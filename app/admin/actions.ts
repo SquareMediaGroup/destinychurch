@@ -14,7 +14,7 @@ export async function login(formData: FormData) {
   const password = String(formData.get("password") || "");
 
   if (username !== adminUser || password !== adminPassword) {
-    return { ok: false, error: "Invalid credentials" };
+    throw new Error("Invalid credentials");
   }
 
   const cookieStore = await cookies();
@@ -25,8 +25,6 @@ export async function login(formData: FormData) {
     path: "/",
     maxAge: 60 * 60 * 8, // 8 hours
   });
-
-  return { ok: true };
 }
 
 export async function logout() {
@@ -38,14 +36,14 @@ export async function updateSermonTitle(formData: FormData) {
   const cookieStore = await cookies();
   const authed = cookieStore.get(ADMIN_COOKIE)?.value === "1";
   if (!authed) {
-    return { ok: false, error: "Unauthorized" };
+    throw new Error("Unauthorized");
   }
 
   const id = String(formData.get("id") || "");
   const title = String(formData.get("title") || "").trim();
 
   if (!id || !title) {
-    return { ok: false, error: "ID and title are required" };
+    throw new Error("ID and title are required");
   }
 
   const supabase = getSupabaseAdmin();
@@ -57,11 +55,10 @@ export async function updateSermonTitle(formData: FormData) {
     .maybeSingle();
 
   if (error) {
-    return { ok: false, error: error.message };
+    throw new Error(error.message);
   }
 
   revalidatePath("/sermons");
   revalidatePath(`/sermons/${encodeURIComponent(id)}`);
   revalidatePath("/admin");
-  return { ok: true };
 }

@@ -2,14 +2,23 @@
 
 :root {
   --background: #ffffff;
-  --foreground: #171717;
+  --foreground: #363f48;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-destiny-orange: #f58021;
+  --color-destiny-red: #fd0000;
+  --color-destiny-blue: #0857ba;
+  --color-destiny-green: #028002;
+  --color-destiny-purple: #8106b1;
+  --color-destiny-grey: #363f48;
+  --color-destiny-white: #ffffff;
+  --color-destiny-black: #000000;
+  --font-sans: var(--font-roboto), system-ui, -apple-system, sans-serif;
+  --font-heading: Arial, "Helvetica Neue", sans-serif;
+  --font-subheading: var(--font-dosis), "Dosis", sans-serif;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -22,5 +31,25 @@
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-roboto), system-ui, -apple-system, sans-serif;
+  line-height: 1.6;
+}
+
+h1,
+h2,
+h3 {
+  font-family: var(--font-heading);
+  color: var(--color-destiny-black);
+}
+
+.subheading {
+  font-family: var(--font-subheading);
+  letter-spacing: 0.01em;
+}
+
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }

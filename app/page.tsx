@@ -1,65 +1,99 @@
-import Image from "next/image";
+import ContinueWatchingRow from "@/components/ContinueWatchingRow";
+import OrangeButton from "@/components/OrangeButton";
+import SermonCard from "@/components/SermonCard";
+import { listSermons } from "@/lib/db";
 
-export default function Home() {
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
+
+export default async function Home() {
+  const sermons = await listSermons(6);
+  const featured = sermons.slice(0, 3);
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
+    <div className="space-y-12">
+      <section className="overflow-hidden rounded-2xl border border-black/5 bg-gradient-to-r from-destiny-orange/10 via-white to-white px-6 py-10 shadow-sm sm:px-10">
+        <p className="subheading text-sm text-destiny-orange">Destiny Sermons</p>
+        <h1 className="mt-2 text-4xl font-bold text-destiny-black sm:text-5xl">
+          Weekly messages, ready to watch
+        </h1>
+        <p className="mt-4 max-w-2xl text-lg text-destiny-grey">
+          A YouTube-like experience for Destiny Church. Watch live replays,
+          podcast sermons, AI summaries, and transcripts — no login needed.
+        </p>
+        <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+          <OrangeButton href="/sermons">Browse sermons</OrangeButton>
           <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+            href="#how-it-works"
+            className="inline-flex items-center gap-2 text-sm font-semibold text-destiny-orange"
           >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
+            How it works →
           </a>
         </div>
-      </main>
+      </section>
+
+      <ContinueWatchingRow sermons={sermons} />
+
+      <section className="space-y-5">
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="subheading text-sm text-destiny-orange">
+              Latest sermons
+            </p>
+            <h2 className="text-2xl font-semibold text-destiny-black">
+              Fresh from YouTube + podcast
+            </h2>
+          </div>
+          <OrangeButton className="hidden sm:inline-flex" href="/sermons">
+            View all
+          </OrangeButton>
+        </div>
+        {featured.length === 0 ? (
+          <div className="rounded-xl border border-black/5 bg-destiny-grey/5 px-4 py-6 text-sm text-destiny-grey">
+            No sermons yet. Run the sync to pull the latest 25.
+          </div>
+        ) : (
+          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            {featured.map((sermon) => (
+              <SermonCard key={sermon.id} sermon={sermon} />
+            ))}
+          </div>
+        )}
+      </section>
+
+      <section className="space-y-4" id="how-it-works">
+        <p className="subheading text-sm text-destiny-orange">How it works</p>
+        <h2 className="text-2xl font-semibold text-destiny-black">
+          Simple for you, ready when you are
+        </h2>
+        <div className="grid gap-4 md:grid-cols-3">
+          <div className="rounded-xl border border-black/5 bg-white px-4 py-5 shadow-sm">
+            <p className="text-sm font-semibold text-destiny-black">1) Watch</p>
+            <p className="mt-2 text-sm text-destiny-grey">
+              Every Sunday&apos;s message is ready to watch again — video, audio,
+              and a clean viewing page that feels like YouTube.
+            </p>
+          </div>
+          <div className="rounded-xl border border-black/5 bg-white px-4 py-5 shadow-sm">
+            <p className="text-sm font-semibold text-destiny-black">
+              2) Catch up fast
+            </p>
+            <p className="mt-2 text-sm text-destiny-grey">
+              Skim the short summary or search the transcript to find the moment
+              you want to revisit.
+            </p>
+          </div>
+          <div className="rounded-xl border border-black/5 bg-white px-4 py-5 shadow-sm">
+            <p className="text-sm font-semibold text-destiny-black">
+              3) Continue where you left
+            </p>
+            <p className="mt-2 text-sm text-destiny-grey">
+              Your place is saved on your device. Pause on your phone, pick up
+              on your laptop without logging in.
+            </p>
+          </div>
+        </div>
+      </section>
     </div>
   );
 }

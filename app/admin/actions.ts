@@ -132,6 +132,32 @@ export async function runSyncNow() {
   revalidatePath("/admin");
 }
 
+export async function runSyncLimited(limit = 5) {
+  const cookieStore = await cookies();
+  const authed = cookieStore.get(ADMIN_COOKIE)?.value === "1";
+  if (!authed) {
+    throw new Error("Unauthorized");
+  }
+
+  const origin =
+    process.env.NEXT_PUBLIC_SITE_URL && process.env.NEXT_PUBLIC_SITE_URL.startsWith("http")
+      ? process.env.NEXT_PUBLIC_SITE_URL
+      : process.env.VERCEL_URL
+        ? `https://${process.env.VERCEL_URL}`
+        : "http://localhost:3000";
+
+  const res = await fetch(`${origin}/api/sermon-sync?limit=${limit}`, {
+    cache: "no-store",
+  });
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Sync failed: ${res.status} ${text}`);
+  }
+
+  revalidatePath("/sermons");
+  revalidatePath("/admin");
+}
+
 export async function deleteSermon(formData: FormData) {
   const cookieStore = await cookies();
   const authed = cookieStore.get(ADMIN_COOKIE)?.value === "1";
@@ -146,6 +172,23 @@ export async function deleteSermon(formData: FormData) {
 
   const supabase = getSupabaseAdmin();
   const { error } = await supabase.from("sermons").delete().eq("id", id);
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  revalidatePath("/sermons");
+  revalidatePath("/admin");
+}
+
+export async function clearSermons() {
+  const cookieStore = await cookies();
+  const authed = cookieStore.get(ADMIN_COOKIE)?.value === "1";
+  if (!authed) {
+    throw new Error("Unauthorized");
+  }
+
+  const supabase = getSupabaseAdmin();
+  const { error } = await supabase.from("sermons").delete().neq("id", "");
   if (error) {
     throw new Error(error.message);
   }

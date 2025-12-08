@@ -1,6 +1,14 @@
 import { cookies } from "next/headers";
 import { listSermons } from "@/lib/db";
-import { deleteSermon, login, logout, runSyncNow, updateSermonMeta } from "./actions";
+import {
+  clearSermons,
+  deleteSermon,
+  login,
+  logout,
+  runSyncLimited,
+  runSyncNow,
+  updateSermonMeta,
+} from "./actions";
 import { cleanDuplicates } from "./cleanup";
 import { processSermon } from "./process";
 import ConfirmSubmit from "@/components/ConfirmSubmit";
@@ -48,15 +56,35 @@ export default async function AdminPage() {
           <p className="text-sm font-semibold text-destiny-black">
             Sync latest sermons (YouTube + Podcast)
           </p>
-          <form action={runSyncNow}>
-            <ConfirmSubmit
-              className="rounded-full bg-destiny-orange px-4 py-2 text-xs font-semibold text-white shadow-sm transition hover:brightness-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-destiny-orange"
-              confirmMessage="Run sync now? This pulls the latest YouTube lives and podcast RSS."
-              pendingLabel="Syncing..."
-            >
-              Run sync now
-            </ConfirmSubmit>
-          </form>
+          <div className="flex flex-wrap items-center gap-2">
+            <form action={runSyncLimited.bind(null, 5)}>
+              <ConfirmSubmit
+                className="rounded-full bg-destiny-orange px-4 py-2 text-xs font-semibold text-white shadow-sm transition hover:brightness-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-destiny-orange"
+                confirmMessage="Run sync for the latest 5 items?"
+                pendingLabel="Syncing..."
+              >
+                Sync 5
+              </ConfirmSubmit>
+            </form>
+            <form action={runSyncNow}>
+              <ConfirmSubmit
+                className="rounded-full border border-destiny-orange px-4 py-2 text-xs font-semibold text-destiny-orange transition hover:bg-destiny-orange hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-destiny-orange"
+                confirmMessage="Run full sync now?"
+                pendingLabel="Syncing..."
+              >
+                Sync all
+              </ConfirmSubmit>
+            </form>
+            <form action={clearSermons}>
+              <ConfirmSubmit
+                className="rounded-full border border-red-500 px-4 py-2 text-xs font-semibold text-red-600 transition hover:bg-red-500 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-500"
+                confirmMessage="Delete ALL sermons from Supabase?"
+                pendingLabel="Deleting..."
+              >
+                Clear all
+              </ConfirmSubmit>
+            </form>
+          </div>
           <p className="text-xs text-destiny-grey/70">
             Pulls last 26 weeks of completed YouTube lives and podcast RSS.
           </p>

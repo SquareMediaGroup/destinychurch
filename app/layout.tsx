@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Dosis, Roboto } from "next/font/google";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import "./globals.css";
 import DestinyFooter from "@/components/DestinyFooter";
 import DestinyHeader from "@/components/DestinyHeader";
@@ -39,6 +40,7 @@ export default function RootLayout({
           </main>
           <DestinyFooter />
         </div>
+        <SpeedInsights />
       </body>
     </html>
   );

@@ -16,8 +16,8 @@ export default async function AdminPage() {
   const sermons = await listSermons(25);
 
   return (
-    <div className="min-h-[70vh] bg-gradient-to-br from-destiny-orange/10 via-white to-destiny-blue/10 px-4 py-10">
-      <div className="mx-auto max-w-6xl space-y-6">
+    <div className="min-h-[70vh] bg-gradient-to-br from-destiny-orange/10 via-white to-destiny-blue/10 px-2 py-10 sm:px-4">
+      <div className="mx-auto max-w-7xl space-y-6">
         <div className="flex items-center justify-between">
           <div>
             <p className="subheading text-sm text-destiny-orange">
@@ -41,9 +41,9 @@ export default async function AdminPage() {
         </div>
 
         <div className="overflow-hidden rounded-2xl border border-black/5 bg-white shadow-lg">
-          <div className="grid grid-cols-4 gap-4 border-b border-black/5 px-4 py-3 text-xs font-semibold uppercase tracking-wide text-destiny-grey/70 sm:grid-cols-6 sm:px-6">
-            <span className="col-span-2 sm:col-span-3">Title</span>
-            <span className="hidden sm:block">YouTube ID</span>
+          <div className="grid grid-cols-4 gap-4 border-b border-black/5 px-4 py-3 text-xs font-semibold uppercase tracking-wide text-destiny-grey/70 sm:grid-cols-7 sm:px-6">
+            <span className="col-span-2 sm:col-span-4">Title</span>
+            <span className="hidden sm:block">YouTube</span>
             <span className="hidden sm:block">Date</span>
             <span className="text-right">Actions</span>
           </div>
@@ -52,10 +52,10 @@ export default async function AdminPage() {
               <form
                 key={sermon.id}
                 action={updateSermonTitle}
-                className="grid grid-cols-4 gap-4 px-4 py-3 sm:grid-cols-6 sm:px-6"
+                className="grid grid-cols-4 gap-4 px-4 py-3 sm:grid-cols-7 sm:px-6"
               >
                 <input type="hidden" name="id" value={sermon.id} />
-                <div className="col-span-2 sm:col-span-3">
+                <div className="col-span-2 sm:col-span-4">
                   <input
                     type="text"
                     name="title"

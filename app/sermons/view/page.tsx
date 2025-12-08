@@ -4,12 +4,7 @@ import SermonSummary from "@/components/SermonSummary";
 import TranscriptBlock from "@/components/TranscriptBlock";
 import VideoPlayer from "@/components/VideoPlayer";
 import SermonCard from "@/components/SermonCard";
-import {
-  getSermonById,
-  getSermonByYoutubeId,
-  getSermonByPodcastGuid,
-  listSermons,
-} from "@/lib/db";
+import { getSermonByViewId, listSermons } from "@/lib/db";
 import { Sermon } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
@@ -53,37 +48,13 @@ export default async function SermonViewPage({ searchParams }: SermonViewPagePro
     viewIdRaw ? viewIdRaw.replace(/\s+/g, "") : "",
   ].filter(Boolean);
 
-  let sermon = null as Awaited<ReturnType<typeof getSermonById>>;
+  let sermon = null as Awaited<ReturnType<typeof getSermonByViewId>>;
   for (const candidate of tryIds) {
-    sermon = await getSermonById(candidate);
+    sermon = await getSermonByViewId(candidate);
     if (sermon) break;
   }
 
-  if (!sermon) {
-    for (const candidate of tryIds) {
-      sermon = await getSermonByYoutubeId(candidate);
-      if (sermon) break;
-    }
-  }
-
-  if (!sermon) {
-    for (const candidate of tryIds) {
-      sermon = await getSermonByPodcastGuid(candidate);
-      if (sermon) break;
-    }
-  }
-
   const allSermons = await listSermons(100);
-  if (!sermon) {
-    sermon =
-      allSermons.find((s) => s.id === viewId) ||
-      allSermons.find((s) => s.id === viewIdRaw) ||
-      allSermons.find((s) => s.youtubeVideoId === viewId) ||
-      allSermons.find((s) => s.youtubeVideoId === viewIdRaw) ||
-      allSermons.find((s) => s.podcastGuid === viewId) ||
-      allSermons.find((s) => s.podcastGuid === viewIdRaw) ||
-      null;
-  }
 
   const resolvedSermon = sermon ?? (viewId ? null : allSermons[0] ?? fallbackSermon);
 

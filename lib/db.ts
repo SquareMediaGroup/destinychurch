@@ -113,6 +113,29 @@ export async function getSermonByPodcastGuid(
   return mapRowToSermon(data as SermonRow);
 }
 
+export async function getSermonByViewId(viewId: string): Promise<Sermon | null> {
+  const supabase = getSupabaseAdmin();
+  const cleaned = viewId.trim();
+  if (!cleaned) return null;
+
+  const orFilters = [
+    `id.eq.${cleaned}`,
+    `youtube_video_id.eq.${cleaned}`,
+    `podcast_guid.eq.${cleaned}`,
+  ].join(",");
+
+  const { data, error } = await supabase
+    .from("sermons")
+    .select("*")
+    .or(orFilters)
+    .limit(1)
+    .maybeSingle();
+
+  if (error) throw error;
+  if (!data) return null;
+  return mapRowToSermon(data as SermonRow);
+}
+
 export async function listSermons(limit = 25): Promise<Sermon[]> {
   const supabase = getSupabaseAdmin();
   const { data, error } = await supabase

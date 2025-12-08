@@ -11,7 +11,7 @@ export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
 type SermonViewPageProps = {
-  searchParams?: { viewId?: string };
+  searchParams?: { viewId?: string; debug?: string };
 };
 
 const fallbackSermon: Sermon = {
@@ -40,6 +40,7 @@ const formatDate = (dateString: string) =>
 export default async function SermonViewPage({ searchParams }: SermonViewPageProps) {
   const viewIdRaw = searchParams?.viewId ?? "";
   const viewId = viewIdRaw ? decodeURIComponent(viewIdRaw).trim() : "";
+  const debugMode = searchParams?.debug === "1";
 
   const tryIds = [
     viewId,
@@ -48,9 +49,12 @@ export default async function SermonViewPage({ searchParams }: SermonViewPagePro
     viewIdRaw ? viewIdRaw.replace(/\s+/g, "") : "",
   ].filter(Boolean);
 
-  let sermon = null as Awaited<ReturnType<typeof getSermonByViewId>>;
+  let sermon = null as Sermon | null;
+  let matchedField: string | null = null;
   for (const candidate of tryIds) {
-    sermon = await getSermonByViewId(candidate);
+    const result = await getSermonByViewId(candidate);
+    sermon = result.sermon;
+    matchedField = result.matchedField;
     if (sermon) break;
   }
 
@@ -81,6 +85,29 @@ export default async function SermonViewPage({ searchParams }: SermonViewPagePro
   return (
     <div className="grid gap-10 lg:grid-cols-[2fr_1fr]">
       <div className="space-y-6">
+        {viewId && (
+          <div className="flex flex-wrap items-center gap-3 rounded-xl border border-black/5 bg-white px-4 py-3 text-xs font-semibold text-destiny-grey">
+            <span>View ID: {viewId}</span>
+            <Link
+              href={`/sermons/view?viewId=${encodeURIComponent(viewId)}&debug=${debugMode ? "0" : "1"}`}
+              className="rounded-full border border-destiny-orange px-3 py-1 text-destiny-orange transition hover:bg-destiny-orange hover:text-white"
+            >
+              {debugMode ? "Exit debug" : "Debug mode"}
+            </Link>
+          </div>
+        )}
+
+        {debugMode && (
+          <div className="space-y-1 rounded-xl border border-black/5 bg-white px-4 py-3 text-xs text-destiny-grey shadow-sm">
+            <p className="font-semibold text-destiny-black">Debug info</p>
+            <p>Raw viewId: {viewIdRaw || "—"}</p>
+            <p>Decoded viewId: {viewId || "—"}</p>
+            <p>Matched field: {matchedField || "none"}</p>
+            <p>Resolved sermon: {resolvedSermon.id} — {resolvedSermon.title}</p>
+            <p>Try order: {tryIds.join(", ") || "none"}</p>
+          </div>
+        )}
+
         <div className="space-y-3">
           <VideoPlayer
             sermonId={resolvedSermon.id}

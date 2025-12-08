@@ -113,27 +113,34 @@ export async function getSermonByPodcastGuid(
   return mapRowToSermon(data as SermonRow);
 }
 
-export async function getSermonByViewId(viewId: string): Promise<Sermon | null> {
+export async function getSermonByViewId(
+  viewId: string,
+): Promise<{ sermon: Sermon | null; matchedField: string | null }> {
   const supabase = getSupabaseAdmin();
   const cleaned = viewId.trim();
-  if (!cleaned) return null;
+  if (!cleaned) return { sermon: null, matchedField: null };
 
-  const orFilters = [
-    `id.eq.${cleaned}`,
-    `youtube_video_id.eq.${cleaned}`,
-    `podcast_guid.eq.${cleaned}`,
-  ].join(",");
+  const tryField = async (field: "id" | "youtube_video_id" | "podcast_guid") => {
+    const { data, error } = await supabase
+      .from("sermons")
+      .select("*")
+      .eq(field, cleaned)
+      .maybeSingle();
+    if (error) throw error;
+    if (!data) return null;
+    return mapRowToSermon(data as SermonRow);
+  };
 
-  const { data, error } = await supabase
-    .from("sermons")
-    .select("*")
-    .or(orFilters)
-    .limit(1)
-    .maybeSingle();
+  const byId = await tryField("id");
+  if (byId) return { sermon: byId, matchedField: "id" };
 
-  if (error) throw error;
-  if (!data) return null;
-  return mapRowToSermon(data as SermonRow);
+  const byYoutube = await tryField("youtube_video_id");
+  if (byYoutube) return { sermon: byYoutube, matchedField: "youtube_video_id" };
+
+  const byPodcast = await tryField("podcast_guid");
+  if (byPodcast) return { sermon: byPodcast, matchedField: "podcast_guid" };
+
+  return { sermon: null, matchedField: null };
 }
 
 export async function listSermons(limit = 25): Promise<Sermon[]> {

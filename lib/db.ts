@@ -98,6 +98,21 @@ export async function getSermonByYoutubeId(
   return mapRowToSermon(data as SermonRow);
 }
 
+export async function getSermonByPodcastGuid(
+  guid: string,
+): Promise<Sermon | null> {
+  const supabase = getSupabaseAdmin();
+  const { data, error } = await supabase
+    .from("sermons")
+    .select("*")
+    .eq("podcast_guid", guid)
+    .maybeSingle();
+
+  if (error) throw error;
+  if (!data) return null;
+  return mapRowToSermon(data as SermonRow);
+}
+
 export async function listSermons(limit = 25): Promise<Sermon[]> {
   const supabase = getSupabaseAdmin();
   const { data, error } = await supabase

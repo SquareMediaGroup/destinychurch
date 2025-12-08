@@ -7,6 +7,7 @@ import SermonCard from "@/components/SermonCard";
 import {
   getSermonById,
   getSermonByYoutubeId,
+  getSermonByPodcastGuid,
   listSermons,
 } from "@/lib/db";
 import { Sermon } from "@/lib/types";
@@ -58,13 +59,18 @@ export default async function SermonViewPage({ searchParams }: SermonViewPagePro
     if (sermon) break;
   }
 
-  // Fallback: if not found, try matching by YouTube video ID suffix
   if (!sermon) {
-    const youtubeId =
-      viewId.includes(":") || viewId.includes("%3A")
-        ? viewId.split(":").pop() ?? viewId
-        : viewId;
-    sermon = await getSermonByYoutubeId(youtubeId);
+    for (const candidate of tryIds) {
+      sermon = await getSermonByYoutubeId(candidate);
+      if (sermon) break;
+    }
+  }
+
+  if (!sermon) {
+    for (const candidate of tryIds) {
+      sermon = await getSermonByPodcastGuid(candidate);
+      if (sermon) break;
+    }
   }
 
   const allSermons = await listSermons(100);

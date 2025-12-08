@@ -21,6 +21,7 @@ export async function processSermon(formData: FormData) {
   const sermon = await getSermonById(id);
   if (!sermon) throw new Error("Sermon not found");
   if (!sermon.podcastAudioUrl) throw new Error("No podcast audio URL to transcribe");
+  if (sermon.summary && sermon.transcript) return;
 
   const transcript = await transcribeAudio(sermon.podcastAudioUrl);
   const summaryBullets = await generateSermonSummary(transcript);

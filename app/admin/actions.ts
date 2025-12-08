@@ -3,21 +3,29 @@
 import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { getSupabaseAdmin } from "@/lib/supabase";
+import { verifyAdminUser, createAdminUser, deleteAdminUser } from "@/lib/adminUsers";
 
 const ADMIN_COOKIE = "destiny-admin";
+const ADMIN_ROLE_COOKIE = "destiny-admin-role";
 
 const adminUser = process.env.ADMIN_USER || "admin";
 const adminPassword = process.env.ADMIN_PASSWORD || "Romans12:1";
 
 export async function login(formData: FormData) {
-  const username = String(formData.get("username") || "");
+  const username = String(formData.get("username") || "").trim();
   const password = String(formData.get("password") || "");
 
-  if (username !== adminUser || password !== adminPassword) {
-    throw new Error("Invalid credentials");
+  let role: "super" | "admin" | null = null;
+  if (username === adminUser && password === adminPassword) {
+    role = "super";
+  } else {
+    const verified = await verifyAdminUser(username, password);
+    role = verified ? "admin" : null;
   }
 
-  const cookieStore = await cookies();
+  if (!role) throw new Error("Invalid credentials");
+
+  const cookieStore = cookies();
   cookieStore.set(ADMIN_COOKIE, "1", {
     httpOnly: true,
     sameSite: "lax",
@@ -25,11 +33,19 @@ export async function login(formData: FormData) {
     path: "/",
     maxAge: 60 * 60 * 8, // 8 hours
   });
+  cookieStore.set(ADMIN_ROLE_COOKIE, role, {
+    httpOnly: true,
+    sameSite: "lax",
+    secure: process.env.NODE_ENV === "production",
+    path: "/",
+    maxAge: 60 * 60 * 8,
+  });
 }
 
 export async function logout() {
-  const cookieStore = await cookies();
+  const cookieStore = cookies();
   cookieStore.delete(ADMIN_COOKIE);
+  cookieStore.delete(ADMIN_ROLE_COOKIE);
 }
 
 const youtubeIdFromLink = (input: string) => {
@@ -52,7 +68,7 @@ const youtubeIdFromLink = (input: string) => {
 };
 
 export async function updateSermonMeta(formData: FormData) {
-  const cookieStore = await cookies();
+  const cookieStore = cookies();
   const authed = cookieStore.get(ADMIN_COOKIE)?.value === "1";
   if (!authed) {
     throw new Error("Unauthorized");
@@ -103,7 +119,7 @@ export async function updateSermonMeta(formData: FormData) {
 }
 
 export async function runSyncNow() {
-  const cookieStore = await cookies();
+  const cookieStore = cookies();
   const authed = cookieStore.get(ADMIN_COOKIE)?.value === "1";
   if (!authed) {
     throw new Error("Unauthorized");
@@ -133,7 +149,7 @@ export async function runSyncNow() {
 }
 
 export async function runSyncLimited(limit = 5) {
-  const cookieStore = await cookies();
+  const cookieStore = cookies();
   const authed = cookieStore.get(ADMIN_COOKIE)?.value === "1";
   if (!authed) {
     throw new Error("Unauthorized");
@@ -159,7 +175,7 @@ export async function runSyncLimited(limit = 5) {
 }
 
 export async function deleteSermon(formData: FormData) {
-  const cookieStore = await cookies();
+  const cookieStore = cookies();
   const authed = cookieStore.get(ADMIN_COOKIE)?.value === "1";
   if (!authed) {
     throw new Error("Unauthorized");
@@ -181,7 +197,7 @@ export async function deleteSermon(formData: FormData) {
 }
 
 export async function clearSermons() {
-  const cookieStore = await cookies();
+  const cookieStore = cookies();
   const authed = cookieStore.get(ADMIN_COOKIE)?.value === "1";
   if (!authed) {
     throw new Error("Unauthorized");
@@ -194,5 +210,30 @@ export async function clearSermons() {
   }
 
   revalidatePath("/sermons");
+  revalidatePath("/admin");
+}
+
+export async function addAdminUser(formData: FormData) {
+  const cookieStore = cookies();
+  const authed = cookieStore.get(ADMIN_COOKIE)?.value === "1";
+  const role = cookieStore.get(ADMIN_ROLE_COOKIE)?.value;
+  if (!authed || role !== "super") throw new Error("Only super admin can add users");
+
+  const username = String(formData.get("username") || "").trim();
+  const password = String(formData.get("password") || "");
+  if (!username || !password) throw new Error("Username and password required");
+  await createAdminUser(username, password);
+  revalidatePath("/admin");
+}
+
+export async function deleteAdminUserAction(formData: FormData) {
+  const cookieStore = cookies();
+  const authed = cookieStore.get(ADMIN_COOKIE)?.value === "1";
+  const role = cookieStore.get(ADMIN_ROLE_COOKIE)?.value;
+  if (!authed || role !== "super") throw new Error("Only super admin can delete users");
+
+  const username = String(formData.get("username") || "").trim();
+  if (!username || username === adminUser) throw new Error("Cannot delete that user");
+  await deleteAdminUser(username);
   revalidatePath("/admin");
 }

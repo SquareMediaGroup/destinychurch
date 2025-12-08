@@ -23,3 +23,9 @@ create table if not exists sermon_link_suggestions (
   status text,
   created_at timestamptz default timezone('utc', now())
 );
+
+create table if not exists admin_users (
+  username text primary key,
+  password_hash text not null,
+  created_at timestamptz default timezone('utc', now())
+);

@@ -98,18 +98,24 @@ export async function runSyncNow() {
   }
 
   const origin =
-    process.env.NEXT_PUBLIC_SITE_URL ||
-    process.env.VERCEL_URL?.startsWith("http")
-      ? process.env.VERCEL_URL
+    process.env.NEXT_PUBLIC_SITE_URL && process.env.NEXT_PUBLIC_SITE_URL.startsWith("http")
+      ? process.env.NEXT_PUBLIC_SITE_URL
       : process.env.VERCEL_URL
         ? `https://${process.env.VERCEL_URL}`
         : "http://localhost:3000";
 
-  const res = await fetch(`${origin}/api/sermon-sync`, { cache: "no-store" });
-  if (!res.ok) {
-    const text = await res.text();
-    throw new Error(`Sync failed: ${res.status} ${text}`);
+  try {
+    const res = await fetch(`${origin}/api/sermon-sync`, { cache: "no-store" });
+    if (!res.ok) {
+      const text = await res.text();
+      throw new Error(`Sync failed: ${res.status} ${text}`);
+    }
+  } catch (error) {
+    throw new Error(
+      error instanceof Error ? error.message : "Sync failed unexpectedly",
+    );
   }
+
   revalidatePath("/sermons");
   revalidatePath("/admin");
 }

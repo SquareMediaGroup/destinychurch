@@ -1,4 +1,4 @@
-import { getSupabaseAdmin } from "./supabase";
+import { getSupabaseAdmin, tryGetSupabaseAdmin } from "./supabase";
 import { Sermon } from "./types";
 
 type SermonRow = {
@@ -83,7 +83,8 @@ export async function saveSermon(sermon: Sermon) {
 }
 
 export async function getSermonById(id: string): Promise<Sermon | null> {
-  const supabase = getSupabaseAdmin();
+  const supabase = tryGetSupabaseAdmin();
+  if (!supabase) return null;
   const { data, error } = await supabase
     .from("sermons")
     .select("*")
@@ -98,7 +99,8 @@ export async function getSermonById(id: string): Promise<Sermon | null> {
 export async function getSermonByYoutubeId(
   youtubeId: string,
 ): Promise<Sermon | null> {
-  const supabase = getSupabaseAdmin();
+  const supabase = tryGetSupabaseAdmin();
+  if (!supabase) return null;
   const { data, error } = await supabase
     .from("sermons")
     .select("*")
@@ -113,7 +115,8 @@ export async function getSermonByYoutubeId(
 export async function getSermonByPodcastGuid(
   guid: string,
 ): Promise<Sermon | null> {
-  const supabase = getSupabaseAdmin();
+  const supabase = tryGetSupabaseAdmin();
+  if (!supabase) return null;
   const { data, error } = await supabase
     .from("sermons")
     .select("*")
@@ -128,7 +131,8 @@ export async function getSermonByPodcastGuid(
 export async function getSermonByViewId(
   viewId: string,
 ): Promise<{ sermon: Sermon | null; matchedField: string | null }> {
-  const supabase = getSupabaseAdmin();
+  const supabase = tryGetSupabaseAdmin();
+  if (!supabase) return { sermon: null, matchedField: null };
   const cleaned = viewId.trim();
   if (!cleaned) return { sermon: null, matchedField: null };
 
@@ -156,7 +160,8 @@ export async function getSermonByViewId(
 }
 
 export async function listSermons(limit = 25): Promise<Sermon[]> {
-  const supabase = getSupabaseAdmin();
+  const supabase = tryGetSupabaseAdmin();
+  if (!supabase) return [];
   const { data, error } = await supabase
     .from("sermons")
     .select("*")

@@ -25,12 +25,14 @@ const similarity = (a: string, b: string) => {
   return intersection / union;
 };
 
-export async function GET() {
+export async function GET(request: Request) {
   const rssUrl = process.env.PODCAST_RSS_URL;
   const youtubeChannelId = process.env.YOUTUBE_CHANNEL_ID;
   const youtubeApiKey = process.env.YOUTUBE_API_KEY;
   const sinceDate = new Date(Date.now() - 1000 * 60 * 60 * 24 * 7 * 26); // last 26 weeks
   const sinceIso = sinceDate.toISOString();
+  const limitParam = new URL(request.url).searchParams.get("limit");
+  const limit = Math.max(1, Math.min(Number(limitParam) || 25, 50));
 
   if (!rssUrl || !youtubeChannelId || !youtubeApiKey) {
     return NextResponse.json(
@@ -45,7 +47,7 @@ export async function GET() {
   try {
     const [podcast, youtube] = await Promise.all([
       fetchPodcastEntries(rssUrl),
-      fetchCompletedYoutubeVideos(youtubeChannelId, youtubeApiKey, 50, sinceIso),
+      fetchCompletedYoutubeVideos(youtubeChannelId, youtubeApiKey, limit * 2, sinceIso),
     ]);
 
     const podcastFiltered = podcast.filter(
@@ -54,7 +56,7 @@ export async function GET() {
     const podcastSorted = [...podcastFiltered].sort(
       (a, b) => new Date(b.pubDate).getTime() - new Date(a.pubDate).getTime(),
     );
-    const podcast25 = podcastSorted.slice(0, 25);
+    const podcast25 = podcastSorted.slice(0, limit);
 
     const sermons: Sermon[] = [];
     const matchedYoutube = new Set<string>();
@@ -99,6 +101,7 @@ export async function GET() {
 
     youtube
       .filter((y) => !matchedYoutube.has(y.videoId))
+      .slice(0, limit)
       .forEach((y) => {
         sermons.push({
           id: `youtube:${y.videoId}`,
@@ -121,7 +124,7 @@ export async function GET() {
       youtubeCount: youtube.length,
       saved: sermons.length,
       sample: sermons.slice(0, 3),
-      note: "Matched by same-day date over the last 26 weeks; refine matching as needed.",
+      note: `Matched by same-day date over the last 26 weeks; fetched limit=${limit}.`,
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unknown error";

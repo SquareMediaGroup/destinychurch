@@ -20,3 +20,12 @@ export function getSupabaseAdmin() {
 
   return supabase;
 }
+
+export function tryGetSupabaseAdmin(): SupabaseClient | null {
+  try {
+    return getSupabaseAdmin();
+  } catch (error) {
+    console.error("Supabase admin unavailable", error);
+    return null;
+  }
+}

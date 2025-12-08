@@ -23,7 +23,7 @@ const formatDuration = (durationSeconds?: number) => {
 export default function SermonCard({ sermon }: SermonCardProps) {
   const durationLabel = formatDuration(sermon.durationSeconds);
   const speaker = sermon.speaker || "Destiny Church";
-  const href = `/sermons/${encodeURIComponent(sermon.id)}`;
+  const href = `/sermons/view?viewId=${encodeURIComponent(sermon.id)}`;
 
   return (
     <Link

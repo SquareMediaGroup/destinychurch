@@ -6,7 +6,7 @@ import { getSupabaseAdmin } from "@/lib/supabase";
 
 const ADMIN_COOKIE = "destiny-admin";
 
-export async function cleanDuplicates(_formData: FormData): Promise<void> {
+export async function cleanDuplicates(): Promise<void> {
   const cookieStore = await cookies();
   const authed = cookieStore.get(ADMIN_COOKIE)?.value === "1";
   if (!authed) throw new Error("Unauthorized");

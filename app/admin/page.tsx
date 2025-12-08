@@ -2,6 +2,7 @@ import { cookies } from "next/headers";
 import { listSermons } from "@/lib/db";
 import { deleteSermon, login, logout, runSyncNow, updateSermonMeta } from "./actions";
 import { cleanDuplicates } from "./cleanup";
+import { processSermon } from "./process";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -136,15 +137,26 @@ export default async function AdminPage() {
                     </button>
                   </div>
                 </form>
-                <form action={deleteSermon} className="flex items-center justify-end">
-                  <input type="hidden" name="id" value={sermon.id} />
-                  <button
-                    type="submit"
-                    className="rounded-full border border-red-500 px-3 py-2 text-xs font-semibold text-red-600 transition hover:bg-red-500 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-500"
-                  >
-                    Delete
-                  </button>
-                </form>
+                <div className="flex items-center justify-end gap-2">
+                  <form action={processSermon}>
+                    <input type="hidden" name="id" value={sermon.id} />
+                    <button
+                      type="submit"
+                      className="rounded-full border border-destiny-orange px-3 py-2 text-xs font-semibold text-destiny-orange transition hover:bg-destiny-orange hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-destiny-orange"
+                    >
+                      Process AI
+                    </button>
+                  </form>
+                  <form action={deleteSermon} className="flex items-center justify-end">
+                    <input type="hidden" name="id" value={sermon.id} />
+                    <button
+                      type="submit"
+                      className="rounded-full border border-red-500 px-3 py-2 text-xs font-semibold text-red-600 transition hover:bg-red-500 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-500"
+                    >
+                      Delete
+                    </button>
+                  </form>
+                </div>
               </div>
             ))}
           </div>

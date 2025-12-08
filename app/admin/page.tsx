@@ -1,6 +1,6 @@
 import { cookies } from "next/headers";
 import { listSermons } from "@/lib/db";
-import { login, logout, updateSermonTitle } from "./actions";
+import { login, logout, runSyncNow, updateSermonTitle } from "./actions";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -38,6 +38,23 @@ export default async function AdminPage() {
               Log out
             </button>
           </form>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-3 rounded-2xl border border-black/5 bg-white px-4 py-3 shadow-sm sm:px-6">
+          <p className="text-sm font-semibold text-destiny-black">
+            Sync latest sermons (YouTube + Podcast)
+          </p>
+          <form action={runSyncNow}>
+            <button
+              type="submit"
+              className="rounded-full bg-destiny-orange px-4 py-2 text-xs font-semibold text-white shadow-sm transition hover:brightness-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-destiny-orange"
+            >
+              Run sync now
+            </button>
+          </form>
+          <p className="text-xs text-destiny-grey/70">
+            Pulls last 26 weeks of completed YouTube lives and podcast RSS.
+          </p>
         </div>
 
         <div className="overflow-hidden rounded-2xl border border-black/5 bg-white shadow-lg">

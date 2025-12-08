@@ -89,3 +89,27 @@ export async function updateSermonTitle(formData: FormData) {
   revalidatePath(`/sermons/${encodeURIComponent(id)}`);
   revalidatePath("/admin");
 }
+
+export async function runSyncNow() {
+  const cookieStore = await cookies();
+  const authed = cookieStore.get(ADMIN_COOKIE)?.value === "1";
+  if (!authed) {
+    throw new Error("Unauthorized");
+  }
+
+  const origin =
+    process.env.NEXT_PUBLIC_SITE_URL ||
+    process.env.VERCEL_URL?.startsWith("http")
+      ? process.env.VERCEL_URL
+      : process.env.VERCEL_URL
+        ? `https://${process.env.VERCEL_URL}`
+        : "http://localhost:3000";
+
+  const res = await fetch(`${origin}/api/sermon-sync`, { cache: "no-store" });
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Sync failed: ${res.status} ${text}`);
+  }
+  revalidatePath("/sermons");
+  revalidatePath("/admin");
+}

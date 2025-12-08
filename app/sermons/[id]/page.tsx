@@ -26,12 +26,27 @@ const formatDate = (dateString: string) =>
 
 export default async function SermonWatchPage({ params }: SermonWatchPageProps) {
   const rawParam = params.id;
-  const decodedId = decodeURIComponent(rawParam);
-  let sermon = await getSermonById(decodedId);
+  const decodedId = decodeURIComponent(rawParam).trim();
+
+  const tryIds = [
+    decodedId,
+    rawParam,
+    decodedId.replace(/\s+/g, ""),
+    rawParam.replace(/\s+/g, ""),
+  ].filter(Boolean);
+
+  let sermon: Awaited<ReturnType<typeof getSermonById>> = null;
+  for (const candidate of tryIds) {
+    sermon = await getSermonById(candidate);
+    if (sermon) break;
+  }
 
   // Fallback: if not found, try matching by YouTube video ID suffix
-  if (!sermon && decodedId.includes(":")) {
-    const youtubeId = decodedId.split(":").pop() ?? decodedId;
+  if (!sermon) {
+    const youtubeId =
+      decodedId.includes(":") || decodedId.includes("%3A")
+        ? decodedId.split(":").pop() ?? decodedId
+        : decodedId;
     sermon = await getSermonByYoutubeId(youtubeId);
   }
 
@@ -39,8 +54,9 @@ export default async function SermonWatchPage({ params }: SermonWatchPageProps) 
   if (!sermon) {
     sermon =
       allSermons.find((s) => s.id === decodedId) ||
-      allSermons.find((s) => s.youtubeVideoId === decodedId) ||
       allSermons.find((s) => s.id === rawParam) ||
+      allSermons.find((s) => s.youtubeVideoId === decodedId) ||
+      allSermons.find((s) => s.youtubeVideoId === rawParam) ||
       null;
   }
 

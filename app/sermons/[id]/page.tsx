@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { notFound } from "next/navigation";
 import SermonSummary from "@/components/SermonSummary";
 import TranscriptBlock from "@/components/TranscriptBlock";
 import VideoPlayer from "@/components/VideoPlayer";
@@ -36,12 +35,33 @@ export default async function SermonWatchPage({ params }: SermonWatchPageProps) 
     sermon = await getSermonByYoutubeId(youtubeId);
   }
 
+  const allSermons = await listSermons(100);
   if (!sermon) {
-    notFound();
+    sermon =
+      allSermons.find((s) => s.id === decodedId) ||
+      allSermons.find((s) => s.youtubeVideoId === decodedId) ||
+      allSermons.find((s) => s.id === rawParam) ||
+      null;
   }
 
-  const recommended = (await listSermons(6))
-    .filter((item) => item.id !== decodedId)
+  if (!sermon) {
+    return (
+      <div className="space-y-6">
+        <div className="rounded-xl border border-black/5 bg-white px-6 py-8 shadow-sm">
+          <h1 className="text-2xl font-bold text-destiny-black">Sermon not found</h1>
+          <p className="mt-2 text-destiny-grey">
+            We could not locate this sermon. Please select another from the list.
+          </p>
+          <Link href="/sermons" className="mt-4 inline-block text-destiny-orange font-semibold">
+            ← Back to sermons
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  const recommended = allSermons
+    .filter((item) => item.id !== sermon.id)
     .slice(0, 2);
 
   return (

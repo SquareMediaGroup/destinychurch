@@ -32,11 +32,25 @@ const mapRowToSermon = (row: SermonRow): Sermon => ({
 
 export async function saveSermon(sermon: Sermon) {
   const supabase = getSupabaseAdmin();
+  let targetId = sermon.id;
+
+  // If a sermon with this podcast guid already exists, reuse its id to avoid unique constraint conflicts.
+  if (sermon.podcastGuid) {
+    const { data: existing } = await supabase
+      .from("sermons")
+      .select("id")
+      .eq("podcast_guid", sermon.podcastGuid)
+      .maybeSingle();
+    if (existing?.id) {
+      targetId = existing.id as string;
+    }
+  }
+
   const { error } = await supabase
     .from("sermons")
     .upsert(
       {
-        id: sermon.id,
+        id: targetId,
         title: sermon.title,
         date: sermon.date,
         youtube_video_id: sermon.youtubeVideoId,

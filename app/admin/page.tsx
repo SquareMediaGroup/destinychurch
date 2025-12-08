@@ -1,6 +1,7 @@
 import { cookies } from "next/headers";
 import { listSermons } from "@/lib/db";
-import { login, logout, runSyncNow, updateSermonTitle } from "./actions";
+import { deleteSermon, login, logout, runSyncNow, updateSermonMeta } from "./actions";
+import { cleanDuplicates } from "./cleanup";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -57,6 +58,23 @@ export default async function AdminPage() {
           </p>
         </div>
 
+        <div className="flex flex-wrap items-center gap-3 rounded-2xl border border-black/5 bg-white px-4 py-3 shadow-sm sm:px-6">
+          <p className="text-sm font-semibold text-destiny-black">
+            Maintenance: remove duplicates
+          </p>
+          <form action={cleanDuplicates}>
+            <button
+              type="submit"
+              className="rounded-full bg-destiny-orange px-4 py-2 text-xs font-semibold text-white shadow-sm transition hover:brightness-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-destiny-orange"
+            >
+              Clean duplicates
+            </button>
+          </form>
+          <p className="text-xs text-destiny-grey/70">
+            Keeps first record per YouTube ID or Podcast GUID, deletes extras.
+          </p>
+        </div>
+
         <div className="overflow-hidden rounded-2xl border border-black/5 bg-white shadow-lg">
           <div className="grid grid-cols-4 gap-4 border-b border-black/5 px-4 py-3 text-xs font-semibold uppercase tracking-wide text-destiny-grey/70 sm:grid-cols-7 sm:px-6">
             <span className="col-span-2 sm:col-span-4">Title</span>
@@ -66,61 +84,68 @@ export default async function AdminPage() {
           </div>
           <div className="divide-y divide-black/5">
             {sermons.map((sermon) => (
-              <form
+              <div
                 key={sermon.id}
-                action={updateSermonTitle}
                 className="grid grid-cols-4 gap-4 px-4 py-3 sm:grid-cols-7 sm:px-6"
               >
-                <input type="hidden" name="id" value={sermon.id} />
-                <div className="col-span-2 sm:col-span-4">
-                  <input
-                    type="text"
-                    name="title"
-                    defaultValue={sermon.title}
-                    className="w-full rounded-lg border border-black/10 px-3 py-2 text-sm text-destiny-black outline-none transition focus:border-destiny-orange focus:ring-2 focus:ring-destiny-orange/30"
-                  />
-                  <p className="mt-1 text-[11px] text-destiny-grey/70">
-                    ID: {sermon.id}
-                  </p>
-                  {sermon.podcastAudioUrl && (
-                    <p className="mt-1 text-[11px] text-destiny-grey/70 break-all">
-                      Podcast:{" "}
-                      <a
-                        className="text-destiny-orange underline"
-                        href={sermon.podcastAudioUrl}
-                        target="_blank"
-                        rel="noreferrer"
-                      >
-                        {sermon.podcastAudioUrl}
-                      </a>
+                <form
+                  action={updateSermonMeta}
+                  className="contents"
+                >
+                  <input type="hidden" name="id" value={sermon.id} />
+                  <div className="col-span-2 sm:col-span-4 space-y-1">
+                    <input
+                      type="text"
+                      name="title"
+                      defaultValue={sermon.title}
+                      className="w-full rounded-lg border border-black/10 px-3 py-2 text-sm text-destiny-black outline-none transition focus:border-destiny-orange focus:ring-2 focus:ring-destiny-orange/30"
+                    />
+                    <input
+                      type="text"
+                      name="podcast"
+                      defaultValue={sermon.podcastAudioUrl || sermon.podcastGuid || ""}
+                      placeholder="Podcast link or GUID (leave empty to unlink)"
+                      className="w-full rounded-lg border border-black/10 px-3 py-2 text-sm text-destiny-black outline-none transition focus:border-destiny-orange focus:ring-2 focus:ring-destiny-orange/30"
+                    />
+                    <p className="text-[11px] text-destiny-grey/70">
+                      ID: {sermon.id}
                     </p>
-                  )}
-                </div>
-                <div className="hidden items-center text-sm text-destiny-grey sm:flex">
-                  <input
-                    type="text"
-                    name="video"
-                    defaultValue={
-                      sermon.youtubeVideoId
-                        ? `https://www.youtube.com/watch?v=${sermon.youtubeVideoId}`
-                        : ""
-                    }
-                    placeholder="YouTube URL or ID"
-                    className="w-full rounded-lg border border-black/10 px-3 py-2 text-sm text-destiny-black outline-none transition focus:border-destiny-orange focus:ring-2 focus:ring-destiny-orange/30"
-                  />
-                </div>
-                <div className="hidden items-center text-sm text-destiny-grey sm:flex">
-                  {new Date(sermon.date).toLocaleDateString("en-GB")}
-                </div>
-                <div className="flex items-center justify-end">
+                  </div>
+                  <div className="hidden items-center text-sm text-destiny-grey sm:flex">
+                    <input
+                      type="text"
+                      name="video"
+                      defaultValue={
+                        sermon.youtubeVideoId
+                          ? `https://www.youtube.com/watch?v=${sermon.youtubeVideoId}`
+                          : ""
+                      }
+                      placeholder="YouTube URL or ID"
+                      className="w-full rounded-lg border border-black/10 px-3 py-2 text-sm text-destiny-black outline-none transition focus:border-destiny-orange focus:ring-2 focus:ring-destiny-orange/30"
+                    />
+                  </div>
+                  <div className="hidden items-center text-sm text-destiny-grey sm:flex">
+                    {new Date(sermon.date).toLocaleDateString("en-GB")}
+                  </div>
+                  <div className="flex items-center justify-end gap-2">
+                    <button
+                      type="submit"
+                      className="rounded-full bg-destiny-orange px-3 py-2 text-xs font-semibold text-white shadow-sm transition hover:brightness-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-destiny-orange"
+                    >
+                      Save
+                    </button>
+                  </div>
+                </form>
+                <form action={deleteSermon} className="flex items-center justify-end">
+                  <input type="hidden" name="id" value={sermon.id} />
                   <button
                     type="submit"
-                    className="rounded-full bg-destiny-orange px-3 py-2 text-xs font-semibold text-white shadow-sm transition hover:brightness-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-destiny-orange"
+                    className="rounded-full border border-red-500 px-3 py-2 text-xs font-semibold text-red-600 transition hover:bg-red-500 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-500"
                   >
-                    Save
+                    Delete
                   </button>
-                </div>
-              </form>
+                </form>
+              </div>
             ))}
           </div>
         </div>

@@ -51,7 +51,7 @@ const youtubeIdFromLink = (input: string) => {
   return "";
 };
 
-export async function updateSermonTitle(formData: FormData) {
+export async function updateSermonMeta(formData: FormData) {
   const cookieStore = await cookies();
   const authed = cookieStore.get(ADMIN_COOKIE)?.value === "1";
   if (!authed) {
@@ -61,6 +61,7 @@ export async function updateSermonTitle(formData: FormData) {
   const id = String(formData.get("id") || "");
   const title = String(formData.get("title") || "").trim();
   const videoInput = String(formData.get("video") || "").trim();
+  const podcastInput = String(formData.get("podcast") || "").trim();
   const youtubeId = youtubeIdFromLink(videoInput);
 
   if (!id || !title) {
@@ -72,6 +73,17 @@ export async function updateSermonTitle(formData: FormData) {
   if (youtubeId) {
     update.youtube_video_id = youtubeId;
     update.thumbnail_url = `https://i.ytimg.com/vi/${youtubeId}/hqdefault.jpg`;
+  } else {
+    update.youtube_video_id = null;
+    update.thumbnail_url = null;
+  }
+
+  if (podcastInput) {
+    update.podcast_guid = podcastInput;
+    update.podcast_audio_url = podcastInput;
+  } else {
+    update.podcast_guid = null;
+    update.podcast_audio_url = null;
   }
 
   const { error } = await supabase
@@ -114,6 +126,28 @@ export async function runSyncNow() {
     throw new Error(
       error instanceof Error ? error.message : "Sync failed unexpectedly",
     );
+  }
+
+  revalidatePath("/sermons");
+  revalidatePath("/admin");
+}
+
+export async function deleteSermon(formData: FormData) {
+  const cookieStore = await cookies();
+  const authed = cookieStore.get(ADMIN_COOKIE)?.value === "1";
+  if (!authed) {
+    throw new Error("Unauthorized");
+  }
+
+  const id = String(formData.get("id") || "");
+  if (!id) {
+    throw new Error("Missing id");
+  }
+
+  const supabase = getSupabaseAdmin();
+  const { error } = await supabase.from("sermons").delete().eq("id", id);
+  if (error) {
+    throw new Error(error.message);
   }
 
   revalidatePath("/sermons");

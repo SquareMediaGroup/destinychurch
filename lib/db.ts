@@ -46,6 +46,18 @@ export async function saveSermon(sermon: Sermon) {
     }
   }
 
+  // If a sermon with this YouTube ID exists, reuse its id as well.
+  if (sermon.youtubeVideoId) {
+    const { data: existing } = await supabase
+      .from("sermons")
+      .select("id")
+      .eq("youtube_video_id", sermon.youtubeVideoId)
+      .maybeSingle();
+    if (existing?.id) {
+      targetId = existing.id as string;
+    }
+  }
+
   const { error } = await supabase
     .from("sermons")
     .upsert(

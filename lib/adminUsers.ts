@@ -3,12 +3,6 @@ import "server-only";
 import crypto from "crypto";
 import { getSupabaseAdmin, tryGetSupabaseAdmin } from "./supabase";
 
-type AdminUserRow = {
-  username: string;
-  password_hash: string;
-  created_at: string;
-};
-
 const PASSWORD_SALT = process.env.ADMIN_PASSWORD_SALT || "destiny-admin-salt";
 
 export function hashPassword(password: string) {
@@ -53,9 +47,9 @@ export async function listAdminUsers(): Promise<{ username: string; createdAt?: 
     .order("created_at", { ascending: true });
   if (error) throw error;
   return (
-    data?.map((row: AdminUserRow) => ({
+    data?.map((row: { username: string; created_at: string | null }) => ({
       username: row.username,
-      createdAt: row.created_at,
+      createdAt: row.created_at ?? undefined,
     })) ?? []
   );
 }

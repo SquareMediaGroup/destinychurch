@@ -25,7 +25,7 @@ export async function login(formData: FormData) {
 
   if (!role) throw new Error("Invalid credentials");
 
-  const cookieStore = cookies();
+  const cookieStore = await cookies();
   cookieStore.set(ADMIN_COOKIE, "1", {
     httpOnly: true,
     sameSite: "lax",
@@ -43,7 +43,7 @@ export async function login(formData: FormData) {
 }
 
 export async function logout() {
-  const cookieStore = cookies();
+  const cookieStore = await cookies();
   cookieStore.delete(ADMIN_COOKIE);
   cookieStore.delete(ADMIN_ROLE_COOKIE);
 }
@@ -68,7 +68,7 @@ const youtubeIdFromLink = (input: string) => {
 };
 
 export async function updateSermonMeta(formData: FormData) {
-  const cookieStore = cookies();
+  const cookieStore = await cookies();
   const authed = cookieStore.get(ADMIN_COOKIE)?.value === "1";
   if (!authed) {
     throw new Error("Unauthorized");
@@ -119,7 +119,7 @@ export async function updateSermonMeta(formData: FormData) {
 }
 
 export async function runSyncNow() {
-  const cookieStore = cookies();
+  const cookieStore = await cookies();
   const authed = cookieStore.get(ADMIN_COOKIE)?.value === "1";
   if (!authed) {
     throw new Error("Unauthorized");
@@ -149,7 +149,7 @@ export async function runSyncNow() {
 }
 
 export async function runSyncLimited(limit = 5) {
-  const cookieStore = cookies();
+  const cookieStore = await cookies();
   const authed = cookieStore.get(ADMIN_COOKIE)?.value === "1";
   if (!authed) {
     throw new Error("Unauthorized");
@@ -175,7 +175,7 @@ export async function runSyncLimited(limit = 5) {
 }
 
 export async function deleteSermon(formData: FormData) {
-  const cookieStore = cookies();
+  const cookieStore = await cookies();
   const authed = cookieStore.get(ADMIN_COOKIE)?.value === "1";
   if (!authed) {
     throw new Error("Unauthorized");
@@ -197,7 +197,7 @@ export async function deleteSermon(formData: FormData) {
 }
 
 export async function clearSermons() {
-  const cookieStore = cookies();
+  const cookieStore = await cookies();
   const authed = cookieStore.get(ADMIN_COOKIE)?.value === "1";
   if (!authed) {
     throw new Error("Unauthorized");
@@ -214,7 +214,7 @@ export async function clearSermons() {
 }
 
 export async function addAdminUser(formData: FormData) {
-  const cookieStore = cookies();
+  const cookieStore = await cookies();
   const authed = cookieStore.get(ADMIN_COOKIE)?.value === "1";
   const role = cookieStore.get(ADMIN_ROLE_COOKIE)?.value;
   if (!authed || role !== "super") throw new Error("Only super admin can add users");
@@ -227,7 +227,7 @@ export async function addAdminUser(formData: FormData) {
 }
 
 export async function deleteAdminUserAction(formData: FormData) {
-  const cookieStore = cookies();
+  const cookieStore = await cookies();
   const authed = cookieStore.get(ADMIN_COOKIE)?.value === "1";
   const role = cookieStore.get(ADMIN_ROLE_COOKIE)?.value;
   if (!authed || role !== "super") throw new Error("Only super admin can delete users");

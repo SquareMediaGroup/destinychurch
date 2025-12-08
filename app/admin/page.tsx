@@ -28,7 +28,7 @@ const navItems = [
 ];
 
 export default async function AdminPage() {
-  const cookieStore = cookies();
+  const cookieStore = await cookies();
   const authed = cookieStore.get("destiny-admin")?.value === "1";
   const role = cookieStore.get("destiny-admin-role")?.value ?? "admin";
   const isSuper = role === "super";

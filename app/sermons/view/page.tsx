@@ -9,12 +9,29 @@ import {
   getSermonByYoutubeId,
   listSermons,
 } from "@/lib/db";
+import { Sermon } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
 type SermonViewPageProps = {
   searchParams?: { viewId?: string };
+};
+
+const fallbackSermon: Sermon = {
+  id: "demo-sermon",
+  title: "Living Sent in Every Season",
+  date: new Date().toISOString(),
+  speaker: "Destiny Church",
+  youtubeVideoId: "d6DiiHAGKMI",
+  youtubePubDate: new Date().toISOString(),
+  podcastAudioUrl:
+    "https://media.destiny.example.com/sermons/2025-02-02-audio.mp3",
+  thumbnailUrl: "/destiny-logo.svg",
+  summary:
+    "A warm, Christ-centred call to live sent in workplaces, homes, and city streets, trusting the Holy Spirit to open doors.",
+  transcript:
+    "Today we’re reminded that Jesus sends us into every season and space. The harvest is in our hands and homes...",
 };
 
 const formatDate = (dateString: string) =>
@@ -60,7 +77,9 @@ export default async function SermonViewPage({ searchParams }: SermonViewPagePro
       null;
   }
 
-  if (!sermon) {
+  const resolvedSermon = sermon ?? (viewId ? fallbackSermon : null);
+
+  if (!resolvedSermon) {
     return (
       <div className="space-y-6">
         <div className="rounded-xl border border-black/5 bg-white px-6 py-8 shadow-sm">
@@ -77,7 +96,7 @@ export default async function SermonViewPage({ searchParams }: SermonViewPagePro
   }
 
   const recommended = allSermons
-    .filter((item) => item.id !== sermon.id)
+    .filter((item) => item.id !== resolvedSermon.id)
     .slice(0, 2);
 
   return (
@@ -85,19 +104,19 @@ export default async function SermonViewPage({ searchParams }: SermonViewPagePro
       <div className="space-y-6">
         <div className="space-y-3">
           <VideoPlayer
-            sermonId={sermon.id}
-            title={sermon.title}
-            videoUrl={sermon.videoUrl}
-            poster={sermon.thumbnailUrl}
-            durationSeconds={sermon.durationSeconds}
-            youtubeVideoId={sermon.youtubeVideoId}
+            sermonId={resolvedSermon.id}
+            title={resolvedSermon.title}
+            videoUrl={resolvedSermon.videoUrl}
+            poster={resolvedSermon.thumbnailUrl}
+            durationSeconds={resolvedSermon.durationSeconds}
+            youtubeVideoId={resolvedSermon.youtubeVideoId}
           />
-          {sermon.podcastAudioUrl && (
+          {resolvedSermon.podcastAudioUrl && (
             <PodcastPlayer
-              sermonId={sermon.id}
-              title={sermon.title}
-              audioUrl={sermon.podcastAudioUrl}
-              durationSeconds={sermon.durationSeconds}
+              sermonId={resolvedSermon.id}
+              title={resolvedSermon.title}
+              audioUrl={resolvedSermon.podcastAudioUrl}
+              durationSeconds={resolvedSermon.durationSeconds}
             />
           )}
           <div className="space-y-1 px-1">
@@ -108,13 +127,13 @@ export default async function SermonViewPage({ searchParams }: SermonViewPagePro
               ← All sermons
             </Link>
             <h1 className="text-3xl font-bold text-destiny-black">
-              {sermon.title}
+              {resolvedSermon.title}
             </h1>
             <p className="text-sm text-destiny-grey">
-              {formatDate(sermon.date)} · {sermon.speaker || "Destiny Church"}
+              {formatDate(resolvedSermon.date)} · {resolvedSermon.speaker || "Destiny Church"}
             </p>
             <div className="flex flex-wrap gap-2">
-              {sermon.tags?.map((tag) => (
+              {resolvedSermon.tags?.map((tag) => (
                 <span
                   key={tag}
                   className="rounded-full bg-destiny-blue/10 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-destiny-blue"
@@ -126,8 +145,8 @@ export default async function SermonViewPage({ searchParams }: SermonViewPagePro
           </div>
         </div>
 
-        <SermonSummary summary={sermon.summary} />
-        <TranscriptBlock transcript={sermon.transcript} />
+        <SermonSummary summary={resolvedSermon.summary} />
+        <TranscriptBlock transcript={resolvedSermon.transcript} />
       </div>
 
       <aside className="space-y-4">

@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { Sermon } from "@/lib/types";
+import { getViewId } from "@/lib/viewIds";
 
 type SermonCardProps = {
   sermon: Sermon;
@@ -23,7 +24,7 @@ const formatDuration = (durationSeconds?: number) => {
 export default function SermonCard({ sermon }: SermonCardProps) {
   const durationLabel = formatDuration(sermon.durationSeconds);
   const speaker = sermon.speaker || "Destiny Church";
-  const href = `/sermons/view?viewId=${encodeURIComponent(sermon.id)}`;
+  const href = `/sermons/view?viewId=${encodeURIComponent(getViewId(sermon))}`;
 
   return (
     <Link

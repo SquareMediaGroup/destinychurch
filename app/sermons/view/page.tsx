@@ -74,6 +74,8 @@ export default async function SermonViewPage({ searchParams }: SermonViewPagePro
       allSermons.find((s) => s.id === viewIdRaw) ||
       allSermons.find((s) => s.youtubeVideoId === viewId) ||
       allSermons.find((s) => s.youtubeVideoId === viewIdRaw) ||
+      allSermons.find((s) => s.podcastGuid === viewId) ||
+      allSermons.find((s) => s.podcastGuid === viewIdRaw) ||
       null;
   }
 

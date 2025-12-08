@@ -25,14 +25,14 @@ const formatDate = (dateString: string) =>
   }).format(new Date(dateString));
 
 export default async function SermonWatchPage({ params }: SermonWatchPageProps) {
-  const rawParam = params.id;
-  const decodedId = decodeURIComponent(rawParam).trim();
+  const rawParam = params.id ?? "";
+  const decodedId = rawParam ? decodeURIComponent(rawParam).trim() : "";
 
   const tryIds = [
     decodedId,
     rawParam,
-    decodedId.replace(/\s+/g, ""),
-    rawParam.replace(/\s+/g, ""),
+    decodedId ? decodedId.replace(/\s+/g, "") : "",
+    rawParam ? rawParam.replace(/\s+/g, "") : "",
   ].filter(Boolean);
 
   let sermon: Awaited<ReturnType<typeof getSermonById>> = null;

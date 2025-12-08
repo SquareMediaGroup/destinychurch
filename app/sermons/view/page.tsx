@@ -85,17 +85,17 @@ export default async function SermonViewPage({ searchParams }: SermonViewPagePro
   return (
     <div className="grid gap-10 lg:grid-cols-[2fr_1fr]">
       <div className="space-y-6">
-        {viewId && (
-          <div className="flex flex-wrap items-center gap-3 rounded-xl border border-black/5 bg-white px-4 py-3 text-xs font-semibold text-destiny-grey">
-            <span>View ID: {viewId}</span>
+        <div className="flex flex-wrap items-center gap-3 rounded-xl border border-black/5 bg-white px-4 py-3 text-xs font-semibold text-destiny-grey">
+          <span>View ID: {viewId || "none"}</span>
+          {viewId && (
             <Link
               href={`/sermons/view?viewId=${encodeURIComponent(viewId)}&debug=${debugMode ? "0" : "1"}`}
               className="rounded-full border border-destiny-orange px-3 py-1 text-destiny-orange transition hover:bg-destiny-orange hover:text-white"
             >
-              {debugMode ? "Exit debug" : "Debug mode"}
+              {debugMode ? "Exit debug" : "Enable debug"}
             </Link>
-          </div>
-        )}
+          )}
+        </div>
 
         {debugMode && (
           <div className="space-y-1 rounded-xl border border-black/5 bg-white px-4 py-3 text-xs text-destiny-grey shadow-sm">

@@ -65,9 +65,32 @@ export default async function AdminPage() {
                   <p className="mt-1 text-[11px] text-destiny-grey/70">
                     ID: {sermon.id}
                   </p>
+                  {sermon.podcastAudioUrl && (
+                    <p className="mt-1 text-[11px] text-destiny-grey/70 break-all">
+                      Podcast:{" "}
+                      <a
+                        className="text-destiny-orange underline"
+                        href={sermon.podcastAudioUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                      >
+                        {sermon.podcastAudioUrl}
+                      </a>
+                    </p>
+                  )}
                 </div>
                 <div className="hidden items-center text-sm text-destiny-grey sm:flex">
-                  {sermon.youtubeVideoId || "—"}
+                  <input
+                    type="text"
+                    name="video"
+                    defaultValue={
+                      sermon.youtubeVideoId
+                        ? `https://www.youtube.com/watch?v=${sermon.youtubeVideoId}`
+                        : ""
+                    }
+                    placeholder="YouTube URL or ID"
+                    className="w-full rounded-lg border border-black/10 px-3 py-2 text-sm text-destiny-black outline-none transition focus:border-destiny-orange focus:ring-2 focus:ring-destiny-orange/30"
+                  />
                 </div>
                 <div className="hidden items-center text-sm text-destiny-grey sm:flex">
                   {new Date(sermon.date).toLocaleDateString("en-GB")}

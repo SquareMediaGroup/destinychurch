@@ -6,7 +6,7 @@ export default function SermonSummary({ summary }: SermonSummaryProps) {
   if (!summary) {
     return (
       <div className="rounded-xl border border-black/5 bg-destiny-grey/5 px-4 py-3 text-sm text-destiny-grey">
-        Summary will appear once the sermon is processed.
+        AI summary is unavailable.
       </div>
     );
   }

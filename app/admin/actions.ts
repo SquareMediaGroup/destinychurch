@@ -32,6 +32,25 @@ export async function logout() {
   cookieStore.delete(ADMIN_COOKIE);
 }
 
+const youtubeIdFromLink = (input: string) => {
+  if (!input) return "";
+  const trimmed = input.trim();
+  if (/^[a-zA-Z0-9_-]{6,}$/.test(trimmed) && !trimmed.includes("http")) {
+    return trimmed;
+  }
+  try {
+    const url = new URL(trimmed);
+    if (url.hostname.includes("youtu")) {
+      if (url.searchParams.get("v")) return url.searchParams.get("v") || "";
+      const parts = url.pathname.split("/");
+      return parts.pop() || "";
+    }
+  } catch {
+    return "";
+  }
+  return "";
+};
+
 export async function updateSermonTitle(formData: FormData) {
   const cookieStore = await cookies();
   const authed = cookieStore.get(ADMIN_COOKIE)?.value === "1";
@@ -41,15 +60,23 @@ export async function updateSermonTitle(formData: FormData) {
 
   const id = String(formData.get("id") || "");
   const title = String(formData.get("title") || "").trim();
+  const videoInput = String(formData.get("video") || "").trim();
+  const youtubeId = youtubeIdFromLink(videoInput);
 
   if (!id || !title) {
     throw new Error("ID and title are required");
   }
 
   const supabase = getSupabaseAdmin();
+  const update: Record<string, unknown> = { title };
+  if (youtubeId) {
+    update.youtube_video_id = youtubeId;
+    update.thumbnail_url = `https://i.ytimg.com/vi/${youtubeId}/hqdefault.jpg`;
+  }
+
   const { error } = await supabase
     .from("sermons")
-    .update({ title })
+    .update(update)
     .eq("id", id)
     .select("id")
     .maybeSingle();

@@ -6,6 +6,25 @@ import { Sermon } from "@/lib/types";
 
 export const runtime = "nodejs";
 
+const normalize = (text: string) =>
+  text
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, " ")
+    .split(/\s+/)
+    .filter(Boolean);
+
+const similarity = (a: string, b: string) => {
+  const tokensA = new Set(normalize(a));
+  const tokensB = new Set(normalize(b));
+  if (tokensA.size === 0 || tokensB.size === 0) return 0;
+  let intersection = 0;
+  tokensA.forEach((t) => {
+    if (tokensB.has(t)) intersection += 1;
+  });
+  const union = new Set([...tokensA, ...tokensB]).size;
+  return intersection / union;
+};
+
 export async function GET() {
   const rssUrl = process.env.PODCAST_RSS_URL;
   const youtubeChannelId = process.env.YOUTUBE_CHANNEL_ID;
@@ -40,19 +59,25 @@ export async function GET() {
     const sermons: Sermon[] = [];
     const matchedYoutube = new Set<string>();
 
-    const isSameDay = (a: Date, b: Date) =>
-      a.getUTCFullYear() === b.getUTCFullYear() &&
-      a.getUTCMonth() === b.getUTCMonth() &&
-      a.getUTCDate() === b.getUTCDate();
+    const withinOneDay = (a: Date, b: Date) =>
+      Math.abs(a.getTime() - b.getTime()) <= 1000 * 60 * 60 * 24;
 
     for (const p of podcast25) {
       const pDate = new Date(p.pubDate);
-      const match = youtube.find(
-        (y) =>
-          !matchedYoutube.has(y.videoId) &&
-          isSameDay(new Date(y.publishedAt), pDate),
+      const candidates = youtube.filter(
+        (y) => !matchedYoutube.has(y.videoId) && withinOneDay(new Date(y.publishedAt), pDate),
       );
+      let best = null as typeof youtube[number] | null;
+      let bestScore = 0;
+      for (const c of candidates) {
+        const score = similarity(p.title, c.title);
+        if (score > bestScore) {
+          bestScore = score;
+          best = c;
+        }
+      }
 
+      const match = bestScore >= 0.3 ? best : null;
       if (match) matchedYoutube.add(match.videoId);
 
       const id = match ? `sermon:${match.videoId}` : `podcast:${p.guid}`;

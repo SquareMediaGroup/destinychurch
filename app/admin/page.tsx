@@ -3,6 +3,7 @@ import { listSermons } from "@/lib/db";
 import { deleteSermon, login, logout, runSyncNow, updateSermonMeta } from "./actions";
 import { cleanDuplicates } from "./cleanup";
 import { processSermon } from "./process";
+import ConfirmSubmit from "@/components/ConfirmSubmit";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -33,12 +34,13 @@ export default async function AdminPage() {
             </p>
           </div>
           <form action={logout}>
-            <button
-              type="submit"
+            <ConfirmSubmit
               className="rounded-full border border-destiny-orange px-4 py-2 text-sm font-semibold text-destiny-orange transition hover:bg-destiny-orange hover:text-white"
+              confirmMessage="Log out of the admin dashboard?"
+              pendingLabel="Logging out..."
             >
               Log out
-            </button>
+            </ConfirmSubmit>
           </form>
         </div>
 
@@ -47,12 +49,13 @@ export default async function AdminPage() {
             Sync latest sermons (YouTube + Podcast)
           </p>
           <form action={runSyncNow}>
-            <button
-              type="submit"
+            <ConfirmSubmit
               className="rounded-full bg-destiny-orange px-4 py-2 text-xs font-semibold text-white shadow-sm transition hover:brightness-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-destiny-orange"
+              confirmMessage="Run sync now? This pulls the latest YouTube lives and podcast RSS."
+              pendingLabel="Syncing..."
             >
               Run sync now
-            </button>
+            </ConfirmSubmit>
           </form>
           <p className="text-xs text-destiny-grey/70">
             Pulls last 26 weeks of completed YouTube lives and podcast RSS.
@@ -64,12 +67,13 @@ export default async function AdminPage() {
             Maintenance: remove duplicates
           </p>
           <form action={cleanDuplicates}>
-            <button
-              type="submit"
+            <ConfirmSubmit
               className="rounded-full bg-destiny-orange px-4 py-2 text-xs font-semibold text-white shadow-sm transition hover:brightness-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-destiny-orange"
+              confirmMessage="Delete duplicate sermons (keeps first per YouTube ID/podcast GUID)?"
+              pendingLabel="Cleaning..."
             >
               Clean duplicates
-            </button>
+            </ConfirmSubmit>
           </form>
           <p className="text-xs text-destiny-grey/70">
             Keeps first record per YouTube ID or Podcast GUID, deletes extras.
@@ -129,32 +133,35 @@ export default async function AdminPage() {
                     {new Date(sermon.date).toLocaleDateString("en-GB")}
                   </div>
                   <div className="flex items-center justify-end gap-2">
-                    <button
-                      type="submit"
+                    <ConfirmSubmit
                       className="rounded-full bg-destiny-orange px-3 py-2 text-xs font-semibold text-white shadow-sm transition hover:brightness-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-destiny-orange"
+                      confirmMessage="Save updates to this sermon?"
+                      pendingLabel="Saving..."
                     >
                       Save
-                    </button>
+                    </ConfirmSubmit>
                   </div>
                 </form>
                 <div className="flex items-center justify-end gap-2">
                   <form action={processSermon}>
                     <input type="hidden" name="id" value={sermon.id} />
-                    <button
-                      type="submit"
+                    <ConfirmSubmit
                       className="rounded-full border border-destiny-orange px-3 py-2 text-xs font-semibold text-destiny-orange transition hover:bg-destiny-orange hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-destiny-orange"
+                      confirmMessage="Run AI transcript and summary for this sermon? Uses OpenAI API."
+                      pendingLabel="Processing..."
                     >
                       Process AI
-                    </button>
+                    </ConfirmSubmit>
                   </form>
                   <form action={deleteSermon} className="flex items-center justify-end">
                     <input type="hidden" name="id" value={sermon.id} />
-                    <button
-                      type="submit"
+                    <ConfirmSubmit
                       className="rounded-full border border-red-500 px-3 py-2 text-xs font-semibold text-red-600 transition hover:bg-red-500 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-500"
+                      confirmMessage="Delete this sermon? This cannot be undone."
+                      pendingLabel="Deleting..."
                     >
                       Delete
-                    </button>
+                    </ConfirmSubmit>
                   </form>
                 </div>
               </div>

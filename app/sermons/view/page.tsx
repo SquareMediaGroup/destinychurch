@@ -79,23 +79,7 @@ export default async function SermonViewPage({ searchParams }: SermonViewPagePro
       null;
   }
 
-  const resolvedSermon = sermon ?? (viewId ? fallbackSermon : null);
-
-  if (!resolvedSermon) {
-    return (
-      <div className="space-y-6">
-        <div className="rounded-xl border border-black/5 bg-white px-6 py-8 shadow-sm">
-          <h1 className="text-2xl font-bold text-destiny-black">Sermon not found</h1>
-          <p className="mt-2 text-destiny-grey">
-            We could not locate this sermon. Please select another from the list.
-          </p>
-          <Link href="/sermons" className="mt-4 inline-block text-destiny-orange font-semibold">
-            ← Back to sermons
-          </Link>
-        </div>
-      </div>
-    );
-  }
+  const resolvedSermon = sermon ?? allSermons[0] ?? fallbackSermon;
 
   const recommended = allSermons
     .filter((item) => item.id !== resolvedSermon.id)

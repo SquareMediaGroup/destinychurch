@@ -10,6 +10,7 @@ type ConfirmSubmitProps = {
   className?: string;
   confirmMessage?: string;
   pendingLabel?: string;
+  form?: string;
 };
 
 export default function ConfirmSubmit({
@@ -33,6 +34,7 @@ export default function ConfirmSubmit({
 
   return (
     <button
+      form={form}
       type="submit"
       className={className}
       disabled={pending}

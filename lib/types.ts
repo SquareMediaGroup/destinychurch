@@ -22,3 +22,13 @@ export type ContinueWatchingEntry = {
   lastUpdated: number;
   durationSeconds?: number;
 };
+
+export type AiReport = {
+  id: string;
+  sermonId: string | null;
+  issueType: string;
+  name: string;
+  email: string;
+  description: string;
+  createdAt?: string;
+};

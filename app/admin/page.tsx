@@ -15,6 +15,7 @@ import {
 import { cleanDuplicates } from "./cleanup";
 import { processSermon } from "./process";
 import ConfirmSubmit from "@/components/ConfirmSubmit";
+import { listReports } from "@/lib/reports";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -32,6 +33,7 @@ export default async function AdminPage() {
     isSuper ? listAdminUsers() : Promise.resolve([]),
   ]);
 
+  const reports = await listReports(50);
   const total = sermons.length;
   const withPodcast = sermons.filter((s) => !!s.podcastAudioUrl).length;
   const withSummary = sermons.filter((s) => !!s.summary).length;
@@ -64,10 +66,12 @@ export default async function AdminPage() {
           withSummary={withSummary}
           withTranscript={withTranscript}
           readyPercent={readyPercent}
+          reportCount={reports.length}
         />
         <ActionRow />
         <MaintenanceRow />
         {isSuper && <AdminUsersPanel admins={admins} />}
+        <ReportsPanel reports={reports} />
         <SermonTable sermons={sermons} />
       </main>
     </div>
@@ -79,12 +83,14 @@ function StatGrid({
   withSummary,
   withTranscript,
   readyPercent,
+  reportCount,
 }: {
   total: number;
   withPodcast: number;
   withSummary: number;
   withTranscript: number;
   readyPercent: number;
+  reportCount: number;
 }) {
   const cards = [
     { label: "Podcast linked", value: withPodcast, tone: "orange" },
@@ -92,6 +98,7 @@ function StatGrid({
     { label: "Transcripts", value: withTranscript, tone: "green" },
     { label: "Total items", value: total, tone: "purple" },
     { label: "AI-ready %", value: `${readyPercent}%`, tone: "orange" },
+    { label: "Reports", value: reportCount, tone: "blue" },
   ];
   const toneMap: Record<string, string> = {
     orange: "from-destiny-orange/15 to-[var(--surface)]",
@@ -366,6 +373,48 @@ function InfoRow({ label, value }: { label: string; value: string }) {
     <div className="flex items-center justify-between gap-3">
       <span className="text-xs font-semibold text-destiny-black/80">{label}</span>
       <span className="truncate text-xs text-destiny-grey">{value}</span>
+    </div>
+  );
+}
+
+function ReportsPanel({ reports }: { reports: Awaited<ReturnType<typeof listReports>> }) {
+  return (
+    <div className="rounded-2xl bg-[var(--surface)] px-4 py-4 shadow-sm ring-1 ring-black/5">
+      <div className="flex items-center justify-between">
+        <div>
+          <p className="text-sm font-semibold text-destiny-black">Reports</p>
+          <p className="text-xs text-destiny-grey/70">Issues with AI summary or transcript.</p>
+        </div>
+        <span className="rounded-full bg-destiny-orange/10 px-3 py-1 text-xs font-semibold text-destiny-orange">
+          {reports.length} new
+        </span>
+      </div>
+
+      {reports.length === 0 ? (
+        <p className="mt-4 text-sm text-destiny-grey">No reports yet.</p>
+      ) : (
+        <div className="mt-4 divide-y divide-black/5">
+          {reports.map((report) => (
+            <div key={report.id} className="py-3 text-sm text-destiny-grey">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <p className="font-semibold text-destiny-black">
+                  {report.issueType} · {report.name}
+                </p>
+                <span className="text-xs text-destiny-grey/70">
+                  {report.createdAt
+                    ? new Date(report.createdAt).toLocaleString("en-GB")
+                    : ""}
+                </span>
+              </div>
+              <p className="text-xs text-destiny-grey/70">{report.email}</p>
+              {report.sermonId && (
+                <p className="text-xs text-destiny-grey/70">Sermon: {report.sermonId}</p>
+              )}
+              <p className="mt-2 leading-relaxed text-[var(--foreground)]">{report.description}</p>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

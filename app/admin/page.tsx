@@ -280,24 +280,31 @@ function SermonTable({ sermons }: { sermons: Awaited<ReturnType<typeof listSermo
       </div>
       <div className="divide-y divide-black/5">
         {sermons.map((sermon) => (
-          <div key={sermon.id} className="bg-[var(--surface-muted)] px-4 py-4">
-            <div className="grid gap-3 md:grid-cols-[2fr_1fr] md:items-center">
-              <div className="space-y-3">
-                <form action={updateSermonMeta} className="space-y-2">
-                  <input type="hidden" name="id" value={sermon.id} />
+          <div key={sermon.id} className="bg-[var(--surface-muted)] px-4 py-5">
+            <div className="grid gap-4 md:grid-cols-[1.6fr_1fr] md:items-start">
+              <form action={updateSermonMeta} className="space-y-3" aria-label={`Edit ${sermon.title}`}>
+                <input type="hidden" name="id" value={sermon.id} />
+                <label className="space-y-1 text-sm font-semibold text-[var(--foreground)]">
+                  <span className="text-xs uppercase tracking-wide text-destiny-grey/70">Title</span>
                   <input
                     type="text"
                     name="title"
                     defaultValue={sermon.title}
-                    className="w-full rounded-xl border border-black/10 px-3 py-2 text-sm outline-none transition focus:border-destiny-orange focus:ring-2 focus:ring-destiny-orange/30"
+                    className="w-full rounded-xl border border-black/10 bg-[var(--surface)] px-3 py-2 text-sm outline-none transition focus:border-destiny-orange focus:ring-2 focus:ring-destiny-orange/30"
                   />
+                </label>
+                <label className="space-y-1 text-sm font-semibold text-[var(--foreground)]">
+                  <span className="text-xs uppercase tracking-wide text-destiny-grey/70">Podcast link or GUID</span>
                   <input
                     type="text"
                     name="podcast"
                     defaultValue={sermon.podcastAudioUrl || sermon.podcastGuid || ""}
                     placeholder="Podcast link or GUID (leave empty to unlink)"
-                    className="w-full rounded-xl border border-black/10 px-3 py-2 text-sm outline-none transition focus:border-destiny-orange focus:ring-2 focus:ring-destiny-orange/30"
+                    className="w-full rounded-xl border border-black/10 bg-[var(--surface)] px-3 py-2 text-sm outline-none transition focus:border-destiny-orange focus:ring-2 focus:ring-destiny-orange/30"
                   />
+                </label>
+                <label className="space-y-1 text-sm font-semibold text-[var(--foreground)]">
+                  <span className="text-xs uppercase tracking-wide text-destiny-grey/70">YouTube URL or ID</span>
                   <input
                     type="text"
                     name="video"
@@ -305,17 +312,12 @@ function SermonTable({ sermons }: { sermons: Awaited<ReturnType<typeof listSermo
                       sermon.youtubeVideoId ? `https://www.youtube.com/watch?v=${sermon.youtubeVideoId}` : ""
                     }
                     placeholder="YouTube URL or ID"
-                    className="w-full rounded-xl border border-black/10 px-3 py-2 text-sm outline-none transition focus:border-destiny-orange focus:ring-2 focus:ring-destiny-orange/30"
+                    className="w-full rounded-xl border border-black/10 bg-[var(--surface)] px-3 py-2 text-sm outline-none transition focus:border-destiny-orange focus:ring-2 focus:ring-destiny-orange/30"
                   />
-                  <p className="text-[11px] text-destiny-grey/70">ID: {sermon.id}</p>
-                  <ConfirmSubmit
-                    className="rounded-full bg-destiny-orange px-4 py-2 text-xs font-semibold text-white shadow-sm transition hover:brightness-95"
-                    confirmMessage="Save updates to this sermon?"
-                    pendingLabel="Saving..."
-                  >
-                    Save
-                  </ConfirmSubmit>
-                </form>
+                </label>
+                <div className="flex flex-wrap items-center justify-between gap-2 text-[11px] text-destiny-grey/70">
+                  <span>ID: {sermon.id}</span>
+                </div>
                 <div className="flex flex-wrap gap-2">
                   <form action={processSermon}>
                     <input type="hidden" name="id" value={sermon.id} />
@@ -337,8 +339,15 @@ function SermonTable({ sermons }: { sermons: Awaited<ReturnType<typeof listSermo
                       Delete
                     </ConfirmSubmit>
                   </form>
+                  <ConfirmSubmit
+                    className="rounded-full bg-destiny-orange px-4 py-2 text-xs font-semibold text-white shadow-sm transition hover:brightness-95"
+                    confirmMessage="Save updates to this sermon?"
+                    pendingLabel="Saving..."
+                  >
+                    Save
+                  </ConfirmSubmit>
                 </div>
-              </div>
+              </form>
               <div className="space-y-2 rounded-xl bg-destiny-blue/5 p-3 text-sm text-destiny-grey">
                 <InfoRow label="YouTube" value={sermon.youtubeVideoId || "—"} />
                 <InfoRow label="Podcast" value={sermon.podcastGuid || sermon.podcastAudioUrl || "—"} />

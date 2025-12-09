@@ -1,5 +1,6 @@
 import ContinueWatchingRow from "@/components/ContinueWatchingRow";
 import SermonCard from "@/components/SermonCard";
+import SermonSearch from "@/components/SermonSearch";
 import { listSermons } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
@@ -21,7 +22,7 @@ export default async function SermonsPage() {
 
       <ContinueWatchingRow sermons={sermons} />
 
-      <section className="space-y-4">
+      <section className="space-y-2">
         <div className="flex items-center justify-between">
           <h2 className="text-xl font-semibold text-destiny-black">
             Latest uploads
@@ -30,17 +31,7 @@ export default async function SermonsPage() {
             Updated automatically from YouTube + podcast
           </p>
         </div>
-        {sermons.length === 0 ? (
-          <div className="rounded-xl border border-black/5 bg-destiny-grey/5 px-4 py-6 text-sm text-destiny-grey">
-            No sermons found yet. Run the sync or check your data source.
-          </div>
-        ) : (
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {sermons.map((sermon) => (
-              <SermonCard key={sermon.id} sermon={sermon} />
-            ))}
-          </div>
-        )}
+        <SermonSearch sermons={sermons} />
       </section>
     </div>
   );

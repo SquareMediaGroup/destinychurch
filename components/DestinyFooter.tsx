@@ -10,7 +10,7 @@ const footerLinks = [
 
 export default function DestinyFooter() {
   return (
-    <footer className="border-t border-black/5 bg-white">
+    <footer className="border-t border-[var(--border-subtle)] bg-[var(--surface)] transition-colors">
       <div className="mx-auto flex max-w-6xl flex-col gap-3 px-4 py-6 text-sm text-destiny-grey lg:flex-row lg:items-center lg:justify-between lg:px-8">
         <div className="flex items-center gap-3">
           <div className="relative h-8 w-[140px]">

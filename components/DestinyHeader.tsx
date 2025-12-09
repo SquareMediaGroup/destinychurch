@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import ThemeToggle from "./ThemeToggle";
 
 const navLinks = [
   { href: "/sermons", label: "Sermons" },
@@ -9,7 +10,7 @@ const navLinks = [
 
 export default function DestinyHeader() {
   return (
-    <header className="border-b border-black/5 bg-white/95 backdrop-blur">
+    <header className="border-b border-[var(--border-subtle)] bg-[var(--surface-overlay)] text-[var(--foreground)] backdrop-blur transition-colors">
       <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4 lg:px-8">
         <Link href="/" className="flex items-center gap-3">
           <div className="relative h-10 w-[180px]">
@@ -37,6 +38,7 @@ export default function DestinyHeader() {
         </nav>
 
         <div className="flex items-center gap-3">
+          <ThemeToggle />
           <Link
             href="/sermons"
             className="rounded-full bg-destiny-orange px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:brightness-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-destiny-orange"

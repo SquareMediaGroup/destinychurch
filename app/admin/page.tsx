@@ -354,32 +354,34 @@ function InfoRow({ label, value }: { label: string; value: string }) {
 
 function LoginCard() {
   return (
-    <div className="flex min-h-[70vh] items-center justify-center bg-gradient-to-br from-destiny-orange/10 via-white to-destiny-blue/10 px-4 py-12">
-      <div className="w-full max-w-md rounded-2xl border border-black/5 bg-white px-8 py-10 shadow-lg">
-        <div className="mb-6 space-y-2">
+    <div className="flex min-h-[70vh] items-center justify-center bg-[var(--background)] px-4 py-12">
+      <div className="w-full max-w-md rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface)] px-8 py-10 shadow-lg">
+        <div className="mb-6 space-y-2 text-center">
           <p className="text-sm font-semibold text-destiny-orange">Admin login</p>
-          <h1 className="text-3xl font-bold text-destiny-black">Destiny Sermons</h1>
-          <p className="text-sm text-destiny-grey">Super admin is the ENV admin user; super can add others.</p>
+          <h1 className="text-3xl font-bold text-[var(--foreground)]">Destiny Sermons</h1>
+          <p className="text-sm text-destiny-grey">
+            Sign in to manage sermons, sync, and AI processing.
+          </p>
         </div>
 
         <form className="space-y-4" action={login}>
-          <label className="block space-y-1 text-sm font-semibold text-destiny-black">
-            Username
+          <label className="block space-y-2 text-sm font-semibold text-[var(--foreground)]">
+            <span className="text-sm">Username</span>
             <input
               type="text"
               name="username"
-              className="w-full rounded-xl border border-black/10 px-4 py-3 text-destiny-grey shadow-inner outline-none transition focus:border-destiny-orange focus:ring-2 focus:ring-destiny-orange/30"
+              className="w-full rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-muted)] px-4 py-3 text-sm text-[var(--foreground)] shadow-inner outline-none transition focus:border-destiny-orange focus:ring-2 focus:ring-destiny-orange/30"
               required
               autoComplete="username"
             />
           </label>
 
-          <label className="block space-y-1 text-sm font-semibold text-destiny-black">
-            Password
+          <label className="block space-y-2 text-sm font-semibold text-[var(--foreground)]">
+            <span className="text-sm">Password</span>
             <input
               type="password"
               name="password"
-              className="w-full rounded-xl border border-black/10 px-4 py-3 text-destiny-grey shadow-inner outline-none transition focus:border-destiny-orange focus:ring-2 focus:ring-destiny-orange/30"
+              className="w-full rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-muted)] px-4 py-3 text-sm text-[var(--foreground)] shadow-inner outline-none transition focus:border-destiny-orange focus:ring-2 focus:ring-destiny-orange/30"
               required
               autoComplete="current-password"
             />

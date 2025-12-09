@@ -151,3 +151,13 @@ h3 {
     display: block;
   }
 }
+
+[data-theme="dark"] [class*="text-destiny-black"],
+:root:not([data-theme]) [class*="text-destiny-black"] {
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] [class*="text-destiny-grey"],
+:root:not([data-theme]) [class*="text-destiny-grey"] {
+  color: #d5deea !important;
+}

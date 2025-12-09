@@ -11,8 +11,29 @@ import { Sermon } from "@/lib/types";
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
+type SearchParamsLike =
+  | URLSearchParams
+  | Record<string, string | string[] | undefined>;
+
 type SermonViewPageProps = {
-  searchParams?: { viewId?: string; debug?: string };
+  searchParams?:
+    | Promise<SearchParamsLike | null | undefined>
+    | SearchParamsLike
+    | null
+    | undefined;
+};
+
+const getQueryValue = (
+  params: SearchParamsLike | null | undefined,
+  key: string,
+): string => {
+  if (!params) return "";
+  if (params instanceof URLSearchParams) {
+    return params.get(key) ?? "";
+  }
+  const value = params[key];
+  if (Array.isArray(value)) return value[0] ?? "";
+  return value ?? "";
 };
 
 const fallbackSermon: Sermon = {
@@ -39,9 +60,12 @@ const formatDate = (dateString: string) =>
   }).format(new Date(dateString));
 
 export default async function SermonViewPage({ searchParams }: SermonViewPageProps) {
-  const viewIdRaw = searchParams?.viewId ?? "";
+  const resolvedSearchParams =
+    (await Promise.resolve(searchParams)) ?? undefined;
+
+  const viewIdRaw = getQueryValue(resolvedSearchParams, "viewId");
   const viewId = viewIdRaw ? decodeURIComponent(viewIdRaw).trim() : "";
-  const debugMode = searchParams?.debug === "1";
+  const debugMode = getQueryValue(resolvedSearchParams, "debug") === "1";
 
   const tryIds = [
     viewId,

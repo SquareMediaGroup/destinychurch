@@ -11,7 +11,11 @@ export async function listReports(limit = 50): Promise<AiReport[]> {
     .order("created_at", { ascending: false })
     .limit(limit);
 
-  if (error) throw error;
+  if (error) {
+    // If the table hasn't been created yet, fail gracefully in production.
+    if ((error as any).code === "42P01") return [];
+    throw error;
+  }
 
   return (
     data?.map((row) => ({

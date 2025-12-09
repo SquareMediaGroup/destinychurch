@@ -18,6 +18,7 @@ export default function ConfirmSubmit({
   className,
   confirmMessage,
   pendingLabel,
+  form,
 }: ConfirmSubmitProps) {
   const { pending } = useFormStatus();
   const toast = useToast();

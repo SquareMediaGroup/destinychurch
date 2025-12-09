@@ -20,11 +20,44 @@ import { listReports } from "@/lib/reports";
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
-export default async function AdminPage() {
+type SearchParamsLike =
+  | URLSearchParams
+  | Record<string, string | string[] | undefined>;
+
+type AdminPageProps = {
+  searchParams?:
+    | Promise<SearchParamsLike | null | undefined>
+    | SearchParamsLike
+    | null
+    | undefined;
+};
+
+const getQueryValue = (
+  params: SearchParamsLike | null | undefined,
+  key: string,
+): string => {
+  if (!params) return "";
+  if (params instanceof URLSearchParams) {
+    return params.get(key) ?? "";
+  }
+  const value = params[key];
+  if (Array.isArray(value)) return value[0] ?? "";
+  return value ?? "";
+};
+
+export default async function AdminPage({ searchParams }: AdminPageProps) {
   const cookieStore = await cookies();
   const authed = cookieStore.get("destiny-admin")?.value === "1";
   const role = cookieStore.get("destiny-admin-role")?.value ?? "admin";
   const isSuper = role === "super";
+
+  const resolvedSearchParams =
+    (await Promise.resolve(searchParams)) ?? undefined;
+  const syncStatus = getQueryValue(resolvedSearchParams, "sync");
+  const syncError = getQueryValue(resolvedSearchParams, "syncError");
+  const savedCount = getQueryValue(resolvedSearchParams, "saved");
+  const podcastCount = getQueryValue(resolvedSearchParams, "podcast");
+  const youtubeCount = getQueryValue(resolvedSearchParams, "youtube");
 
   if (!authed) return <LoginCard />;
 
@@ -43,6 +76,16 @@ export default async function AdminPage() {
   return (
     <div className="min-h-screen bg-[var(--background)] text-[var(--foreground)]">
       <main className="mx-auto w-full max-w-5xl space-y-4 px-4 py-8">
+        {syncStatus === "ok" && (
+          <div className="rounded-xl border border-destiny-green/30 bg-destiny-green/10 px-4 py-3 text-sm text-destiny-grey shadow-sm">
+            Sync complete. Saved {savedCount || "items"}. Podcast: {podcastCount || "—"} · YouTube: {youtubeCount || "—"}.
+          </div>
+        )}
+        {syncError && (
+          <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 shadow-sm">
+            Sync failed: {syncError}
+          </div>
+        )}
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <p className="subheading text-sm text-destiny-orange">Admin</p>

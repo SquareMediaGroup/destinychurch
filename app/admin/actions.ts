@@ -2,8 +2,10 @@
 
 import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { getSupabaseAdmin } from "@/lib/supabase";
 import { verifyAdminUser, createAdminUser, deleteAdminUser } from "@/lib/adminUsers";
+import { syncSermons } from "@/lib/sync";
 
 const ADMIN_COOKIE = "destiny-admin";
 const ADMIN_ROLE_COOKIE = "destiny-admin-role";
@@ -125,27 +127,21 @@ export async function runSyncNow() {
     throw new Error("Unauthorized");
   }
 
-  const origin =
-    process.env.NEXT_PUBLIC_SITE_URL && process.env.NEXT_PUBLIC_SITE_URL.startsWith("http")
-      ? process.env.NEXT_PUBLIC_SITE_URL
-      : process.env.VERCEL_URL
-        ? `https://${process.env.VERCEL_URL}`
-        : "http://localhost:3000";
-
   try {
-    const res = await fetch(`${origin}/api/sermon-sync`, { cache: "no-store" });
-    if (!res.ok) {
-      const text = await res.text();
-      throw new Error(`Sync failed: ${res.status} ${text}`);
-    }
+    const result = await syncSermons();
+    revalidatePath("/sermons");
+    revalidatePath("/admin");
+    redirect(
+      `/admin?sync=ok&saved=${result.saved}&podcast=${result.podcastCount}&youtube=${result.youtubeCount}`,
+    );
   } catch (error) {
-    throw new Error(
-      error instanceof Error ? error.message : "Sync failed unexpectedly",
+    const message =
+      error instanceof Error ? error.message : "Sync failed unexpectedly";
+    console.error("Sync all failed", error);
+    redirect(
+      `/admin?syncError=${encodeURIComponent(message)}`,
     );
   }
-
-  revalidatePath("/sermons");
-  revalidatePath("/admin");
 }
 
 export async function runSyncLimited(limit = 5) {
@@ -155,23 +151,21 @@ export async function runSyncLimited(limit = 5) {
     throw new Error("Unauthorized");
   }
 
-  const origin =
-    process.env.NEXT_PUBLIC_SITE_URL && process.env.NEXT_PUBLIC_SITE_URL.startsWith("http")
-      ? process.env.NEXT_PUBLIC_SITE_URL
-      : process.env.VERCEL_URL
-        ? `https://${process.env.VERCEL_URL}`
-        : "http://localhost:3000";
-
-  const res = await fetch(`${origin}/api/sermon-sync?limit=${limit}`, {
-    cache: "no-store",
-  });
-  if (!res.ok) {
-    const text = await res.text();
-    throw new Error(`Sync failed: ${res.status} ${text}`);
+  try {
+    const result = await syncSermons({ limit });
+    revalidatePath("/sermons");
+    revalidatePath("/admin");
+    redirect(
+      `/admin?sync=ok&saved=${result.saved}&podcast=${result.podcastCount}&youtube=${result.youtubeCount}`,
+    );
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : "Sync failed unexpectedly";
+    console.error("Sync limited failed", error);
+    redirect(
+      `/admin?syncError=${encodeURIComponent(message)}`,
+    );
   }
-
-  revalidatePath("/sermons");
-  revalidatePath("/admin");
 }
 
 export async function deleteSermon(formData: FormData) {

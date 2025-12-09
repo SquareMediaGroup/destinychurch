@@ -12,9 +12,9 @@ export default async function Home() {
 
   return (
     <div className="space-y-12">
-      <section className="overflow-hidden rounded-2xl border border-black/5 bg-gradient-to-r from-destiny-orange/10 via-white to-white px-6 py-10 shadow-sm sm:px-10">
+      <section className="overflow-hidden rounded-2xl border border-[var(--border-subtle)] bg-gradient-to-r from-destiny-orange/15 via-[var(--surface)] to-[var(--surface)] px-6 py-10 text-[var(--foreground)] shadow-sm sm:px-10 transition-colors">
         <p className="subheading text-sm text-destiny-orange">Destiny Sermons</p>
-        <h1 className="mt-2 text-4xl font-bold text-destiny-black sm:text-5xl">
+        <h1 className="mt-2 text-4xl font-bold sm:text-5xl">
           Weekly messages, ready to watch
         </h1>
         <p className="mt-4 max-w-2xl text-lg text-destiny-grey">

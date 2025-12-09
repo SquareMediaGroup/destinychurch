@@ -125,3 +125,29 @@ h3 {
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
+
+.logo-color {
+  display: block;
+}
+
+.logo-white {
+  display: none;
+}
+
+[data-theme="dark"] .logo-color {
+  display: none;
+}
+
+[data-theme="dark"] .logo-white {
+  display: block;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) .logo-color {
+    display: none;
+  }
+
+  :root:not([data-theme]) .logo-white {
+    display: block;
+  }
+}

@@ -20,7 +20,15 @@ export default function DestinyHeader() {
               fill
               priority
               sizes="180px"
-              className="object-contain"
+              className="object-contain logo-color"
+            />
+            <Image
+              src="/destiny-logo-white.svg"
+              alt="Destiny Church"
+              fill
+              priority
+              sizes="180px"
+              className="object-contain logo-white"
             />
           </div>
         </Link>

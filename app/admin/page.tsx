@@ -7,6 +7,7 @@ import {
   deleteAdminUserAction,
   deleteSermon,
   login,
+  logout,
   runSyncLimited,
   runSyncNow,
   updateSermonMeta,
@@ -40,6 +41,23 @@ export default async function AdminPage() {
   return (
     <div className="min-h-screen bg-[var(--background)] text-[var(--foreground)]">
       <main className="mx-auto w-full max-w-5xl space-y-4 px-4 py-8">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <p className="subheading text-sm text-destiny-orange">Admin</p>
+            <h1 className="text-2xl font-bold text-[var(--foreground)]">
+              Destiny dashboard
+            </h1>
+          </div>
+          <form action={logout}>
+            <ConfirmSubmit
+              className="rounded-full border border-destiny-orange px-4 py-2 text-xs font-semibold text-destiny-orange transition hover:bg-destiny-orange hover:text-white"
+              confirmMessage="Log out of the admin dashboard?"
+              pendingLabel="Logging out..."
+            >
+              Logout
+            </ConfirmSubmit>
+          </form>
+        </div>
         <StatGrid
           total={total}
           withPodcast={withPodcast}

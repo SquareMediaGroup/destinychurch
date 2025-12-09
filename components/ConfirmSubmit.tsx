@@ -1,7 +1,9 @@
 "use client";
 
+import { useEffect, useRef, useState } from "react";
 import { useFormStatus } from "react-dom";
 import { ReactNode } from "react";
+import { useToast } from "./ToastProvider";
 
 type ConfirmSubmitProps = {
   children: ReactNode;
@@ -17,6 +19,17 @@ export default function ConfirmSubmit({
   pendingLabel,
 }: ConfirmSubmitProps) {
   const { pending } = useFormStatus();
+  const toast = useToast();
+  const [armed, setArmed] = useState(false);
+  const timerRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) {
+        clearTimeout(timerRef.current);
+      }
+    };
+  }, []);
 
   return (
     <button
@@ -24,10 +37,17 @@ export default function ConfirmSubmit({
       className={className}
       disabled={pending}
       onClick={(e) => {
-        if (confirmMessage && !window.confirm(confirmMessage)) {
+        if (pending) return;
+        if (confirmMessage && !armed) {
           e.preventDefault();
           e.stopPropagation();
+          toast.info(confirmMessage, "Confirm action");
+          setArmed(true);
+          if (timerRef.current) clearTimeout(timerRef.current);
+          timerRef.current = window.setTimeout(() => setArmed(false), 4000);
+          return;
         }
+        setArmed(false);
       }}
     >
       {pending && pendingLabel ? pendingLabel : children}

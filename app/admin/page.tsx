@@ -7,7 +7,6 @@ import {
   deleteAdminUserAction,
   deleteSermon,
   login,
-  logout,
   runSyncLimited,
   runSyncNow,
   updateSermonMeta,
@@ -18,14 +17,6 @@ import ConfirmSubmit from "@/components/ConfirmSubmit";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
-
-const navItems = [
-  { label: "Dashboard", icon: "📊" },
-  { label: "Sermons", icon: "🎥" },
-  { label: "AI", icon: "✨" },
-  { label: "Users", icon: "👥" },
-  { label: "Settings", icon: "⚙️" },
-];
 
 export default async function AdminPage() {
   const cookieStore = await cookies();
@@ -47,160 +38,48 @@ export default async function AdminPage() {
   const readyPercent = total ? Math.round((withSummary / total) * 100) : 0;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-white via-orange-50/30 to-destiny-blue/5 text-destiny-black">
-      <div className="grid min-h-screen gap-4 lg:grid-cols-[250px_1fr]">
-        <Sidebar isSuper={isSuper} />
-
-        <main className="px-4 py-6 lg:pr-8">
-          <TopBar />
-
-          <div className="mt-6 grid gap-4 lg:grid-cols-[1.8fr_1fr]">
-            <div className="space-y-4">
-              <HeroPanel total={total} readyPercent={readyPercent} />
-              <StatGrid
-                total={total}
-                withPodcast={withPodcast}
-                withSummary={withSummary}
-                withTranscript={withTranscript}
-              />
-              <ActionRow />
-              <MaintenanceRow />
-              {isSuper && <AdminUsersPanel admins={admins} />}
-              <SermonTable sermons={sermons} />
-            </div>
-
-            <aside className="space-y-4">
-              <ProfileCard isSuper={isSuper} />
-              <QuickSync />
-              <LegendCard />
-            </aside>
-          </div>
-        </main>
-      </div>
-    </div>
-  );
-}
-
-function Sidebar({ isSuper }: { isSuper: boolean }) {
-  return (
-    <aside className="hidden min-h-screen bg-white/90 shadow-sm ring-1 ring-black/5 lg:block">
-      <div className="flex h-full flex-col space-y-6 px-5 py-6">
-        <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-destiny-orange text-white font-bold">
-            DC
-          </div>
-          <div>
-            <p className="text-xs uppercase tracking-wide text-destiny-grey/70">
-              Destiny Sermons
-            </p>
-            <p className="text-lg font-semibold text-destiny-black">Admin</p>
-          </div>
-        </div>
-        <nav className="space-y-1">
-          {navItems.map((item) => (
-            <div
-              key={item.label}
-              className="flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-semibold text-destiny-grey hover:bg-destiny-orange/10 hover:text-destiny-black"
-            >
-              <span>{item.icon}</span>
-              {item.label}
-            </div>
-          ))}
-        </nav>
-        <div className="mt-auto space-y-3">
-          {isSuper && (
-            <p className="text-xs font-semibold uppercase tracking-wide text-destiny-orange">
-              Super admin
-            </p>
-          )}
-          <form action={logout}>
-            <ConfirmSubmit
-              className="w-full rounded-xl border border-destiny-grey/20 px-3 py-3 text-sm font-semibold text-destiny-grey transition hover:border-destiny-orange hover:bg-destiny-orange/10 hover:text-destiny-black"
-              confirmMessage="Log out of the admin dashboard?"
-              pendingLabel="Logging out..."
-            >
-              Logout
-            </ConfirmSubmit>
-          </form>
-        </div>
-      </div>
-    </aside>
-  );
-}
-
-function TopBar() {
-  return (
-    <div className="flex flex-wrap items-center gap-3 rounded-2xl bg-white px-4 py-3 shadow-sm ring-1 ring-black/5">
-      <div className="flex flex-1 items-center gap-3 rounded-xl border border-black/5 px-3 py-2 text-sm text-destiny-grey">
-        <span className="text-lg">🔍</span>
-        <input
-          className="w-full border-none bg-transparent outline-none"
-          placeholder="Search sermons, podcasts, tags"
+    <div className="min-h-screen bg-[var(--background)] text-[var(--foreground)]">
+      <main className="mx-auto w-full max-w-5xl space-y-4 px-4 py-8">
+        <StatGrid
+          total={total}
+          withPodcast={withPodcast}
+          withSummary={withSummary}
+          withTranscript={withTranscript}
+          readyPercent={readyPercent}
         />
-      </div>
-      <div className="hidden items-center gap-2 text-sm font-semibold text-destiny-grey lg:flex">
-        <span className="rounded-full bg-destiny-orange/10 px-3 py-1 text-destiny-orange">
-          Live
-        </span>
-        <span className="rounded-full bg-destiny-blue/10 px-3 py-1 text-destiny-blue">
-          AI
-        </span>
-      </div>
-      <div className="flex items-center gap-2">
-        <div className="h-10 w-10 rounded-full bg-destiny-orange/10 text-center text-sm font-bold text-destiny-orange leading-10">
-          DC
-        </div>
-      </div>
+        <ActionRow />
+        <MaintenanceRow />
+        {isSuper && <AdminUsersPanel admins={admins} />}
+        <SermonTable sermons={sermons} />
+      </main>
     </div>
   );
 }
-
-function HeroPanel({ total, readyPercent }: { total: number; readyPercent: number }) {
-  return (
-    <div className="overflow-hidden rounded-2xl bg-gradient-to-r from-destiny-grey to-black text-white shadow-md">
-      <div className="flex flex-wrap items-center justify-between gap-4 px-6 py-6">
-        <div>
-          <p className="text-xs uppercase tracking-wide text-white/70">Destiny Church</p>
-          <h1 className="text-2xl font-bold">Sermons control centre</h1>
-          <p className="text-sm text-white/80">Streamlined syncing, AI processing, and metadata.</p>
-        </div>
-        <div className="flex items-center gap-4">
-          <div className="rounded-xl bg-white/10 px-4 py-3 text-center shadow-inner backdrop-blur">
-            <p className="text-sm text-white/80">Total sermons</p>
-            <p className="text-3xl font-bold">{total}</p>
-          </div>
-          <div className="rounded-xl bg-destiny-orange px-4 py-3 text-center shadow-inner">
-            <p className="text-sm text-white/90">AI-ready</p>
-            <p className="text-3xl font-bold">{readyPercent}%</p>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 function StatGrid({
   total,
   withPodcast,
   withSummary,
   withTranscript,
+  readyPercent,
 }: {
   total: number;
   withPodcast: number;
   withSummary: number;
   withTranscript: number;
+  readyPercent: number;
 }) {
   const cards = [
     { label: "Podcast linked", value: withPodcast, tone: "orange" },
     { label: "Summaries", value: withSummary, tone: "blue" },
     { label: "Transcripts", value: withTranscript, tone: "green" },
     { label: "Total items", value: total, tone: "purple" },
+    { label: "AI-ready %", value: `${readyPercent}%`, tone: "orange" },
   ];
   const toneMap: Record<string, string> = {
-    orange: "from-destiny-orange/15 to-white",
-    blue: "from-destiny-blue/15 to-white",
-    green: "from-destiny-green/15 to-white",
-    purple: "from-destiny-purple/15 to-white",
+    orange: "from-destiny-orange/15 to-[var(--surface)]",
+    blue: "from-destiny-blue/15 to-[var(--surface)]",
+    green: "from-destiny-green/15 to-[var(--surface)]",
+    purple: "from-destiny-purple/15 to-[var(--surface)]",
   };
   const dotMap: Record<string, string> = {
     orange: "bg-destiny-orange",
@@ -209,7 +88,7 @@ function StatGrid({
     purple: "bg-destiny-purple",
   };
   return (
-    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
       {cards.map((card) => (
         <div
           key={card.label}
@@ -230,7 +109,7 @@ function StatGrid({
 
 function ActionRow() {
   return (
-    <div className="rounded-2xl bg-white px-4 py-4 shadow-sm ring-1 ring-black/5">
+    <div className="rounded-2xl bg-[var(--surface)] px-4 py-4 shadow-sm ring-1 ring-black/5">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <p className="text-sm font-semibold text-destiny-black">Sync & ingest</p>
@@ -265,7 +144,7 @@ function ActionRow() {
 
 function MaintenanceRow() {
   return (
-    <div className="rounded-2xl bg-white px-4 py-4 shadow-sm ring-1 ring-black/5">
+    <div className="rounded-2xl bg-[var(--surface)] px-4 py-4 shadow-sm ring-1 ring-black/5">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <p className="text-sm font-semibold text-destiny-black">Maintenance</p>
@@ -298,62 +177,9 @@ function MaintenanceRow() {
   );
 }
 
-function QuickSync() {
-  return (
-    <div className="rounded-2xl bg-white px-4 py-4 shadow-sm ring-1 ring-black/5">
-      <p className="text-sm font-semibold text-destiny-black">Quick actions</p>
-      <div className="mt-3 space-y-2 text-sm">
-        <p className="flex items-center gap-2 text-destiny-grey">
-          <span className="text-lg">⚡</span> Sync 5 to test
-        </p>
-        <p className="flex items-center gap-2 text-destiny-grey">
-          <span className="text-lg">🧠</span> Run AI per sermon (Process AI)
-        </p>
-        <p className="flex items-center gap-2 text-destiny-grey">
-          <span className="text-lg">🧹</span> Clean duplicates if you see doubles
-        </p>
-      </div>
-    </div>
-  );
-}
-
-function ProfileCard({ isSuper }: { isSuper: boolean }) {
-  return (
-    <div className="rounded-2xl bg-gradient-to-br from-destiny-orange to-destiny-red/80 px-5 py-5 text-white shadow-md">
-      <p className="text-sm font-semibold">Signed in</p>
-      <p className="text-2xl font-bold">Admin</p>
-      <p className="text-sm text-white/80">
-        Role: {isSuper ? "Super admin (can manage users)" : "Admin"}
-      </p>
-      <form action={logout} className="mt-4">
-        <ConfirmSubmit
-          className="rounded-full bg-white px-4 py-2 text-xs font-semibold text-destiny-orange shadow-sm transition hover:brightness-95"
-          confirmMessage="Log out of the admin dashboard?"
-          pendingLabel="Logging out..."
-        >
-          Logout
-        </ConfirmSubmit>
-      </form>
-    </div>
-  );
-}
-
-function LegendCard() {
-  return (
-    <div className="rounded-2xl bg-white px-4 py-4 shadow-sm ring-1 ring-black/5 text-sm text-destiny-grey">
-      <p className="text-sm font-semibold text-destiny-black">Legend</p>
-      <ul className="mt-2 space-y-1">
-        <li>• Save — update title / links</li>
-        <li>• Process AI — transcribe + summarise</li>
-        <li>• Delete — remove sermon row</li>
-      </ul>
-    </div>
-  );
-}
-
 function AdminUsersPanel({ admins }: { admins: { username: string; createdAt?: string }[] }) {
   return (
-    <div className="rounded-2xl bg-white px-4 py-4 shadow-sm ring-1 ring-black/5">
+    <div className="rounded-2xl bg-[var(--surface)] px-4 py-4 shadow-sm ring-1 ring-black/5">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <p className="text-sm font-semibold text-destiny-black">Admin users</p>
@@ -418,7 +244,7 @@ function AdminUsersPanel({ admins }: { admins: { username: string; createdAt?: s
 
 function SermonTable({ sermons }: { sermons: Awaited<ReturnType<typeof listSermons>> }) {
   return (
-    <div className="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-black/5">
+    <div className="overflow-hidden rounded-2xl bg-[var(--surface)] shadow-sm ring-1 ring-black/5">
       <div className="flex items-center justify-between border-b border-black/5 px-4 py-4">
         <div>
           <p className="text-sm font-semibold text-destiny-black">Sermons</p>
@@ -429,7 +255,7 @@ function SermonTable({ sermons }: { sermons: Awaited<ReturnType<typeof listSermo
       </div>
       <div className="divide-y divide-black/5">
         {sermons.map((sermon) => (
-          <div key={sermon.id} className="bg-white/60 px-4 py-4">
+          <div key={sermon.id} className="bg-[var(--surface-muted)] px-4 py-4">
             <div className="grid gap-3 md:grid-cols-[2fr_1fr] md:items-center">
               <div className="space-y-3">
                 <form action={updateSermonMeta} className="space-y-2">

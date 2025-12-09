@@ -19,7 +19,9 @@ const formatTime = (seconds: number) => {
 export default function ContinueWatchingRow({
   sermons,
 }: ContinueWatchingRowProps) {
-  const { items } = useContinueWatching();
+  const { items, mounted } = useContinueWatching();
+
+  if (!mounted) return null;
 
   const entries = items
     .map((entry) => ({

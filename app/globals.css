@@ -37,7 +37,7 @@
     --border-subtle: rgba(255, 255, 255, 0.1);
     --toggle-track: rgba(255, 255, 255, 0.18);
     --toggle-thumb: #f7f8fb;
-    --color-destiny-black: #e6eaf2;
+    --color-destiny-black: #ffffff;
     --color-destiny-grey: #c5cedb;
     --color-destiny-white: #ffffff;
   }
@@ -53,7 +53,7 @@
   --border-subtle: rgba(255, 255, 255, 0.1);
   --toggle-track: rgba(255, 255, 255, 0.18);
   --toggle-thumb: #f7f8fb;
-  --color-destiny-black: #e6eaf2;
+  --color-destiny-black: #ffffff;
   --color-destiny-grey: #c5cedb;
   --color-destiny-white: #ffffff;
 }

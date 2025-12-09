@@ -19,7 +19,14 @@ export default function DestinyFooter() {
               alt="Destiny Church"
               fill
               sizes="140px"
-              className="object-contain"
+              className="object-contain logo-color"
+            />
+            <Image
+              src="/destiny-logo-color-white.svg"
+              alt="Destiny Church"
+              fill
+              sizes="140px"
+              className="object-contain logo-white"
             />
           </div>
           <p className="text-destiny-grey/80">Weekly sermons and resources.</p>

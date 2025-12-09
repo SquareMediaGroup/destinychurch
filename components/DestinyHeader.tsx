@@ -23,7 +23,7 @@ export default function DestinyHeader() {
               className="object-contain logo-color"
             />
             <Image
-              src="/destiny-logo-white.svg"
+              src="/destiny-logo-color-white.svg"
               alt="Destiny Church"
               fill
               priority

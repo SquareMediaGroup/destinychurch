@@ -101,29 +101,22 @@ export default function VideoPlayer({
 
     const queue = (playlistIds || []).filter(Boolean);
     const playlistQuery = queue.length ? `&playlist=${queue.join(",")}` : "";
-    const autoplayQuery = autoPlay ? "&autoplay=1" : "";
-    return (
-      <div className="overflow-hidden rounded-2xl border border-black/5 bg-white shadow-[0_16px_60px_rgba(0,0,0,0.12)]">
-        <div className="relative aspect-video w-full overflow-hidden bg-black">
-          <div className="absolute inset-0">
-            <iframe
-              className="absolute inset-0 h-full w-full"
-              src={`https://www.youtube.com/embed/${youtubeVideoId}?rel=0${autoplayQuery}${playlistQuery}`}
-              title={title}
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-              allowFullScreen
-            />
-          </div>
-          <VideoOverlays
-            durationLabel={durationLabel}
-            resumeFrom={resumeFrom}
-            resumePercent={resumePercent}
-          />
-        </div>
-        <VideoFooter
+  const autoplayQuery = autoPlay ? "&autoplay=1" : "";
+  return (
+    <div className="overflow-hidden rounded-2xl border border-black/5 bg-white shadow-[0_16px_60px_rgba(0,0,0,0.12)]">
+      <div className="relative aspect-video w-full overflow-hidden bg-black">
+        <iframe
+          className="h-full w-full"
+          src={`https://www.youtube.com/embed/${youtubeVideoId}?rel=0${autoplayQuery}${playlistQuery}`}
           title={title}
-          youtubeVideoId={youtubeVideoId}
-          durationLabel={durationLabel}
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+          allowFullScreen
+        />
+      </div>
+      <VideoFooter
+        title={title}
+        youtubeVideoId={youtubeVideoId}
+        durationLabel={durationLabel}
           resumeFrom={resumeFrom}
           resumePercent={resumePercent}
         />

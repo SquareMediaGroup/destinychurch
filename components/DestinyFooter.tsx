@@ -7,6 +7,7 @@ const footerLinks = [
   { label: "Admin", href: "/admin" },
   { label: "About", href: "https://destinytees.uk/about" },
   { label: "Contact", href: "https://destinytees.uk/contact" },
+  { label: "Cookies", href: "/cookies" },
 ];
 
 export default function DestinyFooter() {

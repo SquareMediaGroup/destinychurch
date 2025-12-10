@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef } from "react";
 import { useContinueWatching } from "@/lib/continueWatching";
+import { useCookieConsent } from "@/lib/cookieConsent";
 
 const FALLBACK_VIDEO =
   "https://storage.googleapis.com/coverr-main/mp4/Mt_Baker.mp4";
@@ -31,6 +32,9 @@ export default function VideoPlayer({
 }: VideoPlayerProps) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const { items, saveProgress, clearProgress } = useContinueWatching();
+  const { consent, decided } = useCookieConsent();
+
+  const mediaAllowed = consent?.media === true;
 
   const resumeFrom = useMemo(() => {
     const match = items.find((item) => item.sermonId === sermonId);
@@ -54,6 +58,7 @@ export default function VideoPlayer({
   }, [resumeFrom]);
 
   const persistProgress = () => {
+    if (!mediaAllowed) return;
     const videoEl = videoRef.current;
     if (!videoEl) return;
     const currentTime = videoEl.currentTime;
@@ -62,6 +67,12 @@ export default function VideoPlayer({
   };
 
   if (youtubeVideoId) {
+    if (!decided || !mediaAllowed) {
+      return (
+        <BlockedVideo title={title} />
+      );
+    }
+
     const queue = (playlistIds || []).filter(Boolean);
     const playlistQuery = queue.length ? `&playlist=${queue.join(",")}` : "";
     const autoplayQuery = autoPlay ? "&autoplay=1" : "";
@@ -81,6 +92,10 @@ export default function VideoPlayer({
         </div>
       </div>
     );
+  }
+
+  if (!decided || !mediaAllowed) {
+    return <BlockedVideo title={title} />;
   }
 
   return (
@@ -105,6 +120,28 @@ export default function VideoPlayer({
       <div className="bg-white px-4 py-3 text-sm font-semibold text-destiny-black sm:px-5">
         {title}
       </div>
+    </div>
+  );
+}
+
+function BlockedVideo({ title }: { title: string }) {
+  return (
+    <div className="overflow-hidden rounded-xl border border-black/5 bg-[var(--surface-muted)] shadow-lg">
+      <div className="flex aspect-video w-full items-center justify-center px-6 text-center">
+        <div className="space-y-2">
+          <p className="text-sm font-semibold text-destiny-black">Video blocked until you enable media cookies.</p>
+          <p className="text-sm text-destiny-grey">
+            We use YouTube and Cloudflare embeds to stream sermons. Update your cookie preferences to allow video.
+          </p>
+          <a
+            href="/cookies"
+            className="inline-flex items-center justify-center rounded-full bg-destiny-orange px-4 py-2 text-xs font-semibold uppercase tracking-wide text-white shadow-sm transition hover:brightness-95"
+          >
+            Manage cookies
+          </a>
+        </div>
+      </div>
+      <div className="bg-white px-4 py-3 text-sm font-semibold text-destiny-black sm:px-5">{title}</div>
     </div>
   );
 }

@@ -4,6 +4,7 @@ import "./globals.css";
 import DestinyFooter from "@/components/DestinyFooter";
 import DestinyHeader from "@/components/DestinyHeader";
 import Providers from "@/components/Providers";
+import CookieBanner from "@/components/CookieBanner";
 
 const roboto = Roboto({
   variable: "--font-roboto",
@@ -36,6 +37,7 @@ export default function RootLayout({
         className={`${roboto.variable} ${dosis.variable} antialiased transition-colors`}
       >
         <Providers>
+          <CookieBanner />
           <div className="flex min-h-screen flex-col bg-[var(--background)] text-[var(--foreground)]">
             <DestinyHeader />
             <main className="mx-auto w-full max-w-6xl flex-1 px-4 pb-16 pt-8 lg:px-8">

@@ -13,10 +13,11 @@ type PlaylistPageProps = {
 export default async function PlaylistPage({ params }: PlaylistPageProps) {
   const rawSlug = params.slug ?? "";
   const slug = rawSlug ? decodeURIComponent(rawSlug) : "";
+  const playlistList = await listPublicPlaylists(50);
   const playlist =
     (await getPlaylistBySlugOrId(slug)) ||
     (await getPlaylistBySlugOrId(slugify(slug))) ||
-    (await listPublicPlaylists(25)).find(
+    playlistList.find(
       (p) =>
         p.slug === slug ||
         p.slug === slugify(slug) ||

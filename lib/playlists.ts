@@ -69,7 +69,7 @@ const baseSelect = `
   playlist_items (
     id,
     position,
-    sermons (
+    sermons:sermons (
       id,
       title,
       date,
@@ -92,7 +92,7 @@ export async function listPublicPlaylists(limit = 20): Promise<Playlist[]> {
   const { data, error } = await supabase
     .from("playlists")
     .select(baseSelect)
-    .or("is_public.eq.true,is_public.is.null")
+    .filter("is_public", "in", "(true,null)")
     .order("created_at", { ascending: false })
     .order("position", { foreignTable: "playlist_items", ascending: true })
     .limit(limit);
@@ -134,7 +134,7 @@ export async function getPlaylistBySlugOrId(
     .order("position", { foreignTable: "playlist_items", ascending: true });
 
   if (!includePrivate) {
-    query = query.or("is_public.eq.true,is_public.is.null");
+    query = query.filter("is_public", "in", "(true,null)");
   }
 
   const { data, error } = await query.maybeSingle();

@@ -129,12 +129,14 @@ export async function getPlaylistBySlugOrId(
   if (altSlug && !slugCandidates.includes(altSlug)) slugCandidates.push(altSlug);
   if (altLower && !slugCandidates.includes(altLower)) slugCandidates.push(altLower);
 
-  for (const candidate of slugCandidates) {
+  const tryFetch = async (candidate: string, useIlike = false) => {
+    const column = "slug";
+    const method = useIlike ? "ilike" : "eq";
     const { data, error } = await publicFilter(
       supabase
         .from("playlists")
         .select(baseSelect)
-        .eq("slug", candidate)
+        [method](column, candidate)
         .order("position", { foreignTable: "playlist_items", ascending: true })
         .maybeSingle(),
     );
@@ -142,7 +144,14 @@ export async function getPlaylistBySlugOrId(
       if ((error as any).code === "42P01") return null;
       throw error;
     }
-    if (data) return mapPlaylist(data as PlaylistRow);
+    return data ? mapPlaylist(data as PlaylistRow) : null;
+  };
+
+  for (const candidate of slugCandidates) {
+    const exact = await tryFetch(candidate, false);
+    if (exact) return exact;
+    const loose = await tryFetch(candidate, true);
+    if (loose) return loose;
   }
 
   if (isUuid(trimmed)) {
@@ -160,6 +169,16 @@ export async function getPlaylistBySlugOrId(
     }
     if (data) return mapPlaylist(data as PlaylistRow);
   }
+
+  // Last resort: scan public playlists and match on slugified title.
+  const all = await listPublicPlaylists(500);
+  const matchFromList = all.find((p) => {
+    const variants = [p.slug, slugify(p.slug || ""), slugify(p.title || "")]
+      .filter(Boolean)
+      .map((v) => v.toLowerCase());
+    return variants.includes(trimmed.toLowerCase());
+  });
+  if (matchFromList) return matchFromList;
 
   return null;
 }

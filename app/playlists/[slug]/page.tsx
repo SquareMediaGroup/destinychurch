@@ -1,7 +1,7 @@
 import Link from "next/link";
-import { notFound } from "next/navigation";
 import PlaylistViewer from "@/components/PlaylistViewer";
-import { getPlaylistBySlugOrId } from "@/lib/playlists";
+import { getPlaylistBySlugOrId, listPublicPlaylists } from "@/lib/playlists";
+import { slugify } from "@/lib/playlists";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -13,10 +13,42 @@ type PlaylistPageProps = {
 export default async function PlaylistPage({ params }: PlaylistPageProps) {
   const rawSlug = params.slug ?? "";
   const slug = rawSlug ? decodeURIComponent(rawSlug) : "";
-  const playlist = await getPlaylistBySlugOrId(slug);
+  const playlist =
+    (await getPlaylistBySlugOrId(slug)) ||
+    (await getPlaylistBySlugOrId(slugify(slug))) ||
+    (await listPublicPlaylists(25)).find(
+      (p) =>
+        p.slug === slug ||
+        p.slug === slugify(slug) ||
+        p.slug?.toLowerCase() === slug.toLowerCase() ||
+        p.id === slug,
+    );
 
   if (!playlist) {
-    notFound();
+    return (
+      <div className="space-y-6">
+        <div className="rounded-xl border border-[var(--border-subtle)] bg-[var(--surface)] px-6 py-8 shadow-sm">
+          <h1 className="text-2xl font-bold text-[var(--foreground)]">Playlist not found</h1>
+          <p className="mt-2 text-destiny-grey">
+            We couldn&apos;t load that playlist. It may be private or the link may be wrong.
+          </p>
+          <div className="mt-4 flex flex-wrap gap-2">
+            <Link
+              href="/playlists"
+              className="rounded-full bg-destiny-orange px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:brightness-95"
+            >
+              ← All playlists
+            </Link>
+            <Link
+              href="/sermons"
+              className="rounded-full border border-[var(--border-subtle)] px-4 py-2 text-sm font-semibold text-[var(--foreground)] transition hover:border-destiny-orange hover:text-destiny-orange"
+            >
+              Browse sermons
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   const count = playlist.items.length;

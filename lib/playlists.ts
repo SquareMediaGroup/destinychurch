@@ -123,6 +123,9 @@ export async function getPlaylistBySlugOrId(
   if (altSlug && altSlug !== trimmed) {
     orFilters.push(`slug.eq.${altSlug}`);
   }
+  if (altSlug && altSlug !== lowered) {
+    orFilters.push(`slug.eq.${altSlug.toLowerCase()}`);
+  }
 
   let query = supabase
     .from("playlists")

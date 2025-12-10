@@ -43,7 +43,7 @@ export default function SermonSummary({ summary }: SermonSummaryProps) {
         components={{
           p: (props) => <p className="leading-relaxed text-destiny-grey" {...props} />,
           strong: (props) => <strong className="font-semibold text-destiny-black" {...props} />,
-          em: (props) => <em className="italic text-destiny-black" {...props} />,
+          em: (props) => <strong className="font-semibold text-destiny-black" {...props} />,
           code: (props) => (
             <code className="rounded bg-destiny-grey/10 px-1 py-0.5 text-[13px] text-destiny-black" {...props} />
           ),

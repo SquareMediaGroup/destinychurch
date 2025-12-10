@@ -27,6 +27,11 @@ const slugify = (input: string) =>
     .replace(/^-+|-+$/g, "")
     .replace(/-{2,}/g, "-");
 
+const isUuid = (value: string) =>
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+    value.trim(),
+  );
+
 const mapPlaylistItem = (row: PlaylistItemRow): PlaylistItem | null => {
   const sermonRow = Array.isArray(row.sermons) ? row.sermons[0] : row.sermons;
   if (!sermonRow) return null;
@@ -92,7 +97,7 @@ export async function listPublicPlaylists(limit = 20): Promise<Playlist[]> {
   const { data, error } = await supabase
     .from("playlists")
     .select(baseSelect)
-    .filter("is_public", "in", "(true,null)")
+    .or("is_public.eq.true,is_public.is.null")
     .order("created_at", { ascending: false })
     .order("position", { foreignTable: "playlist_items", ascending: true })
     .limit(limit);
@@ -115,35 +120,48 @@ export async function getPlaylistBySlugOrId(
   if (!trimmed) return null;
   const altSlug = slugify(trimmed);
   const lowered = trimmed.toLowerCase();
-  const orFilters = [
-    `slug.eq.${trimmed}`,
-    `slug.eq.${lowered}`,
-    `id.eq.${trimmed}`,
-  ];
-  if (altSlug && altSlug !== trimmed) {
-    orFilters.push(`slug.eq.${altSlug}`);
-  }
-  if (altSlug && altSlug !== lowered) {
-    orFilters.push(`slug.eq.${altSlug.toLowerCase()}`);
+  const altLower = altSlug.toLowerCase();
+
+  const publicFilter = <T>(query: any) =>
+    includePrivate ? query : query.or("is_public.eq.true,is_public.is.null");
+
+  const slugCandidates = [trimmed, lowered];
+  if (altSlug && !slugCandidates.includes(altSlug)) slugCandidates.push(altSlug);
+  if (altLower && !slugCandidates.includes(altLower)) slugCandidates.push(altLower);
+
+  for (const candidate of slugCandidates) {
+    const { data, error } = await publicFilter(
+      supabase
+        .from("playlists")
+        .select(baseSelect)
+        .eq("slug", candidate)
+        .order("position", { foreignTable: "playlist_items", ascending: true })
+        .maybeSingle(),
+    );
+    if (error && (error as any).code !== "PGRST116") {
+      if ((error as any).code === "42P01") return null;
+      throw error;
+    }
+    if (data) return mapPlaylist(data as PlaylistRow);
   }
 
-  let query = supabase
-    .from("playlists")
-    .select(baseSelect)
-    .or(orFilters.join(","))
-    .order("position", { foreignTable: "playlist_items", ascending: true });
-
-  if (!includePrivate) {
-    query = query.filter("is_public", "in", "(true,null)");
+  if (isUuid(trimmed)) {
+    const { data, error } = await publicFilter(
+      supabase
+        .from("playlists")
+        .select(baseSelect)
+        .eq("id", trimmed)
+        .order("position", { foreignTable: "playlist_items", ascending: true })
+        .maybeSingle(),
+    );
+    if (error && (error as any).code !== "PGRST116") {
+      if ((error as any).code === "42P01") return null;
+      throw error;
+    }
+    if (data) return mapPlaylist(data as PlaylistRow);
   }
 
-  const { data, error } = await query.maybeSingle();
-  if (error) {
-    if ((error as any).code === "42P01") return null;
-    throw error;
-  }
-  if (!data) return null;
-  return mapPlaylist(data as PlaylistRow);
+  return null;
 }
 
 export async function createPlaylistRecord(input: {

@@ -1,3 +1,5 @@
+import "server-only";
+
 import fs from "fs/promises";
 import { createReadStream } from "fs";
 import path from "path";
@@ -8,6 +10,8 @@ export async function transcribeAudio(audioUrl: string): Promise<string> {
   if (!apiKey) {
     throw new Error("Missing OPENAI_API_KEY");
   }
+
+  console.info(`[ai] Downloading audio for transcription from ${audioUrl}`);
 
   // Download the audio to a temp file to avoid FormData/File quirks on Node.
   const audioRes = await fetch(audioUrl);
@@ -27,7 +31,10 @@ export async function transcribeAudio(audioUrl: string): Promise<string> {
       response_format: "text",
       language: "en",
     });
-    return transcription as string;
+
+    const text = transcription as string;
+    console.info(`[ai] Whisper transcription complete (${text.length.toLocaleString()} chars)`);
+    return text;
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unknown Whisper error";
     throw new Error(message);

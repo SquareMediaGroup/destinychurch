@@ -1,3 +1,4 @@
+import type { PostgrestError } from "@supabase/supabase-js";
 import { getSupabaseAdmin, tryGetSupabaseAdmin } from "./supabase";
 import { mapRowToSermon, SermonRow } from "./db";
 import { Playlist, PlaylistItem } from "./types";
@@ -103,7 +104,7 @@ export async function listPublicPlaylists(limit = 20): Promise<Playlist[]> {
     .limit(limit);
 
   if (error) {
-    if ((error as any).code === "42P01") return [];
+    if ((error as PostgrestError).code === "42P01") return [];
     throw error;
   }
 
@@ -122,8 +123,16 @@ export async function getPlaylistBySlugOrId(
   const lowered = trimmed.toLowerCase();
   const altLower = altSlug.toLowerCase();
 
-  const publicFilter = <T>(query: any) =>
-    includePrivate ? query : query.or("is_public.eq.true,is_public.is.null");
+  const buildQuery = () => {
+    let query = supabase
+      .from("playlists")
+      .select(baseSelect)
+      .order("position", { foreignTable: "playlist_items", ascending: true });
+    if (!includePrivate) {
+      query = query.or("is_public.eq.true,is_public.is.null");
+    }
+    return query;
+  };
 
   const slugCandidates = [trimmed, lowered];
   if (altSlug && !slugCandidates.includes(altSlug)) slugCandidates.push(altSlug);
@@ -131,17 +140,12 @@ export async function getPlaylistBySlugOrId(
 
   const tryFetch = async (candidate: string, useIlike = false) => {
     const column = "slug";
-    const method = useIlike ? "ilike" : "eq";
-    const { data, error } = await publicFilter(
-      supabase
-        .from("playlists")
-        .select(baseSelect)
-        [method](column, candidate)
-        .order("position", { foreignTable: "playlist_items", ascending: true })
-        .maybeSingle(),
-    );
-    if (error && (error as any).code !== "PGRST116") {
-      if ((error as any).code === "42P01") return null;
+    let query = buildQuery();
+    query = useIlike ? query.ilike(column, candidate) : query.eq(column, candidate);
+
+    const { data, error } = await query.maybeSingle();
+    if (error && error.code !== "PGRST116") {
+      if (error.code === "42P01") return null;
       throw error;
     }
     return data ? mapPlaylist(data as PlaylistRow) : null;
@@ -155,16 +159,9 @@ export async function getPlaylistBySlugOrId(
   }
 
   if (isUuid(trimmed)) {
-    const { data, error } = await publicFilter(
-      supabase
-        .from("playlists")
-        .select(baseSelect)
-        .eq("id", trimmed)
-        .order("position", { foreignTable: "playlist_items", ascending: true })
-        .maybeSingle(),
-    );
-    if (error && (error as any).code !== "PGRST116") {
-      if ((error as any).code === "42P01") return null;
+    const { data, error } = await buildQuery().eq("id", trimmed).maybeSingle();
+    if (error && error.code !== "PGRST116") {
+      if (error.code === "42P01") return null;
       throw error;
     }
     if (data) return mapPlaylist(data as PlaylistRow);

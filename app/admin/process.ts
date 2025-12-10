@@ -2,10 +2,7 @@
 
 import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
-import { getSupabaseAdmin } from "@/lib/supabase";
-import { transcribeAudio } from "@/lib/whisper";
-import { generateSermonSummary } from "@/lib/summary";
-import { getSermonById } from "@/lib/db";
+import { processSermonAI } from "@/lib/aiWorkflow";
 
 const ADMIN_COOKIE = "destiny-admin";
 
@@ -17,26 +14,13 @@ export async function processSermon(formData: FormData) {
   const id = String(formData.get("id") || "");
   if (!id) throw new Error("Missing sermon id");
 
-  const supabase = getSupabaseAdmin();
-  const sermon = await getSermonById(id);
-  if (!sermon) throw new Error("Sermon not found");
-  if (!sermon.podcastAudioUrl) throw new Error("No podcast audio URL to transcribe");
-  if (sermon.summary && sermon.transcript) return;
-
-  const transcript = await transcribeAudio(sermon.podcastAudioUrl);
-  const summaryBullets = await generateSermonSummary(transcript);
-  const summary = summaryBullets.map((b) => `• ${b}`).join("\n");
-
-  const { error } = await supabase
-    .from("sermons")
-    .update({
-      transcript,
-      summary,
-      updated_at: new Date().toISOString(),
-    })
-    .eq("id", id);
-
-  if (error) throw new Error(error.message);
+  try {
+    await processSermonAI(id);
+  } catch (error) {
+    console.error(`[admin] AI processing failed for sermon ${id}`, error);
+    const message = error instanceof Error ? error.message : "AI processing failed";
+    throw new Error(message);
+  }
 
   revalidatePath("/sermons");
   revalidatePath("/admin");

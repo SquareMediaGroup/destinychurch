@@ -1,5 +1,4 @@
 import ContinueWatchingRow from "@/components/ContinueWatchingRow";
-import SermonCard from "@/components/SermonCard";
 import SermonSearch from "@/components/SermonSearch";
 import { listSermons } from "@/lib/db";
 

@@ -20,22 +20,12 @@ function resolvePreferredTheme(): Theme {
 }
 
 export default function ThemeToggle() {
-  const [theme, setTheme] = useState<Theme>("light");
-  const [mounted, setMounted] = useState(false);
+  const [theme, setTheme] = useState<Theme>(() => resolvePreferredTheme());
 
   useEffect(() => {
-    const initial = resolvePreferredTheme();
-    setTheme(initial);
-    document.documentElement.dataset.theme = initial;
-    setMounted(true);
-  }, []);
-
-  useEffect(() => {
-    if (!mounted) return;
-
     document.documentElement.dataset.theme = theme;
     window.localStorage.setItem(STORAGE_KEY, theme);
-  }, [mounted, theme]);
+  }, [theme]);
 
   const toggleTheme = () =>
     setTheme((current) => (current === "dark" ? "light" : "dark"));

@@ -1,3 +1,4 @@
+import Link from "next/link";
 import PlaylistCard from "@/components/PlaylistCard";
 import { listPublicPlaylists } from "@/lib/playlists";
 
@@ -25,12 +26,12 @@ export default async function PlaylistsPage() {
           We&apos;re assembling full series into continuous playlists. In the meantime, browse sermons below or keep an eye on this page.
         </p>
         <div className="mt-3 flex flex-wrap gap-2 text-sm text-destiny-grey">
-          <a
+          <Link
             href="/sermons"
             className="rounded-full bg-destiny-orange px-4 py-2 text-white shadow-sm transition hover:brightness-95"
           >
             Browse sermons
-          </a>
+          </Link>
           {playlists.length > 0 && (
             <span className="rounded-full bg-destiny-blue/10 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-destiny-blue">
               {playlists.length} draft playlist{playlists.length === 1 ? "" : "s"} ready

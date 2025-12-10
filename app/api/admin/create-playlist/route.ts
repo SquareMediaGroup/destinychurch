@@ -3,6 +3,7 @@ import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
 import { getSupabaseAdmin } from "@/lib/supabase";
 import { createPlaylistRecord, slugify } from "@/lib/playlists";
+import { SermonRow } from "@/lib/db";
 
 export async function POST(request: NextRequest) {
   const cookieStore = await cookies();
@@ -41,7 +42,7 @@ export async function POST(request: NextRequest) {
   const byId = new Map<string, string>();
   const byYoutube = new Map<string, string>();
   const byPodcast = new Map<string, string>();
-  (sermons || []).forEach((row: any) => {
+  (sermons || []).forEach((row: SermonRow) => {
     if (row.id) byId.set(row.id, row.id);
     if (row.youtube_video_id) byYoutube.set(row.youtube_video_id, row.id);
     if (row.podcast_guid) byPodcast.set(row.podcast_guid, row.id);

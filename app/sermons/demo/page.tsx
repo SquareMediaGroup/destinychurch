@@ -19,8 +19,11 @@ const fallback: Sermon = {
   podcastAudioUrl:
     "https://media.destiny.example.com/sermons/2025-02-02-audio.mp3",
   thumbnailUrl: "/destiny-logo.svg",
-  summary:
-    "A warm, Christ-centred call to live sent in workplaces, homes, and city streets, trusting the Holy Spirit to open doors.",
+  summary: [
+    "- **Live sent:** the Holy Spirit sends us into workplaces, homes, and city streets with courage.",
+    "- **Stay rooted:** _Acts 1:8_ reminds us that His power meets us in every season we walk through.",
+    "- **Walk together:** pray, invite, and build with your Connect Group so no one carries the mission alone.",
+  ].join("\n"),
   transcript:
     "Today we’re reminded that Jesus sends us into every season and space. The harvest is in our hands and homes...",
 };

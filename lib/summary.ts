@@ -16,7 +16,10 @@ export async function generateSermonSummary(transcript: string): Promise<string[
   }
 
   const prompt = `You are writing a warm, Christ-centred summary for a Destiny Church sermon.
-Generate 3-6 concise bullet points with key scripture references and the pastoral voice of Destiny Church.
+Generate 3-6 concise bullet points, formatted as Markdown.
+- Begin each line with "- " so it renders as a bullet.
+- Bold the core thought at the start of the line (e.g., "**Jesus sends us:** we go where He leads").
+- Wrap key scripture references in italics and keep the tone pastoral and invitational.
 
 Transcript:
 ${cleanedTranscript}`;
@@ -45,6 +48,6 @@ export function formatSummaryBullets(lines: string[]): string {
   return lines
     .map((line) => line.replace(/^[*\-•\s]+/, "").trim())
     .filter(Boolean)
-    .map((line) => `• ${line}`)
+    .map((line) => `- ${line}`)
     .join("\n");
 }

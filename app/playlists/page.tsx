@@ -12,18 +12,34 @@ export default async function PlaylistsPage() {
       <header className="space-y-2">
         <p className="subheading text-sm text-destiny-orange">Playlists</p>
         <h1 className="text-3xl font-bold text-[var(--foreground)]">
-          Binge the whole series
+          Coming soon
         </h1>
         <p className="max-w-2xl text-destiny-grey">
-          Curated, public playlists that string together every message from a series or guest speaker. Start one and it will keep playing.
+          We&apos;re curating series-based playlists that auto-play every sermon. Check back shortly while we prepare the lineup.
         </p>
       </header>
 
-      {playlists.length === 0 ? (
-        <div className="rounded-xl border border-[var(--border-subtle)] bg-[var(--surface)] px-4 py-6 text-sm text-destiny-grey">
-          No playlists yet. Admins can create them from the dashboard.
+      <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface)] px-5 py-6 shadow-sm">
+        <p className="text-sm font-semibold text-destiny-orange">Playlists coming soon</p>
+        <p className="mt-2 text-sm text-destiny-grey">
+          We&apos;re assembling full series into continuous playlists. In the meantime, browse sermons below or keep an eye on this page.
+        </p>
+        <div className="mt-3 flex flex-wrap gap-2 text-sm text-destiny-grey">
+          <a
+            href="/sermons"
+            className="rounded-full bg-destiny-orange px-4 py-2 text-white shadow-sm transition hover:brightness-95"
+          >
+            Browse sermons
+          </a>
+          {playlists.length > 0 && (
+            <span className="rounded-full bg-destiny-blue/10 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-destiny-blue">
+              {playlists.length} draft playlist{playlists.length === 1 ? "" : "s"} ready
+            </span>
+          )}
         </div>
-      ) : (
+      </div>
+
+      {playlists.length > 0 && (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {playlists.map((playlist) => (
             <PlaylistCard key={playlist.id} playlist={playlist} />

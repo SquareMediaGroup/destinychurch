@@ -36,25 +36,19 @@ export default function ThemeToggle() {
     setTheme((current) => (current === "dark" ? "light" : "dark"));
 
   const label = theme === "dark" ? "Light mode" : "Dark mode";
+  const icon = theme === "dark" ? "light_mode" : "dark_mode";
 
   return (
     <button
       type="button"
       onClick={toggleTheme}
-      className="flex items-center gap-2 rounded-full border border-[var(--border-subtle)] bg-[var(--surface)] px-3 py-2 text-xs font-semibold uppercase tracking-wide text-[var(--foreground)] shadow-sm transition hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-destiny-orange"
+      className="flex items-center gap-2 rounded-full border border-[var(--border-subtle)] bg-[var(--surface)] px-2.5 py-2 text-xs font-semibold uppercase tracking-wide text-[var(--foreground)] shadow-sm transition hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-destiny-orange"
       aria-label={`Toggle ${label.toLowerCase()}`}
     >
-      <span
-        className="relative inline-flex h-6 w-10 items-center rounded-full bg-[var(--toggle-track)] transition"
-        aria-hidden
-      >
-        <span
-          className={`absolute left-0 top-0 h-6 w-5 rounded-full border border-[var(--border-subtle)] bg-[var(--toggle-thumb)] shadow-sm transition-transform ${
-            theme === "dark" ? "translate-x-5" : "translate-x-0"
-          }`}
-        />
+      <span className="material-symbols-rounded text-[20px]" aria-hidden>
+        {icon}
       </span>
-      <span>{label}</span>
+      <span className="sr-only">{label}</span>
     </button>
   );
 }

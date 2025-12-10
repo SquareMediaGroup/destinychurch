@@ -1,12 +1,20 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useCookieConsent } from "@/lib/cookieConsent";
 
 export default function CookieBanner() {
   const { consent, allowAll, denyOptional } = useCookieConsent();
+  const [mounted, setMounted] = useState(false);
 
-  if (consent) return null;
+  useEffect(() => {
+    // Hydration guard so SSR and client markup stay aligned before consent loads from storage.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setMounted(true);
+  }, []);
+
+  if (!mounted || consent) return null;
 
   return (
     <div className="fixed bottom-4 left-4 right-4 z-50 sm:left-auto sm:right-6 sm:max-w-xl">

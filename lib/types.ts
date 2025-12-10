@@ -32,3 +32,20 @@ export type AiReport = {
   description: string;
   createdAt?: string;
 };
+
+export type PlaylistItem = {
+  id: string;
+  position: number;
+  sermon: Sermon;
+};
+
+export type Playlist = {
+  id: string;
+  slug: string;
+  title: string;
+  description?: string;
+  isPublic?: boolean;
+  items: PlaylistItem[];
+  createdAt?: string;
+  updatedAt?: string;
+};

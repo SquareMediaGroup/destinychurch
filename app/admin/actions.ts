@@ -6,6 +6,7 @@ import { redirect } from "next/navigation";
 import { getSupabaseAdmin } from "@/lib/supabase";
 import { verifyAdminUser, createAdminUser, deleteAdminUser } from "@/lib/adminUsers";
 import { syncSermons } from "@/lib/sync";
+import { createPlaylistRecord } from "@/lib/playlists";
 
 const ADMIN_COOKIE = "destiny-admin";
 const ADMIN_ROLE_COOKIE = "destiny-admin-role";
@@ -229,5 +230,77 @@ export async function deleteAdminUserAction(formData: FormData) {
   const username = String(formData.get("username") || "").trim();
   if (!username || username === adminUser) throw new Error("Cannot delete that user");
   await deleteAdminUser(username);
+  revalidatePath("/admin");
+}
+
+export async function createPlaylistAction(formData: FormData) {
+  const cookieStore = await cookies();
+  const authed = cookieStore.get(ADMIN_COOKIE)?.value === "1";
+  if (!authed) {
+    throw new Error("Unauthorized");
+  }
+
+  const title = String(formData.get("title") || "").trim();
+  const slugInput = String(formData.get("slug") || "").trim();
+  const description = String(formData.get("description") || "").trim();
+  const sermonOrderRaw = String(formData.get("sermonOrder") || "");
+
+  const sermonTokens = sermonOrderRaw
+    .split(/\r?\n/)
+    .flatMap((line) => line.split(","))
+    .map((value) => value.trim())
+    .filter(Boolean);
+
+  if (!title) throw new Error("Title is required");
+  if (!sermonTokens.length) {
+    throw new Error("Add at least one sermon ID, YouTube ID, or podcast GUID.");
+  }
+
+  const supabase = getSupabaseAdmin();
+  const { data: sermons, error } = await supabase
+    .from("sermons")
+    .select("id, youtube_video_id, podcast_guid")
+    .order("date", { ascending: false });
+
+  if (error) throw new Error(error.message);
+
+  const byId = new Map<string, string>();
+  const byYoutube = new Map<string, string>();
+  const byPodcast = new Map<string, string>();
+  (sermons || []).forEach((row: any) => {
+    if (row.id) byId.set(row.id, row.id);
+    if (row.youtube_video_id) byYoutube.set(row.youtube_video_id, row.id);
+    if (row.podcast_guid) byPodcast.set(row.podcast_guid, row.id);
+  });
+
+  const resolved: string[] = [];
+  const missing: string[] = [];
+  sermonTokens.forEach((token) => {
+    const match = byId.get(token) || byYoutube.get(token) || byPodcast.get(token);
+    if (match && !resolved.includes(match)) {
+      resolved.push(match);
+    } else if (!match) {
+      missing.push(token);
+    }
+  });
+
+  if (!resolved.length) {
+    throw new Error("No matching sermons found for that list.");
+  }
+  if (missing.length) {
+    const preview = missing.slice(0, 3).join(", ");
+    throw new Error(`Could not find sermons for: ${preview}`);
+  }
+
+  const { slug } = await createPlaylistRecord({
+    title,
+    description,
+    slug: slugInput,
+    sermonIds: resolved,
+    isPublic: true,
+  });
+
+  revalidatePath("/playlists");
+  revalidatePath(`/playlists/${encodeURIComponent(slug)}`);
   revalidatePath("/admin");
 }

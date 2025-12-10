@@ -1,7 +1,7 @@
 import { getSupabaseAdmin, tryGetSupabaseAdmin } from "./supabase";
 import { Sermon } from "./types";
 
-type SermonRow = {
+export type SermonRow = {
   id: string;
   title: string;
   date: string;
@@ -15,7 +15,7 @@ type SermonRow = {
   transcript?: string;
 };
 
-const mapRowToSermon = (row: SermonRow): Sermon => ({
+export const mapRowToSermon = (row: SermonRow): Sermon => ({
   id: row.id,
   title: row.title,
   date: row.date,

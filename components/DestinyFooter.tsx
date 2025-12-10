@@ -3,6 +3,7 @@ import Link from "next/link";
 
 const footerLinks = [
   { label: "Sermons", href: "/sermons" },
+  { label: "Playlists", href: "/playlists" },
   { label: "Admin", href: "/admin" },
   { label: "About", href: "https://destinytees.uk/about" },
   { label: "Contact", href: "https://destinytees.uk/contact" },

@@ -4,6 +4,7 @@ import ThemeToggle from "./ThemeToggle";
 
 const navLinks = [
   { href: "/sermons", label: "Sermons" },
+  { href: "/playlists", label: "Playlists" },
   { href: "https://destinytees.uk/about", label: "About" },
   { href: "https://destinytees.uk/contact", label: "Contact" },
 ];

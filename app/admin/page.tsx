@@ -8,6 +8,7 @@ import {
   deleteSermon,
   login,
   logout,
+  createPlaylistAction,
   runSyncLimited,
   runSyncNow,
   updateSermonMeta,
@@ -16,6 +17,7 @@ import { cleanDuplicates } from "./cleanup";
 import { processSermon } from "./process";
 import ConfirmSubmit from "@/components/ConfirmSubmit";
 import { listReports } from "@/lib/reports";
+import PlaylistComposer from "@/components/PlaylistComposer";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -112,6 +114,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
           reportCount={reports.length}
         />
         <ActionRow />
+        <PlaylistsPanel sermons={sermons} />
         <MaintenanceRow />
         {isSuper && <AdminUsersPanel admins={admins} />}
         <ReportsPanel reports={reports} />
@@ -205,6 +208,94 @@ function ActionRow() {
             </ConfirmSubmit>
           </form>
         </div>
+      </div>
+    </div>
+  );
+}
+
+function PlaylistsPanel({ sermons }: { sermons: Awaited<ReturnType<typeof listSermons>> }) {
+  const suggestions = sermons.slice(0, 6);
+
+  return (
+    <div className="rounded-2xl bg-[var(--surface)] px-4 py-4 shadow-sm ring-1 ring-black/5">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <p className="text-sm font-semibold text-destiny-black">Playlists</p>
+          <p className="text-xs text-destiny-grey/80">
+            Only admins can create them; they are public and play straight through.
+          </p>
+        </div>
+      </div>
+
+      <form
+        action={createPlaylistAction}
+        className="mt-4 grid gap-3 md:grid-cols-2"
+        aria-label="Create playlist"
+      >
+        <label className="space-y-1 text-sm font-semibold text-[var(--foreground)]">
+          <span className="text-xs uppercase tracking-wide text-destiny-grey/70">Title</span>
+          <input
+            type="text"
+            name="title"
+            placeholder="Summer of Psalms"
+            className="w-full rounded-xl border border-black/10 bg-[var(--surface-muted)] px-3 py-2 text-sm outline-none transition focus:border-destiny-orange focus:ring-2 focus:ring-destiny-orange/30"
+            required
+          />
+        </label>
+        <label className="space-y-1 text-sm font-semibold text-[var(--foreground)]">
+          <span className="text-xs uppercase tracking-wide text-destiny-grey/70">Slug (optional)</span>
+          <input
+            type="text"
+            name="slug"
+            placeholder="summer-psalms"
+            className="w-full rounded-xl border border-black/10 bg-[var(--surface-muted)] px-3 py-2 text-sm outline-none transition focus:border-destiny-orange focus:ring-2 focus:ring-destiny-orange/30"
+          />
+        </label>
+        <div className="md:col-span-2">
+          <p className="text-xs uppercase tracking-wide text-destiny-grey/70 mb-1 font-semibold">
+            Pick sermons for this playlist
+          </p>
+          <PlaylistComposer sermons={sermons} />
+        </div>
+        <label className="md:col-span-2 space-y-1 text-sm font-semibold text-[var(--foreground)]">
+          <span className="text-xs uppercase tracking-wide text-destiny-grey/70">Description</span>
+          <textarea
+            name="description"
+            rows={3}
+            placeholder="All messages from the Romans series."
+            className="w-full rounded-xl border border-black/10 bg-[var(--surface-muted)] px-3 py-2 text-sm outline-none transition focus:border-destiny-orange focus:ring-2 focus:ring-destiny-orange/30"
+          />
+        </label>
+        <div className="md:col-span-2 flex justify-end">
+          <ConfirmSubmit
+            className="rounded-full bg-destiny-blue px-5 py-2 text-xs font-semibold text-white shadow-sm transition hover:brightness-95"
+            confirmMessage="Create this public playlist?"
+            pendingLabel="Creating..."
+          >
+            Create playlist
+          </ConfirmSubmit>
+        </div>
+      </form>
+
+      <div className="mt-4 rounded-xl border border-black/5 bg-destiny-blue/5 p-3">
+        <p className="text-xs font-semibold uppercase tracking-wide text-destiny-grey/70">
+          Recent sermon identifiers
+        </p>
+        {suggestions.length === 0 ? (
+          <p className="mt-2 text-sm text-destiny-grey">No sermons yet. Sync first.</p>
+        ) : (
+          <div className="mt-2 grid gap-2 md:grid-cols-3">
+            {suggestions.map((sermon) => (
+              <div key={sermon.id} className="rounded-lg border border-black/5 bg-white px-3 py-2 text-xs text-destiny-grey">
+                <p className="font-semibold text-destiny-black line-clamp-1">{sermon.title}</p>
+                <p className="truncate">ID: {sermon.id}</p>
+                <p className="truncate">
+                  YouTube: {sermon.youtubeVideoId || "—"}
+                </p>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

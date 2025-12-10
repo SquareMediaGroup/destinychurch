@@ -13,6 +13,9 @@ type VideoPlayerProps = {
   poster?: string;
   durationSeconds?: number;
   youtubeVideoId?: string;
+  autoPlay?: boolean;
+  playlistIds?: string[];
+  onEnded?: () => void;
 };
 
 export default function VideoPlayer({
@@ -22,6 +25,9 @@ export default function VideoPlayer({
   poster,
   durationSeconds,
   youtubeVideoId,
+  autoPlay,
+  playlistIds,
+  onEnded,
 }: VideoPlayerProps) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const { items, saveProgress, clearProgress } = useContinueWatching();
@@ -56,12 +62,15 @@ export default function VideoPlayer({
   };
 
   if (youtubeVideoId) {
+    const queue = (playlistIds || []).filter(Boolean);
+    const playlistQuery = queue.length ? `&playlist=${queue.join(",")}` : "";
+    const autoplayQuery = autoPlay ? "&autoplay=1" : "";
     return (
       <div className="overflow-hidden rounded-xl border border-black/5 bg-black shadow-lg">
         <div className="relative aspect-video w-full">
           <iframe
             className="absolute inset-0 h-full w-full"
-            src={`https://www.youtube.com/embed/${youtubeVideoId}?rel=0`}
+            src={`https://www.youtube.com/embed/${youtubeVideoId}?rel=0${autoplayQuery}${playlistQuery}`}
             title={title}
             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
             allowFullScreen
@@ -81,10 +90,14 @@ export default function VideoPlayer({
         poster={poster}
         className="h-full w-full"
         controls
+        autoPlay={autoPlay}
         onTimeUpdate={persistProgress}
         onPause={persistProgress}
         onSeeked={persistProgress}
-        onEnded={() => clearProgress(sermonId)}
+        onEnded={() => {
+          clearProgress(sermonId);
+          onEnded?.();
+        }}
       >
         <source src={videoUrl ?? FALLBACK_VIDEO} type="video/mp4" />
         Sorry, your browser does not support embedded videos.

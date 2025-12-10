@@ -39,3 +39,24 @@ create table if not exists ai_reports (
   description text not null,
   created_at timestamptz default timezone('utc', now())
 );
+
+create table if not exists playlists (
+  id uuid primary key default gen_random_uuid(),
+  title text not null,
+  description text,
+  slug text unique not null,
+  is_public boolean default true,
+  created_at timestamptz default timezone('utc', now()),
+  updated_at timestamptz default timezone('utc', now())
+);
+
+create table if not exists playlist_items (
+  id uuid primary key default gen_random_uuid(),
+  playlist_id uuid not null references playlists (id) on delete cascade,
+  sermon_id text not null references sermons (id) on delete cascade,
+  position int not null default 1,
+  created_at timestamptz default timezone('utc', now())
+);
+
+create index if not exists playlist_items_playlist_position_idx
+  on playlist_items (playlist_id, position);

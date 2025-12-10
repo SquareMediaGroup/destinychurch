@@ -20,7 +20,12 @@ function resolvePreferredTheme(): Theme {
 }
 
 export default function ThemeToggle() {
-  const [theme, setTheme] = useState<Theme>(() => resolvePreferredTheme());
+  const [theme, setTheme] = useState<Theme>("light");
+
+  useEffect(() => {
+    const preferred = resolvePreferredTheme();
+    setTheme(preferred);
+  }, []);
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme;

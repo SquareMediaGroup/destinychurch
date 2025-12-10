@@ -5,6 +5,7 @@ import DestinyFooter from "@/components/DestinyFooter";
 import DestinyHeader from "@/components/DestinyHeader";
 import Providers from "@/components/Providers";
 import CookieBanner from "@/components/CookieBanner";
+import AnalyticsGate from "@/components/AnalyticsGate";
 
 const roboto = Roboto({
   variable: "--font-roboto",
@@ -45,6 +46,7 @@ export default function RootLayout({
             </main>
             <DestinyFooter />
           </div>
+          <AnalyticsGate />
         </Providers>
       </body>
     </html>

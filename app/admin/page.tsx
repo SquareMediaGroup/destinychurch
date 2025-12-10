@@ -8,7 +8,6 @@ import {
   deleteSermon,
   login,
   logout,
-  createPlaylistAction,
   runSyncLimited,
   runSyncNow,
   updateSermonMeta,
@@ -228,7 +227,8 @@ function PlaylistsPanel({ sermons }: { sermons: Awaited<ReturnType<typeof listSe
       </div>
 
       <form
-        action={createPlaylistAction}
+        action="/api/admin/create-playlist"
+        method="post"
         className="mt-4 grid gap-3 md:grid-cols-2"
         aria-label="Create playlist"
       >

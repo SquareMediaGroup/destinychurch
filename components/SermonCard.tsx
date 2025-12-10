@@ -5,6 +5,7 @@ import { getViewId } from "@/lib/viewIds";
 
 type SermonCardProps = {
   sermon: Sermon;
+  priority?: boolean;
 };
 
 const formatDate = (dateString: string) =>
@@ -21,7 +22,7 @@ const formatDuration = (durationSeconds?: number) => {
   return `${minutes}:${seconds.toString().padStart(2, "0")}`;
 };
 
-export default function SermonCard({ sermon }: SermonCardProps) {
+export default function SermonCard({ sermon, priority = false }: SermonCardProps) {
   const durationLabel = formatDuration(sermon.durationSeconds);
   const speaker = sermon.speaker || "Destiny Church";
   const href = `/sermons/view?viewId=${encodeURIComponent(getViewId(sermon))}`;
@@ -29,6 +30,7 @@ export default function SermonCard({ sermon }: SermonCardProps) {
   return (
     <Link
       href={href}
+      aria-label={`Watch ${sermon.title} by ${speaker} from ${formatDate(sermon.date)}`}
       className="group block overflow-hidden rounded-xl border border-black/5 bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-lg"
     >
       <div className="relative aspect-video overflow-hidden bg-destiny-grey/5">
@@ -37,8 +39,9 @@ export default function SermonCard({ sermon }: SermonCardProps) {
           alt={sermon.title}
           fill
           sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
+          priority={priority}
+          fetchPriority={priority ? "high" : undefined}
           className="object-cover transition duration-300 group-hover:scale-[1.02]"
-          priority={false}
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-black/10 to-transparent opacity-90" />
         {durationLabel && (

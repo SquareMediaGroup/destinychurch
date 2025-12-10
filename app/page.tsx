@@ -54,8 +54,12 @@ export default async function Home() {
           </div>
         ) : (
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {featured.map((sermon) => (
-              <SermonCard key={sermon.id} sermon={sermon} />
+            {featured.map((sermon, index) => (
+              <SermonCard
+                key={sermon.id}
+                sermon={sermon}
+                priority={index === 0}
+              />
             ))}
           </div>
         )}

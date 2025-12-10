@@ -186,9 +186,6 @@ export default async function SermonViewPage({ searchParams }: SermonViewPagePro
           <h2 className="text-lg font-semibold text-destiny-black">
             Recommended
           </h2>
-          <span className="text-xs uppercase tracking-wide text-destiny-grey/70">
-            YouTube-style grid
-          </span>
         </div>
         <div className="grid gap-4">
           {recommended.map((sermon) => (

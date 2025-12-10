@@ -46,6 +46,8 @@ export default function SermonSearch({ sermons }: SermonSearchProps) {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search by title, speaker, summary, or transcript"
+            aria-label="Search sermons"
+            enterKeyHint="search"
             className="w-full rounded-full border border-black/10 bg-[var(--surface)] px-10 py-3 text-sm text-[var(--foreground)] shadow-sm outline-none transition focus:border-destiny-orange focus:ring-2 focus:ring-destiny-orange/30"
           />
         </div>
@@ -60,8 +62,12 @@ export default function SermonSearch({ sermons }: SermonSearchProps) {
         </div>
       ) : (
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {results.map((sermon) => (
-            <SermonCard key={sermon.id} sermon={sermon} />
+          {results.map((sermon, index) => (
+            <SermonCard
+              key={sermon.id}
+              sermon={sermon}
+              priority={index === 0}
+            />
           ))}
         </div>
       )}

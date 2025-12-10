@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Icon from "./Icon";
 
 type Theme = "light" | "dark";
 
@@ -20,12 +21,7 @@ function resolvePreferredTheme(): Theme {
 }
 
 export default function ThemeToggle() {
-  const [theme, setTheme] = useState<Theme>("light");
-
-  useEffect(() => {
-    const preferred = resolvePreferredTheme();
-    setTheme(preferred);
-  }, []);
+  const [theme, setTheme] = useState<Theme>(() => resolvePreferredTheme());
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
@@ -45,9 +41,7 @@ export default function ThemeToggle() {
       className="flex items-center gap-2 rounded-full border border-[var(--border-subtle)] bg-[var(--surface)] px-2.5 py-2 text-xs font-semibold uppercase tracking-wide text-[var(--foreground)] shadow-sm transition hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-destiny-orange"
       aria-label={`Toggle ${label.toLowerCase()}`}
     >
-      <span className="material-symbols-rounded text-[20px]" aria-hidden>
-        {icon}
-      </span>
+      <Icon name={icon} size={20} />
       <span className="sr-only">{label}</span>
     </button>
   );

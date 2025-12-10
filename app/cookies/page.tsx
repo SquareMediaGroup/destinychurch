@@ -1,20 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useCookieConsent } from "@/lib/cookieConsent";
 
 export default function CookiesPage() {
   const { consent, savePreferences, allowAll, denyOptional } = useCookieConsent();
-  const [media, setMedia] = useState(false);
-  const [analytics, setAnalytics] = useState(false);
-
-  useEffect(() => {
-    if (consent) {
-      setMedia(consent.media);
-      setAnalytics(consent.analytics);
-    }
-  }, [consent]);
+  const [media, setMedia] = useState(consent?.media ?? false);
+  const [analytics, setAnalytics] = useState(consent?.analytics ?? false);
 
   return (
     <div className="mx-auto max-w-3xl space-y-6 rounded-2xl border border-black/5 bg-white p-6 shadow-sm">
@@ -94,13 +87,21 @@ export default function CookiesPage() {
         </button>
         <button
           className="rounded-full border border-[var(--border-subtle)] bg-[var(--surface)] px-4 py-2 text-xs font-semibold uppercase tracking-wide text-[var(--foreground)] transition hover:border-destiny-orange"
-          onClick={allowAll}
+          onClick={() => {
+            setMedia(true);
+            setAnalytics(true);
+            allowAll();
+          }}
         >
           Allow all
         </button>
         <button
           className="rounded-full border border-[var(--border-subtle)] bg-[var(--surface)] px-4 py-2 text-xs font-semibold uppercase tracking-wide text-[var(--foreground)] transition hover:border-destiny-orange"
-          onClick={denyOptional}
+          onClick={() => {
+            setMedia(false);
+            setAnalytics(false);
+            denyOptional();
+          }}
         >
           Decline optional
         </button>

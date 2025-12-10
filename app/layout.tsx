@@ -6,6 +6,7 @@ import DestinyHeader from "@/components/DestinyHeader";
 import Providers from "@/components/Providers";
 import CookieBanner from "@/components/CookieBanner";
 import AnalyticsGate from "@/components/AnalyticsGate";
+import GlobalAudioProvider from "@/components/GlobalAudioProvider";
 
 const roboto = Roboto({
   variable: "--font-roboto",
@@ -25,6 +26,10 @@ export const metadata: Metadata = {
   title: "Destiny Sermons",
   description:
     "Weekly Destiny Church sermons with video, summaries, and transcripts.",
+  metadataBase: new URL("https://sermons.destinytees.uk"),
+  alternates: {
+    canonical: "/",
+  },
 };
 
 export default function RootLayout({
@@ -38,15 +43,17 @@ export default function RootLayout({
         className={`${roboto.variable} ${dosis.variable} antialiased transition-colors`}
       >
         <Providers>
-          <CookieBanner />
-          <div className="flex min-h-screen flex-col bg-[var(--background)] text-[var(--foreground)]">
-            <DestinyHeader />
-            <main className="mx-auto w-full max-w-6xl flex-1 px-4 pb-16 pt-8 lg:px-8">
-              {children}
-            </main>
-            <DestinyFooter />
-          </div>
-          <AnalyticsGate />
+          <GlobalAudioProvider>
+            <CookieBanner />
+            <div className="flex min-h-screen flex-col bg-[var(--background)] text-[var(--foreground)]">
+              <DestinyHeader />
+              <main className="mx-auto w-full max-w-6xl flex-1 px-4 pb-16 pt-8 lg:px-8">
+                {children}
+              </main>
+              <DestinyFooter />
+            </div>
+            <AnalyticsGate />
+          </GlobalAudioProvider>
         </Providers>
       </body>
     </html>

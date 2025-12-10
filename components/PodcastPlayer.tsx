@@ -225,9 +225,9 @@ export default function PodcastPlayer({
         <div className="absolute -right-10 bottom-0 h-32 w-32 rounded-full bg-[radial-gradient(circle_at_40%_40%,rgba(8,87,186,0.22),transparent_60%)] blur-3xl" />
       </div>
 
-      <div className="relative space-y-5 px-5 py-5 sm:px-7">
-        <div className="flex flex-wrap items-center justify-between gap-2 text-[13px] text-black/70 dark:text-white/70">
-          <div className="flex items-center gap-2">
+      <div className="relative space-y-5 px-4 py-5 sm:px-7">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-2 text-[13px] text-black/70 dark:text-white/70">
             <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-black/5 text-black dark:bg-white/5 dark:text-white">
               <Icon name="graphic_eq" size={18} />
             </span>
@@ -238,55 +238,89 @@ export default function PodcastPlayer({
               </p>
             </div>
           </div>
-          {resumeBadgeValue ? (
-            <span className="inline-flex items-center gap-1 rounded-full bg-black/5 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-black dark:bg-white/10 dark:text-white">
-              <Icon name="schedule" size={16} />
-              Resume {resumeBadgeValue}
-            </span>
-          ) : (
-            <a
-              href={audioUrl}
-              download
-              className="inline-flex items-center gap-1 rounded-full border border-black/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-black transition hover:border-black/30 hover:bg-black/5 dark:border-white/10 dark:text-white dark:hover:border-white/40 dark:hover:bg-white/5"
+
+          <div className="flex flex-wrap items-center gap-2 text-[12px] font-semibold text-black/70 dark:text-white/70 sm:justify-end">
+            {resumeBadgeValue ? (
+              <span className="inline-flex items-center gap-1 rounded-full bg-black/5 px-3 py-1 text-[11px] uppercase tracking-[0.12em] text-black dark:bg-white/10 dark:text-white">
+                <Icon name="schedule" size={16} />
+                Resume {resumeBadgeValue}
+              </span>
+            ) : (
+              <a
+                href={audioUrl}
+                download
+                className="inline-flex items-center gap-1 rounded-full border border-black/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-black transition hover:border-black/30 hover:bg-black/5 dark:border-white/10 dark:text-white dark:hover:border-white/40 dark:hover:bg-white/5"
+              >
+                <Icon name="download" size={16} />
+                Download
+              </a>
+            )}
+
+            <button
+              type="button"
+              onClick={changeRate}
+              className="group inline-flex items-center gap-1 rounded-full border border-black/10 bg-black/5 px-3 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-black transition hover:border-black/25 hover:bg-black/10 dark:border-white/10 dark:bg-white/5 dark:text-white dark:hover:border-white/40 dark:hover:bg-white/10"
             >
-              <Icon name="download" size={16} />
-              Download
-            </a>
-          )}
+              {playbackRate.toFixed(2).replace(/\.00$/, "")}x
+              <Icon
+                name="speed"
+                size={16}
+                className="text-black/60 transition group-hover:text-black dark:text-white/60 dark:group-hover:text-white"
+              />
+            </button>
+          </div>
         </div>
 
-        <div className="flex items-center justify-center gap-3 sm:gap-5">
-          <button
-            type="button"
-            onClick={changeRate}
-            className="group inline-flex items-center gap-1 rounded-full border border-black/10 bg-black/5 px-3 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-black transition hover:border-black/25 hover:bg-black/10 dark:border-white/10 dark:bg-white/5 dark:text-white dark:hover:border-white/40 dark:hover:bg-white/10"
-          >
-            {playbackRate.toFixed(2).replace(/\.00$/, "")}x
-            <Icon
-              name="speed"
-              size={16}
-              className="text-black/60 transition group-hover:text-black dark:text-white/60 dark:group-hover:text-white"
+        <div className="rounded-2xl bg-white/60 p-3 shadow-sm ring-1 ring-black/5 backdrop-blur dark:bg-white/5 dark:ring-white/10 sm:bg-transparent sm:p-0 sm:shadow-none sm:ring-0">
+          <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-3">
+            <IconButton
+              icon="replay_10"
+              label="Back 15 seconds"
+              badge="15"
+              onClick={() => skipBy(-15)}
+              className="h-11 w-11 sm:h-12 sm:w-12"
             />
-          </button>
+            <IconButton
+              icon="skip_previous"
+              label="Restart"
+              onClick={() => handleSeek(0)}
+              className="h-11 w-11 sm:h-12 sm:w-12"
+            />
 
-          <IconButton icon="replay_10" label="Back 15 seconds" badge="15" onClick={() => skipBy(-15)} />
-          <IconButton icon="skip_previous" label="Restart" onClick={() => handleSeek(0)} />
+            <div className="basis-full flex justify-center sm:basis-auto">
+              <button
+                type="button"
+                aria-label={effectiveIsPlaying ? "Pause podcast" : "Play podcast"}
+                onClick={togglePlay}
+                className="relative flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-b from-[#f8962e] via-[#f58021] to-[#e56a11] text-white shadow-[0_12px_32px_rgba(245,128,33,0.42)] transition hover:scale-105 focus:outline-none focus:ring-2 focus:ring-[rgba(245,128,33,0.45)] sm:h-[72px] sm:w-[72px]"
+              >
+                <Icon name={effectiveIsPlaying ? "pause" : "play_arrow"} size={32} />
+              </button>
+            </div>
 
-          <button
-            type="button"
-            aria-label={effectiveIsPlaying ? "Pause podcast" : "Play podcast"}
-            onClick={togglePlay}
-            className="relative flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-b from-[#f8962e] via-[#f58021] to-[#e56a11] text-white shadow-[0_12px_32px_rgba(245,128,33,0.42)] transition hover:scale-105 focus:outline-none focus:ring-2 focus:ring-[rgba(245,128,33,0.45)]"
-          >
-            <Icon name={effectiveIsPlaying ? "pause" : "play_arrow"} size={32} />
-          </button>
-
-          <IconButton icon="skip_next" label="Skip ahead" onClick={() => skipBy(30)} />
-          <IconButton icon="forward_10" label="Ahead 15 seconds" badge="15" onClick={() => skipBy(15)} />
-          <IconButton icon={muted ? "volume_off" : "volume_up"} label={muted ? "Unmute" : "Mute"} onClick={toggleMute} />
+            <IconButton
+              icon="skip_next"
+              label="Skip ahead"
+              onClick={() => skipBy(30)}
+              className="h-11 w-11 sm:h-12 sm:w-12"
+            />
+            <IconButton
+              icon="forward_10"
+              label="Ahead 15 seconds"
+              badge="15"
+              onClick={() => skipBy(15)}
+              className="h-11 w-11 sm:h-12 sm:w-12"
+            />
+            <IconButton
+              icon={muted ? "volume_off" : "volume_up"}
+              label={muted ? "Unmute" : "Mute"}
+              onClick={toggleMute}
+              className="h-11 w-11 sm:h-12 sm:w-12"
+            />
+          </div>
         </div>
 
-        <div className="flex items-center gap-3 text-[12px] font-semibold text-black/70 dark:text-white/70">
+        <div className="flex flex-col gap-2 text-[12px] font-semibold text-black/70 dark:text-white/70 sm:flex-row sm:items-center sm:gap-3">
           <span className="tabular-nums text-black/80 dark:text-white/80">{formatTime(effectiveCurrentTime)}</span>
           <div className="relative flex-1">
             <div className="absolute inset-0 rounded-full bg-black/10 dark:bg-white/15" aria-hidden />
@@ -302,7 +336,7 @@ export default function PodcastPlayer({
               step={0.1}
               value={Math.min(effectiveCurrentTime, effectiveDuration)}
               onChange={(event) => handleSeek(Number(event.target.value))}
-              className="relative z-10 h-2 w-full cursor-pointer appearance-none bg-transparent focus:outline-none [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-[--accent-orange] [&::-webkit-slider-thumb]:shadow-[0_2px_10px_rgba(0,0,0,0.35)] [&::-moz-range-thumb]:h-4 [&::-moz-range-thumb]:w-4 [&::-moz-range-thumb]:appearance-none [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:bg-[--accent-orange] [&::-moz-range-thumb]:shadow-[0_2px_10px_rgba(0,0,0,0.35)]"
+              className="relative z-10 h-3 w-full cursor-pointer appearance-none bg-transparent focus:outline-none [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-[--accent-orange] [&::-webkit-slider-thumb]:shadow-[0_2px_10px_rgba(0,0,0,0.35)] [&::-moz-range-thumb]:h-5 [&::-moz-range-thumb]:w-5 [&::-moz-range-thumb]:appearance-none [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:bg-[--accent-orange] [&::-moz-range-thumb]:shadow-[0_2px_10px_rgba(0,0,0,0.35)]"
               aria-label="Seek through audio"
             />
           </div>
@@ -343,15 +377,16 @@ type ControlButtonProps = {
   label: string;
   badge?: string;
   onClick: () => void;
+  className?: string;
 };
 
-function IconButton({ icon, label, badge, onClick }: ControlButtonProps) {
+function IconButton({ icon, label, badge, onClick, className = "h-12 w-12" }: ControlButtonProps) {
   return (
     <button
       type="button"
       onClick={onClick}
       aria-label={label}
-      className="relative inline-flex h-12 w-12 items-center justify-center rounded-full border border-black/10 bg-black/5 text-black shadow-[0_8px_20px_rgba(0,0,0,0.25)] transition hover:-translate-y-0.5 hover:border-black/30 hover:bg-black/10 focus:outline-none focus:ring-2 focus:ring-[rgba(245,128,33,0.35)] dark:border-white/8 dark:bg-white/5 dark:text-white dark:hover:border-white/40 dark:hover:bg-white/10 dark:focus:ring-white/60"
+      className={`relative inline-flex items-center justify-center rounded-full border border-black/10 bg-black/5 text-black shadow-[0_8px_20px_rgba(0,0,0,0.25)] transition hover:-translate-y-0.5 hover:border-black/30 hover:bg-black/10 focus:outline-none focus:ring-2 focus:ring-[rgba(245,128,33,0.35)] dark:border-white/8 dark:bg-white/5 dark:text-white dark:hover:border-white/40 dark:hover:bg-white/10 dark:focus:ring-white/60 ${className}`}
     >
       <Icon name={icon} size={22} />
       {badge ? (

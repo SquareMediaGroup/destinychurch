@@ -7,7 +7,12 @@ import { getSupabaseAdmin } from "@/lib/supabase";
 import { verifyAdminUser, createAdminUser, deleteAdminUser } from "@/lib/adminUsers";
 import { syncSermons } from "@/lib/sync";
 import { createPlaylistRecord } from "@/lib/playlists";
-import { SermonRow } from "@/lib/db";
+
+type MinimalSermonRow = {
+  id: string;
+  youtube_video_id?: string | null;
+  podcast_guid?: string | null;
+};
 
 const ADMIN_COOKIE = "destiny-admin";
 const ADMIN_ROLE_COOKIE = "destiny-admin-role";
@@ -268,7 +273,7 @@ export async function createPlaylistAction(formData: FormData) {
   const byId = new Map<string, string>();
   const byYoutube = new Map<string, string>();
   const byPodcast = new Map<string, string>();
-  (sermons || []).forEach((row: SermonRow) => {
+  (sermons || []).forEach((row: MinimalSermonRow) => {
     if (row.id) byId.set(row.id, row.id);
     if (row.youtube_video_id) byYoutube.set(row.youtube_video_id, row.id);
     if (row.podcast_guid) byPodcast.set(row.podcast_guid, row.id);

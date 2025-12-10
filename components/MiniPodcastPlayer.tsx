@@ -1,5 +1,6 @@
 "use client";
 
+import { type CSSProperties } from "react";
 import Icon from "./Icon";
 
 const ACCENT_ORANGE = "#F58021";
@@ -28,7 +29,7 @@ export default function MiniPodcastPlayer({
   return (
     <div
       className="relative flex items-center justify-between gap-3 rounded-2xl border border-white/15 bg-[linear-gradient(135deg,rgba(255,255,255,0.82),rgba(238,238,245,0.66))] px-3 py-2 text-black shadow-[0_12px_32px_rgba(0,0,0,0.12)] backdrop-blur-2xl dark:border-white/10 dark:bg-[linear-gradient(135deg,rgba(8,8,10,0.9),rgba(2,2,4,0.82))] dark:text-white"
-      style={{ ["--accent-orange"]: ACCENT_ORANGE }}
+      style={{ "--accent-orange": ACCENT_ORANGE } as CSSProperties}
     >
       <div className="flex items-center gap-2 overflow-hidden">
         <button

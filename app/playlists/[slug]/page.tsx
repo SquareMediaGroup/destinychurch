@@ -1,7 +1,6 @@
 import Link from "next/link";
 import PlaylistViewer from "@/components/PlaylistViewer";
-import { getPlaylistBySlugOrId, listPublicPlaylists } from "@/lib/playlists";
-import { slugify } from "@/lib/playlists";
+import { getPlaylistBySlugOrId, listPublicPlaylists, slugify } from "@/lib/playlists";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -12,18 +11,29 @@ type PlaylistPageProps = {
 
 export default async function PlaylistPage({ params }: PlaylistPageProps) {
   const rawSlug = params.slug ?? "";
-  const slug = rawSlug ? decodeURIComponent(rawSlug) : "";
-  const playlistList = await listPublicPlaylists(50);
+  const slug = rawSlug ? decodeURIComponent(rawSlug).trim() : "";
+  const normalizedSlug = slugify(slug);
+
+  const playlistList = await listPublicPlaylists(200);
+
   const playlist =
+    playlistList.find((p) => {
+      const slugVariants = [
+        p.slug,
+        slugify(p.slug || ""),
+        slugify(p.title || ""),
+      ].filter(Boolean);
+      return (
+        slugVariants.some(
+          (candidate) =>
+            candidate === slug ||
+            candidate === normalizedSlug ||
+            candidate.toLowerCase() === slug.toLowerCase(),
+        ) || p.id === slug
+      );
+    }) ||
     (await getPlaylistBySlugOrId(slug)) ||
-    (await getPlaylistBySlugOrId(slugify(slug))) ||
-    playlistList.find(
-      (p) =>
-        p.slug === slug ||
-        p.slug === slugify(slug) ||
-        p.slug?.toLowerCase() === slug.toLowerCase() ||
-        p.id === slug,
-    );
+    (await getPlaylistBySlugOrId(normalizedSlug));
 
   if (!playlist) {
     return (

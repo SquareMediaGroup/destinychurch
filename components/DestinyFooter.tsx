@@ -21,8 +21,8 @@ const footerSections = [
     title: "Legal",
     links: [
       { label: "Cookies", href: "/cookies" },
-      { label: "Privacy Policy", href: "/privacy-policy" },
-      { label: "Terms of Service", href: "/terms-of-service" },
+      { label: "Privacy Policy", href: "https://destinytees.uk/privacy-policy" },
+      { label: "Terms of Service", href: "https://destinytees.uk/terms-of-service" },
     ],
   },
 ];
@@ -64,7 +64,7 @@ export default function DestinyFooter() {
             </p>
             <div className="flex flex-wrap gap-2 text-[11px] font-semibold uppercase tracking-wide text-destiny-grey/70">
               <span className="rounded-full border border-[var(--border-subtle)] bg-[var(--surface-muted)] px-3 py-1 text-destiny-grey">
-                Sundays at 10:30am
+                Sundays at 11:00am
               </span>
               <span className="rounded-full border border-[var(--border-subtle)] bg-[var(--surface-muted)] px-3 py-1 text-destiny-grey">
                 Online + in person

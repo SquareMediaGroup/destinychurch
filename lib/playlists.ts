@@ -92,7 +92,7 @@ export async function listPublicPlaylists(limit = 20): Promise<Playlist[]> {
   const { data, error } = await supabase
     .from("playlists")
     .select(baseSelect)
-    .eq("is_public", true)
+    .or("is_public.eq.true,is_public.is.null")
     .order("created_at", { ascending: false })
     .order("position", { foreignTable: "playlist_items", ascending: true })
     .limit(limit);
@@ -114,7 +114,12 @@ export async function getPlaylistBySlugOrId(
   const trimmed = identifier.trim();
   if (!trimmed) return null;
   const altSlug = slugify(trimmed);
-  const orFilters = [`slug.eq.${trimmed}`, `id.eq.${trimmed}`];
+  const lowered = trimmed.toLowerCase();
+  const orFilters = [
+    `slug.eq.${trimmed}`,
+    `slug.eq.${lowered}`,
+    `id.eq.${trimmed}`,
+  ];
   if (altSlug && altSlug !== trimmed) {
     orFilters.push(`slug.eq.${altSlug}`);
   }
@@ -126,7 +131,7 @@ export async function getPlaylistBySlugOrId(
     .order("position", { foreignTable: "playlist_items", ascending: true });
 
   if (!includePrivate) {
-    query = query.eq("is_public", true);
+    query = query.or("is_public.eq.true,is_public.is.null");
   }
 
   const { data, error } = await query.maybeSingle();

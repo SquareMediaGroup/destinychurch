@@ -36,8 +36,6 @@ const formatTime = (value?: number) => {
   return `${minutes}:${seconds.toString().padStart(2, "0")}`;
 };
 
-const clampPercent = (value: number) => Math.min(Math.max(value, 0), 100);
-
 export default function VideoPlayer({
   sermonId,
   title,
@@ -61,10 +59,6 @@ export default function VideoPlayer({
   );
   const resumeFrom = resumeDetails?.lastPosition ?? 0;
   const resumeDuration = resumeDetails?.durationSeconds ?? durationSeconds;
-  const resumePercent =
-    resumeDuration && resumeDuration > 0
-      ? clampPercent((resumeFrom / resumeDuration) * 100)
-      : null;
   const durationLabel = durationSeconds ? formatTime(durationSeconds) : null;
 
   useEffect(() => {
@@ -117,12 +111,10 @@ export default function VideoPlayer({
         title={title}
         youtubeVideoId={youtubeVideoId}
         durationLabel={durationLabel}
-          resumeFrom={resumeFrom}
-          resumePercent={resumePercent}
-        />
-      </div>
-    );
-  }
+      />
+    </div>
+  );
+}
 
   if (!decided || !mediaAllowed) {
     return <BlockedVideo title={title} />;
@@ -149,17 +141,11 @@ export default function VideoPlayer({
           <source src={videoUrl ?? FALLBACK_VIDEO} type="video/mp4" />
           Sorry, your browser does not support embedded videos.
         </video>
-        <VideoOverlays
-          durationLabel={durationLabel}
-          resumeFrom={resumeFrom}
-          resumePercent={resumePercent}
-        />
+        <VideoOverlays durationLabel={durationLabel} />
       </div>
       <VideoFooter
         title={title}
         durationLabel={durationLabel}
-        resumeFrom={resumeFrom}
-        resumePercent={resumePercent}
       />
     </div>
   );
@@ -190,16 +176,12 @@ function BlockedVideo({ title }: { title: string }) {
 type VideoMetaProps = {
   title: string;
   durationLabel?: string | null;
-  resumeFrom?: number;
-  resumePercent?: number | null;
   youtubeVideoId?: string;
 };
 
 function VideoFooter({
   title,
   durationLabel,
-  resumeFrom,
-  resumePercent,
   youtubeVideoId,
 }: VideoMetaProps) {
   return (
@@ -210,7 +192,7 @@ function VideoFooter({
             {title}
           </p>
           <p className="text-sm text-destiny-grey">
-            {durationLabel ? `${durationLabel} • Saves your spot on this device` : "Saves your spot on this device"}
+            {durationLabel ? `${durationLabel} • Video playback` : "Video playback"}
           </p>
         </div>
         {youtubeVideoId ? (
@@ -229,35 +211,16 @@ function VideoFooter({
           </span>
         )}
       </div>
-
-      {resumePercent !== null && resumeFrom ? (
-        <div className="flex items-center gap-2 rounded-xl bg-destiny-orange/5 px-3 py-2 text-xs font-semibold text-destiny-orange">
-          <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-destiny-orange text-white">
-            <Icon name="replay" size={16} />
-          </span>
-          <span>
-            Resume from {formatTime(resumeFrom)} ({Math.round(resumePercent)}%)
-          </span>
-        </div>
-      ) : (
-        <div className="rounded-xl bg-destiny-blue/5 px-3 py-2 text-xs font-semibold uppercase tracking-wide text-destiny-blue">
-          Tip: rotate your phone for a larger view.
-        </div>
-      )}
     </div>
   );
 }
 
 type VideoOverlayProps = {
   durationLabel?: string | null;
-  resumeFrom?: number;
-  resumePercent?: number | null;
 };
 
 function VideoOverlays({
   durationLabel,
-  resumeFrom,
-  resumePercent,
 }: VideoOverlayProps) {
   return (
     <div className="pointer-events-none absolute inset-0">
@@ -274,25 +237,6 @@ function VideoOverlays({
           </span>
         ) : null}
       </div>
-      {resumePercent !== null && resumeFrom ? (
-        <div className="absolute inset-x-3 bottom-3 space-y-2">
-          <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-white">
-            <span className="inline-flex items-center rounded-full bg-black/50 px-2.5 py-1 backdrop-blur">
-              Resume {formatTime(resumeFrom)}
-            </span>
-          </div>
-          <div className="h-1.5 overflow-hidden rounded-full bg-white/30 backdrop-blur">
-            <div
-              className="h-full rounded-full bg-destiny-orange shadow-[0_6px_30px_rgba(245,128,33,0.45)]"
-              style={{ width: `${resumePercent}%` }}
-            />
-          </div>
-        </div>
-      ) : (
-        <div className="absolute left-3 bottom-3 rounded-full bg-white/20 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-white backdrop-blur">
-          Saves your place as you watch
-        </div>
-      )}
     </div>
   );
 }

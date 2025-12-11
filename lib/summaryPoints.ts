@@ -80,7 +80,7 @@ function parseModelResponse(raw: string): ModelResponse | null {
 
         return { title, description, segment_id: segmentId };
       })
-      .filter((point): point is ModelPoint => Boolean(point));
+      .filter((point: ModelPoint | null): point is ModelPoint => Boolean(point));
 
     if (!points.length) return null;
 

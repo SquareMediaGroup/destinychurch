@@ -13,7 +13,7 @@ import {
   updateSermonMeta,
 } from "./actions";
 import { cleanDuplicates } from "./cleanup";
-import { processSermon } from "./process";
+import { processSermon, processSermonV2 } from "./process";
 import ConfirmSubmit from "@/components/ConfirmSubmit";
 import { listReports } from "@/lib/reports";
 import PlaylistComposer from "@/components/PlaylistComposer";
@@ -413,102 +413,155 @@ function SermonTable({ sermons }: { sermons: Awaited<ReturnType<typeof listSermo
         </div>
       </div>
       <div className="divide-y divide-black/5">
-        {sermons.map((sermon) => (
-          <div key={sermon.id} className="bg-[var(--surface-muted)] px-4 py-5">
-            <div className="grid gap-4 md:grid-cols-[1.6fr_1fr] md:items-start">
-              <form
-                id={`edit-${sermon.id}`}
-                action={updateSermonMeta}
-                className="space-y-3"
-                aria-label={`Edit ${sermon.title}`}
-              >
-                <input type="hidden" name="id" value={sermon.id} />
-                <label className="space-y-1 text-sm font-semibold text-[var(--foreground)]">
-                  <span className="text-xs uppercase tracking-wide text-destiny-grey/70">Title</span>
-                  <input
-                    type="text"
-                    name="title"
-                    defaultValue={sermon.title}
-                    className="w-full rounded-xl border border-black/10 bg-[var(--surface)] px-3 py-2 text-sm outline-none transition focus:border-destiny-orange focus:ring-2 focus:ring-destiny-orange/30"
-                  />
-                </label>
-                <label className="space-y-1 text-sm font-semibold text-[var(--foreground)]">
-                  <span className="text-xs uppercase tracking-wide text-destiny-grey/70">Podcast link or GUID</span>
-                  <input
-                    type="text"
-                    name="podcast"
-                    defaultValue={sermon.podcastAudioUrl || sermon.podcastGuid || ""}
-                    placeholder="Podcast link or GUID (leave empty to unlink)"
-                    className="w-full rounded-xl border border-black/10 bg-[var(--surface)] px-3 py-2 text-sm outline-none transition focus:border-destiny-orange focus:ring-2 focus:ring-destiny-orange/30"
-                  />
-                </label>
-                <label className="space-y-1 text-sm font-semibold text-[var(--foreground)]">
-                  <span className="text-xs uppercase tracking-wide text-destiny-grey/70">YouTube URL or ID</span>
-                  <input
-                    type="text"
-                    name="video"
-                    defaultValue={
-                      sermon.youtubeVideoId ? `https://www.youtube.com/watch?v=${sermon.youtubeVideoId}` : ""
+        {sermons.map((sermon) => {
+          const hasTranscript = Boolean(sermon.transcript);
+          const hasSummary = Boolean(sermon.summary);
+          const hasSummaryPoints = Boolean(sermon.summaryPoints?.points?.length);
+
+          return (
+            <div key={sermon.id} className="bg-[var(--surface-muted)] px-4 py-5">
+              <div className="grid gap-4 md:grid-cols-[1.6fr_1fr] md:items-start">
+                <form
+                  id={`edit-${sermon.id}`}
+                  action={updateSermonMeta}
+                  className="space-y-3"
+                  aria-label={`Edit ${sermon.title}`}
+                >
+                  <input type="hidden" name="id" value={sermon.id} />
+                  <label className="space-y-1 text-sm font-semibold text-[var(--foreground)]">
+                    <span className="text-xs uppercase tracking-wide text-destiny-grey/70">Title</span>
+                    <input
+                      type="text"
+                      name="title"
+                      defaultValue={sermon.title}
+                      className="w-full rounded-xl border border-black/10 bg-[var(--surface)] px-3 py-2 text-sm outline-none transition focus:border-destiny-orange focus:ring-2 focus:ring-destiny-orange/30"
+                    />
+                  </label>
+                  <label className="space-y-1 text-sm font-semibold text-[var(--foreground)]">
+                    <span className="text-xs uppercase tracking-wide text-destiny-grey/70">Podcast link or GUID</span>
+                    <input
+                      type="text"
+                      name="podcast"
+                      defaultValue={sermon.podcastAudioUrl || sermon.podcastGuid || ""}
+                      placeholder="Podcast link or GUID (leave empty to unlink)"
+                      className="w-full rounded-xl border border-black/10 bg-[var(--surface)] px-3 py-2 text-sm outline-none transition focus:border-destiny-orange focus:ring-2 focus:ring-destiny-orange/30"
+                    />
+                  </label>
+                  <label className="space-y-1 text-sm font-semibold text-[var(--foreground)]">
+                    <span className="text-xs uppercase tracking-wide text-destiny-grey/70">YouTube URL or ID</span>
+                    <input
+                      type="text"
+                      name="video"
+                      defaultValue={
+                        sermon.youtubeVideoId ? `https://www.youtube.com/watch?v=${sermon.youtubeVideoId}` : ""
+                      }
+                      placeholder="YouTube URL or ID"
+                      className="w-full rounded-xl border border-black/10 bg-[var(--surface)] px-3 py-2 text-sm outline-none transition focus:border-destiny-orange focus:ring-2 focus:ring-destiny-orange/30"
+                    />
+                  </label>
+                  <div className="flex flex-wrap items-center justify-between gap-2 text-[11px] text-destiny-grey/70">
+                    <span>ID: {sermon.id}</span>
+                  </div>
+                </form>
+                <div className="space-y-2 rounded-xl bg-destiny-blue/5 p-3 text-sm text-destiny-grey">
+                  <InfoRow label="YouTube" value={sermon.youtubeVideoId || "—"} />
+                  <InfoRow label="Podcast" value={sermon.podcastGuid || sermon.podcastAudioUrl || "—"} />
+                  <InfoRow
+                    label="AI"
+                    value={
+                      sermon.summary
+                        ? sermon.transcript
+                          ? "Summary + transcript"
+                          : "Summary only"
+                        : "Not processed"
                     }
-                    placeholder="YouTube URL or ID"
-                    className="w-full rounded-xl border border-black/10 bg-[var(--surface)] px-3 py-2 text-sm outline-none transition focus:border-destiny-orange focus:ring-2 focus:ring-destiny-orange/30"
                   />
-                </label>
-                <div className="flex flex-wrap items-center justify-between gap-2 text-[11px] text-destiny-grey/70">
-                  <span>ID: {sermon.id}</span>
+                  <InfoRow
+                    label="Date"
+                    value={sermon.date ? new Date(sermon.date).toLocaleDateString("en-GB") : "—"}
+                  />
                 </div>
-              </form>
-              <div className="space-y-2 rounded-xl bg-destiny-blue/5 p-3 text-sm text-destiny-grey">
-                <InfoRow label="YouTube" value={sermon.youtubeVideoId || "—"} />
-                <InfoRow label="Podcast" value={sermon.podcastGuid || sermon.podcastAudioUrl || "—"} />
-                <InfoRow
-                  label="AI"
-                  value={
-                    sermon.summary
-                      ? sermon.transcript
-                        ? "Summary + transcript"
-                        : "Summary only"
-                      : "Not processed"
-                  }
-                />
-                <InfoRow
-                  label="Date"
-                  value={sermon.date ? new Date(sermon.date).toLocaleDateString("en-GB") : "—"}
-                />
+              </div>
+              <div className="mt-3 rounded-xl border border-black/5 bg-white px-3 py-3 shadow-sm">
+                <div className="flex flex-wrap items-center gap-2 text-[11px] text-destiny-grey/80">
+                  <span className="text-xs font-semibold text-destiny-black">AI Processing</span>
+                  <span className="hidden sm:inline">
+                    V1 = transcript + summary · V2 = structured summary points
+                  </span>
+                  <div className="ml-auto flex flex-wrap gap-1">
+                    <span
+                      className={`rounded-full px-2 py-1 text-[11px] font-semibold ${
+                        hasTranscript
+                          ? "bg-destiny-green/10 text-destiny-green"
+                          : "bg-black/5 text-destiny-grey"
+                      }`}
+                    >
+                      Transcript
+                    </span>
+                    <span
+                      className={`rounded-full px-2 py-1 text-[11px] font-semibold ${
+                        hasSummary
+                          ? "bg-destiny-orange/10 text-destiny-orange"
+                          : "bg-black/5 text-destiny-grey"
+                      }`}
+                    >
+                      Summary
+                    </span>
+                    <span
+                      className={`rounded-full px-2 py-1 text-[11px] font-semibold ${
+                        hasSummaryPoints
+                          ? "bg-destiny-blue/10 text-destiny-blue"
+                          : "bg-black/5 text-destiny-grey"
+                      }`}
+                    >
+                      Points
+                    </span>
+                  </div>
+                </div>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <form action={processSermon}>
+                    <input type="hidden" name="id" value={sermon.id} />
+                    <ConfirmSubmit
+                      className="rounded-full border border-destiny-orange px-4 py-2 text-xs font-semibold text-destiny-orange transition hover:bg-destiny-orange hover:text-white"
+                      confirmMessage="Run AI transcript and summary for this sermon? Uses OpenAI API."
+                      pendingLabel="Processing..."
+                    >
+                      Process AI V1
+                    </ConfirmSubmit>
+                  </form>
+                  <form action={processSermonV2}>
+                    <input type="hidden" name="id" value={sermon.id} />
+                    <ConfirmSubmit
+                      className="rounded-full border border-destiny-blue px-4 py-2 text-xs font-semibold text-destiny-blue transition hover:bg-destiny-blue hover:text-white"
+                      confirmMessage="Run AI V2 summary points for this sermon? Requires transcript segments."
+                      pendingLabel="Processing..."
+                    >
+                      Process AI V2
+                    </ConfirmSubmit>
+                  </form>
+                  <form action={deleteSermon}>
+                    <input type="hidden" name="id" value={sermon.id} />
+                    <ConfirmSubmit
+                      className="rounded-full border border-red-500 px-4 py-2 text-xs font-semibold text-red-600 transition hover:bg-red-500 hover:text-white"
+                      confirmMessage="Delete this sermon? This cannot be undone."
+                      pendingLabel="Deleting..."
+                    >
+                      Delete
+                    </ConfirmSubmit>
+                  </form>
+                  <ConfirmSubmit
+                    form={`edit-${sermon.id}`}
+                    className="rounded-full bg-destiny-orange px-4 py-2 text-xs font-semibold text-white shadow-sm transition hover:brightness-95"
+                    confirmMessage="Save updates to this sermon?"
+                    pendingLabel="Saving..."
+                  >
+                    Save
+                  </ConfirmSubmit>
+                </div>
               </div>
             </div>
-            <div className="mt-3 flex flex-wrap gap-2">
-              <form action={processSermon}>
-                <input type="hidden" name="id" value={sermon.id} />
-                <ConfirmSubmit
-                  className="rounded-full border border-destiny-orange px-4 py-2 text-xs font-semibold text-destiny-orange transition hover:bg-destiny-orange hover:text-white"
-                  confirmMessage="Run AI transcript and summary for this sermon? Uses OpenAI API."
-                  pendingLabel="Processing..."
-                >
-                  Process AI
-                </ConfirmSubmit>
-              </form>
-              <form action={deleteSermon}>
-                <input type="hidden" name="id" value={sermon.id} />
-                <ConfirmSubmit
-                  className="rounded-full border border-red-500 px-4 py-2 text-xs font-semibold text-red-600 transition hover:bg-red-500 hover:text-white"
-                  confirmMessage="Delete this sermon? This cannot be undone."
-                  pendingLabel="Deleting..."
-                >
-                  Delete
-                </ConfirmSubmit>
-              </form>
-              <ConfirmSubmit
-                form={`edit-${sermon.id}`}
-                className="rounded-full bg-destiny-orange px-4 py-2 text-xs font-semibold text-white shadow-sm transition hover:brightness-95"
-                confirmMessage="Save updates to this sermon?"
-                pendingLabel="Saving..."
-              >
-                Save
-              </ConfirmSubmit>
-            </div>
-          </div>
-        ))}
+          );
+        })}
         {sermons.length === 0 && (
           <div className="px-4 py-6 text-sm text-destiny-grey">No sermons yet. Run a sync to begin.</div>
         )}

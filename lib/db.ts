@@ -1,5 +1,5 @@
 import { getSupabaseAdmin, tryGetSupabaseAdmin } from "./supabase";
-import { Sermon } from "./types";
+import { Sermon, type SummaryPointsPayload } from "./types";
 
 export type SermonRow = {
   id: string;
@@ -12,6 +12,7 @@ export type SermonRow = {
   podcast_audio_url?: string;
   thumbnail_url?: string;
   summary?: string;
+  summary_points?: SummaryPointsPayload | null;
   transcript?: string;
 };
 
@@ -27,6 +28,12 @@ export const mapRowToSermon = (row: SermonRow): Sermon => ({
   podcastAudioUrl: row.podcast_audio_url ?? undefined,
   thumbnailUrl: row.thumbnail_url || "/destiny-logo.svg",
   summary: row.summary ?? undefined,
+  summaryPoints:
+    row.summary_points &&
+    typeof row.summary_points === "object" &&
+    Array.isArray((row.summary_points as SummaryPointsPayload).points)
+      ? (row.summary_points as SummaryPointsPayload)
+      : undefined,
   transcript: row.transcript ?? undefined,
 });
 

@@ -26,9 +26,6 @@ export default async function SermonsPage() {
           <h2 className="text-xl font-semibold text-destiny-black">
             Latest uploads
           </h2>
-          <p className="text-sm text-destiny-grey/80">
-            Updated automatically from YouTube + podcast
-          </p>
         </div>
         <SermonSearch sermons={sermons} />
       </section>

@@ -31,7 +31,7 @@ export default function SermonCard({ sermon, priority = false }: SermonCardProps
     <Link
       href={href}
       aria-label={`Watch ${sermon.title} by ${speaker} from ${formatDate(sermon.date)}`}
-      className="group block overflow-hidden rounded-xl border border-black/5 bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-lg"
+      className="group block overflow-hidden rounded-xl border border-black/5 bg-white shadow-sm transition-transform duration-500 hover:-translate-y-1 hover:shadow-lg"
     >
       <div className="relative aspect-video overflow-hidden bg-destiny-grey/5">
         <Image
@@ -41,7 +41,7 @@ export default function SermonCard({ sermon, priority = false }: SermonCardProps
           sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
           priority={priority}
           fetchPriority={priority ? "high" : undefined}
-          className="object-cover transition duration-300 group-hover:scale-[1.02]"
+          className="object-cover transition-transform duration-500 ease-out group-hover:scale-[1.02]"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-black/10 to-transparent opacity-90" />
         {durationLabel && (

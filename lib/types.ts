@@ -1,3 +1,15 @@
+export type SummaryPoint = {
+  id: string;
+  order_index: number;
+  title: string;
+  description: string;
+  start_seconds: number;
+};
+
+export type SummaryPointsPayload = {
+  points: SummaryPoint[];
+};
+
 export type Sermon = {
   id: string;
   title: string;
@@ -12,6 +24,7 @@ export type Sermon = {
   thumbnailUrl: string;
   durationSeconds?: number;
   summary?: string;
+  summaryPoints?: SummaryPointsPayload;
   transcript?: string;
   tags?: string[];
 };

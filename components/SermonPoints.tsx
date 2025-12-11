@@ -1,0 +1,143 @@
+"use client";
+
+import { useMemo, useState } from "react";
+import type { SummaryPoint } from "@/lib/types";
+
+type SermonPointsProps = {
+  points?: SummaryPoint[];
+  onJump?: (seconds: number) => void;
+};
+
+const gradients = [
+  "from-destiny-orange/15 via-white to-destiny-orange/5",
+  "from-destiny-blue/15 via-white to-destiny-blue/5",
+  "from-destiny-green/15 via-white to-destiny-green/5",
+  "from-destiny-purple/15 via-white to-destiny-purple/5",
+];
+
+const formatTime = (seconds: number) => {
+  const total = Math.max(0, Math.floor(seconds || 0));
+  const mins = Math.floor(total / 60);
+  const secs = total % 60;
+  return `${mins}:${secs.toString().padStart(2, "0")}`;
+};
+
+export default function SermonPoints({ points, onJump }: SermonPointsProps) {
+  const sorted = useMemo(
+    () => (points || []).slice().sort((a, b) => a.order_index - b.order_index),
+    [points],
+  );
+
+  const [openId, setOpenId] = useState<string | null>(sorted[0]?.id ?? null);
+
+  if (!sorted.length) return null;
+
+  const handleJump = (seconds: number) => {
+    if (onJump) {
+      onJump(seconds);
+      return;
+    }
+    const video = document.querySelector("video");
+    if (video) {
+      try {
+        video.currentTime = seconds;
+        video.play?.();
+        return;
+      } catch (error) {
+        console.warn("Unable to seek video", error);
+      }
+    }
+    const audio = document.querySelector("audio");
+    if (audio) {
+      try {
+        audio.currentTime = seconds;
+        audio.play?.();
+        return;
+      } catch (error) {
+        console.warn("Unable to seek audio", error);
+      }
+    }
+  };
+
+  return (
+    <section className="overflow-hidden rounded-3xl border border-black/5 bg-white shadow-[0_18px_60px_rgba(0,0,0,0.08)]">
+      <div className="flex flex-wrap items-center gap-3 px-4 py-4 sm:px-5 sm:py-5">
+        <div>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-destiny-grey/70">
+            Sermon points
+          </p>
+          <p className="text-sm text-destiny-grey">Tap to expand; jump to the exact timestamp.</p>
+        </div>
+        <span className="rounded-full bg-destiny-blue/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-destiny-blue">
+          {sorted.length} points
+        </span>
+      </div>
+
+      <div className="space-y-3 border-t border-black/5 px-3 py-4 sm:px-5">
+        <div className="flex gap-3 overflow-x-auto pb-2 sm:grid sm:grid-cols-2 sm:gap-4 sm:overflow-visible">
+          {sorted.map((point, idx) => {
+            const active = openId === point.id;
+            return (
+              <div
+                key={point.id}
+                className={`group relative min-w-[240px] flex-1 snap-center rounded-2xl border border-black/5 bg-gradient-to-br ${gradients[idx % gradients.length]} p-[1px] shadow-[0_14px_40px_rgba(0,0,0,0.12)] transition hover:-translate-y-0.5`}
+              >
+                <button
+                  type="button"
+                  onClick={() => setOpenId(active ? null : point.id)}
+                  className="block w-full rounded-[22px] bg-white/85 p-4 text-left transition hover:bg-white"
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="inline-flex items-center rounded-full bg-black/5 px-2 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-destiny-grey">
+                      P{idx + 1}
+                    </span>
+                    <span className="inline-flex items-center rounded-full bg-destiny-orange/10 px-2.5 py-1 text-[11px] font-semibold text-destiny-orange">
+                      {formatTime(point.start_seconds)}
+                    </span>
+                  </div>
+                  <p className="mt-3 text-base font-semibold leading-tight text-destiny-black">
+                    {point.title}
+                  </p>
+                  <p
+                    className={`mt-2 text-sm text-destiny-grey transition-all ${
+                      active ? "line-clamp-none" : "line-clamp-2"
+                    }`}
+                  >
+                    {point.description}
+                  </p>
+                  <div className="mt-3 flex items-center justify-between text-xs font-semibold text-destiny-orange">
+                    <span className="inline-flex items-center gap-1">
+                      <span className="h-2 w-2 rounded-full bg-destiny-orange" />
+                      {active ? "Hide details" : "View details"}
+                    </span>
+                    <span className={`material-symbols-outlined text-base transition ${active ? "rotate-180" : ""}`}>
+                      expand_more
+                    </span>
+                  </div>
+                </button>
+
+                {active && (
+                  <div className="mt-2 flex flex-wrap items-center justify-between gap-2 rounded-xl bg-white/90 px-4 py-3">
+                    <div className="text-xs text-destiny-grey">
+                      Start at{" "}
+                      <span className="font-semibold text-destiny-black">
+                        {formatTime(point.start_seconds)}
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleJump(point.start_seconds)}
+                      className="inline-flex items-center justify-center rounded-full bg-destiny-orange px-4 py-2 text-xs font-semibold uppercase tracking-[0.12em] text-white shadow-sm transition hover:brightness-95"
+                    >
+                      Jump to point
+                    </button>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </section>
+  );
+}

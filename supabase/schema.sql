@@ -11,10 +11,14 @@ create table if not exists sermons (
   youtube_pub_date timestamptz,
   thumbnail_url text,
   summary text,
+  summary_points jsonb,
   transcript text,
   created_at timestamptz default timezone('utc', now()),
   updated_at timestamptz default timezone('utc', now())
 );
+
+alter table if exists sermons
+  add column if not exists summary_points jsonb;
 
 create table if not exists sermon_link_suggestions (
   id uuid primary key default gen_random_uuid(),
@@ -60,3 +64,11 @@ create table if not exists playlist_items (
 
 create index if not exists playlist_items_playlist_position_idx
   on playlist_items (playlist_id, position);
+
+create table if not exists sermon_transcripts (
+  sermon_id text primary key references sermons (id) on delete cascade,
+  segments jsonb not null,
+  status text,
+  created_at timestamptz default timezone('utc', now()),
+  updated_at timestamptz default timezone('utc', now())
+);

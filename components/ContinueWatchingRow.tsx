@@ -58,7 +58,7 @@ export default function ContinueWatchingRow({
             <Link
               key={entry.sermonId}
               href={`/sermons/view?viewId=${encodeURIComponent(viewId)}`}
-              className="min-w-[260px] max-w-[280px] flex-1 rounded-xl border border-black/5 bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-lg"
+              className="min-w-[260px] max-w-[280px] flex-1 rounded-xl border border-black/5 bg-white shadow-sm transition-transform duration-500 hover:-translate-y-1 hover:shadow-lg"
             >
               <div className="relative aspect-video overflow-hidden rounded-t-xl bg-destiny-grey/5">
                 <Image

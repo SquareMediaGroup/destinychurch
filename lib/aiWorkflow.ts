@@ -5,6 +5,7 @@ import { mapRowToSermon, SermonRow } from "./db";
 import { generateSermonSummary, formatSummaryBullets } from "./summary";
 import { getSupabaseAdmin } from "./supabase";
 import { Sermon } from "./types";
+import { upsertTranscriptSegments } from "./transcriptSegments";
 import { transcribeAudio } from "./whisper";
 
 type ProcessStatus = "created" | "skipped";
@@ -115,7 +116,8 @@ export async function processSermonAI(
     );
   } else {
     try {
-      const generated = cleanText(await transcribeAudio(audioUrl));
+      const { text: generatedText, segments } = await transcribeAudio(audioUrl);
+      const generated = cleanText(generatedText);
       if (!generated) {
         throw new Error("Whisper returned an empty transcript.");
       }
@@ -125,6 +127,18 @@ export async function processSermonAI(
       console.info(
         `[ai] Transcript saved for ${sermonId} (${transcript.length.toLocaleString()} chars).`,
       );
+
+      if (segments.length) {
+        try {
+          await upsertTranscriptSegments(client, sermonId, segments);
+        } catch (segmentError) {
+          console.warn(
+            `[ai] Transcript saved but segments were not stored for ${sermonId}`,
+            segmentError,
+          );
+        }
+      }
+
       result.transcriptStatus = "created";
       result.transcriptLength = transcript.length;
     } catch (error) {

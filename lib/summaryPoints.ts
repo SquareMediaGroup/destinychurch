@@ -1,18 +1,18 @@
 import "server-only";
 
+import type { SupabaseClient } from "@supabase/supabase-js";
 import OpenAI from "openai";
-import type { SummaryPoint, SummaryPointsPayload } from "./types";
+import type { SummaryPoint, SummaryPointsPayload, TranscriptSegment } from "./types";
 import { getSupabaseAdmin } from "./supabase";
+import {
+  getTranscriptSegments,
+  sanitizeSegments,
+  upsertTranscriptSegments,
+} from "./transcriptSegments";
+import { transcribeAudio } from "./whisper";
 
 const SUMMARY_POINTS_MODEL = process.env.OPENAI_SUMMARY_MODEL || "gpt-4.1-mini";
 const MAX_JSON_ATTEMPTS = 3;
-
-type TranscriptSegment = {
-  id: number;
-  start: number;
-  end: number;
-  text: string;
-};
 
 type ModelPoint = {
   title: string;
@@ -39,26 +39,103 @@ Return ONLY JSON:
 }
 Do not output anything except JSON.`;
 
-function sanitizeSegments(input: unknown): TranscriptSegment[] {
-  if (!Array.isArray(input)) return [];
+type SermonContext = {
+  sermonTitle: string;
+  audioUrl: string;
+  transcriptText: string;
+  segments: TranscriptSegment[];
+};
 
-  return input
-    .map((segment) => {
-      const candidate = segment as Partial<TranscriptSegment>;
-      const text = typeof candidate.text === "string" ? candidate.text.trim() : "";
-      const id = Number(candidate.id);
-      const start = Number(candidate.start);
-      const end = Number(candidate.end);
+async function loadSermonContext(
+  supabase: SupabaseClient,
+  sermonId: string,
+): Promise<SermonContext> {
+  const { data: sermonRow, error: sermonError } = await supabase
+    .from("sermons")
+    .select("title, podcast_audio_url, transcript")
+    .eq("id", sermonId)
+    .maybeSingle();
 
-      if (!Number.isFinite(id) || !Number.isFinite(start) || !Number.isFinite(end)) {
-        return null;
+  if (sermonError) {
+    throw new Error(`Failed to load sermon ${sermonId}: ${sermonError.message}`);
+  }
+
+  if (!sermonRow) {
+    throw new Error(`Sermon not found for id ${sermonId}`);
+  }
+
+  let segments: TranscriptSegment[] = [];
+  try {
+    segments = await getTranscriptSegments(supabase, sermonId);
+  } catch (error) {
+    console.warn(`[summary-points] Unable to load transcript segments for ${sermonId}`, error);
+  }
+
+  const sermonTitle =
+    typeof sermonRow.title === "string" && sermonRow.title.trim()
+      ? sermonRow.title.trim()
+      : "Destiny Sermon";
+
+  const audioUrl =
+    typeof sermonRow.podcast_audio_url === "string" ? sermonRow.podcast_audio_url.trim() : "";
+
+  const transcriptText =
+    typeof sermonRow.transcript === "string" ? sermonRow.transcript.trim() : "";
+
+  return { sermonTitle, audioUrl, transcriptText, segments };
+}
+
+async function ensureTranscriptSegments(
+  supabase: SupabaseClient,
+  sermonId: string,
+  context: SermonContext,
+): Promise<TranscriptSegment[]> {
+  const existing = sanitizeSegments(context.segments);
+  if (existing.length) return existing;
+
+  const audioUrl = context.audioUrl?.trim();
+  if (!audioUrl || !/^https?:\/\//i.test(audioUrl)) {
+    throw new Error(
+      "Transcript segments missing and no valid audio URL available. Run AI V1 to generate a transcript first.",
+    );
+  }
+
+  try {
+    const { text, segments } = await transcribeAudio(audioUrl);
+    const sanitized = sanitizeSegments(segments);
+    if (!sanitized.length) {
+      throw new Error(`No transcript segments could be generated for sermon ${sermonId}`);
+    }
+
+    try {
+      await upsertTranscriptSegments(supabase, sermonId, sanitized, "ready");
+    } catch (error) {
+      console.error(
+        `[summary-points] Failed to persist transcript segments for ${sermonId}`,
+        error,
+      );
+    }
+
+    if (!context.transcriptText && text.trim()) {
+      try {
+        await supabase
+          .from("sermons")
+          .update({ transcript: text.trim(), updated_at: new Date().toISOString() })
+          .eq("id", sermonId);
+      } catch (error) {
+        console.warn(
+          `[summary-points] Transcript text was generated but not saved for ${sermonId}`,
+          error,
+        );
       }
-      if (start < 0 || end < 0) return null;
-      if (!text) return null;
+    }
 
-      return { id, start, end, text };
-    })
-    .filter((segment): segment is TranscriptSegment => Boolean(segment));
+    return sanitized;
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : "Failed to generate transcript segments";
+    throw new Error(message);
+  }
 }
 
 function parseModelResponse(raw: string): ModelResponse | null {
@@ -98,43 +175,6 @@ function buildUserPrompt(title: string, segments: TranscriptSegment[]): string {
 Transcript segments:
 ${segmentsJson}
 Return JSON only.`;
-}
-
-async function loadTranscriptSegments(sermonId: string) {
-  const supabase = getSupabaseAdmin();
-
-  const [{ data: transcriptRow, error: transcriptError }, { data: sermonRow, error: sermonError }] =
-    await Promise.all([
-      supabase
-        .from("sermon_transcripts")
-        .select("segments")
-        .eq("sermon_id", sermonId)
-        .maybeSingle(),
-      supabase.from("sermons").select("title").eq("id", sermonId).maybeSingle(),
-    ]);
-
-  if (transcriptError) {
-    throw new Error(
-      `Failed to load transcript segments for ${sermonId}: ${transcriptError.message}`,
-    );
-  }
-
-  if (sermonError) {
-    throw new Error(`Failed to load sermon ${sermonId}: ${sermonError.message}`);
-  }
-
-  const rawSegments = transcriptRow?.segments;
-  const segments = sanitizeSegments(rawSegments);
-  if (!segments.length) {
-    throw new Error(`No transcript segments found for sermon ${sermonId}`);
-  }
-
-  const sermonTitle =
-    typeof sermonRow?.title === "string" && sermonRow.title.trim()
-      ? sermonRow.title.trim()
-      : "Destiny Sermon";
-
-  return { segments, sermonTitle };
 }
 
 async function requestSummaryPoints(
@@ -242,8 +282,10 @@ export async function generateSummaryPointsForSermon(
   console.info(`[summary-points] Starting pipeline for sermon ${sermonId}`);
 
   try {
-    const { segments, sermonTitle } = await loadTranscriptSegments(sermonId);
-    const modelResponse = await requestSummaryPoints(sermonTitle, segments);
+    const supabase = getSupabaseAdmin();
+    const context = await loadSermonContext(supabase, sermonId);
+    const segments = await ensureTranscriptSegments(supabase, sermonId, context);
+    const modelResponse = await requestSummaryPoints(context.sermonTitle, segments);
     const payload = buildSummaryPayload(modelResponse, segments);
 
     await persistSummaryPoints(sermonId, payload);

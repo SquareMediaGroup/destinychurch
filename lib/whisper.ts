@@ -4,8 +4,12 @@ import fs from "fs/promises";
 import { createReadStream } from "fs";
 import path from "path";
 import OpenAI from "openai";
+import type { TranscriptSegment } from "./types";
+import { sanitizeSegments } from "./transcriptSegments";
 
-export async function transcribeAudio(audioUrl: string): Promise<string> {
+export async function transcribeAudio(
+  audioUrl: string,
+): Promise<{ text: string; segments: TranscriptSegment[] }> {
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) {
     throw new Error("Missing OPENAI_API_KEY");
@@ -28,13 +32,18 @@ export async function transcribeAudio(audioUrl: string): Promise<string> {
     const transcription = await client.audio.transcriptions.create({
       file: createReadStream(tmpFile),
       model: "whisper-1",
-      response_format: "text",
+      response_format: "verbose_json",
       language: "en",
     });
 
-    const text = transcription as string;
-    console.info(`[ai] Whisper transcription complete (${text.length.toLocaleString()} chars)`);
-    return text;
+    const text = typeof transcription.text === "string" ? transcription.text.trim() : "";
+    const segments = sanitizeSegments((transcription as { segments?: unknown }).segments);
+
+    console.info(
+      `[ai] Whisper transcription complete (${text.length.toLocaleString()} chars, ${segments.length} segments)`,
+    );
+
+    return { text, segments };
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unknown Whisper error";
     throw new Error(message);

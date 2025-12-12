@@ -13,6 +13,7 @@ import { transcribeAudio } from "./whisper";
 
 const SUMMARY_POINTS_MODEL = process.env.OPENAI_SUMMARY_MODEL || "gpt-4.1-mini";
 const MAX_JSON_ATTEMPTS = 3;
+const OPENAI_AUDIO_LIMIT_BYTES = 25 * 1024 * 1024; // 25MB documented limit
 
 type ModelPoint = {
   title: string;
@@ -45,6 +46,39 @@ type SermonContext = {
   transcriptText: string;
   segments: TranscriptSegment[];
 };
+
+function buildSegmentsFromTranscript(transcript: string): TranscriptSegment[] {
+  const words = transcript
+    .split(/\s+/)
+    .map((w) => w.trim())
+    .filter(Boolean);
+
+  if (!words.length) return [];
+
+  const chunkSize = 80; // ~30 seconds at ~160 wpm
+  const segments: TranscriptSegment[] = [];
+  let startSeconds = 0;
+  let id = 1;
+
+  for (let i = 0; i < words.length; i += chunkSize) {
+    const chunk = words.slice(i, i + chunkSize);
+    const text = chunk.join(" ");
+    const durationSeconds = Math.max(10, Math.round(chunk.length / 2.6)); // ~2.6 words/sec
+    const endSeconds = startSeconds + durationSeconds;
+
+    segments.push({
+      id,
+      start: startSeconds,
+      end: endSeconds,
+      text,
+    });
+
+    startSeconds = endSeconds;
+    id += 1;
+  }
+
+  return segments;
+}
 
 async function loadSermonContext(
   supabase: SupabaseClient,
@@ -93,11 +127,36 @@ async function ensureTranscriptSegments(
   const existing = sanitizeSegments(context.segments);
   if (existing.length) return existing;
 
+  const transcriptSegments = buildSegmentsFromTranscript(context.transcriptText);
+  if (transcriptSegments.length) {
+    console.warn(
+      `[summary-points] Using transcript-derived segments for ${sermonId} (no timings available).`,
+    );
+    return transcriptSegments;
+  }
+
   const audioUrl = context.audioUrl?.trim();
   if (!audioUrl || !/^https?:\/\//i.test(audioUrl)) {
     throw new Error(
       "Transcript segments missing and no valid audio URL available. Run AI V1 to generate a transcript first.",
     );
+  }
+
+  // Preflight size to avoid 413 errors from OpenAI when audio files exceed 25MB.
+  try {
+    const head = await fetch(audioUrl, { method: "HEAD" });
+    const contentLength = Number(head.headers.get("content-length"));
+    if (Number.isFinite(contentLength) && contentLength > OPENAI_AUDIO_LIMIT_BYTES) {
+      const mb = (contentLength / (1024 * 1024)).toFixed(1);
+      throw new Error(
+        `Audio file is ${mb}MB which exceeds OpenAI's 25MB limit. Please upload a smaller audio file or run AI V1 to store a transcript.`,
+      );
+    }
+  } catch (sizeError) {
+    // If HEAD fails we still attempt; if it throws our explicit error, propagate.
+    if (sizeError instanceof Error && sizeError.message.includes("exceeds OpenAI")) {
+      throw sizeError;
+    }
   }
 
   try {

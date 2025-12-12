@@ -13,7 +13,7 @@ import {
   updateSermonMeta,
 } from "./actions";
 import { cleanDuplicates } from "./cleanup";
-import { processSermon, processSermonV2 } from "./process";
+import { processSermon, processSermonSrt, processSermonV2 } from "./process";
 import ConfirmSubmit from "@/components/ConfirmSubmit";
 import { listReports } from "@/lib/reports";
 import PlaylistComposer from "@/components/PlaylistComposer";
@@ -527,6 +527,30 @@ function SermonTable({ sermons }: { sermons: Awaited<ReturnType<typeof listSermo
                       pendingLabel="Processing..."
                     >
                       Process AI V1
+                    </ConfirmSubmit>
+                  </form>
+                  <form
+                    action={processSermonSrt}
+                    encType="multipart/form-data"
+                    className="flex flex-wrap items-center gap-2 rounded-full border border-destiny-blue/20 px-3 py-1"
+                  >
+                    <input type="hidden" name="id" value={sermon.id} />
+                    <label className="text-[11px] font-semibold text-destiny-grey">
+                      <span className="mr-2 text-destiny-black">Upload SRT/VTT</span>
+                      <input
+                        type="file"
+                        name="srt"
+                        accept=".srt,.vtt"
+                        className="max-w-[180px] text-[11px] text-destiny-grey file:mr-2 file:rounded-full file:border file:border-destiny-blue/40 file:bg-destiny-blue/10 file:px-2 file:py-1 file:text-[11px] file:font-semibold file:text-destiny-blue"
+                        required
+                      />
+                    </label>
+                    <ConfirmSubmit
+                      className="rounded-full border border-destiny-blue px-3 py-1.5 text-[11px] font-semibold text-destiny-blue transition hover:bg-destiny-blue hover:text-white"
+                      confirmMessage="Ingest this SRT/VTT as the transcript and generate summary + points?"
+                      pendingLabel="Uploading..."
+                    >
+                      Upload & summarize
                     </ConfirmSubmit>
                   </form>
                   <form action={processSermonV2}>

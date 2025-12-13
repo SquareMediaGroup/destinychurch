@@ -18,8 +18,8 @@ export default async function Home() {
           Weekly messages, ready to watch
         </h1>
         <p className="mt-4 max-w-2xl text-lg text-destiny-grey">
-          A YouTube-like experience for Destiny Church. Watch live replays,
-          podcast sermons, AI summaries, and transcripts — no login needed.
+          Watch Destiny Church sermons with video replays, podcasts,
+          AI summaries, and transcripts — no account required.
         </p>
         <div className="mt-6 flex flex-col gap-3 sm:flex-row">
           <OrangeButton href="/sermons">Browse sermons</OrangeButton>

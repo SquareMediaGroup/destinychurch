@@ -138,7 +138,7 @@ async function ensureTranscriptSegments(
   const audioUrl = context.audioUrl?.trim();
   if (!audioUrl || !/^https?:\/\//i.test(audioUrl)) {
     throw new Error(
-      "Transcript segments missing and no valid audio URL available. Run AI V1 to generate a transcript first.",
+      "Transcript segments missing and no valid audio URL available. Upload an SRT/VTT transcript for this sermon first.",
     );
   }
 
@@ -149,7 +149,7 @@ async function ensureTranscriptSegments(
     if (Number.isFinite(contentLength) && contentLength > OPENAI_AUDIO_LIMIT_BYTES) {
       const mb = (contentLength / (1024 * 1024)).toFixed(1);
       throw new Error(
-        `Audio file is ${mb}MB which exceeds OpenAI's 25MB limit. Please upload a smaller audio file or run AI V1 to store a transcript.`,
+        `Audio file is ${mb}MB which exceeds OpenAI's 25MB limit. Please upload a smaller audio file or add an SRT/VTT transcript.`,
       );
     }
   } catch (sizeError) {

@@ -74,3 +74,21 @@ create table if not exists sermon_transcripts (
   created_at timestamptz default timezone('utc', now()),
   updated_at timestamptz default timezone('utc', now())
 );
+
+create table if not exists auth_users (
+  id uuid primary key default gen_random_uuid(),
+  email text unique not null,
+  created_at timestamptz default timezone('utc', now()),
+  last_login timestamptz default timezone('utc', now())
+);
+
+create table if not exists auth_codes (
+  id uuid primary key default gen_random_uuid(),
+  email text not null,
+  code_hash text not null,
+  expires_at timestamptz not null,
+  used boolean default false,
+  created_at timestamptz default timezone('utc', now())
+);
+
+create index if not exists auth_codes_email_idx on auth_codes (email);

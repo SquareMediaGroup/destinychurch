@@ -13,10 +13,11 @@ import {
   updateSermonMeta,
 } from "./actions";
 import { cleanDuplicates } from "./cleanup";
-import { processSermon, processSermonSrt, processSermonV2 } from "./process";
+import { processSermonSrt, processSermonV2 } from "./process";
 import ConfirmSubmit from "@/components/ConfirmSubmit";
 import { listReports } from "@/lib/reports";
 import PlaylistComposer from "@/components/PlaylistComposer";
+import AiProcessingControls from "@/components/AiProcessingControls";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -486,7 +487,7 @@ function SermonTable({ sermons }: { sermons: Awaited<ReturnType<typeof listSermo
                 <div className="flex flex-wrap items-center gap-2 text-[11px] text-destiny-grey/80">
                   <span className="text-xs font-semibold text-destiny-black">AI Processing</span>
                   <span className="hidden sm:inline">
-                    V1 = transcript + summary · V2 = structured summary points
+                    Upload captions = transcript + summary · V2 = structured summary points
                   </span>
                   <div className="ml-auto flex flex-wrap gap-1">
                     <span
@@ -518,69 +519,34 @@ function SermonTable({ sermons }: { sermons: Awaited<ReturnType<typeof listSermo
                     </span>
                   </div>
                 </div>
-                <div className="mt-3 flex flex-wrap gap-2">
-                  <form action={processSermon}>
-                    <input type="hidden" name="id" value={sermon.id} />
+                <div className="mt-3 space-y-2">
+                  <AiProcessingControls
+                    sermonId={sermon.id}
+                    hasTranscript={hasTranscript}
+                    hasSummaryPoints={hasSummaryPoints}
+                    uploadAction={processSermonSrt}
+                    v2Action={processSermonV2}
+                  />
+                  <div className="flex flex-wrap gap-2">
+                    <form action={deleteSermon}>
+                      <input type="hidden" name="id" value={sermon.id} />
+                      <ConfirmSubmit
+                        className="rounded-full border border-red-500 px-4 py-2 text-xs font-semibold text-red-600 transition hover:bg-red-500 hover:text-white"
+                        confirmMessage="Delete this sermon? This cannot be undone."
+                        pendingLabel="Deleting..."
+                      >
+                        Delete
+                      </ConfirmSubmit>
+                    </form>
                     <ConfirmSubmit
-                      className="rounded-full border border-destiny-orange px-4 py-2 text-xs font-semibold text-destiny-orange transition hover:bg-destiny-orange hover:text-white"
-                      confirmMessage="Run AI transcript and summary for this sermon? Uses OpenAI API."
-                      pendingLabel="Processing..."
+                      form={`edit-${sermon.id}`}
+                      className="rounded-full bg-destiny-orange px-4 py-2 text-xs font-semibold text-white shadow-sm transition hover:brightness-95"
+                      confirmMessage="Save updates to this sermon?"
+                      pendingLabel="Saving..."
                     >
-                      Process AI V1
+                      Save
                     </ConfirmSubmit>
-                  </form>
-                  <form
-                    action={processSermonSrt}
-                    encType="multipart/form-data"
-                    className="flex flex-wrap items-center gap-2 rounded-full border border-destiny-blue/20 px-3 py-1"
-                  >
-                    <input type="hidden" name="id" value={sermon.id} />
-                    <label className="text-[11px] font-semibold text-destiny-grey">
-                      <span className="mr-2 text-destiny-black">Upload SRT/VTT</span>
-                      <input
-                        type="file"
-                        name="srt"
-                        accept=".srt,.vtt"
-                        className="max-w-[180px] text-[11px] text-destiny-grey file:mr-2 file:rounded-full file:border file:border-destiny-blue/40 file:bg-destiny-blue/10 file:px-2 file:py-1 file:text-[11px] file:font-semibold file:text-destiny-blue"
-                        required
-                      />
-                    </label>
-                    <ConfirmSubmit
-                      className="rounded-full border border-destiny-blue px-3 py-1.5 text-[11px] font-semibold text-destiny-blue transition hover:bg-destiny-blue hover:text-white"
-                      confirmMessage="Ingest this SRT/VTT as the transcript and generate summary + points?"
-                      pendingLabel="Uploading..."
-                    >
-                      Upload & summarize
-                    </ConfirmSubmit>
-                  </form>
-                  <form action={processSermonV2}>
-                    <input type="hidden" name="id" value={sermon.id} />
-                    <ConfirmSubmit
-                      className="rounded-full border border-destiny-blue px-4 py-2 text-xs font-semibold text-destiny-blue transition hover:bg-destiny-blue hover:text-white"
-                      confirmMessage="Run AI V2 summary points for this sermon? Requires transcript segments."
-                      pendingLabel="Processing..."
-                    >
-                      Process AI V2
-                    </ConfirmSubmit>
-                  </form>
-                  <form action={deleteSermon}>
-                    <input type="hidden" name="id" value={sermon.id} />
-                    <ConfirmSubmit
-                      className="rounded-full border border-red-500 px-4 py-2 text-xs font-semibold text-red-600 transition hover:bg-red-500 hover:text-white"
-                      confirmMessage="Delete this sermon? This cannot be undone."
-                      pendingLabel="Deleting..."
-                    >
-                      Delete
-                    </ConfirmSubmit>
-                  </form>
-                  <ConfirmSubmit
-                    form={`edit-${sermon.id}`}
-                    className="rounded-full bg-destiny-orange px-4 py-2 text-xs font-semibold text-white shadow-sm transition hover:brightness-95"
-                    confirmMessage="Save updates to this sermon?"
-                    pendingLabel="Saving..."
-                  >
-                    Save
-                  </ConfirmSubmit>
+                  </div>
                 </div>
               </div>
             </div>

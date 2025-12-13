@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import ThemeToggle from "./ThemeToggle";
+import HeaderAuthButton from "./HeaderAuthButton";
 
 const navLinks = [
   { href: "/sermons", label: "Sermons" },
@@ -48,6 +49,7 @@ export default function DestinyHeader() {
 
         <div className="flex items-center gap-3">
           <ThemeToggle />
+          <HeaderAuthButton />
           <Link
             href="/sermons"
             className="rounded-full bg-destiny-orange px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:brightness-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-destiny-orange"

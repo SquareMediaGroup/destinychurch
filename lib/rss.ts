@@ -5,6 +5,7 @@ export type PodcastEntry = {
   title: string;
   pubDate: string;
   audioUrl: string;
+  durationSeconds?: number;
 };
 
 export async function fetchPodcastEntries(feedUrl: string): Promise<PodcastEntry[]> {
@@ -25,6 +26,7 @@ export function mapPodcastToSermon(entry: PodcastEntry): Sermon {
     podcastGuid: entry.guid,
     podcastPubDate: entry.pubDate,
     podcastAudioUrl: entry.audioUrl,
+    durationSeconds: entry.durationSeconds,
     thumbnailUrl: "",
   };
 }
@@ -42,6 +44,28 @@ const enclosureUrl = (source: string) => {
   return match?.[1] ?? "";
 };
 
+const durationSeconds = (source: string) => {
+  const raw = tagValue(source, "itunes:duration");
+  if (!raw) return undefined;
+
+  if (/^\d+$/.test(raw)) {
+    const seconds = Number(raw);
+    return Number.isFinite(seconds) ? seconds : undefined;
+  }
+
+  const parts = raw.split(":").map((p) => Number(p));
+  if (parts.some((n) => Number.isNaN(n))) return undefined;
+  let total = 0;
+  if (parts.length === 3) {
+    total = parts[0] * 3600 + parts[1] * 60 + parts[2];
+  } else if (parts.length === 2) {
+    total = parts[0] * 60 + parts[1];
+  } else {
+    return undefined;
+  }
+  return Number.isFinite(total) ? total : undefined;
+};
+
 function parsePodcastFeed(xml: string): PodcastEntry[] {
   const segments = xml.split(/<item[\s>]/i).slice(1);
 
@@ -52,10 +76,11 @@ function parsePodcastFeed(xml: string): PodcastEntry[] {
       const title = tagValue(chunk, "title");
       const pubDate = tagValue(chunk, "pubDate");
       const audioUrl = enclosureUrl(chunk);
+      const duration = durationSeconds(chunk);
 
       if (!guid || !title || !pubDate || !audioUrl) return null;
 
-      return { guid, title, pubDate, audioUrl };
+      return { guid, title, pubDate, audioUrl, durationSeconds: duration };
     })
     .filter(Boolean) as PodcastEntry[];
 }

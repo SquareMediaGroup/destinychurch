@@ -8,6 +8,7 @@ import { parseSrt } from "@/lib/srt";
 import { getSupabaseAdmin } from "@/lib/supabase";
 import { formatSummaryBullets, generateSermonSummary } from "@/lib/summary";
 import { upsertTranscriptSegments } from "@/lib/transcriptSegments";
+import { getSermonById } from "@/lib/db";
 
 const ADMIN_COOKIE = "destiny-admin";
 
@@ -57,6 +58,20 @@ export async function processSermonSrt(formData: FormData) {
 
   const transcript = segments.map((segment) => segment.text).join("\n");
   const supabase = getSupabaseAdmin();
+
+  const sermon = await getSermonById(id);
+  const expectedDuration = sermon?.durationSeconds && sermon.durationSeconds > 0 ? sermon.durationSeconds : null;
+  const srtDuration = segments[segments.length - 1]?.end ?? 0;
+
+  if (expectedDuration && srtDuration) {
+    const tolerance = Math.max(10, expectedDuration * 0.05); // 5% or 10 seconds
+    const diff = Math.abs(expectedDuration - srtDuration);
+    if (diff > tolerance) {
+      throw new Error(
+        `Uploaded caption duration (${Math.round(srtDuration)}s) does not match podcast length (${expectedDuration}s). Please upload the matching file.`,
+      );
+    }
+  }
 
   try {
     await upsertTranscriptSegments(supabase, id, segments, "ready");

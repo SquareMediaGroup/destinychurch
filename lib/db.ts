@@ -11,6 +11,7 @@ export type SermonRow = {
   podcast_pub_date?: string;
   podcast_audio_url?: string;
   thumbnail_url?: string;
+  duration_seconds?: number | null;
   summary?: string;
   summary_points?: SummaryPointsPayload | null;
   transcript?: string;
@@ -27,6 +28,10 @@ export const mapRowToSermon = (row: SermonRow): Sermon => ({
   podcastPubDate: row.podcast_pub_date ?? undefined,
   podcastAudioUrl: row.podcast_audio_url ?? undefined,
   thumbnailUrl: row.thumbnail_url || "/destiny-logo.svg",
+  durationSeconds:
+    typeof row.duration_seconds === "number" && Number.isFinite(row.duration_seconds)
+      ? row.duration_seconds
+      : undefined,
   summary: row.summary ?? undefined,
   summaryPoints:
     row.summary_points &&
@@ -78,6 +83,7 @@ export async function saveSermon(sermon: Sermon) {
         podcast_pub_date: sermon.podcastPubDate,
         podcast_audio_url: sermon.podcastAudioUrl,
         thumbnail_url: sermon.thumbnailUrl,
+        duration_seconds: sermon.durationSeconds,
         summary: sermon.summary,
         transcript: sermon.transcript,
         updated_at: new Date().toISOString(),

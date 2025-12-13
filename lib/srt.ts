@@ -4,15 +4,13 @@ import type { TranscriptSegment } from "./types";
 
 const timeToSeconds = (value: string): number | null => {
   const trimmed = value.trim();
-  const match = trimmed.match(
-    /(?<h>\d{1,2}):(?<m>\d{1,2}):(?<s>\d{1,2})([,.](?<ms>\d{1,3}))?/,
-  );
-  if (!match || !match.groups) return null;
+  const match = trimmed.match(/(\d{1,2}):(\d{1,2}):(\d{1,2})([,.](\d{1,3}))?/);
+  if (!match) return null;
 
-  const hours = Number(match.groups.h);
-  const minutes = Number(match.groups.m);
-  const seconds = Number(match.groups.s);
-  const millis = Number(match.groups.ms ?? 0);
+  const hours = Number(match[1]);
+  const minutes = Number(match[2]);
+  const seconds = Number(match[3]);
+  const millis = Number(match[5] ?? 0);
 
   if ([hours, minutes, seconds, millis].some((n) => Number.isNaN(n))) return null;
 

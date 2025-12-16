@@ -1,10 +1,9 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { getSupabaseBrowserClient } from "@/lib/supabase-browser";
 
-export default function HeaderAuthButton() {
+export default function HeaderAuthButton({ className = "" }: { className?: string }) {
   const [signedIn, setSignedIn] = useState(false);
   const supabase = useMemo(() => {
     try {
@@ -33,24 +32,15 @@ export default function HeaderAuthButton() {
     window.location.href = "/";
   };
 
-  if (signedIn) {
-    return (
-      <button
-        type="button"
-        onClick={handleLogout}
-        className="rounded-full border border-destiny-orange px-4 py-2 text-sm font-semibold text-destiny-orange transition hover:bg-destiny-orange hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-destiny-orange"
-      >
-        Log out
-      </button>
-    );
-  }
+  if (!signedIn) return null;
 
   return (
-    <Link
-      href="/signup"
-      className="rounded-full border border-destiny-orange px-4 py-2 text-sm font-semibold text-destiny-orange transition hover:bg-destiny-orange hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-destiny-orange"
+    <button
+      type="button"
+      onClick={handleLogout}
+      className={`rounded-full border border-destiny-orange px-4 py-2 text-sm font-semibold text-destiny-orange transition hover:bg-destiny-orange hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-destiny-orange ${className}`}
     >
-      Sign up
-    </Link>
+      Log out
+    </button>
   );
 }

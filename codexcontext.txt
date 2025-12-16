@@ -1,91 +1,156 @@
-The following text is here specifically for you to do the best job possible
-References to Logos are for: /destinychurch/Logos, use the correct ones in the correct spaces
-For fonts pull from Google Fonts, or whatever site is easiest
-For Icons pull from Google Fonts only.
-Supabase will not be used initially.
+Destiny Church Tees Valley — Master Specification (for Codex)
 
-Project Name: Destiny Sermons
-Domain: sermons.destinytees.uk
-Tech Stack: Next.js (App Router) + TypeScript + Tailwind CSS + Vercel + Supabase (or similar DB)
-External APIs:
+Read first:
+The following text exists solely to give you full context so you can do the best job possible.
+
+GLOBAL RULES (STRICT)
+
+Logos
+
+All logo references must use assets from:
+
+/destinychurch/Logos
+
+
+Use the correct logo in the correct place:
+
+Full horizontal logo → headers, footers
+
+Icon-only logo → must be inside a white or light-grey circular background
+
+No recolouring
+
+No overlaying icon on wordmark
+
+Fonts
+
+All fonts must be loaded from Google Fonts
+
+No self-hosted fonts unless unavoidable
+
+Icons
+
+Use Google Fonts Icons only
+
+Material Symbols / Material Icons
+
+No third-party icon libraries
+
+Database
+
+No database is used initially
+
+Use local JSON / TypeScript data files
+
+Architecture must allow adding Supabase (or similar) later without refactor
+
+PROJECT OVERVIEW
+
+Project Name: Destiny Church Website
+
+Primary Domain: destinytees.uk
+
+Tech Stack:
+
+Next.js (App Router)
+
+TypeScript
+
+Tailwind CSS
+
+Vercel
+
+External APIs (server-side only):
 
 Google YouTube Data API v3
 
 OpenAI API (Whisper + GPT)
 
-Purpose:
-A dedicated platform for Destiny Church that automatically collects weekly sermons (YouTube Live + Podcast), generates AI summaries and transcripts, and provides a clean, modern, YouTube-like browsing experience.
-The site includes local device-based Continue Watching, but NO user accounts.
+1) CORE PURPOSE
 
-=====================
-1. CORE PURPOSE
-=====================
+This project builds the entire Destiny Church Tees Valley website.
 
-The platform:
+The website must:
 
-Pulls YouTube Live replays from the Destiny Church YouTube channel using Google YouTube Data API.
+Serve as the primary digital front door for the church
 
-Pulls sermon-only podcast episodes from an RSS feed.
+Clearly communicate:
 
-Suggests a match between podcast + live video based on upload date.
+What Destiny Church is
 
-Sends an admin email allowing approval of the match.
+When and where services happen
 
-Once approved:
+How people can get involved
 
-Downloads podcast audio
+Feel modern, welcoming, and confident
 
-Sends audio to OpenAI Whisper → transcript
+Work beautifully on mobile first
 
-Sends transcript to OpenAI GPT → summary
+Key Principle
 
-Saves everything to DB
+Destiny Sermons is a feature, not the platform.
+It lives inside the site as /watch and /sermons, sharing the same design system, navigation, and branding.
 
-Visitors can:
+2) DESIGN INSPIRATION & TONE
 
-Browse sermons using a YouTube-like grid
+Inspired by:
 
-Click into a watch page
+LIFE Church
 
-View the video, summary, transcript
+Clear layouts
 
-Use local-only continue watching stored via browser storage
+Friendly copy
 
-The UI must feel similar to YouTube while maintaining full Destiny Church branding.
+Strong “What’s On” sections
 
-=====================
-2. BRANDING (FULL DETAIL)
-=====================
-2.1 Primary Accent Colour
+Elevation Church
 
-Orange — #F58021
+Cinematic visuals
+
+Dark hero sections
+
+Bold typography and confident spacing
+
+Tone:
+
+Warm
+
+Christ-centred
+
+Contemporary
+
+Unintimidating for first-time visitors
+
+3) BRANDING
+3.1 Primary Accent Colour
+
+Destiny Orange — #F58021
+
 Used for:
 
-Buttons
+Primary buttons
+
+Active navigation states
 
 Links
 
-Active states
+Key highlights
 
-Highlights
+3.2 Pillar Colours (Secondary Accents)
 
-UI accents
+Use sparingly (tags, badges, subtle UI elements):
 
-2.2 Pillar Colours (Secondary Accents)
+Red (Magnify): #FD0000
 
-Used subtly (badges, tags, small details):
+Orange (Mission) - Main Accent: #F58021
 
-Red: #FD0000 (Magnify)
+Blue (Outreach): #0857BA
 
-Orange: #F58021 (Mission)
+Green (Maturity): #028002
 
-Blue: #0857BA (Outreach/Mission extension)
+Purple (Ministry): #8106B1
 
-Green: #028002 (Maturity)
-
-Purple: #8106B1 (Ministry)
-
-2.3 Neutral Palette
+3.3 Neutral Palette
 
 White: #FFFFFF
 
@@ -93,279 +158,177 @@ Bluish Grey: #363F48
 
 Black: #000000
 
-2.4 Typography
+3.4 Typography (Google Fonts)
 
-Roboto: Body text
+Headings: Arial (system fallback allowed)
 
-Dosis: Subheaders
+Subheadings: Dosis
 
-Arial: Headings
+Body text: Roboto
 
-2.5 Logo Rules
+4) SITE STRUCTURE (ROUTES)
+/                → Homepage
+/new-here        → New visitors
+/whats-on        → Events & services
+/events/[slug]  → Event details
+/watch           → Watch live & latest sermon
+/sermons         → Sermon archive
+/sermons/[id]    → Individual sermon watch page
+/connect         → Groups, serve, Alpha
+/about           → Vision, mission, story
+/give            → Giving
+/contact         → Contact info
 
-Always horizontal full-colour where possible
+5) HOMEPAGE STRUCTURE
 
-Icon alone must be placed inside a circular white/grey background
+Cinematic Hero
 
-No recolouring
+Large background image or video
 
-No icon overlay on top of wordmark
+Dark overlay
 
-=====================
-3. UX / UI DESIGN (YOUTUBE-LIKE EXPERIENCE)
-=====================
+Bold headline
 
-The interface must feel familiar to YouTube:
+1–2 CTAs (e.g. “Plan Your Visit”, “Watch Live”)
 
-3.1 Sermon List Page
+What’s On
 
-Responsive grid of 16:9 thumbnails
+Card-based event grid
 
-Hover effects:
+Clear dates & titles
 
-Slight scale
+Mission / Vision Section
 
-Soft shadow
+Large typography
 
-Thumbnail includes:
+Image-backed or dark section
 
-Duration label
+Destiny values clearly communicated
 
-Date
+Featured CTA Banner
 
-Title
+“Join us this Sunday”
 
-Clean spacing, white background, subtle section dividers
+Two buttons
 
-3.2 Sermon Watch Page
+Get Connected
 
-Similar to YouTube’s watch screen:
+Cards:
 
-Large YouTube video embed at top
+New Here?
 
-Below the video:
+Life Groups
 
-Title (Arial)
+Join a Team
 
-Metadata (date, speaker)
+Footer
 
-Summary block styled like a video description
+Quick links
 
-Collapsible transcript section
+Social icons
 
-Optional sidebar:
+Legal info
 
-Recommended sermons grid
+6) SERMONS FEATURE (DESTINY SERMONS)
+Functionality
 
-3.3 Interactions
+Pull YouTube Live replays using YouTube Data API
 
-Smooth transitions (transition-all ease-out)
+Pull sermon-only podcast episodes via RSS
 
-Rounded corners (rounded-xl)
+Attempt to match podcast + YouTube by date
 
-Hover colour: primary orange
+Admin approval via secure email link
 
-Clean card shadows
+Once approved:
 
-=====================
-4. LOCAL CONTINUE WATCHING (NO ACCOUNTS)
-=====================
+Podcast audio → Whisper → transcript
 
-A localStorage-based continue watching system that works ONLY on the visitor’s device.
-No Firebase, no login, no external authentication.
+Transcript → GPT → summary
 
-4.1 Storage Key
+Saved locally (file-based initially)
+
+Visitor Experience
+
+YouTube-style sermon grid
+
+Individual watch page with:
+
+Embedded video
+
+Summary
+
+Collapsible transcript
+
+Recommended sermons
+
+7) LOCAL “CONTINUE WATCHING” (NO ACCOUNTS)
+
+Uses localStorage
+
+Device-only
+
+No authentication
+
+Storage key:
 
 destiny-sermons-progress
 
-4.2 Stored Structure Example
-[
-  {
-    sermonId: "2025-12-07-am",
-    lastPosition: 623,        // seconds
-    lastUpdated: 1733608000   // timestamp
-  }
-]
 
-4.3 Behavior
+Removes progress automatically when sermon is finished.
 
-When the user pauses, seeks, or navigates away, update localStorage with the timestamp.
+8) OPENAI INTEGRATION
+Whisper
 
-On the homepage, show a “Continue Watching” row if any progress exists on that device.
-
-If the user finishes the video (e.g., within 30 seconds of the end), automatically remove the entry.
-
-Continue Watching is device-specific only.
-
-4.4 Hook Implementation
-
-A custom React hook should handle:
-
-Reading progress
-
-Writing progress
-
-Clearing progress
-
-Returning sorted items by lastUpdated
-
-=====================
-5. DATA FLOW AUTOMATION
-=====================
-5.1 Cron Job (Vercel Cron) – /api/sermon-sync
-
-Runs daily or hourly.
-
-Responsibilities:
-
-Fetch RSS feed
-
-Fetch YouTube Live completed videos
-
-Identify new items
-
-Attempt to match podcast ↔ YouTube based on date
-
-Create match suggestion if found
-
-Send admin email
-
-=====================
-6. EMAIL WORKFLOW
-=====================
-
-Admin receives an email:
-
-A new sermon may be ready.
-
-Podcast: {title} — {date}
-YouTube: {videoTitle} — {date}
-
-Approve link:
-https://sermons.destinytees.uk/api/approve-link?sid=SERMON_ID&token=SIGNED_TOKEN
-
-
-Clicking the link triggers:
-
-Token verification
-
-Linking of the two
-
-Whisper transcription
-
-GPT summary generation
-
-Saving transcript + summary to database
-
-=====================
-7. OPENAI INTEGRATION
-=====================
-7.1 Whisper Transcription
-
-Input: podcast audio from enclosure.url
+Input: podcast audio
 
 Output: full transcript
 
-7.2 GPT Summary
+GPT Summary
 
-Prompt must generate:
-
-Warm, Christ-centred summary
+Warm, Christ-centred tone
 
 3–6 bullet points
 
 Key scripture references
 
-In Destiny’s pastoral brand voice
+Destiny pastoral voice
 
-=====================
-8. GOOGLE YOUTUBE DATA API INTEGRATION
-=====================
+9) YOUTUBE API USAGE
 
-Use:
+Endpoint:
+
 https://www.googleapis.com/youtube/v3/search
+
 
 Parameters:
 
-channelId=DESTINY_CHANNEL_ID
-
-type=video
+channelId
 
 eventType=completed
 
 order=date
 
+type=video
+
 part=snippet
 
-Save:
-
-videoId
-
-title
-
-publishedAt
-
-Thumbnail URLs
-
-=====================
-9. DATABASE SCHEMA
-=====================
-
-Table: sermons
-
-id                text primary key
-title             text
-date              timestamptz
-podcast_guid      text unique
-podcast_pub_date  timestamptz
-podcast_audio_url text
-youtube_video_id  text
-youtube_pub_date  timestamptz
-thumbnail_url     text
-transcript        text
-summary           text
-created_at        timestamptz
-updated_at        timestamptz
-
-
-Table: sermon_link_suggestions
-
-id                uuid
-podcast_guid      text
-youtube_video_id  text
-status            text
-created_at        timestamptz
-
-=====================
-10. FRONTEND STRUCTURE
-=====================
-Pages
-
-/sermons — grid of sermons
-
-/sermons/[id] — watch page
-
-Components
+10) COMPONENTS
+SiteHeader
+SiteFooter
+Hero
+Section
+Card
+CardGrid
+CTAButton
 
 SermonCard
-
 VideoPlayer
-
 SermonSummary
-
 TranscriptBlock
-
 ContinueWatchingRow
 
-DestinyHeader
-
-DestinyFooter
-
-OrangeButton
-
-=====================
-11. TAILWIND CONFIG EXTENSIONS
-=====================
+11) TAILWIND EXTENSIONS
 colors: {
   destiny: {
     orange: "#F58021",
@@ -377,65 +340,12 @@ colors: {
   }
 }
 
-=====================
-12. COSTS
-=====================
+12) FINAL NOTES
 
-Whisper transcription: ~£0.60–£1 per month
+UX must feel Apple-like, but clearly Destiny
 
-GPT summary: ~£0.05–£0.10 per month
+Mobile-first, performance-focused
 
-Total AI cost: ~£1 per month
+Server-side API usage only
 
-Vercel hosting: free tier
-
-Supabase: free tier
-
-=====================
-13. FOLDER STRUCTURE
-=====================
-/app
-  /sermons
-    page.tsx
-  /sermons/[id]
-    page.tsx
-  /api
-    /sermon-sync/route.ts
-    /approve-link/route.ts
-
-/components
-  SermonCard.tsx
-  VideoPlayer.tsx
-  SermonSummary.tsx
-  TranscriptBlock.tsx
-  ContinueWatchingRow.tsx
-  DestinyHeader.tsx
-  DestinyFooter.tsx
-
-/lib
-  db.ts
-  rss.ts
-  youtube.ts
-  whisper.ts
-  summary.ts
-  email.ts
-  continueWatching.ts
-
-/public
-  destiny-logo.png
-
-=====================
-14. FINAL NOTES
-=====================
-
-Branding must strictly follow Destiny Church colours, typography, and logo rules.
-
-UX must feel inspired by YouTube, but distinctly Destiny-branded.
-
-Local-only Continue Watching is required (no Firebase/Auth).
-
-All AI + Google API integrations must function server-side.
-
-Keep architecture scalable for future multi-church support (but not needed now).
-
-END OF FINAL MASTER SPECIFICATION (TXT)
+Structure must scale to future features without rebuild

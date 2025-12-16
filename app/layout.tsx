@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import { Dosis, Roboto } from "next/font/google";
 import "./globals.css";
-import DestinyFooter from "@/components/DestinyFooter";
-import DestinyHeader from "@/components/DestinyHeader";
+import SiteFooter from "@/components/SiteFooter";
+import SiteHeader from "@/components/SiteHeader";
 import Providers from "@/components/Providers";
 import CookieBanner from "@/components/CookieBanner";
 import AnalyticsGate from "@/components/AnalyticsGate";
@@ -23,12 +23,40 @@ const dosis = Dosis({
 });
 
 export const metadata: Metadata = {
-  title: "Destiny Sermons",
+  metadataBase: new URL("https://destinytees.uk"),
+  title: {
+    default: "Destiny Church Tees Valley",
+    template: "%s | Destiny Church",
+  },
   description:
-    "Weekly Destiny Church sermons with video, summaries, and transcripts.",
-  metadataBase: new URL("https://sermons.destinytees.uk"),
+    "A welcoming, Christ-centred church in Stockton-on-Tees. Plan your visit, explore what’s on, and watch the latest sermons.",
   alternates: {
     canonical: "/",
+  },
+  openGraph: {
+    title: "Destiny Church Tees Valley",
+    description:
+      "A welcoming, Christ-centred church in Stockton-on-Tees. Plan your visit, explore what’s on, and watch the latest sermons.",
+    url: "https://destinytees.uk",
+    siteName: "Destiny Church",
+    type: "website",
+    images: [
+      {
+        url: "https://images.unsplash.com/photo-1519500528352-2d1460418d14?auto=format&fit=crop&w=1600&q=80",
+        width: 1600,
+        height: 900,
+        alt: "Destiny Church gathering",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Destiny Church Tees Valley",
+    description:
+      "Plan your visit, discover what’s on, and catch up with the latest sermons.",
+    images: [
+      "https://images.unsplash.com/photo-1519500528352-2d1460418d14?auto=format&fit=crop&w=1600&q=80",
+    ],
   },
 };
 
@@ -46,11 +74,13 @@ export default function RootLayout({
           <GlobalAudioProvider>
             <CookieBanner />
             <div className="flex min-h-screen flex-col bg-[var(--background)] text-[var(--foreground)]">
-              <DestinyHeader />
-              <main className="mx-auto w-full max-w-6xl flex-1 px-4 pb-16 pt-8 lg:px-8">
-                {children}
+              <SiteHeader />
+              <main className="flex-1">
+                <div className="mx-auto w-full max-w-7xl px-4 pb-16 pt-8 lg:px-8">
+                  {children}
+                </div>
               </main>
-              <DestinyFooter />
+              <SiteFooter />
             </div>
             <AnalyticsGate />
           </GlobalAudioProvider>

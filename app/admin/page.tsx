@@ -442,6 +442,7 @@ function SermonTable({ sermons }: { sermons: Awaited<ReturnType<typeof listSermo
         {sermons.map((sermon) => {
           const hasTranscript = Boolean(sermon.transcript);
           const hasSummary = Boolean(sermon.summary);
+          const hasSummaryPoints = Boolean(sermon.summaryPoints?.points?.length);
           return (
             <div key={sermon.id} className="bg-[var(--surface-muted)] px-4 py-4">
               <div className="flex flex-wrap items-center gap-2">

@@ -19,7 +19,7 @@ export default function NotFound() {
             404 · Off the path
           </p>
           <h1 className="text-4xl font-bold leading-tight text-[var(--foreground)] sm:text-5xl">
-            We could not find that page, but Destiny is easy to get back to.
+            The page or sermon you’re looking for can’t be found.
           </h1>
           <p className="max-w-2xl text-lg text-destiny-grey">
             Sermons, replays, and transcripts are only a tap away. Choose where

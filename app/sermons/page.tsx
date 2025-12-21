@@ -14,8 +14,8 @@ export default async function SermonsPage() {
         <p className="subheading text-sm text-destiny-orange">Weekly sermons</p>
         <h1 className="text-3xl font-bold text-destiny-black">Watch & grow</h1>
         <p className="max-w-2xl text-destiny-grey">
-          A YouTube-inspired grid of recent Destiny Church messages with
-          summaries, transcripts, and local continue watching.
+          Recent messages, smart summaries, full transcripts.
+          Pick up where you left off or explore new series and topics.
         </p>
       </header>
 

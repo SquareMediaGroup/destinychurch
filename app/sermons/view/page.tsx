@@ -1,6 +1,5 @@
 import Link from "next/link";
 import PodcastPlayer from "@/components/PodcastPlayer";
-import ReportIssueForm from "@/components/ReportIssueForm";
 import SermonSummary from "@/components/SermonSummary";
 import SermonPoints from "@/components/SermonPoints";
 import TranscriptBlock from "@/components/TranscriptBlock";
@@ -177,12 +176,19 @@ export default async function SermonViewPage({ searchParams }: SermonViewPagePro
           </div>
         </div>
 
-        <SermonSummary summary={resolvedSermon.summary} />
+        <SermonSummary
+          summary={resolvedSermon.summary}
+          sermonId={resolvedSermon.id}
+          sermonTitle={resolvedSermon.title}
+        />
         {resolvedSermon.summaryPoints?.points?.length ? (
           <SermonPoints points={resolvedSermon.summaryPoints.points} />
         ) : null}
-        <TranscriptBlock transcript={resolvedSermon.transcript} />
-        <ReportIssueForm sermonId={resolvedSermon.id} sermonTitle={resolvedSermon.title} />
+        <TranscriptBlock
+          transcript={resolvedSermon.transcript}
+          sermonId={resolvedSermon.id}
+          sermonTitle={resolvedSermon.title}
+        />
       </div>
 
       <aside className="space-y-4">

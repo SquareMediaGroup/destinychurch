@@ -8,6 +8,7 @@ import { useToast } from "./ToastProvider";
 type ReportIssueFormProps = {
   sermonId: string;
   sermonTitle: string;
+  defaultIssueType?: "summary" | "transcript" | "other";
 };
 
 const initialState: ReportFormState = { status: "idle" };
@@ -25,7 +26,7 @@ function SubmitButton() {
   );
 }
 
-export default function ReportIssueForm({ sermonId, sermonTitle }: ReportIssueFormProps) {
+export default function ReportIssueForm({ sermonId, sermonTitle, defaultIssueType = "summary" }: ReportIssueFormProps) {
   const [state, formAction] = useFormState(submitReport, initialState);
   const toast = useToast();
   const formRef = useRef<HTMLFormElement>(null);
@@ -93,6 +94,7 @@ export default function ReportIssueForm({ sermonId, sermonTitle }: ReportIssueFo
           <select
             name="issueType"
             required
+            defaultValue={defaultIssueType}
             className="w-full rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-muted)] px-3 py-2 text-sm text-[var(--foreground)] outline-none transition focus:border-destiny-orange focus:ring-2 focus:ring-destiny-orange/30"
           >
             <option value="summary">Summary</option>

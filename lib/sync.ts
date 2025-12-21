@@ -15,6 +15,8 @@ export type SyncResult = {
 type SyncOptions = {
   limit?: number;
   sinceWeeks?: number;
+  latestOnly?: boolean;
+  dryRun?: boolean;
 };
 
 const normalize = (text: string) =>
@@ -123,12 +125,21 @@ export async function syncSermons(options: SyncOptions = {}): Promise<SyncResult
       });
     });
 
-  await Promise.all(sermons.map((sermon) => saveSermon(sermon)));
+  if (options.latestOnly) {
+    sermons.sort(
+      (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
+    );
+    sermons.splice(1);
+  }
+
+  if (!options.dryRun) {
+    await Promise.all(sermons.map((sermon) => saveSermon(sermon)));
+  }
 
   return {
     podcastCount: podcastLimit.length,
     youtubeCount: youtube.length,
-    saved: sermons.length,
+    saved: options.dryRun ? 0 : sermons.length,
     sermons,
     sample: sermons.slice(0, 3),
     note: `Matched by same-day date over the last ${sinceWeeks} weeks; fetched limit=${limit}.`,

@@ -6,6 +6,7 @@ import { redirect } from "next/navigation";
 import { getSupabaseAdmin } from "@/lib/supabase";
 import { verifyAdminUser, createAdminUser, deleteAdminUser } from "@/lib/adminUsers";
 import { syncSermons } from "@/lib/sync";
+import { saveSermon } from "@/lib/db";
 import { createPlaylistRecord } from "@/lib/playlists";
 
 type MinimalSermonRow = {
@@ -76,6 +77,12 @@ const youtubeIdFromLink = (input: string) => {
   return "";
 };
 
+const parseDate = (value: string) => {
+  if (!value) return null;
+  const asDate = new Date(value);
+  return Number.isNaN(asDate.getTime()) ? null : asDate.toISOString().slice(0, 10);
+};
+
 export async function updateSermonMeta(formData: FormData) {
   const cookieStore = await cookies();
   const authed = cookieStore.get(ADMIN_COOKIE)?.value === "1";
@@ -87,6 +94,14 @@ export async function updateSermonMeta(formData: FormData) {
   const title = String(formData.get("title") || "").trim();
   const videoInput = String(formData.get("video") || "").trim();
   const podcastInput = String(formData.get("podcast") || "").trim();
+  const thumbnail = String(formData.get("thumbnail") || "").trim();
+  const date = parseDate(String(formData.get("date") || ""));
+  const youtubePubDate = parseDate(String(formData.get("youtubePubDate") || ""));
+  const podcastPubDate = parseDate(String(formData.get("podcastPubDate") || ""));
+  const summary = String(formData.get("summary") || "");
+  const transcript = String(formData.get("transcript") || "");
+  const isGuest = String(formData.get("isGuest") || "") === "on";
+  const guestName = String(formData.get("guestName") || "").trim();
   const youtubeId = youtubeIdFromLink(videoInput);
 
   if (!id || !title) {
@@ -94,13 +109,21 @@ export async function updateSermonMeta(formData: FormData) {
   }
 
   const supabase = getSupabaseAdmin();
-  const update: Record<string, unknown> = { title };
+  const update: Record<string, unknown> = {
+    title,
+    date,
+    youtube_pub_date: youtubePubDate,
+    podcast_pub_date: podcastPubDate,
+    summary: summary || null,
+    transcript: transcript || null,
+    guest_speaker: isGuest ? guestName || "YES" : null,
+  };
   if (youtubeId) {
     update.youtube_video_id = youtubeId;
-    update.thumbnail_url = `https://i.ytimg.com/vi/${youtubeId}/hqdefault.jpg`;
+    update.thumbnail_url = thumbnail || `https://i.ytimg.com/vi/${youtubeId}/hqdefault.jpg`;
   } else {
     update.youtube_video_id = null;
-    update.thumbnail_url = null;
+    update.thumbnail_url = thumbnail || null;
   }
 
   if (podcastInput) {
@@ -127,6 +150,57 @@ export async function updateSermonMeta(formData: FormData) {
   revalidatePath("/admin");
 }
 
+export async function createSermon(formData: FormData) {
+  const cookieStore = await cookies();
+  const authed = cookieStore.get(ADMIN_COOKIE)?.value === "1";
+  if (!authed) {
+    throw new Error("Unauthorized");
+  }
+
+  const title = String(formData.get("title") || "").trim();
+  const date = parseDate(String(formData.get("date") || ""));
+  const videoInput = String(formData.get("video") || "").trim();
+  const podcastInput = String(formData.get("podcast") || "").trim();
+  const youtubeId = youtubeIdFromLink(videoInput);
+  const youtubePubDate = parseDate(String(formData.get("youtubePubDate") || ""));
+  const podcastPubDate = parseDate(String(formData.get("podcastPubDate") || ""));
+  const thumbnail = String(formData.get("thumbnail") || "").trim();
+  const summary = String(formData.get("summary") || "");
+  const transcript = String(formData.get("transcript") || "");
+  const isGuest = String(formData.get("isGuest") || "") === "on";
+  const guestName = String(formData.get("guestName") || "").trim();
+
+  if (!title) throw new Error("Title is required");
+  if (!date) throw new Error("Date is required");
+
+  const id = `manual:${crypto.randomUUID()}`;
+  const supabase = getSupabaseAdmin();
+  const { data, error } = await supabase
+    .from("sermons")
+    .insert({
+      id,
+      title,
+      date,
+      youtube_video_id: youtubeId || null,
+      youtube_pub_date: youtubePubDate,
+      podcast_guid: podcastInput || null,
+      podcast_audio_url: podcastInput || null,
+      podcast_pub_date: podcastPubDate,
+      thumbnail_url: thumbnail || (youtubeId ? `https://i.ytimg.com/vi/${youtubeId}/hqdefault.jpg` : null),
+      summary: summary || null,
+      transcript: transcript || null,
+      guest_speaker: isGuest ? guestName || "YES" : null,
+    })
+    .select("id")
+    .maybeSingle();
+
+  if (error) throw new Error(error.message);
+
+  revalidatePath("/sermons");
+  revalidatePath("/admin");
+  return data?.id;
+}
+
 export async function runSyncNow() {
   const cookieStore = await cookies();
   const authed = cookieStore.get(ADMIN_COOKIE)?.value === "1";
@@ -148,6 +222,57 @@ export async function runSyncNow() {
     redirect(
       `/admin?syncError=${encodeURIComponent(message)}`,
     );
+  }
+}
+
+export async function runSyncLatest() {
+  const cookieStore = await cookies();
+  const authed = cookieStore.get(ADMIN_COOKIE)?.value === "1";
+  if (!authed) {
+    throw new Error("Unauthorized");
+  }
+
+  try {
+    const result = await syncSermons({ limit: 1, latestOnly: true, dryRun: true });
+    const latest = result.sermons[0];
+    if (!latest) {
+      redirect(`/admin?syncError=${encodeURIComponent("No sermon data returned.")}`);
+    }
+
+    const supabase = getSupabaseAdmin();
+    const latestDate = new Date(latest.date);
+    const dayStart = new Date(latestDate);
+    dayStart.setHours(0, 0, 0, 0);
+    const dayEnd = new Date(latestDate);
+    dayEnd.setHours(23, 59, 59, 999);
+
+    const { data: existing, error } = await supabase
+      .from("sermons")
+      .select("id")
+      .gte("date", dayStart.toISOString())
+      .lt("date", dayEnd.toISOString())
+      .limit(1);
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    if (existing && existing.length > 0) {
+      const dateLabel = latestDate.toISOString().slice(0, 10);
+      redirect(
+        `/admin?syncNotice=already&date=${encodeURIComponent(dateLabel)}`,
+      );
+    }
+
+    await saveSermon(latest);
+    revalidatePath("/sermons");
+    revalidatePath("/admin");
+    redirect(`/admin?sync=ok&saved=1&podcast=${result.podcastCount}&youtube=${result.youtubeCount}`);
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : "Sync failed unexpectedly";
+    console.error("Sync latest failed", error);
+    redirect(`/admin?syncError=${encodeURIComponent(message)}`);
   }
 }
 
@@ -236,6 +361,21 @@ export async function deleteAdminUserAction(formData: FormData) {
   const username = String(formData.get("username") || "").trim();
   if (!username || username === adminUser) throw new Error("Cannot delete that user");
   await deleteAdminUser(username);
+  revalidatePath("/admin");
+}
+
+export async function resolveReport(formData: FormData) {
+  const cookieStore = await cookies();
+  const authed = cookieStore.get(ADMIN_COOKIE)?.value === "1";
+  if (!authed) throw new Error("Unauthorized");
+
+  const id = String(formData.get("id") || "");
+  const acknowledged = String(formData.get("ack") || "") === "on";
+  if (!id || !acknowledged) throw new Error("Please confirm you read the report");
+
+  const supabase = getSupabaseAdmin();
+  const { error } = await supabase.from("ai_reports").delete().eq("id", id);
+  if (error) throw new Error(error.message);
   revalidatePath("/admin");
 }
 

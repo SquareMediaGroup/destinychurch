@@ -10,7 +10,6 @@ create table if not exists sermons (
   youtube_video_id text,
   youtube_pub_date timestamptz,
   thumbnail_url text,
-  duration_seconds int,
   summary text,
   summary_points jsonb,
   transcript text,
@@ -19,7 +18,6 @@ create table if not exists sermons (
 );
 
 alter table if exists sermons
-  add column if not exists duration_seconds int,
   add column if not exists summary_points jsonb;
 
 create table if not exists sermon_link_suggestions (

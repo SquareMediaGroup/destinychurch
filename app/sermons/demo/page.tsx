@@ -1,68 +1,39 @@
-import Link from "next/link";
-import PodcastPlayer from "@/components/PodcastPlayer";
 import SermonSummary from "@/components/SermonSummary";
 import TranscriptBlock from "@/components/TranscriptBlock";
-import VideoPlayer from "@/components/VideoPlayer";
-import { listSermons } from "@/lib/db";
-import { Sermon } from "@/lib/types";
 
-export const dynamic = "force-dynamic";
-export const runtime = "nodejs";
+export const dynamic = "force-static";
 
-const fallback: Sermon = {
-  id: "demo-sermon",
-  title: "Living Sent in Every Season",
-  date: new Date().toISOString(),
-  speaker: "Destiny Church",
-  youtubeVideoId: "d6DiiHAGKMI",
-  youtubePubDate: new Date().toISOString(),
-  podcastAudioUrl:
-    "https://media.destiny.example.com/sermons/2025-02-02-audio.mp3",
-  thumbnailUrl: "/destiny-logo.svg",
-  summary: [
-    "- **Live sent:** the Holy Spirit sends us into workplaces, homes, and city streets with courage.",
-    "- **Stay rooted:** _Acts 1:8_ reminds us that His power meets us in every season we walk through.",
-    "- **Walk together:** pray, invite, and build with your Connect Group so no one carries the mission alone.",
-  ].join("\n"),
-  transcript:
-    "Today we’re reminded that Jesus sends us into every season and space. The harvest is in our hands and homes...",
-};
+const demoSummary = `
+- God meets us in ordinary moments as well as in the miraculous.
+- Faith grows when we bring our whole story to Jesus—wins, wounds, and waiting.
+- Community is the place we practice grace, tell the truth, and keep our eyes on the hope ahead.
+`;
 
-export default async function DemoSermonPage() {
-  const sermons = await listSermons(1);
-  const sermon = sermons[0] ?? fallback;
+const demoTranscript = `00:00 Welcome everyone. Today we're talking about how God moves in both the ordinary and the miraculous.
 
+02:15 You might think you need a dramatic encounter to grow, but most of the time growth happens in small, daily decisions.
+
+05:30 We read the Gospels and see Jesus meeting people on dusty roads and at dinner tables, not just on mountaintops.
+
+09:45 Faith expands when we let Jesus hold every part of our story—our wins, our wounds, and our waiting.
+
+15:00 Community is where we practice grace. It's where we tell the truth kindly, forgive quickly, and encourage consistently.
+
+20:30 The hope ahead is certain. Until then, we keep walking with Jesus together, one faithful step at a time.`;
+
+export default function DemoSermonPage() {
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold text-destiny-black">
-          {sermon.title}
-        </h1>
-        <Link href="/sermons" className="text-sm font-semibold text-destiny-orange">
-          ← Back to sermons
-        </Link>
+    <div className="space-y-4 rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface)] p-5 shadow-sm">
+      <div>
+        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-destiny-orange">
+          Demo
+        </p>
+        <h1 className="text-3xl font-bold text-[var(--foreground)]">Sample Sermon</h1>
+        <p className="text-sm text-destiny-grey">Example of summary and transcript components</p>
       </div>
 
-      <VideoPlayer
-        sermonId={sermon.id}
-        title={sermon.title}
-        videoUrl={sermon.videoUrl}
-        poster={sermon.thumbnailUrl}
-        durationSeconds={sermon.durationSeconds}
-        youtubeVideoId={sermon.youtubeVideoId}
-      />
-
-      {sermon.podcastAudioUrl && (
-        <PodcastPlayer
-          sermonId={sermon.id}
-          title={sermon.title}
-          audioUrl={sermon.podcastAudioUrl}
-          durationSeconds={sermon.durationSeconds}
-        />
-      )}
-
-      <SermonSummary summary={sermon.summary} />
-      <TranscriptBlock transcript={sermon.transcript} />
+      <SermonSummary summary={demoSummary} sermonId="demo" sermonTitle="Sample Sermon" />
+      <TranscriptBlock transcript={demoTranscript} sermonId="demo" sermonTitle="Sample Sermon" />
     </div>
   );
 }

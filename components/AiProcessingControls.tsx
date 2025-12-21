@@ -43,7 +43,6 @@ export default function AiProcessingControls({
       {mode === "upload" ? (
         <form
           action={uploadAction}
-          encType="multipart/form-data"
           className="flex flex-wrap items-center gap-2"
         >
           <input type="hidden" name="id" value={sermonId} />

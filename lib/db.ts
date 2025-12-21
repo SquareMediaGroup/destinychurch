@@ -10,8 +10,8 @@ export type SermonRow = {
   podcast_guid?: string;
   podcast_pub_date?: string;
   podcast_audio_url?: string;
+  guest_speaker?: string | null;
   thumbnail_url?: string;
-  duration_seconds?: number | null;
   summary?: string;
   summary_points?: SummaryPointsPayload | null;
   transcript?: string;
@@ -21,17 +21,14 @@ export const mapRowToSermon = (row: SermonRow): Sermon => ({
   id: row.id,
   title: row.title,
   date: row.date,
-  speaker: "Destiny Church",
+  speaker: row.guest_speaker || "Destiny Church",
+  guestSpeaker: row.guest_speaker ?? null,
   youtubeVideoId: row.youtube_video_id ?? undefined,
   youtubePubDate: row.youtube_pub_date ?? undefined,
   podcastGuid: row.podcast_guid ?? undefined,
   podcastPubDate: row.podcast_pub_date ?? undefined,
   podcastAudioUrl: row.podcast_audio_url ?? undefined,
   thumbnailUrl: row.thumbnail_url || "/destiny-logo.svg",
-  durationSeconds:
-    typeof row.duration_seconds === "number" && Number.isFinite(row.duration_seconds)
-      ? row.duration_seconds
-      : undefined,
   summary: row.summary ?? undefined,
   summaryPoints:
     row.summary_points &&
@@ -83,7 +80,6 @@ export async function saveSermon(sermon: Sermon) {
         podcast_pub_date: sermon.podcastPubDate,
         podcast_audio_url: sermon.podcastAudioUrl,
         thumbnail_url: sermon.thumbnailUrl,
-        duration_seconds: sermon.durationSeconds,
         summary: sermon.summary,
         transcript: sermon.transcript,
         updated_at: new Date().toISOString(),
@@ -178,6 +174,21 @@ export async function listSermons(limit = 25): Promise<Sermon[]> {
   const { data, error } = await supabase
     .from("sermons")
     .select("*")
+    .order("date", { ascending: false })
+    .limit(limit);
+
+  if (error) throw error;
+  if (!data) return [];
+  return (data as SermonRow[]).map(mapRowToSermon);
+}
+
+export async function listGuestSermons(limit = 50): Promise<Sermon[]> {
+  const supabase = tryGetSupabaseAdmin();
+  if (!supabase) return [];
+  const { data, error } = await supabase
+    .from("sermons")
+    .select("*")
+    .not("guest_speaker", "is", null)
     .order("date", { ascending: false })
     .limit(limit);
 

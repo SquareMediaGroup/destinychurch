@@ -27,6 +27,7 @@ export type Sermon = {
   podcastGuid?: string;
   podcastPubDate?: string;
   podcastAudioUrl?: string;
+  guestSpeaker?: string | null;
   videoUrl?: string;
   thumbnailUrl: string;
   durationSeconds?: number;

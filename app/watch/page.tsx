@@ -10,17 +10,17 @@ export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
 export default async function WatchPage() {
-  const sermons = await listSermons(4);
+  const sermons = await listSermons(3);
 
   return (
     <div className="space-y-12">
       <Hero
-        kicker="Watch"
+        kicker="NEW - AI Sermon Summaries"
         title="Watch live & on demand"
         subtitle="Join us online every Sunday or catch up midweek with video, podcast, and transcripts."
-        backgroundImage="https://images.unsplash.com/photo-1506157786151-b8491531f063?auto=format&fit=crop&w=1900&q=80"
+        backgroundImage="https://destinytees.uk/wp-content/uploads/2024/01/Bible-scaled.jpg"
         primaryAction={{ label: "Watch latest sermon", href: "/sermons" }}
-        secondaryAction={{ label: "Plan an in-person visit", href: "/new-here" }}
+        secondaryAction={{ label: "Plan an in-person visit", href: "https://destinytees.uk/visit" }}
       />
 
       <Section

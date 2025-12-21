@@ -1,28 +1,26 @@
-import Image from "next/image";
 import Link from "next/link";
-import logoColor from "@/Logos/Destiny Church Full Logo Colour.svg";
-import logoWhite from "@/Logos/Destiny Church Full Logo White.svg";
+import logoFull from "@/Logos/Destiny Church Full Logo Color and White.svg";
+import LogoImage from "./LogoImage";
 
 const primaryLinks = [
   { label: "Home", href: "/" },
-  { label: "New here", href: "/new-here" },
-  { label: "What’s on", href: "/whats-on" },
-  { label: "Watch", href: "/watch" },
+  { label: "New here", href: "https://destinytees.uk/new-here" },
+  { label: "What’s on", href: "https://destinytees.uk/whats-on" },
   { label: "Sermons", href: "/sermons" },
 ];
 
 const connectLinks = [
-  { label: "Connect", href: "/connect" },
-  { label: "About", href: "/about" },
-  { label: "Give", href: "/give" },
-  { label: "Contact", href: "/contact" },
+  { label: "Connect", href: "https://destinytees.uk/connect" },
+  { label: "About", href: "https://destinytees.uk/about" },
+  { label: "Give", href: "https://destinytees.uk/give" },
+  { label: "Contact", href: "https://destinytees.uk/contact" },
   { label: "Admin", href: "/admin" },
 ];
 
 const socials = [
-  { label: "Facebook", href: "https://facebook.com" },
-  { label: "Instagram", href: "https://instagram.com" },
-  { label: "YouTube", href: "https://youtube.com" },
+  { label: "Facebook", href: "https://facebook.com/destinyteesvalley" },
+  { label: "Instagram", href: "https://instagram.com/destinychurchteesvalley" },
+  { label: "YouTube", href: "https://youtube.com/destinychurchteesvalley" },
 ];
 
 export default function SiteFooter() {
@@ -32,19 +30,12 @@ export default function SiteFooter() {
         <div className="grid gap-10 md:grid-cols-[1.2fr_1fr_1fr] lg:grid-cols-[1.3fr_1fr_1fr_1fr]">
           <div className="space-y-5">
             <div className="relative h-11 w-[200px]">
-              <Image
-                src={logoColor}
+              <LogoImage
+                src={logoFull}
                 alt="Destiny Church"
                 fill
                 sizes="200px"
-                className="object-contain logo-color"
-              />
-              <Image
-                src={logoWhite}
-                alt="Destiny Church"
-                fill
-                sizes="200px"
-                className="object-contain logo-white"
+                className="object-contain"
               />
             </div>
             <p className="max-w-md text-sm text-white/70">
@@ -115,17 +106,54 @@ export default function SiteFooter() {
             </div>
             <div className="text-sm text-white/70">
               <p>Destiny Centre, 395 Norton Road</p>
-              <p>Stockton-on-Tees · TS20 2QQ · enquires@destinytees.uk</p>
-              <p>+44 (0) 1642 559 797</p>
+              <p className="flex flex-wrap items-center gap-2 text-white/60">
+                <a
+                  href="https://maps.apple.com/?q=Destiny%20Centre%2C%20395%20Norton%20Road%2C%20Stockton-on-Tees%20TS20%202QQ"
+                  className="underline underline-offset-2 transition hover:text-white"
+                  target="_blank"
+                  rel="noreferrer noopener"
+                >
+                  Open in Maps
+                </a>
+                <span aria-hidden>·</span>
+                <a
+                  href="https://www.google.com/maps/search/?api=1&query=Destiny%20Centre%2C%20395%20Norton%20Road%2C%20Stockton-on-Tees%20TS20%202QQ"
+                  className="underline underline-offset-2 transition hover:text-white"
+                  target="_blank"
+                  rel="noreferrer noopener"
+                >
+                  Open in Google Maps
+                </a>
+              </p>
+              <p>
+                <a
+                  href="mailto:enquires@destinytees.uk"
+                  className="underline underline-offset-2 transition hover:text-white"
+                >
+                  enquires@destinytees.uk
+                </a>
+              </p>
+              <p>
+                <a
+                  href="tel:+441642559797"
+                  className="underline underline-offset-2 transition hover:text-white"
+                >
+                  +44 (0) 1642 559 797
+                </a>
+              </p>
             </div>
           </div>
         </div>
 
         <div className="mt-10 flex flex-col gap-3 border-t border-white/10 pt-6 text-xs text-white/60 sm:flex-row sm:items-center sm:justify-between">
-          <span>© {new Date().getFullYear()} Destiny Church</span>
-          <span className="text-white/50">
-            Destiny Church Tees Valley · Company No. 06261423
-          </span>
+          <a href="https://sermons.destinytees.uk" className="text-white/50">
+            <span>© {new Date().getFullYear()} Destiny Sermons </span> 
+          </a>
+          <a href="https://destinytees.uk" className="text-white/50">
+            <span className="text-white/50">
+              Destiny Church Tees Valley · Company No. 06261423
+            </span>
+          </a>
         </div>
       </div>
     </footer>

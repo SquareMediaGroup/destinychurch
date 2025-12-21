@@ -51,7 +51,7 @@ export default function Hero({
               {kicker}
             </span>
           )}
-          <h1 className="text-4xl font-bold leading-tight sm:text-5xl">
+          <h1 className="text-4xl font-bold leading-tight !text-white sm:text-5xl">
             {title}
           </h1>
           {subtitle && (

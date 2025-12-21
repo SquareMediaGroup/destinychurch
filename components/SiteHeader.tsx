@@ -2,31 +2,40 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useState } from "react";
-import { usePathname } from "next/navigation";
+import { type FormEvent, useEffect, useState } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import CTAButton from "./CTAButton";
+import Icon from "./Icon";
 import ThemeToggle from "./ThemeToggle";
-import HeaderAuthButton from "./HeaderAuthButton";
 import logoColor from "@/Logos/Destiny Church Full Logo Colour.svg";
-import logoWhite from "@/Logos/Destiny Church Full Logo White.svg";
+import logoWhite from "@/Logos/Destiny Church Full Logo Color and White.svg";
 
 const navLinks = [
-  { href: "/new-here", label: "New here?" },
-  { href: "/whats-on", label: "What’s on" },
-  { href: "/watch", label: "Watch" },
-  { href: "/sermons", label: "Sermons" },
-  { href: "/connect", label: "Connect" },
-  { href: "/about", label: "About" },
-  { href: "/contact", label: "Contact" },
+  { href: "/sermons/series", label: "Series" },
+  { href: "/sermons/guests", label: "Guests" },
 ];
 
 export default function SiteHeader() {
   const pathname = usePathname();
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const [open, setOpen] = useState(false);
+  const queryParam = searchParams.get("q") ?? "";
+  const [query, setQuery] = useState(queryParam);
+
+  useEffect(() => {
+    setQuery(queryParam);
+  }, [queryParam]);
+
+  const handleSearch = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const trimmed = query.trim();
+    router.push(trimmed ? `/sermons?q=${encodeURIComponent(trimmed)}` : "/sermons");
+  };
 
   return (
     <header className="sticky top-0 z-50 border-b border-white/10 bg-[var(--surface-overlay)]/80 text-[var(--foreground)] backdrop-blur">
-      <div className="mx-auto flex w-full max-w-7xl items-center justify-between px-4 py-4 lg:px-8">
+      <div className="mx-auto flex w-full max-w-7xl items-center gap-4 px-4 py-4 lg:px-8">
         <Link href="/" className="flex items-center gap-3" aria-label="Destiny Church home">
           <div className="relative h-10 w-[190px]">
             <Image
@@ -36,6 +45,9 @@ export default function SiteHeader() {
               priority
               sizes="190px"
               className="object-contain logo-color"
+              draggable={false}
+              onDragStart={(event) => event.preventDefault()}
+              onContextMenu={(event) => event.preventDefault()}
             />
             <Image
               src={logoWhite}
@@ -44,11 +56,17 @@ export default function SiteHeader() {
               priority
               sizes="190px"
               className="object-contain logo-white"
+              draggable={false}
+              onDragStart={(event) => event.preventDefault()}
+              onContextMenu={(event) => event.preventDefault()}
             />
           </div>
         </Link>
 
-        <nav className="hidden items-center gap-7 text-sm font-semibold text-destiny-grey md:flex">
+        <nav className="hidden flex-1 items-center justify-center gap-4 text-sm font-semibold text-destiny-grey md:flex">
+          <CTAButton href="/sermons" className="px-4 py-2 text-xs">
+            Sermons
+          </CTAButton>
           {navLinks.map((link) => {
             const isActive =
               pathname === link.href ||
@@ -68,17 +86,22 @@ export default function SiteHeader() {
         </nav>
 
         <div className="flex items-center gap-3">
-          <div className="hidden items-center gap-2 md:flex">
-            <Link
-              href="/give"
-              className="rounded-full border border-[var(--border-subtle)] px-4 py-2 text-sm font-semibold text-destiny-grey transition hover:border-destiny-orange hover:text-destiny-orange"
-            >
-              Give
-            </Link>
-            <CTAButton href="/new-here">Plan your visit</CTAButton>
-          </div>
+          <form
+            onSubmit={handleSearch}
+            className="hidden items-center gap-2 rounded-full border border-[var(--border-subtle)] bg-[var(--surface)] px-3 py-2 text-xs shadow-sm md:flex"
+          >
+            <Icon name="search" size={16} className="text-destiny-grey/70" />
+            <input
+              type="search"
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder="Search sermons..."
+              aria-label="Search sermons..."
+              enterKeyHint="search"
+              className="w-32 bg-transparent text-[13px] text-[var(--foreground)] placeholder:text-destiny-grey/80 focus:outline-none lg:w-40"
+            />
+          </form>
           <ThemeToggle />
-          <HeaderAuthButton />
           <button
             type="button"
             onClick={() => setOpen((prev) => !prev)}
@@ -132,21 +155,12 @@ export default function SiteHeader() {
             </div>
             <div className="mt-4 grid gap-3">
               <CTAButton
-                href="/new-here"
+                href="/sermons"
                 className="w-full text-center"
                 onClick={() => setOpen(false)}
               >
-                Plan your visit
+                Sermons
               </CTAButton>
-              <CTAButton
-                href="/give"
-                variant="ghost"
-                className="w-full text-center"
-                onClick={() => setOpen(false)}
-              >
-                Give online
-              </CTAButton>
-              <HeaderAuthButton className="w-full text-center" />
             </div>
           </div>
         </div>

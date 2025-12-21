@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState, useMemo, createContext, useContext } from "react";
+import { useCallback, useState, useMemo, createContext, useContext, useEffect } from "react";
 
 export type CookieConsentState = {
   essential: true;
@@ -51,8 +51,15 @@ type CookieConsentContextValue = {
 const CookieConsentContext = createContext<CookieConsentContextValue | undefined>(undefined);
 
 export function CookieConsentProvider({ children }: { children: React.ReactNode }) {
-  const [consent, setConsent] = useState<CookieConsentState | null>(() => readConsent());
+  const [consent, setConsent] = useState<CookieConsentState | null>(null);
   const decided = useMemo(() => consent !== null, [consent]);
+
+  useEffect(() => {
+    const stored = readConsent();
+    if (stored) {
+      setConsent(stored);
+    }
+  }, []);
 
   const update = useCallback((next: CookieConsentState) => {
     setConsent(next);

@@ -23,37 +23,37 @@ const dosis = Dosis({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://destinytees.uk"),
+  metadataBase: new URL("https://sermons.destinytees.uk"),
   title: {
-    default: "Destiny Church Tees Valley",
-    template: "%s | Destiny Church",
+    default: "Destiny Sermons",
+    template: "%s | Destiny Sermons",
   },
   description:
-    "A welcoming, Christ-centred church in Stockton-on-Tees. Plan your visit, explore what’s on, and watch the latest sermons.",
+    "Watch the latest Destiny Sermons with summaries, transcripts, and podcasts.",
   alternates: {
     canonical: "/",
   },
   openGraph: {
-    title: "Destiny Church Tees Valley",
+    title: "Destiny Sermons",
     description:
-      "A welcoming, Christ-centred church in Stockton-on-Tees. Plan your visit, explore what’s on, and watch the latest sermons.",
-    url: "https://destinytees.uk",
-    siteName: "Destiny Church",
+      "Watch the latest Destiny Sermons with summaries, transcripts, and podcasts.",
+    url: "https://sermons.destinytees.uk",
+    siteName: "Destiny Sermons",
     type: "website",
     images: [
       {
         url: "https://images.unsplash.com/photo-1519500528352-2d1460418d14?auto=format&fit=crop&w=1600&q=80",
         width: 1600,
         height: 900,
-        alt: "Destiny Church gathering",
+        alt: "Destiny Sermons gathering",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Destiny Church Tees Valley",
+    title: "Destiny Sermons",
     description:
-      "Plan your visit, discover what’s on, and catch up with the latest sermons.",
+      "Watch the latest Destiny Sermons with summaries, transcripts, and podcasts.",
     images: [
       "https://images.unsplash.com/photo-1519500528352-2d1460418d14?auto=format&fit=crop&w=1600&q=80",
     ],

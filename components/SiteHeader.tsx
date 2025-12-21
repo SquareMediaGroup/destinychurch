@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { type FormEvent, useEffect, useState } from "react";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import CTAButton from "./CTAButton";
 import Icon from "./Icon";
 import ThemeToggle from "./ThemeToggle";
@@ -18,14 +18,17 @@ const navLinks = [
 export default function SiteHeader() {
   const pathname = usePathname();
   const router = useRouter();
-  const searchParams = useSearchParams();
   const [open, setOpen] = useState(false);
-  const queryParam = searchParams.get("q") ?? "";
-  const [query, setQuery] = useState(queryParam);
+  const [query, setQuery] = useState("");
 
   useEffect(() => {
-    setQuery(queryParam);
-  }, [queryParam]);
+    if (!pathname.startsWith("/sermons")) {
+      setQuery("");
+      return;
+    }
+    const params = new URLSearchParams(window.location.search);
+    setQuery(params.get("q") ?? "");
+  }, [pathname]);
 
   const handleSearch = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();

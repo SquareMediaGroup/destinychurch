@@ -8,6 +8,7 @@ import { PlaylistItem } from "@/lib/types";
 type PlaylistViewerProps = {
   playlistTitle: string;
   items: PlaylistItem[];
+  label?: string;
 };
 
 const formatDate = (dateString: string) =>
@@ -17,7 +18,7 @@ const formatDate = (dateString: string) =>
     year: "numeric",
   }).format(new Date(dateString));
 
-export default function PlaylistViewer({ playlistTitle, items }: PlaylistViewerProps) {
+export default function PlaylistViewer({ playlistTitle, items, label = "Playlist" }: PlaylistViewerProps) {
   const [activeIndex, setActiveIndex] = useState(0);
 
   const activeItem = items[activeIndex];
@@ -71,7 +72,7 @@ export default function PlaylistViewer({ playlistTitle, items }: PlaylistViewerP
         <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[var(--border-subtle)] bg-[var(--surface)] px-4 py-3 shadow-sm">
           <div>
             <p className="text-xs font-semibold uppercase tracking-wide text-destiny-orange">
-              Playlist
+              {label}
             </p>
             <p className="text-lg font-semibold text-[var(--foreground)]">
               {playlistTitle}

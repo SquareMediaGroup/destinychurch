@@ -448,5 +448,7 @@ export async function createPlaylistAction(formData: FormData) {
 
   revalidatePath("/playlists");
   revalidatePath(`/playlists/${encodeURIComponent(slug)}`);
+  revalidatePath("/sermons/series");
+  revalidatePath(`/sermons/series/${encodeURIComponent(slug)}`);
   revalidatePath("/admin");
 }

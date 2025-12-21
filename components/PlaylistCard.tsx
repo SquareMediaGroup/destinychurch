@@ -2,14 +2,20 @@ import Image from "next/image";
 import Link from "next/link";
 import { Playlist } from "@/lib/types";
 
-export default function PlaylistCard({ playlist }: { playlist: Playlist }) {
+type PlaylistCardProps = {
+  playlist: Playlist;
+  basePath?: string;
+};
+
+export default function PlaylistCard({ playlist, basePath = "/playlists" }: PlaylistCardProps) {
   const firstSermon = playlist.items[0]?.sermon;
   const cover = firstSermon?.thumbnailUrl ?? "/destiny-logo.svg";
   const sermonCount = playlist.items.length;
+  const safeBase = basePath.replace(/\/$/, "");
 
   return (
     <Link
-      href={`/playlists/${encodeURIComponent(playlist.slug || playlist.id)}`}
+      href={`${safeBase}/${encodeURIComponent(playlist.slug || playlist.id)}`}
       className="group block overflow-hidden rounded-xl border border-black/5 bg-[var(--surface)] shadow-sm transition hover:-translate-y-1 hover:shadow-lg"
     >
       <div className="relative aspect-video overflow-hidden bg-destiny-grey/5">

@@ -87,6 +87,8 @@ export async function POST(request: NextRequest) {
 
     revalidatePath("/playlists");
     revalidatePath(`/playlists/${slug}`);
+    revalidatePath("/sermons/series");
+    revalidatePath(`/sermons/series/${slug}`);
     revalidatePath("/admin");
 
     return NextResponse.redirect(

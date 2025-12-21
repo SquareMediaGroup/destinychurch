@@ -591,6 +591,7 @@ function SermonTable({ sermons }: { sermons: Awaited<ReturnType<typeof listSermo
                     <AiProcessingControls
                       sermonId={sermon.id}
                       hasTranscript={hasTranscript}
+                      hasSummaryPoints={hasSummaryPoints}
                       uploadAction={processSermonSrt}
                       v2Action={processSermonV2}
                     />

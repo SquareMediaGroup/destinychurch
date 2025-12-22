@@ -43,10 +43,8 @@ export const metadata: Metadata = {
     type: "website",
     images: [
       {
-        url: "https://images.unsplash.com/photo-1519500528352-2d1460418d14?auto=format&fit=crop&w=1600&q=80",
-        width: 1600,
-        height: 900,
-        alt: "Destiny Sermons gathering",
+        url: "/og/sermons-hero.jpg",
+        alt: "Destiny Sermons",
       },
     ],
   },
@@ -55,9 +53,7 @@ export const metadata: Metadata = {
     title: "Destiny Sermons",
     description:
       "Watch the latest Destiny Sermons with summaries, transcripts, and podcasts.",
-    images: [
-      "https://images.unsplash.com/photo-1519500528352-2d1460418d14?auto=format&fit=crop&w=1600&q=80",
-    ],
+    images: ["/og/sermons-hero.jpg"],
   },
 };
 

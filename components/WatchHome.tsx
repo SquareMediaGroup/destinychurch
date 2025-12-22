@@ -4,10 +4,10 @@ import CTAButton from "@/components/CTAButton";
 import Hero from "@/components/Hero";
 import Section from "@/components/Section";
 import SermonCard from "@/components/SermonCard";
-import { listSermons } from "@/lib/db";
+import { listSermonsLite } from "@/lib/db";
 
 export default async function WatchHome() {
-  const sermons = await listSermons(3);
+  const sermons = await listSermonsLite(3);
 
   return (
     <div className="space-y-12">

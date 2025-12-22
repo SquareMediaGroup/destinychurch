@@ -1,5 +1,5 @@
 import type { MetadataRoute } from "next";
-import { listSermons } from "@/lib/db";
+import { listSermonsLite } from "@/lib/db";
 import { listPublicPlaylists } from "@/lib/playlists";
 import { getViewId } from "@/lib/viewIds";
 
@@ -50,11 +50,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     },
   ];
 
-  let sermons = [] as Awaited<ReturnType<typeof listSermons>>;
+  let sermons = [] as Awaited<ReturnType<typeof listSermonsLite>>;
   let playlists = [] as Awaited<ReturnType<typeof listPublicPlaylists>>;
 
   try {
-    sermons = await listSermons(500);
+    sermons = await listSermonsLite(500);
   } catch {
     sermons = [];
   }

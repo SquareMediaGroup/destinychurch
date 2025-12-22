@@ -17,6 +17,20 @@ export type SermonRow = {
   transcript?: string;
 };
 
+const sermonListSelect = `
+  id,
+  title,
+  date,
+  youtube_video_id,
+  youtube_pub_date,
+  podcast_guid,
+  podcast_pub_date,
+  podcast_audio_url,
+  guest_speaker,
+  thumbnail_url,
+  summary
+`;
+
 export const mapRowToSermon = (row: SermonRow): Sermon => ({
   id: row.id,
   title: row.title,
@@ -182,12 +196,26 @@ export async function listSermons(limit = 25): Promise<Sermon[]> {
   return (data as SermonRow[]).map(mapRowToSermon);
 }
 
+export async function listSermonsLite(limit = 25): Promise<Sermon[]> {
+  const supabase = tryGetSupabaseAdmin();
+  if (!supabase) return [];
+  const { data, error } = await supabase
+    .from("sermons")
+    .select(sermonListSelect)
+    .order("date", { ascending: false })
+    .limit(limit);
+
+  if (error) throw error;
+  if (!data) return [];
+  return (data as SermonRow[]).map(mapRowToSermon);
+}
+
 export async function listGuestSermons(limit = 50): Promise<Sermon[]> {
   const supabase = tryGetSupabaseAdmin();
   if (!supabase) return [];
   const { data, error } = await supabase
     .from("sermons")
-    .select("*")
+    .select(sermonListSelect)
     .not("guest_speaker", "is", null)
     .order("date", { ascending: false })
     .limit(limit);

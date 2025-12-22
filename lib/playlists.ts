@@ -85,8 +85,7 @@ const baseSelect = `
       podcast_pub_date,
       podcast_audio_url,
       thumbnail_url,
-      summary,
-      transcript
+      summary
     )
   )
 `;

@@ -1,12 +1,12 @@
 import ContinueWatchingRow from "@/components/ContinueWatchingRow";
 import SermonSearch from "@/components/SermonSearch";
-import { listSermons } from "@/lib/db";
+import { listSermonsLite } from "@/lib/db";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 300;
 export const runtime = "nodejs";
 
 export default async function SermonsPage() {
-  const sermons = await listSermons(25);
+  const sermons = await listSermonsLite(25);
 
   return (
     <div className="space-y-10">

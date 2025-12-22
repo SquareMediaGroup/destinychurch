@@ -5,11 +5,13 @@ import SermonPoints from "@/components/SermonPoints";
 import TranscriptBlock from "@/components/TranscriptBlock";
 import VideoPlayer from "@/components/VideoPlayer";
 import SermonCard from "@/components/SermonCard";
-import { getSermonByViewId, listSermons } from "@/lib/db";
+import { getSermonByViewId, listSermonsLite } from "@/lib/db";
 import { Sermon } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
+
+const transcriptsDisabled = true;
 
 type SearchParamsLike =
   | URLSearchParams
@@ -83,7 +85,7 @@ export default async function SermonViewPage({ searchParams }: SermonViewPagePro
     if (sermon) break;
   }
 
-  const allSermons = await listSermons(100);
+  const allSermons = await listSermonsLite(100);
 
   const resolvedSermon = sermon ?? (viewId ? null : allSermons[0] ?? fallbackSermon);
 
@@ -185,9 +187,10 @@ export default async function SermonViewPage({ searchParams }: SermonViewPagePro
           <SermonPoints points={resolvedSermon.summaryPoints.points} />
         ) : null}
         <TranscriptBlock
-          transcript={resolvedSermon.transcript}
+          transcript={transcriptsDisabled ? undefined : resolvedSermon.transcript}
           sermonId={resolvedSermon.id}
           sermonTitle={resolvedSermon.title}
+          disabled={transcriptsDisabled}
         />
       </div>
 

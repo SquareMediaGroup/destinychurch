@@ -2,7 +2,7 @@ import Link from "next/link";
 import PlaylistCard from "@/components/PlaylistCard";
 import { listPublicPlaylists } from "@/lib/playlists";
 
-export const revalidate = 300;
+export const revalidate = 30;
 export const runtime = "nodejs";
 
 export default async function PlaylistsPage() {

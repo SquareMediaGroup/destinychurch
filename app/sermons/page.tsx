@@ -3,7 +3,7 @@ import SermonSearch from "@/components/SermonSearch";
 import { Suspense } from "react";
 import { listSermonsLite } from "@/lib/db";
 
-export const revalidate = 300;
+export const revalidate = 30;
 export const runtime = "nodejs";
 
 export default async function SermonsPage() {

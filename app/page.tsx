@@ -2,7 +2,7 @@ import AnnouncementBanner from "@/components/AnnouncementBanner";
 import WatchHome from "@/components/WatchHome";
 import { getActiveAnnouncement } from "@/lib/announcements";
 
-export const revalidate = 300;
+export const revalidate = 30;
 export const runtime = "nodejs";
 
 export default async function Home() {

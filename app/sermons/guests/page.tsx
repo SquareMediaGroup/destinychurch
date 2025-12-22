@@ -3,7 +3,7 @@ import SermonCard from "@/components/SermonCard";
 import Section from "@/components/Section";
 import { listGuestSermons } from "@/lib/db";
 
-export const revalidate = 300;
+export const revalidate = 30;
 export const runtime = "nodejs";
 
 export const metadata: Metadata = {

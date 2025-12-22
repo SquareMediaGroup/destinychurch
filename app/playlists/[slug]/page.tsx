@@ -2,7 +2,7 @@ import Link from "next/link";
 import PlaylistViewer from "@/components/PlaylistViewer";
 import { getPlaylistBySlugOrId, listPublicPlaylists, slugify } from "@/lib/playlists";
 
-export const revalidate = 300;
+export const revalidate = 30;
 export const runtime = "nodejs";
 
 type PlaylistPageProps = {

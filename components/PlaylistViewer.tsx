@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { useMemo, useState } from "react";
 import VideoPlayer from "./VideoPlayer";
+import SermonSummary from "./SermonSummary";
 import { PlaylistItem } from "@/lib/types";
 
 type PlaylistViewerProps = {
@@ -27,13 +28,13 @@ export default function PlaylistViewer({ playlistTitle, items, label = "Playlist
     [items, activeIndex],
   );
 
-  const youtubeQueue = useMemo(
-    () =>
-      remaining
-        .map((item) => item.sermon.youtubeVideoId)
-        .filter(Boolean) as string[],
-    [remaining],
-  );
+  const youtubeQueue = useMemo(() => {
+    const currentId = activeItem?.sermon.youtubeVideoId;
+    const rest = remaining
+      .map((item) => item.sermon.youtubeVideoId)
+      .filter(Boolean) as string[];
+    return currentId ? [currentId, ...rest] : rest;
+  }, [activeItem, remaining]);
 
   if (!activeItem) {
     return (
@@ -68,6 +69,11 @@ export default function PlaylistViewer({ playlistTitle, items, label = "Playlist
           autoPlay={activeIndex > 0}
           playlistIds={youtubeQueue}
           onEnded={handleNext}
+        />
+        <SermonSummary
+          summary={activeItem.sermon.summary}
+          sermonId={activeItem.sermon.id}
+          sermonTitle={activeItem.sermon.title}
         />
         <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[var(--border-subtle)] bg-[var(--surface)] px-4 py-3 shadow-sm">
           <div>

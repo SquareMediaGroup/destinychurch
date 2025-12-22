@@ -16,13 +16,15 @@ export default function AnnouncementBanner({ message, href }: AnnouncementBanner
         aria-hidden
         className="absolute -right-12 -bottom-10 h-32 w-32 rounded-full bg-gradient-to-br from-destiny-blue/30 via-destiny-green/20 to-destiny-orange/25 blur-3xl"
       />
-      <div className="relative space-y-2">
-        <p className="text-xs font-semibold uppercase tracking-[0.22em] text-destiny-orange">
-          Important update
-        </p>
-        <p className="whitespace-pre-line text-sm text-destiny-grey">
-          {message}
-        </p>
+      <div className="relative flex flex-wrap items-start justify-between gap-4">
+        <div className="space-y-2">
+          <p className="text-xs font-semibold uppercase tracking-[0.22em] text-destiny-orange">
+            Important update
+          </p>
+          <p className="whitespace-pre-line text-sm text-destiny-grey">
+            {message}
+          </p>
+        </div>
         {href ? (
           <Link
             href={href}

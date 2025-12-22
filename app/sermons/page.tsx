@@ -1,5 +1,6 @@
 import ContinueWatchingRow from "@/components/ContinueWatchingRow";
 import SermonSearch from "@/components/SermonSearch";
+import { Suspense } from "react";
 import { listSermonsLite } from "@/lib/db";
 
 export const revalidate = 300;
@@ -27,7 +28,15 @@ export default async function SermonsPage() {
             Latest uploads
           </h2>
         </div>
-        <SermonSearch sermons={sermons} />
+        <Suspense
+          fallback={
+            <div className="rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-muted)] px-4 py-6 text-sm text-destiny-grey">
+              Loading search…
+            </div>
+          }
+        >
+          <SermonSearch sermons={sermons} />
+        </Suspense>
       </section>
     </div>
   );

@@ -7,8 +7,6 @@ import { usePathname, useRouter } from "next/navigation";
 import CTAButton from "./CTAButton";
 import Icon from "./Icon";
 import ThemeToggle from "./ThemeToggle";
-import logoColor from "@/Logos/Destiny Church Full Logo Colour.svg";
-import logoWhite from "@/Logos/Destiny Church Full Logo Color and White.svg";
 
 const navLinks = [
   { href: "/sermons/series", label: "Series" },
@@ -42,7 +40,7 @@ export default function SiteHeader() {
         <Link href="/" className="flex items-center gap-3" aria-label="Destiny Church home">
           <div className="relative h-10 w-[190px]">
             <Image
-              src={logoColor}
+              src="/destiny-logo.svg"
               alt="Destiny Church"
               fill
               priority
@@ -53,7 +51,7 @@ export default function SiteHeader() {
               onContextMenu={(event) => event.preventDefault()}
             />
             <Image
-              src={logoWhite}
+              src="/destiny-logo-white.svg"
               alt="Destiny Church"
               fill
               priority

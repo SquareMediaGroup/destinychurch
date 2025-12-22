@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import logoFull from "@/Logos/Destiny Church Full Logo Color and White.svg";
 import LogoImage from "./LogoImage";
 import ThemeToggle from "./ThemeToggle";
 
@@ -34,7 +33,7 @@ export default function SiteFooter() {
           <div className="space-y-5">
             <div className="relative h-11 w-[200px]">
               <LogoImage
-                src={logoFull}
+                src="/destiny-logo-color-white.svg"
                 alt="Destiny Church"
                 fill
                 sizes="200px"

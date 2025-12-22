@@ -104,6 +104,15 @@ export default function SiteHeader() {
               className="w-32 bg-transparent text-[13px] text-[var(--foreground)] placeholder:text-destiny-grey/80 focus:outline-none lg:w-40"
             />
           </form>
+          <Link
+            href="/settings"
+            aria-label="Settings"
+            className="flex h-9 w-9 items-center justify-center rounded-full border border-[var(--border-subtle)] bg-[var(--surface)] text-[var(--foreground)] shadow-sm transition hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-destiny-orange"
+          >
+            <span className="material-symbols-rounded text-[20px]" aria-hidden="true">
+              settings
+            </span>
+          </Link>
           <ThemeToggle />
           <button
             type="button"

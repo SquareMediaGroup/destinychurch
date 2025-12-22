@@ -2,52 +2,38 @@
 
 import { useEffect, useState } from "react";
 import Icon from "./Icon";
+import { useSettings } from "@/lib/settings";
 
 type Theme = "light" | "dark";
 
-const STORAGE_KEY = "destiny-theme";
-
-function resolvePreferredTheme(): Theme {
-  if (typeof window === "undefined") return "light";
-
-  const stored = window.localStorage.getItem(STORAGE_KEY);
-  if (stored === "light" || stored === "dark") {
-    return stored;
-  }
-
-  return window.matchMedia("(prefers-color-scheme: dark)").matches
-    ? "dark"
-    : "light";
-}
-
 export default function ThemeToggle() {
-  const [theme, setTheme] = useState<Theme>("light");
+  const { settings, updateSetting } = useSettings();
+  const [systemTheme, setSystemTheme] = useState<Theme>("light");
 
   useEffect(() => {
-    const preferred = resolvePreferredTheme();
-    setTheme((current) => (current === preferred ? current : preferred));
+    if (typeof window === "undefined") return;
+    const media = window.matchMedia("(prefers-color-scheme: dark)");
+    const update = () => setSystemTheme(media.matches ? "dark" : "light");
+    update();
+    media.addEventListener("change", update);
+    return () => media.removeEventListener("change", update);
   }, []);
 
-  useEffect(() => {
-    document.documentElement.dataset.theme = theme;
-    window.localStorage.setItem(STORAGE_KEY, theme);
-  }, [theme]);
-
+  const resolvedTheme = settings.theme === "system" ? systemTheme : settings.theme;
   const toggleTheme = () =>
-    setTheme((current) => (current === "dark" ? "light" : "dark"));
+    updateSetting("theme", resolvedTheme === "dark" ? "light" : "dark");
 
-  const label = theme === "dark" ? "Light mode" : "Dark mode";
-  const icon = theme === "dark" ? "light_mode" : "dark_mode";
+  const label = resolvedTheme === "dark" ? "Light mode" : "Dark mode";
+  const icon = resolvedTheme === "dark" ? "light_mode" : "dark_mode";
 
   return (
     <button
       type="button"
       onClick={toggleTheme}
-      className="flex items-center gap-2 rounded-full border border-[var(--border-subtle)] bg-[var(--surface)] px-2.5 py-2 text-xs font-semibold uppercase tracking-wide text-[var(--foreground)] shadow-sm transition hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-destiny-orange"
+      className="flex h-9 w-9 items-center justify-center rounded-full border border-[var(--border-subtle)] bg-[var(--surface)] text-[var(--foreground)] shadow-sm transition hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-destiny-orange"
       aria-label={`Toggle ${label.toLowerCase()}`}
     >
       <Icon name={icon} size={20} />
-      <span className="sr-only">{label}</span>
     </button>
   );
 }

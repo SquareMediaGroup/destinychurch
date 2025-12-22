@@ -3,6 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useContinueWatching } from "@/lib/continueWatching";
+import { useSettings } from "@/lib/settings";
 import { Sermon } from "@/lib/types";
 import { getViewId } from "@/lib/viewIds";
 
@@ -20,8 +21,9 @@ export default function ContinueWatchingRow({
   sermons,
 }: ContinueWatchingRowProps) {
   const { items, mounted } = useContinueWatching();
+  const { settings } = useSettings();
 
-  if (!mounted) return null;
+  if (!mounted || !settings.continueWatching) return null;
 
   const entries = items
     .map((entry) => ({

@@ -66,6 +66,44 @@ body {
   transition: background-color 0.3s ease, color 0.3s ease;
 }
 
+.material-symbols-rounded {
+  font-family: "Material Symbols Rounded";
+  font-weight: 500;
+  font-style: normal;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-variation-settings: "FILL" 0, "wght" 500, "GRAD" 0, "opsz" 24;
+}
+
+:root[data-text-size="large"] {
+  font-size: 112.5%;
+}
+
+:root[data-text-size="normal"] {
+  font-size: 100%;
+}
+
+:root[data-reduce-motion="true"] * {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+  scroll-behavior: auto !important;
+}
+
+:root[data-caption-size="small"] video::cue {
+  font-size: 0.85rem;
+}
+
+:root[data-caption-size="medium"] video::cue {
+  font-size: 1rem;
+}
+
+:root[data-caption-size="large"] video::cue {
+  font-size: 1.2rem;
+}
+
 h1,
 h2,
 h3 {

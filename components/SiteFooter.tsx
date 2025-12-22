@@ -1,6 +1,9 @@
+"use client";
+
 import Link from "next/link";
 import logoFull from "@/Logos/Destiny Church Full Logo Color and White.svg";
 import LogoImage from "./LogoImage";
+import ThemeToggle from "./ThemeToggle";
 
 const primaryLinks = [
   { label: "Home", href: "/" },
@@ -147,13 +150,25 @@ export default function SiteFooter() {
 
         <div className="mt-10 flex flex-col gap-3 border-t border-white/10 pt-6 text-xs text-white/60 sm:flex-row sm:items-center sm:justify-between">
           <a href="https://sermons.destinytees.uk" className="text-white/50">
-            <span>© {new Date().getFullYear()} Destiny Sermons </span> 
+            <span>© {new Date().getFullYear()} Destiny Sermons </span>
           </a>
-          <a href="https://destinytees.uk" className="text-white/50">
-            <span className="text-white/50">
-              Destiny Church Tees Valley · Company No. 06261423
-            </span>
-          </a>
+          <div className="flex flex-wrap items-center gap-3">
+            <Link
+              href="/settings"
+              aria-label="Settings"
+              className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/15 bg-white/5 text-white/80 transition hover:border-white/40 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white/60"
+            >
+              <span className="material-symbols-rounded text-[20px]" aria-hidden="true">
+                settings
+              </span>
+            </Link>
+            <ThemeToggle />
+            <a href="https://destinytees.uk" className="text-white/50">
+              <span className="text-white/50">
+                Destiny Church Tees Valley · Company No. 06261423
+              </span>
+            </a>
+          </div>
         </div>
       </div>
     </footer>

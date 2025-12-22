@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef } from "react";
 import Icon from "./Icon";
 import { useContinueWatching } from "@/lib/continueWatching";
 import { useCookieConsent } from "@/lib/cookieConsent";
+import { useSettings } from "@/lib/settings";
 
 const FALLBACK_VIDEO =
   "https://storage.googleapis.com/coverr-main/mp4/Mt_Baker.mp4";
@@ -50,14 +51,16 @@ export default function VideoPlayer({
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const { items, saveProgress, clearProgress } = useContinueWatching();
   const { consent, decided } = useCookieConsent();
+  const { settings } = useSettings();
 
   const mediaAllowed = consent?.media === true;
+  const resumeEnabled = settings.continueWatching && settings.resumePlayback === "resume";
 
   const resumeDetails = useMemo(
     () => items.find((item) => item.sermonId === sermonId),
     [items, sermonId],
   );
-  const resumeFrom = resumeDetails?.lastPosition ?? 0;
+  const resumeFrom = resumeEnabled ? resumeDetails?.lastPosition ?? 0 : 0;
   const resumeDuration = resumeDetails?.durationSeconds ?? durationSeconds;
   const durationLabel = durationSeconds ? formatTime(durationSeconds) : null;
 
@@ -78,7 +81,7 @@ export default function VideoPlayer({
   }, [resumeFrom]);
 
   const persistProgress = () => {
-    if (!mediaAllowed) return;
+    if (!mediaAllowed || !settings.continueWatching) return;
     const videoEl = videoRef.current;
     if (!videoEl) return;
     const currentTime = videoEl.currentTime;
@@ -91,6 +94,20 @@ export default function VideoPlayer({
     document.title = `${title} | Destiny Sermons`;
   }, [title]);
 
+  useEffect(() => {
+    const el = videoRef.current;
+    if (!el) return;
+    el.playbackRate = settings.playbackSpeed;
+  }, [settings.playbackSpeed, videoUrl]);
+
+  useEffect(() => {
+    const el = videoRef.current;
+    if (!el) return;
+    Array.from(el.textTracks).forEach((track) => {
+      track.mode = settings.captionsEnabled ? "showing" : "disabled";
+    });
+  }, [settings.captionsEnabled, videoUrl]);
+
   if (youtubeVideoId) {
     if (!decided || !mediaAllowed) {
       return (
@@ -100,26 +117,27 @@ export default function VideoPlayer({
 
     const queue = (playlistIds || []).filter(Boolean);
     const playlistQuery = queue.length ? `&playlist=${queue.join(",")}` : "";
-  const autoplayQuery = autoPlay ? "&autoplay=1" : "";
-  return (
-    <div className="overflow-hidden rounded-2xl border border-black/5 bg-white shadow-[0_16px_60px_rgba(0,0,0,0.12)]">
-      <div className="relative aspect-video w-full overflow-hidden bg-black">
-        <iframe
-          className="h-full w-full"
-          src={`https://www.youtube.com/embed/${youtubeVideoId}?rel=0${autoplayQuery}${playlistQuery}`}
+    const autoplayQuery = autoPlay ? "&autoplay=1" : "";
+    const captionsQuery = `&cc_load_policy=${settings.captionsEnabled ? "1" : "0"}`;
+    return (
+      <div className="overflow-hidden rounded-2xl border border-black/5 bg-white shadow-[0_16px_60px_rgba(0,0,0,0.12)]">
+        <div className="relative aspect-video w-full overflow-hidden bg-black">
+          <iframe
+            className="h-full w-full"
+            src={`https://www.youtube.com/embed/${youtubeVideoId}?rel=0${autoplayQuery}${playlistQuery}${captionsQuery}`}
+            title={title}
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+            allowFullScreen
+          />
+        </div>
+        <VideoFooter
           title={title}
-          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-          allowFullScreen
+          youtubeVideoId={youtubeVideoId}
+          durationLabel={durationLabel}
         />
       </div>
-      <VideoFooter
-        title={title}
-        youtubeVideoId={youtubeVideoId}
-        durationLabel={durationLabel}
-      />
-    </div>
-  );
-}
+    );
+  }
 
   if (!decided || !mediaAllowed) {
     return <BlockedVideo title={title} />;
@@ -139,7 +157,9 @@ export default function VideoPlayer({
           onPause={persistProgress}
           onSeeked={persistProgress}
           onEnded={() => {
-            clearProgress(sermonId);
+            if (settings.continueWatching) {
+              clearProgress(sermonId);
+            }
             onEnded?.();
           }}
         >
@@ -163,13 +183,13 @@ function BlockedVideo({ title }: { title: string }) {
         <div className="space-y-3">
           <p className="text-sm font-semibold text-destiny-black">Video blocked until you enable media cookies.</p>
           <p className="text-sm text-destiny-grey">
-            We use YouTube and Cloudflare embeds to stream sermons. Update your cookie preferences to allow video.
+            We use YouTube and Cloudflare embeds to stream sermons. Update your settings to allow video.
           </p>
           <a
-            href="/cookies"
+            href="/settings"
             className="inline-flex w-full items-center justify-center rounded-full bg-destiny-orange px-4 py-2 text-xs font-semibold uppercase tracking-wide text-white shadow-sm transition hover:brightness-95 sm:w-auto"
           >
-            Manage cookies
+            Manage settings
           </a>
         </div>
       </div>

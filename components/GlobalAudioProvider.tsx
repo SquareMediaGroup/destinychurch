@@ -4,6 +4,7 @@ import { createContext, useContext, useEffect, useMemo, useRef, useState } from 
 import { usePathname } from "next/navigation";
 import MiniPodcastPlayer from "./MiniPodcastPlayer";
 import { useContinueWatching } from "@/lib/continueWatching";
+import { useSettings } from "@/lib/settings";
 
 type Track = {
   sermonId: string;
@@ -30,7 +31,7 @@ const GlobalAudioContext = createContext<GlobalAudioContextValue | null>(null);
 
 export const useGlobalAudio = () => useContext(GlobalAudioContext);
 
-const allowedRoots = ["/sermons", "/playlists", "/cookies", "/privacy-policy", "/terms"];
+const allowedRoots = ["/sermons", "/playlists", "/settings", "/privacy-policy", "/terms"];
 
 const isAllowedPath = (pathname: string) => {
   if (pathname.startsWith("/admin")) return false;
@@ -43,6 +44,7 @@ export default function GlobalAudioProvider({ children }: { children: React.Reac
   const allowed = isAllowedPath(pathname);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const { mounted, items, saveProgress, clearProgress } = useContinueWatching();
+  const { settings } = useSettings();
 
   const [activeTrack, setActiveTrack] = useState<Track | null>(null);
   const [currentTime, setCurrentTime] = useState(0);
@@ -54,9 +56,10 @@ export default function GlobalAudioProvider({ children }: { children: React.Reac
 
   const resumeFrom = useMemo(() => {
     if (!mounted || !activeTrack) return 0;
+    if (!settings.continueWatching || settings.resumePlayback !== "resume") return 0;
     const match = items.find((item) => item.sermonId === activeTrack.sermonId);
     return match?.lastPosition ?? 0;
-  }, [activeTrack, items, mounted]);
+  }, [activeTrack, items, mounted, settings.continueWatching, settings.resumePlayback]);
 
   useEffect(() => {
     if (!allowed && activeTrack) {
@@ -101,6 +104,12 @@ export default function GlobalAudioProvider({ children }: { children: React.Reac
       .finally(() => setPendingAutoplay(false));
   }, [pendingAutoplay]);
 
+  useEffect(() => {
+    const el = audioRef.current;
+    if (!el) return;
+    el.playbackRate = settings.playbackSpeed;
+  }, [settings.playbackSpeed]);
+
   const getRuntimeDuration = () => {
     const el = audioRef.current;
     const metaDuration = el && Number.isFinite(el.duration) ? el.duration : undefined;
@@ -112,7 +121,7 @@ export default function GlobalAudioProvider({ children }: { children: React.Reac
 
   const persistProgress = () => {
     const el = audioRef.current;
-    if (!el || !activeTrack) return;
+    if (!el || !activeTrack || !settings.continueWatching) return;
     const nextTime = el.currentTime;
     setCurrentTime(nextTime);
     const playbackDuration = getRuntimeDuration();
@@ -147,7 +156,9 @@ export default function GlobalAudioProvider({ children }: { children: React.Reac
     const safeTime = Math.min(Math.max(next, 0), cappedDuration);
     el.currentTime = safeTime;
     setCurrentTime(safeTime);
-    saveProgress(activeTrack.sermonId, safeTime, cappedDuration);
+    if (settings.continueWatching) {
+      saveProgress(activeTrack.sermonId, safeTime, cappedDuration);
+    }
   };
 
   const skipBy = (seconds: number) => {
@@ -171,7 +182,7 @@ export default function GlobalAudioProvider({ children }: { children: React.Reac
       el.pause();
       el.currentTime = 0;
     }
-    if (activeTrack) {
+    if (activeTrack && settings.continueWatching) {
       clearProgress(activeTrack.sermonId);
     }
     setActiveTrack(null);
@@ -229,7 +240,7 @@ export default function GlobalAudioProvider({ children }: { children: React.Reac
         onDurationChange={() => setDuration(audioRef.current?.duration || activeTrack?.durationSeconds || duration)}
         onEnded={() => {
           setIsPlaying(false);
-          if (activeTrack) {
+          if (activeTrack && settings.continueWatching) {
             clearProgress(activeTrack.sermonId);
           }
         }}

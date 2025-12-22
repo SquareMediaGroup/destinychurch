@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react"
 import Icon from "./Icon";
 import { useGlobalAudio } from "./GlobalAudioProvider";
 import { useContinueWatching } from "@/lib/continueWatching";
+import { useSettings } from "@/lib/settings";
 
 type PodcastPlayerProps = {
   sermonId: string;
@@ -32,20 +33,21 @@ export default function PodcastPlayer({ sermonId, title, audioUrl, durationSecon
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const { mounted, items, saveProgress, clearProgress } = useContinueWatching();
   const globalAudio = useGlobalAudio();
+  const { settings } = useSettings();
 
   const [duration, setDuration] = useState(durationSeconds ?? 0);
   const [currentTime, setCurrentTime] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const [volume, setVolume] = useState(0.9);
   const [isMuted, setIsMuted] = useState(false);
-  const [playbackRate, setPlaybackRate] = useState(1);
+  const [playbackRate, setPlaybackRate] = useState(settings.playbackSpeed);
   const [hasAppliedResume, setHasAppliedResume] = useState(false);
 
   const resumeFrom = useMemo(() => {
-    if (!mounted) return 0;
+    if (!mounted || !settings.continueWatching || settings.resumePlayback !== "resume") return 0;
     const match = items.find((item) => item.sermonId === sermonId);
     return match?.lastPosition ?? 0;
-  }, [items, mounted, sermonId]);
+  }, [items, mounted, sermonId, settings.continueWatching, settings.resumePlayback]);
 
   useEffect(() => {
     const el = audioRef.current;
@@ -88,6 +90,10 @@ export default function PodcastPlayer({ sermonId, title, audioUrl, durationSecon
     el.playbackRate = playbackRate;
   }, [playbackRate]);
 
+  useEffect(() => {
+    setPlaybackRate(settings.playbackSpeed);
+  }, [settings.playbackSpeed]);
+
   const resolvedDuration = useMemo(() => {
     const fallback = duration || durationSeconds || 0;
     if (fallback > 0) return fallback;
@@ -104,6 +110,7 @@ export default function PodcastPlayer({ sermonId, title, audioUrl, durationSecon
   };
 
   const persistProgress = () => {
+    if (!settings.continueWatching) return;
     const el = audioRef.current;
     if (!el) return;
     const nextTime = el.currentTime;
@@ -148,7 +155,9 @@ export default function PodcastPlayer({ sermonId, title, audioUrl, durationSecon
       el.currentTime = safeTime;
     }
     setCurrentTime(safeTime);
-    saveProgress(sermonId, safeTime, cappedDuration);
+    if (settings.continueWatching) {
+      saveProgress(sermonId, safeTime, cappedDuration);
+    }
   };
 
   const skipBy = (seconds: number) => {
@@ -181,7 +190,7 @@ export default function PodcastPlayer({ sermonId, title, audioUrl, durationSecon
   };
 
   const changeRate = () => {
-    const speeds = [0.9, 1, 1.15, 1.35, 1.5] as const;
+    const speeds = [0.75, 1, 1.25, 1.5, 2] as const;
     const currentIndex = speeds.findIndex((speed) => speed === playbackRate);
     const nextRate = speeds[(currentIndex + 1) % speeds.length];
     setPlaybackRate(nextRate);
@@ -300,7 +309,9 @@ export default function PodcastPlayer({ sermonId, title, audioUrl, durationSecon
             const endingDuration = getRuntimeDuration();
             setDuration(endingDuration);
             setCurrentTime(endingDuration);
-            clearProgress(sermonId);
+            if (settings.continueWatching) {
+              clearProgress(sermonId);
+            }
           }}
         />
       ) : null}

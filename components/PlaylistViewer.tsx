@@ -1,10 +1,11 @@
 "use client";
 
 import Image from "next/image";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import VideoPlayer from "./VideoPlayer";
 import SermonSummary from "./SermonSummary";
 import { PlaylistItem } from "@/lib/types";
+import { useSettings } from "@/lib/settings";
 
 type PlaylistViewerProps = {
   playlistTitle: string;
@@ -20,6 +21,7 @@ const formatDate = (dateString: string) =>
   }).format(new Date(dateString));
 
 export default function PlaylistViewer({ playlistTitle, items, label = "Playlist" }: PlaylistViewerProps) {
+  const { settings } = useSettings();
   const [activeIndex, setActiveIndex] = useState(0);
 
   const activeItem = items[activeIndex];
@@ -55,6 +57,12 @@ export default function PlaylistViewer({ playlistTitle, items, label = "Playlist
     if (hasPrev) setActiveIndex((index) => Math.max(index - 1, 0));
   };
 
+  useEffect(() => {
+    if (!activeItem) return;
+    const title = `${activeItem.sermon.title} | Destiny Sermons`;
+    document.title = title;
+  }, [activeItem]);
+
   return (
     <div className="grid gap-6 lg:grid-cols-[2fr_1fr]">
       <div className="space-y-4">
@@ -66,9 +74,9 @@ export default function PlaylistViewer({ playlistTitle, items, label = "Playlist
           poster={activeItem.sermon.thumbnailUrl}
           durationSeconds={activeItem.sermon.durationSeconds}
           youtubeVideoId={activeItem.sermon.youtubeVideoId}
-          autoPlay={activeIndex > 0}
-          playlistIds={youtubeQueue}
-          onEnded={handleNext}
+          autoPlay={settings.autoplayNext && activeIndex > 0}
+          playlistIds={settings.autoplayNext ? youtubeQueue : undefined}
+          onEnded={settings.autoplayNext ? handleNext : undefined}
         />
         <SermonSummary
           summary={activeItem.sermon.summary}

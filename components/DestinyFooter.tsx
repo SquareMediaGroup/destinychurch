@@ -20,7 +20,7 @@ const footerSections = [
   {
     title: "Legal",
     links: [
-      { label: "Cookies", href: "/cookies" },
+      { label: "Settings", href: "/settings" },
       { label: "Privacy Policy", href: "https://destinytees.uk/privacy-policy" },
       { label: "Terms of Service", href: "https://destinytees.uk/terms-of-service" },
     ],

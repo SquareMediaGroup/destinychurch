@@ -86,6 +86,11 @@ export default function VideoPlayer({
     saveProgress(sermonId, currentTime, duration ?? durationSeconds ?? resumeDuration);
   };
 
+  useEffect(() => {
+    if (!title) return;
+    document.title = `${title} | Destiny Sermons`;
+  }, [title]);
+
   if (youtubeVideoId) {
     if (!decided || !mediaAllowed) {
       return (

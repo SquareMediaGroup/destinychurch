@@ -51,6 +51,7 @@ export default async function SeriesPage() {
               key={playlist.id}
               playlist={playlist}
               basePath="/sermons/series"
+              includeIdQuery
             />
           ))}
         </div>

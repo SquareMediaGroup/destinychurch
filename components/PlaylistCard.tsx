@@ -5,17 +5,26 @@ import { Playlist } from "@/lib/types";
 type PlaylistCardProps = {
   playlist: Playlist;
   basePath?: string;
+  includeIdQuery?: boolean;
 };
 
-export default function PlaylistCard({ playlist, basePath = "/playlists" }: PlaylistCardProps) {
+export default function PlaylistCard({
+  playlist,
+  basePath = "/playlists",
+  includeIdQuery = false,
+}: PlaylistCardProps) {
   const firstSermon = playlist.items[0]?.sermon;
   const cover = firstSermon?.thumbnailUrl ?? "/destiny-logo.svg";
   const sermonCount = playlist.items.length;
   const safeBase = basePath.replace(/\/$/, "");
+  const slugOrId = encodeURIComponent(playlist.slug || playlist.id);
+  const href = includeIdQuery
+    ? { pathname: `${safeBase}/${slugOrId}`, query: { id: playlist.id } }
+    : `${safeBase}/${slugOrId}`;
 
   return (
     <Link
-      href={`${safeBase}/${encodeURIComponent(playlist.slug || playlist.id)}`}
+      href={href}
       className="group block overflow-hidden rounded-xl border border-black/5 bg-[var(--surface)] shadow-sm transition hover:-translate-y-1 hover:shadow-lg"
     >
       <div className="relative aspect-video overflow-hidden bg-destiny-grey/5">

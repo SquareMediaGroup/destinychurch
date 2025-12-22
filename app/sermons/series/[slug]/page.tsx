@@ -7,16 +7,25 @@ export const runtime = "nodejs";
 
 type SeriesPageProps = {
   params: { slug: string };
+  searchParams?: Record<string, string | string[] | undefined>;
 };
 
-export default async function SeriesPage({ params }: SeriesPageProps) {
+export default async function SeriesPage({ params, searchParams }: SeriesPageProps) {
   const rawSlug = params.slug ?? "";
-  const slug = rawSlug ? decodeURIComponent(rawSlug).trim() : "";
-  const normalizedSlug = slugify(slug);
+  const slugWithQuery = rawSlug ? decodeURIComponent(rawSlug).trim() : "";
+  const [cleanSlug, queryString = ""] = slugWithQuery.split("?");
+  const normalizedSlug = slugify(cleanSlug);
+  const idParam = searchParams?.id;
+  const idFromSlug = queryString ? new URLSearchParams(queryString).get("id") : "";
+  const playlistId =
+    (typeof idParam === "string" ? idParam : Array.isArray(idParam) ? idParam[0] : "") ||
+    idFromSlug ||
+    "";
 
   const playlistList = await listPublicPlaylists(200);
 
   const playlist =
+    (playlistId ? await getPlaylistBySlugOrId(playlistId) : null) ||
     playlistList.find((p) => {
       const slugVariants = [
         p.slug,
@@ -26,13 +35,13 @@ export default async function SeriesPage({ params }: SeriesPageProps) {
       return (
         slugVariants.some(
           (candidate) =>
-            candidate === slug ||
+            candidate === cleanSlug ||
             candidate === normalizedSlug ||
-            candidate.toLowerCase() === slug.toLowerCase(),
-        ) || p.id === slug
+            candidate.toLowerCase() === cleanSlug.toLowerCase(),
+        ) || p.id === cleanSlug
       );
     }) ||
-    (await getPlaylistBySlugOrId(slug)) ||
+    (await getPlaylistBySlugOrId(cleanSlug)) ||
     (await getPlaylistBySlugOrId(normalizedSlug));
 
   if (!playlist) {

@@ -7,6 +7,7 @@ import Providers from "@/components/Providers";
 import CookieBanner from "@/components/CookieBanner";
 import AnalyticsGate from "@/components/AnalyticsGate";
 import GlobalAudioProvider from "@/components/GlobalAudioProvider";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 
 const roboto = Roboto({
   variable: "--font-roboto",
@@ -93,6 +94,7 @@ export default function RootLayout({
             <AnalyticsGate />
           </GlobalAudioProvider>
         </Providers>
+        <SpeedInsights />
       </body>
     </html>
   );

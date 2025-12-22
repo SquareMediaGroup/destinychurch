@@ -1,8 +1,11 @@
+import Link from "next/link";
+
 type AnnouncementBannerProps = {
   message: string;
+  href?: string;
 };
 
-export default function AnnouncementBanner({ message }: AnnouncementBannerProps) {
+export default function AnnouncementBanner({ message, href }: AnnouncementBannerProps) {
   return (
     <div className="relative isolate overflow-hidden rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface)] px-4 py-4 text-sm text-[var(--foreground)] shadow-sm">
       <div
@@ -13,13 +16,22 @@ export default function AnnouncementBanner({ message }: AnnouncementBannerProps)
         aria-hidden
         className="absolute -right-12 -bottom-10 h-32 w-32 rounded-full bg-gradient-to-br from-destiny-blue/30 via-destiny-green/20 to-destiny-orange/25 blur-3xl"
       />
-      <div className="relative space-y-1">
+      <div className="relative space-y-2">
         <p className="text-xs font-semibold uppercase tracking-[0.22em] text-destiny-orange">
           Important update
         </p>
         <p className="whitespace-pre-line text-sm text-destiny-grey">
           {message}
         </p>
+        {href ? (
+          <Link
+            href={href}
+            className="inline-flex items-center gap-2 rounded-full border border-[var(--border-subtle)] bg-[var(--surface)] px-4 py-2 text-xs font-semibold text-[var(--foreground)] shadow-sm transition hover:border-destiny-orange hover:text-destiny-orange"
+          >
+            Learn more
+            <span aria-hidden>→</span>
+          </Link>
+        ) : null}
       </div>
     </div>
   );

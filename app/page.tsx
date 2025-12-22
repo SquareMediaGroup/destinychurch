@@ -11,7 +11,10 @@ export default async function Home() {
   return (
     <div className="space-y-6">
       {announcement ? (
-        <AnnouncementBanner message={announcement.message} />
+        <AnnouncementBanner
+          message={announcement.message}
+          href={announcement.description ? "/announcement" : undefined}
+        />
       ) : null}
       <WatchHome />
     </div>

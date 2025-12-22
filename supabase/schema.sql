@@ -94,9 +94,13 @@ create index if not exists auth_codes_email_idx on auth_codes (email);
 create table if not exists site_banner (
   id uuid primary key default gen_random_uuid(),
   message text,
+  description text,
   created_at timestamptz default timezone('utc', now()),
   updated_at timestamptz default timezone('utc', now())
 );
 
 create index if not exists site_banner_updated_idx
   on site_banner (updated_at);
+
+alter table if exists site_banner
+  add column if not exists description text;

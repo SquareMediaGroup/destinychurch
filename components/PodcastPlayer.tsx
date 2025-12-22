@@ -33,7 +33,7 @@ export default function PodcastPlayer({ sermonId, title, audioUrl, durationSecon
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const { mounted, items, saveProgress, clearProgress } = useContinueWatching();
   const globalAudio = useGlobalAudio();
-  const { settings } = useSettings();
+  const { settings, updateSetting } = useSettings();
 
   const [duration, setDuration] = useState(durationSeconds ?? 0);
   const [currentTime, setCurrentTime] = useState(0);
@@ -194,6 +194,7 @@ export default function PodcastPlayer({ sermonId, title, audioUrl, durationSecon
     const currentIndex = speeds.findIndex((speed) => speed === playbackRate);
     const nextRate = speeds[(currentIndex + 1) % speeds.length];
     setPlaybackRate(nextRate);
+    updateSetting("playbackSpeed", nextRate);
     const el = audioRef.current;
     if (el) el.playbackRate = nextRate;
   };

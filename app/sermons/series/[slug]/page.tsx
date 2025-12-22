@@ -5,22 +5,40 @@ import { getPlaylistBySlugOrId, listPublicPlaylists, slugify } from "@/lib/playl
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
+type SearchParamsLike =
+  | URLSearchParams
+  | Record<string, string | string[] | undefined>
+  | null
+  | undefined;
+
 type SeriesPageProps = {
-  params: { slug: string };
-  searchParams?: Record<string, string | string[] | undefined>;
+  params: Promise<{ slug: string }> | { slug: string };
+  searchParams?: Promise<SearchParamsLike> | SearchParamsLike;
+};
+
+const getQueryValue = (
+  params: SearchParamsLike,
+  key: string,
+): string => {
+  if (!params) return "";
+  if (params instanceof URLSearchParams) {
+    return params.get(key) ?? "";
+  }
+  const value = params[key];
+  if (Array.isArray(value)) return value[0] ?? "";
+  return value ?? "";
 };
 
 export default async function SeriesPage({ params, searchParams }: SeriesPageProps) {
-  const rawSlug = params.slug ?? "";
+  const resolvedParams = await Promise.resolve(params);
+  const resolvedSearchParams = await Promise.resolve(searchParams);
+  const rawSlug = resolvedParams?.slug ?? "";
   const slugWithQuery = rawSlug ? decodeURIComponent(rawSlug).trim() : "";
   const [cleanSlug, queryString = ""] = slugWithQuery.split("?");
   const normalizedSlug = slugify(cleanSlug);
-  const idParam = searchParams?.id;
-  const idFromSlug = queryString ? new URLSearchParams(queryString).get("id") : "";
-  const playlistId =
-    (typeof idParam === "string" ? idParam : Array.isArray(idParam) ? idParam[0] : "") ||
-    idFromSlug ||
-    "";
+  const idParam = getQueryValue(resolvedSearchParams, "id");
+  const idFromSlug = queryString ? new URLSearchParams(queryString).get("id") ?? "" : "";
+  const playlistId = idParam || idFromSlug || "";
 
   const playlistList = await listPublicPlaylists(200);
 

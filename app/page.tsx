@@ -1,7 +1,8 @@
-import { redirect } from "next/navigation";
+import WatchHome from "@/components/WatchHome";
 
-export const dynamic = "force-static";
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 export default function Home() {
-  redirect("/watch");
+  return <WatchHome />;
 }

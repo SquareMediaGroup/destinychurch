@@ -1,36 +1,105 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+Destiny Sermons
 
-## Getting Started
+Destiny Sermons is a high-performance sermon streaming and archive platform built for modern churches. It combines a clean, distraction-free viewing experience with robust backend infrastructure designed to scale across large sermon libraries and high traffic volumes.
 
-First, run the development server:
+This platform was designed, engineered, and deployed by Square, specifically Square Media Group, as part of Square’s wider mission to equip churches with world-class digital tools.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+⸻
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+✨ Core Capabilities
+	•	🎥 Video & audio sermon streaming
+	•	📚 Series-based sermon organisation
+	•	👤 Guest speaker and teaching categorisation
+	•	📝 AI-ready transcript infrastructure
+	•	🔍 Fast client-side navigation & filtering
+	•	💾 Local continue-watching (privacy-first)
+	•	📱 Fully responsive (mobile-first)
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+⸻
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+🧱 Technology Stack
 
-## Learn More
+Destiny Sermons is built using a modern, scalable web stack:
 
-To learn more about Next.js, take a look at the following resources:
+Frontend
+	•	Next.js (App Router)
+	•	React
+	•	TypeScript
+	•	Modern CSS / Tailwind-style utility design
+	•	Optimised for performance, SEO, and accessibility
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Backend & Data
+	•	Supabase
+	•	Authentication
+	•	Postgres database
+	•	Row-level security
+	•	Serverless functions
+	•	API-driven architecture
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Infrastructure
+	•	Vercel for deployment and edge delivery
+	•	Optimised media loading via external storage/CDN
+	•	Environment-secured secrets and config
 
-## Deploy on Vercel
+Supabase is used as the core backend platform, providing a secure, scalable, and developer-friendly foundation for authentication, data storage, and future expansion.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+⸻
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+🏗️ Architecture Philosophy
+
+Destiny Sermons is built with the following principles:
+	•	Scalability first – designed to grow from a single church to large sermon libraries
+	•	Privacy-respecting – no invasive tracking; localised features where possible
+	•	Separation of concerns – clean boundaries between UI, data, and logic
+	•	Future-ready – structured for AI features, transcripts, and integrations
+
+⸻
+
+🔐 Licensing & Source Code
+
+Source Availability
+
+This repository is public for transparency and demonstration purposes, but is not open source.
+
+The full production source code for Destiny Sermons is available for purchase or licensed use.
+
+📧 Enquiries:
+hello@squaremediagroup.org
+
+Licensing options are available for:
+	•	Churches
+	•	Ministries
+	•	Networks
+	•	White-label platforms
+	•	Enterprise deployments
+
+⸻
+
+🏢 Built by Square Media Group
+
+Square Media Group is a technology and creative company within the wider Square ecosystem. We specialise in:
+	•	Church platforms & apps
+	•	Media-heavy web systems
+	•	Streaming & content infrastructure
+	•	Branding, UI/UX, and motion design
+	•	Long-term digital strategy
+
+Destiny Sermons reflects Square Media Group’s commitment to excellence, performance, and purpose-driven technology.
+
+⸻
+
+📌 Ownership
+
+© Square Media Group
+All rights reserved.
+
+No part of this project may be copied, modified, distributed, or deployed without explicit written permission, unless otherwise licensed.
+
+
+
+███████╗███╗   ███╗ ██████╗     ×     ██████╗  ██████╗████████╗██╗   ██╗
+██╔════╝████╗ ████║██╔════╝           ██╔══██╗██╔════╝╚══██╔══╝██║   ██║
+███████╗██╔████╔██║██║  ███╗          ██║  ██║██║        ██║   ██║   ██║
+╚════██║██║╚██╔╝██║██║   ██║          ██║  ██║██║        ██║   ╚██╗ ██╔╝
+███████║██║ ╚═╝ ██║╚██████╔╝          ██████╔╝╚██████╗   ██║    ╚████╔╝ 
+╚══════╝╚═╝     ╚═╝ ╚═════╝           ╚═════╝  ╚═════╝   ╚═╝     ╚═══╝  

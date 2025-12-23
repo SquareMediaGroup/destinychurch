@@ -1,4 +1,3 @@
-import ContinueWatchingRow from "@/components/ContinueWatchingRow";
 import SermonSearch from "@/components/SermonSearch";
 import { Suspense } from "react";
 import { listSermonsLite } from "@/lib/db";
@@ -19,8 +18,6 @@ export default async function SermonsPage() {
           Pick up where you left off or explore new series and topics.
         </p>
       </header>
-
-      <ContinueWatchingRow sermons={sermons} />
 
       <section className="space-y-2">
         <div className="flex items-center justify-between">

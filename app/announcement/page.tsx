@@ -8,6 +8,7 @@ export const runtime = "nodejs";
 export default async function AnnouncementPage() {
   const announcement = await getActiveAnnouncement();
   const description = announcement?.description;
+  const markdown = description ? description.replace(/\n/g, "  \n") : "";
 
   if (!announcement || !description) {
     return (
@@ -46,7 +47,7 @@ export default async function AnnouncementPage() {
           {announcement.message}
         </h1>
         <div className="prose prose-base max-w-none text-[var(--foreground)] prose-headings:text-[var(--foreground)] prose-p:my-2 prose-ul:my-2 prose-ol:my-2 prose-li:my-1">
-          <ReactMarkdown>{description}</ReactMarkdown>
+          <ReactMarkdown>{markdown}</ReactMarkdown>
         </div>
         <Link
           href="/"

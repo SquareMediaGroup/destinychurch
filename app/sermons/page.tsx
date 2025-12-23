@@ -1,3 +1,4 @@
+import ContinueWatchingGate from "@/components/ContinueWatchingGate";
 import SermonSearch from "@/components/SermonSearch";
 import { Suspense } from "react";
 import { listSermonsLite } from "@/lib/db";
@@ -18,6 +19,10 @@ export default async function SermonsPage() {
           Pick up where you left off or explore new series and topics.
         </p>
       </header>
+
+      <Suspense fallback={null}>
+        <ContinueWatchingGate sermons={sermons} />
+      </Suspense>
 
       <section className="space-y-2">
         <div className="flex items-center justify-between">

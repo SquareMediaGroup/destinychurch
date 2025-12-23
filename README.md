@@ -94,12 +94,3 @@ Destiny Sermons reflects Square Media Group’s commitment to excellence, perfor
 All rights reserved.
 
 No part of this project may be copied, modified, distributed, or deployed without explicit written permission, unless otherwise licensed.
-
-
-
-███████╗███╗   ███╗ ██████╗ 
-██╔════╝████╗ ████║██╔════╝ 
-███████╗██╔████╔██║██║  ███╗
-╚════██║██║╚██╔╝██║██║   ██║
-███████║██║ ╚═╝ ██║╚██████╔╝
-╚══════╝╚═╝     ╚═╝ ╚═════╝ 

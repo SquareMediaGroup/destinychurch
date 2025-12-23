@@ -66,6 +66,16 @@ body {
   transition: background-color 0.3s ease, color 0.3s ease;
 }
 
+::selection {
+  background: #f58021;
+  color: #ffffff;
+}
+
+::-moz-selection {
+  background: #f58021;
+  color: #ffffff;
+}
+
 .material-symbols-rounded {
   font-family: "Material Symbols Rounded";
   font-weight: 500;

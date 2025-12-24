@@ -91,11 +91,11 @@ export default function RootLayout({
               <SiteFooter />
             </div>
             <AnalyticsGate />
+            {turnstileSiteKey ? (
+              <TurnstileGate siteKey={turnstileSiteKey} />
+            ) : null}
           </GlobalAudioProvider>
         </Providers>
-        {turnstileSiteKey ? (
-          <TurnstileGate siteKey={turnstileSiteKey} />
-        ) : null}
         <SpeedInsights />
       </body>
     </html>

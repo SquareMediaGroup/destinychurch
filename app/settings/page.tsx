@@ -301,21 +301,6 @@ export default function SettingsPage() {
           Does not affect external platforms (YouTube, podcast apps).
         </div>
       </section>
-
-      <section className="space-y-2 rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface)] p-4 text-sm text-destiny-grey shadow-sm">
-        <p className="text-sm font-semibold text-[var(--foreground)]">
-          What this intentionally does not include
-        </p>
-        <ul className="list-disc space-y-1 pl-5 text-xs">
-          <li>No social settings</li>
-          <li>No notifications (yet)</li>
-          <li>No account complexity</li>
-          <li>No advanced audio or video toggles</li>
-        </ul>
-        <p className="text-xs text-destiny-grey/70">
-          This keeps settings fast, understandable, and respectful.
-        </p>
-      </section>
     </div>
   );
 }

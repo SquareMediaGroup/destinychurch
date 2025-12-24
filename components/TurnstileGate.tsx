@@ -2,6 +2,7 @@
 
 import Script from "next/script";
 import { useEffect, useRef, useState } from "react";
+import { useCookieConsent } from "@/lib/cookieConsent";
 
 type TurnstileGateProps = {
   siteKey: string;
@@ -33,20 +34,47 @@ export default function TurnstileGate({
   verifyEndpoint = "/api/turnstile/verify",
   storageKey = "turnstile-verified",
 }: TurnstileGateProps) {
+  const { consent } = useCookieConsent();
   const [verified, setVerified] = useState(false);
   const [ready, setReady] = useState(false);
   const [status, setStatus] = useState<"idle" | "verifying" | "error">("idle");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const widgetRef = useRef<HTMLDivElement | null>(null);
   const widgetIdRef = useRef<string | null>(null);
+  const optionalDeclined = Boolean(consent && !consent.media && !consent.analytics);
+
+  const readCookie = (key: string) => {
+    if (typeof document === "undefined") return "";
+    const match = document.cookie.match(
+      new RegExp(`(?:^|; )${key.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, "\\$&")}=([^;]*)`),
+    );
+    return match ? decodeURIComponent(match[1]) : "";
+  };
+
+  const writeCookie = (key: string, value: string, maxAgeSeconds: number) => {
+    if (typeof document === "undefined") return;
+    const secure = window.location.protocol === "https:" ? "; Secure" : "";
+    document.cookie = `${key}=${encodeURIComponent(value)}; Path=/; Max-Age=${maxAgeSeconds}; SameSite=Lax${secure}`;
+  };
+
+  const clearCookie = (key: string) => {
+    if (typeof document === "undefined") return;
+    document.cookie = `${key}=; Path=/; Max-Age=0; SameSite=Lax`;
+  };
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-    const stored = window.sessionStorage.getItem(storageKey);
+    const stored = readCookie(storageKey);
     if (stored === "1") {
       setVerified(true);
     }
   }, [storageKey]);
+
+  useEffect(() => {
+    if (!optionalDeclined) return;
+    clearCookie(storageKey);
+    setVerified(false);
+  }, [optionalDeclined, storageKey]);
 
   const handleSuccess = async (token: string) => {
     setStatus("verifying");
@@ -59,7 +87,9 @@ export default function TurnstileGate({
       });
       const data = await response.json();
       if (data?.success) {
-        window.sessionStorage.setItem(storageKey, "1");
+        if (!optionalDeclined) {
+          writeCookie(storageKey, "1", 60 * 60 * 24 * 30);
+        }
         setVerified(true);
         return;
       }

@@ -5,6 +5,8 @@ import { useEffect, useRef, useState } from "react";
 
 type TurnstileGateProps = {
   siteKey: string;
+  verifyEndpoint?: string;
+  storageKey?: string;
 };
 
 type TurnstileRenderOptions = {
@@ -26,9 +28,11 @@ declare global {
   }
 }
 
-const STORAGE_KEY = "turnstile-verified";
-
-export default function TurnstileGate({ siteKey }: TurnstileGateProps) {
+export default function TurnstileGate({
+  siteKey,
+  verifyEndpoint = "/api/turnstile/verify",
+  storageKey = "turnstile-verified",
+}: TurnstileGateProps) {
   const [verified, setVerified] = useState(false);
   const [ready, setReady] = useState(false);
   const [status, setStatus] = useState<"idle" | "verifying" | "error">("idle");
@@ -38,24 +42,24 @@ export default function TurnstileGate({ siteKey }: TurnstileGateProps) {
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-    const stored = window.sessionStorage.getItem(STORAGE_KEY);
+    const stored = window.sessionStorage.getItem(storageKey);
     if (stored === "1") {
       setVerified(true);
     }
-  }, []);
+  }, [storageKey]);
 
   const handleSuccess = async (token: string) => {
     setStatus("verifying");
     setErrorMessage(null);
     try {
-      const response = await fetch("/api/turnstile/verify", {
+      const response = await fetch(verifyEndpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ token }),
       });
       const data = await response.json();
       if (data?.success) {
-        window.sessionStorage.setItem(STORAGE_KEY, "1");
+        window.sessionStorage.setItem(storageKey, "1");
         setVerified(true);
         return;
       }

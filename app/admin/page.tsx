@@ -20,9 +20,12 @@ import { listReports } from "@/lib/reports";
 import AiProcessingControls from "@/components/AiProcessingControls";
 import PlaylistsModal from "@/components/PlaylistsModal";
 import AdminSyncToast from "@/components/AdminSyncToast";
+import TurnstileGate from "@/components/TurnstileGate";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
+
+const adminSiteKey = process.env.ADMIN_SITE_KEY ?? "";
 
 type SearchParamsLike =
   | URLSearchParams
@@ -63,7 +66,22 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
   const podcastCount = getQueryValue(resolvedSearchParams, "podcast");
   const youtubeCount = getQueryValue(resolvedSearchParams, "youtube");
 
-  if (!authed) return <LoginCard />;
+  const adminGate = adminSiteKey ? (
+    <TurnstileGate
+      siteKey={adminSiteKey}
+      verifyEndpoint="/api/turnstile/verify-admin"
+      storageKey="turnstile-verified-admin"
+    />
+  ) : null;
+
+  if (!authed) {
+    return (
+      <div className="min-h-screen bg-[var(--background)] text-[var(--foreground)]">
+        {adminGate}
+        <LoginCard />
+      </div>
+    );
+  }
 
   const [sermons, admins] = await Promise.all([
     listSermons(50),
@@ -79,6 +97,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
 
   return (
     <div className="min-h-screen bg-[var(--background)] text-[var(--foreground)]">
+      {adminGate}
       <AdminSyncToast />
       <main className="mx-auto w-full max-w-5xl space-y-4 px-4 py-8">
         {syncStatus === "ok" && (

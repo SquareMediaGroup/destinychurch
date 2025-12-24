@@ -8,7 +8,6 @@ import CookieBanner from "@/components/CookieBanner";
 import AnalyticsGate from "@/components/AnalyticsGate";
 import GlobalAudioProvider from "@/components/GlobalAudioProvider";
 import { SpeedInsights } from "@vercel/speed-insights/next";
-import TurnstileGate from "@/components/TurnstileGate";
 
 const roboto = Roboto({
   variable: "--font-roboto",
@@ -63,8 +62,6 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const turnstileSiteKey = process.env.SITE_KEY ?? "";
-
   return (
     <html lang="en">
       <head>
@@ -91,9 +88,6 @@ export default function RootLayout({
               <SiteFooter />
             </div>
             <AnalyticsGate />
-            {turnstileSiteKey ? (
-              <TurnstileGate siteKey={turnstileSiteKey} />
-            ) : null}
           </GlobalAudioProvider>
         </Providers>
         <SpeedInsights />

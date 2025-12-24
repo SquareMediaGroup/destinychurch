@@ -2,12 +2,11 @@
 
 import Script from "next/script";
 import { useEffect, useRef, useState } from "react";
-import { useCookieConsent } from "@/lib/cookieConsent";
 
 type TurnstileGateProps = {
   siteKey: string;
   verifyEndpoint?: string;
-  storageKey?: string;
+  redirectTo?: string;
 };
 
 type TurnstileRenderOptions = {
@@ -32,49 +31,13 @@ declare global {
 export default function TurnstileGate({
   siteKey,
   verifyEndpoint = "/api/turnstile/verify",
-  storageKey = "turnstile-verified",
+  redirectTo,
 }: TurnstileGateProps) {
-  const { consent } = useCookieConsent();
-  const [verified, setVerified] = useState(false);
   const [ready, setReady] = useState(false);
   const [status, setStatus] = useState<"idle" | "verifying" | "error">("idle");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const widgetRef = useRef<HTMLDivElement | null>(null);
   const widgetIdRef = useRef<string | null>(null);
-  const optionalDeclined = Boolean(consent && !consent.media && !consent.analytics);
-
-  const readCookie = (key: string) => {
-    if (typeof document === "undefined") return "";
-    const match = document.cookie.match(
-      new RegExp(`(?:^|; )${key.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, "\\$&")}=([^;]*)`),
-    );
-    return match ? decodeURIComponent(match[1]) : "";
-  };
-
-  const writeCookie = (key: string, value: string, maxAgeSeconds: number) => {
-    if (typeof document === "undefined") return;
-    const secure = window.location.protocol === "https:" ? "; Secure" : "";
-    document.cookie = `${key}=${encodeURIComponent(value)}; Path=/; Max-Age=${maxAgeSeconds}; SameSite=Lax${secure}`;
-  };
-
-  const clearCookie = (key: string) => {
-    if (typeof document === "undefined") return;
-    document.cookie = `${key}=; Path=/; Max-Age=0; SameSite=Lax`;
-  };
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    const stored = readCookie(storageKey);
-    if (stored === "1") {
-      setVerified(true);
-    }
-  }, [storageKey]);
-
-  useEffect(() => {
-    if (!optionalDeclined) return;
-    clearCookie(storageKey);
-    setVerified(false);
-  }, [optionalDeclined, storageKey]);
 
   const handleSuccess = async (token: string) => {
     setStatus("verifying");
@@ -87,10 +50,10 @@ export default function TurnstileGate({
       });
       const data = await response.json();
       if (data?.success) {
-        if (!optionalDeclined) {
-          writeCookie(storageKey, "1", 60 * 60 * 24 * 30);
+        if (typeof window !== "undefined") {
+          const next = redirectTo && redirectTo.startsWith("/") ? redirectTo : "/";
+          window.location.assign(next);
         }
-        setVerified(true);
         return;
       }
       throw new Error("Verification failed");
@@ -105,7 +68,7 @@ export default function TurnstileGate({
   };
 
   useEffect(() => {
-    if (!ready || verified || !widgetRef.current || !window.turnstile) return;
+    if (!ready || !widgetRef.current || !window.turnstile) return;
     if (widgetIdRef.current) return;
     widgetIdRef.current = window.turnstile.render(widgetRef.current, {
       sitekey: siteKey,
@@ -120,9 +83,9 @@ export default function TurnstileGate({
         setErrorMessage("We couldn’t load the challenge. Please refresh.");
       },
     });
-  }, [ready, verified, siteKey]);
+  }, [ready, siteKey]);
 
-  if (!siteKey || verified) return null;
+  if (!siteKey) return null;
 
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 px-4 backdrop-blur-sm">

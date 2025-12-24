@@ -10,6 +10,7 @@ export type CookieConsentState = {
 };
 
 const STORAGE_KEY = "destiny-cookie-consent";
+const TURNSTILE_CLEAR_ENDPOINT = "/api/turnstile/clear";
 
 const safeParse = (raw: string | null): CookieConsentState | null => {
   if (!raw) return null;
@@ -38,6 +39,11 @@ const readConsent = (): CookieConsentState | null => {
 const writeConsent = (value: CookieConsentState) => {
   if (typeof window === "undefined") return;
   window.localStorage.setItem(STORAGE_KEY, JSON.stringify(value));
+};
+
+const clearTurnstileCookie = () => {
+  if (typeof window === "undefined") return;
+  void fetch(TURNSTILE_CLEAR_ENDPOINT, { method: "POST" });
 };
 
 type CookieConsentContextValue = {
@@ -82,6 +88,7 @@ export function CookieConsentProvider({ children }: { children: React.ReactNode 
       analytics: false,
       updatedAt: Date.now(),
     });
+    clearTurnstileCookie();
   }, [update]);
 
   const savePreferences = useCallback(
@@ -92,6 +99,9 @@ export function CookieConsentProvider({ children }: { children: React.ReactNode 
         analytics: opts.analytics,
         updatedAt: Date.now(),
       });
+      if (!opts.media && !opts.analytics) {
+        clearTurnstileCookie();
+      }
     },
     [update],
   );

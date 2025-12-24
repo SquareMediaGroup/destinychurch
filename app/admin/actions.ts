@@ -24,6 +24,29 @@ const adminPassword = process.env.ADMIN_PASSWORD || "Romans12:1";
 export async function login(formData: FormData) {
   const username = String(formData.get("username") || "").trim();
   const password = String(formData.get("password") || "");
+  const turnstileToken = String(formData.get("cf-turnstile-response") || "");
+
+  const adminTurnstileSecret = process.env.ADMIN_SECRET_KEY;
+  if (adminTurnstileSecret) {
+    if (!turnstileToken) {
+      throw new Error("Complete the security check.");
+    }
+    const payload = new URLSearchParams();
+    payload.set("secret", adminTurnstileSecret);
+    payload.set("response", turnstileToken);
+    const verifyResponse = await fetch(
+      "https://challenges.cloudflare.com/turnstile/v0/siteverify",
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: payload.toString(),
+      },
+    );
+    const verifyResult = await verifyResponse.json();
+    if (!verifyResult?.success) {
+      throw new Error("Security check failed.");
+    }
+  }
 
   let role: "super" | "admin" | null = null;
   if (username === adminUser && password === adminPassword) {

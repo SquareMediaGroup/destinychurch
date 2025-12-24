@@ -1,5 +1,4 @@
 import { cookies } from "next/headers";
-import Script from "next/script";
 import { listSermons } from "@/lib/db";
 import { listAdminUsers } from "@/lib/adminUsers";
 import {
@@ -21,6 +20,7 @@ import { listReports } from "@/lib/reports";
 import AiProcessingControls from "@/components/AiProcessingControls";
 import PlaylistsModal from "@/components/PlaylistsModal";
 import AdminSyncToast from "@/components/AdminSyncToast";
+import TurnstileGate from "@/components/TurnstileGate";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -66,9 +66,18 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
   const podcastCount = getQueryValue(resolvedSearchParams, "podcast");
   const youtubeCount = getQueryValue(resolvedSearchParams, "youtube");
 
+  const adminGate = adminSiteKey ? (
+    <TurnstileGate
+      siteKey={adminSiteKey}
+      verifyEndpoint="/api/turnstile/verify-admin"
+      storageKey="turnstile-verified-admin"
+    />
+  ) : null;
+
   if (!authed) {
     return (
       <div className="min-h-screen bg-[var(--background)] text-[var(--foreground)]">
+        {adminGate}
         <LoginCard />
       </div>
     );
@@ -88,6 +97,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
 
   return (
     <div className="min-h-screen bg-[var(--background)] text-[var(--foreground)]">
+      {adminGate}
       <AdminSyncToast />
       <main className="mx-auto w-full max-w-5xl space-y-4 px-4 py-8">
         {syncStatus === "ok" && (
@@ -733,23 +743,6 @@ function LoginCard() {
               autoComplete="current-password"
             />
           </label>
-
-          {adminSiteKey ? (
-            <div className="space-y-2 rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-muted)] px-4 py-3">
-              <p className="text-xs font-semibold uppercase tracking-wide text-destiny-grey/80">
-                Security check
-              </p>
-              <div
-                className="cf-turnstile"
-                data-sitekey={adminSiteKey}
-                data-theme="auto"
-              />
-              <Script
-                src="https://challenges.cloudflare.com/turnstile/v0/api.js"
-                strategy="afterInteractive"
-              />
-            </div>
-          ) : null}
 
           <button
             type="submit"

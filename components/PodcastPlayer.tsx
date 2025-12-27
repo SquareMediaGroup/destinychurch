@@ -42,20 +42,63 @@ export default function PodcastPlayer({ sermonId, title, audioUrl, durationSecon
   const [isMuted, setIsMuted] = useState(false);
   const [playbackRate, setPlaybackRate] = useState(settings.playbackSpeed);
   const [hasAppliedResume, setHasAppliedResume] = useState(false);
+  const hasGlobalAudio = Boolean(globalAudio);
 
+  const resumeEntry = useMemo(
+    () => items.find((item) => item.sermonId === sermonId),
+    [items, sermonId],
+  );
   const resumeFrom = useMemo(() => {
     if (!mounted || !settings.continueWatching || settings.resumePlayback !== "resume") return 0;
-    const match = items.find((item) => item.sermonId === sermonId);
-    return match?.lastPosition ?? 0;
-  }, [items, mounted, sermonId, settings.continueWatching, settings.resumePlayback]);
+    return resumeEntry?.lastPosition ?? 0;
+  }, [mounted, resumeEntry, settings.continueWatching, settings.resumePlayback]);
+  const resumeDuration = resumeEntry?.durationSeconds ?? 0;
+
+  useEffect(() => {
+    const fallback = durationSeconds && durationSeconds > 0 ? durationSeconds : resumeDuration;
+    if (!fallback || fallback <= 0) return;
+    setDuration((prev) => (prev > 0 ? prev : fallback));
+  }, [durationSeconds, resumeDuration]);
+
+  useEffect(() => {
+    if (!hasGlobalAudio) return;
+    if (!audioUrl) return;
+    if (durationSeconds && durationSeconds > 0) return;
+    if (resumeDuration && resumeDuration > 0) return;
+    if (duration > 0) return;
+
+    let cancelled = false;
+    const probe = new Audio();
+    probe.preload = "metadata";
+    probe.src = audioUrl;
+
+    const handleMetadata = () => {
+      if (cancelled) return;
+      const metaDuration = Number.isFinite(probe.duration) ? probe.duration : 0;
+      if (metaDuration > 0) {
+        setDuration(metaDuration);
+      }
+    };
+
+    probe.addEventListener("loadedmetadata", handleMetadata);
+    probe.addEventListener("durationchange", handleMetadata);
+    probe.load();
+
+    return () => {
+      cancelled = true;
+      probe.removeEventListener("loadedmetadata", handleMetadata);
+      probe.removeEventListener("durationchange", handleMetadata);
+      probe.src = "";
+    };
+  }, [audioUrl, duration, durationSeconds, hasGlobalAudio, resumeDuration]);
 
   useEffect(() => {
     const el = audioRef.current;
     if (!el || hasAppliedResume || !mounted) return;
 
     const applyMetadata = () => {
-      const metaDuration = Number.isFinite(el.duration) ? el.duration : durationSeconds ?? 0;
-      setDuration(metaDuration || durationSeconds || 0);
+      const metaDuration = Number.isFinite(el.duration) ? el.duration : durationSeconds ?? resumeDuration ?? 0;
+      setDuration(metaDuration || durationSeconds || resumeDuration || 0);
       if (resumeFrom > 0 && resumeFrom < metaDuration - 1) {
         el.currentTime = resumeFrom;
         setCurrentTime(resumeFrom);
@@ -70,7 +113,7 @@ export default function PodcastPlayer({ sermonId, title, audioUrl, durationSecon
 
     el.addEventListener("loadedmetadata", applyMetadata);
     return () => el.removeEventListener("loadedmetadata", applyMetadata);
-  }, [durationSeconds, hasAppliedResume, mounted, resumeFrom]);
+  }, [durationSeconds, hasAppliedResume, mounted, resumeDuration, resumeFrom]);
 
   useEffect(() => {
     const el = audioRef.current;
@@ -95,10 +138,10 @@ export default function PodcastPlayer({ sermonId, title, audioUrl, durationSecon
   }, [settings.playbackSpeed]);
 
   const resolvedDuration = useMemo(() => {
-    const fallback = duration || durationSeconds || 0;
+    const fallback = duration || durationSeconds || resumeDuration || 0;
     if (fallback > 0) return fallback;
     return Math.max(currentTime, 1);
-  }, [currentTime, duration, durationSeconds]);
+  }, [currentTime, duration, durationSeconds, resumeDuration]);
 
   const getRuntimeDuration = () => {
     const el = audioRef.current;
@@ -106,6 +149,7 @@ export default function PodcastPlayer({ sermonId, title, audioUrl, durationSecon
     if (metaDuration && metaDuration > 0) return metaDuration;
     if (duration && duration > 0) return duration;
     if (durationSeconds && durationSeconds > 0) return durationSeconds;
+    if (resumeDuration && resumeDuration > 0) return resumeDuration;
     return Math.max(currentTime, 1);
   };
 
@@ -173,6 +217,29 @@ export default function PodcastPlayer({ sermonId, title, audioUrl, durationSecon
     handleSeek(base + seconds);
   };
 
+  const handleResume = async () => {
+    if (!resumeFrom) return;
+    if (globalAudio) {
+      if (!isGlobalActive) {
+        globalAudio.playTrack({ sermonId, title, audioUrl, durationSeconds });
+        return;
+      }
+      globalAudio.seekTo(resumeFrom);
+      if (!globalAudio.isPlaying) {
+        globalAudio.togglePlay();
+      }
+      return;
+    }
+    handleSeek(resumeFrom);
+    const el = audioRef.current;
+    if (!el || !el.paused) return;
+    try {
+      await el.play();
+    } catch (error) {
+      console.error("Unable to resume audio", error);
+    }
+  };
+
   const toggleMute = () => {
     if (isGlobalActive && globalAudio) {
       globalAudio.toggleMute();
@@ -227,10 +294,14 @@ export default function PodcastPlayer({ sermonId, title, audioUrl, durationSecon
         </div>
         <div className="flex items-center gap-2 text-xs font-semibold text-destiny-grey">
           {resumeBadgeValue ? (
-            <span className="inline-flex items-center gap-1 rounded-full border border-[var(--border-subtle)] px-2.5 py-1">
+            <button
+              type="button"
+              onClick={handleResume}
+              className="inline-flex items-center gap-1 rounded-full border border-[var(--border-subtle)] px-2.5 py-1 transition hover:border-destiny-orange hover:text-destiny-orange focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-destiny-orange"
+            >
               <Icon name="schedule" size={15} />
               Resume {resumeBadgeValue}
-            </span>
+            </button>
           ) : (
             <a
               href={audioUrl}

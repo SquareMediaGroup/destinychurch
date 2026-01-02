@@ -38,14 +38,6 @@ export default function PlaylistViewer({ playlistTitle, items, label = "Playlist
     return currentId ? [currentId, ...rest] : rest;
   }, [activeItem, remaining]);
 
-  if (!activeItem) {
-    return (
-      <div className="rounded-xl border border-[var(--border-subtle)] bg-[var(--surface)] px-4 py-6 text-sm text-destiny-grey">
-        Add at least one sermon to start this playlist.
-      </div>
-    );
-  }
-
   const hasNext = activeIndex < items.length - 1;
   const hasPrev = activeIndex > 0;
 
@@ -62,6 +54,14 @@ export default function PlaylistViewer({ playlistTitle, items, label = "Playlist
     const title = `${activeItem.sermon.title} | Destiny Sermons`;
     document.title = title;
   }, [activeItem]);
+
+  if (!activeItem) {
+    return (
+      <div className="rounded-xl border border-[var(--border-subtle)] bg-[var(--surface)] px-4 py-6 text-sm text-destiny-grey">
+        Add at least one sermon to start this playlist.
+      </div>
+    );
+  }
 
   return (
     <div className="grid gap-6 lg:grid-cols-[2fr_1fr]">

@@ -1,7 +1,7 @@
 "use client";
 
 import Script from "next/script";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 type TurnstileGateProps = {
   siteKey: string;
@@ -39,7 +39,7 @@ export default function TurnstileGate({
   const widgetRef = useRef<HTMLDivElement | null>(null);
   const widgetIdRef = useRef<string | null>(null);
 
-  const handleSuccess = async (token: string) => {
+  const handleSuccess = useCallback(async (token: string) => {
     setStatus("verifying");
     setErrorMessage(null);
     try {
@@ -65,7 +65,7 @@ export default function TurnstileGate({
         window.turnstile.reset(widgetIdRef.current);
       }
     }
-  };
+  }, [redirectTo, verifyEndpoint]);
 
   useEffect(() => {
     if (!ready || !widgetRef.current || !window.turnstile) return;
@@ -83,7 +83,7 @@ export default function TurnstileGate({
         setErrorMessage("We couldn’t load the challenge. Please refresh.");
       },
     });
-  }, [ready, siteKey]);
+  }, [handleSuccess, ready, siteKey]);
 
   if (!siteKey) return null;
 

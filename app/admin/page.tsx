@@ -24,8 +24,6 @@ import AdminSyncToast from "@/components/AdminSyncToast";
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
-const adminSiteKey = process.env.ADMIN_SITE_KEY ?? "";
-
 type SearchParamsLike =
   | URLSearchParams
   | Record<string, string | string[] | undefined>;

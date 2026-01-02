@@ -2,8 +2,8 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { type FormEvent, useEffect, useState } from "react";
-import { usePathname, useRouter } from "next/navigation";
+import { type FormEvent, useState } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import CTAButton from "./CTAButton";
 import Icon from "./Icon";
 import ThemeToggle from "./ThemeToggle";
@@ -18,21 +18,14 @@ const navLinks = [
 export default function SiteHeader() {
   const pathname = usePathname();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [open, setOpen] = useState(false);
-  const [query, setQuery] = useState("");
-
-  useEffect(() => {
-    if (!pathname.startsWith("/sermons")) {
-      setQuery("");
-      return;
-    }
-    const params = new URLSearchParams(window.location.search);
-    setQuery(params.get("q") ?? "");
-  }, [pathname]);
+  const searchQuery = pathname.startsWith("/sermons") ? searchParams.get("q") ?? "" : "";
 
   const handleSearch = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    const trimmed = query.trim();
+    const formData = new FormData(event.currentTarget);
+    const trimmed = String(formData.get("q") ?? "").trim();
     router.push(trimmed ? `/sermons?q=${encodeURIComponent(trimmed)}` : "/sermons");
   };
 
@@ -96,8 +89,9 @@ export default function SiteHeader() {
             <Icon name="search" size={16} className="text-destiny-grey/70" />
             <input
               type="search"
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
+              name="q"
+              key={`search-${pathname}-${searchQuery}`}
+              defaultValue={searchQuery}
               placeholder="Search sermons..."
               aria-label="Search sermons..."
               enterKeyHint="search"

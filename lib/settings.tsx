@@ -99,6 +99,7 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const stored = readStoredSettings();
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setSettings(stored);
     applySettings(stored);
     setHydrated(true);

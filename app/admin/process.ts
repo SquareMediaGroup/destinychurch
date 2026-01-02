@@ -57,7 +57,6 @@ export async function processSermonSrt(formData: FormData) {
 
   const transcript = segments.map((segment) => segment.text).join("\n");
   const supabase = getSupabaseAdmin();
-  const srtDuration = segments[segments.length - 1]?.end ?? 0;
 
   try {
     await upsertTranscriptSegments(supabase, id, segments, "ready");

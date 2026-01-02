@@ -63,6 +63,7 @@ export function CookieConsentProvider({ children }: { children: React.ReactNode 
   useEffect(() => {
     const stored = readConsent();
     if (stored) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setConsent(stored);
     }
   }, []);

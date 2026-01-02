@@ -48,28 +48,14 @@ function normalizeSummary(summary: string) {
 }
 
 export default function SermonSummary({ summary, sermonId, sermonTitle }: SermonSummaryProps) {
-  if (!summary) {
-    return (
-      <div className="rounded-xl border border-black/5 bg-destiny-grey/5 px-4 py-3 text-sm text-destiny-grey">
-        AI summary is unavailable.
-      </div>
-    );
-  }
-
-  const slides = useMemo(() => normalizeSummary(summary), [summary]);
-
-  if (!slides.length) {
-    return (
-      <div className="rounded-xl border border-black/5 bg-destiny-grey/5 px-4 py-3 text-sm text-destiny-grey">
-        AI summary is unavailable.
-      </div>
-    );
-  }
-
+  const summaryText = summary ?? "";
+  const slides = useMemo(() => normalizeSummary(summaryText), [summaryText]);
   const [index, setIndex] = useState(0);
   const touchStartX = useRef<number | null>(null);
   const total = slides.length;
+  const safeIndex = total ? ((index % total) + total) % total : 0;
   const go = (next: number) => {
+    if (!total) return;
     const safe = ((next % total) + total) % total;
     setIndex(safe);
   };
@@ -91,6 +77,14 @@ export default function SermonSummary({ summary, sermonId, sermonTitle }: Sermon
     }
   };
 
+  if (!slides.length) {
+    return (
+      <div className="rounded-xl border border-black/5 bg-destiny-grey/5 px-4 py-3 text-sm text-destiny-grey">
+        AI summary is unavailable.
+      </div>
+    );
+  }
+
   return (
     <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface)] p-4 shadow-sm sm:p-5">
       <div className="flex items-center justify-between gap-3">
@@ -101,7 +95,7 @@ export default function SermonSummary({ summary, sermonId, sermonTitle }: Sermon
           <div>
             <p className="subheading text-sm text-destiny-orange">Summary</p>
             <p className="text-xs text-destiny-grey/80">
-              Slide {index + 1} of {total}
+              Slide {safeIndex + 1} of {total}
             </p>
           </div>
         </div>
@@ -141,7 +135,7 @@ export default function SermonSummary({ summary, sermonId, sermonTitle }: Sermon
               ol: (props) => <ol className="ml-4 list-decimal space-y-1" {...props} />,
             }}
           >
-            {slides[index]}
+            {slides[safeIndex]}
           </ReactMarkdown>
         </div>
       </div>
@@ -151,7 +145,7 @@ export default function SermonSummary({ summary, sermonId, sermonTitle }: Sermon
           <div className="flex gap-2">
             <button
               type="button"
-              onClick={() => go(index - 1)}
+              onClick={() => go(safeIndex - 1)}
               className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-[var(--border-subtle)] text-[var(--foreground)] transition hover:border-destiny-orange hover:text-destiny-orange"
               aria-label="Previous summary slide"
             >
@@ -159,7 +153,7 @@ export default function SermonSummary({ summary, sermonId, sermonTitle }: Sermon
             </button>
             <button
               type="button"
-              onClick={() => go(index + 1)}
+              onClick={() => go(safeIndex + 1)}
               className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-[var(--border-subtle)] text-[var(--foreground)] transition hover:border-destiny-orange hover:text-destiny-orange"
               aria-label="Next summary slide"
             >
@@ -174,7 +168,7 @@ export default function SermonSummary({ summary, sermonId, sermonTitle }: Sermon
                 onClick={() => go(idx)}
                 aria-label={`Go to summary slide ${idx + 1}`}
                 className={`h-2.5 w-2.5 rounded-full transition ${
-                  idx === index ? "bg-destiny-orange" : "bg-[var(--border-subtle)] hover:bg-destiny-orange/60"
+                  idx === safeIndex ? "bg-destiny-orange" : "bg-[var(--border-subtle)] hover:bg-destiny-orange/60"
                 }`}
               />
             ))}

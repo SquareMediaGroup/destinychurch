@@ -40,9 +40,9 @@ export default function PodcastPlayer({ sermonId, title, audioUrl, durationSecon
   const [isPlaying, setIsPlaying] = useState(false);
   const [volume, setVolume] = useState(0.9);
   const [isMuted, setIsMuted] = useState(false);
-  const [playbackRate, setPlaybackRate] = useState(settings.playbackSpeed);
   const [hasAppliedResume, setHasAppliedResume] = useState(false);
   const hasGlobalAudio = Boolean(globalAudio);
+  const playbackRate = settings.playbackSpeed;
 
   const resumeEntry = useMemo(
     () => items.find((item) => item.sermonId === sermonId),
@@ -53,12 +53,6 @@ export default function PodcastPlayer({ sermonId, title, audioUrl, durationSecon
     return resumeEntry?.lastPosition ?? 0;
   }, [mounted, resumeEntry, settings.continueWatching, settings.resumePlayback]);
   const resumeDuration = resumeEntry?.durationSeconds ?? 0;
-
-  useEffect(() => {
-    const fallback = durationSeconds && durationSeconds > 0 ? durationSeconds : resumeDuration;
-    if (!fallback || fallback <= 0) return;
-    setDuration((prev) => (prev > 0 ? prev : fallback));
-  }, [durationSeconds, resumeDuration]);
 
   useEffect(() => {
     if (!hasGlobalAudio) return;
@@ -130,11 +124,7 @@ export default function PodcastPlayer({ sermonId, title, audioUrl, durationSecon
   useEffect(() => {
     const el = audioRef.current;
     if (!el) return;
-    el.playbackRate = playbackRate;
-  }, [playbackRate]);
-
-  useEffect(() => {
-    setPlaybackRate(settings.playbackSpeed);
+    el.playbackRate = settings.playbackSpeed;
   }, [settings.playbackSpeed]);
 
   const resolvedDuration = useMemo(() => {
@@ -260,7 +250,6 @@ export default function PodcastPlayer({ sermonId, title, audioUrl, durationSecon
     const speeds = [0.75, 1, 1.25, 1.5, 2] as const;
     const currentIndex = speeds.findIndex((speed) => speed === playbackRate);
     const nextRate = speeds[(currentIndex + 1) % speeds.length];
-    setPlaybackRate(nextRate);
     updateSetting("playbackSpeed", nextRate);
     const el = audioRef.current;
     if (el) el.playbackRate = nextRate;
@@ -314,6 +303,19 @@ export default function PodcastPlayer({ sermonId, title, audioUrl, durationSecon
           )}
           <button
             type="button"
+            aria-label="Wi-Fi casting"
+            disabled
+            aria-disabled="true"
+            className="inline-flex items-center gap-1.5 rounded-full border border-[var(--border-subtle)] bg-[var(--surface-muted)] px-2.5 py-1 text-destiny-grey/80 opacity-75"
+          >
+            <Icon name="cast" size={15} />
+            Wi-Fi casting
+            <span className="rounded-full border border-dashed border-destiny-grey/50 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.18em] text-destiny-grey/70">
+              Coming soon
+            </span>
+          </button>
+          <button
+            type="button"
             onClick={changeRate}
             className="rounded-full border border-[var(--border-subtle)] px-2.5 py-1 text-xs font-semibold transition hover:border-destiny-orange hover:text-destiny-orange"
           >
@@ -324,7 +326,6 @@ export default function PodcastPlayer({ sermonId, title, audioUrl, durationSecon
 
       <div className="flex flex-wrap items-center justify-center gap-2">
         <IconButton icon="replay_10" label="Back 15 seconds" onClick={() => skipBy(-15)} />
-        <IconButton icon="skip_previous" label="Restart" onClick={() => handleSeek(0)} />
         <button
           type="button"
           aria-label={effectiveIsPlaying ? "Pause podcast" : "Play podcast"}
@@ -333,7 +334,6 @@ export default function PodcastPlayer({ sermonId, title, audioUrl, durationSecon
         >
           <Icon name={effectiveIsPlaying ? "pause" : "play_arrow"} size={26} />
         </button>
-        <IconButton icon="skip_next" label="Skip ahead" onClick={() => skipBy(30)} />
         <IconButton icon="forward_10" label="Ahead 15 seconds" onClick={() => skipBy(15)} />
         <IconButton icon={effectiveMuted ? "volume_off" : "volume_up"} label={effectiveMuted ? "Unmute" : "Mute"} onClick={toggleMute} />
       </div>

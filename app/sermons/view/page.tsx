@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import PodcastPlayer from "@/components/PodcastPlayer";
 import SermonSummary from "@/components/SermonSummary";
@@ -8,6 +9,7 @@ import SermonCard from "@/components/SermonCard";
 import SermonDebugPanel from "@/components/SermonDebugPanel";
 import { getSermonByViewId, listSermonsLite } from "@/lib/db";
 import { Sermon } from "@/lib/types";
+import { getViewId } from "@/lib/viewIds";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -39,6 +41,92 @@ const getQueryValue = (
   return value ?? "";
 };
 
+const buildViewIdCandidates = (viewId: string, viewIdRaw: string) =>
+  [
+    viewId,
+    viewIdRaw,
+    viewId ? viewId.replace(/\s+/g, "") : "",
+    viewIdRaw ? viewIdRaw.replace(/\s+/g, "") : "",
+  ].filter(Boolean);
+
+const resolveSearchParams = async (searchParams: SermonViewPageProps["searchParams"]) => {
+  const resolvedSearchParams =
+    (await Promise.resolve(searchParams)) ?? undefined;
+  const viewIdRaw = getQueryValue(resolvedSearchParams, "viewId");
+  const viewId = viewIdRaw ? decodeURIComponent(viewIdRaw).trim() : "";
+  const debugMode = getQueryValue(resolvedSearchParams, "debug") === "1";
+  const tryIds = buildViewIdCandidates(viewId, viewIdRaw);
+
+  return { viewIdRaw, viewId, debugMode, tryIds };
+};
+
+const findSermonByCandidates = async (candidates: string[]) => {
+  let sermon = null as Sermon | null;
+  let matchedField: string | null = null;
+
+  for (const candidate of candidates) {
+    const result = await getSermonByViewId(candidate);
+    sermon = result.sermon;
+    matchedField = result.matchedField;
+    if (sermon) break;
+  }
+
+  return { sermon, matchedField };
+};
+
+const buildSermonDescription = (title: string) =>
+  `Watch or Listen to ${title} on Destiny Sermons. Use our built in summary + transcriptions powered by DestinyAI`;
+
+const getShareImageUrl = (sermon: Sermon) => {
+  if (sermon.youtubeVideoId) {
+    return `https://i.ytimg.com/vi/${sermon.youtubeVideoId}/hqdefault.jpg`;
+  }
+
+  return sermon.thumbnailUrl || "/destiny-logo.svg";
+};
+
+export async function generateMetadata({
+  searchParams,
+}: SermonViewPageProps): Promise<Metadata> {
+  const { viewId, viewIdRaw, tryIds } = await resolveSearchParams(searchParams);
+  const { sermon } = await findSermonByCandidates(tryIds);
+  const fallback = (await listSermonsLite(1))[0] ?? fallbackSermon;
+  const resolvedSermon = sermon ?? fallback;
+  const resolvedViewId = viewId || viewIdRaw || getViewId(resolvedSermon);
+  const title = resolvedSermon.title || "Destiny Sermons";
+  const description = buildSermonDescription(title);
+  const imageUrl = getShareImageUrl(resolvedSermon);
+  const url = resolvedViewId
+    ? `/sermons/view?viewId=${encodeURIComponent(resolvedViewId)}`
+    : "/sermons/view";
+
+  return {
+    title,
+    description,
+    alternates: {
+      canonical: url,
+    },
+    openGraph: {
+      title,
+      description,
+      url,
+      siteName: "Destiny Sermons",
+      images: [
+        {
+          url: imageUrl,
+          alt: title,
+        },
+      ],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+      images: [imageUrl],
+    },
+  };
+}
+
 const fallbackSermon: Sermon = {
   id: "demo-sermon",
   title: "Living Sent in Every Season",
@@ -63,28 +151,9 @@ const formatDate = (dateString: string) =>
   }).format(new Date(dateString));
 
 export default async function SermonViewPage({ searchParams }: SermonViewPageProps) {
-  const resolvedSearchParams =
-    (await Promise.resolve(searchParams)) ?? undefined;
-
-  const viewIdRaw = getQueryValue(resolvedSearchParams, "viewId");
-  const viewId = viewIdRaw ? decodeURIComponent(viewIdRaw).trim() : "";
-  const debugMode = getQueryValue(resolvedSearchParams, "debug") === "1";
-
-  const tryIds = [
-    viewId,
-    viewIdRaw,
-    viewId ? viewId.replace(/\s+/g, "") : "",
-    viewIdRaw ? viewIdRaw.replace(/\s+/g, "") : "",
-  ].filter(Boolean);
-
-  let sermon = null as Sermon | null;
-  let matchedField: string | null = null;
-  for (const candidate of tryIds) {
-    const result = await getSermonByViewId(candidate);
-    sermon = result.sermon;
-    matchedField = result.matchedField;
-    if (sermon) break;
-  }
+  const { viewIdRaw, viewId, debugMode, tryIds } =
+    await resolveSearchParams(searchParams);
+  const { sermon, matchedField } = await findSermonByCandidates(tryIds);
 
   const allSermons = await listSermonsLite(100);
 

@@ -16,10 +16,14 @@ export async function generateSermonSummary(transcript: string): Promise<string[
   }
 
   const prompt = `You are writing a warm, Christ-centred summary for a Destiny Church sermon.
-Generate 3-6 concise bullet points, formatted as Markdown.
-- Begin each line with "- " so it renders as a bullet.
-- Bold the core thought at the start of the line (e.g., "**Jesus sends us:** we go where He leads").
-- Wrap key scripture references in italics and keep the tone pastoral and invitational.
+Summarise the sermon into a minimum of 4 clear, core points (4–6 total).
+Format the output as a numbered Markdown list only (1., 2., 3., ...). No sub-points.
+Each numbered point must be on a single line.
+Each point must include:
+- A bolded title at the start (e.g., "**Jesus Sends Us:** ...").
+- A well-expanded description of 2–3 sentences that feels sermon-level and pastoral.
+- Clear spiritual application without over-fragmenting the message.
+Keep the flow true to the sermon’s main message and avoid over-summarising.
 
 Transcript:
 ${cleanedTranscript}`;
@@ -40,14 +44,24 @@ ${cleanedTranscript}`;
   const content: string = completion.choices?.[0]?.message?.content ?? "";
   return content
     .split("\n")
-    .map((line: string) => line.replace(/^[*\-•\s]+/, "").trim())
+    .map((line: string) =>
+      line
+        .replace(/^\s*\d+\.\s+/, "")
+        .replace(/^[*\-•\s]+/, "")
+        .trim(),
+    )
     .filter(Boolean);
 }
 
-export function formatSummaryBullets(lines: string[]): string {
+export function formatSummaryNumbered(lines: string[]): string {
   return lines
-    .map((line) => line.replace(/^[*\-•\s]+/, "").trim())
+    .map((line) =>
+      line
+        .replace(/^\s*\d+\.\s+/, "")
+        .replace(/^[*\-•\s]+/, "")
+        .trim(),
+    )
     .filter(Boolean)
-    .map((line) => `- ${line}`)
+    .map((line, index) => `${index + 1}. ${line}`)
     .join("\n");
 }

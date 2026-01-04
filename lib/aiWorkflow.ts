@@ -2,7 +2,7 @@ import "server-only";
 
 import { SupabaseClient } from "@supabase/supabase-js";
 import { mapRowToSermon, SermonRow } from "./db";
-import { generateSermonSummary, formatSummaryBullets } from "./summary";
+import { generateSermonSummary, formatSummaryNumbered } from "./summary";
 import { getSupabaseAdmin } from "./supabase";
 import { Sermon } from "./types";
 import { upsertTranscriptSegments } from "./transcriptSegments";
@@ -160,7 +160,7 @@ export async function processSermonAI(
   } else {
     try {
       const bullets = await generateSermonSummary(transcript);
-      const formatted = formatSummaryBullets(bullets);
+      const formatted = formatSummaryNumbered(bullets);
       if (!formatted.trim()) {
         throw new Error("Summary generation returned empty content.");
       }

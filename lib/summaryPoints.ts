@@ -27,11 +27,12 @@ type ModelResponse = {
 
 const SYSTEM_PROMPT = `You receive a sermon transcript as an array of timed segments:
 [{ id: number, start: number, end: number, text: string }, ...]
-Your task is to create 3–6 structured sermon points.
-For each point, return:
-- title
-- description (1–4 sentences)
+Your task is to create 4–6 structured sermon points.
+Each point must have:
+- title (short, clear, not Markdown)
+- description (2–3 sentences, reflective and pastoral, with clear spiritual application)
 - segment_id (the segment where the point begins)
+Keep the points balanced with depth; avoid over-fragmenting or over-summarising.
 Return ONLY JSON:
 {
   "points": [
@@ -46,6 +47,12 @@ type SermonContext = {
   transcriptText: string;
   segments: TranscriptSegment[];
 };
+
+const countSentences = (value: string) =>
+  value
+    .split(/[.!?](?:\s|$)/)
+    .map((segment) => segment.trim())
+    .filter(Boolean).length;
 
 function buildSegmentsFromTranscript(transcript: string): TranscriptSegment[] {
   const words = transcript
@@ -204,23 +211,27 @@ function parseModelResponse(raw: string): ModelResponse | null {
       return null;
     }
 
-    const points: ModelPoint[] = parsed.points
-      .map((point: unknown) => {
-        const candidate = point as Partial<ModelPoint>;
-        const title = typeof candidate.title === "string" ? candidate.title.trim() : "";
-        const description =
-          typeof candidate.description === "string" ? candidate.description.trim() : "";
-        const segmentId = Number((candidate as { segment_id?: number }).segment_id);
+    const points = parsed.points.map((point: unknown) => {
+      const candidate = point as Partial<ModelPoint>;
+      const title = typeof candidate.title === "string" ? candidate.title.trim() : "";
+      const description =
+        typeof candidate.description === "string" ? candidate.description.trim() : "";
+      const segmentId = Number((candidate as { segment_id?: number }).segment_id);
+      const sentenceCount = description ? countSentences(description) : 0;
 
-        if (!title || !description || !Number.isFinite(segmentId)) return null;
+      if (!title || !description || !Number.isFinite(segmentId)) return null;
+      if (sentenceCount < 2 || sentenceCount > 3) return null;
 
-        return { title, description, segment_id: segmentId };
-      })
-      .filter((point: ModelPoint | null): point is ModelPoint => Boolean(point));
+      return { title, description, segment_id: segmentId };
+    });
 
-    if (!points.length) return null;
+    if (points.some((point: ModelPoint | null) => !point)) return null;
 
-    return { points };
+    const resolvedPoints = points as ModelPoint[];
+
+    if (resolvedPoints.length < 4 || resolvedPoints.length > 6) return null;
+
+    return { points: resolvedPoints };
   } catch {
     return null;
   }

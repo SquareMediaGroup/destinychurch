@@ -6,7 +6,7 @@ import { processSermonAI } from "@/lib/aiWorkflow";
 import { generateSummaryPointsForSermon } from "@/lib/summaryPoints";
 import { parseSrt } from "@/lib/srt";
 import { getSupabaseAdmin } from "@/lib/supabase";
-import { formatSummaryBullets, generateSermonSummary } from "@/lib/summary";
+import { formatSummaryNumbered, generateSermonSummary } from "@/lib/summary";
 import { upsertTranscriptSegments } from "@/lib/transcriptSegments";
 
 const ADMIN_COOKIE = "destiny-admin";
@@ -68,7 +68,7 @@ export async function processSermonSrt(formData: FormData) {
     // Generate summary text.
     try {
       const bullets = await generateSermonSummary(transcript);
-      const summary = formatSummaryBullets(bullets).trim();
+      const summary = formatSummaryNumbered(bullets).trim();
       if (summary) {
         await supabase
           .from("sermons")

@@ -205,7 +205,13 @@ export default function PodcastPlayer({ sermonId, title, audioUrl, durationSecon
   const handleCast = async () => {
     const castFramework = window.cast?.framework;
     const castMedia = window.chrome?.cast?.media;
-    if (castAvailability.cast && castFramework?.CastContext && castMedia) {
+    if (
+      castAvailability.cast &&
+      castFramework?.CastContext &&
+      castMedia?.MediaInfo &&
+      castMedia?.LoadRequest &&
+      castMedia?.MusicTrackMediaMetadata
+    ) {
       try {
         if (globalAudio?.isPlaying) {
           globalAudio.togglePlay();

@@ -31,7 +31,7 @@ export default function MiniPodcastPlayer({
 }: MiniPodcastPlayerProps) {
   return (
     <div
-      className="relative flex items-center justify-between gap-3 rounded-xl border border-[var(--border-subtle)] bg-[var(--surface)] px-3 py-2 text-[var(--foreground)] shadow-sm"
+      className="relative flex items-center justify-between gap-3 rounded-full border border-[var(--border-subtle)] bg-[var(--surface)] px-3 py-2 text-[var(--foreground)] shadow-sm"
       style={{ "--accent-orange": ACCENT_ORANGE } as CSSProperties}
     >
       <div className="flex items-center gap-2 overflow-hidden">

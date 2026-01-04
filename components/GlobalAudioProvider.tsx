@@ -213,6 +213,7 @@ export default function GlobalAudioProvider({ children }: { children: React.Reac
         <div className="fixed bottom-4 left-1/2 z-50 w-[min(720px,90vw)] -translate-x-1/2">
           <MiniPodcastPlayer
             title={activeTrack.title}
+            sermonId={activeTrack.sermonId}
             isPlaying={isPlaying}
             isMuted={isMuted}
             onTogglePlay={togglePlay}

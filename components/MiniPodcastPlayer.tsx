@@ -1,12 +1,14 @@
 "use client";
 
 import { type CSSProperties } from "react";
+import Link from "next/link";
 import Icon from "./Icon";
 
 const ACCENT_ORANGE = "#F58021";
 
 type MiniPodcastPlayerProps = {
   title: string;
+  sermonId: string;
   isPlaying: boolean;
   isMuted: boolean;
   onTogglePlay: () => void;
@@ -18,6 +20,7 @@ type MiniPodcastPlayerProps = {
 
 export default function MiniPodcastPlayer({
   title,
+  sermonId,
   isPlaying,
   isMuted,
   onTogglePlay,
@@ -35,15 +38,19 @@ export default function MiniPodcastPlayer({
         <button
           type="button"
           onClick={onTogglePlay}
-          className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-destiny-orange text-white shadow-sm transition hover:brightness-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-destiny-orange"
+          className="inline-flex h-10 w-10 flex-none items-center justify-center rounded-full bg-destiny-orange text-white shadow-sm transition hover:brightness-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-destiny-orange sm:h-11 sm:w-11"
           aria-label={isPlaying ? "Pause podcast" : "Play podcast"}
         >
           <Icon name={isPlaying ? "pause" : "play_arrow"} size={22} />
         </button>
 
         <div className="flex min-w-[140px] max-w-[340px] items-center gap-2 overflow-hidden sm:max-w-[460px]">
-          <div className="h-6 w-6 rounded-full border border-[var(--border-subtle)] bg-[var(--surface-muted)]" />
-          <p className="truncate text-sm font-semibold">{title}</p>
+          <Link
+            href={`/sermons/view?viewId=${encodeURIComponent(sermonId)}`}
+            className="truncate text-sm font-semibold transition hover:text-destiny-orange"
+          >
+            {title}
+          </Link>
         </div>
       </div>
 
@@ -69,7 +76,7 @@ function IconButton({ icon, label, onClick }: IconButtonProps) {
       type="button"
       onClick={onClick}
       aria-label={label}
-      className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-[var(--border-subtle)] bg-[var(--surface-muted)] text-[var(--foreground)] shadow-xs transition hover:border-destiny-orange hover:bg-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-destiny-orange"
+      className="inline-flex h-9 w-9 flex-none items-center justify-center rounded-full border border-[var(--border-subtle)] bg-[var(--surface-muted)] text-[var(--foreground)] shadow-xs transition hover:border-destiny-orange hover:bg-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-destiny-orange"
     >
       <Icon name={icon} size={20} />
     </button>

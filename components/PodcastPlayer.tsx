@@ -216,8 +216,7 @@ export default function PodcastPlayer({ sermonId, title, audioUrl, durationSecon
         const context = castFramework.CastContext.getInstance();
         const defaultReceiver =
           castMedia.DEFAULT_MEDIA_RECEIVER_APP_ID;
-        const autoJoinPolicy =
-          window.chrome.cast.AutoJoinPolicy?.ORIGIN_SCOPED ?? undefined;
+        const autoJoinPolicy = window.chrome?.cast?.AutoJoinPolicy?.ORIGIN_SCOPED;
         context.setOptions({
           receiverApplicationId: defaultReceiver,
           ...(autoJoinPolicy ? { autoJoinPolicy } : {}),

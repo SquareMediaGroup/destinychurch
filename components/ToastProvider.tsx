@@ -11,11 +11,19 @@ import {
 
 type ToastTone = "info" | "success" | "error";
 
+type ToastAction = {
+  label: string;
+  onClick: () => void;
+  variant?: "primary" | "ghost";
+};
+
 type Toast = {
   id: string;
   message: string;
   title?: string;
   tone: ToastTone;
+  actions?: ToastAction[];
+  durationMs?: number;
 };
 
 type ToastContextValue = {
@@ -46,10 +54,15 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
         tone: toast.tone ?? "info",
         message: toast.message,
         title: toast.title,
+        actions: toast.actions,
+        durationMs: toast.durationMs,
       };
       setToasts((prev) => [...prev, next]);
-      const timeoutId = window.setTimeout(() => remove(id), 4200);
-      timeouts.current[id] = timeoutId;
+      const durationMs = toast.durationMs ?? 4200;
+      if (durationMs > 0) {
+        const timeoutId = window.setTimeout(() => remove(id), durationMs);
+        timeouts.current[id] = timeoutId;
+      }
       return id;
     },
     [remove],
@@ -67,14 +80,33 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
               {toast.title && <p className="toast-title">{toast.title}</p>}
               <p className="toast-message">{toast.message}</p>
             </div>
-            <button
-              type="button"
-              className="toast-close"
-              aria-label="Dismiss notification"
-              onClick={() => remove(toast.id)}
-            >
-              ×
-            </button>
+            <div className="toast-controls">
+              {toast.actions?.length ? (
+                <div className="toast-actions">
+                  {toast.actions.map((action, index) => (
+                    <button
+                      key={`${toast.id}-action-${index}`}
+                      type="button"
+                      className={`toast-action${action.variant === "primary" ? " toast-action-primary" : ""}`}
+                      onClick={() => {
+                        action.onClick();
+                        remove(toast.id);
+                      }}
+                    >
+                      {action.label}
+                    </button>
+                  ))}
+                </div>
+              ) : null}
+              <button
+                type="button"
+                className="toast-close"
+                aria-label="Dismiss notification"
+                onClick={() => remove(toast.id)}
+              >
+                ×
+              </button>
+            </div>
           </div>
         ))}
       </div>

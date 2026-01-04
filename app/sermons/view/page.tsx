@@ -5,6 +5,7 @@ import SermonPoints from "@/components/SermonPoints";
 import TranscriptBlock from "@/components/TranscriptBlock";
 import VideoPlayer from "@/components/VideoPlayer";
 import SermonCard from "@/components/SermonCard";
+import SermonDebugPanel from "@/components/SermonDebugPanel";
 import { getSermonByViewId, listSermonsLite } from "@/lib/db";
 import { Sermon } from "@/lib/types";
 
@@ -112,28 +113,15 @@ export default async function SermonViewPage({ searchParams }: SermonViewPagePro
   return (
     <div className="grid gap-10 lg:grid-cols-[2fr_1fr]">
       <div className="space-y-6">
-        <div className="flex flex-wrap items-center gap-3 rounded-xl border border-black/5 bg-white px-4 py-3 text-xs font-semibold text-destiny-grey">
-          <span>View ID: {viewId || "none"}</span>
-          {viewId && (
-            <Link
-              href={`/sermons/view?viewId=${encodeURIComponent(viewId)}&debug=${debugMode ? "0" : "1"}`}
-              className="rounded-full border border-destiny-orange px-3 py-1 text-destiny-orange transition hover:bg-destiny-orange hover:text-white"
-            >
-              {debugMode ? "Exit debug" : "Enable debug"}
-            </Link>
-          )}
-        </div>
-
-        {debugMode && (
-          <div className="space-y-1 rounded-xl border border-black/5 bg-white px-4 py-3 text-xs text-destiny-grey shadow-sm">
-            <p className="font-semibold text-destiny-black">Debug info</p>
-            <p>Raw viewId: {viewIdRaw || "—"}</p>
-            <p>Decoded viewId: {viewId || "—"}</p>
-            <p>Matched field: {matchedField || "none"}</p>
-            <p>Resolved sermon: {resolvedSermon.id} — {resolvedSermon.title}</p>
-            <p>Try order: {tryIds.join(", ") || "none"}</p>
-          </div>
-        )}
+        <SermonDebugPanel
+          viewId={viewId}
+          viewIdRaw={viewIdRaw}
+          debugMode={debugMode}
+          matchedField={matchedField}
+          tryIds={tryIds}
+          resolvedSermonId={resolvedSermon.id}
+          resolvedSermonTitle={resolvedSermon.title}
+        />
 
         <div className="space-y-3">
           <VideoPlayer

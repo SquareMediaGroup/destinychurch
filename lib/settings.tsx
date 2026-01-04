@@ -17,6 +17,7 @@ export type Settings = {
   captionsEnabled: boolean;
   captionSize: CaptionSize;
   continueWatching: boolean;
+  devMode: boolean;
 };
 
 export const SETTINGS_STORAGE_KEY = "destiny-settings";
@@ -32,6 +33,7 @@ const DEFAULT_SETTINGS: Settings = {
   captionsEnabled: false,
   captionSize: "medium",
   continueWatching: true,
+  devMode: false,
 };
 
 const parseBoolean = (value: unknown, fallback: boolean) =>
@@ -66,6 +68,7 @@ const readStoredSettings = (): Settings => {
       captionsEnabled: parseBoolean(parsed.captionsEnabled, DEFAULT_SETTINGS.captionsEnabled),
       captionSize: parseString(parsed.captionSize, ["small", "medium", "large"], DEFAULT_SETTINGS.captionSize),
       continueWatching: parseBoolean(parsed.continueWatching, DEFAULT_SETTINGS.continueWatching),
+      devMode: parseBoolean(parsed.devMode, DEFAULT_SETTINGS.devMode),
     };
   } catch {
     return DEFAULT_SETTINGS;
@@ -83,6 +86,7 @@ const applySettings = (settings: Settings) => {
   root.dataset.textSize = settings.textSize;
   root.dataset.reduceMotion = settings.reduceMotion ? "true" : "false";
   root.dataset.captionSize = settings.captionSize;
+  root.dataset.devMode = settings.devMode ? "true" : "false";
 };
 
 type SettingsContextValue = {

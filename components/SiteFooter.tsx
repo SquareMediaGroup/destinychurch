@@ -1,8 +1,11 @@
 "use client";
 
+import { useCallback, useRef } from "react";
 import Link from "next/link";
 import LogoImage from "./LogoImage";
 import ThemeToggle from "./ThemeToggle";
+import { useToast } from "./ToastProvider";
+import { useSettings } from "@/lib/settings";
 
 const primaryLinks = [
   { label: "Home", href: "/" },
@@ -26,12 +29,55 @@ const socials = [
 ];
 
 export default function SiteFooter() {
+  const { settings, updateSetting } = useSettings();
+  const toast = useToast();
+  const logoClicks = useRef(0);
+
+  const promptDevMode = useCallback(() => {
+    const nextMode = !settings.devMode;
+    toast.push({
+      title: nextMode ? "Enable DevMode?" : "Disable DevMode?",
+      message: nextMode
+        ? "DevMode shows view IDs and stats for nerds on sermons."
+        : "DevMode hides view IDs and stats for nerds on sermons.",
+      tone: "info",
+      durationMs: 0,
+      actions: [
+        {
+          label: nextMode ? "Yes" : "Turn off",
+          variant: "primary",
+          onClick: () => {
+            updateSetting("devMode", nextMode);
+            toast.success(nextMode ? "DevMode enabled." : "DevMode disabled.", "DevMode");
+          },
+        },
+        {
+          label: "No",
+          onClick: () => {},
+        },
+      ],
+    });
+  }, [settings.devMode, toast, updateSetting]);
+
+  const handleLogoClick = useCallback(() => {
+    logoClicks.current += 1;
+    if (logoClicks.current >= 5) {
+      logoClicks.current = 0;
+      promptDevMode();
+    }
+  }, [promptDevMode]);
+
   return (
     <footer className="mt-16 border-t border-white/10 bg-[#0d1119] text-white">
       <div className="mx-auto max-w-7xl px-4 py-14 lg:px-8">
         <div className="grid gap-10 md:grid-cols-[1.2fr_1fr_1fr] lg:grid-cols-[1.3fr_1fr_1fr_1fr]">
           <div className="space-y-5">
-            <div className="relative h-11 w-[200px]">
+            <button
+              type="button"
+              onClick={handleLogoClick}
+              aria-label="Destiny Church"
+              className="relative h-11 w-[200px] appearance-none border-0 bg-transparent p-0 text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white/60"
+            >
               <LogoImage
                 src="/destiny-logo-color-white.svg"
                 alt="Destiny Church"
@@ -39,7 +85,7 @@ export default function SiteFooter() {
                 sizes="200px"
                 className="object-contain"
               />
-            </div>
+            </button>
             <p className="max-w-md text-sm text-white/70">
               Destiny Church Tees Valley is a welcoming, Christ-centred home for
               Stockton, Teesside, and beyond. Join us in person or online this

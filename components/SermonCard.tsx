@@ -1,7 +1,10 @@
+"use client";
+
 import Image from "next/image";
 import Link from "next/link";
 import { Sermon } from "@/lib/types";
 import { getViewId } from "@/lib/viewIds";
+import SermonDevDetails from "@/components/SermonDevDetails";
 
 type SermonCardProps = {
   sermon: Sermon;
@@ -25,7 +28,18 @@ const formatDuration = (durationSeconds?: number) => {
 export default function SermonCard({ sermon, priority = false }: SermonCardProps) {
   const durationLabel = formatDuration(sermon.durationSeconds);
   const speaker = sermon.speaker || "Destiny Church";
-  const href = `/sermons/view?viewId=${encodeURIComponent(getViewId(sermon))}`;
+  const viewId = getViewId(sermon);
+  const viewIdSource = sermon.youtubeVideoId
+    ? "youtube_video_id"
+    : sermon.podcastGuid
+      ? "podcast_guid"
+      : "id";
+  const summaryLength =
+    typeof sermon.summary === "string" ? sermon.summary.trim().length : 0;
+  const transcriptLength =
+    typeof sermon.transcript === "string" ? sermon.transcript.trim().length : 0;
+  const tagCount = sermon.tags?.length ?? 0;
+  const href = `/sermons/view?viewId=${encodeURIComponent(viewId)}`;
 
   return (
     <Link
@@ -70,6 +84,16 @@ export default function SermonCard({ sermon, priority = false }: SermonCardProps
             </span>
           ))}
         </div>
+        <SermonDevDetails
+          viewId={viewId}
+          viewIdSource={viewIdSource}
+          sermonId={sermon.id}
+          youtubeVideoId={sermon.youtubeVideoId}
+          podcastGuid={sermon.podcastGuid}
+          summaryLength={summaryLength}
+          transcriptLength={transcriptLength}
+          tagCount={tagCount}
+        />
       </div>
     </Link>
   );

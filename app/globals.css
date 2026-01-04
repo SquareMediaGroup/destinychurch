@@ -269,6 +269,46 @@ h3 {
   color: #dfe7f5;
 }
 
+.toast-controls {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+}
+
+.toast-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.toast-action {
+  border-radius: 9999px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: rgba(255, 255, 255, 0.08);
+  color: #e8edf6;
+  font-size: 0.72rem;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 4px 10px;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.toast-action:hover {
+  background: rgba(255, 255, 255, 0.16);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.toast-action-primary {
+  background: #f58021;
+  border-color: transparent;
+  color: #ffffff;
+}
+
+.toast-action-primary:hover {
+  background: #df6f15;
+}
+
 .toast-close {
   border: 1px solid rgba(255, 255, 255, 0.12);
   background: rgba(255, 255, 255, 0.08);

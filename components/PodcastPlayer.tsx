@@ -29,8 +29,51 @@ const formatTime = (value?: number) => {
 
 const clamp = (value: number, min: number, max: number) => Math.min(Math.max(value, min), max);
 
+type CastAvailability = {
+  cast: boolean;
+  airplay: boolean;
+};
+
+declare global {
+  interface Window {
+    __onGCastApiAvailable?: (available: boolean) => void;
+    cast?: {
+      framework?: {
+        CastContext?: {
+          getInstance: () => {
+            setOptions: (options: Record<string, unknown>) => void;
+            requestSession: () => Promise<void>;
+            getCurrentSession: () => {
+              loadMedia: (request: unknown) => Promise<void>;
+            } | null;
+          };
+        };
+      };
+    };
+    chrome?: {
+      cast?: {
+        AutoJoinPolicy?: {
+          ORIGIN_SCOPED?: unknown;
+        };
+        media?: {
+          DEFAULT_MEDIA_RECEIVER_APP_ID?: string;
+          MediaInfo?: new (contentId: string, contentType: string) => {
+            metadata?: unknown;
+          };
+          LoadRequest?: new (mediaInfo: unknown) => unknown;
+          MusicTrackMediaMetadata?: new () => {
+            title?: string;
+            subtitle?: string;
+          };
+        };
+      };
+    };
+  }
+}
+
 export default function PodcastPlayer({ sermonId, title, audioUrl, durationSeconds }: PodcastPlayerProps) {
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const castScriptLoaded = useRef(false);
   const { mounted, items, saveProgress, clearProgress } = useContinueWatching();
   const globalAudio = useGlobalAudio();
   const { settings, updateSetting } = useSettings();
@@ -41,6 +84,10 @@ export default function PodcastPlayer({ sermonId, title, audioUrl, durationSecon
   const [volume, setVolume] = useState(0.9);
   const [isMuted, setIsMuted] = useState(false);
   const [hasAppliedResume, setHasAppliedResume] = useState(false);
+  const [castAvailability, setCastAvailability] = useState<CastAvailability>({
+    cast: false,
+    airplay: false,
+  });
   const hasGlobalAudio = Boolean(globalAudio);
   const playbackRate = settings.playbackSpeed;
 
@@ -126,6 +173,85 @@ export default function PodcastPlayer({ sermonId, title, audioUrl, durationSecon
     if (!el) return;
     el.playbackRate = settings.playbackSpeed;
   }, [settings.playbackSpeed]);
+
+  useEffect(() => {
+    const el = audioRef.current;
+    const airplay = Boolean(el && "webkitShowPlaybackTargetPicker" in el);
+    setCastAvailability((prev) => ({
+      ...prev,
+      airplay,
+    }));
+  }, []);
+
+  useEffect(() => {
+    if (castScriptLoaded.current) return;
+    if (typeof window === "undefined") return;
+    castScriptLoaded.current = true;
+
+    window.__onGCastApiAvailable = (available: boolean) => {
+      if (!available) return;
+      setCastAvailability((prev) => ({
+        ...prev,
+        cast: true,
+      }));
+    };
+
+    const script = document.createElement("script");
+    script.src = "https://www.gstatic.com/cv/js/sender/v1/cast_sender.js?loadCastFramework=1";
+    script.async = true;
+    document.head.appendChild(script);
+  }, []);
+
+  const handleCast = async () => {
+    if (castAvailability.cast && window.cast?.framework && window.chrome?.cast?.media) {
+      try {
+        if (globalAudio?.isPlaying) {
+          globalAudio.togglePlay();
+        } else if (audioRef.current && !audioRef.current.paused) {
+          audioRef.current.pause();
+        }
+
+        const context = window.cast.framework.CastContext.getInstance();
+        const defaultReceiver =
+          window.chrome.cast.media.DEFAULT_MEDIA_RECEIVER_APP_ID;
+        const autoJoinPolicy =
+          window.chrome.cast.AutoJoinPolicy?.ORIGIN_SCOPED ?? undefined;
+        context.setOptions({
+          receiverApplicationId: defaultReceiver,
+          ...(autoJoinPolicy ? { autoJoinPolicy } : {}),
+        });
+
+        await context.requestSession();
+        const session = context.getCurrentSession();
+        if (!session) return;
+
+        const mediaInfo = new window.chrome.cast.media.MediaInfo(
+          audioUrl,
+          "audio/mpeg",
+        );
+        const metadata = new window.chrome.cast.media.MusicTrackMediaMetadata();
+        metadata.title = title;
+        metadata.subtitle = "Destiny Sermons";
+        mediaInfo.metadata = metadata;
+
+        const request = new window.chrome.cast.media.LoadRequest(mediaInfo);
+        await session.loadMedia(request);
+      } catch (error) {
+        console.error("Unable to start casting", error);
+      }
+      return;
+    }
+
+    const el = audioRef.current;
+    if (castAvailability.airplay && el && "webkitShowPlaybackTargetPicker" in el) {
+      try {
+        (el as HTMLAudioElement & { webkitShowPlaybackTargetPicker: () => void })
+          .webkitShowPlaybackTargetPicker();
+      } catch (error) {
+        console.error("Unable to open AirPlay picker", error);
+      }
+    }
+  };
 
   const resolvedDuration = useMemo(() => {
     const fallback = duration || durationSeconds || resumeDuration || 0;
@@ -303,16 +429,28 @@ export default function PodcastPlayer({ sermonId, title, audioUrl, durationSecon
           )}
           <button
             type="button"
-            aria-label="Wi-Fi casting"
-            disabled
-            aria-disabled="true"
-            className="inline-flex items-center gap-1.5 rounded-full border border-[var(--border-subtle)] bg-[var(--surface-muted)] px-2.5 py-1 text-destiny-grey/80 opacity-75"
+            aria-label={
+              castAvailability.cast
+                ? "Cast to device"
+                : castAvailability.airplay
+                  ? "AirPlay audio"
+                  : "Wi-Fi casting"
+            }
+            onClick={handleCast}
+            disabled={!castAvailability.cast && !castAvailability.airplay}
+            aria-disabled={!castAvailability.cast && !castAvailability.airplay}
+            className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-destiny-orange ${
+              castAvailability.cast || castAvailability.airplay
+                ? "border-[var(--border-subtle)] bg-[var(--surface)] hover:border-destiny-orange hover:text-destiny-orange"
+                : "border-[var(--border-subtle)] bg-[var(--surface-muted)] text-destiny-grey/80 opacity-70"
+            }`}
           >
             <Icon name="cast" size={15} />
-            Wi-Fi casting
-            <span className="rounded-full border border-dashed border-destiny-grey/50 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.18em] text-destiny-grey/70">
-              Coming soon
-            </span>
+            {castAvailability.cast
+              ? "Cast audio"
+              : castAvailability.airplay
+                ? "AirPlay audio"
+                : "Wi-Fi casting"}
           </button>
           <button
             type="button"

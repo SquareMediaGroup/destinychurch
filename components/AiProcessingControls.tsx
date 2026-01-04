@@ -10,6 +10,7 @@ type AiProcessingControlsProps = {
   sermonId: string;
   hasTranscript: boolean;
   hasSummaryPoints: boolean;
+  canRunDestinyAi: boolean;
   uploadAction: ServerAction;
   v2Action: ServerAction;
 };
@@ -18,6 +19,7 @@ export default function AiProcessingControls({
   sermonId,
   hasTranscript,
   hasSummaryPoints,
+  canRunDestinyAi,
   uploadAction,
   v2Action,
 }: AiProcessingControlsProps) {
@@ -68,15 +70,25 @@ export default function AiProcessingControls({
         <form action={v2Action} className="flex flex-wrap items-center gap-2">
           <input type="hidden" name="id" value={sermonId} />
           <ConfirmSubmit
-            className="rounded-full border border-destiny-blue px-4 py-2 text-xs font-semibold text-destiny-blue transition hover:bg-destiny-blue hover:text-white"
-            confirmMessage="Run DestinyAI summary points for this sermon? Requires transcript segments."
+            className={`rounded-full border px-4 py-2 text-xs font-semibold transition ${
+              canRunDestinyAi
+                ? "border-destiny-blue text-destiny-blue hover:bg-destiny-blue hover:text-white"
+                : "border-[var(--border-subtle)] text-destiny-grey/70"
+            }`}
+            confirmMessage="Run DestinyAI (Whisper + summary points) for this sermon? If no transcript exists, we will generate one from the podcast audio."
             pendingLabel="Processing..."
+            disabled={!canRunDestinyAi}
           >
             Process with DestinyAI
           </ConfirmSubmit>
           <p className="text-[11px] text-destiny-grey/80">
-            Generates structured summary points from the stored transcript.
+            Runs Whisper if needed, then generates structured summary points.
           </p>
+          {!canRunDestinyAi && (
+            <p className="text-[11px] text-destiny-grey/70">
+              Requires a podcast audio URL or an existing transcript.
+            </p>
+          )}
         </form>
       )}
     </div>

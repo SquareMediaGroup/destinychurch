@@ -59,6 +59,9 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
     (await Promise.resolve(searchParams)) ?? undefined;
   const syncStatus = getQueryValue(resolvedSearchParams, "sync");
   const syncError = getQueryValue(resolvedSearchParams, "syncError");
+  const aiStatus = getQueryValue(resolvedSearchParams, "ai");
+  const aiError = getQueryValue(resolvedSearchParams, "aiError");
+  const aiId = getQueryValue(resolvedSearchParams, "id");
   const savedCount = getQueryValue(resolvedSearchParams, "saved");
   const podcastCount = getQueryValue(resolvedSearchParams, "podcast");
   const youtubeCount = getQueryValue(resolvedSearchParams, "youtube");
@@ -71,12 +74,32 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
     );
   }
 
-  const [sermons, admins] = await Promise.all([
+  const loadErrors: string[] = [];
+
+  const [sermonsResult, adminsResult] = await Promise.allSettled([
     listSermons(50),
     isSuper ? listAdminUsers() : Promise.resolve([]),
   ]);
 
-  const reports = await listReports(50);
+  const sermons = sermonsResult.status === "fulfilled" ? sermonsResult.value : [];
+  if (sermonsResult.status === "rejected") {
+    console.error("[admin] Failed to load sermons", sermonsResult.reason);
+    loadErrors.push("Unable to load sermons.");
+  }
+
+  const admins = adminsResult.status === "fulfilled" ? adminsResult.value : [];
+  if (adminsResult.status === "rejected") {
+    console.error("[admin] Failed to load admin users", adminsResult.reason);
+    loadErrors.push("Unable to load admin users.");
+  }
+
+  let reports = [] as Awaited<ReturnType<typeof listReports>>;
+  try {
+    reports = await listReports(50);
+  } catch (error) {
+    console.error("[admin] Failed to load reports", error);
+    loadErrors.push("Unable to load reports.");
+  }
   const total = sermons.length;
   const withPodcast = sermons.filter((s) => !!s.podcastAudioUrl).length;
   const withSummary = sermons.filter((s) => !!s.summary).length;
@@ -87,6 +110,21 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
     <div className="min-h-screen bg-[var(--background)] text-[var(--foreground)]">
       <AdminSyncToast />
       <main className="mx-auto w-full max-w-5xl space-y-4 px-4 py-8">
+        {loadErrors.length > 0 && (
+          <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 shadow-sm">
+            {loadErrors.join(" ")} Check Supabase configuration and try again.
+          </div>
+        )}
+        {aiStatus === "ok" && (
+          <div className="rounded-xl border border-destiny-green/30 bg-destiny-green/10 px-4 py-3 text-sm text-destiny-grey shadow-sm">
+            DestinyAI complete{aiId ? ` for sermon ${aiId}` : ""}.
+          </div>
+        )}
+        {aiError && (
+          <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 shadow-sm">
+            DestinyAI failed{aiId ? ` for sermon ${aiId}` : ""}: {aiError}
+          </div>
+        )}
         {syncStatus === "ok" && (
           <div className="rounded-xl border border-destiny-green/30 bg-destiny-green/10 px-4 py-3 text-sm text-destiny-grey shadow-sm">
             Sync complete. Saved {savedCount || "items"}. Podcast: {podcastCount || "—"} · YouTube: {youtubeCount || "—"}.
@@ -449,6 +487,8 @@ function SermonTable({ sermons }: { sermons: Awaited<ReturnType<typeof listSermo
           const hasTranscript = Boolean(sermon.transcript);
           const hasSummary = Boolean(sermon.summary);
           const hasSummaryPoints = Boolean(sermon.summaryPoints?.points?.length);
+          const hasPodcastAudio = Boolean(sermon.podcastAudioUrl);
+          const canRunDestinyAi = hasTranscript || hasPodcastAudio;
           return (
             <div key={sermon.id} className="bg-[var(--surface-muted)] px-4 py-4">
               <div className="flex flex-wrap items-center gap-2">
@@ -591,13 +631,14 @@ function SermonTable({ sermons }: { sermons: Awaited<ReturnType<typeof listSermo
                     <div className="flex flex-wrap items-center gap-2 text-[11px] text-destiny-grey/80">
                       <span className="text-xs font-semibold text-destiny-black">AI Processing</span>
                       <span className="hidden sm:inline">
-                        Upload captions = transcript + summary · V2 = structured summary points
+                        Upload captions = transcript + summary · DestinyAI = Whisper + summary points
                       </span>
                     </div>
                     <AiProcessingControls
                       sermonId={sermon.id}
                       hasTranscript={hasTranscript}
                       hasSummaryPoints={hasSummaryPoints}
+                      canRunDestinyAi={canRunDestinyAi}
                       uploadAction={processSermonSrt}
                       v2Action={processSermonV2}
                     />

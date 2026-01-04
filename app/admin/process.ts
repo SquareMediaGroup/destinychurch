@@ -24,12 +24,13 @@ export async function processSermon(formData: FormData) {
   } catch (error) {
     console.error(`[admin] AI processing failed for sermon ${id}`, error);
     const message = error instanceof Error ? error.message : "AI processing failed";
-    throw new Error(message);
+    redirect(`/admin?aiError=${encodeURIComponent(message)}&id=${encodeURIComponent(id)}`);
   }
 
   revalidatePath("/sermons");
   revalidatePath("/admin");
   revalidatePath(`/sermons/view?viewId=${encodeURIComponent(id)}`);
+  redirect(`/admin?ai=ok&id=${encodeURIComponent(id)}`);
 }
 
 export async function processSermonSrt(formData: FormData) {
@@ -89,12 +90,13 @@ export async function processSermonSrt(formData: FormData) {
     console.error(`[admin] SRT ingest failed for sermon ${id}`, error);
     const message =
       error instanceof Error ? error.message : "SRT ingest failed. Please try again.";
-    throw new Error(message);
+    redirect(`/admin?aiError=${encodeURIComponent(message)}&id=${encodeURIComponent(id)}`);
   }
 
   revalidatePath("/sermons");
   revalidatePath("/admin");
   revalidatePath(`/sermons/view?viewId=${encodeURIComponent(id)}`);
+  redirect(`/admin?ai=ok&id=${encodeURIComponent(id)}`);
 }
 
 export async function processSermonV2(formData: FormData) {
@@ -111,10 +113,11 @@ export async function processSermonV2(formData: FormData) {
     console.error(`[admin] AI v2 summary-points failed for sermon ${id}`, error);
     const message =
       error instanceof Error ? error.message : "AI v2 summary-points processing failed";
-    throw new Error(message);
+    redirect(`/admin?aiError=${encodeURIComponent(message)}&id=${encodeURIComponent(id)}`);
   }
 
   revalidatePath("/sermons");
   revalidatePath("/admin");
   revalidatePath(`/sermons/view?viewId=${encodeURIComponent(id)}`);
+  redirect(`/admin?ai=ok&id=${encodeURIComponent(id)}`);
 }

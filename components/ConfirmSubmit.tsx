@@ -11,6 +11,7 @@ type ConfirmSubmitProps = {
   confirmMessage?: string;
   pendingLabel?: string;
   form?: string;
+  disabled?: boolean;
 };
 
 export default function ConfirmSubmit({
@@ -19,6 +20,7 @@ export default function ConfirmSubmit({
   confirmMessage,
   pendingLabel,
   form,
+  disabled = false,
 }: ConfirmSubmitProps) {
   const { pending } = useFormStatus();
   const toast = useToast();
@@ -38,9 +40,13 @@ export default function ConfirmSubmit({
       form={form}
       type="submit"
       className={className}
-      disabled={pending}
+      disabled={pending || disabled}
       onClick={(e) => {
-        if (pending) return;
+        if (pending || disabled) {
+          e.preventDefault();
+          e.stopPropagation();
+          return;
+        }
         if (confirmMessage && !armed) {
           e.preventDefault();
           e.stopPropagation();

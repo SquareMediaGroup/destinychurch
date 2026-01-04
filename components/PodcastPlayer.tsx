@@ -203,7 +203,9 @@ export default function PodcastPlayer({ sermonId, title, audioUrl, durationSecon
   }, []);
 
   const handleCast = async () => {
-    if (castAvailability.cast && window.cast?.framework && window.chrome?.cast?.media) {
+    const castFramework = window.cast?.framework;
+    const castMedia = window.chrome?.cast?.media;
+    if (castAvailability.cast && castFramework?.CastContext && castMedia) {
       try {
         if (globalAudio?.isPlaying) {
           globalAudio.togglePlay();
@@ -211,9 +213,9 @@ export default function PodcastPlayer({ sermonId, title, audioUrl, durationSecon
           audioRef.current.pause();
         }
 
-        const context = window.cast.framework.CastContext.getInstance();
+        const context = castFramework.CastContext.getInstance();
         const defaultReceiver =
-          window.chrome.cast.media.DEFAULT_MEDIA_RECEIVER_APP_ID;
+          castMedia.DEFAULT_MEDIA_RECEIVER_APP_ID;
         const autoJoinPolicy =
           window.chrome.cast.AutoJoinPolicy?.ORIGIN_SCOPED ?? undefined;
         context.setOptions({
@@ -225,16 +227,16 @@ export default function PodcastPlayer({ sermonId, title, audioUrl, durationSecon
         const session = context.getCurrentSession();
         if (!session) return;
 
-        const mediaInfo = new window.chrome.cast.media.MediaInfo(
+        const mediaInfo = new castMedia.MediaInfo(
           audioUrl,
           "audio/mpeg",
         );
-        const metadata = new window.chrome.cast.media.MusicTrackMediaMetadata();
+        const metadata = new castMedia.MusicTrackMediaMetadata();
         metadata.title = title;
         metadata.subtitle = "Destiny Sermons";
         mediaInfo.metadata = metadata;
 
-        const request = new window.chrome.cast.media.LoadRequest(mediaInfo);
+        const request = new castMedia.LoadRequest(mediaInfo);
         await session.loadMedia(request);
       } catch (error) {
         console.error("Unable to start casting", error);

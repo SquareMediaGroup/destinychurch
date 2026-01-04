@@ -36,7 +36,7 @@ export default function AiProcessingControls({
             active={mode === "upload"}
             onClick={() => setMode("upload")}
           />
-          <ModeButton label="AI V2" active={mode === "v2"} onClick={() => setMode("v2")} />
+          <ModeButton label="DestinyAI" active={mode === "v2"} onClick={() => setMode("v2")} />
         </div>
       </div>
 
@@ -69,10 +69,10 @@ export default function AiProcessingControls({
           <input type="hidden" name="id" value={sermonId} />
           <ConfirmSubmit
             className="rounded-full border border-destiny-blue px-4 py-2 text-xs font-semibold text-destiny-blue transition hover:bg-destiny-blue hover:text-white"
-            confirmMessage="Run AI V2 summary points for this sermon? Requires transcript segments."
+            confirmMessage="Run DestinyAI summary points for this sermon? Requires transcript segments."
             pendingLabel="Processing..."
           >
-            Process AI V2
+            Process DestinyAI
           </ConfirmSubmit>
           <p className="text-[11px] text-destiny-grey/80">
             Generates structured summary points from the stored transcript.

@@ -72,7 +72,7 @@ export default function AiProcessingControls({
             confirmMessage="Run DestinyAI summary points for this sermon? Requires transcript segments."
             pendingLabel="Processing..."
           >
-            Process DestinyAI
+            Process with DestinyAI
           </ConfirmSubmit>
           <p className="text-[11px] text-destiny-grey/80">
             Generates structured summary points from the stored transcript.

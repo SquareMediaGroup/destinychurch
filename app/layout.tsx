@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { Dosis, Roboto } from "next/font/google";
 import "./globals.css";
 import SiteFooter from "@/components/SiteFooter";
@@ -71,7 +72,9 @@ export default function RootLayout({
           <GlobalAudioProvider>
             <CookieBanner />
             <div className="flex min-h-screen flex-col bg-[var(--background)] text-[var(--foreground)]">
-              <SiteHeader />
+              <Suspense fallback={<div className="h-[76px]" />}>
+                <SiteHeader />
+              </Suspense>
               <main className="flex-1">
                 <div className="mx-auto w-full max-w-7xl px-4 pb-16 pt-8 lg:px-8">
                   {children}

@@ -66,6 +66,16 @@ body {
   transition: background-color 0.3s ease, color 0.3s ease;
 }
 
+@supports (-webkit-touch-callout: none) {
+  @media (max-width: 768px) {
+    input,
+    select,
+    textarea {
+      font-size: 16px !important;
+    }
+  }
+}
+
 ::selection {
   background: #f58021;
   color: #ffffff;

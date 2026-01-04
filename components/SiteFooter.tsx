@@ -4,6 +4,7 @@ import { useCallback, useRef } from "react";
 import Link from "next/link";
 import LogoImage from "./LogoImage";
 import ThemeToggle from "./ThemeToggle";
+import Icon from "./Icon";
 import { useToast } from "./ToastProvider";
 import { useSettings } from "@/lib/settings";
 
@@ -203,9 +204,7 @@ export default function SiteFooter() {
               aria-label="Settings"
               className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/15 bg-white/5 text-white/80 transition hover:border-white/40 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white/60"
             >
-              <span className="material-symbols-rounded text-[20px]" aria-hidden="true">
-                settings
-              </span>
+              <Icon name="settings" size={20} />
             </Link>
             <ThemeToggle />
             <a href="https://destinytees.uk" className="text-white/50">

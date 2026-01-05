@@ -37,16 +37,6 @@ export default function TranscriptBlock({
   }, [segments]);
 
   const handleJump = (seconds: number) => {
-    const video = document.querySelector("video");
-    if (video) {
-      try {
-        video.currentTime = seconds;
-        video.play?.();
-        return;
-      } catch (error) {
-        console.warn("Unable to seek video", error);
-      }
-    }
     const audio = document.querySelector("audio");
     if (audio) {
       try {

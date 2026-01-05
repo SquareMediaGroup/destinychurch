@@ -1,11 +1,9 @@
 import "server-only";
 
 import fs from "fs/promises";
-import { createReadStream, createWriteStream } from "fs";
+import { createReadStream } from "fs";
 import { spawn } from "child_process";
 import path from "path";
-import { Readable } from "stream";
-import { pipeline } from "stream/promises";
 import OpenAI from "openai";
 import ffmpegPath from "ffmpeg-static";
 import type { TranscriptSegment } from "./types";
@@ -44,17 +42,10 @@ const downloadAudioToFile = async (audioUrl: string) => {
     throw new Error(`Failed to fetch audio: ${audioRes.status} ${audioRes.statusText}`);
   }
 
-  const body = audioRes.body;
-  if (!body) {
-    throw new Error("Failed to fetch audio: empty response body.");
-  }
-
   const tmpDir = process.env.TMPDIR || "/tmp";
   const tmpFile = path.join(tmpDir, `sermon-${Date.now()}.mp3`);
-  const writeStream = createWriteStream(tmpFile);
-  const readable = Readable.fromWeb(body as unknown as ReadableStream);
-
-  await pipeline(readable, writeStream);
+  const buffer = Buffer.from(await audioRes.arrayBuffer());
+  await fs.writeFile(tmpFile, buffer);
 
   const stats = await fs.stat(tmpFile);
   return { tmpFile, size: stats.size };

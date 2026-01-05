@@ -12,13 +12,17 @@ import { sanitizeSegments } from "./transcriptSegments";
 const OPENAI_AUDIO_LIMIT_BYTES = 25 * 1024 * 1024; // 25MB documented limit
 const CHUNK_SECONDS = 600;
 
+const resolvedFfmpegPath = process.env.FFMPEG_PATH || ffmpegPath;
+
 const runFfmpeg = async (args: string[], label: string) => {
-  if (!ffmpegPath) {
+  if (!resolvedFfmpegPath) {
     throw new Error("FFmpeg is required to split large audio files.");
   }
 
   await new Promise<void>((resolve, reject) => {
-    const child = spawn(ffmpegPath as string, args, { stdio: ["ignore", "ignore", "pipe"] });
+    const child = spawn(resolvedFfmpegPath as string, args, {
+      stdio: ["ignore", "ignore", "pipe"],
+    });
     let stderr = "";
 
     child.stderr.on("data", (chunk) => {

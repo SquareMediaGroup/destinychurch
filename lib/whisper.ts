@@ -6,21 +6,94 @@ import { spawn } from "child_process";
 import path from "path";
 import OpenAI from "openai";
 import ffmpegPath from "ffmpeg-static";
+import ffmpegPackage from "ffmpeg-static/package.json";
+import { gunzip } from "zlib";
+import { promisify } from "util";
 import type { TranscriptSegment } from "./types";
 import { sanitizeSegments } from "./transcriptSegments";
 
 const OPENAI_AUDIO_LIMIT_BYTES = 25 * 1024 * 1024; // 25MB documented limit
 const CHUNK_SECONDS = 600;
 
-const resolvedFfmpegPath = process.env.FFMPEG_PATH || ffmpegPath;
+const resolvedFfmpegPath = process.env.FFMPEG_PATH || ffmpegPath || null;
+const gunzipAsync = promisify(gunzip);
+const ffmpegConfig =
+  (ffmpegPackage as { ["ffmpeg-static"]?: Record<string, string> })[
+    "ffmpeg-static"
+  ] || {};
+const FFMPEG_RELEASE =
+  process.env.FFMPEG_BINARY_RELEASE || ffmpegConfig["binary-release-tag"];
+const FFMPEG_BINARIES_URL =
+  process.env.FFMPEG_BINARIES_URL ||
+  ffmpegConfig["binaries-url"] ||
+  "https://github.com/eugeneware/ffmpeg-static/releases/download";
+const FFMPEG_CACHE_DIR = "ffmpeg-static";
+const FFMPEG_CACHE_NAME = "ffmpeg";
 
-const runFfmpeg = async (args: string[], label: string) => {
-  if (!resolvedFfmpegPath) {
-    throw new Error("FFmpeg is required to split large audio files.");
+const fileExists = async (filePath: string | null | undefined) => {
+  if (!filePath) return false;
+  try {
+    await fs.access(filePath);
+    return true;
+  } catch {
+    return false;
+  }
+};
+
+let ffmpegBinaryPromise: Promise<string> | null = null;
+
+const getFfmpegDownloadUrl = () => {
+  if (!FFMPEG_RELEASE) {
+    throw new Error("FFmpeg release tag is missing.");
+  }
+  const platform = process.env.npm_config_platform || process.platform;
+  const arch = process.env.npm_config_arch || process.arch;
+  return `${FFMPEG_BINARIES_URL}/${FFMPEG_RELEASE}/ffmpeg-${platform}-${arch}.gz`;
+};
+
+const ensureFfmpegBinary = async () => {
+  if (await fileExists(resolvedFfmpegPath)) {
+    return resolvedFfmpegPath as string;
   }
 
+  const tmpDir = process.env.TMPDIR || "/tmp";
+  const cachedPath = path.join(tmpDir, FFMPEG_CACHE_DIR, FFMPEG_CACHE_NAME);
+
+  if (await fileExists(cachedPath)) {
+    return cachedPath;
+  }
+
+  const downloadUrl = getFfmpegDownloadUrl();
+  console.info(`[ai] Downloading ffmpeg binary from ${downloadUrl}`);
+
+  const response = await fetch(downloadUrl);
+  if (!response.ok) {
+    throw new Error(
+      `Failed to download ffmpeg (${response.status} ${response.statusText}).`,
+    );
+  }
+
+  const gzBuffer = Buffer.from(await response.arrayBuffer());
+  const binaryBuffer = await gunzipAsync(gzBuffer);
+
+  await fs.mkdir(path.dirname(cachedPath), { recursive: true });
+  await fs.writeFile(cachedPath, binaryBuffer, { mode: 0o755 });
+
+  return cachedPath;
+};
+
+const resolveFfmpegBinary = () => {
+  if (!ffmpegBinaryPromise) {
+    ffmpegBinaryPromise = ensureFfmpegBinary();
+  }
+  return ffmpegBinaryPromise;
+};
+
+const runFfmpeg = async (args: string[], label: string) => {
+  const binaryPath = await resolveFfmpegBinary();
+
   await new Promise<void>((resolve, reject) => {
-    const child = spawn(resolvedFfmpegPath as string, args, {
+    const child = spawn(binaryPath, args, {
       stdio: ["ignore", "ignore", "pipe"],
     });
     let stderr = "";

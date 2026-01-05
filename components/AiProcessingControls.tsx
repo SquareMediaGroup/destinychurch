@@ -83,19 +83,21 @@ export default function AiProcessingControls({
           >
             Process with DestinyAI
           </ConfirmSubmit>
-          <ConfirmSubmit
-            className={`rounded-full border px-4 py-2 text-xs font-semibold transition ${
-              hasTranscript
-                ? "border-destiny-blue text-destiny-blue hover:bg-destiny-blue hover:text-white"
-                : "border-[var(--border-subtle)] text-destiny-grey/70"
-            }`}
-            formAction={summaryAction}
-            confirmMessage="Run the summary model using the current transcript?"
-            pendingLabel="Summarizing..."
-            disabled={!hasTranscript}
-          >
-            Run Summary Model
-          </ConfirmSubmit>
+          <form action={summaryAction}>
+            <input type="hidden" name="id" value={sermonId} />
+            <ConfirmSubmit
+              className={`rounded-full border px-4 py-2 text-xs font-semibold transition ${
+                hasTranscript
+                  ? "border-destiny-blue text-destiny-blue hover:bg-destiny-blue hover:text-white"
+                  : "border-[var(--border-subtle)] text-destiny-grey/70"
+              }`}
+              confirmMessage="Run the summary model using the current transcript?"
+              pendingLabel="Summarizing..."
+              disabled={!hasTranscript}
+            >
+              Run Summary Model
+            </ConfirmSubmit>
+          </form>
           <p className="text-[11px] text-destiny-grey/80">
             Runs Whisper if needed, then generates structured summary points.
           </p>

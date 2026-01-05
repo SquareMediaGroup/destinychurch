@@ -20,7 +20,7 @@ const runFfmpeg = async (args: string[], label: string) => {
   }
 
   await new Promise<void>((resolve, reject) => {
-    const child = spawn(ffmpegPath, args, { stdio: ["ignore", "ignore", "pipe"] });
+    const child = spawn(ffmpegPath as string, args, { stdio: ["ignore", "ignore", "pipe"] });
     let stderr = "";
 
     child.stderr.on("data", (chunk) => {

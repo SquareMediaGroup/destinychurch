@@ -13,6 +13,7 @@ import { transcribeAudio } from "./whisper";
 
 const SUMMARY_POINTS_MODEL = process.env.OPENAI_SUMMARY_MODEL || "gpt-4.1-mini";
 const MAX_JSON_ATTEMPTS = 3;
+const MAX_SUMMARY_TOKENS = Number(process.env.OPENAI_SUMMARY_MAX_TOKENS) || 800;
 const OPENAI_AUDIO_LIMIT_BYTES = 25 * 1024 * 1024; // 25MB documented limit
 
 type ModelPoint = {
@@ -48,11 +49,41 @@ type SermonContext = {
   segments: TranscriptSegment[];
 };
 
-const countSentences = (value: string) =>
-  value
-    .split(/[.!?](?:\s|$)/)
-    .map((segment) => segment.trim())
-    .filter(Boolean).length;
+const splitSentences = (value: string) => {
+  const matches = value.match(/[^.!?]+[.!?]+/g);
+  if (matches && matches.length) {
+    return matches.map((segment) => segment.trim()).filter(Boolean);
+  }
+  const trimmed = value.trim();
+  return trimmed ? [trimmed] : [];
+};
+
+const normalizeDescription = (value: string) => {
+  const sentences = splitSentences(value);
+  if (sentences.length < 2) return "";
+  return sentences.slice(0, 3).join(" ").trim();
+};
+
+const extractJsonObject = (raw: string) => {
+  const start = raw.indexOf("{");
+  const end = raw.lastIndexOf("}");
+  if (start === -1 || end === -1 || end <= start) return null;
+  return raw.slice(start, end + 1);
+};
+
+const safeParseJson = (raw: string) => {
+  try {
+    return JSON.parse(raw);
+  } catch {
+    const extracted = extractJsonObject(raw);
+    if (!extracted) return null;
+    try {
+      return JSON.parse(extracted);
+    } catch {
+      return null;
+    }
+  }
+};
 
 function buildSegmentsFromTranscript(transcript: string): TranscriptSegment[] {
   const words = transcript
@@ -202,36 +233,31 @@ async function ensureTranscriptSegments(
 }
 
 function parseModelResponse(raw: string): ModelResponse | null {
-  try {
-    const parsed = JSON.parse(raw);
-    if (!parsed || typeof parsed !== "object" || !Array.isArray(parsed.points)) {
-      return null;
-    }
+  const parsed = safeParseJson(raw);
+  if (!parsed || typeof parsed !== "object" || !Array.isArray(parsed.points)) {
+    return null;
+  }
 
-    const points = parsed.points.map((point: unknown) => {
+  const points = parsed.points
+    .map((point: unknown) => {
       const candidate = point as Partial<ModelPoint>;
       const title = typeof candidate.title === "string" ? candidate.title.trim() : "";
       const description =
         typeof candidate.description === "string" ? candidate.description.trim() : "";
-      const segmentId = Number((candidate as { segment_id?: number }).segment_id);
-      const sentenceCount = description ? countSentences(description) : 0;
+      const normalizedDescription = normalizeDescription(description);
+      const segmentIdValue = (candidate as { segment_id?: unknown }).segment_id;
+      const segmentId = Number(segmentIdValue);
+      const resolvedSegmentId = Number.isFinite(segmentId) ? segmentId : 1;
 
-      if (!title || !description || !Number.isFinite(segmentId)) return null;
-      if (sentenceCount < 2 || sentenceCount > 3) return null;
+      if (!title || !normalizedDescription) return null;
 
-      return { title, description, segment_id: segmentId };
-    });
+      return { title, description: normalizedDescription, segment_id: resolvedSegmentId };
+    })
+    .filter(Boolean) as ModelPoint[];
 
-    if (points.some((point: ModelPoint | null) => !point)) return null;
+  if (points.length < 4) return null;
 
-    const resolvedPoints = points as ModelPoint[];
-
-    if (resolvedPoints.length < 4 || resolvedPoints.length > 6) return null;
-
-    return { points: resolvedPoints };
-  } catch {
-    return null;
-  }
+  return { points: points.slice(0, 6) };
 }
 
 function buildUserPrompt(title: string, segments: TranscriptSegment[]): string {
@@ -263,7 +289,7 @@ async function requestSummaryPoints(
         { role: "user", content: userPrompt },
       ],
       temperature: 0,
-      max_tokens: 400,
+      max_tokens: MAX_SUMMARY_TOKENS,
       response_format: { type: "json_object" },
     });
 

@@ -10,11 +10,13 @@ import SermonDebugPanel from "@/components/SermonDebugPanel";
 import { getSermonByViewId, listSermonsLite } from "@/lib/db";
 import { Sermon } from "@/lib/types";
 import { getViewId } from "@/lib/viewIds";
+import { tryGetSupabaseAdmin } from "@/lib/supabase";
+import { getTranscriptSegments } from "@/lib/transcriptSegments";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
-const transcriptsDisabled = true;
+const transcriptsDisabled = false;
 
 type SearchParamsLike =
   | URLSearchParams
@@ -179,6 +181,18 @@ export default async function SermonViewPage({ searchParams }: SermonViewPagePro
     .filter((item) => item.id !== resolvedSermon.id)
     .slice(0, 2);
 
+  let transcriptSegments: Awaited<ReturnType<typeof getTranscriptSegments>> = [];
+  if (!transcriptsDisabled) {
+    const supabase = tryGetSupabaseAdmin();
+    if (supabase) {
+      try {
+        transcriptSegments = await getTranscriptSegments(supabase, resolvedSermon.id);
+      } catch (error) {
+        console.warn("[transcript] Failed to load transcript segments", error);
+      }
+    }
+  }
+
   return (
     <div className="grid gap-10 lg:grid-cols-[2fr_1fr]">
       <div className="space-y-6">
@@ -247,6 +261,7 @@ export default async function SermonViewPage({ searchParams }: SermonViewPagePro
           transcript={transcriptsDisabled ? undefined : resolvedSermon.transcript}
           sermonId={resolvedSermon.id}
           sermonTitle={resolvedSermon.title}
+          segments={transcriptSegments.length ? transcriptSegments : undefined}
           disabled={transcriptsDisabled}
         />
       </div>

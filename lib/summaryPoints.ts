@@ -149,21 +149,18 @@ async function ensureTranscriptSegments(
     );
   }
 
-  // Preflight size to avoid 413 errors from OpenAI when audio files exceed 25MB.
+  // Preflight size to inform chunking when audio files exceed 25MB.
   try {
     const head = await fetch(audioUrl, { method: "HEAD" });
     const contentLength = Number(head.headers.get("content-length"));
     if (Number.isFinite(contentLength) && contentLength > OPENAI_AUDIO_LIMIT_BYTES) {
       const mb = (contentLength / (1024 * 1024)).toFixed(1);
-      throw new Error(
-        `Audio file is ${mb}MB which exceeds OpenAI's 25MB limit. Please upload a smaller audio file or add an SRT/VTT transcript.`,
+      console.info(
+        `[summary-points] Audio file is ${mb}MB; chunked transcription will be used.`,
       );
     }
   } catch (sizeError) {
-    // If HEAD fails we still attempt; if it throws our explicit error, propagate.
-    if (sizeError instanceof Error && sizeError.message.includes("exceeds OpenAI")) {
-      throw sizeError;
-    }
+    // If HEAD fails we still attempt.
   }
 
   try {

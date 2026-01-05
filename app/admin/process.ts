@@ -122,3 +122,53 @@ export async function processSermonV2(formData: FormData) {
   revalidatePath(`/sermons/view?viewId=${encodeURIComponent(id)}`);
   redirect(`/admin?ai=ok&id=${encodeURIComponent(id)}`);
 }
+
+export async function processSermonSummary(formData: FormData) {
+  const cookieStore = await cookies();
+  const authed = cookieStore.get(ADMIN_COOKIE)?.value === "1";
+  if (!authed) throw new Error("Unauthorized");
+
+  const id = String(formData.get("id") || "");
+  if (!id) throw new Error("Missing sermon id");
+
+  const supabase = getSupabaseAdmin();
+
+  try {
+    const { data: sermon, error: sermonError } = await supabase
+      .from("sermons")
+      .select("transcript")
+      .eq("id", id)
+      .maybeSingle();
+
+    if (sermonError) {
+      throw new Error(`Failed to load sermon transcript: ${sermonError.message}`);
+    }
+
+    const transcript =
+      typeof sermon?.transcript === "string" ? sermon.transcript.trim() : "";
+    if (!transcript) {
+      throw new Error("Transcript is required to run the summary model.");
+    }
+
+    const bullets = await generateSermonSummary(transcript);
+    const summary = formatSummaryNumbered(bullets).trim();
+
+    if (!summary) {
+      throw new Error("Summary model returned an empty result.");
+    }
+
+    await supabase
+      .from("sermons")
+      .update({ summary, updated_at: new Date().toISOString() })
+      .eq("id", id);
+  } catch (error) {
+    console.error(`[admin] Summary model failed for sermon ${id}`, error);
+    const message = error instanceof Error ? error.message : "Summary model failed";
+    redirect(`/admin?aiError=${encodeURIComponent(message)}&id=${encodeURIComponent(id)}`);
+  }
+
+  revalidatePath("/sermons");
+  revalidatePath("/admin");
+  revalidatePath(`/sermons/view?viewId=${encodeURIComponent(id)}`);
+  redirect(`/admin?ai=ok&id=${encodeURIComponent(id)}`);
+}

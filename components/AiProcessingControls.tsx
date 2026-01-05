@@ -12,6 +12,7 @@ type AiProcessingControlsProps = {
   hasSummaryPoints: boolean;
   canRunDestinyAi: boolean;
   uploadAction: ServerAction;
+  summaryAction: ServerAction;
   v2Action: ServerAction;
 };
 
@@ -21,6 +22,7 @@ export default function AiProcessingControls({
   hasSummaryPoints,
   canRunDestinyAi,
   uploadAction,
+  summaryAction,
   v2Action,
 }: AiProcessingControlsProps) {
   const defaultMode: ProcessingMode = hasTranscript && !hasSummaryPoints ? "v2" : "upload";
@@ -81,12 +83,30 @@ export default function AiProcessingControls({
           >
             Process with DestinyAI
           </ConfirmSubmit>
+          <ConfirmSubmit
+            className={`rounded-full border px-4 py-2 text-xs font-semibold transition ${
+              hasTranscript
+                ? "border-destiny-blue text-destiny-blue hover:bg-destiny-blue hover:text-white"
+                : "border-[var(--border-subtle)] text-destiny-grey/70"
+            }`}
+            formAction={summaryAction}
+            confirmMessage="Run the summary model using the current transcript?"
+            pendingLabel="Summarizing..."
+            disabled={!hasTranscript}
+          >
+            Run Summary Model
+          </ConfirmSubmit>
           <p className="text-[11px] text-destiny-grey/80">
             Runs Whisper if needed, then generates structured summary points.
           </p>
           {!canRunDestinyAi && (
             <p className="text-[11px] text-destiny-grey/70">
               Requires a podcast audio URL or an existing transcript.
+            </p>
+          )}
+          {!hasTranscript && (
+            <p className="text-[11px] text-destiny-grey/70">
+              Summary model requires an existing transcript.
             </p>
           )}
         </form>

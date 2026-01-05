@@ -14,7 +14,7 @@ import {
   updateSermonMeta,
 } from "./actions";
 import { cleanDuplicates } from "./cleanup";
-import { processSermonSrt, processSermonV2 } from "./process";
+import { processSermonSrt, processSermonSummary, processSermonV2 } from "./process";
 import ConfirmSubmit from "@/components/ConfirmSubmit";
 import { listReports } from "@/lib/reports";
 import AiProcessingControls from "@/components/AiProcessingControls";
@@ -640,6 +640,7 @@ function SermonTable({ sermons }: { sermons: Awaited<ReturnType<typeof listSermo
                       hasSummaryPoints={hasSummaryPoints}
                       canRunDestinyAi={canRunDestinyAi}
                       uploadAction={processSermonSrt}
+                      summaryAction={processSermonSummary}
                       v2Action={processSermonV2}
                     />
                     <div className="flex flex-wrap gap-2">

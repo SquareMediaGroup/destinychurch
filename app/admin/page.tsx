@@ -12,6 +12,7 @@ import {
   createSermon,
   resolveReport,
   updateSermonMeta,
+  updateSiteBanner,
 } from "./actions";
 import { cleanDuplicates } from "./cleanup";
 import { processSermonSrt, processSermonSummary, processSermonV2 } from "./process";
@@ -20,6 +21,7 @@ import { listReports } from "@/lib/reports";
 import AiProcessingControls from "@/components/AiProcessingControls";
 import PlaylistsModal from "@/components/PlaylistsModal";
 import AdminSyncToast from "@/components/AdminSyncToast";
+import { getActiveAnnouncement } from "@/lib/announcements";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -76,9 +78,10 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
 
   const loadErrors: string[] = [];
 
-  const [sermonsResult, adminsResult] = await Promise.allSettled([
+  const [sermonsResult, adminsResult, announcementResult] = await Promise.allSettled([
     listSermons(50),
     isSuper ? listAdminUsers() : Promise.resolve([]),
+    getActiveAnnouncement(),
   ]);
 
   const sermons = sermonsResult.status === "fulfilled" ? sermonsResult.value : [];
@@ -91,6 +94,13 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
   if (adminsResult.status === "rejected") {
     console.error("[admin] Failed to load admin users", adminsResult.reason);
     loadErrors.push("Unable to load admin users.");
+  }
+
+  const announcement =
+    announcementResult.status === "fulfilled" ? announcementResult.value : null;
+  if (announcementResult.status === "rejected") {
+    console.error("[admin] Failed to load announcement banner", announcementResult.reason);
+    loadErrors.push("Unable to load announcement banner.");
   }
 
   let reports = [] as Awaited<ReturnType<typeof listReports>>;
@@ -160,7 +170,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
           readyPercent={readyPercent}
           reportCount={reports.length}
         />
-        <ActionRow />
+        <ActionRow announcement={announcement} />
         <div className="grid gap-4 lg:grid-cols-[1.2fr_1fr]">
           <ManualAddPanel />
           <div className="space-y-4">
@@ -230,25 +240,69 @@ function StatGrid({
   );
 }
 
-function ActionRow() {
+function ActionRow({ announcement }: { announcement: Awaited<ReturnType<typeof getActiveAnnouncement>> }) {
   return (
-    <div className="rounded-2xl bg-[var(--surface)] px-4 py-4 shadow-sm ring-1 ring-black/5">
-      <div className="flex flex-wrap items-center justify-between gap-3">
+    <div className="grid gap-3 lg:grid-cols-[1fr_1fr]">
+      <div className="rounded-2xl bg-[var(--surface)] px-4 py-4 shadow-sm ring-1 ring-black/5">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <p className="text-sm font-semibold text-destiny-black">Sync & ingest</p>
+            <p className="text-xs text-destiny-grey/80">Syncs the latest sermon only.</p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <form action={runSyncLatest}>
+              <ConfirmSubmit
+                className="rounded-full bg-destiny-orange px-4 py-2 text-xs font-semibold text-white shadow-sm transition hover:brightness-95"
+                confirmMessage="Sync the latest sermon now?"
+                pendingLabel="Syncing..."
+              >
+                Sync latest
+              </ConfirmSubmit>
+            </form>
+          </div>
+        </div>
+      </div>
+      <div className="rounded-2xl bg-[var(--surface)] px-4 py-4 shadow-sm ring-1 ring-black/5">
         <div>
-          <p className="text-sm font-semibold text-destiny-black">Sync & ingest</p>
-          <p className="text-xs text-destiny-grey/80">Syncs the latest sermon only.</p>
+          <p className="text-sm font-semibold text-destiny-black">Homepage update</p>
+          <p className="text-xs text-destiny-grey/80">
+            Controls the “Important update” banner on the homepage.
+          </p>
         </div>
-        <div className="flex flex-wrap gap-2">
-          <form action={runSyncLatest}>
+        <form action={updateSiteBanner} className="mt-3 grid gap-3">
+          <label className="space-y-1 text-sm font-semibold text-[var(--foreground)]">
+            <span className="text-xs uppercase tracking-wide text-destiny-grey/70">Message</span>
+            <textarea
+              name="message"
+              defaultValue={announcement?.message || ""}
+              rows={3}
+              className="w-full rounded-xl border border-black/10 bg-[var(--surface-muted)] px-3 py-2 text-sm outline-none transition focus:border-destiny-orange focus:ring-2 focus:ring-destiny-orange/30"
+              placeholder="Latest update headline or summary"
+            />
+          </label>
+          <label className="space-y-1 text-sm font-semibold text-[var(--foreground)]">
+            <span className="text-xs uppercase tracking-wide text-destiny-grey/70">Description (optional)</span>
+            <textarea
+              name="description"
+              defaultValue={announcement?.description || ""}
+              rows={2}
+              className="w-full rounded-xl border border-black/10 bg-[var(--surface-muted)] px-3 py-2 text-sm outline-none transition focus:border-destiny-orange focus:ring-2 focus:ring-destiny-orange/30"
+              placeholder="Optional long-form update (opens /announcement)"
+            />
+          </label>
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <p className="text-xs text-destiny-grey/70">
+              Leave the message empty to hide the banner.
+            </p>
             <ConfirmSubmit
-              className="rounded-full bg-destiny-orange px-4 py-2 text-xs font-semibold text-white shadow-sm transition hover:brightness-95"
-              confirmMessage="Sync the latest sermon now?"
-              pendingLabel="Syncing..."
+              className="rounded-full bg-destiny-blue px-4 py-2 text-xs font-semibold text-white shadow-sm transition hover:brightness-95"
+              confirmMessage="Update the homepage banner?"
+              pendingLabel="Saving..."
             >
-              Sync latest
+              Save update
             </ConfirmSubmit>
-          </form>
-        </div>
+          </div>
+        </form>
       </div>
     </div>
   );

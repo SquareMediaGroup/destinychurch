@@ -225,6 +225,35 @@ export async function runSyncNow() {
   }
 }
 
+export async function updateSiteBanner(formData: FormData) {
+  const cookieStore = await cookies();
+  const authed = cookieStore.get(ADMIN_COOKIE)?.value === "1";
+  if (!authed) {
+    throw new Error("Unauthorized");
+  }
+
+  const message = String(formData.get("message") || "").trim();
+  const description = String(formData.get("description") || "").trim();
+
+  const supabase = getSupabaseAdmin();
+
+  if (!message) {
+    const { error } = await supabase.from("site_banner").delete().neq("id", "");
+    if (error) throw new Error(error.message);
+  } else {
+    const { error } = await supabase.from("site_banner").insert({
+      message,
+      description: description || null,
+      updated_at: new Date().toISOString(),
+    });
+    if (error) throw new Error(error.message);
+  }
+
+  revalidatePath("/");
+  revalidatePath("/announcement");
+  revalidatePath("/admin");
+}
+
 export async function runSyncLatest() {
   const cookieStore = await cookies();
   const authed = cookieStore.get(ADMIN_COOKIE)?.value === "1";

@@ -8,11 +8,12 @@ import { listSermonsLite } from "@/lib/db";
 import { getViewId } from "@/lib/viewIds";
 
 export default async function WatchHome() {
-  const sermons = await listSermonsLite(3);
+  const sermons = await listSermonsLite(12);
   const latestSermon = sermons[0];
   const latestHref = latestSermon
     ? `/sermons/view?viewId=${encodeURIComponent(getViewId(latestSermon))}`
     : "/sermons";
+  const guestSermons = sermons.filter((sermon) => sermon.guestSpeaker).slice(0, 3);
 
   return (
     <div className="space-y-12">
@@ -56,33 +57,21 @@ export default async function WatchHome() {
       </Section>
 
       <Section
-        kicker="Ways to watch"
-        title="Pick the best fit for you"
-        description="Stream live, catch up later, or listen on the go."
+        kicker="Guest sermons"
+        title="Latest guest speakers"
+        description="Catch recent guest messages from Destiny Church."
       >
-        <CardGrid columns={3}>
-          <Card
-            title="Live every Sunday"
-            description="Join the livestream from anywhere. Starts 11:00am with worship and message."
-            href="/sermons"
-            cta="Watch live"
-            eyebrow="Livestream"
-          />
-          <Card
-            title="Podcast replay"
-            description="Listen on the school run or commute. Available wherever you get podcasts."
-            href="/sermons"
-            cta="Open podcast"
-            eyebrow="Audio"
-          />
-          <Card
-            title="Continue watching"
-            description="Pause on one device, pick up on another. Your progress is saved locally."
-            href="/sermons"
-            cta="Resume"
-            eyebrow="Progress"
-          />
-        </CardGrid>
+        {guestSermons.length === 0 ? (
+          <div className="rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-muted)] px-4 py-6 text-sm text-destiny-grey">
+            No guest sermons yet. Check back after the next guest speaker.
+          </div>
+        ) : (
+          <CardGrid columns={3}>
+            {guestSermons.map((sermon, index) => (
+              <SermonCard key={sermon.id} sermon={sermon} priority={index === 0} />
+            ))}
+          </CardGrid>
+        )}
       </Section>
     </div>
   );

@@ -9,10 +9,10 @@ type SermonPointsProps = {
 };
 
 const gradients = [
-  "from-destiny-orange/15 via-[var(--surface)] to-destiny-orange/5",
-  "from-destiny-blue/15 via-[var(--surface)] to-destiny-blue/5",
-  "from-destiny-green/15 via-[var(--surface)] to-destiny-green/5",
-  "from-destiny-purple/15 via-[var(--surface)] to-destiny-purple/5",
+  "from-destiny-orange/25 via-[var(--surface)] to-destiny-orange/10",
+  "from-destiny-blue/25 via-[var(--surface)] to-destiny-blue/10",
+  "from-destiny-green/25 via-[var(--surface)] to-destiny-green/10",
+  "from-destiny-purple/25 via-[var(--surface)] to-destiny-purple/10",
 ];
 
 const formatTime = (seconds: number) => {
@@ -78,15 +78,12 @@ export default function SermonPoints({ points, onJump }: SermonPointsProps) {
           {sorted.map((point, idx) => {
             const active = openId === point.id;
             return (
-              <div
+              <button
                 key={point.id}
-                className={`group relative w-[min(85vw,320px)] flex-shrink-0 snap-center rounded-2xl border border-black/5 bg-gradient-to-br ${gradients[idx % gradients.length]} p-[1px] shadow-[0_14px_40px_rgba(0,0,0,0.12)] transition hover:-translate-y-0.5 sm:min-w-0 sm:w-auto sm:self-start`}
+                type="button"
+                onClick={() => setOpenId(active ? null : point.id)}
+                className={`group relative w-[min(85vw,320px)] flex-shrink-0 snap-center rounded-2xl border border-black/5 bg-gradient-to-br ${gradients[idx % gradients.length]} p-4 text-left shadow-[0_14px_40px_rgba(0,0,0,0.12)] transition hover:-translate-y-0.5 sm:min-w-0 sm:w-auto sm:self-start`}
               >
-                <button
-                  type="button"
-                  onClick={() => setOpenId(active ? null : point.id)}
-                  className="block w-full rounded-2xl bg-[var(--surface-overlay)] p-4 text-left transition hover:bg-[var(--surface)]"
-                >
                   <div className="flex items-center justify-between gap-2">
                     <span className="inline-flex items-center rounded-full bg-black/5 px-2 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-destiny-grey">
                       P{idx + 1}
@@ -111,7 +108,6 @@ export default function SermonPoints({ points, onJump }: SermonPointsProps) {
                       {active ? "Hide details" : "View details"}
                     </span>
                   </div>
-                </button>
 
                 {active && (
                   <div className="mt-2 flex flex-wrap items-center justify-between gap-2 rounded-xl bg-[var(--surface-overlay)] px-4 py-3">
@@ -130,7 +126,7 @@ export default function SermonPoints({ points, onJump }: SermonPointsProps) {
                     </button>
                   </div>
                 )}
-              </div>
+              </button>
             );
           })}
         </div>

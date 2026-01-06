@@ -2,9 +2,13 @@
 
 import { useMemo, useState } from "react";
 import type { SummaryPoint } from "@/lib/types";
+import { useGlobalAudio } from "./GlobalAudioProvider";
 
 type SermonPointsProps = {
   points?: SummaryPoint[];
+  sermonId?: string;
+  sermonTitle?: string;
+  audioUrl?: string;
   onJump?: (seconds: number) => void;
 };
 
@@ -13,6 +17,7 @@ const gradients = [
   "from-destiny-blue/25 via-[var(--surface)] to-destiny-blue/10",
   "from-destiny-green/25 via-[var(--surface)] to-destiny-green/10",
   "from-destiny-purple/25 via-[var(--surface)] to-destiny-purple/10",
+  "from-destiny-red/25 via-[var(--surface)] to-destiny-red/10",
 ];
 
 const formatTime = (seconds: number) => {
@@ -22,12 +27,19 @@ const formatTime = (seconds: number) => {
   return `${mins}:${secs.toString().padStart(2, "0")}`;
 };
 
-export default function SermonPoints({ points, onJump }: SermonPointsProps) {
+export default function SermonPoints({
+  points,
+  sermonId,
+  sermonTitle,
+  audioUrl,
+  onJump,
+}: SermonPointsProps) {
   const sorted = useMemo(
     () => (points || []).slice().sort((a, b) => a.order_index - b.order_index),
     [points],
   );
 
+  const globalAudio = useGlobalAudio();
   const [openId, setOpenId] = useState<string | null>(sorted[0]?.id ?? null);
 
   if (!sorted.length) return null;
@@ -37,20 +49,28 @@ export default function SermonPoints({ points, onJump }: SermonPointsProps) {
       onJump(seconds);
       return;
     }
-    const video = document.querySelector("video");
-    if (video) {
-      try {
-        video.currentTime = seconds;
-        video.play?.();
-        return;
-      } catch (error) {
-        console.warn("Unable to seek video", error);
+    if (globalAudio && sermonId && sermonTitle && audioUrl) {
+      const isActive = globalAudio.activeTrack?.sermonId === sermonId;
+      if (!isActive) {
+        globalAudio.playTrack({ sermonId, title: sermonTitle, audioUrl });
       }
+      globalAudio.seekTo(seconds);
+      if (globalAudio.isMuted) {
+        globalAudio.toggleMute();
+      }
+      if (!globalAudio.isPlaying) {
+        globalAudio.togglePlay();
+      }
+      return;
     }
     const audio = document.querySelector("audio");
     if (audio) {
       try {
         audio.currentTime = seconds;
+        audio.muted = false;
+        if (audio.volume === 0) {
+          audio.volume = 0.8;
+        }
         audio.play?.();
         return;
       } catch (error) {

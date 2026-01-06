@@ -255,7 +255,12 @@ export default async function SermonViewPage({ searchParams }: SermonViewPagePro
           sermonTitle={resolvedSermon.title}
         />
         {resolvedSermon.summaryPoints?.points?.length ? (
-          <SermonPoints points={resolvedSermon.summaryPoints.points} />
+          <SermonPoints
+            points={resolvedSermon.summaryPoints.points}
+            sermonId={resolvedSermon.id}
+            sermonTitle={resolvedSermon.title || "Destiny Sermon"}
+            audioUrl={resolvedSermon.podcastAudioUrl || ""}
+          />
         ) : null}
         <TranscriptBlock
           transcript={transcriptsDisabled ? undefined : resolvedSermon.transcript}

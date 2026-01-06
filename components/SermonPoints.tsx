@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 import type { SummaryPoint } from "@/lib/types";
 import { useGlobalAudio } from "./GlobalAudioProvider";
 
@@ -40,7 +40,6 @@ export default function SermonPoints({
   );
 
   const globalAudio = useGlobalAudio();
-  const cardRefs = useRef<(HTMLButtonElement | null)[]>([]);
   const [openId, setOpenId] = useState<string | null>(sorted[0]?.id ?? null);
 
   if (!sorted.length) return null;
@@ -104,20 +103,7 @@ export default function SermonPoints({
               <button
                 key={point.id}
                 type="button"
-                ref={(el) => {
-                  cardRefs.current[idx] = el;
-                }}
-                onClick={() => {
-                  const card = cardRefs.current[idx];
-                  if (card) {
-                    card.scrollIntoView({
-                      behavior: "smooth",
-                      block: "center",
-                      inline: "nearest",
-                    });
-                  }
-                  setOpenId(active ? null : point.id);
-                }}
+                onClick={() => setOpenId(active ? null : point.id)}
                 className={`group relative w-[min(85vw,320px)] flex-shrink-0 snap-center rounded-2xl border border-black/5 bg-gradient-to-br ${gradients[idx % gradients.length]} p-4 text-left shadow-[0_14px_40px_rgba(0,0,0,0.12)] transition hover:-translate-y-0.5 sm:min-w-0 sm:w-auto sm:self-start`}
               >
                   <div className="flex items-center justify-between gap-2">

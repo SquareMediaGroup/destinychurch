@@ -53,8 +53,10 @@ export default function SermonPoints({
       const isActive = globalAudio.activeTrack?.sermonId === sermonId;
       if (!isActive) {
         globalAudio.playTrack({ sermonId, title: sermonTitle, audioUrl });
+        setTimeout(() => globalAudio.seekTo(seconds), 150);
+      } else {
+        globalAudio.seekTo(seconds);
       }
-      globalAudio.seekTo(seconds);
       if (globalAudio.isMuted) {
         globalAudio.toggleMute();
       }

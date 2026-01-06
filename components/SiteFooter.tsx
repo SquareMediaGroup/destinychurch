@@ -196,7 +196,7 @@ export default function SiteFooter() {
 
         <div className="mt-10 flex flex-col gap-3 border-t border-white/10 pt-6 text-xs text-white/60 sm:flex-row sm:items-center sm:justify-between">
           <a href="https://sermons.destinytees.uk" className="text-white/50">
-            <span>© {new Date().getFullYear()} Destiny Sermons </span>
+            <span>© {new Date().getFullYear()} Destiny Sermons</span>
           </a>
           <div className="flex flex-wrap items-center gap-3">
             <Link

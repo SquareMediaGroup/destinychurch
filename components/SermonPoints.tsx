@@ -109,23 +109,27 @@ export default function SermonPoints({ points, onJump }: SermonPointsProps) {
                     </span>
                   </div>
 
-                {active && (
-                  <div className="mt-2 flex flex-wrap items-center justify-between gap-2 rounded-xl bg-[var(--surface-overlay)] px-4 py-3 shadow-[0_10px_24px_rgba(0,0,0,0.12)]">
-                    <div className="text-xs text-destiny-grey">
-                      Start at{" "}
-                      <span className="font-semibold text-destiny-black">
-                        {formatTime(point.start_seconds)}
-                      </span>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => handleJump(point.start_seconds)}
-                      className="inline-flex items-center justify-center rounded-full bg-destiny-orange px-4 py-2 text-xs font-semibold uppercase tracking-[0.12em] text-white shadow-sm transition hover:brightness-95"
-                    >
-                      Jump to point
-                    </button>
+                <div
+                  className={`flex flex-wrap items-center justify-between gap-2 overflow-hidden rounded-xl bg-[var(--surface-overlay)] px-4 py-3 shadow-[0_10px_24px_rgba(0,0,0,0.12)] transition-[max-height,opacity,transform,margin] duration-300 ${
+                    active
+                      ? "mt-2 max-h-24 translate-y-0 opacity-100"
+                      : "mt-0 max-h-0 -translate-y-1 opacity-0"
+                  } ${active ? "pointer-events-auto" : "pointer-events-none"}`}
+                >
+                  <div className="text-xs text-destiny-grey">
+                    Start at{" "}
+                    <span className="font-semibold text-destiny-black">
+                      {formatTime(point.start_seconds)}
+                    </span>
                   </div>
-                )}
+                  <button
+                    type="button"
+                    onClick={() => handleJump(point.start_seconds)}
+                    className="inline-flex items-center justify-center rounded-full bg-destiny-orange px-4 py-2 text-xs font-semibold uppercase tracking-[0.12em] text-white shadow-sm transition hover:brightness-95"
+                  >
+                    Jump to point
+                  </button>
+                </div>
               </button>
             );
           })}

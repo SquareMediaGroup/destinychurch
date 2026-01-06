@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Suspense } from "react";
 import { Dosis, Roboto } from "next/font/google";
 import "./globals.css";
@@ -56,6 +56,11 @@ export const metadata: Metadata = {
       "Watch the latest Destiny Sermons with summaries, transcripts, and podcasts.",
     images: ["/og/sermons-hero.jpg"],
   },
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
 };
 
 export default function RootLayout({

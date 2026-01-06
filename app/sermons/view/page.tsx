@@ -15,6 +15,10 @@ import { getTranscriptSegments } from "@/lib/transcriptSegments";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
+export const viewport = {
+  width: "device-width",
+  initialScale: 1,
+};
 
 const transcriptsDisabled = false;
 

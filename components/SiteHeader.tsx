@@ -27,6 +27,7 @@ export default function SiteHeader() {
     const formData = new FormData(event.currentTarget);
     const trimmed = String(formData.get("q") ?? "").trim();
     router.push(trimmed ? `/sermons?q=${encodeURIComponent(trimmed)}` : "/sermons");
+    setOpen(false);
   };
 
   return (
@@ -135,7 +136,23 @@ export default function SiteHeader() {
       {open && (
         <div className="mx-auto w-full max-w-7xl px-4 pb-6 md:hidden">
           <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface)] px-4 py-5 shadow-lg">
-            <div className="grid gap-3">
+            <form
+              onSubmit={handleSearch}
+              className="flex items-center gap-2 rounded-full border border-[var(--border-subtle)] bg-[var(--surface-muted)] px-3 py-2 text-xs shadow-sm"
+            >
+              <Icon name="search" size={16} className="text-destiny-grey/70" />
+              <input
+                type="search"
+                name="q"
+                key={`search-mobile-${pathname}-${searchQuery}`}
+                defaultValue={searchQuery}
+                placeholder="Search sermons..."
+                aria-label="Search sermons..."
+                enterKeyHint="search"
+                className="flex-1 bg-transparent text-[13px] text-[var(--foreground)] placeholder:text-destiny-grey/80 focus:outline-none"
+              />
+            </form>
+            <div className="mt-4 grid gap-3">
               {navLinks.map((link) => {
                 const isActive =
                   pathname === link.href ||

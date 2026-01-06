@@ -14,6 +14,7 @@ export default async function WatchHome() {
     ? `/sermons/view?viewId=${encodeURIComponent(getViewId(latestSermon))}`
     : "/sermons";
   const guestSermons = sermons.filter((sermon) => sermon.guestSpeaker).slice(0, 3);
+  const latestMessages = sermons.slice(0, 6);
 
   return (
     <div className="space-y-12">
@@ -37,7 +38,7 @@ export default async function WatchHome() {
           </div>
         ) : (
           <CardGrid>
-            {sermons.map((sermon, index) => (
+            {latestMessages.map((sermon, index) => (
               <SermonCard
                 key={sermon.id}
                 sermon={sermon}
@@ -72,6 +73,11 @@ export default async function WatchHome() {
             ))}
           </CardGrid>
         )}
+        <div className="mt-6 flex flex-wrap gap-3">
+          <CTAButton href="/sermons/guests" variant="ghost">
+            Browse all Guest Sermons
+          </CTAButton>
+        </div>
       </Section>
     </div>
   );

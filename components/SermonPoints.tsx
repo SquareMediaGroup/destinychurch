@@ -112,8 +112,8 @@ export default function SermonPoints({
                   if (card) {
                     card.scrollIntoView({
                       behavior: "smooth",
-                      block: "nearest",
-                      inline: "center",
+                      block: "center",
+                      inline: "nearest",
                     });
                   }
                   setOpenId(active ? null : point.id);

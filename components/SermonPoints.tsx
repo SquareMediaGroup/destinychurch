@@ -144,7 +144,10 @@ export default function SermonPoints({
                   </div>
                   <button
                     type="button"
-                    onClick={() => handleJump(point.start_seconds)}
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      handleJump(point.start_seconds);
+                    }}
                     className="inline-flex items-center justify-center rounded-full bg-destiny-orange px-4 py-2 text-xs font-semibold uppercase tracking-[0.12em] text-white shadow-sm transition hover:brightness-95"
                   >
                     Jump to point

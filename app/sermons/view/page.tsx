@@ -249,11 +249,13 @@ export default async function SermonViewPage({ searchParams }: SermonViewPagePro
           </div>
         </div>
 
-        <SermonSummary
-          summary={resolvedSermon.summary}
-          sermonId={resolvedSermon.id}
-          sermonTitle={resolvedSermon.title}
-        />
+        {!resolvedSermon.summaryPoints?.points?.length && (
+          <SermonSummary
+            summary={resolvedSermon.summary}
+            sermonId={resolvedSermon.id}
+            sermonTitle={resolvedSermon.title}
+          />
+        )}
         {resolvedSermon.summaryPoints?.points?.length ? (
           <SermonPoints
             points={resolvedSermon.summaryPoints.points}

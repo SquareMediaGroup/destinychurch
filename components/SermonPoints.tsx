@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import type { SummaryPoint } from "@/lib/types";
 import { useGlobalAudio } from "./GlobalAudioProvider";
+import ReportIssueLauncher from "./ReportIssueLauncher";
 
 type SermonPointsProps = {
   points?: SummaryPoint[];
@@ -90,9 +91,19 @@ export default function SermonPoints({
           </p>
           <p className="text-sm text-destiny-grey">Tap to expand; jump to the exact timestamp.</p>
         </div>
-        <span className="rounded-full bg-destiny-blue/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-destiny-blue">
-          {sorted.length} points
-        </span>
+        <div className="ml-auto flex flex-wrap items-center gap-2">
+          <span className="rounded-full bg-destiny-blue/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-destiny-blue">
+            {sorted.length} points
+          </span>
+          {sermonId && sermonTitle ? (
+            <ReportIssueLauncher
+              sermonId={sermonId}
+              sermonTitle={sermonTitle}
+              issueType="summary"
+              label="Report"
+            />
+          ) : null}
+        </div>
       </div>
 
       <div className="space-y-3 border-t border-black/5 px-3 py-4 sm:px-5">

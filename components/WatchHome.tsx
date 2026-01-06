@@ -5,9 +5,14 @@ import Hero from "@/components/Hero";
 import Section from "@/components/Section";
 import SermonCard from "@/components/SermonCard";
 import { listSermonsLite } from "@/lib/db";
+import { getViewId } from "@/lib/viewIds";
 
 export default async function WatchHome() {
   const sermons = await listSermonsLite(3);
+  const latestSermon = sermons[0];
+  const latestHref = latestSermon
+    ? `/sermons/view?viewId=${encodeURIComponent(getViewId(latestSermon))}`
+    : "/sermons";
 
   return (
     <div className="space-y-12">
@@ -16,7 +21,7 @@ export default async function WatchHome() {
         title="Watch live & on demand"
         subtitle="Join us online every Sunday or catch up midweek with video, podcast, and transcripts."
         backgroundImage="/Images/Bible Image Destiny Church.jpg"
-        primaryAction={{ label: "Watch latest sermon", href: "/sermons" }}
+        primaryAction={{ label: "Watch latest sermon", href: latestHref }}
         secondaryAction={{ label: "Plan an in-person visit", href: "https://destinytees.uk/visit" }}
       />
 

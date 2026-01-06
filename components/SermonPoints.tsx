@@ -110,7 +110,7 @@ export default function SermonPoints({ points, onJump }: SermonPointsProps) {
                   </div>
 
                 {active && (
-                  <div className="mt-2 flex flex-wrap items-center justify-between gap-2 rounded-xl bg-[var(--surface-overlay)] px-4 py-3">
+                  <div className="mt-2 flex flex-wrap items-center justify-between gap-2 rounded-xl bg-[var(--surface-overlay)] px-4 py-3 shadow-[0_10px_24px_rgba(0,0,0,0.12)]">
                     <div className="text-xs text-destiny-grey">
                       Start at{" "}
                       <span className="font-semibold text-destiny-black">

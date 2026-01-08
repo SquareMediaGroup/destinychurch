@@ -107,7 +107,7 @@ export default function SermonPoints({
       </div>
 
       <div className="space-y-3 border-t border-black/5 px-3 py-4 sm:px-5">
-        <div className="flex snap-x snap-mandatory items-stretch gap-3 overflow-x-auto pb-2 scroll-smooth md:grid md:grid-cols-2 md:items-start md:gap-4 md:overflow-visible md:snap-none">
+        <div className="flex min-w-0 snap-x snap-mandatory items-stretch gap-3 overflow-x-auto pb-2 scroll-smooth md:grid md:grid-cols-2 md:items-start md:gap-4 md:overflow-visible md:snap-none">
           {sorted.map((point, idx) => {
             const active = openId === point.id;
             return (
@@ -115,7 +115,7 @@ export default function SermonPoints({
                 key={point.id}
                 type="button"
                 onClick={() => setOpenId(active ? null : point.id)}
-                className={`group relative w-[82%] flex-none snap-start rounded-2xl border border-black/5 bg-gradient-to-br ${gradients[idx % gradients.length]} p-4 text-left shadow-[0_14px_40px_rgba(0,0,0,0.12)] transition hover:-translate-y-0.5 md:w-auto md:self-start`}
+                className={`group relative w-[82%] min-w-0 flex-none snap-start rounded-2xl border border-black/5 bg-gradient-to-br ${gradients[idx % gradients.length]} p-4 text-left shadow-[0_14px_40px_rgba(0,0,0,0.12)] transition hover:-translate-y-0.5 md:w-auto md:self-start`}
               >
                   <div className="flex items-center justify-between gap-2">
                     <span className="inline-flex items-center rounded-full bg-black/5 px-2 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-destiny-grey">

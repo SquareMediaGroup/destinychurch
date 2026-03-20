@@ -183,44 +183,59 @@ export async function getSermonByViewId(
 }
 
 export async function listSermons(limit = 25): Promise<Sermon[]> {
-  const supabase = tryGetSupabaseAdmin();
-  if (!supabase) return [];
-  const { data, error } = await supabase
-    .from("sermons")
-    .select("*")
-    .order("date", { ascending: false })
-    .limit(limit);
+  try {
+    const supabase = tryGetSupabaseAdmin();
+    if (!supabase) return [];
+    const { data, error } = await supabase
+      .from("sermons")
+      .select("*")
+      .order("date", { ascending: false })
+      .limit(limit);
 
-  if (error) throw error;
-  if (!data) return [];
-  return (data as SermonRow[]).map(mapRowToSermon);
+    if (error) throw error;
+    if (!data) return [];
+    return (data as SermonRow[]).map(mapRowToSermon);
+  } catch (err) {
+    console.error("Failed to list sermons", err);
+    return [];
+  }
 }
 
 export async function listSermonsLite(limit = 25): Promise<Sermon[]> {
-  const supabase = tryGetSupabaseAdmin();
-  if (!supabase) return [];
-  const { data, error } = await supabase
-    .from("sermons")
-    .select(sermonListSelect)
-    .order("date", { ascending: false })
-    .limit(limit);
+  try {
+    const supabase = tryGetSupabaseAdmin();
+    if (!supabase) return [];
+    const { data, error } = await supabase
+      .from("sermons")
+      .select(sermonListSelect)
+      .order("date", { ascending: false })
+      .limit(limit);
 
-  if (error) throw error;
-  if (!data) return [];
-  return (data as SermonRow[]).map(mapRowToSermon);
+    if (error) throw error;
+    if (!data) return [];
+    return (data as SermonRow[]).map(mapRowToSermon);
+  } catch (err) {
+    console.error("Failed to list sermons (lite)", err);
+    return [];
+  }
 }
 
 export async function listGuestSermons(limit = 50): Promise<Sermon[]> {
-  const supabase = tryGetSupabaseAdmin();
-  if (!supabase) return [];
-  const { data, error } = await supabase
-    .from("sermons")
-    .select(sermonListSelect)
-    .not("guest_speaker", "is", null)
-    .order("date", { ascending: false })
-    .limit(limit);
+  try {
+    const supabase = tryGetSupabaseAdmin();
+    if (!supabase) return [];
+    const { data, error } = await supabase
+      .from("sermons")
+      .select(sermonListSelect)
+      .not("guest_speaker", "is", null)
+      .order("date", { ascending: false })
+      .limit(limit);
 
-  if (error) throw error;
-  if (!data) return [];
-  return (data as SermonRow[]).map(mapRowToSermon);
+    if (error) throw error;
+    if (!data) return [];
+    return (data as SermonRow[]).map(mapRowToSermon);
+  } catch (err) {
+    console.error("Failed to list guest sermons", err);
+    return [];
+  }
 }

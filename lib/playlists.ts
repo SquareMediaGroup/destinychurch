@@ -91,23 +91,29 @@ const baseSelect = `
 `;
 
 export async function listPublicPlaylists(limit = 20): Promise<Playlist[]> {
-  const supabase = tryGetSupabaseAdmin();
-  if (!supabase) return [];
+  try {
+    const supabase = tryGetSupabaseAdmin();
+    if (!supabase) return [];
 
-  const { data, error } = await supabase
-    .from("playlists")
-    .select(baseSelect)
-    .or("is_public.eq.true,is_public.is.null")
-    .order("created_at", { ascending: false })
-    .order("position", { foreignTable: "playlist_items", ascending: true })
-    .limit(limit);
+    const { data, error } = await supabase
+      .from("playlists")
+      .select(baseSelect)
+      .or("is_public.eq.true,is_public.is.null")
+      .order("created_at", { ascending: false })
+      .order("position", { foreignTable: "playlist_items", ascending: true })
+      .limit(limit);
 
-  if (error) {
-    if ((error as PostgrestError).code === "42P01") return [];
-    throw error;
+    if (error) {
+      if ((error as PostgrestError).code === "42P01") return [];
+      console.error("Failed to list playlists", error);
+      return [];
+    }
+
+    return (data as PlaylistRow[]).map(mapPlaylist);
+  } catch (err) {
+    console.error("Failed to list playlists", err);
+    return [];
   }
-
-  return (data as PlaylistRow[]).map(mapPlaylist);
 }
 
 export async function getPlaylistBySlugOrId(

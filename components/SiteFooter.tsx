@@ -3,7 +3,6 @@
 import { useCallback, useRef } from "react";
 import Link from "next/link";
 import LogoImage from "./LogoImage";
-import ThemeToggle from "./ThemeToggle";
 import Icon from "./Icon";
 import { useToast } from "./ToastProvider";
 import { useSettings } from "@/lib/settings";
@@ -206,7 +205,6 @@ export default function SiteFooter() {
             >
               <Icon name="settings" size={20} />
             </Link>
-            <ThemeToggle />
             <a href="https://destinytees.uk" className="text-white/50">
               <span className="text-white/50">
                 Destiny Church Tees Valley · Company No. 06261423

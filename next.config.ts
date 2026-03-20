@@ -39,6 +39,14 @@ const nextConfig: NextConfig = {
         protocol: "https",
         hostname: "destinytees.uk",
       },
+      {
+        protocol: "https",
+        hostname: "**.churchsuite.com",
+      },
+      {
+        protocol: "https",
+        hostname: "**.churchsuite.co.uk",
+      },
     ],
   },
 };

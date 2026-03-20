@@ -6,7 +6,6 @@ import { type FormEvent, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import CTAButton from "./CTAButton";
 import Icon from "./Icon";
-import ThemeToggle from "./ThemeToggle";
 const logoColorSrc = "/destiny-logo.svg";
 const logoWhiteSrc = "/destiny-logo-color-white.svg";
 
@@ -106,7 +105,6 @@ export default function SiteHeader() {
           >
             <Icon name="settings" size={20} />
           </Link>
-          <ThemeToggle />
           <button
             type="button"
             onClick={() => setOpen((prev) => !prev)}

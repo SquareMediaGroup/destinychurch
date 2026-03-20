@@ -2,13 +2,11 @@
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 
-export type ThemePreference = "system" | "light" | "dark";
 export type TextSize = "normal" | "large";
 export type CaptionSize = "small" | "medium" | "large";
 export type ResumePreference = "resume" | "restart";
 
 export type Settings = {
-  theme: ThemePreference;
   textSize: TextSize;
   reduceMotion: boolean;
   autoplayNext: boolean;
@@ -21,10 +19,8 @@ export type Settings = {
 };
 
 export const SETTINGS_STORAGE_KEY = "destiny-settings";
-const LEGACY_THEME_KEY = "destiny-theme";
 
 const DEFAULT_SETTINGS: Settings = {
-  theme: "system",
   textSize: "normal",
   reduceMotion: false,
   autoplayNext: true,
@@ -48,18 +44,11 @@ const parseNumber = (value: unknown, allowed: number[], fallback: number) =>
 const readStoredSettings = (): Settings => {
   if (typeof window === "undefined") return DEFAULT_SETTINGS;
   const raw = window.localStorage.getItem(SETTINGS_STORAGE_KEY);
-  if (!raw) {
-    const legacyTheme = window.localStorage.getItem(LEGACY_THEME_KEY);
-    if (legacyTheme === "light" || legacyTheme === "dark") {
-      return { ...DEFAULT_SETTINGS, theme: legacyTheme };
-    }
-    return DEFAULT_SETTINGS;
-  }
+  if (!raw) return DEFAULT_SETTINGS;
 
   try {
     const parsed = JSON.parse(raw) as Partial<Settings>;
     return {
-      theme: parseString(parsed.theme, ["system", "light", "dark"], DEFAULT_SETTINGS.theme),
       textSize: parseString(parsed.textSize, ["normal", "large"], DEFAULT_SETTINGS.textSize),
       reduceMotion: parseBoolean(parsed.reduceMotion, DEFAULT_SETTINGS.reduceMotion),
       autoplayNext: parseBoolean(parsed.autoplayNext, DEFAULT_SETTINGS.autoplayNext),
@@ -78,11 +67,6 @@ const readStoredSettings = (): Settings => {
 const applySettings = (settings: Settings) => {
   if (typeof document === "undefined") return;
   const root = document.documentElement;
-  if (settings.theme === "system") {
-    root.removeAttribute("data-theme");
-  } else {
-    root.dataset.theme = settings.theme;
-  }
   root.dataset.textSize = settings.textSize;
   root.dataset.reduceMotion = settings.reduceMotion ? "true" : "false";
   root.dataset.captionSize = settings.captionSize;
@@ -126,7 +110,6 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
     setSettings(DEFAULT_SETTINGS);
     if (typeof window !== "undefined") {
       window.localStorage.removeItem(SETTINGS_STORAGE_KEY);
-      window.localStorage.removeItem(LEGACY_THEME_KEY);
     }
     applySettings(DEFAULT_SETTINGS);
   }, []);

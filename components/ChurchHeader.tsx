@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 
 const aboutDropdown = [
   { href: "/about#vision", label: "Our Vision" },
@@ -58,7 +58,19 @@ function Dropdown({
 export default function ChurchHeader() {
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const headerRef = useRef<HTMLElement>(null);
+
+  const handleScroll = useCallback(() => {
+    setScrolled(window.scrollY > 50);
+  }, []);
+
+  useEffect(() => {
+    setMounted(true);
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, [handleScroll]);
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -73,10 +85,20 @@ export default function ChurchHeader() {
   return (
     <header
       ref={headerRef}
-      className="absolute left-0 right-0 top-0 z-50"
+      className="fixed left-0 right-0 top-0 z-50"
+      style={{
+        transform: mounted ? "translateY(0)" : "translateY(-100%)",
+        transition: "transform 0.4s ease",
+      }}
     >
       <div className="mx-auto max-w-7xl px-4 py-4 lg:px-8">
-        <div className="flex items-center justify-between rounded-full bg-destiny-grey/80 px-6 py-3 backdrop-blur-md">
+        <div
+          className={`flex items-center justify-between rounded-full px-6 py-3 backdrop-blur-md transition-all duration-300 ${
+            scrolled
+              ? "bg-destiny-grey/95 shadow-xl shadow-black/20"
+              : "bg-destiny-grey/80"
+          }`}
+        >
           {/* Logo */}
           <Link href="/" className="flex items-center gap-3">
             <div className="relative h-9 w-[170px]">

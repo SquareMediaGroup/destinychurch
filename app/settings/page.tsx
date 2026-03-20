@@ -121,18 +121,6 @@ export default function SettingsPage() {
 
       <section className="space-y-4">
         <h2 className="text-lg font-semibold text-[var(--foreground)]">Appearance</h2>
-        <SettingsRow title="Theme">
-          <ChoiceGroup
-            ariaLabel="Theme"
-            value={settings.theme}
-            onChange={(value) => updateSetting("theme", value)}
-            options={[
-              { value: "system", label: "System (default)" },
-              { value: "dark", label: "Dark" },
-              { value: "light", label: "Light" },
-            ]}
-          />
-        </SettingsRow>
         <SettingsRow title="Text size">
           <ChoiceGroup
             ariaLabel="Text size"

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
+import AnimateIn from "@/components/AnimateIn";
 
 type ChurchSuiteEvent = {
   id: number;
@@ -159,38 +160,44 @@ export default async function WhatsOnSection() {
     <section className="bg-white py-16">
       <div className="mx-auto max-w-7xl px-4 lg:px-8">
         {/* Header */}
-        <div className="mb-8 flex items-end justify-between">
-          <h2 className="text-3xl font-black text-destiny-orange md:text-4xl">
-            What&apos;s On
-          </h2>
-          <Link
-            href="/whats-on"
-            className="text-sm font-semibold text-destiny-grey/70 underline underline-offset-4 transition hover:text-destiny-grey"
-          >
-            View Church Calendar
-          </Link>
-        </div>
+        <AnimateIn>
+          <div className="mb-8 flex items-end justify-between">
+            <h2 className="text-3xl font-black text-destiny-orange md:text-4xl">
+              What&apos;s On
+            </h2>
+            <Link
+              href="/whats-on"
+              className="text-sm font-semibold text-destiny-grey/70 underline underline-offset-4 transition hover:text-destiny-grey"
+            >
+              View Church Calendar
+            </Link>
+          </div>
+        </AnimateIn>
 
         {/* Event cards carousel */}
-        <div className="scrollbar-hide -mx-4 flex gap-5 overflow-x-auto px-4 pb-4">
-          {hasEvents
-            ? events.slice(0, 6).map((event) => (
-                <EventCard key={event.id} event={event} />
-              ))
-            : Array.from({ length: 3 }).map((_, i) => (
-                <EventCardPlaceholder key={i} index={i} />
-              ))}
-        </div>
+        <AnimateIn delay={100}>
+          <div className="scrollbar-hide -mx-4 flex gap-5 overflow-x-auto px-4 pb-4">
+            {hasEvents
+              ? events.slice(0, 6).map((event) => (
+                  <EventCard key={event.id} event={event} />
+                ))
+              : Array.from({ length: 3 }).map((_, i) => (
+                  <EventCardPlaceholder key={i} index={i} />
+                ))}
+          </div>
+        </AnimateIn>
 
         {/* View all button */}
-        <div className="mt-6 text-center">
-          <Link
-            href="/whats-on"
-            className="inline-flex items-center justify-center rounded-full border-2 border-destiny-orange px-8 py-3 text-sm font-bold text-destiny-orange transition hover:bg-destiny-orange hover:text-white"
-          >
-            View All
-          </Link>
-        </div>
+        <AnimateIn delay={200}>
+          <div className="mt-6 text-center">
+            <Link
+              href="/whats-on"
+              className="inline-flex items-center justify-center rounded-full border-2 border-destiny-orange px-8 py-3 text-sm font-bold text-destiny-orange transition hover:bg-destiny-orange hover:text-white"
+            >
+              View All
+            </Link>
+          </div>
+        </AnimateIn>
       </div>
     </section>
   );

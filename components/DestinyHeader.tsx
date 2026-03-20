@@ -1,6 +1,5 @@
 import Image from "next/image";
 import Link from "next/link";
-import ThemeToggle from "./ThemeToggle";
 import HeaderAuthButton from "./HeaderAuthButton";
 
 const navLinks = [
@@ -48,7 +47,6 @@ export default function DestinyHeader() {
         </nav>
 
         <div className="flex items-center gap-3">
-          <ThemeToggle />
           <HeaderAuthButton />
           <Link
             href="/sermons"

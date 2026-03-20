@@ -3,19 +3,10 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 
 export type TextSize = "normal" | "large";
-export type CaptionSize = "small" | "medium" | "large";
-export type ResumePreference = "resume" | "restart";
 
 export type Settings = {
   textSize: TextSize;
   reduceMotion: boolean;
-  autoplayNext: boolean;
-  playbackSpeed: number;
-  resumePlayback: ResumePreference;
-  captionsEnabled: boolean;
-  captionSize: CaptionSize;
-  continueWatching: boolean;
-  devMode: boolean;
 };
 
 export const SETTINGS_STORAGE_KEY = "destiny-settings";
@@ -23,13 +14,6 @@ export const SETTINGS_STORAGE_KEY = "destiny-settings";
 const DEFAULT_SETTINGS: Settings = {
   textSize: "normal",
   reduceMotion: false,
-  autoplayNext: true,
-  playbackSpeed: 1,
-  resumePlayback: "resume",
-  captionsEnabled: false,
-  captionSize: "medium",
-  continueWatching: true,
-  devMode: false,
 };
 
 const parseBoolean = (value: unknown, fallback: boolean) =>
@@ -37,9 +21,6 @@ const parseBoolean = (value: unknown, fallback: boolean) =>
 
 const parseString = <T extends string>(value: unknown, allowed: T[], fallback: T): T =>
   typeof value === "string" && allowed.includes(value as T) ? (value as T) : fallback;
-
-const parseNumber = (value: unknown, allowed: number[], fallback: number) =>
-  typeof value === "number" && allowed.includes(value) ? value : fallback;
 
 const readStoredSettings = (): Settings => {
   if (typeof window === "undefined") return DEFAULT_SETTINGS;
@@ -51,13 +32,6 @@ const readStoredSettings = (): Settings => {
     return {
       textSize: parseString(parsed.textSize, ["normal", "large"], DEFAULT_SETTINGS.textSize),
       reduceMotion: parseBoolean(parsed.reduceMotion, DEFAULT_SETTINGS.reduceMotion),
-      autoplayNext: parseBoolean(parsed.autoplayNext, DEFAULT_SETTINGS.autoplayNext),
-      playbackSpeed: parseNumber(parsed.playbackSpeed, [0.75, 1, 1.25, 1.5, 2], DEFAULT_SETTINGS.playbackSpeed),
-      resumePlayback: parseString(parsed.resumePlayback, ["resume", "restart"], DEFAULT_SETTINGS.resumePlayback),
-      captionsEnabled: parseBoolean(parsed.captionsEnabled, DEFAULT_SETTINGS.captionsEnabled),
-      captionSize: parseString(parsed.captionSize, ["small", "medium", "large"], DEFAULT_SETTINGS.captionSize),
-      continueWatching: parseBoolean(parsed.continueWatching, DEFAULT_SETTINGS.continueWatching),
-      devMode: parseBoolean(parsed.devMode, DEFAULT_SETTINGS.devMode),
     };
   } catch {
     return DEFAULT_SETTINGS;
@@ -69,8 +43,6 @@ const applySettings = (settings: Settings) => {
   const root = document.documentElement;
   root.dataset.textSize = settings.textSize;
   root.dataset.reduceMotion = settings.reduceMotion ? "true" : "false";
-  root.dataset.captionSize = settings.captionSize;
-  root.dataset.devMode = settings.devMode ? "true" : "false";
 };
 
 type SettingsContextValue = {

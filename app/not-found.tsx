@@ -2,35 +2,18 @@ import Link from "next/link";
 
 export default function NotFound() {
   return (
-    <div className="rounded-3xl border border-[var(--border-subtle)] bg-[var(--surface)] px-6 py-10 shadow-sm lg:px-12">
-      <h1 className="text-2xl font-semibold text-[var(--foreground)] sm:text-3xl">
-        The page or sermon you’re looking for can’t be found.
+    <div className="flex min-h-[60vh] flex-col items-center justify-center px-4 text-center">
+      <h1 className="mb-4 text-3xl font-black text-destiny-grey">
+        Page not found
       </h1>
-      <form
-        action="/sermons"
-        method="get"
-        className="mt-6 flex w-full max-w-lg items-center gap-2 rounded-full border border-[var(--border-subtle)] bg-[var(--surface-muted)] px-4 py-2"
-      >
-        <input
-          type="search"
-          name="q"
-          placeholder="Search sermons..."
-          aria-label="Search sermons"
-          className="w-full bg-transparent text-sm text-[var(--foreground)] placeholder:text-destiny-grey/70 focus:outline-none"
-        />
-        <button
-          type="submit"
-          className="rounded-full bg-destiny-orange px-3 py-2 text-xs font-semibold text-white shadow-sm transition hover:brightness-95"
-        >
-          Search
-        </button>
-      </form>
+      <p className="mb-8 text-destiny-grey/70">
+        The page you&apos;re looking for doesn&apos;t exist.
+      </p>
       <Link
         href="/"
-        className="mt-4 inline-flex items-center gap-2 rounded-full border border-[var(--border-subtle)] px-4 py-2 text-xs font-semibold text-[var(--foreground)] transition hover:border-destiny-orange hover:text-destiny-orange"
+        className="rounded-full bg-destiny-orange px-6 py-3 text-sm font-bold text-white shadow-lg shadow-destiny-orange/25 transition hover:brightness-110"
       >
         Back to home
-        <span aria-hidden>→</span>
       </Link>
     </div>
   );

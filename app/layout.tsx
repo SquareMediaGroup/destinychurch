@@ -7,7 +7,6 @@ import ChurchFooter from "@/components/ChurchFooter";
 import Providers from "@/components/Providers";
 import CookieBanner from "@/components/CookieBanner";
 import AnalyticsGate from "@/components/AnalyticsGate";
-import GlobalAudioProvider from "@/components/GlobalAudioProvider";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 
 const roboto = Roboto({
@@ -69,17 +68,15 @@ export default function RootLayout({
         className={`${roboto.variable} ${dosis.variable} antialiased`}
       >
         <Providers>
-          <GlobalAudioProvider>
-            <CookieBanner />
-            <div className="flex min-h-screen flex-col bg-[var(--background)] text-[var(--foreground)]">
-              <Suspense>
-                <ChurchHeader />
-              </Suspense>
-              <main className="flex-1">{children}</main>
-              <ChurchFooter />
-            </div>
-            <AnalyticsGate />
-          </GlobalAudioProvider>
+          <CookieBanner />
+          <div className="flex min-h-screen flex-col bg-[var(--background)] text-[var(--foreground)]">
+            <Suspense>
+              <ChurchHeader />
+            </Suspense>
+            <main className="flex-1">{children}</main>
+            <ChurchFooter />
+          </div>
+          <AnalyticsGate />
         </Providers>
         <SpeedInsights />
       </body>

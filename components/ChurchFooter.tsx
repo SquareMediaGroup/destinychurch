@@ -1,10 +1,5 @@
-"use client";
-
-import { useCallback, useRef } from "react";
 import Link from "next/link";
-import LogoImage from "./LogoImage";
-import { useToast } from "./ToastProvider";
-import { useSettings } from "@/lib/settings";
+import Image from "next/image";
 
 const churchLinks = [
   { label: "Homepage", href: "/" },
@@ -26,64 +21,23 @@ const legalLinks = [
 ];
 
 export default function ChurchFooter() {
-  const { settings, updateSetting } = useSettings();
-  const toast = useToast();
-  const logoClicks = useRef(0);
-
-  const promptDevMode = useCallback(() => {
-    const nextMode = !settings.devMode;
-    toast.push({
-      title: nextMode ? "Enable DevMode?" : "Disable DevMode?",
-      message: nextMode
-        ? "DevMode shows view IDs and stats for nerds on sermons."
-        : "DevMode hides view IDs and stats for nerds on sermons.",
-      tone: "info",
-      durationMs: 0,
-      actions: [
-        {
-          label: nextMode ? "Yes" : "Turn off",
-          variant: "primary",
-          onClick: () => {
-            updateSetting("devMode", nextMode);
-            toast.success(nextMode ? "DevMode enabled." : "DevMode disabled.", "DevMode");
-          },
-        },
-        {
-          label: "No",
-          onClick: () => {},
-        },
-      ],
-    });
-  }, [settings.devMode, toast, updateSetting]);
-
-  const handleLogoClick = useCallback(() => {
-    logoClicks.current += 1;
-    if (logoClicks.current >= 5) {
-      logoClicks.current = 0;
-      promptDevMode();
-    }
-  }, [promptDevMode]);
-
   return (
     <footer className="border-t border-white/10 bg-[#0d1119] text-white">
       <div className="mx-auto max-w-7xl px-4 py-14 lg:px-8">
         <div className="grid gap-10 md:grid-cols-[1.3fr_1fr_1fr_1fr]">
           {/* Brand column */}
           <div className="space-y-5">
-            <button
-              type="button"
-              onClick={handleLogoClick}
-              aria-label="Destiny Church"
-              className="relative h-11 w-[200px] appearance-none border-0 bg-transparent p-0 text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white/60"
-            >
-              <LogoImage
-                src="/img/brand/destiny-logo-color-white.svg"
-                alt="Destiny Church"
-                fill
-                sizes="200px"
-                className="object-contain"
-              />
-            </button>
+            <Link href="/" aria-label="Destiny Church">
+              <div className="relative h-11 w-[200px]">
+                <Image
+                  src="/img/brand/destiny-logo-color-white.svg"
+                  alt="Destiny Church"
+                  fill
+                  sizes="200px"
+                  className="object-contain"
+                />
+              </div>
+            </Link>
             <p className="max-w-md text-sm text-white/70">
               Destiny Church Tees Valley is a multi-cultural church where all
               can find a place to belong and thrive. We&apos;d love to welcome

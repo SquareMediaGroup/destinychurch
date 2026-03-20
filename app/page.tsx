@@ -1,22 +1,21 @@
-import AnnouncementBanner from "@/components/AnnouncementBanner";
-import WatchHome from "@/components/WatchHome";
-import { getActiveAnnouncement } from "@/lib/announcements";
+import HeroSection from "@/components/home/HeroSection";
+import MissionSection from "@/components/home/MissionSection";
+import WhatsOnSection from "@/components/home/WhatsOnSection";
+import EveryoneHasAPlaceSection from "@/components/home/EveryoneHasAPlaceSection";
+import WorshipWithUsSection from "@/components/home/WorshipWithUsSection";
+import GetInvolvedSection from "@/components/home/GetInvolvedSection";
 
 export const revalidate = 30;
-export const runtime = "nodejs";
 
-export default async function Home() {
-  const announcement = await getActiveAnnouncement();
-
+export default function HomePage() {
   return (
-    <div className="space-y-6">
-      {announcement ? (
-        <AnnouncementBanner
-          message={announcement.message}
-          href={announcement.description ? "/announcement" : undefined}
-        />
-      ) : null}
-      <WatchHome />
-    </div>
+    <>
+      <HeroSection />
+      <MissionSection />
+      <WhatsOnSection />
+      <EveryoneHasAPlaceSection />
+      <WorshipWithUsSection />
+      <GetInvolvedSection />
+    </>
   );
 }

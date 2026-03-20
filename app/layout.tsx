@@ -2,12 +2,11 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 import { Dosis, Roboto } from "next/font/google";
 import "./globals.css";
-import SiteFooter from "@/components/SiteFooter";
-import SiteHeader from "@/components/SiteHeader";
+import ChurchHeader from "@/components/ChurchHeader";
+import ChurchFooter from "@/components/ChurchFooter";
 import Providers from "@/components/Providers";
 import CookieBanner from "@/components/CookieBanner";
 import AnalyticsGate from "@/components/AnalyticsGate";
-import GlobalAudioProvider from "@/components/GlobalAudioProvider";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 
 const roboto = Roboto({
@@ -25,39 +24,38 @@ const dosis = Dosis({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://sermons.destinytees.uk"),
+  metadataBase: new URL("https://destinytees.uk"),
   title: {
-    default: "Destiny Sermons",
-    template: "%s | Destiny Sermons",
+    default: "Destiny Church Tees Valley",
+    template: "%s | Destiny Church",
   },
   description:
-    "Watch the latest Destiny Sermons with summaries, transcripts, and podcasts.",
+    "Destiny Church Tees Valley — a multi-cultural church where all can find a place to belong and thrive. Join us Sundays at 11am.",
   alternates: {
     canonical: "/",
   },
   openGraph: {
-    title: "Destiny Sermons",
+    title: "Destiny Church Tees Valley",
     description:
-      "Watch the latest Destiny Sermons with summaries, transcripts, and podcasts.",
-    url: "https://sermons.destinytees.uk",
-    siteName: "Destiny Sermons",
+      "A multi-cultural church where all can find a place to belong and thrive.",
+    url: "https://destinytees.uk",
+    siteName: "Destiny Church",
     type: "website",
     images: [
       {
         url: "/og/sermons-hero.jpg",
-        alt: "Destiny Sermons",
+        alt: "Destiny Church Tees Valley",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Destiny Sermons",
+    title: "Destiny Church Tees Valley",
     description:
-      "Watch the latest Destiny Sermons with summaries, transcripts, and podcasts.",
+      "A multi-cultural church where all can find a place to belong and thrive.",
     images: ["/og/sermons-hero.jpg"],
   },
 };
-
 
 export default function RootLayout({
   children,
@@ -67,24 +65,18 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${roboto.variable} ${dosis.variable} antialiased transition-colors`}
+        className={`${roboto.variable} ${dosis.variable} antialiased`}
       >
         <Providers>
-          <GlobalAudioProvider>
-            <CookieBanner />
-            <div className="flex min-h-screen flex-col bg-[var(--background)] text-[var(--foreground)]">
-              <Suspense fallback={<div className="h-[76px]" />}>
-                <SiteHeader />
-              </Suspense>
-              <main className="flex-1">
-                <div className="mx-auto w-full max-w-7xl px-4 pb-16 pt-8 lg:px-8">
-                  {children}
-                </div>
-              </main>
-              <SiteFooter />
-            </div>
-            <AnalyticsGate />
-          </GlobalAudioProvider>
+          <CookieBanner />
+          <div className="flex min-h-screen flex-col bg-[var(--background)] text-[var(--foreground)]">
+            <Suspense>
+              <ChurchHeader />
+            </Suspense>
+            <main className="flex-1">{children}</main>
+            <ChurchFooter />
+          </div>
+          <AnalyticsGate />
         </Providers>
         <SpeedInsights />
       </body>

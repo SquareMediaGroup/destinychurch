@@ -119,14 +119,6 @@ export default function SermonsSidebar() {
               className="object-contain"
             />
           </div>
-          <div className="hidden leading-tight lg:block">
-            <p className="text-xs font-black uppercase tracking-wide text-white">
-              Destiny
-            </p>
-            <p className="text-[10px] font-medium text-white/40">
-              Church
-            </p>
-          </div>
         </Link>
 
         {/* Nav */}

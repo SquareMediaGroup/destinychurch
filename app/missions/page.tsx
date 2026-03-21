@@ -51,7 +51,7 @@ const partners = [
   {
     id: "safe-families",
     name: "Safe Families",
-    logo: "/img/photos/mission/brand/Safe-Families-Web-Logo@2x.png",
+    logo: "/img/photos/mission/brand/safe-families-logo.png",
     logoWidth: 180,
     logoHeight: 60,
     description:
@@ -117,15 +117,8 @@ export default function MissionsPage() {
           <div className="flex flex-wrap items-center justify-center gap-12">
             {partners.map((p) => (
               <AnimateIn key={p.id}>
-                <div className="relative h-12 w-44">
-                  <Image
-                    src={p.logo}
-                    alt={p.name}
-                    fill
-                    className="object-contain"
-                    sizes="176px"
-                  />
-                </div>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={p.logo} alt={p.name} className="h-12 w-auto object-contain" />
               </AnimateIn>
             ))}
           </div>
@@ -146,15 +139,12 @@ export default function MissionsPage() {
               {/* Left: info */}
               <AnimateIn>
                 {/* Logo */}
-                <div className={`relative mb-6 h-12 w-44 ${partner.dark ? "brightness-0 invert" : ""}`}>
-                  <Image
-                    src={partner.logo}
-                    alt={partner.name}
-                    fill
-                    className="object-contain object-left"
-                    sizes="176px"
-                  />
-                </div>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={partner.logo}
+                  alt={partner.name}
+                  className={`mb-6 h-12 w-auto object-contain ${partner.dark ? "brightness-0 invert" : ""}`}
+                />
 
                 <h2 className={`mb-5 text-3xl font-black md:text-4xl ${partner.dark ? "text-white" : "text-destiny-grey"}`}>
                   {partner.name}

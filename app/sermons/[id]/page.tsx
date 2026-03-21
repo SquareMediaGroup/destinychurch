@@ -78,7 +78,7 @@ export default async function SermonPage({ params }: PageProps) {
             </Link>
 
             {/* Player */}
-            <SermonPlayer videoId={video.id} />
+            <SermonPlayer videoId={video.id} thumbnail={video.thumbnail} />
 
             {/* Title */}
             <h1 className="mb-1 mt-4 text-xl font-black text-white">

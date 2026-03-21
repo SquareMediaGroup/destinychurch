@@ -87,6 +87,32 @@ export default function NewHerePage() {
         </div>
       </section>
 
+      {/* Address book form */}
+      <section className="bg-white py-20">
+        <div className="mx-auto max-w-3xl px-4 lg:px-8">
+          <AnimateIn className="text-center mb-10">
+            <p className="mb-3 text-xs font-bold uppercase tracking-widest text-destiny-orange">
+              Stay Connected
+            </p>
+            <h2 className="mb-4 text-4xl font-black text-destiny-grey md:text-5xl">
+              Add Yourself to Our<br />Address Book
+            </h2>
+            <p className="text-base leading-relaxed text-destiny-grey/60">
+              Let us know you&apos;re here — fill in your details and we&apos;ll be in touch to help you find your feet.
+            </p>
+          </AnimateIn>
+          <AnimateIn delay={100}>
+            <iframe
+              src="https://destinytees.churchsuite.com/embed/addressbook/form"
+              className="w-full rounded-2xl border border-black/5 shadow-sm"
+              style={{ minHeight: 700, display: "block" }}
+              title="Add yourself to our address book"
+              loading="lazy"
+            />
+          </AnimateIn>
+        </div>
+      </section>
+
       {/* Meet the Pastors */}
       <section style={{ background: "linear-gradient(135deg, #363f48 0%, #242e37 100%)" }} className="py-20">
         <div className="mx-auto max-w-7xl px-4 lg:px-8">

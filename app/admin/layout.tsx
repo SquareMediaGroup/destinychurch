@@ -27,7 +27,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           <Link href="/admin" className="flex items-center gap-2.5 shrink-0">
             <div className="relative h-7 w-7">
               <Image
-                src="/img/brand/Destiny%20SVG%20Logos/Destiny%20Logo%20Icons%20SVG/Icon_No_Background.svg"
+                src="/img/brand/destiny-icon.svg"
                 alt="Destiny Church"
                 fill
                 className="object-contain"

@@ -35,7 +35,7 @@ export default function AdminLoginPage() {
         <div className="mb-8 flex justify-center">
           <div className="relative h-14 w-14">
             <Image
-              src="/img/brand/Destiny%20SVG%20Logos/Destiny%20Logo%20Icons%20SVG/Icon_No_Background.svg"
+              src="/img/brand/destiny-icon.svg"
               alt="Destiny Church"
               fill
               className="object-contain"

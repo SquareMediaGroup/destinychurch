@@ -6,7 +6,7 @@ import { usePathname } from "next/navigation";
 import { useState } from "react";
 
 const ICON_SRC =
-  "/img/brand/Destiny%20SVG%20Logos/Destiny%20Logo%20Icons%20SVG/Icon_No_Background.svg";
+  "/img/brand/destiny-icon.svg";
 
 const whatsOnItems = [
   { href: "/whats-on", label: "Events" },

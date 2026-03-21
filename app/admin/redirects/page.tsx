@@ -24,10 +24,18 @@ export default function RedirectsPage() {
   const [targetUrl, setTargetUrl] = useState("");
 
   const fetchRedirects = useCallback(async () => {
-    const res = await fetch("/api/admin/redirects");
-    const data = await res.json();
-    setRedirects(data);
-    setLoading(false);
+    try {
+      const res = await fetch("/api/admin/redirects");
+      const data = await res.json();
+      setRedirects(Array.isArray(data) ? data : []);
+      if (!Array.isArray(data) && data?.error) {
+        setError(`Database error: ${data.error}`);
+      }
+    } catch {
+      setRedirects([]);
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   useEffect(() => {

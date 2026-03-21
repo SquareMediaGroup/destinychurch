@@ -42,7 +42,7 @@ export default async function SermonsPage() {
       </div>
 
       {/* Grid section */}
-      <section className="bg-[#f5f7fa] py-14">
+      <section className="bg-[#111111] py-14">
         <div className="mx-auto max-w-7xl px-4 lg:px-8">
           <SermonGrid videos={videos} />
         </div>

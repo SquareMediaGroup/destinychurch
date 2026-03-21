@@ -21,7 +21,7 @@ export default function SermonGrid({ videos }: SermonGridProps) {
     <div>
       {/* Search bar */}
       <div className="relative mb-4">
-        <span className="material-symbols-rounded pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-xl text-destiny-grey/40">
+        <span className="material-symbols-rounded pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-xl text-white/30">
           search
         </span>
         <input
@@ -29,12 +29,12 @@ export default function SermonGrid({ videos }: SermonGridProps) {
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Search sermons..."
-          className="w-full rounded-full border border-black/10 bg-white py-3 pl-11 pr-5 text-sm text-destiny-grey shadow-sm placeholder:text-destiny-grey/40 focus:border-destiny-orange/50 focus:outline-none focus:ring-2 focus:ring-destiny-orange/20"
+          className="w-full rounded-full border border-white/10 bg-[#1e1e1e] py-3 pl-11 pr-5 text-sm text-white shadow-sm placeholder:text-white/30 focus:border-destiny-orange/50 focus:outline-none focus:ring-2 focus:ring-destiny-orange/20"
         />
       </div>
 
       {/* Result count */}
-      <p className="mb-6 text-xs text-destiny-grey/50">
+      <p className="mb-6 text-xs text-white/40">
         Showing {filtered.length} sermon{filtered.length !== 1 ? "s" : ""}
       </p>
 
@@ -47,11 +47,11 @@ export default function SermonGrid({ videos }: SermonGridProps) {
         </div>
       ) : (
         <div className="flex flex-col items-center justify-center py-20 text-center">
-          <span className="material-symbols-rounded mb-4 text-5xl text-destiny-grey/25">
+          <span className="material-symbols-rounded mb-4 text-5xl text-white/20">
             search_off
           </span>
-          <p className="text-base font-bold text-destiny-grey/50">No sermons found</p>
-          <p className="mt-1 text-sm text-destiny-grey/30">Try a different search term</p>
+          <p className="text-base font-bold text-white/50">No sermons found</p>
+          <p className="mt-1 text-sm text-white/30">Try a different search term</p>
         </div>
       )}
     </div>

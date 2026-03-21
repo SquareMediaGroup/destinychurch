@@ -45,11 +45,11 @@ export default function SermonCard({ video }: SermonCardProps) {
 
       {/* Below thumbnail */}
       <div className="mt-3">
-        <h3 className="line-clamp-2 text-sm font-black leading-snug text-destiny-grey">
+        <h3 className="line-clamp-2 text-sm font-black leading-snug text-white">
           {video.title}
         </h3>
         {date && (
-          <p className="mt-1 text-xs text-destiny-grey/50">{date}</p>
+          <p className="mt-1 text-xs text-white/40">{date}</p>
         )}
       </div>
     </Link>

@@ -32,7 +32,7 @@ export default function ContactPage() {
         </section>
       </div>
 
-      <section className="bg-white py-20">
+      <section className="bg-white py-20" id="first-impressions">
         <div className="mx-auto max-w-7xl px-4 lg:px-8">
           <div className="grid gap-16 md:grid-cols-2">
 
@@ -97,6 +97,32 @@ export default function ContactPage() {
               <ContactForm />
             </AnimateIn>
           </div>
+        </div>
+      </section>
+
+      {/* First Impressions feedback form */}
+      <section className="bg-[#f5f7fa] py-20">
+        <div className="mx-auto max-w-3xl px-4 lg:px-8">
+          <AnimateIn className="mb-10 text-center">
+            <p className="mb-3 text-xs font-bold uppercase tracking-widest text-destiny-orange">
+              Feedback
+            </p>
+            <h2 className="mb-4 text-4xl font-black text-destiny-grey md:text-5xl">
+              First Impressions
+            </h2>
+            <p className="text-base leading-relaxed text-destiny-grey/60">
+              Visited us recently? We&apos;d love to know what you thought — your feedback helps us make every visit better.
+            </p>
+          </AnimateIn>
+          <AnimateIn delay={100}>
+            <iframe
+              src="https://destinytees.churchsuite.com/-/forms/fhq8ahuc"
+              className="w-full rounded-2xl border border-black/5 bg-white shadow-sm"
+              style={{ minHeight: 700, display: "block" }}
+              title="First Impressions feedback form"
+              loading="lazy"
+            />
+          </AnimateIn>
         </div>
       </section>
     </>

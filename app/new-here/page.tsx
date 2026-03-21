@@ -87,6 +87,32 @@ export default function NewHerePage() {
         </div>
       </section>
 
+      {/* You Said Yes form */}
+      <section className="bg-[#f5f7fa] py-20">
+        <div className="mx-auto max-w-3xl px-4 lg:px-8">
+          <AnimateIn className="mb-10 text-center">
+            <p className="mb-3 text-xs font-bold uppercase tracking-widest text-destiny-orange">
+              New to Faith
+            </p>
+            <h2 className="mb-4 text-4xl font-black text-destiny-grey md:text-5xl">
+              You Said Yes!
+            </h2>
+            <p className="text-base leading-relaxed text-destiny-grey/60">
+              That&apos;s the best decision you&apos;ll ever make. Let us know and we&apos;ll help you take your next steps.
+            </p>
+          </AnimateIn>
+          <AnimateIn delay={100}>
+            <iframe
+              src="https://destinytees.churchsuite.com/-/forms/uwqnm8of"
+              className="w-full rounded-2xl border border-black/5 bg-white shadow-sm"
+              style={{ minHeight: 700, display: "block" }}
+              title="You Said Yes registration form"
+              loading="lazy"
+            />
+          </AnimateIn>
+        </div>
+      </section>
+
       {/* Address book form */}
       <section className="bg-white py-20">
         <div className="mx-auto max-w-3xl px-4 lg:px-8">

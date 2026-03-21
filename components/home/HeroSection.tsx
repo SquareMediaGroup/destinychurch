@@ -30,20 +30,22 @@ export default function HeroSection() {
           {" "}Home
         </h1>
 
-        <div className="mt-10 flex flex-wrap items-center justify-center gap-4">
-          <a
-            href="/visit"
-            className="rounded-full bg-destiny-orange px-8 py-3.5 text-sm font-bold text-white shadow-lg shadow-destiny-orange/30 transition hover:brightness-110"
-          >
-            Plan a Visit
-          </a>
-          <a
-            href="/sermons"
-            className="rounded-full border-2 border-white/30 px-8 py-3.5 text-sm font-bold text-white backdrop-blur-sm transition hover:border-white hover:bg-white/10"
-          >
-            Sermons
-          </a>
-        </div>
+      </div>
+
+      {/* CTAs pinned to bottom */}
+      <div className="absolute bottom-10 left-0 right-0 z-10 flex flex-wrap items-center justify-center gap-4 px-4">
+        <a
+          href="/visit"
+          className="rounded-full bg-destiny-orange px-8 py-3.5 text-sm font-bold text-white shadow-lg shadow-destiny-orange/30 transition hover:brightness-110"
+        >
+          Plan a Visit
+        </a>
+        <a
+          href="/sermons"
+          className="rounded-full border-2 border-white/30 px-8 py-3.5 text-sm font-bold text-white backdrop-blur-sm transition hover:border-white hover:bg-white/10"
+        >
+          Sermons
+        </a>
       </div>
     </section>
   );

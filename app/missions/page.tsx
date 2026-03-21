@@ -34,6 +34,7 @@ const partners = [
     id: "compassion",
     name: "Compassion",
     logo: "/img/photos/mission/brand/Compassion.svg",
+    whiteLogo: true,
     description:
       "Founded in 1952, Compassion is an international children's charity. We work in 29 countries partnering with 8,600 local churches within communities experiencing poverty. Our heart is to give children and young people the opportunity to thrive and reach their God-given potential both now and into the future.\n\nCompassion's child development programmes are holistic, and because we work in partnership with local churches who know their communities inside out, they're tailored to a child or young person's individual situation. Independent research shows they are highly effective, and now more than 2.3 million children globally are being released from poverty.",
     video: {
@@ -104,8 +105,10 @@ export default function MissionsPage() {
           <div className="flex flex-wrap items-center justify-center gap-12">
             {partners.map((p) => (
               <AnimateIn key={p.id}>
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={p.logo} alt={p.name} className="h-10 w-auto object-contain" />
+                <div className={p.whiteLogo ? "rounded-xl bg-destiny-grey px-4 py-2" : ""}>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={p.logo} alt={p.name} className="h-10 w-auto object-contain" />
+                </div>
               </AnimateIn>
             ))}
           </div>
@@ -124,8 +127,10 @@ export default function MissionsPage() {
 
               {/* Text */}
               <AnimateIn className={i % 2 !== 0 ? "lg:order-2" : ""}>
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={partner.logo} alt={partner.name} className="mb-6 h-10 w-auto object-contain" />
+                <div className={partner.whiteLogo ? "mb-6 inline-block rounded-xl bg-destiny-grey px-4 py-2" : "mb-6"}>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={partner.logo} alt={partner.name} className="h-10 w-auto object-contain" />
+                </div>
                 <h2 className="mb-5 text-3xl font-black text-destiny-grey md:text-4xl">
                   {partner.name}
                 </h2>

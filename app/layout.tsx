@@ -3,7 +3,7 @@ import { Suspense } from "react";
 import { Dosis, Roboto, Anton } from "next/font/google";
 import "./globals.css";
 import ChurchHeader from "@/components/ChurchHeader";
-import ChurchFooter from "@/components/ChurchFooter";
+import FooterGate from "@/components/FooterGate";
 import Providers from "@/components/Providers";
 import CookieBanner from "@/components/CookieBanner";
 import AnalyticsGate from "@/components/AnalyticsGate";
@@ -84,7 +84,7 @@ export default function RootLayout({
               <ChurchHeader />
             </Suspense>
             <main className="flex-1">{children}</main>
-            <ChurchFooter />
+            <FooterGate />
           </div>
           <AnalyticsGate />
         </Providers>

@@ -3,6 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useState, useRef, useEffect, useCallback } from "react";
+import { usePathname } from "next/navigation";
 
 const aboutDropdown = [
   { href: "/about", label: "Our Mission" },
@@ -58,6 +59,7 @@ function Dropdown({
 }
 
 export default function ChurchHeader() {
+  const pathname = usePathname();
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
@@ -101,6 +103,8 @@ export default function ChurchHeader() {
     document.addEventListener("click", handleClickOutside);
     return () => document.removeEventListener("click", handleClickOutside);
   }, []);
+
+  if (pathname.startsWith("/sermons")) return null;
 
   return (
     <header

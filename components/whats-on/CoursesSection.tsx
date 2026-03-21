@@ -69,7 +69,7 @@ export default function CoursesSection() {
                   and is designed to create conversation.
                 </p>
                 <Link
-                  href="/contact"
+                  href="/alpha"
                   className="inline-flex items-center justify-center rounded-full bg-destiny-orange px-6 py-2.5 text-sm font-bold text-white transition hover:brightness-110"
                 >
                   Try Alpha

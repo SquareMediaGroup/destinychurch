@@ -1,0 +1,155 @@
+Destiny Church uses personal data about individuals for the purpose of general church administration and communication.
+
+Destiny Church recognises the importance of the correct and lawful treatment of personal data. All personal data we process is managed appropriately and in compliance with the General Data Protection Regulation (GDPR) and the Data Protection Act 2018.
+
+Destiny Church fully adheres to the seven principles of the GDPR. These principles specify the legal conditions that must be satisfied in relation to obtaining, handling, processing, transportation and storage of personal data. Employees and any others who obtain, handle, process, transport and store personal data for Destiny Church must adhere to these principles.
+
+Data Protection Principles
+There are seven data protection principles that sit at the heart of GDPR. These principles are the rules that govern how we must process personal data. We will always comply with the data protection principles in respect of the personal data we process, and we will be able to demonstrate our compliance with these principles.
+
+Lawfulness, Fairness & Transparency Principle: personal data shall be processed in a lawful, fair and transparent way;
+Purpose Limitation Principle: personal data shall be collected for specified, explicit and legitimate purposes and not further processed in a manner that is incompatible with those purposes;
+Data Minimisation Principle: personal data shall be adequate, relevant and limited to what is necessary;
+Accuracy Principle: personal data shall be accurate and, where necessary, kept up to date;
+Storage Limitation Principle: personal data shall be kept for no longer than is necessary
+Integrity & Confidentiality (Security) Principle: personal data shall be processed in a manner that ensures appropriate security using appropriate technical or organisational measures.
+Accountability Principle: this requires us to be responsible for complying with GDPR and be able to demonstrate our compliance with all the above principles.
+1. Introduction
+This policy describes how and why Destiny Church Tees Valley (‘we’, ‘us’, or ‘our’) may access, collect, store, use or process your personal information when you use our services, including when you:
+
+Visit our website at any related online services provided by [Church Name]. By using our website, use our church management application (Churchsuite).
+Engage with us in other related ways including attending church services or events.
+You agree to the terms of this Privacy Policy when you use our services. We may update this policy from time to time, and we encourage you to review it periodically.
+
+2. How We Collect Information About You
+We collect personal information that you voluntarily provide to us when you are in contact with us. For example, when you:
+
+Visit our website;
+Register your details at ChurchSuite or via an embedded form on our website or social media
+Make a donation, by completion of offering envelopes, text, via our website or electronic means;
+Register for a conference or other Church event;
+Provide your contact details, in writing or orally, to Church staff or volunteers;
+Purchase goods or services, including when you provide credit or debit card details;
+When you attend church services or participate in other Church activities;
+Communicate with the Church by means such as email, letter, telephone;
+Face to face meetings with staff and volunteers;
+Automatically as you navigate our Website or web apps: through cookies, server logs, and other tracking technologies.
+Access social media platforms such as Facebook, YouTube, WhatsApp, Twitter, Instagram
+3. Information We Collect
+We may collect various types of information from and about users of our website, including:
+
+Personal identification information:
+Name
+Email address
+Postal address
+Phone number
+Date of birth (e.g., for age-restricted activities or children’s ministry)
+Gender (optional, for demographic purposes or specific ministry engagement
+Donation Information:
+Payment card details (processed securely by third-party payment processors – we do not store full card numbers)
+Donation history
+Gift Aid declarations
+Ministry and Event Registration Information:
+Information required for event participation (e.g., dietary restrictions for retreats, medical information for youth camps – only with explicit consent and for legitimate purposes)
+Attendance records for specific ministries or groups
+Communication Information:
+Correspondence with us via email, contact forms, or other channels
+Preferences for receiving communications (e.g., newsletters, event announcements)
+Technical and Usage Information:
+This information may be collected automatically when you visit our website or use our web applications. This information does not reveal your specific identity and is needed to maintain the security and operations of our applications and for internal analytics and reporting purposes
+
+IP address
+Browser type and version
+Operating system
+Referring website addresses
+Pages visited on our Website
+Time and date of visit
+Duration of visit
+Clickstream data
+Device information (e.g., mobile device IDs)
+Sensitive Information:
+We may collect and store sensitive personal information such as health information (food allergies) , religious information (church attendance) when you and/or your family attend, register for church events and conferences.
+
+4. How We Use Your Information
+Destiny Church will process information primarily to provide services to our community. We will process your information for various purposes including:
+
+The day-to-day administration of the church; e.g. pastoral care and oversight including calls and visits, preparation of ministry rotas, maintaining financial records of giving for audit and tax purposes.
+Contacting you to keep you informed of church services, activities, resources and events.
+To fulfil requests, you make (e.g., registering for an event, processing a donation).
+To comply with legal or regulatory requirements (e.g Gift Aid declarations, safeguard obligations)
+Statistical analysis; gaining a better understanding of church demographics.
+N.B. although collated church data may be passed to a third party, such as number of small groups or small group’s attendance, no personal data will be disclosed.
+To protect our website, data, and users from unauthorised access, fraud, and other malicious activities.
+5. Disclosure of Your Information
+Destiny Church will treat all your personal information as private and confidential and not disclose any data about you to anyone other than the leadership and ministry overseers/co-coordinators of the church in order to facilitate the administration and day-to-day ministry of the church.
+
+All Destiny Church staff and volunteers who have access to Personal Data will be required to agree to sign a Confidentiality Policy and a Data Protection Policy.
+
+We do not sell, rent, or trade your personal information to third parties.
+
+There are four exceptional circumstances to the above permitted by law:
+
+Where we are legally compelled to do so.
+Where there is a duty to the public to disclose.
+Where disclosure is required to protect your interest.
+Where disclosure is made at your request or with your consent.
+6. Data Security
+We have implemented appropriate technical and organisational measures designed to secure your personal information from accidental loss, unauthorised access, use, alteration, and disclosure. These measures include:
+
+Encryption: Using SSL/TLS encryption for data transmitted over our Website.
+Access Controls: Restricting access to personal information to authorised personnel only on a “need-to-know” basis.
+Regular Security Audits: Conducting periodic reviews of our security practices.
+Data Minimization: Collecting only the information necessary for the stated purposes.
+Secure Storage: Storing data on secure servers with appropriate safeguards.
+While we strive to protect your personal information, no method of transmission over the internet or method of electronic storage is 100% secure. Therefore, we cannot guarantee the absolute security of your information.
+
+7. Data Retention
+We will retain your personal information only for as long as necessary to fulfil the purposes for which it was collected, including for the purposes of satisfying any legal, accounting, or reporting requirements.
+
+To determine the appropriate retention period for personal data, we consider the amount, nature, and sensitivity of the personal data, the potential risk of harm from unauthorised use or disclosure of your personal data, the purposes for which we process your personal data and whether we can achieve those purposes through other means, and the applicable legal requirements.
+
+8. Rights To Access Information
+Under data protection laws, you have certain rights concerning your personal information. These may include:
+
+The Right to Be Informed: To be informed about how your personal data is collected and used (this Privacy Policy serves this purpose).
+The Right of Access: To request access to the personal information we hold about you.
+The Right to Rectification: To request that inaccurate or incomplete personal information about you be corrected.
+The Right to Erasure ( “Right to Be Forgotten”): To request the deletion of your personal information in certain circumstances (e.g., where the data is no longer necessary for the purposes for which it was collected).
+The Right to Restriction of Processing: To request that we limit the way we use your personal information in certain situations.
+The Right to Object: To object to the processing of your personal information in certain circumstances (e.g., for direct marketing purposes).
+Rights in Relation to Automated Decision-Making and Profiling: The right not to be subject to a decision based solely on automated processing, including profiling, which produces legal effects concerning you or similarly significantly affects you. (We do not currently engage in such processing).
+To exercise any of these rights, please contact us using the details provided in Section 11. We may need to request specific information from you to help us confirm your identity and ensure your right to access your personal data (or to exercise any of your other rights). This is a security measure to ensure that personal data is not disclosed to any person who has no right to receive it.
+
+We will consider and act upon request in accordance with applicable data protection laws.
+
+9. Children’s Privacy
+We do not knowingly collect personal information from children under 13 without verifiable parental consent. If we learn that we have collected personal information from a child under 13 without parental consent, we will take steps to delete that information as quickly as possible.
+
+For specific ministries or events involving children, we will obtain explicit parental or guardian consent before collecting any personal information about children. Our safeguarding policies provide further details on how we protect children.
+
+10. Links to Other Websites 
+Our website and applications may contain links to other websites that are not operated by us. This Privacy Policy applies only to our Destiny Church applications. We have no control over and assume no responsibility for the content, privacy policies, or practices of any third-party sites or services. We encourage you to review the privacy policies of any third-party websites you visit.
+
+11. Contact Information
+If you have any questions or concerns about this Privacy Policy or our data practices, please contact us:
+
+FAO: The Data Protection Officer
+Destiny Church Tees Valley
+395 Norton Road, Norton,
+Stockton-on-Tees TS20 2QQ
+or emailing enquiries@destinytees.uk
++44 (0) 164 2 559 797
+
+12. Complaints
+If you are not satisfied with our response to a privacy concern, or if you believe we are not processing your personal data in accordance with data protection laws, you have the right to lodge a complaint with the relevant supervisory authority. In the UK, this is the Information Commissioner’s Office (ICO).
+
+Information Commissioner’s Office (ICO)
+Wycliffe House
+Water Lane, Wilmslow
+Cheshire
+SK9 5AF
+Helpline number: 0303 123 1113
+ICO website: https://www.ico.org.uk
+
+13. Changes To This Privacy Policy
+We may update our Privacy Policy from time to time. We will notify you of any changes by posting the new Privacy Policy on this page and updating the “Last Updated” date at the top of this policy. You are advised to review this Privacy Policy periodically for any changes.

@@ -10,13 +10,17 @@ const churchLinks = [
 
 const connectLinks = [
   { label: "New Here?", href: "/new-here" },
+  { label: "Plan a Visit", href: "/visit" },
+  { label: "Connect Card", href: "/connect-card" },
   { label: "Join a Team", href: "/serve" },
   { label: "Connect Groups", href: "/connect" },
 ];
 
 const legalLinks = [
-  { label: "Data & GDPR Policy", href: "/legal/gdpr" },
-  { label: "Safeguarding Policy", href: "/legal/safeguarding" },
+  { label: "Data & GDPR Policy", href: "/data-gdpr" },
+  { label: "Safeguarding Policy", href: "/safeguarding" },
+  { label: "Terms of Use", href: "/terms" },
+  { label: "Privacy Policy", href: "/privacy" },
   { label: "Contact Us", href: "/contact" },
 ];
 

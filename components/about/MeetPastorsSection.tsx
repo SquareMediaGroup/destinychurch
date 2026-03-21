@@ -4,7 +4,7 @@ import AnimateIn from "@/components/AnimateIn";
 
 export default function MeetPastorsSection() {
   return (
-    <section className="py-16" style={{ background: "linear-gradient(135deg, #363f48 0%, #242e37 100%)" }}>
+    <section className="py-20" style={{ background: "linear-gradient(135deg, #363f48 0%, #242e37 100%)" }}>
       <div className="mx-auto max-w-7xl px-4 lg:px-8">
         <div className="flex flex-col items-center gap-10 md:flex-row md:gap-16">
           {/* Pastor photo */}

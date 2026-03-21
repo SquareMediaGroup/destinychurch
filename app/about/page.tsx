@@ -1,5 +1,5 @@
 import AboutHero from "@/components/about/AboutHero";
-import MissionSection from "@/components/home/MissionSection";
+import AboutMissionStatement from "@/components/about/AboutMissionStatement";
 import MeetPastorsSection from "@/components/about/MeetPastorsSection";
 import TeamSection from "@/components/about/TeamSection";
 import BeliefsSection from "@/components/about/BeliefsSection";
@@ -10,7 +10,7 @@ export default function AboutPage() {
   return (
     <>
       <AboutHero />
-      <MissionSection />
+      <AboutMissionStatement />
       <MeetPastorsSection />
       <TeamSection />
       <BeliefsSection />

@@ -23,7 +23,7 @@ export const events: Event[] = [
     category: "Gathering",
     excerpt: "Worship, teaching, and community for every age. Kids & youth programmes run alongside the main service.",
     description:
-      "Join the Destiny family this Sunday for worship, teaching, and community. Kids Church and Youth run alongside the main gathering, with friendly hosts to help you find a seat. Doors open from 10:30am with coffee ready.",
+      "Join the Destiny family this Sunday for worship, teaching, and community. Kids Church and Youth run alongside the main gathering, with friendly hosts to help you find a seat. Doors open from 9:45am with coffee ready.",
     image:
       "https://images.unsplash.com/photo-1513546493312-0066d7de3fd2?auto=format&fit=crop&w=1600&q=80",
     featured: true,

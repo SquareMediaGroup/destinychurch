@@ -5,21 +5,21 @@ import AnimateIn from "@/components/AnimateIn";
 const groups = [
   {
     title: "Kids",
-    href: "/whats-on#kids",
+    href: "/kids",
     image: "/img/photos/Kids2.jpg",
     description:
       "Destiny Kids is a fun place where children of all ages can learn more about the Bible through games, stories, and singing.",
   },
   {
     title: "Youth",
-    href: "/whats-on#youth",
+    href: "/youth",
     image: "/img/photos/Youth1.JPG",
     description:
       "Destiny Youth is vibrant and engaging, ministry with a mission encounter God, build meaningful relationships, and make an impact in their schools and communities.",
   },
   {
     title: "Young Adults",
-    href: "/whats-on#young-adults",
+    href: "/young-adults",
     image: "/img/photos/YA1.jpg",
     description:
       "A vibrant community of young adults worshipping, We seek together to build a deep and authentic relationship with Jesus Christ.",

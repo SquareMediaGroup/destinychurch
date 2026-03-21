@@ -39,19 +39,19 @@ export default function BeliefsSection() {
         {/* Two pillars */}
         <div className="grid gap-6 md:grid-cols-2">
           <AnimateIn delay={150}>
-            <div className="rounded-2xl p-8" style={{ background: "linear-gradient(135deg, #5a4a1a 0%, #3d3010 100%)" }}>
+            <div className="rounded-2xl p-8" style={{ background: "#F58021" }}>
               <p className="mb-4 text-xs font-bold uppercase tracking-widest text-white/50">
                 The Great Commandment
               </p>
               <p className="mb-6 text-sm leading-relaxed text-white/80">
                 &lsquo;Love the Lord your God with all your passion and prayer and intelligence.&rsquo; This is the most important, the first on any list. But there is a second to set alongside it: &lsquo;Love others as well as you love yourself.&rsquo; These two commands are pegs; everything in God&apos;s Law and the Prophets hangs from them.
               </p>
-              <p className="text-xs font-bold text-destiny-orange">— Matthew 22:37–40</p>
+              <p className="text-xs font-bold text-white">— Matthew 22:37–40</p>
             </div>
           </AnimateIn>
 
           <AnimateIn delay={200}>
-            <div className="rounded-2xl p-8" style={{ background: "linear-gradient(135deg, #1a3a2a 0%, #0d2a1d 100%)" }}>
+            <div className="rounded-2xl p-8" style={{ background: "#363f48" }}>
               <p className="mb-4 text-xs font-bold uppercase tracking-widest text-white/50">
                 The Great Commission
               </p>

@@ -5,24 +5,25 @@ import Link from "next/link";
 import { useState, useRef, useEffect, useCallback } from "react";
 
 const aboutDropdown = [
-  { href: "/about#vision", label: "Our Vision" },
+  { href: "/about", label: "Our Mission" },
   { href: "/about#pillars", label: "Foundational Pillars" },
-  { href: "/about#beliefs", label: "What We Believe" },
-  { href: "/about#team", label: "Team" },
+  { href: "/about#team", label: "Meet the Team" },
+  { href: "/beliefs", label: "What We Believe" },
+  { href: "/visit", label: "Plan a Visit" },
 ];
 
 const whatsOnDropdown = [
-  { href: "/whats-on#events", label: "Events" },
-  { href: "/whats-on#courses", label: "Courses" },
-  { href: "/whats-on#alpha", label: "Alpha" },
-  { href: "/whats-on#missions", label: "Missions" },
-  { href: "/whats-on#highlights", label: "Highlights" },
+  { href: "/whats-on", label: "Events" },
+  { href: "/whats-on", label: "Courses" },
+  { href: "/alpha", label: "Alpha" },
+  { href: "/missions", label: "Missions" },
+  { href: "/whats-on", label: "Highlights" },
 ];
 
 const navItems = [
-  { label: "What's on", dropdown: whatsOnDropdown },
+  { label: "What's on", href: "/whats-on", dropdown: whatsOnDropdown },
   { href: "/serve", label: "Serve" },
-  { label: "About", dropdown: aboutDropdown },
+  { label: "About", href: "/about", dropdown: aboutDropdown },
   { href: "/give", label: "Give" },
 ];
 
@@ -42,7 +43,7 @@ function Dropdown({
       <div className="min-w-[180px] rounded-2xl border border-black/5 bg-white p-2 shadow-xl">
         {items.map((item) => (
           <Link
-            key={item.href}
+            key={item.label}
             href={item.href}
             onClick={onClose}
             className="block rounded-xl px-4 py-2.5 text-sm font-medium text-destiny-grey transition hover:bg-gray-50 hover:text-destiny-orange"
@@ -59,11 +60,21 @@ export default function ChurchHeader() {
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const [hidden, setHidden] = useState(false);
   const [mounted, setMounted] = useState(false);
   const headerRef = useRef<HTMLElement>(null);
+  const lastScrollY = useRef(0);
 
   const handleScroll = useCallback(() => {
-    setScrolled(window.scrollY > 50);
+    const y = window.scrollY;
+    setScrolled(y > 50);
+    if (y > lastScrollY.current && y > 80) {
+      setHidden(true);
+      setOpenDropdown(null);
+    } else {
+      setHidden(false);
+    }
+    lastScrollY.current = y;
   }, []);
 
   useEffect(() => {
@@ -71,6 +82,14 @@ export default function ChurchHeader() {
     window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
   }, [handleScroll]);
+
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (e.clientY < 80) setHidden(false);
+    };
+    window.addEventListener("mousemove", handleMouseMove, { passive: true });
+    return () => window.removeEventListener("mousemove", handleMouseMove);
+  }, []);
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -87,13 +106,13 @@ export default function ChurchHeader() {
       ref={headerRef}
       className="fixed left-0 right-0 top-0 z-50"
       style={{
-        transform: mounted ? "translateY(0)" : "translateY(-100%)",
-        transition: "transform 0.4s ease",
+        transform: !mounted || hidden ? "translateY(-110%)" : "translateY(0)",
+        transition: "transform 0.4s cubic-bezier(0.4, 0, 0.2, 1)",
       }}
     >
       <div className="mx-auto max-w-7xl px-4 py-4 lg:px-8">
         <div
-          className={`flex items-center justify-between rounded-full border px-6 py-3 backdrop-blur-xl transition-all duration-300 ${
+          className={`flex items-center justify-between rounded-full border px-6 py-3 backdrop-blur-md transition-all duration-300 ${
             scrolled
               ? "border-white/10 bg-destiny-grey/60 shadow-xl shadow-black/30"
               : "border-white/10 bg-destiny-grey/40 shadow-lg shadow-black/10"
@@ -119,15 +138,19 @@ export default function ChurchHeader() {
               if (item.dropdown) {
                 const isOpen = openDropdown === item.label;
                 return (
-                  <div key={item.label} className="relative">
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setOpenDropdown(isOpen ? null : item.label)
-                      }
-                      className="flex items-center gap-1 rounded-full px-4 py-2 text-sm font-medium text-white/90 transition hover:text-white"
+                  <div key={item.label} className="relative flex items-center">
+                    <Link
+                      href={item.href!}
+                      className="rounded-full pl-4 py-2 pr-1 text-sm font-medium text-white/90 transition hover:text-destiny-orange"
                     >
                       {item.label}
+                    </Link>
+                    <button
+                      type="button"
+                      onClick={() => setOpenDropdown(isOpen ? null : item.label)}
+                      className="rounded-full px-1.5 py-2 text-white/90 transition hover:text-destiny-orange"
+                      aria-label={`Toggle ${item.label} menu`}
+                    >
                       <svg
                         className={`h-3.5 w-3.5 transition-transform ${isOpen ? "rotate-180" : ""}`}
                         fill="none"
@@ -151,7 +174,7 @@ export default function ChurchHeader() {
                 <Link
                   key={item.href}
                   href={item.href!}
-                  className="rounded-full px-4 py-2 text-sm font-medium text-white/90 transition hover:text-white"
+                  className="rounded-full px-4 py-2 text-sm font-medium text-white/90 transition hover:text-destiny-orange"
                 >
                   {item.label}
                 </Link>

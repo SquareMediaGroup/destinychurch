@@ -2,21 +2,14 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 
 const navItems = [
-  { href: "/admin", label: "Dashboard", exact: true },
   { href: "/admin/redirects", label: "Redirects" },
 ];
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const router = useRouter();
-
-  async function handleLogout() {
-    await fetch("/api/admin/logout", { method: "POST" });
-    router.push("/admin/login");
-  }
 
   return (
     <div className="min-h-screen bg-[#f5f7fa]">
@@ -44,9 +37,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           {/* Nav */}
           <nav className="flex items-center gap-1">
             {navItems.map((item) => {
-              const isActive = item.exact
-                ? pathname === item.href
-                : pathname.startsWith(item.href);
+              const isActive = pathname.startsWith(item.href);
               return (
                 <Link
                   key={item.href}
@@ -62,18 +53,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               );
             })}
           </nav>
-
-          {/* Spacer */}
-          <div className="flex-1" />
-
-          {/* Sign out */}
-          <button
-            onClick={handleLogout}
-            className="flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium text-destiny-grey/50 transition hover:bg-black/5 hover:text-destiny-grey"
-          >
-            <span className="material-symbols-rounded text-base">logout</span>
-            Sign out
-          </button>
         </div>
       </header>
 

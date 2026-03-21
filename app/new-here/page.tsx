@@ -4,6 +4,7 @@ import Link from "next/link";
 import AnimateIn from "@/components/AnimateIn";
 import WorshipWithUsSection from "@/components/home/WorshipWithUsSection";
 import NewHereHero from "@/components/new-here/NewHereHero";
+import YouSaidYesButton from "@/components/new-here/YouSaidYesButton";
 
 export const metadata: Metadata = {
   title: "New Here?",
@@ -22,14 +23,14 @@ const cards = [
     image: "/img/brand/NewHere/Here, You Belong.png",
     description:
       "Welcome Home! We have lots of opportunities for you to connect, grow, learn and contribute whatever your age, experience, abilities and personality.",
-    cta: { label: "Fill in Connect Form", href: "/connect" },
+    cta: { label: "Fill in Connect Form", href: "/connect-card" },
   },
   {
     title: "New to Faith?",
     image: "/img/brand/NewHere/You Said Yes.png",
     description:
       "You Said Yes! That's the best decision you'll ever make EVER. But now what? We have a range of courses and gatherings we would love to invite you to. It's casual, it's welcoming, it's for you.",
-    cta: { label: "Register your interest", href: "/connect" },
+    cta: null,
   },
   {
     title: "Join a Connect Group",
@@ -74,42 +75,20 @@ export default function NewHerePage() {
                   </p>
 
                   {/* CTA */}
-                  <Link
-                    href={card.cta.href}
-                    className="inline-flex w-fit items-center rounded-full border border-destiny-grey/30 px-5 py-2 text-sm font-bold text-destiny-grey transition hover:border-destiny-orange hover:text-destiny-orange"
-                  >
-                    {card.cta.label}
-                  </Link>
+                  {card.cta ? (
+                    <Link
+                      href={card.cta.href}
+                      className="inline-flex w-fit items-center rounded-full border border-destiny-grey/30 px-5 py-2 text-sm font-bold text-destiny-grey transition hover:border-destiny-orange hover:text-destiny-orange"
+                    >
+                      {card.cta.label}
+                    </Link>
+                  ) : (
+                    <YouSaidYesButton />
+                  )}
                 </div>
               </AnimateIn>
             ))}
           </div>
-        </div>
-      </section>
-
-      {/* You Said Yes form */}
-      <section className="bg-[#f5f7fa] py-20">
-        <div className="mx-auto max-w-3xl px-4 lg:px-8">
-          <AnimateIn className="mb-10 text-center">
-            <p className="mb-3 text-xs font-bold uppercase tracking-widest text-destiny-orange">
-              New to Faith
-            </p>
-            <h2 className="mb-4 text-4xl font-black text-destiny-grey md:text-5xl">
-              You Said Yes!
-            </h2>
-            <p className="text-base leading-relaxed text-destiny-grey/60">
-              That&apos;s the best decision you&apos;ll ever make. Let us know and we&apos;ll help you take your next steps.
-            </p>
-          </AnimateIn>
-          <AnimateIn delay={100}>
-            <iframe
-              src="https://destinytees.churchsuite.com/-/forms/uwqnm8of"
-              className="w-full rounded-2xl border border-black/5 bg-white shadow-sm"
-              style={{ minHeight: 700, display: "block" }}
-              title="You Said Yes registration form"
-              loading="lazy"
-            />
-          </AnimateIn>
         </div>
       </section>
 

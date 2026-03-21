@@ -12,6 +12,7 @@ export const metadata: Metadata = {
   },
 };
 import MissionSection from "@/components/home/MissionSection";
+import LatestSermonSection from "@/components/home/LatestSermonSection";
 import WhatsOnSection from "@/components/home/WhatsOnSection";
 import EveryoneHasAPlaceSection from "@/components/home/EveryoneHasAPlaceSection";
 import WorshipWithUsSection from "@/components/home/WorshipWithUsSection";
@@ -24,6 +25,7 @@ export default function HomePage() {
     <>
       <HeroSection />
       <MissionSection />
+      <LatestSermonSection />
       <WhatsOnSection />
       <EveryoneHasAPlaceSection />
       <WorshipWithUsSection />

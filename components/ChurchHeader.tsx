@@ -22,6 +22,7 @@ const whatsOnDropdown = [
 
 const navItems = [
   { label: "What's on", href: "/whats-on", dropdown: whatsOnDropdown },
+  { href: "/sermons", label: "Sermons" },
   { href: "/serve", label: "Serve" },
   { label: "About", href: "/about", dropdown: aboutDropdown },
   { href: "/give", label: "Give" },

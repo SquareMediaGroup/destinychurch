@@ -31,7 +31,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 alt="Destiny Church"
                 fill
                 className="object-contain"
-                style={{ filter: "invert(1)" }}
               />
             </div>
             <span className="text-sm font-black uppercase tracking-wide text-destiny-grey">

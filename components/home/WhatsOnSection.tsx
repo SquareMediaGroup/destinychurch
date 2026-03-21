@@ -1,6 +1,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import AnimateIn from "@/components/AnimateIn";
+import EventsCarousel from "@/components/home/EventsCarousel";
 
 type ChurchSuiteEvent = {
   id: number;
@@ -48,9 +49,17 @@ function EventCard({ event }: { event: ChurchSuiteEvent }) {
   const start = formatDate(event.datetime_start);
   const end = formatDate(event.datetime_end);
   const imageUrl = event.images?.original_500 || event.images?.md;
+  const href = event.identifier
+    ? `https://destinytees.churchsuite.com/events/${event.identifier}`
+    : "https://destinytees.churchsuite.com/events";
 
   return (
-    <div className="group min-w-[280px] max-w-[320px] shrink-0 overflow-hidden rounded-2xl border border-black/5 bg-white shadow-md transition hover:shadow-lg">
+    <a
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="group min-w-[280px] max-w-[320px] shrink-0 overflow-hidden rounded-2xl border border-black/5 bg-white shadow-md"
+    >
       {/* Image with date badge */}
       <div className="relative h-44 w-full overflow-hidden bg-gray-100">
         {imageUrl ? (
@@ -91,9 +100,7 @@ function EventCard({ event }: { event: ChurchSuiteEvent }) {
             <svg className="h-3.5 w-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
-            <span>
-              {start.time} - {end.time}
-            </span>
+            <span>{start.time} - {end.time}</span>
           </div>
           {event.location?.name && (
             <div className="flex items-center gap-2">
@@ -104,17 +111,9 @@ function EventCard({ event }: { event: ChurchSuiteEvent }) {
               <span>{event.location.name}</span>
             </div>
           )}
-          {event.signup_options?.signup_enabled && (
-            <div className="flex items-center gap-2">
-              <svg className="h-3.5 w-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-              </svg>
-              <span>Sign up</span>
-            </div>
-          )}
         </div>
       </div>
-    </div>
+    </a>
   );
 }
 
@@ -176,7 +175,7 @@ export default async function WhatsOnSection() {
 
         {/* Event cards carousel */}
         <AnimateIn delay={100}>
-          <div className="scrollbar-hide -mx-4 flex gap-5 overflow-x-auto px-4 pb-4">
+          <EventsCarousel>
             {hasEvents
               ? events.slice(0, 6).map((event) => (
                   <EventCard key={event.id} event={event} />
@@ -184,7 +183,7 @@ export default async function WhatsOnSection() {
               : Array.from({ length: 3 }).map((_, i) => (
                   <EventCardPlaceholder key={i} index={i} />
                 ))}
-          </div>
+          </EventsCarousel>
         </AnimateIn>
 
         {/* View all button */}

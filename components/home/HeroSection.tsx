@@ -2,11 +2,11 @@ import Image from "next/image";
 
 export default function HeroSection() {
   return (
-    <section className="relative flex min-h-[85vh] items-center justify-center overflow-hidden bg-destiny-grey">
+    <section className="relative flex min-h-screen items-center justify-center overflow-hidden bg-destiny-grey">
       {/* Background image */}
       <div
         className="absolute inset-0 bg-cover bg-center bg-no-repeat"
-        style={{ backgroundImage: "url(/img/photos/hero-bg.jpg)" }}
+        style={{ backgroundImage: "url('/img/photos/Hero%20BKG.png')" }}
       />
       <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/40 to-black/70" />
 
@@ -14,25 +14,21 @@ export default function HeroSection() {
         className="relative z-10 px-4 text-center"
         style={{ animation: "fadeInUp 0.9s ease forwards" }}
       >
-        <p className="font-subheading mb-2 text-lg font-medium tracking-widest text-white/70 uppercase md:text-xl">
-          Jesus
-        </p>
-        <h1 className="text-5xl font-black uppercase leading-[0.95] tracking-tight text-white md:text-7xl lg:text-8xl">
-          Welcome
-          <br />
-          Home
+        <h1 className="whitespace-nowrap uppercase leading-[0.9] tracking-tight text-white text-[clamp(2rem,7.5vw,9.8rem)]" style={{ fontFamily: "var(--font-anton)" }}>
+          <span className="relative inline-block">
+            Welcome
+            <Image
+              src="/img/brand/Scribble.png"
+              alt=""
+              width={700}
+              height={100}
+              className="absolute left-1/2 w-[105%] -translate-x-[49%]" style={{ bottom: "-0.2em" }}
+              priority
+              aria-hidden="true"
+            />
+          </span>
+          {" "}Home
         </h1>
-        <div className="mt-2 flex justify-center">
-          <Image
-            src="/img/brand/scribble.png"
-            alt=""
-            width={320}
-            height={48}
-            className="w-56 md:w-80"
-            priority
-            aria-hidden="true"
-          />
-        </div>
       </div>
     </section>
   );

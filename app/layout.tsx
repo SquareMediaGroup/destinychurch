@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
-import { Dosis, Roboto } from "next/font/google";
+import { Dosis, Roboto, Anton } from "next/font/google";
 import "./globals.css";
 import ChurchHeader from "@/components/ChurchHeader";
 import ChurchFooter from "@/components/ChurchFooter";
@@ -21,6 +21,13 @@ const dosis = Dosis({
   display: "swap",
   subsets: ["latin"],
   weight: ["500", "600", "700"],
+});
+
+const anton = Anton({
+  variable: "--font-anton",
+  display: "swap",
+  subsets: ["latin"],
+  weight: "400",
 });
 
 export const metadata: Metadata = {
@@ -65,7 +72,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${roboto.variable} ${dosis.variable} antialiased`}
+        className={`${roboto.variable} ${dosis.variable} ${anton.variable} antialiased`}
       >
         <Providers>
           <CookieBanner />

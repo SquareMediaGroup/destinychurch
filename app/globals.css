@@ -30,6 +30,11 @@
   --font-subheading: var(--font-dosis), "Dosis", sans-serif;
 }
 
+html {
+  background: #363f48;
+  overscroll-behavior: none;
+}
+
 body {
   background: var(--background);
   color: var(--foreground);
@@ -87,6 +92,11 @@ h1,
 h2,
 h3 {
   font-family: var(--font-heading);
+}
+
+@keyframes mission-wipe-in {
+  from { clip-path: inset(0 100% 0 0); }
+  to   { clip-path: inset(0 0% 0 0); }
 }
 
 @keyframes fadeInUp {

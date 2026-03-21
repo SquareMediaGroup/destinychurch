@@ -6,28 +6,28 @@ const groups = [
   {
     title: "Kids",
     href: "/whats-on#kids",
-    image: "/img/photos/kids.jpg",
+    image: "/img/photos/Kids2.jpg",
     description:
       "Destiny Kids is a fun place where children of all ages can learn more about the Bible through games, stories, and singing.",
   },
   {
     title: "Youth",
     href: "/whats-on#youth",
-    image: "/img/photos/youth.jpg",
+    image: "/img/photos/Youth1.JPG",
     description:
       "Destiny Youth is vibrant and engaging, ministry with a mission encounter God, build meaningful relationships, and make an impact in their schools and communities.",
   },
   {
     title: "Young Adults",
     href: "/whats-on#young-adults",
-    image: "/img/photos/young-adults.jpg",
+    image: "/img/photos/YA1.jpg",
     description:
       "A vibrant community of young adults worshipping, We seek together to build a deep and authentic relationship with Jesus Christ.",
   },
   {
     title: "Connect Groups",
     href: "/connect",
-    image: "/img/photos/connect-groups.jpg",
+    image: "/img/photos/ConnectGroups.jpg",
     description:
       "Our Connect Groups are an integral part of the life and health of the church. Together in a small group believers are effective, powerful and fruitful witnesses in the world.",
   },
@@ -48,26 +48,26 @@ export default function EveryoneHasAPlaceSection() {
             <AnimateIn key={group.title} delay={i * 80}>
               <Link
                 href={group.href}
-                className="group block overflow-hidden rounded-2xl bg-[#2c1a0e] shadow-lg transition hover:shadow-xl"
+                className="group relative block h-80 overflow-hidden rounded-2xl shadow-lg"
               >
-                {/* Image */}
-                <div className="relative h-48 w-full overflow-hidden">
-                  <Image
-                    src={group.image}
-                    alt={group.title}
-                    fill
-                    className="object-cover transition group-hover:scale-105"
-                    sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
-                  <h3 className="absolute bottom-3 left-4 text-xl font-black uppercase text-white">
+                <Image
+                  src={group.image}
+                  alt={group.title}
+                  fill
+                  className="object-cover transition duration-500 group-hover:scale-105"
+                  sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+                />
+                {/* Base gradient — always visible */}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-black/10" />
+                {/* Hover gradient — strengthens on hover */}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/50 to-black/20 opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+
+                {/* Text */}
+                <div className="absolute inset-x-0 bottom-0 p-5">
+                  <h3 className="text-xl font-black uppercase text-white">
                     {group.title}
                   </h3>
-                </div>
-
-                {/* Description */}
-                <div className="p-4">
-                  <p className="text-sm leading-relaxed text-white/60 line-clamp-3">
+                  <p className="mt-2 max-h-0 overflow-hidden text-sm leading-relaxed text-white/80 transition-all duration-500 group-hover:max-h-40">
                     {group.description}
                   </p>
                 </div>

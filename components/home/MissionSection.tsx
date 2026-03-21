@@ -1,58 +1,82 @@
 import Image from "next/image";
+import Link from "next/link";
 import AnimateIn from "@/components/AnimateIn";
+import MissionSlideshow from "@/components/home/MissionSlideshow";
 
 export default function MissionSection() {
   return (
-    <section className="bg-[#1a1108]">
-      <div className="mx-auto max-w-7xl px-4 py-16 lg:px-8">
-        <AnimateIn>
-          <div className="mx-auto max-w-3xl rounded-3xl bg-[#2c1a0e] p-8 shadow-2xl md:p-12">
-            {/* Icon */}
-            <div className="mb-4 flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-destiny-orange/20">
-                <svg className="h-5 w-5 text-destiny-orange" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />
-                </svg>
+    <div className="px-4 py-8 lg:px-8">
+      <section className="group relative overflow-hidden rounded-3xl py-14">
+        {/* Slideshow background */}
+        <MissionSlideshow />
+
+        {/* Dark gradient overlay */}
+        <div className="absolute inset-0" style={{ background: "linear-gradient(135deg, #1c0f06cc 0%, #0d0d0dee 100%)" }} />
+
+        {/* Content */}
+        <div className="relative mx-auto max-w-5xl px-8 lg:px-12">
+          <AnimateIn>
+
+            {/* "Our Mission" label — collapses via grid */}
+            <div className="grid grid-rows-[0fr] transition-[grid-template-rows] duration-500 ease-in-out group-hover:grid-rows-[1fr]">
+              <div className="overflow-hidden min-h-0">
+                <div className="pb-4 opacity-0 transition-opacity duration-500 group-hover:opacity-100">
+                  <span className="text-xs font-bold uppercase tracking-widest text-white/40">
+                    Our Mission
+                  </span>
+                </div>
               </div>
-              <span className="text-xs font-bold uppercase tracking-widest text-white/50">
-                Our Mission
-              </span>
             </div>
 
-            <h2 className="mb-6 text-2xl font-black leading-tight text-white md:text-3xl">
+            {/* Heading — always visible */}
+            <h2 className="text-2xl font-black leading-tight text-white md:text-3xl lg:text-4xl">
               Transforming Lives through
               <br />
-              faith, hope and love for Jesus.
+              <span className="text-destiny-orange">Faith, Hope and Love</span> for Jesus.
             </h2>
 
-            <p className="mb-8 text-base leading-relaxed text-white/70">
-              Destiny Church exists to bring people to Jesus and membership of his
-              family, developing them to maturity in Christ, and equipping them for
-              their ministry in the Church and mission in the world, in order to
-              magnify God&apos;s name.
-            </p>
+            {/* Description + pastor row — collapses via grid */}
+            <div className="grid grid-rows-[0fr] transition-[grid-template-rows] duration-500 ease-in-out group-hover:grid-rows-[1fr]">
+              <div className="overflow-hidden min-h-0">
+                <div className="opacity-0 transition-opacity duration-500 delay-100 group-hover:opacity-100">
+                  <p className="mt-6 mb-8 text-base leading-relaxed text-white/60 md:text-lg">
+                    Destiny Church exists to bring people to Jesus and membership of his
+                    family, developing them to maturity in Christ, and equipping them for
+                    their ministry in the Church and mission in the world, in order to
+                    magnify God&apos;s name.
+                  </p>
 
-            {/* Pastor attribution */}
-            <div className="flex items-center gap-3">
-              <div className="relative h-10 w-10 overflow-hidden rounded-full bg-destiny-orange/30">
-                <Image
-                  src="/img/photos/pastors-thumb.jpg"
-                  alt="Jonathan & Cath Harris"
-                  fill
-                  className="object-cover"
-                  sizes="40px"
-                />
-              </div>
-              <div>
-                <p className="text-sm font-bold text-white">
-                  Jonathan &amp; Cath Harris
-                </p>
-                <p className="text-xs text-white/50">Lead Pastors</p>
+                  <div className="flex items-center justify-between pb-2">
+                    <div className="flex items-center gap-3">
+                      <div className="relative h-11 w-11 overflow-hidden rounded-full bg-destiny-orange/20">
+                        <Image
+                          src="/img/photos/Elders.webp"
+                          alt="Jonathan & Cath Harris"
+                          fill
+                          className="object-cover"
+                          sizes="44px"
+                        />
+                      </div>
+                      <div>
+                        <p className="text-sm font-bold text-white">Jonathan &amp; Cath Harris</p>
+                        <p className="text-xs text-white/40">Lead Pastors</p>
+                      </div>
+                    </div>
+
+                    <Link
+                      href="/about"
+                      className="rounded-full bg-destiny-orange px-6 py-2.5 text-sm font-bold text-white transition hover:brightness-110"
+                    >
+                      About Destiny Church
+                    </Link>
+                  </div>
+                </div>
               </div>
             </div>
-          </div>
-        </AnimateIn>
-      </div>
-    </section>
+
+          </AnimateIn>
+        </div>
+      </section>
+    </div>
   );
 }

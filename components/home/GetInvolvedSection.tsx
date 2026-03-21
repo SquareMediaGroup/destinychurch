@@ -7,7 +7,7 @@ const cards = [
     title: "Get Connected",
     description:
       "Biblical community reflects the very nature of God. We were made and created to belong to a small group of believers who encourage each other, study God's Word together, and support each other in their walk of faith.",
-    image: "/img/photos/get-connected.jpg",
+    image: "/img/photos/Prayer1.jpg",
     cta: "Join a Connect Group",
     href: "/connect",
   },
@@ -15,7 +15,7 @@ const cards = [
     title: "Join a Team",
     description:
       "You are uniquely gifted to be a blessing to the body of Christ. We'd love to give you the opportunity to use your gifts and talents to serve. Get involved, and together let's express love and build His kingdom.",
-    image: "/img/photos/join-team.jpg",
+    image: "/img/photos/Kids1.png",
     cta: "Join a Team",
     href: "/serve",
   },
@@ -23,14 +23,14 @@ const cards = [
 
 export default function GetInvolvedSection() {
   return (
-    <section className="bg-white py-16">
+    <section className="bg-white pt-16 pb-24">
       <div className="mx-auto max-w-7xl px-4 lg:px-8">
         <div className="grid gap-8 md:grid-cols-2">
           {cards.map((card, i) => (
             <AnimateIn key={card.title} delay={i * 100}>
               <div className="group overflow-hidden rounded-2xl bg-white shadow-lg">
                 {/* Image */}
-                <div className="relative h-56 w-full overflow-hidden">
+                <div className="relative h-[22.5rem] w-full overflow-hidden">
                   <Image
                     src={card.image}
                     alt={card.title}

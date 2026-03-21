@@ -4,12 +4,14 @@ import AnimateIn from "@/components/AnimateIn";
 export default function WorshipWithUsSection() {
   return (
     <div className="px-4 py-8 lg:px-8">
-      <section className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-[#2c1a0e] to-[#3d2b1a]">
-        {/* Background image overlay */}
+      <section className="relative overflow-hidden rounded-3xl">
+        {/* Background image */}
         <div
-          className="absolute inset-0 bg-cover bg-center opacity-20"
-          style={{ backgroundImage: "url(/img/photos/worship-bg.jpg)" }}
+          className="absolute inset-0 scale-105 bg-cover bg-center blur-sm"
+          style={{ backgroundImage: "url('/img/photos/WorshipWUs.jpg')" }}
         />
+        {/* Gradient overlay */}
+        <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/60 to-black/40" />
         <div className="relative mx-auto flex max-w-7xl flex-col items-start justify-between gap-8 px-4 py-16 md:flex-row md:items-center lg:px-8">
           <AnimateIn className="max-w-xl">
             <h2 className="mb-4 text-3xl font-black text-white md:text-4xl">

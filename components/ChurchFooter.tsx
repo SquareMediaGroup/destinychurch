@@ -22,12 +22,12 @@ const legalLinks = [
 
 export default function ChurchFooter() {
   return (
-    <footer className="border-t border-white/10 bg-[#0d1119] text-white">
+    <footer className="border-t border-white/5 text-white" style={{ background: "linear-gradient(135deg, #1c0f06 0%, #0d0d0d 100%)" }}>
       <div className="mx-auto max-w-7xl px-4 py-14 lg:px-8">
         <div className="grid gap-10 md:grid-cols-[1.3fr_1fr_1fr_1fr]">
           {/* Brand column */}
           <div className="space-y-5">
-            <Link href="/" aria-label="Destiny Church">
+            <Link href="/" aria-label="Destiny Church" className="-ml-[30px] -mt-[7px] block">
               <div className="relative h-11 w-[200px]">
                 <Image
                   src="/img/brand/destiny-logo-color-white.svg"
@@ -38,7 +38,7 @@ export default function ChurchFooter() {
                 />
               </div>
             </Link>
-            <p className="max-w-md text-sm text-white/70">
+            <p className="max-w-[220px] text-sm text-white/70">
               Destiny Church Tees Valley is a multi-cultural church where all
               can find a place to belong and thrive. We&apos;d love to welcome
               you through our doors!

@@ -5,8 +5,8 @@ import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 
 const navItems = [
-  { href: "/admin", icon: "dashboard", label: "Dashboard", exact: true },
-  { href: "/admin/redirects", icon: "link", label: "Redirects" },
+  { href: "/admin", label: "Dashboard", exact: true },
+  { href: "/admin/redirects", label: "Redirects" },
 ];
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -19,64 +19,67 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   }
 
   return (
-    <div className="flex min-h-screen bg-[#f5f7fa]">
-      {/* Sidebar */}
-      <aside className="flex h-screen w-56 shrink-0 flex-col border-r border-black/5 bg-[#0a0a0a] sticky top-0">
-        {/* Logo */}
-        <div className="flex items-center gap-3 px-5 py-5 border-b border-white/[0.07]">
-          <div className="relative h-8 w-8 shrink-0">
-            <Image
-              src="/img/brand/Destiny%20SVG%20Logos/Destiny%20Logo%20Icons%20SVG/Icon_No_Background.svg"
-              alt="Destiny Church"
-              fill
-              className="object-contain"
-            />
-          </div>
-          <div>
-            <p className="text-xs font-black uppercase tracking-wide text-white leading-tight">Destiny</p>
-            <p className="text-[10px] text-white/40 leading-tight">Admin</p>
-          </div>
-        </div>
+    <div className="min-h-screen bg-[#f5f7fa]">
+      {/* Top bar */}
+      <header className="sticky top-0 z-40 border-b border-black/5 bg-white/90 backdrop-blur-sm">
+        <div className="mx-auto flex max-w-6xl items-center gap-6 px-6 py-3">
+          {/* Logo + label */}
+          <Link href="/admin" className="flex items-center gap-2.5 shrink-0">
+            <div className="relative h-7 w-7">
+              <Image
+                src="/img/brand/Destiny%20SVG%20Logos/Destiny%20Logo%20Icons%20SVG/Icon_No_Background.svg"
+                alt="Destiny Church"
+                fill
+                className="object-contain"
+                style={{ filter: "invert(1)" }}
+              />
+            </div>
+            <span className="text-sm font-black uppercase tracking-wide text-destiny-grey">
+              Admin
+            </span>
+          </Link>
 
-        {/* Nav */}
-        <nav className="flex flex-col gap-0.5 p-3 flex-1">
-          {navItems.map((item) => {
-            const isActive = item.exact
-              ? pathname === item.href
-              : pathname.startsWith(item.href);
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition ${
-                  isActive
-                    ? "bg-white/10 text-white"
-                    : "text-white/40 hover:bg-white/5 hover:text-white/70"
-                }`}
-              >
-                <span className={`material-symbols-rounded text-xl ${isActive ? "text-destiny-orange" : ""}`}>
-                  {item.icon}
-                </span>
-                {item.label}
-              </Link>
-            );
-          })}
-        </nav>
+          {/* Divider */}
+          <div className="h-5 w-px bg-black/10" />
 
-        {/* Logout */}
-        <div className="p-3 border-t border-white/[0.07]">
+          {/* Nav */}
+          <nav className="flex items-center gap-1">
+            {navItems.map((item) => {
+              const isActive = item.exact
+                ? pathname === item.href
+                : pathname.startsWith(item.href);
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={`rounded-full px-4 py-1.5 text-sm font-medium transition ${
+                    isActive
+                      ? "bg-destiny-orange text-white"
+                      : "text-destiny-grey/60 hover:bg-black/5 hover:text-destiny-grey"
+                  }`}
+                >
+                  {item.label}
+                </Link>
+              );
+            })}
+          </nav>
+
+          {/* Spacer */}
+          <div className="flex-1" />
+
+          {/* Sign out */}
           <button
             onClick={handleLogout}
-            className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-white/40 transition hover:bg-white/5 hover:text-white/70"
+            className="flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium text-destiny-grey/50 transition hover:bg-black/5 hover:text-destiny-grey"
           >
-            <span className="material-symbols-rounded text-xl">logout</span>
+            <span className="material-symbols-rounded text-base">logout</span>
             Sign out
           </button>
         </div>
-      </aside>
+      </header>
 
-      {/* Content */}
-      <main className="flex-1 min-w-0 p-8">
+      {/* Page content */}
+      <main className="mx-auto max-w-6xl px-6 py-10">
         {children}
       </main>
     </div>

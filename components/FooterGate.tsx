@@ -5,6 +5,6 @@ import ChurchFooter from "./ChurchFooter";
 
 export default function FooterGate() {
   const pathname = usePathname();
-  if (pathname.startsWith("/sermons")) return null;
+  if (pathname.startsWith("/sermons") || pathname.startsWith("/admin")) return null;
   return <ChurchFooter />;
 }

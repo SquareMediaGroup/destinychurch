@@ -104,7 +104,7 @@ export default function ChurchHeader() {
     return () => document.removeEventListener("click", handleClickOutside);
   }, []);
 
-  if (pathname.startsWith("/sermons")) return null;
+  if (pathname.startsWith("/sermons") || pathname.startsWith("/admin")) return null;
 
   return (
     <header

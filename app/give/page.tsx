@@ -1,6 +1,18 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import AnimateIn from "@/components/AnimateIn";
 import WorshipWithUsSection from "@/components/home/WorshipWithUsSection";
+
+export const metadata: Metadata = {
+  title: "Give",
+  description: "Support the work of Destiny Church Tees Valley. Give online, by bank transfer or text. Your generosity helps us serve our community and share the love of God.",
+  alternates: { canonical: "/give" },
+  openGraph: {
+    title: "Give | Destiny Church Tees Valley",
+    description: "Support Destiny Church — give online, by bank transfer or text. Every gift makes a difference.",
+    url: "https://destinytees.uk/give",
+  },
+};
 
 export default function GivePage() {
   return (

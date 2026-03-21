@@ -1,7 +1,19 @@
+import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import AnimateIn from "@/components/AnimateIn";
 import WorshipWithUsSection from "@/components/home/WorshipWithUsSection";
+
+export const metadata: Metadata = {
+  title: "Destiny Kids",
+  description: "Destiny Kids runs every Sunday from 10:45am for children aged 0–11 at Destiny Church Stockton-on-Tees. Safe, fun and faith-filled classes for every age group.",
+  alternates: { canonical: "/kids" },
+  openGraph: {
+    title: "Destiny Kids | Destiny Church Tees Valley",
+    description: "Fun, safe and faith-filled Sunday classes for children aged 0–11. Led by DBS-checked volunteers who love little ones.",
+    url: "https://destinytees.uk/kids",
+  },
+};
 
 const classes = [
   {

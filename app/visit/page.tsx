@@ -1,7 +1,19 @@
+import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import AnimateIn from "@/components/AnimateIn";
 import VisitSlideshow from "@/components/visit/VisitSlideshow";
+
+export const metadata: Metadata = {
+  title: "Plan Your Visit",
+  description: "Everything you need to know before visiting Destiny Church. We meet every Sunday at 11am at Destiny Centre, Norton Road, Stockton-on-Tees, TS20 2QQ. Free parking.",
+  alternates: { canonical: "/visit" },
+  openGraph: {
+    title: "Plan Your Visit | Destiny Church Tees Valley",
+    description: "Sunday 11am at Destiny Centre, Norton Road, Stockton-on-Tees. Free parking, BSL available, kids provision from 10:45am.",
+    url: "https://destinytees.uk/visit",
+  },
+};
 
 const whatToExpect = [
   {

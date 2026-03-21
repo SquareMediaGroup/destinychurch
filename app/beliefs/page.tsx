@@ -1,6 +1,18 @@
+import type { Metadata } from "next";
 import Image from "next/image";
 import AnimateIn from "@/components/AnimateIn";
 import WorshipWithUsSection from "@/components/home/WorshipWithUsSection";
+
+export const metadata: Metadata = {
+  title: "What We Believe",
+  description: "Destiny Church's statement of faith and core beliefs — what the Bible says about God, Jesus Christ, the Holy Spirit, salvation, the Church and eternity.",
+  alternates: { canonical: "/beliefs" },
+  openGraph: {
+    title: "What We Believe | Destiny Church",
+    description: "Our statement of faith and the biblical foundations that shape everything we do at Destiny Church Tees Valley.",
+    url: "https://destinytees.uk/beliefs",
+  },
+};
 
 const beliefs = [
   {

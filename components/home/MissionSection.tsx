@@ -50,7 +50,7 @@ export default function MissionSection() {
                     <div className="flex items-center gap-3">
                       <div className="relative h-11 w-11 overflow-hidden rounded-full bg-destiny-orange/20">
                         <Image
-                          src="/img/photos/Elders.webp"
+                          src="/img/brand/Team/JonathanCath.png"
                           alt="Jonathan & Cath Harris"
                           fill
                           className="object-cover"

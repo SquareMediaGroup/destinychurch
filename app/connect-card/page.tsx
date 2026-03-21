@@ -1,8 +1,20 @@
+import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import AnimateIn from "@/components/AnimateIn";
 import ConnectCardCTAs from "@/components/connect-card/ConnectCardCTAs";
 import WorshipWithUsSection from "@/components/home/WorshipWithUsSection";
+
+export const metadata: Metadata = {
+  title: "Connect Card",
+  description: "Fill in a connect card or submit a prayer request to Destiny Church Tees Valley. Take your next step with us — we'd love to get to know you.",
+  alternates: { canonical: "/connect-card" },
+  openGraph: {
+    title: "Connect Card | Destiny Church Tees Valley",
+    description: "Take your next step. Fill in a connect card or share a prayer request — we're here for you.",
+    url: "https://destinytees.uk/connect-card",
+  },
+};
 
 const steps = [
   {

@@ -1,4 +1,16 @@
+import type { Metadata } from "next";
 import WhatsOnHero from "@/components/whats-on/WhatsOnHero";
+
+export const metadata: Metadata = {
+  title: "What's On",
+  description: "See what's happening at Destiny Church Tees Valley — upcoming events, courses, Alpha, and highlights. There's always something on.",
+  alternates: { canonical: "/whats-on" },
+  openGraph: {
+    title: "What's On | Destiny Church Tees Valley",
+    description: "Upcoming events, courses and Alpha at Destiny Church Stockton-on-Tees.",
+    url: "https://destinytees.uk/whats-on",
+  },
+};
 import EventsGrid from "@/components/whats-on/EventsGrid";
 import ConnectGroupsBanner from "@/components/whats-on/ConnectGroupsBanner";
 import CoursesSection from "@/components/whats-on/CoursesSection";

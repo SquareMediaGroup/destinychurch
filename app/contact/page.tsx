@@ -1,5 +1,17 @@
+import type { Metadata } from "next";
 import AnimateIn from "@/components/AnimateIn";
 import ContactForm from "./ContactForm";
+
+export const metadata: Metadata = {
+  title: "Contact Us",
+  description: "Get in touch with Destiny Church Tees Valley. Call us on 01642 559797, email us, or send a message using our contact form. We'd love to hear from you.",
+  alternates: { canonical: "/contact" },
+  openGraph: {
+    title: "Contact Destiny Church Tees Valley",
+    description: "Get in touch — call 01642 559797 or send us a message. We'd love to hear from you.",
+    url: "https://destinytees.uk/contact",
+  },
+};
 
 export default function ContactPage() {
   return (

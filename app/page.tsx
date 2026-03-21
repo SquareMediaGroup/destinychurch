@@ -1,4 +1,16 @@
+import type { Metadata } from "next";
 import HeroSection from "@/components/home/HeroSection";
+
+export const metadata: Metadata = {
+  title: "Destiny Church Tees Valley — Sundays at 11am in Stockton-on-Tees",
+  description: "A warm, multi-cultural church meeting every Sunday at 11am at Destiny Centre, Norton Road, Stockton-on-Tees. Everyone is welcome — come as you are.",
+  alternates: { canonical: "/" },
+  openGraph: {
+    title: "Destiny Church Tees Valley",
+    description: "A warm, multi-cultural church meeting every Sunday at 11am. Everyone is welcome.",
+    url: "https://destinytees.uk",
+  },
+};
 import MissionSection from "@/components/home/MissionSection";
 import WhatsOnSection from "@/components/home/WhatsOnSection";
 import EveryoneHasAPlaceSection from "@/components/home/EveryoneHasAPlaceSection";

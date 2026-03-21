@@ -1,6 +1,18 @@
+import type { Metadata } from "next";
 import Image from "next/image";
 import AnimateIn from "@/components/AnimateIn";
 import WorshipWithUsSection from "@/components/home/WorshipWithUsSection";
+
+export const metadata: Metadata = {
+  title: "Connect Groups",
+  description: "Join a Connect Group at Destiny Church Tees Valley. Small groups meeting throughout the week — a place to build real friendships, grow in faith and do life together.",
+  alternates: { canonical: "/connect" },
+  openGraph: {
+    title: "Connect Groups | Destiny Church Tees Valley",
+    description: "Find your people. Join a Connect Group and do life together with others in Stockton-on-Tees and beyond.",
+    url: "https://destinytees.uk/connect",
+  },
+};
 
 const perks = [
   { icon: "favorite", title: "Real Relationships", body: "Life is better together. Connect Groups are where friendships are formed and community is built." },

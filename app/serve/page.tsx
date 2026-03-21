@@ -1,6 +1,18 @@
+import type { Metadata } from "next";
 import Image from "next/image";
 import AnimateIn from "@/components/AnimateIn";
 import WorshipWithUsSection from "@/components/home/WorshipWithUsSection";
+
+export const metadata: Metadata = {
+  title: "Serve",
+  description: "Join a ministry team at Destiny Church Tees Valley. From worship and kids to media and administration — find your place and use your gifts to serve others.",
+  alternates: { canonical: "/serve" },
+  openGraph: {
+    title: "Serve | Destiny Church Tees Valley",
+    description: "You were made for more than just attending. Find your team and use your gifts at Destiny Church.",
+    url: "https://destinytees.uk/serve",
+  },
+};
 
 const ministries = [
   {

@@ -1,7 +1,19 @@
+import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import AnimateIn from "@/components/AnimateIn";
 import WorshipWithUsSection from "@/components/home/WorshipWithUsSection";
+
+export const metadata: Metadata = {
+  title: "Young Adults",
+  description: "A community for 18–30s at Destiny Church Tees Valley. Events, meals, Connect Groups and doing life together — real friendships built outside of Sunday.",
+  alternates: { canonical: "/young-adults" },
+  openGraph: {
+    title: "Young Adults | Destiny Church Tees Valley",
+    description: "A community of 18–30s figuring out life, faith and everything in between. Based in Stockton-on-Tees.",
+    url: "https://destinytees.uk/young-adults",
+  },
+};
 
 const values = [
   { icon: "diversity_3", title: "Community", body: "Real friendships built outside of Sunday. We do life together — not just church." },

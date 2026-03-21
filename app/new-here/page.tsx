@@ -1,8 +1,20 @@
+import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import AnimateIn from "@/components/AnimateIn";
 import WorshipWithUsSection from "@/components/home/WorshipWithUsSection";
 import NewHereHero from "@/components/new-here/NewHereHero";
+
+export const metadata: Metadata = {
+  title: "New Here?",
+  description: "New to Destiny Church Tees Valley? Find out what to expect, how to get connected, and what your next step looks like. You are welcome here.",
+  alternates: { canonical: "/new-here" },
+  openGraph: {
+    title: "New Here? | Destiny Church Tees Valley",
+    description: "Welcome! Find out what to expect and how to get connected at Destiny Church Stockton-on-Tees.",
+    url: "https://destinytees.uk/new-here",
+  },
+};
 
 const cards = [
   {

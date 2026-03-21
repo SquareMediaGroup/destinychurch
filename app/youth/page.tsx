@@ -1,7 +1,19 @@
+import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import AnimateIn from "@/components/AnimateIn";
 import WorshipWithUsSection from "@/components/home/WorshipWithUsSection";
+
+export const metadata: Metadata = {
+  title: "Destiny Youth",
+  description: "Destiny Youth meets every Wednesday 7–8:30pm for young people aged 11–18 in Stockton-on-Tees. An energetic, welcoming space to encounter God and build real friendships.",
+  alternates: { canonical: "/youth" },
+  openGraph: {
+    title: "Destiny Youth | Destiny Church Tees Valley",
+    description: "Every Wednesday 7pm–8:30pm. KS3, KS4 & KS5 groups for young people aged 11–18 in Stockton-on-Tees.",
+    url: "https://destinytees.uk/youth",
+  },
+};
 
 const groups = [
   {

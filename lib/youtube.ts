@@ -9,7 +9,7 @@ export type YTVideo = {
 };
 
 export function thumbUrl(id: string): string {
-  return `https://i.ytimg.com/vi/${id}/maxresdefault.jpg`;
+  return `/api/youtube/thumbnail/${id}`;
 }
 
 export function formatDate(iso: string): string {

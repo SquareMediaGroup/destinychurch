@@ -9,6 +9,7 @@ import CookieBanner from "@/components/CookieBanner";
 import AnalyticsGate from "@/components/AnalyticsGate";
 import SiteBanner from "@/components/SiteBanner";
 import { createServiceClient } from "@/utils/supabase/service";
+import { unstable_noStore as noStore } from "next/cache";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 
 const roboto = Roboto({
@@ -67,6 +68,7 @@ export const metadata: Metadata = {
 };
 
 async function getActiveBanner() {
+  noStore();
   try {
     const supabase = createServiceClient();
     const { data } = await supabase

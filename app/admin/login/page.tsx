@@ -2,9 +2,10 @@
 
 import { useState } from "react";
 import Image from "next/image";
+import { createClient } from "@/utils/supabase/client";
 
 export default function AdminLoginPage() {
-  const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -13,16 +14,15 @@ export default function AdminLoginPage() {
     e.preventDefault();
     setLoading(true);
     setError("");
-    const res = await fetch("/api/admin/login", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ username, password }),
-    });
-    if (res.ok) {
-      window.location.href = "/admin";
-    } else {
-      setError("Invalid username or password");
+
+    const supabase = createClient();
+    const { error: authError } = await supabase.auth.signInWithPassword({ email, password });
+
+    if (authError) {
+      setError("Invalid email or password");
       setLoading(false);
+    } else {
+      window.location.href = "/admin/redirects";
     }
   }
 
@@ -35,7 +35,7 @@ export default function AdminLoginPage() {
       />
       <div className="absolute inset-0 bg-gradient-to-br from-black/80 via-black/60 to-destiny-grey/90" />
 
-      {/* Content — sits below the floating header */}
+      {/* Content */}
       <div className="relative z-10 flex w-full flex-col items-center justify-center px-4 pt-32 pb-16">
         <div className="w-full max-w-md">
 
@@ -71,15 +71,15 @@ export default function AdminLoginPage() {
             <form onSubmit={handleSubmit} className="flex flex-col gap-5">
               <div>
                 <label className="mb-2 block text-xs font-bold uppercase tracking-wider text-white/40">
-                  Username
+                  Email
                 </label>
                 <input
-                  type="text"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                  autoComplete="username"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  autoComplete="email"
                   required
-                  placeholder="Username"
+                  placeholder="you@example.com"
                   className="w-full rounded-2xl border border-white/10 bg-white/5 px-5 py-3.5 text-sm text-white placeholder:text-white/20 transition focus:border-destiny-orange/50 focus:outline-none focus:ring-2 focus:ring-destiny-orange/20"
                 />
               </div>

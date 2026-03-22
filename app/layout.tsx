@@ -7,6 +7,8 @@ import FooterGate from "@/components/FooterGate";
 import Providers from "@/components/Providers";
 import CookieBanner from "@/components/CookieBanner";
 import AnalyticsGate from "@/components/AnalyticsGate";
+import SiteBanner from "@/components/SiteBanner";
+import { createServiceClient } from "@/utils/supabase/service";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 
 const roboto = Roboto({
@@ -64,11 +66,28 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({
+async function getActiveBanner() {
+  try {
+    const supabase = createServiceClient();
+    const { data } = await supabase
+      .from("site_banner")
+      .select("active, message, link, link_text")
+      .eq("active", true)
+      .limit(1)
+      .maybeSingle();
+    return data;
+  } catch {
+    return null;
+  }
+}
+
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const banner = await getActiveBanner();
+
   return (
     <html lang="en">
       <head>
@@ -77,7 +96,8 @@ export default function RootLayout({
       <body
         className={`${roboto.variable} ${dosis.variable} ${anton.variable} antialiased`}
       >
-        <Providers>
+        <Providers banner={banner}>
+          <SiteBanner />
           <CookieBanner />
           <div className="flex min-h-screen flex-col bg-[var(--background)] text-[var(--foreground)]">
             <Suspense>

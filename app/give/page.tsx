@@ -2,6 +2,24 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import AnimateIn from "@/components/AnimateIn";
 import WorshipWithUsSection from "@/components/home/WorshipWithUsSection";
+import { createServiceClient } from "@/utils/supabase/service";
+
+export const revalidate = 60;
+
+async function getGiveContent() {
+  try {
+    const supabase = createServiceClient();
+    const { data } = await supabase
+      .from("page_content")
+      .select("key, value")
+      .eq("page", "give");
+    const map: Record<string, string> = {};
+    for (const row of data ?? []) map[row.key] = row.value;
+    return map;
+  } catch {
+    return {};
+  }
+}
 
 export const metadata: Metadata = {
   title: "Give",
@@ -14,7 +32,8 @@ export const metadata: Metadata = {
   },
 };
 
-export default function GivePage() {
+export default async function GivePage() {
+  const content = await getGiveContent();
   return (
     <>
       {/* Hero */}
@@ -152,10 +171,10 @@ export default function GivePage() {
           <AnimateIn delay={100}>
             <div className="grid gap-4 sm:grid-cols-2">
               {[
-                { label: "Account Name", value: "Destiny Church Tees Valley" },
-                { label: "Sort Code", value: "08-92-99" },
-                { label: "Account Number", value: "67397646" },
-                { label: "Reference", value: "Your full name" },
+                { label: "Account Name",   value: content.account_name   ?? "Destiny Church Tees Valley" },
+                { label: "Sort Code",      value: content.sort_code      ?? "08-92-99" },
+                { label: "Account Number", value: content.account_number ?? "67397646" },
+                { label: "Reference",      value: "Your full name" },
               ].map(({ label, value }) => (
                 <div key={label} className="rounded-2xl bg-white p-5 shadow-sm">
                   <p className="mb-1 text-xs font-bold uppercase tracking-widest text-destiny-orange">{label}</p>
@@ -186,7 +205,7 @@ export default function GivePage() {
                   <p className="mb-2 text-xs font-bold uppercase tracking-widest text-destiny-orange">Step 1</p>
                   <span className="material-symbols-rounded mb-3 block text-4xl text-destiny-grey/40">edit</span>
                   <p className="text-sm font-bold text-destiny-grey">Text the keyword</p>
-                  <p className="mt-1 text-2xl font-black text-destiny-orange">DCTEES</p>
+                  <p className="mt-1 text-2xl font-black text-destiny-orange">{content.text_keyword ?? "DCTEES"}</p>
                 </div>
                 <div className="text-center">
                   <p className="mb-2 text-xs font-bold uppercase tracking-widest text-destiny-orange">Step 2</p>
@@ -198,7 +217,7 @@ export default function GivePage() {
                   <p className="mb-2 text-xs font-bold uppercase tracking-widest text-destiny-orange">Step 3</p>
                   <span className="material-symbols-rounded mb-3 block text-4xl text-destiny-grey/40">send</span>
                   <p className="text-sm font-bold text-destiny-grey">Send to</p>
-                  <p className="mt-1 text-2xl font-black text-destiny-orange">07380 307 800</p>
+                  <p className="mt-1 text-2xl font-black text-destiny-orange">{content.text_number ?? "07380 307 800"}</p>
                 </div>
               </div>
               <p className="mt-6 text-center text-xs text-destiny-grey/40">

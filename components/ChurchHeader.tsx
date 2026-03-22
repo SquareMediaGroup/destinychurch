@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useState, useRef, useEffect, useCallback } from "react";
 import { usePathname } from "next/navigation";
+import { useBanner } from "@/contexts/BannerContext";
 
 const aboutDropdown = [
   { href: "/about", label: "Our Mission" },
@@ -107,11 +108,13 @@ export default function ChurchHeader() {
   if (pathname.startsWith("/sermons")) return null;
 
   const isAdmin = pathname.startsWith("/admin");
+  const banner = useBanner();
+  const bannerOffset = banner.active && !isAdmin ? "top-10" : "top-0";
 
   return (
     <header
       ref={headerRef}
-      className="fixed left-0 right-0 top-0 z-50"
+      className={`fixed left-0 right-0 z-50 ${bannerOffset}`}
       style={{
         transform: !mounted || hidden ? "translateY(-110%)" : "translateY(0)",
         transition: "transform 0.4s cubic-bezier(0.4, 0, 0.2, 1)",
@@ -194,26 +197,24 @@ export default function ChurchHeader() {
                 <span className="rounded-full bg-destiny-orange/15 px-3 py-1 text-xs font-bold uppercase tracking-widest text-destiny-orange">
                   Admin
                 </span>
-                <Link
-                  href="/admin/redirects"
-                  className={`rounded-full px-4 py-2 text-sm font-medium transition ${
-                    pathname.startsWith("/admin/redirects")
-                      ? "text-destiny-orange"
-                      : "text-white/90 hover:text-destiny-orange"
-                  }`}
-                >
-                  Redirects
-                </Link>
-                <Link
-                  href="/admin/sermons"
-                  className={`rounded-full px-4 py-2 text-sm font-medium transition ${
-                    pathname.startsWith("/admin/sermons")
-                      ? "text-destiny-orange"
-                      : "text-white/90 hover:text-destiny-orange"
-                  }`}
-                >
-                  Sermons
-                </Link>
+                {[
+                  { href: "/admin/redirects", label: "Redirects" },
+                  { href: "/admin/sermons", label: "Sermons" },
+                  { href: "/admin/banner", label: "Banner" },
+                  { href: "/admin/pages", label: "Pages" },
+                ].map((item) => (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    className={`rounded-full px-4 py-2 text-sm font-medium transition ${
+                      pathname.startsWith(item.href)
+                        ? "text-destiny-orange"
+                        : "text-white/90 hover:text-destiny-orange"
+                    }`}
+                  >
+                    {item.label}
+                  </Link>
+                ))}
                 <form action="/api/admin/logout" method="POST">
                   <button
                     type="submit"

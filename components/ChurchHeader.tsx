@@ -104,7 +104,9 @@ export default function ChurchHeader() {
     return () => document.removeEventListener("click", handleClickOutside);
   }, []);
 
-  if (pathname.startsWith("/sermons") || pathname.startsWith("/admin")) return null;
+  if (pathname.startsWith("/sermons")) return null;
+
+  const isAdmin = pathname.startsWith("/admin");
 
   return (
     <header
@@ -139,7 +141,7 @@ export default function ChurchHeader() {
 
           {/* Desktop nav */}
           <nav className="hidden items-center gap-1 md:flex">
-            {navItems.map((item) => {
+            {!isAdmin && navItems.map((item) => {
               if (item.dropdown) {
                 const isOpen = openDropdown === item.label;
                 return (
@@ -185,16 +187,54 @@ export default function ChurchHeader() {
                 </Link>
               );
             })}
+
+            {isAdmin && (
+              <>
+                <span className="mx-1 h-4 w-px bg-white/20" />
+                <span className="rounded-full bg-destiny-orange/15 px-3 py-1 text-xs font-bold uppercase tracking-widest text-destiny-orange">
+                  Admin
+                </span>
+                <Link
+                  href="/admin/redirects"
+                  className={`rounded-full px-4 py-2 text-sm font-medium transition ${
+                    pathname.startsWith("/admin/redirects")
+                      ? "text-destiny-orange"
+                      : "text-white/90 hover:text-destiny-orange"
+                  }`}
+                >
+                  Redirects
+                </Link>
+                <Link
+                  href="/admin/sermons"
+                  className={`rounded-full px-4 py-2 text-sm font-medium transition ${
+                    pathname.startsWith("/admin/sermons")
+                      ? "text-destiny-orange"
+                      : "text-white/90 hover:text-destiny-orange"
+                  }`}
+                >
+                  Sermons
+                </Link>
+              </>
+            )}
           </nav>
 
           {/* CTA + mobile toggle */}
           <div className="flex items-center gap-3">
-            <Link
-              href="/new-here"
-              className="rounded-full bg-destiny-orange px-5 py-2.5 text-sm font-bold text-white shadow-lg shadow-destiny-orange/25 transition hover:brightness-110"
-            >
-              New Here?
-            </Link>
+            {isAdmin ? (
+              <Link
+                href="/"
+                className="rounded-full border border-white/20 px-5 py-2.5 text-sm font-bold text-white/80 transition hover:border-white/40 hover:text-white"
+              >
+                ← View Site
+              </Link>
+            ) : (
+              <Link
+                href="/new-here"
+                className="rounded-full bg-destiny-orange px-5 py-2.5 text-sm font-bold text-white shadow-lg shadow-destiny-orange/25 transition hover:brightness-110"
+              >
+                New Here?
+              </Link>
+            )}
             <button
               type="button"
               onClick={() => setMobileOpen(!mobileOpen)}

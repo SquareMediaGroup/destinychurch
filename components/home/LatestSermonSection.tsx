@@ -1,9 +1,10 @@
 import Image from "next/image";
 import Link from "next/link";
-import { getLatestVideo, formatDate } from "@/lib/youtube";
+import { getLatestVisibleVideo } from "@/lib/sermons";
+import { formatDate } from "@/lib/youtube";
 
 export default async function LatestSermonSection() {
-  const video = await getLatestVideo();
+  const video = await getLatestVisibleVideo();
   if (!video) return null;
 
   const date = formatDate(video.publishedAt);

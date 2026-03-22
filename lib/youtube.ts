@@ -60,7 +60,7 @@ export async function getLatestVideo(): Promise<YTVideo | null> {
     searchUrl.searchParams.set("maxResults", "1");
     searchUrl.searchParams.set("key", API_KEY ?? "");
 
-    const res = await fetch(searchUrl.toString(), { next: { revalidate: 3600 } });
+    const res = await fetch(searchUrl.toString(), { next: { revalidate: 300 } });
     if (!res.ok) return null;
     const data = await res.json();
     const items = data.items ?? [];
@@ -88,7 +88,7 @@ export async function getAllVideos(maxResults = 50): Promise<YTVideo[]> {
     searchUrl.searchParams.set("maxResults", String(maxResults));
     searchUrl.searchParams.set("key", API_KEY ?? "");
 
-    const res = await fetch(searchUrl.toString(), { next: { revalidate: 3600 } });
+    const res = await fetch(searchUrl.toString(), { next: { revalidate: 300 } });
     if (!res.ok) return [];
     const data = await res.json();
     const items: Array<{ id?: { videoId?: string }; snippet?: { title?: string; description?: string; publishedAt?: string; thumbnails?: { maxres?: { url?: string }; high?: { url?: string } } } }> = data.items ?? [];
@@ -101,7 +101,7 @@ export async function getAllVideos(maxResults = 50): Promise<YTVideo[]> {
     detailUrl.searchParams.set("id", ids.join(","));
     detailUrl.searchParams.set("key", API_KEY ?? "");
 
-    const detailRes = await fetch(detailUrl.toString(), { next: { revalidate: 3600 } });
+    const detailRes = await fetch(detailUrl.toString(), { next: { revalidate: 300 } });
     if (!detailRes.ok) {
       // Fall back to snippet-only data
       return items.map((item) => {
@@ -148,7 +148,7 @@ export async function getVideo(id: string): Promise<YTVideo | null> {
     url.searchParams.set("id", id);
     url.searchParams.set("key", API_KEY ?? "");
 
-    const res = await fetch(url.toString(), { next: { revalidate: 3600 } });
+    const res = await fetch(url.toString(), { next: { revalidate: 300 } });
     if (!res.ok) return null;
     const data = await res.json();
     const items = data.items ?? [];

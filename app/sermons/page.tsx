@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { getAllVideos } from "@/lib/youtube";
+import { getVisibleVideos } from "@/lib/sermons";
 import SermonGrid from "@/components/sermons/SermonGrid";
 
 export const metadata: Metadata = {
@@ -18,7 +18,7 @@ export const metadata: Metadata = {
 export const revalidate = 3600;
 
 export default async function SermonsPage() {
-  const videos = await getAllVideos(50);
+  const videos = await getVisibleVideos(50);
 
   return (
     <>

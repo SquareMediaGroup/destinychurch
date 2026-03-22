@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 
 const navItems = [
   { href: "/admin/redirects", label: "Redirects" },
+  { href: "/admin/sermons", label: "Sermons" },
 ];
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {

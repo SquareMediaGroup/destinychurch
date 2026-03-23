@@ -92,9 +92,6 @@ export default async function SermonPage({ params }: PageProps) {
           {date && <> &middot; {date}</>}
         </p>
 
-        {/* Divider */}
-        <div className="mb-4 border-t border-white/10" />
-
         {/* Description */}
         {video.description && (
           <div className="mb-6">
@@ -125,9 +122,6 @@ export default async function SermonPage({ params }: PageProps) {
             </Link>
           ))}
         </div>
-
-        {/* Divider */}
-        <div className="mb-6 border-t border-white/10" />
 
         {/* Up Next — horizontal with filter/sort */}
         <UpNextSection videos={recommendations} />

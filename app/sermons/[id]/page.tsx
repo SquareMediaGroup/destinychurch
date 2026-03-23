@@ -45,10 +45,10 @@ const actionCards = [
     sub: "Let us know you're here",
   },
   {
-    href: "/new-here",
-    icon: "explore",
-    label: "Plan a Visit",
-    sub: "Join us this Sunday",
+    href: "/whats-on",
+    icon: "event",
+    label: "What's On",
+    sub: "See upcoming events",
   },
 ];
 

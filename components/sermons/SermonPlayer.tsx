@@ -21,7 +21,7 @@ function formatTimestamp(seconds: number): string {
 export default function SermonPlayer({ videoId, thumbnail, sermonStart }: SermonPlayerProps) {
   const { consent, allowAll, savePreferences } = useCookieConsent();
   const [mounted, setMounted] = useState(false);
-  const [startAt, setStartAt] = useState<number | null>(null);
+  const [seekCount, setSeekCount] = useState(0);
 
   useEffect(() => {
     setMounted(true);
@@ -75,17 +75,19 @@ export default function SermonPlayer({ videoId, thumbnail, sermonStart }: Sermon
     );
   }
 
+  const seeking = seekCount > 0;
   const embedParams = new URLSearchParams({
     modestbranding: "1",
     rel: "0",
     color: "white",
-    autoplay: startAt !== null ? "1" : "0",
+    autoplay: seeking ? "1" : "0",
   });
-  if (startAt !== null) embedParams.set("start", String(startAt));
+  if (seeking && sermonStart) embedParams.set("start", String(sermonStart));
 
   return (
     <div className="relative aspect-video w-full overflow-hidden rounded-2xl bg-black">
       <iframe
+        key={seekCount}
         src={`https://www.youtube.com/embed/${videoId}?${embedParams.toString()}`}
         title="Sermon video"
         allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
@@ -94,9 +96,9 @@ export default function SermonPlayer({ videoId, thumbnail, sermonStart }: Sermon
       />
 
       {/* Jump to Sermon button */}
-      {sermonStart && startAt === null && (
+      {sermonStart && (
         <button
-          onClick={() => setStartAt(sermonStart)}
+          onClick={() => setSeekCount((c) => c + 1)}
           className="absolute bottom-4 right-4 flex items-center gap-2 rounded-full bg-destiny-orange px-4 py-2.5 text-sm font-bold text-white shadow-lg shadow-black/40 transition hover:brightness-110"
         >
           <span className="material-symbols-rounded text-lg">fast_forward</span>

@@ -55,7 +55,7 @@ const actionCards = [
 /** Look for "Sermon: 33:15" or "Sermon starts at 1:02:30" etc. in the description */
 function parseSermonStart(description: string): number | null {
   const match = description.match(
-    /sermon\s*(?:starts?\s*(?:at\s*)?)?[:@\-]?\s*(\d{1,2}):(\d{2})(?::(\d{2}))?/i
+    /sermon\s*(?:starts?\s*(?:at\s*)?)?[@\-]?\s*(\d{1,2}):(\d{2})(?::(\d{2}))?/i
   );
   if (!match) return null;
   const h = match[3] ? Number(match[1]) : 0;

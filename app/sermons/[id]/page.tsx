@@ -52,6 +52,18 @@ const actionCards = [
   },
 ];
 
+/** Look for "Sermon: 33:15" or "Sermon starts at 1:02:30" etc. in the description */
+function parseSermonStart(description: string): number | null {
+  const match = description.match(
+    /sermon\s*(?:starts?\s*(?:at\s*)?)?[:@\-]?\s*(\d{1,2}):(\d{2})(?::(\d{2}))?/i
+  );
+  if (!match) return null;
+  const h = match[3] ? Number(match[1]) : 0;
+  const m = match[3] ? Number(match[2]) : Number(match[1]);
+  const s = match[3] ? Number(match[3]) : Number(match[2]);
+  return h * 3600 + m * 60 + s;
+}
+
 export default async function SermonPage({ params }: PageProps) {
   const { id } = await params;
   const [video, related] = await Promise.all([getVideo(id), getAllVideos(20)]);
@@ -60,6 +72,7 @@ export default async function SermonPage({ params }: PageProps) {
 
   const recommendations = related.filter((v) => v.id !== id);
   const date = formatDate(video.publishedAt);
+  const sermonStart = parseSermonStart(video.description);
 
   return (
     <main className="min-h-screen bg-[#0f0f0f] text-white">
@@ -79,7 +92,7 @@ export default async function SermonPage({ params }: PageProps) {
         </Link>
 
         {/* Player */}
-        <SermonPlayer videoId={video.id} thumbnail={video.thumbnail} />
+        <SermonPlayer videoId={video.id} thumbnail={video.thumbnail} sermonStart={sermonStart} />
 
         {/* Title */}
         <h1 className="mb-1 mt-4 text-xl font-black text-white">

@@ -24,19 +24,25 @@ const aboutItems = [
   { href: "/visit", label: "Plan a Visit" },
 ];
 
-const navItems = [
-  { href: "/whats-on", icon: "event", label: "What's On", sub: whatsOnItems },
+const topItems = [
   { href: "/sermons", icon: "subscriptions", label: "Sermons" },
+  { href: "/series", icon: "video_library", label: "Series" },
+  { href: "/guest-speakers", icon: "mic", label: "Guest Speakers" },
+];
+
+const bottomItems = [
+  { href: "/whats-on", icon: "event", label: "What's On", sub: whatsOnItems },
   { href: "/serve", icon: "handshake", label: "Serve" },
   { href: "/about", icon: "info", label: "About", sub: aboutItems },
   { href: "/give", icon: "volunteer_activism", label: "Give" },
+  { href: "/new-here", icon: "explore", label: "New Here?" },
 ];
 
 function ExpandableItem({
   item,
   isActive,
 }: {
-  item: (typeof navItems)[number];
+  item: (typeof bottomItems)[number];
   isActive: boolean;
 }) {
   const [open, setOpen] = useState(false);
@@ -121,13 +127,44 @@ export default function SermonsSidebar() {
           </div>
         </Link>
 
-        {/* Nav */}
+        {/* Nav — top group */}
         <nav className="flex flex-col gap-0.5">
-          {navItems.map((item) => {
+          {topItems.map((item) => {
             const isActive =
               item.href === "/sermons"
                 ? pathname.startsWith("/sermons")
-                : pathname.startsWith(item.href);
+                : pathname === item.href;
+
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition ${
+                  isActive
+                    ? "bg-white/10 text-white"
+                    : "text-white/50 hover:bg-white/5 hover:text-white/80"
+                }`}
+              >
+                <span
+                  className={`material-symbols-rounded shrink-0 text-xl ${
+                    isActive ? "text-destiny-orange" : ""
+                  }`}
+                >
+                  {item.icon}
+                </span>
+                <span className="hidden lg:inline">{item.label}</span>
+              </Link>
+            );
+          })}
+        </nav>
+
+        {/* Separator */}
+        <div className="mx-2 my-2 border-t border-white/[0.07]" />
+
+        {/* Nav — bottom group */}
+        <nav className="flex flex-col gap-0.5">
+          {bottomItems.map((item) => {
+            const isActive = pathname.startsWith(item.href);
 
             if (item.sub) {
               return (
@@ -160,16 +197,6 @@ export default function SermonsSidebar() {
 
         {/* Spacer */}
         <div className="flex-1" />
-
-        {/* New Here CTA */}
-        <Link
-          href="/new-here"
-          className="mt-4 flex items-center justify-center gap-2 rounded-xl bg-destiny-orange px-3 py-2.5 text-sm font-bold text-white shadow-lg shadow-destiny-orange/20 transition hover:brightness-110"
-          title="New Here?"
-        >
-          <span className="material-symbols-rounded shrink-0 text-xl">explore</span>
-          <span className="hidden lg:inline">New Here?</span>
-        </Link>
       </div>
     </aside>
   );

@@ -18,6 +18,17 @@ export default function BetaDisclaimer() {
     } catch {}
   }, []);
 
+  useEffect(() => {
+    if (!mounted || acknowledged) {
+      document.body.style.overflow = "";
+    } else {
+      document.body.style.overflow = "hidden";
+    }
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [mounted, acknowledged]);
+
   if (!mounted || acknowledged) return null;
 
   const handleContinue = () => {

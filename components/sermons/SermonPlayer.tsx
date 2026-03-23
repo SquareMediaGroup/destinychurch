@@ -1,8 +1,16 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import Image from "next/image";
 import { useCookieConsent } from "@/lib/cookieConsent";
+
+/* global YT */
+declare global {
+  interface Window {
+    YT?: typeof YT;
+    onYouTubeIframeAPIReady?: () => void;
+  }
+}
 
 interface SermonPlayerProps {
   videoId: string;
@@ -18,10 +26,35 @@ function formatTimestamp(seconds: number): string {
   return `${m}:${String(s).padStart(2, "0")}`;
 }
 
+let apiLoading = false;
+const apiCallbacks: (() => void)[] = [];
+
+function loadYTApi(cb: () => void) {
+  if (window.YT?.Player) {
+    cb();
+    return;
+  }
+  apiCallbacks.push(cb);
+  if (apiLoading) return;
+  apiLoading = true;
+  const prev = window.onYouTubeIframeAPIReady;
+  window.onYouTubeIframeAPIReady = () => {
+    prev?.();
+    apiCallbacks.forEach((fn) => fn());
+    apiCallbacks.length = 0;
+  };
+  const tag = document.createElement("script");
+  tag.src = "https://www.youtube.com/iframe_api";
+  document.head.appendChild(tag);
+}
+
 export default function SermonPlayer({ videoId, thumbnail, sermonStart }: SermonPlayerProps) {
   const { consent, allowAll, savePreferences } = useCookieConsent();
   const [mounted, setMounted] = useState(false);
-  const [seekCount, setSeekCount] = useState(0);
+  const [showJump, setShowJump] = useState(!!sermonStart);
+  const playerRef = useRef<YT.Player | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
     setMounted(true);
@@ -29,10 +62,64 @@ export default function SermonPlayer({ videoId, thumbnail, sermonStart }: Sermon
 
   const canPlay = mounted && consent?.media === true;
 
+  const startPolling = useCallback(() => {
+    if (!sermonStart) return;
+    if (pollRef.current) clearInterval(pollRef.current);
+    pollRef.current = setInterval(() => {
+      const player = playerRef.current;
+      if (!player?.getCurrentTime) return;
+      if (player.getCurrentTime() >= sermonStart) {
+        setShowJump(false);
+        if (pollRef.current) clearInterval(pollRef.current);
+      }
+    }, 1000);
+  }, [sermonStart]);
+
+  useEffect(() => {
+    return () => {
+      if (pollRef.current) clearInterval(pollRef.current);
+    };
+  }, []);
+
+  // Initialise YT player once canPlay is true
+  useEffect(() => {
+    if (!canPlay || !containerRef.current) return;
+
+    loadYTApi(() => {
+      if (playerRef.current) {
+        playerRef.current.destroy();
+      }
+      playerRef.current = new window.YT!.Player(containerRef.current! as unknown as string, {
+        videoId,
+        playerVars: {
+          modestbranding: 1 as YT.ModestBranding,
+          rel: 0 as YT.RelatedVideos,
+          autoplay: 0 as YT.AutoPlay,
+        },
+        events: {
+          onStateChange: () => startPolling(),
+        },
+      });
+    });
+
+    return () => {
+      if (pollRef.current) clearInterval(pollRef.current);
+      playerRef.current?.destroy();
+      playerRef.current = null;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [canPlay, videoId]);
+
+  const handleJump = () => {
+    if (!sermonStart || !playerRef.current?.seekTo) return;
+    playerRef.current.seekTo(sermonStart, true);
+    playerRef.current.playVideo();
+    startPolling();
+  };
+
   if (!mounted || !canPlay) {
     return (
       <div className="relative aspect-video w-full overflow-hidden rounded-2xl bg-[#111]">
-        {/* Blurred thumbnail behind */}
         {thumbnail && (
           <Image
             src={thumbnail}
@@ -42,8 +129,6 @@ export default function SermonPlayer({ videoId, thumbnail, sermonStart }: Sermon
             sizes="(max-width: 1024px) 100vw, 740px"
           />
         )}
-
-        {/* Overlay */}
         <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 bg-black/60 px-6 text-center">
           <span className="material-symbols-rounded text-5xl text-white/40">
             cookie
@@ -75,30 +160,13 @@ export default function SermonPlayer({ videoId, thumbnail, sermonStart }: Sermon
     );
   }
 
-  const seeking = seekCount > 0;
-  const embedParams = new URLSearchParams({
-    modestbranding: "1",
-    rel: "0",
-    color: "white",
-    autoplay: seeking ? "1" : "0",
-  });
-  if (seeking && sermonStart) embedParams.set("start", String(sermonStart));
-
   return (
     <div className="relative aspect-video w-full overflow-hidden rounded-2xl bg-black">
-      <iframe
-        key={seekCount}
-        src={`https://www.youtube.com/embed/${videoId}?${embedParams.toString()}`}
-        title="Sermon video"
-        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-        allowFullScreen
-        className="h-full w-full"
-      />
+      <div ref={containerRef} className="h-full w-full" />
 
-      {/* Jump to Sermon button */}
-      {sermonStart && (
+      {sermonStart && showJump && (
         <button
-          onClick={() => setSeekCount((c) => c + 1)}
+          onClick={handleJump}
           className="absolute bottom-4 right-4 flex items-center gap-2 rounded-full bg-destiny-orange px-4 py-2.5 text-sm font-bold text-white shadow-lg shadow-black/40 transition hover:brightness-110"
         >
           <span className="material-symbols-rounded text-lg">fast_forward</span>

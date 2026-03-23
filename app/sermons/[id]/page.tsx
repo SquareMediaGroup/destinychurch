@@ -52,16 +52,22 @@ const actionCards = [
   },
 ];
 
-/** Look for "Sermon: 33:15" or "Sermon starts at 1:02:30" etc. in the description */
+const SERMON_TS_RE =
+  /sermon\s*(?:starts?\s*(?:at\s*)?)?[@\-]?\s*(\d{1,2}):(\d{2})(?::(\d{2}))?/i;
+
+/** Look for "Sermon starts at 33:15" or "Sermon @ 1:02:30" etc. in the description */
 function parseSermonStart(description: string): number | null {
-  const match = description.match(
-    /sermon\s*(?:starts?\s*(?:at\s*)?)?[@\-]?\s*(\d{1,2}):(\d{2})(?::(\d{2}))?/i
-  );
+  const match = description.match(SERMON_TS_RE);
   if (!match) return null;
   const h = match[3] ? Number(match[1]) : 0;
   const m = match[3] ? Number(match[2]) : Number(match[1]);
   const s = match[3] ? Number(match[3]) : Number(match[2]);
   return h * 3600 + m * 60 + s;
+}
+
+/** Strip the sermon-timestamp line from the description so viewers don't see it */
+function stripSermonTimestamp(description: string): string {
+  return description.replace(new RegExp(`^.*${SERMON_TS_RE.source}.*$`, "im"), "").trim();
 }
 
 export default async function SermonPage({ params }: PageProps) {
@@ -73,6 +79,7 @@ export default async function SermonPage({ params }: PageProps) {
   const recommendations = related.filter((v) => v.id !== id);
   const date = formatDate(video.publishedAt);
   const sermonStart = parseSermonStart(video.description);
+  const displayDescription = stripSermonTimestamp(video.description);
 
   return (
     <main className="min-h-screen bg-[#0f0f0f] text-white">
@@ -106,9 +113,9 @@ export default async function SermonPage({ params }: PageProps) {
         </p>
 
         {/* Description */}
-        {video.description && (
+        {displayDescription && (
           <div className="mb-6">
-            <SermonDescription text={video.description} />
+            <SermonDescription text={displayDescription} />
           </div>
         )}
 

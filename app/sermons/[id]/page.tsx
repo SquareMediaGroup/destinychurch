@@ -195,6 +195,9 @@ export default async function SermonPage({ params }: PageProps) {
 
         {/* Up Next — horizontal with filter/sort */}
         <UpNextSection videos={recommendations} />
+
+        {/* TODO: remove — test spacer for sticky player */}
+        <div className="h-[3000px]" />
       </div>
     </main>
   );

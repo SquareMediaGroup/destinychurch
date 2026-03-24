@@ -10,6 +10,13 @@ const leadTeam = [
   { name: "Nkereuwem Ekanem", role: "Creativity & Innovation", photo: "/img/brand/Team/NE.png", email: "nk@destinytees.uk" },
 ];
 
+const departmentHeads = [
+  { name: "Funke Awojide", role: "Kids Pastor", photo: "/img/brand/Team/FA.png", email: "funke@destinytees.uk" },
+  { name: "Younes Moradi", role: "Stewarding", photo: null, email: "younes@destinytees.uk" },
+  { name: "David Bayode", role: "Worship", photo: null, email: "david@destinytees.uk" },
+  { name: "Adebowale Awojide", role: "Prayer Team", photo: "/img/brand/Team/Debo.png", email: "debo@destinytees.uk" },
+];
+
 function TeamCard({ name, role, photo, cardBg, email }: { name: string; role: string; photo: string | null; cardBg: string; email: string }) {
   const initials = name.split(" ").map((n) => n[0]).join("");
   return (
@@ -55,6 +62,20 @@ export default function TeamSection() {
           {leadTeam.map((member, i) => (
             <AnimateIn key={member.name} delay={i * 80}>
               <TeamCard {...member} cardBg="#FF9E4F" />
+            </AnimateIn>
+          ))}
+        </div>
+
+        {/* Department Heads */}
+        <AnimateIn>
+          <h2 className="mb-10 text-center text-3xl font-black text-destiny-orange md:text-4xl">
+            Department Heads
+          </h2>
+        </AnimateIn>
+        <div className="mb-6 grid grid-cols-2 gap-4 sm:grid-cols-4">
+          {departmentHeads.map((member, i) => (
+            <AnimateIn key={member.name} delay={i * 80}>
+              <TeamCard {...member} cardBg="#475C70" />
             </AnimateIn>
           ))}
         </div>

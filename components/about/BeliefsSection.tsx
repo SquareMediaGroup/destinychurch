@@ -3,7 +3,7 @@ import AnimateIn from "@/components/AnimateIn";
 
 export default function BeliefsSection() {
   return (
-    <section className="bg-[#f5f7fa] py-16">
+    <section className="bg-white py-16">
       <div className="mx-auto max-w-7xl px-4 lg:px-8">
 
         {/* Header */}

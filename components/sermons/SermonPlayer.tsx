@@ -65,11 +65,17 @@ export default function SermonPlayer({ videoId, thumbnail, sermonStart }: Sermon
   const [dismissed, setDismissed] = useState(false);
   const isMobile = useIsMobile();
 
+  // Custom controls state (docked desktop)
+  const [playing, setPlaying] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
+  const controlsPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
   // Drag (desktop PiP)
   const wrapperRef = useRef<HTMLDivElement>(null);
   const [pos, setPos] = useState({ x: 24, y: 24 });
   const dragging = useRef(false);
-  const didDrag = useRef(false);
   const dragStart = useRef({ mx: 0, my: 0, px: 0, py: 0 });
 
   useEffect(() => { setMounted(true); }, []);
@@ -84,6 +90,24 @@ export default function SermonPlayer({ videoId, thumbnail, sermonStart }: Sermon
   }, [mounted]);
 
   useEffect(() => { if (!docked) setDismissed(false); }, [docked]);
+
+  // Poll player state for custom controls
+  useEffect(() => {
+    if (controlsPollRef.current) clearInterval(controlsPollRef.current);
+    if (!docked || dismissed || isMobile) return;
+    controlsPollRef.current = setInterval(() => {
+      const p = playerRef.current;
+      if (!p?.getPlayerState || !p?.getCurrentTime || !p?.getDuration) return;
+      const state = p.getPlayerState();
+      setPlaying(state === 1); // YT.PlayerState.PLAYING
+      const dur = p.getDuration();
+      const cur = p.getCurrentTime();
+      setDuration(dur);
+      setCurrentTime(cur);
+      setProgress(dur > 0 ? cur / dur : 0);
+    }, 250);
+    return () => { if (controlsPollRef.current) clearInterval(controlsPollRef.current); };
+  }, [docked, dismissed, isMobile]);
 
   const canPlay = mounted && consent?.media === true;
 
@@ -123,16 +147,29 @@ export default function SermonPlayer({ videoId, thumbnail, sermonStart }: Sermon
     startPolling();
   };
 
+  const togglePlay = () => {
+    const p = playerRef.current;
+    if (!p) return;
+    if (playing) p.pauseVideo(); else p.playVideo();
+  };
+
+  const handleSeek = (e: React.MouseEvent<HTMLDivElement>) => {
+    const p = playerRef.current;
+    if (!p?.seekTo || !p?.getDuration) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const frac = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+    p.seekTo(frac * p.getDuration(), true);
+  };
+
+  // Drag handlers — on the overlay div, not the iframe
   const onPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
-    if (isMobile || (e.target as HTMLElement).closest("iframe, button")) return;
+    if (isMobile || (e.target as HTMLElement).closest("button")) return;
     dragging.current = true;
-    didDrag.current = false;
     dragStart.current = { mx: e.clientX, my: e.clientY, px: pos.x, py: pos.y };
     e.currentTarget.setPointerCapture(e.pointerId);
   };
   const onPointerMove = (e: React.PointerEvent) => {
     if (!dragging.current) return;
-    didDrag.current = true;
     setPos({
       x: Math.max(8, Math.min(window.innerWidth - 380, dragStart.current.px + (dragStart.current.mx - e.clientX))),
       y: Math.max(8, Math.min(window.innerHeight - 230, dragStart.current.py + (dragStart.current.my - e.clientY))),
@@ -167,24 +204,16 @@ export default function SermonPlayer({ videoId, thumbnail, sermonStart }: Sermon
   }
 
   const showDocked = docked && !dismissed;
+  const showDesktopDock = showDocked && !isMobile;
 
-  /*
-   * The player div (containerRef) must remain in the DOM without unmounting,
-   * or the YT iframe gets destroyed. We keep ONE wrapper that switches between
-   * inline (relative, inside sentinel) and docked (fixed/sticky) via className + style.
-   *
-   * Mobile docked  → sticky top-0, full width
-   * Desktop docked → fixed bottom-right, 360px, draggable
-   * Not docked     → relative, fills the sentinel
-   */
   const wrapperClass = showDocked
     ? isMobile
       ? "sticky top-0 z-40 w-full bg-black shadow-lg shadow-black/40"
       : "fixed z-50 overflow-hidden rounded-xl shadow-2xl shadow-black/60"
     : "relative w-full overflow-hidden rounded-2xl";
 
-  const wrapperStyle: React.CSSProperties = showDocked && !isMobile
-    ? { right: pos.x, bottom: pos.y, width: 360, cursor: dragging.current ? "grabbing" : "grab" }
+  const wrapperStyle: React.CSSProperties = showDesktopDock
+    ? { right: pos.x, bottom: pos.y, width: 360 }
     : {};
 
   return (
@@ -193,24 +222,72 @@ export default function SermonPlayer({ videoId, thumbnail, sermonStart }: Sermon
         ref={wrapperRef}
         className={wrapperClass}
         style={wrapperStyle}
-        onPointerDown={showDocked && !isMobile ? onPointerDown : undefined}
-        onPointerMove={showDocked && !isMobile ? onPointerMove : undefined}
-        onPointerUp={showDocked && !isMobile ? onPointerUp : undefined}
       >
         <div className="relative aspect-video w-full bg-black">
           <div ref={containerRef} className="h-full w-full" />
 
-          {/* Close — desktop docked only */}
-          {showDocked && !isMobile && (
-            <button
-              onClick={() => setDismissed(true)}
-              className="absolute right-2 top-2 z-10 flex h-7 w-7 items-center justify-center rounded-full bg-black/70 text-white/60 transition hover:bg-black hover:text-white"
-              aria-label="Close mini player"
+          {/* Desktop docked: overlay that blocks iframe and enables dragging + custom controls */}
+          {showDesktopDock && (
+            <div
+              className="absolute inset-0 z-10 flex cursor-grab flex-col justify-between active:cursor-grabbing"
+              onPointerDown={onPointerDown}
+              onPointerMove={onPointerMove}
+              onPointerUp={onPointerUp}
             >
-              <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
+              {/* Top bar: drag handle + close */}
+              <div className="flex items-center justify-between px-3 pt-2">
+                <div className="h-1 w-8 rounded-full bg-white/20" />
+                <button
+                  onClick={() => setDismissed(true)}
+                  className="flex h-6 w-6 items-center justify-center rounded-full bg-black/60 text-white/60 transition hover:bg-black/80 hover:text-white"
+                  aria-label="Close mini player"
+                >
+                  <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+
+              {/* Center: play/pause */}
+              <div className="flex items-center justify-center">
+                <button
+                  onClick={togglePlay}
+                  className="flex h-12 w-12 items-center justify-center rounded-full bg-black/50 text-white transition hover:bg-black/70 hover:scale-110"
+                >
+                  {playing ? (
+                    <svg className="h-6 w-6" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z" />
+                    </svg>
+                  ) : (
+                    <svg className="h-6 w-6 pl-0.5" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M8 5v14l11-7z" />
+                    </svg>
+                  )}
+                </button>
+              </div>
+
+              {/* Bottom bar: progress + time */}
+              <div className="px-3 pb-2">
+                <div className="mb-1 flex items-center justify-between text-[10px] text-white/50">
+                  <span>{formatTimestamp(Math.floor(currentTime))}</span>
+                  <span>{formatTimestamp(Math.floor(duration))}</span>
+                </div>
+                {/* Progress bar */}
+                <div
+                  className="group relative h-1.5 cursor-pointer rounded-full bg-white/20"
+                  onClick={handleSeek}
+                >
+                  <div
+                    className="h-full rounded-full bg-destiny-orange transition-all"
+                    style={{ width: `${progress * 100}%` }}
+                  />
+                  <div
+                    className="absolute top-1/2 h-3 w-3 -translate-y-1/2 rounded-full bg-white opacity-0 shadow transition group-hover:opacity-100"
+                    style={{ left: `${progress * 100}%`, marginLeft: -6 }}
+                  />
+                </div>
+              </div>
+            </div>
           )}
 
           {/* Scroll back — mobile docked only */}
@@ -226,25 +303,14 @@ export default function SermonPlayer({ videoId, thumbnail, sermonStart }: Sermon
             </button>
           )}
 
-          {/* Drag handle — desktop docked */}
-          {showDocked && !isMobile && (
-            <div className="pointer-events-none absolute left-1/2 top-1.5 -translate-x-1/2">
-              <div className="h-1 w-8 rounded-full bg-white/20" />
-            </div>
-          )}
-
-          {/* Jump to sermon */}
-          {sermonStart && showJump && (
+          {/* Jump to sermon — inline & mobile docked */}
+          {sermonStart && showJump && !showDesktopDock && (
             <button
               onClick={handleJump}
-              className={`absolute flex items-center gap-1.5 rounded-full bg-destiny-orange font-bold text-white shadow-lg shadow-black/40 transition hover:brightness-110 ${
-                showDocked && !isMobile
-                  ? "bottom-2 right-2 gap-1 px-3 py-1.5 text-xs"
-                  : "bottom-4 right-4 gap-2 px-4 py-2.5 text-sm"
-              }`}
+              className="absolute bottom-4 right-4 flex items-center gap-2 rounded-full bg-destiny-orange px-4 py-2.5 text-sm font-bold text-white shadow-lg shadow-black/40 transition hover:brightness-110"
             >
-              <span className={`material-symbols-rounded ${showDocked && !isMobile ? "text-sm" : "text-lg"}`}>fast_forward</span>
-              {showDocked && !isMobile ? `Skip (${formatTimestamp(sermonStart)})` : `Skip to Sermon (${formatTimestamp(sermonStart)})`}
+              <span className="material-symbols-rounded text-lg">fast_forward</span>
+              Skip to Sermon ({formatTimestamp(sermonStart)})
             </button>
           )}
         </div>

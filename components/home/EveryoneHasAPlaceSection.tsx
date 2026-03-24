@@ -35,10 +35,10 @@ const groups = [
 
 export default function EveryoneHasAPlaceSection() {
   return (
-    <section className="bg-[#1a1108] py-16">
+    <section className="bg-[#1a1108] py-10 sm:py-16">
       <div className="mx-auto max-w-7xl px-4 lg:px-8">
         <AnimateIn>
-          <h2 className="mb-10 text-center text-3xl font-black uppercase tracking-tight text-white md:text-4xl">
+          <h2 className="mb-6 text-center text-2xl font-black uppercase tracking-tight text-white sm:mb-10 sm:text-3xl md:text-4xl">
             Everyone Has A Place
           </h2>
         </AnimateIn>
@@ -48,7 +48,7 @@ export default function EveryoneHasAPlaceSection() {
             <AnimateIn key={group.title} delay={i * 80}>
               <Link
                 href={group.href}
-                className="group relative block h-80 overflow-hidden rounded-2xl shadow-lg"
+                className="group relative block h-56 overflow-hidden rounded-2xl shadow-lg sm:h-72 lg:h-80"
               >
                 <Image
                   src={group.image}

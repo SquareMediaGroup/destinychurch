@@ -69,13 +69,13 @@ export default function MagnifySection() {
   const pillar = pillars[active];
 
   return (
-    <section id="pillars" className="bg-white py-16">
+    <section id="pillars" className="bg-white py-10 sm:py-16">
       <div className="mx-auto max-w-7xl px-4 lg:px-8">
         <AnimateIn>
           <p className="mb-2 text-center text-xs font-bold uppercase tracking-widest text-destiny-orange">
             Our Five Pillars
           </p>
-          <h2 className="mb-10 text-center text-3xl font-black text-destiny-grey md:text-4xl">
+          <h2 className="mb-6 text-center text-2xl font-black text-destiny-grey sm:mb-10 sm:text-3xl md:text-4xl">
             What We Stand For
           </h2>
         </AnimateIn>
@@ -86,7 +86,7 @@ export default function MagnifySection() {
           style={{ background: pillar.color }}
         >
           <div
-            className={`flex flex-col items-center justify-center gap-8 px-8 py-12 transition-opacity duration-300 md:flex-row md:gap-16 md:px-16 ${
+            className={`flex flex-col items-center justify-center gap-6 px-5 py-8 transition-opacity duration-300 sm:gap-8 sm:px-8 sm:py-12 md:flex-row md:gap-16 md:px-16 ${
               animating ? "opacity-0" : "opacity-100"
             }`}
           >
@@ -98,16 +98,16 @@ export default function MagnifySection() {
                 alt={pillar.name}
                 width={160}
                 height={160}
-                className="h-36 w-36 md:h-44 md:w-44"
+                className="h-24 w-24 sm:h-36 sm:w-36 md:h-44 md:w-44"
               />
             </div>
 
             {/* Text */}
             <div>
-              <h3 className="mb-4 text-5xl font-black text-white md:text-6xl">
+              <h3 className="mb-3 text-3xl font-black text-white sm:mb-4 sm:text-5xl md:text-6xl">
                 {pillar.name}
               </h3>
-              <p className="max-w-xl text-base leading-relaxed text-white/80 md:text-lg">
+              <p className="max-w-xl text-sm leading-relaxed text-white/80 sm:text-base md:text-lg">
                 {pillar.description}
               </p>
             </div>
@@ -118,7 +118,7 @@ export default function MagnifySection() {
           <button
             onClick={prev}
             aria-label="Previous pillar"
-            className="absolute left-4 top-1/2 -translate-y-1/2 rounded-full bg-white/20 p-2 backdrop-blur-sm transition hover:bg-white/30"
+            className="absolute left-2 top-1/2 -translate-y-1/2 rounded-full bg-white/20 p-1.5 backdrop-blur-sm transition hover:bg-white/30 sm:left-4 sm:p-2"
           >
             <svg className="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
@@ -127,7 +127,7 @@ export default function MagnifySection() {
           <button
             onClick={next}
             aria-label="Next pillar"
-            className="absolute right-4 top-1/2 -translate-y-1/2 rounded-full bg-white/20 p-2 backdrop-blur-sm transition hover:bg-white/30"
+            className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full bg-white/20 p-1.5 backdrop-blur-sm transition hover:bg-white/30 sm:right-4 sm:p-2"
           >
             <svg className="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />

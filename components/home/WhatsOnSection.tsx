@@ -58,10 +58,10 @@ function EventCard({ event }: { event: ChurchSuiteEvent }) {
       href={href}
       target="_blank"
       rel="noopener noreferrer"
-      className="group min-w-[280px] max-w-[320px] shrink-0 overflow-hidden rounded-2xl border border-black/5 bg-white shadow-md"
+      className="group min-w-[240px] max-w-[280px] shrink-0 overflow-hidden rounded-2xl border border-black/5 bg-white shadow-md sm:min-w-[280px] sm:max-w-[320px]"
     >
       {/* Image with date badge */}
-      <div className="relative h-44 w-full overflow-hidden bg-gray-100">
+      <div className="relative h-36 w-full overflow-hidden bg-gray-100 sm:h-44">
         {imageUrl ? (
           <Image
             src={imageUrl}
@@ -78,7 +78,7 @@ function EventCard({ event }: { event: ChurchSuiteEvent }) {
           </div>
         )}
         {/* Date badge */}
-        <div className="absolute bottom-3 right-3 flex h-14 w-14 flex-col items-center justify-center rounded-xl bg-destiny-orange text-white shadow-lg">
+        <div className="absolute bottom-2 right-2 flex h-11 w-11 flex-col items-center justify-center rounded-xl bg-destiny-orange text-white shadow-lg sm:bottom-3 sm:right-3 sm:h-14 sm:w-14">
           <span className="text-lg font-black leading-none">{start.day}</span>
           <span className="text-[10px] font-bold uppercase">{start.month}</span>
         </div>
@@ -126,12 +126,12 @@ function EventCardPlaceholder({ index }: { index: number }) {
   const item = placeholders[index % placeholders.length];
 
   return (
-    <div className="min-w-[280px] max-w-[320px] shrink-0 overflow-hidden rounded-2xl border border-black/5 bg-white shadow-md">
-      <div className="relative h-44 w-full bg-gradient-to-br from-destiny-orange/20 to-destiny-orange/5">
+    <div className="min-w-[240px] max-w-[280px] shrink-0 overflow-hidden rounded-2xl border border-black/5 bg-white shadow-md sm:min-w-[280px] sm:max-w-[320px]">
+      <div className="relative h-36 w-full bg-gradient-to-br from-destiny-orange/20 to-destiny-orange/5 sm:h-44">
         <div className="flex h-full items-center justify-center">
           <span className="text-4xl font-black text-destiny-orange/30">DC</span>
         </div>
-        <div className="absolute bottom-3 right-3 flex h-14 w-14 flex-col items-center justify-center rounded-xl bg-destiny-orange text-white shadow-lg">
+        <div className="absolute bottom-2 right-2 flex h-11 w-11 flex-col items-center justify-center rounded-xl bg-destiny-orange text-white shadow-lg sm:bottom-3 sm:right-3 sm:h-14 sm:w-14">
           <span className="text-sm font-black leading-none">{item.day}</span>
         </div>
       </div>
@@ -156,17 +156,17 @@ export default async function WhatsOnSection() {
   const hasEvents = events.length > 0;
 
   return (
-    <section className="bg-white py-16">
+    <section className="bg-white py-10 sm:py-16">
       <div className="mx-auto max-w-7xl px-4 lg:px-8">
         {/* Header */}
         <AnimateIn>
-          <div className="mb-8 flex items-end justify-between">
-            <h2 className="text-3xl font-black text-destiny-orange md:text-4xl">
+          <div className="mb-8 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+            <h2 className="text-2xl font-black text-destiny-orange sm:text-3xl md:text-4xl">
               What&apos;s On
             </h2>
             <Link
               href="/whats-on"
-              className="text-sm font-semibold text-destiny-grey/70 underline underline-offset-4 transition hover:text-destiny-grey"
+              className="text-xs font-semibold text-destiny-grey/70 underline underline-offset-4 transition hover:text-destiny-grey sm:text-sm"
             >
               View Church Calendar
             </Link>

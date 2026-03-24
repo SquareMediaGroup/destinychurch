@@ -9,9 +9,9 @@ export default function AboutHero() {
           style={{ backgroundImage: "url('/img/photos/About Us BKG.png')" }}
         />
         <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/50 to-black/70" />
-        <div className="relative flex flex-col items-center justify-center py-[12rem] px-4 text-center">
+        <div className="relative flex flex-col items-center justify-center py-24 px-4 text-center sm:py-36 lg:py-[12rem]">
           <AnimateIn>
-            <h1 className="text-5xl font-black text-white md:text-6xl lg:text-7xl">
+            <h1 className="text-3xl font-black text-white sm:text-5xl md:text-6xl lg:text-7xl">
               About Us
             </h1>
             <p className="mt-4 text-base text-white/70 md:text-lg">

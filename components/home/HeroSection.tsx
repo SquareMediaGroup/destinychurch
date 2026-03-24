@@ -14,7 +14,7 @@ export default function HeroSection() {
         className="relative z-10 px-4 text-center"
         style={{ animation: "fadeInUp 0.9s ease forwards" }}
       >
-        <h1 className="whitespace-nowrap uppercase leading-[0.9] tracking-tight text-white text-[clamp(2rem,7.5vw,9.8rem)]" style={{ fontFamily: "var(--font-anton)" }}>
+        <h1 className="whitespace-nowrap uppercase leading-[0.9] tracking-tight text-white text-[clamp(2.5rem,10vw,9.8rem)]" style={{ fontFamily: "var(--font-anton)" }}>
           <span className="relative inline-block">
             Welcome
             <Image
@@ -33,16 +33,16 @@ export default function HeroSection() {
       </div>
 
       {/* CTAs pinned to bottom */}
-      <div className="absolute bottom-10 left-0 right-0 z-10 flex flex-wrap items-center justify-center gap-4 px-4">
+      <div className="absolute bottom-6 left-0 right-0 z-10 flex flex-wrap items-center justify-center gap-3 px-4 sm:bottom-10 sm:gap-4">
         <a
           href="/visit"
-          className="rounded-full bg-destiny-orange px-8 py-3.5 text-sm font-bold text-white shadow-lg shadow-destiny-orange/30 transition hover:brightness-110"
+          className="rounded-full bg-destiny-orange px-6 py-3 text-xs font-bold text-white shadow-lg shadow-destiny-orange/30 transition hover:brightness-110 sm:px-8 sm:py-3.5 sm:text-sm"
         >
           Plan a Visit
         </a>
         <a
           href="/sermons"
-          className="rounded-full border-2 border-white/30 px-8 py-3.5 text-sm font-bold text-white backdrop-blur-sm transition hover:border-white hover:bg-white/10"
+          className="rounded-full border-2 border-white/30 px-6 py-3 text-xs font-bold text-white backdrop-blur-sm transition hover:border-white hover:bg-white/10 sm:px-8 sm:py-3.5 sm:text-sm"
         >
           Sermons
         </a>

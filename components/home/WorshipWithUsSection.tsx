@@ -12,12 +12,12 @@ export default function WorshipWithUsSection() {
         />
         {/* Gradient overlay */}
         <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/60 to-black/40" />
-        <div className="relative mx-auto flex max-w-7xl flex-col items-start justify-between gap-8 px-4 py-16 md:flex-row md:items-center lg:px-8">
+        <div className="relative mx-auto flex max-w-7xl flex-col items-start justify-between gap-6 px-4 py-10 sm:gap-8 sm:py-16 md:flex-row md:items-center lg:px-8">
           <AnimateIn className="max-w-xl">
-            <h2 className="mb-4 text-3xl font-black text-white md:text-4xl">
+            <h2 className="mb-3 text-2xl font-black text-white sm:mb-4 sm:text-3xl md:text-4xl">
               Worship With Us
             </h2>
-            <p className="text-base leading-relaxed text-white/70">
+            <p className="text-sm leading-relaxed text-white/70 sm:text-base">
               Church is a place to belong, not an event to attend. As a community,
               together, we can be more and do more as we press on to be all God
               wants us to be. Come and experience an awesome time of praise,

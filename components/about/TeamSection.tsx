@@ -49,7 +49,7 @@ function TeamCard({ name, role, photo, cardBg, email }: { name: string; role: st
 
 export default function TeamSection() {
   return (
-    <section id="team" className="bg-[#f5f7fa] py-16">
+    <section id="team" className="bg-[#f5f7fa] py-10 sm:py-16">
       <div className="mx-auto max-w-7xl px-4 lg:px-8">
 
         {/* Lead Team */}

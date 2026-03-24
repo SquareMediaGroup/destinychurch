@@ -3,13 +3,13 @@ import AnimateIn from "@/components/AnimateIn";
 
 export default function BeliefsSection() {
   return (
-    <section className="bg-white py-16">
+    <section className="bg-white py-10 sm:py-16">
       <div className="mx-auto max-w-7xl px-4 lg:px-8">
 
         {/* Header */}
         <AnimateIn>
-          <div className="mb-2 flex items-center justify-between">
-            <h2 className="text-3xl font-black text-destiny-grey md:text-4xl">Our Beliefs</h2>
+          <div className="mb-2 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <h2 className="text-2xl font-black text-destiny-grey sm:text-3xl md:text-4xl">Our Beliefs</h2>
             <Link
               href="/beliefs"
               className="rounded-full bg-destiny-orange px-6 py-2.5 text-sm font-bold text-white transition hover:brightness-110"
@@ -39,7 +39,7 @@ export default function BeliefsSection() {
         {/* Two pillars */}
         <div className="grid gap-6 md:grid-cols-2">
           <AnimateIn delay={150}>
-            <div className="rounded-2xl p-8" style={{ background: "#F58021" }}>
+            <div className="rounded-2xl p-5 sm:p-8" style={{ background: "#F58021" }}>
               <p className="mb-4 text-xs font-bold uppercase tracking-widest text-white/50">
                 The Great Commandment
               </p>
@@ -51,7 +51,7 @@ export default function BeliefsSection() {
           </AnimateIn>
 
           <AnimateIn delay={200}>
-            <div className="rounded-2xl p-8" style={{ background: "#363f48" }}>
+            <div className="rounded-2xl p-5 sm:p-8" style={{ background: "#363f48" }}>
               <p className="mb-4 text-xs font-bold uppercase tracking-widest text-white/50">
                 The Great Commission
               </p>

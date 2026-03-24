@@ -113,16 +113,27 @@ export default function SermonsSidebar() {
         {/* Logo */}
         <Link
           href="/"
-          className="mb-6 flex items-center gap-3 px-1"
+          className="mb-6 flex items-center px-1"
           title="Destiny Church"
         >
-          <div className="relative h-10 w-10 shrink-0">
+          {/* Icon — collapsed sidebar */}
+          <div className="relative h-10 w-10 shrink-0 lg:hidden">
             <Image
               src={ICON_SRC}
               alt="Destiny Church"
               fill
               sizes="40px"
               className="object-contain"
+            />
+          </div>
+          {/* Full logo — expanded sidebar */}
+          <div className="relative hidden h-10 w-[180px] lg:block">
+            <Image
+              src="/img/brand/destiny-logo-color-white.svg"
+              alt="Destiny Church"
+              fill
+              sizes="180px"
+              className="object-contain object-left"
             />
           </div>
         </Link>

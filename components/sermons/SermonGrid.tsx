@@ -21,9 +21,9 @@ export default function SermonGrid({ videos }: SermonGridProps) {
     <div>
       {/* Search bar */}
       <div className="relative mb-4">
-        <span className="material-symbols-rounded pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-xl text-white/30">
-          search
-        </span>
+        <svg className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-white/30" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+        </svg>
         <input
           type="text"
           value={query}
@@ -47,9 +47,10 @@ export default function SermonGrid({ videos }: SermonGridProps) {
         </div>
       ) : (
         <div className="flex flex-col items-center justify-center py-20 text-center">
-          <span className="material-symbols-rounded mb-4 text-5xl text-white/20">
-            search_off
-          </span>
+          <svg className="mb-4 h-12 w-12 text-white/20" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6" />
+          </svg>
           <p className="text-base font-bold text-white/50">No sermons found</p>
           <p className="mt-1 text-sm text-white/30">Try a different search term</p>
         </div>

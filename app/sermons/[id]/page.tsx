@@ -71,19 +71,22 @@ const actionCards = [
     href: "/give",
     icon: "volunteer_activism",
     label: "Give",
-    sub: "Support Destiny Church",
+    sub: "Support the mission",
+    color: "#F58021",
   },
   {
     href: "/connect-card",
     icon: "contact_mail",
     label: "Connect Card",
-    sub: "Let us know you're here",
+    sub: "We'd love to hear from you",
+    color: "#3B82F6",
   },
   {
     href: "/whats-on",
     icon: "event",
     label: "What's On",
-    sub: "See upcoming events",
+    sub: "Don't miss what's next",
+    color: "#8B5CF6",
   },
 ];
 
@@ -162,22 +165,30 @@ export default async function SermonPage({ params }: PageProps) {
 
         {/* Action cards */}
         <p className="mb-3 text-xs font-bold uppercase tracking-widest text-white/30">What are your Next Steps?</p>
-        <div className="mb-8 flex flex-wrap gap-3">
+        <div className="mb-8 grid gap-3 sm:grid-cols-3">
           {actionCards.map((card) => (
             <Link
               key={card.href}
               href={card.href}
-              className="group flex min-w-[140px] flex-1 items-center gap-3 rounded-2xl bg-[#272727] p-4 transition hover:bg-[#3f3f3f]"
+              className="group relative overflow-hidden rounded-2xl p-5 transition hover:scale-[1.02]"
+              style={{ background: `linear-gradient(135deg, ${card.color}22, ${card.color}08)`, border: `1px solid ${card.color}25` }}
             >
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-destiny-orange/15">
-                <span className="material-symbols-rounded text-xl text-destiny-orange">
+              <div
+                className="mb-3 flex h-11 w-11 items-center justify-center rounded-xl"
+                style={{ background: `${card.color}20` }}
+              >
+                <span className="material-symbols-rounded text-2xl" style={{ color: card.color }}>
                   {card.icon}
                 </span>
               </div>
-              <div>
-                <p className="text-sm font-bold text-white">{card.label}</p>
-                <p className="text-xs text-white/40">{card.sub}</p>
-              </div>
+              <p className="text-sm font-bold text-white">{card.label}</p>
+              <p className="mt-0.5 text-xs text-white/50">{card.sub}</p>
+              <svg
+                className="absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-white/20 transition group-hover:translate-x-1 group-hover:text-white/50"
+                fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+              </svg>
             </Link>
           ))}
         </div>

@@ -124,14 +124,17 @@ export default async function SermonPage({ params }: PageProps) {
           <SermonSearchBar />
         </div>
 
-        {/* Back link */}
-        <Link
-          href="/sermons"
-          className="mb-4 inline-flex items-center gap-1.5 text-sm text-white/60 transition hover:text-white"
-        >
-          <span className="material-symbols-rounded text-base">arrow_back</span>
-          Back to Sermons
-        </Link>
+        {/* Back link + Share */}
+        <div className="mb-4 flex items-center justify-between">
+          <Link
+            href="/sermons"
+            className="inline-flex items-center gap-1.5 text-sm text-white/60 transition hover:text-white"
+          >
+            <span className="material-symbols-rounded text-base">arrow_back</span>
+            Back to Sermons
+          </Link>
+          <ShareButton title={video.title} url={`https://destinytees.uk/sermons/${id}`} />
+        </div>
 
         {/* Player */}
         <SermonPlayer videoId={video.id} thumbnail={video.thumbnail} sermonStart={sermonStart} />
@@ -142,13 +145,10 @@ export default async function SermonPage({ params }: PageProps) {
         </h1>
 
         {/* Meta row */}
-        <div className="mb-4 flex items-center justify-between">
-          <p className="text-sm text-white/50">
-            Destiny Church Tees Valley
-            {date && <> &middot; {date}</>}
-          </p>
-          <ShareButton title={video.title} url={`https://destinytees.uk/sermons/${id}`} />
-        </div>
+        <p className="mb-4 text-sm text-white/50">
+          Destiny Church Tees Valley
+          {date && <> &middot; {date}</>}
+        </p>
 
         {/* Description */}
         {displayDescription && (

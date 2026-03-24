@@ -5,6 +5,7 @@ import { getVideo, getAllVideos, formatDate } from "@/lib/youtube";
 import SermonPlayer from "@/components/sermons/SermonPlayer";
 import SermonDescription from "@/components/sermons/SermonDescription";
 import SermonSearchBar from "@/components/sermons/SermonSearchBar";
+import ShareButton from "@/components/sermons/ShareButton";
 import UpNextSection from "@/components/sermons/UpNextSection";
 
 interface PageProps {
@@ -17,14 +18,47 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   if (!video) {
     return { title: "Sermon Not Found" };
   }
+  const desc = video.description.slice(0, 160);
   return {
     title: video.title,
-    description: video.description.slice(0, 160),
+    description: desc,
+    alternates: { canonical: `/sermons/${id}` },
     openGraph: {
       title: `${video.title} | Destiny Church`,
-      description: video.description.slice(0, 160),
+      description: desc,
       url: `https://destinytees.uk/sermons/${id}`,
-      images: [{ url: video.thumbnail, alt: video.title }],
+      siteName: "Destiny Church",
+      type: "video.other",
+      images: [
+        {
+          url: video.thumbnail,
+          width: 1280,
+          height: 720,
+          alt: video.title,
+        },
+      ],
+      videos: [
+        {
+          url: `https://www.youtube.com/embed/${id}`,
+          width: 1280,
+          height: 720,
+          type: "text/html",
+        },
+      ],
+    },
+    twitter: {
+      card: "player",
+      title: `${video.title} | Destiny Church`,
+      description: desc,
+      images: [video.thumbnail],
+      players: [
+        {
+          playerUrl: `https://www.youtube.com/embed/${id}`,
+          streamUrl: `https://www.youtube.com/embed/${id}`,
+          width: 1280,
+          height: 720,
+        },
+      ],
     },
   };
 }
@@ -106,11 +140,14 @@ export default async function SermonPage({ params }: PageProps) {
           {video.title}
         </h1>
 
-        {/* Meta row — no view count */}
-        <p className="mb-4 text-sm text-white/50">
-          Destiny Church Tees Valley
-          {date && <> &middot; {date}</>}
-        </p>
+        {/* Meta row */}
+        <div className="mb-4 flex items-center justify-between">
+          <p className="text-sm text-white/50">
+            Destiny Church Tees Valley
+            {date && <> &middot; {date}</>}
+          </p>
+          <ShareButton title={video.title} url={`https://destinytees.uk/sermons/${id}`} />
+        </div>
 
         {/* Description */}
         {displayDescription && (

@@ -161,6 +161,7 @@ export default async function SermonPage({ params }: PageProps) {
         <div className="mb-6 border-t border-white/10" />
 
         {/* Action cards */}
+        <p className="mb-3 text-xs font-bold uppercase tracking-widest text-white/30">What are your Next Steps?</p>
         <div className="mb-8 flex flex-wrap gap-3">
           {actionCards.map((card) => (
             <Link

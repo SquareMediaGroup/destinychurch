@@ -19,6 +19,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     return { title: "Sermon Not Found" };
   }
   const desc = video.description.slice(0, 160);
+  const ogImage = `https://i.ytimg.com/vi/${id}/maxresdefault.jpg`;
   return {
     title: video.title,
     description: desc,
@@ -31,7 +32,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       type: "video.other",
       images: [
         {
-          url: video.thumbnail,
+          url: ogImage,
           width: 1280,
           height: 720,
           alt: video.title,
@@ -50,7 +51,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       card: "player",
       title: `${video.title} | Destiny Church`,
       description: desc,
-      images: [video.thumbnail],
+      images: [ogImage],
       players: [
         {
           playerUrl: `https://www.youtube.com/embed/${id}`,

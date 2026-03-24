@@ -6,20 +6,22 @@ export default function BeliefsSection() {
     <section className="bg-white py-10 sm:py-16">
       <div className="mx-auto max-w-7xl px-4 lg:px-8">
 
-        {/* Header */}
+        {/* Header card */}
         <AnimateIn>
-          <div className="mb-2 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <h2 className="text-2xl font-black text-destiny-grey sm:text-3xl md:text-4xl">Our Beliefs</h2>
-            <Link
-              href="/beliefs"
-              className="rounded-full bg-destiny-orange px-6 py-2.5 text-sm font-bold text-white transition hover:brightness-110"
-            >
-              Our Beliefs
-            </Link>
+          <div className="mb-10 rounded-2xl bg-[#f5f7fa] p-5 sm:p-8">
+            <div className="mb-2 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <h2 className="text-2xl font-black text-destiny-grey sm:text-3xl md:text-4xl">Our Beliefs</h2>
+              <Link
+                href="/beliefs"
+                className="w-fit rounded-full bg-destiny-orange px-6 py-2.5 text-sm font-bold text-white transition hover:brightness-110"
+              >
+                Our Beliefs
+              </Link>
+            </div>
+            <p className="text-sm text-destiny-grey/50">
+              Learn more about what we as a church believe
+            </p>
           </div>
-          <p className="mb-10 text-sm text-destiny-grey/50">
-            Learn more about what we as a church believe
-          </p>
         </AnimateIn>
 
         {/* Foundational Pillars */}

@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import type { YTVideo } from "@/lib/youtube";
+import { formatDuration } from "@/lib/youtube";
 
 interface FeaturedSlideshowProps {
   slides: YTVideo[];
@@ -79,10 +80,7 @@ export default function FeaturedSlideshow({ slides }: FeaturedSlideshowProps) {
                   })}
                 </span>
               )}
-              {slide.duration && <span>· {slide.duration}</span>}
-              {slide.viewCount && (
-                <span>· {parseInt(slide.viewCount).toLocaleString()} views</span>
-              )}
+              {slide.duration && <span>· {formatDuration(slide.duration)}</span>}
             </div>
             <Link
               href={`/sermons/${slide.id}`}

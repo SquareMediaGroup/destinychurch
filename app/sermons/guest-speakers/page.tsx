@@ -5,11 +5,11 @@ import CollectionSection from "@/components/sermons/CollectionSection";
 export const metadata: Metadata = {
   title: "Guest Speakers",
   description: "Watch sermons from guest speakers at Destiny Church Tees Valley.",
-  alternates: { canonical: "/guest-speakers" },
+  alternates: { canonical: "/sermons/guest-speakers" },
   openGraph: {
     title: "Guest Speakers | Destiny Church Tees Valley",
     description: "Watch sermons from guest speakers at Destiny Church Tees Valley.",
-    url: "https://destinytees.uk/guest-speakers",
+    url: "https://destinytees.uk/sermons/guest-speakers",
   },
 };
 

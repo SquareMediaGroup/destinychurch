@@ -5,11 +5,11 @@ import CollectionSection from "@/components/sermons/CollectionSection";
 export const metadata: Metadata = {
   title: "Series",
   description: "Watch sermon series from Destiny Church Tees Valley.",
-  alternates: { canonical: "/series" },
+  alternates: { canonical: "/sermons/series" },
   openGraph: {
     title: "Series | Destiny Church Tees Valley",
     description: "Watch sermon series from Destiny Church Tees Valley.",
-    url: "https://destinytees.uk/series",
+    url: "https://destinytees.uk/sermons/series",
   },
 };
 

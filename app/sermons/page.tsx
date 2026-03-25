@@ -37,19 +37,18 @@ export default async function SermonsPage() {
       {/* Featured slideshow */}
       <FeaturedSlideshow slides={featured} />
 
-      {/* Playlist collections — Disney+ style rows */}
-      <section className="bg-[#111111] pt-10 pb-2">
-        <div className="mx-auto max-w-7xl px-4 lg:px-8">
-          <Suspense fallback={null}>
-            <CollectionSection type="playlist" />
-          </Suspense>
-        </div>
-      </section>
-
-      {/* Grid section */}
+      {/* Grid section with playlists inserted between rows */}
       <section className="bg-[#111111] py-14">
         <div className="mx-auto max-w-7xl px-4 lg:px-8">
-          <SermonGrid videos={videos} />
+          <SermonGrid
+            videos={videos}
+            insertAfter={6}
+            insertNode={
+              <Suspense fallback={null}>
+                <CollectionSection type="playlist" />
+              </Suspense>
+            }
+          />
         </div>
       </section>
     </>

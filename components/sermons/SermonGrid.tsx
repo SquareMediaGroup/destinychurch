@@ -6,9 +6,11 @@ import SermonCard from "@/components/sermons/SermonCard";
 
 interface SermonGridProps {
   videos: YTVideo[];
+  insertAfter?: number;
+  insertNode?: React.ReactNode;
 }
 
-export default function SermonGrid({ videos }: SermonGridProps) {
+export default function SermonGrid({ videos, insertAfter = 6, insertNode }: SermonGridProps) {
   const [query, setQuery] = useState("");
 
   const filtered = query.trim()
@@ -40,11 +42,26 @@ export default function SermonGrid({ videos }: SermonGridProps) {
 
       {/* Grid or empty state */}
       {filtered.length > 0 ? (
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {filtered.map((video) => (
-            <SermonCard key={video.id} video={video} />
-          ))}
-        </div>
+        <>
+          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            {filtered.slice(0, insertAfter).map((video) => (
+              <SermonCard key={video.id} video={video} />
+            ))}
+          </div>
+
+          {/* Injected content (e.g. playlist rows) */}
+          {insertNode && !query.trim() && filtered.length > insertAfter && (
+            <div className="my-10">{insertNode}</div>
+          )}
+
+          {filtered.length > insertAfter && (
+            <div className="mt-6 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+              {filtered.slice(insertAfter).map((video) => (
+                <SermonCard key={video.id} video={video} />
+              ))}
+            </div>
+          )}
+        </>
       ) : (
         <div className="flex flex-col items-center justify-center py-20 text-center">
           <svg className="mb-4 h-12 w-12 text-white/20" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>

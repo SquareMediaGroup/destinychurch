@@ -3,6 +3,7 @@
 import { useEffect, useState, useRef, useCallback } from "react";
 import Image from "next/image";
 import { useCookieConsent } from "@/lib/cookieConsent";
+import { useSermonPlayerState } from "@/lib/sermonPlayerContext";
 
 declare global {
   interface Window {
@@ -66,7 +67,9 @@ export default function SermonPlayer({ videoId, thumbnail, sermonStart }: Sermon
   const isMobile = useIsMobile();
 
   // Custom controls state (docked desktop)
-  const [playing, setPlaying] = useState(false);
+  const { setPlaying: setGlobalPlaying } = useSermonPlayerState();
+  const [playing, setPlayingLocal] = useState(false);
+  const setPlaying = useCallback((v: boolean) => { setPlayingLocal(v); setGlobalPlaying(v); }, [setGlobalPlaying]);
   const [progress, setProgress] = useState(0);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);

@@ -4,6 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
+import { useSermonPlayerState } from "@/lib/sermonPlayerContext";
 
 const ICON_SRC =
   "/img/brand/destiny-icon.svg";
@@ -41,9 +42,11 @@ const bottomItems = [
 function ExpandableItem({
   item,
   isActive,
+  collapsed,
 }: {
   item: (typeof bottomItems)[number];
   isActive: boolean;
+  collapsed: boolean;
 }) {
   const [open, setOpen] = useState(false);
 
@@ -66,12 +69,12 @@ function ExpandableItem({
           >
             {item.icon}
           </span>
-          <span className="hidden lg:inline">{item.label}</span>
+          <span className={`hidden ${collapsed ? "" : "lg:inline"}`}>{item.label}</span>
         </Link>
         {/* chevron — only visible on wide sidebar */}
         <button
           onClick={() => setOpen((v) => !v)}
-          className="hidden shrink-0 rounded-lg p-1.5 text-white/30 transition hover:text-white/70 lg:block"
+          className={`hidden shrink-0 rounded-lg p-1.5 text-white/30 transition hover:text-white/70 ${collapsed ? "" : "lg:block"}`}
           aria-label={`Toggle ${item.label}`}
         >
           <svg
@@ -87,7 +90,7 @@ function ExpandableItem({
       </div>
 
       {/* sub-items — wide sidebar only */}
-      {open && (
+      {open && !collapsed && (
         <div className="hidden lg:block ml-9 mt-0.5 flex flex-col gap-0.5">
           {item.sub!.map((sub) => (
             <Link
@@ -106,9 +109,11 @@ function ExpandableItem({
 
 export default function SermonsSidebar() {
   const pathname = usePathname();
+  const { isPlaying } = useSermonPlayerState();
+  const collapsed = isPlaying;
 
   return (
-    <aside className="sticky top-0 flex h-screen w-14 shrink-0 flex-col border-r border-white/[0.07] bg-[#0a0a0a] lg:w-[220px]">
+    <aside className={`sticky top-0 flex h-screen shrink-0 flex-col border-r border-white/[0.07] bg-[#0a0a0a] transition-all duration-300 ${collapsed ? "w-14" : "w-14 lg:w-[220px]"}`}>
       <div className="flex h-full flex-col overflow-y-auto px-2 pb-4 pt-5">
         {/* Logo */}
         <Link
@@ -117,7 +122,7 @@ export default function SermonsSidebar() {
           title="Destiny Church"
         >
           {/* Icon — collapsed sidebar */}
-          <div className="relative h-10 w-10 shrink-0 lg:hidden">
+          <div className={`relative h-10 w-10 shrink-0 ${collapsed ? "" : "lg:hidden"}`}>
             <Image
               src={ICON_SRC}
               alt="Destiny Church"
@@ -127,7 +132,7 @@ export default function SermonsSidebar() {
             />
           </div>
           {/* Full logo — expanded sidebar */}
-          <div className="relative hidden h-10 w-[180px] lg:block">
+          <div className={`relative hidden h-10 w-[180px] ${collapsed ? "" : "lg:block"}`}>
             <Image
               src="/img/brand/destiny-logo-color-white.svg"
               alt="Destiny Church"
@@ -163,7 +168,7 @@ export default function SermonsSidebar() {
                 >
                   {item.icon}
                 </span>
-                <span className="hidden lg:inline">{item.label}</span>
+                <span className={`hidden ${collapsed ? "" : "lg:inline"}`}>{item.label}</span>
               </Link>
             );
           })}
@@ -179,7 +184,7 @@ export default function SermonsSidebar() {
 
             if (item.sub) {
               return (
-                <ExpandableItem key={item.href} item={item} isActive={isActive} />
+                <ExpandableItem key={item.href} item={item} isActive={isActive} collapsed={collapsed} />
               );
             }
 
@@ -200,7 +205,7 @@ export default function SermonsSidebar() {
                 >
                   {item.icon}
                 </span>
-                <span className="hidden lg:inline">{item.label}</span>
+                <span className={`hidden ${collapsed ? "" : "lg:inline"}`}>{item.label}</span>
               </Link>
             );
           })}

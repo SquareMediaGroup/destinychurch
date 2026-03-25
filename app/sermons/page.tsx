@@ -3,6 +3,7 @@ import { Suspense } from "react";
 import { getVisibleVideos } from "@/lib/sermons";
 import SermonGrid from "@/components/sermons/SermonGrid";
 import CollectionSection from "@/components/sermons/CollectionSection";
+import FeaturedSlideshow from "@/components/sermons/FeaturedSlideshow";
 
 export const metadata: Metadata = {
   title: "Sermons",
@@ -22,26 +23,19 @@ export const revalidate = 3600;
 export default async function SermonsPage() {
   const videos = await getVisibleVideos(50);
 
+  // Featured: latest sermon + 3 random picks from the rest
+  const featured: typeof videos = [];
+  if (videos.length > 0) {
+    featured.push(videos[0]);
+    const rest = videos.slice(1);
+    const shuffled = rest.sort(() => Math.random() - 0.5);
+    featured.push(...shuffled.slice(0, 3));
+  }
+
   return (
     <>
-      {/* Hero */}
-      <div
-        className="relative overflow-hidden py-28 text-center"
-        style={{ background: "linear-gradient(135deg, #1a1108 0%, #0d0d0d 100%)" }}
-      >
-        <div className="absolute inset-0 bg-gradient-to-b from-black/30 to-black/60" />
-        <div className="relative mx-auto max-w-3xl px-4">
-          <p className="mb-3 text-xs font-bold uppercase tracking-widest text-destiny-orange">
-            Destiny Church
-          </p>
-          <h1 className="mb-4 text-5xl font-black text-white md:text-6xl lg:text-7xl">
-            Sermons
-          </h1>
-          <p className="text-base text-white/60 md:text-lg">
-            Every message, any time.
-          </p>
-        </div>
-      </div>
+      {/* Featured slideshow */}
+      <FeaturedSlideshow slides={featured} />
 
       {/* Playlist collections — Disney+ style rows */}
       <section className="bg-[#111111] pt-10 pb-2">

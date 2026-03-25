@@ -141,6 +141,37 @@ export async function getAllVideos(maxResults = 50): Promise<YTVideo[]> {
   }
 }
 
+export async function getPlaylistVideos(playlistId: string, maxResults = 20): Promise<YTVideo[]> {
+  try {
+    const url = new URL("https://www.googleapis.com/youtube/v3/playlistItems");
+    url.searchParams.set("part", "snippet");
+    url.searchParams.set("playlistId", playlistId);
+    url.searchParams.set("maxResults", String(maxResults));
+    url.searchParams.set("key", API_KEY ?? "");
+
+    const res = await fetch(url.toString(), { next: { revalidate: 3600 } });
+    if (!res.ok) return [];
+    const data = await res.json();
+    const items: Array<{ snippet?: { resourceId?: { videoId?: string }; title?: string; description?: string; publishedAt?: string } }> = data.items ?? [];
+
+    return items
+      .filter((item) => item.snippet?.resourceId?.videoId)
+      .map((item) => {
+        const s = item.snippet!;
+        const id = s.resourceId!.videoId!;
+        return {
+          id,
+          title: s.title ?? "",
+          description: s.description ?? "",
+          thumbnail: thumbUrl(id),
+          publishedAt: s.publishedAt ?? "",
+        };
+      });
+  } catch {
+    return [];
+  }
+}
+
 export async function getVideo(id: string): Promise<YTVideo | null> {
   try {
     const url = new URL("https://www.googleapis.com/youtube/v3/videos");

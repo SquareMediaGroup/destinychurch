@@ -94,15 +94,28 @@ export default function SermonPlayer({ videoId, thumbnail, sermonStart }: Sermon
 
   useEffect(() => { if (!docked) setDismissed(false); }, [docked]);
 
-  // Poll player state for custom controls
+  const canPlay = mounted && consent?.media === true;
+
+  // Always poll playing state for sidebar collapse
+  const playingPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  useEffect(() => {
+    if (playingPollRef.current) clearInterval(playingPollRef.current);
+    if (!canPlay) return;
+    playingPollRef.current = setInterval(() => {
+      const p = playerRef.current;
+      if (!p?.getPlayerState) return;
+      setPlaying(p.getPlayerState() === 1);
+    }, 500);
+    return () => { if (playingPollRef.current) clearInterval(playingPollRef.current); };
+  }, [canPlay, setPlaying]);
+
+  // Poll detailed state for docked custom controls
   useEffect(() => {
     if (controlsPollRef.current) clearInterval(controlsPollRef.current);
     if (!docked || dismissed || isMobile) return;
     controlsPollRef.current = setInterval(() => {
       const p = playerRef.current;
-      if (!p?.getPlayerState || !p?.getCurrentTime || !p?.getDuration) return;
-      const state = p.getPlayerState();
-      setPlaying(state === 1); // YT.PlayerState.PLAYING
+      if (!p?.getCurrentTime || !p?.getDuration) return;
       const dur = p.getDuration();
       const cur = p.getCurrentTime();
       setDuration(dur);
@@ -111,8 +124,6 @@ export default function SermonPlayer({ videoId, thumbnail, sermonStart }: Sermon
     }, 250);
     return () => { if (controlsPollRef.current) clearInterval(controlsPollRef.current); };
   }, [docked, dismissed, isMobile]);
-
-  const canPlay = mounted && consent?.media === true;
 
   const startPolling = useCallback(() => {
     if (!sermonStart) return;

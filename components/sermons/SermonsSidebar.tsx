@@ -27,7 +27,6 @@ const aboutItems = [
 
 const topItems = [
   { href: "/sermons", icon: "subscriptions", label: "Sermons" },
-  { href: "/sermons/series", icon: "video_library", label: "Series" },
   { href: "/sermons/guest-speakers", icon: "mic", label: "Guest Speakers" },
 ];
 
@@ -148,7 +147,7 @@ export default function SermonsSidebar() {
           {topItems.map((item) => {
             const isActive =
               item.href === "/sermons"
-                ? pathname === "/sermons" || pathname.startsWith("/sermons/") && !pathname.startsWith("/sermons/series") && !pathname.startsWith("/sermons/guest-speakers")
+                ? pathname === "/sermons" || pathname.startsWith("/sermons/") && !pathname.startsWith("/sermons/guest-speakers")
                 : pathname.startsWith(item.href);
 
             return (

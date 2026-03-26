@@ -1,8 +1,6 @@
 import type { Metadata } from "next";
-import { Suspense } from "react";
 import { getVisibleVideos } from "@/lib/sermons";
 import SermonGrid from "@/components/sermons/SermonGrid";
-import CollectionSection from "@/components/sermons/CollectionSection";
 import FeaturedSlideshow from "@/components/sermons/FeaturedSlideshow";
 
 export const metadata: Metadata = {
@@ -37,18 +35,10 @@ export default async function SermonsPage() {
       {/* Featured slideshow */}
       <FeaturedSlideshow slides={featured} />
 
-      {/* Grid section with playlists inserted between rows */}
+      {/* Grid section */}
       <section className="bg-[#111111] py-14">
         <div className="mx-auto max-w-7xl px-4 lg:px-8">
-          <SermonGrid
-            videos={videos}
-            insertAfter={6}
-            insertNode={
-              <Suspense fallback={null}>
-                <CollectionSection type="playlist" />
-              </Suspense>
-            }
-          />
+          <SermonGrid videos={videos} />
         </div>
       </section>
     </>

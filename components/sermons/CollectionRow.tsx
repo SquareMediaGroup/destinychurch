@@ -9,11 +9,9 @@ interface CollectionRowProps {
   title: string;
   description?: string | null;
   videos: YTVideo[];
-  showEpisodeNumbers?: boolean;
-  seriesPlaylistId?: string;
 }
 
-export default function CollectionRow({ title, description, videos, showEpisodeNumbers, seriesPlaylistId }: CollectionRowProps) {
+export default function CollectionRow({ title, description, videos }: CollectionRowProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(false);
@@ -62,10 +60,10 @@ export default function CollectionRow({ title, description, videos, showEpisodeN
         )}
 
         <div ref={scrollRef} className="scrollbar-hide flex gap-3 overflow-x-auto pb-2 sm:gap-4">
-          {videos.map((video, index) => (
+          {videos.map((video) => (
             <Link
               key={video.id}
-              href={seriesPlaylistId ? `/sermons/${video.id}?series=${seriesPlaylistId}` : `/sermons/${video.id}`}
+              href={`/sermons/${video.id}`}
               className="group w-[180px] flex-shrink-0 sm:w-[240px]"
             >
               <div className="relative overflow-hidden rounded-lg" style={{ aspectRatio: "16/9" }}>
@@ -77,11 +75,6 @@ export default function CollectionRow({ title, description, videos, showEpisodeN
                   sizes="(max-width: 640px) 180px, 240px"
                 />
                 <div className="absolute inset-0 bg-black/0 transition group-hover:bg-black/20" />
-                {showEpisodeNumbers && (
-                  <span className="absolute top-1.5 left-1.5 rounded bg-destiny-orange px-2 py-0.5 text-[10px] font-bold text-white">
-                    EP {index + 1}
-                  </span>
-                )}
                 {video.duration && (
                   <span className="absolute bottom-1.5 right-1.5 rounded bg-black/80 px-1.5 py-0.5 text-[10px] font-medium text-white">
                     {video.duration}
@@ -89,7 +82,6 @@ export default function CollectionRow({ title, description, videos, showEpisodeN
                 )}
               </div>
               <p className="mt-2 line-clamp-2 text-xs font-semibold leading-snug text-white sm:text-sm">
-                {showEpisodeNumbers && <span className="text-destiny-orange">Episode {index + 1}: </span>}
                 {video.title}
               </p>
             </Link>

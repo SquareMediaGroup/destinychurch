@@ -2,7 +2,6 @@
 
 import { useEffect, useState, useRef, useCallback } from "react";
 import Image from "next/image";
-import { useRouter } from "next/navigation";
 import { useCookieConsent } from "@/lib/cookieConsent";
 import { useSermonPlayerState } from "@/lib/sermonPlayerContext";
 
@@ -17,7 +16,6 @@ interface SermonPlayerProps {
   videoId: string;
   thumbnail?: string;
   sermonStart?: number | null;
-  nextEpisodeUrl?: string;
 }
 
 function formatTimestamp(seconds: number): string {
@@ -55,12 +53,9 @@ function useIsMobile() {
   return mobile;
 }
 
-export default function SermonPlayer({ videoId, thumbnail, sermonStart, nextEpisodeUrl }: SermonPlayerProps) {
-  const router = useRouter();
+export default function SermonPlayer({ videoId, thumbnail, sermonStart }: SermonPlayerProps) {
   const { consent, allowAll, savePreferences } = useCookieConsent();
   const [mounted, setMounted] = useState(false);
-  const [showNextOverlay, setShowNextOverlay] = useState(false);
-  const nextTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [showJump, setShowJump] = useState(!!sermonStart);
   const playerRef = useRef<YT.Player | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -152,26 +147,10 @@ export default function SermonPlayer({ videoId, thumbnail, sermonStart, nextEpis
       playerRef.current = new window.YT!.Player(containerRef.current! as unknown as string, {
         videoId,
         playerVars: { modestbranding: 1 as YT.ModestBranding, rel: 0 as YT.RelatedVideos, autoplay: 0 as YT.AutoPlay },
-        events: {
-          onStateChange: (e: YT.OnStateChangeEvent) => {
-            startPolling();
-            // Auto-play next episode when video ends
-            if (e.data === 0 && nextEpisodeUrl) {
-              setShowNextOverlay(true);
-              nextTimerRef.current = setTimeout(() => {
-                router.push(nextEpisodeUrl);
-              }, 5000);
-            }
-          },
-        },
+        events: { onStateChange: () => startPolling() },
       });
     });
-    return () => {
-      if (pollRef.current) clearInterval(pollRef.current);
-      if (nextTimerRef.current) clearTimeout(nextTimerRef.current);
-      playerRef.current?.destroy();
-      playerRef.current = null;
-    };
+    return () => { if (pollRef.current) clearInterval(pollRef.current); playerRef.current?.destroy(); playerRef.current = null; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [canPlay, videoId]);
 
@@ -336,30 +315,6 @@ export default function SermonPlayer({ videoId, thumbnail, sermonStart, nextEpis
                 <path strokeLinecap="round" strokeLinejoin="round" d="M5 15l7-7 7 7" />
               </svg>
             </button>
-          )}
-
-          {/* Next episode overlay */}
-          {showNextOverlay && nextEpisodeUrl && (
-            <div className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-3 bg-black/80">
-              <p className="text-sm font-bold text-white">Next episode starting in 5 seconds...</p>
-              <div className="flex gap-3">
-                <button
-                  onClick={() => router.push(nextEpisodeUrl)}
-                  className="rounded-full bg-destiny-orange px-5 py-2 text-sm font-bold text-white transition hover:brightness-110"
-                >
-                  Play Now
-                </button>
-                <button
-                  onClick={() => {
-                    setShowNextOverlay(false);
-                    if (nextTimerRef.current) clearTimeout(nextTimerRef.current);
-                  }}
-                  className="rounded-full border border-white/20 px-5 py-2 text-sm font-medium text-white/70 transition hover:border-white/40 hover:text-white"
-                >
-                  Cancel
-                </button>
-              </div>
-            </div>
           )}
 
           {/* Jump to sermon — inline & mobile docked */}

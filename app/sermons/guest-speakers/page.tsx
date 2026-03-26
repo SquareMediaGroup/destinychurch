@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
-import { Suspense } from "react";
-import CollectionSection from "@/components/sermons/CollectionSection";
+import { getCollections } from "@/lib/collections";
+import { getPlaylistVideos } from "@/lib/youtube";
+import SermonCard from "@/components/sermons/SermonCard";
 
 export const metadata: Metadata = {
   title: "Guest Speakers",
@@ -15,7 +16,14 @@ export const metadata: Metadata = {
 
 export const revalidate = 3600;
 
-export default function GuestSpeakersPage() {
+export default async function GuestSpeakersPage() {
+  const collections = await getCollections("guest_speaker");
+  const videos = (
+    await Promise.all(
+      collections.map((c) => getPlaylistVideos(c.youtube_playlist_id, 50))
+    )
+  ).flat();
+
   return (
     <>
       <div
@@ -38,9 +46,15 @@ export default function GuestSpeakersPage() {
 
       <section className="bg-[#111111] py-14">
         <div className="mx-auto max-w-7xl px-4 lg:px-8">
-          <Suspense fallback={<p className="text-center text-sm text-white/40">Loading speakers...</p>}>
-            <CollectionSection type="guest_speaker" />
-          </Suspense>
+          {videos.length > 0 ? (
+            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+              {videos.map((video) => (
+                <SermonCard key={video.id} video={video} />
+              ))}
+            </div>
+          ) : (
+            <p className="text-center text-sm text-white/40">No guest speaker sermons found.</p>
+          )}
         </div>
       </section>
     </>

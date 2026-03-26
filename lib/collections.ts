@@ -30,3 +30,23 @@ export async function getAllCollections(): Promise<SermonCollection[]> {
     .order("display_order", { ascending: true });
   return (data ?? []) as SermonCollection[];
 }
+
+/** Check all series playlists for a video and return its series context */
+export async function getSeriesForVideo(
+  videoId: string
+): Promise<{
+  collection: SermonCollection;
+  videos: import("@/lib/youtube").YTVideo[];
+  currentIndex: number;
+} | null> {
+  const { getPlaylistVideos } = await import("@/lib/youtube");
+  const series = await getCollections("series");
+  for (const s of series) {
+    const videos = await getPlaylistVideos(s.youtube_playlist_id, 50);
+    const idx = videos.findIndex((v) => v.id === videoId);
+    if (idx !== -1) {
+      return { collection: s, videos, currentIndex: idx };
+    }
+  }
+  return null;
+}

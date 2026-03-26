@@ -17,6 +17,8 @@ export default async function CollectionSection({ type }: CollectionSectionProps
     }))
   );
 
+  const isSeries = type === "series";
+
   return (
     <>
       {rows
@@ -27,6 +29,8 @@ export default async function CollectionSection({ type }: CollectionSectionProps
             title={row.title}
             description={row.description}
             videos={row.videos}
+            showEpisodeNumbers={isSeries}
+            seriesPlaylistId={isSeries ? row.youtube_playlist_id : undefined}
           />
         ))}
     </>

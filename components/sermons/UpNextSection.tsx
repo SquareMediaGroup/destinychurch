@@ -15,6 +15,10 @@ interface Video {
 
 interface UpNextSectionProps {
   videos: Video[];
+  seriesVideos?: Video[];
+  seriesTitle?: string;
+  seriesPlaylistId?: string;
+  currentIndex?: number;
 }
 
 function fmtDate(iso: string): string {
@@ -29,7 +33,12 @@ function fmtDate(iso: string): string {
   }
 }
 
-export default function UpNextSection({ videos }: UpNextSectionProps) {
+export default function UpNextSection({ videos, seriesVideos, seriesTitle, seriesPlaylistId, currentIndex }: UpNextSectionProps) {
+  const isSeries = !!(seriesVideos && seriesPlaylistId && currentIndex !== undefined);
+  // For series: show remaining episodes starting from the next one
+  const episodeList = isSeries
+    ? seriesVideos.map((v, i) => ({ ...v, episodeNumber: i + 1 })).filter((_, i) => i !== currentIndex)
+    : [];
   const [sort, setSort] = useState<SortOption>("newest");
   const [filter, setFilter] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -76,6 +85,82 @@ export default function UpNextSection({ videos }: UpNextSectionProps) {
 
     return result;
   }, [videos, sort, filter]);
+
+  if (isSeries) {
+    return (
+      <section>
+        <div className="mb-4">
+          <h2 className="text-lg font-bold text-white">
+            {seriesTitle} — All Episodes
+          </h2>
+          <p className="mt-0.5 text-xs text-white/40">
+            {seriesVideos.length} episode{seriesVideos.length !== 1 ? "s" : ""}
+          </p>
+        </div>
+
+        <div className="relative">
+          {canScrollLeft && (
+            <button
+              onClick={() => scroll("left")}
+              aria-label="Scroll left"
+              className="absolute -left-1 top-1/2 z-20 -translate-y-1/2 flex h-8 w-8 items-center justify-center rounded-full bg-white/10 text-white/60 backdrop-blur-sm transition hover:bg-white/20 hover:text-white"
+            >
+              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+              </svg>
+            </button>
+          )}
+
+          <div ref={scrollRef} className="scrollbar-hide -mx-1 flex gap-3 overflow-x-auto px-1 pb-4 sm:gap-4">
+            {episodeList.map((ep) => {
+              const isNext = currentIndex !== undefined && ep.episodeNumber === currentIndex + 2;
+              return (
+                <Link
+                  key={ep.id}
+                  href={`/sermons/${ep.id}?series=${seriesPlaylistId}`}
+                  className={`group w-[200px] flex-shrink-0 rounded-xl p-2 transition sm:w-[260px] ${isNext ? "bg-destiny-orange/10 ring-1 ring-destiny-orange/30" : "hover:bg-[#272727]"}`}
+                >
+                  <div className="relative overflow-hidden rounded-xl" style={{ aspectRatio: "16/9" }}>
+                    <Image
+                      src={ep.thumbnail}
+                      alt={ep.title}
+                      fill
+                      className="object-cover transition-transform duration-300 group-hover:scale-105"
+                      sizes="(max-width: 640px) 200px, 260px"
+                    />
+                    <span className="absolute top-1.5 left-1.5 rounded bg-destiny-orange px-2 py-0.5 text-[10px] font-bold text-white">
+                      EP {ep.episodeNumber}
+                    </span>
+                    {isNext && (
+                      <span className="absolute bottom-1.5 left-1.5 rounded bg-white/90 px-2 py-0.5 text-[10px] font-bold text-black">
+                        Up Next
+                      </span>
+                    )}
+                  </div>
+                  <p className="mt-2 line-clamp-2 text-xs font-bold leading-snug text-white sm:text-sm">
+                    <span className="text-destiny-orange">Episode {ep.episodeNumber}: </span>
+                    {ep.title}
+                  </p>
+                </Link>
+              );
+            })}
+          </div>
+
+          {canScrollRight && (
+            <button
+              onClick={() => scroll("right")}
+              aria-label="Scroll right"
+              className="absolute -right-1 top-1/2 z-20 -translate-y-1/2 flex h-8 w-8 items-center justify-center rounded-full bg-white/10 text-white/60 backdrop-blur-sm transition hover:bg-white/20 hover:text-white"
+            >
+              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+              </svg>
+            </button>
+          )}
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section>

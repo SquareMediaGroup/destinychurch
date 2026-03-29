@@ -56,6 +56,25 @@ export default function ContactForm() {
       </div>
 
       <div>
+        <label className="mb-1.5 block text-sm font-bold text-destiny-grey" htmlFor="subject">
+          Subject
+        </label>
+        <select
+          id="subject"
+          name="subject"
+          required
+          className="w-full appearance-none rounded-2xl border border-black/10 bg-[#f5f7fa] px-4 py-3 text-sm text-destiny-grey outline-none transition focus:border-destiny-orange focus:ring-2 focus:ring-destiny-orange/20"
+        >
+          <option value="" disabled selected>Select a subject</option>
+          <option value="Safeguarding">Safeguarding</option>
+          <option value="Privacy">Privacy</option>
+          <option value="Complaints">Complaints</option>
+          <option value="Enquiries">Enquiries</option>
+          <option value="Other">Other</option>
+        </select>
+      </div>
+
+      <div>
         <label className="mb-1.5 block text-sm font-bold text-destiny-grey" htmlFor="message">
           Message
         </label>

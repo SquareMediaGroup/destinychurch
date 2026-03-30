@@ -143,12 +143,14 @@ export async function submitContactForm(formData: FormData) {
     if (error) throw error;
 
     // Forward email notification to tech team
-    await resend.emails.send({
+    const { error: emailError } = await resend.emails.send({
       from: "Destiny Church <noreply@destinytees.uk>",
       to: "techteam@destinytees.uk",
       subject: `Contact Form: ${subject} — ${name}`,
       html: buildContactEmailHtml(name, email, subject, message),
     });
+
+    if (emailError) throw new Error(emailError.message);
 
     return { success: true };
   } catch (err) {

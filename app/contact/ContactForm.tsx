@@ -6,6 +6,7 @@ import { submitContactForm } from "./actions";
 export default function ContactForm() {
   const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
   const [errorMsg, setErrorMsg] = useState("");
+  const [subject, setSubject] = useState("");
   const formRef = useRef<HTMLFormElement>(null);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -63,9 +64,11 @@ export default function ContactForm() {
           id="subject"
           name="subject"
           required
+          value={subject}
+          onChange={(e) => setSubject(e.target.value)}
           className="w-full appearance-none rounded-2xl border border-black/10 bg-[#f5f7fa] px-4 py-3 text-sm text-destiny-grey outline-none transition focus:border-destiny-orange focus:ring-2 focus:ring-destiny-orange/20"
         >
-          <option value="" disabled selected>Select a subject</option>
+          <option value="" disabled>Select a subject</option>
           <option value="Safeguarding">Safeguarding</option>
           <option value="Privacy">Privacy</option>
           <option value="Complaints">Complaints</option>
@@ -73,6 +76,19 @@ export default function ContactForm() {
           <option value="Other">Other</option>
         </select>
       </div>
+
+      {subject === "Safeguarding" && (
+        <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-4">
+          <p className="mb-1 font-bold text-red-700">If someone is in immediate danger</p>
+          <p className="text-sm text-red-600">
+            Please call <strong>999</strong> immediately. Do not wait for a response to this form.
+          </p>
+          <p className="mt-2 text-sm text-red-600">
+            For non-emergency safeguarding concerns, you can also contact the NSPCC helpline on{" "}
+            <strong>0808 800 5000</strong> (free, 24/7).
+          </p>
+        </div>
+      )}
 
       <div>
         <label className="mb-1.5 block text-sm font-bold text-destiny-grey" htmlFor="message">

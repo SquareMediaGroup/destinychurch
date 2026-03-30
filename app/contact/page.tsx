@@ -94,6 +94,17 @@ export default function ContactPage() {
             {/* Form */}
             <AnimateIn delay={100}>
               <h2 className="mb-8 text-2xl font-black text-destiny-grey">Send a Message</h2>
+              <a
+                href="/connect-card"
+                className="mb-6 flex items-center gap-3 rounded-2xl border border-destiny-orange/20 bg-destiny-orange/5 px-4 py-3 transition hover:bg-destiny-orange/10"
+              >
+                <span className="material-symbols-rounded text-xl text-destiny-orange">waving_hand</span>
+                <div className="flex-1">
+                  <p className="text-sm font-bold text-destiny-grey">New here?</p>
+                  <p className="text-xs text-destiny-grey/60">Fill in a connect card instead — it&apos;s the best way to say hello.</p>
+                </div>
+                <span className="material-symbols-rounded text-sm text-destiny-orange">arrow_forward</span>
+              </a>
               <ContactForm />
             </AnimateIn>
           </div>

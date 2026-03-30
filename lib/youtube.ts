@@ -54,6 +54,7 @@ export async function getLatestVideo(): Promise<YTVideo | null> {
     const searchUrl = new URL("https://www.googleapis.com/youtube/v3/search");
     searchUrl.searchParams.set("part", "snippet");
     searchUrl.searchParams.set("channelId", CHANNEL_ID ?? "");
+    searchUrl.searchParams.set("eventType", "completed");
     searchUrl.searchParams.set("order", "date");
     searchUrl.searchParams.set("type", "video");
     searchUrl.searchParams.set("maxResults", "1");
@@ -81,6 +82,7 @@ export async function getAllVideos(maxResults = 50): Promise<YTVideo[]> {
     const searchUrl = new URL("https://www.googleapis.com/youtube/v3/search");
     searchUrl.searchParams.set("part", "snippet");
     searchUrl.searchParams.set("channelId", CHANNEL_ID ?? "");
+    searchUrl.searchParams.set("eventType", "completed");
     searchUrl.searchParams.set("order", "date");
     searchUrl.searchParams.set("type", "video");
     searchUrl.searchParams.set("maxResults", String(maxResults));

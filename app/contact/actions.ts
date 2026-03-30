@@ -8,82 +8,66 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 type SubjectTheme = {
   accentColor: string;
   accentShadow: string;
-  badgeBg: string;
-  badgeText: string;
   badgeLabel: string;
   headline: string;
   intro: string;
-  headerBg: string;
-  logoSrc: string;
-  logoWidth: string;
+  // Dark gradient behind the glass card — matches site hero gradients
+  bgGradient: string;
+  // Tinted glow strip at bottom of header, simulating the glass accent
+  glowColor: string;
 };
 
 function getTheme(subject: string): SubjectTheme {
   switch (subject) {
     case "Safeguarding":
       return {
-        accentColor: "#dc2626",
-        accentShadow: "rgba(220,38,38,0.35)",
-        badgeBg: "#fef2f2",
-        badgeText: "#dc2626",
+        accentColor: "#ef4444",
+        accentShadow: "rgba(239,68,68,0.4)",
         badgeLabel: "Safeguarding",
         headline: "Safeguarding Report",
         intro: "A safeguarding concern has been submitted through the website. Please review and respond promptly.",
-        headerBg: "#dc2626",
-        logoSrc: "https://destinytees.uk/wp-content/uploads/2022/11/Full_Logo_White_Text-1.png",
-        logoWidth: "200",
+        bgGradient: "linear-gradient(135deg, #2c0a0a 0%, #1a0505 60%, #0d0d0d 100%)",
+        glowColor: "rgba(239,68,68,0.5)",
       };
     case "Privacy":
       return {
-        accentColor: "#2563eb",
-        accentShadow: "rgba(37,99,235,0.35)",
-        badgeBg: "#eff6ff",
-        badgeText: "#2563eb",
+        accentColor: "#3b82f6",
+        accentShadow: "rgba(59,130,246,0.4)",
         badgeLabel: "Privacy",
         headline: "Privacy Enquiry",
         intro: "A privacy-related message has been submitted through the website contact form.",
-        headerBg: "#2563eb",
-        logoSrc: "https://destinytees.uk/wp-content/uploads/2022/11/Full_Logo_White_Text-1.png",
-        logoWidth: "200",
+        bgGradient: "linear-gradient(135deg, #0a1628 0%, #071020 60%, #050d1a 100%)",
+        glowColor: "rgba(59,130,246,0.5)",
       };
     case "Complaints":
       return {
-        accentColor: "#d97706",
-        accentShadow: "rgba(217,119,6,0.35)",
-        badgeBg: "#fffbeb",
-        badgeText: "#d97706",
+        accentColor: "#f59e0b",
+        accentShadow: "rgba(245,158,11,0.4)",
         badgeLabel: "Complaint",
         headline: "New Complaint Received",
         intro: "A complaint has been submitted through the website. Please review and respond in a timely manner.",
-        headerBg: "#d97706",
-        logoSrc: "https://destinytees.uk/wp-content/uploads/2022/11/Full_Logo_White_Text-1.png",
-        logoWidth: "200",
+        bgGradient: "linear-gradient(135deg, #1f1200 0%, #140d00 60%, #0d0d0d 100%)",
+        glowColor: "rgba(245,158,11,0.5)",
       };
     case "Enquiries":
       return {
         accentColor: "#F58021",
-        accentShadow: "rgba(245,128,33,0.35)",
-        badgeBg: "#fff3e8",
-        badgeText: "#F58021",
+        accentShadow: "rgba(245,128,33,0.4)",
         badgeLabel: "Enquiry",
         headline: "New Enquiry",
         intro: "A new enquiry has been submitted through the website contact form.",
-        headerBg: "#363F48",
-        logoSrc: "https://destinytees.uk/wp-content/uploads/2022/11/Full_Logo_White_Text-1.png",
-        logoWidth: "200",
+        bgGradient: "linear-gradient(135deg, #1c0f06 0%, #0d0d0d 60%, #111318 100%)",
+        glowColor: "rgba(245,128,33,0.5)",
       };
     default:
       return {
         accentColor: "#F58021",
-        accentShadow: "rgba(245,128,33,0.35)",
-        badgeBg: "#fff3e8",
-        badgeText: "#F58021",
+        accentShadow: "rgba(245,128,33,0.4)",
         badgeLabel: "Contact Form",
         headline: "New Message Received",
         intro: "A new message has been submitted through the website contact form.",
-        headerBg: "#363F48",
-        logoSrc: "https://destinytees.uk/wp-content/uploads/2022/11/Full_Logo_White_Text-1.png",
-        logoWidth: "200",
+        bgGradient: "linear-gradient(135deg, #1c0f06 0%, #0d0d0d 60%, #111318 100%)",
+        glowColor: "rgba(245,128,33,0.5)",
       };
   }
 }
@@ -103,67 +87,70 @@ function buildContactEmailHtml(name: string, email: string, subject: string, mes
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <title>${t.headline}</title>
   </head>
-  <body style="margin:0;padding:0;background:#f6f6f6;">
+  <body style="margin:0;padding:0;background:#0f0f0f;">
 
     <div style="display:none;max-height:0;overflow:hidden;opacity:0;color:transparent;">
       New ${escapedSubject} message from ${escapedName}
     </div>
 
-    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f6f6f6;">
+    <!-- Full dark background wrapper -->
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:${t.bgGradient};">
       <tr>
-        <td align="center" style="padding:34px 16px;">
+        <td align="center" style="padding:40px 16px 0 16px;">
 
-          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background:#ffffff;border-radius:18px;overflow:hidden;box-shadow:0 10px 32px rgba(0,0,0,0.08);text-align:center;">
+          <!-- Logo -->
+          <img
+            src="https://destinytees.uk/wp-content/uploads/2022/11/Full_Logo_White_Text-1.png"
+            width="180"
+            alt="Destiny Church"
+            style="display:block;margin:0 auto 32px auto;border:0;outline:none;text-decoration:none;height:auto;max-width:100%;"
+          />
 
-            <!-- Coloured header -->
+          <!-- Glass card -->
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background:rgba(255,255,255,0.06);border-radius:24px;border:1px solid rgba(255,255,255,0.10);text-align:center;">
+
+            <!-- Accent glow bar -->
             <tr>
-              <td style="background:${t.headerBg};padding:32px 28px 28px 28px;">
-                <img
-                  src="${t.logoSrc}"
-                  width="${t.logoWidth}"
-                  alt="Destiny Church"
-                  style="display:block;margin:0 auto;border:0;outline:none;text-decoration:none;height:auto;max-width:100%;"
-                />
-              </td>
+              <td style="height:3px;background:${t.accentColor};border-radius:24px 24px 0 0;"></td>
             </tr>
 
-            <!-- Accent bar -->
+            <!-- Badge + headline -->
             <tr>
-              <td style="height:5px;background:${t.accentColor};"></td>
-            </tr>
-
-            <!-- Copy -->
-            <tr>
-              <td style="padding:28px 28px 8px 28px;font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Arial,sans-serif;color:#0c0a09;text-align:center;">
-                <span style="display:inline-block;padding:5px 14px;border-radius:999px;background:${t.badgeBg};color:${t.badgeText};font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;">
+              <td style="padding:32px 28px 8px 28px;font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Arial,sans-serif;text-align:center;">
+                <span style="display:inline-block;padding:5px 16px;border-radius:999px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.12);color:${t.accentColor};font-size:10px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;">
                   ${t.badgeLabel}
                 </span>
-                <h1 style="margin:16px 0 10px 0;font-size:22px;line-height:1.25;font-weight:800;color:#0c0a09;">
+                <h1 style="margin:18px 0 10px 0;font-size:24px;line-height:1.2;font-weight:800;color:#ffffff;">
                   ${t.headline}
                 </h1>
-                <p style="margin:0 0 24px 0;font-size:14px;line-height:1.7;color:#4a4543;">
+                <p style="margin:0 0 28px 0;font-size:14px;line-height:1.7;color:rgba(255,255,255,0.55);">
                   ${t.intro}
                 </p>
               </td>
             </tr>
 
-            <!-- Details card -->
+            <!-- Details glass card -->
             <tr>
-              <td style="padding:0 28px 24px 28px;font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Arial,sans-serif;text-align:left;">
-                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f9fafb;border-radius:12px;overflow:hidden;">
+              <td style="padding:0 24px 24px 24px;font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Arial,sans-serif;text-align:left;">
+                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:rgba(255,255,255,0.05);border-radius:16px;border:1px solid rgba(255,255,255,0.08);">
                   <tr>
-                    <td style="padding:20px 24px;">
-                      <p style="margin:0 0 6px 0;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:#9aa3aa;">From</p>
-                      <p style="margin:0 0 4px 0;font-size:15px;font-weight:700;color:#0c0a09;">${escapedName}</p>
-                      <p style="margin:0 0 20px 0;font-size:14px;color:#4a4543;">
-                        <a href="mailto:${escapedEmail}" style="color:${t.accentColor};text-decoration:underline;">${escapedEmail}</a>
+                    <td style="padding:22px 22px 6px 22px;">
+
+                      <p style="margin:0 0 5px 0;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:rgba(255,255,255,0.35);">From</p>
+                      <p style="margin:0 0 3px 0;font-size:15px;font-weight:700;color:#ffffff;">${escapedName}</p>
+                      <p style="margin:0 0 20px 0;font-size:13px;">
+                        <a href="mailto:${escapedEmail}" style="color:${t.accentColor};text-decoration:none;">${escapedEmail}</a>
                       </p>
 
-                      <p style="margin:0 0 6px 0;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:#9aa3aa;">Subject</p>
-                      <p style="margin:0 0 20px 0;font-size:15px;font-weight:600;color:#0c0a09;">${escapedSubject}</p>
+                      <p style="margin:0 0 5px 0;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:rgba(255,255,255,0.35);">Subject</p>
+                      <p style="margin:0 0 20px 0;font-size:15px;font-weight:600;color:#ffffff;">${escapedSubject}</p>
 
-                      <p style="margin:0 0 6px 0;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:#9aa3aa;">Message</p>
-                      <p style="margin:0;font-size:14px;line-height:1.7;color:#4a4543;">${escapedMessage}</p>
+                      <!-- Divider -->
+                      <div style="height:1px;background:rgba(255,255,255,0.08);margin:0 0 20px 0;"></div>
+
+                      <p style="margin:0 0 5px 0;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:rgba(255,255,255,0.35);">Message</p>
+                      <p style="margin:0 0 16px 0;font-size:14px;line-height:1.75;color:rgba(255,255,255,0.75);">${escapedMessage}</p>
+
                     </td>
                   </tr>
                 </table>
@@ -172,30 +159,32 @@ function buildContactEmailHtml(name: string, email: string, subject: string, mes
 
             <!-- Reply CTA -->
             <tr>
-              <td align="center" style="padding:0 28px 32px 28px;">
+              <td align="center" style="padding:0 24px 36px 24px;">
                 <a
                   href="mailto:${escapedEmail}?subject=Re: ${escapedSubject}"
-                  style="display:inline-block;padding:14px 32px;border-radius:999px;background:${t.accentColor};color:#ffffff;font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Arial,sans-serif;font-size:14px;font-weight:700;text-decoration:none;box-shadow:0 4px 14px ${t.accentShadow};"
+                  style="display:inline-block;padding:14px 36px;border-radius:999px;background:${t.accentColor};color:#ffffff;font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Arial,sans-serif;font-size:14px;font-weight:700;text-decoration:none;letter-spacing:0.01em;box-shadow:0 4px 20px ${t.accentShadow};"
                 >
                   Reply to ${escapedName}
                 </a>
               </td>
             </tr>
 
-            <!-- Footer -->
+          </table>
+
+          <!-- Footer -->
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;">
             <tr>
-              <td style="padding:18px 28px 20px 28px;background:#363F48;font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Arial,sans-serif;text-align:center;">
-                <p style="margin:0 0 10px 0;font-size:12px;line-height:1.6;color:#e6e9ec;">
+              <td style="padding:24px 16px 40px 16px;font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Arial,sans-serif;text-align:center;">
+                <p style="margin:0 0 8px 0;font-size:12px;color:rgba(255,255,255,0.3);">
                   Destiny Church Tees Valley
                 </p>
-                <p style="margin:0;font-size:12px;line-height:1.6;">
-                  <a href="https://destinytees.uk/privacy-policy" style="color:#ffffff;text-decoration:underline;">Privacy Policy</a>
-                  <span style="margin:0 10px;color:#9aa3aa;">&bull;</span>
-                  <a href="https://destinytees.uk" style="color:#ffffff;text-decoration:underline;">Visit Site</a>
+                <p style="margin:0;font-size:12px;">
+                  <a href="https://destinytees.uk/privacy-policy" style="color:rgba(255,255,255,0.4);text-decoration:underline;">Privacy Policy</a>
+                  <span style="margin:0 8px;color:rgba(255,255,255,0.2);">&bull;</span>
+                  <a href="https://destinytees.uk" style="color:rgba(255,255,255,0.4);text-decoration:underline;">Visit Site</a>
                 </p>
               </td>
             </tr>
-
           </table>
 
         </td>

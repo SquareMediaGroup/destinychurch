@@ -144,7 +144,7 @@ export async function submitContactForm(formData: FormData) {
 
     // Forward email notification to tech team
     const { error: emailError } = await resend.emails.send({
-      from: "Destiny Church <noreply@destinytees.uk>",
+      from: "Destiny Church <noreply@support.squaremediagroup.org>",
       to: "techteam@destinytees.uk",
       subject: `Contact Form: ${subject} — ${name}`,
       html: buildContactEmailHtml(name, email, subject, message),

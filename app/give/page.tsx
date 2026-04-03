@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import AnimateIn from "@/components/AnimateIn";
 import WorshipWithUsSection from "@/components/home/WorshipWithUsSection";
+import GiveCTA from "@/components/give/GiveCTA";
 import { createServiceClient } from "@/utils/supabase/service";
 
 export const revalidate = 60;
@@ -53,6 +54,9 @@ export default async function GivePage() {
               Thank you for your generosity. Your giving helps us reach our community,
               grow our church family and make a lasting difference.
             </p>
+            <div className="mt-8 flex justify-center">
+              <GiveCTA />
+            </div>
           </AnimateIn>
         </section>
       </div>

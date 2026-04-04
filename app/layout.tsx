@@ -100,8 +100,8 @@ export default async function RootLayout({
         className={`${roboto.variable} ${dosis.variable} ${anton.variable} antialiased`}
       >
         <Providers banner={banner}>
-          <BetaDisclaimer />
-          <SiteBanner />
+          {/* <BetaDisclaimer /> */}
+<SiteBanner />
           <CookieBanner />
           <div className="flex min-h-screen flex-col bg-[var(--background)] text-[var(--foreground)]">
             <Suspense>

@@ -4,6 +4,20 @@ const nextConfig: NextConfig = {
   outputFileTracingIncludes: {
     "*": ["node_modules/ffmpeg-static/ffmpeg"],
   },
+  async redirects() {
+    return [
+      {
+        source: "/prayer-request",
+        destination: "/connect-card",
+        permanent: true,
+      },
+      {
+        source: "/prayer-requests",
+        destination: "/connect-card",
+        permanent: true,
+      },
+    ];
+  },
   async headers() {
     return [
       {

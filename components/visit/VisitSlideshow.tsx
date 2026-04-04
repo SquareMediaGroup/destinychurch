@@ -5,9 +5,13 @@ import Image from "next/image";
 
 const photos = [
   "/img/photos/WorshipMoment1.jpg",
+  "/img/photos/Gallery/SN1_7825.CR2.jpeg",
   "/img/photos/Community.webp",
+  "/img/photos/Gallery/SN1_7862.CR2.jpeg",
   "/img/photos/ConnectGroups.jpg",
+  "/img/photos/Gallery/SN1_7897.CR2.jpeg",
   "/img/photos/WorshipMoment2.jpg",
+  "/img/photos/Gallery/SN1_7941.CR2.jpeg",
 ];
 
 const MARQUEE_TEXT = "TRANSFORMING LIVES • TRANSFORMING LIVES • TRANSFORMING LIVES • TRANSFORMING LIVES • ";

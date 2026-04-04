@@ -107,7 +107,7 @@ export default function YoungAdultsPage() {
                 <Image src="/img/photos/ConnectGroups.jpg" alt="" width={300} height={280} className="h-full w-full object-cover" />
               </div>
               <div className="col-span-2 overflow-hidden rounded-2xl">
-                <Image src="/img/photos/YA1.jpg" alt="" width={620} height={220} className="w-full object-cover" />
+                <Image src="/img/photos/Gallery/SN1_7879.CR2.jpeg" alt="" width={620} height={220} className="w-full object-cover" />
               </div>
             </AnimateIn>
             <AnimateIn delay={100} className="w-full md:w-1/2">
@@ -163,8 +163,8 @@ export default function YoungAdultsPage() {
           <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
             {[
               "/img/photos/YA1.jpg",
-              "/img/photos/Community.webp",
-              "/img/photos/WorshipMoment1.jpg",
+              "/img/photos/Gallery/SN1_7894.CR2.jpeg",
+              "/img/photos/Gallery/SN1_7897.CR2.jpeg",
               "/img/photos/WorshipMoment2.jpg",
             ].map((src, i) => (
               <AnimateIn key={i} delay={i * 60}>

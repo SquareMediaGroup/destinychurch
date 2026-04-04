@@ -93,7 +93,7 @@ export default function KidsPage() {
                 <Image src="/img/photos/Kids2.jpg" alt="Destiny Kids" width={300} height={220} className="w-full object-cover" />
               </div>
               <div className="overflow-hidden rounded-2xl">
-                <Image src="/img/photos/Community.webp" alt="Community" width={300} height={220} className="w-full object-cover" />
+                <Image src="/img/photos/Gallery/SN1_7913.CR2.jpeg" alt="" width={300} height={220} className="w-full object-cover" />
               </div>
             </AnimateIn>
           </div>
@@ -191,7 +191,7 @@ export default function KidsPage() {
                 <Image src="/img/photos/Kids1.png" alt="Tots Morning" width={300} height={280} className="w-full object-cover" />
               </div>
               <div className="col-span-2 overflow-hidden rounded-2xl">
-                <Image src="/img/photos/Community.webp" alt="Community" width={620} height={220} className="w-full object-cover" />
+                <Image src="/img/photos/Gallery/SN1_7923.CR2.jpeg" alt="" width={620} height={220} className="w-full object-cover" />
               </div>
             </AnimateIn>
             <AnimateIn delay={100} className="w-full md:w-3/5">
@@ -251,8 +251,8 @@ export default function KidsPage() {
             {[
               "/img/photos/Kids1.png",
               "/img/photos/Kids2.jpg",
-              "/img/photos/Community.webp",
-              "/img/photos/Kids1.png",
+              "/img/photos/Gallery/SN1_7941.CR2.jpeg",
+              "/img/photos/Gallery/SN1_7995.CR2.jpeg",
             ].map((src, i) => (
               <AnimateIn key={i} delay={i * 60}>
                 <div className="aspect-square overflow-hidden rounded-2xl">

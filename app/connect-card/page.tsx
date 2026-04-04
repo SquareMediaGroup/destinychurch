@@ -79,7 +79,7 @@ export default function ConnectCardPage() {
                 <Image src="/img/photos/Community.webp" alt="Community" width={640} height={300} className="w-full object-cover" />
               </div>
               <div className="overflow-hidden rounded-2xl">
-                <Image src="/img/photos/WorshipMoment1.jpg" alt="" width={300} height={220} className="w-full object-cover" />
+                <Image src="/img/photos/Gallery/SN1_8070.CR2.jpeg" alt="" width={300} height={220} className="w-full object-cover" />
               </div>
               <div className="overflow-hidden rounded-2xl">
                 <Image src="/img/photos/ConnectGroups.jpg" alt="" width={300} height={220} className="w-full object-cover" />

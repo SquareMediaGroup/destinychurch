@@ -158,10 +158,10 @@ export default function ServePage() {
                 <Image src="/img/photos/Training_DC-scaled.jpg" alt="Serving at Destiny" width={640} height={280} className="w-full object-cover" />
               </div>
               <div className="overflow-hidden rounded-2xl">
-                <Image src="/img/photos/WorshipMoment1.jpg" alt="" width={300} height={200} className="w-full object-cover" />
+                <Image src="/img/photos/Gallery/SN1_7825.CR2.jpeg" alt="" width={300} height={200} className="w-full object-cover" />
               </div>
               <div className="overflow-hidden rounded-2xl">
-                <Image src="/img/photos/Community.webp" alt="" width={300} height={200} className="w-full object-cover" />
+                <Image src="/img/photos/Gallery/SN1_7832.CR2.jpeg" alt="" width={300} height={200} className="w-full object-cover" />
               </div>
             </AnimateIn>
           </div>
@@ -223,10 +223,10 @@ export default function ServePage() {
         <div className="mx-auto max-w-7xl px-4 lg:px-8">
           <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
             {[
-              "/img/photos/WorshipMoment1.jpg",
-              "/img/photos/WorshipMoment2.jpg",
-              "/img/photos/Community.webp",
-              "/img/photos/ConnectGroups.jpg",
+              "/img/photos/Gallery/SN1_7835.CR2.jpeg",
+              "/img/photos/Gallery/SN1_7862.CR2.jpeg",
+              "/img/photos/Gallery/SN1_7865.CR2.jpeg",
+              "/img/photos/Gallery/SN1_7875.CR2.jpeg",
             ].map((src, i) => (
               <AnimateIn key={i} delay={i * 60}>
                 <div className="aspect-square overflow-hidden rounded-2xl">

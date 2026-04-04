@@ -32,8 +32,6 @@ export default function MeetPastorsSection() {
                   className="absolute left-1/2 w-[110%] -translate-x-[49%]"
                   style={{ bottom: "-0.2em" }}
                   aria-hidden="true"
-                  draggable={false}
-                  onContextMenu={(e) => e.preventDefault()}
                 />
               </span>
             </h2>

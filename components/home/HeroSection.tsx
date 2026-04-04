@@ -25,6 +25,8 @@ export default function HeroSection() {
               className="absolute left-1/2 w-[105%] -translate-x-[49%]" style={{ bottom: "-0.2em" }}
               priority
               aria-hidden="true"
+              draggable={false}
+              onContextMenu={(e) => e.preventDefault()}
             />
           </span>
           {" "}Home

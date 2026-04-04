@@ -122,7 +122,7 @@ export default function ChurchHeader() {
     >
       <div className="mx-auto max-w-7xl px-4 py-4 lg:px-8">
         <div
-          className={`flex items-center justify-between rounded-full border px-6 py-3 backdrop-blur-md transition-all duration-300 ${
+          className={`flex items-center justify-between rounded-full border pl-6 pr-2.5 py-3 backdrop-blur-md transition-all duration-300 ${
             scrolled
               ? "border-white/10 bg-destiny-grey/60 shadow-xl shadow-black/30"
               : "border-white/10 bg-destiny-grey/40 shadow-lg shadow-black/10"

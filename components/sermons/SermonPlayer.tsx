@@ -6,8 +6,36 @@ import { useCookieConsent } from "@/lib/cookieConsent";
 import { useSermonPlayerState } from "@/lib/sermonPlayerContext";
 
 declare global {
+  namespace YT {
+    interface Player {
+      getPlayerState(): number;
+      getCurrentTime(): number;
+      getDuration(): number;
+      seekTo(seconds: number, allowSeekAhead: boolean): void;
+      playVideo(): void;
+      pauseVideo(): void;
+      destroy(): void;
+    }
+    interface PlayerOptions {
+      videoId: string;
+      playerVars?: {
+        modestbranding?: number;
+        rel?: number;
+        autoplay?: number;
+      };
+      events?: {
+        onStateChange?: () => void;
+      };
+    }
+    type ModestBranding = number;
+    type RelatedVideos = number;
+    type AutoPlay = number;
+  }
+
   interface Window {
-    YT?: typeof YT;
+    YT?: {
+      Player: new (element: string | HTMLElement, options: YT.PlayerOptions) => YT.Player;
+    };
     onYouTubeIframeAPIReady?: () => void;
   }
 }

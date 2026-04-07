@@ -42,7 +42,7 @@ const ministries: Ministry[] = [
   {
     name: "Destiny Kids",
     icon: "child_care",
-    color: "#0857BA",
+    color: "#F58021",
     lead: "Funke Awojide",
     tagline: "Ages 0–11 · Teaching, games & care",
     description:
@@ -63,7 +63,7 @@ const ministries: Ministry[] = [
   {
     name: "Destiny Youth",
     icon: "bolt",
-    color: "#8106B1",
+    color: "#F58021",
     lead: "Osas Obot",
     tagline: "Ages 11–18 · Faith, identity & purpose",
     description:
@@ -101,7 +101,7 @@ const ministries: Ministry[] = [
   {
     name: "Prayer Team",
     icon: "volunteer_activism",
-    color: "#FD0000",
+    color: "#F58021",
     lead: "Adebowale Awojide",
     tagline: "Intercession · Ministry · Prayer ministry",
     description:
@@ -117,7 +117,7 @@ const ministries: Ministry[] = [
   {
     name: "Connect Groups",
     icon: "diversity_3",
-    color: "#0857BA",
+    color: "#F58021",
     lead: "Tracy Reddy",
     tagline: "Small groups · Mid-week community",
     description:
@@ -133,7 +133,7 @@ const ministries: Ministry[] = [
   {
     name: "Hospitality",
     icon: "local_cafe",
-    color: "#028002",
+    color: "#F58021",
     lead: "Thandi Mathema",
     tagline: "Teas, coffees & a warm welcome",
     description:
@@ -149,7 +149,7 @@ const ministries: Ministry[] = [
   {
     name: "Production",
     icon: "videocam",
-    color: "#363f48",
+    color: "#F58021",
     lead: "Daniel Park",
     tagline: "Sound · Lighting · Screens · Livestream",
     description:
@@ -170,7 +170,7 @@ const ministries: Ministry[] = [
   {
     name: "Social Media & Photography",
     icon: "palette",
-    color: "#8106B1",
+    color: "#F58021",
     lead: "Daniel Park",
     tagline: "Design · Content · Photography",
     description:
@@ -191,7 +191,7 @@ const ministries: Ministry[] = [
   {
     name: "Outreach & Missions",
     icon: "public",
-    color: "#028002",
+    color: "#F58021",
     lead: "Nkereuwem Ekanem",
     tagline: "Local · National · International",
     description:
@@ -207,7 +207,7 @@ const ministries: Ministry[] = [
   {
     name: "Administration",
     icon: "admin_panel_settings",
-    color: "#363f48",
+    color: "#F58021",
     lead: "George Krezner",
     tagline: "Organisation · Operations · Planning",
     description:
@@ -237,7 +237,7 @@ const ministries: Ministry[] = [
   {
     name: "Building Maintenance",
     icon: "handyman",
-    color: "#028002",
+    color: "#F58021",
     lead: "",
     tagline: "Cleaning · DIY · Facilities care",
     description:

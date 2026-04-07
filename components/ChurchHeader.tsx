@@ -239,7 +239,7 @@ export default function ChurchHeader() {
             ) : (
               <Link
                 href="/new-here"
-                className="rounded-full bg-destiny-orange px-5 py-2.5 text-sm font-bold text-white shadow-lg shadow-destiny-orange/25 transition hover:brightness-110"
+                className="whitespace-nowrap rounded-full bg-destiny-orange px-5 py-2.5 text-sm font-bold text-white shadow-lg shadow-destiny-orange/25 transition hover:brightness-110"
               >
                 New Here?
               </Link>

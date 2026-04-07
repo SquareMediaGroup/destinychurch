@@ -483,7 +483,7 @@ export default function SermonPlayer({ videoId, thumbnail, sermonStart }: Sermon
                       className="flex items-center gap-1.5 rounded-full bg-destiny-orange px-3 py-1.5 text-xs font-bold text-white transition hover:brightness-110"
                     >
                       <span className="h-3.5 w-3.5"><IconSkip /></span>
-                      Skip to {formatTimestamp(sermonStart)}
+                      Skip to Sermon ({formatTimestamp(sermonStart)})
                     </button>
                   )}
 

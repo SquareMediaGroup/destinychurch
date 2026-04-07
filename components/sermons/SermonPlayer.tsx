@@ -13,18 +13,18 @@ declare global {
   }
 }
 
+export interface SermonPlayerHandle {
+  jump: () => void;
+}
+
 interface SermonPlayerProps {
   videoId: string;
   thumbnail?: string;
   sermonStart?: number | null;
-}
-
-function formatTimestamp(seconds: number): string {
-  const h = Math.floor(seconds / 3600);
-  const m = Math.floor((seconds % 3600) / 60);
-  const s = seconds % 60;
-  if (h > 0) return `${h}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
-  return `${m}:${String(s).padStart(2, "0")}`;
+  /** Called when playback passes the sermonStart timestamp (hides external skip button) */
+  onSermonReached?: () => void;
+  /** Receives a handle with a jump() method so the parent can trigger skip */
+  handleRef?: React.MutableRefObject<SermonPlayerHandle | null>;
 }
 
 let apiLoading = false;
@@ -54,14 +54,6 @@ function useIsMobile() {
   return mobile;
 }
 
-function IconSkip() {
-  return (
-    <svg className="h-full w-full" fill="currentColor" viewBox="0 0 24 24">
-      <path d="M4 18l8.5-6L4 6v12zm9-12v12l8.5-6L13 6z" />
-    </svg>
-  );
-}
-
 function IconClose() {
   return (
     <svg className="h-full w-full" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
@@ -80,10 +72,9 @@ function IconScrollUp() {
 
 // ── Main component ─────────────────────────────────────────────────────────
 
-export default function SermonPlayer({ videoId, thumbnail, sermonStart }: SermonPlayerProps) {
+export default function SermonPlayer({ videoId, thumbnail, sermonStart, onSermonReached, handleRef }: SermonPlayerProps) {
   const { consent, allowAll, savePreferences } = useCookieConsent();
   const [mounted, setMounted] = useState(false);
-  const [showJump, setShowJump] = useState(!!sermonStart);
 
   const playerRef = useRef<YT.Player | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -131,7 +122,7 @@ export default function SermonPlayer({ videoId, thumbnail, sermonStart }: Sermon
     return () => { if (statePollRef.current) clearInterval(statePollRef.current); };
   }, [canPlay, setGlobalPlaying]);
 
-  // Poll for sermonStart skip banner
+  // Poll for sermonStart — notify parent when reached
   const startJumpPolling = useCallback(() => {
     if (!sermonStart) return;
     if (jumpPollRef.current) clearInterval(jumpPollRef.current);
@@ -139,11 +130,11 @@ export default function SermonPlayer({ videoId, thumbnail, sermonStart }: Sermon
       const p = playerRef.current;
       if (!p?.getCurrentTime) return;
       if (p.getCurrentTime() >= sermonStart) {
-        setShowJump(false);
+        onSermonReached?.();
         if (jumpPollRef.current) clearInterval(jumpPollRef.current);
       }
     }, 1000);
-  }, [sermonStart]);
+  }, [sermonStart, onSermonReached]);
 
   useEffect(() => () => { if (jumpPollRef.current) clearInterval(jumpPollRef.current); }, []);
 
@@ -181,12 +172,18 @@ export default function SermonPlayer({ videoId, thumbnail, sermonStart }: Sermon
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [canPlay, videoId]);
 
-  const handleJump = () => {
-    if (!sermonStart || !playerRef.current?.seekTo) return;
-    playerRef.current.seekTo(sermonStart, true);
-    playerRef.current.playVideo();
-    startJumpPolling();
-  };
+  // Expose jump handle to parent
+  useEffect(() => {
+    if (!handleRef) return;
+    handleRef.current = {
+      jump: () => {
+        if (!sermonStart || !playerRef.current?.seekTo) return;
+        playerRef.current.seekTo(sermonStart, true);
+        playerRef.current.playVideo();
+        startJumpPolling();
+      },
+    };
+  }, [handleRef, sermonStart, startJumpPolling]);
 
   // Drag handlers (desktop PiP only)
   const onPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
@@ -251,19 +248,6 @@ export default function SermonPlayer({ videoId, thumbnail, sermonStart }: Sermon
           {/* YouTube iframe target */}
           <div ref={containerRef} className="h-full w-full" />
 
-          {/* ── Skip to Sermon button (inline, above YouTube controls) ────── */}
-          {!showDocked && sermonStart && showJump && (
-            <div className="pointer-events-none absolute inset-0 z-10 flex items-start justify-start p-3">
-              <button
-                className="pointer-events-auto flex items-center gap-1.5 rounded-full bg-destiny-orange px-3 py-1.5 text-xs font-bold text-white shadow-lg transition hover:brightness-110"
-                onClick={handleJump}
-              >
-                <span className="h-3.5 w-3.5"><IconSkip /></span>
-                Skip to Sermon ({formatTimestamp(sermonStart)})
-              </button>
-            </div>
-          )}
-
           {/* ── Desktop PiP overlay (draggable, close button) ──────────────── */}
           {isDesktopDock && (
             <div
@@ -272,7 +256,6 @@ export default function SermonPlayer({ videoId, thumbnail, sermonStart }: Sermon
               onPointerMove={onPointerMove}
               onPointerUp={onPointerUp}
             >
-              {/* Top bar — drag handle + close */}
               <div className="flex items-center justify-between px-3 pt-2">
                 <div className="h-1 w-8 rounded-full bg-white/20" />
                 <button

@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getVideo, getAllVideos, formatDate } from "@/lib/youtube";
-import SermonPlayer from "@/components/sermons/SermonPlayer";
+import SermonPlayerSection from "@/components/sermons/SermonPlayerSection";
 import SermonDescription from "@/components/sermons/SermonDescription";
 import SermonSearchBar from "@/components/sermons/SermonSearchBar";
 import ShareButton from "@/components/sermons/ShareButton";
@@ -160,19 +160,14 @@ export default async function SermonPage({ params }: PageProps) {
           <ShareButton title={video.title} url={`https://destinytees.uk/sermons/${id}`} />
         </div>
 
-        {/* Player */}
-        <SermonPlayer videoId={video.id} thumbnail={video.thumbnail} sermonStart={sermonStart} />
-
-        {/* Title */}
-        <h1 className="mb-1 mt-4 text-xl font-black text-white">
-          {video.title}
-        </h1>
-
-        {/* Meta row */}
-        <p className="mb-4 text-sm text-white/50">
-          Destiny Church Tees Valley
-          {date && <> &middot; {date}</>}
-        </p>
+        {/* Player + title + meta */}
+        <SermonPlayerSection
+          videoId={video.id}
+          thumbnail={video.thumbnail}
+          sermonStart={sermonStart}
+          title={video.title}
+          meta={`Destiny Church Tees Valley${date ? ` · ${date}` : ""}`}
+        />
 
         {/* Description */}
         {displayDescription && (

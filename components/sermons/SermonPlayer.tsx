@@ -5,6 +5,7 @@ import { useEffect, useState, useRef, useCallback } from "react";
 import Image from "next/image";
 import { useCookieConsent } from "@/lib/cookieConsent";
 import { useSermonPlayerState } from "@/lib/sermonPlayerContext";
+import { useSermonJump } from "./SermonJumpContext";
 
 declare global {
   interface Window {
@@ -13,18 +14,9 @@ declare global {
   }
 }
 
-export interface SermonPlayerHandle {
-  jump: () => void;
-}
-
 interface SermonPlayerProps {
   videoId: string;
   thumbnail?: string;
-  sermonStart?: number | null;
-  /** Called when playback passes the sermonStart timestamp (hides external skip button) */
-  onSermonReached?: () => void;
-  /** Receives a handle with a jump() method so the parent can trigger skip */
-  handleRef?: React.MutableRefObject<SermonPlayerHandle | null>;
 }
 
 let apiLoading = false;
@@ -70,11 +62,11 @@ function IconScrollUp() {
   );
 }
 
-// ── Main component ─────────────────────────────────────────────────────────
-
-export default function SermonPlayer({ videoId, thumbnail, sermonStart, onSermonReached, handleRef }: SermonPlayerProps) {
+export default function SermonPlayer({ videoId, thumbnail }: SermonPlayerProps) {
   const { consent, allowAll, savePreferences } = useCookieConsent();
   const [mounted, setMounted] = useState(false);
+
+  const { jumpFnRef, hideJump, sermonStart } = useSermonJump();
 
   const playerRef = useRef<YT.Player | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -89,14 +81,12 @@ export default function SermonPlayer({ videoId, thumbnail, sermonStart, onSermon
 
   const { setPlaying: setGlobalPlaying } = useSermonPlayerState();
 
-  // Desktop PiP drag state
   const [pos, setPos] = useState({ x: 24, y: 24 });
   const dragging = useRef(false);
   const dragStart = useRef({ mx: 0, my: 0, px: 0, py: 0 });
 
   useEffect(() => { setMounted(true); }, []);
 
-  // Sentinel intersection → docked state
   useEffect(() => {
     if (!mounted) return;
     const el = sentinelRef.current;
@@ -110,7 +100,7 @@ export default function SermonPlayer({ videoId, thumbnail, sermonStart, onSermon
 
   const canPlay = mounted && consent?.media === true;
 
-  // Poll player state for global playing flag
+  // Poll for global playing state
   useEffect(() => {
     if (statePollRef.current) clearInterval(statePollRef.current);
     if (!canPlay) return;
@@ -122,7 +112,7 @@ export default function SermonPlayer({ videoId, thumbnail, sermonStart, onSermon
     return () => { if (statePollRef.current) clearInterval(statePollRef.current); };
   }, [canPlay, setGlobalPlaying]);
 
-  // Poll for sermonStart — notify parent when reached
+  // Poll to auto-hide the skip button when sermon is reached
   const startJumpPolling = useCallback(() => {
     if (!sermonStart) return;
     if (jumpPollRef.current) clearInterval(jumpPollRef.current);
@@ -130,11 +120,11 @@ export default function SermonPlayer({ videoId, thumbnail, sermonStart, onSermon
       const p = playerRef.current;
       if (!p?.getCurrentTime) return;
       if (p.getCurrentTime() >= sermonStart) {
-        onSermonReached?.();
+        hideJump();
         if (jumpPollRef.current) clearInterval(jumpPollRef.current);
       }
     }, 1000);
-  }, [sermonStart, onSermonReached]);
+  }, [sermonStart, hideJump]);
 
   useEffect(() => () => { if (jumpPollRef.current) clearInterval(jumpPollRef.current); }, []);
 
@@ -145,13 +135,7 @@ export default function SermonPlayer({ videoId, thumbnail, sermonStart, onSermon
       if (playerRef.current) playerRef.current.destroy();
       playerRef.current = new window.YT!.Player(containerRef.current! as unknown as string, {
         videoId,
-        playerVars: {
-          modestbranding: 1,
-          rel: 0,
-          autoplay: 0,
-          controls: 1,
-          iv_load_policy: 3,
-        },
+        playerVars: { modestbranding: 1, rel: 0, autoplay: 0, controls: 1, iv_load_policy: 3 },
         events: {
           onStateChange: () => startJumpPolling(),
           onReady: () => {
@@ -172,20 +156,17 @@ export default function SermonPlayer({ videoId, thumbnail, sermonStart, onSermon
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [canPlay, videoId]);
 
-  // Expose jump handle to parent
+  // Register the jump function in the shared context ref
   useEffect(() => {
-    if (!handleRef) return;
-    handleRef.current = {
-      jump: () => {
-        if (!sermonStart || !playerRef.current?.seekTo) return;
-        playerRef.current.seekTo(sermonStart, true);
-        playerRef.current.playVideo();
-        startJumpPolling();
-      },
+    jumpFnRef.current = () => {
+      if (!sermonStart || !playerRef.current?.seekTo) return;
+      playerRef.current.seekTo(sermonStart, true);
+      playerRef.current.playVideo();
+      startJumpPolling();
     };
-  }, [handleRef, sermonStart, startJumpPolling]);
+  }, [jumpFnRef, sermonStart, startJumpPolling]);
 
-  // Drag handlers (desktop PiP only)
+  // Drag handlers (desktop PiP)
   const onPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
     if ((e.target as HTMLElement).closest("button")) return;
     dragging.current = true;
@@ -205,7 +186,7 @@ export default function SermonPlayer({ videoId, thumbnail, sermonStart, onSermon
 
   if (!mounted || !canPlay) {
     return (
-      <div className="relative aspect-video w-full overflow-hidden rounded-2xl bg-[#111]">
+      <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 overflow-hidden rounded-2xl bg-[#111]">
         {thumbnail && (
           <Image src={thumbnail} alt="Sermon thumbnail" fill className="object-cover opacity-30 blur-sm scale-105" sizes="(max-width: 1024px) 100vw, 740px" />
         )}
@@ -236,19 +217,16 @@ export default function SermonPlayer({ videoId, thumbnail, sermonStart, onSermon
     ? isMobile
       ? "sticky top-0 z-40 w-full bg-black shadow-lg shadow-black/40"
       : "fixed z-50 overflow-hidden rounded-xl shadow-2xl shadow-black/60"
-    : "relative w-full overflow-hidden rounded-2xl";
+    : "absolute inset-0 overflow-hidden rounded-2xl";
 
   const wrapperStyle: React.CSSProperties = isDesktopDock ? { right: pos.x, bottom: pos.y, width: 360 } : {};
 
   return (
-    <div ref={sentinelRef} style={{ aspectRatio: "16/9" }}>
+    <div ref={sentinelRef} className="absolute inset-0">
       <div ref={wrapperRef} className={wrapperClass} style={wrapperStyle}>
         <div className="relative aspect-video w-full bg-black">
-
-          {/* YouTube iframe target */}
           <div ref={containerRef} className="h-full w-full" />
 
-          {/* ── Desktop PiP overlay (draggable, close button) ──────────────── */}
           {isDesktopDock && (
             <div
               className="absolute inset-0 z-10 flex cursor-grab flex-col justify-between active:cursor-grabbing"
@@ -269,7 +247,6 @@ export default function SermonPlayer({ videoId, thumbnail, sermonStart, onSermon
             </div>
           )}
 
-          {/* ── Mobile dock overlay (scroll-back button) ─────────────────── */}
           {isMobileDock && (
             <div className="absolute inset-0 z-10 pointer-events-none">
               <button
@@ -281,7 +258,6 @@ export default function SermonPlayer({ videoId, thumbnail, sermonStart, onSermon
               </button>
             </div>
           )}
-
         </div>
       </div>
     </div>

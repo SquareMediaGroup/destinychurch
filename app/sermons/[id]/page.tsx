@@ -2,7 +2,9 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getVideo, getAllVideos, formatDate } from "@/lib/youtube";
-import SermonPlayerSection from "@/components/sermons/SermonPlayerSection";
+import SermonPlayer from "@/components/sermons/SermonPlayer";
+import { SermonJumpProvider } from "@/components/sermons/SermonJumpContext";
+import SkipToSermonButton from "@/components/sermons/SkipToSermonButton";
 import SermonDescription from "@/components/sermons/SermonDescription";
 import SermonSearchBar from "@/components/sermons/SermonSearchBar";
 import ShareButton from "@/components/sermons/ShareButton";
@@ -160,14 +162,23 @@ export default async function SermonPage({ params }: PageProps) {
           <ShareButton title={video.title} url={`https://destinytees.uk/sermons/${id}`} />
         </div>
 
-        {/* Player + title + meta */}
-        <SermonPlayerSection
-          videoId={video.id}
-          thumbnail={video.thumbnail}
-          sermonStart={sermonStart}
-          title={video.title}
-          meta={`Destiny Church Tees Valley${date ? ` · ${date}` : ""}`}
-        />
+        {/* Player — aspect-ratio wrapper reserves space on SSR, eliminating CLS */}
+        <SermonJumpProvider sermonStart={sermonStart}>
+          <div className="relative w-full" style={{ aspectRatio: "16/9" }}>
+            <SermonPlayer videoId={video.id} thumbnail={video.thumbnail} />
+          </div>
+
+          {/* Title row — server-rendered, no CLS */}
+          <div className="mt-4 flex items-start justify-between gap-4">
+            <h1 className="text-xl font-black leading-snug text-white">{video.title}</h1>
+            <SkipToSermonButton />
+          </div>
+
+          {/* Meta row — server-rendered */}
+          <p className="mb-4 mt-1 text-sm text-white/50">
+            Destiny Church Tees Valley{date && <> &middot; {date}</>}
+          </p>
+        </SermonJumpProvider>
 
         {/* Description */}
         {displayDescription && (

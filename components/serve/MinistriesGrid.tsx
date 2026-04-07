@@ -1,0 +1,448 @@
+"use client";
+
+import Image from "next/image";
+import { useState } from "react";
+import AnimateIn from "@/components/AnimateIn";
+
+type Ministry = {
+  name: string;
+  icon: string;
+  color: string;
+  lead: string;
+  tagline: string;
+  description: string;
+  detail: string;
+  photos: string[];
+};
+
+const ministries: Ministry[] = [
+  {
+    name: "Worship",
+    icon: "music_note",
+    color: "#F58021",
+    lead: "David Bayode",
+    tagline: "Singers, musicians & sound engineers",
+    description:
+      "Lead the church in encountering God through music, song and creative expression. Singers, musicians and sound engineers all welcome.",
+    detail:
+      "The Worship team leads the church into the presence of God every Sunday and at special events. We're a community of singers, musicians, and sound engineers who are as passionate about spiritual depth as we are about musical excellence. We rehearse weekly and invest in one another's growth — both on stage and off it. If you play an instrument, have a voice, or love running sound and mix, we'd love to hear from you.",
+    photos: [
+      "/img/photos/Gallery/WorshipMoment.jpeg",
+      "/img/photos/Gallery/SingingLand.jpeg",
+      "/img/photos/Gallery/SingingPort.jpeg",
+      "/img/photos/Gallery/SingingLand3.jpeg",
+    ],
+  },
+  {
+    name: "Destiny Kids",
+    icon: "child_care",
+    color: "#0857BA",
+    lead: "Funke Awojide",
+    tagline: "Ages 0–11 · Teaching, games & care",
+    description:
+      "Help children aged 0–11 discover God in a fun, safe and nurturing environment. Teaching, craft, games and pastoral care for little ones.",
+    detail:
+      "Destiny Kids is where the next generation first encounters Jesus. We run vibrant, safe, and age-appropriate sessions for children aged 0–11 every Sunday. Volunteers get involved in storytelling, crafts, games, check-in, and one-to-one care. No special qualifications needed — just a love for kids and a heart to serve. All volunteers are DBS checked.",
+    photos: [
+      "/img/photos/Kids1.png",
+      "/img/photos/Kids2.jpg",
+      "/img/photos/Gallery/FamilySatTogether.jpeg",
+    ],
+  },
+  {
+    name: "Destiny Youth",
+    icon: "bolt",
+    color: "#8106B1",
+    lead: "Osas Obot",
+    tagline: "Ages 11–18 · Faith, identity & purpose",
+    description:
+      "Invest in the next generation. Walk alongside young people aged 11–18 as they explore faith, identity and purpose.",
+    detail:
+      "Destiny Youth is a space where teenagers can be themselves, ask hard questions, and encounter a God who knows them by name. The team runs Sunday sessions and regular youth events, creating environments that are energetic, honest, and rooted in the Word. If you have a heart for young people and remember what it felt like to be a teenager navigating life and faith, this team is for you.",
+    photos: [
+      "/img/photos/Gallery/YouthCommunity.jpeg",
+      "/img/photos/YA1.jpg",
+      "/img/photos/Youth1.JPG",
+    ],
+  },
+  {
+    name: "Stewarding & Welcome",
+    icon: "waving_hand",
+    color: "#F58021",
+    lead: "Younes Moradi",
+    tagline: "First impressions · Warm & safe spaces",
+    description:
+      "Be the first face people see. Our Welcome Team creates a warm, safe and welcoming environment every Sunday and at events.",
+    detail:
+      "The Welcome Team is the heartbeat of Sunday hospitality. You're the first face a guest sees when they walk through the door, and that moment matters more than you know. From greeting and directing to ensuring safety and accessibility, this team makes sure every single person — whether it's their first Sunday or their hundredth — feels genuinely seen and welcomed.",
+    photos: [
+      "/img/photos/Gallery/Community.jpeg",
+      "/img/photos/Gallery/Community2.jpeg",
+      "/img/photos/Gallery/OlderPeople.jpeg",
+    ],
+  },
+  {
+    name: "Prayer Team",
+    icon: "volunteer_activism",
+    color: "#FD0000",
+    lead: "Adebowale Awojide",
+    tagline: "Intercession · Ministry · Prayer ministry",
+    description:
+      "Pray with and for the congregation during services and beyond. A vital ministry underpinning everything we do at Destiny.",
+    detail:
+      "Prayer is the engine room of everything at Destiny. The Prayer Team ministers to individuals during and after services, intercedes for the church and the city, and helps build a culture where encountering God is the norm. If you feel called to a ministry of prayer and want to serve the church in one of the most impactful ways possible, this team is waiting for you.",
+    photos: [
+      "/img/photos/Prayer1.jpg",
+      "/img/photos/Gallery/Speaker.jpeg",
+      "/img/photos/Gallery/Speaker2.jpeg",
+    ],
+  },
+  {
+    name: "Connect Groups",
+    icon: "diversity_3",
+    color: "#0857BA",
+    lead: "Tracy Reddy",
+    tagline: "Small groups · Mid-week community",
+    description:
+      "Host or lead a small group where people can grow in faith, build friendships and do life together throughout the week.",
+    detail:
+      "Connect Groups are where real community happens. These small groups of 8–12 people meet mid-week in homes across Teesside to study the Word, pray together, and do life. As a Connect Group leader or host, you create the space for people to belong, grow and be known. Training and ongoing support are provided for all leaders.",
+    photos: [
+      "/img/photos/ConnectGroups.jpg",
+      "/img/photos/Gallery/Community2.jpeg",
+      "/img/photos/Gallery/FamilySatTogether.jpeg",
+    ],
+  },
+  {
+    name: "Hospitality",
+    icon: "local_cafe",
+    color: "#028002",
+    lead: "Thandi Mathema",
+    tagline: "Teas, coffees & a warm welcome",
+    description:
+      "Serve teas, coffees and refreshments, making every guest feel genuinely welcome and at home from the moment they walk through the door.",
+    detail:
+      "There is theology in a warm cup of coffee. The Hospitality team serves refreshments before and after every Sunday service, creating a relaxed atmosphere where conversations happen and friendships form. It might sound simple, but this team plays a crucial role in making Destiny feel like home. If you love people and don't mind getting behind a counter, we'd love you on the team.",
+    photos: [
+      "/img/photos/Gallery/Community.jpeg",
+      "/img/photos/Gallery/OlderPeople.jpeg",
+      "/img/photos/Gallery/FamilySatTogether.jpeg",
+    ],
+  },
+  {
+    name: "Production",
+    icon: "videocam",
+    color: "#363f48",
+    lead: "Daniel Park",
+    tagline: "Sound · Lighting · Screens · Livestream",
+    description:
+      "Run sound, lighting, screens and video. Help bring the Sunday experience to life both in the building and online for those watching at home.",
+    detail:
+      "The Production team is the technical backbone of every Sunday service and event. From running front-of-house sound and lighting rigs to managing the screens and livestreaming for those watching at home, this is a team for people who love tech and want to use it for something that matters. Training is available — passion for excellence and a teachable spirit are all you need.",
+    photos: [
+      "/img/photos/Gallery/WorshipMoment3.jpeg",
+      "/img/photos/Gallery/SingingLand2.jpeg",
+      "/img/photos/Gallery/SingingLand4.jpeg",
+    ],
+  },
+  {
+    name: "Social Media & Photography",
+    icon: "palette",
+    color: "#8106B1",
+    lead: "Daniel Park",
+    tagline: "Design · Content · Photography",
+    description:
+      "Design graphics, capture moments and shape the visual identity of Destiny Church across social media and beyond.",
+    detail:
+      "The Social Media & Photography team tells the story of Destiny to the world. From Sunday morning photos and Reels to week-to-week graphics and campaign visuals, this team shapes how the church looks and sounds online. If you're a photographer, videographer, graphic designer, or content creator — or you just have a good eye and want to learn — there's a role for you here.",
+    photos: [
+      "/img/photos/Gallery/Photography.jpeg",
+      "/img/photos/Gallery/WorshipMoment.jpeg",
+      "/img/photos/Gallery/Speaker2.jpeg",
+    ],
+  },
+  {
+    name: "Outreach & Missions",
+    icon: "public",
+    color: "#028002",
+    lead: "Nkereuwem Ekanem",
+    tagline: "Local · National · International",
+    description:
+      "Take the love of God beyond the church walls — locally, nationally and internationally. Get involved in outreach events and mission trips.",
+    detail:
+      "Outreach & Missions is about taking the Gospel beyond our four walls. The team organises local community initiatives, partners with national organisations, and sends teams on international mission trips. Whether you want to hand out food in Middlesbrough or fly to a partner church overseas, this team will give you the opportunity to be the hands and feet of Jesus in a very real way.",
+    photos: [
+      "/img/photos/Gallery/Community.jpeg",
+      "/img/photos/Gallery/OlderPeople.jpeg",
+      "/img/photos/Community.webp",
+    ],
+  },
+  {
+    name: "Administration",
+    icon: "admin_panel_settings",
+    color: "#363f48",
+    lead: "George Krezner",
+    tagline: "Organisation · Operations · Planning",
+    description:
+      "Keep Destiny running smoothly behind the scenes. If you're organised, detail-oriented and love serving practically, this team needs you.",
+    detail:
+      "The Administration team keeps the engine of Destiny Church running. From communications and scheduling to event logistics and financial administration, this is a team for people who love order, precision and making things happen. If you're organised, reliable and enjoy serving in ways that others often don't see — this is one of the most valuable roles in the church.",
+    photos: [
+      "/img/photos/Gallery/Community2.jpeg",
+      "/img/photos/Gallery/FamilySatTogether.jpeg",
+    ],
+  },
+  {
+    name: "Decoration",
+    icon: "brush",
+    color: "#F58021",
+    lead: "",
+    tagline: "Stage design · Seasonal décor · Atmosphere",
+    description:
+      "Help create beautiful spaces that welcome people and reflect the heart of Destiny — from Sunday stage design to seasonal installations.",
+    detail:
+      "The Decoration team transforms the physical space of Destiny Church into an environment that speaks before a word is even said. From Sunday stage setups and seasonal displays to special events and creative installations, this team uses artistic gifts to create atmosphere. If you have an eye for design, a creative streak, or simply love making spaces feel special, come and join us.",
+    photos: [
+      "/img/photos/Gallery/WorshipMoment3.jpeg",
+      "/img/photos/Gallery/SingingLand4.jpeg",
+    ],
+  },
+  {
+    name: "Building Maintenance",
+    icon: "handyman",
+    color: "#028002",
+    lead: "",
+    tagline: "Cleaning · DIY · Facilities care",
+    description:
+      "Help keep our building clean, well-maintained and ready for every service and event. Practical skills of every kind welcome.",
+    detail:
+      "The Building Maintenance team ensures that Destiny's home is always clean, safe and well-kept. From regular cleaning rotas and DIY repairs to post-event tidy-ups and facility improvements, this is a hands-on team for people who love practical service. No specialist skills required — just a willingness to roll up your sleeves and take care of what God has given us.",
+    photos: [
+      "/img/photos/Gallery/Community.jpeg",
+      "/img/photos/Gallery/FamilySatTogether.jpeg",
+    ],
+  },
+  {
+    name: "Alpha",
+    icon: "lightbulb",
+    color: "#F58021",
+    lead: "",
+    tagline: "Hosting · Discussion · Welcoming seekers",
+    description:
+      "Help run Alpha — a relaxed series of conversations exploring the big questions of life and faith, open to anyone and everyone.",
+    detail:
+      "Alpha is one of the most powerful evangelism tools in the church — a series of sessions that create a safe space for anyone to explore Christianity, no matter where they're starting from. The Alpha team helps with hosting, cooking, leading small group discussions, and praying for guests. If you have a heart for people who are searching, and want to play a part in their journey to faith, this is a team you'll love.",
+    photos: [
+      "/img/photos/Gallery/Community2.jpeg",
+      "/img/photos/Gallery/OlderPeople.jpeg",
+      "/img/photos/Gallery/FamilySatTogether.jpeg",
+    ],
+  },
+];
+
+export default function MinistriesGrid() {
+  const [active, setActive] = useState<Ministry | null>(null);
+
+  return (
+    <>
+      {/* Grid */}
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        {ministries.map((m, i) => (
+          <AnimateIn key={m.name} delay={(i % 4) * 60}>
+            <button
+              onClick={() => setActive(m)}
+              className="group relative flex w-full flex-col overflow-hidden rounded-2xl bg-white text-left shadow-sm ring-1 ring-black/5 transition duration-200 hover:-translate-y-1 hover:shadow-lg hover:ring-2 focus-visible:outline-none focus-visible:ring-2"
+              style={{ "--hover-ring": m.color } as React.CSSProperties}
+            >
+              {/* Coloured top bar */}
+              <div className="h-1 w-full" style={{ background: m.color }} />
+
+              <div className="flex flex-1 flex-col p-5">
+                {/* Icon */}
+                <div
+                  className="mb-4 flex h-11 w-11 items-center justify-center rounded-xl"
+                  style={{ background: m.color + "18" }}
+                >
+                  <span
+                    className="material-symbols-rounded text-[1.4rem]"
+                    style={{ color: m.color }}
+                  >
+                    {m.icon}
+                  </span>
+                </div>
+
+                {/* Text */}
+                <h3 className="mb-1 text-[0.95rem] font-black text-destiny-grey">
+                  {m.name}
+                </h3>
+                <p className="mb-4 text-[0.72rem] font-semibold uppercase tracking-widest text-destiny-grey/40">
+                  {m.tagline}
+                </p>
+                <p className="line-clamp-3 text-[0.82rem] leading-relaxed text-destiny-grey/60">
+                  {m.description}
+                </p>
+
+                {/* Footer */}
+                <div className="mt-auto flex items-center justify-between pt-5">
+                  <span className="text-[0.75rem] text-destiny-grey/40">
+                    Lead: <span className="font-semibold text-destiny-grey/60">{m.lead}</span>
+                  </span>
+                  <span
+                    className="flex h-7 w-7 items-center justify-center rounded-full transition-transform duration-200 group-hover:translate-x-0.5"
+                    style={{ background: m.color + "18" }}
+                  >
+                    <span
+                      className="material-symbols-rounded text-[1rem]"
+                      style={{ color: m.color }}
+                    >
+                      arrow_forward
+                    </span>
+                  </span>
+                </div>
+              </div>
+            </button>
+          </AnimateIn>
+        ))}
+      </div>
+
+      {/* Modal */}
+      {active && (
+        <MinistryModal ministry={active} onClose={() => setActive(null)} />
+      )}
+    </>
+  );
+}
+
+function MinistryModal({
+  ministry: m,
+  onClose,
+}: {
+  ministry: Ministry;
+  onClose: () => void;
+}) {
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-end justify-center sm:items-center"
+      role="dialog"
+      aria-modal="true"
+      aria-label={m.name}
+    >
+      {/* Backdrop */}
+      <div
+        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+        onClick={onClose}
+      />
+
+      {/* Sheet */}
+      <div className="animate-slide-up relative z-10 flex max-h-[92dvh] w-full max-w-2xl flex-col overflow-hidden rounded-t-3xl bg-white sm:rounded-3xl sm:shadow-2xl">
+        {/* Coloured bar */}
+        <div className="h-1 w-full shrink-0" style={{ background: m.color }} />
+
+        {/* Scrollable body */}
+        <div className="overflow-y-auto">
+          {/* Header */}
+          <div className="flex items-start gap-4 px-6 pt-6 pb-4">
+            <div
+              className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl"
+              style={{ background: m.color + "18" }}
+            >
+              <span
+                className="material-symbols-rounded text-2xl"
+                style={{ color: m.color }}
+              >
+                {m.icon}
+              </span>
+            </div>
+            <div className="flex-1">
+              <h2 className="text-xl font-black text-destiny-grey">{m.name}</h2>
+              <p className="text-xs font-semibold uppercase tracking-widest text-destiny-grey/40">
+                {m.tagline}
+              </p>
+            </div>
+            <button
+              onClick={onClose}
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-black/5 text-destiny-grey/50 transition hover:bg-black/10"
+              aria-label="Close"
+            >
+              <span className="material-symbols-rounded text-[1.2rem]">close</span>
+            </button>
+          </div>
+
+          {/* Photos */}
+          {m.photos.length > 0 && (
+            <div className="px-6 pb-5">
+              <div
+                className={`grid gap-2 ${
+                  m.photos.length === 1
+                    ? "grid-cols-1"
+                    : m.photos.length === 2
+                    ? "grid-cols-2"
+                    : "grid-cols-3"
+                }`}
+              >
+                {m.photos.map((src, i) => (
+                  <div
+                    key={i}
+                    className={`overflow-hidden rounded-xl ${
+                      m.photos.length === 3 && i === 0
+                        ? "col-span-2 aspect-video"
+                        : "aspect-square"
+                    }`}
+                  >
+                    <Image
+                      src={src}
+                      alt=""
+                      width={600}
+                      height={400}
+                      className="h-full w-full object-cover"
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Description */}
+          <div className="px-6 pb-4">
+            <p className="text-sm leading-relaxed text-destiny-grey/70">
+              {m.detail}
+            </p>
+          </div>
+
+          {/* Lead */}
+          <div className="mx-6 mb-6 flex items-center gap-3 rounded-2xl bg-[#f5f7fa] px-4 py-3">
+            <span
+              className="flex h-9 w-9 items-center justify-center rounded-full"
+              style={{ background: m.color + "22" }}
+            >
+              <span
+                className="material-symbols-rounded text-[1.1rem]"
+                style={{ color: m.color }}
+              >
+                person
+              </span>
+            </span>
+            <div>
+              <p className="text-[0.7rem] font-semibold uppercase tracking-widest text-destiny-grey/40">
+                Team Lead
+              </p>
+              <p className="text-sm font-bold text-destiny-grey">{m.lead}</p>
+            </div>
+          </div>
+
+          {/* CTA */}
+          <div className="px-6 pb-8">
+            <a
+              href="#get-involved"
+              onClick={onClose}
+              className="flex w-full items-center justify-center rounded-full py-3 text-sm font-bold text-white transition hover:opacity-90"
+              style={{ background: m.color }}
+            >
+              Get Involved
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

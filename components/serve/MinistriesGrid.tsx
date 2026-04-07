@@ -278,36 +278,13 @@ export default function MinistriesGrid() {
           <AnimateIn key={m.name} delay={(i % 4) * 60} className="h-full">
             <button
               onClick={() => setActive(m)}
-              className="group relative flex h-full w-full flex-col overflow-hidden rounded-2xl text-left shadow-sm transition duration-200 hover:-translate-y-1 hover:shadow-lg focus-visible:outline-none"
-              style={{ background: m.color + "12" }}
+              className="group flex h-full w-full flex-col items-center rounded-3xl bg-white p-8 text-center shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-md focus-visible:outline-none"
             >
-              <div className="flex flex-1 flex-col p-5">
-                {/* Text */}
-                <h3
-                  className="mb-3 text-[0.95rem] font-black"
-                  style={{ color: m.color }}
-                >
-                  {m.name}
-                </h3>
-                <p className="line-clamp-3 text-[0.82rem] leading-relaxed text-destiny-grey/60">
-                  {m.description}
-                </p>
-
-                {/* Footer */}
-                <div className="mt-auto flex items-center justify-end pt-5">
-                  <span
-                    className="flex h-7 w-7 items-center justify-center rounded-full transition-transform duration-200 group-hover:translate-x-0.5"
-                    style={{ background: m.color + "25" }}
-                  >
-                    <span
-                      className="material-symbols-rounded text-[1rem]"
-                      style={{ color: m.color }}
-                    >
-                      arrow_forward
-                    </span>
-                  </span>
-                </div>
+              <div className="mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-destiny-orange/10 transition group-hover:bg-destiny-orange/20">
+                <span className="material-symbols-rounded text-4xl text-destiny-orange">{m.icon}</span>
               </div>
+              <h3 className="mb-2 text-xl font-black text-destiny-grey">{m.name}</h3>
+              <p className="text-sm leading-relaxed text-destiny-grey/60">{m.description}</p>
             </button>
           </AnimateIn>
         ))}

@@ -13,6 +13,7 @@ type Ministry = {
   description: string;
   detail: string;
   photos: string[];
+  requirements?: string[];
 };
 
 const ministries: Ministry[] = [
@@ -32,6 +33,11 @@ const ministries: Ministry[] = [
       "/img/photos/Gallery/SingingPort.jpeg",
       "/img/photos/Gallery/SingingLand3.jpeg",
     ],
+    requirements: [
+      "Ability to play an instrument or sing to a reasonable standard",
+      "Commitment to weekly rehearsals",
+      "Active member of Destiny Church",
+    ],
   },
   {
     name: "Destiny Kids",
@@ -48,6 +54,11 @@ const ministries: Ministry[] = [
       "/img/photos/Kids2.jpg",
       "/img/photos/Gallery/FamilySatTogether.jpeg",
     ],
+    requirements: [
+      "Enhanced DBS check (we'll help arrange this)",
+      "Completed Safeguarding training",
+      "Active member of Destiny Church",
+    ],
   },
   {
     name: "Destiny Youth",
@@ -63,6 +74,12 @@ const ministries: Ministry[] = [
       "/img/photos/Gallery/YouthCommunity.jpeg",
       "/img/photos/YA1.jpg",
       "/img/photos/Youth1.JPG",
+    ],
+    requirements: [
+      "Enhanced DBS check (we'll help arrange this)",
+      "Completed Safeguarding training",
+      "Active member of Destiny Church",
+      "Heart for young people aged 11–18",
     ],
   },
   {
@@ -144,6 +161,11 @@ const ministries: Ministry[] = [
       "/img/photos/Gallery/SingingLand2.jpeg",
       "/img/photos/Gallery/SingingLand4.jpeg",
     ],
+    requirements: [
+      "Basic understanding of sound, lighting, or video (training available)",
+      "Reliable and punctual — Sundays require early setup",
+      "Willingness to learn and serve consistently",
+    ],
   },
   {
     name: "Social Media & Photography",
@@ -159,6 +181,11 @@ const ministries: Ministry[] = [
       "/img/photos/Gallery/Photography.jpeg",
       "/img/photos/Gallery/WorshipMoment.jpeg",
       "/img/photos/Gallery/Speaker2.jpeg",
+    ],
+    requirements: [
+      "Experience or genuine interest in photography, videography, or graphic design",
+      "Own equipment helpful but not required",
+      "Comfortable using social media platforms",
     ],
   },
   {
@@ -408,6 +435,28 @@ function MinistryModal({
               {m.detail}
             </p>
           </div>
+
+          {/* Requirements */}
+          {m.requirements && m.requirements.length > 0 && (
+            <div className="mx-6 mb-6 rounded-2xl bg-[#f5f7fa] p-4">
+              <p className="mb-3 text-[0.7rem] font-bold uppercase tracking-widest text-destiny-grey/40">
+                Requirements
+              </p>
+              <ul className="space-y-2">
+                {m.requirements.map((req, i) => (
+                  <li key={i} className="flex items-start gap-2.5 text-[0.82rem] text-destiny-grey/70">
+                    <span
+                      className="material-symbols-rounded mt-0.5 shrink-0 text-[0.95rem]"
+                      style={{ color: m.color }}
+                    >
+                      check_circle
+                    </span>
+                    {req}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
 
           {/* CTA */}
           <div className="px-6 pb-8">

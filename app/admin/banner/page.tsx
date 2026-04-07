@@ -1,16 +1,48 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import type { BannerType } from "@/contexts/BannerContext";
 
 interface Banner {
   active: boolean;
   message: string;
+  type: BannerType;
   link: string;
   link_text: string;
 }
 
+const TYPES: { value: BannerType; label: string; description: string; color: string; icon: string }[] = [
+  {
+    value: "announcement",
+    label: "Announcement",
+    description: "Highlighted in orange — for events, news or time-sensitive updates.",
+    color: "bg-destiny-orange",
+    icon: "campaign",
+  },
+  {
+    value: "notice",
+    label: "Notice",
+    description: "Subtle grey bar — for general information or low-priority notices.",
+    color: "bg-[#6b7280]",
+    icon: "info",
+  },
+  {
+    value: "sitewide",
+    label: "Site-Wide Block",
+    description: "Replaces the entire site with a maintenance screen. All visitors are blocked except /admin.",
+    color: "bg-[#111]",
+    icon: "build",
+  },
+];
+
 export default function AdminBannerPage() {
-  const [banner, setBanner] = useState<Banner>({ active: false, message: "", link: "", link_text: "" });
+  const [banner, setBanner] = useState<Banner>({
+    active: false,
+    message: "",
+    type: "announcement",
+    link: "",
+    link_text: "",
+  });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -23,6 +55,7 @@ export default function AdminBannerPage() {
         setBanner({
           active: d.active ?? false,
           message: d.message ?? "",
+          type: d.type ?? "announcement",
           link: d.link ?? "",
           link_text: d.link_text ?? "",
         });
@@ -49,13 +82,15 @@ export default function AdminBannerPage() {
     setSaving(false);
   }
 
+  const selectedType = TYPES.find((t) => t.value === banner.type) ?? TYPES[0];
+
   return (
     <div className="mx-auto max-w-6xl px-6 py-10 pt-28">
       <div className="max-w-2xl">
         <div className="mb-6">
           <h1 className="text-2xl font-black text-destiny-grey">Site Banner</h1>
           <p className="mt-1 text-sm text-destiny-grey/50">
-            Display a sitewide announcement bar at the top of every page.
+            Display a sitewide announcement bar — or block the entire site for maintenance.
           </p>
         </div>
 
@@ -66,19 +101,35 @@ export default function AdminBannerPage() {
         ) : (
           <form onSubmit={handleSave} className="flex flex-col gap-6">
 
-            {/* Preview */}
+            {/* Live preview */}
             {banner.active && banner.message && (
-              <div className="flex items-center justify-center gap-3 rounded-2xl bg-destiny-orange px-6 py-3">
-                <span className="material-symbols-rounded text-sm text-white/80">campaign</span>
-                <p className="text-sm font-medium text-white">
-                  {banner.message}
+              banner.type === "sitewide" ? (
+                <div className="flex flex-col items-center justify-center gap-3 rounded-2xl bg-[#111] px-6 py-10 text-center">
+                  <span className="material-symbols-rounded text-4xl text-white/20">build</span>
+                  <p className="text-base font-black text-white">We'll be back soon</p>
+                  <p className="text-sm text-white/60">{banner.message}</p>
                   {banner.link && (
-                    <span className="ml-2 font-bold underline underline-offset-2">
+                    <span className="mt-2 rounded-full bg-white/10 px-4 py-1.5 text-xs font-bold text-white">
                       {banner.link_text || "Learn more"} →
                     </span>
                   )}
-                </p>
-              </div>
+                  <p className="mt-3 rounded-full bg-red-500/20 px-3 py-1 text-xs font-bold text-red-400">
+                    ⚠ This will block all visitors except /admin
+                  </p>
+                </div>
+              ) : (
+                <div className={`flex items-center justify-center gap-3 rounded-2xl px-6 py-3 ${selectedType.color}`}>
+                  <span className="material-symbols-rounded text-sm text-white/80">{selectedType.icon}</span>
+                  <p className="text-sm font-medium text-white">
+                    {banner.message}
+                    {banner.link && (
+                      <span className="ml-2 font-bold underline underline-offset-2">
+                        {banner.link_text || "Learn more"} →
+                      </span>
+                    )}
+                  </p>
+                </div>
+              )
             )}
 
             <div className="rounded-2xl border border-black/5 bg-white p-6 shadow-sm flex flex-col gap-5">
@@ -106,6 +157,45 @@ export default function AdminBannerPage() {
 
               <div className="h-px bg-black/5" />
 
+              {/* Banner type */}
+              <div>
+                <p className="mb-2 text-xs font-bold text-destiny-grey/60">Banner Type</p>
+                <div className="flex flex-col gap-2">
+                  {TYPES.map((t) => (
+                    <label
+                      key={t.value}
+                      className={`flex cursor-pointer items-start gap-3 rounded-xl border p-4 transition ${
+                        banner.type === t.value
+                          ? "border-destiny-orange/40 bg-destiny-orange/5"
+                          : "border-black/8 hover:border-black/15"
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        name="type"
+                        value={t.value}
+                        checked={banner.type === t.value}
+                        onChange={() => setBanner((b) => ({ ...b, type: t.value }))}
+                        className="mt-0.5 accent-destiny-orange"
+                      />
+                      <div className="flex flex-1 items-start gap-3">
+                        <span
+                          className={`mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-white ${t.color}`}
+                        >
+                          <span className="material-symbols-rounded text-base">{t.icon}</span>
+                        </span>
+                        <div>
+                          <p className="text-sm font-bold text-destiny-grey">{t.label}</p>
+                          <p className="text-xs leading-relaxed text-destiny-grey/50">{t.description}</p>
+                        </div>
+                      </div>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              <div className="h-px bg-black/5" />
+
               {/* Message */}
               <div>
                 <label className="mb-1.5 block text-xs font-bold text-destiny-grey/60">
@@ -115,7 +205,11 @@ export default function AdminBannerPage() {
                   type="text"
                   value={banner.message}
                   onChange={(e) => setBanner((b) => ({ ...b, message: e.target.value }))}
-                  placeholder="Service times are changing this Sunday…"
+                  placeholder={
+                    banner.type === "sitewide"
+                      ? "We're carrying out scheduled maintenance. Back shortly."
+                      : "Service times are changing this Sunday…"
+                  }
                   className="w-full rounded-xl border border-black/10 px-4 py-2.5 text-sm text-destiny-grey placeholder:text-destiny-grey/30 focus:border-destiny-orange/50 focus:outline-none focus:ring-2 focus:ring-destiny-orange/20"
                 />
               </div>

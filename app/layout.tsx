@@ -74,7 +74,7 @@ async function getActiveBanner() {
     const supabase = createServiceClient();
     const { data } = await supabase
       .from("site_banner")
-      .select("active, message, link, link_text")
+      .select("active, message, type, link, link_text")
       .eq("active", true)
       .limit(1)
       .maybeSingle();

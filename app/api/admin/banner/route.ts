@@ -11,16 +11,17 @@ export async function GET() {
     .maybeSingle();
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  return NextResponse.json(data ?? { active: false, message: "", link: null, link_text: null });
+  return NextResponse.json(
+    data ?? { active: false, message: "", type: "announcement", link: null, link_text: null }
+  );
 }
 
 export async function PUT(request: Request) {
   const body = await request.json();
-  const { active, message, link, link_text } = body;
+  const { active, message, type, link, link_text } = body;
 
   const supabase = createServiceClient();
 
-  // Check if a row exists
   const { data: existing } = await supabase
     .from("site_banner")
     .select("id")
@@ -31,12 +32,25 @@ export async function PUT(request: Request) {
   if (existing?.id) {
     ({ error } = await supabase
       .from("site_banner")
-      .update({ active, message, link: link || null, link_text: link_text || null, updated_at: new Date().toISOString() })
+      .update({
+        active,
+        message,
+        type: type ?? "announcement",
+        link: link || null,
+        link_text: link_text || null,
+        updated_at: new Date().toISOString(),
+      })
       .eq("id", existing.id));
   } else {
     ({ error } = await supabase
       .from("site_banner")
-      .insert({ active, message, link: link || null, link_text: link_text || null }));
+      .insert({
+        active,
+        message,
+        type: type ?? "announcement",
+        link: link || null,
+        link_text: link_text || null,
+      }));
   }
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });

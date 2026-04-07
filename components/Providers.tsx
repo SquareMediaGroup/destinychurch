@@ -3,14 +3,7 @@
 import { ToastProvider } from "./ToastProvider";
 import { CookieConsentProvider } from "@/lib/cookieConsent";
 import { SettingsProvider } from "@/lib/settings";
-import { BannerContext } from "@/contexts/BannerContext";
-
-interface BannerData {
-  active: boolean;
-  message: string;
-  link?: string | null;
-  link_text?: string | null;
-}
+import { BannerContext, type BannerData } from "@/contexts/BannerContext";
 
 interface ProvidersProps {
   children: React.ReactNode;
@@ -19,7 +12,7 @@ interface ProvidersProps {
 
 export default function Providers({ children, banner }: ProvidersProps) {
   return (
-    <BannerContext.Provider value={banner ?? { active: false, message: "" }}>
+    <BannerContext.Provider value={banner ?? { active: false, message: "", type: "announcement" }}>
       <SettingsProvider>
         <CookieConsentProvider>
           <ToastProvider>{children}</ToastProvider>

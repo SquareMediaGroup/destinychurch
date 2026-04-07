@@ -16,8 +16,8 @@ test('Contact page shows heading', async ({ page }) => {
 });
 
 test('Contact details — address is visible', async ({ page }) => {
-  await expect(page.getByText('Norton Road')).toBeVisible();
-  await expect(page.getByText('TS20 2QQ')).toBeVisible();
+  await expect(page.getByText('Norton Road').first()).toBeVisible();
+  await expect(page.getByText('TS20 2QQ').first()).toBeVisible();
 });
 
 test('Contact details — email link is visible and correct', async ({ page }) => {
@@ -27,7 +27,7 @@ test('Contact details — email link is visible and correct', async ({ page }) =
 });
 
 test('Contact details — phone link is visible and correct', async ({ page }) => {
-  const phoneLink = page.getByRole('link', { name: /01642/ });
+  const phoneLink = page.getByRole('link', { name: /01642/ }).first();
   await expect(phoneLink).toBeVisible();
   await expect(phoneLink).toHaveAttribute('href', 'tel:+441642559797');
 });
@@ -37,9 +37,10 @@ test('Contact details — Sunday service time is visible', async ({ page }) => {
 });
 
 test('New here connect card banner is visible', async ({ page }) => {
-  await expect(page.getByText('New here?')).toBeVisible();
-  const connectLink = page.getByRole('link', { name: /New here/ });
-  await expect(connectLink).toHaveAttribute('href', '/connect-card');
+  // Scope to the form section to avoid matching the nav and footer links
+  const formSection = page.locator('section').filter({ hasText: 'Send a Message' });
+  await expect(formSection.getByText('New here?')).toBeVisible();
+  await expect(formSection.getByRole('link', { name: /New here/i })).toHaveAttribute('href', '/connect-card');
 });
 
 test('First Impressions feedback section is visible', async ({ page }) => {
@@ -134,8 +135,8 @@ test('Send Message button is disabled while submitting', async ({ page }) => {
 // ── Navigate to contact from visit page (original flow) ───────────────────
 
 test('Can navigate to contact page from Plan a Visit', async ({ page }) => {
+  // beforeEach already accepted cookies on /contact — navigate directly
   await page.goto('https://destinychurch.vercel.app');
-  await page.getByRole('button', { name: 'Accept All' }).click();
   await page.getByRole('link', { name: 'Plan a Visit' }).first().click();
   await expect(page.getByRole('heading', { name: 'Plan Your Visit' })).toBeVisible();
   await page.getByRole('link', { name: 'Contact Us' }).click();

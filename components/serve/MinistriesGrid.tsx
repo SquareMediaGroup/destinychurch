@@ -4,6 +4,8 @@ import Image from "next/image";
 import { useState } from "react";
 import AnimateIn from "@/components/AnimateIn";
 
+type Category = "All" | "Worship & Arts" | "Kids & Youth" | "Community" | "Outreach" | "Behind the Scenes";
+
 type Ministry = {
   name: string;
   icon: string;
@@ -14,7 +16,10 @@ type Ministry = {
   detail: string;
   photos: string[];
   requirements?: string[];
+  category: Category;
 };
+
+const CATEGORIES: Category[] = ["All", "Worship & Arts", "Kids & Youth", "Community", "Outreach", "Behind the Scenes"];
 
 const ministries: Ministry[] = [
   {
@@ -38,6 +43,7 @@ const ministries: Ministry[] = [
       "Commitment to weekly rehearsals",
       "Active member of Destiny Church",
     ],
+    category: "Worship & Arts",
   },
   {
     name: "Destiny Kids",
@@ -59,6 +65,7 @@ const ministries: Ministry[] = [
       "Completed Safeguarding training",
       "Active member of Destiny Church",
     ],
+    category: "Kids & Youth",
   },
   {
     name: "Destiny Youth",
@@ -81,6 +88,7 @@ const ministries: Ministry[] = [
       "Active member of Destiny Church",
       "Heart for young people aged 11–18",
     ],
+    category: "Kids & Youth",
   },
   {
     name: "Stewarding & Welcome",
@@ -97,6 +105,7 @@ const ministries: Ministry[] = [
       "/img/photos/Gallery/Community2.jpeg",
       "/img/photos/Gallery/OlderPeople.jpeg",
     ],
+    category: "Community",
   },
   {
     name: "Prayer Team",
@@ -113,6 +122,7 @@ const ministries: Ministry[] = [
       "/img/photos/Gallery/Speaker.jpeg",
       "/img/photos/Gallery/Speaker2.jpeg",
     ],
+    category: "Community",
   },
   {
     name: "Connect Groups",
@@ -129,6 +139,7 @@ const ministries: Ministry[] = [
       "/img/photos/Gallery/Community2.jpeg",
       "/img/photos/Gallery/FamilySatTogether.jpeg",
     ],
+    category: "Community",
   },
   {
     name: "Hospitality",
@@ -145,6 +156,7 @@ const ministries: Ministry[] = [
       "/img/photos/Gallery/OlderPeople.jpeg",
       "/img/photos/Gallery/FamilySatTogether.jpeg",
     ],
+    category: "Community",
   },
   {
     name: "Production",
@@ -166,6 +178,7 @@ const ministries: Ministry[] = [
       "Reliable and punctual — Sundays require early setup",
       "Willingness to learn and serve consistently",
     ],
+    category: "Behind the Scenes",
   },
   {
     name: "Social Media & Photography",
@@ -187,6 +200,7 @@ const ministries: Ministry[] = [
       "Own equipment helpful but not required",
       "Comfortable using social media platforms",
     ],
+    category: "Worship & Arts",
   },
   {
     name: "Outreach & Missions",
@@ -203,6 +217,7 @@ const ministries: Ministry[] = [
       "/img/photos/Gallery/OlderPeople.jpeg",
       "/img/photos/Community.webp",
     ],
+    category: "Outreach",
   },
   {
     name: "Administration",
@@ -218,6 +233,7 @@ const ministries: Ministry[] = [
       "/img/photos/Gallery/Community2.jpeg",
       "/img/photos/Gallery/FamilySatTogether.jpeg",
     ],
+    category: "Behind the Scenes",
   },
   {
     name: "Decoration",
@@ -233,6 +249,7 @@ const ministries: Ministry[] = [
       "/img/photos/Gallery/WorshipMoment3.jpeg",
       "/img/photos/Gallery/SingingLand4.jpeg",
     ],
+    category: "Worship & Arts",
   },
   {
     name: "Building Maintenance",
@@ -248,6 +265,7 @@ const ministries: Ministry[] = [
       "/img/photos/Gallery/Community.jpeg",
       "/img/photos/Gallery/FamilySatTogether.jpeg",
     ],
+    category: "Behind the Scenes",
   },
   {
     name: "Alpha",
@@ -264,17 +282,39 @@ const ministries: Ministry[] = [
       "/img/photos/Gallery/OlderPeople.jpeg",
       "/img/photos/Gallery/FamilySatTogether.jpeg",
     ],
+    category: "Outreach",
   },
 ];
 
 export default function MinistriesGrid() {
   const [active, setActive] = useState<Ministry | null>(null);
+  const [filter, setFilter] = useState<Category>("All");
+
+  const visible = filter === "All" ? ministries : ministries.filter((m) => m.category === filter);
 
   return (
     <>
+      {/* Filter pills */}
+      <div className="mb-8 flex flex-wrap justify-center gap-2">
+        {CATEGORIES.map((cat) => (
+          <button
+            key={cat}
+            onClick={() => setFilter(cat)}
+            className="rounded-full border-2 px-5 py-2 text-sm font-bold transition duration-200"
+            style={
+              filter === cat
+                ? { borderColor: "#F58021", background: "#F58021", color: "#fff" }
+                : { borderColor: "#F5802133", background: "transparent", color: "#363f48" }
+            }
+          >
+            {cat}
+          </button>
+        ))}
+      </div>
+
       {/* Grid */}
       <div className="grid items-stretch gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-        {ministries.map((m, i) => (
+        {visible.map((m, i) => (
           <AnimateIn key={m.name} delay={(i % 4) * 60} className="h-full">
             <button
               onClick={() => setActive(m)}

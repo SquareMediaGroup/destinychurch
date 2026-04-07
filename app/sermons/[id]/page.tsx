@@ -119,7 +119,28 @@ export default async function SermonPage({ params }: PageProps) {
   const sermonStart = parseSermonStart(video.description);
   const displayDescription = stripSermonTimestamp(video.description);
 
+  const videoSchema = {
+    "@context": "https://schema.org",
+    "@type": "VideoObject",
+    name: video.title,
+    description: displayDescription.slice(0, 300) || video.title,
+    thumbnailUrl: `https://i.ytimg.com/vi/${id}/maxresdefault.jpg`,
+    uploadDate: video.publishedAt,
+    embedUrl: `https://www.youtube.com/embed/${id}`,
+    contentUrl: `https://www.youtube.com/watch?v=${id}`,
+    publisher: {
+      "@type": "Organization",
+      name: "Destiny Church Tees Valley",
+      url: "https://destinytees.uk",
+    },
+  };
+
   return (
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(videoSchema) }}
+      />
     <main className="min-h-screen bg-[#0f0f0f] text-white">
       <div className="mx-auto max-w-5xl px-4 py-6 lg:px-8">
         {/* Search bar */}
@@ -197,5 +218,6 @@ export default async function SermonPage({ params }: PageProps) {
         <UpNextSection videos={recommendations} />
       </div>
     </main>
+    </>
   );
 }

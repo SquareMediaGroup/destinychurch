@@ -84,6 +84,80 @@ async function getActiveBanner() {
   }
 }
 
+const orgSchema = {
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": ["Church", "LocalBusiness"],
+      "@id": "https://destinytees.uk/#church",
+      name: "Destiny Church Tees Valley",
+      url: "https://destinytees.uk",
+      logo: "https://destinytees.uk/img/logo.png",
+      image: "https://destinytees.uk/og/sermons-hero.jpg",
+      description:
+        "A multi-cultural church where all can find a place to belong and thrive. Bible-based teaching, vibrant worship, and genuine community.",
+      address: {
+        "@type": "PostalAddress",
+        streetAddress: "Dovecot Street",
+        addressLocality: "Stockton-on-Tees",
+        addressRegion: "Teesside",
+        postalCode: "TS18 1LL",
+        addressCountry: "GB",
+      },
+      geo: {
+        "@type": "GeoCoordinates",
+        latitude: 54.5704,
+        longitude: -1.3185,
+      },
+      telephone: "",
+      email: "hello@destinytees.uk",
+      openingHoursSpecification: [
+        {
+          "@type": "OpeningHoursSpecification",
+          dayOfWeek: "Sunday",
+          opens: "10:30",
+          closes: "13:00",
+        },
+      ],
+      sameAs: [
+        "https://www.youtube.com/@DestinyChurchTeesValley",
+        "https://www.facebook.com/destinychurchteesvalley",
+        "https://www.instagram.com/destinychurchteesvalley",
+      ],
+    },
+    {
+      "@type": "Event",
+      "@id": "https://destinytees.uk/#sunday-service",
+      name: "Sunday Morning Service",
+      description:
+        "Join us every Sunday morning for worship, Bible teaching, and community at Destiny Church Tees Valley.",
+      startDate: "2024-01-07T11:00:00+00:00",
+      eventSchedule: {
+        "@type": "Schedule",
+        repeatFrequency: "P1W",
+        byDay: "https://schema.org/Sunday",
+        startTime: "11:00",
+        endTime: "12:30",
+      },
+      location: {
+        "@type": "Place",
+        name: "Destiny Church Tees Valley",
+        address: {
+          "@type": "PostalAddress",
+          streetAddress: "Dovecot Street",
+          addressLocality: "Stockton-on-Tees",
+          postalCode: "TS18 1LL",
+          addressCountry: "GB",
+        },
+      },
+      organizer: { "@id": "https://destinytees.uk/#church" },
+      eventStatus: "https://schema.org/EventScheduled",
+      eventAttendanceMode: "https://schema.org/OfflineEventAttendanceMode",
+      isAccessibleForFree: true,
+    },
+  ],
+};
+
 export default async function RootLayout({
   children,
 }: Readonly<{
@@ -95,6 +169,10 @@ export default async function RootLayout({
     <html lang="en">
       <head>
         <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,500,0,0" />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(orgSchema) }}
+        />
       </head>
       <body
         className={`${roboto.variable} ${dosis.variable} ${anton.variable} antialiased`}

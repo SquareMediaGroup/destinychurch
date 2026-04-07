@@ -32,6 +32,7 @@ export default async function SermonsPage() {
 
   return (
     <>
+      <h1 className="sr-only">Sermons — Destiny Church Tees Valley</h1>
       {/* Featured slideshow */}
       <FeaturedSlideshow slides={featured} />
 

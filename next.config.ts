@@ -32,7 +32,7 @@ const nextConfig: NextConfig = {
     ];
   },
   images: {
-    minimumCacheTTL: 300,
+    minimumCacheTTL: 2592000, // 30 days
     remotePatterns: [
       {
         protocol: "https",
@@ -53,6 +53,10 @@ const nextConfig: NextConfig = {
       {
         protocol: "https",
         hostname: "destinytees.uk",
+      },
+      {
+        protocol: "https",
+        hostname: "**.destinytees.uk",
       },
       {
         protocol: "https",

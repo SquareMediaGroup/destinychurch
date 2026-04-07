@@ -289,8 +289,20 @@ const ministries: Ministry[] = [
 export default function MinistriesGrid() {
   const [active, setActive] = useState<Ministry | null>(null);
   const [filter, setFilter] = useState<Category>("All");
+  const [displayedFilter, setDisplayedFilter] = useState<Category>("All");
+  const [fading, setFading] = useState(false);
 
-  const visible = filter === "All" ? ministries : ministries.filter((m) => m.category === filter);
+  function handleFilter(cat: Category) {
+    if (cat === filter) return;
+    setFading(true);
+    setTimeout(() => {
+      setFilter(cat);
+      setDisplayedFilter(cat);
+      setFading(false);
+    }, 200);
+  }
+
+  const visible = displayedFilter === "All" ? ministries : ministries.filter((m) => m.category === displayedFilter);
 
   return (
     <>
@@ -299,7 +311,7 @@ export default function MinistriesGrid() {
         {CATEGORIES.map((cat) => (
           <button
             key={cat}
-            onClick={() => setFilter(cat)}
+            onClick={() => handleFilter(cat)}
             className="rounded-full border-2 px-5 py-2 text-sm font-bold transition duration-200"
             style={
               filter === cat
@@ -313,12 +325,15 @@ export default function MinistriesGrid() {
       </div>
 
       {/* Grid */}
-      <div className={filter === "All"
-        ? "grid items-stretch gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
-        : "flex flex-wrap justify-center gap-4"}
+      <div
+        className={`transition-all duration-200 ${fading ? "opacity-0 translate-y-2" : "opacity-100 translate-y-0"} ${
+          displayedFilter === "All"
+            ? "grid items-stretch gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+            : "flex flex-wrap justify-center gap-4"
+        }`}
       >
         {visible.map((m, i) => (
-          <AnimateIn key={m.name} delay={(i % 4) * 60} className={filter === "All" ? "h-full" : "h-full w-full sm:w-[calc(50%-0.5rem)] lg:w-[calc(33.333%-0.667rem)] xl:w-[calc(25%-0.75rem)]"}>
+          <AnimateIn key={m.name} delay={fading ? 0 : (i % 4) * 60} className={displayedFilter === "All" ? "h-full" : "h-full w-full sm:w-[calc(50%-0.5rem)] lg:w-[calc(33.333%-0.667rem)] xl:w-[calc(25%-0.75rem)]"}>
             <button
               onClick={() => setActive(m)}
               className="group flex h-full w-full flex-col items-center rounded-3xl bg-white p-8 text-center shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-md focus-visible:outline-none"

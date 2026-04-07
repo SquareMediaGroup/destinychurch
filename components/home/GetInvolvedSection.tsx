@@ -15,7 +15,7 @@ const cards = [
     title: "Join a Team",
     description:
       "You are uniquely gifted to be a blessing to the body of Christ. We'd love to give you the opportunity to use your gifts and talents to serve. Get involved, and together let's express love and build His kingdom.",
-    image: "/img/photos/Kids1.png",
+    image: "/img/photos/Training_DC-scaled.jpg",
     cta: "Join a Team",
     href: "/serve",
   },

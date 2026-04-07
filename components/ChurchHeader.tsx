@@ -251,21 +251,18 @@ export default function ChurchHeader() {
               aria-label="Toggle navigation"
               className="relative h-10 w-10 rounded-full text-white transition md:hidden"
             >
-              <span
-                className={`absolute left-1/2 top-[30%] block h-0.5 w-5 -translate-x-1/2 bg-current transition ${
-                  mobileOpen ? "translate-y-1.5 rotate-45" : ""
-                }`}
-              />
-              <span
-                className={`absolute left-1/2 block h-0.5 w-5 -translate-x-1/2 bg-current transition ${
-                  mobileOpen ? "opacity-0" : ""
-                }`}
-              />
-              <span
-                className={`absolute left-1/2 bottom-[30%] block h-0.5 w-5 -translate-x-1/2 bg-current transition ${
-                  mobileOpen ? "-translate-y-1.5 -rotate-45" : ""
-                }`}
-              />
+              {/* Hamburger — fades out when open */}
+              <span className={`absolute inset-0 flex flex-col items-center justify-center gap-[5px] transition-opacity duration-200 ${mobileOpen ? "opacity-0" : "opacity-100"}`}>
+                <span className="block h-0.5 w-5 bg-current" />
+                <span className="block h-0.5 w-5 bg-current" />
+                <span className="block h-0.5 w-5 bg-current" />
+              </span>
+              {/* X — fades in when open */}
+              <span className={`absolute inset-0 flex items-center justify-center transition-opacity duration-200 ${mobileOpen ? "opacity-100" : "opacity-0"}`}>
+                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </span>
             </button>
           </div>
         </div>

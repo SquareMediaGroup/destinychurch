@@ -31,8 +31,8 @@ export default function HeroSection() {
               aria-hidden="true"
             />
           </span>
-          <br className="md:hidden" />
-          {" "}Home
+          <span className="mt-4 block md:hidden">Home</span>
+          <span className="hidden md:inline"> Home</span>
         </h1>
 
       </div>

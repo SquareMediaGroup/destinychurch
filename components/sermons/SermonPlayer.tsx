@@ -248,8 +248,7 @@ export default function SermonPlayer({ videoId, thumbnail, sermonStart }: Sermon
           modestbranding: 1,
           rel: 0,
           autoplay: 0,
-          controls: 0,       // hide YouTube's native controls
-          disablekb: 1,
+          controls: 1,       // YouTube UI shown in fullscreen; our overlay hides it otherwise
           iv_load_policy: 3, // no annotations
         },
         events: {
@@ -434,8 +433,8 @@ export default function SermonPlayer({ videoId, thumbnail, sermonStart }: Sermon
             </div>
           )}
 
-          {/* ── Inline custom controls (always shown, not docked) ─────────── */}
-          {!showDocked && (
+          {/* ── Inline custom controls — hidden in fullscreen so YouTube's UI shows ── */}
+          {!showDocked && !isFullscreen && (
             <div className="group/ctrl absolute inset-0 z-10 flex flex-col justify-end">
               {/* Gradient */}
               <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/75 via-black/10 to-transparent opacity-0 transition-opacity duration-200 group-hover/ctrl:opacity-100" />

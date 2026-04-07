@@ -249,11 +249,21 @@ export default function SermonPlayer({ videoId, thumbnail, sermonStart }: Sermon
           rel: 0,
           autoplay: 0,
           controls: 0,       // hide YouTube's native controls
-          disablekb: 1,      // we handle keyboard ourselves if needed
+          disablekb: 1,
           iv_load_policy: 3, // no annotations
-          fs: 0,             // we handle fullscreen ourselves
         },
-        events: { onStateChange: () => startJumpPolling() },
+        events: {
+          onStateChange: () => startJumpPolling(),
+          onReady: () => {
+            // Patch iframe attributes so the browser's Permissions Policy
+            // allows requestFullscreen() on the wrapper div (cross-origin)
+            const iframe = containerRef.current?.querySelector("iframe");
+            if (iframe) {
+              iframe.setAttribute("allow", "autoplay; fullscreen");
+              iframe.setAttribute("allowfullscreen", "");
+            }
+          },
+        },
       });
     });
     return () => {
@@ -293,10 +303,18 @@ export default function SermonPlayer({ videoId, thumbnail, sermonStart }: Sermon
   };
 
   const handleFullscreen = () => {
-    const el = wrapperRef.current;
-    if (!el) return;
-    if (document.fullscreenElement) document.exitFullscreen();
-    else el.requestFullscreen();
+    if (document.fullscreenElement) {
+      document.exitFullscreen();
+      return;
+    }
+    // Try the wrapper div first; fall back to the iframe for cross-origin restrictions
+    const wrapper = wrapperRef.current;
+    const iframe = containerRef.current?.querySelector("iframe");
+    const target = wrapper ?? iframe;
+    target?.requestFullscreen().catch(() => {
+      // Some browsers block div fullscreen with cross-origin iframes — try iframe directly
+      iframe?.requestFullscreen().catch(() => {});
+    });
   };
 
   // Drag handlers (desktop PiP only)

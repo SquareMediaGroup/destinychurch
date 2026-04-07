@@ -284,17 +284,11 @@ export default function MinistriesGrid() {
               <div className="flex flex-1 flex-col p-5">
                 {/* Text */}
                 <h3
-                  className="mb-1 text-[0.95rem] font-black"
+                  className="mb-3 text-[0.95rem] font-black"
                   style={{ color: m.color }}
                 >
                   {m.name}
                 </h3>
-                <p
-                  className="mb-4 text-[0.72rem] font-semibold uppercase tracking-widest"
-                  style={{ color: m.color + "99" }}
-                >
-                  {m.tagline}
-                </p>
                 <p className="line-clamp-3 text-[0.82rem] leading-relaxed text-destiny-grey/60">
                   {m.description}
                 </p>
@@ -409,9 +403,6 @@ function MinistryModal({
           <div className="flex items-start gap-4 px-6 pt-6 pb-4">
             <div className="flex-1">
               <h2 className="text-xl font-black text-destiny-grey">{m.name}</h2>
-              <p className="text-xs font-semibold uppercase tracking-widest text-destiny-grey/40">
-                {m.tagline}
-              </p>
             </div>
             <button
               onClick={onClose}

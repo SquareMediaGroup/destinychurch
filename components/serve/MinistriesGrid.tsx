@@ -258,19 +258,6 @@ export default function MinistriesGrid() {
               <div className="h-1 w-full" style={{ background: m.color }} />
 
               <div className="flex flex-1 flex-col p-5">
-                {/* Icon */}
-                <div
-                  className="mb-4 flex h-11 w-11 items-center justify-center rounded-xl"
-                  style={{ background: m.color + "18" }}
-                >
-                  <span
-                    className="material-symbols-rounded text-[1.4rem]"
-                    style={{ color: m.color }}
-                  >
-                    {m.icon}
-                  </span>
-                </div>
-
                 {/* Text */}
                 <h3 className="mb-1 text-[0.95rem] font-black text-destiny-grey">
                   {m.name}
@@ -283,10 +270,7 @@ export default function MinistriesGrid() {
                 </p>
 
                 {/* Footer */}
-                <div className="mt-auto flex items-center justify-between pt-5">
-                  <span className="text-[0.75rem] text-destiny-grey/40">
-                    Lead: <span className="font-semibold text-destiny-grey/60">{m.lead}</span>
-                  </span>
+                <div className="mt-auto flex items-center justify-end pt-5">
                   <span
                     className="flex h-7 w-7 items-center justify-center rounded-full transition-transform duration-200 group-hover:translate-x-0.5"
                     style={{ background: m.color + "18" }}
@@ -393,17 +377,6 @@ function MinistryModal({
         <div className="overflow-y-auto">
           {/* Header */}
           <div className="flex items-start gap-4 px-6 pt-6 pb-4">
-            <div
-              className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl"
-              style={{ background: m.color + "18" }}
-            >
-              <span
-                className="material-symbols-rounded text-2xl"
-                style={{ color: m.color }}
-              >
-                {m.icon}
-              </span>
-            </div>
             <div className="flex-1">
               <h2 className="text-xl font-black text-destiny-grey">{m.name}</h2>
               <p className="text-xs font-semibold uppercase tracking-widest text-destiny-grey/40">
@@ -431,27 +404,6 @@ function MinistryModal({
             <p className="text-sm leading-relaxed text-destiny-grey/70">
               {m.detail}
             </p>
-          </div>
-
-          {/* Lead */}
-          <div className="mx-6 mb-6 flex items-center gap-3 rounded-2xl bg-[#f5f7fa] px-4 py-3">
-            <span
-              className="flex h-9 w-9 items-center justify-center rounded-full"
-              style={{ background: m.color + "22" }}
-            >
-              <span
-                className="material-symbols-rounded text-[1.1rem]"
-                style={{ color: m.color }}
-              >
-                person
-              </span>
-            </span>
-            <div>
-              <p className="text-[0.7rem] font-semibold uppercase tracking-widest text-destiny-grey/40">
-                Team Lead
-              </p>
-              <p className="text-sm font-bold text-destiny-grey">{m.lead}</p>
-            </div>
           </div>
 
           {/* CTA */}

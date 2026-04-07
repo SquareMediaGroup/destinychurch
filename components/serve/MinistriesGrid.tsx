@@ -313,6 +313,57 @@ export default function MinistriesGrid() {
   );
 }
 
+function PhotoSlideshow({ photos, color }: { photos: string[]; color: string }) {
+  const [index, setIndex] = useState(0);
+  if (photos.length === 0) return null;
+  const prev = () => setIndex((i) => (i - 1 + photos.length) % photos.length);
+  const next = () => setIndex((i) => (i + 1) % photos.length);
+  return (
+    <div className="relative aspect-video w-full overflow-hidden bg-black">
+      <Image
+        key={photos[index]}
+        src={photos[index]}
+        alt=""
+        fill
+        className="object-cover transition-opacity duration-300"
+        sizes="(max-width: 640px) 100vw, 672px"
+      />
+      {photos.length > 1 && (
+        <>
+          <button
+            onClick={prev}
+            className="absolute left-3 top-1/2 -translate-y-1/2 flex h-8 w-8 items-center justify-center rounded-full bg-black/40 text-white backdrop-blur-sm transition hover:bg-black/60"
+            aria-label="Previous photo"
+          >
+            <span className="material-symbols-rounded text-[1.1rem]">chevron_left</span>
+          </button>
+          <button
+            onClick={next}
+            className="absolute right-3 top-1/2 -translate-y-1/2 flex h-8 w-8 items-center justify-center rounded-full bg-black/40 text-white backdrop-blur-sm transition hover:bg-black/60"
+            aria-label="Next photo"
+          >
+            <span className="material-symbols-rounded text-[1.1rem]">chevron_right</span>
+          </button>
+          <div className="absolute bottom-3 left-1/2 flex -translate-x-1/2 gap-1.5">
+            {photos.map((_, i) => (
+              <button
+                key={i}
+                onClick={() => setIndex(i)}
+                className="h-1.5 rounded-full transition-all duration-200"
+                style={{
+                  width: i === index ? "1.5rem" : "0.375rem",
+                  background: i === index ? color : "rgba(255,255,255,0.5)",
+                }}
+                aria-label={`Photo ${i + 1}`}
+              />
+            ))}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
 function MinistryModal({
   ministry: m,
   onClose,
@@ -368,37 +419,10 @@ function MinistryModal({
             </button>
           </div>
 
-          {/* Photos */}
+          {/* Photos slideshow */}
           {m.photos.length > 0 && (
-            <div className="px-6 pb-5">
-              <div
-                className={`grid gap-2 ${
-                  m.photos.length === 1
-                    ? "grid-cols-1"
-                    : m.photos.length === 2
-                    ? "grid-cols-2"
-                    : "grid-cols-3"
-                }`}
-              >
-                {m.photos.map((src, i) => (
-                  <div
-                    key={i}
-                    className={`overflow-hidden rounded-xl ${
-                      m.photos.length === 3 && i === 0
-                        ? "col-span-2 aspect-video"
-                        : "aspect-square"
-                    }`}
-                  >
-                    <Image
-                      src={src}
-                      alt=""
-                      width={600}
-                      height={400}
-                      className="h-full w-full object-cover"
-                    />
-                  </div>
-                ))}
-              </div>
+            <div className="pb-5">
+              <PhotoSlideshow photos={m.photos} color={m.color} />
             </div>
           )}
 

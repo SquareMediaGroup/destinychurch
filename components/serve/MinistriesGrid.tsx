@@ -326,10 +326,14 @@ export default function MinistriesGrid() {
 
       {/* Grid */}
       <div
-        className={`grid items-stretch gap-4 transition-all duration-200 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 ${fading ? "opacity-0 translate-y-2" : "opacity-100 translate-y-0"} ${displayedFilter !== "All" ? "justify-items-center" : ""}`}
+        className={`transition-all duration-200 ${fading ? "opacity-0 translate-y-2" : "opacity-100 translate-y-0"} ${
+          displayedFilter === "All"
+            ? "grid items-stretch gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+            : "flex flex-wrap items-stretch justify-center gap-4"
+        }`}
       >
         {visible.map((m, i) => (
-          <AnimateIn key={m.name} delay={fading ? 0 : (i % 4) * 60} className="h-full w-full">
+          <AnimateIn key={m.name} delay={fading ? 0 : (i % 4) * 60} className={displayedFilter === "All" ? "h-full" : "h-auto w-full sm:w-[calc(50%-0.5rem)] lg:w-[calc(33.333%-0.667rem)] xl:w-[calc(25%-0.75rem)]"}>
             <button
               onClick={() => setActive(m)}
               className="group flex h-full w-full flex-col items-center rounded-3xl bg-white p-8 text-center shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-md focus-visible:outline-none"

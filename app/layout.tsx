@@ -8,7 +8,6 @@ import Providers from "@/components/Providers";
 import CookieBanner from "@/components/CookieBanner";
 import AnalyticsGate from "@/components/AnalyticsGate";
 import SiteBanner from "@/components/SiteBanner";
-import BetaDisclaimer from "@/components/BetaDisclaimer";
 import { createServiceClient } from "@/utils/supabase/service";
 import { unstable_noStore as noStore } from "next/cache";
 import { SpeedInsights } from "@vercel/speed-insights/next";
@@ -178,7 +177,6 @@ export default async function RootLayout({
         className={`${roboto.variable} ${dosis.variable} ${anton.variable} antialiased`}
       >
         <Providers banner={banner}>
-          {/* <BetaDisclaimer /> */}
 <SiteBanner />
           <CookieBanner />
           <div className="flex min-h-screen flex-col bg-[var(--background)] text-[var(--foreground)]">

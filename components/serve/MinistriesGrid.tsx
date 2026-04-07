@@ -246,12 +246,12 @@ export default function MinistriesGrid() {
   return (
     <>
       {/* Grid */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+      <div className="grid items-stretch gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {ministries.map((m, i) => (
-          <AnimateIn key={m.name} delay={(i % 4) * 60}>
+          <AnimateIn key={m.name} delay={(i % 4) * 60} className="h-full">
             <button
               onClick={() => setActive(m)}
-              className="group relative flex w-full flex-col overflow-hidden rounded-2xl text-left shadow-sm transition duration-200 hover:-translate-y-1 hover:shadow-lg focus-visible:outline-none"
+              className="group relative flex h-full w-full flex-col overflow-hidden rounded-2xl text-left shadow-sm transition duration-200 hover:-translate-y-1 hover:shadow-lg focus-visible:outline-none"
               style={{ background: m.color + "12" }}
             >
               <div className="flex flex-1 flex-col p-5">

@@ -17,10 +17,10 @@ export default function MissionSection() {
         <div className="relative mx-auto max-w-5xl px-5 sm:px-8 lg:px-12">
           <AnimateIn>
 
-            {/* "Our Mission" label — collapses via grid */}
-            <div className="grid grid-rows-[0fr] transition-[grid-template-rows] duration-500 ease-in-out group-hover:grid-rows-[1fr]">
+            {/* "Our Mission" label — always visible on mobile, hover-only on desktop */}
+            <div className="grid grid-rows-[1fr] transition-[grid-template-rows] duration-500 ease-in-out md:grid-rows-[0fr] md:group-hover:grid-rows-[1fr]">
               <div className="overflow-hidden min-h-0">
-                <div className="pb-4 opacity-0 transition-opacity duration-500 group-hover:opacity-100">
+                <div className="pb-4 opacity-100 transition-opacity duration-500 md:opacity-0 md:group-hover:opacity-100">
                   <span className="text-xs font-bold uppercase tracking-widest text-white/40">
                     Our Mission
                   </span>
@@ -35,10 +35,10 @@ export default function MissionSection() {
               <span className="text-destiny-orange">Faith, Hope and Love</span> for Jesus.
             </h2>
 
-            {/* Description + pastor row — collapses via grid */}
-            <div className="grid grid-rows-[0fr] transition-[grid-template-rows] duration-500 ease-in-out group-hover:grid-rows-[1fr]">
+            {/* Description + pastor row — always visible on mobile, hover-only on desktop */}
+            <div className="grid grid-rows-[1fr] transition-[grid-template-rows] duration-500 ease-in-out md:grid-rows-[0fr] md:group-hover:grid-rows-[1fr]">
               <div className="overflow-hidden min-h-0">
-                <div className="opacity-0 transition-opacity duration-500 delay-100 group-hover:opacity-100">
+                <div className="opacity-100 transition-opacity duration-500 delay-100 md:opacity-0 md:group-hover:opacity-100">
                   <p className="mt-4 mb-6 text-sm leading-relaxed text-white/60 sm:mt-6 sm:mb-8 sm:text-base md:text-lg">
                     Destiny Church exists to bring people to Jesus and membership of his
                     family, developing them to maturity in Christ, and equipping them for

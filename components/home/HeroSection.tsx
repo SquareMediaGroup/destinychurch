@@ -14,7 +14,10 @@ export default function HeroSection() {
         className="relative z-10 px-4 text-center"
         style={{ animation: "fadeInUp 0.9s ease forwards" }}
       >
-        <h1 className="whitespace-nowrap uppercase leading-[0.9] tracking-tight text-white text-[clamp(2.5rem,10vw,9.8rem)]" style={{ fontFamily: "var(--font-anton)" }}>
+        <h1
+          className="uppercase leading-[0.85] tracking-tight text-white text-[22vw] md:whitespace-nowrap md:text-[clamp(2.5rem,10vw,9.8rem)]"
+          style={{ fontFamily: "var(--font-anton)" }}
+        >
           <span className="relative inline-block">
             Welcome
             <Image
@@ -22,11 +25,13 @@ export default function HeroSection() {
               alt=""
               width={700}
               height={100}
-              className="absolute left-1/2 w-[105%] -translate-x-[49%]" style={{ bottom: "-0.2em" }}
+              className="absolute left-1/2 w-[105%] -translate-x-[49%]"
+              style={{ bottom: "-0.2em" }}
               priority
               aria-hidden="true"
             />
           </span>
+          <br className="md:hidden" />
           {" "}Home
         </h1>
 

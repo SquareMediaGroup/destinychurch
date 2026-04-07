@@ -251,18 +251,21 @@ export default function MinistriesGrid() {
           <AnimateIn key={m.name} delay={(i % 4) * 60}>
             <button
               onClick={() => setActive(m)}
-              className="group relative flex w-full flex-col overflow-hidden rounded-2xl bg-white text-left shadow-sm ring-1 ring-black/5 transition duration-200 hover:-translate-y-1 hover:shadow-lg hover:ring-2 focus-visible:outline-none focus-visible:ring-2"
-              style={{ "--hover-ring": m.color } as React.CSSProperties}
+              className="group relative flex w-full flex-col overflow-hidden rounded-2xl text-left shadow-sm transition duration-200 hover:-translate-y-1 hover:shadow-lg focus-visible:outline-none"
+              style={{ background: m.color + "12" }}
             >
-              {/* Coloured top bar */}
-              <div className="h-1 w-full" style={{ background: m.color }} />
-
               <div className="flex flex-1 flex-col p-5">
                 {/* Text */}
-                <h3 className="mb-1 text-[0.95rem] font-black text-destiny-grey">
+                <h3
+                  className="mb-1 text-[0.95rem] font-black"
+                  style={{ color: m.color }}
+                >
                   {m.name}
                 </h3>
-                <p className="mb-4 text-[0.72rem] font-semibold uppercase tracking-widest text-destiny-grey/40">
+                <p
+                  className="mb-4 text-[0.72rem] font-semibold uppercase tracking-widest"
+                  style={{ color: m.color + "99" }}
+                >
                   {m.tagline}
                 </p>
                 <p className="line-clamp-3 text-[0.82rem] leading-relaxed text-destiny-grey/60">
@@ -273,7 +276,7 @@ export default function MinistriesGrid() {
                 <div className="mt-auto flex items-center justify-end pt-5">
                   <span
                     className="flex h-7 w-7 items-center justify-center rounded-full transition-transform duration-200 group-hover:translate-x-0.5"
-                    style={{ background: m.color + "18" }}
+                    style={{ background: m.color + "25" }}
                   >
                     <span
                       className="material-symbols-rounded text-[1rem]"

@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useBanner } from "@/contexts/BannerContext";
@@ -8,9 +9,19 @@ export default function SiteBanner() {
   const banner = useBanner();
   const pathname = usePathname();
 
-  if (!banner.active || !banner.message) return null;
-
   const isAdmin = pathname.startsWith("/admin");
+  const isSitewideActive = banner.active && banner.message && banner.type === "sitewide" && !isAdmin;
+
+  useEffect(() => {
+    if (isSitewideActive) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => { document.body.style.overflow = ""; };
+  }, [isSitewideActive]);
+
+  if (!banner.active || !banner.message) return null;
 
   // Sitewide (maintenance) banner — full-screen block on all non-admin pages
   if (banner.type === "sitewide") {

@@ -27,6 +27,7 @@ const navItems = [
   { href: "/sermons", label: "Sermons" },
   { href: "/serve", label: "Serve" },
   { label: "About", href: "/about", dropdown: aboutDropdown },
+  { href: "/hire", label: "Hire" },
   { href: "/give", label: "Give" },
 ];
 

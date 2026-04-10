@@ -31,9 +31,15 @@
 }
 
 html {
-  background: #363f48;
+  background: #F58021;
   overscroll-behavior: none;
   scroll-behavior: smooth;
+}
+
+@media (max-width: 768px) {
+  html {
+    overscroll-behavior: auto;
+  }
 }
 
 body {
@@ -145,10 +151,12 @@ h3 {
   animation: slide-up 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
-.animate-in {
+/* Elements below the fold waiting to animate in */
+.animate-pending {
   opacity: 0;
 }
 
+/* Elements entering the viewport — plays the animation */
 .animate-in.is-visible {
   animation: fadeInUp 0.6s ease forwards;
 }

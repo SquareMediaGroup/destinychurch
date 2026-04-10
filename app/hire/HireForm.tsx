@@ -113,6 +113,20 @@ export default function HireForm() {
         </div>
       </div>
 
+      {eventType === "Other" && (
+        <div>
+          <label className={labelClass} htmlFor="event_type_other">Please describe your event <span className="text-red-400">*</span></label>
+          <input
+            id="event_type_other"
+            name="event_type_other"
+            type="text"
+            required
+            placeholder="Tell us what type of event you're planning"
+            className={inputClass}
+          />
+        </div>
+      )}
+
       {eventType === "Wedding Ceremony" && (
         <div>
           <label className={labelClass}>Are you a member of Destiny Church? <span className="text-red-400">*</span></label>

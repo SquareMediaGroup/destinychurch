@@ -38,6 +38,18 @@ const spaces = [
   },
 ];
 
+const INCLUDED = [
+  { icon: "local_parking",      label: "Car Park",                       detail: "Free on-site parking for all your guests" },
+  { icon: "wifi",               label: "Wi-Fi 7 Internet",               detail: "Very fast Wi-Fi 7 connection throughout the building" },
+  { icon: "directions_bus",     label: "Bus Stop Outside",               detail: "A bus stop is right outside the front door" },
+  { icon: "accessible",         label: "Full Step-Free Access",          detail: "Elevators, step-free rooms and accessible toilets for every guest" },
+  { icon: "price_check",        label: "No Hidden Fees",                 detail: "The price we quote is the price you pay" },
+  { icon: "event_available",    label: "Flexible Cancellation*",         detail: "Plans change — we work with you, not against you" },
+  { icon: "cleaning_services",  label: "Spotless Venue",                 detail: "Every space is cleaned and prepared before your event" },
+  { icon: "support_agent",      label: "Dedicated On-Site Staff",        detail: "A member of our team is always on hand on the day" },
+  { icon: "security",           label: "CCTV",                           detail: "Full CCTV coverage across the building for your peace of mind" },
+];
+
 const faqs = [
   {
     q: "What are your hire rates?",
@@ -130,6 +142,39 @@ export default async function HirePage() {
               </AnimateIn>
             ))}
           </div>
+        </div>
+      </section>
+
+      {/* Always included */}
+      <section className="py-20" style={{ background: "linear-gradient(135deg, #1c0f06 0%, #0d0d0d 100%)" }}>
+        <div className="mx-auto max-w-7xl px-4 lg:px-8">
+          <AnimateIn className="mb-12 text-center">
+            <p className="mb-3 text-xs font-bold uppercase tracking-widest text-destiny-orange">Every Hire, No Exceptions</p>
+            <h2 className="text-3xl font-black text-white md:text-4xl">Always Included</h2>
+            <p className="mx-auto mt-3 max-w-xl text-sm text-white/50">
+              No matter what you&apos;re booking or how long for, every hire comes with all of the following — at no extra cost.
+            </p>
+          </AnimateIn>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {INCLUDED.map((item, i) => (
+              <AnimateIn key={item.label} delay={i * 60}>
+                <div className="flex items-start gap-4 rounded-2xl border border-white/8 bg-white/5 p-5 backdrop-blur-sm">
+                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-destiny-orange/15">
+                    <span className="material-symbols-rounded text-xl text-destiny-orange">{item.icon}</span>
+                  </div>
+                  <div>
+                    <p className="mb-0.5 text-sm font-bold text-white">{item.label}</p>
+                    <p className="text-xs leading-relaxed text-white/50">{item.detail}</p>
+                  </div>
+                </div>
+              </AnimateIn>
+            ))}
+          </div>
+          <AnimateIn>
+            <p className="mt-8 text-center text-xs text-white/30">
+              * Flexible Cancellation is subject to our cancellation policy, which will be provided at the time of booking.
+            </p>
+          </AnimateIn>
         </div>
       </section>
 

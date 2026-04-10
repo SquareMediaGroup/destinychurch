@@ -7,6 +7,15 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { useBanner } from "@/contexts/BannerContext";
 import { useSermonSearch } from "@/lib/sermonSearchContext";
 
+const navItems = [
+  { href: "/whats-on", label: "What's on" },
+  { href: "/sermons", label: "Sermons" },
+  { href: "/serve", label: "Serve" },
+  { href: "/about", label: "About" },
+  { href: "/hire", label: "Hire" },
+  { href: "/give", label: "Give" },
+];
+
 const tabs = [
   { label: "Sermons", href: "/sermons" },
   { label: "Guest Speakers", href: "/sermons/guest-speakers" },
@@ -82,33 +91,53 @@ export default function SermonsHeader() {
             </div>
           </Link>
 
-          {/* Search bar — centred, grows to fill space */}
-          {showSearch && (
-            <div className="relative hidden flex-1 max-w-sm md:block">
-              <svg className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-white/40" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
-              </svg>
-              <input
-                type="text"
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                placeholder="Search sermons…"
-                className="w-full rounded-full border border-white/10 bg-white/8 py-2 pl-9 pr-4 text-sm text-white placeholder:text-white/35 focus:border-destiny-orange/50 focus:outline-none focus:ring-2 focus:ring-destiny-orange/20"
-              />
-              {query && (
-                <button
-                  type="button"
-                  onClick={() => setQuery("")}
-                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-white/40 hover:text-white/70"
-                  aria-label="Clear search"
-                >
-                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-              )}
-            </div>
-          )}
+          {/* Nav items + search */}
+          <div className="hidden items-center gap-1 md:flex">
+            {navItems.map((item) => (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={`rounded-full px-4 py-2 text-sm font-medium transition ${
+                  item.href === "/sermons" && pathname.startsWith("/sermons")
+                    ? "text-destiny-orange"
+                    : "text-white/90 hover:text-destiny-orange"
+                }`}
+              >
+                {item.label}
+              </Link>
+            ))}
+
+            {/* Divider */}
+            {showSearch && <span className="mx-1 h-4 w-px bg-white/20" />}
+
+            {/* Search input */}
+            {showSearch && (
+              <div className="relative">
+                <svg className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/40" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+                </svg>
+                <input
+                  type="text"
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  placeholder="Search sermons…"
+                  className="w-44 rounded-full border border-white/10 bg-white/8 py-2 pl-9 pr-8 text-sm text-white placeholder:text-white/35 transition-all duration-200 focus:w-56 focus:border-destiny-orange/50 focus:outline-none focus:ring-2 focus:ring-destiny-orange/20"
+                />
+                {query && (
+                  <button
+                    type="button"
+                    onClick={() => setQuery("")}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-white/40 hover:text-white/70"
+                    aria-label="Clear search"
+                  >
+                    <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
 
           {/* CTA + mobile toggle */}
           <div className="flex shrink-0 items-center gap-3">
@@ -179,18 +208,18 @@ export default function SermonsHeader() {
                 />
               </div>
             )}
-            {tabs.map((tab) => (
+            {navItems.map((item) => (
               <Link
-                key={tab.href}
-                href={tab.href}
-                onClick={() => { setMobileOpen(false); setQuery(""); }}
+                key={item.href}
+                href={item.href}
+                onClick={() => setMobileOpen(false)}
                 className={`block rounded-xl px-4 py-3 text-sm font-bold transition ${
-                  pathname === tab.href
+                  item.href === "/sermons" && pathname.startsWith("/sermons")
                     ? "bg-white/10 text-white"
                     : "text-white/60 hover:bg-white/5 hover:text-white"
                 }`}
               >
-                {tab.label}
+                {item.label}
               </Link>
             ))}
             <div className="mt-2 border-t border-white/10 pt-2">

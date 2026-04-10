@@ -6,6 +6,15 @@ import { usePathname } from "next/navigation";
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useBanner } from "@/contexts/BannerContext";
 
+const navItems = [
+  { href: "/whats-on", label: "What's on" },
+  { href: "/sermons", label: "Sermons" },
+  { href: "/serve", label: "Serve" },
+  { href: "/about", label: "About" },
+  { href: "/hire", label: "Hire" },
+  { href: "/give", label: "Give" },
+];
+
 const tabs = [
   { label: "Sermons", href: "/sermons" },
   { label: "Guest Speakers", href: "/sermons/guest-speakers" },
@@ -54,7 +63,9 @@ export default function SermonsHeader() {
         transition: "transform 0.4s cubic-bezier(0.4, 0, 0.2, 1)",
       }}
     >
-      <div className="mx-auto max-w-7xl px-4 py-4 lg:px-8">
+      <div className="mx-auto max-w-7xl px-4 pt-4 lg:px-8">
+
+        {/* Main header pill */}
         <div
           className={`flex items-center justify-between rounded-full border px-6 py-3 backdrop-blur-md transition-all duration-300 ${
             scrolled
@@ -76,29 +87,24 @@ export default function SermonsHeader() {
             </div>
           </Link>
 
-          {/* Sub-nav pill — centred on desktop */}
-          <nav className="hidden md:flex absolute left-1/2 -translate-x-1/2">
-            <div className="flex items-center rounded-full border border-white/15 bg-white/10 p-1 backdrop-blur-sm">
-              {tabs.map((tab) => {
-                const active = pathname === tab.href;
-                return (
-                  <Link
-                    key={tab.href}
-                    href={tab.href}
-                    className={`rounded-full px-5 py-2 text-sm font-bold transition-all duration-200 ${
-                      active
-                        ? "bg-white text-[#0d0d0d] shadow-sm"
-                        : "text-white/70 hover:text-white"
-                    }`}
-                  >
-                    {tab.label}
-                  </Link>
-                );
-              })}
-            </div>
+          {/* Desktop nav */}
+          <nav className="hidden items-center gap-1 md:flex">
+            {navItems.map((item) => (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={`rounded-full px-4 py-2 text-sm font-medium transition ${
+                  pathname === item.href || (item.href === "/sermons" && pathname.startsWith("/sermons"))
+                    ? "text-destiny-orange"
+                    : "text-white/90 hover:text-destiny-orange"
+                }`}
+              >
+                {item.label}
+              </Link>
+            ))}
           </nav>
 
-          {/* Right — CTA + mobile toggle */}
+          {/* CTA + mobile toggle */}
           <div className="flex shrink-0 items-center gap-3">
             <Link
               href="/new-here"
@@ -106,8 +112,6 @@ export default function SermonsHeader() {
             >
               New Here?
             </Link>
-
-            {/* Mobile hamburger */}
             <button
               type="button"
               onClick={() => setMobileOpen((o) => !o)}
@@ -129,26 +133,45 @@ export default function SermonsHeader() {
           </div>
         </div>
 
-        {/* Mobile menu */}
-        {mobileOpen && (
-          <div className="mt-2 rounded-2xl border border-white/10 bg-destiny-grey/90 p-3 shadow-xl backdrop-blur-md md:hidden">
+        {/* Sub-nav switcher — below the main pill */}
+        <div className="mt-2 flex justify-center">
+          <div className="flex items-center rounded-full border border-white/15 bg-white/10 p-1 backdrop-blur-sm">
             {tabs.map((tab) => {
               const active = pathname === tab.href;
               return (
                 <Link
                   key={tab.href}
                   href={tab.href}
-                  onClick={() => setMobileOpen(false)}
-                  className={`block rounded-xl px-4 py-3 text-sm font-bold transition ${
+                  className={`rounded-full px-5 py-2 text-sm font-bold transition-all duration-200 ${
                     active
-                      ? "bg-white/10 text-white"
-                      : "text-white/60 hover:bg-white/5 hover:text-white"
+                      ? "bg-white text-[#0d0d0d] shadow-sm"
+                      : "text-white/70 hover:text-white"
                   }`}
                 >
                   {tab.label}
                 </Link>
               );
             })}
+          </div>
+        </div>
+
+        {/* Mobile menu */}
+        {mobileOpen && (
+          <div className="mt-2 rounded-2xl border border-white/10 bg-destiny-grey/90 p-3 shadow-xl backdrop-blur-md">
+            {navItems.map((item) => (
+              <Link
+                key={item.href}
+                href={item.href}
+                onClick={() => setMobileOpen(false)}
+                className={`block rounded-xl px-4 py-3 text-sm font-bold transition ${
+                  pathname === item.href || (item.href === "/sermons" && pathname.startsWith("/sermons"))
+                    ? "bg-white/10 text-white"
+                    : "text-white/60 hover:bg-white/5 hover:text-white"
+                }`}
+              >
+                {item.label}
+              </Link>
+            ))}
             <div className="mt-2 border-t border-white/10 pt-2">
               <Link
                 href="/new-here"

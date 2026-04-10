@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import AnimateIn from "@/components/AnimateIn";
 import HireForm from "./HireForm";
+import FaqAccordion from "./FaqAccordion";
 import { getPageContent } from "@/lib/pageContent";
 
 export const metadata: Metadata = {
@@ -245,15 +246,7 @@ export default async function HirePage() {
               </div>
 
               {/* FAQs */}
-              <div className="mt-10 space-y-3">
-                <p className="text-xs font-bold uppercase tracking-widest text-destiny-grey/40">Common Questions</p>
-                {faqs.map((faq) => (
-                  <div key={faq.q} className="rounded-2xl bg-white p-5">
-                    <p className="mb-1.5 text-sm font-black text-destiny-grey">{faq.q}</p>
-                    <p className="text-sm leading-relaxed text-destiny-grey/60">{faq.a}</p>
-                  </div>
-                ))}
-              </div>
+              <FaqAccordion faqs={faqs} />
             </AnimateIn>
 
             {/* Right — form */}

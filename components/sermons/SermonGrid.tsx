@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import type { YTVideo } from "@/lib/youtube";
 import SermonCard from "@/components/sermons/SermonCard";
 import { useSermonSearch } from "@/lib/sermonSearchContext";
@@ -9,7 +10,11 @@ interface SermonGridProps {
 }
 
 export default function SermonGrid({ videos }: SermonGridProps) {
-  const { query } = useSermonSearch();
+  const { query, setTitles } = useSermonSearch();
+
+  useEffect(() => {
+    setTitles(videos.map((v) => v.title).filter(Boolean));
+  }, [videos, setTitles]);
 
   const filtered = query.trim()
     ? videos.filter((v) =>

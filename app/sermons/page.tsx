@@ -19,7 +19,7 @@ export const metadata: Metadata = {
 export const revalidate = 3600;
 
 export default async function SermonsPage() {
-  const videos = await getVisibleVideos(50);
+  const videos = await getVisibleVideos(200);
 
   // Featured: latest sermon + 3 random picks from the rest
   const featured: typeof videos = [];

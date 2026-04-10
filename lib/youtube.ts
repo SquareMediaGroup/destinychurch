@@ -77,65 +77,79 @@ export async function getLatestVideo(): Promise<YTVideo | null> {
   }
 }
 
-export async function getAllVideos(maxResults = 50): Promise<YTVideo[]> {
+type SearchItem = { id?: { videoId?: string } };
+type DetailItem = { id: string; snippet?: { title?: string; description?: string; publishedAt?: string }; statistics?: { viewCount?: string }; contentDetails?: { duration?: string } };
+
+async function fetchVideoDetails(ids: string[]): Promise<Map<string, DetailItem>> {
+  const detailMap = new Map<string, DetailItem>();
+  // YouTube videos.list accepts max 50 IDs per request
+  const chunks: string[][] = [];
+  for (let i = 0; i < ids.length; i += 50) chunks.push(ids.slice(i, i + 50));
+
+  await Promise.all(
+    chunks.map(async (chunk) => {
+      const url = new URL("https://www.googleapis.com/youtube/v3/videos");
+      url.searchParams.set("part", "snippet,statistics,contentDetails");
+      url.searchParams.set("id", chunk.join(","));
+      url.searchParams.set("key", API_KEY ?? "");
+      const res = await fetch(url.toString(), { next: { revalidate: 300 } });
+      if (!res.ok) return;
+      const data = await res.json();
+      for (const v of (data.items ?? []) as DetailItem[]) detailMap.set(v.id, v);
+    })
+  );
+  return detailMap;
+}
+
+export async function getAllVideos(maxResults = 200): Promise<YTVideo[]> {
   try {
-    const searchUrl = new URL("https://www.googleapis.com/youtube/v3/search");
-    searchUrl.searchParams.set("part", "snippet");
-    searchUrl.searchParams.set("channelId", CHANNEL_ID ?? "");
-    searchUrl.searchParams.set("eventType", "completed");
-    searchUrl.searchParams.set("order", "date");
-    searchUrl.searchParams.set("type", "video");
-    searchUrl.searchParams.set("maxResults", String(maxResults));
-    searchUrl.searchParams.set("key", API_KEY ?? "");
+    const allIds: string[] = [];
+    let pageToken: string | undefined;
+    const perPage = 50; // YouTube API maximum per search request
 
-    const res = await fetch(searchUrl.toString(), { next: { revalidate: 300 } });
-    if (!res.ok) return [];
-    const data = await res.json();
-    const items: Array<{ id?: { videoId?: string }; snippet?: { title?: string; description?: string; publishedAt?: string; thumbnails?: { maxres?: { url?: string }; high?: { url?: string } } } }> = data.items ?? [];
-    if (!items.length) return [];
+    // Paginate through search results until we have enough
+    while (allIds.length < maxResults) {
+      const searchUrl = new URL("https://www.googleapis.com/youtube/v3/search");
+      searchUrl.searchParams.set("part", "snippet");
+      searchUrl.searchParams.set("channelId", CHANNEL_ID ?? "");
+      searchUrl.searchParams.set("eventType", "completed");
+      searchUrl.searchParams.set("order", "date");
+      searchUrl.searchParams.set("type", "video");
+      searchUrl.searchParams.set("maxResults", String(perPage));
+      searchUrl.searchParams.set("key", API_KEY ?? "");
+      if (pageToken) searchUrl.searchParams.set("pageToken", pageToken);
 
-    // Fetch details for all videos in one batch
-    const ids = items.map((item) => item.id?.videoId ?? "").filter(Boolean);
-    const detailUrl = new URL("https://www.googleapis.com/youtube/v3/videos");
-    detailUrl.searchParams.set("part", "snippet,statistics,contentDetails");
-    detailUrl.searchParams.set("id", ids.join(","));
-    detailUrl.searchParams.set("key", API_KEY ?? "");
+      const res = await fetch(searchUrl.toString(), { next: { revalidate: 300 } });
+      if (!res.ok) break;
+      const data = await res.json();
+      const items: SearchItem[] = data.items ?? [];
+      const ids = items.map((item) => item.id?.videoId ?? "").filter(Boolean);
+      allIds.push(...ids);
 
-    const detailRes = await fetch(detailUrl.toString(), { next: { revalidate: 300 } });
-    if (!detailRes.ok) {
-      // Fall back to snippet-only data
-      return items.map((item) => {
-        const id = item.id?.videoId ?? "";
-        const snippet = item.snippet ?? {};
+      pageToken = data.nextPageToken;
+      if (!pageToken) break;
+    }
+
+    if (!allIds.length) return [];
+
+    const limited = allIds.slice(0, maxResults);
+    const detailMap = await fetchVideoDetails(limited);
+
+    return limited
+      .map((id) => {
+        const v = detailMap.get(id);
+        const snippet = v?.snippet ?? {};
         return {
           id,
           title: snippet.title ?? "",
           description: snippet.description ?? "",
           thumbnail: thumbUrl(id),
           publishedAt: snippet.publishedAt ?? "",
+          viewCount: v?.statistics?.viewCount,
+          duration: v?.contentDetails?.duration,
         };
-      });
-    }
-
-    const detailData = await detailRes.json();
-    const detailMap = new Map<string, { snippet?: { title?: string; description?: string; publishedAt?: string }; statistics?: { viewCount?: string }; contentDetails?: { duration?: string } }>();
-    for (const v of (detailData.items ?? [])) {
-      detailMap.set(v.id, v);
-    }
-
-    return ids.map((id) => {
-      const v = detailMap.get(id);
-      const snippet = v?.snippet ?? {};
-      return {
-        id,
-        title: snippet.title ?? "",
-        description: snippet.description ?? "",
-        thumbnail: thumbUrl(id),
-        publishedAt: snippet.publishedAt ?? "",
-        viewCount: v?.statistics?.viewCount,
-        duration: v?.contentDetails?.duration,
-      };
-    });
+      })
+      .filter((v) => v.title); // drop any with no title
   } catch {
     return [];
   }

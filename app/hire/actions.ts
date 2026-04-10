@@ -18,16 +18,18 @@ function buildHireEmailHtml(fields: {
   attendance: string;
   requirements: string;
   message: string;
+  churchMember?: string;
 }) {
   const esc = (s: string) =>
     s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\n/g, "<br />");
 
-  const rows = [
+  const rows: [string, string][] = [
     ["Name", fields.name],
     ["Email", fields.email],
     ["Phone", fields.phone],
     ["Organisation / Group", fields.organisation || "—"],
     ["Event Type", fields.eventType],
+    ...(fields.churchMember ? [["Destiny Church Member", fields.churchMember] as [string, string]] : []),
     ["Space Requested", fields.space],
     ["Date", fields.date],
     ["Start Time", fields.startTime],
@@ -114,6 +116,7 @@ export async function submitHireEnquiry(formData: FormData) {
   const attendance = formData.get("attendance")?.toString().trim() ?? "";
   const requirements = formData.get("requirements")?.toString().trim() ?? "";
   const message = formData.get("message")?.toString().trim() ?? "";
+  const churchMember = formData.get("church_member")?.toString().trim() ?? "";
 
   if (!name || !email || !phone || !eventType || !space || !date || !startTime || !endTime || !attendance) {
     return { success: false, error: "Please fill in all required fields." };
@@ -130,6 +133,7 @@ export async function submitHireEnquiry(formData: FormData) {
       name, email, phone, organisation, event_type: eventType,
       space, date, start_time: startTime, end_time: endTime,
       attendance, requirements, message,
+      church_member: churchMember || null,
       created_at: new Date().toISOString(),
     });
 
@@ -137,7 +141,7 @@ export async function submitHireEnquiry(formData: FormData) {
       from: "Destiny Church <noreply@support.squaremediagroup.org>",
       to: "techteam@destinytees.uk",
       subject: `Venue Hire Enquiry: ${space} — ${date} (${name})`,
-      html: buildHireEmailHtml({ name, email, phone, organisation, eventType, space, date, startTime, endTime, attendance, requirements, message }),
+      html: buildHireEmailHtml({ name, email, phone, organisation, eventType, space, date, startTime, endTime, attendance, requirements, message, churchMember: churchMember || undefined }),
     });
 
     return { success: true };

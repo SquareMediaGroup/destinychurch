@@ -17,6 +17,7 @@ const EVENT_TYPES = [
   "Corporate Meeting",
   "Conference",
   "Birthday / Celebration",
+  "Wedding Ceremony",
   "Wedding Reception",
   "Funeral / Memorial",
   "Fitness / Classes",
@@ -31,6 +32,7 @@ const labelClass = "mb-1.5 block text-sm font-bold text-destiny-grey";
 export default function HireForm() {
   const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
   const [errorMsg, setErrorMsg] = useState("");
+  const [eventType, setEventType] = useState("");
   const formRef = useRef<HTMLFormElement>(null);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -90,7 +92,14 @@ export default function HireForm() {
       <div className="grid gap-4 sm:grid-cols-2">
         <div>
           <label className={labelClass} htmlFor="event_type">Event Type <span className="text-red-400">*</span></label>
-          <select id="event_type" name="event_type" required defaultValue="" className={`${inputClass} appearance-none`}>
+          <select
+            id="event_type"
+            name="event_type"
+            required
+            defaultValue=""
+            className={`${inputClass} appearance-none`}
+            onChange={(e) => setEventType(e.target.value)}
+          >
             <option value="" disabled>Select event type</option>
             {EVENT_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
           </select>
@@ -103,6 +112,22 @@ export default function HireForm() {
           </select>
         </div>
       </div>
+
+      {eventType === "Wedding Ceremony" && (
+        <div>
+          <label className={labelClass}>Are you a member of Destiny Church? <span className="text-red-400">*</span></label>
+          <div className="flex gap-6 mt-1">
+            <label className="flex items-center gap-2 cursor-pointer text-sm text-destiny-grey">
+              <input type="radio" name="church_member" value="Yes" required className="accent-destiny-orange" />
+              Yes
+            </label>
+            <label className="flex items-center gap-2 cursor-pointer text-sm text-destiny-grey">
+              <input type="radio" name="church_member" value="No" required className="accent-destiny-orange" />
+              No
+            </label>
+          </div>
+        </div>
+      )}
 
       <div className="grid gap-4 sm:grid-cols-3">
         <div>

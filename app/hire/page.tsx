@@ -179,6 +179,25 @@ export default async function HirePage() {
         </div>
       </section>
 
+      {/* Availability notice */}
+      <section className="bg-white py-6">
+        <div className="mx-auto max-w-7xl px-4 lg:px-8">
+          <AnimateIn>
+            <div className="flex flex-col gap-3 rounded-2xl border border-destiny-orange/20 bg-destiny-orange/5 px-6 py-5 sm:flex-row sm:items-center sm:gap-5">
+              <span className="material-symbols-rounded shrink-0 text-2xl text-destiny-orange">calendar_month</span>
+              <div>
+                <p className="text-sm font-black text-destiny-grey">Availability &amp; Time Restrictions</p>
+                <p className="mt-0.5 text-sm text-destiny-grey/60">
+                  We are <span className="font-bold text-destiny-grey">not available for hire on Sundays</span>.
+                  On <span className="font-bold text-destiny-grey">Wednesdays and Thursdays</span>, all hires must end by <span className="font-bold text-destiny-grey">6:00 PM</span>.
+                  There are no other date or time restrictions.
+                </p>
+              </div>
+            </div>
+          </AnimateIn>
+        </div>
+      </section>
+
       {/* Enquiry form + contact details */}
       <section className="bg-[#f5f7fa] py-20" id="enquiry">
         <div className="mx-auto max-w-7xl px-4 lg:px-8">

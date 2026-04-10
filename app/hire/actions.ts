@@ -129,6 +129,15 @@ export async function submitHireEnquiry(formData: FormData) {
     return { success: false, error: "Please enter a valid email address." };
   }
 
+  const day = new Date(date).getUTCDay(); // 0 = Sun, 3 = Wed, 4 = Thu
+  if (day === 0) {
+    return { success: false, error: "We do not accept hires on Sundays. Please choose a different date." };
+  }
+  if ((day === 3 || day === 4) && endTime > "18:00") {
+    const dayName = day === 3 ? "Wednesdays" : "Thursdays";
+    return { success: false, error: `All hires must end by 6:00 PM on ${dayName}. Please adjust your end time.` };
+  }
+
   try {
     const supabase = getSupabaseAdmin();
     await supabase.from("hire_enquiries").insert({

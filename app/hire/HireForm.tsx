@@ -29,20 +29,43 @@ const inputClass =
   "w-full rounded-2xl border border-black/10 bg-[#f5f7fa] px-4 py-3 text-sm text-destiny-grey outline-none transition focus:border-destiny-orange focus:ring-2 focus:ring-destiny-orange/20 placeholder:text-destiny-grey/40";
 const labelClass = "mb-1.5 block text-sm font-bold text-destiny-grey";
 
+function getDateRestrictionError(date: string, endTime: string): string | null {
+  if (!date) return null;
+  const day = new Date(date).getUTCDay(); // 0 = Sunday, 3 = Wednesday, 4 = Thursday
+  if (day === 0) return "We do not accept hires on Sundays. Please choose a different date.";
+  if ((day === 3 || day === 4) && endTime && endTime > "18:00") {
+    const dayName = day === 3 ? "Wednesdays" : "Thursdays";
+    return `All hires must end by 6:00 PM on ${dayName}. Please adjust your end time.`;
+  }
+  return null;
+}
+
 export default function HireForm() {
   const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
   const [errorMsg, setErrorMsg] = useState("");
   const [eventType, setEventType] = useState("");
+  const [selectedDate, setSelectedDate] = useState("");
+  const [endTime, setEndTime] = useState("");
   const formRef = useRef<HTMLFormElement>(null);
+
+  const dateError = getDateRestrictionError(selectedDate, endTime);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    if (dateError) {
+      setStatus("error");
+      setErrorMsg(dateError);
+      return;
+    }
     setStatus("loading");
     setErrorMsg("");
     const result = await submitHireEnquiry(new FormData(e.currentTarget));
     if (result.success) {
       setStatus("success");
       formRef.current?.reset();
+      setSelectedDate("");
+      setEndTime("");
+      setEventType("");
     } else {
       setStatus("error");
       setErrorMsg(result.error ?? "Something went wrong.");
@@ -146,7 +169,14 @@ export default function HireForm() {
       <div className="grid gap-4 sm:grid-cols-3">
         <div>
           <label className={labelClass} htmlFor="date">Date <span className="text-red-400">*</span></label>
-          <input id="date" name="date" type="date" required className={inputClass} />
+          <input
+            id="date"
+            name="date"
+            type="date"
+            required
+            className={`${inputClass} ${selectedDate && getDateRestrictionError(selectedDate, endTime)?.includes("Sundays") ? "border-red-400 focus:border-red-400 focus:ring-red-400/20" : ""}`}
+            onChange={(e) => setSelectedDate(e.target.value)}
+          />
         </div>
         <div>
           <label className={labelClass} htmlFor="start_time">Start Time <span className="text-red-400">*</span></label>
@@ -154,9 +184,24 @@ export default function HireForm() {
         </div>
         <div>
           <label className={labelClass} htmlFor="end_time">End Time <span className="text-red-400">*</span></label>
-          <input id="end_time" name="end_time" type="time" required className={inputClass} />
+          <input
+            id="end_time"
+            name="end_time"
+            type="time"
+            required
+            className={`${inputClass} ${dateError && !dateError.includes("Sundays") ? "border-red-400 focus:border-red-400 focus:ring-red-400/20" : ""}`}
+            onChange={(e) => setEndTime(e.target.value)}
+          />
         </div>
       </div>
+
+      {/* Inline date/time restriction warning */}
+      {dateError && (
+        <div className="flex items-start gap-3 rounded-2xl bg-red-50 px-4 py-3">
+          <span className="material-symbols-rounded mt-0.5 shrink-0 text-base text-red-500">block</span>
+          <p className="text-sm text-red-600">{dateError}</p>
+        </div>
+      )}
 
       <div>
         <label className={labelClass} htmlFor="attendance">Expected Attendance <span className="text-red-400">*</span></label>
@@ -173,13 +218,13 @@ export default function HireForm() {
         <textarea id="message" name="message" rows={4} placeholder="Any other details about your event…" className={`${inputClass} resize-none`} />
       </div>
 
-      {status === "error" && (
+      {status === "error" && !dateError && (
         <p className="rounded-2xl bg-red-50 px-4 py-3 text-sm text-red-600">{errorMsg}</p>
       )}
 
       <button
         type="submit"
-        disabled={status === "loading"}
+        disabled={status === "loading" || !!dateError}
         className="w-full rounded-full bg-destiny-orange py-3.5 text-sm font-bold text-white shadow-lg shadow-destiny-orange/25 transition hover:brightness-110 disabled:opacity-60"
       >
         {status === "loading" ? "Sending enquiry…" : "Send Hire Enquiry"}

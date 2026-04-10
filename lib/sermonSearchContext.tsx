@@ -2,25 +2,30 @@
 
 import { createContext, useContext, useState } from "react";
 
+export interface SermonSuggestion {
+  id: string;
+  title: string;
+}
+
 interface SermonSearchContextValue {
   query: string;
   setQuery: (q: string) => void;
-  titles: string[];
-  setTitles: (t: string[]) => void;
+  suggestions: SermonSuggestion[];
+  setSuggestions: (s: SermonSuggestion[]) => void;
 }
 
 const SermonSearchContext = createContext<SermonSearchContextValue>({
   query: "",
   setQuery: () => {},
-  titles: [],
-  setTitles: () => {},
+  suggestions: [],
+  setSuggestions: () => {},
 });
 
 export function SermonSearchProvider({ children }: { children: React.ReactNode }) {
   const [query, setQuery] = useState("");
-  const [titles, setTitles] = useState<string[]>([]);
+  const [suggestions, setSuggestions] = useState<SermonSuggestion[]>([]);
   return (
-    <SermonSearchContext.Provider value={{ query, setQuery, titles, setTitles }}>
+    <SermonSearchContext.Provider value={{ query, setQuery, suggestions, setSuggestions }}>
       {children}
     </SermonSearchContext.Provider>
   );

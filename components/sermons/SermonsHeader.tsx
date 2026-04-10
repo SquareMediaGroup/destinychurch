@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useBanner } from "@/contexts/BannerContext";
 import { useSermonSearch } from "@/lib/sermonSearchContext";
@@ -25,7 +25,8 @@ const MAX_SUGGESTIONS = 6;
 
 export default function SermonsHeader() {
   const pathname = usePathname();
-  const { query, setQuery, titles } = useSermonSearch();
+  const router = useRouter();
+  const { query, setQuery, suggestions: allSuggestions } = useSermonSearch();
   const [scrolled, setScrolled] = useState(false);
   const [hidden, setHidden] = useState(false);
   const [mounted, setMounted] = useState(false);
@@ -58,7 +59,6 @@ export default function SermonsHeader() {
     return () => window.removeEventListener("mousemove", onMove);
   }, []);
 
-  // Close dropdown on outside click
   useEffect(() => {
     const onDown = (e: MouseEvent) => {
       if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
@@ -72,28 +72,33 @@ export default function SermonsHeader() {
 
   const showSearch = pathname === "/sermons" || pathname === "/sermons/guest-speakers";
 
-  const suggestions = showSearch && query.trim().length >= 1
-    ? titles
-        .filter((t) => t.toLowerCase().includes(query.trim().toLowerCase()))
+  const filteredSuggestions = showSearch && query.trim().length >= 1
+    ? allSuggestions
+        .filter((s) => s.title.toLowerCase().includes(query.trim().toLowerCase()))
         .slice(0, MAX_SUGGESTIONS)
     : [];
 
-  const showDropdown = searchFocused && suggestions.length > 0;
+  const showDropdown = searchFocused && filteredSuggestions.length > 0;
   const searchExpanded = searchFocused && showSearch;
+
+  function navigateTo(id: string) {
+    setSearchFocused(false);
+    setActiveIdx(-1);
+    setQuery("");
+    router.push(`/sermons/${id}`);
+  }
 
   function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
     if (!showDropdown) return;
     if (e.key === "ArrowDown") {
       e.preventDefault();
-      setActiveIdx((i) => Math.min(i + 1, suggestions.length - 1));
+      setActiveIdx((i) => Math.min(i + 1, filteredSuggestions.length - 1));
     } else if (e.key === "ArrowUp") {
       e.preventDefault();
       setActiveIdx((i) => Math.max(i - 1, -1));
     } else if (e.key === "Enter" && activeIdx >= 0) {
       e.preventDefault();
-      setQuery(suggestions[activeIdx]);
-      setSearchFocused(false);
-      setActiveIdx(-1);
+      navigateTo(filteredSuggestions[activeIdx].id);
     } else if (e.key === "Escape") {
       setSearchFocused(false);
       setActiveIdx(-1);
@@ -184,8 +189,8 @@ export default function SermonsHeader() {
                 onFocus={() => setSearchFocused(true)}
                 onKeyDown={handleKeyDown}
                 placeholder="Search sermons…"
-                className={`w-full rounded-full border border-white/10 bg-white/8 py-2 pl-9 pr-8 text-sm text-white placeholder:text-white/35 shadow-lg shadow-black/40 transition-all duration-300 focus:border-destiny-orange/50 focus:outline-none focus:ring-2 focus:ring-destiny-orange/20 ${
-                  !searchExpanded ? "w-44" : ""
+                className={`rounded-full border border-white/10 bg-transparent py-2 pl-9 pr-8 text-sm text-white shadow-md shadow-black/20 transition-all duration-300 placeholder:text-white/35 focus:border-destiny-orange/50 focus:outline-none focus:ring-2 focus:ring-destiny-orange/20 ${
+                  searchExpanded ? "w-full" : "w-44"
                 }`}
               />
               {query && (
@@ -203,16 +208,14 @@ export default function SermonsHeader() {
 
               {/* Predictive dropdown */}
               {showDropdown && (
-                <div className="absolute left-0 right-0 top-full z-50 mt-2 overflow-hidden rounded-2xl border border-white/10 bg-destiny-grey/95 shadow-2xl shadow-black/60 backdrop-blur-md">
-                  {suggestions.map((title, i) => (
+                <div className="absolute left-0 right-0 top-full z-50 mt-2 overflow-hidden rounded-2xl border border-white/10 bg-destiny-grey/95 shadow-xl shadow-black/30 backdrop-blur-md">
+                  {filteredSuggestions.map((s, i) => (
                     <button
-                      key={title}
+                      key={s.id}
                       type="button"
                       onMouseDown={(e) => {
                         e.preventDefault();
-                        setQuery(title);
-                        setSearchFocused(false);
-                        setActiveIdx(-1);
+                        navigateTo(s.id);
                       }}
                       onMouseEnter={() => setActiveIdx(i)}
                       className={`flex w-full items-center gap-3 px-4 py-3 text-left text-sm transition ${
@@ -220,9 +223,9 @@ export default function SermonsHeader() {
                       }`}
                     >
                       <svg className="h-3.5 w-3.5 shrink-0 text-white/30" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M8 5v14l11-7z" />
                       </svg>
-                      <span className="truncate text-white/60">{highlightMatch(title)}</span>
+                      <span className="truncate text-white/60">{highlightMatch(s.title)}</span>
                     </button>
                   ))}
                 </div>
@@ -242,7 +245,7 @@ export default function SermonsHeader() {
             </div>
           )}
 
-          {/* Escape button when expanded */}
+          {/* Cancel button when expanded */}
           {searchExpanded && (
             <button
               type="button"
@@ -308,7 +311,7 @@ export default function SermonsHeader() {
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
                   placeholder="Search sermons…"
-                  className="w-full rounded-full border border-white/10 bg-white/8 py-2.5 pl-9 pr-4 text-sm text-white shadow-lg shadow-black/40 placeholder:text-white/35 focus:border-destiny-orange/50 focus:outline-none"
+                  className="w-full rounded-full border border-white/10 bg-transparent py-2.5 pl-9 pr-4 text-sm text-white shadow-md shadow-black/20 placeholder:text-white/35 focus:border-destiny-orange/50 focus:outline-none"
                 />
               </div>
             )}

@@ -10,11 +10,15 @@ interface SermonGridProps {
 }
 
 export default function SermonGrid({ videos }: SermonGridProps) {
-  const { query, setTitles } = useSermonSearch();
+  const { query, setSuggestions } = useSermonSearch();
 
   useEffect(() => {
-    setTitles(videos.map((v) => v.title).filter(Boolean));
-  }, [videos, setTitles]);
+    setSuggestions(
+      videos
+        .filter((v) => v.title)
+        .map((v) => ({ id: v.id, title: v.title }))
+    );
+  }, [videos, setSuggestions]);
 
   const filtered = query.trim()
     ? videos.filter((v) =>

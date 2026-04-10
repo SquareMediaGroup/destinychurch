@@ -1,30 +1,19 @@
 "use client";
 
-import { useState } from "react";
+import { useActionState, useEffect } from "react";
 import Image from "next/image";
-import { createClient } from "@/utils/supabase/client";
+import { adminSignIn } from "./actions";
+
+const initialState = { success: false, error: undefined as string | undefined };
 
 export default function AdminLoginPage() {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [state, formAction, pending] = useActionState(adminSignIn, initialState);
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    setLoading(true);
-    setError("");
-
-    const supabase = createClient();
-    const { error: authError } = await supabase.auth.signInWithPassword({ email, password });
-
-    if (authError) {
-      setError("Invalid email or password");
-      setLoading(false);
-    } else {
+  useEffect(() => {
+    if (state.success) {
       window.location.href = "/admin/redirects";
     }
-  }
+  }, [state.success]);
 
   return (
     <div className="relative flex min-h-screen w-full overflow-hidden bg-destiny-grey">
@@ -68,15 +57,14 @@ export default function AdminLoginPage() {
 
           {/* Card */}
           <div className="rounded-3xl border border-white/10 bg-white/5 p-8 shadow-2xl backdrop-blur-md">
-            <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+            <form action={formAction} className="flex flex-col gap-5">
               <div>
                 <label className="mb-2 block text-xs font-bold uppercase tracking-wider text-white/40">
                   Email
                 </label>
                 <input
                   type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  name="email"
                   autoComplete="email"
                   required
                   placeholder="you@example.com"
@@ -90,8 +78,7 @@ export default function AdminLoginPage() {
                 </label>
                 <input
                   type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  name="password"
                   autoComplete="current-password"
                   required
                   placeholder="Password"
@@ -99,19 +86,19 @@ export default function AdminLoginPage() {
                 />
               </div>
 
-              {error && (
+              {state.error && (
                 <div className="flex items-center gap-3 rounded-2xl bg-red-500/10 px-4 py-3 text-sm text-red-400">
                   <span className="material-symbols-rounded text-base">error</span>
-                  {error}
+                  {state.error}
                 </div>
               )}
 
               <button
                 type="submit"
-                disabled={loading}
+                disabled={pending}
                 className="mt-1 rounded-2xl bg-destiny-orange px-6 py-3.5 text-sm font-bold text-white shadow-lg shadow-destiny-orange/25 transition hover:brightness-110 disabled:opacity-60"
               >
-                {loading ? "Signing in…" : "Sign in"}
+                {pending ? "Signing in…" : "Sign in"}
               </button>
             </form>
           </div>

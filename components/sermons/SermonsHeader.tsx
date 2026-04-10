@@ -274,8 +274,8 @@ export default function SermonsHeader() {
           </button>
         </div>
 
-        {/* Sub-nav switcher */}
-        <div className="mt-2 flex justify-center">
+        {/* Sub-nav switcher — hidden while searching */}
+        <div className={`mt-2 flex justify-center transition-all duration-200 ${query.trim() ? "invisible h-0 mt-0 overflow-hidden" : ""}`}>
           <div className="flex items-center rounded-full border border-white/15 bg-white/10 p-1 backdrop-blur-sm">
             {tabs.map((tab) => {
               const active = pathname === tab.href;

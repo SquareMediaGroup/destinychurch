@@ -1,4 +1,4 @@
-import SermonsSidebar from "@/components/sermons/SermonsSidebar";
+import SermonsHeader from "@/components/sermons/SermonsHeader";
 import { SermonPlayerProvider } from "@/lib/sermonPlayerContext";
 
 export default function SermonsLayout({
@@ -8,10 +8,8 @@ export default function SermonsLayout({
 }) {
   return (
     <SermonPlayerProvider>
-      <div className="flex min-h-screen bg-[#0f0f0f]">
-        <SermonsSidebar />
-        <div className="min-w-0 flex-1">{children}</div>
-      </div>
+      <SermonsHeader />
+      <div className="min-h-screen bg-[#0f0f0f]">{children}</div>
     </SermonPlayerProvider>
   );
 }

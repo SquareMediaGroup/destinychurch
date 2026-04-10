@@ -27,7 +27,7 @@ export default async function GuestSpeakersPage() {
   return (
     <>
       <div
-        className="relative overflow-hidden py-28 text-center"
+        className="relative overflow-hidden pb-20 pt-40 text-center"
         style={{ background: "linear-gradient(135deg, #1a1108 0%, #0d0d0d 100%)" }}
       >
         <div className="absolute inset-0 bg-gradient-to-b from-black/30 to-black/60" />

@@ -70,7 +70,7 @@ export default function SermonsHeader() {
     return () => document.removeEventListener("mousedown", onDown);
   }, []);
 
-  const showSearch = pathname === "/sermons" || pathname === "/sermons/guest-speakers";
+  const showSearch = pathname.startsWith("/sermons");
 
   const filteredSuggestions = showSearch && query.trim().length >= 1
     ? allSuggestions
@@ -277,8 +277,8 @@ export default function SermonsHeader() {
           </button>
         </div>
 
-        {/* Sub-nav switcher — hidden while searching */}
-        <div className={`mt-2 flex justify-center transition-all duration-200 ${query.trim() ? "invisible h-0 mt-0 overflow-hidden" : ""}`}>
+        {/* Sub-nav switcher — only on listing pages, hidden while searching */}
+        <div className={`mt-2 flex justify-center transition-all duration-200 ${query.trim() || !tabs.some(t => t.href === pathname) ? "invisible h-0 mt-0 overflow-hidden" : ""}`}>
           <div className="flex items-center rounded-full border border-white/15 bg-white/10 p-1 backdrop-blur-sm">
             {tabs.map((tab) => {
               const active = pathname === tab.href;

@@ -6,7 +6,6 @@ import SermonPlayer from "@/components/sermons/SermonPlayer";
 import { SermonJumpProvider } from "@/components/sermons/SermonJumpContext";
 import SkipToSermonButton from "@/components/sermons/SkipToSermonButton";
 import SermonDescription from "@/components/sermons/SermonDescription";
-import SermonSearchBar from "@/components/sermons/SermonSearchBar";
 import ShareButton from "@/components/sermons/ShareButton";
 import UpNextSection from "@/components/sermons/UpNextSection";
 
@@ -145,11 +144,6 @@ export default async function SermonPage({ params }: PageProps) {
       />
     <main className="min-h-screen bg-[#0f0f0f] text-white">
       <div className="mx-auto max-w-5xl px-4 py-6 lg:px-8">
-        {/* Search bar */}
-        <div className="mb-6">
-          <SermonSearchBar />
-        </div>
-
         {/* Back link + Share */}
         <div className="mb-4 flex items-center justify-between">
           <Link

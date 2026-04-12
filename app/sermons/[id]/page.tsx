@@ -143,7 +143,7 @@ export default async function SermonPage({ params }: PageProps) {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(videoSchema) }}
       />
     <main className="min-h-screen bg-[#0f0f0f] text-white">
-      <div className="mx-auto max-w-5xl px-4 py-6 lg:px-8">
+      <div className="mx-auto max-w-5xl px-4 pb-6 pt-24 lg:px-8">
         {/* Back link + Share */}
         <div className="mb-4 flex items-center justify-between">
           <Link

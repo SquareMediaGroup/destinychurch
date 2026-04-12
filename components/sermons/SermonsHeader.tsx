@@ -165,6 +165,16 @@ export default function SermonsHeader() {
         transition: "transform 0.4s cubic-bezier(0.4, 0, 0.2, 1)",
       }}
     >
+      {/* Dark gradient — fades in when header is expanded so content behind stays readable */}
+      <div
+        className="pointer-events-none absolute inset-x-0 top-0 h-36"
+        style={{
+          background: "linear-gradient(to bottom, rgba(0,0,0,0.85) 0%, transparent 100%)",
+          opacity:    expanded ? 1 : 0.45,
+          transition: "opacity 0.45s ease",
+          zIndex: -1,
+        }}
+      />
       <div className="mx-auto max-w-7xl px-4 pt-4 lg:px-8">
 
         {/* ── Main row ── */}
@@ -174,7 +184,7 @@ export default function SermonsHeader() {
           {showSearch && (
             <div
               ref={searchContainerRef}
-              className="absolute left-0 top-1/2 -translate-y-1/2 z-10 hidden md:block"
+              className="absolute left-0 top-1/2 -translate-y-1/2 z-30 hidden md:block"
               style={outerFade}
             >
               <div className="relative">
@@ -192,7 +202,7 @@ export default function SermonsHeader() {
                   onFocus={() => setSearchFocused(true)}
                   onKeyDown={handleKeyDown}
                   placeholder="Search sermons…"
-                  className="w-72 rounded-full border border-white/20 bg-black/50 py-2 pl-9 pr-8 text-sm text-white placeholder:text-white/40 focus:border-destiny-orange/50 focus:outline-none focus:ring-2 focus:ring-destiny-orange/20"
+                  className="w-96 rounded-full border border-white/30 bg-[#111111] py-2.5 pl-9 pr-8 text-sm text-white placeholder:text-white/50 focus:border-destiny-orange/60 focus:outline-none focus:ring-2 focus:ring-destiny-orange/25"
                 />
                 {query && (
                   <button
@@ -233,9 +243,10 @@ export default function SermonsHeader() {
           )}
 
           {/* CENTER — the morphing pill (flex-centered so it expands symmetrically) */}
-          <div className="absolute inset-0 z-20 flex items-center justify-center">
+          {/* pointer-events-none on the wrapper so the full-width container never swallows clicks meant for search/toggle */}
+          <div className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center">
             <div
-              className={`relative h-14 overflow-hidden rounded-full border border-white/10 backdrop-blur-md transition-shadow ${glassClass}`}
+              className={`pointer-events-auto relative h-14 overflow-hidden rounded-full border border-white/10 backdrop-blur-md transition-shadow ${glassClass}`}
               style={{
                 width:      expanded ? "100%" : "3.5rem",
                 transition: "width 0.45s cubic-bezier(0.4, 0, 0.2, 1)",
@@ -344,7 +355,7 @@ export default function SermonsHeader() {
 
           {/* RIGHT — Sermons / Guest Speakers toggle (desktop only) */}
           <div
-            className="absolute right-0 top-1/2 -translate-y-1/2 z-10 hidden md:flex"
+            className="absolute right-0 top-1/2 -translate-y-1/2 z-30 hidden md:flex"
             style={outerFade}
           >
             <div className="flex items-center rounded-full border border-white/15 bg-white/10 p-1 backdrop-blur-sm">

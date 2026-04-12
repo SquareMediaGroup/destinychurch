@@ -32,8 +32,7 @@ export default function AnimateIn({
     const alreadyInView = rect.top < window.innerHeight && rect.bottom > 0;
 
     if (alreadyInView) {
-      // Already visible on mount — show immediately, no animation needed
-      setState("visible");
+      // Already visible on mount — leave in "initial" state, no animation needed
       return;
     }
 

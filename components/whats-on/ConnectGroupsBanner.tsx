@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import AnimateIn from "@/components/AnimateIn";
 
@@ -6,9 +7,14 @@ export default function ConnectGroupsBanner() {
     <div className="px-4 py-8 lg:px-8">
       <section className="relative overflow-hidden rounded-3xl">
         {/* Background */}
-        <div
-          className="absolute inset-0 scale-105 bg-cover bg-center blur-sm"
-          style={{ backgroundImage: "url('/img/photos/ConnectGroups.jpg')" }}
+        <Image
+          src="/img/photos/ConnectGroups.jpg"
+          alt=""
+          fill
+          className="scale-105 object-cover object-center blur-sm"
+          sizes="(max-width: 1280px) 100vw, 1280px"
+          quality={60}
+          aria-hidden="true"
         />
         <div className="absolute inset-0 bg-gradient-to-r from-black/85 via-black/70 to-black/50" />
 

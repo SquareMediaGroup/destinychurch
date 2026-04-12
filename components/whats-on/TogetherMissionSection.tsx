@@ -7,9 +7,14 @@ export default function TogetherMissionSection() {
     <section className="py-8 px-4 lg:px-8">
       <div className="relative overflow-hidden rounded-3xl">
         {/* Blurred background */}
-        <div
-          className="absolute inset-0 scale-105 bg-cover bg-center blur-sm"
-          style={{ backgroundImage: "url('/img/photos/mission/Mission-3.png')" }}
+        <Image
+          src="/img/photos/mission/Mission-3.png"
+          alt=""
+          fill
+          className="scale-105 object-cover object-center blur-sm"
+          sizes="(max-width: 1280px) 100vw, 1280px"
+          quality={60}
+          aria-hidden="true"
         />
         {/* Black to transparent gradient */}
         <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/50 to-black/20" />

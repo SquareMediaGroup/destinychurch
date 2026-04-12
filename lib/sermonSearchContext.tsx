@@ -21,9 +21,15 @@ const SermonSearchContext = createContext<SermonSearchContextValue>({
   setSuggestions: () => {},
 });
 
-export function SermonSearchProvider({ children }: { children: React.ReactNode }) {
+export function SermonSearchProvider({
+  children,
+  initialSuggestions = [],
+}: {
+  children: React.ReactNode;
+  initialSuggestions?: SermonSuggestion[];
+}) {
   const [query, setQuery] = useState("");
-  const [suggestions, setSuggestions] = useState<SermonSuggestion[]>([]);
+  const [suggestions, setSuggestions] = useState<SermonSuggestion[]>(initialSuggestions);
   return (
     <SermonSearchContext.Provider value={{ query, setQuery, suggestions, setSuggestions }}>
       {children}

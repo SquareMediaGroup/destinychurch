@@ -184,7 +184,7 @@ export default function SermonsHeader() {
           {showSearch && (
             <div
               ref={searchContainerRef}
-              className="absolute left-0 top-1/2 -translate-y-1/2 z-30 hidden md:block"
+              className="absolute left-0 top-1/2 -translate-y-1/2 z-10 hidden md:block"
               style={outerFade}
             >
               <div className="relative">
@@ -355,7 +355,7 @@ export default function SermonsHeader() {
 
           {/* RIGHT — Sermons / Guest Speakers toggle (desktop only) */}
           <div
-            className="absolute right-0 top-1/2 -translate-y-1/2 z-30 hidden md:flex"
+            className="absolute right-0 top-1/2 -translate-y-1/2 z-10 hidden md:flex"
             style={outerFade}
           >
             <div className="flex items-center rounded-full border border-white/15 bg-white/10 p-1 backdrop-blur-sm">

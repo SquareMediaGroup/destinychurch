@@ -13,14 +13,9 @@ export default async function LatestSermonSection() {
   return (
     <section className="relative w-full overflow-hidden" style={{ minHeight: 320 }}>
       {/* Blurred thumbnail background */}
-      <Image
-        src={video.thumbnail}
-        alt=""
-        fill
-        className="scale-110 object-cover object-center blur-sm"
-        sizes="100vw"
-        quality={60}
-        aria-hidden="true"
+      <div
+        className="absolute inset-0 scale-110 bg-cover bg-center blur-sm"
+        style={{ backgroundImage: `url('${video.thumbnail}')` }}
       />
       {/* Dark overlay */}
       <div className="absolute inset-0 bg-black/60" />

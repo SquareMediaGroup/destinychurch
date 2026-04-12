@@ -9,9 +9,7 @@ export type YTVideo = {
 };
 
 export function thumbUrl(id: string): string {
-  // Use YouTube's CDN directly — i.ytimg.com is in next.config remotePatterns
-  // so Next.js Image will still serve optimized WebP with proper caching.
-  return `https://i.ytimg.com/vi/${id}/maxresdefault.jpg`;
+  return `/api/youtube/thumbnail/${id}`;
 }
 
 export function formatDate(iso: string): string {

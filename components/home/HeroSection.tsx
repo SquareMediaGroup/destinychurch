@@ -3,16 +3,10 @@ import Image from "next/image";
 export default function HeroSection() {
   return (
     <section className="relative flex min-h-screen items-center justify-center overflow-hidden bg-destiny-grey">
-      {/* Background image — Next.js Image for automatic WebP, resizing, and LCP priority */}
-      <Image
-        src="/img/photos/Hero BKG.png"
-        alt=""
-        fill
-        priority
-        quality={75}
-        className="object-cover object-center"
-        sizes="100vw"
-        aria-hidden="true"
+      {/* Background image */}
+      <div
+        className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+        style={{ backgroundImage: "url('/img/photos/Hero%20BKG.png')" }}
       />
       <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/40 to-black/70" />
 

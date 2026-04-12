@@ -192,7 +192,7 @@ export default function SermonsHeader() {
                   onFocus={() => setSearchFocused(true)}
                   onKeyDown={handleKeyDown}
                   placeholder="Search sermons…"
-                  className="w-52 rounded-full border border-white/10 bg-transparent py-2 pl-9 pr-8 text-sm text-white shadow-md shadow-black/20 placeholder:text-white/35 focus:border-destiny-orange/50 focus:outline-none focus:ring-2 focus:ring-destiny-orange/20"
+                  className="w-72 rounded-full border border-white/20 bg-black/50 py-2 pl-9 pr-8 text-sm text-white placeholder:text-white/40 focus:border-destiny-orange/50 focus:outline-none focus:ring-2 focus:ring-destiny-orange/20"
                 />
                 {query && (
                   <button
@@ -262,7 +262,7 @@ export default function SermonsHeader() {
                 </div>
               </div>
 
-              {/* Full logo — left-aligned, fades in */}
+              {/* Full logo — left-aligned, fades in, links to home */}
               <div
                 style={{
                   position:  "absolute",
@@ -272,19 +272,17 @@ export default function SermonsHeader() {
                   ...innerFade,
                 }}
               >
-                <div className="relative h-9 w-[170px]">
-                  <Image src="/img/brand/destiny-logo-color-white.svg" alt="Destiny Church" fill sizes="170px" priority className="object-contain" />
-                </div>
+                <Link href="/" onClick={() => setExpanded(false)}>
+                  <div className="relative h-9 w-[170px]">
+                    <Image src="/img/brand/destiny-logo-color-white.svg" alt="Destiny Church" fill sizes="170px" priority className="object-contain" />
+                  </div>
+                </Link>
               </div>
 
-              {/* Nav items — desktop, fade in */}
+              {/* Nav items — desktop, centered, fade in */}
               <div
-                className="absolute inset-0 hidden items-center md:flex"
-                style={{
-                  paddingLeft:  "210px",
-                  paddingRight: "150px",
-                  ...innerFade,
-                }}
+                className="absolute inset-0 hidden items-center justify-center md:flex"
+                style={innerFade}
               >
                 {navItems.map((item) => (
                   <Link

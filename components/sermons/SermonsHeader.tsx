@@ -170,7 +170,7 @@ export default function SermonsHeader() {
         className="pointer-events-none absolute inset-x-0 top-0 h-36"
         style={{
           background: "linear-gradient(to bottom, rgba(0,0,0,0.85) 0%, transparent 100%)",
-          opacity:    expanded ? 1 : 0.45,
+          opacity:    (expanded || searchFocused) ? 1 : 0.45,
           transition: "opacity 0.45s ease",
           zIndex: -1,
         }}

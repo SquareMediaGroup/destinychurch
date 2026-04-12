@@ -149,11 +149,11 @@ export default function SermonsHeader() {
     transition:    "opacity 0.15s ease",
   };
 
-  // Elements inside the pill fade in after the pill is mostly expanded
+  // Fade in with delay (wait for pill to expand), fade out immediately before pill collapses
   const innerFade: React.CSSProperties = {
     opacity:       expanded ? 1 : 0,
     pointerEvents: expanded ? "auto" : "none",
-    transition:    "opacity 0.2s ease 0.25s",
+    transition:    expanded ? "opacity 0.2s ease 0.25s" : "opacity 0.1s ease",
   };
 
   return (

@@ -143,7 +143,7 @@ export default function GlobalSearch({
               type="text"
               value={query}
               onChange={(e) => handleChange(e.target.value)}
-              placeholder="Search Destiny Church…"
+              placeholder="Search Anything Destiny…"
               className="w-full rounded-full border border-white/15 bg-destiny-grey/50 py-3.5 pl-12 pr-10 text-sm text-white placeholder:text-white/50 shadow-xl backdrop-blur-md focus:border-destiny-orange/50 focus:outline-none focus:ring-2 focus:ring-destiny-orange/20"
             />
             {loading ? (

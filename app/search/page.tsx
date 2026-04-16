@@ -238,7 +238,7 @@ export default async function SearchPage({
               name="q"
               type="text"
               defaultValue={query}
-              placeholder="Search Destiny Church…"
+              placeholder="Search Anything Destiny…"
               autoFocus
               className="w-full rounded-full border border-destiny-grey/15 bg-white py-4 pl-12 pr-5 text-destiny-grey shadow-sm focus:border-destiny-orange/40 focus:outline-none focus:ring-2 focus:ring-destiny-orange/20"
             />

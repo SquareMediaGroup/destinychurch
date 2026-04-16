@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import Image from "next/image";
 
 type ChurchSuiteEvent = {
   id: number;
@@ -40,12 +39,10 @@ function EventCard({ event }: { event: ChurchSuiteEvent }) {
     >
       <div className="relative h-44 w-full overflow-hidden bg-gray-100">
         {imageUrl ? (
-          <Image
+          <img
             src={imageUrl}
             alt={event.name}
-            fill
-            className="object-cover transition group-hover:scale-105"
-            sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
+            className="absolute inset-0 h-full w-full object-cover transition group-hover:scale-105"
           />
         ) : (
           <div className="flex h-full items-center justify-center bg-gradient-to-br from-destiny-orange/20 to-destiny-orange/5">

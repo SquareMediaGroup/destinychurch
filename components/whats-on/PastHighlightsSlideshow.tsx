@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import Image from "next/image";
 
 type Video = {
   videoId: string;
@@ -39,13 +38,10 @@ export default function PastHighlightsSlideshow({ videos }: { videos: Video[] })
             className="group absolute inset-0 w-full"
             aria-label={`Play ${current.title}`}
           >
-            <Image
+            <img
               src={current.thumbnail}
               alt={current.title}
-              fill
-              className="object-cover transition duration-500 group-hover:scale-105"
-              sizes="100vw"
-              priority
+              className="absolute inset-0 h-full w-full object-cover transition duration-500 group-hover:scale-105"
             />
             <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
 
@@ -101,12 +97,10 @@ export default function PastHighlightsSlideshow({ videos }: { videos: Video[] })
               i === active ? "ring-2 ring-destiny-orange ring-offset-2" : "opacity-60 hover:opacity-100"
             }`}
           >
-            <Image
+            <img
               src={v.thumbnail}
               alt={v.title}
-              fill
-              className="object-cover"
-              sizes="128px"
+              className="absolute inset-0 h-full w-full object-cover"
             />
           </button>
         ))}

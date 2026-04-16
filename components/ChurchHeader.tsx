@@ -15,11 +15,11 @@ const aboutDropdown = [
 ];
 
 const whatsOnDropdown = [
-  { href: "/whats-on", label: "Events" },
-  { href: "/whats-on", label: "Courses" },
+  { href: "/whats-on#events", label: "Events" },
+  { href: "/whats-on#courses", label: "Courses" },
   { href: "/alpha", label: "Alpha" },
   { href: "/missions", label: "Missions" },
-  { href: "/whats-on", label: "Highlights" },
+  { href: "/whats-on#highlights", label: "Highlights" },
 ];
 
 const navItems = [

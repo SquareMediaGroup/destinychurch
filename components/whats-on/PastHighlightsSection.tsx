@@ -42,7 +42,7 @@ export default async function PastHighlightsSection() {
   const videos = await getPlaylistVideos();
 
   return (
-    <section className="bg-white py-16">
+    <section id="highlights" className="bg-white py-16">
       <div className="mx-auto max-w-7xl px-4 lg:px-8">
         <AnimateIn>
           <h2 className="mb-10 text-center text-3xl font-black text-destiny-orange md:text-4xl">

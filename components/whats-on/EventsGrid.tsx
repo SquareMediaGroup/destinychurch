@@ -95,7 +95,7 @@ export default function EventsGrid({ events }: { events: ChurchSuiteEvent[] }) {
   );
 
   return (
-    <section className="bg-white py-12">
+    <section id="events" className="bg-white py-12">
       <div className="mx-auto max-w-7xl px-4 lg:px-8">
         {/* Search */}
         <div className="mb-8 flex items-center gap-3 rounded-2xl border border-black/10 bg-white px-4 py-3 shadow-sm">

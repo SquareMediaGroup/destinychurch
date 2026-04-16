@@ -164,7 +164,7 @@ async function fetchSearchData(q: string) {
       const userMessage =
         q +
         (sermonLibrary
-          ? `\n\n---\nIf this relates to sermons or spiritual topics, include up to 4 relevant sermon IDs from the library in "suggestedSermons". Match by topic — not just exact title words.`
+          ? `\n\n---\nOnly include sermon IDs in "suggestedSermons" where the sermon title clearly and directly contains or matches the query words. Do not guess or infer — if a title doesn't obviously relate, exclude it. If none match closely, return an empty array.`
           : "");
 
       const completion = await openai.chat.completions.create({

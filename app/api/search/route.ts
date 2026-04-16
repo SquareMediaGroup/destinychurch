@@ -2,6 +2,63 @@ import { NextRequest, NextResponse } from "next/server";
 import OpenAI from "openai";
 import { getVisibleVideos } from "@/lib/sermons";
 
+// ── Rate limiting ────────────────────────────────────────────────────────────
+const WINDOW_MS = 60_000;       // 1-minute sliding window
+const MAX_PER_WINDOW = 15;      // requests allowed per window
+const COOLDOWN_MS = [           // progressive cooldown per offense
+  5  * 60_000,  // 1st offense : 5 min
+  10 * 60_000,  // 2nd offense : 10 min
+  20 * 60_000,  // 3rd offense : 20 min
+  40 * 60_000,  // 4th offense : 40 min
+  60 * 60_000,  // 5th offense+: 60 min
+];
+
+interface RateLimitRecord {
+  timestamps: number[];
+  cooldownUntil: number;
+  offenses: number;
+}
+
+const rlStore = new Map<string, RateLimitRecord>();
+
+// Prune stale entries every 10 minutes to prevent memory creep
+setInterval(() => {
+  const cutoff = Date.now() - 2 * 60 * 60_000;
+  for (const [ip, r] of rlStore) {
+    if (r.cooldownUntil < Date.now() && (r.timestamps.at(-1) ?? 0) < cutoff) {
+      rlStore.delete(ip);
+    }
+  }
+}, 10 * 60_000);
+
+function clientIp(req: NextRequest): string {
+  return (
+    req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
+    req.headers.get("x-real-ip") ??
+    "unknown"
+  );
+}
+
+function isRateLimited(ip: string): boolean {
+  const now = Date.now();
+  let r = rlStore.get(ip);
+  if (!r) { r = { timestamps: [], cooldownUntil: 0, offenses: 0 }; rlStore.set(ip, r); }
+
+  if (now < r.cooldownUntil) return true;
+
+  r.timestamps = r.timestamps.filter((t) => now - t < WINDOW_MS);
+  r.timestamps.push(now);
+
+  if (r.timestamps.length > MAX_PER_WINDOW) {
+    r.offenses += 1;
+    r.cooldownUntil = now + COOLDOWN_MS[Math.min(r.offenses - 1, COOLDOWN_MS.length - 1)];
+    r.timestamps = [];
+    return true;
+  }
+  return false;
+}
+// ─────────────────────────────────────────────────────────────────────────────
+
 const SITE_KNOWLEDGE = `
 You are a friendly, warm assistant for Destiny Church Tees Valley (destinytees.uk).
 Answer in 1–3 short sentences using a natural, conversational tone — like a helpful church member, not a formal document.
@@ -157,9 +214,13 @@ SITE PAGES:
 `.trim();
 
 export async function GET(request: NextRequest) {
+  if (isRateLimited(clientIp(request))) {
+    return NextResponse.json({ answer: null, page: null, ctaLabel: null, sermons: [] });
+  }
+
   const q = request.nextUrl.searchParams.get("q")?.trim() ?? "";
   if (!q || q.length < 2) {
-    return NextResponse.json({ answer: null, sermons: [] });
+    return NextResponse.json({ answer: null, page: null, ctaLabel: null, sermons: [] });
   }
 
   try {

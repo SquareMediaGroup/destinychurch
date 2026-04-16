@@ -69,7 +69,8 @@ Always respond with valid JSON in this exact format:
 {
   "answer": "your 1–3 sentence answer here",
   "page": "/relevant-page-path or null",
-  "ctaLabel": "Short inviting action label or null"
+  "ctaLabel": "Short inviting action label or null",
+  "suggestedSermons": ["sermonId1", "sermonId2"]
 }
 Always include a page and ctaLabel when your answer relates to any page — if in doubt, include one. Examples:
 - giving/bank details → page: "/give", ctaLabel: "Give Now"
@@ -226,7 +227,11 @@ export async function GET(request: NextRequest) {
   try {
     const videos = await getVisibleVideos(200);
 
-    const sermons = videos
+    // Build a lookup map for fast ID → title resolution
+    const sermonMap = new Map(videos.map((v) => [v.id, v.title]));
+
+    // Simple title-match for the predictive dropdown (fast, no AI)
+    const titleMatches = videos
       .filter((v) => v.title.toLowerCase().includes(q.toLowerCase()))
       .slice(0, 5)
       .map((v) => ({ id: v.id, title: v.title }));
@@ -234,16 +239,30 @@ export async function GET(request: NextRequest) {
     let answer: string | null = null;
     let page: string | null = null;
     let ctaLabel: string | null = null;
+    let aiSermons: { id: string; title: string }[] = [];
 
     if (process.env.OPENAI_API_KEY) {
       const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+
+      // Append the full sermon library so the AI can match by topic
+      const sermonLibrary = videos.length
+        ? "\n\nSERMON LIBRARY:\n" +
+          videos.map((v) => `${v.id} | ${v.title}`).join("\n")
+        : "";
+
+      const userMessage =
+        q +
+        (sermonLibrary
+          ? `\n\n---\nIf this query relates to sermons or spiritual topics, include up to 4 relevant sermon IDs from the library above in the "suggestedSermons" array. Match by topic — not just exact title words.`
+          : "");
+
       const completion = await openai.chat.completions.create({
         model: "gpt-4.1-nano",
         messages: [
-          { role: "system", content: SITE_KNOWLEDGE },
-          { role: "user", content: q },
+          { role: "system", content: SITE_KNOWLEDGE + sermonLibrary },
+          { role: "user", content: userMessage },
         ],
-        max_tokens: 220,
+        max_tokens: 300,
         temperature: 0.2,
         response_format: { type: "json_object" },
       });
@@ -257,8 +276,14 @@ export async function GET(request: NextRequest) {
             page = parsed.page ?? null;
             ctaLabel = parsed.ctaLabel ?? null;
           }
+          // Resolve suggested sermon IDs to {id, title} objects
+          const suggested: string[] = Array.isArray(parsed.suggestedSermons)
+            ? parsed.suggestedSermons.slice(0, 4)
+            : [];
+          aiSermons = suggested
+            .filter((id) => sermonMap.has(id))
+            .map((id) => ({ id, title: sermonMap.get(id)! }));
         } catch {
-          // fallback: treat raw as plain text answer
           if (!/^(i don't know|i'm not sure|i cannot|i can't)/i.test(raw)) {
             answer = raw;
           }
@@ -266,9 +291,9 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    return NextResponse.json({ answer, page, ctaLabel, sermons });
+    return NextResponse.json({ answer, page, ctaLabel, sermons: titleMatches, aiSermons });
   } catch (err) {
     console.error("[search]", err);
-    return NextResponse.json({ answer: null, sermons: [] });
+    return NextResponse.json({ answer: null, page: null, ctaLabel: null, sermons: [], aiSermons: [] });
   }
 }

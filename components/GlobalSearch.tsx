@@ -14,6 +14,7 @@ interface SearchResponse {
   page: string | null;
   ctaLabel: string | null;
   sermons: SermonMatch[];
+  aiSermons: SermonMatch[];
 }
 
 const SITE_PAGES = [
@@ -88,7 +89,7 @@ export default function GlobalSearch({
         const data: SearchResponse = await res.json();
         setResult(data);
       } catch {
-        setResult({ answer: null, page: null, ctaLabel: null, sermons: [] });
+        setResult({ answer: null, page: null, ctaLabel: null, sermons: [], aiSermons: [] });
       } finally {
         setLoading(false);
       }
@@ -110,12 +111,13 @@ export default function GlobalSearch({
       ).slice(0, 3)
     : [];
 
-  const hasPages   = pageMatches.length > 0;
-  const hasSermons = (result?.sermons?.length ?? 0) > 0;
-  const hasAnswer  = Boolean(result?.answer);
-  const showEmpty  =
-    query.trim().length > 2 && !loading && !hasPages && !hasSermons && !hasAnswer;
-  const showPanel  = hasPages || hasSermons || hasAnswer || showEmpty;
+  const hasPages      = pageMatches.length > 0;
+  const hasSermons    = (result?.sermons?.length ?? 0) > 0;
+  const hasAiSermons  = (result?.aiSermons?.length ?? 0) > 0;
+  const hasAnswer     = Boolean(result?.answer);
+  const showEmpty     =
+    query.trim().length > 2 && !loading && !hasPages && !hasSermons && !hasAiSermons && !hasAnswer;
+  const showPanel     = hasPages || hasSermons || hasAiSermons || hasAnswer || showEmpty;
 
   return (
     <div className="flex justify-center px-4 pt-3 pb-2 lg:px-8">
@@ -233,6 +235,26 @@ export default function GlobalSearch({
                     </span>
                   </div>
                   <p className="text-sm leading-relaxed text-white/80">{result!.answer}</p>
+
+                  {/* AI-suggested sermons */}
+                  {hasAiSermons && (
+                    <div className="mt-3 space-y-1">
+                      {result!.aiSermons.map((s) => (
+                        <Link
+                          key={s.id}
+                          href={`/sermons/${s.id}`}
+                          onClick={onClose}
+                          className="flex items-center gap-2 rounded-xl px-3 py-2 text-xs text-white/70 transition hover:bg-white/10 hover:text-white"
+                        >
+                          <svg className="h-3.5 w-3.5 shrink-0 text-destiny-orange/60" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                            <path d="M8 5v14l11-7z" />
+                          </svg>
+                          <span className="truncate">{s.title}</span>
+                        </Link>
+                      ))}
+                    </div>
+                  )}
+
                   {result!.page && result!.ctaLabel && (
                     <Link
                       href={result!.page}

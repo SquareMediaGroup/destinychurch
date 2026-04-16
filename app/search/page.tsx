@@ -136,7 +136,8 @@ export async function generateMetadata({
 }
 
 async function fetchSearchData(q: string) {
-  const [videos] = await Promise.all([getVisibleVideos(200)]);
+  const videos = await getVisibleVideos(200);
+  const sermonMap = new Map(videos.map((v) => [v.id, v.title]));
 
   const sermons = videos
     .filter((v) => v.title.toLowerCase().includes(q.toLowerCase()))
@@ -150,17 +151,29 @@ async function fetchSearchData(q: string) {
   let answer: string | null = null;
   let aiPage: string | null = null;
   let ctaLabel: string | null = null;
+  let aiSermons: { id: string; title: string }[] = [];
 
   if (process.env.OPENAI_API_KEY) {
     try {
       const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+
+      const sermonLibrary = videos.length
+        ? "\n\nSERMON LIBRARY:\n" + videos.map((v) => `${v.id} | ${v.title}`).join("\n")
+        : "";
+
+      const userMessage =
+        q +
+        (sermonLibrary
+          ? `\n\n---\nIf this relates to sermons or spiritual topics, include up to 4 relevant sermon IDs from the library in "suggestedSermons". Match by topic — not just exact title words.`
+          : "");
+
       const completion = await openai.chat.completions.create({
         model: "gpt-4.1-nano",
         messages: [
-          { role: "system", content: SITE_KNOWLEDGE },
-          { role: "user", content: q },
+          { role: "system", content: SITE_KNOWLEDGE + sermonLibrary },
+          { role: "user", content: userMessage },
         ],
-        max_tokens: 220,
+        max_tokens: 300,
         temperature: 0.2,
         response_format: { type: "json_object" },
       });
@@ -174,6 +187,12 @@ async function fetchSearchData(q: string) {
             aiPage = parsed.page ?? null;
             ctaLabel = parsed.ctaLabel ?? null;
           }
+          const suggested: string[] = Array.isArray(parsed.suggestedSermons)
+            ? parsed.suggestedSermons.slice(0, 4)
+            : [];
+          aiSermons = suggested
+            .filter((id) => sermonMap.has(id))
+            .map((id) => ({ id, title: sermonMap.get(id)! }));
         } catch {
           if (!/^(i don't know|i'm not sure|i cannot|i can't)/i.test(raw)) answer = raw;
         }
@@ -183,7 +202,7 @@ async function fetchSearchData(q: string) {
     }
   }
 
-  return { sermons, pages, answer, aiPage, ctaLabel };
+  return { sermons, pages, answer, aiPage, ctaLabel, aiSermons };
 }
 
 export default async function SearchPage({
@@ -194,9 +213,9 @@ export default async function SearchPage({
   const { q } = await searchParams;
   const query = q?.trim() ?? "";
 
-  const { sermons, pages, answer, aiPage, ctaLabel } = query
+  const { sermons, pages, answer, aiPage, ctaLabel, aiSermons } = query
     ? await fetchSearchData(query)
-    : { sermons: [], pages: [], answer: null, aiPage: null, ctaLabel: null };
+    : { sermons: [], pages: [], answer: null, aiPage: null, ctaLabel: null, aiSermons: [] };
 
   const hasResults = sermons.length > 0 || pages.length > 0 || Boolean(answer);
 
@@ -249,6 +268,25 @@ export default async function SearchPage({
               </span>
             </div>
             <p className="text-sm leading-relaxed text-destiny-grey/80">{answer}</p>
+
+            {/* AI-suggested sermons */}
+            {aiSermons.length > 0 && (
+              <div className="mt-4 space-y-1">
+                {aiSermons.map((s) => (
+                  <Link
+                    key={s.id}
+                    href={`/sermons/${s.id}`}
+                    className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-destiny-grey/70 transition hover:bg-destiny-orange/5 hover:text-destiny-grey"
+                  >
+                    <svg className="h-4 w-4 shrink-0 text-destiny-orange/60" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path d="M8 5v14l11-7z" />
+                    </svg>
+                    <span className="truncate">{s.title}</span>
+                  </Link>
+                ))}
+              </div>
+            )}
+
             {aiPage && ctaLabel && (
               <Link
                 href={aiPage}

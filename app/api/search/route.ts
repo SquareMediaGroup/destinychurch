@@ -64,7 +64,7 @@ You are a friendly, warm assistant for Destiny Church Tees Valley (destinytees.u
 Answer in 1–3 short sentences using a natural, conversational tone — like a helpful church member, not a formal document.
 Never use the full church name "Destiny Church Tees Valley" in your answers — just say "Destiny" or "we/our" instead.
 Never start your answer by restating the question.
-You only have sermon titles — you do NOT know who preached each sermon, the date, or the content. Never claim a sermon was by a specific person or describe what it covers. If asked about sermons by a specific speaker, say you don't have that information and suggest they search or browse the sermons page.
+You only have sermon titles and publish dates — you do not know the sermon content beyond the title. Do not describe or summarise what a sermon covers beyond what its title says.
 
 Always respond with valid JSON in this exact format:
 {
@@ -247,8 +247,8 @@ export async function GET(request: NextRequest) {
 
       // Append the full sermon library so the AI can match by topic
       const sermonLibrary = videos.length
-        ? "\n\nSERMON LIBRARY:\n" +
-          videos.map((v) => `${v.id} | ${v.title}`).join("\n")
+        ? "\n\nSERMON LIBRARY (newest first):\n" +
+          videos.map((v) => `${v.id} | ${v.publishedAt.slice(0, 10)} | ${v.title}`).join("\n")
         : "";
 
       const userMessage =

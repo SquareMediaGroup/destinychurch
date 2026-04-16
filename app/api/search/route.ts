@@ -8,6 +8,14 @@ Answer in 1–3 short sentences using a natural, conversational tone — like a 
 Never use the full church name "Destiny Church Tees Valley" in your answers — just say "Destiny" or "we/our" instead.
 Never start your answer by restating the question.
 
+Always respond with valid JSON in this exact format:
+{
+  "answer": "your 1–3 sentence answer here",
+  "page": "/relevant-page-path or null",
+  "ctaLabel": "Short inviting action label or null"
+}
+Include a page and ctaLabel whenever your answer relates to a specific page on the site. Choose a CTA label that feels warm and action-oriented (e.g. "Give Now", "Plan Your Visit", "Meet the Team", "Watch Sermons", "Join Alpha", "Get Involved"). If no specific page is relevant, set both to null.
+
 CHURCH BASICS:
 - Name: Destiny Church Tees Valley
 - Website: destinytees.uk
@@ -150,6 +158,8 @@ export async function GET(request: NextRequest) {
       .map((v) => ({ id: v.id, title: v.title }));
 
     let answer: string | null = null;
+    let page: string | null = null;
+    let ctaLabel: string | null = null;
 
     if (process.env.OPENAI_API_KEY) {
       const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
@@ -159,16 +169,30 @@ export async function GET(request: NextRequest) {
           { role: "system", content: SITE_KNOWLEDGE },
           { role: "user", content: q },
         ],
-        max_tokens: 180,
+        max_tokens: 220,
         temperature: 0.2,
+        response_format: { type: "json_object" },
       });
       const raw = completion.choices[0]?.message?.content?.trim() ?? null;
-      if (raw && !/^(i don't know|i'm not sure|i cannot|i can't)/i.test(raw)) {
-        answer = raw;
+      if (raw) {
+        try {
+          const parsed = JSON.parse(raw);
+          const ans = parsed.answer?.trim() ?? null;
+          if (ans && !/^(i don't know|i'm not sure|i cannot|i can't)/i.test(ans)) {
+            answer = ans;
+            page = parsed.page ?? null;
+            ctaLabel = parsed.ctaLabel ?? null;
+          }
+        } catch {
+          // fallback: treat raw as plain text answer
+          if (!/^(i don't know|i'm not sure|i cannot|i can't)/i.test(raw)) {
+            answer = raw;
+          }
+        }
       }
     }
 
-    return NextResponse.json({ answer, sermons });
+    return NextResponse.json({ answer, page, ctaLabel, sermons });
   } catch (err) {
     console.error("[search]", err);
     return NextResponse.json({ answer: null, sermons: [] });

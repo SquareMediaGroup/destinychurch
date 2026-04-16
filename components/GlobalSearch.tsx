@@ -11,6 +11,8 @@ interface SermonMatch {
 
 interface SearchResponse {
   answer: string | null;
+  page: string | null;
+  ctaLabel: string | null;
   sermons: SermonMatch[];
 }
 
@@ -231,6 +233,15 @@ export default function GlobalSearch({
                     </span>
                   </div>
                   <p className="text-sm leading-relaxed text-white/80">{result!.answer}</p>
+                  {result!.page && result!.ctaLabel && (
+                    <Link
+                      href={result!.page}
+                      onClick={onClose}
+                      className="mt-3 inline-block rounded-full bg-destiny-orange px-4 py-2 text-xs font-bold text-white transition hover:brightness-110"
+                    >
+                      {result!.ctaLabel}
+                    </Link>
+                  )}
                 </div>
               </>
             )}

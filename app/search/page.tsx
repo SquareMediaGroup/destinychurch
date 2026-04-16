@@ -11,6 +11,14 @@ Answer in 1–3 short sentences using a natural, conversational tone — like a 
 Never use the full church name "Destiny Church Tees Valley" in your answers — just say "Destiny" or "we/our" instead.
 Never start your answer by restating the question.
 
+Always respond with valid JSON in this exact format:
+{
+  "answer": "your 1–3 sentence answer here",
+  "page": "/relevant-page-path or null",
+  "ctaLabel": "Short inviting action label or null"
+}
+Include a page and ctaLabel whenever your answer relates to a specific page on the site. Choose a CTA label that feels warm and action-oriented (e.g. "Give Now", "Plan Your Visit", "Meet the Team", "Watch Sermons", "Join Alpha", "Get Involved"). If no specific page is relevant, set both to null.
+
 CHURCH BASICS:
 - Name: Destiny Church Tees Valley
 - Website: destinytees.uk
@@ -127,6 +135,9 @@ async function fetchSearchData(q: string) {
   );
 
   let answer: string | null = null;
+  let aiPage: string | null = null;
+  let ctaLabel: string | null = null;
+
   if (process.env.OPENAI_API_KEY) {
     try {
       const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
@@ -138,17 +149,28 @@ async function fetchSearchData(q: string) {
         ],
         max_tokens: 220,
         temperature: 0.2,
+        response_format: { type: "json_object" },
       });
       const raw = completion.choices[0]?.message?.content?.trim() ?? null;
-      if (raw && !/^(i don't know|i'm not sure|i cannot|i can't)/i.test(raw)) {
-        answer = raw;
+      if (raw) {
+        try {
+          const parsed = JSON.parse(raw);
+          const ans = parsed.answer?.trim() ?? null;
+          if (ans && !/^(i don't know|i'm not sure|i cannot|i can't)/i.test(ans)) {
+            answer = ans;
+            aiPage = parsed.page ?? null;
+            ctaLabel = parsed.ctaLabel ?? null;
+          }
+        } catch {
+          if (!/^(i don't know|i'm not sure|i cannot|i can't)/i.test(raw)) answer = raw;
+        }
       }
     } catch {
       // silently skip AI if unavailable
     }
   }
 
-  return { sermons, pages, answer };
+  return { sermons, pages, answer, aiPage, ctaLabel };
 }
 
 export default async function SearchPage({
@@ -159,9 +181,9 @@ export default async function SearchPage({
   const { q } = await searchParams;
   const query = q?.trim() ?? "";
 
-  const { sermons, pages, answer } = query
+  const { sermons, pages, answer, aiPage, ctaLabel } = query
     ? await fetchSearchData(query)
-    : { sermons: [], pages: [], answer: null };
+    : { sermons: [], pages: [], answer: null, aiPage: null, ctaLabel: null };
 
   const hasResults = sermons.length > 0 || pages.length > 0 || Boolean(answer);
 
@@ -214,6 +236,14 @@ export default async function SearchPage({
               </span>
             </div>
             <p className="text-sm leading-relaxed text-destiny-grey/80">{answer}</p>
+            {aiPage && ctaLabel && (
+              <Link
+                href={aiPage}
+                className="mt-4 inline-block rounded-full bg-destiny-orange px-5 py-2.5 text-sm font-bold text-white transition hover:brightness-110"
+              >
+                {ctaLabel}
+              </Link>
+            )}
           </div>
         )}
 

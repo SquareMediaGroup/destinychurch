@@ -124,7 +124,7 @@ export default function GlobalSearch({
         <form onSubmit={handleSubmit}>
           <div className="relative">
             <svg
-              className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-white/40"
+              className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-white/60"
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
@@ -142,7 +142,7 @@ export default function GlobalSearch({
               value={query}
               onChange={(e) => handleChange(e.target.value)}
               placeholder="Search Destiny Church…"
-              className="w-full rounded-full border border-white/20 bg-destiny-grey/95 py-3.5 pl-12 pr-10 text-sm text-white placeholder:text-white/40 shadow-xl backdrop-blur-md focus:border-destiny-orange/50 focus:outline-none focus:ring-2 focus:ring-destiny-orange/20"
+              className="w-full rounded-full border border-white/15 bg-destiny-grey/50 py-3.5 pl-12 pr-10 text-sm text-white placeholder:text-white/50 shadow-xl backdrop-blur-md focus:border-destiny-orange/50 focus:outline-none focus:ring-2 focus:ring-destiny-orange/20"
             />
             {loading ? (
               <div className="absolute right-4 top-1/2 -translate-y-1/2">
@@ -169,7 +169,7 @@ export default function GlobalSearch({
 
         {/* Results panel */}
         {showPanel && (
-          <div className="mt-1.5 overflow-hidden rounded-2xl border border-white/10 bg-destiny-grey/95 shadow-2xl backdrop-blur-md">
+          <div className="mt-1.5 overflow-hidden rounded-2xl border border-white/15 bg-destiny-grey/60 shadow-2xl backdrop-blur-md">
 
             {/* Page matches */}
             {hasPages && pageMatches.map((page) => (

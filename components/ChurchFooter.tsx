@@ -7,6 +7,7 @@ const churchLinks = [
   { label: "About us", href: "/about" },
   { label: "Serve", href: "/serve" },
   { label: "Give", href: "/give" },
+  { label: "Hire", href: "/hire" },
 ];
 
 const connectLinks = [

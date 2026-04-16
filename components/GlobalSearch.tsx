@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useState, useRef, useEffect, useCallback } from "react";
 
 interface SermonMatch {
@@ -41,6 +41,7 @@ export default function GlobalSearch({
   onClose: () => void;
 }) {
   const pathname = usePathname();
+  const router = useRouter();
   const [query, setQuery] = useState("");
   const [result, setResult] = useState<SearchResponse | null>(null);
   const [loading, setLoading] = useState(false);
@@ -57,7 +58,6 @@ export default function GlobalSearch({
     }
   }, [open]);
 
-  // Close on route change
   useEffect(() => {
     onClose();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -93,6 +93,13 @@ export default function GlobalSearch({
     }, 350);
   }, []);
 
+  function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!query.trim()) return;
+    onClose();
+    router.push(`/search?q=${encodeURIComponent(query.trim())}`);
+  }
+
   if (!open) return null;
 
   const pageMatches = query.trim().length >= 1
@@ -112,49 +119,51 @@ export default function GlobalSearch({
     <div className="flex justify-center px-4 pt-3 pb-2 lg:px-8">
       <div className="w-full" style={{ maxWidth: "40%" }}>
         {/* Search input */}
-        <div className="relative">
-          <svg
-            className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-white/40"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            strokeWidth={2}
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"
-            />
-          </svg>
-          <input
-            ref={inputRef}
-            type="text"
-            value={query}
-            onChange={(e) => handleChange(e.target.value)}
-            placeholder="Search Destiny Church…"
-            className="w-full rounded-full border border-white/20 bg-destiny-grey/95 py-3.5 pl-12 pr-10 text-sm text-white placeholder:text-white/40 shadow-xl backdrop-blur-md focus:border-destiny-orange/50 focus:outline-none focus:ring-2 focus:ring-destiny-orange/20"
-          />
-          {loading ? (
-            <div className="absolute right-4 top-1/2 -translate-y-1/2">
-              <div className="h-4 w-4 animate-spin rounded-full border-2 border-white/20 border-t-destiny-orange" />
-            </div>
-          ) : query ? (
-            <button
-              type="button"
-              onClick={() => {
-                setQuery("");
-                setResult(null);
-                inputRef.current?.focus();
-              }}
-              className="absolute right-3.5 top-1/2 -translate-y-1/2 text-white/40 transition hover:text-white/70"
-              aria-label="Clear search"
+        <form onSubmit={handleSubmit}>
+          <div className="relative">
+            <svg
+              className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-white/40"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={2}
             >
-              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
-          ) : null}
-        </div>
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"
+              />
+            </svg>
+            <input
+              ref={inputRef}
+              type="text"
+              value={query}
+              onChange={(e) => handleChange(e.target.value)}
+              placeholder="Search Destiny Church…"
+              className="w-full rounded-full border border-white/20 bg-destiny-grey/95 py-3.5 pl-12 pr-10 text-sm text-white placeholder:text-white/40 shadow-xl backdrop-blur-md focus:border-destiny-orange/50 focus:outline-none focus:ring-2 focus:ring-destiny-orange/20"
+            />
+            {loading ? (
+              <div className="absolute right-4 top-1/2 -translate-y-1/2">
+                <div className="h-4 w-4 animate-spin rounded-full border-2 border-white/20 border-t-destiny-orange" />
+              </div>
+            ) : query ? (
+              <button
+                type="button"
+                onClick={() => {
+                  setQuery("");
+                  setResult(null);
+                  inputRef.current?.focus();
+                }}
+                className="absolute right-3.5 top-1/2 -translate-y-1/2 text-white/40 transition hover:text-white/70"
+                aria-label="Clear search"
+              >
+                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            ) : null}
+          </div>
+        </form>
 
         {/* Results panel */}
         {showPanel && (
@@ -198,29 +207,27 @@ export default function GlobalSearch({
               </>
             )}
 
-            {/* AI answer */}
+            {/* AI Overview */}
             {hasAnswer && (
               <>
                 {(hasPages || hasSermons) && <div className="mx-4 border-t border-white/10" />}
                 <div className="px-4 py-4">
                   <div className="mb-2 flex items-center gap-2">
-                    <span className="flex h-5 w-5 items-center justify-center rounded-full bg-destiny-orange/20">
-                      <svg
-                        className="h-3 w-3 text-destiny-orange"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                        strokeWidth={2}
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z"
-                        />
-                      </svg>
-                    </span>
+                    <svg
+                      className="h-3.5 w-3.5 text-destiny-orange"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      strokeWidth={2}
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z"
+                      />
+                    </svg>
                     <span className="text-xs font-bold uppercase tracking-wider text-destiny-orange">
-                      Destiny Knows
+                      AI Overview
                     </span>
                   </div>
                   <p className="text-sm leading-relaxed text-white/80">{result!.answer}</p>

@@ -11,7 +11,6 @@ Only answer queries that are a direct question or request for information about 
 Answer in 1–3 short sentences using a natural, conversational tone — like a helpful church member, not a formal document.
 Never use the full church name "Destiny Church Tees Valley" in your answers — just say "Destiny" or "we/our" instead.
 Never start your answer by restating the question.
-You only have sermon titles and publish dates — you do not know the sermon content beyond the title. Do not describe or summarise what a sermon covers beyond what its title says.
 Never assign a role (pastor, leader, staff, etc.) to any person unless their role is explicitly listed in the knowledge base below. If a name appears in a sermon title but is not in the leadership list, they are likely a guest speaker — say so if relevant, but do not invent a title for them.
 
 Always respond with valid JSON in this exact format:
@@ -19,10 +18,10 @@ Always respond with valid JSON in this exact format:
   "answer": "your 1–3 sentence answer here",
   "page": "/relevant-page-path or null",
   "ctaLabel": "Short inviting action label or null",
-  "suggestedSermons": ["sermonId1", "sermonId2"]
+  "suggestedSermons": []
 }
 The ctaLabel must always be a short action phrase (2–5 words) like "Give Now" or "Plan Your Visit" — never a sermon title, person's name, or description.
-suggestedSermons must only contain IDs that appear in the SERMON LIBRARY section below — never IDs or text from the knowledge base above.
+Always return suggestedSermons as an empty array.
 Always include a page and ctaLabel when your answer relates to any page — if in doubt, include one. Examples:
 - giving/bank details → page: "/give", ctaLabel: "Give Now"
 - hiring the building/venue/hall → page: "/hire", ctaLabel: "Enquire About Hiring"
@@ -163,29 +162,23 @@ async function fetchSearchData(q: string) {
     try {
       const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-      const sermonLibrary = videos.length
-        ? "\n\nSERMON LIBRARY (newest first):\n" +
-          videos.map((v) => {
-            const pipeIdx = v.title.lastIndexOf(" | ");
-            const title   = pipeIdx !== -1 ? v.title.slice(0, pipeIdx).trim() : v.title;
-            const speaker = pipeIdx !== -1 ? v.title.slice(pipeIdx + 3).trim() : null;
-            return speaker
-              ? `${v.id} | ${v.publishedAt.slice(0, 10)} | title: ${title} | speaker: ${speaker}`
-              : `${v.id} | ${v.publishedAt.slice(0, 10)} | title: ${title}`;
-          }).join("\n")
-        : "";
-
-      const userMessage =
-        q +
-        (sermonLibrary
-          ? `\n\n---\nOnly include sermon IDs in "suggestedSermons" where the sermon title clearly and directly contains or matches the query words. Do not guess or infer — if a title doesn't obviously relate, exclude it. If none match closely, return an empty array.`
-          : "");
+      // const sermonLibrary = videos.length
+      //   ? "\n\nSERMON LIBRARY (newest first):\n" +
+      //     videos.map((v) => {
+      //       const pipeIdx = v.title.lastIndexOf(" | ");
+      //       const title   = pipeIdx !== -1 ? v.title.slice(0, pipeIdx).trim() : v.title;
+      //       const speaker = pipeIdx !== -1 ? v.title.slice(pipeIdx + 3).trim() : null;
+      //       return speaker
+      //         ? `${v.id} | ${v.publishedAt.slice(0, 10)} | title: ${title} | speaker: ${speaker}`
+      //         : `${v.id} | ${v.publishedAt.slice(0, 10)} | title: ${title}`;
+      //     }).join("\n")
+      //   : "";
 
       const completion = await openai.chat.completions.create({
         model: "gpt-4.1-nano",
         messages: [
-          { role: "system", content: SITE_KNOWLEDGE + sermonLibrary },
-          { role: "user", content: userMessage },
+          { role: "system", content: SITE_KNOWLEDGE },
+          { role: "user", content: q },
         ],
         max_tokens: 300,
         temperature: 0.2,

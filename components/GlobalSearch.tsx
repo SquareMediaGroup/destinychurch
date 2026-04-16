@@ -79,8 +79,8 @@ export default function GlobalSearch({
       setLoading(false);
       return;
     }
-    setLoading(true);
     debounceRef.current = setTimeout(async () => {
+      setLoading(true);
       try {
         const res = await fetch(`/api/search?q=${encodeURIComponent(value.trim())}`);
         const data: SearchResponse = await res.json();
@@ -90,7 +90,7 @@ export default function GlobalSearch({
       } finally {
         setLoading(false);
       }
-    }, 350);
+    }, 700);
   }, []);
 
   function handleSubmit(e: React.FormEvent) {

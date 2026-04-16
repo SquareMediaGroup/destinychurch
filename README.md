@@ -1,96 +1,149 @@
-Destiny Sermons
+# Destiny Church Tees Valley
 
-Destiny Sermons is a high-performance sermon streaming and archive platform built for modern churches. It combines a clean, distraction-free viewing experience with robust backend infrastructure designed to scale across large sermon libraries and high traffic volumes.
+The official website for Destiny Church Tees Valley — a multi-cultural church based in Stockton-on-Tees. The platform covers the full church digital presence: sermon streaming and archive, events, ministries, member engagement, venue hire, and an admin dashboard.
 
-This platform was designed, engineered, and deployed by Square, specifically Square Media Group, as part of Square’s wider mission to equip churches with world-class digital tools.
+Designed, engineered, and deployed by [Square Media Group](mailto:hello@squaremediagroup.org) as part of Square's mission to equip churches with world-class digital tools.
 
-⸻
+---
 
-✨ Core Capabilities
-	•	🎥 Video & audio sermon streaming
-	•	📚 Series-based sermon organisation
-	•	👤 Guest speaker and teaching categorisation
-	•	📝 AI-ready transcript infrastructure
-	•	🔍 Fast client-side navigation & filtering
-	•	💾 Local continue-watching (privacy-first)
-	•	📱 Fully responsive (mobile-first)
+## Features
 
-⸻
+- Sermon streaming and archive with series/speaker filtering
+- Events and what's on listings
+- Ministry pages (Kids, Youth, Young Adults, Missions)
+- Venue hire enquiry system
+- Connect card and prayer request forms
+- Giving and volunteer pages
+- AI-ready transcript infrastructure
+- Protected admin dashboard (sermons, pages, redirects, banner)
+- Mobile-first, fully responsive
 
-🧱 Technology Stack
+---
 
-Destiny Sermons is built using a modern, scalable web stack:
+## Tech Stack
 
-Frontend
-	•	Next.js (App Router)
-	•	React
-	•	TypeScript
-	•	Modern CSS / Tailwind-style utility design
-	•	Optimised for performance, SEO, and accessibility
+| Layer | Technology |
+|---|---|
+| Framework | Next.js 16 (App Router), React 19 |
+| Language | TypeScript |
+| Styling | Tailwind CSS v4 |
+| Backend / Auth | Supabase (PostgreSQL + Row-Level Security) |
+| Email | Resend |
+| Deployment | Vercel |
+| Testing | Playwright (E2E) |
 
-Backend & Data
-	•	Supabase
-	•	Authentication
-	•	Postgres database
-	•	Row-level security
-	•	Serverless functions
-	•	API-driven architecture
+---
 
-Infrastructure
-	•	Vercel for deployment and edge delivery
-	•	Optimised media loading via external storage/CDN
-	•	Environment-secured secrets and config
+## Getting Started
 
-Supabase is used as the core backend platform, providing a secure, scalable, and developer-friendly foundation for authentication, data storage, and future expansion.
+### Prerequisites
 
-⸻
+- Node.js 18+
+- A [Supabase](https://supabase.com) project
+- A [Resend](https://resend.com) account
+- A Google [YouTube Data API v3](https://developers.google.com/youtube/v3) key
 
-🏗️ Architecture Philosophy
+### Environment Variables
 
-Destiny Sermons is built with the following principles:
-	•	Scalability first – designed to grow from a single church to large sermon libraries
-	•	Privacy-respecting – no invasive tracking; localised features where possible
-	•	Separation of concerns – clean boundaries between UI, data, and logic
-	•	Future-ready – structured for AI features, transcripts, and integrations
+Create a `.env.local` file in the project root:
 
-⸻
+```env
+# Supabase
+NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
 
-🔐 Licensing & Source Code
+# YouTube
+YOUTUBE_API_KEY=your_youtube_api_key
+YOUTUBE_CHANNEL_ID=your_youtube_channel_id
 
-Source Availability
+# Email
+RESEND_API_KEY=your_resend_api_key
+```
 
-This repository is public for transparency and demonstration purposes, but is not open source.
+### Install & Run
 
-The full production source code for Destiny Sermons is available for purchase or licensed use.
+```bash
+npm install
+npm run dev
+```
 
-📧 Enquiries:
-hello@squaremediagroup.org
+Open [http://localhost:3000](http://localhost:3000).
 
-Licensing options are available for:
-	•	Churches
-	•	Ministries
-	•	Networks
-	•	White-label platforms
-	•	Enterprise deployments
+### Build for Production
 
-⸻
+```bash
+npm run build
+npm run start
+```
 
-🏢 Built by Square Media Group
+---
 
-Square Media Group is a technology and creative company within the wider Square ecosystem. We specialise in:
-	•	Church platforms & apps
-	•	Media-heavy web systems
-	•	Streaming & content infrastructure
-	•	Branding, UI/UX, and motion design
-	•	Long-term digital strategy
+## Project Structure
 
-Destiny Sermons reflects Square Media Group’s commitment to excellence, performance, and purpose-driven technology.
+```
+app/
+├── about/          # About the church
+├── beliefs/        # Doctrine & beliefs
+├── connect/        # Connect groups
+├── connect-card/   # Connection & prayer form
+├── contact/        # Contact form
+├── give/           # Giving & donations
+├── hire/           # Venue hire enquiries
+├── kids/           # Kids ministry
+├── missions/       # Missions & outreach
+├── new-here/       # First-time visitor guide
+├── serve/          # Volunteer opportunities
+├── sermons/        # Sermon archive & individual pages
+├── visit/          # Plan a visit
+├── whats-on/       # Events
+├── young-adults/   # Young adults ministry
+├── youth/          # Youth ministry
+├── admin/          # Protected admin dashboard
+└── api/            # YouTube integration & admin endpoints
 
-⸻
+components/         # Shared UI components
+supabase/
+└── migrations/     # Database schema migrations
+```
 
-📌 Ownership
+---
 
-© Square Media Group
-All rights reserved.
+## Admin Dashboard
 
+The `/admin` area is protected by Supabase Auth. Log in at `/admin/login` to manage:
+
+- **Sermons** — add, edit, or hide sermon videos
+- **Pages** — manage dynamic content pages
+- **Redirects** — configure URL redirects
+- **Banner** — control the site-wide announcement banner
+
+---
+
+## Testing & Linting
+
+```bash
+npx playwright test   # E2E tests
+npm run lint          # Linting
+```
+
+---
+
+## Licensing & Source Code
+
+This repository is public for transparency and demonstration purposes, but is **not open source**.
+
+The full production source code is available for purchase or licensed use. Licensing options are available for churches, ministries, networks, white-label platforms, and enterprise deployments.
+
+Enquiries: [hello@squaremediagroup.org](mailto:hello@squaremediagroup.org)
+
+---
+
+## Built by Square Media Group
+
+Square Media Group is a technology and creative company specialising in church platforms, media-heavy web systems, streaming and content infrastructure, and long-term digital strategy.
+
+---
+
+© Square Media Group. All rights reserved.  
 No part of this project may be copied, modified, distributed, or deployed without explicit written permission, unless otherwise licensed.

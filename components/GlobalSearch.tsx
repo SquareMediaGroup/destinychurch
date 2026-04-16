@@ -77,7 +77,7 @@ export default function GlobalSearch({
   const handleChange = useCallback((value: string) => {
     setQuery(value);
     clearTimeout(debounceRef.current);
-    if (!value.trim()) {
+    if (!value.trim() || value.trim().length > 150) {
       setResult(null);
       setLoading(false);
       return;

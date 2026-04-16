@@ -25,7 +25,7 @@ function TeamCard({ name, role, photo, cardBg, email }: { name: string; role: st
         {photo ? (
           <Image src={photo} alt={name} width={220} height={280} className="w-full object-contain" />
         ) : (
-          <div className="flex h-52 items-center justify-center text-3xl font-black text-white/30">
+          <div className="flex aspect-[11/14] items-center justify-center text-3xl font-black text-white/30">
             {initials}
           </div>
         )}

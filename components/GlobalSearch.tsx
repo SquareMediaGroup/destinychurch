@@ -132,7 +132,7 @@ export default function GlobalSearch({
             value={query}
             onChange={(e) => handleChange(e.target.value)}
             placeholder="Search Destiny Church…"
-            className="w-full rounded-2xl border border-white/20 bg-destiny-grey/95 py-3.5 pl-12 pr-10 text-sm text-white placeholder:text-white/40 shadow-xl backdrop-blur-md focus:border-destiny-orange/50 focus:outline-none focus:ring-2 focus:ring-destiny-orange/20"
+            className="w-full rounded-full border border-white/20 bg-destiny-grey/95 py-3.5 pl-12 pr-10 text-sm text-white placeholder:text-white/40 shadow-xl backdrop-blur-md focus:border-destiny-orange/50 focus:outline-none focus:ring-2 focus:ring-destiny-orange/20"
           />
           {loading ? (
             <div className="absolute right-4 top-1/2 -translate-y-1/2">
@@ -220,7 +220,7 @@ export default function GlobalSearch({
                       </svg>
                     </span>
                     <span className="text-xs font-bold uppercase tracking-wider text-destiny-orange">
-                      AI Answer
+                      Destiny Knows
                     </span>
                   </div>
                   <p className="text-sm leading-relaxed text-white/80">{result!.answer}</p>

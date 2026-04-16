@@ -36,6 +36,15 @@ New Here (/new-here), Connect (/connect), Alpha (/alpha), Serve (/serve), About 
 Missions (/missions), Youth (/youth), Young Adults (/young-adults), Kids (/kids),
 Safeguarding (/safeguarding), Beliefs (/beliefs), Contact (/contact), Privacy (/privacy)
 
+LEADERSHIP:
+- Lead Pastors: Jonathan & Cath Harris (also written as Jonathan and Catherine Harris)
+- Jonathan Harris is the Senior Pastor — passionate about building team and releasing potential in others
+- Catherine (Cath) Harris leads the Care Team and serves the town
+- They have been pastors at Destiny for over two decades
+- Their daughters are Faith Harris (Associate Pastor) and Nadine Harris
+- Kids Pastor: Funke Awojide (funke@destinytees.uk)
+- Faith Harris email: faith@destinytees.uk
+
 ABOUT:
 - Bible-based, Spirit-led Christian church in Tees Valley
 - Regular events: Alpha (intro to Christianity), courses, missions, community outreach

@@ -251,7 +251,8 @@ export async function GET(request: NextRequest) {
 
       // Append the full sermon library so the AI can match by topic
       const sermonLibrary = videos.length
-        ? "\n\nSERMON LIBRARY (newest first):\n" +
+        ? "\n\nSERMON LIBRARY (newest first, format: ID | DATE | TITLE):\n" +
+          "Note: many titles follow the pattern 'Sermon Title | Speaker Name' — the name after the pipe is the speaker, not part of the sermon topic.\n" +
           videos.map((v) => `${v.id} | ${v.publishedAt.slice(0, 10)} | ${v.title}`).join("\n")
         : "";
 

@@ -254,7 +254,7 @@ export default function ChurchHeader() {
                     setSearchOpen((v) => !v);
                     setMobileOpen(false);
                   }}
-                  className={`hidden items-center justify-center rounded-full p-2 transition md:flex ${
+                  className={`hidden items-center justify-center rounded-full p-2 md:flex ${
                     searchOpen
                       ? "bg-white/10 text-destiny-orange"
                       : "text-white/70 hover:bg-white/10 hover:text-white"

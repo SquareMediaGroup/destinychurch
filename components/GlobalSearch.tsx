@@ -255,7 +255,7 @@ export default function GlobalSearch({
                     </div>
                   )}
 
-                  {result!.page && result!.ctaLabel && (
+                  {result!.page && result!.ctaLabel && !hasAiSermons && (
                     <Link
                       href={result!.page}
                       onClick={onClose}

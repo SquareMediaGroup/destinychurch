@@ -289,7 +289,7 @@ export default async function SearchPage({
               </div>
             )}
 
-            {aiPage && ctaLabel && (
+            {aiPage && ctaLabel && aiSermons.length === 0 && (
               <Link
                 href={aiPage}
                 className="mt-4 inline-block rounded-full bg-destiny-orange px-5 py-2.5 text-sm font-bold text-white transition hover:brightness-110"

@@ -7,51 +7,64 @@ export default function MissionSection() {
   return (
     <div className="px-4 py-8 lg:px-8">
       <section className="relative overflow-hidden rounded-3xl">
-        {/* Slideshow background */}
         <MissionSlideshow />
 
-        {/* Dark gradient overlay */}
-        <div className="absolute inset-0" style={{ background: "linear-gradient(135deg, #1c0f06cc 0%, #0d0d0dee 100%)" }} />
+        {/* Cinematic bottom-weighted overlay */}
+        <div
+          className="absolute inset-0"
+          style={{
+            background:
+              "linear-gradient(to bottom, rgba(0,0,0,0.15) 0%, rgba(8,4,1,0.55) 45%, rgba(5,2,0,0.96) 100%)",
+          }}
+        />
 
-        {/* Content */}
-        <div className="relative mx-auto flex max-w-7xl flex-col items-start justify-between gap-8 px-4 py-10 sm:gap-10 sm:py-16 md:flex-row md:items-end lg:px-8">
+        {/* Content pinned to bottom */}
+        <div className="relative mx-auto flex max-w-7xl flex-col justify-end gap-8 px-6 pt-40 pb-10 sm:pt-56 sm:pb-14 lg:px-10 lg:pb-16">
 
-          <AnimateIn className="max-w-2xl">
-            <span className="mb-4 block text-xs font-bold uppercase tracking-widest text-white/40">
-              Our Mission
-            </span>
-            <h2 className="text-2xl font-black leading-tight text-white sm:text-3xl md:text-4xl">
+          <AnimateIn>
+            {/* Orange accent rule */}
+            <div className="mb-6 h-0.5 w-14 bg-destiny-orange" />
+
+            <h2
+              className="max-w-3xl text-4xl leading-[0.95] text-white sm:text-5xl md:text-6xl lg:text-7xl"
+              style={{ fontFamily: "var(--font-anton)" }}
+            >
               Transforming Lives through{" "}
-              <span className="text-destiny-orange">Faith, Hope and Love</span>{" "}
+              <span className="text-destiny-orange">Faith, Hope &amp; Love</span>{" "}
               for Jesus.
             </h2>
-            <p className="mt-4 text-sm leading-relaxed text-white/60 sm:mt-6 sm:text-base">
+
+            <p className="mt-5 max-w-xl text-sm leading-relaxed text-white/55 sm:text-base">
               Destiny Church exists to bring people to Jesus and membership of his
-              family, developing them to maturity in Christ, and equipping them for
-              their ministry in the Church and mission in the world, in order to
-              magnify God&apos;s name.
+              family, developing them to Christlikeness, and equipping them for
+              ministry in the Church and mission in the world.
             </p>
           </AnimateIn>
 
-          <AnimateIn delay={150} className="flex shrink-0 flex-col gap-5">
-            <div className="flex items-center gap-3">
-              <div className="relative h-11 w-11 overflow-hidden rounded-full bg-destiny-orange/20">
+          <AnimateIn delay={120} className="flex flex-wrap items-center gap-5 sm:gap-8">
+            {/* Pastor attribution */}
+            <div className="flex items-center gap-3.5">
+              <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-full ring-2 ring-destiny-orange/35 ring-offset-2 ring-offset-black/80">
                 <Image
                   src="/img/brand/Team/JonathanCath.png"
-                  alt="Jonathan & Cath Harris"
+                  alt="Jonathan &amp; Cath Harris"
                   fill
                   className="object-cover"
-                  sizes="44px"
+                  sizes="48px"
                 />
               </div>
               <div>
                 <p className="text-sm font-bold text-white">Jonathan &amp; Cath Harris</p>
-                <p className="text-xs text-white/40">Lead Pastors</p>
+                <p className="text-xs text-destiny-orange/70 font-medium tracking-wide">Lead Pastors</p>
               </div>
             </div>
+
+            {/* Divider */}
+            <div className="hidden h-8 w-px bg-white/15 sm:block" />
+
             <Link
               href="/about"
-              className="rounded-full bg-destiny-orange px-8 py-3 text-center text-sm font-bold text-white shadow-lg shadow-destiny-orange/25 transition hover:brightness-110"
+              className="rounded-full bg-destiny-orange px-7 py-2.5 text-sm font-bold text-white shadow-lg shadow-destiny-orange/30 transition hover:brightness-110"
             >
               About Destiny Church
             </Link>

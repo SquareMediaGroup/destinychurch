@@ -89,10 +89,17 @@ export default function VisitPage() {
       {/* Hero */}
       <div className="px-4 pt-8 pb-8 lg:px-8">
         <section className="relative overflow-hidden rounded-3xl">
-          <div
-            className="absolute inset-0 scale-105 bg-cover bg-center blur-sm"
-            style={{ backgroundImage: "url('/img/photos/Plan a Visit.jpg')" }}
-          />
+          <div className="absolute inset-0 scale-105 overflow-hidden blur-sm">
+            <Image
+              src="/img/photos/Plan a Visit.jpg"
+              alt=""
+              fill
+              priority
+              className="object-cover object-center"
+              sizes="100vw"
+              aria-hidden="true"
+            />
+          </div>
           <div className="absolute inset-0 bg-gradient-to-b from-black/55 via-black/45 to-black/80" />
           <div className="relative flex flex-col items-center justify-center py-[12rem] px-4 text-center">
             <AnimateIn>

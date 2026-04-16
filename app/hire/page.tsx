@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import AnimateIn from "@/components/AnimateIn";
 import HireForm from "./HireForm";
 import FaqAccordion from "./FaqAccordion";
@@ -87,7 +88,17 @@ export default async function HirePage() {
           className="relative overflow-hidden rounded-3xl py-[10rem] px-4 text-center"
           style={{ background: "linear-gradient(135deg, #1c0f06 0%, #0d0d0d 100%)" }}
         >
-          <div className="absolute inset-0 opacity-20" style={{ backgroundImage: "url('/img/photos/Plan a Visit.jpg')", backgroundSize: "cover", backgroundPosition: "center" }} />
+          <div className="absolute inset-0 overflow-hidden opacity-20">
+            <Image
+              src="/img/photos/Plan a Visit.jpg"
+              alt=""
+              fill
+              priority
+              className="object-cover object-center"
+              sizes="100vw"
+              aria-hidden="true"
+            />
+          </div>
           <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/40 to-black/80" />
           <AnimateIn className="relative z-10">
             <p className="mb-3 text-xs font-bold uppercase tracking-widest text-destiny-orange">Venue Hire</p>

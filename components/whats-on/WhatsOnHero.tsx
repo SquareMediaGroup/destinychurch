@@ -1,3 +1,4 @@
+import Image from "next/image";
 import AnimateIn from "@/components/AnimateIn";
 
 export default function WhatsOnHero() {
@@ -5,10 +6,17 @@ export default function WhatsOnHero() {
     <div className="px-4 pt-8 pb-0 lg:px-8">
       <section className="relative overflow-hidden rounded-3xl">
         {/* Background image */}
-        <div
-          className="absolute inset-0 scale-105 bg-cover bg-center blur-sm"
-          style={{ backgroundImage: "url('/img/photos/WorshipMoment2.jpg')" }}
-        />
+        <div className="absolute inset-0 scale-105 overflow-hidden blur-sm">
+          <Image
+            src="/img/photos/WorshipMoment2.jpg"
+            alt=""
+            fill
+            priority
+            className="object-cover object-center"
+            sizes="100vw"
+            aria-hidden="true"
+          />
+        </div>
         {/* Gradient overlay */}
         <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/50 to-black/70" />
 

@@ -47,10 +47,17 @@ export default function BeliefsPage() {
       {/* Hero */}
       <div className="px-4 pt-15 pb-15 lg:px-8">
         <section className="relative overflow-hidden rounded-3xl">
-          <div
-            className="absolute inset-0 scale-105 bg-cover bg-center blur-sm"
-            style={{ backgroundImage: "url('/img/photos/Bible Image Destiny Church.jpg')" }}
-          />
+          <div className="absolute inset-0 scale-105 overflow-hidden blur-sm">
+            <Image
+              src="/img/photos/Bible Image Destiny Church.jpg"
+              alt=""
+              fill
+              priority
+              className="object-cover object-center"
+              sizes="100vw"
+              aria-hidden="true"
+            />
+          </div>
           <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/50 to-black/70" />
           <div className="relative flex flex-col items-center justify-center py-[12rem] px-4 text-center">
             <AnimateIn>

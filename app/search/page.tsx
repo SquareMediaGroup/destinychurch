@@ -61,13 +61,13 @@ LEAD PASTORS:
 - Jonathan Harris — Senior Pastor. Has led Destiny for over 20 years. Passionate about building team and unleashing potential in others.
 - Catherine (Cath) Harris — Lead Pastor. Heart for teaching, training, and leading the Community and Care Team. Serves the town.
 - Together they are "Jonathan & Cath Harris, Lead Pastors"
-- Daughters: Faith Harris (Associate Pastor) and Nadine Harris
+- Daughters: Faith Moradi (Associate Pastor) and Nadine Harris
 
 FULL LEADERSHIP TEAM:
 Lead Team:
 - Jonathan Harris — Senior Pastor
 - Cath Harris — Lead Pastor
-- Faith Harris — Associate Pastor (faith@destinytees.uk)
+- Faith Moradi — Associate Pastor (faith@destinytees.uk)
 - Tracy Reddy — Small Groups (tracy@destinytees.uk)
 - Deveshin Reddy — Finance & Facilities (deveshin@destinytees.uk)
 - Nkereuwem (NK) Ekanem — Creativity & Innovation (nk@destinytees.uk)

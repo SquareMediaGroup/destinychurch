@@ -164,9 +164,15 @@ async function fetchSearchData(q: string) {
       const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
       const sermonLibrary = videos.length
-        ? "\n\nSERMON LIBRARY (newest first, format: ID | DATE | TITLE):\n" +
-          "Note: many titles follow the pattern 'Sermon Title | Speaker Name' — the name after the pipe is the speaker, not part of the sermon topic.\n" +
-          videos.map((v) => `${v.id} | ${v.publishedAt.slice(0, 10)} | ${v.title}`).join("\n")
+        ? "\n\nSERMON LIBRARY (newest first):\n" +
+          videos.map((v) => {
+            const pipeIdx = v.title.lastIndexOf(" | ");
+            const title   = pipeIdx !== -1 ? v.title.slice(0, pipeIdx).trim() : v.title;
+            const speaker = pipeIdx !== -1 ? v.title.slice(pipeIdx + 3).trim() : null;
+            return speaker
+              ? `${v.id} | ${v.publishedAt.slice(0, 10)} | title: ${title} | speaker: ${speaker}`
+              : `${v.id} | ${v.publishedAt.slice(0, 10)} | title: ${title}`;
+          }).join("\n")
         : "";
 
       const userMessage =

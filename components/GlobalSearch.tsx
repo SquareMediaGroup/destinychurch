@@ -88,7 +88,7 @@ export default function GlobalSearch({
         const data: SearchResponse = await res.json();
         setResult(data);
       } catch {
-        setResult({ answer: null, sermons: [] });
+        setResult({ answer: null, page: null, ctaLabel: null, sermons: [] });
       } finally {
         setLoading(false);
       }

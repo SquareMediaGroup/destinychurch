@@ -12,7 +12,6 @@ const navItems = [
   { href: "/sermons",  label: "Sermons"   },
   { href: "/serve",    label: "Serve"      },
   { href: "/about",    label: "About"      },
-  { href: "/hire",     label: "Hire"       },
   { href: "/give",     label: "Give"       },
 ];
 
@@ -284,8 +283,8 @@ export default function SermonsHeader() {
                 }}
               >
                 <Link href="/" onClick={() => setExpanded(false)}>
-                  <div className="relative h-9 w-[170px]">
-                    <Image src="/img/brand/destiny-logo-color-white.svg" alt="Destiny Church" fill sizes="170px" priority className="object-contain" />
+                  <div className="relative h-[43px] w-[204px]">
+                    <Image src="/img/brand/destiny-logo-color-white.svg" alt="Destiny Church" fill sizes="204px" priority className="object-contain" />
                   </div>
                 </Link>
               </div>

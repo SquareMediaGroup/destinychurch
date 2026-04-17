@@ -43,15 +43,26 @@ function Dropdown({
   items,
   open,
   onClose,
+  onMouseEnter,
+  onMouseLeave,
 }: {
   items: { href: string; label: string }[];
   open: boolean;
   onClose: () => void;
+  onMouseEnter: () => void;
+  onMouseLeave: () => void;
 }) {
-  if (!open) return null;
-
   return (
-    <div className="absolute left-1/2 top-full z-50 mt-2 -translate-x-1/2">
+    <div
+      className="absolute left-1/2 top-full z-50 mt-2 -translate-x-1/2"
+      style={{
+        opacity: open ? 1 : 0,
+        pointerEvents: open ? "auto" : "none",
+        transition: open ? "opacity 0.15s ease" : "opacity 1.2s ease",
+      }}
+      onMouseEnter={onMouseEnter}
+      onMouseLeave={onMouseLeave}
+    >
       <div className="min-w-[180px] rounded-2xl border border-black/5 bg-white p-2 shadow-xl">
         {items.map((item) => (
           <Link
@@ -78,6 +89,16 @@ export default function ChurchHeader() {
   const [searchOpen, setSearchOpen] = useState(false);
   const headerRef = useRef<HTMLElement>(null);
   const lastScrollY = useRef(0);
+  const hoverTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const handleNavMouseEnter = (label: string) => {
+    if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current);
+    setOpenDropdown(label);
+  };
+
+  const handleNavMouseLeave = () => {
+    hoverTimeoutRef.current = setTimeout(() => setOpenDropdown(null), 50);
+  };
 
   const handleScroll = useCallback(() => {
     const y = window.scrollY;
@@ -95,7 +116,10 @@ export default function ChurchHeader() {
   useEffect(() => {
     setMounted(true);
     window.addEventListener("scroll", handleScroll, { passive: true });
-    return () => window.removeEventListener("scroll", handleScroll);
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+      if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current);
+    };
   }, [handleScroll]);
 
   useEffect(() => {
@@ -109,7 +133,6 @@ export default function ChurchHeader() {
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (headerRef.current && !headerRef.current.contains(e.target as Node)) {
-        setOpenDropdown(null);
         setSearchOpen(false);
       }
     };
@@ -179,33 +202,24 @@ export default function ChurchHeader() {
                   if (item.dropdown) {
                     const isOpen = openDropdown === item.label;
                     return (
-                      <div key={item.label} className="relative flex items-center">
+                      <div
+                        key={item.label}
+                        className="relative flex items-center"
+                        onMouseEnter={() => handleNavMouseEnter(item.label)}
+                        onMouseLeave={handleNavMouseLeave}
+                      >
                         <Link
                           href={item.href!}
-                          className="rounded-full py-2 pl-4 pr-1 text-sm font-medium text-white/90 transition hover:text-destiny-orange"
+                          className="rounded-full px-4 py-2 text-sm font-medium text-white/90 transition hover:text-destiny-orange"
                         >
                           {item.label}
                         </Link>
-                        <button
-                          type="button"
-                          onClick={() => setOpenDropdown(isOpen ? null : item.label)}
-                          className="rounded-full px-1.5 py-2 text-white/90 transition hover:text-destiny-orange"
-                          aria-label={`Toggle ${item.label} menu`}
-                        >
-                          <svg
-                            className={`h-3.5 w-3.5 transition-transform ${isOpen ? "rotate-180" : ""}`}
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke="currentColor"
-                            strokeWidth={2.5}
-                          >
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-                          </svg>
-                        </button>
                         <Dropdown
                           items={item.dropdown}
                           open={isOpen}
                           onClose={() => setOpenDropdown(null)}
+                          onMouseEnter={() => handleNavMouseEnter(item.label)}
+                          onMouseLeave={handleNavMouseLeave}
                         />
                       </div>
                     );

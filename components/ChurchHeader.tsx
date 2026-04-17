@@ -142,8 +142,9 @@ export default function ChurchHeader() {
   }, []);
 
   if (pathname.startsWith("/sermons")) return null;
+  if (pathname.startsWith("/admin")) return null;
 
-  const isAdmin = pathname.startsWith("/admin");
+  const isAdmin = false;
   const banner = useBanner();
   const bannerOffset = banner.active && !isAdmin ? "top-10" : "top-0";
 

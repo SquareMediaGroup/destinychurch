@@ -17,6 +17,7 @@ Designed, engineered, and deployed by [Square Media Group](mailto:hello@squareme
 - AI-ready transcript infrastructure
 - Protected admin dashboard (sermons, pages, redirects, banner)
 - Mobile-first, fully responsive
+- AI Smart Search (Powered by OpenAI)
 
 ---
 

@@ -26,7 +26,7 @@ export default function HeroSection() {
               width={700}
               height={100}
               className="absolute left-1/2 w-[105%] -translate-x-[49%]"
-              style={{ bottom: "-0.5em" }}
+              style={{ bottom: "-0.3em" }}
               priority
               aria-hidden="true"
             />

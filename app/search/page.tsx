@@ -258,7 +258,7 @@ export default async function SearchPage({
 
         {/* AI Overview */}
         {answer && (
-          <div className="mb-6 rounded-2xl border border-destiny-orange/30 bg-white p-10 shadow-lg">
+          <div className="mb-6 rounded-2xl border border-destiny-orange/30 p-10">
             <div className="mb-5 flex items-center gap-3">
               <svg
                 className="h-6 w-6 text-destiny-orange"
@@ -270,7 +270,7 @@ export default async function SearchPage({
                 AI Overview
               </span>
             </div>
-            <p className="text-xl leading-relaxed text-destiny-grey/80">{answer}</p>
+            <p className="text-xl leading-relaxed text-white/90">{answer}</p>
 
             {/* AI-suggested sermons */}
             {aiSermons.length > 0 && (
@@ -279,7 +279,7 @@ export default async function SearchPage({
                   <Link
                     key={s.id}
                     href={`/sermons/${s.id}`}
-                    className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-destiny-grey/70 transition hover:bg-destiny-orange/5 hover:text-destiny-grey"
+                    className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-white/60 transition hover:bg-destiny-orange/10 hover:text-white"
                   >
                     <svg className="h-4 w-4 shrink-0 text-destiny-orange/60" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                       <path d="M8 5v14l11-7z" />

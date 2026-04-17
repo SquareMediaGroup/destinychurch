@@ -70,6 +70,17 @@ Device information (e.g., mobile device IDs)
 Sensitive Information:
 We may collect and store sensitive personal information such as health information (food allergies) , religious information (church attendance) when you and/or your family attend, register for church events and conferences.
 
+3a. Smart Search (AI-Powered Search)
+Our website includes "Smart Search," an AI-powered search feature that uses OpenAI's API to process your search queries and provide answers about our church. When you use Smart Search:
+
+- Your search query is sent to OpenAI's servers for processing
+- OpenAI may retain your query data according to their privacy policy (https://openai.com/privacy)
+- We do not store your search queries on our servers
+- Your search queries should not include sensitive personal information
+- You can learn more about how OpenAI processes data at: https://openai.com/policies/privacy-policy
+
+For more information about how OpenAI processes your data, please review their privacy policy.
+
 4. How We Use Your Information
 Destiny Church will process information primarily to provide services to our community. We will process your information for various purposes including:
 

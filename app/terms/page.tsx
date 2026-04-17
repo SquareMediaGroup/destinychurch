@@ -78,6 +78,24 @@ export default function TermsPage() {
               and will not be liable for the website being temporarily unavailable due to technical issues beyond our control.
             </p>
 
+            <h2>AI-Generated Content Disclaimer</h2>
+            <p>
+              Our website includes &ldquo;Smart Search,&rdquo; an AI-powered search feature that uses artificial intelligence
+              to generate responses to your questions about Destiny Church. While we strive for accuracy, AI-generated content
+              may contain errors, inaccuracies, or outdated information.
+            </p>
+            <p>
+              Responses from Smart Search should not be relied upon as official church guidance, pastoral advice, spiritual
+              counsel, or definitive answers to important matters. For significant concerns, questions about faith, pastoral
+              support, or official church information, please contact our leadership directly at{' '}
+              <a href="mailto:admin@destinytees.uk" className="text-destiny-orange hover:underline">admin@destinytees.uk</a> or{' '}
+              <a href="tel:+441642559797" className="text-destiny-orange hover:underline">+44 (0) 1642 559797</a>.
+            </p>
+            <p>
+              Your use of Smart Search is at your own discretion and risk. We are not liable for any consequences arising
+              from the use of or reliance upon AI-generated responses.
+            </p>
+
             <h2>Your Comments and Concerns</h2>
             <p>
               Destiny Church sites are operated by Destiny Church Tees Valley. All feedback, comments, requests for

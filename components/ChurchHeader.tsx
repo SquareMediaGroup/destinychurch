@@ -31,6 +31,14 @@ const navItems = [
   { href: "/give", label: "Give" },
 ];
 
+const mobileNavItems = [
+  { href: "/whats-on",   label: "What's On"  },
+  { href: "/sermons",    label: "Sermons"    },
+  { href: "/serve",      label: "Serve"      },
+  { href: "/about",      label: "About"      },
+  { href: "/give",       label: "Give"       },
+];
+
 function Dropdown({
   items,
   open,
@@ -117,6 +125,13 @@ export default function ChurchHeader() {
 
   return (
     <>
+      <style>{`
+        @keyframes corner-pulse {
+          0%, 100% { opacity: 0.45; transform: scale(1); }
+          50% { opacity: 0.9; transform: scale(1.25); }
+        }
+      `}</style>
+
       {/* Backdrop behind search panel */}
       {searchOpen && !isAdmin && (
         <div
@@ -137,21 +152,21 @@ export default function ChurchHeader() {
         <div className="mx-auto max-w-7xl px-4 py-4 lg:px-8">
           {/* Pill */}
           <div
-            className={`flex items-center justify-between rounded-full border px-6 py-2 backdrop-blur-md transition-all duration-300 ${
+            className={`flex items-center justify-between rounded-full border px-4 py-2 backdrop-blur-md transition-all duration-300 md:px-6 ${
               scrolled
                 ? "border-white/10 bg-destiny-grey/60 shadow-xl shadow-black/30"
                 : "border-white/10 bg-destiny-grey/40 shadow-lg shadow-black/10"
             }`}
           >
-            {/* Logo — 20% larger, header height unchanged */}
+            {/* Logo — responsive size */}
             <Link href="/" className="flex items-center gap-3">
-              <div className="relative h-[43px] w-[204px]">
+              <div className="relative h-8 w-[152px] md:h-[43px] md:w-[204px]">
                 <Image
                   src="/img/brand/destiny-logo-color-white.svg"
                   alt="Destiny Church"
                   fill
                   priority
-                  sizes="204px"
+                  sizes="(min-width: 768px) 204px, 152px"
                   className="object-contain"
                 />
               </div>
@@ -283,7 +298,7 @@ export default function ChurchHeader() {
               ) : (
                 <Link
                   href="/new-here"
-                  className="whitespace-nowrap rounded-full bg-destiny-orange px-5 py-2.5 text-sm font-bold text-white shadow-lg shadow-destiny-orange/25 transition hover:brightness-110"
+                  className="hidden whitespace-nowrap rounded-full bg-destiny-orange px-4 py-2 text-sm font-bold text-white shadow-lg shadow-destiny-orange/25 transition hover:brightness-110 sm:inline-flex md:px-5 md:py-2.5"
                 >
                   New Here?
                 </Link>
@@ -291,10 +306,10 @@ export default function ChurchHeader() {
 
               <button
                 type="button"
-                onClick={() => setMobileOpen(!mobileOpen)}
+                onClick={() => { setMobileOpen(!mobileOpen); setSearchOpen(false); }}
                 aria-expanded={mobileOpen}
                 aria-label="Toggle navigation"
-                className="relative h-10 w-10 rounded-full text-white transition md:hidden"
+                className="relative h-9 w-9 rounded-full text-white transition md:hidden"
               >
                 <span
                   className={`absolute inset-0 flex flex-col items-center justify-center gap-[5px] transition-opacity duration-200 ${
@@ -333,55 +348,87 @@ export default function ChurchHeader() {
 
           {/* Mobile menu */}
           {mobileOpen && (
-            <div className="mt-2 rounded-2xl bg-white p-4 shadow-xl md:hidden">
-              {/* Mobile search trigger */}
+            <div className="mt-2 rounded-2xl bg-white p-3 shadow-xl md:hidden">
+
+              {/* Smart Search button */}
               {!isAdmin && (
                 <button
                   type="button"
-                  onClick={() => {
-                    setMobileOpen(false);
-                    setSearchOpen(true);
-                  }}
-                  className="mb-2 flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-destiny-grey transition hover:bg-gray-50 hover:text-destiny-orange"
+                  onClick={() => { setMobileOpen(false); setSearchOpen(true); }}
+                  className="relative mb-3 w-full overflow-hidden rounded-2xl"
+                  style={{ background: "rgba(10,10,18,0.96)", border: "1px solid rgba(255,255,255,0.07)" }}
                 >
-                  <svg className="h-4 w-4 text-destiny-grey/40" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
-                  </svg>
-                  Search
+                  {/* Corner glows */}
+                  <span
+                    className="pointer-events-none absolute -left-3 -top-3 h-14 w-14 rounded-full blur-xl"
+                    style={{ background: "radial-gradient(circle, rgba(168,85,247,1), transparent 70%)", animation: "corner-pulse 3s ease-in-out infinite" }}
+                  />
+                  <span
+                    className="pointer-events-none absolute -right-3 -top-3 h-14 w-14 rounded-full blur-xl"
+                    style={{ background: "radial-gradient(circle, rgba(249,115,22,1), transparent 70%)", animation: "corner-pulse 3s ease-in-out infinite 0.75s" }}
+                  />
+                  <span
+                    className="pointer-events-none absolute -bottom-3 -left-3 h-14 w-14 rounded-full blur-xl"
+                    style={{ background: "radial-gradient(circle, rgba(59,130,246,1), transparent 70%)", animation: "corner-pulse 3s ease-in-out infinite 1.5s" }}
+                  />
+                  <span
+                    className="pointer-events-none absolute -bottom-3 -right-3 h-14 w-14 rounded-full blur-xl"
+                    style={{ background: "radial-gradient(circle, rgba(236,72,153,1), transparent 70%)", animation: "corner-pulse 3s ease-in-out infinite 2.25s" }}
+                  />
+                  {/* Content */}
+                  <div className="relative flex items-center gap-3 px-4 py-3">
+                    <svg
+                      className="h-4 w-4 shrink-0 text-white/80"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      strokeWidth={2}
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z"
+                      />
+                    </svg>
+                    <div className="text-left">
+                      <p className="text-sm font-semibold text-white">Smart Search</p>
+                      <p className="text-xs text-white/40">Ask anything about Destiny</p>
+                    </div>
+                    <svg
+                      className="ml-auto h-4 w-4 shrink-0 text-white/25"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      strokeWidth={2}
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+                    </svg>
+                  </div>
                 </button>
               )}
 
-              {navItems.map((item) => {
-                if (item.dropdown) {
-                  return (
-                    <div key={item.label}>
-                      <p className="px-3 py-2 text-xs font-bold uppercase tracking-wider text-destiny-grey/50">
-                        {item.label}
-                      </p>
-                      {item.dropdown.map((sub) => (
-                        <Link
-                          key={sub.href}
-                          href={sub.href}
-                          onClick={() => setMobileOpen(false)}
-                          className="block rounded-xl px-3 py-2.5 text-sm font-medium text-destiny-grey transition hover:bg-gray-50 hover:text-destiny-orange"
-                        >
-                          {sub.label}
-                        </Link>
-                      ))}
-                    </div>
-                  );
-                }
-                return (
-                  <Link
-                    key={item.href}
-                    href={item.href!}
-                    onClick={() => setMobileOpen(false)}
-                    className="block rounded-xl px-3 py-2.5 text-sm font-medium text-destiny-grey transition hover:bg-gray-50 hover:text-destiny-orange"
-                  >
-                    {item.label}
-                  </Link>
-                );
-              })}
+              {/* Flat nav links */}
+              {mobileNavItems.map((item) => (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  onClick={() => setMobileOpen(false)}
+                  className="block rounded-xl px-3 py-2.5 text-sm font-medium text-destiny-grey transition hover:bg-gray-50 hover:text-destiny-orange"
+                >
+                  {item.label}
+                </Link>
+              ))}
+
+              {/* New Here CTA at bottom */}
+              <div className="mt-2 border-t border-gray-100 pt-2">
+                <Link
+                  href="/new-here"
+                  onClick={() => setMobileOpen(false)}
+                  className="flex items-center justify-center rounded-xl bg-destiny-orange px-4 py-2.5 text-sm font-bold text-white transition hover:brightness-110"
+                >
+                  New Here?
+                </Link>
+              </div>
             </div>
           )}
         </div>

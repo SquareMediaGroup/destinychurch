@@ -121,7 +121,7 @@ export default function GlobalSearch({
 
   return (
     <div className="flex justify-center px-4 pt-3 pb-2 lg:px-8">
-      <div className="w-full" style={{ maxWidth: "40%" }}>
+      <div className="w-full md:max-w-[40%]">
         {/* Search input */}
         <form onSubmit={handleSubmit}>
           <div className="relative">

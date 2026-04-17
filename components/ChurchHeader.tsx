@@ -350,6 +350,19 @@ export default function ChurchHeader() {
           {mobileOpen && (
             <div className="mt-2 rounded-2xl bg-white p-3 shadow-xl md:hidden">
 
+              {/* Logo */}
+              <div className="mb-3 px-1 pt-1">
+                <div className="relative h-7 w-[132px]">
+                  <Image
+                    src="/img/brand/Destiny SVG Logos/Destiny Full Logo SVG/Full Logo Colour.svg"
+                    alt="Destiny Church"
+                    fill
+                    sizes="132px"
+                    className="object-contain object-left"
+                  />
+                </div>
+              </div>
+
               {/* Smart Search button */}
               {!isAdmin && (
                 <button

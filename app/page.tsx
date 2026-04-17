@@ -11,6 +11,7 @@ export const metadata: Metadata = {
     url: "https://destinytees.uk",
   },
 };
+import HomeOverscrollColor from "@/components/home/HomeOverscrollColor";
 import MissionSection from "@/components/home/MissionSection";
 import LatestSermonSection from "@/components/home/LatestSermonSection";
 import WhatsOnSection from "@/components/home/WhatsOnSection";
@@ -23,6 +24,7 @@ export const revalidate = 30;
 export default function HomePage() {
   return (
     <>
+      <HomeOverscrollColor />
       <HeroSection />
       <MissionSection />
       <LatestSermonSection />

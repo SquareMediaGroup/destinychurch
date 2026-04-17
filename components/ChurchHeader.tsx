@@ -77,6 +77,7 @@ export default function ChurchHeader() {
   const [mounted, setMounted] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const headerRef = useRef<HTMLElement>(null);
+  const bridgeInputRef = useRef<HTMLInputElement>(null);
   const lastScrollY = useRef(0);
 
   const handleScroll = useCallback(() => {
@@ -125,6 +126,16 @@ export default function ChurchHeader() {
 
   return (
     <>
+      {/* iOS keyboard bridge — always in DOM so focus() can be called synchronously in click handlers */}
+      <input
+        ref={bridgeInputRef}
+        type="text"
+        aria-hidden="true"
+        tabIndex={-1}
+        readOnly
+        style={{ position: "fixed", opacity: 0, width: 0, height: 0, top: 0, left: 0, pointerEvents: "none" }}
+      />
+
       <style>{`
         @keyframes corner-pulse {
           0%, 100% { opacity: 0.45; transform: scale(1); }
@@ -367,7 +378,11 @@ export default function ChurchHeader() {
               {!isAdmin && (
                 <button
                   type="button"
-                  onClick={() => { setMobileOpen(false); setSearchOpen(true); }}
+                  onClick={() => {
+                    bridgeInputRef.current?.focus(); // synchronous focus — tells iOS keyboard to appear
+                    setMobileOpen(false);
+                    setSearchOpen(true);
+                  }}
                   className="relative mb-3 w-full overflow-hidden rounded-2xl"
                   style={{ background: "rgba(10,10,18,0.96)", border: "1px solid rgba(255,255,255,0.07)" }}
                 >

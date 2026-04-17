@@ -10,6 +10,7 @@ export interface BannerData {
   type: BannerType;
   link?: string | null;
   link_text?: string | null;
+  custom_color?: string | null;
 }
 
 export const BannerContext = createContext<BannerData>({

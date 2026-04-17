@@ -12,13 +12,13 @@ export async function GET() {
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json(
-    data ?? { active: false, message: "", type: "announcement", link: null, link_text: null }
+    data ?? { active: false, message: "", type: "announcement", link: null, link_text: null, custom_color: null }
   );
 }
 
 export async function PUT(request: Request) {
   const body = await request.json();
-  const { active, message, type, link, link_text } = body;
+  const { active, message, type, link, link_text, custom_color } = body;
 
   const supabase = createServiceClient();
 
@@ -38,6 +38,7 @@ export async function PUT(request: Request) {
         type: type ?? "announcement",
         link: link || null,
         link_text: link_text || null,
+        custom_color: type === "announcement" ? (custom_color || null) : null,
         updated_at: new Date().toISOString(),
       })
       .eq("id", existing.id));
@@ -50,6 +51,7 @@ export async function PUT(request: Request) {
         type: type ?? "announcement",
         link: link || null,
         link_text: link_text || null,
+        custom_color: type === "announcement" ? (custom_color || null) : null,
       }));
   }
 

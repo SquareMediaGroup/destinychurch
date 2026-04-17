@@ -5,6 +5,18 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useBanner } from "@/contexts/BannerContext";
 
+function getContrastColor(hex: string): "black" | "white" {
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  const toLinear = (c: number) => {
+    const s = c / 255;
+    return s <= 0.04045 ? s / 12.92 : Math.pow((s + 0.055) / 1.055, 2.4);
+  };
+  const L = 0.2126 * toLinear(r) + 0.7152 * toLinear(g) + 0.0722 * toLinear(b);
+  return L > 0.179 ? "black" : "white";
+}
+
 export default function SiteBanner() {
   const banner = useBanner();
   const pathname = usePathname();
@@ -48,17 +60,24 @@ export default function SiteBanner() {
   if (isAdmin || pathname.startsWith("/sermons")) return null;
 
   const isNotice = banner.type === "notice";
+  const isAnnouncement = banner.type === "announcement";
+
+  const customColor = isAnnouncement && banner.custom_color ? banner.custom_color : null;
+  const textColor = customColor ? getContrastColor(customColor) : "white";
+  const textClass = textColor === "black" ? "text-black/80" : "text-white/80";
+  const textClassSolid = textColor === "black" ? "text-black" : "text-white";
 
   return (
     <div
       className={`fixed left-0 right-0 top-0 z-[60] flex h-10 items-center justify-center gap-3 px-4 ${
-        isNotice ? "bg-[#6b7280]" : "bg-destiny-orange"
+        customColor ? "" : isNotice ? "bg-[#6b7280]" : "bg-destiny-orange"
       }`}
+      style={customColor ? { backgroundColor: customColor } : undefined}
     >
-      <span className="material-symbols-rounded text-sm text-white/80">
+      <span className={`material-symbols-rounded text-sm ${textClass}`}>
         {isNotice ? "info" : "campaign"}
       </span>
-      <p className="text-sm font-medium text-white">
+      <p className={`text-sm font-medium ${textClassSolid}`}>
         {banner.message}
         {banner.link && (
           <Link

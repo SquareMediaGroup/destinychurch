@@ -9,6 +9,21 @@ interface Banner {
   type: BannerType;
   link: string;
   link_text: string;
+  custom_color: string;
+}
+
+const BRAND_ORANGE = "#f58021";
+
+function getContrastColor(hex: string): "black" | "white" {
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  const toLinear = (c: number) => {
+    const s = c / 255;
+    return s <= 0.04045 ? s / 12.92 : Math.pow((s + 0.055) / 1.055, 2.4);
+  };
+  const L = 0.2126 * toLinear(r) + 0.7152 * toLinear(g) + 0.0722 * toLinear(b);
+  return L > 0.179 ? "black" : "white";
 }
 
 const TYPES: { value: BannerType; label: string; description: string; color: string; icon: string }[] = [
@@ -42,6 +57,7 @@ export default function AdminBannerPage() {
     type: "announcement",
     link: "",
     link_text: "",
+    custom_color: "",
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -58,6 +74,7 @@ export default function AdminBannerPage() {
           type: d.type ?? "announcement",
           link: d.link ?? "",
           link_text: d.link_text ?? "",
+          custom_color: d.custom_color ?? "",
         });
       })
       .finally(() => setLoading(false));
@@ -117,19 +134,27 @@ export default function AdminBannerPage() {
                     ⚠ This will block all visitors except /admin
                   </p>
                 </div>
-              ) : (
-                <div className={`flex items-center justify-center gap-3 rounded-2xl px-6 py-3 ${selectedType.color}`}>
-                  <span className="material-symbols-rounded text-sm text-white/80">{selectedType.icon}</span>
-                  <p className="text-sm font-medium text-white">
-                    {banner.message}
-                    {banner.link && (
-                      <span className="ml-2 font-bold underline underline-offset-2">
-                        {banner.link_text || "Learn more"} →
-                      </span>
-                    )}
-                  </p>
-                </div>
-              )
+              ) : (() => {
+                const isAnnouncement = banner.type === "announcement";
+                const previewColor = isAnnouncement && banner.custom_color ? banner.custom_color : null;
+                const textColor = previewColor ? getContrastColor(previewColor) : "white";
+                return (
+                  <div
+                    className={`flex items-center justify-center gap-3 rounded-2xl px-6 py-3 ${previewColor ? "" : selectedType.color}`}
+                    style={previewColor ? { backgroundColor: previewColor } : undefined}
+                  >
+                    <span className={`material-symbols-rounded text-sm ${textColor === "black" ? "text-black/80" : "text-white/80"}`}>{selectedType.icon}</span>
+                    <p className={`text-sm font-medium ${textColor === "black" ? "text-black" : "text-white"}`}>
+                      {banner.message}
+                      {banner.link && (
+                        <span className="ml-2 font-bold underline underline-offset-2">
+                          {banner.link_text || "Learn more"} →
+                        </span>
+                      )}
+                    </p>
+                  </div>
+                );
+              })()
             )}
 
             <div className="rounded-2xl border border-black/5 bg-white p-6 shadow-sm flex flex-col gap-5">
@@ -193,6 +218,43 @@ export default function AdminBannerPage() {
                   ))}
                 </div>
               </div>
+
+              {/* Custom colour — announcement only */}
+              {banner.type === "announcement" && (
+                <>
+                  <div className="h-px bg-black/5" />
+                  <div>
+                    <p className="mb-1.5 text-xs font-bold text-destiny-grey/60">
+                      Banner Colour <span className="font-normal">(optional — defaults to brand orange)</span>
+                    </p>
+                    <div className="flex items-center gap-3">
+                      <input
+                        type="color"
+                        value={banner.custom_color || BRAND_ORANGE}
+                        onChange={(e) => setBanner((b) => ({ ...b, custom_color: e.target.value }))}
+                        className="h-10 w-10 cursor-pointer rounded-lg border border-black/10 p-0.5"
+                      />
+                      <input
+                        type="text"
+                        value={banner.custom_color}
+                        onChange={(e) => setBanner((b) => ({ ...b, custom_color: e.target.value }))}
+                        placeholder={BRAND_ORANGE}
+                        maxLength={7}
+                        className="w-32 rounded-xl border border-black/10 px-4 py-2.5 font-mono text-sm text-destiny-grey placeholder:text-destiny-grey/30 focus:border-destiny-orange/50 focus:outline-none focus:ring-2 focus:ring-destiny-orange/20"
+                      />
+                      {banner.custom_color && (
+                        <button
+                          type="button"
+                          onClick={() => setBanner((b) => ({ ...b, custom_color: "" }))}
+                          className="text-xs text-destiny-grey/40 hover:text-destiny-grey/70"
+                        >
+                          Reset to default
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </>
+              )}
 
               <div className="h-px bg-black/5" />
 

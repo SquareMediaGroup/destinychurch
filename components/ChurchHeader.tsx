@@ -369,7 +369,7 @@ export default function ChurchHeader() {
             <div
               className="overflow-hidden transition-all duration-300 ease-in-out"
               style={{
-                maxHeight: searchOpen ? "520px" : "0px",
+                maxHeight: searchOpen ? "600px" : "0px",
                 opacity: searchOpen ? 1 : 0,
               }}
             >

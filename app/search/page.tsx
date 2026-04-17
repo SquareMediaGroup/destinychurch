@@ -58,15 +58,15 @@ SUNDAY SERVICES:
 
 LEAD PASTORS:
 - Jonathan Harris — Senior Pastor. Has led Destiny for over 20 years. Passionate about building team and unleashing potential in others.
-- Catherine (Cath) Harris — Lead Pastor. Heart for teaching, training, and leading the Community and Care Team. Serves the town.
+- Catherine (Cath) Harris — Community & Care Pastor. Heart for teaching, training, and leading the Community and Care Team. Serves the town.
 - Together they are "Jonathan & Cath Harris, Lead Pastors"
-- Daughters: Faith Harris (Associate Pastor) and Nadine Harris
+- Daughters: Faith Moradi (Associate Pastor) and Nadine Harris (Life Church Bradford, Youth Pastor (not at Destiny but part of the family))
 
 FULL LEADERSHIP TEAM:
 Lead Team:
 - Jonathan Harris — Senior Pastor
-- Cath Harris — Lead Pastor
-- Faith Harris — Associate Pastor (faith@destinytees.uk)
+- Cath Harris — Community & Care Pastor
+- Faith Moradi — Associate Pastor (faith@destinytees.uk)
 - Tracy Reddy — Small Groups (tracy@destinytees.uk)
 - Deveshin Reddy — Finance & Facilities (deveshin@destinytees.uk)
 - Nkereuwem (NK) Ekanem — Creativity & Innovation (nk@destinytees.uk)
@@ -76,10 +76,6 @@ Department Leaders:
 - Younes Moradi — Stewarding (younes@destinytees.uk)
 - David Bayode — Worship (david@destinytees.uk)
 - Adebowale (Debo) Awojide — Prayer Team (debo@destinytees.uk)
-- Osas Obot — Youth
-- Thandi Mathema — Hospitality
-- Daniel Park — Production & Social Media / Photography
-- George Krezner — Administration
 
 GIVING / BANK DETAILS:
 - Account Name: Destiny Church Tees Valley

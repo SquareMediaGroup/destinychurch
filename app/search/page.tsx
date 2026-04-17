@@ -223,8 +223,8 @@ export default async function SearchPage({
   const hasResults = sermons.length > 0 || pages.length > 0 || Boolean(answer);
 
   return (
-    <div className="min-h-screen bg-[#f5f7fa] pt-32 pb-20">
-      <div className="mx-auto max-w-3xl px-4 lg:px-8">
+    <div className="min-h-screen bg-[#0a0400] pt-32 pb-20">
+      <div className="mx-auto max-w-5xl px-4 lg:px-8">
 
         {/* Search bar */}
         <form action="/search" method="GET" className="mb-8">
@@ -247,30 +247,30 @@ export default async function SearchPage({
         </form>
 
         {!query && (
-          <p className="text-center text-destiny-grey/50">Enter a search term above.</p>
+          <p className="text-center text-white/50">Enter a search term above.</p>
         )}
 
         {query && !hasResults && (
-          <p className="text-center text-destiny-grey/50">
+          <p className="text-center text-white/50">
             No results found for &ldquo;{query}&rdquo;
           </p>
         )}
 
         {/* AI Overview */}
         {answer && (
-          <div className="mb-6 rounded-2xl border border-destiny-orange/20 bg-white p-5 shadow-sm">
-            <div className="mb-3 flex items-center gap-2">
+          <div className="mb-6 rounded-2xl border border-destiny-orange/30 bg-white p-10 shadow-lg">
+            <div className="mb-5 flex items-center gap-3">
               <svg
-                className="h-4 w-4 text-destiny-orange"
+                className="h-6 w-6 text-destiny-orange"
                 fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
               >
                 <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" />
               </svg>
-              <span className="text-xs font-bold uppercase tracking-wider text-destiny-orange">
+              <span className="text-lg font-bold uppercase tracking-wider text-destiny-orange">
                 AI Overview
               </span>
             </div>
-            <p className="text-sm leading-relaxed text-destiny-grey/80">{answer}</p>
+            <p className="text-xl leading-relaxed text-destiny-grey/80">{answer}</p>
 
             {/* AI-suggested sermons */}
             {aiSermons.length > 0 && (
@@ -304,7 +304,7 @@ export default async function SearchPage({
         {/* Page results */}
         {pages.length > 0 && (
           <div className="mb-6">
-            <h2 className="mb-3 text-xs font-bold uppercase tracking-wider text-destiny-grey/40">Pages</h2>
+            <h2 className="mb-3 text-xs font-bold uppercase tracking-wider text-white/40">Pages</h2>
             <div className="overflow-hidden rounded-2xl border border-destiny-grey/10 bg-white shadow-sm">
               {pages.map((page, i) => (
                 <Link
@@ -330,7 +330,7 @@ export default async function SearchPage({
         {/* Sermon results */}
         {sermons.length > 0 && (
           <div>
-            <h2 className="mb-3 text-xs font-bold uppercase tracking-wider text-destiny-grey/40">Sermons</h2>
+            <h2 className="mb-3 text-xs font-bold uppercase tracking-wider text-white/40">Sermons</h2>
             <div className="overflow-hidden rounded-2xl border border-destiny-grey/10 bg-white shadow-sm">
               {sermons.map((s, i) => (
                 <Link

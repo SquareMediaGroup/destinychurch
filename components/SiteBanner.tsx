@@ -44,8 +44,8 @@ export default function SiteBanner() {
     );
   }
 
-  // Announcement and Notice banners — slim top bar, hidden on admin + sermons
-  if (isAdmin || pathname.startsWith("/sermons")) return null;
+  // Announcement and Notice banners — slim top bar, hidden on admin
+  if (isAdmin) return null;
 
   const isNotice = banner.type === "notice";
 

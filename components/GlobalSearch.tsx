@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState, useRef, useEffect, useCallback } from "react";
+import { useCookieConsent } from "@/lib/cookieConsent";
 
 interface SermonMatch {
   id: string;
@@ -45,6 +46,7 @@ export default function GlobalSearch({
 }) {
   const pathname = usePathname();
   const router = useRouter();
+  const { decided, allowAll, denyOptional } = useCookieConsent();
   const [query, setQuery] = useState("");
   const [result, setResult] = useState<SearchResponse | null>(null);
   const [loading, setLoading] = useState(false);
@@ -104,6 +106,47 @@ export default function GlobalSearch({
   }
 
   if (!open) return null;
+
+  if (!decided) {
+    return (
+      <div className="flex justify-center px-4 pt-3 pb-2 lg:px-8">
+        <div className="w-full md:max-w-[40%]">
+          <div className="rounded-2xl border border-white/15 bg-destiny-grey/60 p-5 shadow-2xl backdrop-blur-md">
+            <div className="mb-3 flex items-center gap-1.5">
+              <svg className="h-3.5 w-3.5 text-destiny-orange" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" />
+              </svg>
+              <span className="text-xs font-bold uppercase tracking-widest text-white/40">Smart Search</span>
+            </div>
+            <p className="text-sm font-semibold text-white">Accept cookies to use Smart Search</p>
+            <p className="mt-1.5 text-xs leading-relaxed text-white/50">
+              Smart Search uses AI to answer your questions. Accept cookies to enable this feature.
+            </p>
+            <div className="mt-4 flex flex-wrap gap-2">
+              <button
+                onClick={allowAll}
+                className="rounded-full bg-destiny-orange px-4 py-2 text-xs font-semibold uppercase tracking-wide text-white transition hover:brightness-95"
+              >
+                Accept All
+              </button>
+              <button
+                onClick={denyOptional}
+                className="rounded-full border border-white/15 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-white/60 transition hover:border-destiny-orange hover:text-white"
+              >
+                Essential Only
+              </button>
+              <button
+                onClick={onClose}
+                className="rounded-full px-4 py-2 text-xs font-semibold uppercase tracking-wide text-white/30 transition hover:text-white/60"
+              >
+                Dismiss
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   const pageMatches = query.trim().length >= 1
     ? SITE_PAGES.filter((p) =>

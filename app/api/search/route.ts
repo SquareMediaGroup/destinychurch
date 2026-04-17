@@ -99,27 +99,27 @@ CHURCH BASICS:
 - Email: admin@destinytees.uk
 - Mission: "Transforming Lives through Faith, Hope and Love for Jesus"
 - Purpose: Bring people to Jesus, develop them to maturity in Christ, equip them for ministry and mission
-- Bible-based, Spirit-led Christian church in Tees Valley, part of a wider network of churches
+- Bible-based, Pentacostal Christian church in Tees Valley.
 
 SUNDAY SERVICES:
 - Prayer Service: 10:00am – 10:30am
 - Main Sunday Service: 11:00am – approx 12:30pm (about 90 minutes)
-- Doors open: 9:45am (coffee available early)
+- Doors open: 9:45am (doors open at this time for prayer, then main service starts at 11:00am)
 - Dress code: none — come as you are
 - What to expect: contemporary worship, Bible-based teaching, prayer, community
 - Free on-site parking | Step-free access | Accessible toilets | BSL interpretation | Hearing loop
 - Several bus routes stop on Norton Road outside
 
 LEAD PASTORS:
-- Jonathan Harris — Senior Pastor. Has led Destiny for over 20 years. Passionate about building team and unleashing potential in others.
-- Catherine (Cath) Harris — Lead Pastor. Heart for teaching, training, and leading the Community and Care Team. Serves the town.
+- Jonathan Harris — Senior Pastor. Has led Destiny for over 25 years. Passionate about building team and unleashing potential in others.
+- Catherine (Cath) Harris — Lead Pastor. She with Jonathan have been at Destiny for over 25 years. Heart for teaching, training, and leading the Community and Care Team. Serves the town.
 - Together they are "Jonathan & Cath Harris, Lead Pastors"
-- Daughters: Faith Harris (Associate Pastor) and Nadine Harris
+- Daughters: Faith Harris (Associate Pastor) and Nadine Harris (Life Church Bradford, Youth Pastor)
 
 FULL LEADERSHIP TEAM:
 Lead Team:
 - Jonathan Harris — Senior Pastor
-- Cath Harris — Lead Pastor
+- Cath Harris — Community & Care Pastor
 - Faith Harris — Associate Pastor (faith@destinytees.uk)
 - Tracy Reddy — Small Groups (tracy@destinytees.uk)
 - Deveshin Reddy — Finance & Facilities (deveshin@destinytees.uk)
@@ -130,10 +130,6 @@ Department Leaders:
 - Younes Moradi — Stewarding (younes@destinytees.uk)
 - David Bayode — Worship (david@destinytees.uk)
 - Adebowale (Debo) Awojide — Prayer Team (debo@destinytees.uk)
-- Osas Obot — Youth
-- Thandi Mathema — Hospitality
-- Daniel Park — Production & Social Media / Photography
-- George Krezner — Administration
 
 GIVING / BANK DETAILS:
 - Account Name: Destiny Church Tees Valley
@@ -181,8 +177,8 @@ ALPHA COURSE:
 - Contact church for current dates
 
 SERVE / VOLUNTEER TEAMS:
-Worship (David Bayode), Kids (Funke Awojide), Youth (Osas Obot), Stewarding & Welcome (Younes Moradi), Prayer (Debo Awojide), Connect Groups (Tracy Reddy), Hospitality (Thandi Mathema), Production (Daniel Park), Social Media & Photography (Daniel Park), Outreach & Missions (NK Ekanem), Administration (George Krezner), Decoration, Building Maintenance, Alpha hosting.
-Most teams require active member status. DBS check required for Kids and Youth teams.
+Worship (David Bayode), Kids (Funke Awojide), Stewarding & Welcome (Younes Moradi), Prayer (Debo Awojide), Connect Groups (Tracy Reddy), Hospitality (Thandi Mathema), Production (NK), Social Media & Photography (NK), Outreach & Missions (Tracy Reddy), Administration (George Krezner), Decoration, Building Maintenance, Alpha hosting.
+All teams require active member status. DBS check required for Kids and Youth teams.
 
 MISSION PARTNERS:
 - The Moses Project (themosesproject.co.uk): supports adult males with drug/alcohol addictions — housing, mentoring, recovery

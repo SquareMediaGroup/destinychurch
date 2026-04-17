@@ -41,7 +41,7 @@ export default function MeetPastorsSection() {
               pastors at Destiny for over two decades. Jonathan is the church&apos;s Senior Pastor,
               passionate about building team and unleashing the potential in others. Catherine
               has a heart for teaching and training; she is an integral part of our Community and
-              Care Team leading our town. They are proud parents to Faith &amp; Nadine Harris.
+              Care Team leading our town. They are proud parents to Faith Moradi &amp; Nadine Harris.
             </p>
             <p className="text-sm font-bold text-white/40">
               Jonathan &amp; Cath Harris, Lead Pastors

@@ -136,13 +136,6 @@ export default function ChurchHeader() {
         style={{ position: "fixed", opacity: 0, width: 0, height: 0, top: 0, left: 0, pointerEvents: "none" }}
       />
 
-      <style>{`
-        @keyframes corner-pulse {
-          0%, 100% { opacity: 0.45; transform: scale(1); }
-          50% { opacity: 0.9; transform: scale(1.25); }
-        }
-      `}</style>
-
       {/* Backdrop behind search panel */}
       {searchOpen && !isAdmin && (
         <div
@@ -271,30 +264,43 @@ export default function ChurchHeader() {
 
             {/* Right: search icon + CTA + mobile toggle */}
             <div className="flex items-center gap-2">
-              {/* Search icon — desktop, non-admin */}
+              {/* Smart Search icon — all screen sizes, non-admin */}
               {!isAdmin && (
                 <button
                   type="button"
                   onClick={(e) => {
                     e.stopPropagation();
+                    if (!searchOpen) {
+                      bridgeInputRef.current?.focus(); // synchronous — iOS keyboard appears
+                    }
                     setSearchOpen((v) => !v);
                     setMobileOpen(false);
                   }}
-                  className={`hidden items-center justify-center rounded-full p-2 md:flex ${
+                  className={`relative flex items-center justify-center rounded-full p-2 ${
                     searchOpen
                       ? "bg-white/10 text-destiny-orange"
                       : "text-white/70 hover:bg-white/10 hover:text-white"
                   }`}
-                  aria-label={searchOpen ? "Close search" : "Open search"}
+                  aria-label={searchOpen ? "Close Smart Search" : "Open Smart Search"}
                 >
                   {searchOpen ? (
                     <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
                     </svg>
                   ) : (
-                    <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
-                    </svg>
+                    <>
+                      <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+                      </svg>
+                      {/* AI sparkle badge */}
+                      <svg
+                        className="absolute right-0.5 top-0.5 h-3 w-3 text-destiny-orange"
+                        fill="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" />
+                      </svg>
+                    </>
                   )}
                 </button>
               )}
@@ -360,80 +366,6 @@ export default function ChurchHeader() {
           {/* Mobile menu */}
           {mobileOpen && (
             <div className="mt-2 rounded-2xl bg-white p-3 shadow-xl md:hidden">
-
-              {/* Logo */}
-              <div className="mb-3 px-1 pt-1">
-                <div className="relative h-7 w-[132px]">
-                  <Image
-                    src="/img/brand/Destiny SVG Logos/Destiny Full Logo SVG/Full Logo Colour.svg"
-                    alt="Destiny Church"
-                    fill
-                    sizes="132px"
-                    className="object-contain object-left"
-                  />
-                </div>
-              </div>
-
-              {/* Smart Search button */}
-              {!isAdmin && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    bridgeInputRef.current?.focus(); // synchronous focus — tells iOS keyboard to appear
-                    setMobileOpen(false);
-                    setSearchOpen(true);
-                  }}
-                  className="relative mb-3 w-full overflow-hidden rounded-2xl"
-                  style={{ background: "rgba(10,10,18,0.96)", border: "1px solid rgba(255,255,255,0.07)" }}
-                >
-                  {/* Corner glows */}
-                  <span
-                    className="pointer-events-none absolute -left-3 -top-3 h-14 w-14 rounded-full blur-xl"
-                    style={{ background: "radial-gradient(circle, rgba(168,85,247,1), transparent 70%)", animation: "corner-pulse 3s ease-in-out infinite" }}
-                  />
-                  <span
-                    className="pointer-events-none absolute -right-3 -top-3 h-14 w-14 rounded-full blur-xl"
-                    style={{ background: "radial-gradient(circle, rgba(249,115,22,1), transparent 70%)", animation: "corner-pulse 3s ease-in-out infinite 0.75s" }}
-                  />
-                  <span
-                    className="pointer-events-none absolute -bottom-3 -left-3 h-14 w-14 rounded-full blur-xl"
-                    style={{ background: "radial-gradient(circle, rgba(59,130,246,1), transparent 70%)", animation: "corner-pulse 3s ease-in-out infinite 1.5s" }}
-                  />
-                  <span
-                    className="pointer-events-none absolute -bottom-3 -right-3 h-14 w-14 rounded-full blur-xl"
-                    style={{ background: "radial-gradient(circle, rgba(236,72,153,1), transparent 70%)", animation: "corner-pulse 3s ease-in-out infinite 2.25s" }}
-                  />
-                  {/* Content */}
-                  <div className="relative flex items-center gap-3 px-4 py-3">
-                    <svg
-                      className="h-4 w-4 shrink-0 text-white/80"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                      strokeWidth={2}
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z"
-                      />
-                    </svg>
-                    <div className="text-left">
-                      <p className="text-sm font-semibold text-white">Smart Search</p>
-                      <p className="text-xs text-white/40">Ask anything about Destiny</p>
-                    </div>
-                    <svg
-                      className="ml-auto h-4 w-4 shrink-0 text-white/25"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                      strokeWidth={2}
-                    >
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
-                    </svg>
-                  </div>
-                </button>
-              )}
 
               {/* Flat nav links */}
               {mobileNavItems.map((item) => (

@@ -122,6 +122,14 @@ export default function GlobalSearch({
   return (
     <div className="flex justify-center px-4 pt-3 pb-2 lg:px-8">
       <div className="w-full md:max-w-[40%]">
+        {/* Smart Search label */}
+        <div className="mb-2 flex items-center gap-1.5 px-1">
+          <svg className="h-3.5 w-3.5 text-destiny-orange" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" />
+          </svg>
+          <span className="text-xs font-bold uppercase tracking-widest text-white/40">Smart Search</span>
+        </div>
+
         {/* Search input */}
         <form onSubmit={handleSubmit}>
           <div className="relative">

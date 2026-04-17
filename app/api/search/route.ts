@@ -115,15 +115,15 @@ SUNDAY SERVICES:
 
 LEAD PASTORS:
 - Jonathan Harris — Senior Pastor. Has led Destiny for over 25 years. Passionate about building team and unleashing potential in others.
-- Catherine (Cath) Harris — Lead Pastor. She with Jonathan have been at Destiny for over 25 years. Heart for teaching, training, and leading the Community and Care Team. Serves the town.
+- Catherine (Cath) Harris — Community & Care Pastor. She with Jonathan have been at Destiny for over 25 years. Heart for teaching, training, and leading the Community and Care Team. Serves the town.
 - Together they are "Jonathan & Cath Harris, Lead Pastors"
-- Daughters: Faith Harris (Associate Pastor) and Nadine Harris (Life Church Bradford, Youth Pastor)
+- Daughters: Faith Moradi (Associate Pastor) and Nadine Harris (Life Church Bradford, Youth Pastor (not at Destiny but part of the family))
 
 FULL LEADERSHIP TEAM:
 Lead Team:
 - Jonathan Harris — Senior Pastor
 - Cath Harris — Community & Care Pastor
-- Faith Harris — Associate Pastor (faith@destinytees.uk)
+- Faith Moradi — Associate Pastor (faith@destinytees.uk)
 - Tracy Reddy — Small Groups (tracy@destinytees.uk)
 - Deveshin Reddy — Finance & Facilities (deveshin@destinytees.uk)
 - Nkereuwem (NK) Ekanem — Creativity & Innovation (nk@destinytees.uk)

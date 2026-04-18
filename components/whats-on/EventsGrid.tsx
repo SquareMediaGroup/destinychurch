@@ -65,39 +65,48 @@ function EventCard({ event }: { event: DeduplicatedEvent }) {
       rel="noopener noreferrer"
       className="group flex flex-col overflow-hidden rounded-2xl bg-white shadow-[0_2px_16px_rgba(0,0,0,0.08)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_8px_32px_rgba(0,0,0,0.12)]"
     >
-      {/* Image */}
-      <div className="relative h-48 w-full shrink-0 overflow-hidden bg-gray-100">
-        {imageUrl ? (
+      {imageUrl ? (
+        /* With image */
+        <div className="relative h-48 w-full shrink-0 overflow-hidden">
           <img
             src={imageUrl}
             alt={event.name}
             className="absolute inset-0 h-full w-full object-cover transition duration-500 group-hover:scale-105"
           />
-        ) : (
-          <div className="flex h-full items-center justify-center bg-gradient-to-br from-destiny-orange/20 via-destiny-orange/10 to-transparent">
-            <span className="text-5xl font-black text-destiny-orange/20">DC</span>
+          <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
+
+          {isCourse && (
+            <div className="absolute left-3 top-3 flex items-center gap-1.5 rounded-full bg-destiny-orange px-3 py-1 text-[11px] font-bold uppercase tracking-wide text-white shadow-md">
+              {event.sessionCount} Sessions
+            </div>
+          )}
+
+          <div className="absolute bottom-3 right-3 flex h-14 w-14 flex-col items-center justify-center rounded-xl bg-white/95 shadow-lg backdrop-blur-sm">
+            <span className="text-xl font-black leading-none text-destiny-orange">{start.day}</span>
+            <span className="text-[10px] font-bold uppercase tracking-wider text-destiny-grey/70">{start.month}</span>
           </div>
-        )}
-
-        {/* Gradient overlay */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
-
-        {/* Course badge */}
-        {isCourse && (
-          <div className="absolute left-3 top-3 flex items-center gap-1.5 rounded-full bg-destiny-orange px-3 py-1 text-[11px] font-bold uppercase tracking-wide text-white shadow-md">
-            <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.966 8.966 0 00-6 2.292m0-14.25v14.25" />
-            </svg>
-            Course · {event.sessionCount} sessions
-          </div>
-        )}
-
-        {/* Date badge */}
-        <div className="absolute bottom-3 right-3 flex h-14 w-14 flex-col items-center justify-center rounded-xl bg-white/95 shadow-lg backdrop-blur-sm">
-          <span className="text-xl font-black leading-none text-destiny-orange">{start.day}</span>
-          <span className="text-[10px] font-bold uppercase tracking-wider text-destiny-grey/70">{start.month}</span>
         </div>
-      </div>
+      ) : (
+        /* No image — branded header strip */
+        <div className="relative shrink-0 overflow-hidden bg-gradient-to-br from-destiny-orange to-destiny-orange/80 px-5 pb-5 pt-5">
+          <div className="absolute -right-4 -top-4 h-24 w-24 rounded-full bg-white/10" />
+          <div className="absolute -bottom-6 -left-3 h-16 w-16 rounded-full bg-white/10" />
+
+          {isCourse && (
+            <div className="mb-3 inline-flex items-center rounded-full bg-white/20 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide text-white">
+              {event.sessionCount} Sessions
+            </div>
+          )}
+
+          <div className="flex items-end justify-between">
+            <div>
+              <p className="text-[11px] font-semibold uppercase tracking-widest text-white/70">{start.month}</p>
+              <p className="text-4xl font-black leading-none text-white">{start.day}</p>
+            </div>
+            <span className="text-3xl font-black text-white/20">DC</span>
+          </div>
+        </div>
+      )}
 
       {/* Content */}
       <div className="flex flex-1 flex-col p-5">

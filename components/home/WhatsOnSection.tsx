@@ -79,9 +79,9 @@ function EventCard({ event }: { event: DeduplicatedEvent }) {
       rel="noopener noreferrer"
       className="group flex min-w-[240px] max-w-[280px] shrink-0 flex-col overflow-hidden rounded-2xl bg-white shadow-[0_2px_16px_rgba(0,0,0,0.08)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_8px_32px_rgba(0,0,0,0.12)] sm:min-w-[280px] sm:max-w-[320px]"
     >
-      {/* Image */}
-      <div className="relative h-36 w-full shrink-0 overflow-hidden bg-gray-100 sm:h-44">
-        {imageUrl ? (
+      {imageUrl ? (
+        /* With image */
+        <div className="relative h-36 w-full shrink-0 overflow-hidden sm:h-44">
           <Image
             src={imageUrl}
             alt={event.name}
@@ -89,29 +89,40 @@ function EventCard({ event }: { event: DeduplicatedEvent }) {
             className="object-cover transition duration-500 group-hover:scale-105"
             sizes="320px"
           />
-        ) : (
-          <div className="flex h-full items-center justify-center bg-gradient-to-br from-destiny-orange/20 via-destiny-orange/10 to-transparent">
-            <span className="text-4xl font-black text-destiny-orange/20">DC</span>
-          </div>
-        )}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
 
-        {/* Course badge */}
-        {isCourse && (
-          <div className="absolute left-2.5 top-2.5 flex items-center gap-1 rounded-full bg-destiny-orange px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-white shadow-md">
-            <svg className="h-2.5 w-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.966 8.966 0 00-6 2.292m0-14.25v14.25" />
-            </svg>
-            Course · {event.sessionCount} sessions
-          </div>
-        )}
+          {isCourse && (
+            <div className="absolute left-2.5 top-2.5 rounded-full bg-destiny-orange px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-white shadow-md">
+              {event.sessionCount} Sessions
+            </div>
+          )}
 
-        {/* Date badge */}
-        <div className="absolute bottom-2 right-2 flex h-11 w-11 flex-col items-center justify-center rounded-xl bg-white/95 shadow-lg backdrop-blur-sm sm:bottom-3 sm:right-3 sm:h-14 sm:w-14">
-          <span className="text-lg font-black leading-none text-destiny-orange sm:text-xl">{start.day}</span>
-          <span className="text-[9px] font-bold uppercase tracking-wider text-destiny-grey/70 sm:text-[10px]">{start.month}</span>
+          <div className="absolute bottom-2 right-2 flex h-11 w-11 flex-col items-center justify-center rounded-xl bg-white/95 shadow-lg backdrop-blur-sm sm:bottom-3 sm:right-3 sm:h-14 sm:w-14">
+            <span className="text-lg font-black leading-none text-destiny-orange sm:text-xl">{start.day}</span>
+            <span className="text-[9px] font-bold uppercase tracking-wider text-destiny-grey/70 sm:text-[10px]">{start.month}</span>
+          </div>
         </div>
-      </div>
+      ) : (
+        /* No image — branded header strip */
+        <div className="relative shrink-0 overflow-hidden bg-gradient-to-br from-destiny-orange to-destiny-orange/80 px-4 pb-4 pt-4 sm:px-5 sm:pb-5 sm:pt-5">
+          <div className="absolute -right-4 -top-4 h-20 w-20 rounded-full bg-white/10 sm:h-24 sm:w-24" />
+          <div className="absolute -bottom-5 -left-3 h-14 w-14 rounded-full bg-white/10 sm:h-16 sm:w-16" />
+
+          {isCourse && (
+            <div className="mb-2.5 inline-flex items-center rounded-full bg-white/20 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-white">
+              {event.sessionCount} Sessions
+            </div>
+          )}
+
+          <div className="flex items-end justify-between">
+            <div>
+              <p className="text-[10px] font-semibold uppercase tracking-widest text-white/70">{start.month}</p>
+              <p className="text-3xl font-black leading-none text-white sm:text-4xl">{start.day}</p>
+            </div>
+            <span className="text-2xl font-black text-white/20 sm:text-3xl">DC</span>
+          </div>
+        </div>
+      )}
 
       {/* Content */}
       <div className="flex flex-1 flex-col p-4">

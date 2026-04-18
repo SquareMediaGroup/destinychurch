@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import Image from "next/image";
 import { getVisibleVideos } from "@/lib/sermons";
 import OpenAI from "openai";
+import SearchChat from "@/components/SearchChat";
 
 export const dynamic = "force-dynamic";
 
@@ -158,25 +160,13 @@ async function fetchSearchData(q: string) {
     try {
       const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-      // const sermonLibrary = videos.length
-      //   ? "\n\nSERMON LIBRARY (newest first):\n" +
-      //     videos.map((v) => {
-      //       const pipeIdx = v.title.lastIndexOf(" | ");
-      //       const title   = pipeIdx !== -1 ? v.title.slice(0, pipeIdx).trim() : v.title;
-      //       const speaker = pipeIdx !== -1 ? v.title.slice(pipeIdx + 3).trim() : null;
-      //       return speaker
-      //         ? `${v.id} | ${v.publishedAt.slice(0, 10)} | title: ${title} | speaker: ${speaker}`
-      //         : `${v.id} | ${v.publishedAt.slice(0, 10)} | title: ${title}`;
-      //     }).join("\n")
-      //   : "";
-
       const completion = await openai.chat.completions.create({
         model: "gpt-4.1-nano",
         messages: [
           { role: "system", content: SITE_KNOWLEDGE },
           { role: "user", content: q },
         ],
-        max_tokens: 300,
+        max_tokens: 600,
         temperature: 0.2,
         response_format: { type: "json_object" },
       });
@@ -223,14 +213,14 @@ export default async function SearchPage({
   const hasResults = sermons.length > 0 || pages.length > 0 || Boolean(answer);
 
   return (
-    <div className="min-h-screen bg-[#0a0400] pt-32 pb-20">
-      <div className="mx-auto max-w-5xl px-4 lg:px-8">
+    <div className="min-h-screen bg-[#f5f5f5] pt-28 pb-20">
+      <div className="mx-auto max-w-2xl px-4 lg:px-6">
 
         {/* Search bar */}
-        <form action="/search" method="GET" className="mb-8">
+        <form action="/search" method="GET" className="mb-7">
           <div className="relative">
             <svg
-              className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-destiny-grey/40"
+              className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400"
               fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
             >
               <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
@@ -241,85 +231,63 @@ export default async function SearchPage({
               defaultValue={query}
               placeholder="Search Anything Destiny…"
               autoFocus
-              className="w-full rounded-full border border-destiny-grey/15 bg-white py-4 pl-12 pr-5 text-destiny-grey shadow-sm focus:border-destiny-orange/40 focus:outline-none focus:ring-2 focus:ring-destiny-orange/20"
+              className="w-full rounded-full border border-gray-200 bg-white py-3.5 pl-12 pr-5 text-gray-800 shadow-sm focus:border-destiny-orange/40 focus:outline-none focus:ring-2 focus:ring-destiny-orange/20"
             />
           </div>
         </form>
 
+        {/* Empty state */}
         {!query && (
-          <p className="text-center text-white/50">Enter a search term above.</p>
-        )}
-
-        {query && !hasResults && (
-          <p className="text-center text-white/50">
-            No results found for &ldquo;{query}&rdquo;
-          </p>
-        )}
-
-        {/* AI Overview */}
-        {answer && (
-          <div className="mb-6 rounded-2xl border border-destiny-orange/30 bg-white p-10 shadow-lg">
-            <div className="mb-5 flex items-center gap-3">
-              <svg
-                className="h-6 w-6 text-destiny-orange"
-                fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
-              >
-                <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" />
-              </svg>
-              <span className="text-lg font-bold uppercase tracking-wider text-destiny-orange">
-                AI Overview
-              </span>
-            </div>
-            <p className="text-xl leading-relaxed text-destiny-grey/80">{answer}</p>
-
-            {/* AI-suggested sermons */}
-            {aiSermons.length > 0 && (
-              <div className="mt-4 space-y-1">
-                {aiSermons.map((s) => (
-                  <Link
-                    key={s.id}
-                    href={`/sermons/${s.id}`}
-                    className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-destiny-grey/70 transition hover:bg-destiny-orange/5 hover:text-destiny-grey"
-                  >
-                    <svg className="h-4 w-4 shrink-0 text-destiny-orange/60" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                      <path d="M8 5v14l11-7z" />
-                    </svg>
-                    <span className="truncate">{s.title}</span>
-                  </Link>
-                ))}
-              </div>
-            )}
-
-            {aiPage && ctaLabel && aiSermons.length === 0 && (
-              <Link
-                href={aiPage}
-                className="mt-4 inline-block rounded-full bg-destiny-orange px-5 py-2.5 text-sm font-bold text-white transition hover:brightness-110"
-              >
-                {ctaLabel}
-              </Link>
-            )}
+          <div className="py-16 text-center">
+            <svg className="mx-auto mb-4 h-12 w-12 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+            </svg>
+            <p className="text-gray-400">Enter a search term above to get started.</p>
           </div>
+        )}
+
+        {/* No results */}
+        {query && !hasResults && (
+          <div className="py-16 text-center">
+            <p className="text-gray-500">No results found for <span className="font-semibold text-gray-700">&ldquo;{query}&rdquo;</span></p>
+            <p className="mt-1 text-sm text-gray-400">Try a different search term or browse the pages below.</p>
+          </div>
+        )}
+
+        {/* AI Overview with chat */}
+        {answer && (
+          <SearchChat
+            initialAnswer={answer}
+            initialPage={aiPage}
+            initialCtaLabel={ctaLabel}
+            aiSermons={aiSermons}
+            query={query}
+          />
         )}
 
         {/* Page results */}
         {pages.length > 0 && (
-          <div className="mb-6">
-            <h2 className="mb-3 text-xs font-bold uppercase tracking-wider text-white/40">Pages</h2>
-            <div className="overflow-hidden rounded-2xl border border-destiny-grey/10 bg-white shadow-sm">
+          <div className="mb-5">
+            <p className="mb-2 px-1 text-xs font-semibold uppercase tracking-wider text-gray-400">Pages</p>
+            <div className="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-black/5">
               {pages.map((page, i) => (
                 <Link
                   key={page.href}
                   href={page.href}
-                  className={`flex items-center gap-3 px-5 py-4 transition hover:bg-gray-50 ${
-                    i < pages.length - 1 ? "border-b border-destiny-grey/8" : ""
+                  className={`group flex items-center gap-4 px-5 py-4 transition hover:bg-gray-50 ${
+                    i < pages.length - 1 ? "border-b border-gray-100" : ""
                   }`}
                 >
-                  <svg className="h-4 w-4 shrink-0 text-destiny-grey/30" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
-                  </svg>
-                  <div>
-                    <p className="text-sm font-semibold text-destiny-grey">{page.title}</p>
-                    <p className="text-xs text-destiny-grey/50">{page.desc}</p>
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gray-100 text-gray-400 transition group-hover:bg-destiny-orange/10 group-hover:text-destiny-orange">
+                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
+                    </svg>
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold text-gray-800 group-hover:text-destiny-orange transition">{page.title}</p>
+                    <p className="mt-0.5 truncate text-xs text-gray-400">
+                      destinytees.uk{page.href}
+                    </p>
                   </div>
                 </Link>
               ))}
@@ -330,20 +298,42 @@ export default async function SearchPage({
         {/* Sermon results */}
         {sermons.length > 0 && (
           <div>
-            <h2 className="mb-3 text-xs font-bold uppercase tracking-wider text-white/40">Sermons</h2>
-            <div className="overflow-hidden rounded-2xl border border-destiny-grey/10 bg-white shadow-sm">
+            <p className="mb-2 px-1 text-xs font-semibold uppercase tracking-wider text-gray-400">Sermons</p>
+            <div className="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-black/5">
               {sermons.map((s, i) => (
                 <Link
                   key={s.id}
                   href={`/sermons/${s.id}`}
-                  className={`flex items-center gap-3 px-5 py-4 transition hover:bg-gray-50 ${
-                    i < sermons.length - 1 ? "border-b border-destiny-grey/8" : ""
+                  className={`group flex items-center gap-4 px-5 py-3.5 transition hover:bg-gray-50 ${
+                    i < sermons.length - 1 ? "border-b border-gray-100" : ""
                   }`}
                 >
-                  <svg className="h-4 w-4 shrink-0 text-destiny-orange/60" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path d="M8 5v14l11-7z" />
-                  </svg>
-                  <span className="text-sm font-medium text-destiny-grey">{s.title}</span>
+                  {s.thumbnail ? (
+                    <div className="relative h-12 w-20 shrink-0 overflow-hidden rounded-lg bg-gray-100">
+                      <Image
+                        src={s.thumbnail}
+                        alt=""
+                        fill
+                        className="object-cover"
+                        sizes="80px"
+                      />
+                      <div className="absolute inset-0 flex items-center justify-center bg-black/20 opacity-0 transition group-hover:opacity-100">
+                        <svg className="h-4 w-4 text-white drop-shadow" fill="currentColor" viewBox="0 0 24 24">
+                          <path d="M8 5v14l11-7z" />
+                        </svg>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-destiny-orange/10 text-destiny-orange transition group-hover:bg-destiny-orange group-hover:text-white">
+                      <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M8 5v14l11-7z" />
+                      </svg>
+                    </div>
+                  )}
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-medium text-gray-800 group-hover:text-destiny-orange transition">{s.title}</p>
+                    <p className="mt-0.5 text-xs text-gray-400">destinytees.uk/sermons/{s.id}</p>
+                  </div>
                 </Link>
               ))}
             </div>

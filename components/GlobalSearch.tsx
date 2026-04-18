@@ -160,7 +160,7 @@ export default function GlobalSearch({
   const hasAnswer     = Boolean(result?.answer);
   const showEmpty     =
     query.trim().length > 2 && !loading && !hasPages && !hasSermons && !hasAiSermons && !hasAnswer;
-  const showPanel     = hasPages || hasSermons || hasAiSermons || hasAnswer || showEmpty;
+  const showPanel     = hasPages || hasSermons || hasAiSermons || hasAnswer || showEmpty || loading;
 
   return (
     <div className="flex justify-center px-4 pt-3 pb-2 lg:px-8">
@@ -209,7 +209,16 @@ export default function GlobalSearch({
 
         {/* Results panel */}
         {showPanel && (
-          <div className="mt-1.5 overflow-hidden rounded-2xl border border-white/15 bg-destiny-grey/60 shadow-2xl backdrop-blur-md">
+          <div className="mt-1.5 overflow-hidden rounded-2xl border border-white/10 bg-destiny-grey/70 shadow-2xl backdrop-blur-md">
+
+            {/* Loading skeleton */}
+            {loading && !hasAnswer && !hasPages && !hasSermons && (
+              <div className="px-4 py-4 space-y-2.5">
+                <div className="h-3 w-20 animate-pulse rounded-full bg-white/10" />
+                <div className="h-3 animate-pulse rounded bg-white/10" />
+                <div className="h-3 w-4/5 animate-pulse rounded bg-white/10" />
+              </div>
+            )}
 
             {/* Page matches */}
             {hasPages && pageMatches.map((page) => (
@@ -217,20 +226,25 @@ export default function GlobalSearch({
                 key={page.href}
                 href={page.href}
                 onClick={onClose}
-                className="flex items-center gap-3 px-4 py-3 text-sm text-white/70 transition hover:bg-white/10 hover:text-white"
+                className="group flex items-center gap-3 px-4 py-3 text-sm text-white/60 transition hover:bg-white/8 hover:text-white"
               >
-                <svg className="h-4 w-4 shrink-0 text-white/30" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
-                </svg>
-                {page.title}
+                <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-white/8 text-white/30 transition group-hover:bg-destiny-orange/20 group-hover:text-destiny-orange">
+                  <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
+                  </svg>
+                </div>
+                <div className="min-w-0">
+                  <span className="block">{page.title}</span>
+                  <span className="block text-[11px] text-white/25">destinytees.uk{page.href}</span>
+                </div>
               </Link>
             ))}
 
             {/* Sermon matches */}
             {hasSermons && (
               <>
-                {hasPages && <div className="mx-4 border-t border-white/10" />}
-                <p className="px-4 pb-1 pt-3 text-xs font-bold uppercase tracking-wider text-white/30">
+                {hasPages && <div className="mx-4 border-t border-white/8" />}
+                <p className="px-4 pb-1 pt-3 text-[10px] font-bold uppercase tracking-wider text-white/30">
                   Sermons
                 </p>
                 {result!.sermons.map((s) => (
@@ -238,11 +252,13 @@ export default function GlobalSearch({
                     key={s.id}
                     href={`/sermons/${s.id}`}
                     onClick={onClose}
-                    className="flex items-center gap-3 px-4 py-3 text-sm text-white/70 transition hover:bg-white/10 hover:text-white"
+                    className="group flex items-center gap-3 px-4 py-3 text-sm text-white/60 transition hover:bg-white/8 hover:text-white"
                   >
-                    <svg className="h-4 w-4 shrink-0 text-destiny-orange/60" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                      <path d="M8 5v14l11-7z" />
-                    </svg>
+                    <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-destiny-orange/15 text-destiny-orange/60 transition group-hover:bg-destiny-orange group-hover:text-white">
+                      <svg className="h-3.5 w-3.5" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M8 5v14l11-7z" />
+                      </svg>
+                    </div>
                     <span className="truncate">{s.title}</span>
                   </Link>
                 ))}
@@ -252,63 +268,81 @@ export default function GlobalSearch({
             {/* AI Overview */}
             {hasAnswer && (
               <>
-                {(hasPages || hasSermons) && <div className="mx-4 border-t border-white/10" />}
+                {(hasPages || hasSermons) && <div className="mx-4 border-t border-white/8" />}
                 <div className="px-4 py-4">
-                  <div className="mb-2 flex items-center gap-2">
-                    <svg
-                      className="h-3.5 w-3.5 text-destiny-orange"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                      strokeWidth={2}
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z"
-                      />
-                    </svg>
-                    <span className="text-xs font-bold uppercase tracking-wider text-destiny-orange">
-                      AI Overview
-                    </span>
+                  {/* Header */}
+                  <div className="mb-3 flex items-center justify-between">
+                    <div className="flex items-center gap-1.5">
+                      <svg className="h-3.5 w-3.5 text-destiny-orange" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" />
+                      </svg>
+                      <span className="text-xs font-bold uppercase tracking-wider text-destiny-orange">
+                        AI Overview
+                      </span>
+                    </div>
+                    <span className="text-[10px] text-white/25">destinytees.uk</span>
                   </div>
-                  <p className="text-sm leading-relaxed text-white/80">{result!.answer}</p>
+
+                  {/* Answer */}
+                  <p className="text-sm leading-relaxed text-white/75">{result!.answer}</p>
 
                   {/* AI-suggested sermons */}
                   {hasAiSermons && (
-                    <div className="mt-3 space-y-1">
+                    <div className="mt-3 space-y-0.5">
                       {result!.aiSermons.map((s) => (
                         <Link
                           key={s.id}
                           href={`/sermons/${s.id}`}
                           onClick={onClose}
-                          className="flex items-center gap-2 rounded-xl px-3 py-2 text-xs text-white/70 transition hover:bg-white/10 hover:text-white"
+                          className="group flex items-center gap-2.5 rounded-xl px-2 py-2 text-xs text-white/60 transition hover:bg-white/8 hover:text-white"
                         >
-                          <svg className="h-3.5 w-3.5 shrink-0 text-destiny-orange/60" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                            <path d="M8 5v14l11-7z" />
-                          </svg>
+                          <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-destiny-orange/15 text-destiny-orange/60 transition group-hover:bg-destiny-orange group-hover:text-white">
+                            <svg className="h-2.5 w-2.5" fill="currentColor" viewBox="0 0 24 24">
+                              <path d="M8 5v14l11-7z" />
+                            </svg>
+                          </div>
                           <span className="truncate">{s.title}</span>
                         </Link>
                       ))}
                     </div>
                   )}
 
+                  {/* CTA */}
                   {result!.page && result!.ctaLabel && !hasAiSermons && (
                     <Link
                       href={result!.page}
                       onClick={onClose}
-                      className="mt-3 inline-block rounded-full bg-destiny-orange px-4 py-2 text-xs font-bold text-white transition hover:brightness-110"
+                      className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-destiny-orange px-4 py-2 text-xs font-bold text-white transition hover:brightness-110"
                     >
                       {result!.ctaLabel}
+                      <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
+                      </svg>
                     </Link>
                   )}
+
+                  {/* Full results link */}
+                  <button
+                    onClick={handleSubmit as unknown as React.MouseEventHandler}
+                    className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-xl border border-white/8 py-2 text-xs text-white/30 transition hover:border-white/15 hover:text-white/50"
+                    onMouseDown={(e) => {
+                      e.preventDefault();
+                      onClose();
+                      router.push(`/search?q=${encodeURIComponent(query.trim())}`);
+                    }}
+                  >
+                    <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+                    </svg>
+                    See full results
+                  </button>
                 </div>
               </>
             )}
 
             {/* No results */}
             {showEmpty && (
-              <p className="px-4 py-6 text-center text-sm text-white/40">
+              <p className="px-4 py-6 text-center text-sm text-white/30">
                 No results found for &ldquo;{query}&rdquo;
               </p>
             )}

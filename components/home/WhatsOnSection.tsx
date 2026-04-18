@@ -14,6 +14,24 @@ type ChurchSuiteEvent = {
   identifier?: string;
 };
 
+type DeduplicatedEvent = ChurchSuiteEvent & { sessionCount: number };
+
+function deduplicateEvents(events: ChurchSuiteEvent[]): DeduplicatedEvent[] {
+  const map = new Map<string, { event: ChurchSuiteEvent; count: number }>();
+  for (const event of events) {
+    const key = event.name.toLowerCase().trim();
+    if (map.has(key)) {
+      map.get(key)!.count++;
+    } else {
+      map.set(key, { event, count: 1 });
+    }
+  }
+  return Array.from(map.values()).map(({ event, count }) => ({
+    ...event,
+    sessionCount: count,
+  }));
+}
+
 async function getEvents(): Promise<ChurchSuiteEvent[]> {
   try {
     const res = await fetch(
@@ -45,69 +63,86 @@ function formatDate(dateStr: string) {
   };
 }
 
-function EventCard({ event }: { event: ChurchSuiteEvent }) {
+function EventCard({ event }: { event: DeduplicatedEvent }) {
   const start = formatDate(event.datetime_start);
   const end = formatDate(event.datetime_end);
   const imageUrl = event.images?.original_500 || event.images?.md;
   const href = event.identifier
     ? `https://destinytees.churchsuite.com/events/${event.identifier}`
     : "https://destinytees.churchsuite.com/events";
+  const isCourse = event.sessionCount > 1;
 
   return (
     <a
       href={href}
       target="_blank"
       rel="noopener noreferrer"
-      className="group min-w-[240px] max-w-[280px] shrink-0 overflow-hidden rounded-2xl border border-black/5 bg-white shadow-md sm:min-w-[280px] sm:max-w-[320px]"
+      className="group flex min-w-[240px] max-w-[280px] shrink-0 flex-col overflow-hidden rounded-2xl bg-white shadow-[0_2px_16px_rgba(0,0,0,0.08)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_8px_32px_rgba(0,0,0,0.12)] sm:min-w-[280px] sm:max-w-[320px]"
     >
-      {/* Image with date badge */}
-      <div className="relative h-36 w-full overflow-hidden bg-gray-100 sm:h-44">
+      {/* Image */}
+      <div className="relative h-36 w-full shrink-0 overflow-hidden bg-gray-100 sm:h-44">
         {imageUrl ? (
           <Image
             src={imageUrl}
             alt={event.name}
             fill
-            className="object-cover transition group-hover:scale-105"
+            className="object-cover transition duration-500 group-hover:scale-105"
             sizes="320px"
           />
         ) : (
-          <div className="flex h-full items-center justify-center bg-gradient-to-br from-destiny-orange/20 to-destiny-orange/5">
-            <span className="text-4xl font-black text-destiny-orange/30">
-              DC
-            </span>
+          <div className="flex h-full items-center justify-center bg-gradient-to-br from-destiny-orange/20 via-destiny-orange/10 to-transparent">
+            <span className="text-4xl font-black text-destiny-orange/20">DC</span>
           </div>
         )}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
+
+        {/* Course badge */}
+        {isCourse && (
+          <div className="absolute left-2.5 top-2.5 flex items-center gap-1 rounded-full bg-destiny-orange px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-white shadow-md">
+            <svg className="h-2.5 w-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.966 8.966 0 00-6 2.292m0-14.25v14.25" />
+            </svg>
+            Course · {event.sessionCount} sessions
+          </div>
+        )}
+
         {/* Date badge */}
-        <div className="absolute bottom-2 right-2 flex h-11 w-11 flex-col items-center justify-center rounded-xl bg-destiny-orange text-white shadow-lg sm:bottom-3 sm:right-3 sm:h-14 sm:w-14">
-          <span className="text-lg font-black leading-none">{start.day}</span>
-          <span className="text-[10px] font-bold uppercase">{start.month}</span>
+        <div className="absolute bottom-2 right-2 flex h-11 w-11 flex-col items-center justify-center rounded-xl bg-white/95 shadow-lg backdrop-blur-sm sm:bottom-3 sm:right-3 sm:h-14 sm:w-14">
+          <span className="text-lg font-black leading-none text-destiny-orange sm:text-xl">{start.day}</span>
+          <span className="text-[9px] font-bold uppercase tracking-wider text-destiny-grey/70 sm:text-[10px]">{start.month}</span>
         </div>
       </div>
 
       {/* Content */}
-      <div className="p-4">
-        <h3 className="mb-3 text-base font-bold text-destiny-grey line-clamp-2">
+      <div className="flex flex-1 flex-col p-4">
+        <h3 className="mb-3 text-sm font-bold leading-snug text-destiny-grey line-clamp-2 sm:text-base">
           {event.name}
         </h3>
-        <div className="space-y-1.5 text-xs text-destiny-grey/60">
+        <div className="mt-auto space-y-1.5 text-xs text-destiny-grey/60">
           <div className="flex items-center gap-2">
-            <svg className="h-3.5 w-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-            </svg>
+            <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-md bg-destiny-orange/10">
+              <svg className="h-3 w-3 text-destiny-orange" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+            </div>
             <span>{start.date}</span>
           </div>
           <div className="flex items-center gap-2">
-            <svg className="h-3.5 w-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            <span>{start.time} - {end.time}</span>
+            <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-md bg-destiny-orange/10">
+              <svg className="h-3 w-3 text-destiny-orange" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <span>{start.time} – {end.time}</span>
           </div>
           {event.location?.name && (
             <div className="flex items-center gap-2">
-              <svg className="h-3.5 w-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                <path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-              </svg>
+              <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-md bg-destiny-orange/10">
+                <svg className="h-3 w-3 text-destiny-orange" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+              </div>
               <span>{event.location.name}</span>
             </div>
           )}
@@ -152,7 +187,8 @@ function EventCardPlaceholder({ index }: { index: number }) {
 }
 
 export default async function WhatsOnSection() {
-  const events = await getEvents();
+  const rawEvents = await getEvents();
+  const events = deduplicateEvents(rawEvents);
   const hasEvents = events.length > 0;
 
   return (

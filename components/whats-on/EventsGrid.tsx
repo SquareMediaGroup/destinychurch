@@ -12,72 +12,137 @@ type ChurchSuiteEvent = {
   identifier?: string;
 };
 
+type DeduplicatedEvent = ChurchSuiteEvent & { sessionCount: number };
+
+function deduplicateEvents(events: ChurchSuiteEvent[]): DeduplicatedEvent[] {
+  const map = new Map<string, { event: ChurchSuiteEvent; count: number }>();
+  for (const event of events) {
+    const key = event.name.toLowerCase().trim();
+    if (map.has(key)) {
+      map.get(key)!.count++;
+    } else {
+      map.set(key, { event, count: 1 });
+    }
+  }
+  return Array.from(map.values()).map(({ event, count }) => ({
+    ...event,
+    sessionCount: count,
+  }));
+}
+
 function formatDate(dateStr: string) {
   const d = new Date(dateStr);
   return {
     day: d.getDate(),
     month: d.toLocaleDateString("en-GB", { month: "short" }).toUpperCase(),
-    date: d.toLocaleDateString("en-GB", { month: "short", day: "numeric", year: "numeric" }),
-    time: d.toLocaleTimeString("en-GB", { hour: "numeric", minute: "2-digit", hour12: true }),
+    fullDate: d.toLocaleDateString("en-GB", {
+      weekday: "short",
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    }),
+    time: d.toLocaleTimeString("en-GB", {
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: true,
+    }),
   };
 }
 
-function EventCard({ event }: { event: ChurchSuiteEvent }) {
+function EventCard({ event }: { event: DeduplicatedEvent }) {
   const start = formatDate(event.datetime_start);
   const end = formatDate(event.datetime_end);
   const imageUrl = event.images?.original_500 || event.images?.md;
   const href = event.identifier
     ? `https://destinytees.churchsuite.com/events/${event.identifier}`
     : "https://destinytees.churchsuite.com/events";
+  const isCourse = event.sessionCount > 1;
 
   return (
     <a
       href={href}
       target="_blank"
       rel="noopener noreferrer"
-      className="group overflow-hidden rounded-2xl border border-black/5 bg-white shadow-md transition hover:shadow-lg"
+      className="group flex flex-col overflow-hidden rounded-2xl bg-white shadow-[0_2px_16px_rgba(0,0,0,0.08)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_8px_32px_rgba(0,0,0,0.12)]"
     >
-      <div className="relative h-44 w-full overflow-hidden bg-gray-100">
+      {/* Image */}
+      <div className="relative h-48 w-full shrink-0 overflow-hidden bg-gray-100">
         {imageUrl ? (
           <img
             src={imageUrl}
             alt={event.name}
-            className="absolute inset-0 h-full w-full object-cover transition group-hover:scale-105"
+            className="absolute inset-0 h-full w-full object-cover transition duration-500 group-hover:scale-105"
           />
         ) : (
-          <div className="flex h-full items-center justify-center bg-gradient-to-br from-destiny-orange/20 to-destiny-orange/5">
-            <span className="text-4xl font-black text-destiny-orange/30">DC</span>
+          <div className="flex h-full items-center justify-center bg-gradient-to-br from-destiny-orange/20 via-destiny-orange/10 to-transparent">
+            <span className="text-5xl font-black text-destiny-orange/20">DC</span>
           </div>
         )}
-        <div className="absolute bottom-3 right-3 flex h-14 w-14 flex-col items-center justify-center rounded-xl bg-destiny-orange text-white shadow-lg">
-          <span className="text-lg font-black leading-none">{start.day}</span>
-          <span className="text-[10px] font-bold uppercase">{start.month}</span>
+
+        {/* Gradient overlay */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
+
+        {/* Course badge */}
+        {isCourse && (
+          <div className="absolute left-3 top-3 flex items-center gap-1.5 rounded-full bg-destiny-orange px-3 py-1 text-[11px] font-bold uppercase tracking-wide text-white shadow-md">
+            <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.966 8.966 0 00-6 2.292m0-14.25v14.25" />
+            </svg>
+            Course · {event.sessionCount} sessions
+          </div>
+        )}
+
+        {/* Date badge */}
+        <div className="absolute bottom-3 right-3 flex h-14 w-14 flex-col items-center justify-center rounded-xl bg-white/95 shadow-lg backdrop-blur-sm">
+          <span className="text-xl font-black leading-none text-destiny-orange">{start.day}</span>
+          <span className="text-[10px] font-bold uppercase tracking-wider text-destiny-grey/70">{start.month}</span>
         </div>
       </div>
-      <div className="p-4">
-        <h3 className="mb-3 text-base font-bold text-destiny-grey line-clamp-2">{event.name}</h3>
-        <div className="space-y-1.5 text-xs text-destiny-grey/60">
-          <div className="flex items-center gap-2">
-            <svg className="h-3.5 w-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-            </svg>
-            <span>{start.date}</span>
+
+      {/* Content */}
+      <div className="flex flex-1 flex-col p-5">
+        <h3 className="mb-4 text-base font-bold leading-snug text-destiny-grey line-clamp-2">
+          {event.name}
+        </h3>
+
+        <div className="mt-auto space-y-2 text-xs text-destiny-grey/60">
+          <div className="flex items-center gap-2.5">
+            <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-destiny-orange/10">
+              <svg className="h-3.5 w-3.5 text-destiny-orange" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+            </div>
+            <span className="font-medium text-destiny-grey/80">{start.fullDate}</span>
           </div>
-          <div className="flex items-center gap-2">
-            <svg className="h-3.5 w-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
+
+          <div className="flex items-center gap-2.5">
+            <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-destiny-orange/10">
+              <svg className="h-3.5 w-3.5 text-destiny-orange" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
             <span>{start.time} – {end.time}</span>
           </div>
+
           {event.location?.name && (
-            <div className="flex items-center gap-2">
-              <svg className="h-3.5 w-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                <path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-              </svg>
+            <div className="flex items-center gap-2.5">
+              <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-destiny-orange/10">
+                <svg className="h-3.5 w-3.5 text-destiny-orange" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+              </div>
               <span>{event.location.name}</span>
             </div>
           )}
+        </div>
+
+        {/* CTA */}
+        <div className="mt-5 flex items-center gap-1.5 text-xs font-bold text-destiny-orange">
+          <span>{isCourse ? "View course" : "Find out more"}</span>
+          <svg className="h-3.5 w-3.5 transition-transform duration-200 group-hover:translate-x-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
+          </svg>
         </div>
       </div>
     </a>
@@ -86,8 +151,9 @@ function EventCard({ event }: { event: ChurchSuiteEvent }) {
 
 export default function EventsGrid({ events }: { events: ChurchSuiteEvent[] }) {
   const [search, setSearch] = useState("");
+  const deduplicated = deduplicateEvents(events);
 
-  const filtered = events.filter((e) =>
+  const filtered = deduplicated.filter((e) =>
     e.name.toLowerCase().includes(search.toLowerCase())
   );
 
@@ -95,13 +161,13 @@ export default function EventsGrid({ events }: { events: ChurchSuiteEvent[] }) {
     <section id="events" className="bg-white py-12">
       <div className="mx-auto max-w-7xl px-4 lg:px-8">
         {/* Search */}
-        <div className="mb-8 flex items-center gap-3 rounded-2xl border border-black/10 bg-white px-4 py-3 shadow-sm">
+        <div className="mb-8 flex items-center gap-3 rounded-2xl border border-black/8 bg-gray-50 px-4 py-3 shadow-sm transition-shadow focus-within:border-destiny-orange/30 focus-within:shadow-md">
           <svg className="h-4 w-4 shrink-0 text-destiny-grey/40" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z" />
           </svg>
           <input
             type="text"
-            placeholder="Search Events..."
+            placeholder="Search events…"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="w-full bg-transparent text-sm text-destiny-grey placeholder-destiny-grey/40 outline-none"
@@ -116,9 +182,14 @@ export default function EventsGrid({ events }: { events: ChurchSuiteEvent[] }) {
             ))}
           </div>
         ) : (
-          <div className="py-20 text-center text-destiny-grey/40">
-            <p className="text-lg font-semibold">No events found</p>
-            <p className="mt-1 text-sm">Try a different search term</p>
+          <div className="py-20 text-center">
+            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-destiny-orange/10">
+              <svg className="h-8 w-8 text-destiny-orange/50" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 9v7.5" />
+              </svg>
+            </div>
+            <p className="text-base font-semibold text-destiny-grey/60">No events found</p>
+            <p className="mt-1 text-sm text-destiny-grey/40">Try a different search term</p>
           </div>
         )}
       </div>

@@ -56,6 +56,10 @@ const nextConfig: NextConfig = {
       },
       {
         protocol: "https",
+        hostname: "cdn.churchsuite.com",
+      },
+      {
+        protocol: "https",
         hostname: "**.churchsuite.com",
       },
       {

@@ -10,6 +10,7 @@ const navItems = [
   { href: "/admin/banner", icon: "campaign", label: "Banner" },
   { href: "/admin/pages", icon: "article", label: "Pages" },
   { href: "/admin/redirects", icon: "alt_route", label: "Redirects" },
+  { href: "/admin/cache", icon: "refresh", label: "Clear Cache" },
 ];
 
 export default function AdminSidebar() {

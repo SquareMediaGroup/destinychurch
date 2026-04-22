@@ -251,7 +251,7 @@ export default function ChurchHeader() {
             }`}
             style={{
               borderRadius: `${9999 * progress}px`,
-              backgroundColor: `rgba(54, 63, 72, ${0.6 - 0.2 * progress})`,
+              backgroundColor: `rgba(54, 63, 72, ${(isHome ? 0.6 : 1) - (isHome ? 0.2 : 0.6) * progress})`,
               transition: "box-shadow 0.3s, border-color 0.3s",
             }}
           >

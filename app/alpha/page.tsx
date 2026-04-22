@@ -118,17 +118,42 @@ export default function AlphaPage() {
                   {event.location && ` · ${event.location}`}
                 </p>
               )}
-              <button
-                onClick={openVideo}
-                className="mt-4 inline-flex items-center gap-3 rounded-full bg-white/10 px-6 py-3 text-sm font-bold text-white backdrop-blur-sm transition hover:bg-white/20"
-              >
-                <span className="flex h-8 w-8 items-center justify-center rounded-full bg-white/20">
-                  <svg className="ml-0.5 h-4 w-4 text-white" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M8 5v14l11-7z" />
-                  </svg>
-                </span>
-                Watch the promo
-              </button>
+              <div className="flex flex-col gap-3 sm:flex-row items-center justify-center">
+                {!loading && event ? (
+                  <>
+                    <button
+                      onClick={openSignup}
+                      className="mt-4 inline-flex items-center gap-3 rounded-full bg-destiny-orange px-6 py-3 text-sm font-bold text-white shadow-lg shadow-destiny-orange/30 transition hover:brightness-110"
+                    >
+                      <span className="material-symbols-rounded text-lg">person_add</span>
+                      Sign Up Now
+                    </button>
+                    <button
+                      onClick={openVideo}
+                      className="mt-4 inline-flex items-center gap-3 rounded-full bg-white/10 px-6 py-3 text-sm font-bold text-white backdrop-blur-sm transition hover:bg-white/20"
+                    >
+                      <span className="flex h-5 w-5 items-center justify-center">
+                        <svg className="ml-0.5 h-4 w-4 text-white" fill="currentColor" viewBox="0 0 24 24">
+                          <path d="M8 5v14l11-7z" />
+                        </svg>
+                      </span>
+                      Watch promo
+                    </button>
+                  </>
+                ) : (
+                  <button
+                    onClick={openVideo}
+                    className="mt-4 inline-flex items-center gap-3 rounded-full bg-white/10 px-6 py-3 text-sm font-bold text-white backdrop-blur-sm transition hover:bg-white/20"
+                  >
+                    <span className="flex h-5 w-5 items-center justify-center">
+                      <svg className="ml-0.5 h-4 w-4 text-white" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M8 5v14l11-7z" />
+                      </svg>
+                    </span>
+                    Watch the promo
+                  </button>
+                )}
+              </div>
             </AnimateIn>
           </div>
         </section>

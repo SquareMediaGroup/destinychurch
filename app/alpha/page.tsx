@@ -1,10 +1,18 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import AnimateIn from "@/components/AnimateIn";
 import WorshipWithUsSection from "@/components/home/WorshipWithUsSection";
+import AlphaSignupModal from "@/components/AlphaSignupModal";
+
+interface AlphaEvent {
+  id: string;
+  start_date: string;
+  signup_url: string;
+  location: string | null;
+}
 
 const steps = [
   {
@@ -42,6 +50,27 @@ const topics = [
 export default function AlphaPage() {
   const [videoOpen, setVideoOpen] = useState(false);
   const [videoVisible, setVideoVisible] = useState(false);
+  const [signupOpen, setSignupOpen] = useState(false);
+  const [event, setEvent] = useState<AlphaEvent | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchEvent() {
+      try {
+        const res = await fetch("/api/admin/alpha-events");
+        const data = await res.json();
+        const activeAlpha = Array.isArray(data)
+          ? data.find((e: AlphaEvent & { type: string; active: boolean }) => e.type === "alpha" && e.active)
+          : null;
+        setEvent(activeAlpha || null);
+      } catch (error) {
+        console.error("Failed to fetch Alpha event:", error);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchEvent();
+  }, []);
 
   const openVideo = () => {
     setVideoOpen(true);
@@ -56,6 +85,22 @@ export default function AlphaPage() {
       document.body.style.overflow = "";
     }, 350);
   };
+
+  const openSignup = () => {
+    setSignupOpen(true);
+  };
+
+  const closeSignup = () => {
+    setSignupOpen(false);
+  };
+
+  const startDateFormatted = event
+    ? new Date(event.start_date).toLocaleDateString("en-GB", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      })
+    : null;
 
   return (
     <>
@@ -80,6 +125,12 @@ export default function AlphaPage() {
               <p className="mb-4 text-lg text-white/70 md:text-xl">
                 An open invitation to explore the big questions of life and faith.
               </p>
+              {event && startDateFormatted && (
+                <p className="mb-6 text-sm font-bold text-destiny-orange">
+                  Starting {startDateFormatted}
+                  {event.location && ` · ${event.location}`}
+                </p>
+              )}
               <button
                 onClick={openVideo}
                 className="mt-4 inline-flex items-center gap-3 rounded-full bg-white/10 px-6 py-3 text-sm font-bold text-white backdrop-blur-sm transition hover:bg-white/20"
@@ -248,23 +299,29 @@ export default function AlphaPage() {
               and we&apos;ll be in touch with the next start date.
             </p>
             <div className="flex flex-col items-center justify-center gap-3 sm:flex-row">
-              <Link
-                href="https://destinytees.churchsuite.com/forms/6fskcfqd"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="rounded-full bg-destiny-orange px-8 py-3 text-sm font-bold text-white shadow-lg shadow-destiny-orange/25 transition hover:brightness-110"
-              >
-                Register for Alpha
-              </Link>
-              <button
-                onClick={openVideo}
-                className="inline-flex items-center gap-2 rounded-full border-2 border-destiny-grey/20 px-8 py-3 text-sm font-bold text-destiny-grey transition hover:border-destiny-orange hover:text-destiny-orange"
-              >
-                <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M8 5v14l11-7z" />
-                </svg>
-                Watch promo
-              </button>
+              {!loading && event ? (
+                <>
+                  <button
+                    onClick={openSignup}
+                    className="rounded-full bg-destiny-orange px-8 py-3 text-sm font-bold text-white shadow-lg shadow-destiny-orange/25 transition hover:brightness-110"
+                  >
+                    Register for Alpha
+                  </button>
+                  <button
+                    onClick={openVideo}
+                    className="inline-flex items-center gap-2 rounded-full border-2 border-destiny-grey/20 px-8 py-3 text-sm font-bold text-destiny-grey transition hover:border-destiny-orange hover:text-destiny-orange"
+                  >
+                    <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M8 5v14l11-7z" />
+                    </svg>
+                    Watch promo
+                  </button>
+                </>
+              ) : (
+                <div className="text-sm text-destiny-grey/50">
+                  {loading ? "Loading event details..." : "No upcoming events scheduled yet"}
+                </div>
+              )}
             </div>
           </AnimateIn>
         </div>
@@ -312,6 +369,17 @@ export default function AlphaPage() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Signup modal */}
+      {event && (
+        <AlphaSignupModal
+          open={signupOpen}
+          onClose={closeSignup}
+          signupUrl={event.signup_url}
+          title="Register for Alpha"
+          subtitle={startDateFormatted ? `Starting ${startDateFormatted}` : undefined}
+        />
       )}
     </>
   );

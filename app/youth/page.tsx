@@ -3,6 +3,7 @@ import Image from "next/image";
 import Link from "next/link";
 import AnimateIn from "@/components/AnimateIn";
 import WorshipWithUsSection from "@/components/home/WorshipWithUsSection";
+import YouthAlphaSection from "@/components/youth-alpha/YouthAlphaSection";
 
 export const metadata: Metadata = {
   title: "Destiny Youth",
@@ -79,75 +80,36 @@ export default function YouthPage() {
                 <Image src="/img/photos/Youth1.JPG" alt="Destiny Youth" width={640} height={320} className="w-full object-cover" />
               </div>
               <div className="overflow-hidden rounded-2xl">
-                <Image src="/img/Alpha/YouthAlpha/5.png" alt="Youth" width={300} height={220} className="w-full object-cover" />
+                <Image src="/img/Alpha/YouthAlpha/5.png" alt="" width={300} height={220} className="w-full object-cover" />
               </div>
               <div className="overflow-hidden rounded-2xl">
-                <Image src="/img/Alpha/YouthAlpha/6.png" alt="Youth" width={300} height={220} className="w-full object-cover" />
+                <Image src="/img/Alpha/YouthAlpha/6.png" alt="" width={300} height={220} className="w-full object-cover" />
               </div>
             </AnimateIn>
           </div>
         </div>
       </section>
 
-      {/* When & where */}
+      {/* Groups */}
       <section className="bg-[#f5f7fa] py-16">
         <div className="mx-auto max-w-7xl px-4 lg:px-8">
-          <div className="grid gap-6 sm:grid-cols-3">
-            <AnimateIn delay={0}>
-              <div className="flex items-start gap-4 rounded-3xl bg-white p-6 shadow-sm">
-                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-destiny-orange/10">
-                  <span className="material-symbols-rounded text-2xl text-destiny-orange">calendar_month</span>
-                </div>
-                <div>
-                  <p className="mb-1 font-black text-destiny-grey">Every Wednesday</p>
-                  <p className="text-sm text-destiny-grey/60">7:00pm – 8:30pm</p>
-                </div>
-              </div>
-            </AnimateIn>
-            <AnimateIn delay={80}>
-              <div className="flex items-start gap-4 rounded-3xl bg-white p-6 shadow-sm">
-                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-destiny-orange/10">
-                  <span className="material-symbols-rounded text-2xl text-destiny-orange">location_on</span>
-                </div>
-                <div>
-                  <p className="mb-1 font-black text-destiny-grey">Destiny Centre</p>
-                  <p className="text-sm text-destiny-grey/60">Norton Road, Stockton-on-Tees, TS20 2QQ</p>
-                </div>
-              </div>
-            </AnimateIn>
-            <AnimateIn delay={160}>
-              <div className="flex items-start gap-4 rounded-3xl bg-white p-6 shadow-sm">
-                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-destiny-orange/10">
-                  <span className="material-symbols-rounded text-2xl text-destiny-orange">group</span>
-                </div>
-                <div>
-                  <p className="mb-1 font-black text-destiny-grey">Ages 11–18</p>
-                  <p className="text-sm text-destiny-grey/60">KS3, KS4 &amp; KS5 groups</p>
-                </div>
-              </div>
-            </AnimateIn>
-          </div>
-        </div>
-      </section>
-
-      {/* Age groups */}
-      <section className="bg-white py-20">
-        <div className="mx-auto max-w-7xl px-4 lg:px-8">
           <AnimateIn>
-            <h2 className="mb-3 text-center text-3xl font-black text-destiny-grey md:text-4xl">Our Groups</h2>
-            <p className="mb-12 text-center text-sm text-destiny-grey/50">Split by school year so every young person is with their peers</p>
+            <h2 className="mb-12 text-center text-3xl font-black text-destiny-grey md:text-4xl">For every age</h2>
           </AnimateIn>
           <div className="grid gap-6 md:grid-cols-3">
             {groups.map((g, i) => (
               <AnimateIn key={g.name} delay={i * 80}>
-                <div className="overflow-hidden rounded-3xl">
-                  <div className="p-8" style={{ background: g.color }}>
-                    <div className="mb-4 flex items-center gap-3">
-                      <span className="material-symbols-rounded text-4xl text-white/80">{g.icon}</span>
-                      <div>
-                        <h3 className="text-2xl font-black text-white">{g.name}</h3>
-                        <p className="text-sm font-bold text-white/60">{g.ages}</p>
-                      </div>
+                <div className="overflow-hidden rounded-3xl shadow-sm transition hover:shadow-md">
+                  <div
+                    className="flex h-32 items-end justify-start p-6"
+                    style={{ background: g.color }}
+                  >
+                    <div>
+                      <p className="text-xs font-bold text-white/80">{g.ages}</p>
+                      <p className="text-2xl font-black text-white">{g.name}</p>
+                    </div>
+                    <div className="ml-auto">
+                      <span className="material-symbols-rounded text-5xl text-white/20">{g.icon}</span>
                     </div>
                   </div>
                   <div className="bg-[#f5f7fa] p-6">
@@ -181,28 +143,7 @@ export default function YouthPage() {
       </section>
 
       {/* Youth Alpha CTA */}
-      <section style={{ background: "linear-gradient(135deg, #363f48 0%, #242e37 100%)" }} className="py-16">
-        <div className="mx-auto max-w-7xl px-4 lg:px-8">
-          <div className="flex flex-col items-center gap-10 md:flex-row md:gap-16">
-            <AnimateIn className="w-full overflow-hidden rounded-3xl md:w-2/5">
-              <Image src="/img/Alpha/Alpha/IG-MAIN-scaled.jpg" alt="Youth Alpha" width={600} height={400} className="w-full object-cover" />
-            </AnimateIn>
-            <AnimateIn delay={100} className="w-full md:w-3/5">
-              <p className="mb-3 text-xs font-bold uppercase tracking-widest text-destiny-orange">Explore Faith</p>
-              <h2 className="mb-4 text-3xl font-black text-white md:text-4xl">Youth Alpha</h2>
-              <p className="mb-6 text-base leading-relaxed text-white/70">
-                Got questions about life, faith and what it all means? Youth Alpha is a space for young people to explore the big questions honestly, without pressure or judgement.
-              </p>
-              <Link
-                href="/alpha"
-                className="inline-flex items-center rounded-full bg-destiny-orange px-7 py-3 text-sm font-bold text-white shadow-lg shadow-destiny-orange/25 transition hover:brightness-110"
-              >
-                Find out about Alpha
-              </Link>
-            </AnimateIn>
-          </div>
-        </div>
-      </section>
+      <YouthAlphaSection />
 
       <WorshipWithUsSection />
     </>

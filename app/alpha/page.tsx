@@ -6,6 +6,8 @@ import Link from "next/link";
 import AnimateIn from "@/components/AnimateIn";
 import WorshipWithUsSection from "@/components/home/WorshipWithUsSection";
 import AlphaSignupModal from "@/components/AlphaSignupModal";
+import AlphaTopics from "@/components/alpha/AlphaTopics";
+import AlphaAskAnything from "@/components/alpha/AlphaAskAnything";
 
 interface AlphaEvent {
   id: string;
@@ -30,21 +32,6 @@ const steps = [
     title: "Discussion",
     body: "The best part. In small groups, everyone gets to share their thoughts. No pressure, no wrong answers — just good conversation.",
   },
-];
-
-const topics = [
-  "Is there more to life than this?",
-  "Who is Jesus?",
-  "Why did Jesus die?",
-  "How can I have faith?",
-  "Why and how do I pray?",
-  "Why and how should I read the Bible?",
-  "How does God guide us?",
-  "Who is the Holy Spirit?",
-  "What does the Holy Spirit do?",
-  "How can I make the most of the rest of my life?",
-  "How can I resist evil?",
-  "Why and how should I tell others?",
 ];
 
 export default function AlphaPage() {
@@ -208,44 +195,11 @@ export default function AlphaPage() {
         </div>
       </section>
 
-      {/* Topics */}
-      <section className="bg-white py-16">
-        <div className="mx-auto max-w-7xl px-4 lg:px-8">
-          <div className="flex flex-col items-start gap-12 md:flex-row md:gap-20">
-            <AnimateIn className="w-full md:w-1/2">
-              <p className="mb-3 text-xs font-bold uppercase tracking-widest text-destiny-orange">
-                What&apos;s covered
-              </p>
-              <h2 className="mb-8 text-3xl font-black text-destiny-grey md:text-4xl">
-                The Topics
-              </h2>
-              <ul className="space-y-3">
-                {topics.map((topic, i) => (
-                  <li key={topic} className="flex items-center gap-3 text-sm text-destiny-grey/70">
-                    <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-destiny-orange/10 text-xs font-black text-destiny-orange">
-                      {i + 1}
-                    </span>
-                    {topic}
-                  </li>
-                ))}
-              </ul>
-            </AnimateIn>
-            <AnimateIn delay={100} className="w-full md:w-1/2">
-              <div className="grid grid-cols-2 gap-3">
-                <div className="overflow-hidden rounded-2xl">
-                  <Image src="/img/Alpha/Alpha/WiA-SC_V2-Carousel_02.jpg" alt="" width={300} height={200} className="w-full object-cover" />
-                </div>
-                <div className="overflow-hidden rounded-2xl">
-                  <Image src="/img/Alpha/Alpha/WiA-SC_V2-Carousel_03.jpg" alt="" width={300} height={200} className="w-full object-cover" />
-                </div>
-                <div className="col-span-2 overflow-hidden rounded-2xl">
-                  <Image src="/img/Alpha/Alpha/WiA-SC_V2-Carousel_04.jpg" alt="" width={620} height={250} className="w-full object-cover" />
-                </div>
-              </div>
-            </AnimateIn>
-          </div>
-        </div>
-      </section>
+      {/* Interactive Topics */}
+      <AlphaTopics />
+
+      {/* Ask Anything */}
+      <AlphaAskAnything />
 
       {/* Youth Alpha */}
       <section style={{ background: "linear-gradient(135deg, #363f48 0%, #242e37 100%)" }} className="py-16">

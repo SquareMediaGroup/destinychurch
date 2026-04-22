@@ -53,7 +53,7 @@ export default function AdminSermonsPage() {
   const visible = videos.filter((v) => !hiddenIds.has(v.id));
 
   return (
-    <div className="mx-auto max-w-6xl px-6 py-10 pt-28">
+    <div className="mx-auto max-w-6xl px-6 py-10">
     <div className="max-w-4xl">
       <div className="mb-6">
         <h1 className="text-2xl font-black text-destiny-grey">Sermons</h1>

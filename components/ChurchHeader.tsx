@@ -199,14 +199,13 @@ export default function ChurchHeader() {
         >
           {/* Pill */}
           <div
-            className={`flex items-center justify-between border px-4 py-2 backdrop-blur-md md:px-6 ${
-              scrolled
-                ? "border-white/10 bg-destiny-grey/60 shadow-xl shadow-black/30"
-                : "border-white/10 bg-destiny-grey/40 shadow-lg shadow-black/10"
+            className={`flex items-center justify-between border border-white/10 px-4 py-2 backdrop-blur-md md:px-6 ${
+              scrolled ? "shadow-xl shadow-black/30" : "shadow-lg shadow-black/10"
             }`}
             style={{
               borderRadius: `${9999 * progress}px`,
-              transition: "background-color 0.3s, box-shadow 0.3s, border-color 0.3s",
+              backgroundColor: `rgba(54, 63, 72, ${0.6 - 0.2 * progress})`,
+              transition: "box-shadow 0.3s, border-color 0.3s",
             }}
           >
             {/* Logo — responsive size */}

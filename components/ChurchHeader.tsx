@@ -70,7 +70,7 @@ function Dropdown({
   );
 }
 
-const MORPH_DISTANCE = 100;
+const MORPH_DISTANCE = 160;
 
 export default function ChurchHeader() {
   const pathname = usePathname();

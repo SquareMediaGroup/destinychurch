@@ -7,12 +7,22 @@ export async function middleware(request: NextRequest) {
 
   const { data: { user } } = await supabase.auth.getUser();
 
+  // Allow unauthenticated logout endpoint so sign-out always succeeds
+  if (pathname === "/api/admin/logout") {
+    return supabaseResponse;
+  }
+
   // Already logged in — send away from login page
   if (pathname === "/admin/login") {
     if (user) {
       return NextResponse.redirect(new URL("/admin/redirects", request.url));
     }
     return supabaseResponse;
+  }
+
+  // Unauthenticated API requests: return 401 instead of redirecting
+  if (!user && pathname.startsWith("/api/admin")) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   // Protect all other /admin/* routes
@@ -24,5 +34,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/admin/:path*"],
+  matcher: ["/admin/:path*", "/api/admin/:path*"],
 };

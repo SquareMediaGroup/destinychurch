@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { usePathname } from "next/navigation";
 import { useBanner } from "@/contexts/BannerContext";
 import GlobalSearch from "./GlobalSearch";
@@ -15,23 +15,14 @@ const aboutDropdown = [
   { href: "/visit", label: "Plan a Visit" },
 ];
 
-const whatsOnDropdown = [
+const whatsOnDropdownBase = [
   { href: "/whats-on#events", label: "Events" },
   { href: "/whats-on#courses", label: "Courses" },
-  { href: "/alpha", label: "Alpha" },
   { href: "/missions", label: "Missions" },
   { href: "/whats-on#highlights", label: "Highlights" },
 ];
 
-const navItems = [
-  { label: "What's on", href: "/whats-on", dropdown: whatsOnDropdown },
-  { href: "/sermons", label: "Sermons" },
-  { href: "/serve", label: "Serve" },
-  { label: "About", href: "/about", dropdown: aboutDropdown },
-  { href: "/give", label: "Give" },
-];
-
-const mobileNavItems = [
+const mobileNavItemsBase = [
   { href: "/whats-on",   label: "What's On"  },
   { href: "/sermons",    label: "Sermons"    },
   { href: "/serve",      label: "Serve"      },
@@ -90,6 +81,7 @@ export default function ChurchHeader() {
   const [mounted, setMounted] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [progress, setProgress] = useState(0);
+  const [alphaActive, setAlphaActive] = useState(false);
   const headerRef = useRef<HTMLElement>(null);
   const bridgeInputRef = useRef<HTMLInputElement>(null);
   const lastScrollY = useRef(0);
@@ -152,9 +144,64 @@ export default function ChurchHeader() {
     return () => document.removeEventListener("click", handleClickOutside);
   }, []);
 
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/admin/alpha-events")
+      .then((res) => (res.ok ? res.json() : []))
+      .then((data) => {
+        if (cancelled) return;
+        const hasActive = Array.isArray(data)
+          && data.some((e: { type?: string; active?: boolean }) => e.type === "alpha" && e.active);
+        setAlphaActive(hasActive);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const whatsOnDropdown = useMemo(
+    () =>
+      alphaActive
+        ? [
+            whatsOnDropdownBase[0],
+            whatsOnDropdownBase[1],
+            { href: "/alpha", label: "Alpha" },
+            ...whatsOnDropdownBase.slice(2),
+          ]
+        : whatsOnDropdownBase,
+    [alphaActive]
+  );
+
+  const navItems = useMemo(
+    () => [
+      { label: "What's on", href: "/whats-on", dropdown: whatsOnDropdown },
+      { href: "/sermons", label: "Sermons" },
+      ...(alphaActive ? [{ href: "/alpha", label: "Alpha" }] : []),
+      { href: "/serve", label: "Serve" },
+      { label: "About", href: "/about", dropdown: aboutDropdown },
+      { href: "/give", label: "Give" },
+    ],
+    [alphaActive, whatsOnDropdown]
+  );
+
+  const mobileNavItems = useMemo(
+    () =>
+      alphaActive
+        ? [
+            mobileNavItemsBase[0],
+            mobileNavItemsBase[1],
+            { href: "/alpha", label: "Alpha" },
+            ...mobileNavItemsBase.slice(2),
+          ]
+        : mobileNavItemsBase,
+    [alphaActive]
+  );
+
   if (pathname.startsWith("/sermons")) return null;
 
   const isAdmin = pathname.startsWith("/admin");
+  const isHome = pathname === "/";
   const banner = useBanner();
   const bannerOffset = banner.active && !isAdmin ? "top-10" : "top-0";
 
@@ -181,7 +228,7 @@ export default function ChurchHeader() {
 
       <header
         ref={headerRef}
-        className={`sticky z-50 ${bannerOffset}`}
+        className={`${isHome ? "fixed left-0 right-0" : "sticky"} z-50 ${bannerOffset}`}
         style={{
           transform: !mounted || hidden ? "translateY(-110%)" : "translateY(0)",
           transition: "transform 0.4s cubic-bezier(0.4, 0, 0.2, 1)",

@@ -70,7 +70,7 @@ function Dropdown({
   );
 }
 
-const MORPH_DISTANCE = 160;
+const MORPH_DISTANCE = 180;
 
 export default function ChurchHeader() {
   const pathname = usePathname();
@@ -250,7 +250,7 @@ export default function ChurchHeader() {
               scrolled ? "shadow-xl shadow-black/30" : "shadow-lg shadow-black/10"
             }`}
             style={{
-              borderRadius: `${9999 * progress}px`,
+              borderRadius: `${48 * progress}px`,
               backgroundColor: `rgba(54, 63, 72, ${(isHome ? 0.6 : 1) - (isHome ? 0.2 : 0.6) * progress})`,
               transition: "box-shadow 0.3s, border-color 0.3s",
             }}

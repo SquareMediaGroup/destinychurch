@@ -79,6 +79,8 @@ function Dropdown({
   );
 }
 
+const MORPH_DISTANCE = 100;
+
 export default function ChurchHeader() {
   const pathname = usePathname();
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
@@ -87,10 +89,12 @@ export default function ChurchHeader() {
   const [hidden, setHidden] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
+  const [progress, setProgress] = useState(0);
   const headerRef = useRef<HTMLElement>(null);
   const bridgeInputRef = useRef<HTMLInputElement>(null);
   const lastScrollY = useRef(0);
   const hoverTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const rafId = useRef<number | null>(null);
 
   const handleNavMouseEnter = (label: string) => {
     if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current);
@@ -102,24 +106,31 @@ export default function ChurchHeader() {
   };
 
   const handleScroll = useCallback(() => {
-    const y = window.scrollY;
-    setScrolled(y > 50);
-    if (y > lastScrollY.current && y > 80) {
-      setHidden(true);
-      setOpenDropdown(null);
-      setSearchOpen(false);
-    } else {
-      setHidden(false);
-    }
-    lastScrollY.current = y;
+    if (rafId.current != null) return;
+    rafId.current = requestAnimationFrame(() => {
+      rafId.current = null;
+      const y = window.scrollY;
+      setScrolled(y > 50);
+      setProgress(Math.min(1, Math.max(0, y / MORPH_DISTANCE)));
+      if (y > MORPH_DISTANCE && y > lastScrollY.current) {
+        setHidden(true);
+        setOpenDropdown(null);
+        setSearchOpen(false);
+      } else {
+        setHidden(false);
+      }
+      lastScrollY.current = y;
+    });
   }, []);
 
   useEffect(() => {
     setMounted(true);
+    handleScroll();
     window.addEventListener("scroll", handleScroll, { passive: true });
     return () => {
       window.removeEventListener("scroll", handleScroll);
       if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current);
+      if (rafId.current != null) cancelAnimationFrame(rafId.current);
     };
   }, [handleScroll]);
 
@@ -170,20 +181,33 @@ export default function ChurchHeader() {
 
       <header
         ref={headerRef}
-        className={`fixed left-0 right-0 z-50 ${bannerOffset}`}
+        className={`sticky z-50 ${bannerOffset}`}
         style={{
           transform: !mounted || hidden ? "translateY(-110%)" : "translateY(0)",
           transition: "transform 0.4s cubic-bezier(0.4, 0, 0.2, 1)",
         }}
       >
-        <div className="mx-auto max-w-7xl px-4 py-4 lg:px-8">
+        <div
+          className="mx-auto"
+          style={{
+            maxWidth: `min(100%, calc(100% + (80rem - 100%) * ${progress}))`,
+            paddingTop: `${progress}rem`,
+            paddingBottom: `${progress}rem`,
+            paddingLeft: `${progress}rem`,
+            paddingRight: `${progress}rem`,
+          }}
+        >
           {/* Pill */}
           <div
-            className={`flex items-center justify-between rounded-full border px-4 py-2 backdrop-blur-md transition-all duration-300 md:px-6 ${
+            className={`flex items-center justify-between border px-4 py-2 backdrop-blur-md md:px-6 ${
               scrolled
                 ? "border-white/10 bg-destiny-grey/60 shadow-xl shadow-black/30"
                 : "border-white/10 bg-destiny-grey/40 shadow-lg shadow-black/10"
             }`}
+            style={{
+              borderRadius: `${9999 * progress}px`,
+              transition: "background-color 0.3s, box-shadow 0.3s, border-color 0.3s",
+            }}
           >
             {/* Logo — responsive size */}
             <Link href="/" className="flex items-center gap-3">

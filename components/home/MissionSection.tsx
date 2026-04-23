@@ -4,19 +4,18 @@ import AnimateIn from "@/components/AnimateIn";
 
 export default function MissionSection() {
   return (
-    <section className="px-4 py-10 sm:py-20 lg:px-8">
-      <div className="mx-auto max-w-7xl">
-
-        <AnimateIn className="max-w-3xl">
-          <span className="mb-5 block text-sm font-bold uppercase tracking-widest text-destiny-orange">
+    <section className="bg-white py-20">
+      <div className="mx-auto max-w-4xl px-8 text-center lg:px-12">
+        <AnimateIn>
+          <p className="mb-5 text-xs font-bold uppercase tracking-widest text-destiny-grey/40">
             Our Mission
-          </span>
-          <h2 className="text-3xl font-black leading-tight text-gray-900 sm:text-4xl md:text-5xl">
-            Transforming Lives through{" "}
-            <span className="text-destiny-orange">Faith, Hope and Love</span>{" "}
-            for Jesus.
+          </p>
+          <h2 className="mb-8 text-3xl font-black leading-tight text-destiny-grey md:text-4xl lg:text-5xl">
+            Transforming Lives through
+            <br />
+            <span className="text-destiny-orange">Faith, Hope and Love</span> for Jesus.
           </h2>
-          <p className="mt-5 text-base leading-relaxed text-gray-600 sm:mt-7 sm:text-xl">
+          <p className="text-lg leading-relaxed text-destiny-grey/60 md:text-xl">
             Destiny Church exists to bring people to Jesus and membership of his
             family, developing them to maturity in Christ, and equipping them for
             their ministry in the Church and mission in the world, in order to
@@ -24,7 +23,7 @@ export default function MissionSection() {
           </p>
         </AnimateIn>
 
-        <AnimateIn delay={150} className="mt-8 flex flex-col items-start gap-5 sm:mt-10">
+        <AnimateIn delay={150} className="mt-10 flex flex-col items-center gap-6">
           <div className="flex items-center gap-4">
             <div className="relative h-16 w-16 overflow-hidden rounded-full bg-destiny-orange/10">
               <Image
@@ -35,9 +34,9 @@ export default function MissionSection() {
                 sizes="64px"
               />
             </div>
-            <div>
-              <p className="text-base font-bold text-gray-900">Jonathan &amp; Cath Harris</p>
-              <p className="text-sm text-gray-500">Lead Pastors</p>
+            <div className="text-left">
+              <p className="text-base font-bold text-destiny-grey">Jonathan &amp; Cath Harris</p>
+              <p className="text-sm text-destiny-grey/50">Lead Pastors</p>
             </div>
           </div>
           <Link
@@ -47,7 +46,6 @@ export default function MissionSection() {
             About Destiny Church
           </Link>
         </AnimateIn>
-
       </div>
     </section>
   );

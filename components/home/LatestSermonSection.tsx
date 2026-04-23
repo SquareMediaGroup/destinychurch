@@ -11,19 +11,21 @@ export default async function LatestSermonSection() {
   const shortDesc = video.description.slice(0, 160).trim();
 
   return (
-    <section className="relative w-full overflow-hidden" style={{ minHeight: 320 }}>
-      {/* Blurred thumbnail background */}
-      <div
-        className="absolute inset-0 scale-110 bg-cover bg-center blur-sm"
-        style={{ backgroundImage: `url('${video.thumbnail}')` }}
-      />
-      {/* Dark overlay */}
-      <div className="absolute inset-0 bg-black/60" />
+    <div className="px-4 py-8 lg:px-8">
+     <div className="glowing-gradient-border rounded-3xl">
+      <section className="relative w-full overflow-hidden rounded-3xl">
+        {/* Blurred thumbnail background */}
+        <div
+          className="absolute inset-0 scale-110 bg-cover bg-center blur-sm"
+          style={{ backgroundImage: `url('${video.thumbnail}')` }}
+        />
+        {/* Dark overlay */}
+        <div className="absolute inset-0 bg-black/60" />
 
-      {/* Content */}
-      <div className="relative flex min-h-[320px] items-center sm:min-h-[480px]">
-        <div className="mx-auto w-full max-w-7xl px-4 py-12 lg:px-8">
-          <div className="flex flex-col gap-8 md:flex-row md:items-center">
+        {/* Content */}
+        <div className="relative flex min-h-[320px] items-center sm:min-h-[480px]">
+          <div className="mx-auto w-full max-w-7xl px-6 py-12 sm:px-10 lg:px-12">
+            <div className="flex flex-col gap-8 md:flex-row md:items-center">
 
             {/* Left column */}
             <div className="flex flex-col justify-center md:w-1/2">
@@ -83,9 +85,11 @@ export default async function LatestSermonSection() {
               </Link>
             </div>
 
+            </div>
           </div>
         </div>
-      </div>
-    </section>
+      </section>
+     </div>
+    </div>
   );
 }

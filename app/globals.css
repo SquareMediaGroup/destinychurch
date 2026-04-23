@@ -147,6 +147,64 @@ h3 {
   to   { opacity: 1; transform: translateY(0); }
 }
 
+@property --border-angle {
+  syntax: "<angle>";
+  initial-value: 0deg;
+  inherits: false;
+}
+
+@keyframes border-rotate {
+  to { --border-angle: 360deg; }
+}
+
+.glowing-gradient-border {
+  position: relative;
+  isolation: isolate;
+}
+
+.glowing-gradient-border::before,
+.glowing-gradient-border::after {
+  content: "";
+  position: absolute;
+  border-radius: inherit;
+  background: conic-gradient(
+    from var(--border-angle),
+    #f58021,
+    #fd0000,
+    #8106b1,
+    #0857ba,
+    #028002,
+    #f58021
+  );
+  animation: border-rotate 6s linear infinite;
+  pointer-events: none;
+}
+
+.glowing-gradient-border::before {
+  inset: -2px;
+  padding: 2px;
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+          mask-composite: exclude;
+  z-index: 1;
+}
+
+.glowing-gradient-border::after {
+  inset: -14px;
+  filter: blur(22px);
+  opacity: 0.55;
+  z-index: -1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .glowing-gradient-border::before,
+  .glowing-gradient-border::after {
+    animation: none;
+  }
+}
+
 .animate-slide-up {
   animation: slide-up 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }

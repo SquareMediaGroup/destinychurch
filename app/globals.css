@@ -210,6 +210,14 @@ h3 {
   }
 }
 
+/* Paused when the card is off-screen (toggled by ScrollSpeedGlow via
+   IntersectionObserver) — avoids paying for the rotating conic-gradient
+   and the blurred ::after layer when the user can't see them. */
+.glowing-gradient-border.is-offscreen::before,
+.glowing-gradient-border.is-offscreen::after {
+  animation-play-state: paused;
+}
+
 .animate-slide-up {
   animation: slide-up 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }

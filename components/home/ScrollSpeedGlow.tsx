@@ -7,6 +7,10 @@ import { useEffect } from "react";
  * based on the user's scroll velocity. Default (idle) duration is 9.6s per
  * revolution; peak speed caps at ~1.6s when the user scrolls fast. Velocity
  * decays smoothly when scrolling stops, so the ring eases back to idle.
+ *
+ * Also uses IntersectionObserver to tag off-screen cards with `.is-offscreen`
+ * so their CSS animation is paused — keeps the rotating conic-gradient and
+ * its blurred ::after glow from costing GPU time when the user can't see them.
  */
 export default function ScrollSpeedGlow() {
   useEffect(() => {
@@ -21,6 +25,8 @@ export default function ScrollSpeedGlow() {
     const MAX_DURATION = 1.6; // seconds per revolution at peak scroll speed
     const PEAK_VELOCITY = 2500; // px/sec — scroll speed that saturates the effect
     const DECAY_PER_SECOND = 3.5; // higher = velocity fades faster when you stop
+
+    // --- Scroll velocity → --border-spin-duration ---------------------------
 
     let lastY = window.scrollY;
     let lastScrollTime = performance.now();
@@ -62,10 +68,36 @@ export default function ScrollSpeedGlow() {
     window.addEventListener("scroll", handleScroll, { passive: true });
     rafId = requestAnimationFrame(tick);
 
+    // --- Pause animation when off-screen ------------------------------------
+
+    const cards = Array.from(
+      document.querySelectorAll<HTMLElement>(".glowing-gradient-border")
+    );
+    // Start paused; observer will un-pause once a card enters the viewport.
+    cards.forEach((el) => el.classList.add("is-offscreen"));
+
+    let observer: IntersectionObserver | null = null;
+    if (cards.length > 0 && "IntersectionObserver" in window) {
+      observer = new IntersectionObserver(
+        (entries) => {
+          for (const entry of entries) {
+            entry.target.classList.toggle("is-offscreen", !entry.isIntersecting);
+          }
+        },
+        { rootMargin: "100px" } // small pre-roll so it's already running when you scroll to it
+      );
+      cards.forEach((el) => observer!.observe(el));
+    } else {
+      // No IO support — just leave them visible/animating.
+      cards.forEach((el) => el.classList.remove("is-offscreen"));
+    }
+
     return () => {
       window.removeEventListener("scroll", handleScroll);
       cancelAnimationFrame(rafId);
       document.documentElement.style.removeProperty("--border-spin-duration");
+      observer?.disconnect();
+      cards.forEach((el) => el.classList.remove("is-offscreen"));
     };
   }, []);
 

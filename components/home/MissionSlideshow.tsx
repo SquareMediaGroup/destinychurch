@@ -83,7 +83,7 @@ export default function MissionSlideshow() {
           className="object-cover"
           style={imgStyle}
           aria-hidden="true"
-          priority={current === 0}
+          loading="lazy"
         />
       </div>
     </div>

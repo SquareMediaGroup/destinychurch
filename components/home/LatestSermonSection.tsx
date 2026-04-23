@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { getLatestVisibleVideo } from "@/lib/sermons";
 import { formatDate } from "@/lib/youtube";
+import ScrollSpeedGlow from "@/components/home/ScrollSpeedGlow";
 
 export default async function LatestSermonSection() {
   const video = await getLatestVisibleVideo();
@@ -12,6 +13,7 @@ export default async function LatestSermonSection() {
 
   return (
     <div className="px-4 py-8 lg:px-8">
+     <ScrollSpeedGlow />
      <div className="glowing-gradient-border rounded-3xl">
       <section className="relative w-full overflow-hidden rounded-3xl">
         {/* Blurred thumbnail background */}
@@ -19,8 +21,8 @@ export default async function LatestSermonSection() {
           className="absolute inset-0 scale-110 bg-cover bg-center blur-sm"
           style={{ backgroundImage: `url('${video.thumbnail}')` }}
         />
-        {/* Dark overlay */}
-        <div className="absolute inset-0 bg-black/60" />
+        {/* Brand blue-grey tint over the blurred background */}
+        <div className="absolute inset-0 bg-destiny-grey/70" />
 
         {/* Content */}
         <div className="relative flex min-h-[320px] items-center sm:min-h-[480px]">

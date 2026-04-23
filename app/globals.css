@@ -150,23 +150,20 @@ h3 {
 @property --border-angle {
   syntax: "<angle>";
   initial-value: 0deg;
-  inherits: false;
-}
-
-@keyframes border-rotate {
-  to { --border-angle: 360deg; }
+  inherits: true;
 }
 
 .glowing-gradient-border {
   position: relative;
   isolation: isolate;
+  /* Note: intentionally don't define --border-spin-duration here, so the
+     inherited value set on :root by ScrollSpeedGlow wins. Fallback is in var(). */
 }
 
 .glowing-gradient-border::before,
 .glowing-gradient-border::after {
   content: "";
   position: absolute;
-  border-radius: inherit;
   background: conic-gradient(
     from var(--border-angle),
     #f58021,
@@ -176,12 +173,14 @@ h3 {
     #028002,
     #f58021
   );
-  animation: border-rotate 6s linear infinite;
+  animation: border-rotate var(--border-spin-duration, 9.6s) linear infinite;
   pointer-events: none;
 }
 
 .glowing-gradient-border::before {
   inset: -2px;
+  /* Parent has rounded-3xl (1.5rem); match concentric outer radius */
+  border-radius: calc(1.5rem + 2px);
   padding: 2px;
   -webkit-mask:
     linear-gradient(#000 0 0) content-box,
@@ -193,9 +192,15 @@ h3 {
 
 .glowing-gradient-border::after {
   inset: -14px;
+  border-radius: calc(1.5rem + 14px);
   filter: blur(22px);
   opacity: 0.55;
   z-index: -1;
+}
+
+@keyframes border-rotate {
+  from { --border-angle: 0deg; }
+  to   { --border-angle: 360deg; }
 }
 
 @media (prefers-reduced-motion: reduce) {

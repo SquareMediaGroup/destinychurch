@@ -8,6 +8,7 @@ import Providers from "@/components/Providers";
 import CookieBanner from "@/components/CookieBanner";
 import AnalyticsGate from "@/components/AnalyticsGate";
 import SiteBanner from "@/components/SiteBanner";
+import BannerSpacer from "@/components/BannerSpacer";
 import { createServiceClient } from "@/utils/supabase/service";
 import { unstable_noStore as noStore } from "next/cache";
 import { SpeedInsights } from "@vercel/speed-insights/next";
@@ -180,6 +181,7 @@ export default async function RootLayout({
 <SiteBanner />
           <CookieBanner />
           <div className="flex min-h-screen flex-col bg-[var(--background)] text-[var(--foreground)]">
+            <BannerSpacer />
             <Suspense>
               <ChurchHeader />
             </Suspense>

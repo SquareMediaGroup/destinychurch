@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
-import { Dosis, Roboto, Anton } from "next/font/google";
+import { Roboto, Anton } from "next/font/google";
 import "./globals.css";
 import ChurchHeader from "@/components/ChurchHeader";
 import FooterGate from "@/components/FooterGate";
@@ -18,13 +18,6 @@ const roboto = Roboto({
   display: "swap",
   subsets: ["latin"],
   weight: ["400", "500", "700"],
-});
-
-const dosis = Dosis({
-  variable: "--font-dosis",
-  display: "swap",
-  subsets: ["latin"],
-  weight: ["500", "600", "700"],
 });
 
 const anton = Anton({
@@ -175,7 +168,7 @@ export default async function RootLayout({
         />
       </head>
       <body
-        className={`${roboto.variable} ${dosis.variable} ${anton.variable} antialiased`}
+        className={`${roboto.variable} ${anton.variable} antialiased`}
       >
         <Providers banner={banner}>
 <SiteBanner />

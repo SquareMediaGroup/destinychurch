@@ -27,7 +27,6 @@
   --color-destiny-brown-light: #3d2b1a;
   --font-sans: var(--font-roboto), system-ui, -apple-system, sans-serif;
   --font-heading: Arial, "Helvetica Neue", sans-serif;
-  --font-subheading: var(--font-dosis), "Dosis", sans-serif;
 }
 
 html {
@@ -242,10 +241,6 @@ h3 {
   animation: fadeInUp 0.6s ease both;
 }
 
-.subheading {
-  font-family: var(--font-subheading);
-  letter-spacing: 0.01em;
-}
 
 .line-clamp-2 {
   display: -webkit-box;

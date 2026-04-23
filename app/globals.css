@@ -241,6 +241,12 @@ h3 {
   animation: fadeInUp 0.6s ease both;
 }
 
+@media (min-width: 768px) {
+  .hero-text-animate {
+    animation: fadeInUp 0.9s ease forwards;
+  }
+}
+
 
 .line-clamp-2 {
   display: -webkit-box;

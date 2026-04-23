@@ -16,10 +16,7 @@ export default function HeroSection() {
       />
       <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/40 to-black/70" />
 
-      <div
-        className="relative z-10 px-4 text-center"
-        style={{ animation: "fadeInUp 0.9s ease forwards" }}
-      >
+      <div className="hero-text-animate relative z-10 px-4 text-center">
         <h1
           className="uppercase leading-[0.85] tracking-tight text-white text-[22vw] md:whitespace-nowrap md:text-[clamp(2.5rem,10vw,9.8rem)]"
           style={{ fontFamily: "var(--font-anton)" }}

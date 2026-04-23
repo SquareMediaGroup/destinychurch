@@ -21,7 +21,7 @@ export default function YouthAlphaSection() {
   useEffect(() => {
     async function fetchEvent() {
       try {
-        const res = await fetch("/api/admin/alpha-events");
+        const res = await fetch("/api/alpha-events");
         const data = await res.json();
         const activeYouthAlpha = Array.isArray(data)
           ? data.find(

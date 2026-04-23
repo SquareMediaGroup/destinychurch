@@ -146,7 +146,7 @@ export default function ChurchHeader() {
 
   useEffect(() => {
     let cancelled = false;
-    fetch("/api/admin/alpha-events")
+    fetch("/api/alpha-events")
       .then((res) => (res.ok ? res.json() : []))
       .then((data) => {
         if (cancelled) return;

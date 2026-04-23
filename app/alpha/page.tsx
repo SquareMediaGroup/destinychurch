@@ -44,7 +44,7 @@ export default function AlphaPage() {
   useEffect(() => {
     async function fetchEvent() {
       try {
-        const res = await fetch("/api/admin/alpha-events");
+        const res = await fetch("/api/alpha-events");
         const data = await res.json();
         const activeAlpha = Array.isArray(data)
           ? data.find((e: AlphaEvent & { type: string; active: boolean }) => e.type === "alpha" && e.active)

@@ -173,7 +173,8 @@ h3 {
     #028002,
     #f58021
   );
-  animation: border-rotate var(--border-spin-duration, 9.6s) linear infinite;
+  /* Constant rotation speed — no scroll-reactive change. */
+  animation: border-rotate 9.6s linear infinite;
   pointer-events: none;
 }
 
@@ -196,6 +197,14 @@ h3 {
   filter: blur(22px);
   opacity: 0.55;
   z-index: -1;
+}
+
+/* Drop the expensive blurred outer glow on mobile — saves the most GPU time
+   on the devices least equipped to handle it. Rotating border stays. */
+@media (max-width: 768px) {
+  .glowing-gradient-border::after {
+    display: none;
+  }
 }
 
 @keyframes border-rotate {

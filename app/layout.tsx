@@ -108,7 +108,7 @@ const orgSchema = {
         latitude: 54.5704,
         longitude: -1.3185,
       },
-      telephone: "",
+      telephone: "+44-1642-559797",
       email: "hello@destinytees.uk",
       openingHoursSpecification: [
         {

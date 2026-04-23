@@ -20,7 +20,7 @@ export default function AdminLoginPage() {
       {/* Background */}
       <div
         className="absolute inset-0 bg-cover bg-center bg-no-repeat"
-        style={{ backgroundImage: "url('/img/photos/Hero%20BKG.png')" }}
+        style={{ backgroundImage: "url('/img/photos/Hero%20BKG.webp')" }}
       />
       <div className="absolute inset-0 bg-gradient-to-br from-black/80 via-black/60 to-destiny-grey/90" />
 

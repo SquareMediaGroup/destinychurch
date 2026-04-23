@@ -199,6 +199,7 @@ export default function ChurchHeader() {
   );
 
   if (pathname.startsWith("/sermons")) return null;
+  if (pathname.startsWith("/admin")) return null;
 
   const isAdmin = pathname.startsWith("/admin");
   const isHome = pathname === "/";

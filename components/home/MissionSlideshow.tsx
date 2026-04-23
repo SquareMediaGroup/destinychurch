@@ -5,7 +5,7 @@ import Image from "next/image";
 
 const photos = [
   "/img/photos/ConnectGroups.jpg",
-  "/img/photos/WorshipWUs.jpg",
+  "/img/photos/WorshipWUs.webp",
   "/img/photos/WorshipMoment1.jpg",
   "/img/photos/WorshipMoment2.jpg",
   "/img/photos/Prayer1.jpg",

@@ -29,6 +29,36 @@ const nextConfig: NextConfig = {
           },
         ],
       },
+      // Long-lived cache for static media in /public (PageSpeed flagged 5-minute
+      // TTL on vercel.app). File names would need to change when the image does,
+      // but for branded backgrounds this is fine.
+      {
+        source: "/img/:path*",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: "public, max-age=31536000, immutable",
+          },
+        ],
+      },
+      {
+        source: "/og/:path*",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: "public, max-age=31536000, immutable",
+          },
+        ],
+      },
+      {
+        source: "/fonts/:path*",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: "public, max-age=31536000, immutable",
+          },
+        ],
+      },
     ];
   },
   images: {

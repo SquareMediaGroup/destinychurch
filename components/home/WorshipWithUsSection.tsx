@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import AnimateIn from "@/components/AnimateIn";
 
@@ -5,10 +6,16 @@ export default function WorshipWithUsSection() {
   return (
     <div className="px-4 py-8 lg:px-8">
       <section className="relative overflow-hidden rounded-3xl">
-        {/* Background image */}
-        <div
-          className="absolute inset-0 scale-105 bg-cover bg-center blur-sm"
-          style={{ backgroundImage: "url('/img/photos/WorshipWUs.jpg')" }}
+        {/* Background image — below the fold on every page that uses it, so lazy load */}
+        <Image
+          src="/img/photos/WorshipWUs.webp"
+          alt=""
+          aria-hidden="true"
+          fill
+          sizes="100vw"
+          quality={80}
+          loading="lazy"
+          className="scale-105 object-cover object-center blur-sm"
         />
         {/* Gradient overlay */}
         <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/60 to-black/40" />

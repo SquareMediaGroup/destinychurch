@@ -21,8 +21,8 @@ export default async function LatestSermonSection() {
           className="absolute inset-0 scale-110 bg-cover bg-center blur-sm"
           style={{ backgroundImage: `url('${video.thumbnail}')` }}
         />
-        {/* Brand blue-grey tint over the blurred background */}
-        <div className="absolute inset-0 bg-destiny-grey/70" />
+        {/* Near-black tint of the destiny-grey accent (#363f48 → ~25% brightness) */}
+        <div className="absolute inset-0 bg-[#0b0f14]/70" />
 
         {/* Content */}
         <div className="relative flex min-h-[320px] items-center sm:min-h-[480px]">

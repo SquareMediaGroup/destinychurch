@@ -5,6 +5,7 @@ import AnimateIn from "@/components/AnimateIn";
 import WorshipWithUsSection from "@/components/home/WorshipWithUsSection";
 import NewHereHero from "@/components/new-here/NewHereHero";
 import YouSaidYesButton from "@/components/new-here/YouSaidYesButton";
+import ChurchSuiteEmbed from "@/components/ChurchSuiteEmbed";
 
 export const metadata: Metadata = {
   title: "New Here?",
@@ -107,12 +108,11 @@ export default function NewHerePage() {
             </p>
           </AnimateIn>
           <AnimateIn delay={100}>
-            <iframe
+            <ChurchSuiteEmbed
               src="https://destinytees.churchsuite.com/embed/addressbook/form"
-              className="w-full rounded-2xl border border-black/5 shadow-sm"
-              style={{ minHeight: 700, display: "block" }}
               title="Add yourself to our address book"
-              loading="lazy"
+              minHeight={700}
+              className="rounded-2xl border border-black/5 shadow-sm"
             />
           </AnimateIn>
         </div>

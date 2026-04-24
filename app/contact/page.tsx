@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import AnimateIn from "@/components/AnimateIn";
 import ContactForm from "./ContactForm";
+import ChurchSuiteEmbed from "@/components/ChurchSuiteEmbed";
 
 export const metadata: Metadata = {
   title: "Contact Us",
@@ -126,12 +127,11 @@ export default function ContactPage() {
             </p>
           </AnimateIn>
           <AnimateIn delay={100}>
-            <iframe
+            <ChurchSuiteEmbed
               src="https://destinytees.churchsuite.com/-/forms/fhq8ahuc"
-              className="w-full rounded-2xl border border-black/5 bg-white shadow-sm"
-              style={{ minHeight: 700, display: "block" }}
               title="First Impressions feedback form"
-              loading="lazy"
+              minHeight={700}
+              className="rounded-2xl border border-black/5 bg-white shadow-sm"
             />
           </AnimateIn>
         </div>

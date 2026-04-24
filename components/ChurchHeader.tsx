@@ -102,14 +102,6 @@ export default function ChurchHeader() {
     rafId.current = requestAnimationFrame(() => {
       rafId.current = null;
       const y = window.scrollY;
-      const isDesktop = window.innerWidth >= 768;
-      if (!isDesktop) {
-        setScrolled(false);
-        setProgress(0);
-        setHidden(false);
-        lastScrollY.current = y;
-        return;
-      }
       setScrolled(y > 50);
       setProgress(Math.min(1, Math.max(0, y / MORPH_DISTANCE)));
       if (y > MORPH_DISTANCE && y > lastScrollY.current) {

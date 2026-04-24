@@ -102,6 +102,7 @@ export default function ChurchHeader() {
     rafId.current = requestAnimationFrame(() => {
       rafId.current = null;
       const y = window.scrollY;
+      setMobileOpen(false);
       setScrolled(y > 50);
       setProgress(Math.min(1, Math.max(0, y / MORPH_DISTANCE)));
       if (y > MORPH_DISTANCE && y > lastScrollY.current) {
@@ -411,25 +412,12 @@ export default function ChurchHeader() {
                 onClick={() => { setMobileOpen(!mobileOpen); setSearchOpen(false); }}
                 aria-expanded={mobileOpen}
                 aria-label="Toggle navigation"
-                className="relative h-9 w-9 rounded-full text-white transition md:hidden"
+                className="relative h-9 w-9 rounded-full text-white md:hidden"
               >
-                <span
-                  className={`absolute inset-0 flex flex-col items-center justify-center gap-[5px] transition-opacity duration-200 ${
-                    mobileOpen ? "opacity-0" : "opacity-100"
-                  }`}
-                >
-                  <span className="block h-0.5 w-5 bg-current" />
-                  <span className="block h-0.5 w-5 bg-current" />
-                  <span className="block h-0.5 w-5 bg-current" />
-                </span>
-                <span
-                  className={`absolute inset-0 flex items-center justify-center transition-opacity duration-200 ${
-                    mobileOpen ? "opacity-100" : "opacity-0"
-                  }`}
-                >
-                  <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                  </svg>
+                <span className="absolute inset-0 flex flex-col items-center justify-center gap-[5px]">
+                  <span className={`block h-0.5 w-5 bg-current transition-all duration-300 ease-in-out ${mobileOpen ? "translate-y-[7px] rotate-45" : ""}`} />
+                  <span className={`block h-0.5 w-5 bg-current transition-all duration-300 ease-in-out ${mobileOpen ? "opacity-0 scale-x-0" : ""}`} />
+                  <span className={`block h-0.5 w-5 bg-current transition-all duration-300 ease-in-out ${mobileOpen ? "-translate-y-[7px] -rotate-45" : ""}`} />
                 </span>
               </button>
             </div>
@@ -449,9 +437,14 @@ export default function ChurchHeader() {
           )}
 
           {/* Mobile menu */}
-          {mobileOpen && (
-            <div className="mt-2 rounded-2xl bg-white p-3 shadow-xl md:hidden">
-
+          <div
+            className="overflow-hidden transition-all duration-300 ease-in-out md:hidden"
+            style={{
+              maxHeight: mobileOpen ? "600px" : "0px",
+              opacity: mobileOpen ? 1 : 0,
+            }}
+          >
+            <div className="mt-2 rounded-2xl bg-white p-3 shadow-xl">
               {/* Flat nav links */}
               {mobileNavItems.map((item) => (
                 <Link
@@ -475,7 +468,7 @@ export default function ChurchHeader() {
                 </Link>
               </div>
             </div>
-          )}
+          </div>
         </div>
       </header>
     </>

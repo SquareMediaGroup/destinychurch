@@ -244,26 +244,6 @@ export default function KidsPage() {
         </div>
       </section>
 
-      {/* Photo strip */}
-      <section className="bg-[#f5f7fa] py-12">
-        <div className="mx-auto max-w-7xl px-4 lg:px-8">
-          <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-            {[
-              "/img/photos/Kids1.png",
-              "/img/photos/Kids2.jpg",
-              "/img/photos/Gallery/SN1_7941.CR2.jpeg",
-              "/img/photos/Gallery/SN1_7995.CR2.jpeg",
-            ].map((src, i) => (
-              <AnimateIn key={i} delay={i * 60}>
-                <div className="aspect-square overflow-hidden rounded-2xl">
-                  <Image src={src} alt="" width={300} height={300} className="h-full w-full object-cover" />
-                </div>
-              </AnimateIn>
-            ))}
-          </div>
-        </div>
-      </section>
-
       <WorshipWithUsSection />
     </>
   );

@@ -117,26 +117,6 @@ export default function ServePage() {
         </div>
       </section>
 
-      {/* Photo strip */}
-      <section className="bg-[#f5f7fa] py-12">
-        <div className="mx-auto max-w-7xl px-4 lg:px-8">
-          <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-            {[
-              "/img/photos/Gallery/SN1_7835.CR2.jpeg",
-              "/img/photos/Gallery/SN1_7862.CR2.jpeg",
-              "/img/photos/Gallery/SN1_7865.CR2.jpeg",
-              "/img/photos/Gallery/SN1_7875.CR2.jpeg",
-            ].map((src, i) => (
-              <AnimateIn key={i} delay={i * 60}>
-                <div className="aspect-square overflow-hidden rounded-2xl">
-                  <Image src={src} alt="" width={300} height={300} className="h-full w-full object-cover" />
-                </div>
-              </AnimateIn>
-            ))}
-          </div>
-        </div>
-      </section>
-
       <WorshipWithUsSection />
     </>
   );

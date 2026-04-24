@@ -164,25 +164,6 @@ export default function MissionsPage() {
         </section>
       ))}
 
-      {/* Photo strip */}
-      <section className="bg-[#f5f7fa] py-12">
-        <div className="mx-auto max-w-7xl px-4 lg:px-8">
-          <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
-            {[
-              { src: "/img/photos/mission/IMG_0125-scaled.jpg", alt: "Missions" },
-              { src: "/img/photos/mission/Mission-3.png", alt: "Missions" },
-              { src: "/img/photos/mission/Missions-2-scaled.jpg", alt: "Missions" },
-            ].map((img, i) => (
-              <AnimateIn key={i} delay={i * 60}>
-                <div className="overflow-hidden rounded-2xl">
-                  <Image src={img.src} alt={img.alt} width={600} height={400} className="w-full object-cover" />
-                </div>
-              </AnimateIn>
-            ))}
-          </div>
-        </div>
-      </section>
-
       <WorshipWithUsSection />
     </>
   );

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
+import ChurchSuiteEmbed from "@/components/ChurchSuiteEmbed";
 
 type ModalType = "connect" | "prayer" | null;
 
@@ -109,13 +110,7 @@ export default function ConnectCardCTAs({ variant = "dark" }: Props) {
                 <span className="material-symbols-rounded text-xl">close</span>
               </button>
             </div>
-            <iframe
-              src={FORMS[open].src}
-              className="w-full"
-              style={{ height: 620, border: "none" }}
-              title={FORMS[open].title}
-              loading="lazy"
-            />
+            <ChurchSuiteEmbed src={FORMS[open].src} title={FORMS[open].title} height={620} />
           </div>
         </div>,
         document.body

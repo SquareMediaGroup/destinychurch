@@ -3,6 +3,7 @@ import Image from "next/image";
 import AnimateIn from "@/components/AnimateIn";
 import WorshipWithUsSection from "@/components/home/WorshipWithUsSection";
 import MinistriesGrid from "@/components/serve/MinistriesGrid";
+import ChurchSuiteEmbed from "@/components/ChurchSuiteEmbed";
 
 export const metadata: Metadata = {
   title: "Serve",
@@ -104,15 +105,12 @@ export default function ServePage() {
             </p>
           </AnimateIn>
           <AnimateIn delay={100}>
-            <div className="overflow-hidden rounded-3xl shadow-2xl">
-              <iframe
-                src="https://destinytees.churchsuite.com/-/forms/cdgkeqkm"
-                className="w-full"
-                style={{ height: 800, border: "none" }}
-                title="Serve sign up form"
-                loading="lazy"
-              />
-            </div>
+            <ChurchSuiteEmbed
+              src="https://destinytees.churchsuite.com/-/forms/cdgkeqkm"
+              title="Serve sign up form"
+              height={800}
+              className="rounded-3xl shadow-2xl"
+            />
           </AnimateIn>
         </div>
       </section>

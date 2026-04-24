@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
+import ChurchSuiteEmbed from "@/components/ChurchSuiteEmbed";
 
 interface Props {
   open: boolean;
@@ -84,13 +85,7 @@ export default function AlphaSignupModal({
             <span className="material-symbols-rounded text-xl">close</span>
           </button>
         </div>
-        <iframe
-          src={signupUrl}
-          className="w-full"
-          style={{ height: 620, border: "none" }}
-          title={title}
-          loading="lazy"
-        />
+        <ChurchSuiteEmbed src={signupUrl} title={title} height={620} />
       </div>
     </div>,
     document.body

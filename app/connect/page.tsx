@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import AnimateIn from "@/components/AnimateIn";
 import WorshipWithUsSection from "@/components/home/WorshipWithUsSection";
+import ChurchSuiteEmbed from "@/components/ChurchSuiteEmbed";
 
 export const metadata: Metadata = {
   title: "Connect Groups",
@@ -124,15 +125,12 @@ export default function ConnectGroupsPage() {
             </p>
           </AnimateIn>
           <AnimateIn delay={100}>
-            <div className="overflow-hidden rounded-3xl shadow-2xl">
-              <iframe
-                src="https://destinytees.churchsuite.com/forms/twuneiil"
-                className="w-full"
-                style={{ height: 750, border: "none" }}
-                title="Connect Group sign up"
-                loading="lazy"
-              />
-            </div>
+            <ChurchSuiteEmbed
+              src="https://destinytees.churchsuite.com/forms/twuneiil"
+              title="Connect Group sign up"
+              height={750}
+              className="rounded-3xl shadow-2xl"
+            />
           </AnimateIn>
         </div>
       </section>

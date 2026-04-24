@@ -3,6 +3,7 @@ import Link from "next/link";
 import AnimateIn from "@/components/AnimateIn";
 import WorshipWithUsSection from "@/components/home/WorshipWithUsSection";
 import GiveCTA from "@/components/give/GiveCTA";
+import ChurchSuiteEmbed from "@/components/ChurchSuiteEmbed";
 import { createServiceClient } from "@/utils/supabase/service";
 
 export const revalidate = 60;
@@ -147,15 +148,12 @@ export default async function GivePage() {
             </p>
           </AnimateIn>
           <AnimateIn delay={100}>
-            <div className="overflow-hidden rounded-3xl border border-black/5 shadow-sm">
-              <iframe
-                src="https://destinytees.churchsuite.com/donate"
-                className="w-full"
-                style={{ height: 700, border: "none" }}
-                title="Give online — Destiny Church"
-                loading="lazy"
-              />
-            </div>
+            <ChurchSuiteEmbed
+              src="https://destinytees.churchsuite.com/donate"
+              title="Give online — Destiny Church"
+              height={700}
+              className="rounded-3xl border border-black/5 shadow-sm"
+            />
           </AnimateIn>
         </div>
       </section>

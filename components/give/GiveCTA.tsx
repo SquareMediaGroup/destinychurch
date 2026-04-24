@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
+import ChurchSuiteEmbed from "@/components/ChurchSuiteEmbed";
 
 interface Props {
   variant?: "dark" | "light";
@@ -79,12 +80,10 @@ export default function GiveCTA({ variant = "dark" }: Props) {
                 <span className="material-symbols-rounded text-xl">close</span>
               </button>
             </div>
-            <iframe
+            <ChurchSuiteEmbed
               src="https://destinytees.churchsuite.com/donate"
-              className="w-full"
-              style={{ height: 620, border: "none" }}
               title="Give Online — Destiny Church"
-              loading="lazy"
+              height={620}
             />
           </div>
         </div>,

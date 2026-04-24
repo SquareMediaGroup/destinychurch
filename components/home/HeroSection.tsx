@@ -24,7 +24,7 @@ export default function HeroSection() {
           <span className="relative inline-block">
             Welcome
             <Image
-              src="/img/brand/Scribble.png"
+              src="/img/brand/Scribble.webp"
               alt=""
               width={700}
               height={100}

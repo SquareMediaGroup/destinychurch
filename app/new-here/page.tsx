@@ -140,7 +140,7 @@ export default function NewHerePage() {
                 <span className="relative inline-block">
                   Pastors
                   <Image
-                    src="/img/brand/Scribble.png"
+                    src="/img/brand/Scribble.webp"
                     alt=""
                     width={400}
                     height={60}

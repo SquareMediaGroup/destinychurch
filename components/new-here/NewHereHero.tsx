@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Image from "next/image";
 import AnimateIn from "@/components/AnimateIn";
 
 export default function NewHereHero() {
@@ -69,14 +70,14 @@ export default function NewHereHero() {
         {/* Blob 1 — left */}
         <div
           ref={blob1Ref}
-          className="pointer-events-none absolute -left-64 -top-32 h-[600px] w-[600px] rounded-full opacity-50 md:h-[750px] md:w-[750px]"
+          className="pointer-events-none absolute -left-64 -top-32 hidden h-[600px] w-[600px] rounded-full opacity-50 md:block md:h-[750px] md:w-[750px]"
           style={{ background: "#F58021", willChange: "transform" }}
           aria-hidden="true"
         />
         {/* Blob 2 — right */}
         <div
           ref={blob2Ref}
-          className="pointer-events-none absolute -right-48 top-0 h-[500px] w-[500px] rounded-full opacity-40 md:h-[650px] md:w-[650px]"
+          className="pointer-events-none absolute -right-48 top-0 hidden h-[500px] w-[500px] rounded-full opacity-40 md:block md:h-[650px] md:w-[650px]"
           style={{ background: "#F58021", willChange: "transform" }}
           aria-hidden="true"
         />
@@ -84,7 +85,18 @@ export default function NewHereHero() {
         <div className="relative mx-auto max-w-3xl px-4 text-center lg:px-8">
           <AnimateIn>
             <h1 className="mb-10 text-5xl font-black text-destiny-grey md:text-6xl lg:text-7xl">
-              New Here?
+              <span className="relative inline-block">
+                New Here?
+                <Image
+                  src="/img/brand/Scribble.webp"
+                  alt=""
+                  width={400}
+                  height={47}
+                  className="absolute left-1/2 w-[110%] -translate-x-[49%]"
+                  style={{ bottom: "-0.2em" }}
+                  aria-hidden="true"
+                />
+              </span>
             </h1>
           </AnimateIn>
 

@@ -93,7 +93,7 @@ export default function NewHereHero() {
                   width={400}
                   height={47}
                   className="absolute left-1/2 w-[110%] -translate-x-[49%]"
-                  style={{ bottom: "-0.2em" }}
+                  style={{ bottom: "-0.5em" }}
                   aria-hidden="true"
                 />
               </span>

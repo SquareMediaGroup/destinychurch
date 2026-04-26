@@ -146,17 +146,9 @@ h3 {
   to   { opacity: 1; transform: translateY(0); }
 }
 
-@property --border-angle {
-  syntax: "<angle>";
-  initial-value: 0deg;
-  inherits: true;
-}
-
 .glowing-gradient-border {
   position: relative;
   isolation: isolate;
-  /* Note: intentionally don't define --border-spin-duration here, so the
-     inherited value set on :root by ScrollSpeedGlow wins. Fallback is in var(). */
 }
 
 .glowing-gradient-border::before,
@@ -164,7 +156,7 @@ h3 {
   content: "";
   position: absolute;
   background: conic-gradient(
-    from var(--border-angle),
+    from 0deg,
     #f58021,
     #fd0000,
     #8106b1,
@@ -172,24 +164,27 @@ h3 {
     #028002,
     #f58021
   );
-  /* Constant rotation speed — no scroll-reactive change. */
-  animation: border-rotate 9.6s linear infinite;
   pointer-events: none;
+  will-change: transform;
 }
 
+/* Rotating border strip — transform: rotate() works in all browsers,
+   no @property / CSS Houdini needed. The mask cutout is a symmetric donut
+   so it stays correct under any rotation angle. */
 .glowing-gradient-border::before {
   inset: -2px;
-  /* Parent has rounded-3xl (1.5rem); match concentric outer radius */
   border-radius: calc(1.5rem + 2px);
-  padding: 2px;
   -webkit-mask:
     linear-gradient(#000 0 0) content-box,
     linear-gradient(#000 0 0);
   -webkit-mask-composite: xor;
           mask-composite: exclude;
+  animation: border-rotate 9.6s linear infinite;
   z-index: 1;
 }
 
+/* Static blurred glow — no rotation animation. At blur(22px) the rotation
+   is invisible anyway; skipping it cuts GPU cost roughly in half. */
 .glowing-gradient-border::after {
   inset: -14px;
   border-radius: calc(1.5rem + 14px);
@@ -198,8 +193,7 @@ h3 {
   z-index: -1;
 }
 
-/* Drop the expensive blurred outer glow on mobile — saves the most GPU time
-   on the devices least equipped to handle it. Rotating border stays. */
+/* Drop the blurred outer glow on mobile — too expensive on low-end devices. */
 @media (max-width: 768px) {
   .glowing-gradient-border::after {
     display: none;
@@ -207,22 +201,17 @@ h3 {
 }
 
 @keyframes border-rotate {
-  from { --border-angle: 0deg; }
-  to   { --border-angle: 360deg; }
+  to { transform: rotate(360deg); }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .glowing-gradient-border::before,
-  .glowing-gradient-border::after {
+  .glowing-gradient-border::before {
     animation: none;
   }
 }
 
-/* Paused when the card is off-screen (toggled by ScrollSpeedGlow via
-   IntersectionObserver) — avoids paying for the rotating conic-gradient
-   and the blurred ::after layer when the user can't see them. */
-.glowing-gradient-border.is-offscreen::before,
-.glowing-gradient-border.is-offscreen::after {
+/* Paused when off-screen (toggled by ScrollSpeedGlow via IntersectionObserver). */
+.glowing-gradient-border.is-offscreen::before {
   animation-play-state: paused;
 }
 

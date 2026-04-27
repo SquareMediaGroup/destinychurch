@@ -258,11 +258,6 @@ export default function GlobalSearch({
 
           {/* Header / input */}
           <div className="px-7 pt-5">
-            <div className="gs-mono mb-4 flex items-center justify-between text-[10px] uppercase tracking-[0.22em] text-[#2c1a0e]/45">
-              <span>§ 001 — Smart Search</span>
-              <span className="hidden sm:inline">destiny.search · ai-assisted</span>
-            </div>
-
             <form
               onSubmit={(e) => {
                 e.preventDefault();

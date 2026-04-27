@@ -422,6 +422,31 @@ export default function ChurchHeader() {
             </div>
           </div>
 
+          {/* Sermons / Guest Speakers toggle — only on /sermons pages */}
+          {pathname.startsWith("/sermons") && !isAdmin && (
+            <div className="flex justify-center pb-2 pt-1.5">
+              <div className="flex items-center rounded-full border border-white/15 bg-white/10 p-1 backdrop-blur-sm">
+                {[
+                  { label: "Sermons", href: "/sermons" },
+                  { label: "Guest Speakers", href: "/sermons/guest-speakers" },
+                ].map((tab) => {
+                  const active = pathname === tab.href;
+                  return (
+                    <Link
+                      key={tab.href}
+                      href={tab.href}
+                      className={`whitespace-nowrap rounded-full px-4 py-2 text-sm font-bold transition-all duration-200 ${
+                        active ? "bg-white text-[#0d0d0d] shadow-sm" : "text-white/70 hover:text-white"
+                      }`}
+                    >
+                      {tab.label}
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
           {/* Global search panel — slides down below pill */}
           {!isAdmin && (
             <div
@@ -444,6 +469,30 @@ export default function ChurchHeader() {
             }}
           >
             <div className="mt-2 rounded-2xl bg-white p-3 shadow-xl">
+              {/* Sermons sub-toggle on mobile */}
+              {pathname.startsWith("/sermons") && (
+                <div className="mb-2 flex rounded-xl border border-black/8 bg-black/5 p-1">
+                  {[
+                    { label: "Sermons", href: "/sermons" },
+                    { label: "Guest Speakers", href: "/sermons/guest-speakers" },
+                  ].map((tab) => {
+                    const active = pathname === tab.href;
+                    return (
+                      <Link
+                        key={tab.href}
+                        href={tab.href}
+                        onClick={() => setMobileOpen(false)}
+                        className={`flex-1 rounded-lg px-3 py-2 text-center text-sm font-bold transition ${
+                          active ? "bg-white text-destiny-grey shadow-sm" : "text-destiny-grey/50 hover:text-destiny-grey"
+                        }`}
+                      >
+                        {tab.label}
+                      </Link>
+                    );
+                  })}
+                </div>
+              )}
+
               {/* Flat nav links */}
               {mobileNavItems.map((item) => (
                 <Link

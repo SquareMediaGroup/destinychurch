@@ -1,4 +1,3 @@
-import SermonsTabBar from "@/components/sermons/SermonsTabBar";
 import { SermonPlayerProvider } from "@/lib/sermonPlayerContext";
 import { SermonSearchProvider } from "@/lib/sermonSearchContext";
 
@@ -12,7 +11,6 @@ export default async function SermonsLayout({
   return (
     <SermonPlayerProvider>
       <SermonSearchProvider initialSuggestions={[]}>
-        <SermonsTabBar />
         <div className="min-h-screen bg-[#0f0f0f]">{children}</div>
       </SermonSearchProvider>
     </SermonPlayerProvider>

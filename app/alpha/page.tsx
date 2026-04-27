@@ -124,7 +124,7 @@ export default function AlphaPage() {
                   Everyone
                 </em>
               </h1>
-              <p className="mb-4 text-lg text-white/80 md:text-xl">
+              <p className="mx-auto mb-4 max-w-xl text-lg leading-relaxed text-white/80 md:text-xl">
                 Wherever you&apos;re at in life or faith, there&apos;s a seat for you at the Alpha table. Everyone&apos;s invited. Every question matters.
               </p>
               {event && startDateFormatted && (

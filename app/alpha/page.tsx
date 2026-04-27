@@ -17,6 +17,11 @@ interface AlphaEvent {
   start_date: string;
   signup_url: string;
   location: string | null;
+  format?: "in_person" | "online";
+  meeting_platform?: "zoom" | "google_meet" | null;
+  meeting_url?: string | null;
+  meeting_id?: string | null;
+  meeting_passcode?: string | null;
 }
 
 const steps = [
@@ -175,6 +180,13 @@ export default function AlphaPage() {
         const day = d.toLocaleDateString("en-GB", { day: "numeric" });
         const month = d.toLocaleDateString("en-GB", { month: "long" });
         const year = d.toLocaleDateString("en-GB", { year: "numeric" });
+        const isOnline = event.format === "online";
+        const platformLabel =
+          event.meeting_platform === "zoom"
+            ? "Zoom"
+            : event.meeting_platform === "google_meet"
+            ? "Google Meet"
+            : "Online";
         return (
           <div className="mx-auto max-w-5xl px-4 pb-14 lg:px-8">
             <AnimateIn>
@@ -206,37 +218,84 @@ export default function AlphaPage() {
                     </div>
                   </div>
 
-                  {/* Location */}
-                  <div className="px-8 py-7 md:px-10">
-                    <div className="mb-3 flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.28em] text-destiny-orange">
-                      <span className="material-symbols-rounded text-sm leading-none">place</span>
-                      Where
-                    </div>
-                    {event.location ? (
-                      <>
-                        <div className="text-[11px] uppercase tracking-[0.2em] text-destiny-grey/50">
-                          Join us at
-                        </div>
-                        <div className="mt-1 text-2xl font-black leading-tight text-destiny-grey md:text-3xl">
-                          {event.location}
-                        </div>
-                      </>
-                    ) : (
-                      <>
-                        <div className="text-[11px] uppercase tracking-[0.2em] text-destiny-grey/50">
-                          Venue
-                        </div>
-                        <div className="mt-1 flex items-baseline gap-2">
-                          <span
-                            className="text-5xl font-normal italic leading-none text-destiny-grey/40 md:text-6xl"
-                            style={{ fontFamily: "var(--font-playfair), Georgia, serif" }}
-                          >
-                            tba
+                  {/* Where / Online */}
+                  {isOnline ? (
+                    <div className="px-8 py-7 md:px-10">
+                      <div className="mb-3 flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.28em] text-destiny-orange">
+                        <span className="material-symbols-rounded text-sm leading-none">videocam</span>
+                        Online
+                      </div>
+                      <div className="text-[11px] uppercase tracking-[0.2em] text-destiny-grey/50">
+                        Join via
+                      </div>
+                      <div className="mt-1 flex flex-wrap items-baseline gap-x-3 gap-y-1">
+                        <span className="text-2xl font-black leading-tight text-destiny-grey md:text-3xl">
+                          {platformLabel}
+                        </span>
+                        {event.meeting_id && (
+                          <span className="font-mono text-xs text-destiny-grey/50">
+                            #{event.meeting_id}
                           </span>
+                        )}
+                      </div>
+                      {(event.meeting_url || event.meeting_passcode) && (
+                        <div className="mt-3 flex flex-wrap items-center gap-3">
+                          {event.meeting_url && (
+                            <a
+                              href={event.meeting_url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1.5 rounded-full bg-destiny-grey px-3.5 py-1.5 text-[11px] font-bold uppercase tracking-wide text-white transition hover:bg-destiny-orange"
+                            >
+                              <span className="material-symbols-rounded text-[14px] leading-none">
+                                open_in_new
+                              </span>
+                              Join meeting
+                            </a>
+                          )}
+                          {event.meeting_passcode && (
+                            <span className="text-[11px] uppercase tracking-wide text-destiny-grey/50">
+                              Passcode{" "}
+                              <span className="font-mono text-destiny-grey/80 normal-case tracking-normal">
+                                {event.meeting_passcode}
+                              </span>
+                            </span>
+                          )}
                         </div>
-                      </>
-                    )}
-                  </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="px-8 py-7 md:px-10">
+                      <div className="mb-3 flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.28em] text-destiny-orange">
+                        <span className="material-symbols-rounded text-sm leading-none">place</span>
+                        Where
+                      </div>
+                      {event.location ? (
+                        <>
+                          <div className="text-[11px] uppercase tracking-[0.2em] text-destiny-grey/50">
+                            Join us at
+                          </div>
+                          <div className="mt-1 text-2xl font-black leading-tight text-destiny-grey md:text-3xl">
+                            {event.location}
+                          </div>
+                        </>
+                      ) : (
+                        <>
+                          <div className="text-[11px] uppercase tracking-[0.2em] text-destiny-grey/50">
+                            Venue
+                          </div>
+                          <div className="mt-1 flex items-baseline gap-2">
+                            <span
+                              className="text-5xl font-normal italic leading-none text-destiny-grey/40 md:text-6xl"
+                              style={{ fontFamily: "var(--font-playfair), Georgia, serif" }}
+                            >
+                              tba
+                            </span>
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
             </AnimateIn>

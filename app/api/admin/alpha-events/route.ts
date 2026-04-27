@@ -24,7 +24,18 @@ export async function GET() {
 
 export async function POST(req: Request) {
   try {
-    const { type, start_date, signup_url, location, active } = await req.json();
+    const {
+      type,
+      start_date,
+      signup_url,
+      location,
+      format,
+      meeting_platform,
+      meeting_url,
+      meeting_id,
+      meeting_passcode,
+      active,
+    } = await req.json();
 
     if (!type || !start_date || !signup_url) {
       return Response.json(
@@ -33,13 +44,22 @@ export async function POST(req: Request) {
       );
     }
 
+    const eventFormat = format === "online" ? "online" : "in_person";
+
     const { data, error } = await supabase
       .from("alpha_events")
       .insert({
         type,
         start_date,
         signup_url,
-        location: location || null,
+        format: eventFormat,
+        location: eventFormat === "in_person" ? location || null : null,
+        meeting_platform:
+          eventFormat === "online" ? meeting_platform || null : null,
+        meeting_url: eventFormat === "online" ? meeting_url || null : null,
+        meeting_id: eventFormat === "online" ? meeting_id || null : null,
+        meeting_passcode:
+          eventFormat === "online" ? meeting_passcode || null : null,
         active: active ?? true,
       })
       .select()

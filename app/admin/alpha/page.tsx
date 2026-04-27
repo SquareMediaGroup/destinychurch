@@ -2,15 +2,29 @@
 
 import { useEffect, useState, useCallback } from "react";
 
+type EventType = "alpha" | "youth_alpha";
+type EventFormat = "in_person" | "online";
+type MeetingPlatform = "zoom" | "google_meet";
+
 interface AlphaEvent {
   id: string;
-  type: "alpha" | "youth_alpha";
+  type: EventType;
   start_date: string;
   signup_url: string;
   location: string | null;
+  format: EventFormat;
+  meeting_platform: MeetingPlatform | null;
+  meeting_url: string | null;
+  meeting_id: string | null;
+  meeting_passcode: string | null;
   active: boolean;
   created_at: string;
 }
+
+const PLATFORM_LABEL: Record<MeetingPlatform, string> = {
+  zoom: "Zoom",
+  google_meet: "Google Meet",
+};
 
 export default function AlphaPage() {
   const [events, setEvents] = useState<AlphaEvent[]>([]);
@@ -19,10 +33,15 @@ export default function AlphaPage() {
   const [error, setError] = useState("");
 
   // Form state
-  const [type, setType] = useState<"alpha" | "youth_alpha">("alpha");
+  const [type, setType] = useState<EventType>("alpha");
   const [startDate, setStartDate] = useState("");
   const [signupUrl, setSignupUrl] = useState("");
+  const [format, setFormat] = useState<EventFormat>("in_person");
   const [location, setLocation] = useState("");
+  const [meetingPlatform, setMeetingPlatform] = useState<MeetingPlatform>("zoom");
+  const [meetingUrl, setMeetingUrl] = useState("");
+  const [meetingId, setMeetingId] = useState("");
+  const [meetingPasscode, setMeetingPasscode] = useState("");
 
   const fetchEvents = useCallback(async () => {
     try {
@@ -43,28 +62,44 @@ export default function AlphaPage() {
     fetchEvents();
   }, [fetchEvents]);
 
+  function resetForm() {
+    setType("alpha");
+    setStartDate("");
+    setSignupUrl("");
+    setFormat("in_person");
+    setLocation("");
+    setMeetingPlatform("zoom");
+    setMeetingUrl("");
+    setMeetingId("");
+    setMeetingPasscode("");
+  }
+
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault();
     setCreating(true);
     setError("");
 
+    const payload = {
+      type,
+      start_date: startDate,
+      signup_url: signupUrl,
+      format,
+      location: format === "in_person" ? location || null : null,
+      meeting_platform: format === "online" ? meetingPlatform : null,
+      meeting_url: format === "online" ? meetingUrl || null : null,
+      meeting_id: format === "online" ? meetingId || null : null,
+      meeting_passcode: format === "online" ? meetingPasscode || null : null,
+      active: true,
+    };
+
     const res = await fetch("/api/admin/alpha-events", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        type,
-        start_date: startDate,
-        signup_url: signupUrl,
-        location: location || null,
-        active: true,
-      }),
+      body: JSON.stringify(payload),
     });
 
     if (res.ok) {
-      setType("alpha");
-      setStartDate("");
-      setSignupUrl("");
-      setLocation("");
+      resetForm();
       await fetchEvents();
     } else {
       const d = await res.json();
@@ -116,9 +151,7 @@ export default function AlphaPage() {
                 </label>
                 <select
                   value={type}
-                  onChange={(e) =>
-                    setType(e.target.value as "alpha" | "youth_alpha")
-                  }
+                  onChange={(e) => setType(e.target.value as EventType)}
                   className="w-full rounded-xl border border-black/10 px-4 py-2.5 text-sm text-destiny-grey focus:border-destiny-orange/50 focus:outline-none focus:ring-2 focus:ring-destiny-orange/20"
                 >
                   <option value="alpha">Alpha</option>
@@ -153,18 +186,111 @@ export default function AlphaPage() {
               />
             </div>
 
+            {/* Format toggle */}
             <div>
               <label className="mb-1.5 block text-xs font-bold text-destiny-grey/60">
-                Location <span className="font-normal">(optional)</span>
+                Format <span className="text-red-400">*</span>
               </label>
-              <input
-                type="text"
-                value={location}
-                onChange={(e) => setLocation(e.target.value)}
-                placeholder="e.g. Main Campus"
-                className="w-full rounded-xl border border-black/10 px-4 py-2.5 text-sm text-destiny-grey placeholder:text-destiny-grey/30 focus:border-destiny-orange/50 focus:outline-none focus:ring-2 focus:ring-destiny-orange/20"
-              />
+              <div className="inline-flex rounded-xl border border-black/10 bg-black/[0.02] p-1">
+                <FormatPill
+                  active={format === "in_person"}
+                  onClick={() => setFormat("in_person")}
+                  icon="storefront"
+                  label="In-person"
+                />
+                <FormatPill
+                  active={format === "online"}
+                  onClick={() => setFormat("online")}
+                  icon="videocam"
+                  label="Online"
+                />
+              </div>
             </div>
+
+            {format === "in_person" ? (
+              <div>
+                <label className="mb-1.5 block text-xs font-bold text-destiny-grey/60">
+                  Location <span className="font-normal">(optional)</span>
+                </label>
+                <input
+                  type="text"
+                  value={location}
+                  onChange={(e) => setLocation(e.target.value)}
+                  placeholder="e.g. Main Campus"
+                  className="w-full rounded-xl border border-black/10 px-4 py-2.5 text-sm text-destiny-grey placeholder:text-destiny-grey/30 focus:border-destiny-orange/50 focus:outline-none focus:ring-2 focus:ring-destiny-orange/20"
+                />
+              </div>
+            ) : (
+              <div className="rounded-xl border border-dashed border-destiny-orange/30 bg-destiny-orange/[0.04] p-5">
+                <div className="mb-4 grid gap-4 sm:grid-cols-2">
+                  <div>
+                    <label className="mb-1.5 block text-xs font-bold text-destiny-grey/60">
+                      Platform <span className="text-red-400">*</span>
+                    </label>
+                    <select
+                      value={meetingPlatform}
+                      onChange={(e) =>
+                        setMeetingPlatform(e.target.value as MeetingPlatform)
+                      }
+                      className="w-full rounded-xl border border-black/10 bg-white px-4 py-2.5 text-sm text-destiny-grey focus:border-destiny-orange/50 focus:outline-none focus:ring-2 focus:ring-destiny-orange/20"
+                    >
+                      <option value="zoom">Zoom</option>
+                      <option value="google_meet">Google Meet</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="mb-1.5 block text-xs font-bold text-destiny-grey/60">
+                      Meeting ID
+                    </label>
+                    <input
+                      type="text"
+                      value={meetingId}
+                      onChange={(e) => setMeetingId(e.target.value)}
+                      placeholder={
+                        meetingPlatform === "zoom"
+                          ? "e.g. 123 4567 8901"
+                          : "e.g. abc-defg-hij"
+                      }
+                      className="w-full rounded-xl border border-black/10 bg-white px-4 py-2.5 text-sm text-destiny-grey placeholder:text-destiny-grey/30 focus:border-destiny-orange/50 focus:outline-none focus:ring-2 focus:ring-destiny-orange/20"
+                    />
+                  </div>
+                </div>
+
+                <div className="mb-4">
+                  <label className="mb-1.5 block text-xs font-bold text-destiny-grey/60">
+                    Direct join link
+                  </label>
+                  <input
+                    type="url"
+                    value={meetingUrl}
+                    onChange={(e) => setMeetingUrl(e.target.value)}
+                    placeholder={
+                      meetingPlatform === "zoom"
+                        ? "https://us02web.zoom.us/j/..."
+                        : "https://meet.google.com/abc-defg-hij"
+                    }
+                    className="w-full rounded-xl border border-black/10 bg-white px-4 py-2.5 text-sm text-destiny-grey placeholder:text-destiny-grey/30 focus:border-destiny-orange/50 focus:outline-none focus:ring-2 focus:ring-destiny-orange/20"
+                  />
+                </div>
+
+                <div>
+                  <label className="mb-1.5 block text-xs font-bold text-destiny-grey/60">
+                    Passcode <span className="font-normal">(optional)</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={meetingPasscode}
+                    onChange={(e) => setMeetingPasscode(e.target.value)}
+                    placeholder={
+                      meetingPlatform === "zoom"
+                        ? "Zoom meeting passcode"
+                        : "Not usually needed for Meet"
+                    }
+                    className="w-full rounded-xl border border-black/10 bg-white px-4 py-2.5 text-sm text-destiny-grey placeholder:text-destiny-grey/30 focus:border-destiny-orange/50 focus:outline-none focus:ring-2 focus:ring-destiny-orange/20"
+                  />
+                </div>
+              </div>
+            )}
 
             {error && (
               <p className="rounded-xl bg-red-50 px-4 py-3 text-sm text-red-600">
@@ -203,6 +329,30 @@ export default function AlphaPage() {
         />
       </div>
     </div>
+  );
+}
+
+interface FormatPillProps {
+  active: boolean;
+  onClick: () => void;
+  icon: string;
+  label: string;
+}
+
+function FormatPill({ active, onClick, icon, label }: FormatPillProps) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-bold transition ${
+        active
+          ? "bg-white text-destiny-grey shadow-sm"
+          : "text-destiny-grey/50 hover:text-destiny-grey"
+      }`}
+    >
+      <span className="material-symbols-rounded text-base">{icon}</span>
+      {label}
+    </button>
   );
 }
 
@@ -252,6 +402,10 @@ function EventSection({
               month: "short",
               day: "numeric",
             });
+            const isOnline = event.format === "online";
+            const platformLabel = event.meeting_platform
+              ? PLATFORM_LABEL[event.meeting_platform]
+              : "Online";
 
             return (
               <div
@@ -261,19 +415,37 @@ function EventSection({
                 }`}
               >
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-0.5">
+                  <div className="mb-0.5 flex flex-wrap items-center gap-2">
                     <span className="text-sm font-bold text-destiny-grey">
                       {formatted}
                     </span>
-                    {event.location && (
-                      <span className="rounded-full bg-destiny-orange/10 px-2 py-0.5 text-[10px] font-bold text-destiny-orange">
-                        {event.location}
+                    {isOnline ? (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-blue-500/10 px-2 py-0.5 text-[10px] font-bold text-blue-600">
+                        <span className="material-symbols-rounded text-[12px] leading-none">
+                          videocam
+                        </span>
+                        {platformLabel}
                       </span>
+                    ) : (
+                      event.location && (
+                        <span className="rounded-full bg-destiny-orange/10 px-2 py-0.5 text-[10px] font-bold text-destiny-orange">
+                          {event.location}
+                        </span>
+                      )
                     )}
                   </div>
-                  <p className="truncate text-xs text-destiny-grey/40">
-                    {event.signup_url}
-                  </p>
+                  {isOnline ? (
+                    <p className="truncate text-xs text-destiny-grey/40">
+                      {event.meeting_url ||
+                        (event.meeting_id
+                          ? `ID: ${event.meeting_id}`
+                          : "No join details")}
+                    </p>
+                  ) : (
+                    <p className="truncate text-xs text-destiny-grey/40">
+                      {event.signup_url}
+                    </p>
+                  )}
                 </div>
 
                 {/* Actions */}

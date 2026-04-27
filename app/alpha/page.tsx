@@ -4,6 +4,9 @@ import { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import AnimateIn from "@/components/AnimateIn";
+
+const ALPHA_HERO_VIDEO =
+  "https://player.vimeo.com/progressive_redirect/playback/1158973369/rendition/1080p/file.mp4%20%281080p%29.mp4?loc=external&signature=62a42712f74bca4e0082af9c72980c99f54ccf6cebabdfa6ca58dfeae7e7caee";
 import WorshipWithUsSection from "@/components/home/WorshipWithUsSection";
 import AlphaSignupModal from "@/components/AlphaSignupModal";
 import AlphaTopics from "@/components/alpha/AlphaTopics";
@@ -93,23 +96,35 @@ export default function AlphaPage() {
     <>
       {/* Hero */}
       <div className="px-4 pt-8 pb-8 lg:px-8">
-        <section className="relative overflow-hidden rounded-3xl" style={{ background: "#7A0A0A" }}>
-          {/* Alpha logo as background */}
-          <div className="absolute inset-0 flex items-center justify-center opacity-20">
-            <Image
-              src="/img/Alpha/Alpha-Logo_Red-landscape2.png"
-              alt=""
-              fill
-              className="object-contain scale-150"
-              aria-hidden="true"
-              priority
-            />
-          </div>
-          <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-black/40" />
+        <section className="relative overflow-hidden rounded-3xl bg-[#3a0606]">
+          {/* Background video */}
+          <video
+            src={ALPHA_HERO_VIDEO}
+            autoPlay
+            muted
+            loop
+            playsInline
+            preload="auto"
+            aria-hidden="true"
+            className="absolute inset-0 h-full w-full object-cover"
+          />
+          {/* Dark red overlay 40% */}
+          <div
+            className="absolute inset-0"
+            style={{ backgroundColor: "rgba(90, 8, 8, 0.4)" }}
+            aria-hidden="true"
+          />
+          {/* Subtle bottom shading for CTA legibility */}
+          <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-black/40" aria-hidden="true" />
           <div className="relative flex flex-col items-center justify-center py-[12rem] px-4 text-center">
             <AnimateIn>
-              <h1 className="mb-8 text-7xl font-black text-white md:text-8xl lg:text-9xl">Alpha</h1>
-              <p className="mb-4 text-lg text-white/70 md:text-xl">
+              <h1 className="mb-8 text-6xl font-black leading-[0.95] text-white md:text-7xl lg:text-8xl">
+                Alpha is for{" "}
+                <em className="font-[var(--font-playfair)] italic font-normal tracking-tight" style={{ fontFamily: "var(--font-playfair), Georgia, serif" }}>
+                  Everyone
+                </em>
+              </h1>
+              <p className="mb-4 text-lg text-white/80 md:text-xl">
                 An open invitation to explore the big questions of life and faith.
               </p>
               {event && startDateFormatted && (

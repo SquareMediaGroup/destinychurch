@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
-import { Roboto, Anton } from "next/font/google";
+import { Roboto, Anton, Playfair_Display } from "next/font/google";
 import "./globals.css";
 import ChurchHeader from "@/components/ChurchHeader";
 import FooterGate from "@/components/FooterGate";
@@ -25,6 +25,14 @@ const anton = Anton({
   display: "swap",
   subsets: ["latin"],
   weight: "400",
+});
+
+const playfair = Playfair_Display({
+  variable: "--font-playfair",
+  display: "swap",
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+  style: ["normal", "italic"],
 });
 
 export const metadata: Metadata = {
@@ -168,7 +176,7 @@ export default async function RootLayout({
         />
       </head>
       <body
-        className={`${roboto.variable} ${anton.variable} antialiased`}
+        className={`${roboto.variable} ${anton.variable} ${playfair.variable} antialiased`}
       >
         <Providers banner={banner}>
 <SiteBanner />

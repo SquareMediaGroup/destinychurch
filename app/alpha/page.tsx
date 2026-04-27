@@ -125,7 +125,7 @@ export default function AlphaPage() {
                 </em>
               </h1>
               <p className="mb-4 text-lg text-white/80 md:text-xl">
-                An open invitation to explore the big questions of life and faith.
+                Wherever you&apos;re at in life or faith, there&apos;s a seat for you at the Alpha table. Everyone&apos;s invited. Every question matters.
               </p>
               {event && startDateFormatted && (
                 <p className="mb-6 text-sm font-bold text-destiny-orange">

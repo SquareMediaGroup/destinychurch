@@ -182,7 +182,7 @@ export default function GlobalSearch({
           <div
             className="relative overflow-hidden bg-[#fbf6ec] text-[#2c1a0e]"
             style={{
-              borderRadius: 4,
+              borderRadius: 9999,
               boxShadow: "0 18px 60px -20px rgba(44,26,14,0.35), 0 2px 0 rgba(44,26,14,0.06)",
             }}
           >

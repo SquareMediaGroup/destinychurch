@@ -108,10 +108,10 @@ export default function AlphaPage() {
             aria-hidden="true"
             className="absolute inset-0 h-full w-full object-cover"
           />
-          {/* Dark red overlay 40% */}
+          {/* Black overlay 40% */}
           <div
             className="absolute inset-0"
-            style={{ backgroundColor: "rgba(90, 8, 8, 0.4)" }}
+            style={{ backgroundColor: "rgba(0, 0, 0, 0.4)" }}
             aria-hidden="true"
           />
           {/* Subtle bottom shading for CTA legibility */}

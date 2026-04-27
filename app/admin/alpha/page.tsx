@@ -1,6 +1,11 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
+import {
+  type AlphaFrequency,
+  FREQUENCY_LABEL,
+  getNextAlphaSession,
+} from "@/lib/alphaSession";
 
 type EventType = "alpha" | "youth_alpha";
 type EventFormat = "in_person" | "online";
@@ -17,6 +22,8 @@ interface AlphaEvent {
   meeting_url: string | null;
   meeting_id: string | null;
   meeting_passcode: string | null;
+  frequency: AlphaFrequency;
+  custom_interval_days: number | null;
   active: boolean;
   created_at: string;
 }
@@ -25,6 +32,14 @@ const PLATFORM_LABEL: Record<MeetingPlatform, string> = {
   zoom: "Zoom",
   google_meet: "Google Meet",
 };
+
+const FREQUENCY_OPTIONS: AlphaFrequency[] = [
+  "weekly",
+  "fortnightly",
+  "monthly",
+  "custom",
+  "one_off",
+];
 
 export default function AlphaPage() {
   const [events, setEvents] = useState<AlphaEvent[]>([]);
@@ -42,6 +57,26 @@ export default function AlphaPage() {
   const [meetingUrl, setMeetingUrl] = useState("");
   const [meetingId, setMeetingId] = useState("");
   const [meetingPasscode, setMeetingPasscode] = useState("");
+  const [frequency, setFrequency] = useState<AlphaFrequency>("weekly");
+  const [customIntervalDays, setCustomIntervalDays] = useState<string>("21");
+
+  // Alpha banner state — separate row in site_banner shared with /admin/banner
+  const [bannerActive, setBannerActive] = useState(false);
+  const [bannerOtherType, setBannerOtherType] = useState<string | null>(null);
+  const [bannerSaving, setBannerSaving] = useState(false);
+
+  const fetchBanner = useCallback(async () => {
+    try {
+      const res = await fetch("/api/admin/banner");
+      const data = await res.json();
+      const active = !!data?.active;
+      const t = data?.type ?? "announcement";
+      setBannerActive(active && t === "alpha");
+      setBannerOtherType(active && t !== "alpha" ? t : null);
+    } catch {
+      // ignore
+    }
+  }, []);
 
   const fetchEvents = useCallback(async () => {
     try {
@@ -60,7 +95,8 @@ export default function AlphaPage() {
 
   useEffect(() => {
     fetchEvents();
-  }, [fetchEvents]);
+    fetchBanner();
+  }, [fetchEvents, fetchBanner]);
 
   function resetForm() {
     setType("alpha");
@@ -72,6 +108,40 @@ export default function AlphaPage() {
     setMeetingUrl("");
     setMeetingId("");
     setMeetingPasscode("");
+    setFrequency("weekly");
+    setCustomIntervalDays("21");
+  }
+
+  async function toggleBanner(next: boolean) {
+    setBannerSaving(true);
+    try {
+      const payload = next
+        ? {
+            active: true,
+            type: "alpha",
+            message: "",
+            link: "/alpha",
+            link_text: "Sign up",
+          }
+        : {
+            active: false,
+            type: "alpha",
+            message: "",
+            link: "/alpha",
+            link_text: "Sign up",
+          };
+      const res = await fetch("/api/admin/banner", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      if (res.ok) {
+        setBannerActive(next);
+        if (next) setBannerOtherType(null);
+      }
+    } finally {
+      setBannerSaving(false);
+    }
   }
 
   async function handleCreate(e: React.FormEvent) {
@@ -79,6 +149,7 @@ export default function AlphaPage() {
     setCreating(true);
     setError("");
 
+    const parsedCustom = parseInt(customIntervalDays, 10);
     const payload = {
       type,
       start_date: startDate,
@@ -89,6 +160,11 @@ export default function AlphaPage() {
       meeting_url: format === "online" ? meetingUrl || null : null,
       meeting_id: format === "online" ? meetingId || null : null,
       meeting_passcode: format === "online" ? meetingPasscode || null : null,
+      frequency,
+      custom_interval_days:
+        frequency === "custom" && Number.isFinite(parsedCustom) && parsedCustom > 0
+          ? parsedCustom
+          : null,
       active: true,
     };
 
@@ -136,6 +212,69 @@ export default function AlphaPage() {
           <p className="mt-1 text-sm text-destiny-grey/50">
             Manage Alpha and Youth Alpha event dates, signup links, and availability.
           </p>
+        </div>
+
+        {/* Alpha site banner toggle — mirrors /admin/banner */}
+        <div className="relative mb-8 overflow-hidden rounded-2xl border border-black/5 p-6 shadow-sm">
+          <div
+            aria-hidden="true"
+            className="absolute inset-0"
+            style={{
+              background:
+                "linear-gradient(120deg, #2a0404 0%, #3a0606 55%, #501010 100%)",
+            }}
+          />
+          <div
+            aria-hidden="true"
+            className="absolute -right-12 -top-12 h-44 w-44 rounded-full"
+            style={{
+              background:
+                "radial-gradient(closest-side, rgba(232,108,42,0.35), transparent 70%)",
+            }}
+          />
+          <div className="relative flex items-start justify-between gap-4">
+            <div className="flex-1">
+              <p className="mb-1.5 text-[10px] font-black uppercase tracking-[0.32em] text-destiny-orange">
+                Site banner
+              </p>
+              <h2 className="mb-1 text-lg font-black text-white">
+                Show Alpha across the site
+              </h2>
+              <p className="text-xs leading-relaxed text-white/60">
+                A red top-bar with the next session date, auto-updating each
+                week. Toggleable here or in{" "}
+                <a
+                  href="/admin/banner"
+                  className="font-bold text-destiny-orange underline underline-offset-2 hover:text-white"
+                >
+                  Banner settings
+                </a>
+                .
+              </p>
+              {bannerOtherType && !bannerActive && (
+                <p className="mt-2 inline-flex items-center gap-1 rounded-full bg-white/10 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-white/70">
+                  <span className="material-symbols-rounded text-[14px] leading-none">
+                    swap_horiz
+                  </span>
+                  Will replace current {bannerOtherType} banner
+                </p>
+              )}
+            </div>
+            <button
+              type="button"
+              disabled={bannerSaving}
+              onClick={() => toggleBanner(!bannerActive)}
+              className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors ${
+                bannerActive ? "bg-destiny-orange" : "bg-white/15"
+              } ${bannerSaving ? "opacity-60" : ""}`}
+            >
+              <span
+                className={`inline-block h-4 w-4 rounded-full bg-white shadow transition-transform ${
+                  bannerActive ? "translate-x-6" : "translate-x-1"
+                }`}
+              />
+            </button>
+          </div>
         </div>
 
         {/* Create form */}
@@ -186,24 +325,63 @@ export default function AlphaPage() {
               />
             </div>
 
-            {/* Format toggle */}
-            <div>
-              <label className="mb-1.5 block text-xs font-bold text-destiny-grey/60">
-                Format <span className="text-red-400">*</span>
-              </label>
-              <div className="inline-flex rounded-xl border border-black/10 bg-black/[0.02] p-1">
-                <FormatPill
-                  active={format === "in_person"}
-                  onClick={() => setFormat("in_person")}
-                  icon="storefront"
-                  label="In-person"
-                />
-                <FormatPill
-                  active={format === "online"}
-                  onClick={() => setFormat("online")}
-                  icon="videocam"
-                  label="Online"
-                />
+            <div className="grid gap-4 sm:grid-cols-2">
+              {/* Format toggle */}
+              <div>
+                <label className="mb-1.5 block text-xs font-bold text-destiny-grey/60">
+                  Format <span className="text-red-400">*</span>
+                </label>
+                <div className="inline-flex rounded-xl border border-black/10 bg-black/[0.02] p-1">
+                  <FormatPill
+                    active={format === "in_person"}
+                    onClick={() => setFormat("in_person")}
+                    icon="storefront"
+                    label="In-person"
+                  />
+                  <FormatPill
+                    active={format === "online"}
+                    onClick={() => setFormat("online")}
+                    icon="videocam"
+                    label="Online"
+                  />
+                </div>
+              </div>
+
+              {/* Frequency */}
+              <div>
+                <label className="mb-1.5 block text-xs font-bold text-destiny-grey/60">
+                  Frequency <span className="text-red-400">*</span>
+                </label>
+                <div className="flex items-center gap-2">
+                  <select
+                    value={frequency}
+                    onChange={(e) =>
+                      setFrequency(e.target.value as AlphaFrequency)
+                    }
+                    className="w-full rounded-xl border border-black/10 px-4 py-2.5 text-sm text-destiny-grey focus:border-destiny-orange/50 focus:outline-none focus:ring-2 focus:ring-destiny-orange/20"
+                  >
+                    {FREQUENCY_OPTIONS.map((f) => (
+                      <option key={f} value={f}>
+                        {FREQUENCY_LABEL[f]}
+                      </option>
+                    ))}
+                  </select>
+                  {frequency === "custom" && (
+                    <div className="flex items-center gap-1.5 rounded-xl border border-black/10 px-3 py-2 text-sm text-destiny-grey">
+                      <span className="text-xs text-destiny-grey/50">every</span>
+                      <input
+                        type="number"
+                        min={1}
+                        value={customIntervalDays}
+                        onChange={(e) =>
+                          setCustomIntervalDays(e.target.value)
+                        }
+                        className="w-14 bg-transparent text-center font-bold focus:outline-none"
+                      />
+                      <span className="text-xs text-destiny-grey/50">days</span>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
 
@@ -406,6 +584,21 @@ function EventSection({
             const platformLabel = event.meeting_platform
               ? PLATFORM_LABEL[event.meeting_platform]
               : "Online";
+            const freq = (event.frequency || "weekly") as AlphaFrequency;
+            const next = getNextAlphaSession(
+              event.start_date,
+              freq,
+              event.custom_interval_days
+            );
+            const showsNext = !next.isFirst && !next.isPast;
+            const nextLabel = next.date.toLocaleDateString("en-GB", {
+              day: "numeric",
+              month: "short",
+            });
+            const freqLabel =
+              freq === "custom" && event.custom_interval_days
+                ? `Every ${event.custom_interval_days}d`
+                : FREQUENCY_LABEL[freq];
 
             return (
               <div
@@ -419,6 +612,17 @@ function EventSection({
                     <span className="text-sm font-bold text-destiny-grey">
                       {formatted}
                     </span>
+                    <span className="rounded-full bg-black/5 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-destiny-grey/60">
+                      {freqLabel}
+                    </span>
+                    {showsNext && (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-bold text-emerald-700">
+                        <span className="material-symbols-rounded text-[12px] leading-none">
+                          schedule
+                        </span>
+                        Next {nextLabel}
+                      </span>
+                    )}
                     {isOnline ? (
                       <span className="inline-flex items-center gap-1 rounded-full bg-blue-500/10 px-2 py-0.5 text-[10px] font-bold text-blue-600">
                         <span className="material-symbols-rounded text-[12px] leading-none">

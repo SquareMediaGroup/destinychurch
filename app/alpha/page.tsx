@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import AnimateIn from "@/components/AnimateIn";
+import { getNextAlphaSession } from "@/lib/alphaSession";
 
 const ALPHA_HERO_VIDEO =
   "https://player.vimeo.com/progressive_redirect/playback/1158973369/rendition/1080p/file.mp4%20%281080p%29.mp4?loc=external&signature=62a42712f74bca4e0082af9c72980c99f54ccf6cebabdfa6ca58dfeae7e7caee";
@@ -22,6 +23,8 @@ interface AlphaEvent {
   meeting_url?: string | null;
   meeting_id?: string | null;
   meeting_passcode?: string | null;
+  frequency?: string | null;
+  custom_interval_days?: number | null;
 }
 
 const steps = [
@@ -89,13 +92,21 @@ export default function AlphaPage() {
     setSignupOpen(false);
   };
 
-  const startDateFormatted = event
-    ? new Date(event.start_date).toLocaleDateString("en-GB", {
+  const sessionInfo = event
+    ? getNextAlphaSession(
+        event.start_date,
+        event.frequency,
+        event.custom_interval_days
+      )
+    : null;
+  const startDateFormatted = sessionInfo
+    ? sessionInfo.date.toLocaleDateString("en-GB", {
         year: "numeric",
         month: "long",
         day: "numeric",
       })
     : null;
+  const sessionLeadIn = sessionInfo?.isFirst ? "Starting" : "Next session";
 
   return (
     <>
@@ -175,11 +186,17 @@ export default function AlphaPage() {
 
       {/* Event dateline */}
       {event && (() => {
-        const d = new Date(event.start_date);
+        const session = getNextAlphaSession(
+          event.start_date,
+          event.frequency,
+          event.custom_interval_days
+        );
+        const d = session.date;
         const weekday = d.toLocaleDateString("en-GB", { weekday: "long" });
         const day = d.toLocaleDateString("en-GB", { day: "numeric" });
         const month = d.toLocaleDateString("en-GB", { month: "long" });
         const year = d.toLocaleDateString("en-GB", { year: "numeric" });
+        const cadenceLabel = session.isFirst ? "Starting" : "Next session";
         const isOnline = event.format === "online";
         const platformLabel =
           event.meeting_platform === "zoom"
@@ -200,7 +217,7 @@ export default function AlphaPage() {
                   <div className="border-b border-dashed border-destiny-grey/15 px-8 py-7 md:border-b-0 md:border-r md:px-10">
                     <div className="mb-3 flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.28em] text-destiny-orange">
                       <span className="material-symbols-rounded text-sm leading-none">event</span>
-                      Starting
+                      {cadenceLabel}
                     </div>
                     <div className="text-[11px] uppercase tracking-[0.2em] text-destiny-grey/50">
                       {weekday}
@@ -501,7 +518,7 @@ export default function AlphaPage() {
           onClose={closeSignup}
           signupUrl={event.signup_url}
           title="Register for Alpha"
-          subtitle={startDateFormatted ? `Starting ${startDateFormatted}` : undefined}
+          subtitle={startDateFormatted ? `${sessionLeadIn} ${startDateFormatted}` : undefined}
         />
       )}
     </>

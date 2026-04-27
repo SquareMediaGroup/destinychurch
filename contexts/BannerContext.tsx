@@ -2,7 +2,17 @@
 
 import { createContext, useContext } from "react";
 
-export type BannerType = "announcement" | "notice" | "sitewide";
+export type BannerType = "announcement" | "notice" | "sitewide" | "alpha";
+
+export interface AlphaBannerInfo {
+  start_date: string;
+  signup_url: string;
+  frequency: string;
+  custom_interval_days?: number | null;
+  format?: "in_person" | "online" | null;
+  location?: string | null;
+  meeting_platform?: "zoom" | "google_meet" | null;
+}
 
 export interface BannerData {
   active: boolean;
@@ -10,6 +20,7 @@ export interface BannerData {
   type: BannerType;
   link?: string | null;
   link_text?: string | null;
+  alpha?: AlphaBannerInfo | null;
 }
 
 export const BannerContext = createContext<BannerData>({

@@ -7,7 +7,10 @@ export default function BannerSpacer() {
   const banner = useBanner();
   const pathname = usePathname();
 
-  if (!banner.active || !banner.message) return null;
+  if (!banner.active) return null;
+  // Alpha banner has no message field but still occupies the bar
+  if (banner.type !== "alpha" && !banner.message) return null;
+  if (banner.type === "alpha" && !banner.alpha) return null;
   if (banner.type === "sitewide") return null;
   if (pathname === "/") return null;
   if (pathname.startsWith("/admin")) return null;

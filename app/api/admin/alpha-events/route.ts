@@ -34,6 +34,8 @@ export async function POST(req: Request) {
       meeting_url,
       meeting_id,
       meeting_passcode,
+      frequency,
+      custom_interval_days,
       active,
     } = await req.json();
 
@@ -45,6 +47,12 @@ export async function POST(req: Request) {
     }
 
     const eventFormat = format === "online" ? "online" : "in_person";
+    const allowedFreq = ["weekly", "fortnightly", "monthly", "custom", "one_off"];
+    const eventFrequency = allowedFreq.includes(frequency) ? frequency : "weekly";
+    const parsedInterval =
+      eventFrequency === "custom" && Number.isFinite(Number(custom_interval_days))
+        ? Math.max(1, Math.floor(Number(custom_interval_days)))
+        : null;
 
     const { data, error } = await supabase
       .from("alpha_events")
@@ -60,6 +68,8 @@ export async function POST(req: Request) {
         meeting_id: eventFormat === "online" ? meeting_id || null : null,
         meeting_passcode:
           eventFormat === "online" ? meeting_passcode || null : null,
+        frequency: eventFrequency,
+        custom_interval_days: parsedInterval,
         active: active ?? true,
       })
       .select()

@@ -79,6 +79,26 @@ async function getActiveBanner() {
       .eq("active", true)
       .limit(1)
       .maybeSingle();
+    if (!data) return null;
+
+    if (data.type === "alpha") {
+      const { data: alpha } = await supabase
+        .from("alpha_events")
+        .select(
+          "start_date, signup_url, frequency, custom_interval_days, format, location, meeting_platform"
+        )
+        .eq("type", "alpha")
+        .eq("active", true)
+        .order("start_date", { ascending: true })
+        .limit(1)
+        .maybeSingle();
+
+      // No active Alpha event ⇒ silently hide the banner rather than render an empty bar
+      if (!alpha) return { ...data, active: false };
+
+      return { ...data, alpha };
+    }
+
     return data;
   } catch {
     return null;

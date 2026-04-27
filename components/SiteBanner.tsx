@@ -45,33 +45,21 @@ export default function SiteBanner() {
     return (
       <div
         className="fixed left-0 right-0 top-0 z-[60] flex h-10 items-center justify-center gap-3 px-4"
-        style={{
-          background:
-            "linear-gradient(90deg, #2a0404 0%, #3a0606 50%, #2a0404 100%)",
-        }}
+        style={{ backgroundColor: "#e51b1b" }}
       >
-        <span
-          aria-hidden="true"
-          className="text-[11px] font-black uppercase tracking-[0.32em] text-destiny-orange"
-        >
+        <span className="text-[11px] font-black uppercase tracking-[0.32em] text-white">
           {intro}
         </span>
-        <span aria-hidden="true" className="h-3 w-px bg-white/20" />
-        <p className="text-sm font-medium text-white/90">
+        <span aria-hidden="true" className="h-3 w-px bg-white/40" />
+        <p className="text-sm text-white">
           {cadenceLabel}{" "}
-          <span
-            className="italic font-normal text-white"
-            style={{ fontFamily: "var(--font-playfair), Georgia, serif" }}
-          >
-            {dateLabel}
-          </span>
+          <span className="font-bold">{dateLabel}</span>
         </p>
         <Link
           href={linkHref}
-          className="ml-1 inline-flex items-center gap-1 text-sm font-bold text-destiny-orange underline-offset-2 transition hover:text-white hover:underline"
+          className="ml-1 text-sm font-bold text-white underline underline-offset-2 transition hover:no-underline"
         >
-          {linkText}
-          <span className="material-symbols-rounded text-xs">arrow_forward</span>
+          {linkText} →
         </Link>
       </div>
     );

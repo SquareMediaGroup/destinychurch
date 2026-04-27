@@ -38,8 +38,8 @@ const TYPES: {
     value: "alpha",
     label: "Alpha",
     description:
-      "Deep-red bar that auto-pulls from the active Alpha event. Date updates as sessions pass.",
-    color: "bg-[#3a0606]",
+      "Bright-red bar that auto-pulls from the active Alpha event. Date updates as sessions pass.",
+    color: "bg-[#e51b1b]",
     icon: "auto_awesome",
   },
   {
@@ -176,27 +176,19 @@ export default function AdminBannerPage() {
               ) : isAlpha ? (
                 <div
                   className="flex h-10 items-center justify-center gap-3 rounded-2xl px-6"
-                  style={{
-                    background:
-                      "linear-gradient(90deg, #2a0404 0%, #3a0606 50%, #2a0404 100%)",
-                  }}
+                  style={{ backgroundColor: "#e51b1b" }}
                 >
-                  <span className="text-[11px] font-black uppercase tracking-[0.32em] text-destiny-orange">
+                  <span className="text-[11px] font-black uppercase tracking-[0.32em] text-white">
                     {banner.message?.trim() || "Alpha"}
                   </span>
-                  <span className="h-3 w-px bg-white/20" />
-                  <p className="text-sm font-medium text-white/90">
+                  <span className="h-3 w-px bg-white/40" />
+                  <p className="text-sm text-white">
                     {alphaPreview?.cadenceLabel}{" "}
-                    <span
-                      className="italic font-normal text-white"
-                      style={{
-                        fontFamily: "var(--font-playfair), Georgia, serif",
-                      }}
-                    >
+                    <span className="font-bold">
                       {alphaPreview?.dateLabel}
                     </span>
                   </p>
-                  <span className="text-sm font-bold text-destiny-orange">
+                  <span className="text-sm font-bold text-white underline underline-offset-2">
                     {banner.link_text || "Sign up"} →
                   </span>
                 </div>
@@ -297,8 +289,8 @@ export default function AdminBannerPage() {
               <div className="h-px bg-black/5" />
 
               {isAlpha ? (
-                <div className="rounded-xl border border-dashed border-[#3a0606]/30 bg-[#3a0606]/[0.04] p-5">
-                  <p className="mb-2 text-xs font-bold uppercase tracking-wider text-[#3a0606]">
+                <div className="rounded-xl border border-dashed border-[#e51b1b]/30 bg-[#e51b1b]/[0.04] p-5">
+                  <p className="mb-2 text-xs font-bold uppercase tracking-wider text-[#e51b1b]">
                     Auto-populated from Alpha
                   </p>
                   {alpha ? (
@@ -309,7 +301,7 @@ export default function AdminBannerPage() {
                       sessions pass. Edit details under{" "}
                       <a
                         href="/admin/alpha"
-                        className="font-bold text-[#3a0606] underline underline-offset-2"
+                        className="font-bold text-[#e51b1b] underline underline-offset-2"
                       >
                         Alpha events
                       </a>
@@ -321,7 +313,7 @@ export default function AdminBannerPage() {
                       until you{" "}
                       <a
                         href="/admin/alpha"
-                        className="font-bold text-[#3a0606] underline underline-offset-2"
+                        className="font-bold text-[#e51b1b] underline underline-offset-2"
                       >
                         create one
                       </a>

@@ -233,8 +233,42 @@ export default function ChurchHeader() {
         style={{
           transform: !mounted || hidden ? "translateY(-110%)" : "translateY(0)",
           transition: "transform 0.4s cubic-bezier(0.4, 0, 0.2, 1)",
+          overflow: "visible",
         }}
       >
+        {/* Sermons / Guest Speakers toggle — floats below header, zero height impact */}
+        {pathname.startsWith("/sermons") && !isAdmin && (
+          <div
+            style={{
+              position: "absolute",
+              top: "100%",
+              left: "50%",
+              transform: "translateX(-50%)",
+              paddingTop: "8px",
+              zIndex: 10,
+            }}
+          >
+            <div className="flex items-center rounded-full border border-white/15 bg-white/10 p-1 shadow-lg backdrop-blur-sm">
+              {[
+                { label: "Sermons", href: "/sermons" },
+                { label: "Guest Speakers", href: "/sermons/guest-speakers" },
+              ].map((tab) => {
+                const active = pathname === tab.href;
+                return (
+                  <Link
+                    key={tab.href}
+                    href={tab.href}
+                    className={`whitespace-nowrap rounded-full px-4 py-2 text-sm font-bold transition-all duration-200 ${
+                      active ? "bg-white text-[#0d0d0d] shadow-sm" : "text-white/70 hover:text-white"
+                    }`}
+                  >
+                    {tab.label}
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
+        )}
         <div
           className="mx-auto"
           style={{
@@ -421,31 +455,6 @@ export default function ChurchHeader() {
               </button>
             </div>
           </div>
-
-          {/* Sermons / Guest Speakers toggle — only on /sermons pages */}
-          {pathname.startsWith("/sermons") && !isAdmin && (
-            <div className="flex justify-center pb-2 pt-1.5">
-              <div className="flex items-center rounded-full border border-white/15 bg-white/10 p-1 backdrop-blur-sm">
-                {[
-                  { label: "Sermons", href: "/sermons" },
-                  { label: "Guest Speakers", href: "/sermons/guest-speakers" },
-                ].map((tab) => {
-                  const active = pathname === tab.href;
-                  return (
-                    <Link
-                      key={tab.href}
-                      href={tab.href}
-                      className={`whitespace-nowrap rounded-full px-4 py-2 text-sm font-bold transition-all duration-200 ${
-                        active ? "bg-white text-[#0d0d0d] shadow-sm" : "text-white/70 hover:text-white"
-                      }`}
-                    >
-                      {tab.label}
-                    </Link>
-                  );
-                })}
-              </div>
-            </div>
-          )}
 
           {/* Global search panel — slides down below pill */}
           {!isAdmin && (

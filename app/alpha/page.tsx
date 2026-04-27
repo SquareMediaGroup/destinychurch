@@ -127,12 +127,6 @@ export default function AlphaPage() {
               <p className="mx-auto mb-4 max-w-xl text-lg leading-relaxed text-white/80 md:text-xl">
                 Wherever you&apos;re at in life or faith, there&apos;s a seat for you at the Alpha table. Everyone&apos;s invited. Every question matters.
               </p>
-              {event && startDateFormatted && (
-                <p className="mb-6 text-sm font-bold text-destiny-orange">
-                  Starting {startDateFormatted}
-                  {event.location && ` · ${event.location}`}
-                </p>
-              )}
               <div className="flex flex-col gap-3 sm:flex-row items-center justify-center">
                 {!loading && event ? (
                   <>
@@ -173,6 +167,82 @@ export default function AlphaPage() {
           </div>
         </section>
       </div>
+
+      {/* Event dateline */}
+      {event && (() => {
+        const d = new Date(event.start_date);
+        const weekday = d.toLocaleDateString("en-GB", { weekday: "long" });
+        const day = d.toLocaleDateString("en-GB", { day: "numeric" });
+        const month = d.toLocaleDateString("en-GB", { month: "long" });
+        const year = d.toLocaleDateString("en-GB", { year: "numeric" });
+        return (
+          <div className="mx-auto max-w-5xl px-4 pb-14 lg:px-8">
+            <AnimateIn>
+              <div className="relative overflow-hidden rounded-3xl bg-white shadow-[0_30px_60px_-30px_rgba(58,6,6,0.35)] ring-1 ring-black/5">
+                {/* Ticket-stub notches */}
+                <span aria-hidden="true" className="absolute left-0 top-1/2 h-6 w-6 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#f5f7fa]" />
+                <span aria-hidden="true" className="absolute right-0 top-1/2 h-6 w-6 translate-x-1/2 -translate-y-1/2 rounded-full bg-[#f5f7fa]" />
+
+                <div className="grid grid-cols-1 md:grid-cols-2">
+                  {/* Date */}
+                  <div className="border-b border-dashed border-destiny-grey/15 px-8 py-7 md:border-b-0 md:border-r md:px-10">
+                    <div className="mb-3 flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.28em] text-destiny-orange">
+                      <span className="material-symbols-rounded text-sm leading-none">event</span>
+                      Starting
+                    </div>
+                    <div className="text-[11px] uppercase tracking-[0.2em] text-destiny-grey/50">
+                      {weekday}
+                    </div>
+                    <div className="mt-1 flex items-baseline gap-3">
+                      <span
+                        className="text-5xl font-normal italic leading-none text-destiny-grey md:text-6xl"
+                        style={{ fontFamily: "var(--font-playfair), Georgia, serif" }}
+                      >
+                        {day}
+                      </span>
+                      <span className="text-lg font-black uppercase tracking-wide text-destiny-grey md:text-xl">
+                        {month} <span className="text-destiny-grey/40">{year}</span>
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Location */}
+                  <div className="px-8 py-7 md:px-10">
+                    <div className="mb-3 flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.28em] text-destiny-orange">
+                      <span className="material-symbols-rounded text-sm leading-none">place</span>
+                      Where
+                    </div>
+                    {event.location ? (
+                      <>
+                        <div className="text-[11px] uppercase tracking-[0.2em] text-destiny-grey/50">
+                          Join us at
+                        </div>
+                        <div className="mt-1 text-2xl font-black leading-tight text-destiny-grey md:text-3xl">
+                          {event.location}
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <div className="text-[11px] uppercase tracking-[0.2em] text-destiny-grey/50">
+                          Venue
+                        </div>
+                        <div className="mt-1 flex items-baseline gap-2">
+                          <span
+                            className="text-5xl font-normal italic leading-none text-destiny-grey/40 md:text-6xl"
+                            style={{ fontFamily: "var(--font-playfair), Georgia, serif" }}
+                          >
+                            tba
+                          </span>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </AnimateIn>
+          </div>
+        );
+      })()}
 
       {/* What is Alpha */}
       <section className="bg-white py-20">

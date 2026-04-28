@@ -2,38 +2,32 @@ import Image from "next/image";
 import Link from "next/link";
 import AnimateIn from "@/components/AnimateIn";
 
-const SHARED_BG = "/img/Gradients/RadiantAtmospheres_09.webp";
-
 const groups = [
   {
     title: "Kids",
     href: "/kids",
-    image: "/img/TransparentBackgroundImages/ParentChild.webp",
-    hue: "0deg",
+    image: "/img/photos/Kids2.jpg",
     description:
       "Destiny Kids is a fun place where children of all ages can learn more about the Bible through games, stories, and singing.",
   },
   {
     title: "Youth",
     href: "/youth",
-    image: "/img/TransparentBackgroundImages/Youth.webp",
-    hue: "90deg",
+    image: "/img/photos/Youth1.JPG",
     description:
       "Destiny Youth is vibrant and engaging, ministry with a mission encounter God, build meaningful relationships, and make an impact in their schools and communities.",
   },
   {
     title: "Young Adults",
     href: "/young-adults",
-    image: "/img/TransparentBackgroundImages/YA.webp",
-    hue: "200deg",
+    image: "/img/photos/YA1.jpg",
     description:
       "A vibrant community of young adults worshipping, We seek together to build a deep and authentic relationship with Jesus Christ.",
   },
   {
     title: "Connect Groups",
     href: "/connect",
-    image: "/img/TransparentBackgroundImages/ConnectGroups.webp",
-    hue: "300deg",
+    image: "/img/photos/ConnectGroups.jpg",
     description:
       "Our Connect Groups are an integral part of the life and health of the church. Together in a small group believers are effective, powerful and fruitful witnesses in the world.",
   },
@@ -56,30 +50,16 @@ export default function EveryoneHasAPlaceSection() {
                 href={group.href}
                 className="group relative block h-56 overflow-hidden rounded-2xl shadow-lg sm:h-72 lg:h-80"
               >
-                {/* Shared gradient background — hue-rotated per card */}
-                <div
-                  aria-hidden
-                  className="absolute inset-0"
-                  style={{ filter: `hue-rotate(${group.hue})` }}
-                >
-                  <Image
-                    src={SHARED_BG}
-                    alt=""
-                    fill
-                    className="object-cover"
-                    sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
-                  />
-                </div>
-                {/* Subject (transparent cutout) — 30% larger */}
                 <Image
                   src={group.image}
                   alt={group.title}
                   fill
-                  className="object-cover transition duration-500 group-hover:scale-[1.36]"
-                  sizes="(max-width: 640px) 130vw, (max-width: 1024px) 65vw, 33vw"
-                  style={{ transform: "scale(1.3)" }}
+                  className="object-cover transition duration-500 group-hover:scale-105"
+                  sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
                 />
-                {/* Hover gradient — only on hover */}
+                {/* Base gradient — always visible */}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-black/10" />
+                {/* Hover gradient — strengthens on hover */}
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/50 to-black/20 opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
 
                 {/* Text */}

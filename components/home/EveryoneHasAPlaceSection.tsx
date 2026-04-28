@@ -30,7 +30,7 @@ const groups = [
   {
     title: "Connect Groups",
     href: "/connect",
-    image: "/img/photos/ConnectGroups.jpg",
+    image: "/img/TransparentBackgroundImages/ConnectGroups.webp",
     background: "/img/Gradients/RadiantAtmospheres_09.webp",
     description:
       "Our Connect Groups are an integral part of the life and health of the church. Together in a small group believers are effective, powerful and fruitful witnesses in the world.",

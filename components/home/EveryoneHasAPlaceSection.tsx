@@ -17,7 +17,7 @@ const groups: Group[] = [
     title: "Kids",
     href: "/kids",
     image: "/img/photos/Kids2.jpg",
-    cutout: "/img/TransparentBackgroundImages/Parent+Child.webp",
+    cutout: "/img/TransparentBackgroundImages/ParentChild.webp",
     cutoutAlt: "A parent holding a child",
     cutoutOffsetX: "-4%",
     description:
@@ -66,7 +66,7 @@ export default function EveryoneHasAPlaceSection() {
         </AnimateIn>
 
         {/* Extra top padding so cutouts have room to rise above each card */}
-        <div className="grid gap-6 pt-24 sm:grid-cols-2 sm:pt-28 lg:grid-cols-4">
+        <div className="grid gap-6 pt-40 sm:grid-cols-2 sm:pt-48 lg:grid-cols-4 lg:pt-52">
           {groups.map((group, i) => (
             <AnimateIn key={group.title} delay={i * 80}>
               <Link
@@ -77,9 +77,9 @@ export default function EveryoneHasAPlaceSection() {
                 {group.cutout && (
                   <div
                     aria-hidden
-                    className="pointer-events-none absolute left-1/2 z-20 h-[140px] w-[115%] -translate-x-1/2 sm:h-[170px] lg:h-[190px]"
+                    className="pointer-events-none absolute left-1/2 z-20 h-[220px] w-[130%] -translate-x-1/2 sm:h-[260px] lg:h-[290px]"
                     style={{
-                      bottom: "calc(100% - 40px)",
+                      bottom: "calc(100% - 60px)",
                       transform: `translateX(calc(-50% + ${group.cutoutOffsetX}))`,
                     }}
                   >
@@ -88,7 +88,7 @@ export default function EveryoneHasAPlaceSection() {
                         src={group.cutout}
                         alt={group.cutoutAlt ?? group.title}
                         fill
-                        sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+                        sizes="(max-width: 640px) 130vw, (max-width: 1024px) 65vw, 33vw"
                         className="object-contain object-bottom drop-shadow-[0_18px_18px_rgba(0,0,0,0.55)]"
                       />
                     </div>

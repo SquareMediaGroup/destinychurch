@@ -2,7 +2,17 @@ import Image from "next/image";
 import Link from "next/link";
 import AnimateIn from "@/components/AnimateIn";
 
-const groups = [
+type Group = {
+  title: string;
+  href: string;
+  image: string;
+  cutout: string | null;
+  cutoutAlt: string | null;
+  cutoutOffsetX: string;
+  description: string;
+};
+
+const groups: Group[] = [
   {
     title: "Kids",
     href: "/kids",

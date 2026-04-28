@@ -71,9 +71,7 @@ export default function EveryoneHasAPlaceSection() {
                   className="object-cover transition duration-500 group-hover:scale-105"
                   sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
                 />
-                {/* Base gradient — always visible */}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-black/10" />
-                {/* Hover gradient — strengthens on hover */}
+                {/* Hover gradient — only on hover */}
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/50 to-black/20 opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
 
                 {/* Text */}

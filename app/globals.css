@@ -215,33 +215,6 @@ h3 {
   animation-play-state: paused;
 }
 
-/* Smart Search — caret + ellipsis + row reveal */
-@keyframes gs-caret {
-  0%, 49%   { opacity: 1; }
-  50%, 100% { opacity: 0; }
-}
-@keyframes gs-dot {
-  0%, 80%, 100% { opacity: 0.18; transform: translateY(0); }
-  40%           { opacity: 1;    transform: translateY(-2px); }
-}
-@keyframes gs-row-in {
-  from { opacity: 0; transform: translateY(6px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-@keyframes gs-rule-grow {
-  from { transform: scaleX(0); }
-  to   { transform: scaleX(1); }
-}
-.gs-caret    { animation: gs-caret 1.05s steps(1) infinite; }
-.gs-dot      { animation: gs-dot 1.2s ease-in-out infinite; display: inline-block; }
-.gs-row-in   { animation: gs-row-in 0.32s cubic-bezier(0.16, 1, 0.3, 1) both; }
-.gs-rule     { transform-origin: left center; animation: gs-rule-grow 0.5s cubic-bezier(0.16, 1, 0.3, 1) both; }
-.gs-mono     { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; }
-
-@media (prefers-reduced-motion: reduce) {
-  .gs-caret, .gs-dot, .gs-row-in, .gs-rule { animation: none; }
-}
-
 @keyframes churchsuite-spin {
   to { transform: rotate(360deg); }
 }

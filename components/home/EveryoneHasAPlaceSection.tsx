@@ -47,48 +47,43 @@ export default function EveryoneHasAPlaceSection() {
           </h2>
         </AnimateIn>
 
-        <div className="grid gap-6 pt-12 sm:grid-cols-2 sm:pt-14 lg:grid-cols-4">
+        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
           {groups.map((group, i) => (
             <AnimateIn key={group.title} delay={i * 80}>
               <Link
                 href={group.href}
-                className="group relative block h-56 rounded-2xl shadow-lg sm:h-72 lg:h-80"
+                className="group relative block h-56 overflow-hidden rounded-2xl shadow-lg sm:h-72 lg:h-80"
               >
-                {/* Card frame — clipped (gradient + text live here) */}
-                <div className="absolute inset-0 overflow-hidden rounded-2xl">
-                  <Image
-                    src={group.background}
-                    alt=""
-                    aria-hidden
-                    fill
-                    className="object-cover"
-                    sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
-                  />
-                  {/* Base gradient — always visible */}
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-black/10" />
-                  {/* Hover gradient — strengthens on hover */}
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/50 to-black/20 opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+                {/* Gradient background */}
+                <Image
+                  src={group.background}
+                  alt=""
+                  aria-hidden
+                  fill
+                  className="object-cover"
+                  sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+                />
+                {/* Subject (transparent cutout) */}
+                <Image
+                  src={group.image}
+                  alt={group.title}
+                  fill
+                  className="object-cover transition duration-500 group-hover:scale-105"
+                  sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+                />
+                {/* Base gradient — always visible */}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-black/10" />
+                {/* Hover gradient — strengthens on hover */}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/50 to-black/20 opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
 
-                  {/* Text */}
-                  <div className="absolute inset-x-0 bottom-0 p-5">
-                    <h3 className="text-xl font-black uppercase text-white">
-                      {group.title}
-                    </h3>
-                    <p className="mt-2 max-h-0 overflow-hidden text-sm leading-relaxed text-white/80 transition-all duration-500 group-hover:max-h-40">
-                      {group.description}
-                    </p>
-                  </div>
-                </div>
-
-                {/* Subject cutout — overflows above card */}
-                <div className="pointer-events-none absolute inset-x-0 -top-10 bottom-0 z-10 sm:-top-12">
-                  <Image
-                    src={group.image}
-                    alt={group.title}
-                    fill
-                    className="object-cover object-top transition-transform duration-500 ease-out group-hover:-translate-y-1 group-hover:scale-[1.03]"
-                    sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
-                  />
+                {/* Text */}
+                <div className="absolute inset-x-0 bottom-0 p-5">
+                  <h3 className="text-xl font-black uppercase text-white">
+                    {group.title}
+                  </h3>
+                  <p className="mt-2 max-h-0 overflow-hidden text-sm leading-relaxed text-white/80 transition-all duration-500 group-hover:max-h-40">
+                    {group.description}
+                  </p>
                 </div>
               </Link>
             </AnimateIn>

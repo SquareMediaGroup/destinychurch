@@ -146,9 +146,20 @@ h3 {
   to   { opacity: 1; transform: translateY(0); }
 }
 
+/* Animated angle for the conic gradient. @property lets us interpolate the
+   angle so the colors actually travel around the border instead of the whole
+   element rotating in place. Supported in Chrome/Edge 85+, Safari 16.4+,
+   Firefox 128+. Older browsers fall back to a static gradient. */
+@property --grad-angle {
+  syntax: "<angle>";
+  initial-value: 0deg;
+  inherits: false;
+}
+
 .glowing-gradient-border {
   position: relative;
   isolation: isolate;
+  --grad-angle: 0deg;
 }
 
 .glowing-gradient-border::before,
@@ -156,7 +167,7 @@ h3 {
   content: "";
   position: absolute;
   background: conic-gradient(
-    from 0deg,
+    from var(--grad-angle),
     #f58021,
     #fd0000,
     #8106b1,
@@ -165,12 +176,8 @@ h3 {
     #f58021
   );
   pointer-events: none;
-  will-change: transform;
 }
 
-/* Rotating border strip — transform: rotate() works in all browsers,
-   no @property / CSS Houdini needed. The mask cutout is a symmetric donut
-   so it stays correct under any rotation angle. */
 .glowing-gradient-border::before {
   inset: -2px;
   border-radius: calc(1.5rem + 2px);
@@ -179,18 +186,19 @@ h3 {
     linear-gradient(#000 0 0);
   -webkit-mask-composite: xor;
           mask-composite: exclude;
-  animation: border-rotate 9.6s linear infinite;
   z-index: 1;
 }
 
-/* Static blurred glow — no rotation animation. At blur(22px) the rotation
-   is invisible anyway; skipping it cuts GPU cost roughly in half. */
 .glowing-gradient-border::after {
   inset: -14px;
   border-radius: calc(1.5rem + 14px);
   filter: blur(22px);
   opacity: 0.55;
   z-index: -1;
+}
+
+.glowing-gradient-border {
+  animation: grad-rotate 9.6s linear infinite;
 }
 
 /* Drop the blurred outer glow on mobile — too expensive on low-end devices. */
@@ -200,18 +208,22 @@ h3 {
   }
 }
 
+@keyframes grad-rotate {
+  to { --grad-angle: 360deg; }
+}
+
 @keyframes border-rotate {
   to { transform: rotate(360deg); }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .glowing-gradient-border::before {
+  .glowing-gradient-border {
     animation: none;
   }
 }
 
 /* Paused when off-screen (toggled by ScrollSpeedGlow via IntersectionObserver). */
-.glowing-gradient-border.is-offscreen::before {
+.glowing-gradient-border.is-offscreen {
   animation-play-state: paused;
 }
 
@@ -222,6 +234,7 @@ h3 {
   position: relative;
   isolation: isolate;
   border-radius: 9999px;
+  --grad-angle: 0deg;
 }
 
 .search-glow::before,
@@ -229,7 +242,7 @@ h3 {
   content: "";
   position: absolute;
   background: conic-gradient(
-    from 0deg,
+    from var(--grad-angle),
     #f58021,
     #fd0000,
     #8106b1,
@@ -238,7 +251,6 @@ h3 {
     #f58021
   );
   pointer-events: none;
-  will-change: transform, opacity;
   border-radius: 9999px;
   opacity: 0;
   transition: opacity 0.25s ease;
@@ -251,8 +263,6 @@ h3 {
     linear-gradient(#000 0 0);
   -webkit-mask-composite: xor;
           mask-composite: exclude;
-  animation: border-rotate 2.4s linear infinite;
-  animation-play-state: paused;
   z-index: 1;
 }
 
@@ -262,9 +272,12 @@ h3 {
   z-index: -1;
 }
 
+.search-glow.is-loading {
+  animation: grad-rotate 2.4s linear infinite;
+}
+
 .search-glow.is-loading::before {
   opacity: 1;
-  animation-play-state: running;
 }
 
 .search-glow.is-loading::after {
@@ -274,6 +287,12 @@ h3 {
 @media (max-width: 768px) {
   .search-glow::after {
     display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .search-glow.is-loading {
+    animation: none;
   }
 }
 

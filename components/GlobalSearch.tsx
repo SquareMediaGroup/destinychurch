@@ -18,6 +18,19 @@ interface SearchResponse {
   aiSermons: SermonMatch[];
 }
 
+const PLACEHOLDER_PROMPTS = [
+  "When does the service start?",
+  "Is there Kids Church?",
+  "How do I get baptised?",
+  "Where do I park?",
+  "What is Alpha?",
+  "How can I serve?",
+  "Where can I find sermons?",
+  "How do I join a Connect Group?",
+];
+
+const SMART_SEARCH_SEEN_KEY = "destiny-smart-search-seen";
+
 const SITE_PAGES = [
   { title: "Sermons",      href: "/sermons"       },
   { title: "Give",         href: "/give"           },
@@ -50,6 +63,8 @@ export default function GlobalSearch({
   const [query, setQuery] = useState("");
   const [result, setResult] = useState<SearchResponse | null>(null);
   const [loading, setLoading] = useState(false);
+  const [placeholderIndex, setPlaceholderIndex] = useState(0);
+  const [showFirstUse, setShowFirstUse] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
@@ -58,10 +73,34 @@ export default function GlobalSearch({
       setQuery("");
       setResult(null);
       setLoading(false);
+      setPlaceholderIndex(Math.floor(Math.random() * PLACEHOLDER_PROMPTS.length));
+      try {
+        const seen = localStorage.getItem(SMART_SEARCH_SEEN_KEY);
+        setShowFirstUse(!seen);
+      } catch {
+        setShowFirstUse(false);
+      }
       const t = setTimeout(() => inputRef.current?.focus(), 60);
       return () => clearTimeout(t);
     }
   }, [open]);
+
+  useEffect(() => {
+    if (!open || query) return;
+    const id = setInterval(() => {
+      setPlaceholderIndex((i) => (i + 1) % PLACEHOLDER_PROMPTS.length);
+    }, 2800);
+    return () => clearInterval(id);
+  }, [open, query]);
+
+  const dismissFirstUse = useCallback(() => {
+    setShowFirstUse(false);
+    try {
+      localStorage.setItem(SMART_SEARCH_SEEN_KEY, "1");
+    } catch {
+      // ignore
+    }
+  }, []);
 
   useEffect(() => {
     onClose();
@@ -78,6 +117,7 @@ export default function GlobalSearch({
 
   const handleChange = useCallback((value: string) => {
     setQuery(value);
+    if (value && showFirstUse) dismissFirstUse();
     clearTimeout(debounceRef.current);
     if (!value.trim() || value.trim().length > 150) {
       setResult(null);
@@ -165,27 +205,19 @@ export default function GlobalSearch({
   return (
     <div className="flex justify-center px-4 pt-3 pb-2 lg:px-8">
       <div className="w-full md:max-w-[40%]">
-        {/* Smart Search label */}
-        <div className="mb-2 flex items-center gap-1.5 px-1">
-          <svg className="h-3.5 w-3.5 text-destiny-orange" fill="currentColor" viewBox="0 0 24 24">
-            <path d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" />
-          </svg>
-          <span className="text-xs font-bold uppercase tracking-widest text-white/40">Smart Search</span>
-        </div>
-
         {/* Search input */}
         <form onSubmit={handleSubmit}>
-          <div className="relative">
+          <div className={`search-glow relative ${loading ? "is-loading" : ""}`}>
             <input
               ref={inputRef}
               type="text"
               value={query}
               onChange={(e) => handleChange(e.target.value)}
-              placeholder="Search Anything Destiny…"
-              className="w-full rounded-full border border-white/15 bg-destiny-grey/50 py-3.5 pl-4 pr-10 text-sm text-white placeholder:text-white/50 shadow-xl backdrop-blur-md focus:border-destiny-orange/50 focus:outline-none focus:ring-2 focus:ring-destiny-orange/20"
+              placeholder={PLACEHOLDER_PROMPTS[placeholderIndex]}
+              className="relative z-10 w-full rounded-full border border-white/15 bg-destiny-grey/50 py-3.5 pl-4 pr-10 text-sm text-white placeholder:text-white/50 shadow-xl backdrop-blur-md focus:outline-none"
             />
             {loading ? (
-              <div className="absolute right-4 top-1/2 -translate-y-1/2">
+              <div className="absolute right-4 top-1/2 z-20 -translate-y-1/2">
                 <div className="h-4 w-4 animate-spin rounded-full border-2 border-white/20 border-t-destiny-orange" />
               </div>
             ) : query ? (
@@ -196,7 +228,7 @@ export default function GlobalSearch({
                   setResult(null);
                   inputRef.current?.focus();
                 }}
-                className="absolute right-3.5 top-1/2 -translate-y-1/2 text-white/40 transition hover:text-white/70"
+                className="absolute right-3.5 top-1/2 z-20 -translate-y-1/2 text-white/40 transition hover:text-white/70"
                 aria-label="Clear search"
               >
                 <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
@@ -206,6 +238,30 @@ export default function GlobalSearch({
             ) : null}
           </div>
         </form>
+
+        {/* First-use explanation */}
+        {showFirstUse && !query && !showPanel && (
+          <div className="mt-2 rounded-2xl border border-white/10 bg-destiny-grey/70 p-4 shadow-xl backdrop-blur-md">
+            <div className="mb-2 flex items-center gap-1.5">
+              <svg className="h-3.5 w-3.5 text-destiny-orange" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" />
+              </svg>
+              <span className="text-xs font-bold uppercase tracking-widest text-destiny-orange">
+                Welcome to Smart Search
+              </span>
+            </div>
+            <p className="text-sm leading-relaxed text-white/75">
+              Ask Destiny anything &mdash; service times, kids&rsquo; ministry, how to get involved, sermon topics. Smart Search uses AI to point you to the right page or sermon in seconds.
+            </p>
+            <button
+              type="button"
+              onClick={dismissFirstUse}
+              className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-destiny-orange px-4 py-1.5 text-xs font-bold text-white transition hover:brightness-110"
+            >
+              Got it
+            </button>
+          </div>
+        )}
 
         {/* Results panel */}
         {showPanel && (

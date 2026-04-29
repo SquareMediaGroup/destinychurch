@@ -218,15 +218,6 @@ export default function ChurchHeader() {
         style={{ position: "fixed", opacity: 0, width: 0, height: 0, top: 0, left: 0, pointerEvents: "none" }}
       />
 
-      {/* Backdrop behind search panel */}
-      {searchOpen && !isAdmin && (
-        <div
-          className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm"
-          onClick={() => setSearchOpen(false)}
-          aria-hidden="true"
-        />
-      )}
-
       <header
         ref={headerRef}
         className={`${isHome ? "fixed left-0 right-0" : "sticky"} z-50 ${bannerOffset}`}

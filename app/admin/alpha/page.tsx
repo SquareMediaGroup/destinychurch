@@ -547,11 +547,6 @@ function BannerCard({
           />
         </button>
       </div>
-      <div
-        aria-hidden="true"
-        className="h-1.5 w-full rounded-full"
-        style={{ backgroundColor: swatch, opacity: active ? 0.5 : 0.15 }}
-      />
     </div>
   );
 }

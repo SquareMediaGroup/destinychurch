@@ -119,19 +119,6 @@ export default function AlphaPage() {
   async function toggleAlphaBanner(next: boolean) {
     setAlphaBannerSaving(true);
     try {
-      // Turn off youth banner when turning on alpha
-      if (next && youthBannerActive) {
-        await fetch("/api/admin/banner", {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            active: false,
-            type: "youth_alpha",
-          }),
-        });
-        setYouthBannerActive(false);
-      }
-
       const res = await fetch("/api/admin/banner", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
@@ -152,19 +139,6 @@ export default function AlphaPage() {
   async function toggleYouthBanner(next: boolean) {
     setYouthBannerSaving(true);
     try {
-      // Turn off alpha banner when turning on youth
-      if (next && alphaBannerActive) {
-        await fetch("/api/admin/banner", {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            active: false,
-            type: "alpha",
-          }),
-        });
-        setAlphaBannerActive(false);
-      }
-
       const res = await fetch("/api/admin/banner", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
@@ -276,7 +250,7 @@ export default function AlphaPage() {
                 Site banner
               </p>
               <h2 className="text-lg font-black text-white">
-                Promote a course
+                Promote courses
               </h2>
             </div>
 
@@ -301,7 +275,8 @@ export default function AlphaPage() {
 
             <div className="border-t border-white/10 px-6 py-3 text-[11px] leading-relaxed text-white/50">
               Each shows a red top-bar with the next session date, auto-updating
-              weekly. Only one banner displays at a time.
+              weekly. Both can run at the same time — they stack at the top of
+              the site.
             </div>
           </div>
         </div>

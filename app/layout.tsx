@@ -73,16 +73,20 @@ async function getActiveBanner() {
   noStore();
   try {
     const supabase = createServiceClient();
-    const { data } = await supabase
+    const { data: rows } = await supabase
       .from("site_banner")
       .select("active, message, type, link, link_text")
-      .eq("active", true)
-      .limit(1)
-      .maybeSingle();
-    if (!data) return null;
+      .eq("active", true);
 
-    if (data.type === "alpha" || data.type === "youth_alpha") {
-      const eventType = data.type;
+    const banners = rows ?? [];
+    if (banners.length === 0) return null;
+
+    // Sitewide takes over everything.
+    const sitewide = banners.find((b) => b.type === "sitewide");
+    if (sitewide) return sitewide;
+
+    async function resolveAlpha(b: (typeof banners)[number]) {
+      const eventType = b.type === "youth_alpha" ? "youth_alpha" : "alpha";
       const { data: alpha } = await supabase
         .from("alpha_events")
         .select(
@@ -93,14 +97,37 @@ async function getActiveBanner() {
         .order("start_date", { ascending: true })
         .limit(1)
         .maybeSingle();
-
-      // No active Alpha event ⇒ silently hide the banner rather than render an empty bar
-      if (!alpha) return { ...data, active: false };
-
-      return { ...data, alpha };
+      if (!alpha) return { ...b, active: false };
+      return { ...b, alpha };
     }
 
-    return data;
+    const alpha = banners.find((b) => b.type === "alpha");
+    const youthAlpha = banners.find((b) => b.type === "youth_alpha");
+    const other = banners.find(
+      (b) => b.type !== "alpha" && b.type !== "youth_alpha"
+    );
+
+    const resolvedAlpha = alpha ? await resolveAlpha(alpha) : null;
+    const resolvedYouth = youthAlpha ? await resolveAlpha(youthAlpha) : null;
+
+    // Prefer Alpha as primary, then Youth Alpha, then any other banner.
+    const primary =
+      (resolvedAlpha?.active ? resolvedAlpha : null) ??
+      (resolvedYouth?.active ? resolvedYouth : null) ??
+      other ??
+      null;
+
+    if (!primary) return null;
+
+    // Chain the second alpha-type banner as a companion.
+    let companion: typeof primary | null = null;
+    if (primary.type === "alpha" && resolvedYouth?.active) {
+      companion = resolvedYouth;
+    } else if (primary.type === "youth_alpha" && resolvedAlpha?.active) {
+      companion = resolvedAlpha;
+    }
+
+    return companion ? { ...primary, companion } : primary;
   } catch {
     return null;
   }

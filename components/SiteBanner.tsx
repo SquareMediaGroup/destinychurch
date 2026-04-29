@@ -50,8 +50,26 @@ export default function SiteBanner() {
   if (isAdmin) return null;
   if (!banner.active) return null;
 
-  // Alpha banner — pulls from the active Alpha or Youth Alpha event, no message required
-  if ((banner.type === "alpha" || banner.type === "youth_alpha") && banner.alpha) {
+  const primary = renderBanner(banner, 0);
+  const companion = banner.companion?.active
+    ? renderBanner(banner.companion, 1)
+    : null;
+
+  if (!primary && !companion) return null;
+
+  return (
+    <>
+      {primary}
+      {companion}
+    </>
+  );
+}
+
+function renderBanner(banner: BannerData, index: number) {
+  const top = index * 40; // each bar is h-10 (40px)
+
+  if (banner.type === "alpha" || banner.type === "youth_alpha") {
+    if (!banner.alpha) return null;
     const { date, isFirst } = getNextAlphaSession(
       banner.alpha.start_date,
       banner.alpha.frequency,
@@ -64,17 +82,20 @@ export default function SiteBanner() {
     });
     const linkHref = banner.link || (banner.type === "youth_alpha" ? "/youth-alpha" : "/alpha");
     const linkText = banner.link_text || "Sign up";
-    const intro = banner.message?.trim() || (banner.type === "youth_alpha" ? "Youth Alpha" : "Alpha");
+    const eyebrow =
+      banner.message?.trim() ||
+      (banner.type === "youth_alpha" ? "Youth Alpha" : "Alpha");
     const cadenceLabel = isFirst ? "Starting" : "Next session";
     const bg = banner.type === "youth_alpha" ? "#b81313" : "#e51b1b";
 
     return (
       <div
-        className="fixed left-0 right-0 top-0 z-[60] flex h-10 items-center justify-center gap-3 px-4"
-        style={{ backgroundColor: bg }}
+        key={`${banner.type}-${index}`}
+        className="fixed left-0 right-0 z-[60] flex h-10 items-center justify-center gap-3 px-4"
+        style={{ backgroundColor: bg, top }}
       >
         <span className="text-[11px] font-black uppercase tracking-[0.32em] text-white">
-          {intro}
+          {eyebrow}
         </span>
         <span aria-hidden="true" className="h-3 w-px bg-white/40" />
         <p className="text-sm text-white">
@@ -92,14 +113,14 @@ export default function SiteBanner() {
 
   if (!banner.message) return null;
 
-  // Announcement and Notice banners — slim top bar, hidden on admin
   const isNotice = banner.type === "notice";
-
   return (
     <div
-      className={`fixed left-0 right-0 top-0 z-[60] flex h-10 items-center justify-center gap-3 px-4 ${
+      key={`${banner.type}-${index}`}
+      className={`fixed left-0 right-0 z-[60] flex h-10 items-center justify-center gap-3 px-4 ${
         isNotice ? "bg-[#6b7280]" : "bg-destiny-orange"
       }`}
+      style={{ top }}
     >
       <span className="material-symbols-rounded text-sm text-white/80">
         {isNotice ? "info" : "campaign"}

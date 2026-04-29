@@ -274,9 +274,8 @@ export default function AlphaPage() {
             </div>
 
             <div className="border-t border-white/10 px-6 py-3 text-[11px] leading-relaxed text-white/50">
-              Each shows a red top-bar with the next session date, auto-updating
-              weekly. Both can run at the same time — they stack at the top of
-              the site.
+              Both banners stack at the top when enabled, each with the next
+              session date, auto-updating weekly.
             </div>
           </div>
         </div>

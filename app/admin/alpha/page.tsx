@@ -252,8 +252,8 @@ export default function AlphaPage() {
           </p>
         </div>
 
-        {/* Alpha + Youth Alpha banner toggles — both can run at the same time */}
-        <div className="relative mb-8 overflow-hidden rounded-2xl border border-black/5 p-6 shadow-sm">
+        {/* Alpha + Youth Alpha banner toggles — choose which course to promote */}
+        <div className="relative mb-8 overflow-hidden rounded-2xl border border-black/5 shadow-sm">
           <div
             aria-hidden="true"
             className="absolute inset-0"
@@ -271,42 +271,37 @@ export default function AlphaPage() {
             }}
           />
           <div className="relative">
-            <p className="mb-1.5 text-[10px] font-black uppercase tracking-[0.32em] text-destiny-orange">
-              Site banner
-            </p>
-            <h2 className="mb-1 text-lg font-black text-white">
-              Show across the site
-            </h2>
-            <p className="mb-5 text-xs leading-relaxed text-white/60">
-              A red top-bar with the next session date, auto-updating each week.
-              Toggle between Alpha and Youth Alpha — only one shows at a time.
-              Other banner types live in{" "}
-              <Link
-                href="/admin/banner"
-                className="font-bold text-destiny-orange underline underline-offset-2 hover:text-white"
-              >
-                Banner settings
-              </Link>
-              .
-            </p>
+            <div className="border-b border-white/10 px-6 py-4">
+              <p className="mb-1.5 text-[10px] font-black uppercase tracking-[0.32em] text-destiny-orange">
+                Site banner
+              </p>
+              <h2 className="text-lg font-black text-white">
+                Promote a course
+              </h2>
+            </div>
 
-            <div className="space-y-2">
-              <BannerToggleRow
-                label="Show Alpha banner"
-                hint="Display next Alpha session"
+            <div className="grid gap-3 p-6 sm:grid-cols-2">
+              <BannerCard
+                label="Alpha"
+                hint="18+ course"
                 active={alphaBannerActive}
                 saving={alphaBannerSaving}
                 onToggle={() => toggleAlphaBanner(!alphaBannerActive)}
                 swatch="#e51b1b"
               />
-              <BannerToggleRow
-                label="Show Youth Alpha banner"
-                hint="Display next Youth Alpha session"
+              <BannerCard
+                label="Youth Alpha"
+                hint="11–18 course"
                 active={youthBannerActive}
                 saving={youthBannerSaving}
                 onToggle={() => toggleYouthBanner(!youthBannerActive)}
                 swatch="#b81313"
               />
+            </div>
+
+            <div className="border-t border-white/10 px-6 py-3 text-[11px] leading-relaxed text-white/50">
+              Each shows a red top-bar with the next session date, auto-updating
+              weekly. Only one banner displays at a time.
             </div>
           </div>
         </div>
@@ -551,7 +546,7 @@ interface FormatPillProps {
   label: string;
 }
 
-interface BannerToggleRowProps {
+interface BannerCardProps {
   label: string;
   hint: string;
   active: boolean;
@@ -560,41 +555,47 @@ interface BannerToggleRowProps {
   swatch: string;
 }
 
-function BannerToggleRow({
+function BannerCard({
   label,
   hint,
   active,
   saving,
   onToggle,
   swatch,
-}: BannerToggleRowProps) {
+}: BannerCardProps) {
   return (
-    <div className="flex items-center justify-between gap-4 rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3">
-      <div className="flex items-center gap-3">
-        <span
-          aria-hidden="true"
-          className="h-7 w-1.5 rounded-full"
-          style={{ backgroundColor: swatch }}
-        />
+    <div
+      className={`rounded-xl border px-4 py-4 transition ${
+        active
+          ? "border-destiny-orange/50 bg-destiny-orange/10"
+          : "border-white/10 bg-white/[0.04]"
+      }`}
+    >
+      <div className="mb-3 flex items-start justify-between gap-2">
         <div>
-          <p className="text-sm font-bold text-white">{label}</p>
-          <p className="text-[11px] text-white/50">{hint}</p>
+          <p className="text-sm font-black text-white">{label}</p>
+          <p className="text-[10px] text-white/50">{hint}</p>
         </div>
+        <button
+          type="button"
+          disabled={saving}
+          onClick={onToggle}
+          className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors ${
+            active ? "bg-destiny-orange" : "bg-white/15"
+          } ${saving ? "opacity-60" : ""}`}
+        >
+          <span
+            className={`inline-block h-4 w-4 rounded-full bg-white shadow transition-transform ${
+              active ? "translate-x-6" : "translate-x-1"
+            }`}
+          />
+        </button>
       </div>
-      <button
-        type="button"
-        disabled={saving}
-        onClick={onToggle}
-        className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors ${
-          active ? "bg-destiny-orange" : "bg-white/15"
-        } ${saving ? "opacity-60" : ""}`}
-      >
-        <span
-          className={`inline-block h-4 w-4 rounded-full bg-white shadow transition-transform ${
-            active ? "translate-x-6" : "translate-x-1"
-          }`}
-        />
-      </button>
+      <div
+        aria-hidden="true"
+        className="h-2 w-full rounded-full"
+        style={{ backgroundColor: swatch, opacity: active ? 0.4 : 0.2 }}
+      />
     </div>
   );
 }

@@ -119,6 +119,19 @@ export default function AlphaPage() {
   async function toggleAlphaBanner(next: boolean) {
     setAlphaBannerSaving(true);
     try {
+      // Turn off youth banner when turning on alpha
+      if (next && youthBannerActive) {
+        await fetch("/api/admin/banner", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            active: false,
+            type: "youth_alpha",
+          }),
+        });
+        setYouthBannerActive(false);
+      }
+
       const res = await fetch("/api/admin/banner", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
@@ -139,6 +152,19 @@ export default function AlphaPage() {
   async function toggleYouthBanner(next: boolean) {
     setYouthBannerSaving(true);
     try {
+      // Turn off alpha banner when turning on youth
+      if (next && alphaBannerActive) {
+        await fetch("/api/admin/banner", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            active: false,
+            type: "alpha",
+          }),
+        });
+        setAlphaBannerActive(false);
+      }
+
       const res = await fetch("/api/admin/banner", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
@@ -252,9 +278,9 @@ export default function AlphaPage() {
               Show across the site
             </h2>
             <p className="mb-5 text-xs leading-relaxed text-white/60">
-              Independent top-bars with each course&apos;s next session date,
-              auto-updating each week. Run one or both — they stack when both
-              are on. Other banner types live in{" "}
+              A red top-bar with the next session date, auto-updating each week.
+              Toggle between Alpha and Youth Alpha — only one shows at a time.
+              Other banner types live in{" "}
               <Link
                 href="/admin/banner"
                 className="font-bold text-destiny-orange underline underline-offset-2 hover:text-white"
@@ -266,16 +292,16 @@ export default function AlphaPage() {
 
             <div className="space-y-2">
               <BannerToggleRow
-                label="Alpha banner"
-                hint="Red bar with the next Alpha session"
+                label="Show Alpha banner"
+                hint="Display next Alpha session"
                 active={alphaBannerActive}
                 saving={alphaBannerSaving}
                 onToggle={() => toggleAlphaBanner(!alphaBannerActive)}
                 swatch="#e51b1b"
               />
               <BannerToggleRow
-                label="Youth Alpha banner"
-                hint="Companion bar with the next Youth Alpha session"
+                label="Show Youth Alpha banner"
+                hint="Display next Youth Alpha session"
                 active={youthBannerActive}
                 saving={youthBannerSaving}
                 onToggle={() => toggleYouthBanner(!youthBannerActive)}

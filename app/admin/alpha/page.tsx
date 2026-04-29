@@ -226,57 +226,39 @@ export default function AlphaPage() {
           </p>
         </div>
 
-        {/* Alpha + Youth Alpha banner toggles — choose which course to promote */}
-        <div className="relative mb-8 overflow-hidden rounded-2xl border border-black/5 shadow-sm">
-          <div
-            aria-hidden="true"
-            className="absolute inset-0"
-            style={{
-              background:
-                "linear-gradient(120deg, #2a0404 0%, #3a0606 55%, #501010 100%)",
-            }}
-          />
-          <div
-            aria-hidden="true"
-            className="absolute -right-12 -top-12 h-44 w-44 rounded-full"
-            style={{
-              background:
-                "radial-gradient(closest-side, rgba(232,108,42,0.35), transparent 70%)",
-            }}
-          />
-          <div className="relative">
-            <div className="border-b border-white/10 px-6 py-4">
-              <p className="mb-1.5 text-[10px] font-black uppercase tracking-[0.32em] text-destiny-orange">
-                Site banner
-              </p>
-              <h2 className="text-lg font-black text-white">
-                Promote courses
-              </h2>
-            </div>
+        {/* Alpha + Youth Alpha banner toggles — promote both courses */}
+        <div className="mb-8 rounded-2xl border border-black/5 bg-white p-6 shadow-sm">
+          <div className="mb-4">
+            <p className="mb-1.5 text-[10px] font-black uppercase tracking-[0.32em] text-destiny-grey/50">
+              Site banner
+            </p>
+            <h2 className="text-lg font-black text-destiny-grey">
+              Promote courses
+            </h2>
+          </div>
 
-            <div className="grid gap-3 p-6 sm:grid-cols-2">
-              <BannerCard
-                label="Alpha"
-                hint="18+ course"
-                active={alphaBannerActive}
-                saving={alphaBannerSaving}
-                onToggle={() => toggleAlphaBanner(!alphaBannerActive)}
-                swatch="#e51b1b"
-              />
-              <BannerCard
-                label="Youth Alpha"
-                hint="11–18 course"
-                active={youthBannerActive}
-                saving={youthBannerSaving}
-                onToggle={() => toggleYouthBanner(!youthBannerActive)}
-                swatch="#b81313"
-              />
-            </div>
+          <p className="mb-5 text-xs leading-relaxed text-destiny-grey/60">
+            Toggle on to show each course&apos;s banner at the top of the site.
+            Both can run at once — they stack when both are enabled.
+          </p>
 
-            <div className="border-t border-white/10 px-6 py-3 text-[11px] leading-relaxed text-white/50">
-              Both banners stack at the top when enabled, each with the next
-              session date, auto-updating weekly.
-            </div>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <BannerCard
+              label="Alpha"
+              hint="18+ course"
+              active={alphaBannerActive}
+              saving={alphaBannerSaving}
+              onToggle={() => toggleAlphaBanner(!alphaBannerActive)}
+              swatch="#e51b1b"
+            />
+            <BannerCard
+              label="Youth Alpha"
+              hint="11–18 course"
+              active={youthBannerActive}
+              saving={youthBannerSaving}
+              onToggle={() => toggleYouthBanner(!youthBannerActive)}
+              swatch="#b81313"
+            />
           </div>
         </div>
 
@@ -539,23 +521,23 @@ function BannerCard({
 }: BannerCardProps) {
   return (
     <div
-      className={`rounded-xl border px-4 py-4 transition ${
+      className={`rounded-xl border px-4 py-3 transition ${
         active
-          ? "border-destiny-orange/50 bg-destiny-orange/10"
-          : "border-white/10 bg-white/[0.04]"
+          ? "border-destiny-orange/30 bg-destiny-orange/5"
+          : "border-black/8 bg-black/[0.02]"
       }`}
     >
-      <div className="mb-3 flex items-start justify-between gap-2">
+      <div className="mb-2 flex items-start justify-between gap-2">
         <div>
-          <p className="text-sm font-black text-white">{label}</p>
-          <p className="text-[10px] text-white/50">{hint}</p>
+          <p className="text-sm font-bold text-destiny-grey">{label}</p>
+          <p className="text-[10px] text-destiny-grey/50">{hint}</p>
         </div>
         <button
           type="button"
           disabled={saving}
           onClick={onToggle}
           className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors ${
-            active ? "bg-destiny-orange" : "bg-white/15"
+            active ? "bg-destiny-orange" : "bg-black/10"
           } ${saving ? "opacity-60" : ""}`}
         >
           <span
@@ -567,8 +549,8 @@ function BannerCard({
       </div>
       <div
         aria-hidden="true"
-        className="h-2 w-full rounded-full"
-        style={{ backgroundColor: swatch, opacity: active ? 0.4 : 0.2 }}
+        className="h-1.5 w-full rounded-full"
+        style={{ backgroundColor: swatch, opacity: active ? 0.5 : 0.15 }}
       />
     </div>
   );

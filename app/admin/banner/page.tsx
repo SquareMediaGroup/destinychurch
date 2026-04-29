@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import type { BannerType } from "@/contexts/BannerContext";
-import { getNextAlphaSession } from "@/lib/alphaSession";
 
 interface Banner {
   active: boolean;
@@ -10,13 +10,6 @@ interface Banner {
   type: BannerType;
   link: string;
   link_text: string;
-}
-
-interface ActiveAlpha {
-  start_date: string;
-  signup_url: string;
-  frequency: string;
-  custom_interval_days: number | null;
 }
 
 const TYPES: {
@@ -33,14 +26,6 @@ const TYPES: {
       "Highlighted in orange — for events, news or time-sensitive updates.",
     color: "bg-destiny-orange",
     icon: "campaign",
-  },
-  {
-    value: "alpha",
-    label: "Alpha",
-    description:
-      "Bright-red bar that auto-pulls from the active Alpha event. Date updates as sessions pass.",
-    color: "bg-[#e51b1b]",
-    icon: "auto_awesome",
   },
   {
     value: "notice",
@@ -68,31 +53,26 @@ export default function AdminBannerPage() {
     link: "",
     link_text: "",
   });
-  const [alpha, setAlpha] = useState<ActiveAlpha | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState("");
 
   useEffect(() => {
-    Promise.all([
-      fetch("/api/admin/banner").then((r) => r.json()),
-      fetch("/api/admin/alpha-events").then((r) => r.json()),
-    ])
-      .then(([b, events]) => {
+    fetch("/api/admin/banner")
+      .then((r) => r.json())
+      .then((b) => {
+        const t: BannerType =
+          b.type === "alpha" || b.type === "youth_alpha"
+            ? "announcement"
+            : (b.type ?? "announcement");
         setBanner({
           active: b.active ?? false,
           message: b.message ?? "",
-          type: b.type ?? "announcement",
+          type: t,
           link: b.link ?? "",
           link_text: b.link_text ?? "",
         });
-        if (Array.isArray(events)) {
-          const active = events.find(
-            (e) => e.type === "alpha" && e.active
-          );
-          setAlpha(active ?? null);
-        }
       })
       .finally(() => setLoading(false));
   }, []);
@@ -117,26 +97,7 @@ export default function AdminBannerPage() {
   }
 
   const selectedType = TYPES.find((t) => t.value === banner.type) ?? TYPES[0];
-  const isAlpha = banner.type === "alpha";
   const isSitewide = banner.type === "sitewide";
-
-  const alphaPreview = alpha
-    ? (() => {
-        const { date, isFirst } = getNextAlphaSession(
-          alpha.start_date,
-          alpha.frequency,
-          alpha.custom_interval_days
-        );
-        return {
-          dateLabel: date.toLocaleDateString("en-GB", {
-            weekday: "short",
-            day: "numeric",
-            month: "long",
-          }),
-          cadenceLabel: isFirst ? "Starting" : "Next session",
-        };
-      })()
-    : null;
 
   return (
     <div className="mx-auto max-w-6xl px-6 py-10">
@@ -158,7 +119,7 @@ export default function AdminBannerPage() {
         ) : (
           <form onSubmit={handleSave} className="flex flex-col gap-6">
             {/* Live preview */}
-            {banner.active && (isAlpha ? !!alphaPreview : !!banner.message) && (
+            {banner.active && !!banner.message && (
               isSitewide ? (
                 <div className="flex flex-col items-center justify-center gap-3 rounded-2xl bg-[#111] px-6 py-10 text-center">
                   <span className="material-symbols-rounded text-4xl text-white/20">build</span>
@@ -172,25 +133,6 @@ export default function AdminBannerPage() {
                   <p className="mt-3 rounded-full bg-red-500/20 px-3 py-1 text-xs font-bold text-red-400">
                     ⚠ This will block all visitors except /admin
                   </p>
-                </div>
-              ) : isAlpha ? (
-                <div
-                  className="flex h-10 items-center justify-center gap-3 rounded-2xl px-6"
-                  style={{ backgroundColor: "#e51b1b" }}
-                >
-                  <span className="text-[11px] font-black uppercase tracking-[0.32em] text-white">
-                    {banner.message?.trim() || "Alpha"}
-                  </span>
-                  <span className="h-3 w-px bg-white/40" />
-                  <p className="text-sm text-white">
-                    {alphaPreview?.cadenceLabel}{" "}
-                    <span className="font-bold">
-                      {alphaPreview?.dateLabel}
-                    </span>
-                  </p>
-                  <span className="text-sm font-bold text-white underline underline-offset-2">
-                    {banner.link_text || "Sign up"} →
-                  </span>
                 </div>
               ) : (
                 <div
@@ -210,6 +152,18 @@ export default function AdminBannerPage() {
                 </div>
               )
             )}
+
+            <div className="rounded-xl border border-dashed border-[#e51b1b]/30 bg-[#e51b1b]/[0.04] p-4 text-xs leading-relaxed text-destiny-grey/70">
+              Looking for the Alpha banners? Alpha and Youth Alpha each have
+              their own toggle on the{" "}
+              <Link
+                href="/admin/alpha"
+                className="font-bold text-[#e51b1b] underline underline-offset-2"
+              >
+                Alpha events page
+              </Link>{" "}
+              — both can run at once and will stack at the top of the site.
+            </div>
 
             <div className="rounded-2xl border border-black/5 bg-white p-6 shadow-sm flex flex-col gap-5">
               {/* Active toggle */}
@@ -288,150 +242,61 @@ export default function AdminBannerPage() {
 
               <div className="h-px bg-black/5" />
 
-              {isAlpha ? (
-                <div className="rounded-xl border border-dashed border-[#e51b1b]/30 bg-[#e51b1b]/[0.04] p-5">
-                  <p className="mb-2 text-xs font-bold uppercase tracking-wider text-[#e51b1b]">
-                    Auto-populated from Alpha
-                  </p>
-                  {alpha ? (
-                    <p className="text-sm text-destiny-grey/70">
-                      Pulling from your active Alpha event ({alphaPreview?.cadenceLabel.toLowerCase()}{" "}
-                      <strong>{alphaPreview?.dateLabel}</strong>). Date advances
-                      automatically each {alpha.frequency.replace("_", " ")} as
-                      sessions pass. Edit details under{" "}
-                      <a
-                        href="/admin/alpha"
-                        className="font-bold text-[#e51b1b] underline underline-offset-2"
-                      >
-                        Alpha events
-                      </a>
-                      .
-                    </p>
-                  ) : (
-                    <p className="text-sm text-destiny-grey/70">
-                      No active Alpha event yet. The banner will stay hidden
-                      until you{" "}
-                      <a
-                        href="/admin/alpha"
-                        className="font-bold text-[#e51b1b] underline underline-offset-2"
-                      >
-                        create one
-                      </a>
-                      .
-                    </p>
-                  )}
+              {/* Message */}
+              <div>
+                <label className="mb-1.5 block text-xs font-bold text-destiny-grey/60">
+                  Message <span className="text-red-400">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={banner.message}
+                  onChange={(e) =>
+                    setBanner((b) => ({ ...b, message: e.target.value }))
+                  }
+                  placeholder={
+                    isSitewide
+                      ? "We're carrying out scheduled maintenance. Back shortly."
+                      : "Service times are changing this Sunday…"
+                  }
+                  className="w-full rounded-xl border border-black/10 px-4 py-2.5 text-sm text-destiny-grey placeholder:text-destiny-grey/30 focus:border-destiny-orange/50 focus:outline-none focus:ring-2 focus:ring-destiny-orange/20"
+                />
+              </div>
 
-                  <div className="mt-4 grid gap-4 sm:grid-cols-2">
-                    <div>
-                      <label className="mb-1.5 block text-xs font-bold text-destiny-grey/60">
-                        Eyebrow{" "}
-                        <span className="font-normal">(optional)</span>
-                      </label>
-                      <input
-                        type="text"
-                        value={banner.message}
-                        onChange={(e) =>
-                          setBanner((b) => ({ ...b, message: e.target.value }))
-                        }
-                        placeholder="Alpha"
-                        className="w-full rounded-xl border border-black/10 bg-white px-4 py-2.5 text-sm text-destiny-grey placeholder:text-destiny-grey/30 focus:border-destiny-orange/50 focus:outline-none focus:ring-2 focus:ring-destiny-orange/20"
-                      />
-                    </div>
-                    <div>
-                      <label className="mb-1.5 block text-xs font-bold text-destiny-grey/60">
-                        CTA label{" "}
-                        <span className="font-normal">(optional)</span>
-                      </label>
-                      <input
-                        type="text"
-                        value={banner.link_text}
-                        onChange={(e) =>
-                          setBanner((b) => ({
-                            ...b,
-                            link_text: e.target.value,
-                          }))
-                        }
-                        placeholder="Sign up"
-                        className="w-full rounded-xl border border-black/10 bg-white px-4 py-2.5 text-sm text-destiny-grey placeholder:text-destiny-grey/30 focus:border-destiny-orange/50 focus:outline-none focus:ring-2 focus:ring-destiny-orange/20"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="mt-4">
-                    <label className="mb-1.5 block text-xs font-bold text-destiny-grey/60">
-                      CTA link{" "}
-                      <span className="font-normal">(default /alpha)</span>
-                    </label>
-                    <input
-                      type="text"
-                      value={banner.link}
-                      onChange={(e) =>
-                        setBanner((b) => ({ ...b, link: e.target.value }))
-                      }
-                      placeholder="/alpha"
-                      className="w-full rounded-xl border border-black/10 bg-white px-4 py-2.5 text-sm text-destiny-grey placeholder:text-destiny-grey/30 focus:border-destiny-orange/50 focus:outline-none focus:ring-2 focus:ring-destiny-orange/20"
-                    />
-                  </div>
+              {/* Link */}
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div>
+                  <label className="mb-1.5 block text-xs font-bold text-destiny-grey/60">
+                    Link URL <span className="font-normal">(optional)</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={banner.link}
+                    onChange={(e) =>
+                      setBanner((b) => ({ ...b, link: e.target.value }))
+                    }
+                    placeholder="/whats-on"
+                    className="w-full rounded-xl border border-black/10 px-4 py-2.5 text-sm text-destiny-grey placeholder:text-destiny-grey/30 focus:border-destiny-orange/50 focus:outline-none focus:ring-2 focus:ring-destiny-orange/20"
+                  />
                 </div>
-              ) : (
-                <>
-                  {/* Message */}
-                  <div>
-                    <label className="mb-1.5 block text-xs font-bold text-destiny-grey/60">
-                      Message <span className="text-red-400">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      value={banner.message}
-                      onChange={(e) =>
-                        setBanner((b) => ({ ...b, message: e.target.value }))
-                      }
-                      placeholder={
-                        isSitewide
-                          ? "We're carrying out scheduled maintenance. Back shortly."
-                          : "Service times are changing this Sunday…"
-                      }
-                      className="w-full rounded-xl border border-black/10 px-4 py-2.5 text-sm text-destiny-grey placeholder:text-destiny-grey/30 focus:border-destiny-orange/50 focus:outline-none focus:ring-2 focus:ring-destiny-orange/20"
-                    />
-                  </div>
-
-                  {/* Link */}
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    <div>
-                      <label className="mb-1.5 block text-xs font-bold text-destiny-grey/60">
-                        Link URL <span className="font-normal">(optional)</span>
-                      </label>
-                      <input
-                        type="text"
-                        value={banner.link}
-                        onChange={(e) =>
-                          setBanner((b) => ({ ...b, link: e.target.value }))
-                        }
-                        placeholder="/whats-on"
-                        className="w-full rounded-xl border border-black/10 px-4 py-2.5 text-sm text-destiny-grey placeholder:text-destiny-grey/30 focus:border-destiny-orange/50 focus:outline-none focus:ring-2 focus:ring-destiny-orange/20"
-                      />
-                    </div>
-                    <div>
-                      <label className="mb-1.5 block text-xs font-bold text-destiny-grey/60">
-                        Link Text{" "}
-                        <span className="font-normal">(optional)</span>
-                      </label>
-                      <input
-                        type="text"
-                        value={banner.link_text}
-                        onChange={(e) =>
-                          setBanner((b) => ({
-                            ...b,
-                            link_text: e.target.value,
-                          }))
-                        }
-                        placeholder="Find out more"
-                        className="w-full rounded-xl border border-black/10 px-4 py-2.5 text-sm text-destiny-grey placeholder:text-destiny-grey/30 focus:border-destiny-orange/50 focus:outline-none focus:ring-2 focus:ring-destiny-orange/20"
-                      />
-                    </div>
-                  </div>
-                </>
-              )}
+                <div>
+                  <label className="mb-1.5 block text-xs font-bold text-destiny-grey/60">
+                    Link Text{" "}
+                    <span className="font-normal">(optional)</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={banner.link_text}
+                    onChange={(e) =>
+                      setBanner((b) => ({
+                        ...b,
+                        link_text: e.target.value,
+                      }))
+                    }
+                    placeholder="Find out more"
+                    className="w-full rounded-xl border border-black/10 px-4 py-2.5 text-sm text-destiny-grey placeholder:text-destiny-grey/30 focus:border-destiny-orange/50 focus:outline-none focus:ring-2 focus:ring-destiny-orange/20"
+                  />
+                </div>
+              </div>
             </div>
 
             {error && (

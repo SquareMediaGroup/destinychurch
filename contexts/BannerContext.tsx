@@ -2,7 +2,12 @@
 
 import { createContext, useContext } from "react";
 
-export type BannerType = "announcement" | "notice" | "sitewide" | "alpha";
+export type BannerType =
+  | "announcement"
+  | "notice"
+  | "sitewide"
+  | "alpha"
+  | "youth_alpha";
 
 export interface AlphaBannerInfo {
   start_date: string;
@@ -21,6 +26,8 @@ export interface BannerData {
   link?: string | null;
   link_text?: string | null;
   alpha?: AlphaBannerInfo | null;
+  // Optional companion banner — used when Alpha and Youth Alpha run together
+  companion?: BannerData | null;
 }
 
 export const BannerContext = createContext<BannerData>({

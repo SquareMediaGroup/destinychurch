@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
+import Link from "next/link";
 import {
   type AlphaFrequency,
   FREQUENCY_LABEL,
@@ -60,19 +61,22 @@ export default function AlphaPage() {
   const [frequency, setFrequency] = useState<AlphaFrequency>("weekly");
   const [customIntervalDays, setCustomIntervalDays] = useState<string>("21");
 
-  // Alpha banner state — separate row in site_banner shared with /admin/banner
-  const [bannerActive, setBannerActive] = useState(false);
-  const [bannerOtherType, setBannerOtherType] = useState<string | null>(null);
-  const [bannerSaving, setBannerSaving] = useState(false);
+  // Alpha + Youth Alpha banners — independent rows in site_banner, can run together
+  const [alphaBannerActive, setAlphaBannerActive] = useState(false);
+  const [youthBannerActive, setYouthBannerActive] = useState(false);
+  const [alphaBannerSaving, setAlphaBannerSaving] = useState(false);
+  const [youthBannerSaving, setYouthBannerSaving] = useState(false);
 
   const fetchBanner = useCallback(async () => {
     try {
-      const res = await fetch("/api/admin/banner");
-      const data = await res.json();
-      const active = !!data?.active;
-      const t = data?.type ?? "announcement";
-      setBannerActive(active && t === "alpha");
-      setBannerOtherType(active && t !== "alpha" ? t : null);
+      const [alphaRes, youthRes] = await Promise.all([
+        fetch("/api/admin/banner?type=alpha").then((r) => r.json()),
+        fetch("/api/admin/banner?type=youth_alpha").then((r) => r.json()),
+      ]);
+      setAlphaBannerActive(!!alphaRes?.active && alphaRes?.type === "alpha");
+      setYouthBannerActive(
+        !!youthRes?.active && youthRes?.type === "youth_alpha"
+      );
     } catch {
       // ignore
     }
@@ -112,35 +116,43 @@ export default function AlphaPage() {
     setCustomIntervalDays("21");
   }
 
-  async function toggleBanner(next: boolean) {
-    setBannerSaving(true);
+  async function toggleAlphaBanner(next: boolean) {
+    setAlphaBannerSaving(true);
     try {
-      const payload = next
-        ? {
-            active: true,
-            type: "alpha",
-            message: "",
-            link: "/alpha",
-            link_text: "Sign up",
-          }
-        : {
-            active: false,
-            type: "alpha",
-            message: "",
-            link: "/alpha",
-            link_text: "Sign up",
-          };
       const res = await fetch("/api/admin/banner", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+        body: JSON.stringify({
+          active: next,
+          type: "alpha",
+          message: "",
+          link: "/alpha",
+          link_text: "Sign up",
+        }),
       });
-      if (res.ok) {
-        setBannerActive(next);
-        if (next) setBannerOtherType(null);
-      }
+      if (res.ok) setAlphaBannerActive(next);
     } finally {
-      setBannerSaving(false);
+      setAlphaBannerSaving(false);
+    }
+  }
+
+  async function toggleYouthBanner(next: boolean) {
+    setYouthBannerSaving(true);
+    try {
+      const res = await fetch("/api/admin/banner", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          active: next,
+          type: "youth_alpha",
+          message: "Youth Alpha",
+          link: "/youth-alpha",
+          link_text: "Sign up",
+        }),
+      });
+      if (res.ok) setYouthBannerActive(next);
+    } finally {
+      setYouthBannerSaving(false);
     }
   }
 
@@ -214,7 +226,7 @@ export default function AlphaPage() {
           </p>
         </div>
 
-        {/* Alpha site banner toggle — mirrors /admin/banner */}
+        {/* Alpha + Youth Alpha banner toggles — both can run at the same time */}
         <div className="relative mb-8 overflow-hidden rounded-2xl border border-black/5 p-6 shadow-sm">
           <div
             aria-hidden="true"
@@ -232,48 +244,44 @@ export default function AlphaPage() {
                 "radial-gradient(closest-side, rgba(232,108,42,0.35), transparent 70%)",
             }}
           />
-          <div className="relative flex items-start justify-between gap-4">
-            <div className="flex-1">
-              <p className="mb-1.5 text-[10px] font-black uppercase tracking-[0.32em] text-destiny-orange">
-                Site banner
-              </p>
-              <h2 className="mb-1 text-lg font-black text-white">
-                Show Alpha across the site
-              </h2>
-              <p className="text-xs leading-relaxed text-white/60">
-                A red top-bar with the next session date, auto-updating each
-                week. Toggleable here or in{" "}
-                <a
-                  href="/admin/banner"
-                  className="font-bold text-destiny-orange underline underline-offset-2 hover:text-white"
-                >
-                  Banner settings
-                </a>
-                .
-              </p>
-              {bannerOtherType && !bannerActive && (
-                <p className="mt-2 inline-flex items-center gap-1 rounded-full bg-white/10 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-white/70">
-                  <span className="material-symbols-rounded text-[14px] leading-none">
-                    swap_horiz
-                  </span>
-                  Will replace current {bannerOtherType} banner
-                </p>
-              )}
-            </div>
-            <button
-              type="button"
-              disabled={bannerSaving}
-              onClick={() => toggleBanner(!bannerActive)}
-              className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors ${
-                bannerActive ? "bg-destiny-orange" : "bg-white/15"
-              } ${bannerSaving ? "opacity-60" : ""}`}
-            >
-              <span
-                className={`inline-block h-4 w-4 rounded-full bg-white shadow transition-transform ${
-                  bannerActive ? "translate-x-6" : "translate-x-1"
-                }`}
+          <div className="relative">
+            <p className="mb-1.5 text-[10px] font-black uppercase tracking-[0.32em] text-destiny-orange">
+              Site banner
+            </p>
+            <h2 className="mb-1 text-lg font-black text-white">
+              Show across the site
+            </h2>
+            <p className="mb-5 text-xs leading-relaxed text-white/60">
+              Independent top-bars with each course&apos;s next session date,
+              auto-updating each week. Run one or both — they stack when both
+              are on. Other banner types live in{" "}
+              <Link
+                href="/admin/banner"
+                className="font-bold text-destiny-orange underline underline-offset-2 hover:text-white"
+              >
+                Banner settings
+              </Link>
+              .
+            </p>
+
+            <div className="space-y-2">
+              <BannerToggleRow
+                label="Alpha banner"
+                hint="Red bar with the next Alpha session"
+                active={alphaBannerActive}
+                saving={alphaBannerSaving}
+                onToggle={() => toggleAlphaBanner(!alphaBannerActive)}
+                swatch="#e51b1b"
               />
-            </button>
+              <BannerToggleRow
+                label="Youth Alpha banner"
+                hint="Companion bar with the next Youth Alpha session"
+                active={youthBannerActive}
+                saving={youthBannerSaving}
+                onToggle={() => toggleYouthBanner(!youthBannerActive)}
+                swatch="#b81313"
+              />
+            </div>
           </div>
         </div>
 
@@ -515,6 +523,54 @@ interface FormatPillProps {
   onClick: () => void;
   icon: string;
   label: string;
+}
+
+interface BannerToggleRowProps {
+  label: string;
+  hint: string;
+  active: boolean;
+  saving: boolean;
+  onToggle: () => void;
+  swatch: string;
+}
+
+function BannerToggleRow({
+  label,
+  hint,
+  active,
+  saving,
+  onToggle,
+  swatch,
+}: BannerToggleRowProps) {
+  return (
+    <div className="flex items-center justify-between gap-4 rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3">
+      <div className="flex items-center gap-3">
+        <span
+          aria-hidden="true"
+          className="h-7 w-1.5 rounded-full"
+          style={{ backgroundColor: swatch }}
+        />
+        <div>
+          <p className="text-sm font-bold text-white">{label}</p>
+          <p className="text-[11px] text-white/50">{hint}</p>
+        </div>
+      </div>
+      <button
+        type="button"
+        disabled={saving}
+        onClick={onToggle}
+        className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors ${
+          active ? "bg-destiny-orange" : "bg-white/15"
+        } ${saving ? "opacity-60" : ""}`}
+      >
+        <span
+          className={`inline-block h-4 w-4 rounded-full bg-white shadow transition-transform ${
+            active ? "translate-x-6" : "translate-x-1"
+          }`}
+        />
+      </button>
+    </div>
+  );
 }
 
 function FormatPill({ active, onClick, icon, label }: FormatPillProps) {

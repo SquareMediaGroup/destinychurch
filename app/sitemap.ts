@@ -19,6 +19,8 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { url: `${BASE_URL}/kids`,         changeFrequency: "monthly", priority: 0.7 },
     { url: `${BASE_URL}/youth`,        changeFrequency: "monthly", priority: 0.7 },
     { url: `${BASE_URL}/young-adults`, changeFrequency: "monthly", priority: 0.7 },
+    { url: `${BASE_URL}/baptism`,      changeFrequency: "monthly", priority: 0.7 },
+    { url: `${BASE_URL}/child-dedication`, changeFrequency: "monthly", priority: 0.6 },
     { url: `${BASE_URL}/hire`,          changeFrequency: "monthly", priority: 0.7 },
     { url: `${BASE_URL}/contact`,      changeFrequency: "yearly",  priority: 0.6 },
     { url: `${BASE_URL}/privacy`,      changeFrequency: "yearly",  priority: 0.3 },

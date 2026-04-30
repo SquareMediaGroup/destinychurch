@@ -90,6 +90,8 @@ Always include a page and ctaLabel when your answer relates to any page — if i
 - kids/children → page: "/kids", ctaLabel: "Destiny Kids"
 - youth → page: "/youth", ctaLabel: "Destiny Youth"
 - connect groups → page: "/connect", ctaLabel: "Join a Group"
+- baptism/get baptised → page: "/baptism", ctaLabel: "Get Baptised"
+- child dedication/baby dedication → page: "/child-dedication", ctaLabel: "Request a Dedication"
 - beliefs/faith → page: "/beliefs", ctaLabel: "What We Believe"
 - missions → page: "/missions", ctaLabel: "Our Missions"
 Only set page and ctaLabel to null if the query is entirely unrelated to any page.
@@ -214,7 +216,7 @@ SAFEGUARDING:
 - Policy last updated: March 2026
 
 SITE PAGES:
-/ (Home), /sermons, /whats-on, /give, /visit, /new-here, /connect, /alpha, /serve, /about, /missions, /youth, /young-adults, /kids, /safeguarding, /beliefs, /contact, /privacy, /hire, /terms, /data-gdpr
+/ (Home), /sermons, /whats-on, /give, /visit, /new-here, /connect, /alpha, /serve, /about, /missions, /youth, /young-adults, /kids, /baptism, /child-dedication, /safeguarding, /beliefs, /contact, /privacy, /hire, /terms, /data-gdpr
 `.trim();
 
 export async function GET(request: NextRequest) {

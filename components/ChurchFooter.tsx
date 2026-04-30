@@ -16,6 +16,8 @@ const connectLinks = [
   { label: "Connect Card", href: "/connect-card" },
   { label: "Join a Team", href: "/serve" },
   { label: "Connect Groups", href: "/connect" },
+  { label: "Baptism", href: "/baptism" },
+  { label: "Child Dedication", href: "/child-dedication" },
 ];
 
 const legalLinks = [

@@ -77,7 +77,7 @@ function EventCard({ event }: { event: DeduplicatedEvent }) {
       href={href}
       target="_blank"
       rel="noopener noreferrer"
-      className="group flex min-w-[240px] max-w-[280px] shrink-0 flex-col overflow-hidden rounded-2xl bg-white shadow-[0_2px_16px_rgba(0,0,0,0.08)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_8px_32px_rgba(0,0,0,0.12)] sm:min-w-[280px] sm:max-w-[320px]"
+      className="group flex min-w-[240px] max-w-[280px] shrink-0 flex-col overflow-hidden rounded-2xl bg-white shadow-[0_2px_16px_rgba(0,0,0,0.08)] transition-all duration-300 hover:-translate-y-1 sm:min-w-[280px] sm:max-w-[320px]"
     >
       {imageUrl ? (
         /* With image */

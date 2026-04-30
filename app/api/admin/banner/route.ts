@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { createServiceClient } from "@/utils/supabase/service";
 
-const ALPHA_TYPES = new Set(["alpha", "youth_alpha"]);
+const ALPHA_TYPES = new Set(["alpha", "youth_alpha", "recovery"]);
 
 export async function GET(request: Request) {
   const url = new URL(request.url);
@@ -33,7 +33,7 @@ export async function GET(request: Request) {
   const { data: nonAlpha, error: nonAlphaErr } = await supabase
     .from("site_banner")
     .select("*")
-    .not("type", "in", "(alpha,youth_alpha)")
+    .not("type", "in", "(alpha,youth_alpha,recovery)")
     .order("created_at", { ascending: true })
     .limit(1)
     .maybeSingle();
@@ -75,7 +75,7 @@ export async function PUT(request: Request) {
   const existingQuery = supabase.from("site_banner").select("id").limit(1);
   const { data: existing } = isAlphaType
     ? await existingQuery.eq("type", resolvedType).maybeSingle()
-    : await existingQuery.not("type", "in", "(alpha,youth_alpha)").maybeSingle();
+    : await existingQuery.not("type", "in", "(alpha,youth_alpha,recovery)").maybeSingle();
 
   let error;
   if (existing?.id) {

@@ -7,7 +7,8 @@ export type BannerType =
   | "notice"
   | "sitewide"
   | "alpha"
-  | "youth_alpha";
+  | "youth_alpha"
+  | "recovery";
 
 export interface AlphaBannerInfo {
   start_date: string;

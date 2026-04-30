@@ -12,10 +12,11 @@ export default function BannerSpacer() {
   if (pathname === "/") return null;
   if (pathname.startsWith("/admin")) return null;
 
-  const isAlphaType = (t: string) => t === "alpha" || t === "youth_alpha";
+  const isEventType = (t: string) =>
+    t === "alpha" || t === "youth_alpha" || t === "recovery";
   const isVisible = (b: typeof banner) => {
     if (!b.active) return false;
-    if (isAlphaType(b.type)) return !!b.alpha;
+    if (isEventType(b.type)) return !!b.alpha;
     return !!b.message;
   };
 

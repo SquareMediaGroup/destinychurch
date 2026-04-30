@@ -85,14 +85,15 @@ async function getActiveBanner() {
     const sitewide = banners.find((b) => b.type === "sitewide");
     if (sitewide) return sitewide;
 
-    async function resolveAlpha(b: (typeof banners)[number]) {
-      const eventType = b.type === "youth_alpha" ? "youth_alpha" : "alpha";
+    const EVENT_TYPES = new Set(["alpha", "youth_alpha", "recovery"]);
+
+    async function resolveEvent(b: (typeof banners)[number]) {
       const { data: alpha } = await supabase
         .from("alpha_events")
         .select(
           "start_date, signup_url, frequency, custom_interval_days, format, location, meeting_platform"
         )
-        .eq("type", eventType)
+        .eq("type", b.type)
         .eq("active", true)
         .order("start_date", { ascending: true })
         .limit(1)
@@ -103,29 +104,24 @@ async function getActiveBanner() {
 
     const alpha = banners.find((b) => b.type === "alpha");
     const youthAlpha = banners.find((b) => b.type === "youth_alpha");
-    const other = banners.find(
-      (b) => b.type !== "alpha" && b.type !== "youth_alpha"
+    const recovery = banners.find((b) => b.type === "recovery");
+    const other = banners.find((b) => !EVENT_TYPES.has(b.type));
+
+    const resolvedAlpha = alpha ? await resolveEvent(alpha) : null;
+    const resolvedYouth = youthAlpha ? await resolveEvent(youthAlpha) : null;
+    const resolvedRecovery = recovery ? await resolveEvent(recovery) : null;
+
+    const activeResolved = [resolvedAlpha, resolvedYouth, resolvedRecovery].filter(
+      (b): b is NonNullable<typeof b> => !!b?.active
     );
 
-    const resolvedAlpha = alpha ? await resolveAlpha(alpha) : null;
-    const resolvedYouth = youthAlpha ? await resolveAlpha(youthAlpha) : null;
-
-    // Prefer Alpha as primary, then Youth Alpha, then any other banner.
-    const primary =
-      (resolvedAlpha?.active ? resolvedAlpha : null) ??
-      (resolvedYouth?.active ? resolvedYouth : null) ??
-      other ??
-      null;
+    // Prefer event banners first, then any other banner.
+    const primary = activeResolved[0] ?? other ?? null;
 
     if (!primary) return null;
 
-    // Chain the second alpha-type banner as a companion.
-    let companion: typeof primary | null = null;
-    if (primary.type === "alpha" && resolvedYouth?.active) {
-      companion = resolvedYouth;
-    } else if (primary.type === "youth_alpha" && resolvedAlpha?.active) {
-      companion = resolvedAlpha;
-    }
+    // Chain the next active event banner as a companion (only one slot).
+    const companion = activeResolved.find((b) => b !== primary) ?? null;
 
     return companion ? { ...primary, companion } : primary;
   } catch {

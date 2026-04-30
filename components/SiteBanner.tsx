@@ -68,7 +68,11 @@ export default function SiteBanner() {
 function renderBanner(banner: BannerData, index: number) {
   const top = index * 40; // each bar is h-10 (40px)
 
-  if (banner.type === "alpha" || banner.type === "youth_alpha") {
+  if (
+    banner.type === "alpha" ||
+    banner.type === "youth_alpha" ||
+    banner.type === "recovery"
+  ) {
     if (!banner.alpha) return null;
     const { date, isFirst } = getNextAlphaSession(
       banner.alpha.start_date,
@@ -80,13 +84,28 @@ function renderBanner(banner: BannerData, index: number) {
       day: "numeric",
       month: "long",
     });
-    const linkHref = banner.link || (banner.type === "youth_alpha" ? "/youth-alpha" : "/alpha");
+    const defaultHref =
+      banner.type === "youth_alpha"
+        ? "/youth-alpha"
+        : banner.type === "recovery"
+        ? "/destiny-recovery"
+        : "/alpha";
+    const linkHref = banner.link || defaultHref;
     const linkText = banner.link_text || "Sign up";
-    const eyebrow =
-      banner.message?.trim() ||
-      (banner.type === "youth_alpha" ? "Youth Alpha" : "Alpha");
+    const defaultEyebrow =
+      banner.type === "youth_alpha"
+        ? "Youth Alpha"
+        : banner.type === "recovery"
+        ? "Destiny Recovery"
+        : "Alpha";
+    const eyebrow = banner.message?.trim() || defaultEyebrow;
     const cadenceLabel = isFirst ? "Starting" : "Next session";
-    const bg = banner.type === "youth_alpha" ? "#b81313" : "#e51b1b";
+    const bg =
+      banner.type === "youth_alpha"
+        ? "#b81313"
+        : banner.type === "recovery"
+        ? "#006756"
+        : "#e51b1b";
 
     return (
       <div

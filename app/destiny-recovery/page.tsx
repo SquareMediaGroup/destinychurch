@@ -141,9 +141,15 @@ export default function DestinyRecoveryPage() {
           <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-black/40" aria-hidden="true" />
           <div className="relative flex flex-col items-center justify-center py-[12rem] px-6 md:px-12 text-center">
             <AnimateIn>
-              <p className="mb-5 text-xs font-black uppercase tracking-[0.32em] text-white/80">
-                Destiny Recovery
-              </p>
+              <div className="mb-5 flex justify-center">
+                <Image
+                  src="/img/DCRecovery/DC_Recovery_Full_Logo_White.png"
+                  alt="Destiny Recovery"
+                  width={280}
+                  height={80}
+                  className="w-full max-w-sm object-contain"
+                />
+              </div>
               <h1 className="mb-8 max-w-3xl text-5xl font-black leading-[0.95] text-white md:text-6xl lg:text-7xl">
                 Christian recovery support that{" "}
                 <em

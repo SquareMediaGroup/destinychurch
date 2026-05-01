@@ -139,12 +139,12 @@ export default function DestinyRecoveryPage() {
             aria-hidden="true"
           />
           <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-black/40" aria-hidden="true" />
-          <div className="relative flex flex-col items-center justify-center py-[12rem] px-4 text-center">
+          <div className="relative flex flex-col items-center justify-center py-[12rem] px-6 md:px-12 text-center">
             <AnimateIn>
               <p className="mb-5 text-xs font-black uppercase tracking-[0.32em] text-white/80">
                 Destiny Recovery
               </p>
-              <h1 className="mb-8 text-5xl font-black leading-[0.95] text-white md:text-6xl lg:text-7xl">
+              <h1 className="mb-8 max-w-3xl text-5xl font-black leading-[0.95] text-white md:text-6xl lg:text-7xl">
                 Christian recovery support that{" "}
                 <em
                   className="italic font-normal tracking-tight"
@@ -421,22 +421,14 @@ export default function DestinyRecoveryPage() {
         <div className="mx-auto max-w-7xl px-4 lg:px-8">
           <div className="flex flex-col items-center gap-12 md:flex-row md:gap-16">
             <AnimateIn className="w-full md:w-2/5">
-              <div
-                className="overflow-hidden rounded-3xl p-10"
-                style={{
-                  background:
-                    "linear-gradient(135deg, #006756 0%, #00513f 100%)",
-                }}
-              >
-                <div className="relative mx-auto aspect-[2/3] w-full max-w-xs">
-                  <Image
-                    src="/img/DCRecovery/LifeRecoveryBible.webp"
-                    alt="The Life Recovery Bible — Second Edition"
-                    fill
-                    className="rounded-xl object-cover shadow-2xl"
-                    sizes="(min-width: 768px) 320px, 80vw"
-                  />
-                </div>
+              <div className="relative mx-auto aspect-[2/3] w-full max-w-xs">
+                <Image
+                  src="/img/DCRecovery/LifeRecoveryBible.webp"
+                  alt="The Life Recovery Bible — Second Edition"
+                  fill
+                  className="rounded-xl object-cover shadow-2xl"
+                  sizes="(min-width: 768px) 320px, 80vw"
+                />
               </div>
             </AnimateIn>
             <AnimateIn delay={100} className="w-full md:w-3/5">

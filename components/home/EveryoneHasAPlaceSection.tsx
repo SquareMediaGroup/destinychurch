@@ -6,7 +6,7 @@ const groups = [
   {
     title: "Kids",
     href: "/kids",
-    image: "/img/photos/Kids2.jpg",
+    image: "/img/photos/Kids2.webp",
     description:
       "Destiny Kids is a fun place where children of all ages can learn more about the Bible through games, stories, and singing.",
   },
@@ -20,14 +20,14 @@ const groups = [
   {
     title: "Young Adults",
     href: "/young-adults",
-    image: "/img/photos/YA1.jpg",
+    image: "/img/photos/YA1.webp",
     description:
       "A vibrant community of young adults worshipping, We seek together to build a deep and authentic relationship with Jesus Christ.",
   },
   {
     title: "Connect Groups",
     href: "/connect",
-    image: "/img/photos/ConnectGroups.jpg",
+    image: "/img/photos/ConnectGroups.webp",
     description:
       "Our Connect Groups are an integral part of the life and health of the church. Together in a small group believers are effective, powerful and fruitful witnesses in the world.",
   },

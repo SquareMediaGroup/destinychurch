@@ -7,7 +7,7 @@ export default function AboutMissionCard() {
       <section className="relative overflow-hidden rounded-3xl py-16">
         <div
           className="absolute inset-0 scale-105 bg-cover bg-center blur-sm"
-          style={{ backgroundImage: "url('/img/photos/WorshipMoment1.jpg')" }}
+          style={{ backgroundImage: "url('/img/photos/WorshipMoment1.webp')" }}
         />
         <div className="absolute inset-0 bg-gradient-to-r from-black/90 via-black/70 to-black/50" />
 

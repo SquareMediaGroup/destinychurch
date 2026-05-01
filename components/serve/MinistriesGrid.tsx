@@ -33,10 +33,10 @@ const ministries: Ministry[] = [
     detail:
       "The Worship team leads the church into the presence of God every Sunday and at special events. We're a community of singers, musicians, and sound engineers who are as passionate about spiritual depth as we are about musical excellence. We rehearse weekly and invest in one another's growth — both on stage and off it. If you play an instrument, have a voice, or love running sound and mix, we'd love to hear from you.",
     photos: [
-      "/img/photos/Gallery/WorshipMoment.jpeg",
-      "/img/photos/Gallery/SingingLand.jpeg",
-      "/img/photos/Gallery/SingingPort.jpeg",
-      "/img/photos/Gallery/SingingLand3.jpeg",
+      "/img/photos/Gallery/WorshipMoment.webp",
+      "/img/photos/Gallery/SingingLand.webp",
+      "/img/photos/Gallery/SingingPort.webp",
+      "/img/photos/Gallery/SingingLand3.webp",
     ],
     requirements: [
       "Ability to play an instrument or sing to a reasonable standard",
@@ -56,9 +56,9 @@ const ministries: Ministry[] = [
     detail:
       "Destiny Kids is where the next generation first encounters Jesus. We run vibrant, safe, and age-appropriate sessions for children aged 0–11 every Sunday. Volunteers get involved in storytelling, crafts, games, check-in, and one-to-one care. No special qualifications needed — just a love for kids and a heart to serve. All volunteers are DBS checked.",
     photos: [
-      "/img/photos/Kids1.png",
-      "/img/photos/Kids2.jpg",
-      "/img/photos/Gallery/FamilySatTogether.jpeg",
+      "/img/photos/Kids1.webp",
+      "/img/photos/Kids2.webp",
+      "/img/photos/Gallery/FamilySatTogether.webp",
     ],
     requirements: [
       "Enhanced DBS check (we'll help arrange this)",
@@ -78,8 +78,8 @@ const ministries: Ministry[] = [
     detail:
       "Destiny Youth is a space where teenagers can be themselves, ask hard questions, and encounter a God who knows them by name. The team runs Sunday sessions and regular youth events, creating environments that are energetic, honest, and rooted in the Word. If you have a heart for young people and remember what it felt like to be a teenager navigating life and faith, this team is for you.",
     photos: [
-      "/img/photos/Gallery/YouthCommunity.jpeg",
-      "/img/photos/YA1.jpg",
+      "/img/photos/Gallery/YouthCommunity.webp",
+      "/img/photos/YA1.webp",
       "/img/photos/Youth1.JPG",
     ],
     requirements: [
@@ -101,9 +101,9 @@ const ministries: Ministry[] = [
     detail:
       "The Welcome Team is the heartbeat of Sunday hospitality. You're the first face a guest sees when they walk through the door, and that moment matters more than you know. From greeting and directing to ensuring safety and accessibility, this team makes sure every single person — whether it's their first Sunday or their hundredth — feels genuinely seen and welcomed.",
     photos: [
-      "/img/photos/Gallery/Community.jpeg",
-      "/img/photos/Gallery/Community2.jpeg",
-      "/img/photos/Gallery/OlderPeople.jpeg",
+      "/img/photos/Gallery/Community.webp",
+      "/img/photos/Gallery/Community2.webp",
+      "/img/photos/Gallery/OlderPeople.webp",
     ],
     category: "Community",
   },
@@ -118,9 +118,9 @@ const ministries: Ministry[] = [
     detail:
       "Prayer is the engine room of everything at Destiny. The Prayer Team ministers to individuals during and after services, intercedes for the church and the city, and helps build a culture where encountering God is the norm. If you feel called to a ministry of prayer and want to serve the church in one of the most impactful ways possible, this team is waiting for you.",
     photos: [
-      "/img/photos/Prayer1.jpg",
-      "/img/photos/Gallery/Speaker.jpeg",
-      "/img/photos/Gallery/Speaker2.jpeg",
+      "/img/photos/Prayer1.webp",
+      "/img/photos/Gallery/Speaker.webp",
+      "/img/photos/Gallery/Speaker2.webp",
     ],
     category: "Community",
   },
@@ -135,9 +135,9 @@ const ministries: Ministry[] = [
     detail:
       "Connect Groups are where real community happens. These small groups of 8–12 people meet mid-week in homes across Teesside to study the Word, pray together, and do life. As a Connect Group leader or host, you create the space for people to belong, grow and be known. Training and ongoing support are provided for all leaders.",
     photos: [
-      "/img/photos/ConnectGroups.jpg",
-      "/img/photos/Gallery/Community2.jpeg",
-      "/img/photos/Gallery/FamilySatTogether.jpeg",
+      "/img/photos/ConnectGroups.webp",
+      "/img/photos/Gallery/Community2.webp",
+      "/img/photos/Gallery/FamilySatTogether.webp",
     ],
     category: "Community",
   },
@@ -152,9 +152,9 @@ const ministries: Ministry[] = [
     detail:
       "There is theology in a warm cup of coffee. The Hospitality team serves refreshments before and after every Sunday service, creating a relaxed atmosphere where conversations happen and friendships form. It might sound simple, but this team plays a crucial role in making Destiny feel like home. If you love people and don't mind getting behind a counter, we'd love you on the team.",
     photos: [
-      "/img/photos/Gallery/Community.jpeg",
-      "/img/photos/Gallery/OlderPeople.jpeg",
-      "/img/photos/Gallery/FamilySatTogether.jpeg",
+      "/img/photos/Gallery/Community.webp",
+      "/img/photos/Gallery/OlderPeople.webp",
+      "/img/photos/Gallery/FamilySatTogether.webp",
     ],
     category: "Community",
   },
@@ -169,9 +169,9 @@ const ministries: Ministry[] = [
     detail:
       "The Production team is the technical backbone of every Sunday service and event. From running front-of-house sound and lighting rigs to managing the screens and livestreaming for those watching at home, this is a team for people who love tech and want to use it for something that matters. Training is available — passion for excellence and a teachable spirit are all you need.",
     photos: [
-      "/img/photos/Gallery/WorshipMoment3.jpeg",
-      "/img/photos/Gallery/SingingLand2.jpeg",
-      "/img/photos/Gallery/SingingLand4.jpeg",
+      "/img/photos/Gallery/WorshipMoment3.webp",
+      "/img/photos/Gallery/SingingLand2.webp",
+      "/img/photos/Gallery/SingingLand4.webp",
     ],
     requirements: [
       "Basic understanding of sound, lighting, or video (training available)",
@@ -191,9 +191,9 @@ const ministries: Ministry[] = [
     detail:
       "The Social Media & Photography team tells the story of Destiny to the world. From Sunday morning photos and Reels to week-to-week graphics and campaign visuals, this team shapes how the church looks and sounds online. If you're a photographer, videographer, graphic designer, or content creator — or you just have a good eye and want to learn — there's a role for you here.",
     photos: [
-      "/img/photos/Gallery/Photography.jpeg",
-      "/img/photos/Gallery/WorshipMoment.jpeg",
-      "/img/photos/Gallery/Speaker2.jpeg",
+      "/img/photos/Gallery/Photography.webp",
+      "/img/photos/Gallery/WorshipMoment.webp",
+      "/img/photos/Gallery/Speaker2.webp",
     ],
     requirements: [
       "Experience or genuine interest in photography, videography, or graphic design",
@@ -213,8 +213,8 @@ const ministries: Ministry[] = [
     detail:
       "Outreach & Missions is about taking the Gospel beyond our four walls. The team organises local community initiatives, partners with national organisations, and sends teams on international mission trips. Whether you want to hand out food in Middlesbrough or fly to a partner church overseas, this team will give you the opportunity to be the hands and feet of Jesus in a very real way.",
     photos: [
-      "/img/photos/Gallery/Community.jpeg",
-      "/img/photos/Gallery/OlderPeople.jpeg",
+      "/img/photos/Gallery/Community.webp",
+      "/img/photos/Gallery/OlderPeople.webp",
       "/img/photos/Community.webp",
     ],
     category: "Outreach",
@@ -230,8 +230,8 @@ const ministries: Ministry[] = [
     detail:
       "The Administration team keeps the engine of Destiny Church running. From communications and scheduling to event logistics and financial administration, this is a team for people who love order, precision and making things happen. If you're organised, reliable and enjoy serving in ways that others often don't see — this is one of the most valuable roles in the church.",
     photos: [
-      "/img/photos/Gallery/Community2.jpeg",
-      "/img/photos/Gallery/FamilySatTogether.jpeg",
+      "/img/photos/Gallery/Community2.webp",
+      "/img/photos/Gallery/FamilySatTogether.webp",
     ],
     category: "Behind the Scenes",
   },
@@ -246,8 +246,8 @@ const ministries: Ministry[] = [
     detail:
       "The Decoration team transforms the physical space of Destiny Church into an environment that speaks before a word is even said. From Sunday stage setups and seasonal displays to special events and creative installations, this team uses artistic gifts to create atmosphere. If you have an eye for design, a creative streak, or simply love making spaces feel special, come and join us.",
     photos: [
-      "/img/photos/Gallery/WorshipMoment3.jpeg",
-      "/img/photos/Gallery/SingingLand4.jpeg",
+      "/img/photos/Gallery/WorshipMoment3.webp",
+      "/img/photos/Gallery/SingingLand4.webp",
     ],
     category: "Worship & Arts",
   },
@@ -262,8 +262,8 @@ const ministries: Ministry[] = [
     detail:
       "The Building Maintenance team ensures that Destiny's home is always clean, safe and well-kept. From regular cleaning rotas and DIY repairs to post-event tidy-ups and facility improvements, this is a hands-on team for people who love practical service. No specialist skills required — just a willingness to roll up your sleeves and take care of what God has given us.",
     photos: [
-      "/img/photos/Gallery/Community.jpeg",
-      "/img/photos/Gallery/FamilySatTogether.jpeg",
+      "/img/photos/Gallery/Community.webp",
+      "/img/photos/Gallery/FamilySatTogether.webp",
     ],
     category: "Behind the Scenes",
   },
@@ -278,9 +278,9 @@ const ministries: Ministry[] = [
     detail:
       "Alpha is one of the most powerful evangelism tools in the church — a series of sessions that create a safe space for anyone to explore Christianity, no matter where they're starting from. The Alpha team helps with hosting, cooking, leading small group discussions, and praying for guests. If you have a heart for people who are searching, and want to play a part in their journey to faith, this is a team you'll love.",
     photos: [
-      "/img/photos/Gallery/Community2.jpeg",
-      "/img/photos/Gallery/OlderPeople.jpeg",
-      "/img/photos/Gallery/FamilySatTogether.jpeg",
+      "/img/photos/Gallery/Community2.webp",
+      "/img/photos/Gallery/OlderPeople.webp",
+      "/img/photos/Gallery/FamilySatTogether.webp",
     ],
     category: "Outreach",
   },

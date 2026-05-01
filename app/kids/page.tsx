@@ -58,7 +58,7 @@ export default function KidsPage() {
         <section className="relative overflow-hidden rounded-3xl">
           <div
             className="absolute inset-0 scale-105 bg-cover bg-top blur-sm"
-            style={{ backgroundImage: "url('/img/photos/Kids1.png')" }}
+            style={{ backgroundImage: "url('/img/photos/Kids1.webp')" }}
           />
           <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-black/40 to-black/75" />
           <div className="relative flex flex-col items-center justify-center py-[12rem] px-4 text-center">
@@ -87,13 +87,13 @@ export default function KidsPage() {
             </AnimateIn>
             <AnimateIn delay={100} className="grid w-full grid-cols-2 gap-3 md:w-1/2">
               <div className="col-span-2 overflow-hidden rounded-3xl">
-                <Image src="/img/photos/Kids1.png" alt="Destiny Kids" width={640} height={300} className="w-full object-cover" />
+                <Image src="/img/photos/Kids1.webp" alt="Destiny Kids" width={640} height={300} className="w-full object-cover" />
               </div>
               <div className="overflow-hidden rounded-2xl">
-                <Image src="/img/photos/Kids2.jpg" alt="Destiny Kids" width={300} height={220} className="w-full object-cover" />
+                <Image src="/img/photos/Kids2.webp" alt="Destiny Kids" width={300} height={220} className="w-full object-cover" />
               </div>
               <div className="overflow-hidden rounded-2xl">
-                <Image src="/img/photos/Gallery/SN1_7913.CR2.jpeg" alt="" width={300} height={220} className="w-full object-cover" />
+                <Image src="/img/photos/Gallery/SN1_7913.CR2.webp" alt="" width={300} height={220} className="w-full object-cover" />
               </div>
             </AnimateIn>
           </div>
@@ -185,13 +185,13 @@ export default function KidsPage() {
           <div className="flex flex-col items-center gap-12 md:flex-row md:gap-16">
             <AnimateIn className="grid w-full grid-cols-2 gap-3 md:w-2/5">
               <div className="overflow-hidden rounded-2xl">
-                <Image src="/img/photos/Kids2.jpg" alt="Tots Morning" width={300} height={280} className="w-full object-cover" />
+                <Image src="/img/photos/Kids2.webp" alt="Tots Morning" width={300} height={280} className="w-full object-cover" />
               </div>
               <div className="overflow-hidden rounded-2xl">
-                <Image src="/img/photos/Kids1.png" alt="Tots Morning" width={300} height={280} className="w-full object-cover" />
+                <Image src="/img/photos/Kids1.webp" alt="Tots Morning" width={300} height={280} className="w-full object-cover" />
               </div>
               <div className="col-span-2 overflow-hidden rounded-2xl">
-                <Image src="/img/photos/Gallery/SN1_7923.CR2.jpeg" alt="" width={620} height={220} className="w-full object-cover" />
+                <Image src="/img/photos/Gallery/SN1_7923.CR2.webp" alt="" width={620} height={220} className="w-full object-cover" />
               </div>
             </AnimateIn>
             <AnimateIn delay={100} className="w-full md:w-3/5">
@@ -229,7 +229,7 @@ export default function KidsPage() {
           <div className="flex flex-col items-center gap-8 md:flex-row md:gap-12">
             <AnimateIn className="shrink-0">
               <div className="h-44 w-44 overflow-hidden rounded-3xl bg-[#f5f7fa]">
-                <Image src="/img/brand/Team/FA.png" alt="Funke Awojide" width={176} height={176} className="h-full w-full object-contain" />
+                <Image src="/img/brand/Team/FA.webp" alt="Funke Awojide" width={176} height={176} className="h-full w-full object-contain" />
               </div>
             </AnimateIn>
             <AnimateIn delay={80}>

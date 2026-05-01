@@ -8,7 +8,7 @@ export default function ConnectGroupsBanner() {
         {/* Background */}
         <div
           className="absolute inset-0 scale-105 bg-cover bg-center blur-sm"
-          style={{ backgroundImage: "url('/img/photos/ConnectGroups.jpg')" }}
+          style={{ backgroundImage: "url('/img/photos/ConnectGroups.webp')" }}
         />
         <div className="absolute inset-0 bg-gradient-to-r from-black/85 via-black/70 to-black/50" />
 

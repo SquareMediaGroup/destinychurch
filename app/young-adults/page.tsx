@@ -30,7 +30,7 @@ export default function YoungAdultsPage() {
         <section className="relative overflow-hidden rounded-3xl">
           <div
             className="absolute inset-0 scale-105 bg-cover bg-center blur-sm"
-            style={{ backgroundImage: "url('/img/photos/YA1.jpg')" }}
+            style={{ backgroundImage: "url('/img/photos/YA1.webp')" }}
           />
           <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-black/40 to-black/80" />
           <div className="relative flex flex-col items-center justify-center py-[12rem] px-4 text-center">
@@ -60,13 +60,13 @@ export default function YoungAdultsPage() {
             </AnimateIn>
             <AnimateIn delay={100} className="grid w-full grid-cols-2 gap-3 md:w-1/2">
               <div className="col-span-2 overflow-hidden rounded-3xl">
-                <Image src="/img/photos/YA1.jpg" alt="Young Adults" width={640} height={300} className="w-full object-cover" />
+                <Image src="/img/photos/YA1.webp" alt="Young Adults" width={640} height={300} className="w-full object-cover" />
               </div>
               <div className="overflow-hidden rounded-2xl">
                 <Image src="/img/photos/Community.webp" alt="Community" width={300} height={220} className="w-full object-cover" />
               </div>
               <div className="overflow-hidden rounded-2xl">
-                <Image src="/img/photos/WorshipMoment1.jpg" alt="Worship" width={300} height={220} className="w-full object-cover" />
+                <Image src="/img/photos/WorshipMoment1.webp" alt="Worship" width={300} height={220} className="w-full object-cover" />
               </div>
             </AnimateIn>
           </div>
@@ -101,13 +101,13 @@ export default function YoungAdultsPage() {
           <div className="flex flex-col items-center gap-12 md:flex-row md:gap-16">
             <AnimateIn delay={0} className="grid w-full grid-cols-2 gap-3 md:w-1/2">
               <div className="overflow-hidden rounded-2xl">
-                <Image src="/img/photos/WorshipMoment2.jpg" alt="" width={300} height={280} className="h-full w-full object-cover" />
+                <Image src="/img/photos/WorshipMoment2.webp" alt="" width={300} height={280} className="h-full w-full object-cover" />
               </div>
               <div className="overflow-hidden rounded-2xl">
-                <Image src="/img/photos/ConnectGroups.jpg" alt="" width={300} height={280} className="h-full w-full object-cover" />
+                <Image src="/img/photos/ConnectGroups.webp" alt="" width={300} height={280} className="h-full w-full object-cover" />
               </div>
               <div className="col-span-2 overflow-hidden rounded-2xl">
-                <Image src="/img/photos/Gallery/SN1_7879.CR2.jpeg" alt="" width={620} height={220} className="w-full object-cover" />
+                <Image src="/img/photos/Gallery/SN1_7879.CR2.webp" alt="" width={620} height={220} className="w-full object-cover" />
               </div>
             </AnimateIn>
             <AnimateIn delay={100} className="w-full md:w-1/2">

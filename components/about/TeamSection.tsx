@@ -4,17 +4,17 @@ import Image from "next/image";
 import AnimateIn from "@/components/AnimateIn";
 
 const leadTeam = [
-  { name: "Faith Harris", role: "Associate Pastor", photo: "/img/brand/Team/FH.png", email: "faith@destinytees.uk" },
-  { name: "Tracy Reddy", role: "Small Groups", photo: "/img/brand/Team/TR.png", email: "tracy@destinytees.uk" },
-  { name: "Deveshin Reddy", role: "Finance & Facilities", photo: "/img/brand/Team/DR.png", email: "deveshin@destinytees.uk" },
-  { name: "Nkereuwem Ekanem", role: "Creativity & Innovation", photo: "/img/brand/Team/NE.png", email: "nk@destinytees.uk" },
+  { name: "Faith Harris", role: "Associate Pastor", photo: "/img/brand/Team/FH.webp", email: "faith@destinytees.uk" },
+  { name: "Tracy Reddy", role: "Small Groups", photo: "/img/brand/Team/TR.webp", email: "tracy@destinytees.uk" },
+  { name: "Deveshin Reddy", role: "Finance & Facilities", photo: "/img/brand/Team/DR.webp", email: "deveshin@destinytees.uk" },
+  { name: "Nkereuwem Ekanem", role: "Creativity & Innovation", photo: "/img/brand/Team/NE.webp", email: "nk@destinytees.uk" },
 ];
 
 const departmentHeads = [
-  { name: "Funke Awojide", role: "Kids Pastor", photo: "/img/brand/Team/FA.png", email: "funke@destinytees.uk" },
+  { name: "Funke Awojide", role: "Kids Pastor", photo: "/img/brand/Team/FA.webp", email: "funke@destinytees.uk" },
   { name: "Younes Moradi", role: "Stewarding", photo: null, email: "younes@destinytees.uk" },
   { name: "David Bayode", role: "Worship", photo: null, email: "david@destinytees.uk" },
-  { name: "Adebowale Awojide", role: "Prayer Team", photo: "/img/brand/Team/Debo.png", email: "debo@destinytees.uk" },
+  { name: "Adebowale Awojide", role: "Prayer Team", photo: "/img/brand/Team/Debo.webp", email: "debo@destinytees.uk" },
 ];
 
 function TeamCard({ name, role, photo, cardBg, email }: { name: string; role: string; photo: string | null; cardBg: string; email: string }) {

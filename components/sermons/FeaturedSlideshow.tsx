@@ -42,7 +42,7 @@ export default function FeaturedSlideshow({ slides }: FeaturedSlideshowProps) {
           style={{ opacity: i === active ? 1 : 0 }}
         >
           <Image
-            src={`https://i.ytimg.com/vi/${s.id}/maxresdefault.jpg`}
+            src={`https://i.ytimg.com/vi/${s.id}/maxresdefault.webp`}
             alt={s.title}
             fill
             className="object-cover"

@@ -65,7 +65,7 @@ export default function YouthAlphaSection() {
           <div className="flex flex-col items-center gap-10 md:flex-row md:gap-16">
             <AnimateIn className="w-full overflow-hidden rounded-3xl md:w-2/5">
               <Image
-                src="/img/Alpha/Alpha/IG-MAIN-scaled.jpg"
+                src="/img/Alpha/Alpha/IG-MAIN-scaled.webp"
                 alt="Youth Alpha"
                 width={600}
                 height={400}

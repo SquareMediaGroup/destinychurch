@@ -24,7 +24,7 @@ export default function ServePage() {
         <section className="relative overflow-hidden rounded-3xl">
           <div
             className="absolute inset-0 scale-105 bg-cover bg-center blur-sm"
-            style={{ backgroundImage: "url('/img/photos/Training_DC-scaled.jpg')" }}
+            style={{ backgroundImage: "url('/img/photos/Training_DC-scaled.webp')" }}
           />
           <div className="absolute inset-0 bg-gradient-to-b from-black/55 via-black/45 to-black/80" />
           <div className="relative flex flex-col items-center justify-center py-[12rem] px-4 text-center">
@@ -70,13 +70,13 @@ export default function ServePage() {
             </AnimateIn>
             <AnimateIn delay={100} className="grid w-full grid-cols-2 gap-3 md:w-1/2">
               <div className="col-span-2 overflow-hidden rounded-3xl">
-                <Image src="/img/photos/Training_DC-scaled.jpg" alt="Serving at Destiny" width={640} height={280} className="w-full object-cover" />
+                <Image src="/img/photos/Training_DC-scaled.webp" alt="Serving at Destiny" width={640} height={280} className="w-full object-cover" />
               </div>
               <div className="overflow-hidden rounded-2xl">
-                <Image src="/img/photos/Gallery/SN1_7825.CR2.jpeg" alt="" width={300} height={200} className="w-full object-cover" />
+                <Image src="/img/photos/Gallery/SN1_7825.CR2.webp" alt="" width={300} height={200} className="w-full object-cover" />
               </div>
               <div className="overflow-hidden rounded-2xl">
-                <Image src="/img/photos/Gallery/SN1_7832.CR2.jpeg" alt="" width={300} height={200} className="w-full object-cover" />
+                <Image src="/img/photos/Gallery/SN1_7832.CR2.webp" alt="" width={300} height={200} className="w-full object-cover" />
               </div>
             </AnimateIn>
           </div>

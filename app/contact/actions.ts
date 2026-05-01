@@ -120,7 +120,7 @@ function buildContactEmailHtml(name: string, email: string, subject: string, mes
             style="display:block;margin:0 auto 28px auto;border:0;outline:none;text-decoration:none;height:auto;max-width:100%;"
           />
           <img class="em-logo-light"
-            src="https://destinytees.uk/wp-content/uploads/2022/11/Full_Logo_White_Text-1.png"
+            src="https://destinytees.uk/wp-content/uploads/2022/11/Full_Logo_White_Text-1.webp"
             width="180" alt="Destiny Church"
             style="display:none;margin:0 auto 28px auto;border:0;outline:none;text-decoration:none;height:auto;max-width:100%;"
           />

@@ -20,7 +20,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     return { title: "Sermon Not Found" };
   }
   const desc = video.description.slice(0, 160);
-  const ogImage = `https://i.ytimg.com/vi/${id}/maxresdefault.jpg`;
+  const ogImage = `https://i.ytimg.com/vi/${id}/maxresdefault.webp`;
   return {
     title: video.title,
     description: desc,
@@ -125,7 +125,7 @@ export default async function SermonPage({ params }: PageProps) {
     "@type": "VideoObject",
     name: video.title,
     description: displayDescription.slice(0, 300) || video.title,
-    thumbnailUrl: `https://i.ytimg.com/vi/${id}/maxresdefault.jpg`,
+    thumbnailUrl: `https://i.ytimg.com/vi/${id}/maxresdefault.webp`,
     uploadDate: video.publishedAt,
     embedUrl: `https://www.youtube.com/embed/${id}`,
     contentUrl: `https://www.youtube.com/watch?v=${id}`,

@@ -7,8 +7,8 @@ export async function GET(
   const { id } = await params;
 
   const urls = [
-    `https://i.ytimg.com/vi/${id}/maxresdefault.jpg`,
-    `https://i.ytimg.com/vi/${id}/hqdefault.jpg`,
+    `https://i.ytimg.com/vi/${id}/maxresdefault.webp`,
+    `https://i.ytimg.com/vi/${id}/hqdefault.webp`,
   ];
 
   for (const url of urls) {

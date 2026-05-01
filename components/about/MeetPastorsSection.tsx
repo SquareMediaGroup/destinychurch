@@ -10,7 +10,7 @@ export default function MeetPastorsSection() {
           {/* Pastor photo */}
           <AnimateIn className="shrink-0">
             <Image
-              src="/img/brand/Team/JonathanCath.png"
+              src="/img/brand/Team/JonathanCath.webp"
               alt="Jonathan & Cath Harris"
               width={380}
               height={480}

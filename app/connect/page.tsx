@@ -30,7 +30,7 @@ export default function ConnectGroupsPage() {
         <section className="relative overflow-hidden rounded-3xl">
           <div
             className="absolute inset-0 scale-105 bg-cover bg-center blur-sm"
-            style={{ backgroundImage: "url('/img/photos/ConnectGroups.jpg')" }}
+            style={{ backgroundImage: "url('/img/photos/ConnectGroups.webp')" }}
           />
           <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/50 to-black/75" />
           <div className="relative flex flex-col items-center justify-center py-[12rem] px-4 text-center">

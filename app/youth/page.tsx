@@ -80,10 +80,10 @@ export default function YouthPage() {
                 <Image src="/img/photos/Youth1.JPG" alt="Destiny Youth" width={640} height={320} className="w-full object-cover" />
               </div>
               <div className="overflow-hidden rounded-2xl">
-                <Image src="/img/Alpha/YouthAlpha/5.png" alt="" width={300} height={220} className="w-full object-cover" />
+                <Image src="/img/Alpha/YouthAlpha/5.webp" alt="" width={300} height={220} className="w-full object-cover" />
               </div>
               <div className="overflow-hidden rounded-2xl">
-                <Image src="/img/Alpha/YouthAlpha/6.png" alt="" width={300} height={220} className="w-full object-cover" />
+                <Image src="/img/Alpha/YouthAlpha/6.webp" alt="" width={300} height={220} className="w-full object-cover" />
               </div>
             </AnimateIn>
           </div>
@@ -128,9 +128,9 @@ export default function YouthPage() {
           <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
             {[
               { src: "/img/photos/Youth1.JPG", tall: false },
-              { src: "/img/Alpha/YouthAlpha/5.png", tall: false },
-              { src: "/img/Alpha/YouthAlpha/6.png", tall: false },
-              { src: "/img/photos/WorshipMoment1.jpg", tall: false },
+              { src: "/img/Alpha/YouthAlpha/5.webp", tall: false },
+              { src: "/img/Alpha/YouthAlpha/6.webp", tall: false },
+              { src: "/img/photos/WorshipMoment1.webp", tall: false },
             ].map((img, i) => (
               <AnimateIn key={i} delay={i * 60}>
                 <div className="aspect-square overflow-hidden rounded-2xl">

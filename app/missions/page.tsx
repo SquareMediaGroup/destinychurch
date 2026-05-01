@@ -20,13 +20,13 @@ const partners = [
   {
     id: "moses",
     name: "The Moses Project",
-    logo: "/img/photos/mission/brand/mosesProject-new.png",
+    logo: "/img/photos/mission/brand/mosesProject-new.webp",
     description:
       "The Moses Project is a registered charitable company which provides guidance, mentoring and support to hundreds of adult males with past and current addictions to drugs and alcohol. The men usually live in chaotic circumstances and are suffering the consequences of long-term self-abuse.\n\nAssistance is given with housing and benefit applications, introduction to positive lifestyles, one-to-one support along with regular team-building events and activities. The Moses Project works closely with all commissioned agencies — Stockton Borough Council Outreach Services, CGL, Probation Services and NHS Mental Health.\n\nBy offering support with life's everyday problems in a caring environment where everyone is welcomed, we provide clients with the opportunity to recover, rebuild their lives and become re-engaged with society.",
     video: {
       src: "https://www.youtube.com/embed/jNtRUpTfCvY",
       title: "The Moses Project",
-      thumbnail: "https://i.ytimg.com/vi/jNtRUpTfCvY/maxresdefault.jpg",
+      thumbnail: "https://i.ytimg.com/vi/jNtRUpTfCvY/maxresdefault.webp",
     },
     cta: { label: "Visit The Moses Project", href: "https://www.themosesproject.co.uk" },
   },
@@ -40,14 +40,14 @@ const partners = [
     video: {
       src: "https://www.youtube.com/embed/HE5FDJZkGms",
       title: "Compassion UK",
-      thumbnail: "https://i.ytimg.com/vi/HE5FDJZkGms/maxresdefault.jpg",
+      thumbnail: "https://i.ytimg.com/vi/HE5FDJZkGms/maxresdefault.webp",
     },
     cta: { label: "Visit Compassion UK", href: "https://www.compassionuk.org" },
   },
   {
     id: "safe-families",
     name: "Safe Families",
-    logo: "/img/photos/mission/brand/safe-families-logo.png",
+    logo: "/img/photos/mission/brand/safe-families-logo.webp",
     description:
       "No one should feel alone. We exist to create relationship and connection because everyone deserves to belong.\n\nSafe Families is a charity that works with 35+ local authorities around the UK, offering hope, belonging and support to children, families and care leavers — primarily, but not exclusively, with and through local churches.\n\nSafe Families' model is flexible, trauma informed and takes a whole family approach to change. We train and support volunteers who provide emotional and practical support, overnight hosting and resources. Volunteers often form long-term relationships with families, improving their social networks.",
     video: {
@@ -66,7 +66,7 @@ export default function MissionsPage() {
         <section className="relative overflow-hidden rounded-3xl">
           <div
             className="absolute inset-0 scale-105 bg-cover bg-center blur-sm"
-            style={{ backgroundImage: "url('/img/photos/mission/together-on-mission.png')" }}
+            style={{ backgroundImage: "url('/img/photos/mission/together-on-mission.webp')" }}
           />
           <div className="absolute inset-0 bg-gradient-to-b from-black/55 via-black/45 to-black/80" />
           <div className="relative flex flex-col items-center justify-center py-48 px-4 text-center">

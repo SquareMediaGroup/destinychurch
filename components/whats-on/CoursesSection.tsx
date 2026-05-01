@@ -18,7 +18,7 @@ export default function CoursesSection() {
             <div className="overflow-hidden rounded-2xl bg-white shadow-md">
               <div className="relative h-100 w-full overflow-hidden bg-white">
                 <Image
-                  src="/img/photos/Courses/Cap.png"
+                  src="/img/photos/Courses/Cap.webp"
                   alt="CAP Money Course"
                   fill
                   className="object-cover"
@@ -47,7 +47,7 @@ export default function CoursesSection() {
             <div className="overflow-hidden rounded-2xl bg-white shadow-md">
               <div className="relative h-100 w-full overflow-hidden">
                 <Image
-                  src="/img/photos/Courses/Alpha.jpg"
+                  src="/img/photos/Courses/Alpha.webp"
                   alt="Alpha Course"
                   fill
                   className="object-cover object-bottom"
@@ -130,7 +130,7 @@ export default function CoursesSection() {
             <div className="relative flex flex-col items-start justify-between gap-6 p-10 md:flex-row md:items-center" style={{ minHeight: "380px" }}>
               {/* Background photo */}
               <Image
-                src="/img/photos/Training_DC-scaled.jpg"
+                src="/img/photos/Training_DC-scaled.webp"
                 alt=""
                 fill
                 className="object-cover"
@@ -140,7 +140,7 @@ export default function CoursesSection() {
               {/* DC gradient overlay — contained and reduced opacity */}
               <div className="absolute inset-0 opacity-65">
                 <Image
-                  src="/img/brand/DCgradient.png"
+                  src="/img/brand/DCgradient.webp"
                   alt=""
                   fill
                   className="object-cover"

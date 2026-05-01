@@ -4,17 +4,17 @@ import { useEffect, useState } from "react";
 import Image from "next/image";
 
 const photos = [
-  "/img/photos/ConnectGroups.jpg",
+  "/img/photos/ConnectGroups.webp",
   "/img/photos/WorshipWUs.webp",
-  "/img/photos/WorshipMoment1.jpg",
-  "/img/photos/WorshipMoment2.jpg",
-  "/img/photos/Prayer1.jpg",
+  "/img/photos/WorshipMoment1.webp",
+  "/img/photos/WorshipMoment2.webp",
+  "/img/photos/Prayer1.webp",
   "/img/photos/Community.webp",
-  "/img/photos/Kids2.jpg",
-  "/img/photos/YA1.jpg",
+  "/img/photos/Kids2.webp",
+  "/img/photos/YA1.webp",
   "/img/photos/Youth1.JPG",
-  "/img/photos/Plan a Visit.jpg",
-  "/img/photos/Yannick Baptism Photo.png",
+  "/img/photos/Plan a Visit.webp",
+  "/img/photos/Yannick Baptism Photo.webp",
   "/img/photos/Elders.webp",
 ];
 

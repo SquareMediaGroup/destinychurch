@@ -7,7 +7,7 @@ export default function WhatsOnHero() {
         {/* Background image */}
         <div
           className="absolute inset-0 scale-105 bg-cover bg-center blur-sm"
-          style={{ backgroundImage: "url('/img/photos/WorshipMoment2.jpg')" }}
+          style={{ backgroundImage: "url('/img/photos/WorshipMoment2.webp')" }}
         />
         {/* Gradient overlay */}
         <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/50 to-black/70" />

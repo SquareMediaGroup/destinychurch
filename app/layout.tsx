@@ -55,7 +55,7 @@ export const metadata: Metadata = {
     type: "website",
     images: [
       {
-        url: "/og/sermons-hero.jpg",
+        url: "/og/sermons-hero.webp",
         alt: "Destiny Church Tees Valley",
       },
     ],
@@ -65,7 +65,7 @@ export const metadata: Metadata = {
     title: "Destiny Church Tees Valley",
     description:
       "A multi-cultural church where all can find a place to belong and thrive.",
-    images: ["/og/sermons-hero.jpg"],
+    images: ["/og/sermons-hero.webp"],
   },
 };
 
@@ -137,8 +137,8 @@ const orgSchema = {
       "@id": "https://destinytees.uk/#church",
       name: "Destiny Church Tees Valley",
       url: "https://destinytees.uk",
-      logo: "https://destinytees.uk/img/logo.png",
-      image: "https://destinytees.uk/og/sermons-hero.jpg",
+      logo: "https://destinytees.uk/img/logo.webp",
+      image: "https://destinytees.uk/og/sermons-hero.webp",
       description:
         "A multi-cultural church where all can find a place to belong and thrive. Bible-based teaching, vibrant worship, and genuine community.",
       address: {

@@ -9,7 +9,7 @@ export default function TogetherMissionSection() {
         {/* Blurred background */}
         <div
           className="absolute inset-0 scale-105 bg-cover bg-center blur-sm"
-          style={{ backgroundImage: "url('/img/photos/mission/Mission-3.png')" }}
+          style={{ backgroundImage: "url('/img/photos/mission/Mission-3.webp')" }}
         />
         {/* Black to transparent gradient */}
         <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/50 to-black/20" />
@@ -33,7 +33,7 @@ export default function TogetherMissionSection() {
 
           <AnimateIn delay={150} className="w-full max-w-sm">
             <Image
-              src="/img/photos/mission/together-on-mission.png"
+              src="/img/photos/mission/together-on-mission.webp"
               alt="Together on a Mission"
               width={500}
               height={400}

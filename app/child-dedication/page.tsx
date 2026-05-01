@@ -30,7 +30,7 @@ export default function ChildDedicationPage() {
         <section className="relative overflow-hidden rounded-3xl">
           <div
             className="absolute inset-0 scale-105 bg-cover bg-center blur-sm"
-            style={{ backgroundImage: "url('/img/photos/Kids1.png')" }}
+            style={{ backgroundImage: "url('/img/photos/Kids1.webp')" }}
           />
           <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/50 to-black/75" />
           <div className="relative flex flex-col items-center justify-center py-[12rem] px-4 text-center">
@@ -56,7 +56,7 @@ export default function ChildDedicationPage() {
             <AnimateIn className="w-full md:w-1/2">
               <div className="overflow-hidden rounded-3xl">
                 <Image
-                  src="/img/photos/Kids2.jpg"
+                  src="/img/photos/Kids2.webp"
                   alt="Children at Destiny Church"
                   width={640}
                   height={440}

@@ -363,7 +363,7 @@ export default function AlphaPage() {
             <AnimateIn delay={100} className="w-full md:w-1/2">
               <div className="overflow-hidden rounded-3xl">
                 <Image
-                  src="/img/Alpha/Alpha/WiA-SC_V2-Carousel_01.jpg"
+                  src="/img/Alpha/Alpha/WiA-SC_V2-Carousel_01.webp"
                   alt="Alpha session"
                   width={640}
                   height={420}
@@ -413,7 +413,7 @@ export default function AlphaPage() {
               {["5", "6"].map((n) => (
                 <div key={n} className="overflow-hidden rounded-2xl">
                   <Image
-                    src={`/img/Alpha/YouthAlpha/${n}.png`}
+                    src={`/img/Alpha/YouthAlpha/${n}.webp`}
                     alt="Youth Alpha"
                     width={200}
                     height={250}

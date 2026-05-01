@@ -31,7 +31,7 @@ async function getPlaylistVideos(): Promise<Video[]> {
           item.snippet.thumbnails?.maxres?.url ||
           item.snippet.thumbnails?.high?.url ||
           item.snippet.thumbnails?.medium?.url ||
-          `https://i.ytimg.com/vi/${item.snippet.resourceId.videoId}/hqdefault.jpg`,
+          `https://i.ytimg.com/vi/${item.snippet.resourceId.videoId}/hqdefault.webp`,
       }));
   } catch {
     return [];

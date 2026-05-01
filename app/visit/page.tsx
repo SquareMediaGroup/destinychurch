@@ -91,7 +91,7 @@ export default function VisitPage() {
         <section className="relative overflow-hidden rounded-3xl">
           <div
             className="absolute inset-0 scale-105 bg-cover bg-center blur-sm"
-            style={{ backgroundImage: "url('/img/photos/Plan a Visit.jpg')" }}
+            style={{ backgroundImage: "url('/img/photos/Plan a Visit.webp')" }}
           />
           <div className="absolute inset-0 bg-gradient-to-b from-black/55 via-black/45 to-black/80" />
           <div className="relative flex flex-col items-center justify-center py-[12rem] px-4 text-center">
@@ -184,13 +184,13 @@ export default function VisitPage() {
             </AnimateIn>
             <AnimateIn delay={100} className="grid w-full grid-cols-2 gap-3 md:w-1/2">
               <div className="col-span-2 overflow-hidden rounded-3xl">
-                <Image src="/img/photos/Plan a Visit.jpg" alt="Destiny Church" width={640} height={300} className="w-full object-cover" />
+                <Image src="/img/photos/Plan a Visit.webp" alt="Destiny Church" width={640} height={300} className="w-full object-cover" />
               </div>
               <div className="overflow-hidden rounded-2xl">
-                <Image src="/img/photos/Gallery/Speaker.jpeg" alt="" width={300} height={220} className="w-full object-cover" />
+                <Image src="/img/photos/Gallery/Speaker.webp" alt="" width={300} height={220} className="w-full object-cover" />
               </div>
               <div className="overflow-hidden rounded-2xl">
-                <Image src="/img/photos/Gallery/Speaker2.jpeg" alt="" width={300} height={220} className="w-full object-cover" />
+                <Image src="/img/photos/Gallery/Speaker2.webp" alt="" width={300} height={220} className="w-full object-cover" />
               </div>
             </AnimateIn>
           </div>

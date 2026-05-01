@@ -48,7 +48,7 @@ export default function BeliefsPage() {
       <div className="px-4 pt-15 pb-15 lg:px-8">
         <section className="relative overflow-hidden rounded-3xl">
           <Image
-            src="/img/photos/Bible Image Destiny Church.jpg"
+            src="/img/photos/Bible Image Destiny Church.webp"
             alt=""
             aria-hidden="true"
             fill

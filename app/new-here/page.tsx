@@ -21,21 +21,21 @@ export const metadata: Metadata = {
 const cards = [
   {
     title: "New to Destiny Church?",
-    image: "/img/brand/NewHere/Here, You Belong.png",
+    image: "/img/brand/NewHere/Here, You Belong.webp",
     description:
       "Welcome Home! We have lots of opportunities for you to connect, grow, learn and contribute whatever your age, experience, abilities and personality.",
     cta: { label: "Fill in Connect Form", href: "/connect-card" },
   },
   {
     title: "New to Faith?",
-    image: "/img/brand/NewHere/You Said Yes.png",
+    image: "/img/brand/NewHere/You Said Yes.webp",
     description:
       "You Said Yes! That's the best decision you'll ever make EVER. But now what? We have a range of courses and gatherings we would love to invite you to. It's casual, it's welcoming, it's for you.",
     cta: null,
   },
   {
     title: "Join a Connect Group",
-    image: "/img/brand/NewHere/Connct Groups.png",
+    image: "/img/brand/NewHere/Connct Groups.webp",
     description:
       "Our Connect Groups are an integral part of the life and health of the church. They enable us to be effective, powerful and fruitful witnesses in the world. Find people you can pray, grow and do life with.",
     cta: { label: "Join a Connect Group", href: "/connect" },
@@ -125,7 +125,7 @@ export default function NewHerePage() {
             <AnimateIn className="shrink-0">
               <div className="h-52 w-52 overflow-hidden rounded-full md:h-64 md:w-64">
                 <Image
-                  src="/img/brand/Team/JonathanCath.png"
+                  src="/img/brand/Team/JonathanCath.webp"
                   alt="Jonathan & Cath Harris"
                   width={256}
                   height={256}

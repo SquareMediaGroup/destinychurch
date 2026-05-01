@@ -12,7 +12,7 @@ export default function CoursesSection() {
           </h2>
         </AnimateIn>
 
-        <div className="grid gap-6 md:grid-cols-2">
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           {/* CAP Money Course */}
           <AnimateIn>
             <div className="overflow-hidden rounded-2xl bg-white shadow-md">
@@ -22,7 +22,7 @@ export default function CoursesSection() {
                   alt="CAP Money Course"
                   fill
                   className="object-cover"
-                  sizes="(max-width: 768px) 100vw, 50vw"
+                  sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
                 />
               </div>
               <div className="p-6">
@@ -51,7 +51,7 @@ export default function CoursesSection() {
                   alt="Alpha Course"
                   fill
                   className="object-cover object-bottom"
-                  sizes="(max-width: 768px) 100vw, 50vw"
+                  sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
                 <div className="absolute inset-x-0 bottom-4 px-5">
@@ -73,6 +73,51 @@ export default function CoursesSection() {
                   className="inline-flex items-center justify-center rounded-full bg-destiny-orange px-6 py-2.5 text-sm font-bold text-white transition hover:brightness-110"
                 >
                   Try Alpha
+                </Link>
+              </div>
+            </div>
+          </AnimateIn>
+
+          {/* Destiny Recovery */}
+          <AnimateIn delay={200}>
+            <div className="overflow-hidden rounded-2xl bg-white shadow-md">
+              <div className="relative h-100 w-full overflow-hidden">
+                <Image
+                  src="/img/DCRecovery/Hero.webp"
+                  alt="Destiny Recovery"
+                  fill
+                  className="object-cover"
+                  sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                />
+                <div
+                  className="absolute inset-0"
+                  style={{
+                    background:
+                      "linear-gradient(to top, rgba(0,81,63,0.85) 0%, rgba(0,103,86,0.4) 50%, transparent 100%)",
+                  }}
+                />
+                <div className="absolute inset-x-0 bottom-4 px-5">
+                  <p className="text-xs font-bold uppercase tracking-widest text-white/70">
+                    A 12-step Christ-centred journey.
+                  </p>
+                  <h3 className="text-2xl font-black text-white">Find Healing</h3>
+                </div>
+              </div>
+              <div className="p-6">
+                <h3 className="mb-1 text-lg font-black" style={{ color: "#006756" }}>
+                  Destiny Recovery
+                </h3>
+                <p className="mb-5 text-sm leading-relaxed text-destiny-grey/70">
+                  Christian recovery support that meets you where you are. A 12-step
+                  programme providing a Christ-centred pathway to overcoming
+                  struggles and healing from emotional wounds.
+                </p>
+                <Link
+                  href="/destiny-recovery"
+                  className="inline-flex items-center justify-center rounded-full px-6 py-2.5 text-sm font-bold text-white transition hover:brightness-110"
+                  style={{ backgroundColor: "#006756" }}
+                >
+                  Learn More
                 </Link>
               </div>
             </div>

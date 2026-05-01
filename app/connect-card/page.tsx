@@ -112,6 +112,27 @@ export default function ConnectCardPage() {
         </div>
       </section>
 
+      {/* Connect Card Preview */}
+      <section className="bg-white py-16">
+        <div className="mx-auto max-w-7xl px-4 lg:px-8">
+          <AnimateIn>
+            <p className="mb-3 text-center text-xs font-bold uppercase tracking-widest text-destiny-orange">What It Looks Like</p>
+            <h2 className="mb-12 text-center text-3xl font-black text-destiny-grey md:text-4xl">Our Connect Card</h2>
+          </AnimateIn>
+          <div className="grid gap-6 md:grid-cols-3">
+            <AnimateIn className="overflow-hidden rounded-2xl">
+              <Image src="/img/brand/connectcards/Connect-cards.pngf_.png" alt="Connect Card Front" width={400} height={500} className="w-full object-cover" />
+            </AnimateIn>
+            <AnimateIn delay={60} className="overflow-hidden rounded-2xl">
+              <Image src="/img/brand/connectcards/2.png" alt="Connect Card Detail 2" width={400} height={500} className="w-full object-cover" />
+            </AnimateIn>
+            <AnimateIn delay={120} className="overflow-hidden rounded-2xl">
+              <Image src="/img/brand/connectcards/3.png" alt="Connect Card Detail 3" width={400} height={500} className="w-full object-cover" />
+            </AnimateIn>
+          </div>
+        </div>
+      </section>
+
       {/* CTAs */}
       <section style={{ background: "linear-gradient(135deg, #363f48 0%, #242e37 100%)" }} className="py-20">
         <div className="mx-auto max-w-4xl px-4 lg:px-8">

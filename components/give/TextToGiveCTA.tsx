@@ -28,11 +28,11 @@ export default function TextToGiveCTA({ keyword, number }: Props) {
     return () => window.removeEventListener("resize", checkDesktop);
   }, []);
 
-  const openModal = () => {
+  const openModal = (qrMode = false) => {
     setOpen(true);
     setAmount("");
     setIsMonthly(false);
-    setShowQR(false);
+    setShowQR(qrMode);
     requestAnimationFrame(() => requestAnimationFrame(() => setVisible(true)));
     document.body.style.overflow = "hidden";
   };
@@ -47,8 +47,7 @@ export default function TextToGiveCTA({ keyword, number }: Props) {
 
   const handleCTAClick = (defaultAmount?: string) => {
     if (isDesktop) {
-      setShowQR(true);
-      openModal();
+      openModal(true);
     } else {
       sendTextMessage(defaultAmount);
     }
@@ -90,10 +89,7 @@ export default function TextToGiveCTA({ keyword, number }: Props) {
 
         {/* Secondary CTA: Custom Amount */}
         <button
-          onClick={() => {
-            setShowQR(false);
-            openModal();
-          }}
+          onClick={() => openModal(false)}
           className="group flex items-center gap-4 rounded-2xl bg-destiny-grey px-7 py-4 text-left shadow-xl shadow-destiny-grey/30 transition hover:brightness-110"
         >
           <span className="material-symbols-rounded text-2xl text-white">edit</span>

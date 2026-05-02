@@ -90,6 +90,10 @@ const nextConfig: NextConfig = {
       },
       {
         protocol: "https",
+        hostname: "lwmnrbglbtbyypzcenzf.supabase.co",
+      },
+      {
+        protocol: "https",
         hostname: "**.churchsuite.com",
       },
       {

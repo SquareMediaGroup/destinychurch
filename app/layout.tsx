@@ -8,6 +8,7 @@ import Providers from "@/components/Providers";
 import CookieBanner from "@/components/CookieBanner";
 import AnalyticsGate from "@/components/AnalyticsGate";
 import SiteBanner from "@/components/SiteBanner";
+import SitePopup from "@/components/SitePopup";
 import BannerSpacer from "@/components/BannerSpacer";
 import { createServiceClient } from "@/utils/supabase/service";
 import { unstable_noStore as noStore } from "next/cache";
@@ -129,6 +130,25 @@ async function getActiveBanner() {
   }
 }
 
+async function getActivePopup() {
+  noStore();
+  try {
+    const supabase = createServiceClient();
+    const { data } = await supabase
+      .from("site_popup")
+      .select(
+        "active, title, body, cta_text, cta_link, image_url, show_once, updated_at"
+      )
+      .eq("active", true)
+      .order("created_at", { ascending: true })
+      .limit(1)
+      .maybeSingle();
+    return data ?? null;
+  } catch {
+    return null;
+  }
+}
+
 const orgSchema = {
   "@context": "https://schema.org",
   "@graph": [
@@ -209,6 +229,7 @@ export default async function RootLayout({
   children: React.ReactNode;
 }>) {
   const banner = await getActiveBanner();
+  const popup = await getActivePopup();
 
   return (
     <html lang="en">
@@ -234,6 +255,7 @@ export default async function RootLayout({
             <FooterGate />
           </div>
           <AnalyticsGate />
+          <SitePopup popup={popup} />
         </Providers>
         <SpeedInsights />
       </body>

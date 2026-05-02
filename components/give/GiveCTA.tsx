@@ -12,12 +12,10 @@ export default function GiveCTA({ variant = "dark" }: Props) {
   const [open, setOpen] = useState(false);
   const [visible, setVisible] = useState(false);
   const [mounted, setMounted] = useState(false);
-  const [modalMode, setModalMode] = useState<"online" | "custom">("online");
 
   useEffect(() => { setMounted(true); }, []);
 
-  const openModal = (mode: "online" | "custom") => {
-    setModalMode(mode);
+  const openModal = () => {
     setOpen(true);
     requestAnimationFrame(() => requestAnimationFrame(() => setVisible(true)));
     document.body.style.overflow = "hidden";
@@ -41,33 +39,17 @@ export default function GiveCTA({ variant = "dark" }: Props) {
 
   return (
     <>
-      <div className="flex flex-col gap-3 sm:flex-row">
-        {/* Primary CTA: Text to Give £10 */}
-        <button
-          onClick={() => openModal("online")}
-          className="group flex items-center gap-4 rounded-2xl bg-destiny-orange px-7 py-4 text-left shadow-xl shadow-destiny-orange/30 transition hover:brightness-110"
-        >
-          <span className="material-symbols-rounded text-2xl text-white">sms</span>
-          <span>
-            <span className="block text-sm font-black text-white">Text to Give £10</span>
-            <span className={`block text-xs ${subtitleClass}`}>Send DCTEES give 10</span>
-          </span>
-          <span className="material-symbols-rounded ml-4 text-lg text-white/60 transition group-hover:translate-x-1">arrow_forward</span>
-        </button>
-
-        {/* Secondary CTA: Custom Amount */}
-        <button
-          onClick={() => openModal("custom")}
-          className="group flex items-center gap-4 rounded-2xl bg-white/20 px-7 py-4 text-left transition hover:bg-white/30"
-        >
-          <span className="material-symbols-rounded text-2xl text-white">edit</span>
-          <span>
-            <span className="block text-sm font-black text-white">Other Amount</span>
-            <span className={`block text-xs ${subtitleClass}`}>Online, bank or custom text</span>
-          </span>
-          <span className="material-symbols-rounded ml-4 text-lg text-white/60 transition group-hover:translate-x-1">arrow_forward</span>
-        </button>
-      </div>
+      <button
+        onClick={openModal}
+        className="group flex items-center gap-4 rounded-2xl bg-destiny-orange px-7 py-4 text-left shadow-xl shadow-destiny-orange/30 transition hover:brightness-110"
+      >
+        <span className="material-symbols-rounded text-2xl text-white">volunteer_activism</span>
+        <span>
+          <span className="block text-sm font-black text-white">Give Online</span>
+          <span className={`block text-xs ${subtitleClass}`}>Secure giving via ChurchSuite</span>
+        </span>
+        <span className="material-symbols-rounded ml-4 text-lg text-white/60 transition group-hover:translate-x-1">arrow_forward</span>
+      </button>
 
       {mounted && open && createPortal(
         <div
@@ -89,9 +71,7 @@ export default function GiveCTA({ variant = "dark" }: Props) {
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between border-b border-black/5 px-6 py-4">
-              <p className="font-black text-destiny-grey">
-                {modalMode === "online" ? "Give Online" : "Give a Custom Amount"}
-              </p>
+              <p className="font-black text-destiny-grey">Give Online</p>
               <button
                 onClick={closeModal}
                 className="flex h-8 w-8 items-center justify-center rounded-full text-destiny-grey/40 transition hover:bg-gray-100 hover:text-destiny-grey"
@@ -100,53 +80,11 @@ export default function GiveCTA({ variant = "dark" }: Props) {
                 <span className="material-symbols-rounded text-xl">close</span>
               </button>
             </div>
-
-            {modalMode === "online" ? (
-              <ChurchSuiteEmbed
-                src="https://destinytees.churchsuite.com/donate"
-                title="Give Online — Destiny Church"
-                height={620}
-              />
-            ) : (
-              <div className="p-8">
-                <p className="mb-6 text-sm text-destiny-grey/60">
-                  Choose your preferred giving method below:
-                </p>
-                <div className="space-y-4">
-                  <button
-                    onClick={() => {
-                      window.open("https://destinytees.churchsuite.com/donate", "_blank");
-                      closeModal();
-                    }}
-                    className="w-full rounded-2xl bg-destiny-orange/10 px-4 py-3 text-left transition hover:bg-destiny-orange/20"
-                  >
-                    <p className="font-bold text-destiny-grey">Give Online</p>
-                    <p className="text-sm text-destiny-grey/60">Any amount via secure payment</p>
-                  </button>
-                  <button
-                    onClick={() => {
-                      const message = "I'd like to give a custom amount via text. Text DCTEES give [amount] to 07380 307 800";
-                      window.location.href = `sms:?body=${encodeURIComponent(message)}`;
-                      closeModal();
-                    }}
-                    className="w-full rounded-2xl bg-destiny-orange/10 px-4 py-3 text-left transition hover:bg-destiny-orange/20"
-                  >
-                    <p className="font-bold text-destiny-grey">Text to Give</p>
-                    <p className="text-sm text-destiny-grey/60">Text DCTEES give [amount] to 07380 307 800</p>
-                  </button>
-                  <button
-                    onClick={() => {
-                      closeModal();
-                      document.getElementById("give-bank")?.scrollIntoView({ behavior: "smooth" });
-                    }}
-                    className="w-full rounded-2xl bg-destiny-orange/10 px-4 py-3 text-left transition hover:bg-destiny-orange/20"
-                  >
-                    <p className="font-bold text-destiny-grey">Bank Transfer</p>
-                    <p className="text-sm text-destiny-grey/60">Direct bank transfer or standing order</p>
-                  </button>
-                </div>
-              </div>
-            )}
+            <ChurchSuiteEmbed
+              src="https://destinytees.churchsuite.com/donate"
+              title="Give Online — Destiny Church"
+              height={620}
+            />
           </div>
         </div>,
         document.body

@@ -3,6 +3,7 @@ import Link from "next/link";
 import AnimateIn from "@/components/AnimateIn";
 import WorshipWithUsSection from "@/components/home/WorshipWithUsSection";
 import GiveCTA from "@/components/give/GiveCTA";
+import TextToGiveCTA from "@/components/give/TextToGiveCTA";
 import ChurchSuiteEmbed from "@/components/ChurchSuiteEmbed";
 import { createServiceClient } from "@/utils/supabase/service";
 
@@ -201,7 +202,7 @@ export default async function GivePage() {
             </p>
           </AnimateIn>
           <AnimateIn delay={100}>
-            <div className="rounded-3xl border border-black/5 bg-[#f5f7fa] p-8">
+            <div className="rounded-3xl border border-black/5 bg-[#f5f7fa] p-8 mb-8">
               <div className="grid gap-6 md:grid-cols-3">
                 <div className="text-center">
                   <p className="mb-2 text-xs font-bold uppercase tracking-widest text-destiny-orange">Step 1</p>
@@ -226,6 +227,13 @@ export default async function GivePage() {
                 Add <span className="font-bold">/mo</span> to the end of your amount for a monthly recurring gift.
               </p>
             </div>
+          </AnimateIn>
+
+          <AnimateIn delay={200}>
+            <TextToGiveCTA
+              keyword={content.text_keyword ?? "DCTEES"}
+              number={content.text_number ?? "07380 307 800"}
+            />
           </AnimateIn>
         </div>
       </section>

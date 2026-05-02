@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
+import QRCode from "qrcode.react";
 
 interface Props {
   keyword: string;
@@ -14,13 +15,24 @@ export default function TextToGiveCTA({ keyword, number }: Props) {
   const [mounted, setMounted] = useState(false);
   const [amount, setAmount] = useState("");
   const [isMonthly, setIsMonthly] = useState(false);
+  const [isDesktop, setIsDesktop] = useState(true);
+  const [showQR, setShowQR] = useState(false);
 
-  useEffect(() => { setMounted(true); }, []);
+  useEffect(() => {
+    setMounted(true);
+    const checkDesktop = () => {
+      setIsDesktop(window.innerWidth >= 768);
+    };
+    checkDesktop();
+    window.addEventListener("resize", checkDesktop);
+    return () => window.removeEventListener("resize", checkDesktop);
+  }, []);
 
   const openModal = () => {
     setOpen(true);
     setAmount("");
     setIsMonthly(false);
+    setShowQR(false);
     requestAnimationFrame(() => requestAnimationFrame(() => setVisible(true)));
     document.body.style.overflow = "hidden";
   };
@@ -31,6 +43,15 @@ export default function TextToGiveCTA({ keyword, number }: Props) {
       setOpen(false);
       document.body.style.overflow = "";
     }, 350);
+  };
+
+  const handleCTAClick = (defaultAmount?: string) => {
+    if (isDesktop) {
+      setShowQR(true);
+      openModal();
+    } else {
+      sendTextMessage(defaultAmount);
+    }
   };
 
   const sendTextMessage = (defaultAmount?: string) => {
@@ -56,7 +77,7 @@ export default function TextToGiveCTA({ keyword, number }: Props) {
       <div className="flex flex-col gap-3 sm:flex-row">
         {/* Primary CTA: £10 */}
         <button
-          onClick={() => sendTextMessage("10")}
+          onClick={() => handleCTAClick("10")}
           className="group flex items-center gap-4 rounded-2xl bg-destiny-orange px-7 py-4 text-left shadow-xl shadow-destiny-orange/30 transition hover:brightness-110"
         >
           <span className="material-symbols-rounded text-2xl text-white">sms</span>
@@ -69,7 +90,10 @@ export default function TextToGiveCTA({ keyword, number }: Props) {
 
         {/* Secondary CTA: Custom Amount */}
         <button
-          onClick={openModal}
+          onClick={() => {
+            setShowQR(false);
+            openModal();
+          }}
           className="group flex items-center gap-4 rounded-2xl bg-destiny-grey px-7 py-4 text-left shadow-xl shadow-destiny-grey/30 transition hover:brightness-110"
         >
           <span className="material-symbols-rounded text-2xl text-white">edit</span>
@@ -101,7 +125,7 @@ export default function TextToGiveCTA({ keyword, number }: Props) {
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between border-b border-black/5 px-6 py-4">
-              <p className="font-black text-destiny-grey">Custom Amount</p>
+              <p className="font-black text-destiny-grey">{showQR ? "Scan to Give" : "Custom Amount"}</p>
               <button
                 onClick={closeModal}
                 className="flex h-8 w-8 items-center justify-center rounded-full text-destiny-grey/40 transition hover:bg-gray-100 hover:text-destiny-grey"
@@ -112,6 +136,22 @@ export default function TextToGiveCTA({ keyword, number }: Props) {
             </div>
 
             <div className="p-8">
+              {showQR ? (
+                <div className="flex flex-col items-center gap-6">
+                  <p className="text-center text-sm text-destiny-grey/60">
+                    Scan this QR code with your phone to open the giving page
+                  </p>
+                  <div className="rounded-2xl border-8 border-white bg-white p-4">
+                    <QRCode
+                      value={typeof window !== "undefined" ? window.location.href : ""}
+                      size={256}
+                      level="H"
+                      includeMargin={false}
+                    />
+                  </div>
+                </div>
+              ) : (
+                <>
               <div className="mb-6">
                 <label htmlFor="amount" className="block mb-2 text-sm font-bold text-destiny-grey">
                   Amount (£)
@@ -159,6 +199,8 @@ export default function TextToGiveCTA({ keyword, number }: Props) {
                   Send Text
                 </button>
               </div>
+              </>
+              )}
             </div>
           </div>
         </div>,

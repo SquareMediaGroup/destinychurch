@@ -70,7 +70,7 @@ export default function TextToGiveCTA({ keyword, number }: Props) {
         {/* Secondary CTA: Custom Amount */}
         <button
           onClick={openModal}
-          className="group flex items-center gap-4 rounded-2xl bg-white/20 px-7 py-4 text-left transition hover:bg-white/30"
+          className="group flex items-center gap-4 rounded-2xl bg-destiny-blue px-7 py-4 text-left shadow-xl shadow-destiny-blue/30 transition hover:brightness-110"
         >
           <span className="material-symbols-rounded text-2xl text-white">edit</span>
           <span>

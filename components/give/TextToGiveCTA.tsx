@@ -89,7 +89,13 @@ export default function TextToGiveCTA({ keyword, number }: Props) {
 
         {/* Secondary CTA: Custom Amount */}
         <button
-          onClick={() => openModal(false)}
+          onClick={() => {
+            if (isDesktop) {
+              openModal(true);
+            } else {
+              openModal(false);
+            }
+          }}
           className="group flex items-center gap-4 rounded-2xl bg-destiny-grey px-7 py-4 text-left shadow-xl shadow-destiny-grey/30 transition hover:brightness-110"
         >
           <span className="material-symbols-rounded text-2xl text-white">edit</span>

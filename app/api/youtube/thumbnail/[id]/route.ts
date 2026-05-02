@@ -7,8 +7,9 @@ export async function GET(
   const { id } = await params;
 
   const urls = [
-    `https://i.ytimg.com/vi/${id}/maxresdefault.webp`,
-    `https://i.ytimg.com/vi/${id}/hqdefault.webp`,
+    `https://i.ytimg.com/vi/${id}/maxresdefault.jpg`,
+    `https://i.ytimg.com/vi/${id}/sddefault.jpg`,
+    `https://i.ytimg.com/vi/${id}/hqdefault.jpg`,
   ];
 
   for (const url of urls) {
@@ -17,7 +18,7 @@ export async function GET(
       const buffer = await res.arrayBuffer();
       return new NextResponse(buffer, {
         headers: {
-          "Content-Type": "image/webp",
+          "Content-Type": "image/jpeg",
           "Cache-Control": "public, max-age=300, s-maxage=300",
         },
       });

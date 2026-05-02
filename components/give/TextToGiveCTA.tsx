@@ -120,6 +120,7 @@ export default function TextToGiveCTA({ keyword, number }: Props) {
                   id="amount"
                   type="number"
                   min="0"
+                  max="30"
                   step="0.01"
                   placeholder="e.g. 25"
                   value={amount}

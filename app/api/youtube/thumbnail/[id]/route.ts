@@ -17,7 +17,7 @@ export async function GET(
       const buffer = await res.arrayBuffer();
       return new NextResponse(buffer, {
         headers: {
-          "Content-Type": "image/jpeg",
+          "Content-Type": "image/webp",
           "Cache-Control": "public, max-age=300, s-maxage=300",
         },
       });

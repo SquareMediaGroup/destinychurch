@@ -190,7 +190,7 @@ export default async function GivePage() {
       </section>
 
       {/* Text to give */}
-      <section id="give-text" className="bg-white py-16">
+      <section id="give-text" className="bg-[#f5f7fa] py-16">
         <div className="mx-auto max-w-4xl px-4 lg:px-8">
           <AnimateIn>
             <div className="mb-3 flex items-center gap-3">

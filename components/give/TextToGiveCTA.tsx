@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
-import QRCode from "qrcode.react";
+import { QRCodeSVG } from "qrcode.react";
 
 interface Props {
   keyword: string;
@@ -142,7 +142,7 @@ export default function TextToGiveCTA({ keyword, number }: Props) {
                     Scan this QR code with your phone to open the giving page
                   </p>
                   <div className="rounded-2xl border-8 border-white bg-white p-4">
-                    <QRCode
+                    <QRCodeSVG
                       value={typeof window !== "undefined" ? window.location.href : ""}
                       size={256}
                       level="H"

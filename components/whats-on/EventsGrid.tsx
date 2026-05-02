@@ -41,6 +41,11 @@ function formatDate(dateStr: string) {
       month: "long",
       year: "numeric",
     }),
+    shortDate: d.toLocaleDateString("en-GB", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    }),
     time: d.toLocaleTimeString("en-GB", {
       hour: "numeric",
       minute: "2-digit",
@@ -57,6 +62,7 @@ function EventCard({ event }: { event: DeduplicatedEvent }) {
     ? `https://destinytees.churchsuite.com/events/${event.identifier}`
     : "https://destinytees.churchsuite.com/events";
   const isCourse = event.sessionCount > 1;
+  const isMultiday = new Date(event.datetime_start).toDateString() !== new Date(event.datetime_end).toDateString();
 
   return (
     <a
@@ -75,11 +81,18 @@ function EventCard({ event }: { event: DeduplicatedEvent }) {
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
 
-          {isCourse && (
-            <div className="absolute left-3 top-3 flex items-center gap-1.5 rounded-full bg-destiny-orange px-3 py-1 text-[11px] font-bold uppercase tracking-wide text-white shadow-md">
-              {event.sessionCount} Sessions
-            </div>
-          )}
+          <div className="absolute left-3 top-3 flex items-center gap-2">
+            {isMultiday && (
+              <div className="flex items-center gap-1.5 rounded-full bg-red-500 px-3 py-1 text-[11px] font-bold uppercase tracking-wide text-white shadow-md">
+                Multiday
+              </div>
+            )}
+            {isCourse && (
+              <div className="flex items-center gap-1.5 rounded-full bg-destiny-orange px-3 py-1 text-[11px] font-bold uppercase tracking-wide text-white shadow-md">
+                {event.sessionCount} Sessions
+              </div>
+            )}
+          </div>
 
           <div className="absolute bottom-3 right-3 flex h-14 w-14 flex-col items-center justify-center rounded-xl bg-white/95 shadow-lg backdrop-blur-sm">
             <span className="text-xl font-black leading-none text-destiny-orange">{start.day}</span>
@@ -92,11 +105,18 @@ function EventCard({ event }: { event: DeduplicatedEvent }) {
           <div className="absolute -right-4 -top-4 h-24 w-24 rounded-full bg-white/10" />
           <div className="absolute -bottom-6 -left-3 h-16 w-16 rounded-full bg-white/10" />
 
-          {isCourse && (
-            <div className="mb-3 inline-flex items-center rounded-full bg-white/20 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide text-white">
-              {event.sessionCount} Sessions
-            </div>
-          )}
+          <div className="mb-3 flex items-center gap-2">
+            {isMultiday && (
+              <div className="inline-flex items-center rounded-full bg-red-500/80 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide text-white">
+                Multiday
+              </div>
+            )}
+            {isCourse && (
+              <div className="inline-flex items-center rounded-full bg-white/20 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide text-white">
+                {event.sessionCount} Sessions
+              </div>
+            )}
+          </div>
 
           <div className="flex items-end justify-between">
             <div>
@@ -121,7 +141,9 @@ function EventCard({ event }: { event: DeduplicatedEvent }) {
                 <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
               </svg>
             </div>
-            <span className="font-medium text-destiny-grey/80">{start.fullDate}</span>
+            <span className="font-medium text-destiny-grey/80">
+              {isMultiday ? `${start.fullDate} – ${end.fullDate}` : start.fullDate}
+            </span>
           </div>
 
           <div className="flex items-center gap-2.5">

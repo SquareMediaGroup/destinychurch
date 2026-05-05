@@ -1,18 +1,32 @@
 "use client";
 
 import Image from "next/image";
-import type { BuilderElement } from "@/lib/builder/types";
+import { useState } from "react";
+import type { BuilderElement, ElementType } from "@/lib/builder/types";
 import { layoutToClasses } from "@/lib/builder/layout";
 import { BRAND_COMPONENTS } from "./BrandComponentRegistry";
+
+const GAP_CLASS: Record<number, string> = {
+  0: "gap-0", 1: "gap-1", 2: "gap-2", 3: "gap-3", 4: "gap-4",
+  5: "gap-5", 6: "gap-6", 7: "gap-7", 8: "gap-8", 9: "gap-9",
+  10: "gap-10", 11: "gap-11", 12: "gap-12",
+};
 
 type Props = {
   element: BuilderElement;
   selectedId?: string | null;
   onSelect?: (id: string) => void;
+  onDropInto?: (parentId: string, type: ElementType) => void;
   editing?: boolean;
 };
 
-export default function ElementRenderer({ element, selectedId, onSelect, editing }: Props) {
+export default function ElementRenderer({
+  element,
+  selectedId,
+  onSelect,
+  onDropInto,
+  editing,
+}: Props) {
   const isSelected = editing && selectedId === element.id;
   const layoutClass = layoutToClasses(element.layout);
 
@@ -30,7 +44,7 @@ export default function ElementRenderer({ element, selectedId, onSelect, editing
       }
     : { className: layoutClass };
 
-  const inner = renderInner(element, selectedId, onSelect, editing);
+  const inner = renderInner(element, selectedId, onSelect, onDropInto, editing);
 
   return (
     <div {...wrapperProps} data-element-id={element.id}>
@@ -48,6 +62,7 @@ function renderInner(
   element: BuilderElement,
   selectedId?: string | null,
   onSelect?: (id: string) => void,
+  onDropInto?: (parentId: string, type: ElementType) => void,
   editing?: boolean,
 ): React.ReactNode {
   const { type, props, children = [] } = element;
@@ -56,7 +71,6 @@ function renderInner(
   const BrandComp = BRAND_COMPONENTS[type];
   if (BrandComp) {
     if (editing) {
-      // Wrap in pointer-events:none so clicks reach the wrapper for selection
       return (
         <div className="pointer-events-none">
           <BrandComp {...(props as Record<string, unknown>)} />
@@ -142,26 +156,30 @@ function renderInner(
 
     case "section": {
       const bg = (props.background as string) || "white";
+      const align = (props.align as string) || "stretch";
       const bgClass =
         bg === "grey" ? "bg-[#f5f7fa]" : bg === "dark" ? "bg-destiny-grey text-white" : "bg-white";
+      const alignClass =
+        align === "center" ? "items-center" : align === "end" ? "items-end" : "items-stretch";
       return (
         <section className={`w-full px-6 py-10 ${bgClass}`}>
-          <div className="mx-auto flex max-w-6xl flex-col gap-4">
-            {children.length === 0 && editing ? (
-              <div className="flex h-24 items-center justify-center rounded-xl border-2 border-dashed border-black/10 text-sm text-destiny-grey/40">
-                Drop elements here
-              </div>
-            ) : (
-              children.map((child) => (
-                <ElementRenderer
-                  key={child.id}
-                  element={child}
-                  selectedId={selectedId}
-                  onSelect={onSelect}
-                  editing={editing}
-                />
-              ))
-            )}
+          <div className={`mx-auto flex max-w-6xl flex-col gap-4 ${alignClass}`}>
+            <DropZone parentId={element.id} onDropInto={onDropInto} editing={editing}>
+              {children.length === 0 && editing ? (
+                <EmptyDropHint label="Drop elements into section" />
+              ) : (
+                children.map((child) => (
+                  <ElementRenderer
+                    key={child.id}
+                    element={child}
+                    selectedId={selectedId}
+                    onSelect={onSelect}
+                    onDropInto={onDropInto}
+                    editing={editing}
+                  />
+                ))
+              )}
+            </DropZone>
           </div>
         </section>
       );
@@ -169,35 +187,54 @@ function renderInner(
 
     case "container":
       return (
-        <div className="flex flex-col gap-3 p-2">
-          {children.length === 0 && editing ? (
-            <div className="flex h-16 items-center justify-center rounded-lg border-2 border-dashed border-black/10 text-xs text-destiny-grey/40">
-              Empty container
-            </div>
-          ) : (
-            children.map((child) => (
-              <ElementRenderer
-                key={child.id}
-                element={child}
-                selectedId={selectedId}
-                onSelect={onSelect}
-                editing={editing}
-              />
-            ))
-          )}
-        </div>
+        <DropZone parentId={element.id} onDropInto={onDropInto} editing={editing}>
+          <div className="flex flex-col gap-3 p-2">
+            {children.length === 0 && editing ? (
+              <EmptyDropHint label="Empty container" small />
+            ) : (
+              children.map((child) => (
+                <ElementRenderer
+                  key={child.id}
+                  element={child}
+                  selectedId={selectedId}
+                  onSelect={onSelect}
+                  onDropInto={onDropInto}
+                  editing={editing}
+                />
+              ))
+            )}
+          </div>
+        </DropZone>
       );
 
     case "columns": {
       const gap = (props.gap as number) || 4;
+      const direction = (props.direction as string) || "row";
+      const align = (props.align as string) || "stretch";
+      const justify = (props.justify as string) || "start";
+      const dirClass = direction === "column" ? "flex-col" : "flex-col md:flex-row";
+      const alignClass =
+        align === "center" ? "items-center" : align === "end" ? "items-end" : "items-stretch";
+      const justifyClass =
+        justify === "center"
+          ? "justify-center"
+          : justify === "end"
+            ? "justify-end"
+            : justify === "between"
+              ? "justify-between"
+              : justify === "around"
+                ? "justify-around"
+                : "justify-start";
+      const gapClass = GAP_CLASS[gap] || "gap-4";
       return (
-        <div className={`flex flex-col md:flex-row gap-${gap}`}>
+        <div className={`flex ${dirClass} ${gapClass} ${alignClass} ${justifyClass}`}>
           {children.map((child) => (
             <div key={child.id} className="flex-1">
               <ElementRenderer
                 element={child}
                 selectedId={selectedId}
                 onSelect={onSelect}
+                onDropInto={onDropInto}
                 editing={editing}
               />
             </div>
@@ -213,4 +250,59 @@ function renderInner(
         </div>
       );
   }
+}
+
+function DropZone({
+  parentId,
+  onDropInto,
+  editing,
+  children,
+}: {
+  parentId: string;
+  onDropInto?: (parentId: string, type: ElementType) => void;
+  editing?: boolean;
+  children: React.ReactNode;
+}) {
+  const [hover, setHover] = useState(false);
+
+  if (!editing || !onDropInto) return <>{children}</>;
+
+  function handleDragOver(e: React.DragEvent) {
+    if (!e.dataTransfer.types.includes("application/x-builder-element")) return;
+    e.preventDefault();
+    e.stopPropagation();
+    e.dataTransfer.dropEffect = "copy";
+    setHover(true);
+  }
+
+  function handleDrop(e: React.DragEvent) {
+    e.preventDefault();
+    e.stopPropagation();
+    setHover(false);
+    const type = e.dataTransfer.getData("application/x-builder-element") as ElementType;
+    if (type) onDropInto!(parentId, type);
+  }
+
+  return (
+    <div
+      onDragOver={handleDragOver}
+      onDragLeave={() => setHover(false)}
+      onDrop={handleDrop}
+      className={hover ? "rounded-lg outline outline-2 outline-destiny-orange/60 outline-dashed" : ""}
+    >
+      {children}
+    </div>
+  );
+}
+
+function EmptyDropHint({ label, small }: { label: string; small?: boolean }) {
+  return (
+    <div
+      className={`flex items-center justify-center rounded-xl border-2 border-dashed border-black/10 text-destiny-grey/40 ${
+        small ? "h-16 text-xs" : "h-24 text-sm"
+      }`}
+    >
+      {label}
+    </div>
+  );
 }

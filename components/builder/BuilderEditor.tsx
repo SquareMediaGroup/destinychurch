@@ -9,6 +9,7 @@ import Canvas from "./Canvas";
 import CanvasToolbar from "./CanvasToolbar";
 import PropertiesPanel from "./PropertiesPanel";
 import ElementTree from "./ElementTree";
+import BreakpointToolbar, { BREAKPOINT_WIDTHS, type Breakpoint } from "./BreakpointToolbar";
 
 type Props = {
   initialPage: BuilderPage;
@@ -22,6 +23,7 @@ export default function BuilderEditor({ initialPage }: Props) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [saveState, setSaveState] = useState<SaveState>("idle");
   const [showLayers, setShowLayers] = useState(false);
+  const [breakpoint, setBreakpoint] = useState<Breakpoint>("desktop");
 
   const selectedElement = useMemo<BuilderElement | null>(() => {
     if (!selectedId) return null;
@@ -31,6 +33,12 @@ export default function BuilderEditor({ initialPage }: Props) {
   const handleAdd = useCallback((type: ElementType) => {
     const el = createElement(type);
     setLayout((prev) => [...prev, el]);
+    setSelectedId(el.id);
+  }, []);
+
+  const handleDropInto = useCallback((parentId: string, type: ElementType) => {
+    const el = createElement(type);
+    setLayout((prev) => insertChild(prev, parentId, el));
     setSelectedId(el.id);
   }, []);
 
@@ -47,32 +55,15 @@ export default function BuilderEditor({ initialPage }: Props) {
   );
 
   const handleDuplicate = useCallback((id: string) => {
-    setLayout((prev) => {
-      const idx = prev.findIndex((e) => e.id === id);
-      if (idx === -1) return prev;
-      const copy = cloneWithNewIds(prev[idx]);
-      return [...prev.slice(0, idx + 1), copy, ...prev.slice(idx + 1)];
-    });
+    setLayout((prev) => duplicateElement(prev, id));
   }, []);
 
-  const handleMoveUp = useCallback((id: string) => {
-    setLayout((prev) => {
-      const idx = prev.findIndex((e) => e.id === id);
-      if (idx <= 0) return prev;
-      const next = [...prev];
-      [next[idx - 1], next[idx]] = [next[idx], next[idx - 1]];
-      return next;
-    });
+  const handleMove = useCallback((id: string, direction: -1 | 1) => {
+    setLayout((prev) => moveSibling(prev, id, direction));
   }, []);
 
-  const handleMoveDown = useCallback((id: string) => {
-    setLayout((prev) => {
-      const idx = prev.findIndex((e) => e.id === id);
-      if (idx === -1 || idx >= prev.length - 1) return prev;
-      const next = [...prev];
-      [next[idx], next[idx + 1]] = [next[idx + 1], next[idx]];
-      return next;
-    });
+  const handleReorder = useCallback((draggedId: string, targetId: string, position: "before" | "after") => {
+    setLayout((prev) => reorderElement(prev, draggedId, targetId, position));
   }, []);
 
   // Auto-save: debounce 1.5s after layout/title changes
@@ -102,8 +93,10 @@ export default function BuilderEditor({ initialPage }: Props) {
     return () => clearTimeout(t);
   }, [layout, page.title, page.slug, page.id]);
 
+  const canvasMaxWidth = BREAKPOINT_WIDTHS[breakpoint];
+
   return (
-    <div className="flex h-[calc(100vh-0px)] flex-col bg-[#f5f7fa]">
+    <div className="flex h-screen flex-col bg-[#f5f7fa]">
       {/* Top bar */}
       <header className="flex shrink-0 items-center justify-between border-b border-black/8 bg-white px-4 py-2">
         <div className="flex items-center gap-3">
@@ -128,7 +121,9 @@ export default function BuilderEditor({ initialPage }: Props) {
             </div>
           </div>
         </div>
-        <div className="flex items-center gap-2">
+
+        <div className="flex items-center gap-3">
+          <BreakpointToolbar value={breakpoint} onChange={setBreakpoint} />
           <button
             type="button"
             onClick={() => setShowLayers((s) => !s)}
@@ -161,20 +156,25 @@ export default function BuilderEditor({ initialPage }: Props) {
               layout={layout}
               selectedId={selectedId}
               onSelect={setSelectedId}
-              onMoveUp={handleMoveUp}
-              onMoveDown={handleMoveDown}
+              onMoveUp={(id) => handleMove(id, -1)}
+              onMoveDown={(id) => handleMove(id, 1)}
+              onReorder={handleReorder}
             />
           </aside>
         )}
 
         {/* Center: canvas */}
-        <main className="flex-1 overflow-y-auto">
-          <div className="mx-auto my-6 max-w-5xl rounded-2xl border border-black/8 bg-white shadow-sm">
+        <main className="flex-1 overflow-y-auto p-6">
+          <div
+            className="mx-auto rounded-2xl border border-black/8 bg-white shadow-sm transition-[max-width] duration-300"
+            style={{ maxWidth: `${canvasMaxWidth}px` }}
+          >
             <Canvas
               layout={layout}
               selectedId={selectedId}
               onSelect={setSelectedId}
               onDropElement={handleAdd}
+              onDropInto={handleDropInto}
             />
           </div>
         </main>
@@ -200,7 +200,8 @@ function SaveIndicator({ state }: { state: SaveState }) {
   return <span className="text-destiny-grey/30">Auto-save on</span>;
 }
 
-// Helpers — recursive tree operations
+// ── Recursive tree operations ──────────────────────────────────────────
+
 function findElement(layout: BuilderElement[], id: string): BuilderElement | null {
   for (const el of layout) {
     if (el.id === id) return el;
@@ -218,12 +219,8 @@ function updateElement(
   patch: Partial<BuilderElement>,
 ): BuilderElement[] {
   return layout.map((el) => {
-    if (el.id === id) {
-      return { ...el, ...patch };
-    }
-    if (el.children) {
-      return { ...el, children: updateElement(el.children, id, patch) };
-    }
+    if (el.id === id) return { ...el, ...patch };
+    if (el.children) return { ...el, children: updateElement(el.children, id, patch) };
     return el;
   });
 }
@@ -231,9 +228,86 @@ function updateElement(
 function removeElement(layout: BuilderElement[], id: string): BuilderElement[] {
   return layout
     .filter((el) => el.id !== id)
-    .map((el) =>
-      el.children ? { ...el, children: removeElement(el.children, id) } : el,
-    );
+    .map((el) => (el.children ? { ...el, children: removeElement(el.children, id) } : el));
+}
+
+function insertChild(
+  layout: BuilderElement[],
+  parentId: string,
+  child: BuilderElement,
+): BuilderElement[] {
+  return layout.map((el) => {
+    if (el.id === parentId) {
+      return { ...el, children: [...(el.children || []), child] };
+    }
+    if (el.children) {
+      return { ...el, children: insertChild(el.children, parentId, child) };
+    }
+    return el;
+  });
+}
+
+function duplicateElement(layout: BuilderElement[], id: string): BuilderElement[] {
+  const out: BuilderElement[] = [];
+  for (const el of layout) {
+    out.push(el.children ? { ...el, children: duplicateElement(el.children, id) } : el);
+    if (el.id === id) out.push(cloneWithNewIds(el));
+  }
+  return out;
+}
+
+function moveSibling(
+  layout: BuilderElement[],
+  id: string,
+  direction: -1 | 1,
+): BuilderElement[] {
+  const idx = layout.findIndex((e) => e.id === id);
+  if (idx !== -1) {
+    const target = idx + direction;
+    if (target < 0 || target >= layout.length) return layout;
+    const next = [...layout];
+    [next[idx], next[target]] = [next[target], next[idx]];
+    return next;
+  }
+  return layout.map((el) =>
+    el.children ? { ...el, children: moveSibling(el.children, id, direction) } : el,
+  );
+}
+
+function reorderElement(
+  layout: BuilderElement[],
+  draggedId: string,
+  targetId: string,
+  position: "before" | "after",
+): BuilderElement[] {
+  if (draggedId === targetId) return layout;
+  const dragged = findElement(layout, draggedId);
+  if (!dragged) return layout;
+  // Don't allow dragging into own descendant
+  if (containsId(dragged, targetId)) return layout;
+  const removed = removeElement(layout, draggedId);
+  return insertNear(removed, targetId, dragged, position);
+}
+
+function containsId(el: BuilderElement, id: string): boolean {
+  if (el.id === id) return true;
+  return (el.children || []).some((c) => containsId(c, id));
+}
+
+function insertNear(
+  layout: BuilderElement[],
+  targetId: string,
+  newEl: BuilderElement,
+  position: "before" | "after",
+): BuilderElement[] {
+  const idx = layout.findIndex((e) => e.id === targetId);
+  if (idx !== -1) {
+    const insertAt = position === "before" ? idx : idx + 1;
+    return [...layout.slice(0, insertAt), newEl, ...layout.slice(insertAt)];
+  }
+  return layout.map((el) =>
+    el.children ? { ...el, children: insertNear(el.children, targetId, newEl, position) } : el,
+  );
 }
 
 function cloneWithNewIds(el: BuilderElement): BuilderElement {

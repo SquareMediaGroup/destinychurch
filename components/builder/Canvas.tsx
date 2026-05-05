@@ -8,10 +8,18 @@ type Props = {
   selectedId: string | null;
   onSelect: (id: string | null) => void;
   onDropElement: (type: ElementType) => void;
+  onDropInto: (parentId: string, type: ElementType) => void;
 };
 
-export default function Canvas({ layout, selectedId, onSelect, onDropElement }: Props) {
+export default function Canvas({
+  layout,
+  selectedId,
+  onSelect,
+  onDropElement,
+  onDropInto,
+}: Props) {
   function handleDragOver(e: React.DragEvent) {
+    if (!e.dataTransfer.types.includes("application/x-builder-element")) return;
     e.preventDefault();
     e.dataTransfer.dropEffect = "copy";
   }
@@ -49,6 +57,7 @@ export default function Canvas({ layout, selectedId, onSelect, onDropElement }: 
               element={element}
               selectedId={selectedId}
               onSelect={onSelect}
+              onDropInto={onDropInto}
               editing
             />
           ))}

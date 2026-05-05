@@ -277,28 +277,79 @@ function ContentEditor({
       );
     case "section":
       return (
-        <Field label="Background">
-          <select
-            value={(props.background as string) || "white"}
-            onChange={(e) => setProp("background", e.target.value)}
-            className={inputCls}
-          >
-            <option value="white">White</option>
-            <option value="grey">Light grey</option>
-            <option value="dark">Dark</option>
-          </select>
-        </Field>
+        <>
+          <Field label="Background">
+            <select
+              value={(props.background as string) || "white"}
+              onChange={(e) => setProp("background", e.target.value)}
+              className={inputCls}
+            >
+              <option value="white">White</option>
+              <option value="grey">Light grey</option>
+              <option value="dark">Dark</option>
+            </select>
+          </Field>
+          <Field label="Children alignment">
+            <select
+              value={(props.align as string) || "stretch"}
+              onChange={(e) => setProp("align", e.target.value)}
+              className={inputCls}
+            >
+              <option value="stretch">Stretch</option>
+              <option value="start">Start</option>
+              <option value="center">Center</option>
+              <option value="end">End</option>
+            </select>
+          </Field>
+        </>
       );
     case "columns":
       return (
-        <Field label="Gap">
-          <NumberStepper
-            value={(props.gap as number) || 4}
-            onChange={(v) => setProp("gap", v)}
-            step={1}
-            max={12}
-          />
-        </Field>
+        <>
+          <Field label="Direction">
+            <select
+              value={(props.direction as string) || "row"}
+              onChange={(e) => setProp("direction", e.target.value)}
+              className={inputCls}
+            >
+              <option value="row">Row (horizontal)</option>
+              <option value="column">Column (vertical)</option>
+            </select>
+          </Field>
+          <Field label="Gap">
+            <NumberStepper
+              value={(props.gap as number) || 4}
+              onChange={(v) => setProp("gap", v)}
+              step={1}
+              max={12}
+            />
+          </Field>
+          <Field label="Justify">
+            <select
+              value={(props.justify as string) || "start"}
+              onChange={(e) => setProp("justify", e.target.value)}
+              className={inputCls}
+            >
+              <option value="start">Start</option>
+              <option value="center">Center</option>
+              <option value="end">End</option>
+              <option value="between">Space between</option>
+              <option value="around">Space around</option>
+            </select>
+          </Field>
+          <Field label="Align">
+            <select
+              value={(props.align as string) || "stretch"}
+              onChange={(e) => setProp("align", e.target.value)}
+              className={inputCls}
+            >
+              <option value="stretch">Stretch</option>
+              <option value="start">Start</option>
+              <option value="center">Center</option>
+              <option value="end">End</option>
+            </select>
+          </Field>
+        </>
       );
     case "divider":
     case "container":

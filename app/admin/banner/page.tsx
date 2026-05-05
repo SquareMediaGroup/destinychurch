@@ -162,7 +162,7 @@ export default function AdminBannerPage() {
               >
                 Alpha events page
               </Link>{" "}
-              — both can run at once and will stack at the top of the site.
+              — manage them separately there.
             </div>
 
             <div className="rounded-2xl border border-black/5 bg-white p-6 shadow-sm flex flex-col gap-5">

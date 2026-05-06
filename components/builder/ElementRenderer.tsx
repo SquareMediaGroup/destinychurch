@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useRef, useState } from "react";
+import { createElement, useEffect, useRef, useState } from "react";
 import type { BuilderElement, ElementType } from "@/lib/builder/types";
 import { layoutToClasses } from "@/lib/builder/layout";
 import { BRAND_COMPONENTS } from "./BrandComponentRegistry";
@@ -173,25 +173,23 @@ function InlineEditable({
     }
   }
 
-  const Tag = (asTag || "p") as keyof React.JSX.IntrinsicElements;
-
-  return (
-    <Tag
-      ref={ref as React.Ref<never>}
-      contentEditable={editingNow}
-      suppressContentEditableWarning
-      onDoubleClick={(e: React.MouseEvent) => {
-        if (!isSelected) return;
-        e.stopPropagation();
-        setEditingNow(true);
-      }}
-      onBlur={handleBlur}
-      onKeyDown={handleKey}
-      className={`${className || ""} ${editingNow ? "outline-none ring-1 ring-destiny-orange/50 rounded" : ""}`}
-    >
-      {value}
-    </Tag>
-  );
+  const tagName = (asTag || "p") as string;
+  const sharedProps: Record<string, unknown> = {
+    ref,
+    contentEditable: editingNow,
+    suppressContentEditableWarning: true,
+    onDoubleClick: (e: React.MouseEvent) => {
+      if (!isSelected) return;
+      e.stopPropagation();
+      setEditingNow(true);
+    },
+    onBlur: handleBlur,
+    onKeyDown: handleKey,
+    className: `${className || ""} ${editingNow ? "outline-none ring-1 ring-destiny-orange/50 rounded" : ""}`,
+    children: value,
+  };
+  // Use createElement to avoid Tag union type complexity at the call site.
+  return createElement(tagName, sharedProps);
 }
 
 function renderInner(

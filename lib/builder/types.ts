@@ -6,12 +6,18 @@ export type ElementType =
   | "heading"
   | "image"
   | "button"
+  | "card"
   | "spacer"
   | "divider"
-  // Containers
+  // Layout
   | "section"
   | "container"
   | "columns"
+  | "stack"
+  | "grid"
+  // CMS
+  | "sermonsList"
+  | "eventsList"
   // Brand components (existing component library)
   | "HeroSection"
   | "MissionSection"
@@ -29,8 +35,12 @@ export type ElementType =
   | "MagnifySection"
   | "MinistriesGrid";
 
+export type WidthValue = "auto" | "full" | "1/2" | "1/3" | "2/3" | "1/4" | "3/4";
+
 export type LayoutProps = {
-  width?: "auto" | "full" | "1/2" | "1/3" | "2/3" | "1/4" | "3/4";
+  width?: WidthValue;
+  widthMd?: WidthValue;
+  widthLg?: WidthValue;
   marginTop?: number;
   marginBottom?: number;
   paddingX?: number;

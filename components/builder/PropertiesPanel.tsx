@@ -81,6 +81,38 @@ export default function PropertiesPanel({ element, onUpdate, onDelete, onDuplica
               <option value="auto">Auto</option>
             </select>
           </Field>
+          <Field label="Md ≥768">
+            <select
+              value={element.layout?.widthMd ?? ""}
+              onChange={(e) => setLayout("widthMd", e.target.value || undefined)}
+              className={inputCls}
+            >
+              <option value="">— inherit —</option>
+              <option value="full">Full</option>
+              <option value="3/4">3/4</option>
+              <option value="2/3">2/3</option>
+              <option value="1/2">1/2</option>
+              <option value="1/3">1/3</option>
+              <option value="1/4">1/4</option>
+              <option value="auto">Auto</option>
+            </select>
+          </Field>
+          <Field label="Lg ≥1024">
+            <select
+              value={element.layout?.widthLg ?? ""}
+              onChange={(e) => setLayout("widthLg", e.target.value || undefined)}
+              className={inputCls}
+            >
+              <option value="">— inherit —</option>
+              <option value="full">Full</option>
+              <option value="3/4">3/4</option>
+              <option value="2/3">2/3</option>
+              <option value="1/2">1/2</option>
+              <option value="1/3">1/3</option>
+              <option value="1/4">1/4</option>
+              <option value="auto">Auto</option>
+            </select>
+          </Field>
           <Field label="Align">
             <select
               value={element.layout?.align ?? "left"}
@@ -343,6 +375,173 @@ function ContentEditor({
               <option value="center">Center</option>
               <option value="end">End</option>
             </select>
+          </Field>
+        </>
+      );
+    case "card":
+      return (
+        <>
+          <Field label="Padding">
+            <NumberStepper
+              value={(props.padding as number) ?? 6}
+              onChange={(v) => setProp("padding", v)}
+              step={1}
+              max={12}
+            />
+          </Field>
+          <Field label="Background">
+            <select
+              value={(props.background as string) || "white"}
+              onChange={(e) => setProp("background", e.target.value)}
+              className={inputCls}
+            >
+              <option value="white">White</option>
+              <option value="grey">Light grey</option>
+              <option value="dark">Dark</option>
+            </select>
+          </Field>
+          <Field label="Border">
+            <select
+              value={(props.border as boolean) ? "true" : "false"}
+              onChange={(e) => setProp("border", e.target.value === "true")}
+              className={inputCls}
+            >
+              <option value="true">On</option>
+              <option value="false">Off</option>
+            </select>
+          </Field>
+          <Field label="Shadow">
+            <select
+              value={(props.shadow as string) || "sm"}
+              onChange={(e) => setProp("shadow", e.target.value)}
+              className={inputCls}
+            >
+              <option value="none">None</option>
+              <option value="sm">Small</option>
+              <option value="md">Medium</option>
+              <option value="lg">Large</option>
+            </select>
+          </Field>
+        </>
+      );
+    case "stack":
+      return (
+        <>
+          <Field label="Direction">
+            <select
+              value={(props.direction as string) || "vertical"}
+              onChange={(e) => setProp("direction", e.target.value)}
+              className={inputCls}
+            >
+              <option value="vertical">Vertical</option>
+              <option value="horizontal">Horizontal</option>
+            </select>
+          </Field>
+          <Field label="Gap">
+            <NumberStepper
+              value={(props.gap as number) ?? 4}
+              onChange={(v) => setProp("gap", v)}
+              step={1}
+              max={12}
+            />
+          </Field>
+          <Field label="Align">
+            <select
+              value={(props.align as string) || "stretch"}
+              onChange={(e) => setProp("align", e.target.value)}
+              className={inputCls}
+            >
+              <option value="stretch">Stretch</option>
+              <option value="start">Start</option>
+              <option value="center">Center</option>
+              <option value="end">End</option>
+            </select>
+          </Field>
+          <Field label="Justify">
+            <select
+              value={(props.justify as string) || "start"}
+              onChange={(e) => setProp("justify", e.target.value)}
+              className={inputCls}
+            >
+              <option value="start">Start</option>
+              <option value="center">Center</option>
+              <option value="end">End</option>
+              <option value="between">Between</option>
+              <option value="around">Around</option>
+            </select>
+          </Field>
+        </>
+      );
+    case "grid":
+      return (
+        <>
+          <Field label="Cols">
+            <NumberStepper
+              value={(props.columns as number) ?? 3}
+              onChange={(v) => setProp("columns", Math.max(1, Math.min(6, v)))}
+              step={1}
+              max={6}
+            />
+          </Field>
+          <Field label="Md cols">
+            <NumberStepper
+              value={(props.columnsMd as number) ?? 2}
+              onChange={(v) => setProp("columnsMd", Math.max(1, Math.min(6, v)))}
+              step={1}
+              max={6}
+            />
+          </Field>
+          <Field label="Sm cols">
+            <NumberStepper
+              value={(props.columnsSm as number) ?? 1}
+              onChange={(v) => setProp("columnsSm", Math.max(1, Math.min(4, v)))}
+              step={1}
+              max={4}
+            />
+          </Field>
+          <Field label="Gap">
+            <NumberStepper
+              value={(props.gap as number) ?? 4}
+              onChange={(v) => setProp("gap", v)}
+              step={1}
+              max={12}
+            />
+          </Field>
+        </>
+      );
+    case "sermonsList":
+      return (
+        <Field label="Limit">
+          <NumberStepper
+            value={(props.limit as number) ?? 3}
+            onChange={(v) => setProp("limit", Math.max(1, Math.min(12, v)))}
+            step={1}
+            max={12}
+          />
+        </Field>
+      );
+    case "eventsList":
+      return (
+        <>
+          <Field label="Type">
+            <select
+              value={(props.type as string) || ""}
+              onChange={(e) => setProp("type", e.target.value)}
+              className={inputCls}
+            >
+              <option value="">Any</option>
+              <option value="alpha">Alpha</option>
+              <option value="youth_alpha">Youth Alpha</option>
+              <option value="recovery">Recovery</option>
+            </select>
+          </Field>
+          <Field label="Limit">
+            <NumberStepper
+              value={(props.limit as number) ?? 3}
+              onChange={(v) => setProp("limit", Math.max(1, Math.min(12, v)))}
+              step={1}
+              max={12}
+            />
           </Field>
         </>
       );

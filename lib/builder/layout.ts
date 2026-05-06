@@ -1,13 +1,33 @@
-import type { LayoutProps } from "./types";
+import type { LayoutProps, WidthValue } from "./types";
 
-const widthMap: Record<NonNullable<LayoutProps["width"]>, string> = {
+const baseWidth: Record<WidthValue, string> = {
   auto: "w-auto",
   full: "w-full",
-  "1/2": "w-full md:w-1/2",
-  "1/3": "w-full md:w-1/3",
-  "2/3": "w-full md:w-2/3",
-  "1/4": "w-full md:w-1/4",
-  "3/4": "w-full md:w-3/4",
+  "1/2": "w-1/2",
+  "1/3": "w-1/3",
+  "2/3": "w-2/3",
+  "1/4": "w-1/4",
+  "3/4": "w-3/4",
+};
+
+const mdWidth: Record<WidthValue, string> = {
+  auto: "md:w-auto",
+  full: "md:w-full",
+  "1/2": "md:w-1/2",
+  "1/3": "md:w-1/3",
+  "2/3": "md:w-2/3",
+  "1/4": "md:w-1/4",
+  "3/4": "md:w-3/4",
+};
+
+const lgWidth: Record<WidthValue, string> = {
+  auto: "lg:w-auto",
+  full: "lg:w-full",
+  "1/2": "lg:w-1/2",
+  "1/3": "lg:w-1/3",
+  "2/3": "lg:w-2/3",
+  "1/4": "lg:w-1/4",
+  "3/4": "lg:w-3/4",
 };
 
 const alignMap: Record<NonNullable<LayoutProps["align"]>, string> = {
@@ -41,7 +61,9 @@ const PY: Record<number, string> = {
 export function layoutToClasses(layout?: LayoutProps): string {
   if (!layout) return "";
   const parts: string[] = [];
-  if (layout.width) parts.push(widthMap[layout.width]);
+  if (layout.width) parts.push(baseWidth[layout.width]);
+  if (layout.widthMd) parts.push(mdWidth[layout.widthMd]);
+  if (layout.widthLg) parts.push(lgWidth[layout.widthLg]);
   if (typeof layout.marginTop === "number") parts.push(MT[layout.marginTop] || "");
   if (typeof layout.marginBottom === "number") parts.push(MB[layout.marginBottom] || "");
   if (typeof layout.paddingX === "number") parts.push(PX[layout.paddingX] || "");

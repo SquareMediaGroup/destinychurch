@@ -5,11 +5,29 @@ import { useEffect, useRef, useState } from "react";
 import type { BuilderElement, ElementType } from "@/lib/builder/types";
 import { layoutToClasses } from "@/lib/builder/layout";
 import { BRAND_COMPONENTS } from "./BrandComponentRegistry";
+import { SermonsList, EventsList } from "./CmsLists";
 
 const GAP_CLASS: Record<number, string> = {
   0: "gap-0", 1: "gap-1", 2: "gap-2", 3: "gap-3", 4: "gap-4",
   5: "gap-5", 6: "gap-6", 7: "gap-7", 8: "gap-8", 9: "gap-9",
   10: "gap-10", 11: "gap-11", 12: "gap-12",
+};
+
+const PAD_CLASS: Record<number, string> = {
+  0: "p-0", 1: "p-1", 2: "p-2", 3: "p-3", 4: "p-4", 5: "p-5", 6: "p-6",
+  7: "p-7", 8: "p-8", 9: "p-9", 10: "p-10", 11: "p-11", 12: "p-12",
+};
+
+const GRID_COLS_LG: Record<number, string> = {
+  1: "lg:grid-cols-1", 2: "lg:grid-cols-2", 3: "lg:grid-cols-3", 4: "lg:grid-cols-4",
+  5: "lg:grid-cols-5", 6: "lg:grid-cols-6",
+};
+const GRID_COLS_MD: Record<number, string> = {
+  1: "md:grid-cols-1", 2: "md:grid-cols-2", 3: "md:grid-cols-3", 4: "md:grid-cols-4",
+  5: "md:grid-cols-5", 6: "md:grid-cols-6",
+};
+const GRID_COLS_BASE: Record<number, string> = {
+  1: "grid-cols-1", 2: "grid-cols-2", 3: "grid-cols-3", 4: "grid-cols-4",
 };
 
 type Props = {
@@ -280,15 +298,163 @@ function renderInner(
           : variant === "secondary"
             ? "bg-destiny-grey text-white hover:brightness-110"
             : "border-2 border-destiny-grey text-destiny-grey hover:bg-destiny-grey hover:text-white";
+      const inner = editing ? (
+        <InlineEditable
+          value={label}
+          onChange={(v) => onUpdate?.(element.id, { props: { ...props, label: v } })}
+          isSelected={!!isSelected}
+          asTag="p"
+          className="inline"
+        />
+      ) : (
+        label
+      );
       return (
         <a
           href={href}
           onClick={editing ? (e) => e.preventDefault() : undefined}
           className={`inline-flex items-center gap-2 rounded-xl px-6 py-2.5 text-sm font-bold transition ${cls}`}
         >
-          {label}
+          {inner}
           <span className="material-symbols-rounded text-base">arrow_forward</span>
         </a>
+      );
+    }
+
+    case "card": {
+      const padding = (props.padding as number) ?? 6;
+      const background = (props.background as string) || "white";
+      const border = (props.border as boolean) ?? true;
+      const shadowSize = (props.shadow as string) || "sm";
+      const bgClass =
+        background === "grey" ? "bg-[#f5f7fa]" : background === "dark" ? "bg-destiny-grey text-white" : "bg-white";
+      const shadowClass =
+        shadowSize === "none"
+          ? ""
+          : shadowSize === "lg"
+            ? "shadow-xl"
+            : shadowSize === "md"
+              ? "shadow-md"
+              : "shadow-sm";
+      const borderClass = border ? "border border-black/5" : "";
+      return (
+        <div className={`rounded-2xl ${bgClass} ${borderClass} ${shadowClass} ${PAD_CLASS[padding] || "p-6"}`}>
+          <DropZone parentId={element.id} onDropInto={onDropInto} editing={editing}>
+            {children.length === 0 && editing ? (
+              <EmptyDropHint label="Drop into card" small />
+            ) : (
+              <div className="flex flex-col gap-3">
+                {children.map((child) => (
+                  <ElementRenderer
+                    key={child.id}
+                    element={child}
+                    selectedId={selectedId}
+                    onSelect={onSelect}
+                    onDropInto={onDropInto}
+                    onUpdate={onUpdate}
+                    onDelete={onDelete}
+                    onDuplicate={onDuplicate}
+                    editing={editing}
+                  />
+                ))}
+              </div>
+            )}
+          </DropZone>
+        </div>
+      );
+    }
+
+    case "stack": {
+      const direction = (props.direction as string) || "vertical";
+      const gap = (props.gap as number) ?? 4;
+      const align = (props.align as string) || "stretch";
+      const justify = (props.justify as string) || "start";
+      const dirClass = direction === "horizontal" ? "flex-row" : "flex-col";
+      const alignClass =
+        align === "center" ? "items-center" : align === "end" ? "items-end" : align === "start" ? "items-start" : "items-stretch";
+      const justifyClass =
+        justify === "center"
+          ? "justify-center"
+          : justify === "end"
+            ? "justify-end"
+            : justify === "between"
+              ? "justify-between"
+              : justify === "around"
+                ? "justify-around"
+                : "justify-start";
+      return (
+        <DropZone parentId={element.id} onDropInto={onDropInto} editing={editing}>
+          <div className={`flex ${dirClass} ${GAP_CLASS[gap] || "gap-4"} ${alignClass} ${justifyClass}`}>
+            {children.length === 0 && editing ? (
+              <EmptyDropHint label="Drop into stack" small />
+            ) : (
+              children.map((child) => (
+                <ElementRenderer
+                  key={child.id}
+                  element={child}
+                  selectedId={selectedId}
+                  onSelect={onSelect}
+                  onDropInto={onDropInto}
+                  onUpdate={onUpdate}
+                  onDelete={onDelete}
+                  onDuplicate={onDuplicate}
+                  editing={editing}
+                />
+              ))
+            )}
+          </div>
+        </DropZone>
+      );
+    }
+
+    case "grid": {
+      const columns = (props.columns as number) ?? 3;
+      const columnsMd = (props.columnsMd as number) ?? 2;
+      const columnsSm = (props.columnsSm as number) ?? 1;
+      const gap = (props.gap as number) ?? 4;
+      return (
+        <DropZone parentId={element.id} onDropInto={onDropInto} editing={editing}>
+          <div
+            className={`grid ${GRID_COLS_BASE[columnsSm] || "grid-cols-1"} ${GRID_COLS_MD[columnsMd] || "md:grid-cols-2"} ${GRID_COLS_LG[columns] || "lg:grid-cols-3"} ${GAP_CLASS[gap] || "gap-4"}`}
+          >
+            {children.length === 0 && editing ? (
+              <EmptyDropHint label="Drop into grid" small />
+            ) : (
+              children.map((child) => (
+                <ElementRenderer
+                  key={child.id}
+                  element={child}
+                  selectedId={selectedId}
+                  onSelect={onSelect}
+                  onDropInto={onDropInto}
+                  onUpdate={onUpdate}
+                  onDelete={onDelete}
+                  onDuplicate={onDuplicate}
+                  editing={editing}
+                />
+              ))
+            )}
+          </div>
+        </DropZone>
+      );
+    }
+
+    case "sermonsList": {
+      const limit = (props.limit as number) ?? 3;
+      return (
+        <div className={editing ? "pointer-events-none" : ""}>
+          <SermonsList limit={limit} />
+        </div>
+      );
+    }
+
+    case "eventsList": {
+      const limit = (props.limit as number) ?? 3;
+      const filterType = (props.type as string) || undefined;
+      return (
+        <div className={editing ? "pointer-events-none" : ""}>
+          <EventsList limit={limit} type={filterType} />
+        </div>
       );
     }
 

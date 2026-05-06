@@ -112,25 +112,25 @@ export default function BuilderEditor({ initialPage }: Props) {
   const canvasMaxWidth = BREAKPOINT_WIDTHS[breakpoint];
 
   return (
-    <div className="flex h-screen flex-col bg-[#f5f7fa]">
+    <div className="flex h-screen flex-col bg-zinc-950">
       {/* Top bar */}
-      <header className="flex shrink-0 items-center justify-between border-b border-black/8 bg-white px-4 py-2">
-        <div className="flex items-center gap-3">
+      <header className="flex shrink-0 items-center justify-between border-b border-white/5 bg-zinc-900 px-3 py-2 text-zinc-100">
+        <div className="flex items-center gap-2">
           <Link
             href="/admin/builder"
-            className="flex h-8 w-8 items-center justify-center rounded-lg text-destiny-grey/60 hover:bg-[#f5f7fa]"
+            className="flex h-8 w-8 items-center justify-center rounded-md text-white/50 hover:bg-white/5 hover:text-white"
             title="Back to pages"
           >
-            <span className="material-symbols-rounded text-xl">arrow_back</span>
+            <span className="material-symbols-rounded text-[18px]">arrow_back</span>
           </Link>
           <div>
             <input
               type="text"
               value={page.title}
               onChange={(e) => setPage((p) => ({ ...p, title: e.target.value }))}
-              className="rounded-md border-transparent bg-transparent px-1 text-sm font-bold text-destiny-grey hover:bg-[#f5f7fa] focus:bg-white focus:outline-none focus:ring-2 focus:ring-destiny-orange/20"
+              className="rounded border-transparent bg-transparent px-1 text-xs font-semibold text-white hover:bg-white/5 focus:bg-white/10 focus:outline-none"
             />
-            <div className="flex items-center gap-2 px-1 text-[11px] text-destiny-grey/50">
+            <div className="flex items-center gap-1.5 px-1 text-[10px] text-white/40">
               <span>/{page.slug}</span>
               <span>·</span>
               <SaveIndicator state={saveState} />
@@ -143,32 +143,35 @@ export default function BuilderEditor({ initialPage }: Props) {
           <button
             type="button"
             onClick={() => setShowLayers((s) => !s)}
-            className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold transition ${
+            className={`flex items-center gap-1 rounded-md px-2.5 py-1.5 text-xs font-medium transition ${
               showLayers
-                ? "bg-destiny-grey/10 text-destiny-grey"
-                : "text-destiny-grey/60 hover:bg-[#f5f7fa]"
+                ? "bg-white/10 text-white"
+                : "text-white/60 hover:bg-white/5 hover:text-white"
             }`}
           >
-            <span className="material-symbols-rounded text-base">layers</span>
+            <span className="material-symbols-rounded text-[15px]">layers</span>
             Layers
           </button>
           <span
-            className={`rounded-md px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide ${
+            className={`flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${
               page.status === "published"
-                ? "bg-green-100 text-green-700"
+                ? "bg-emerald-500/15 text-emerald-400"
                 : page.status === "draft"
-                  ? "bg-amber-100 text-amber-700"
-                  : "bg-destiny-grey/10 text-destiny-grey/60"
+                  ? "bg-amber-500/15 text-amber-400"
+                  : "bg-white/5 text-white/40"
             }`}
           >
+            <span className={`h-1.5 w-1.5 rounded-full ${
+              page.status === "published" ? "bg-emerald-400" : page.status === "draft" ? "bg-amber-400" : "bg-white/40"
+            }`} />
             {page.status}
           </span>
           <Link
             href={`/admin/builder/${page.id}/preview`}
             target="_blank"
-            className="flex items-center gap-1.5 rounded-lg border border-black/10 px-3 py-1.5 text-xs font-bold text-destiny-grey hover:bg-[#f5f7fa]"
+            className="flex items-center gap-1 rounded-md px-2.5 py-1.5 text-xs font-medium text-white/60 hover:bg-white/5 hover:text-white"
           >
-            <span className="material-symbols-rounded text-base">visibility</span>
+            <span className="material-symbols-rounded text-[15px]">visibility</span>
             Preview
           </Link>
           {page.status === "published" ? (
@@ -177,15 +180,15 @@ export default function BuilderEditor({ initialPage }: Props) {
                 href={`/${page.slug}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-1.5 rounded-lg border border-black/10 px-3 py-1.5 text-xs font-bold text-destiny-grey hover:bg-[#f5f7fa]"
+                className="flex items-center gap-1 rounded-md px-2.5 py-1.5 text-xs font-medium text-white/60 hover:bg-white/5 hover:text-white"
               >
-                <span className="material-symbols-rounded text-base">open_in_new</span>
-                View live
+                <span className="material-symbols-rounded text-[15px]">open_in_new</span>
+                Live
               </a>
               <button
                 type="button"
                 onClick={() => handleStatusChange("draft")}
-                className="flex items-center gap-1.5 rounded-lg border border-black/10 px-3 py-1.5 text-xs font-bold text-destiny-grey hover:bg-[#f5f7fa]"
+                className="rounded-md px-2.5 py-1.5 text-xs font-medium text-white/60 hover:bg-white/5 hover:text-white"
               >
                 Unpublish
               </button>
@@ -194,9 +197,9 @@ export default function BuilderEditor({ initialPage }: Props) {
             <button
               type="button"
               onClick={() => handleStatusChange("published")}
-              className="flex items-center gap-1.5 rounded-lg bg-destiny-orange px-3 py-1.5 text-xs font-bold text-white shadow-sm shadow-destiny-orange/20 hover:brightness-110"
+              className="flex items-center gap-1 rounded-md bg-destiny-orange px-3 py-1.5 text-xs font-semibold text-white shadow-sm shadow-destiny-orange/30 hover:brightness-110"
             >
-              <span className="material-symbols-rounded text-base">rocket_launch</span>
+              <span className="material-symbols-rounded text-[15px]">rocket_launch</span>
               Publish
             </button>
           )}
@@ -206,13 +209,13 @@ export default function BuilderEditor({ initialPage }: Props) {
       {/* Main 3-column workspace */}
       <div className="flex flex-1 overflow-hidden">
         {/* Left: components palette */}
-        <aside className="w-64 shrink-0 border-r border-black/8">
+        <aside className="w-56 shrink-0 border-r border-white/5">
           <CanvasToolbar onAddElement={handleAdd} />
         </aside>
 
         {/* Optional layers panel */}
         {showLayers && (
-          <aside className="w-56 shrink-0 border-r border-black/8">
+          <aside className="w-52 shrink-0 border-r border-white/5">
             <ElementTree
               layout={layout}
               selectedId={selectedId}
@@ -225,9 +228,9 @@ export default function BuilderEditor({ initialPage }: Props) {
         )}
 
         {/* Center: canvas */}
-        <main className="flex-1 overflow-y-auto p-6">
+        <main className="flex-1 overflow-y-auto bg-zinc-950 p-8">
           <div
-            className="mx-auto rounded-2xl border border-black/8 bg-white shadow-sm transition-[max-width] duration-300"
+            className="mx-auto overflow-hidden rounded-lg bg-white shadow-2xl shadow-black/40 transition-[max-width] duration-300 ring-1 ring-white/5"
             style={{ maxWidth: `${canvasMaxWidth}px` }}
           >
             <Canvas
@@ -236,12 +239,15 @@ export default function BuilderEditor({ initialPage }: Props) {
               onSelect={setSelectedId}
               onDropElement={handleAdd}
               onDropInto={handleDropInto}
+              onUpdate={handleUpdate}
+              onDelete={handleDelete}
+              onDuplicate={handleDuplicate}
             />
           </div>
         </main>
 
         {/* Right: properties */}
-        <aside className="w-72 shrink-0 border-l border-black/8">
+        <aside className="w-64 shrink-0 border-l border-white/5">
           <PropertiesPanel
             element={selectedElement}
             onUpdate={handleUpdate}
@@ -255,10 +261,10 @@ export default function BuilderEditor({ initialPage }: Props) {
 }
 
 function SaveIndicator({ state }: { state: SaveState }) {
-  if (state === "saving") return <span className="text-destiny-grey/50">Saving…</span>;
-  if (state === "saved") return <span className="text-green-600">Saved</span>;
-  if (state === "error") return <span className="text-red-600">Error saving</span>;
-  return <span className="text-destiny-grey/30">Auto-save on</span>;
+  if (state === "saving") return <span className="text-white/50">Saving…</span>;
+  if (state === "saved") return <span className="text-emerald-400">Saved</span>;
+  if (state === "error") return <span className="text-red-400">Error</span>;
+  return <span className="text-white/30">Auto-save</span>;
 }
 
 // ── Recursive tree operations ──────────────────────────────────────────

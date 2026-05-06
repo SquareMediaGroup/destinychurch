@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { BuilderElement, ElementType } from "@/lib/builder/types";
 import { layoutToClasses } from "@/lib/builder/layout";
 import { BRAND_COMPONENTS } from "./BrandComponentRegistry";
@@ -17,6 +17,9 @@ type Props = {
   selectedId?: string | null;
   onSelect?: (id: string) => void;
   onDropInto?: (parentId: string, type: ElementType) => void;
+  onUpdate?: (id: string, patch: Partial<BuilderElement>) => void;
+  onDelete?: (id: string) => void;
+  onDuplicate?: (id: string) => void;
   editing?: boolean;
 };
 
@@ -25,6 +28,9 @@ export default function ElementRenderer({
   selectedId,
   onSelect,
   onDropInto,
+  onUpdate,
+  onDelete,
+  onDuplicate,
   editing,
 }: Props) {
   const isSelected = editing && selectedId === element.id;
@@ -38,34 +44,150 @@ export default function ElementRenderer({
         },
         className: `relative cursor-pointer transition-all ${
           isSelected
-            ? "outline outline-2 outline-destiny-orange outline-offset-2"
-            : "hover:outline hover:outline-2 hover:outline-destiny-orange/40 hover:outline-offset-2"
+            ? "outline outline-1 outline-destiny-orange outline-offset-[-1px]"
+            : "hover:outline hover:outline-1 hover:outline-destiny-orange/30 hover:outline-offset-[-1px]"
         } ${layoutClass}`,
       }
     : { className: layoutClass };
 
-  const inner = renderInner(element, selectedId, onSelect, onDropInto, editing);
+  const inner = renderInner(element, selectedId, onSelect, onDropInto, onUpdate, onDelete, onDuplicate, editing);
 
   return (
     <div {...wrapperProps} data-element-id={element.id}>
       {editing && isSelected && (
-        <span className="pointer-events-none absolute -top-6 left-0 z-10 rounded-md bg-destiny-orange px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white">
-          {element.type}
-        </span>
+        <FloatingActions
+          label={element.type}
+          onDuplicate={() => onDuplicate?.(element.id)}
+          onDelete={() => onDelete?.(element.id)}
+        />
       )}
       {inner}
     </div>
   );
 }
 
+function FloatingActions({
+  label,
+  onDuplicate,
+  onDelete,
+}: {
+  label: string;
+  onDuplicate: () => void;
+  onDelete: () => void;
+}) {
+  return (
+    <div className="pointer-events-auto absolute -top-7 left-0 z-20 flex items-center gap-px rounded-md bg-destiny-orange text-white shadow-lg">
+      <span className="px-2 py-1 text-[10px] font-bold uppercase tracking-wide">{label}</span>
+      <div className="h-4 w-px bg-white/20" />
+      <button
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation();
+          onDuplicate();
+        }}
+        className="flex h-6 w-6 items-center justify-center hover:bg-white/15"
+        title="Duplicate"
+      >
+        <span className="material-symbols-rounded text-[14px]">content_copy</span>
+      </button>
+      <button
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation();
+          onDelete();
+        }}
+        className="flex h-6 w-6 items-center justify-center rounded-r-md hover:bg-white/15"
+        title="Delete"
+      >
+        <span className="material-symbols-rounded text-[14px]">delete</span>
+      </button>
+    </div>
+  );
+}
+
+function InlineEditable({
+  value,
+  onChange,
+  className,
+  multiline,
+  isSelected,
+  asTag,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  className?: string;
+  multiline?: boolean;
+  isSelected: boolean;
+  asTag?: "h1" | "h2" | "h3" | "h4" | "p";
+}) {
+  const ref = useRef<HTMLElement | null>(null);
+  const [editingNow, setEditingNow] = useState(false);
+
+  useEffect(() => {
+    if (editingNow && ref.current) {
+      ref.current.focus();
+      // Move cursor to end
+      const range = document.createRange();
+      range.selectNodeContents(ref.current);
+      range.collapse(false);
+      const sel = window.getSelection();
+      sel?.removeAllRanges();
+      sel?.addRange(range);
+    }
+  }, [editingNow]);
+
+  function handleBlur() {
+    if (!ref.current) return;
+    const next = multiline ? ref.current.innerText : ref.current.innerText.replace(/\n+/g, " ");
+    if (next !== value) onChange(next);
+    setEditingNow(false);
+  }
+
+  function handleKey(e: React.KeyboardEvent) {
+    if (!multiline && e.key === "Enter") {
+      e.preventDefault();
+      ref.current?.blur();
+    }
+    if (e.key === "Escape") {
+      e.preventDefault();
+      if (ref.current) ref.current.innerText = value;
+      ref.current?.blur();
+    }
+  }
+
+  const Tag = (asTag || "p") as keyof React.JSX.IntrinsicElements;
+
+  return (
+    <Tag
+      ref={ref as React.Ref<never>}
+      contentEditable={editingNow}
+      suppressContentEditableWarning
+      onDoubleClick={(e: React.MouseEvent) => {
+        if (!isSelected) return;
+        e.stopPropagation();
+        setEditingNow(true);
+      }}
+      onBlur={handleBlur}
+      onKeyDown={handleKey}
+      className={`${className || ""} ${editingNow ? "outline-none ring-1 ring-destiny-orange/50 rounded" : ""}`}
+    >
+      {value}
+    </Tag>
+  );
+}
+
 function renderInner(
   element: BuilderElement,
-  selectedId?: string | null,
-  onSelect?: (id: string) => void,
-  onDropInto?: (parentId: string, type: ElementType) => void,
+  selectedId: string | null | undefined,
+  onSelect: ((id: string) => void) | undefined,
+  onDropInto: ((parentId: string, type: ElementType) => void) | undefined,
+  onUpdate: ((id: string, patch: Partial<BuilderElement>) => void) | undefined,
+  onDelete: ((id: string) => void) | undefined,
+  onDuplicate: ((id: string) => void) | undefined,
   editing?: boolean,
 ): React.ReactNode {
   const { type, props, children = [] } = element;
+  const isSelected = editing && selectedId === element.id;
 
   // Brand components — render as-is (read-only in canvas)
   const BrandComp = BRAND_COMPONENTS[type];
@@ -83,6 +205,18 @@ function renderInner(
   switch (type) {
     case "text": {
       const content = (props.content as string) || "";
+      if (editing) {
+        return (
+          <InlineEditable
+            value={content}
+            onChange={(v) => onUpdate?.(element.id, { props: { ...props, content: v } })}
+            className="whitespace-pre-line text-base leading-relaxed text-destiny-grey/80"
+            multiline
+            isSelected={!!isSelected}
+            asTag="p"
+          />
+        );
+      }
       return (
         <p className="whitespace-pre-line text-base leading-relaxed text-destiny-grey/80">
           {content}
@@ -100,7 +234,19 @@ function renderInner(
         4: "text-xl md:text-2xl font-bold",
       };
       const Tag = `h${level}` as "h1" | "h2" | "h3" | "h4";
-      return <Tag className={`${sizes[level] || sizes[2]} text-destiny-grey`}>{content}</Tag>;
+      const cls = `${sizes[level] || sizes[2]} text-destiny-grey`;
+      if (editing) {
+        return (
+          <InlineEditable
+            value={content}
+            onChange={(v) => onUpdate?.(element.id, { props: { ...props, content: v } })}
+            className={cls}
+            isSelected={!!isSelected}
+            asTag={Tag}
+          />
+        );
+      }
+      return <Tag className={cls}>{content}</Tag>;
     }
 
     case "image": {
@@ -175,6 +321,9 @@ function renderInner(
                     selectedId={selectedId}
                     onSelect={onSelect}
                     onDropInto={onDropInto}
+                    onUpdate={onUpdate}
+                    onDelete={onDelete}
+                    onDuplicate={onDuplicate}
                     editing={editing}
                   />
                 ))
@@ -199,6 +348,9 @@ function renderInner(
                   selectedId={selectedId}
                   onSelect={onSelect}
                   onDropInto={onDropInto}
+                  onUpdate={onUpdate}
+                  onDelete={onDelete}
+                  onDuplicate={onDuplicate}
                   editing={editing}
                 />
               ))
@@ -235,6 +387,9 @@ function renderInner(
                 selectedId={selectedId}
                 onSelect={onSelect}
                 onDropInto={onDropInto}
+                onUpdate={onUpdate}
+                onDelete={onDelete}
+                onDuplicate={onDuplicate}
                 editing={editing}
               />
             </div>

@@ -16,30 +16,32 @@ export default function CanvasToolbar({ onAddElement }: Props) {
   );
 
   return (
-    <div className="flex h-full flex-col bg-white">
-      <div className="border-b border-black/5 px-4 py-3">
-        <p className="text-[10px] font-bold uppercase tracking-widest text-destiny-grey/40">
-          Components
-        </p>
-        <input
-          type="text"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder="Search…"
-          className="mt-2 w-full rounded-lg border border-black/10 px-3 py-1.5 text-sm text-destiny-grey placeholder:text-destiny-grey/30 focus:border-destiny-orange/50 focus:outline-none focus:ring-2 focus:ring-destiny-orange/20"
-        />
+    <div className="flex h-full flex-col bg-zinc-900 text-zinc-100">
+      <div className="border-b border-white/5 px-3 py-3">
+        <div className="relative">
+          <span className="material-symbols-rounded pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 text-[16px] text-white/30">
+            search
+          </span>
+          <input
+            type="text"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Insert…"
+            className="w-full rounded-md bg-white/5 py-1.5 pl-8 pr-2 text-xs text-white placeholder:text-white/30 focus:bg-white/10 focus:outline-none focus:ring-1 focus:ring-white/20"
+          />
+        </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-3">
+      <div className="flex-1 overflow-y-auto p-2">
         {CATEGORIES.map((category) => {
           const items = filtered.filter((m) => m.category === category);
           if (items.length === 0) return null;
           return (
-            <div key={category} className="mb-4">
-              <p className="mb-2 px-1 text-[10px] font-bold uppercase tracking-widest text-destiny-grey/40">
+            <div key={category} className="mb-3">
+              <p className="mb-1.5 px-1 text-[10px] font-semibold uppercase tracking-wider text-white/30">
                 {category}
               </p>
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-2 gap-1">
                 {items.map((meta) => (
                   <PaletteItem key={meta.type} meta={meta} onAdd={onAddElement} />
                 ))}
@@ -65,12 +67,12 @@ function PaletteItem({ meta, onAdd }: { meta: ElementMeta; onAdd: (t: ElementTyp
       onDragStart={handleDragStart}
       onClick={() => onAdd(meta.type)}
       title={meta.description}
-      className="flex flex-col items-start gap-1 rounded-lg border border-black/8 bg-white p-2.5 text-left transition hover:border-destiny-orange/40 hover:bg-destiny-orange/[0.03] active:scale-[0.98]"
+      className="group flex flex-col items-start gap-1 rounded-md border border-white/5 bg-white/[0.02] p-2 text-left transition hover:border-white/10 hover:bg-white/[0.06] active:scale-[0.97]"
     >
-      <span className="material-symbols-rounded text-lg text-destiny-grey/60">
+      <span className="material-symbols-rounded text-[16px] text-white/50 group-hover:text-white/80">
         {meta.icon}
       </span>
-      <span className="text-[11px] font-bold leading-tight text-destiny-grey">
+      <span className="text-[10.5px] font-medium leading-tight text-white/80">
         {meta.label}
       </span>
     </button>

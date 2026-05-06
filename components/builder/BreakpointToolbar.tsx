@@ -21,20 +21,20 @@ type Props = {
 
 export default function BreakpointToolbar({ value, onChange }: Props) {
   return (
-    <div className="flex items-center gap-1 rounded-lg bg-[#f5f7fa] p-1">
+    <div className="flex items-center gap-0.5 rounded-md bg-white/5 p-0.5">
       {ITEMS.map((item) => (
         <button
           key={item.value}
           type="button"
           onClick={() => onChange(item.value)}
           title={`${item.label} (${BREAKPOINT_WIDTHS[item.value]}px)`}
-          className={`flex h-7 w-9 items-center justify-center rounded-md transition ${
+          className={`flex h-7 w-9 items-center justify-center rounded transition ${
             value === item.value
-              ? "bg-white text-destiny-orange shadow-sm"
-              : "text-destiny-grey/50 hover:text-destiny-grey"
+              ? "bg-white/10 text-white"
+              : "text-white/40 hover:text-white/80"
           }`}
         >
-          <span className="material-symbols-rounded text-base">{item.icon}</span>
+          <span className="material-symbols-rounded text-[18px]">{item.icon}</span>
         </button>
       ))}
     </div>

@@ -22,17 +22,15 @@ export default function ElementTree({
   onReorder,
 }: Props) {
   return (
-    <div className="flex h-full flex-col bg-white">
-      <div className="border-b border-black/5 px-4 py-3">
-        <p className="text-[10px] font-bold uppercase tracking-widest text-destiny-grey/40">
-          Layers
-        </p>
+    <div className="flex h-full flex-col bg-zinc-900 text-zinc-100">
+      <div className="border-b border-white/5 px-3 py-2.5">
+        <p className="text-[10px] font-semibold uppercase tracking-wider text-white/30">Layers</p>
       </div>
-      <div className="flex-1 overflow-y-auto p-2">
+      <div className="flex-1 overflow-y-auto p-1.5">
         {layout.length === 0 ? (
-          <p className="px-2 py-4 text-xs text-destiny-grey/40">No elements yet</p>
+          <p className="px-2 py-4 text-[11px] text-white/30">No elements</p>
         ) : (
-          <ul className="flex flex-col gap-0.5">
+          <ul className="flex flex-col gap-px">
             {layout.map((el, idx) => (
               <TreeNode
                 key={el.id}
@@ -115,12 +113,12 @@ function TreeNode({
         onDragOver={handleDragOver}
         onDragLeave={() => setDropTarget(null)}
         onDrop={handleDrop}
-        className={`group relative flex items-center gap-2 rounded-md px-2 py-1.5 text-xs transition ${
+        className={`group relative flex items-center gap-1.5 rounded text-[11px] transition ${
           selected
-            ? "bg-destiny-orange/10 text-destiny-orange"
-            : "text-destiny-grey/70 hover:bg-[#f5f7fa]"
+            ? "bg-destiny-orange/15 text-white"
+            : "text-white/60 hover:bg-white/5 hover:text-white"
         }`}
-        style={{ paddingLeft: `${depth * 12 + 8}px` }}
+        style={{ paddingLeft: `${depth * 10 + 6}px` }}
       >
         {dropTarget === "before" && (
           <div className="pointer-events-none absolute -top-px left-2 right-2 h-0.5 rounded bg-destiny-orange" />
@@ -128,40 +126,37 @@ function TreeNode({
         {dropTarget === "after" && (
           <div className="pointer-events-none absolute -bottom-px left-2 right-2 h-0.5 rounded bg-destiny-orange" />
         )}
-        <span className="material-symbols-rounded cursor-grab text-[14px] text-destiny-grey/30 active:cursor-grabbing">
-          drag_indicator
-        </span>
         <button
           type="button"
           onClick={() => onSelect(element.id)}
-          className="flex flex-1 items-center gap-2 text-left"
+          className="flex flex-1 items-center gap-1.5 py-1 pr-1 text-left"
         >
-          <span className="material-symbols-rounded text-sm">
+          <span className="material-symbols-rounded text-[13px] opacity-70">
             {meta?.icon || "widgets"}
           </span>
-          <span className="font-bold">{meta?.label || element.type}</span>
+          <span className="font-medium">{meta?.label || element.type}</span>
         </button>
-        <div className="flex opacity-0 transition group-hover:opacity-100">
+        <div className="flex pr-1 opacity-0 transition group-hover:opacity-100">
           <button
             type="button"
             onClick={() => onMoveUp(element.id)}
             disabled={isFirst}
-            className="flex h-5 w-5 items-center justify-center rounded text-destiny-grey/50 hover:bg-white disabled:opacity-30"
+            className="flex h-5 w-5 items-center justify-center rounded text-white/40 hover:text-white disabled:opacity-30"
           >
-            <span className="material-symbols-rounded text-sm">arrow_upward</span>
+            <span className="material-symbols-rounded text-[12px]">arrow_upward</span>
           </button>
           <button
             type="button"
             onClick={() => onMoveDown(element.id)}
             disabled={isLast}
-            className="flex h-5 w-5 items-center justify-center rounded text-destiny-grey/50 hover:bg-white disabled:opacity-30"
+            className="flex h-5 w-5 items-center justify-center rounded text-white/40 hover:text-white disabled:opacity-30"
           >
-            <span className="material-symbols-rounded text-sm">arrow_downward</span>
+            <span className="material-symbols-rounded text-[12px]">arrow_downward</span>
           </button>
         </div>
       </div>
       {hasChildren && (
-        <ul className="flex flex-col gap-0.5">
+        <ul className="flex flex-col gap-px">
           {element.children!.map((child, idx) => (
             <TreeNode
               key={child.id}

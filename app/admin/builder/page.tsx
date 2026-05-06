@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { TEMPLATES, getTemplate } from "@/lib/builder/templates";
 
 type PageRow = {
   id: string;
@@ -21,6 +22,7 @@ export default function BuilderListPage() {
   const [showNew, setShowNew] = useState(false);
   const [newTitle, setNewTitle] = useState("");
   const [newSlug, setNewSlug] = useState("");
+  const [templateId, setTemplateId] = useState("blank");
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState("");
 
@@ -35,13 +37,14 @@ export default function BuilderListPage() {
     e.preventDefault();
     setCreating(true);
     setError("");
+    const tpl = getTemplate(templateId);
     const res = await fetch("/api/admin/builder/pages", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         title: newTitle,
         slug: newSlug || slugify(newTitle),
-        layout_json: [],
+        layout_json: tpl ? tpl.build() : [],
       }),
     });
     const data = await res.json();
@@ -118,6 +121,32 @@ export default function BuilderListPage() {
               </div>
             </label>
           </div>
+          <div className="mt-5">
+            <p className="mb-2 text-xs font-bold text-destiny-grey/60">Start from a template</p>
+            <div className="grid grid-cols-2 gap-2 md:grid-cols-3">
+              {TEMPLATES.map((t) => {
+                const selected = templateId === t.id;
+                return (
+                  <button
+                    type="button"
+                    key={t.id}
+                    onClick={() => setTemplateId(t.id)}
+                    className={`flex flex-col items-start gap-1 rounded-xl border p-3 text-left transition ${
+                      selected
+                        ? "border-destiny-orange bg-destiny-orange/5 ring-2 ring-destiny-orange/20"
+                        : "border-black/10 hover:bg-[#f5f7fa]"
+                    }`}
+                  >
+                    <span className="material-symbols-rounded text-base text-destiny-orange">
+                      {t.icon}
+                    </span>
+                    <span className="text-xs font-bold text-destiny-grey">{t.name}</span>
+                    <span className="text-[11px] text-destiny-grey/50">{t.description}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
           {error && (
             <p className="mt-3 rounded-lg bg-red-50 px-3 py-2 text-xs text-red-600">{error}</p>
           )}
@@ -184,6 +213,24 @@ export default function BuilderListPage() {
                   >
                     {p.status}
                   </span>
+                  {p.status === "published" && (
+                    <a
+                      href={`/${p.slug}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="rounded-lg p-1.5 text-destiny-grey/60 hover:bg-[#f5f7fa]"
+                      title="View live"
+                    >
+                      <span className="material-symbols-rounded text-base">open_in_new</span>
+                    </a>
+                  )}
+                  <Link
+                    href={`/admin/builder/${p.id}/preview`}
+                    className="rounded-lg p-1.5 text-destiny-grey/60 hover:bg-[#f5f7fa]"
+                    title="Preview"
+                  >
+                    <span className="material-symbols-rounded text-base">visibility</span>
+                  </Link>
                   <Link
                     href={`/admin/builder/${p.id}`}
                     className="rounded-lg p-1.5 text-destiny-grey/60 hover:bg-[#f5f7fa]"

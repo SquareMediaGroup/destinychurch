@@ -66,6 +66,22 @@ export default function BuilderEditor({ initialPage }: Props) {
     setLayout((prev) => reorderElement(prev, draggedId, targetId, position));
   }, []);
 
+  const handleStatusChange = useCallback(
+    async (status: "draft" | "published" | "archived") => {
+      if (!page.id) return;
+      const res = await fetch(`/api/admin/builder/pages/${page.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setPage((p) => ({ ...p, status: data.page.status, published_at: data.page.published_at }));
+      }
+    },
+    [page.id],
+  );
+
   // Auto-save: debounce 1.5s after layout/title changes
   useEffect(() => {
     if (!page.id) return;
@@ -136,9 +152,54 @@ export default function BuilderEditor({ initialPage }: Props) {
             <span className="material-symbols-rounded text-base">layers</span>
             Layers
           </button>
-          <span className="rounded-md bg-destiny-grey/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-destiny-grey/60">
+          <span
+            className={`rounded-md px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide ${
+              page.status === "published"
+                ? "bg-green-100 text-green-700"
+                : page.status === "draft"
+                  ? "bg-amber-100 text-amber-700"
+                  : "bg-destiny-grey/10 text-destiny-grey/60"
+            }`}
+          >
             {page.status}
           </span>
+          <Link
+            href={`/admin/builder/${page.id}/preview`}
+            target="_blank"
+            className="flex items-center gap-1.5 rounded-lg border border-black/10 px-3 py-1.5 text-xs font-bold text-destiny-grey hover:bg-[#f5f7fa]"
+          >
+            <span className="material-symbols-rounded text-base">visibility</span>
+            Preview
+          </Link>
+          {page.status === "published" ? (
+            <>
+              <a
+                href={`/${page.slug}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-1.5 rounded-lg border border-black/10 px-3 py-1.5 text-xs font-bold text-destiny-grey hover:bg-[#f5f7fa]"
+              >
+                <span className="material-symbols-rounded text-base">open_in_new</span>
+                View live
+              </a>
+              <button
+                type="button"
+                onClick={() => handleStatusChange("draft")}
+                className="flex items-center gap-1.5 rounded-lg border border-black/10 px-3 py-1.5 text-xs font-bold text-destiny-grey hover:bg-[#f5f7fa]"
+              >
+                Unpublish
+              </button>
+            </>
+          ) : (
+            <button
+              type="button"
+              onClick={() => handleStatusChange("published")}
+              className="flex items-center gap-1.5 rounded-lg bg-destiny-orange px-3 py-1.5 text-xs font-bold text-white shadow-sm shadow-destiny-orange/20 hover:brightness-110"
+            >
+              <span className="material-symbols-rounded text-base">rocket_launch</span>
+              Publish
+            </button>
+          )}
         </div>
       </header>
 

@@ -39,8 +39,8 @@ export default function MediaUploader({
 
   async function getAuthHeaders() {
     const supabase = getSupabaseBrowserClient();
-    const { data: session } = await supabase.auth.getSession();
-    const token = session?.session?.access_token;
+    const { data } = await supabase.auth.getSession();
+    const token = data?.session?.access_token;
     if (!token) throw new Error("Not authenticated");
     return { "Authorization": `Bearer ${token}` };
   }

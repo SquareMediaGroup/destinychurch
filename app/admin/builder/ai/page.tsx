@@ -35,9 +35,9 @@ export default function AIPageCreatorPage() {
 
     try {
       const supabase = getSupabaseBrowserClient();
-      const { data: session } = await supabase.auth.getSession();
+      const { data } = await supabase.auth.getSession();
       
-      if (!session?.session?.access_token) {
+      if (!data?.session?.access_token) {
         throw new Error("Not authenticated. Please log in.");
       }
 
@@ -45,7 +45,7 @@ export default function AIPageCreatorPage() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${session.session.access_token}`,
+          "Authorization": `Bearer ${data.session.access_token}`,
         },
         body: JSON.stringify({
           pageType: pageType.trim() || undefined,

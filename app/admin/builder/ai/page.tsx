@@ -34,22 +34,25 @@ export default function AIPageCreatorPage() {
     setLoading(true);
 
     try {
+      // Get auth token from Supabase session
       const supabase = getSupabaseBrowserClient();
       const { data } = await supabase.auth.getSession();
+      const token = data?.session?.access_token;
       
-      if (!data?.session?.access_token) {
-        throw new Error("Not authenticated. Please log in.");
+      if (!token) {
+        throw new Error("Not authenticated. Please log in and try again.");
       }
 
+      // Call generate-page API
       const response = await fetch("/api/admin/builder/ai/generate-page", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${data.session.access_token}`,
+          "Authorization": `Bearer ${token}`,
         },
         body: JSON.stringify({
           pageType: pageType.trim() || undefined,
-          context,
+          context: context.trim(),
           audience: audience !== "general" ? audience : undefined,
           urgency,
           media,
@@ -61,14 +64,14 @@ export default function AIPageCreatorPage() {
         throw new Error(errorData.error || "Failed to generate page");
       }
 
-      const pageData = (await response.json()) as {
+      const result = (await response.json()) as {
         id: string;
         editUrl: string;
       };
+      
       setSuccess(true);
-
       setTimeout(() => {
-        router.push(pageData.editUrl);
+        router.push(result.editUrl);
       }, 1000);
     } catch (err) {
       setError(err instanceof Error ? err.message : "An error occurred");
@@ -77,8 +80,7 @@ export default function AIPageCreatorPage() {
     }
   }
 
-  // Check if any media is missing description (required for AI to use it well)
-  const undescribedMedia = media.filter((m) => !m.description.trim());
+  const undescribedMedia = media.filter((m) => !m.description?.trim());
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-6">
@@ -87,7 +89,7 @@ export default function AIPageCreatorPage() {
         <div className="mb-8">
           <Link
             href="/admin/builder"
-            className="text-sm text-destiny-orange hover:text-destiny-orange/80 mb-4 inline-block"
+            className="text-sm text-destiny-orange hover:text-destiny-orange/80 mb-4 inline-block font-semibold"
           >
             ← Back to Pages
           </Link>
@@ -108,51 +110,42 @@ export default function AIPageCreatorPage() {
           {/* Error Alert */}
           {error && (
             <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-              <p className="text-red-800">{error}</p>
+              <p className="text-sm font-semibold text-red-700">Error</p>
+              <p className="text-red-600 text-sm mt-1">{error}</p>
             </div>
           )}
 
           {/* Success Alert */}
           {success && (
             <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-              <p className="text-green-800">
-                ✓ Page generated! Redirecting to editor...
+              <p className="text-green-700 font-semibold">
+                ✓ Page generated! Redirecting...
               </p>
             </div>
           )}
 
-          {/* Context — the main input */}
+          {/* Main Description */}
           <div>
-            <label
-              htmlFor="context"
-              className="block text-sm font-semibold text-destiny-grey mb-2"
-            >
-              What should this page do?{" "}
-              <span className="text-red-600">*</span>
+            <label htmlFor="context" className="block text-sm font-semibold text-destiny-grey mb-2">
+              What should this page do? <span className="text-red-600">*</span>
             </label>
             <textarea
               id="context"
               value={context}
               onChange={(e) => setContext(e.target.value)}
               disabled={loading}
-              placeholder="E.g., 'Create a landing page for Alpha starting September 12, targeting students who are asking big questions about life and faith. Include a sign-up CTA and explain what Alpha is.'"
-              rows={5}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-destiny-orange focus:border-transparent disabled:bg-gray-100 resize-none"
+              placeholder="E.g., Create a landing page for Alpha starting September 12, targeting students asking about life and faith. Include sign-up CTA."
+              rows={4}
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-destiny-orange focus:border-transparent disabled:bg-gray-100 resize-none"
               required
             />
-            <p className="text-xs text-gray-500 mt-1">
-              Be specific about goals, audience, and important details
-            </p>
+            <p className="text-xs text-gray-500 mt-1">Be specific about goals, audience, and important details</p>
           </div>
 
-          {/* Page Type — optional free text */}
+          {/* Page Type (Optional) */}
           <div>
-            <label
-              htmlFor="pageType"
-              className="block text-sm font-semibold text-destiny-grey mb-2"
-            >
-              Page type{" "}
-              <span className="text-gray-400 font-normal">(optional)</span>
+            <label htmlFor="pageType" className="block text-sm font-semibold text-destiny-grey mb-2">
+              Page type <span className="text-gray-400 font-normal">(optional)</span>
             </label>
             <input
               id="pageType"
@@ -160,29 +153,23 @@ export default function AIPageCreatorPage() {
               value={pageType}
               onChange={(e) => setPageType(e.target.value)}
               disabled={loading}
-              placeholder="e.g., Alpha launch, About us, Mens conference..."
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-destiny-orange focus:border-transparent disabled:bg-gray-100"
+              placeholder="e.g., Alpha launch, About us, Sermon archive..."
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-destiny-orange focus:border-transparent disabled:bg-gray-100"
             />
-            <p className="text-xs text-gray-500 mt-1">
-              Leave blank to let AI infer from your description
-            </p>
+            <p className="text-xs text-gray-500 mt-1">Leave blank for AI to infer from description</p>
           </div>
 
           {/* Audience */}
           <div>
-            <label
-              htmlFor="audience"
-              className="block text-sm font-semibold text-destiny-grey mb-2"
-            >
-              Target audience{" "}
-              <span className="text-gray-400 font-normal">(optional)</span>
+            <label htmlFor="audience" className="block text-sm font-semibold text-destiny-grey mb-2">
+              Target audience <span className="text-gray-400 font-normal">(optional)</span>
             </label>
             <select
               id="audience"
               value={audience}
               onChange={(e) => setAudience(e.target.value)}
               disabled={loading}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-destiny-orange focus:border-transparent disabled:bg-gray-100"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-destiny-orange focus:border-transparent disabled:bg-gray-100"
             >
               {AUDIENCES.map((aud) => (
                 <option key={aud.id} value={aud.id}>
@@ -192,11 +179,10 @@ export default function AIPageCreatorPage() {
             </select>
           </div>
 
-          {/* Media uploader */}
+          {/* Media Uploader */}
           <div>
             <label className="block text-sm font-semibold text-destiny-grey mb-2">
-              Photos and videos{" "}
-              <span className="text-gray-400 font-normal">(optional)</span>
+              Photos & videos <span className="text-gray-400 font-normal">(optional)</span>
             </label>
             <MediaUploader
               media={media}
@@ -205,10 +191,7 @@ export default function AIPageCreatorPage() {
             />
             {undescribedMedia.length > 0 && (
               <p className="text-xs text-orange-600 mt-2">
-                ⚠ {undescribedMedia.length} item
-                {undescribedMedia.length === 1 ? "" : "s"} need
-                {undescribedMedia.length === 1 ? "s" : ""} a description for AI
-                to place properly
+                ⚠ {undescribedMedia.length} item{undescribedMedia.length !== 1 ? "s" : ""} need{undescribedMedia.length === 1 ? "s" : ""} description
               </p>
             )}
           </div>
@@ -216,7 +199,7 @@ export default function AIPageCreatorPage() {
           {/* Urgency */}
           <div>
             <label className="block text-sm font-semibold text-destiny-grey mb-2">
-              How soon do you need this?
+              Timeline
             </label>
             <div className="space-y-2">
               <label className="flex items-center">
@@ -225,15 +208,11 @@ export default function AIPageCreatorPage() {
                   name="urgency"
                   value="standard"
                   checked={urgency === "standard"}
-                  onChange={(e) =>
-                    setUrgency(e.target.value as "standard")
-                  }
+                  onChange={(e) => setUrgency(e.target.value as "standard")}
                   disabled={loading}
                   className="w-4 h-4 text-destiny-orange accent-destiny-orange"
                 />
-                <span className="ml-3 text-destiny-grey">
-                  Standard (high quality)
-                </span>
+                <span className="ml-2 text-sm text-destiny-grey">Standard (high quality)</span>
               </label>
               <label className="flex items-center">
                 <input
@@ -241,25 +220,21 @@ export default function AIPageCreatorPage() {
                   name="urgency"
                   value="immediate"
                   checked={urgency === "immediate"}
-                  onChange={(e) =>
-                    setUrgency(e.target.value as "immediate")
-                  }
+                  onChange={(e) => setUrgency(e.target.value as "immediate")}
                   disabled={loading}
                   className="w-4 h-4 text-destiny-orange accent-destiny-orange"
                 />
-                <span className="ml-3 text-destiny-grey">
-                  Immediate (quick draft)
-                </span>
+                <span className="ml-2 text-sm text-destiny-grey">Immediate (quick draft)</span>
               </label>
             </div>
           </div>
 
           {/* Actions */}
-          <div className="flex gap-4 pt-4">
+          <div className="flex gap-3 pt-4">
             <button
               type="submit"
               disabled={loading || !context.trim()}
-              className="flex-1 px-6 py-3 bg-destiny-orange text-white font-semibold rounded-lg hover:brightness-110 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+              className="flex-1 px-6 py-3 bg-destiny-orange text-white font-semibold rounded-lg hover:brightness-110 disabled:bg-gray-400 disabled:cursor-not-allowed transition-all"
             >
               {loading ? "Generating..." : "Generate Page"}
             </button>
@@ -272,16 +247,14 @@ export default function AIPageCreatorPage() {
           </div>
 
           {/* Info Box */}
-          <div className="bg-destiny-orange/5 border border-destiny-orange/20 rounded-lg p-4 mt-8">
-            <h3 className="font-semibold text-destiny-orange mb-2">
-              How this works
-            </h3>
-            <ul className="text-sm text-destiny-grey space-y-1">
-              <li>✓ AI generates a page using your approved components</li>
-              <li>✓ Photos auto-convert to WebP and use the best size for each spot</li>
-              <li>✓ AI uses your descriptions to place media in the right components</li>
-              <li>✓ All design matches your church's brand system</li>
-              <li>✓ You can edit and refine after generation</li>
+          <div className="bg-destiny-orange/5 border border-destiny-orange/20 rounded-lg p-4 space-y-2">
+            <h3 className="font-semibold text-destiny-orange text-sm">How this works</h3>
+            <ul className="text-xs text-destiny-grey space-y-1">
+              <li>✓ AI assembles your approved components</li>
+              <li>✓ Photos auto-convert to WebP with optimal sizing</li>
+              <li>✓ Media descriptions guide smart placement</li>
+              <li>✓ Design matches your church's brand</li>
+              <li>✓ Fully editable before publishing</li>
             </ul>
           </div>
         </form>

@@ -51,6 +51,10 @@ export default function AIPageCreatorPage() {
     runUrl?: string;
     message: string;
   } | null>(null);
+  const [completed, setCompleted] = useState<{
+    success: boolean;
+    runUrl?: string;
+  } | null>(null);
 
   const charCount = context.length;
   const charLimit = 2000;
@@ -67,6 +71,7 @@ export default function AIPageCreatorPage() {
     e.preventDefault();
     setError("");
     setQueued(null);
+    setCompleted(null);
     setLoading(true);
 
     try {
@@ -170,8 +175,114 @@ export default function AIPageCreatorPage() {
           </div>
         )}
 
-        {/* Workflow progress */}
-        {queued && queued.runId && (
+        {/* Completed state — persists until user starts another generation or dismisses */}
+        {completed && (
+          <div
+            className={`mb-6 overflow-hidden rounded-2xl border shadow-sm ${
+              completed.success
+                ? "border-green-200 bg-gradient-to-br from-green-50 to-emerald-50"
+                : "border-red-200 bg-gradient-to-br from-red-50 to-rose-50"
+            }`}
+          >
+            <div className="p-6">
+              <div className="flex items-start gap-4">
+                <span
+                  className={`flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-2xl ${
+                    completed.success
+                      ? "bg-green-500 text-white"
+                      : "bg-red-500 text-white"
+                  }`}
+                >
+                  <span className="material-symbols-rounded text-2xl">
+                    {completed.success ? "check_circle" : "error"}
+                  </span>
+                </span>
+                <div className="flex-1">
+                  <h3
+                    className={`text-lg font-bold ${
+                      completed.success ? "text-green-900" : "text-red-900"
+                    }`}
+                  >
+                    {completed.success
+                      ? "Page generated and committed to main"
+                      : "Page generation failed"}
+                  </h3>
+                  <p
+                    className={`mt-1 text-sm ${
+                      completed.success ? "text-green-700" : "text-red-700"
+                    }`}
+                  >
+                    {completed.success
+                      ? "Your audit email is on its way. Refresh the pages list to see it."
+                      : "Check the workflow logs for the failure reason."}
+                  </p>
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    {completed.success && (
+                      <Link
+                        href="/admin/builder"
+                        className="inline-flex items-center gap-1.5 rounded-xl bg-green-600 px-4 py-2 text-sm font-bold text-white shadow-sm transition hover:bg-green-700"
+                      >
+                        <span className="material-symbols-rounded text-base">
+                          list
+                        </span>
+                        View pages
+                      </Link>
+                    )}
+                    {completed.runUrl && (
+                      <a
+                        href={completed.runUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className={`inline-flex items-center gap-1.5 rounded-xl border bg-white px-4 py-2 text-sm font-bold transition hover:bg-[#f5f7fa] ${
+                          completed.success
+                            ? "border-green-200 text-green-700"
+                            : "border-red-200 text-red-700"
+                        }`}
+                      >
+                        <span className="material-symbols-rounded text-base">
+                          open_in_new
+                        </span>
+                        View workflow run
+                      </a>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setCompleted(null);
+                        setQueued(null);
+                        setContext("");
+                        setPageType("");
+                        setAudience("general");
+                        setMedia([]);
+                      }}
+                      className="inline-flex items-center gap-1.5 rounded-xl border border-black/10 bg-white px-4 py-2 text-sm font-bold text-destiny-grey/70 transition hover:bg-[#f5f7fa]"
+                    >
+                      <span className="material-symbols-rounded text-base">
+                        auto_awesome
+                      </span>
+                      Generate another
+                    </button>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setCompleted(null)}
+                  className={`flex-shrink-0 rounded-lg p-1 transition ${
+                    completed.success
+                      ? "text-green-700 hover:bg-green-100"
+                      : "text-red-700 hover:bg-red-100"
+                  }`}
+                  aria-label="Dismiss"
+                >
+                  <span className="material-symbols-rounded text-base">close</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Workflow progress — shown while running */}
+        {queued && queued.runId && !completed && (
           <div className="mb-6 rounded-2xl border border-black/5 bg-white p-6 shadow-sm">
             <div className="mb-4 flex items-center gap-2 text-xs font-bold uppercase tracking-[0.2em] text-destiny-orange">
               <span className="material-symbols-rounded text-base">bolt</span>
@@ -182,15 +293,7 @@ export default function AIPageCreatorPage() {
               runUrl={queued.runUrl || ""}
               ghToken={authToken}
               onComplete={(success) => {
-                if (success) {
-                  setTimeout(() => {
-                    setQueued(null);
-                    setContext("");
-                    setPageType("");
-                    setAudience("general");
-                    setMedia([]);
-                  }, 2000);
-                }
+                setCompleted({ success, runUrl: queued.runUrl });
               }}
             />
           </div>

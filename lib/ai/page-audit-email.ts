@@ -7,7 +7,9 @@ import { Resend } from "resend";
 const resend = new Resend(process.env.RESEND_API_KEY);
 
 const AUDIT_RECIPIENT = process.env.PAGE_AUDIT_RECIPIENT || "malachi@squaremediagroup.org";
-const FROM = process.env.PAGE_AUDIT_FROM || "Destiny AI <ai@destinytees.uk>";
+// Default to Resend's universal test sender (works without domain verification).
+// Override PAGE_AUDIT_FROM in env to use a verified custom domain.
+const FROM = process.env.PAGE_AUDIT_FROM || "Destiny AI <onboarding@resend.dev>";
 
 export interface PageAuditEmailInput {
   title: string;
@@ -76,10 +78,22 @@ export async function sendPageAuditEmail(input: PageAuditEmailInput): Promise<vo
   </div>
 </body></html>`;
 
-  await resend.emails.send({
+  console.log(`📧 Sending audit email from "${FROM}" to "${AUDIT_RECIPIENT}"`);
+
+  const result = await resend.emails.send({
     from: FROM,
     to: AUDIT_RECIPIENT,
     subject: `[AI page] ${input.title} — ${status}${input.pushed ? " · pushed" : ""}`,
     html,
   });
+
+  if (result.error) {
+    throw new Error(
+      `Resend rejected the email: ${result.error.name} — ${result.error.message}. ` +
+        `From="${FROM}" To="${AUDIT_RECIPIENT}". ` +
+        `If using a custom domain, verify it at https://resend.com/domains.`
+    );
+  }
+
+  console.log(`✓ Audit email sent (id: ${result.data?.id})`);
 }

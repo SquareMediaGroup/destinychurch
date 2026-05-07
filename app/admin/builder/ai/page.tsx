@@ -25,19 +25,16 @@ export default function AIPageCreatorPage() {
   const [media, setMedia] = useState<MediaItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [result, setResult] = useState<{
-    title: string;
-    route: string;
-    commit?: string;
-    pushed: boolean;
-    files: string[];
-    reasoning: string;
+  const [queued, setQueued] = useState<{
+    runId?: number;
+    runUrl?: string;
+    message: string;
   } | null>(null);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
-    setResult(null);
+    setQueued(null);
     setLoading(true);
 
     try {
@@ -67,17 +64,14 @@ export default function AIPageCreatorPage() {
       const payload = (await response.json()) as Record<string, unknown>;
       if (!response.ok) {
         throw new Error(
-          (payload.error as string) || `Failed to generate page (HTTP ${response.status})`
+          (payload.error as string) || `Failed to queue page generation (HTTP ${response.status})`
         );
       }
 
-      setResult({
-        title: payload.title as string,
-        route: payload.route as string,
-        commit: payload.commit as string | undefined,
-        pushed: Boolean(payload.pushed),
-        files: (payload.files as string[]) ?? [],
-        reasoning: (payload.reasoning as string) ?? "",
+      setQueued({
+        runId: payload.runId as number | undefined,
+        runUrl: payload.runUrl as string | undefined,
+        message: (payload.message as string) ?? "Page generation queued",
       });
     } catch (err) {
       setError(err instanceof Error ? err.message : "An error occurred");
@@ -124,43 +118,28 @@ export default function AIPageCreatorPage() {
             </div>
           )}
 
-          {/* Success Alert */}
-          {result && (
-            <div className="bg-green-50 border border-green-200 rounded-lg p-4 space-y-2">
-              <p className="text-green-700 font-semibold">
-                ✓ Page generated and committed
+          {/* Queued Alert */}
+          {queued && (
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 space-y-2">
+              <p className="text-blue-700 font-semibold">
+                ⏳ Page generation queued on GitHub Actions
               </p>
               <p className="text-sm text-destiny-grey">
-                <strong>{result.title}</strong> is live at{" "}
+                {queued.message}
+              </p>
+              {queued.runUrl && (
                 <a
-                  href={result.route}
+                  href={queued.runUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-destiny-orange underline"
+                  className="inline-block mt-2 px-4 py-2 bg-destiny-orange text-white text-sm font-semibold rounded-lg hover:brightness-110"
                 >
-                  {result.route}
+                  View Workflow Run →
                 </a>
+              )}
+              <p className="text-xs text-destiny-grey/60">
+                Check GitHub Actions for real-time progress. An audit email will be sent when complete.
               </p>
-              {result.commit && (
-                <p className="text-xs font-mono text-destiny-grey/60">
-                  Commit {result.commit.slice(0, 12)} {result.pushed ? "· pushed to main" : "· not pushed"}
-                </p>
-              )}
-              <details className="text-xs text-destiny-grey/70 mt-2">
-                <summary className="cursor-pointer font-semibold">
-                  Files ({result.files.length})
-                </summary>
-                <ul className="mt-2 ml-4 list-disc font-mono">
-                  {result.files.map((f) => (
-                    <li key={f}>{f}</li>
-                  ))}
-                </ul>
-              </details>
-              {result.reasoning && (
-                <p className="text-xs text-destiny-grey/70 italic border-l-2 border-destiny-orange/30 pl-2 mt-2">
-                  {result.reasoning}
-                </p>
-              )}
             </div>
           )}
 

@@ -1,33 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { createClient } from "@/utils/supabase/server";
-import { getLLMClient } from "@/lib/ai/llm-client";
-import { generatePageCode } from "@/lib/ai/code-generator";
-import {
-  pageDirExists,
-  writePageFile,
-  writeComponentFile,
-  deletePageFile,
-} from "@/lib/ai/code-context";
-import { runTypeCheck } from "@/lib/ai/code-validator";
-import { commitAndPush, rollbackFiles } from "@/lib/ai/git-automation";
-import { sendPageAuditEmail } from "@/lib/ai/page-audit-email";
+
+const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
+const GITHUB_REPO = process.env.GITHUB_REPO || "SquareMediaGroup/destinychurch";
 
 export const runtime = "nodejs";
-export const maxDuration = 300; // generation + tsc + git can take a while
 
+/**
+ * Dispatch the AI page generation workflow via GitHub Actions.
+ * The workflow runs in a VM with a writable filesystem, generates the page,
+ * type-checks, commits, pushes, and sends an audit email.
+ */
 export async function POST(req: NextRequest) {
-  // Block on Vercel — filesystem is read-only there
-  if (process.env.VERCEL === "1") {
-    return NextResponse.json(
-      {
-        error:
-          "AI code generation is only available in environments with a writable filesystem (run locally, or on a dedicated worker). It is disabled on Vercel.",
-      },
-      { status: 503 }
-    );
-  }
-
   // Identify the user via Supabase cookies (middleware already enforces auth)
   const supabase = createClient(await cookies());
   const {
@@ -52,117 +37,93 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "context is required" }, { status: 400 });
   }
 
-  // Generate code via LLM
-  const llm = getLLMClient();
-  let generated;
-  try {
-    generated = await generatePageCode(
-      {
-        context,
-        pageType: typeof pageType === "string" && pageType.trim() ? pageType.trim() : undefined,
-        audience: typeof audience === "string" ? audience : undefined,
-        media: Array.isArray(media) ? (media as never[]) : undefined,
-      },
-      llm
-    );
-  } catch (err) {
+  // Validate GitHub token
+  if (!GITHUB_TOKEN) {
     return NextResponse.json(
-      { error: err instanceof Error ? err.message : "Code generation failed" },
+      { error: "GitHub Actions integration not configured (GITHUB_TOKEN missing)" },
+      { status: 503 }
+    );
+  }
+
+  // Dispatch the workflow
+  try {
+    const response = await fetch(
+      `https://api.github.com/repos/${GITHUB_REPO}/actions/workflows/ai-generate-page.yml/dispatches`,
+      {
+        method: "POST",
+        headers: {
+          Accept: "application/vnd.github.v3+json",
+          Authorization: `token ${GITHUB_TOKEN}`,
+        },
+        body: JSON.stringify({
+          ref: "main",
+          inputs: {
+            context: context.trim(),
+            pageType: typeof pageType === "string" && pageType.trim() ? pageType.trim() : "",
+            audience: typeof audience === "string" && audience.trim() ? audience.trim() : "",
+            media: Array.isArray(media) ? JSON.stringify(media) : "",
+            requesterEmail: user.email || user.id,
+          },
+        }),
+      }
+    );
+
+    if (!response.ok) {
+      const error = await response.json();
+      console.error("GitHub API error:", error);
+      return NextResponse.json(
+        {
+          error:
+            error.message ||
+            `Failed to dispatch workflow (${response.status})`,
+        },
+        { status: 502 }
+      );
+    }
+
+    // GitHub returns 204 No Content on success, so we need to fetch the run
+    // Wait a bit for the workflow to appear
+    await new Promise((r) => setTimeout(r, 1000));
+
+    // Get the latest run for this workflow
+    const runsResponse = await fetch(
+      `https://api.github.com/repos/${GITHUB_REPO}/actions/workflows/ai-generate-page.yml/runs?per_page=1`,
+      {
+        headers: {
+          Accept: "application/vnd.github.v3+json",
+          Authorization: `token ${GITHUB_TOKEN}`,
+        },
+      }
+    );
+
+    if (!runsResponse.ok) {
+      console.error("Failed to fetch workflow run");
+      return NextResponse.json(
+        {
+          ok: true,
+          queued: true,
+          message: "Page generation queued on GitHub Actions. Check workflow status in the Actions tab.",
+        }
+      );
+    }
+
+    const runsData = (await runsResponse.json()) as {
+      workflow_runs?: Array<{ id: number; html_url: string; status: string }>;
+    };
+    const latestRun = runsData.workflow_runs?.[0];
+
+    return NextResponse.json({
+      ok: true,
+      queued: true,
+      runId: latestRun?.id,
+      runUrl: latestRun?.html_url,
+      message: "Page generation queued. Workflow is running now.",
+    });
+  } catch (err) {
+    console.error("Dispatch error:", err);
+    return NextResponse.json(
+      { error: err instanceof Error ? err.message : "Failed to queue page generation" },
       { status: 502 }
     );
   }
-
-  // Slug must not collide with existing route
-  if (await pageDirExists(generated.slug)) {
-    return NextResponse.json(
-      { error: `Route /${generated.slug} already exists. Choose a different page concept or rename.` },
-      { status: 409 }
-    );
-  }
-
-  // Write files
-  const writtenPaths: string[] = [];
-  try {
-    for (const c of generated.newComponents) {
-      const [, category, fileName] = c.path.split("/");
-      const componentName = fileName.replace(/\.tsx$/, "");
-      const rel = await writeComponentFile(category, componentName, c.source);
-      writtenPaths.push(rel);
-    }
-    const pageRel = await writePageFile(generated.slug, generated.pageFile.source);
-    writtenPaths.push(pageRel);
-  } catch (err) {
-    await rollbackFiles(writtenPaths);
-    return NextResponse.json(
-      { error: err instanceof Error ? err.message : "Failed to write files" },
-      { status: 500 }
-    );
-  }
-
-  // Validate
-  const validation = await runTypeCheck();
-
-  // If validation fails, roll back the page (keep components in case AI wants to retry?)
-  if (!validation.ok) {
-    await rollbackFiles(writtenPaths);
-    await deletePageFile(generated.slug);
-
-    // Audit failure email
-    try {
-      await sendPageAuditEmail({
-        title: generated.title,
-        slug: generated.slug,
-        requester: user.email ?? user.id,
-        reasoning: generated.reasoning,
-        files: writtenPaths,
-        validation,
-        pushed: false,
-      });
-    } catch (err) {
-      console.error("Audit email failed:", err);
-    }
-
-    return NextResponse.json(
-      {
-        error: "Generated code failed type-check. Files have been rolled back.",
-        validation: validation.output.slice(0, 4000),
-      },
-      { status: 422 }
-    );
-  }
-
-  // Commit + push
-  const commitResult = await commitAndPush({
-    paths: writtenPaths,
-    message: `feat: AI-generated page /${generated.slug}\n\n${generated.title}\n\nRequested by: ${user.email ?? user.id}\nReasoning: ${generated.reasoning.slice(0, 400)}`,
-    push: true,
-  });
-
-  // Audit email (always send on success, even if push failed)
-  try {
-    await sendPageAuditEmail({
-      title: generated.title,
-      slug: generated.slug,
-      requester: user.email ?? user.id,
-      reasoning: generated.reasoning,
-      files: writtenPaths,
-      commitHash: commitResult.hash,
-      validation,
-      pushed: commitResult.ok,
-    });
-  } catch (err) {
-    console.error("Audit email failed:", err);
-  }
-
-  return NextResponse.json({
-    ok: true,
-    title: generated.title,
-    slug: generated.slug,
-    route: `/${generated.slug}`,
-    files: writtenPaths,
-    commit: commitResult.hash,
-    pushed: commitResult.ok,
-    pushOutput: commitResult.ok ? null : commitResult.output,
-    reasoning: generated.reasoning,
-  });
 }

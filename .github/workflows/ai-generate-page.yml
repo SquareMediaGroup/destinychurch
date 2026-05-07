@@ -1,0 +1,64 @@
+name: AI Generate Page
+
+on:
+  workflow_dispatch:
+    inputs:
+      context:
+        description: "Page description (required)"
+        required: true
+        type: string
+      pageType:
+        description: "Page type (optional)"
+        required: false
+        type: string
+      audience:
+        description: "Target audience (optional)"
+        required: false
+        type: string
+      media:
+        description: "Media JSON (optional, array of MediaItem)"
+        required: false
+        type: string
+      requesterEmail:
+        description: "Email of requester"
+        required: true
+        type: string
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - run: npm ci
+
+      - name: Configure git
+        run: |
+          git config user.name "Destiny AI"
+          git config user.email "ai@destinytees.uk"
+
+      - name: Generate page code
+        env:
+          VERCEL_AI_GATEWAY_TOKEN: ${{ secrets.VERCEL_AI_GATEWAY_TOKEN }}
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          PAGE_AUDIT_RECIPIENT: ${{ secrets.PAGE_AUDIT_RECIPIENT }}
+          PAGE_AUDIT_FROM: ${{ secrets.PAGE_AUDIT_FROM }}
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY }}
+          GEN_CONTEXT: ${{ inputs.context }}
+          GEN_PAGE_TYPE: ${{ inputs.pageType }}
+          GEN_AUDIENCE: ${{ inputs.audience }}
+          GEN_MEDIA: ${{ inputs.media }}
+          GEN_REQUESTER_EMAIL: ${{ inputs.requesterEmail }}
+        run: npx tsx scripts/ai-generate-page.mts

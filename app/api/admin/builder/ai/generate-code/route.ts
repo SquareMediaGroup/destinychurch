@@ -37,6 +37,22 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "context is required" }, { status: 400 });
   }
 
+  // Reject reserved system routes (admin, api, auth, etc.) to prevent accidental
+  // overwrite of critical app infrastructure. Defence in depth — generator also blocks.
+  const RESERVED = [
+    "admin", "api", "auth", "_next", "favicon.ico", "robots", "sitemap",
+    "layout", "page", "globals", "not-found",
+  ];
+  if (typeof slug === "string" && slug.trim()) {
+    const normalized = slug.trim().toLowerCase().replace(/[^a-z0-9-]+/g, "-");
+    if (RESERVED.includes(normalized)) {
+      return NextResponse.json(
+        { error: `Slug "${normalized}" is a reserved system route and cannot be used.` },
+        { status: 400 }
+      );
+    }
+  }
+
   // Validate GitHub token
   if (!GITHUB_TOKEN) {
     return NextResponse.json(

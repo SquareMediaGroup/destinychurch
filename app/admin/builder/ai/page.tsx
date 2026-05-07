@@ -16,6 +16,12 @@ const EXISTING_ROUTES = [
   "youth",
 ];
 
+// System routes the user must NEVER overwrite — submission is blocked if matched.
+const RESERVED_SLUGS = [
+  "admin", "api", "auth", "_next", "favicon.ico", "robots", "sitemap",
+  "layout", "page", "globals", "not-found",
+];
+
 const AUDIENCES = [
   { id: "general", label: "Everyone", icon: "groups" },
   { id: "students", label: "Students", icon: "school" },
@@ -160,7 +166,12 @@ export default function AIPageCreatorPage() {
   const charCount = context.length;
   const charLimit = 2000;
   const undescribedMedia = media.filter((m) => !m.description?.trim());
-  const canSubmit = context.trim().length >= 20 && !loading && undescribedMedia.length === 0;
+  const slugIsReserved = RESERVED_SLUGS.includes(slug.trim().toLowerCase());
+  const canSubmit =
+    context.trim().length >= 20 &&
+    !loading &&
+    undescribedMedia.length === 0 &&
+    !slugIsReserved;
 
   function applyExample(ex: (typeof EXAMPLES)[number]) {
     setContext(ex.text);
@@ -488,7 +499,11 @@ export default function AIPageCreatorPage() {
             description="The path where this page lives, e.g. /alpha or /visit. Lowercase letters, numbers, hyphens."
             optional
             badge={
-              slug.trim() && EXISTING_ROUTES.includes(slug.trim().toLowerCase()) ? (
+              slugIsReserved ? (
+                <span className="inline-flex items-center gap-1 rounded-full bg-red-600 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white">
+                  Reserved — cannot use
+                </span>
+              ) : slug.trim() && EXISTING_ROUTES.includes(slug.trim().toLowerCase()) ? (
                 <span className="inline-flex items-center gap-1 rounded-full bg-red-100 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-red-700">
                   Will overwrite /{slug.trim().toLowerCase()}
                 </span>
@@ -634,6 +649,10 @@ export default function AIPageCreatorPage() {
           <div className="text-xs text-destiny-grey/60">
             {context.trim().length < 20 ? (
               <span>Write at least 20 characters to enable generation</span>
+            ) : slugIsReserved ? (
+              <span className="font-bold text-red-600">
+                &quot;{slug.trim().toLowerCase()}&quot; is a reserved system route — pick a different slug
+              </span>
             ) : undescribedMedia.length > 0 ? (
               <span className="text-amber-600">
                 Add descriptions to {undescribedMedia.length} media item

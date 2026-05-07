@@ -33,7 +33,7 @@ export class VercelAIGatewayClient implements LLMClient {
       },
       body: JSON.stringify({
         model: this.modelId,
-        max_tokens: 4096,
+        max_tokens: 16000,
         temperature: 0.7,
         messages: [
           {

@@ -96,7 +96,7 @@ Respond with ONLY this JSON shape:
 {
   "title": "Human-readable page title",
   "slug": "url-slug",
-  "reasoning": "1-3 sentences on why you chose this structure",
+  "reasoning": "ONE sentence (max 200 chars) on why you chose this structure. Plain text only. No quotes, no newlines, no special characters.",
   "page": {
     "source": "// Full source of app/<slug>/page.tsx as a string"
   },
@@ -120,13 +120,67 @@ function stripCodeFences(raw: string): string {
   return s.trim();
 }
 
+function tryRepairJson(s: string): string | null {
+  // Salvage common truncation issues: response was cut off mid-string/object.
+  // Strategy: trim to last balanced position, close any open string, balance braces/brackets.
+  let str = s.trim();
+
+  // Find last complete top-level closing brace
+  let depth = 0;
+  let inString = false;
+  let escape = false;
+  let lastSafePos = -1;
+
+  for (let i = 0; i < str.length; i++) {
+    const ch = str[i];
+    if (escape) {
+      escape = false;
+      continue;
+    }
+    if (ch === "\\" && inString) {
+      escape = true;
+      continue;
+    }
+    if (ch === '"') {
+      inString = !inString;
+      continue;
+    }
+    if (inString) continue;
+    if (ch === "{" || ch === "[") depth++;
+    else if (ch === "}" || ch === "]") {
+      depth--;
+      if (depth === 0) lastSafePos = i;
+    }
+  }
+
+  if (lastSafePos > 0) {
+    return str.slice(0, lastSafePos + 1);
+  }
+  return null;
+}
+
 function parseLLMOutput(raw: string): LLMOutput {
   const cleaned = stripCodeFences(raw);
   let parsed: unknown;
   try {
     parsed = JSON.parse(cleaned);
   } catch (err) {
-    throw new Error(`LLM did not return valid JSON: ${(err as Error).message}\n\nRaw response:\n${raw.slice(0, 500)}`);
+    // Attempt salvage for truncated JSON
+    const repaired = tryRepairJson(cleaned);
+    if (repaired) {
+      try {
+        parsed = JSON.parse(repaired);
+        console.warn("⚠ LLM response was truncated; salvaged with JSON repair");
+      } catch {
+        throw new Error(
+          `LLM did not return valid JSON (repair failed): ${(err as Error).message}\n\nLast 500 chars:\n${raw.slice(-500)}`
+        );
+      }
+    } else {
+      throw new Error(
+        `LLM did not return valid JSON: ${(err as Error).message}\n\nFirst 300 chars:\n${raw.slice(0, 300)}\n\nLast 300 chars:\n${raw.slice(-300)}`
+      );
+    }
   }
   if (typeof parsed !== "object" || parsed === null) {
     throw new Error("LLM response is not an object");

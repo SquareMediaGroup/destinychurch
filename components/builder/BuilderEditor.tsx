@@ -9,6 +9,7 @@ import Canvas from "./Canvas";
 import CanvasToolbar from "./CanvasToolbar";
 import PropertiesPanel from "./PropertiesPanel";
 import ElementTree from "./ElementTree";
+import AIAssistant from "./AIAssistant";
 import BreakpointToolbar, { BREAKPOINT_WIDTHS, type Breakpoint } from "./BreakpointToolbar";
 
 type Props = {
@@ -23,6 +24,7 @@ export default function BuilderEditor({ initialPage }: Props) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [saveState, setSaveState] = useState<SaveState>("idle");
   const [showLayers, setShowLayers] = useState(false);
+  const [showAssistant, setShowAssistant] = useState(false);
   const [breakpoint, setBreakpoint] = useState<Breakpoint>("desktop");
 
   const selectedElement = useMemo<BuilderElement | null>(() => {
@@ -65,6 +67,17 @@ export default function BuilderEditor({ initialPage }: Props) {
   const handleReorder = useCallback((draggedId: string, targetId: string, position: "before" | "after") => {
     setLayout((prev) => reorderElement(prev, draggedId, targetId, position));
   }, []);
+
+  const handleInsertFromAI = useCallback((element: BuilderElement, position: "after" | "end") => {
+    if (position === "end") {
+      setLayout((prev) => [...prev, element]);
+    } else if (selectedId) {
+      setLayout((prev) => insertAfterElement(prev, selectedId, element));
+    } else {
+      setLayout((prev) => [...prev, element]);
+    }
+    setSelectedId(element.id);
+  }, [selectedId]);
 
   const handleStatusChange = useCallback(
     async (status: "draft" | "published" | "archived") => {
@@ -246,14 +259,45 @@ export default function BuilderEditor({ initialPage }: Props) {
           </div>
         </main>
 
-        {/* Right: properties */}
-        <aside className="w-64 shrink-0 border-l border-white/5">
-          <PropertiesPanel
-            element={selectedElement}
-            onUpdate={handleUpdate}
-            onDelete={handleDelete}
-            onDuplicate={handleDuplicate}
-          />
+        {/* Right: properties or AI assistant */}
+        <aside className="w-80 shrink-0 border-l border-white/5 flex flex-col">
+          {showAssistant ? (
+            <AIAssistant
+              pageId={page.id || ""}
+              pageType={page.title?.split(" ")[0]?.toLowerCase() || "page"}
+              currentElements={layout}
+              onInsertElement={handleInsertFromAI}
+            />
+          ) : (
+            <PropertiesPanel
+              element={selectedElement}
+              onUpdate={handleUpdate}
+              onDelete={handleDelete}
+              onDuplicate={handleDuplicate}
+            />
+          )}
+          <div className="border-t border-white/5 p-2 flex gap-1">
+            <button
+              onClick={() => setShowAssistant(false)}
+              className={`flex-1 px-2 py-1 text-xs rounded ${
+                !showAssistant
+                  ? "bg-white/10 text-white"
+                  : "text-white/50 hover:text-white/70"
+              }`}
+            >
+              Properties
+            </button>
+            <button
+              onClick={() => setShowAssistant(true)}
+              className={`flex-1 px-2 py-1 text-xs rounded ${
+                showAssistant
+                  ? "bg-white/10 text-white"
+                  : "text-white/50 hover:text-white/70"
+              }`}
+            >
+              ✨ AI
+            </button>
+          </div>
         </aside>
       </div>
     </div>
@@ -383,4 +427,12 @@ function cloneWithNewIds(el: BuilderElement): BuilderElement {
     id: newId(),
     children: el.children?.map(cloneWithNewIds),
   };
+}
+
+function insertAfterElement(
+  layout: BuilderElement[],
+  targetId: string,
+  newEl: BuilderElement,
+): BuilderElement[] {
+  return insertNear(layout, targetId, newEl, "after");
 }

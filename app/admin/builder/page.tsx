@@ -113,14 +113,23 @@ export default function BuilderListPage() {
             Create and manage custom pages with the visual builder.
           </p>
         </div>
-        <button
-          type="button"
-          onClick={() => setShowNew(true)}
-          className="inline-flex items-center gap-2 rounded-xl bg-destiny-orange px-5 py-2.5 text-sm font-bold text-white shadow-sm shadow-destiny-orange/20 transition hover:brightness-110"
-        >
-          <span className="material-symbols-rounded text-base">add</span>
-          New page
-        </button>
+        <div className="flex gap-2">
+          <Link
+            href="/admin/builder/ai"
+            className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-bold text-white shadow-sm shadow-blue-600/20 transition hover:brightness-110"
+          >
+            <span className="material-symbols-rounded text-base">sparkles</span>
+            Create with AI
+          </Link>
+          <button
+            type="button"
+            onClick={() => setShowNew(true)}
+            className="inline-flex items-center gap-2 rounded-xl bg-destiny-orange px-5 py-2.5 text-sm font-bold text-white shadow-sm shadow-destiny-orange/20 transition hover:brightness-110"
+          >
+            <span className="material-symbols-rounded text-base">add</span>
+            New page
+          </button>
+        </div>
       </div>
 
       {showNew && (

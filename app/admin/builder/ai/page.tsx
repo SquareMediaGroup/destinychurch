@@ -44,6 +44,96 @@ const EXAMPLES = [
     pageType: "Get involved",
     audience: "general",
   },
+  {
+    label: "Christmas services",
+    text: "Christmas services page covering Christmas Eve carols, Christmas Day family service, and a New Year's gathering. Include times, what to bring, kids info, and a 'invite a friend' CTA. Warm and inviting tone.",
+    pageType: "Seasonal event",
+    audience: "families",
+  },
+  {
+    label: "Easter weekend",
+    text: "Easter weekend page covering Good Friday reflection, Saturday prayer night, and Sunday celebration services. Mention egg hunts for kids after Sunday morning. Hopeful, joyful tone.",
+    pageType: "Seasonal event",
+    audience: "families",
+  },
+  {
+    label: "Marriage course",
+    text: "Page for our 7-week Marriage Course. Aimed at couples at any stage. Include what each session covers, dates, cost, childcare available, and a sign-up CTA. Sincere, no-pressure tone.",
+    pageType: "Course",
+    audience: "young-adults",
+  },
+  {
+    label: "Parenting course",
+    text: "Page for the Parenting Children Course (5-11 year olds). Cover what's included, dates, childcare, and a sign-up form. Reassuring tone — no perfect parents needed.",
+    pageType: "Course",
+    audience: "families",
+  },
+  {
+    label: "Baptism Sunday",
+    text: "Page explaining baptism — what it means, what to expect on the day, who can be baptised, FAQ, and a form to sign up for the next baptism Sunday. Include a few short testimonies if possible.",
+    pageType: "Sacrament",
+    audience: "general",
+  },
+  {
+    label: "Membership pathway",
+    text: "Page describing our 4-week membership journey. Cover what membership means, the steps involved, when classes meet, and a CTA to register. Clear and motivating.",
+    pageType: "Membership",
+    audience: "general",
+  },
+  {
+    label: "Prayer ministry",
+    text: "Page for our prayer ministry. Cover the weekly prayer night, the prayer wall, how to submit a prayer request, and how to join the prayer team. Calm, trustworthy tone.",
+    pageType: "Ministry",
+    audience: "general",
+  },
+  {
+    label: "Youth weekend away",
+    text: "Page for the youth weekend away (ages 11-18) at a retreat centre. Include dates, cost, what to pack, transport details, leader contacts, and a sign-up form with parental consent.",
+    pageType: "Event",
+    audience: "students",
+  },
+  {
+    label: "Kids summer holiday club",
+    text: "Page for our 5-day kids summer holiday club for ages 5-11. Include theme, daily timings, cost, what to bring, lunch info, and a sign-up CTA. Playful, fun tone.",
+    pageType: "Event",
+    audience: "kids",
+  },
+  {
+    label: "Small groups directory",
+    text: "Page listing our small groups by location, day of the week, and life stage (students, young adults, families, seniors). Include a CTA to find a group near me. Welcoming tone.",
+    pageType: "Connect",
+    audience: "general",
+  },
+  {
+    label: "Senior's tea & community",
+    text: "Page for our weekly senior's tea & community gathering. Cover what happens, who's welcome, transport help available, and a contact for questions. Warm, friendly tone.",
+    pageType: "Community",
+    audience: "seniors",
+  },
+  {
+    label: "Mission trip — Uganda",
+    text: "Page for the upcoming Uganda mission trip. Cover the partner ministry, what the team will do, the dates, the fundraising target, and how to apply or support a team member. Hopeful, mission-focused tone.",
+    pageType: "Missions",
+    audience: "young-adults",
+  },
+  {
+    label: "Foodbank partnership",
+    text: "Page for our local foodbank partnership. Cover what we collect, drop-off times, how to volunteer, and how to refer someone in need. Compassionate, practical tone.",
+    pageType: "Outreach",
+    audience: "general",
+  },
+  {
+    label: "Annual report",
+    text: "Page summarising last year at Destiny Church — key milestones, baptisms, new members, ministries launched, and finances overview. Include a thank-you note from the lead pastor.",
+    pageType: "Report",
+    audience: "general",
+  },
+  {
+    label: "Pastoral care",
+    text: "Page explaining how to access pastoral support — listening prayer, life crisis help, hospital visits, bereavement support. Include a confidential contact form. Gentle, trustworthy tone.",
+    pageType: "Care",
+    audience: "general",
+  },
 ];
 
 export default function AIPageCreatorPage() {

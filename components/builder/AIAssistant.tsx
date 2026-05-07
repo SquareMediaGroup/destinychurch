@@ -64,7 +64,7 @@ export default function AIAssistant({
     <div className="w-full md:w-80 bg-white border-l border-gray-200 flex flex-col">
       {/* Header */}
       <div
-        className="flex items-center justify-between p-4 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50 cursor-pointer"
+        className="flex items-center justify-between p-4 border-b border-gray-200 bg-gradient-to-r from-destiny-orange/5 to-destiny-orange/10 cursor-pointer"
         onClick={() => setExpanded(!expanded)}
       >
         <div className="flex items-center gap-2">
@@ -80,8 +80,8 @@ export default function AIAssistant({
       {expanded && (
         <div className="flex-1 overflow-y-auto p-4 space-y-4">
           {/* Instructions */}
-          <div className="text-xs text-gray-600 bg-blue-50 p-3 rounded-lg">
-            <p className="font-semibold mb-1">Need help?</p>
+          <div className="text-xs text-destiny-grey bg-destiny-orange/5 p-3 rounded-lg">
+            <p className="font-semibold text-destiny-orange mb-1">Need help?</p>
             <p>Describe what section you'd like to add, and AI will suggest something that works with your current layout.</p>
           </div>
 
@@ -98,7 +98,7 @@ export default function AIAssistant({
             <button
               type="submit"
               disabled={loading || !context.trim()}
-              className="w-full px-3 py-2 bg-blue-600 text-white text-sm font-semibold rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+              className="w-full px-3 py-2 bg-destiny-orange text-white text-sm font-semibold rounded-lg hover:brightness-110 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
             >
               {loading ? "Suggesting..." : "Suggest Section"}
             </button>
@@ -113,12 +113,12 @@ export default function AIAssistant({
 
           {/* Suggestion */}
           {suggestion && (
-            <div className="bg-green-50 border border-green-200 rounded-lg p-4 space-y-3">
+            <div className="bg-destiny-orange/5 border border-destiny-orange/30 rounded-lg p-4 space-y-3">
               <div>
-                <p className="text-xs font-semibold text-green-900 uppercase tracking-wide">
+                <p className="text-xs font-semibold text-destiny-orange uppercase tracking-wide">
                   Suggested Component
                 </p>
-                <p className="text-lg font-bold text-green-900 mt-1">
+                <p className="text-lg font-bold text-destiny-orange mt-1">
                   {suggestion.type}
                 </p>
               </div>
@@ -139,7 +139,7 @@ export default function AIAssistant({
               <div className="flex gap-2 pt-2">
                 <button
                   onClick={handleInsert}
-                  className="flex-1 px-3 py-2 bg-green-600 text-white text-sm font-semibold rounded hover:bg-green-700 transition-colors"
+                  className="flex-1 px-3 py-2 bg-destiny-orange text-white text-sm font-semibold rounded hover:brightness-110 transition-colors"
                 >
                   Insert
                 </button>
@@ -155,11 +155,11 @@ export default function AIAssistant({
 
           {/* Tips */}
           {!suggestion && (
-            <div className="bg-gray-50 rounded-lg p-3 space-y-2">
-              <p className="text-xs font-semibold text-gray-700 uppercase tracking-wide">
+            <div className="bg-destiny-orange/5 rounded-lg p-3 space-y-2">
+              <p className="text-xs font-semibold text-destiny-orange uppercase tracking-wide">
                 Pro Tips
               </p>
-              <ul className="text-xs text-gray-600 space-y-1">
+              <ul className="text-xs text-destiny-grey space-y-1">
                 <li>• Be specific ("call to action button" not just "button")</li>
                 <li>• Mention the purpose or audience</li>
                 <li>• AI respects your design system</li>

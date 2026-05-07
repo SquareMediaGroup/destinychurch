@@ -78,7 +78,7 @@ export default function AIPageCreatorPage() {
         <div className="mb-8">
           <Link
             href="/admin/builder"
-            className="text-sm text-blue-600 hover:text-blue-700 mb-4 inline-block"
+            className="text-sm text-destiny-orange hover:text-destiny-orange/80 mb-4 inline-block"
           >
             ← Back to Pages
           </Link>
@@ -116,7 +116,7 @@ export default function AIPageCreatorPage() {
               value={pageType}
               onChange={(e) => setPageType(e.target.value)}
               disabled={loading}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-destiny-orange focus:border-transparent disabled:bg-gray-100"
             >
               {PAGE_TYPES.map((pt) => (
                 <option key={pt.id} value={pt.id}>
@@ -159,7 +159,7 @@ export default function AIPageCreatorPage() {
               value={audience}
               onChange={(e) => setAudience(e.target.value)}
               disabled={loading}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-destiny-orange focus:border-transparent disabled:bg-gray-100"
             >
               {AUDIENCES.map((aud) => (
                 <option key={aud.id} value={aud.id}>
@@ -186,7 +186,7 @@ export default function AIPageCreatorPage() {
                   checked={urgency === "standard"}
                   onChange={(e) => setUrgency(e.target.value as "standard")}
                   disabled={loading}
-                  className="w-4 h-4 text-blue-600"
+                  className="w-4 h-4 text-destiny-orange accent-destiny-orange"
                 />
                 <span className="ml-3 text-gray-700">Standard (high quality)</span>
               </label>
@@ -198,7 +198,7 @@ export default function AIPageCreatorPage() {
                   checked={urgency === "immediate"}
                   onChange={(e) => setUrgency(e.target.value as "immediate")}
                   disabled={loading}
-                  className="w-4 h-4 text-blue-600"
+                  className="w-4 h-4 text-destiny-orange accent-destiny-orange"
                 />
                 <span className="ml-3 text-gray-700">Immediate (quick draft)</span>
               </label>
@@ -210,7 +210,7 @@ export default function AIPageCreatorPage() {
             <button
               type="submit"
               disabled={loading || !context.trim()}
-              className="flex-1 px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+              className="flex-1 px-6 py-3 bg-destiny-orange text-white font-semibold rounded-lg hover:brightness-110 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
             >
               {loading ? "Generating..." : "Generate Page"}
             </button>
@@ -223,9 +223,9 @@ export default function AIPageCreatorPage() {
           </div>
 
           {/* Info Box */}
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mt-8">
-            <h3 className="font-semibold text-blue-900 mb-2">How this works</h3>
-            <ul className="text-sm text-blue-800 space-y-1">
+          <div className="bg-destiny-orange/5 border border-destiny-orange/20 rounded-lg p-4 mt-8">
+            <h3 className="font-semibold text-destiny-orange mb-2">How this works</h3>
+            <ul className="text-sm text-destiny-grey space-y-1">
               <li>✓ AI generates a page structure using your approved components</li>
               <li>✓ All design elements match your church's brand system</li>
               <li>✓ You can edit and refine the page after generation</li>

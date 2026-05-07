@@ -155,6 +155,7 @@ export default function AIPageCreatorPage() {
     success: boolean;
     runUrl?: string;
   } | null>(null);
+  const [showAllExamples, setShowAllExamples] = useState(false);
 
   const charCount = context.length;
   const charLimit = 2000;
@@ -430,7 +431,7 @@ export default function AIPageCreatorPage() {
                 Or start from an example
               </p>
               <div className="flex flex-wrap gap-2">
-                {EXAMPLES.map((ex) => (
+                {(showAllExamples ? EXAMPLES : EXAMPLES.slice(0, 4)).map((ex) => (
                   <button
                     key={ex.label}
                     type="button"
@@ -444,6 +445,20 @@ export default function AIPageCreatorPage() {
                     {ex.label}
                   </button>
                 ))}
+                {EXAMPLES.length > 4 && (
+                  <button
+                    type="button"
+                    onClick={() => setShowAllExamples((v) => !v)}
+                    className="group inline-flex items-center gap-1.5 rounded-full border border-dashed border-destiny-orange/40 bg-destiny-orange/5 px-3.5 py-1.5 text-xs font-bold text-destiny-orange transition hover:-translate-y-0.5 hover:bg-destiny-orange/10"
+                  >
+                    <span className="material-symbols-rounded text-sm transition group-hover:scale-110">
+                      {showAllExamples ? "expand_less" : "expand_more"}
+                    </span>
+                    {showAllExamples
+                      ? "Show fewer"
+                      : `Show ${EXAMPLES.length - 4} more`}
+                  </button>
+                )}
               </div>
             </div>
           </Section>

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import MediaUploader from "@/components/builder/MediaUploader";
+import WorkflowProgress from "@/components/builder/WorkflowProgress";
 import { getSupabaseBrowserClient } from "@/lib/supabase-browser";
 import type { MediaItem } from "@/lib/ai/media-types";
 
@@ -25,6 +26,7 @@ export default function AIPageCreatorPage() {
   const [media, setMedia] = useState<MediaItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [authToken, setAuthToken] = useState<string>("");
   const [queued, setQueued] = useState<{
     runId?: number;
     runUrl?: string;
@@ -45,6 +47,8 @@ export default function AIPageCreatorPage() {
       if (!token) {
         throw new Error("Not authenticated. Please log in and try again.");
       }
+
+      setAuthToken(token);
 
       const response = await fetch("/api/admin/builder/ai/generate-code", {
         method: "POST",
@@ -118,28 +122,25 @@ export default function AIPageCreatorPage() {
             </div>
           )}
 
-          {/* Queued Alert */}
-          {queued && (
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 space-y-2">
-              <p className="text-blue-700 font-semibold">
-                ⏳ Page generation queued on GitHub Actions
-              </p>
-              <p className="text-sm text-destiny-grey">
-                {queued.message}
-              </p>
-              {queued.runUrl && (
-                <a
-                  href={queued.runUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-block mt-2 px-4 py-2 bg-destiny-orange text-white text-sm font-semibold rounded-lg hover:brightness-110"
-                >
-                  View Workflow Run →
-                </a>
-              )}
-              <p className="text-xs text-destiny-grey/60">
-                Check GitHub Actions for real-time progress. An audit email will be sent when complete.
-              </p>
+          {/* Workflow Progress */}
+          {queued && queued.runId && (
+            <div className="rounded-2xl border border-black/5 bg-white shadow-sm p-6">
+              <WorkflowProgress
+                runId={queued.runId}
+                runUrl={queued.runUrl || ""}
+                ghToken={authToken}
+                onComplete={(success) => {
+                  if (success) {
+                    setTimeout(() => {
+                      setQueued(null);
+                      setContext("");
+                      setPageType("");
+                      setAudience("general");
+                      setMedia([]);
+                    }, 2000);
+                  }
+                }}
+              />
             </div>
           )}
 

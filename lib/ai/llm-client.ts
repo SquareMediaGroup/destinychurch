@@ -13,8 +13,8 @@ export class VercelAIGatewayClient implements LLMClient {
 
   constructor(
     apiKey: string,
-    modelId: string = "claude-3-5-sonnet-20241022",
-    gatewayUrl: string = "https://api.vercel.ai/v1"
+    modelId: string = "anthropic/claude-sonnet-4-5",
+    gatewayUrl: string = "https://ai-gateway.vercel.sh/v1"
   ) {
     if (!apiKey) {
       throw new Error("VERCEL_AI_GATEWAY_TOKEN is required");
@@ -50,14 +50,43 @@ export class VercelAIGatewayClient implements LLMClient {
     });
 
     if (!response.ok) {
-      const error = await response.json();
-      const message = error.error?.message || error.message || "Unknown error";
-      throw new Error(`Vercel AI Gateway error: ${message}`);
+      const contentType = response.headers.get("content-type");
+      let errorMsg = `HTTP ${response.status}`;
+
+      try {
+        if (contentType?.includes("application/json")) {
+          const error = await response.json() as { error?: { message?: string }; message?: string };
+          errorMsg = error.error?.message || error.message || errorMsg;
+        } else {
+          const text = await response.text();
+          errorMsg = text.slice(0, 300);
+        }
+      } catch {
+        // If we can't parse error response, use status
+      }
+
+      throw new Error(`Vercel AI Gateway error (${response.status}): ${errorMsg}`);
     }
 
-    const data = (await response.json()) as {
-      choices: Array<{ message: { content: string } }>;
-    };
+    const contentType = response.headers.get("content-type");
+    if (!contentType?.includes("application/json")) {
+      const text = await response.text();
+      throw new Error(`Expected JSON response but got ${contentType || "unknown type"}: ${text.slice(0, 300)}`);
+    }
+
+    let data;
+    try {
+      data = (await response.json()) as {
+        choices: Array<{ message: { content: string } }>;
+      };
+    } catch (err) {
+      throw new Error(`Failed to parse JSON response: ${err instanceof Error ? err.message : "Unknown error"}`);
+    }
+
+    if (!data.choices?.[0]?.message?.content) {
+      throw new Error("Invalid response structure: missing content");
+    }
+
     return data.choices[0].message.content;
   }
 }
@@ -214,7 +243,7 @@ export class MockLLMClient implements LLMClient {
 export function createLLMClient(): LLMClient {
   const provider = process.env.AI_PROVIDER || "vercel";
   const vercelToken = process.env.VERCEL_AI_GATEWAY_TOKEN;
-  const vercelModel = process.env.VERCEL_AI_MODEL || "claude-3-5-sonnet-20241022";
+  const vercelModel = process.env.VERCEL_AI_MODEL || "anthropic/claude-sonnet-4-5";
 
   // Use mock client if explicitly requested or if no keys are available
   if (provider === "mock") {

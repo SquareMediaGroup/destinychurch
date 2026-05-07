@@ -57,18 +57,18 @@ export default function AIPageCreatorPage() {
       });
 
       if (!response.ok) {
-        const data = (await response.json()) as { error?: string };
-        throw new Error(data.error || "Failed to generate page");
+        const errorData = (await response.json()) as { error?: string };
+        throw new Error(errorData.error || "Failed to generate page");
       }
 
-      const data = (await response.json()) as {
+      const pageData = (await response.json()) as {
         id: string;
         editUrl: string;
       };
       setSuccess(true);
 
       setTimeout(() => {
-        router.push(data.editUrl);
+        router.push(pageData.editUrl);
       }, 1000);
     } catch (err) {
       setError(err instanceof Error ? err.message : "An error occurred");

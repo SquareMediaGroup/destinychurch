@@ -3,82 +3,38 @@ export interface LLMClient {
 }
 
 /**
- * Anthropic Claude LLM Client
+ * Vercel AI Gateway LLM Client
+ * Unified interface for Claude via Vercel's platform
  */
-export class AnthropicLLMClient implements LLMClient {
+export class VercelAIGatewayClient implements LLMClient {
   private apiKey: string;
   private modelId: string;
+  private gatewayUrl: string;
 
-  constructor(apiKey: string, modelId: string = "claude-3-5-sonnet-20241022") {
+  constructor(
+    apiKey: string,
+    modelId: string = "claude-3-5-sonnet-20241022",
+    gatewayUrl: string = "https://api.vercel.ai/v1"
+  ) {
     if (!apiKey) {
-      throw new Error("ANTHROPIC_API_KEY is required");
+      throw new Error("VERCEL_AI_GATEWAY_TOKEN is required");
     }
     this.apiKey = apiKey;
     this.modelId = modelId;
+    this.gatewayUrl = gatewayUrl;
   }
 
   async generatePageStructure(prompt: string): Promise<string> {
-    const response = await fetch("https://api.anthropic.com/v1/messages", {
+    const response = await fetch(`${this.gatewayUrl}/chat/completions`, {
       method: "POST",
       headers: {
-        "x-api-key": this.apiKey,
-        "anthropic-version": "2023-06-01",
-        "content-type": "application/json",
-      },
-      body: JSON.stringify({
-        model: this.modelId,
-        max_tokens: 4096,
-        system: `You are an expert church website designer. Your job is to create page structures using pre-built semantic components. Always respond with ONLY valid JSON, no markdown, no explanation.`,
-        messages: [
-          {
-            role: "user",
-            content: prompt,
-          },
-        ],
-      }),
-    });
-
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(`Anthropic API error: ${error.error?.message || "Unknown error"}`);
-    }
-
-    const data = (await response.json()) as { content: Array<{ type: string; text: string }> };
-    const content = data.content[0];
-
-    if (content.type !== "text") {
-      throw new Error("Unexpected response format from Anthropic API");
-    }
-
-    return content.text;
-  }
-}
-
-/**
- * OpenAI GPT LLM Client
- */
-export class OpenAILLMClient implements LLMClient {
-  private apiKey: string;
-  private modelId: string;
-
-  constructor(apiKey: string, modelId: string = "gpt-4o-mini") {
-    if (!apiKey) {
-      throw new Error("OPENAI_API_KEY is required");
-    }
-    this.apiKey = apiKey;
-    this.modelId = modelId;
-  }
-
-  async generatePageStructure(prompt: string): Promise<string> {
-    const response = await fetch("https://api.openai.com/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${this.apiKey}`,
+        Authorization: `Bearer ${this.apiKey}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
         model: this.modelId,
         max_tokens: 4096,
+        temperature: 0.7,
         messages: [
           {
             role: "system",
@@ -95,7 +51,8 @@ export class OpenAILLMClient implements LLMClient {
 
     if (!response.ok) {
       const error = await response.json();
-      throw new Error(`OpenAI API error: ${error.error?.message || "Unknown error"}`);
+      const message = error.error?.message || error.message || "Unknown error";
+      throw new Error(`Vercel AI Gateway error: ${message}`);
     }
 
     const data = (await response.json()) as {
@@ -104,6 +61,7 @@ export class OpenAILLMClient implements LLMClient {
     return data.choices[0].message.content;
   }
 }
+
 
 /**
  * Mock LLM Client for testing (returns predefined page structures)
@@ -251,30 +209,25 @@ export class MockLLMClient implements LLMClient {
 
 /**
  * Factory function to create appropriate LLM client based on env vars
+ * Defaults to Vercel AI Gateway for Claude Sonnet
  */
 export function createLLMClient(): LLMClient {
-  const provider = process.env.AI_PROVIDER || "anthropic";
-  const anthropicKey = process.env.ANTHROPIC_API_KEY;
-  const openaiKey = process.env.OPENAI_API_KEY;
+  const provider = process.env.AI_PROVIDER || "vercel";
+  const vercelToken = process.env.VERCEL_AI_GATEWAY_TOKEN;
+  const vercelModel = process.env.VERCEL_AI_MODEL || "claude-3-5-sonnet-20241022";
 
   // Use mock client if explicitly requested or if no keys are available
-  if (provider === "mock" || (!anthropicKey && !openaiKey)) {
-    console.warn("Using mock LLM client. Set AI_PROVIDER and relevant API keys to use real LLMs.");
+  if (provider === "mock") {
+    console.warn("Using mock LLM client. Set VERCEL_AI_GATEWAY_TOKEN to use real Claude Sonnet.");
     return new MockLLMClient();
   }
 
-  if (provider === "anthropic") {
-    if (!anthropicKey) {
-      throw new Error("ANTHROPIC_API_KEY env var is required when AI_PROVIDER=anthropic");
+  if (provider === "vercel") {
+    if (!vercelToken) {
+      console.warn("VERCEL_AI_GATEWAY_TOKEN not set. Falling back to mock LLM client.");
+      return new MockLLMClient();
     }
-    return new AnthropicLLMClient(anthropicKey);
-  }
-
-  if (provider === "openai") {
-    if (!openaiKey) {
-      throw new Error("OPENAI_API_KEY env var is required when AI_PROVIDER=openai");
-    }
-    return new OpenAILLMClient(openaiKey);
+    return new VercelAIGatewayClient(vercelToken, vercelModel);
   }
 
   throw new Error(`Unknown AI_PROVIDER: ${provider}`);

@@ -2,19 +2,20 @@
 
 import { useActionState, useEffect } from "react";
 import Image from "next/image";
-import Link from "next/link";
-import { adminSignIn } from "./actions";
+import { useRouter } from "next/navigation";
+import { resetPassword } from "./actions";
 
 const initialState = { success: false, error: undefined as string | undefined };
 
-export default function AdminLoginPage() {
-  const [state, formAction, pending] = useActionState(adminSignIn, initialState);
+export default function ResetPasswordPage() {
+  const router = useRouter();
+  const [state, formAction, pending] = useActionState(resetPassword, initialState);
 
   useEffect(() => {
     if (state.success) {
-      window.location.href = "/admin/redirects";
+      router.push("/admin/login");
     }
-  }, [state.success]);
+  }, [state.success, router]);
 
   return (
     <div className="relative flex min-h-screen w-full overflow-hidden bg-destiny-grey">
@@ -28,7 +29,6 @@ export default function AdminLoginPage() {
       {/* Content */}
       <div className="relative z-10 flex w-full flex-col items-center justify-center px-4 pt-32 pb-16">
         <div className="w-full max-w-md">
-
           {/* Logo */}
           <div className="mb-10 flex justify-center">
             <div className="relative h-10 w-[190px]">
@@ -46,13 +46,13 @@ export default function AdminLoginPage() {
           {/* Heading */}
           <div className="mb-8 text-center">
             <span className="mb-3 inline-block rounded-full bg-destiny-orange/15 px-4 py-1.5 text-xs font-bold uppercase tracking-widest text-destiny-orange">
-              Admin Portal
+              Set New Password
             </span>
             <h1 className="text-3xl font-black text-white md:text-4xl">
-              Welcome back
+              Create a new password
             </h1>
             <p className="mt-2 text-sm text-white/40">
-              Sign in to manage Destiny Church
+              Enter a strong password to secure your admin account.
             </p>
           </div>
 
@@ -61,43 +61,37 @@ export default function AdminLoginPage() {
             <form action={formAction} className="flex flex-col gap-5">
               <div>
                 <label className="mb-2 block text-xs font-bold uppercase tracking-wider text-white/40">
-                  Email
+                  New password
                 </label>
                 <input
-                  type="email"
-                  name="email"
-                  autoComplete="email"
+                  type="password"
+                  name="password"
+                  autoComplete="new-password"
                   required
-                  placeholder="you@example.com"
+                  placeholder="At least 8 characters"
                   className="w-full rounded-2xl border border-white/10 bg-white/5 px-5 py-3.5 text-sm text-white placeholder:text-white/20 transition focus:border-destiny-orange/50 focus:outline-none focus:ring-2 focus:ring-destiny-orange/20"
                 />
               </div>
 
               <div>
-                <div className="mb-2 flex items-center justify-between">
-                  <label className="block text-xs font-bold uppercase tracking-wider text-white/40">
-                    Password
-                  </label>
-                  <Link
-                    href="/admin/forgot-password"
-                    className="text-xs font-bold text-destiny-orange hover:brightness-110"
-                  >
-                    Forgot?
-                  </Link>
-                </div>
+                <label className="mb-2 block text-xs font-bold uppercase tracking-wider text-white/40">
+                  Confirm password
+                </label>
                 <input
                   type="password"
-                  name="password"
-                  autoComplete="current-password"
+                  name="confirmPassword"
+                  autoComplete="new-password"
                   required
-                  placeholder="Password"
+                  placeholder="Confirm your password"
                   className="w-full rounded-2xl border border-white/10 bg-white/5 px-5 py-3.5 text-sm text-white placeholder:text-white/20 transition focus:border-destiny-orange/50 focus:outline-none focus:ring-2 focus:ring-destiny-orange/20"
                 />
               </div>
 
               {state.error && (
                 <div className="flex items-center gap-3 rounded-2xl bg-red-500/10 px-4 py-3 text-sm text-red-400">
-                  <span className="material-symbols-rounded text-base">error</span>
+                  <span className="material-symbols-rounded text-base">
+                    error
+                  </span>
                   {state.error}
                 </div>
               )}
@@ -107,11 +101,10 @@ export default function AdminLoginPage() {
                 disabled={pending}
                 className="mt-1 rounded-2xl bg-destiny-orange px-6 py-3.5 text-sm font-bold text-white shadow-lg shadow-destiny-orange/25 transition hover:brightness-110 disabled:opacity-60"
               >
-                {pending ? "Signing in…" : "Sign in"}
+                {pending ? "Resetting password…" : "Reset password"}
               </button>
             </form>
           </div>
-
         </div>
       </div>
     </div>

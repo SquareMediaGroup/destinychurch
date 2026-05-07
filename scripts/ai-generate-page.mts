@@ -38,8 +38,18 @@ async function main() {
   }
 
   console.log("📝 Generating page...");
-  const llm = new VercelAIGatewayClient(process.env.VERCEL_AI_GATEWAY_TOKEN!);
-  const generated = await generatePageCode({ context, pageType, audience, media }, llm);
+  if (!process.env.VERCEL_AI_GATEWAY_TOKEN) {
+    throw new Error("VERCEL_AI_GATEWAY_TOKEN is required but not set");
+  }
+  const llm = new VercelAIGatewayClient(process.env.VERCEL_AI_GATEWAY_TOKEN);
+  let generated;
+  try {
+    generated = await generatePageCode({ context, pageType, audience, media }, llm);
+  } catch (err) {
+    const errorMsg = err instanceof Error ? err.message : String(err);
+    console.error("LLM generation failed:", errorMsg);
+    throw err;
+  }
   console.log(`✓ Generated: ${generated.title}`);
 
   console.log("📝 Writing files...");

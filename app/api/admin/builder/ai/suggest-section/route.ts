@@ -19,21 +19,23 @@ export async function POST(req: NextRequest) {
 
     const { pageType, currentElements, context } = body as Record<string, unknown>;
 
-    // Validate required fields
-    if (!pageType || !context) {
+    if (!context) {
       return NextResponse.json(
-        { error: "pageType and context are required" },
+        { error: "context is required" },
         { status: 400 }
       );
     }
 
-    if (
-      typeof pageType !== "string" ||
-      typeof context !== "string" ||
-      !Array.isArray(currentElements)
-    ) {
+    if (typeof context !== "string" || !Array.isArray(currentElements)) {
       return NextResponse.json(
         { error: "Invalid field types" },
+        { status: 400 }
+      );
+    }
+
+    if (pageType !== undefined && typeof pageType !== "string") {
+      return NextResponse.json(
+        { error: "pageType must be a string when provided" },
         { status: 400 }
       );
     }
@@ -42,7 +44,7 @@ export async function POST(req: NextRequest) {
     const llmClient = getLLMClient();
     const suggestedElement = await suggestSectionForPage(
       {
-        pageType,
+        pageType: typeof pageType === "string" && pageType.trim() ? pageType.trim() : undefined,
         currentElements: currentElements as BuilderElement[],
         description: context,
       },

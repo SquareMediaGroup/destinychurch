@@ -1,12 +1,14 @@
 import { ELEMENT_REGISTRY } from "@/lib/builder/registry";
 import { PROPS_SCHEMAS, validateComponentProps } from "@/lib/builder/props-schema";
 import type { BuilderElement, ElementType } from "@/lib/builder/types";
+import type { MediaItem } from "@/lib/ai/media-types";
 
 export interface PageIntent {
-  pageType: string; // "alpha", "about", "giving", etc.
-  context: string; // Free-form volunteer description
+  pageType?: string; // Optional - AI infers from context if not provided
+  context: string; // Free-form volunteer description (required)
   audience?: string; // "students", "young adults", etc.
   urgency?: "standard" | "immediate";
+  media?: MediaItem[]; // Available images and videos for the page
 }
 
 export interface GeneratedPage {
@@ -47,6 +49,39 @@ Important rules:
 4. Generate valid JSON that matches the BuilderElement structure
 5. Each component should have appropriate props
 6. DO NOT invent custom HTML or CSS`;
+}
+
+// Build context about available media for the AI to reference
+function buildMediaContext(media?: MediaItem[]): string {
+  if (!media || media.length === 0) {
+    return "\nNo media uploaded. Use placeholder URLs or omit image/video props.";
+  }
+
+  const lines = media.map((item) => {
+    if (item.mediaType === "image") {
+      return `- Image (${item.purpose}): ${item.heroUrl} | Description: "${item.description || "no description"}" | Alt: "${item.altText || ""}"
+  Variants: hero=${item.heroUrl}, general=${item.generalUrl}, thumbnail=${item.thumbnailUrl}`;
+    } else {
+      return `- Video (${item.purpose}, ${item.sourceType}): ${item.externalUrl} | Description: "${item.description || "no description"}"`;
+    }
+  });
+
+  return `\nAvailable media to use in this page (USE THESE in image/video props):
+${lines.join("\n")}
+
+Match media to components by purpose:
+- "hero" purpose → use as backgroundImage in HeroSection or AboutHero
+- "background" → use in section backgrounds
+- "team" → use in MeetPastorsSection or TeamSection
+- "event" → use in event-related sections
+- "ministry" → use in MinistriesGrid or MagnifySection
+- "logo" → use sparingly, typically smaller placements
+- "general" → use for any contextual visual
+
+For images, prefer the appropriate variant URL:
+- Use heroUrl for full-width hero backgrounds
+- Use generalUrl for inline content images
+- Use thumbnailUrl for cards and small previews`;
 }
 
 // Generate slug from title
@@ -177,15 +212,18 @@ export async function generatePageFromIntent(
 ): Promise<GeneratedPage> {
   // Build the LLM prompt
   const componentContext = buildComponentContext();
+  const mediaContext = buildMediaContext(intent.media);
 
-  const systemPrompt = `You are an expert church website designer. Your job is to create page structures for a church website using pre-built semantic components.
+  const pageTypeLine = intent.pageType
+    ? `Page type: ${intent.pageType}`
+    : `Page type: Infer from context — pick the most appropriate church page type`;
+
+  const userPrompt = `Create a page structure for a church website.
 
 ${componentContext}
+${mediaContext}
 
-You MUST respond with ONLY valid JSON (no markdown, no explanation, just the JSON array).`;
-
-  const userPrompt = `Create a page structure for:
-Page type: ${intent.pageType}
+${pageTypeLine}
 Audience: ${intent.audience || "general"}
 Context: ${intent.context}
 ${intent.urgency === "immediate" ? "Urgency: Create something immediately useful" : ""}
@@ -203,6 +241,7 @@ Example:
     "props": {
       "title": "...",
       "subtitle": "...",
+      "backgroundImage": "[use hero image URL from media if available]",
       "ctas": [{"label": "...", "href": "..."}]
     }
   },
@@ -241,17 +280,26 @@ Example:
   }
 
   // Generate metadata
-  const title = `${intent.pageType.charAt(0).toUpperCase() + intent.pageType.slice(1)} ${
-    intent.audience ? `- ${intent.audience}` : ""
-  }`.trim();
+  const baseTitle = intent.pageType
+    ? intent.pageType.charAt(0).toUpperCase() + intent.pageType.slice(1)
+    : extractTitleFromContext(intent.context);
+  const title = `${baseTitle}${intent.audience ? ` - ${intent.audience}` : ""}`.trim();
   const slug = generateSlug(title);
 
   return {
     title,
     slug,
     elements,
-    reasoning: `Generated for ${intent.pageType} page targeting ${intent.audience || "general"} audience`,
+    reasoning: `Generated ${intent.pageType ? `for ${intent.pageType} page` : "from context"} targeting ${intent.audience || "general"} audience`,
   };
+}
+
+// Extract a likely title from free-form context when no pageType is provided
+function extractTitleFromContext(context: string): string {
+  // Take the first meaningful phrase, capped at ~40 chars
+  const words = context.trim().split(/\s+/).slice(0, 6).join(" ");
+  if (words.length < 3) return "New Page";
+  return words.length > 40 ? words.substring(0, 40) : words;
 }
 
 /**
@@ -259,15 +307,18 @@ Example:
  */
 export async function suggestSectionForPage(
   pageContext: {
-    pageType: string;
+    pageType?: string;
     currentElements: BuilderElement[];
     description: string;
   },
   llmClient: LLMClient
 ): Promise<BuilderElement> {
-  const currentTypes = pageContext.currentElements.map((el) => el.type).join(", ");
+  const currentTypes = pageContext.currentElements.map((el) => el.type).join(", ") || "none yet";
+  const pageTypeLabel = pageContext.pageType
+    ? `${pageContext.pageType} page`
+    : "page";
 
-  const prompt = `Given a page structure for a ${pageContext.pageType} page with components: ${currentTypes}
+  const prompt = `Given a ${pageTypeLabel} with components: ${currentTypes}
 
 User request: ${pageContext.description}
 

@@ -24,34 +24,38 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
     }
 
-    const { pageType, context, audience, urgency } = body as Record<string, unknown>;
+    const { pageType, context, audience, urgency, media } = body as Record<string, unknown>;
 
-    // Validate required fields
-    if (!pageType || !context) {
+    // Only context is required now; pageType is optional
+    if (!context) {
       return NextResponse.json(
-        { error: "pageType and context are required" },
+        { error: "context is required" },
         { status: 400 }
       );
     }
 
-    if (typeof pageType !== "string" || typeof context !== "string") {
+    if (typeof context !== "string") {
       return NextResponse.json(
-        { error: "pageType and context must be strings" },
+        { error: "context must be a string" },
         { status: 400 }
       );
     }
 
-    // Rate limiting (basic: 1 request per 5 seconds per user)
-    // In production, use Redis or similar
-    // For now, we'll skip this as it requires state management
+    if (pageType !== undefined && typeof pageType !== "string") {
+      return NextResponse.json(
+        { error: "pageType must be a string when provided" },
+        { status: 400 }
+      );
+    }
 
     // Create page intent
     const intent: PageIntent = {
-      pageType,
+      pageType: typeof pageType === "string" && pageType.trim() ? pageType.trim() : undefined,
       context,
       audience: typeof audience === "string" ? audience : undefined,
       urgency:
         urgency === "immediate" || urgency === "standard" ? urgency : "standard",
+      media: Array.isArray(media) ? media : undefined,
     };
 
     // Generate page structure

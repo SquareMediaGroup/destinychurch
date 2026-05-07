@@ -25,30 +25,35 @@ export default function AIPageCreatorPage() {
   const [media, setMedia] = useState<MediaItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [success, setSuccess] = useState(false);
+  const [result, setResult] = useState<{
+    title: string;
+    route: string;
+    commit?: string;
+    pushed: boolean;
+    files: string[];
+    reasoning: string;
+  } | null>(null);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
-    setSuccess(false);
+    setResult(null);
     setLoading(true);
 
     try {
-      // Get auth token from Supabase session
       const supabase = getSupabaseBrowserClient();
       const { data } = await supabase.auth.getSession();
       const token = data?.session?.access_token;
-      
+
       if (!token) {
         throw new Error("Not authenticated. Please log in and try again.");
       }
 
-      // Call generate-page API
-      const response = await fetch("/api/admin/builder/ai/generate-page", {
+      const response = await fetch("/api/admin/builder/ai/generate-code", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`,
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
           pageType: pageType.trim() || undefined,
@@ -59,26 +64,30 @@ export default function AIPageCreatorPage() {
         }),
       });
 
+      const payload = (await response.json()) as Record<string, unknown>;
       if (!response.ok) {
-        const errorData = (await response.json()) as { error?: string };
-        throw new Error(errorData.error || "Failed to generate page");
+        throw new Error(
+          (payload.error as string) || `Failed to generate page (HTTP ${response.status})`
+        );
       }
 
-      const result = (await response.json()) as {
-        id: string;
-        editUrl: string;
-      };
-      
-      setSuccess(true);
-      setTimeout(() => {
-        router.push(result.editUrl);
-      }, 1000);
+      setResult({
+        title: payload.title as string,
+        route: payload.route as string,
+        commit: payload.commit as string | undefined,
+        pushed: Boolean(payload.pushed),
+        files: (payload.files as string[]) ?? [],
+        reasoning: (payload.reasoning as string) ?? "",
+      });
     } catch (err) {
       setError(err instanceof Error ? err.message : "An error occurred");
     } finally {
       setLoading(false);
     }
   }
+
+  // suppress unused warning
+  void router;
 
   const undescribedMedia = media.filter((m) => !m.description?.trim());
 
@@ -97,8 +106,8 @@ export default function AIPageCreatorPage() {
             Create Page with AI
           </h1>
           <p className="text-destiny-grey/70">
-            Describe what you want, add any photos or videos, and AI will
-            generate a page using your approved components.
+            Describe what you want and AI will write a real Next.js page,
+            type-check it, commit it to <code className="font-mono text-sm">main</code>, and email an audit summary.
           </p>
         </div>
 
@@ -116,11 +125,42 @@ export default function AIPageCreatorPage() {
           )}
 
           {/* Success Alert */}
-          {success && (
-            <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+          {result && (
+            <div className="bg-green-50 border border-green-200 rounded-lg p-4 space-y-2">
               <p className="text-green-700 font-semibold">
-                ✓ Page generated! Redirecting...
+                ✓ Page generated and committed
               </p>
+              <p className="text-sm text-destiny-grey">
+                <strong>{result.title}</strong> is live at{" "}
+                <a
+                  href={result.route}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-destiny-orange underline"
+                >
+                  {result.route}
+                </a>
+              </p>
+              {result.commit && (
+                <p className="text-xs font-mono text-destiny-grey/60">
+                  Commit {result.commit.slice(0, 12)} {result.pushed ? "· pushed to main" : "· not pushed"}
+                </p>
+              )}
+              <details className="text-xs text-destiny-grey/70 mt-2">
+                <summary className="cursor-pointer font-semibold">
+                  Files ({result.files.length})
+                </summary>
+                <ul className="mt-2 ml-4 list-disc font-mono">
+                  {result.files.map((f) => (
+                    <li key={f}>{f}</li>
+                  ))}
+                </ul>
+              </details>
+              {result.reasoning && (
+                <p className="text-xs text-destiny-grey/70 italic border-l-2 border-destiny-orange/30 pl-2 mt-2">
+                  {result.reasoning}
+                </p>
+              )}
             </div>
           )}
 
@@ -250,11 +290,11 @@ export default function AIPageCreatorPage() {
           <div className="bg-destiny-orange/5 border border-destiny-orange/20 rounded-lg p-4 space-y-2">
             <h3 className="font-semibold text-destiny-orange text-sm">How this works</h3>
             <ul className="text-xs text-destiny-grey space-y-1">
-              <li>✓ AI assembles your approved components</li>
-              <li>✓ Photos auto-convert to WebP with optimal sizing</li>
-              <li>✓ Media descriptions guide smart placement</li>
-              <li>✓ Design matches your church's brand</li>
-              <li>✓ Fully editable before publishing</li>
+              <li>✓ AI reads existing pages + components for context</li>
+              <li>✓ Generates a real <code className="font-mono">app/&lt;slug&gt;/page.tsx</code> file</li>
+              <li>✓ Type-checks the generated code with <code className="font-mono">tsc</code></li>
+              <li>✓ Commits and pushes to <code className="font-mono">main</code> on success</li>
+              <li>✓ Audit summary emailed after every run</li>
             </ul>
           </div>
         </form>

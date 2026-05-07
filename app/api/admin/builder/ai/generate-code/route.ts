@@ -32,7 +32,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
   }
 
-  const { pageType, context, audience, media } = body as Record<string, unknown>;
+  const { pageType, context, audience, media, slug } = body as Record<string, unknown>;
   if (typeof context !== "string" || !context.trim()) {
     return NextResponse.json({ error: "context is required" }, { status: 400 });
   }
@@ -61,6 +61,9 @@ export async function POST(req: NextRequest) {
             context: context.trim(),
             pageType: typeof pageType === "string" && pageType.trim() ? pageType.trim() : "",
             audience: typeof audience === "string" && audience.trim() ? audience.trim() : "",
+            slug: typeof slug === "string" && slug.trim()
+              ? slug.trim().toLowerCase().replace(/[^a-z0-9-]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 60)
+              : "",
             media: Array.isArray(media) ? JSON.stringify(media) : "",
             requesterEmail: user.email || user.id,
           },

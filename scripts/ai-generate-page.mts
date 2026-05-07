@@ -16,6 +16,7 @@ async function main() {
   const context = process.env.GEN_CONTEXT;
   const pageType = process.env.GEN_PAGE_TYPE || undefined;
   const audience = process.env.GEN_AUDIENCE || undefined;
+  const requestedSlug = process.env.GEN_SLUG?.trim() || undefined;
   let media = undefined;
 
   if (process.env.GEN_MEDIA && process.env.GEN_MEDIA.trim()) {
@@ -44,7 +45,7 @@ async function main() {
   const llm = new VercelAIGatewayClient(process.env.VERCEL_AI_GATEWAY_TOKEN);
   let generated;
   try {
-    generated = await generatePageCode({ context, pageType, audience, media }, llm);
+    generated = await generatePageCode({ context, pageType, audience, media, requestedSlug }, llm);
   } catch (err) {
     const errorMsg = err instanceof Error ? err.message : String(err);
     console.error("LLM generation failed:", errorMsg);

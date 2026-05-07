@@ -15,6 +15,10 @@ on:
         description: "Target audience (optional)"
         required: false
         type: string
+      slug:
+        description: "URL slug (optional, may overwrite existing route)"
+        required: false
+        type: string
       media:
         description: "Media JSON (optional, array of MediaItem)"
         required: false
@@ -59,6 +63,7 @@ jobs:
           GEN_CONTEXT: ${{ inputs.context }}
           GEN_PAGE_TYPE: ${{ inputs.pageType }}
           GEN_AUDIENCE: ${{ inputs.audience }}
+          GEN_SLUG: ${{ inputs.slug }}
           GEN_MEDIA: ${{ inputs.media }}
           GEN_REQUESTER_EMAIL: ${{ inputs.requesterEmail }}
         run: npx tsx scripts/ai-generate-page.mts

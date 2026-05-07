@@ -7,6 +7,15 @@ import WorkflowProgress from "@/components/builder/WorkflowProgress";
 import { getSupabaseBrowserClient } from "@/lib/supabase-browser";
 import type { MediaItem } from "@/lib/ai/media-types";
 
+// Top-level routes that already exist — used to warn when entering a slug that would overwrite them.
+const EXISTING_ROUTES = [
+  "about", "alpha", "baptism", "beliefs", "child-dedication", "connect",
+  "connect-card", "contact", "data-gdpr", "destiny-recovery", "give", "help",
+  "hire", "kids", "missions", "new-here", "privacy", "safeguarding", "search",
+  "sermons", "serve", "terms", "visit", "volunteer", "whats-on", "young-adults",
+  "youth",
+];
+
 const AUDIENCES = [
   { id: "general", label: "Everyone", icon: "groups" },
   { id: "students", label: "Students", icon: "school" },
@@ -40,6 +49,7 @@ const EXAMPLES = [
 export default function AIPageCreatorPage() {
   const [pageType, setPageType] = useState("");
   const [context, setContext] = useState("");
+  const [slug, setSlug] = useState("");
   const [audience, setAudience] = useState("general");
   const [urgency, setUrgency] = useState<"standard" | "immediate">("standard");
   const [media, setMedia] = useState<MediaItem[]>([]);
@@ -94,6 +104,7 @@ export default function AIPageCreatorPage() {
         body: JSON.stringify({
           pageType: pageType.trim() || undefined,
           context: context.trim(),
+          slug: slug.trim() || undefined,
           audience: audience !== "general" ? audience : undefined,
           urgency,
           media,
@@ -252,6 +263,7 @@ export default function AIPageCreatorPage() {
                         setQueued(null);
                         setContext("");
                         setPageType("");
+                        setSlug("");
                         setAudience("general");
                         setMedia([]);
                       }}
@@ -364,9 +376,60 @@ export default function AIPageCreatorPage() {
             />
           </Section>
 
-          {/* Section: Audience */}
+          {/* Section: URL slug */}
           <Section
             number={3}
+            title="URL slug"
+            description="The path where this page lives, e.g. /alpha or /visit. Lowercase letters, numbers, hyphens."
+            optional
+            badge={
+              slug.trim() && EXISTING_ROUTES.includes(slug.trim().toLowerCase()) ? (
+                <span className="inline-flex items-center gap-1 rounded-full bg-red-100 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-red-700">
+                  Will overwrite /{slug.trim().toLowerCase()}
+                </span>
+              ) : null
+            }
+          >
+            <div className="flex items-stretch overflow-hidden rounded-2xl border border-black/10 bg-white transition focus-within:border-destiny-orange/50 focus-within:ring-4 focus-within:ring-destiny-orange/10">
+              <span className="flex items-center bg-[#fafafa] px-4 font-mono text-sm text-destiny-grey/40">
+                /
+              </span>
+              <input
+                id="slug"
+                type="text"
+                value={slug}
+                onChange={(e) =>
+                  setSlug(
+                    e.target.value
+                      .toLowerCase()
+                      .replace(/[^a-z0-9-]+/g, "-")
+                      .replace(/^-+/, "")
+                      .slice(0, 60)
+                  )
+                }
+                disabled={loading}
+                placeholder="leave blank to let AI choose"
+                className="flex-1 bg-white px-4 py-3.5 font-mono text-sm text-destiny-grey placeholder:font-sans placeholder:text-destiny-grey/30 focus:outline-none disabled:bg-[#fafafa] disabled:opacity-60"
+              />
+            </div>
+            <div className="mt-3 flex items-start gap-2 rounded-xl bg-amber-50 p-3 text-xs text-amber-800">
+              <span className="material-symbols-rounded mt-0.5 flex-shrink-0 text-base text-amber-600">
+                warning
+              </span>
+              <p>
+                <strong>Warning:</strong> If you enter a slug that matches an
+                existing page (e.g. <code className="font-mono">visit</code>,{" "}
+                <code className="font-mono">about</code>,{" "}
+                <code className="font-mono">alpha</code>),{" "}
+                <strong>the existing page will be replaced</strong>. Leave blank
+                and AI will pick a safe new slug.
+              </p>
+            </div>
+          </Section>
+
+          {/* Section: Audience */}
+          <Section
+            number={4}
             title="Target audience"
             description="Who is this page for? AI will tailor tone and content."
             optional
@@ -410,7 +473,7 @@ export default function AIPageCreatorPage() {
 
           {/* Section: Media */}
           <Section
-            number={4}
+            number={5}
             title="Photos & videos"
             description="Upload images or paste video URLs. Add a description for each so AI knows where to use it."
             optional
@@ -432,7 +495,7 @@ export default function AIPageCreatorPage() {
 
           {/* Section: Timeline */}
           <Section
-            number={5}
+            number={6}
             title="Timeline"
             description="Standard takes longer but produces higher quality output."
           >

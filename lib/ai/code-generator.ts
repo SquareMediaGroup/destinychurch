@@ -15,6 +15,7 @@ export interface CodeGenIntent {
   context: string;
   audience?: string;
   media?: MediaItem[];
+  requestedSlug?: string; // if provided, AI must use this exact slug (overwrites existing route)
 }
 
 export interface GeneratedFile {
@@ -63,10 +64,14 @@ function buildUserPrompt(intent: CodeGenIntent, components: ComponentInfo[], ref
         .join("\n")}`
     : "";
 
+  const slugDirective = intent.requestedSlug
+    ? `\n\nIMPORTANT: The slug MUST be exactly "${intent.requestedSlug}". Do not change it. This may overwrite an existing page at /${intent.requestedSlug} — that is intentional and approved by the volunteer.`
+    : "";
+
   return `## Volunteer intent
 ${intent.context}
 ${intent.pageType ? `\nPage type: ${intent.pageType}` : ""}
-${intent.audience ? `\nTarget audience: ${intent.audience}` : ""}
+${intent.audience ? `\nTarget audience: ${intent.audience}` : ""}${slugDirective}
 
 ## Available components (prefer composing these)
 ${componentList}
@@ -88,8 +93,8 @@ Rules:
    - Use Tailwind classes consistent with brand: destiny-orange (#f58021), destiny-grey, white backgrounds.
    - Be self-contained (no props) so the page just renders <NewComponent />.
    - Use next/image for any images, with alt text.
-6. Slug must be lowercase letters/numbers/hyphens, max 60 chars, not collide with existing routes.
-7. Do NOT modify existing files. Only create new ones.
+6. Slug must be lowercase letters/numbers/hyphens, max 60 chars. Do not collide with existing routes UNLESS a specific slug was provided above (then use that exact slug).
+7. Do NOT modify existing component files. Only create new ones.
 
 ## Output format
 Respond with ONLY this JSON shape:
@@ -228,12 +233,15 @@ export async function generatePageCode(
 
   const out = parseLLMOutput(raw);
 
+  // If the user explicitly requested a slug, enforce it even if the LLM ignored the directive
+  const finalSlug = intent.requestedSlug?.trim() || out.slug;
+
   return {
     title: out.title,
-    slug: out.slug,
+    slug: finalSlug,
     reasoning: out.reasoning,
     pageFile: {
-      path: `app/${out.slug}/page.tsx`,
+      path: `app/${finalSlug}/page.tsx`,
       source: out.page.source,
     },
     newComponents: (out.newComponents ?? []).map((c) => ({

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import MediaUploader from "@/components/builder/MediaUploader";
+import { getSupabaseBrowserClient } from "@/lib/supabase-browser";
 import type { MediaItem } from "@/lib/ai/media-types";
 
 const AUDIENCES = [
@@ -33,9 +34,19 @@ export default function AIPageCreatorPage() {
     setLoading(true);
 
     try {
+      const supabase = getSupabaseBrowserClient();
+      const { data: session } = await supabase.auth.getSession();
+      
+      if (!session?.session?.access_token) {
+        throw new Error("Not authenticated. Please log in.");
+      }
+
       const response = await fetch("/api/admin/builder/ai/generate-page", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${session.session.access_token}`,
+        },
         body: JSON.stringify({
           pageType: pageType.trim() || undefined,
           context,

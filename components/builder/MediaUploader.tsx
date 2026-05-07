@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef } from "react";
+import { getSupabaseBrowserClient } from "@/lib/supabase-browser";
 import type { MediaItem, MediaPurpose } from "@/lib/ai/media-types";
 import {
   MAX_UPLOAD_SIZE_BYTES,
@@ -36,6 +37,14 @@ export default function MediaUploader({
   const [dragActive, setDragActive] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  async function getAuthHeaders() {
+    const supabase = getSupabaseBrowserClient();
+    const { data: session } = await supabase.auth.getSession();
+    const token = session?.session?.access_token;
+    if (!token) throw new Error("Not authenticated");
+    return { "Authorization": `Bearer ${token}` };
+  }
+
   async function handleFiles(files: FileList | null) {
     if (!files || files.length === 0) return;
     setError("");
@@ -56,9 +65,11 @@ export default function MediaUploader({
       try {
         const formData = new FormData();
         formData.append("file", file);
-
+        
+        const headers = await getAuthHeaders();
         const response = await fetch("/api/admin/builder/ai/upload-media", {
           method: "POST",
+          headers,
           body: formData,
         });
 
@@ -100,7 +111,6 @@ export default function MediaUploader({
     if (newMedia.length > 0) {
       const allMedia = [...media, ...newMedia];
       onMediaChange(allMedia);
-      // Auto-open the question form for the last uploaded item
       setEditingId(newMedia[newMedia.length - 1].id);
     }
     setUploading(false);
@@ -112,9 +122,10 @@ export default function MediaUploader({
     setAddingVideo(true);
 
     try {
+      const headers = await getAuthHeaders();
       const response = await fetch("/api/admin/builder/ai/add-video", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers,
         body: JSON.stringify({ url: videoUrl }),
       });
 
@@ -155,18 +166,22 @@ export default function MediaUploader({
     onMediaChange(updated);
 
     // Persist the metadata update to the server
-    fetch("/api/admin/builder/ai/upload-media", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        id,
-        purpose: updates.purpose,
-        description: updates.description,
-        altText: updates.altText,
-      }),
-    }).catch(() => {
-      // Silent fail — metadata update is non-critical
-    });
+    getAuthHeaders()
+      .then((headers) =>
+        fetch("/api/admin/builder/ai/upload-media", {
+          method: "PATCH",
+          headers,
+          body: JSON.stringify({
+            id,
+            purpose: updates.purpose,
+            description: updates.description,
+            altText: updates.altText,
+          }),
+        })
+      )
+      .catch(() => {
+        // Silent fail — metadata update is non-critical
+      });
   }
 
   function removeMediaItem(id: string) {
@@ -238,197 +253,153 @@ export default function MediaUploader({
             type="url"
             value={videoUrl}
             onChange={(e) => setVideoUrl(e.target.value)}
-            placeholder="YouTube, Vimeo, or .mp4 URL"
             disabled={disabled || addingVideo}
-            className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-destiny-orange focus:border-transparent disabled:bg-gray-100"
+            placeholder="YouTube, Vimeo, or direct video URL"
+            className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-destiny-orange focus:border-transparent disabled:bg-gray-100"
+            onKeyPress={(e) => e.key === "Enter" && handleAddVideo()}
           />
           <button
             type="button"
             onClick={handleAddVideo}
-            disabled={!videoUrl.trim() || disabled || addingVideo}
-            className="px-4 py-2 bg-destiny-orange text-white text-sm font-semibold rounded hover:brightness-110 disabled:bg-gray-400 transition-colors"
+            disabled={disabled || addingVideo || !videoUrl.trim()}
+            className="px-4 py-2 bg-destiny-orange text-white text-sm font-semibold rounded-lg hover:brightness-110 disabled:bg-gray-400 transition-colors"
           >
             {addingVideo ? "Adding..." : "Add"}
           </button>
         </div>
+        <p className="text-[11px] text-gray-500 mt-1">
+          Supports YouTube, Vimeo, or direct links to video files
+        </p>
       </div>
 
-      {/* Error display */}
+      {/* Error message */}
       {error && (
         <div className="bg-red-50 border border-red-200 rounded-lg p-3">
-          <p className="text-sm text-red-800">{error}</p>
+          <p className="text-xs text-red-700">{error}</p>
         </div>
       )}
 
       {/* Media list */}
       {media.length > 0 && (
-        <div className="space-y-2">
-          <p className="text-xs font-semibold text-destiny-grey uppercase tracking-wide">
-            Media ({media.length})
-          </p>
+        <div className="space-y-3">
           {media.map((item) => (
-            <MediaItemCard
+            <div
               key={item.id}
-              item={item}
-              isEditing={editingId === item.id}
-              onEdit={() => setEditingId(item.id)}
-              onClose={() => setEditingId(null)}
-              onUpdate={(updates) => updateMediaItem(item.id, updates)}
-              onRemove={() => removeMediaItem(item.id)}
-            />
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
-type MediaItemCardProps = {
-  item: MediaItem;
-  isEditing: boolean;
-  onEdit: () => void;
-  onClose: () => void;
-  onUpdate: (updates: Partial<MediaItem>) => void;
-  onRemove: () => void;
-};
-
-function MediaItemCard({
-  item,
-  isEditing,
-  onEdit,
-  onClose,
-  onUpdate,
-  onRemove,
-}: MediaItemCardProps) {
-  const previewUrl =
-    item.mediaType === "image"
-      ? item.thumbnailUrl
-      : item.thumbnailUrl || "/video-placeholder.svg";
-
-  return (
-    <div className="border border-gray-200 rounded-lg overflow-hidden bg-white">
-      <div className="flex gap-3 p-3">
-        {/* Thumbnail */}
-        <div className="flex-shrink-0 w-16 h-16 bg-gray-100 rounded overflow-hidden flex items-center justify-center">
-          {previewUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={previewUrl}
-              alt={item.altText || "Media preview"}
-              className="w-full h-full object-cover"
-            />
-          ) : (
-            <span className="text-2xl">
-              {item.mediaType === "video" ? "🎬" : "🖼️"}
-            </span>
-          )}
-        </div>
-
-        {/* Info */}
-        <div className="flex-1 min-w-0">
-          <div className="flex items-start justify-between gap-2">
-            <div className="min-w-0">
-              <p className="text-sm font-semibold text-destiny-grey truncate">
-                {item.purpose
-                  ? PURPOSES.find((p) => p.value === item.purpose)?.label ||
-                    item.purpose
-                  : "Untagged"}
-                {item.mediaType === "video" && (
-                  <span className="ml-2 text-xs text-gray-500">
-                    ({item.sourceType})
-                  </span>
-                )}
-              </p>
-              {item.description && (
-                <p className="text-xs text-gray-600 truncate">
-                  {item.description}
-                </p>
-              )}
-              {!item.description && (
-                <p className="text-xs text-orange-600">
-                  ⚠ Add a description for AI to use this media
-                </p>
-              )}
-            </div>
-            <div className="flex gap-1">
-              {!isEditing && (
+              className="border border-gray-300 rounded-lg p-4 bg-white"
+            >
+              {/* Preview thumbnail + details */}
+              <div className="flex gap-4 items-start mb-3">
+                <div className="w-20 h-20 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0">
+                  <img
+                    src={item.thumbnailUrl || item.externalUrl || ""}
+                    alt={item.altText || ""}
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="text-xs font-semibold text-destiny-orange mb-1">
+                    {item.mediaType === "image" ? "📷 Image" : "🎬 Video"}
+                  </div>
+                  <p className="text-xs text-destiny-grey/70 truncate">
+                    {item.sourceType === "upload" && item.originalUrl
+                      ? item.originalUrl.split("/").pop() || "Uploaded image"
+                      : item.externalUrl || "Media item"}
+                  </p>
+                  {item.width && item.height && (
+                    <p className="text-[11px] text-destiny-grey/50">
+                      {item.width} × {item.height}
+                    </p>
+                  )}
+                </div>
                 <button
-                  onClick={onEdit}
-                  className="text-xs text-destiny-orange hover:underline"
+                  type="button"
+                  onClick={() => removeMediaItem(item.id)}
+                  className="p-2 text-destiny-grey/40 hover:text-red-600 hover:bg-red-50 rounded-lg transition"
                 >
-                  Edit
+                  <span className="material-symbols-rounded text-base">
+                    delete
+                  </span>
+                </button>
+              </div>
+
+              {/* Edit section */}
+              {editingId === item.id ? (
+                <div className="space-y-3 bg-destiny-orange/5 -mx-4 -mb-4 p-4 rounded-b-lg">
+                  <div>
+                    <label className="block text-xs font-semibold text-destiny-grey mb-1">
+                      What is this image for?
+                    </label>
+                    <select
+                      value={item.purpose}
+                      onChange={(e) =>
+                        updateMediaItem(item.id, { purpose: e.target.value as MediaPurpose })
+                      }
+                      className="w-full px-2 py-1.5 border border-gray-300 rounded text-xs focus:ring-2 focus:ring-destiny-orange focus:border-transparent"
+                    >
+                      {PURPOSES.map((p) => (
+                        <option key={p.value} value={p.value}>
+                          {p.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-destiny-grey mb-1">
+                      Description (helps AI place it correctly)
+                    </label>
+                    <textarea
+                      value={item.description}
+                      onChange={(e) =>
+                        updateMediaItem(item.id, { description: e.target.value })
+                      }
+                      placeholder="E.g., 'Church building exterior', 'Pastor smiling at pulpit', 'Group of volunteers'"
+                      rows={2}
+                      className="w-full px-2 py-1.5 border border-gray-300 rounded text-xs focus:ring-2 focus:ring-destiny-orange focus:border-transparent resize-none"
+                    />
+                  </div>
+                  {item.mediaType === "image" && (
+                    <div>
+                      <label className="block text-xs font-semibold text-destiny-grey mb-1">
+                        Alt text (for accessibility)
+                      </label>
+                      <input
+                        type="text"
+                        value={item.altText || ""}
+                        onChange={(e) =>
+                          updateMediaItem(item.id, { altText: e.target.value })
+                        }
+                        placeholder="Describe the image for screen readers"
+                        className="w-full px-2 py-1.5 border border-gray-300 rounded text-xs focus:ring-2 focus:ring-destiny-orange focus:border-transparent"
+                      />
+                    </div>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => setEditingId(null)}
+                    className="w-full px-2 py-1.5 bg-destiny-orange/10 text-destiny-orange text-xs font-semibold rounded hover:bg-destiny-orange/20 transition"
+                  >
+                    Done
+                  </button>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setEditingId(item.id)}
+                  className="w-full px-3 py-2 text-left bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded text-xs font-semibold text-destiny-grey transition"
+                >
+                  {item.description ? (
+                    <>
+                      <span className="text-destiny-grey/60">Purpose:</span>{" "}
+                      {PURPOSES.find((p) => p.value === item.purpose)?.label} ·{" "}
+                      {item.description}
+                    </>
+                  ) : (
+                    "Add description (click to edit)"
+                  )}
                 </button>
               )}
-              <button
-                onClick={onRemove}
-                className="text-xs text-red-600 hover:underline"
-              >
-                Remove
-              </button>
             </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Edit form */}
-      {isEditing && (
-        <div className="border-t border-gray-200 p-3 space-y-3 bg-gray-50">
-          <div>
-            <label className="block text-xs font-semibold text-destiny-grey mb-1">
-              What is this for?
-            </label>
-            <select
-              value={item.purpose}
-              onChange={(e) =>
-                onUpdate({ purpose: e.target.value as MediaPurpose })
-              }
-              className="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-destiny-orange focus:border-transparent"
-            >
-              {PURPOSES.map((p) => (
-                <option key={p.value} value={p.value}>
-                  {p.label}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div>
-            <label className="block text-xs font-semibold text-destiny-grey mb-1">
-              Describe this {item.mediaType}
-            </label>
-            <textarea
-              value={item.description}
-              onChange={(e) => onUpdate({ description: e.target.value })}
-              placeholder="E.g., 'Pastor John speaking at Easter service' or 'Youth group photo from camp'"
-              rows={2}
-              className="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-destiny-orange focus:border-transparent resize-none"
-            />
-            <p className="text-xs text-gray-500 mt-1">
-              This helps AI choose where to place it
-            </p>
-          </div>
-
-          {item.mediaType === "image" && (
-            <div>
-              <label className="block text-xs font-semibold text-destiny-grey mb-1">
-                Alt text (for accessibility)
-              </label>
-              <input
-                type="text"
-                value={item.altText || ""}
-                onChange={(e) => onUpdate({ altText: e.target.value })}
-                placeholder="Brief description of the image"
-                className="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-destiny-orange focus:border-transparent"
-              />
-            </div>
-          )}
-
-          <button
-            onClick={onClose}
-            className="w-full px-3 py-2 bg-destiny-orange text-white text-sm font-semibold rounded hover:brightness-110 transition-colors"
-          >
-            Done
-          </button>
+          ))}
         </div>
       )}
     </div>

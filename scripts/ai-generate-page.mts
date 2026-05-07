@@ -16,7 +16,18 @@ async function main() {
   const context = process.env.GEN_CONTEXT;
   const pageType = process.env.GEN_PAGE_TYPE || undefined;
   const audience = process.env.GEN_AUDIENCE || undefined;
-  const media = process.env.GEN_MEDIA ? JSON.parse(process.env.GEN_MEDIA) : undefined;
+  let media = undefined;
+
+  if (process.env.GEN_MEDIA && process.env.GEN_MEDIA.trim()) {
+    try {
+      media = JSON.parse(process.env.GEN_MEDIA);
+    } catch (err) {
+      console.error("❌ GEN_MEDIA is not valid JSON");
+      console.error("Received:", process.env.GEN_MEDIA.slice(0, 200));
+      throw new Error("Invalid media JSON");
+    }
+  }
+
   const requesterEmail = process.env.GEN_REQUESTER_EMAIL;
 
   if (!context) {

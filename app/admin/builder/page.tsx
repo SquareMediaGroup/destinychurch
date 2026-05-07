@@ -25,17 +25,6 @@ export default function BuilderListPage() {
   const [templateId, setTemplateId] = useState("blank");
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState("");
-  const [isMobile, setIsMobile] = useState(false);
-
-  useEffect(() => {
-    const checkMobile = () => {
-      setIsMobile(window.innerWidth < 768);
-    };
-
-    checkMobile();
-    window.addEventListener("resize", checkMobile);
-    return () => window.removeEventListener("resize", checkMobile);
-  }, []);
 
   useEffect(() => {
     fetch("/api/admin/builder/pages")
@@ -75,35 +64,6 @@ export default function BuilderListPage() {
     }
   }
 
-  if (isMobile) {
-    return (
-      <div className="flex min-h-screen w-full items-center justify-center bg-gradient-to-br from-destiny-grey/5 to-destiny-orange/5 px-6">
-        <div className="w-full max-w-md rounded-3xl border border-black/5 bg-white p-8 shadow-lg">
-          <div className="mb-6 flex justify-center">
-            <div className="rounded-full bg-destiny-orange/10 p-4">
-              <span className="material-symbols-rounded text-4xl text-destiny-orange">
-                desktop_mac
-              </span>
-            </div>
-          </div>
-          <h1 className="mb-3 text-center text-2xl font-black text-destiny-grey">
-            Builder not available on mobile
-          </h1>
-          <p className="mb-6 text-center text-sm text-destiny-grey/60">
-            The page builder is designed for desktop and tablet use. Please access it from a larger screen to create and manage pages.
-          </p>
-          <Link
-            href="/admin"
-            className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-destiny-orange px-5 py-3 text-sm font-bold text-white shadow-sm shadow-destiny-orange/20 transition hover:brightness-110"
-          >
-            <span className="material-symbols-rounded text-base">arrow_back</span>
-            Back to admin
-          </Link>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="mx-auto max-w-6xl px-6 py-10">
       <div className="mb-6 flex items-center justify-between">
@@ -116,7 +76,7 @@ export default function BuilderListPage() {
         <div className="flex gap-2">
           <Link
             href="/admin/builder/ai"
-            className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-bold text-white shadow-sm shadow-blue-600/20 transition hover:brightness-110"
+            className="inline-flex items-center gap-2 rounded-xl bg-destiny-orange px-5 py-2.5 text-sm font-bold text-white shadow-sm shadow-destiny-orange/20 transition hover:brightness-110"
           >
             <span className="material-symbols-rounded text-base">sparkles</span>
             Create with AI

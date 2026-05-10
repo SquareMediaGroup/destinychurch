@@ -98,6 +98,16 @@ export default function BuilderListPage() {
               </span>
             </Link>
             <Link
+              href="/admin/builder/skeleton"
+              className="group inline-flex items-center gap-2 rounded-2xl border border-destiny-orange/30 bg-white px-5 py-3.5 text-sm font-bold text-destiny-grey/80 transition hover:-translate-y-0.5 hover:border-destiny-orange hover:text-destiny-orange"
+            >
+              <span className="material-symbols-rounded text-lg">widgets</span>
+              Skeleton sketcher
+              <span className="inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-destiny-orange to-amber-500 px-2 py-0.5 text-[9px] font-black uppercase tracking-[0.18em] text-white">
+                Beta
+              </span>
+            </Link>
+            <Link
               href="/admin"
               className="inline-flex items-center gap-2 rounded-2xl border border-black/10 bg-white px-5 py-3.5 text-sm font-bold text-destiny-grey/70 transition hover:bg-[#f5f7fa]"
             >

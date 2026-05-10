@@ -261,15 +261,36 @@ export default function SkeletonBuilderPage() {
               <span className="h-1.5 w-1.5 rounded-full bg-white" />
               Beta
             </span>
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-black/10 bg-white px-3 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-destiny-grey/60">
+              Optional
+            </span>
           </div>
           <p className="mt-2 max-w-3xl text-sm text-destiny-grey/60">
             Drag blocks from the left onto the canvas to sketch a page layout.
             Reorder by dragging, delete by dragging back to the palette. The AI
-            will eventually use this skeleton to know where each section belongs.
+            will use this skeleton to know where each section belongs.
             <span className="ml-1 font-bold text-destiny-grey/80">
-              No saving yet — this is a UI preview.
+              You don&apos;t have to use this — you can skip it and let AI decide
+              the layout entirely from your description.
             </span>
           </p>
+
+          <div className="mt-4 flex flex-wrap gap-2">
+            <Link
+              href="/admin/builder/ai"
+              className="group inline-flex items-center gap-2 rounded-xl bg-destiny-orange px-4 py-2 text-xs font-bold text-white shadow-sm shadow-destiny-orange/30 transition hover:-translate-y-0.5 hover:shadow-md hover:shadow-destiny-orange/40"
+            >
+              <span className="material-symbols-rounded text-base">auto_awesome</span>
+              Skip — let AI decide everything
+              <span className="material-symbols-rounded text-sm transition group-hover:translate-x-0.5">
+                arrow_forward
+              </span>
+            </Link>
+            <span className="inline-flex items-center gap-1.5 rounded-xl border border-dashed border-destiny-orange/30 bg-destiny-orange/5 px-3 py-2 text-[11px] font-bold text-destiny-orange">
+              <span className="material-symbols-rounded text-sm">info</span>
+              No saving yet — this is a UI preview
+            </span>
+          </div>
         </div>
       </div>
 

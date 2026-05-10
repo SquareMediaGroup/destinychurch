@@ -23,12 +23,38 @@ export interface GeneratedFile {
   source: string;
 }
 
+/**
+ * One editable user-facing text that lives inside a generated source file.
+ * The dashboard renders one form field per entry. On save, the workflow does
+ * a first-occurrence find-and-replace inside `file` to swap `value` for the new value.
+ */
+export interface EditableText {
+  /** Stable id ("hero-title", "cta-1-label"). Used by the editor to track fields across edits. */
+  id: string;
+  /** Human label rendered in the dashboard. */
+  label: string;
+  /** The exact current text content as it appears in the source file. */
+  value: string;
+  /** Repo-relative file path the text lives in. */
+  file: string;
+  /** Section/component name for grouping. */
+  section: string;
+  /** "heading" | "body" | "cta" | "alt" | "href" — informs the field renderer. */
+  kind: "heading" | "body" | "cta" | "alt" | "href";
+  /**
+   * 30-80 char unique substring of the file source that contains `value` exactly once.
+   * Used to disambiguate when the same text appears more than once.
+   */
+  context: string;
+}
+
 export interface GeneratedCode {
   title: string;
   slug: string;
   pageFile: GeneratedFile;
   newComponents: GeneratedFile[];
   reasoning: string;
+  editableTexts: EditableText[];
 }
 
 interface LLMOutput {
@@ -41,6 +67,7 @@ interface LLMOutput {
     name: string;
     source: string;
   }>;
+  editableTexts?: EditableText[];
 }
 
 function buildSystemPrompt(): string {
@@ -229,10 +256,48 @@ Respond with ONLY this JSON (no markdown fences, no commentary):
       "name": "AlphaLaunchHero",
       "source": "// Full TypeScript source of the new component as a single string with \\n escapes"
     }
+  ],
+  "editableTexts": [
+    {
+      "id": "hero-title",
+      "label": "Hero headline",
+      "value": "Alpha is for Everyone",
+      "file": "components/alpha/AlphaLaunchHero.tsx",
+      "section": "Hero",
+      "kind": "heading",
+      "context": "<h1 className=\\"...\\">Alpha is for Everyone</h1>"
+    }
   ]
 }
 
-If no new components are needed, return "newComponents": [].`;
+If no new components are needed, return "newComponents": [].
+
+## editableTexts catalog (REQUIRED)
+You MUST list EVERY user-visible text string in the page and the new components.
+The dashboard uses this list to build a visual editor where volunteers can update
+copy without writing code. Include:
+- Every heading (h1, h2, h3) text
+- Every paragraph or body copy line
+- Every CTA button label
+- Every link label
+- Every image alt text
+- Every CTA href (so volunteers can repoint links)
+- Every metadata title and description (the page's <Metadata> export)
+
+Do NOT include:
+- Tailwind class names
+- Variable names
+- Internal labels (e.g. \`aria-hidden=""\`, \`alt=""\` on decorative images)
+- The \`metadata.alternates.canonical\` URL (auto-managed)
+
+Each entry must:
+- Have a unique \`id\` (kebab-case: hero-title, hero-cta-1, mission-body)
+- Have a \`label\` ("Hero headline", "First CTA button label", "Section 2 paragraph")
+- Have a \`value\` that EXACTLY matches the string as it appears in the source (escape \\n inside strings only — JSX text content rarely has newlines)
+- Set \`file\` to the repo-relative path where the text lives
+- Set \`section\` to a logical group ("Hero", "Mission", "Get Involved", "Metadata", "FAQ")
+- Set \`kind\` to one of: heading | body | cta | alt | href
+- Set \`context\` to a short 30-80 char snippet of the surrounding source that contains \`value\` exactly once. Use literal source characters (curly braces are fine; \\" only when inside a JSON string). The snippet is used to disambiguate identical strings, so make it unique.`;
 }
 
 function stripCodeFences(raw: string): string {
@@ -323,12 +388,30 @@ function parseLLMOutput(raw: string): LLMOutput {
     }))
     .filter((c) => c.category && c.name && c.source);
 
+  const editableTextsRaw = Array.isArray(obj.editableTexts) ? obj.editableTexts : [];
+  const editableTexts: EditableText[] = editableTextsRaw
+    .filter((t): t is Record<string, unknown> => typeof t === "object" && t !== null)
+    .map((t) => {
+      const kind = String(t.kind ?? "body") as EditableText["kind"];
+      return {
+        id: String(t.id ?? ""),
+        label: String(t.label ?? ""),
+        value: String(t.value ?? ""),
+        file: String(t.file ?? ""),
+        section: String(t.section ?? "General"),
+        kind: ["heading", "body", "cta", "alt", "href"].includes(kind) ? kind : "body",
+        context: String(t.context ?? ""),
+      };
+    })
+    .filter((t) => t.id && t.label && t.value && t.file);
+
   return {
     title: title || "Untitled Page",
     slug,
     reasoning,
     page: { source: page.source },
     newComponents,
+    editableTexts,
   };
 }
 
@@ -346,19 +429,30 @@ export async function generatePageCode(
 
   const out = parseLLMOutput(raw);
   const finalSlug = intent.requestedSlug?.trim() || out.slug;
+  const pagePath = `app/${finalSlug}/page.tsx`;
+
+  // Rewrite editable text file references that point to the page file
+  // to match the final slug (the AI may have used a placeholder slug).
+  const editableTexts = (out.editableTexts ?? []).map((t) => {
+    if (t.file.startsWith("app/") && t.file.endsWith("/page.tsx")) {
+      return { ...t, file: pagePath };
+    }
+    return t;
+  });
 
   return {
     title: out.title,
     slug: finalSlug,
     reasoning: out.reasoning,
     pageFile: {
-      path: `app/${finalSlug}/page.tsx`,
+      path: pagePath,
       source: out.page.source,
     },
     newComponents: (out.newComponents ?? []).map((c) => ({
       path: `components/${c.category}/${c.name}.tsx`,
       source: c.source,
     })),
+    editableTexts,
   };
 }
 
@@ -446,5 +540,9 @@ Keep the same slug "${previous.slug}". Return ONLY the JSON, no markdown.`;
       path: `components/${c.category}/${c.name}.tsx`,
       source: c.source,
     })),
+    // On a repair pass, keep the previous catalog if the LLM didn't return a new one
+    editableTexts: out.editableTexts && out.editableTexts.length > 0
+      ? out.editableTexts
+      : previous.editableTexts,
   };
 }

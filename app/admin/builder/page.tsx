@@ -8,6 +8,9 @@ type PageRow = {
   slug: string;
   title: string;
   status: "draft" | "published" | "archived";
+  source_type?: "json" | "code";
+  source_path?: string | null;
+  repo_commit?: string | null;
   created_at: string;
   updated_at: string;
   published_at: string | null;
@@ -234,24 +237,42 @@ function PageCard({
 }) {
   const updated = new Date(page.updated_at);
   const isPublished = page.status === "published";
+  const isAI = page.source_type === "code";
+  const editHref = isAI
+    ? `/admin/builder/code/${page.id}`
+    : `/admin/builder/${page.id}`;
 
   return (
-    <div className="group relative flex flex-col overflow-hidden rounded-2xl border border-black/5 bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-lg">
+    <Link
+      href={editHref}
+      className="group relative flex flex-col overflow-hidden rounded-2xl border border-black/5 bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-lg"
+    >
       {/* Preview thumbnail (gradient placeholder) */}
       <div
         className="relative aspect-[16/9] overflow-hidden"
         style={{
-          background:
-            "linear-gradient(135deg, rgba(245,128,33,0.12), rgba(245,128,33,0.04) 60%, #f5f7fa)",
+          background: isAI
+            ? "linear-gradient(135deg, rgba(99,102,241,0.14), rgba(168,85,247,0.06) 60%, #f5f7fa)"
+            : "linear-gradient(135deg, rgba(245,128,33,0.12), rgba(245,128,33,0.04) 60%, #f5f7fa)",
         }}
       >
         <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-          <span className="material-symbols-rounded text-5xl text-destiny-orange/20">
-            description
+          <span
+            className={`material-symbols-rounded text-5xl ${
+              isAI ? "text-indigo-500/30" : "text-destiny-orange/20"
+            }`}
+          >
+            {isAI ? "auto_awesome" : "description"}
           </span>
         </div>
-        <div className="absolute left-3 top-3">
+        <div className="absolute left-3 top-3 flex flex-col gap-1.5">
           <StatusPill status={page.status} />
+          {isAI && (
+            <span className="inline-flex items-center gap-1 self-start rounded-full bg-gradient-to-r from-indigo-500 to-violet-500 px-2 py-0.5 text-[10px] font-black uppercase tracking-[0.18em] text-white shadow-sm">
+              <span className="material-symbols-rounded text-xs">auto_awesome</span>
+              AI
+            </span>
+          )}
         </div>
         {isPublished && (
           <a
@@ -259,6 +280,7 @@ function PageCard({
             target="_blank"
             rel="noopener noreferrer"
             title="View live"
+            onClick={(e) => e.stopPropagation()}
             className="absolute right-3 top-3 inline-flex h-8 w-8 items-center justify-center rounded-lg bg-white/95 text-destiny-grey shadow-sm transition hover:bg-white"
           >
             <span className="material-symbols-rounded text-base">open_in_new</span>
@@ -282,16 +304,19 @@ function PageCard({
           </span>
 
           <div className="flex items-center gap-1 opacity-0 transition group-hover:opacity-100">
-            <Link
-              href={`/admin/builder/${page.id}/preview`}
-              title="Preview"
-              className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-destiny-grey/60 hover:bg-[#f5f7fa]"
+            <span
+              className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-[11px] font-bold text-destiny-grey/70 hover:bg-[#f5f7fa]"
             >
-              <span className="material-symbols-rounded text-base">visibility</span>
-            </Link>
+              <span className="material-symbols-rounded text-sm">edit</span>
+              {isAI ? "Edit text" : "Edit"}
+            </span>
             <button
               type="button"
-              onClick={onDelete}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                onDelete();
+              }}
               title="Delete"
               className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-destiny-grey/60 hover:bg-red-50 hover:text-red-600"
             >
@@ -300,7 +325,7 @@ function PageCard({
           </div>
         </div>
       </div>
-    </div>
+    </Link>
   );
 }
 

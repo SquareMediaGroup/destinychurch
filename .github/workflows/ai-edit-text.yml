@@ -1,0 +1,53 @@
+name: AI Edit Text
+
+on:
+  workflow_dispatch:
+    inputs:
+      pageId:
+        description: "builder_pages.id (UUID)"
+        required: true
+        type: string
+      edits:
+        description: "JSON array of {id, value}"
+        required: true
+        type: string
+      requesterEmail:
+        description: "Email of requester"
+        required: true
+        type: string
+
+jobs:
+  edit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - run: npm ci
+
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Apply text edits
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          PAGE_AUDIT_RECIPIENT: ${{ secrets.PAGE_AUDIT_RECIPIENT }}
+          PAGE_AUDIT_FROM: ${{ secrets.PAGE_AUDIT_FROM }}
+          EDIT_PAGE_ID: ${{ inputs.pageId }}
+          EDIT_EDITS_JSON: ${{ inputs.edits }}
+          EDIT_REQUESTER_EMAIL: ${{ inputs.requesterEmail }}
+        run: npx tsx scripts/ai-edit-text.mts

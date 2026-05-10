@@ -16,6 +16,7 @@ import {
 } from "../lib/ai/code-validator";
 import { commitAndPush, rollbackFiles } from "../lib/ai/git-automation";
 import { sendPageAuditEmail } from "../lib/ai/page-audit-email";
+import { upsertCodePage } from "../lib/ai/builder-pages-db";
 
 const MAX_TYPECHECK_ATTEMPTS = 3; // 1 initial + 2 repair attempts
 
@@ -166,6 +167,22 @@ async function main() {
     throw new Error(`Commit failed: ${commitResult.output}`);
   }
   console.log(`✓ Pushed: ${commitResult.hash?.slice(0, 12)}`);
+
+  console.log("🗂  Registering page in /admin/builder dashboard...");
+  try {
+    const upsert = await upsertCodePage({
+      slug: generated.slug,
+      title: generated.title,
+      source_type: "code",
+      source_path: generated.pageFile.path,
+      editable_texts: generated.editableTexts,
+      repo_commit: commitResult.hash ?? null,
+      status: "published",
+    });
+    console.log(`✓ Registered as builder_pages.id = ${upsert.id} (${generated.editableTexts.length} editable texts)`);
+  } catch (err) {
+    console.error("⚠ Failed to register page in builder_pages — page is live but won't show in /admin/builder:", err);
+  }
 
   console.log("📧 Sending audit email...");
   await sendPageAuditEmail({

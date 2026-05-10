@@ -6,7 +6,9 @@ export async function GET() {
   const supabase = createServiceClient();
   const { data, error } = await supabase
     .from("builder_pages")
-    .select("id, slug, title, status, created_at, updated_at, published_at")
+    .select(
+      "id, slug, title, status, source_type, source_path, repo_commit, created_at, updated_at, published_at"
+    )
     .order("updated_at", { ascending: false });
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });

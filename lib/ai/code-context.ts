@@ -14,7 +14,9 @@ export interface ComponentInfo {
   importPath: string; // e.g. "@/components/home/HeroSection"
   name: string; // e.g. "HeroSection"
   category: string; // e.g. "home", "about"
-  excerpt: string; // first ~40 lines for AI to see structure
+  source: string; // FULL file source — AI needs this to clone-with-changes
+  acceptsProps: boolean; // true when the default export takes a props arg
+  isClient: boolean; // starts with "use client"
 }
 
 export interface PageInfo {
@@ -23,6 +25,25 @@ export interface PageInfo {
 }
 
 const SAFE_DIR_ALLOWLIST = ["home", "about", "alpha", "give", "serve", "visit", "missions", "new-here", "help", "whats-on", "sermons", "youth-alpha", "connect-card"];
+
+// Detect whether the default-exported component accepts props.
+// Looks for `export default function Name(` followed by anything other than `)` —
+// i.e. there's at least one parameter inside the parens.
+function detectAcceptsProps(source: string): boolean {
+  const matches = source.match(/export\s+default\s+function\s+\w+\s*\(([^)]*)\)/);
+  if (!matches) {
+    // Try arrow form: `const X = (...) => ...; export default X;`
+    const arrow = source.match(/const\s+\w+\s*[:=]\s*\(([^)]*)\)\s*(?::\s*[^=]+)?=>/);
+    if (arrow) return arrow[1].trim().length > 0;
+    return false;
+  }
+  return matches[1].trim().length > 0;
+}
+
+function detectIsClient(source: string): boolean {
+  // Match "use client" within the first 200 chars
+  return /^["']use client["'];?/m.test(source.slice(0, 200));
+}
 
 /**
  * Walk components directory and return a catalog of importable components.
@@ -43,12 +64,13 @@ export async function getComponentCatalog(): Promise<ComponentInfo[]> {
       const filePath = path.join(dirPath, file);
       const name = file.replace(/\.tsx$/, "");
       const source = await fs.readFile(filePath, "utf-8");
-      const lines = source.split("\n").slice(0, 40).join("\n");
       out.push({
         importPath: `@/components/${dir}/${name}`,
         name,
         category: dir,
-        excerpt: lines,
+        source,
+        acceptsProps: detectAcceptsProps(source),
+        isClient: detectIsClient(source),
       });
     }
   }

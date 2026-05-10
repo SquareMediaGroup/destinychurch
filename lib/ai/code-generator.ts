@@ -46,23 +46,111 @@ interface LLMOutput {
 function buildSystemPrompt(): string {
   return `You are an expert Next.js (App Router) developer working on a church website.
 You write production-ready TypeScript React code that follows the repo's existing conventions.
-Always respond with ONLY valid JSON, no markdown code fences, no explanation text outside the JSON.`;
+Always respond with ONLY valid JSON, no markdown code fences, no explanation text outside the JSON.
+Your code MUST type-check with strict TypeScript on the first try.`;
+}
+
+// Categorise components into "templates" (Hero variants and reusable sections)
+// vs "as-is" (no-prop sections that should be referenced verbatim).
+function buildComponentSection(components: ComponentInfo[]): string {
+  // Group by category
+  const byCategory = new Map<string, ComponentInfo[]>();
+  for (const c of components) {
+    if (!byCategory.has(c.category)) byCategory.set(c.category, []);
+    byCategory.get(c.category)!.push(c);
+  }
+
+  const lines: string[] = [];
+  for (const [cat, list] of byCategory) {
+    lines.push(`\n### ${cat}/`);
+    for (const c of list) {
+      const propsLabel = c.acceptsProps ? "props=YES" : "props=NO (hardcoded — clone to customise)";
+      const clientLabel = c.isClient ? " [client]" : "";
+      lines.push(`\n#### ${c.name} — ${propsLabel}${clientLabel}`);
+      lines.push(`Import: \`import ${c.name} from "${c.importPath}";\``);
+      lines.push("```tsx");
+      lines.push(c.source);
+      lines.push("```");
+    }
+  }
+  return lines.join("\n");
+}
+
+function buildMediaSection(media?: MediaItem[]): string {
+  if (!media || media.length === 0) {
+    return `\n## Media
+The volunteer did not upload any photos or videos. Use brand assets from /public/img/ that already appear in reference pages, OR write the page without imagery if none fits.`;
+  }
+
+  const lines: string[] = [];
+  lines.push(`\n## Media (USE THESE — the volunteer uploaded them for THIS page)`);
+  lines.push("");
+  for (let i = 0; i < media.length; i++) {
+    const m = media[i];
+    if (m.mediaType === "image") {
+      lines.push(`### Image ${i + 1} — purpose: ${m.purpose}`);
+      lines.push(`- Description: ${m.description || "(none)"}`);
+      lines.push(`- Alt text: ${m.altText || m.description || "Photo"}`);
+      lines.push(`- Hero variant (1920x1080): ${m.heroUrl ?? "n/a"}`);
+      lines.push(`- General variant (800x600): ${m.generalUrl ?? "n/a"}`);
+      lines.push(`- Thumbnail (400x300): ${m.thumbnailUrl ?? "n/a"}`);
+      if (m.width && m.height) {
+        lines.push(`- Original dimensions: ${m.width} x ${m.height}`);
+      }
+    } else {
+      lines.push(`### Video ${i + 1} — purpose: ${m.purpose}, source: ${m.sourceType}`);
+      lines.push(`- Description: ${m.description || "(none)"}`);
+      lines.push(`- URL: ${m.externalUrl ?? "n/a"}`);
+    }
+    lines.push("");
+  }
+
+  lines.push(`### How to use these URLs in code
+
+For IMAGES — always use \`next/image\`:
+\`\`\`tsx
+import Image from "next/image";
+
+// Hero/full-bleed background:
+<Image
+  src="HERO_URL_FROM_ABOVE"
+  alt="Alt text from above"
+  fill
+  priority
+  sizes="100vw"
+  className="object-cover"
+/>
+
+// Inline content image (use width+height when known, otherwise fill+sizes):
+<Image
+  src="GENERAL_URL_FROM_ABOVE"
+  alt="Alt text"
+  width={800}
+  height={600}
+  className="rounded-2xl object-cover"
+/>
+\`\`\`
+
+For VIDEOS:
+- YouTube: \`<iframe src="https://www.youtube.com/embed/VIDEO_ID" allowFullScreen className="aspect-video w-full" />\` (extract VIDEO_ID from the URL)
+- Vimeo: \`<iframe src="https://player.vimeo.com/video/VIDEO_ID" allowFullScreen className="aspect-video w-full" />\`
+- Direct .mp4/.webm: \`<video src="URL" controls className="w-full" />\` (or autoPlay muted loop playsInline for backgrounds)
+
+CRITICAL RULES:
+1. EVERY image MUST have a non-empty \`alt\` attribute (use the alt text or description above; empty string only for decorative backgrounds with \`aria-hidden\`).
+2. NEVER make up image URLs. Only use the URLs listed above OR the existing /img/... paths visible in reference pages.
+3. Match purpose to placement: "hero" purpose → hero/header section, "team" → people sections, "event" → event cards, "ministry" → ministry tiles, "background" → section backgrounds, "general" → inline content.
+4. The Supabase image domain is already in next.config.ts \`remotePatterns\` — these URLs WILL work with next/image.`);
+
+  return lines.join("\n");
 }
 
 function buildUserPrompt(intent: CodeGenIntent, components: ComponentInfo[], references: { route: string; source: string }[]): string {
-  const componentList = components
-    .map((c) => `  - import ${c.name} from "${c.importPath}";  // ${c.category}`)
-    .join("\n");
-
+  const componentSection = buildComponentSection(components);
   const referencesBlock = references
     .map((r) => `### Reference page ${r.route}\n\`\`\`tsx\n${r.source}\n\`\`\``)
     .join("\n\n");
-
-  const mediaBlock = intent.media && intent.media.length > 0
-    ? `\nAvailable uploaded media (use these URLs in any new section component you build):\n${intent.media
-        .map((m) => `- ${m.mediaType} (${m.purpose}): hero=${m.heroUrl ?? "n/a"} general=${m.generalUrl ?? "n/a"} thumb=${m.thumbnailUrl ?? "n/a"} ${m.externalUrl ? `external=${m.externalUrl}` : ""} desc="${m.description ?? ""}"`)
-        .join("\n")}`
-    : "";
+  const mediaSection = buildMediaSection(intent.media);
 
   const slugDirective = intent.requestedSlug
     ? `\n\nIMPORTANT: The slug MUST be exactly "${intent.requestedSlug}". Do not change it. This may overwrite an existing page at /${intent.requestedSlug} — that is intentional and approved by the volunteer.`
@@ -73,43 +161,73 @@ ${intent.context}
 ${intent.pageType ? `\nPage type: ${intent.pageType}` : ""}
 ${intent.audience ? `\nTarget audience: ${intent.audience}` : ""}${slugDirective}
 
-## Available components (prefer composing these)
-${componentList}
+## Available components
+Below is the FULL source of every reusable component, grouped by category.
+Each is labelled \`props=YES\` (accepts props you can pass) or \`props=NO\` (hardcoded — passing props will fail TypeScript).
+${componentSection}
 
 ## Reference existing pages
 ${referencesBlock}
-${mediaBlock}
+${mediaSection}
 
 ## Your task
-Generate a new Next.js App Router page at app/<slug>/page.tsx that fulfils the volunteer's intent.
+Generate a new Next.js App Router page at \`app/<slug>/page.tsx\` that fulfils the volunteer's intent.
 
-Rules:
-1. STRONGLY prefer composing existing components from the catalog above. Only create a new component if no existing one fits.
-2. Use the exact import paths shown in the catalog.
-3. Include a Next.js \`metadata\` export with title, description, alternates.canonical, and openGraph.
-4. Use the same code style as the reference pages (default export function, JSX fragments, no extra wrappers).
-5. New components, if any, must:
-   - Live under components/<category>/<Name>.tsx where <category> is one of: home, about, alpha, give, serve, visit, missions, new-here, help, whats-on, sermons, youth-alpha, connect-card.
-   - Use Tailwind classes consistent with brand: destiny-orange (#f58021), destiny-grey, white backgrounds.
-   - Be self-contained (no props) so the page just renders <NewComponent />.
-   - Use next/image for any images, with alt text.
-6. Slug must be lowercase letters/numbers/hyphens, max 60 chars. Do not collide with existing routes UNLESS a specific slug was provided above (then use that exact slug).
-7. Do NOT modify existing component files. Only create new ones.
+## How to choose between using and cloning a component
+
+The catalog above contains finished, hardcoded sections (Hero, Mission, EveryoneHasAPlace, etc.). Each one is labelled \`props=NO\` because it ships with its own copy/CTA/imagery baked in. You have THREE patterns to follow:
+
+### Pattern A — render an existing component as-is (preferred when copy fits)
+If the volunteer's intent works with the EXISTING text and imagery of a section (e.g. they want the standard "Worship With Us" CTA, or "Everyone Has A Place" tiles unchanged), just import and render it: \`<WorshipWithUsSection />\`. Pass NO props.
+
+### Pattern B — CLONE an existing component as a new file (THIS IS THE NORMAL CASE for Hero and any section that needs new copy/CTA/image)
+This is what the volunteer expects most of the time. The Hero looks the same on every page — only the text, CTAs and background image change. So:
+1. Pick the closest existing template from the catalog (e.g. \`HeroSection\` from home, or \`AboutHero\` from about).
+2. Create a NEW component file under \`components/<category>/<NewName>.tsx\` (e.g. \`components/alpha/AlphaSeptemberHero.tsx\`).
+3. Copy the JSX, Tailwind classes, fonts, gradients, animations and overall layout EXACTLY.
+4. Change ONLY:
+   - The headline / subhead / body text
+   - The CTA button labels and \`href\`s
+   - The background image \`src\` (use a media URL the volunteer uploaded; otherwise keep the original /img/... path the template uses)
+   - Optionally: the brand-coloured accents (keep destiny-orange #f58021 unless intent suggests otherwise)
+5. The new component must be self-contained with NO props (just \`export default function NewName() { ... }\`).
+6. Render it on the page: \`<AlphaSeptemberHero />\`.
+
+DO THE SAME for non-hero sections when they need different copy: clone \`MissionSection\` → \`AlphaWhyComeSection\` etc.
+
+### Pattern C — write a brand-new section
+Only do this if NO existing component is structurally close. Match the brand: destiny-orange CTAs, destiny-grey body text, white or destiny-grey backgrounds, Tailwind spacing scale, \`AnimateIn\` for entry animations (\`import AnimateIn from "@/components/AnimateIn";\`), \`next/image\` for images, semantic HTML, no inline styles unless the reference pages use them.
+
+## Hard rules to avoid TypeScript failures (READ CAREFULLY)
+
+1. NEVER pass props to a component labelled \`props=NO\`. \`<HeroSection title="X" />\` will FAIL the build because HeroSection accepts no arguments. If you need different content, follow Pattern B (clone).
+2. Every \`<Image>\` from \`next/image\` MUST have an \`alt\` attribute (string, can be empty for decorative). MUST have either \`fill\` or both \`width\` and \`height\`.
+3. Every imported component, hook, or utility must actually exist. Do not invent imports. Only import:
+   - From the catalog above using its exact \`importPath\`.
+   - From \`next/image\`, \`next/link\`, \`next\` (for \`Metadata\` type), \`react\`.
+   - \`@/components/AnimateIn\` (entry animations).
+   - From a NEW component file you are creating in the same response.
+4. The page file must use \`export default function PageName()\` (no props), and may include \`export const metadata: Metadata = {...}\`.
+5. If you use React hooks (\`useState\`, \`useEffect\`, \`useCallback\`) in a NEW component, that component file MUST start with \`"use client";\` as the first line. The page file (\`app/<slug>/page.tsx\`) should stay a server component (no \`"use client"\`) so it can export metadata.
+6. Do not use \`any\`, do not use \`@ts-ignore\`, do not use unused imports.
+7. Do not create files outside \`app/<slug>/\` and \`components/<category>/\`. Categories allowed: home, about, alpha, give, serve, visit, missions, new-here, help, whats-on, sermons, youth-alpha, connect-card.
+8. New component file names must be PascalCase (\`AlphaLaunchHero\`), no spaces, no hyphens.
+9. Slug must match \`^[a-z0-9][a-z0-9-]{0,60}$\`.
 
 ## Output format
-Respond with ONLY this JSON shape:
+Respond with ONLY this JSON (no markdown fences, no commentary):
 {
   "title": "Human-readable page title",
   "slug": "url-slug",
-  "reasoning": "ONE sentence (max 200 chars) on why you chose this structure. Plain text only. No quotes, no newlines, no special characters.",
+  "reasoning": "ONE sentence (max 200 chars) on which template you cloned and why. Plain text only. No quotes, no newlines.",
   "page": {
-    "source": "// Full source of app/<slug>/page.tsx as a string"
+    "source": "// Full TypeScript source of app/<slug>/page.tsx as a single string with \\n escapes"
   },
   "newComponents": [
     {
       "category": "alpha",
-      "name": "AlphaSeptemberCallout",
-      "source": "// Full source as a string"
+      "name": "AlphaLaunchHero",
+      "source": "// Full TypeScript source of the new component as a single string with \\n escapes"
     }
   ]
 }
@@ -127,10 +245,8 @@ function stripCodeFences(raw: string): string {
 
 function tryRepairJson(s: string): string | null {
   // Salvage common truncation issues: response was cut off mid-string/object.
-  // Strategy: trim to last balanced position, close any open string, balance braces/brackets.
   let str = s.trim();
 
-  // Find last complete top-level closing brace
   let depth = 0;
   let inString = false;
   let escape = false;
@@ -170,7 +286,6 @@ function parseLLMOutput(raw: string): LLMOutput {
   try {
     parsed = JSON.parse(cleaned);
   } catch (err) {
-    // Attempt salvage for truncated JSON
     const repaired = tryRepairJson(cleaned);
     if (repaired) {
       try {
@@ -227,13 +342,9 @@ export async function generatePageCode(
   ]);
 
   const prompt = buildUserPrompt(intent, components, references);
-  // Reuse the same generatePageStructure entrypoint; it sends the system prompt internally
-  // but we want a different system prompt for code generation. Inline a richer call:
   const raw = await llm.generatePageStructure(`${buildSystemPrompt()}\n\n${prompt}`);
 
   const out = parseLLMOutput(raw);
-
-  // If the user explicitly requested a slug, enforce it even if the LLM ignored the directive
   const finalSlug = intent.requestedSlug?.trim() || out.slug;
 
   return {
@@ -242,6 +353,93 @@ export async function generatePageCode(
     reasoning: out.reasoning,
     pageFile: {
       path: `app/${finalSlug}/page.tsx`,
+      source: out.page.source,
+    },
+    newComponents: (out.newComponents ?? []).map((c) => ({
+      path: `components/${c.category}/${c.name}.tsx`,
+      source: c.source,
+    })),
+  };
+}
+
+/**
+ * Repair a previous generation that failed type-checking.
+ * Sends the existing files + the tsc error output back to the LLM and asks
+ * it to return the same JSON shape, with the errors fixed.
+ */
+export async function repairGeneratedCode(
+  previous: GeneratedCode,
+  typeCheckOutput: string,
+  llm: LLMClient
+): Promise<GeneratedCode> {
+  const componentBlocks = previous.newComponents
+    .map(
+      (c) => `### Existing new component at \`${c.path}\`
+\`\`\`tsx
+${c.source}
+\`\`\``
+    )
+    .join("\n\n");
+
+  // Trim tsc output to the relevant errors only (avoid blowing the context).
+  const relevantErrors = typeCheckOutput
+    .split("\n")
+    .filter((line) => {
+      // Keep lines mentioning the new files or generic tsc error format.
+      const mentionsNew = previous.newComponents.some((c) =>
+        line.includes(c.path)
+      );
+      return mentionsNew || line.includes(previous.pageFile.path) || /error TS\d+/.test(line);
+    })
+    .slice(0, 80) // cap to 80 lines
+    .join("\n");
+
+  const prompt = `${buildSystemPrompt()}
+
+The previous code generation FAILED TypeScript type-checking.
+Your job is to return the SAME JSON shape with the errors fixed.
+
+## Error output from \`tsc --noEmit\`
+\`\`\`
+${relevantErrors || typeCheckOutput.slice(-3000)}
+\`\`\`
+
+## The page file at \`${previous.pageFile.path}\`
+\`\`\`tsx
+${previous.pageFile.source}
+\`\`\`
+
+${componentBlocks}
+
+## Common causes to check
+- Passed props to a no-prop component (e.g. \`<HeroSection title="X" />\` when HeroSection takes no args). FIX: clone the component as a new file with the new copy baked in.
+- Imported a component that doesn't exist. FIX: remove the import or replace with a real one.
+- Missing \`alt\` on \`<Image>\`. FIX: add a non-empty alt attribute.
+- Used \`useState\`/\`useEffect\` in a server component. FIX: add \`"use client";\` as the first line of the component file.
+- Used \`metadata\` export in a client component. FIX: keep page.tsx as a server component, move interactive UI to a client component.
+- Wrong import path. FIX: use \`@/components/<category>/<Name>\`.
+
+## Output format
+Return the COMPLETE, fixed code as JSON in the same shape:
+{
+  "title": "...",
+  "slug": "${previous.slug}",
+  "reasoning": "...",
+  "page": { "source": "..." },
+  "newComponents": [{ "category": "...", "name": "...", "source": "..." }]
+}
+
+Keep the same slug "${previous.slug}". Return ONLY the JSON, no markdown.`;
+
+  const raw = await llm.generatePageStructure(prompt);
+  const out = parseLLMOutput(raw);
+
+  return {
+    title: out.title || previous.title,
+    slug: previous.slug,
+    reasoning: out.reasoning,
+    pageFile: {
+      path: `app/${previous.slug}/page.tsx`,
       source: out.page.source,
     },
     newComponents: (out.newComponents ?? []).map((c) => ({

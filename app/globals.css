@@ -216,6 +216,18 @@ h3 {
   to { transform: rotate(360deg); }
 }
 
+/* Shimmer for the AI workflow progress bar */
+@keyframes ai-progress-shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(200%); }
+}
+.ai-progress-shimmer {
+  animation: ai-progress-shimmer 1.8s linear infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .ai-progress-shimmer { animation: none; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .glowing-gradient-border {
     animation: none;

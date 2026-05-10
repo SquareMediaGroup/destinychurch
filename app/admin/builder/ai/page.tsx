@@ -395,21 +395,34 @@ export default function AIPageCreatorPage() {
           </div>
         )}
 
-        {/* Workflow progress — shown while running */}
+        {/* Workflow progress — sticky so it stays visible while user scrolls.
+            Distinct indigo→violet→fuchsia gradient avoids confusion with the
+            destiny-orange Generate button. */}
         {queued && queued.runId && !completed && (
-          <div className="mb-6 rounded-2xl border border-black/5 bg-white p-6 shadow-sm">
-            <div className="mb-4 flex items-center gap-2 text-xs font-bold uppercase tracking-[0.2em] text-destiny-orange">
-              <span className="material-symbols-rounded text-base">bolt</span>
-              Generation in progress
+          <div className="sticky top-4 z-20 mb-6">
+            <div className="overflow-hidden rounded-2xl border-2 border-indigo-200 bg-white shadow-2xl shadow-indigo-500/10 ring-1 ring-indigo-100">
+              {/* Top accent strip */}
+              <div className="h-1 bg-gradient-to-r from-indigo-500 via-violet-500 to-fuchsia-500" />
+              <div className="p-6">
+                <div className="mb-4 flex items-center justify-between">
+                  <div className="flex items-center gap-2 text-[11px] font-black uppercase tracking-[0.25em] text-indigo-600">
+                    <span className="material-symbols-rounded text-base">bolt</span>
+                    Generation in progress
+                  </div>
+                  <span className="rounded-full bg-indigo-50 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-[0.2em] text-indigo-700">
+                    Live
+                  </span>
+                </div>
+                <WorkflowProgress
+                  runId={queued.runId}
+                  runUrl={queued.runUrl || ""}
+                  ghToken={authToken}
+                  onComplete={(success) => {
+                    setCompleted({ success, runUrl: queued.runUrl });
+                  }}
+                />
+              </div>
             </div>
-            <WorkflowProgress
-              runId={queued.runId}
-              runUrl={queued.runUrl || ""}
-              ghToken={authToken}
-              onComplete={(success) => {
-                setCompleted({ success, runUrl: queued.runUrl });
-              }}
-            />
           </div>
         )}
 
@@ -419,6 +432,7 @@ export default function AIPageCreatorPage() {
             number={1}
             title="What should this page do?"
             description="Be specific about the page's goal, key sections, and tone. The more detail, the better the result."
+            required
           >
             <div className="relative">
               <textarea
@@ -708,6 +722,7 @@ function Section({
   title,
   description,
   optional,
+  required,
   badge,
   children,
 }: {
@@ -715,26 +730,49 @@ function Section({
   title: string;
   description: string;
   optional?: boolean;
+  required?: boolean;
   badge?: React.ReactNode;
   children: React.ReactNode;
 }) {
   return (
-    <div className="rounded-3xl border border-black/5 bg-white p-6 shadow-sm transition hover:shadow-md md:p-8">
+    <div
+      className={`rounded-3xl border bg-white p-6 shadow-sm transition hover:shadow-md md:p-8 ${
+        required ? "border-destiny-orange/40 ring-1 ring-destiny-orange/10" : "border-black/5"
+      }`}
+    >
       <div className="mb-5 flex items-start gap-4">
-        <span className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-xl bg-destiny-orange/10 text-sm font-black text-destiny-orange">
+        <span
+          className={`flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-xl text-sm font-black ${
+            required
+              ? "bg-destiny-orange text-white"
+              : "bg-destiny-orange/10 text-destiny-orange"
+          }`}
+        >
           {number}
         </span>
         <div className="flex-1">
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <h2 className="text-base font-bold text-destiny-grey">{title}</h2>
+            {required && (
+              <span
+                role="status"
+                className="inline-flex items-center gap-1 rounded-full bg-destiny-orange px-2 py-0.5 text-[10px] font-black uppercase tracking-[0.18em] text-white"
+              >
+                <span aria-hidden="true">*</span>
+                Required
+              </span>
+            )}
             {optional && (
-              <span className="text-[10px] font-bold uppercase tracking-wider text-destiny-grey/40">
+              <span
+                role="status"
+                className="inline-flex items-center rounded-full border border-destiny-grey/15 bg-destiny-grey/5 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.18em] text-destiny-grey/70"
+              >
                 Optional
               </span>
             )}
             {badge}
           </div>
-          <p className="mt-1 text-sm text-destiny-grey/60">{description}</p>
+          <p className="mt-1 text-sm text-destiny-grey/70">{description}</p>
         </div>
       </div>
       {children}

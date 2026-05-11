@@ -23,6 +23,10 @@ on:
         description: "Media JSON (optional, array of MediaItem)"
         required: false
         type: string
+      layout:
+        description: "Comma-separated block kinds from the Skeleton sketcher (optional)"
+        required: false
+        type: string
       requesterEmail:
         description: "Email of requester"
         required: true
@@ -65,5 +69,6 @@ jobs:
           GEN_AUDIENCE: ${{ inputs.audience }}
           GEN_SLUG: ${{ inputs.slug }}
           GEN_MEDIA: ${{ inputs.media }}
+          GEN_LAYOUT: ${{ inputs.layout }}
           GEN_REQUESTER_EMAIL: ${{ inputs.requesterEmail }}
         run: npx tsx scripts/ai-generate-page.mts

@@ -9,6 +9,7 @@ import {
   getReferencePages,
   type ComponentInfo,
 } from "./code-context";
+import { type BlockKind, BLOCK_AI_GUIDE } from "./skeleton-types";
 
 export interface CodeGenIntent {
   pageType?: string;
@@ -16,6 +17,11 @@ export interface CodeGenIntent {
   audience?: string;
   media?: MediaItem[];
   requestedSlug?: string; // if provided, AI must use this exact slug (overwrites existing route)
+  /**
+   * Ordered list of block kinds from the Skeleton sketcher. When present, the AI
+   * MUST follow this section order exactly when generating the page.
+   */
+  layout?: BlockKind[];
 }
 
 export interface GeneratedFile {
@@ -172,12 +178,33 @@ CRITICAL RULES:
   return lines.join("\n");
 }
 
+function buildLayoutSection(layout?: BlockKind[]): string {
+  if (!layout || layout.length === 0) return "";
+  const lines = layout.map(
+    (kind, i) =>
+      `${i + 1}. ${BLOCK_AI_GUIDE[kind].label} — ${BLOCK_AI_GUIDE[kind].guidance}`
+  );
+  return `\n## REQUIRED layout (from the volunteer's skeleton sketch)
+
+The volunteer sketched the section order they want. Build the page with these
+sections, in this order, no more, no less. Treat this as authoritative — do
+NOT add an extra hero, do NOT skip blocks, do NOT reorder. Each numbered item
+must map to one section on the final page:
+
+${lines.join("\n")}
+
+If the volunteer's free-form description suggests additional sections, fold
+that material INTO one of the blocks above rather than adding new sections.
+The free-form description still drives the copy, tone, and CTAs.`;
+}
+
 function buildUserPrompt(intent: CodeGenIntent, components: ComponentInfo[], references: { route: string; source: string }[]): string {
   const componentSection = buildComponentSection(components);
   const referencesBlock = references
     .map((r) => `### Reference page ${r.route}\n\`\`\`tsx\n${r.source}\n\`\`\``)
     .join("\n\n");
   const mediaSection = buildMediaSection(intent.media);
+  const layoutSection = buildLayoutSection(intent.layout);
 
   const slugDirective = intent.requestedSlug
     ? `\n\nIMPORTANT: The slug MUST be exactly "${intent.requestedSlug}". Do not change it. This may overwrite an existing page at /${intent.requestedSlug} — that is intentional and approved by the volunteer.`
@@ -187,6 +214,7 @@ function buildUserPrompt(intent: CodeGenIntent, components: ComponentInfo[], ref
 ${intent.context}
 ${intent.pageType ? `\nPage type: ${intent.pageType}` : ""}
 ${intent.audience ? `\nTarget audience: ${intent.audience}` : ""}${slugDirective}
+${layoutSection}
 
 ## Available components
 Below is the FULL source of every reusable component, grouped by category.

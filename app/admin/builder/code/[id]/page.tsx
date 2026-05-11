@@ -47,6 +47,32 @@ export default function CodePageEditor({
     editCount: number;
   } | null>(null);
 
+  const [scanning, setScanning] = useState(false);
+  const [scanError, setScanError] = useState<string | null>(null);
+
+  async function scanForTexts() {
+    if (!page) return;
+    setScanning(true);
+    setScanError(null);
+    try {
+      const r = await fetch(`/api/admin/builder/code/${page.id}/extract-texts`, {
+        method: "POST",
+      });
+      const json = (await r.json()) as Record<string, unknown>;
+      if (!r.ok) {
+        throw new Error((json.error as string) ?? `Scan failed (${r.status})`);
+      }
+      // Re-fetch the row so the editor renders with the new catalog
+      const refresh = await fetch(`/api/admin/builder/code/${page.id}`);
+      const refreshData = (await refresh.json()) as { page: PageRow };
+      setPage(refreshData.page);
+    } catch (err) {
+      setScanError(err instanceof Error ? err.message : "Scan failed");
+    } finally {
+      setScanning(false);
+    }
+  }
+
   useEffect(() => {
     let cancelled = false;
     (async () => {
@@ -270,23 +296,52 @@ export default function CodePageEditor({
       <div className="mx-auto max-w-4xl px-6 py-8">
         {noTexts ? (
           <div className="rounded-3xl border border-dashed border-black/15 bg-white p-12 text-center">
-            <span className="material-symbols-rounded text-4xl text-destiny-grey/30">
-              text_snippet
+            <span
+              className={`material-symbols-rounded text-4xl ${
+                scanning ? "animate-spin text-indigo-500" : "text-destiny-grey/30"
+              }`}
+            >
+              {scanning ? "progress_activity" : "text_snippet"}
             </span>
             <h2 className="mt-3 text-base font-bold text-destiny-grey">
-              No editable text catalog for this page
+              {scanning
+                ? "Reading the source files…"
+                : "No editable text catalog yet"}
             </h2>
             <p className="mx-auto mt-1 max-w-md text-sm text-destiny-grey/60">
-              This page was generated before the visual editor was wired up. Re-generate
-              it from the AI creator to enable editing.
+              {scanning
+                ? "AI is scanning page.tsx and any cloned section components to find every editable heading, body line, CTA, and link. Usually takes 20–40 seconds."
+                : "This page was generated before the visual editor was wired up. AI can scan the source files now and build a catalog so you can edit every heading, body line, CTA, and link from here."}
             </p>
-            <Link
-              href="/admin/builder/ai"
-              className="mt-5 inline-flex items-center gap-2 rounded-xl bg-destiny-orange px-4 py-2.5 text-sm font-bold text-white shadow-sm transition hover:brightness-110"
-            >
-              <span className="material-symbols-rounded text-base">auto_awesome</span>
-              Re-generate with AI
-            </Link>
+            {scanError && (
+              <p className="mx-auto mt-3 max-w-md rounded-lg bg-red-50 px-3 py-2 text-xs text-red-700">
+                {scanError}
+              </p>
+            )}
+            <div className="mt-5 flex flex-wrap justify-center gap-2">
+              <button
+                type="button"
+                onClick={scanForTexts}
+                disabled={scanning}
+                className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-indigo-500 to-violet-500 px-5 py-2.5 text-sm font-bold text-white shadow-sm shadow-indigo-500/30 transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0"
+              >
+                <span
+                  className={`material-symbols-rounded text-base ${
+                    scanning ? "animate-spin" : ""
+                  }`}
+                >
+                  {scanning ? "progress_activity" : "auto_fix"}
+                </span>
+                {scanning ? "Scanning…" : "Scan for editable text"}
+              </button>
+              <Link
+                href="/admin/builder/ai"
+                className="inline-flex items-center gap-2 rounded-xl border border-black/10 bg-white px-4 py-2.5 text-sm font-bold text-destiny-grey/70 transition hover:bg-[#f5f7fa]"
+              >
+                <span className="material-symbols-rounded text-base">auto_awesome</span>
+                Or re-generate from scratch
+              </Link>
+            </div>
           </div>
         ) : (
           <div className="space-y-5">

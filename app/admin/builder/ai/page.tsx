@@ -1,11 +1,17 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import MediaUploader from "@/components/builder/MediaUploader";
 import WorkflowProgress from "@/components/builder/WorkflowProgress";
 import { getSupabaseBrowserClient } from "@/lib/supabase-browser";
 import type { MediaItem } from "@/lib/ai/media-types";
+import {
+  type BlockKind,
+  parseLayoutParam,
+  BLOCK_AI_GUIDE,
+} from "@/lib/ai/skeleton-types";
 
 // Top-level routes that already exist — used to warn when entering a slug that would overwrite them.
 const EXISTING_ROUTES = [
@@ -143,6 +149,8 @@ const EXAMPLES = [
 ];
 
 export default function AIPageCreatorPage() {
+  const searchParams = useSearchParams();
+  const [layout, setLayout] = useState<BlockKind[]>([]);
   const [pageType, setPageType] = useState("");
   const [context, setContext] = useState("");
   const [slug, setSlug] = useState("");
@@ -162,6 +170,12 @@ export default function AIPageCreatorPage() {
     runUrl?: string;
   } | null>(null);
   const [showAllExamples, setShowAllExamples] = useState(false);
+
+  // Pick up the skeleton layout from the URL on mount
+  useEffect(() => {
+    const raw = searchParams.get("layout");
+    setLayout(parseLayoutParam(raw));
+  }, [searchParams]);
 
   const charCount = context.length;
   const charLimit = 2000;
@@ -210,6 +224,7 @@ export default function AIPageCreatorPage() {
           audience: audience !== "general" ? audience : undefined,
           urgency,
           media,
+          layout: layout.length > 0 ? layout : undefined,
         }),
       });
 
@@ -270,6 +285,58 @@ export default function AIPageCreatorPage() {
       </div>
 
       <div className="mx-auto max-w-4xl px-6 py-8">
+        {/* Locked layout from the skeleton sketcher */}
+        {layout.length > 0 && (
+          <div className="mb-6 overflow-hidden rounded-2xl border-2 border-indigo-200 bg-white shadow-sm">
+            <div className="h-1 bg-gradient-to-r from-indigo-500 via-violet-500 to-fuchsia-500" />
+            <div className="p-5">
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                  <div className="flex items-center gap-2 text-[11px] font-black uppercase tracking-[0.22em] text-indigo-600">
+                    <span className="material-symbols-rounded text-base">widgets</span>
+                    Layout from skeleton sketcher
+                  </div>
+                  <p className="mt-1 text-sm text-destiny-grey/70">
+                    AI will follow this section order exactly when it generates the page.
+                  </p>
+                </div>
+                <div className="flex gap-2">
+                  <Link
+                    href={`/admin/builder/skeleton?layout=${encodeURIComponent(layout.join(","))}`}
+                    className="inline-flex items-center gap-1.5 rounded-lg border border-indigo-200 bg-white px-3 py-1.5 text-xs font-bold text-indigo-700 transition hover:bg-indigo-50"
+                  >
+                    <span className="material-symbols-rounded text-sm">edit</span>
+                    Edit layout
+                  </Link>
+                  <button
+                    type="button"
+                    onClick={() => setLayout([])}
+                    className="inline-flex items-center gap-1.5 rounded-lg border border-black/10 bg-white px-3 py-1.5 text-xs font-bold text-destiny-grey/70 transition hover:bg-[#f5f7fa]"
+                  >
+                    <span className="material-symbols-rounded text-sm">close</span>
+                    Clear layout
+                  </button>
+                </div>
+              </div>
+              <ol className="mt-4 flex flex-wrap gap-2">
+                {layout.map((kind, i) => (
+                  <li
+                    key={`${kind}-${i}`}
+                    className="inline-flex items-center gap-2 rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-1.5 text-xs"
+                  >
+                    <span className="inline-flex h-5 w-5 items-center justify-center rounded-md bg-indigo-200 font-mono text-[10px] font-bold text-indigo-900">
+                      {i + 1}
+                    </span>
+                    <span className="font-bold text-indigo-900">
+                      {BLOCK_AI_GUIDE[kind].label}
+                    </span>
+                  </li>
+                ))}
+              </ol>
+            </div>
+          </div>
+        )}
+
         {/* Error alert */}
         {error && (
           <div className="mb-6 flex items-start gap-3 rounded-2xl border border-red-200 bg-red-50 p-4">

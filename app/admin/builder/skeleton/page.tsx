@@ -2,20 +2,8 @@
 
 import { useState } from "react";
 import Link from "next/link";
-
-type BlockKind =
-  | "hero"
-  | "heading"
-  | "content"
-  | "image"
-  | "video"
-  | "churchsuite-form"
-  | "cta"
-  | "gallery"
-  | "testimonial"
-  | "faq"
-  | "team"
-  | "spacer";
+import { useRouter } from "next/navigation";
+import type { BlockKind } from "@/lib/ai/skeleton-types";
 
 type BlockDef = {
   kind: BlockKind;
@@ -141,11 +129,18 @@ function nextId(kind: BlockKind): string {
 }
 
 export default function SkeletonBuilderPage() {
+  const router = useRouter();
   const [blocks, setBlocks] = useState<CanvasBlock[]>(STARTER_BLOCKS);
   const [dragKind, setDragKind] = useState<BlockKind | null>(null);
   const [dragId, setDragId] = useState<string | null>(null);
   const [dropIndex, setDropIndex] = useState<number | null>(null);
   const [paletteOver, setPaletteOver] = useState(false);
+
+  function continueToAI() {
+    if (blocks.length === 0) return;
+    const layout = blocks.map((b) => b.kind).join(",");
+    router.push(`/admin/builder/ai?layout=${encodeURIComponent(layout)}`);
+  }
 
   function addBlockAt(kind: BlockKind, index: number) {
     const def = PALETTE.find((p) => p.kind === kind);
@@ -235,7 +230,7 @@ export default function SkeletonBuilderPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#fafafa]">
+    <div className="min-h-screen bg-[#fafafa] pb-28">
       {/* Header */}
       <div className="relative overflow-hidden border-b border-black/5 bg-white">
         <div
@@ -266,11 +261,11 @@ export default function SkeletonBuilderPage() {
             </span>
           </div>
           <p className="mt-2 max-w-3xl text-sm text-destiny-grey/60">
-            Drag blocks from the left onto the canvas to sketch a page layout.
-            Reorder by dragging, delete by dragging back to the palette. The AI
-            will use this skeleton to know where each section belongs.
+            Drag blocks from the left onto the canvas to sketch a page layout,
+            then hit <strong>Use this layout</strong>. The AI will follow your
+            section order exactly when it generates the page.
             <span className="ml-1 font-bold text-destiny-grey/80">
-              You don&apos;t have to use this — you can skip it and let AI decide
+              You don&apos;t have to use this — you can skip and let AI decide
               the layout entirely from your description.
             </span>
           </p>
@@ -278,18 +273,11 @@ export default function SkeletonBuilderPage() {
           <div className="mt-4 flex flex-wrap gap-2">
             <Link
               href="/admin/builder/ai"
-              className="group inline-flex items-center gap-2 rounded-xl bg-destiny-orange px-4 py-2 text-xs font-bold text-white shadow-sm shadow-destiny-orange/30 transition hover:-translate-y-0.5 hover:shadow-md hover:shadow-destiny-orange/40"
+              className="inline-flex items-center gap-2 rounded-xl border border-black/10 bg-white px-4 py-2 text-xs font-bold text-destiny-grey/70 transition hover:bg-[#f5f7fa]"
             >
-              <span className="material-symbols-rounded text-base">auto_awesome</span>
+              <span className="material-symbols-rounded text-base">close</span>
               Skip — let AI decide everything
-              <span className="material-symbols-rounded text-sm transition group-hover:translate-x-0.5">
-                arrow_forward
-              </span>
             </Link>
-            <span className="inline-flex items-center gap-1.5 rounded-xl border border-dashed border-destiny-orange/30 bg-destiny-orange/5 px-3 py-2 text-[11px] font-bold text-destiny-orange">
-              <span className="material-symbols-rounded text-sm">info</span>
-              No saving yet — this is a UI preview
-            </span>
           </div>
         </div>
       </div>
@@ -440,6 +428,44 @@ export default function SkeletonBuilderPage() {
             </div>
           )}
         </section>
+      </div>
+
+      {/* Sticky continue bar */}
+      <div className="fixed bottom-0 left-0 right-0 z-30 border-t border-black/5 bg-white/95 backdrop-blur-md">
+        <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-6 py-4">
+          <div className="text-xs text-destiny-grey/70">
+            {blocks.length === 0 ? (
+              <span>Add at least one block to continue</span>
+            ) : (
+              <span className="font-bold text-destiny-grey">
+                {blocks.length} block{blocks.length === 1 ? "" : "s"} —
+                <span className="ml-2 font-mono text-destiny-grey/60">
+                  {blocks.map((b) => b.label).join(" → ")}
+                </span>
+              </span>
+            )}
+          </div>
+          <div className="flex gap-2">
+            <Link
+              href="/admin/builder"
+              className="inline-flex items-center gap-1.5 rounded-xl border border-black/10 bg-white px-4 py-2.5 text-sm font-bold text-destiny-grey/70 transition hover:bg-[#f5f7fa]"
+            >
+              Cancel
+            </Link>
+            <button
+              type="button"
+              onClick={continueToAI}
+              disabled={blocks.length === 0}
+              className="group inline-flex items-center gap-2 rounded-xl bg-destiny-orange px-6 py-2.5 text-sm font-bold text-white shadow-lg shadow-destiny-orange/30 transition hover:-translate-y-0.5 hover:shadow-xl hover:shadow-destiny-orange/40 disabled:cursor-not-allowed disabled:bg-destiny-grey/30 disabled:shadow-none disabled:hover:translate-y-0"
+            >
+              <span className="material-symbols-rounded text-base">auto_awesome</span>
+              Use this layout
+              <span className="material-symbols-rounded text-base transition group-hover:translate-x-0.5">
+                arrow_forward
+              </span>
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   );

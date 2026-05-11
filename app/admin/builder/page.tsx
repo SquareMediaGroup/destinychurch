@@ -23,12 +23,24 @@ export default function BuilderListPage() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<FilterKey>("all");
+  const [indexing, setIndexing] = useState(false);
+  const [indexResult, setIndexResult] = useState<{
+    inserted: number;
+    updated: number;
+    scanned: number;
+  } | null>(null);
+  const [indexError, setIndexError] = useState<string | null>(null);
 
-  useEffect(() => {
+  function reload() {
+    setLoading(true);
     fetch("/api/admin/builder/pages")
       .then((r) => r.json())
       .then((d) => setPages(d.pages || []))
       .finally(() => setLoading(false));
+  }
+
+  useEffect(() => {
+    reload();
   }, []);
 
   async function deletePage(id: string) {
@@ -36,6 +48,29 @@ export default function BuilderListPage() {
     const res = await fetch(`/api/admin/builder/pages/${id}`, { method: "DELETE" });
     if (res.ok) {
       setPages((prev) => prev.filter((p) => p.id !== id));
+    }
+  }
+
+  async function runIndex() {
+    setIndexing(true);
+    setIndexError(null);
+    setIndexResult(null);
+    try {
+      const r = await fetch("/api/admin/builder/code/index", { method: "POST" });
+      const json = (await r.json()) as Record<string, unknown>;
+      if (!r.ok) {
+        throw new Error((json.error as string) ?? `Index failed (${r.status})`);
+      }
+      setIndexResult({
+        inserted: (json.inserted as number) ?? 0,
+        updated: (json.updated as number) ?? 0,
+        scanned: (json.scanned as number) ?? 0,
+      });
+      reload();
+    } catch (err) {
+      setIndexError(err instanceof Error ? err.message : "Indexing failed");
+    } finally {
+      setIndexing(false);
     }
   }
 
@@ -110,6 +145,20 @@ export default function BuilderListPage() {
                 Beta
               </span>
             </Link>
+            <button
+              type="button"
+              onClick={runIndex}
+              disabled={indexing}
+              title="Scan app/ for AI-generated pages that aren't in the dashboard yet and register them"
+              className="inline-flex items-center gap-2 rounded-2xl border border-indigo-200 bg-white px-5 py-3.5 text-sm font-bold text-indigo-700 transition hover:-translate-y-0.5 hover:bg-indigo-50 disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0"
+            >
+              <span
+                className={`material-symbols-rounded text-lg ${indexing ? "animate-spin" : ""}`}
+              >
+                {indexing ? "progress_activity" : "manage_search"}
+              </span>
+              {indexing ? "Scanning…" : "Index AI pages"}
+            </button>
             <Link
               href="/admin"
               className="inline-flex items-center gap-2 rounded-2xl border border-black/10 bg-white px-5 py-3.5 text-sm font-bold text-destiny-grey/70 transition hover:bg-[#f5f7fa]"
@@ -118,6 +167,56 @@ export default function BuilderListPage() {
               Back to admin
             </Link>
           </div>
+
+          {/* Index result/error banner */}
+          {indexResult && (
+            <div className="mt-5 flex items-start gap-3 rounded-2xl border border-indigo-200 bg-indigo-50 p-4">
+              <span className="material-symbols-rounded mt-0.5 text-indigo-600">
+                check_circle
+              </span>
+              <div className="flex-1 text-sm">
+                <p className="font-bold text-indigo-900">
+                  Scanned {indexResult.scanned} page
+                  {indexResult.scanned === 1 ? "" : "s"} —{" "}
+                  {indexResult.inserted === 0 && indexResult.updated === 0
+                    ? "everything was already up to date."
+                    : `${indexResult.inserted} new, ${indexResult.updated} refreshed.`}
+                </p>
+                <p className="text-xs text-indigo-700">
+                  Click any AI card to open the visual editor. If the catalog is
+                  empty, hit <strong>Scan for editable text</strong> on the editor
+                  to populate it.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIndexResult(null)}
+                aria-label="Dismiss"
+                className="text-indigo-700"
+              >
+                <span className="material-symbols-rounded text-base">close</span>
+              </button>
+            </div>
+          )}
+          {indexError && (
+            <div className="mt-5 flex items-start gap-3 rounded-2xl border border-red-200 bg-red-50 p-4">
+              <span className="material-symbols-rounded mt-0.5 text-red-600">
+                error
+              </span>
+              <div className="flex-1 text-sm">
+                <p className="font-bold text-red-900">Index failed</p>
+                <p className="text-red-700">{indexError}</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIndexError(null)}
+                aria-label="Dismiss"
+                className="text-red-700"
+              >
+                <span className="material-symbols-rounded text-base">close</span>
+              </button>
+            </div>
+          )}
 
           {/* Stat cards */}
           <div className="mt-10 grid grid-cols-2 gap-3 md:grid-cols-4">

@@ -17,6 +17,7 @@ import {
 import { commitAndPush, rollbackFiles } from "../lib/ai/git-automation";
 import { sendPageAuditEmail } from "../lib/ai/page-audit-email";
 import { upsertCodePage } from "../lib/ai/builder-pages-db";
+import { parseLayoutParam } from "../lib/ai/skeleton-types";
 
 const MAX_TYPECHECK_ATTEMPTS = 3; // 1 initial + 2 repair attempts
 
@@ -53,6 +54,10 @@ async function main() {
   }
 
   const requesterEmail = process.env.GEN_REQUESTER_EMAIL;
+  const layout = parseLayoutParam(process.env.GEN_LAYOUT);
+  if (layout.length > 0) {
+    console.log(`📐 Skeleton layout received: ${layout.join(" → ")}`);
+  }
 
   if (!context) {
     throw new Error("GEN_CONTEXT is required");
@@ -69,7 +74,10 @@ async function main() {
 
   let generated: GeneratedCode;
   try {
-    generated = await generatePageCode({ context, pageType, audience, media, requestedSlug }, llm);
+    generated = await generatePageCode(
+      { context, pageType, audience, media, requestedSlug, layout: layout.length > 0 ? layout : undefined },
+      llm
+    );
   } catch (err) {
     const errorMsg = err instanceof Error ? err.message : String(err);
     console.error("LLM generation failed:", errorMsg);

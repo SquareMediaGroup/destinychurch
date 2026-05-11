@@ -23,24 +23,27 @@ export default function BuilderListPage() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<FilterKey>("all");
-  const [indexing, setIndexing] = useState(false);
-  const [indexResult, setIndexResult] = useState<{
-    inserted: number;
-    updated: number;
-    scanned: number;
-  } | null>(null);
-  const [indexError, setIndexError] = useState<string | null>(null);
 
-  function reload() {
+  // Auto-index runs silently on every mount so the listing always reflects
+  // what's on disk. Errors are non-fatal — we still show whatever's in the DB.
+  async function syncAndLoad() {
     setLoading(true);
-    fetch("/api/admin/builder/pages")
-      .then((r) => r.json())
-      .then((d) => setPages(d.pages || []))
-      .finally(() => setLoading(false));
+    try {
+      await fetch("/api/admin/builder/code/index", { method: "POST" });
+    } catch {
+      // ignore — listing fetch below will still work
+    }
+    try {
+      const r = await fetch("/api/admin/builder/pages");
+      const d = await r.json();
+      setPages(d.pages || []);
+    } finally {
+      setLoading(false);
+    }
   }
 
   useEffect(() => {
-    reload();
+    syncAndLoad();
   }, []);
 
   async function deletePage(id: string) {
@@ -48,29 +51,6 @@ export default function BuilderListPage() {
     const res = await fetch(`/api/admin/builder/pages/${id}`, { method: "DELETE" });
     if (res.ok) {
       setPages((prev) => prev.filter((p) => p.id !== id));
-    }
-  }
-
-  async function runIndex() {
-    setIndexing(true);
-    setIndexError(null);
-    setIndexResult(null);
-    try {
-      const r = await fetch("/api/admin/builder/code/index", { method: "POST" });
-      const json = (await r.json()) as Record<string, unknown>;
-      if (!r.ok) {
-        throw new Error((json.error as string) ?? `Index failed (${r.status})`);
-      }
-      setIndexResult({
-        inserted: (json.inserted as number) ?? 0,
-        updated: (json.updated as number) ?? 0,
-        scanned: (json.scanned as number) ?? 0,
-      });
-      reload();
-    } catch (err) {
-      setIndexError(err instanceof Error ? err.message : "Indexing failed");
-    } finally {
-      setIndexing(false);
     }
   }
 
@@ -99,239 +79,122 @@ export default function BuilderListPage() {
 
   return (
     <div className="min-h-screen bg-[#fafafa]">
-      {/* Hero header */}
-      <div className="relative overflow-hidden border-b border-black/5 bg-white">
-        <div
-          className="pointer-events-none absolute inset-0 opacity-60"
-          style={{
-            backgroundImage:
-              "radial-gradient(circle at 0% 0%, rgba(245,128,33,0.08), transparent 50%), radial-gradient(circle at 100% 100%, rgba(245,128,33,0.06), transparent 50%)",
-          }}
-        />
-        <div className="relative mx-auto max-w-6xl px-6 py-12 md:py-16">
-          <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.2em] text-destiny-orange">
-            <span className="h-1.5 w-1.5 rounded-full bg-destiny-orange" />
-            Page Builder
-          </div>
-          <h1 className="mt-3 text-4xl font-black tracking-tight text-destiny-grey md:text-5xl">
-            Build pages with{" "}
-            <span className="bg-gradient-to-r from-destiny-orange to-amber-500 bg-clip-text text-transparent">
-              AI
-            </span>
-          </h1>
-          <p className="mt-3 max-w-2xl text-base text-destiny-grey/60">
-            Describe what you want and AI writes a real Next.js page, type-checks
-            it, commits to <code className="rounded bg-destiny-grey/5 px-1.5 py-0.5 font-mono text-sm">main</code>, and emails an audit.
-          </p>
-
-          <div className="mt-8 flex flex-wrap gap-3">
-            <Link
-              href="/admin/builder/ai"
-              className="group inline-flex items-center gap-2 rounded-2xl bg-destiny-orange px-6 py-3.5 text-sm font-bold text-white shadow-lg shadow-destiny-orange/30 transition hover:-translate-y-0.5 hover:shadow-xl hover:shadow-destiny-orange/40"
-            >
-              <span className="material-symbols-rounded text-lg">auto_awesome</span>
-              Create page with AI
-              <span className="material-symbols-rounded text-base transition group-hover:translate-x-0.5">
-                arrow_forward
-              </span>
-            </Link>
-            <Link
-              href="/admin/builder/skeleton"
-              className="group inline-flex items-center gap-2 rounded-2xl border border-destiny-orange/30 bg-white px-5 py-3.5 text-sm font-bold text-destiny-grey/80 transition hover:-translate-y-0.5 hover:border-destiny-orange hover:text-destiny-orange"
-            >
-              <span className="material-symbols-rounded text-lg">widgets</span>
-              Skeleton sketcher
-              <span className="inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-destiny-orange to-amber-500 px-2 py-0.5 text-[9px] font-black uppercase tracking-[0.18em] text-white">
-                Beta
-              </span>
-            </Link>
-            <button
-              type="button"
-              onClick={runIndex}
-              disabled={indexing}
-              title="Scan app/ for AI-generated pages that aren't in the dashboard yet and register them"
-              className="inline-flex items-center gap-2 rounded-2xl border border-indigo-200 bg-white px-5 py-3.5 text-sm font-bold text-indigo-700 transition hover:-translate-y-0.5 hover:bg-indigo-50 disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0"
-            >
-              <span
-                className={`material-symbols-rounded text-lg ${indexing ? "animate-spin" : ""}`}
-              >
-                {indexing ? "progress_activity" : "manage_search"}
-              </span>
-              {indexing ? "Scanning…" : "Index AI pages"}
-            </button>
-            <Link
-              href="/admin"
-              className="inline-flex items-center gap-2 rounded-2xl border border-black/10 bg-white px-5 py-3.5 text-sm font-bold text-destiny-grey/70 transition hover:bg-[#f5f7fa]"
-            >
-              <span className="material-symbols-rounded text-lg">arrow_back</span>
-              Back to admin
-            </Link>
-          </div>
-
-          {/* Index result/error banner */}
-          {indexResult && (
-            <div className="mt-5 flex items-start gap-3 rounded-2xl border border-indigo-200 bg-indigo-50 p-4">
-              <span className="material-symbols-rounded mt-0.5 text-indigo-600">
-                check_circle
-              </span>
-              <div className="flex-1 text-sm">
-                <p className="font-bold text-indigo-900">
-                  Scanned {indexResult.scanned} page
-                  {indexResult.scanned === 1 ? "" : "s"} —{" "}
-                  {indexResult.inserted === 0 && indexResult.updated === 0
-                    ? "everything was already up to date."
-                    : `${indexResult.inserted} new, ${indexResult.updated} refreshed.`}
-                </p>
-                <p className="text-xs text-indigo-700">
-                  Click any AI card to open the visual editor. If the catalog is
-                  empty, hit <strong>Scan for editable text</strong> on the editor
-                  to populate it.
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={() => setIndexResult(null)}
-                aria-label="Dismiss"
-                className="text-indigo-700"
-              >
-                <span className="material-symbols-rounded text-base">close</span>
-              </button>
+      {/* Header */}
+      <div className="border-b border-black/5 bg-white">
+        <div className="mx-auto max-w-5xl px-6 py-8 md:py-10">
+          <div className="flex flex-wrap items-end justify-between gap-4">
+            <div>
+              <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-destiny-grey/50">
+                Page Builder
+              </p>
+              <h1 className="mt-1 text-2xl font-black tracking-tight text-destiny-grey md:text-3xl">
+                Pages
+              </h1>
+              <p className="mt-1 text-sm text-destiny-grey/60">
+                AI-generated pages on the site, plus draft pages still in
+                progress.
+              </p>
             </div>
-          )}
-          {indexError && (
-            <div className="mt-5 flex items-start gap-3 rounded-2xl border border-red-200 bg-red-50 p-4">
-              <span className="material-symbols-rounded mt-0.5 text-red-600">
-                error
-              </span>
-              <div className="flex-1 text-sm">
-                <p className="font-bold text-red-900">Index failed</p>
-                <p className="text-red-700">{indexError}</p>
-              </div>
-              <button
-                type="button"
-                onClick={() => setIndexError(null)}
-                aria-label="Dismiss"
-                className="text-red-700"
+            <div className="flex gap-2">
+              <Link
+                href="/admin/builder/ai"
+                className="inline-flex items-center gap-1.5 rounded-lg bg-destiny-orange px-4 py-2 text-sm font-bold text-white shadow-sm transition hover:brightness-110"
               >
-                <span className="material-symbols-rounded text-base">close</span>
-              </button>
+                <span className="material-symbols-rounded text-base">add</span>
+                New page
+              </Link>
+              <Link
+                href="/admin"
+                className="inline-flex items-center gap-1.5 rounded-lg border border-black/10 bg-white px-3 py-2 text-sm font-bold text-destiny-grey/70 transition hover:bg-[#f5f7fa]"
+              >
+                <span className="material-symbols-rounded text-base">arrow_back</span>
+                Admin
+              </Link>
             </div>
-          )}
-
-          {/* Stat cards */}
-          <div className="mt-10 grid grid-cols-2 gap-3 md:grid-cols-4">
-            <StatCard label="Total pages" value={counts.all} accent="grey" />
-            <StatCard label="Published" value={counts.published} accent="green" />
-            <StatCard label="Drafts" value={counts.draft} accent="amber" />
-            <StatCard label="Archived" value={counts.archived} accent="grey" />
           </div>
         </div>
       </div>
 
-      {/* List section */}
-      <div className="mx-auto max-w-6xl px-6 py-10">
-        {/* Filters */}
-        <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-          <div className="flex flex-wrap items-center gap-2">
-            {(["all", "published", "draft", "archived"] as FilterKey[]).map(
-              (k) => {
-                const active = filter === k;
-                return (
-                  <button
-                    key={k}
-                    type="button"
-                    onClick={() => setFilter(k)}
-                    className={`inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-xs font-bold capitalize transition ${
-                      active
-                        ? "bg-destiny-grey text-white shadow-sm"
-                        : "bg-white text-destiny-grey/60 hover:bg-[#f5f7fa]"
+      {/* List + filters */}
+      <div className="mx-auto max-w-5xl px-6 py-6">
+        {/* Filter chips + search in a single compact row */}
+        <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex flex-wrap items-center gap-1">
+            {(["all", "published", "draft", "archived"] as FilterKey[]).map((k) => {
+              const active = filter === k;
+              return (
+                <button
+                  key={k}
+                  type="button"
+                  onClick={() => setFilter(k)}
+                  className={`inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-bold capitalize transition ${
+                    active
+                      ? "bg-destiny-grey text-white"
+                      : "bg-transparent text-destiny-grey/60 hover:bg-[#f5f7fa]"
+                  }`}
+                >
+                  {k}
+                  <span
+                    className={`tabular-nums text-[10px] ${
+                      active ? "text-white/60" : "text-destiny-grey/40"
                     }`}
                   >
-                    {k}
-                    <span
-                      className={`rounded-full px-1.5 py-0.5 text-[10px] ${
-                        active ? "bg-white/20" : "bg-destiny-grey/10"
-                      }`}
-                    >
-                      {counts[k]}
-                    </span>
-                  </button>
-                );
-              }
-            )}
+                    {counts[k]}
+                  </span>
+                </button>
+              );
+            })}
           </div>
-          <div className="relative w-full md:w-72">
-            <span className="material-symbols-rounded pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-base text-destiny-grey/30">
+          <div className="relative w-full sm:w-64">
+            <span className="material-symbols-rounded pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-base text-destiny-grey/30">
               search
             </span>
             <input
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search pages…"
-              className="w-full rounded-xl border border-black/5 bg-white px-9 py-2.5 text-sm text-destiny-grey placeholder:text-destiny-grey/30 focus:border-destiny-orange/50 focus:outline-none focus:ring-2 focus:ring-destiny-orange/10"
+              placeholder="Search…"
+              className="w-full rounded-md border border-black/10 bg-white px-8 py-1.5 text-sm text-destiny-grey placeholder:text-destiny-grey/30 focus:border-destiny-grey/40 focus:outline-none focus:ring-2 focus:ring-destiny-grey/10"
             />
           </div>
         </div>
 
-        {/* Pages grid */}
+        {/* List */}
         {loading ? (
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {[0, 1, 2, 3, 4, 5].map((i) => (
-              <div
+          <ul className="space-y-1.5">
+            {[0, 1, 2, 3, 4].map((i) => (
+              <li
                 key={i}
-                className="h-48 animate-pulse rounded-2xl border border-black/5 bg-white"
+                className="h-14 animate-pulse rounded-lg border border-black/5 bg-white"
               />
             ))}
-          </div>
+          </ul>
         ) : filtered.length === 0 ? (
           <EmptyState hasSearch={Boolean(search) || filter !== "all"} />
         ) : (
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {filtered.map((p) => (
-              <PageCard key={p.id} page={p} onDelete={() => deletePage(p.id)} />
+          <ul className="overflow-hidden rounded-lg border border-black/5 bg-white">
+            {filtered.map((p, i) => (
+              <PageRow
+                key={p.id}
+                page={p}
+                isLast={i === filtered.length - 1}
+                onDelete={() => deletePage(p.id)}
+              />
             ))}
-          </div>
+          </ul>
         )}
       </div>
     </div>
   );
 }
 
-function StatCard({
-  label,
-  value,
-  accent,
-}: {
-  label: string;
-  value: number;
-  accent: "grey" | "green" | "amber";
-}) {
-  const dot =
-    accent === "green"
-      ? "bg-green-500"
-      : accent === "amber"
-        ? "bg-amber-500"
-        : "bg-destiny-grey/40";
-
-  return (
-    <div className="rounded-2xl border border-black/5 bg-white p-4 shadow-sm">
-      <div className="flex items-center gap-2">
-        <span className={`h-2 w-2 rounded-full ${dot}`} />
-        <span className="text-[11px] font-bold uppercase tracking-wider text-destiny-grey/50">
-          {label}
-        </span>
-      </div>
-      <div className="mt-2 text-2xl font-black text-destiny-grey">{value}</div>
-    </div>
-  );
-}
-
-function PageCard({
+function PageRow({
   page,
+  isLast,
   onDelete,
 }: {
   page: PageRow;
+  isLast: boolean;
   onDelete: () => void;
 }) {
   const updated = new Date(page.updated_at);
@@ -341,123 +204,94 @@ function PageCard({
     ? `/admin/builder/code/${page.id}`
     : `/admin/builder/${page.id}`;
 
+  const statusDot =
+    page.status === "published"
+      ? "bg-emerald-500"
+      : page.status === "draft"
+        ? "bg-amber-500"
+        : "bg-destiny-grey/30";
+
   return (
-    <Link
-      href={editHref}
-      className="group relative flex flex-col overflow-hidden rounded-2xl border border-black/5 bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-lg"
+    <li
+      className={`group relative ${isLast ? "" : "border-b border-black/5"}`}
     >
-      {/* Preview thumbnail (gradient placeholder) */}
-      <div
-        className="relative aspect-[16/9] overflow-hidden"
-        style={{
-          background: isAI
-            ? "linear-gradient(135deg, rgba(99,102,241,0.14), rgba(168,85,247,0.06) 60%, #f5f7fa)"
-            : "linear-gradient(135deg, rgba(245,128,33,0.12), rgba(245,128,33,0.04) 60%, #f5f7fa)",
-        }}
+      <Link
+        href={editHref}
+        className="flex items-center gap-3 px-4 py-3 transition hover:bg-[#fafafa]"
       >
-        <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-          <span
-            className={`material-symbols-rounded text-5xl ${
-              isAI ? "text-indigo-500/30" : "text-destiny-orange/20"
-            }`}
-          >
-            {isAI ? "auto_awesome" : "description"}
-          </span>
-        </div>
-        <div className="absolute left-3 top-3 flex flex-col gap-1.5">
-          <StatusPill status={page.status} />
-          {isAI && (
-            <span className="inline-flex items-center gap-1 self-start rounded-full bg-gradient-to-r from-indigo-500 to-violet-500 px-2 py-0.5 text-[10px] font-black uppercase tracking-[0.18em] text-white shadow-sm">
-              <span className="material-symbols-rounded text-xs">auto_awesome</span>
-              AI
+        {/* Status dot */}
+        <span
+          className={`h-2 w-2 flex-shrink-0 rounded-full ${statusDot}`}
+          aria-label={page.status}
+        />
+
+        {/* Title + slug */}
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2">
+            <span className="truncate text-sm font-bold text-destiny-grey">
+              {page.title}
             </span>
-          )}
-        </div>
-        {isPublished && (
-          <a
-            href={`/${page.slug}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            title="View live"
-            onClick={(e) => e.stopPropagation()}
-            className="absolute right-3 top-3 inline-flex h-8 w-8 items-center justify-center rounded-lg bg-white/95 text-destiny-grey shadow-sm transition hover:bg-white"
-          >
-            <span className="material-symbols-rounded text-base">open_in_new</span>
-          </a>
-        )}
-      </div>
-
-      {/* Body */}
-      <div className="flex flex-1 flex-col p-5">
-        <h3 className="line-clamp-2 text-base font-bold text-destiny-grey">
-          {page.title}
-        </h3>
-        <p className="mt-1 truncate font-mono text-xs text-destiny-grey/50">
-          /{page.slug}
-        </p>
-
-        <div className="mt-4 flex items-center justify-between border-t border-black/5 pt-4">
-          <span className="flex items-center gap-1.5 text-[11px] text-destiny-grey/50">
-            <span className="material-symbols-rounded text-sm">schedule</span>
-            {formatRelative(updated)}
-          </span>
-
-          <div className="flex items-center gap-1 opacity-0 transition group-hover:opacity-100">
-            <span
-              className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-[11px] font-bold text-destiny-grey/70 hover:bg-[#f5f7fa]"
-            >
-              <span className="material-symbols-rounded text-sm">edit</span>
-              {isAI ? "Edit text" : "Edit"}
-            </span>
-            <button
-              type="button"
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                onDelete();
-              }}
-              title="Delete"
-              className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-destiny-grey/60 hover:bg-red-50 hover:text-red-600"
-            >
-              <span className="material-symbols-rounded text-base">delete</span>
-            </button>
+            {isAI && (
+              <span
+                className="inline-flex items-center rounded border border-black/10 bg-[#fafafa] px-1.5 py-0 text-[9px] font-bold uppercase tracking-wider text-destiny-grey/60"
+                title="Generated by AI"
+              >
+                AI
+              </span>
+            )}
           </div>
+          <p className="truncate font-mono text-[11px] text-destiny-grey/45">
+            /{page.slug}
+          </p>
         </div>
-      </div>
-    </Link>
-  );
-}
 
-function StatusPill({ status }: { status: PageRow["status"] }) {
-  const config =
-    status === "published"
-      ? { bg: "bg-green-500/95", text: "text-white", label: "Published" }
-      : status === "draft"
-        ? { bg: "bg-amber-500/95", text: "text-white", label: "Draft" }
-        : { bg: "bg-destiny-grey/80", text: "text-white", label: "Archived" };
+        {/* Meta */}
+        <span className="hidden flex-shrink-0 text-[11px] text-destiny-grey/40 sm:inline">
+          {formatRelative(updated)}
+        </span>
 
-  return (
-    <span
-      className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider ${config.bg} ${config.text} backdrop-blur`}
-    >
-      <span className="h-1.5 w-1.5 rounded-full bg-white" />
-      {config.label}
-    </span>
+        {/* Actions (visible on hover) */}
+        <div className="flex flex-shrink-0 items-center gap-0.5 opacity-0 transition group-hover:opacity-100">
+          {isPublished && (
+            <a
+              href={`/${page.slug}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              title="View live page"
+              onClick={(e) => e.stopPropagation()}
+              className="inline-flex h-7 w-7 items-center justify-center rounded text-destiny-grey/50 hover:bg-black/5 hover:text-destiny-grey"
+            >
+              <span className="material-symbols-rounded text-base">open_in_new</span>
+            </a>
+          )}
+          <button
+            type="button"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              onDelete();
+            }}
+            title="Delete"
+            className="inline-flex h-7 w-7 items-center justify-center rounded text-destiny-grey/50 hover:bg-red-50 hover:text-red-600"
+          >
+            <span className="material-symbols-rounded text-base">delete</span>
+          </button>
+        </div>
+      </Link>
+    </li>
   );
 }
 
 function EmptyState({ hasSearch }: { hasSearch: boolean }) {
   return (
-    <div className="rounded-3xl border border-dashed border-black/10 bg-white py-20 text-center">
-      <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-destiny-orange/10">
-        <span className="material-symbols-rounded text-3xl text-destiny-orange">
-          {hasSearch ? "search_off" : "auto_awesome"}
-        </span>
-      </div>
-      <h3 className="mt-5 text-lg font-bold text-destiny-grey">
+    <div className="rounded-lg border border-dashed border-black/15 bg-white py-16 text-center">
+      <span className="material-symbols-rounded text-3xl text-destiny-grey/30">
+        {hasSearch ? "search_off" : "description"}
+      </span>
+      <h3 className="mt-3 text-sm font-bold text-destiny-grey">
         {hasSearch ? "No matching pages" : "No pages yet"}
       </h3>
-      <p className="mx-auto mt-1 max-w-sm text-sm text-destiny-grey/50">
+      <p className="mx-auto mt-1 max-w-sm text-xs text-destiny-grey/50">
         {hasSearch
           ? "Try a different filter or search term."
           : "Get started by describing the page you want — AI will build it."}
@@ -465,9 +299,9 @@ function EmptyState({ hasSearch }: { hasSearch: boolean }) {
       {!hasSearch && (
         <Link
           href="/admin/builder/ai"
-          className="mt-6 inline-flex items-center gap-2 rounded-xl bg-destiny-orange px-5 py-2.5 text-sm font-bold text-white shadow-sm transition hover:brightness-110"
+          className="mt-4 inline-flex items-center gap-1.5 rounded-lg bg-destiny-orange px-3.5 py-2 text-xs font-bold text-white shadow-sm transition hover:brightness-110"
         >
-          <span className="material-symbols-rounded text-base">auto_awesome</span>
+          <span className="material-symbols-rounded text-sm">add</span>
           Create your first page
         </Link>
       )}

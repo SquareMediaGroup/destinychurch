@@ -144,6 +144,7 @@ export default function SkeletonBuilderPage() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
   const selected = blocks.find((b) => b.id === selectedId) ?? null;
+  const isDragging = dragKind !== null || dragId !== null;
 
   function updateBlockData(id: string, patch: Partial<BlockData>) {
     setBlocks((prev) =>
@@ -337,6 +338,7 @@ export default function SkeletonBuilderPage() {
               <PaletteCard
                 key={p.kind}
                 def={p}
+                onClick={() => addBlockAt(p.kind, blocks.length)}
                 onDragStart={(e) => onPaletteDragStart(e, p.kind)}
                 onDragEnd={onDragEnd}
               />
@@ -345,7 +347,8 @@ export default function SkeletonBuilderPage() {
           <div className="mt-4 rounded-xl bg-[#fafafa] p-3 text-[11px] leading-relaxed text-destiny-grey/60">
             <p className="mb-1 font-bold text-destiny-grey/70">How to use</p>
             <ul className="list-disc pl-4">
-              <li>Drag a block into the canvas to add it</li>
+              <li>Click a block to add it to the bottom</li>
+              <li>Or drag a block to drop it at a specific spot</li>
               <li>Drag a canvas block up or down to reorder</li>
               <li>Drag a canvas block back here to delete</li>
             </ul>
@@ -391,6 +394,7 @@ export default function SkeletonBuilderPage() {
             {/* Drop slot at top */}
             <DropSlot
               active={dropIndex === 0}
+              dragging={isDragging}
               onDragOver={(e) => onSlotDragOver(e, 0)}
               onDragLeave={() => setDropIndex(null)}
               onDrop={(e) => onSlotDrop(e, 0)}
@@ -419,6 +423,7 @@ export default function SkeletonBuilderPage() {
                 />
                 <DropSlot
                   active={dropIndex === i + 1}
+                  dragging={isDragging}
                   onDragOver={(e) => onSlotDragOver(e, i + 1)}
                   onDragLeave={() => setDropIndex(null)}
                   onDrop={(e) => onSlotDrop(e, i + 1)}
@@ -534,19 +539,42 @@ export default function SkeletonBuilderPage() {
 
 function PaletteCard({
   def,
+  onClick,
   onDragStart,
   onDragEnd,
 }: {
   def: BlockDef;
+  onClick: () => void;
   onDragStart: (e: React.DragEvent) => void;
   onDragEnd: () => void;
 }) {
+  // Track whether the user actually initiated a drag so the click handler
+  // doesn't fire after a drop. Native HTML5 drag fires `click` on drop-cancel
+  // in some browsers, which would double-add the block.
+  const [didDrag, setDidDrag] = useState(false);
+
   return (
-    <div
+    <button
+      type="button"
       draggable
-      onDragStart={onDragStart}
-      onDragEnd={onDragEnd}
-      className="group flex cursor-grab items-start gap-3 rounded-xl border border-black/5 bg-white p-3 transition hover:-translate-y-0.5 hover:border-destiny-orange/30 hover:shadow-md active:cursor-grabbing"
+      onClick={(e) => {
+        if (didDrag) {
+          setDidDrag(false);
+          return;
+        }
+        e.preventDefault();
+        onClick();
+      }}
+      onDragStart={(e) => {
+        setDidDrag(true);
+        onDragStart(e);
+      }}
+      onDragEnd={() => {
+        onDragEnd();
+        // Reset after the next tick so an immediately-following click is suppressed
+        setTimeout(() => setDidDrag(false), 0);
+      }}
+      className="group flex w-full cursor-grab items-start gap-3 rounded-xl border border-black/5 bg-white p-3 text-left transition hover:-translate-y-0.5 hover:border-destiny-orange/30 hover:shadow-md active:cursor-grabbing"
     >
       <span
         className={`flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg ${def.accent}`}
@@ -560,38 +588,48 @@ function PaletteCard({
         </p>
       </div>
       <span className="material-symbols-rounded mt-1 text-base text-destiny-grey/30 opacity-0 transition group-hover:opacity-100">
-        drag_indicator
+        add
       </span>
-    </div>
+    </button>
   );
 }
 
 function DropSlot({
   active,
+  dragging,
   onDragOver,
   onDragLeave,
   onDrop,
 }: {
   active: boolean;
+  dragging: boolean;
   onDragOver: (e: React.DragEvent) => void;
   onDragLeave: () => void;
   onDrop: (e: React.DragEvent) => void;
 }) {
+  // When dragging, the slot is a large generous target so the drop almost
+  // never misses. When idle, it's a thin spacer that fades into the layout.
+  const sizeClass = active
+    ? "my-2 h-14 bg-destiny-orange/15 ring-2 ring-destiny-orange/40"
+    : dragging
+      ? "my-1 h-10 bg-destiny-orange/[0.04] ring-1 ring-dashed ring-destiny-orange/20"
+      : "my-1 h-2";
+
   return (
     <div
       onDragOver={onDragOver}
       onDragLeave={onDragLeave}
       onDrop={onDrop}
-      className={`h-2 rounded-full transition-all ${
-        active
-          ? "my-2 h-12 bg-destiny-orange/15 ring-2 ring-destiny-orange/40"
-          : "my-1"
-      }`}
+      className={`rounded-lg transition-all ${sizeClass}`}
     >
-      {active && (
-        <div className="flex h-full items-center justify-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-destiny-orange">
+      {(active || dragging) && (
+        <div
+          className={`flex h-full items-center justify-center gap-1.5 text-[11px] font-bold uppercase tracking-wider ${
+            active ? "text-destiny-orange" : "text-destiny-orange/40"
+          }`}
+        >
           <span className="material-symbols-rounded text-base">add</span>
-          Drop here
+          {active ? "Drop here" : "Drop zone"}
         </div>
       )}
     </div>

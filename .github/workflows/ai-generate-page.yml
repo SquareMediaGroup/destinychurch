@@ -27,6 +27,10 @@ on:
         description: "Comma-separated block kinds from the Skeleton sketcher (optional)"
         required: false
         type: string
+      skeleton:
+        description: "Full skeleton JSON with per-block config (optional)"
+        required: false
+        type: string
       requesterEmail:
         description: "Email of requester"
         required: true
@@ -70,5 +74,6 @@ jobs:
           GEN_SLUG: ${{ inputs.slug }}
           GEN_MEDIA: ${{ inputs.media }}
           GEN_LAYOUT: ${{ inputs.layout }}
+          GEN_SKELETON: ${{ inputs.skeleton }}
           GEN_REQUESTER_EMAIL: ${{ inputs.requesterEmail }}
         run: npx tsx scripts/ai-generate-page.mts

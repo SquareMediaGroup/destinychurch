@@ -9,7 +9,12 @@ import {
   getReferencePages,
   type ComponentInfo,
 } from "./code-context";
-import { type BlockKind, BLOCK_AI_GUIDE } from "./skeleton-types";
+import {
+  type BlockKind,
+  type Skeleton,
+  type SkeletonBlock,
+  BLOCK_AI_GUIDE,
+} from "./skeleton-types";
 
 export interface CodeGenIntent {
   pageType?: string;
@@ -22,6 +27,12 @@ export interface CodeGenIntent {
    * MUST follow this section order exactly when generating the page.
    */
   layout?: BlockKind[];
+  /**
+   * Optional richer skeleton payload — each block carries volunteer-supplied
+   * config (exact copy, CTA links, form URLs, …) that the AI MUST honor.
+   * Takes precedence over `layout` when both are present.
+   */
+  skeleton?: Skeleton;
 }
 
 export interface GeneratedFile {
@@ -178,24 +189,149 @@ CRITICAL RULES:
   return lines.join("\n");
 }
 
-function buildLayoutSection(layout?: BlockKind[]): string {
-  if (!layout || layout.length === 0) return "";
-  const lines = layout.map(
-    (kind, i) =>
-      `${i + 1}. ${BLOCK_AI_GUIDE[kind].label} — ${BLOCK_AI_GUIDE[kind].guidance}`
-  );
+function describeBlockConfig(block: SkeletonBlock): string {
+  const d = block.data;
+  const lines: string[] = [];
+
+  // Helper to push only when non-empty
+  const push = (key: string, value?: string) => {
+    if (value && value.trim().length > 0) lines.push(`     - ${key}: ${JSON.stringify(value.trim())}`);
+  };
+
+  switch (block.kind) {
+    case "hero":
+      push("Headline (use VERBATIM)", d.heroTitle);
+      push("Subtitle (use VERBATIM)", d.heroSubtitle);
+      push("CTA button label (use VERBATIM)", d.heroCtaLabel);
+      push("CTA href (use VERBATIM)", d.heroCtaHref);
+      break;
+    case "heading":
+      push("Heading text (use VERBATIM)", d.headingText);
+      break;
+    case "content":
+      if (d.contentBody) {
+        const text = d.contentBody.trim();
+        // Heuristic: if the input looks like prose (long enough + sentence punctuation),
+        // we tell the LLM to use it verbatim. Otherwise treat as a brief.
+        const looksLikeProse =
+          text.length > 60 && /[.!?]/.test(text) && !/^write|^describe|^say/i.test(text);
+        lines.push(
+          looksLikeProse
+            ? `     - Body copy (USE VERBATIM — this is the exact text the volunteer wants): ${JSON.stringify(text)}`
+            : `     - Brief (volunteer's instructions for what to write — generate copy that matches): ${JSON.stringify(text)}`
+        );
+      }
+      break;
+    case "image":
+      push("Image src URL (use VERBATIM)", d.imageUrl);
+      push("Alt text (use VERBATIM)", d.imageAlt);
+      push("Caption (use VERBATIM)", d.imageCaption);
+      break;
+    case "video":
+      push("Video URL (use VERBATIM)", d.videoUrl);
+      push("Caption (use VERBATIM)", d.videoCaption);
+      break;
+    case "churchsuite-form":
+      push("ChurchSuite form src URL (use VERBATIM — pass to ChurchSuiteEmbed)", d.formUrl);
+      push("Form title (use VERBATIM)", d.formTitle);
+      break;
+    case "cta":
+      push("Heading (use VERBATIM)", d.ctaHeading);
+      push("Supporting line (use VERBATIM)", d.ctaBody);
+      push("Primary button label (use VERBATIM)", d.ctaButtonLabel);
+      push("Primary button href (use VERBATIM)", d.ctaButtonHref);
+      push("Secondary button label (use VERBATIM)", d.ctaSecondaryLabel);
+      push("Secondary button href (use VERBATIM)", d.ctaSecondaryHref);
+      break;
+    case "gallery":
+      if (d.galleryUrls) {
+        const urls = d.galleryUrls
+          .split(/[\n,]/)
+          .map((s) => s.trim())
+          .filter(Boolean);
+        if (urls.length > 0) {
+          lines.push(
+            `     - Image URLs (use these exact URLs as the gallery, in this order):\n${urls
+              .map((u, i) => `       ${i + 1}. ${u}`)
+              .join("\n")}`
+          );
+        }
+      }
+      break;
+    case "testimonial":
+      push("Quote (use VERBATIM, inside curly quotes)", d.testimonialQuote);
+      push("Attribution name (use VERBATIM)", d.testimonialName);
+      push("Attribution role (use VERBATIM)", d.testimonialRole);
+      break;
+    case "faq":
+      if (d.faqList) {
+        lines.push(
+          `     - Volunteer-supplied Q/A pairs (parse this into accordion items, preserve wording):\n${d.faqList
+            .split("\n")
+            .map((l) => `       ${l}`)
+            .join("\n")}`
+        );
+      }
+      break;
+    case "team":
+      if (d.teamList) {
+        lines.push(
+          `     - Volunteer-supplied team members (preserve name/role wording, one card per line):\n${d.teamList
+            .split("\n")
+            .map((l) => `       ${l}`)
+            .join("\n")}`
+        );
+      }
+      break;
+    case "spacer":
+      break;
+  }
+
+  if (d.notes && d.notes.trim().length > 0) {
+    lines.push(`     - Note from volunteer: ${JSON.stringify(d.notes.trim())}`);
+  }
+
+  return lines.join("\n");
+}
+
+function buildLayoutSection(layout?: BlockKind[], skeleton?: Skeleton): string {
+  // Prefer the richer skeleton when present; fall back to layout-only.
+  const blocks: SkeletonBlock[] =
+    skeleton && skeleton.blocks.length > 0
+      ? skeleton.blocks
+      : (layout ?? []).map((kind) => ({ kind, data: {} }));
+
+  if (blocks.length === 0) return "";
+
+  const lines = blocks.map((block, i) => {
+    const guide = BLOCK_AI_GUIDE[block.kind];
+    const head = `${i + 1}. ${guide.label} — ${guide.guidance}`;
+    const cfg = describeBlockConfig(block);
+    return cfg ? `${head}\n${cfg}` : head;
+  });
+
   return `\n## REQUIRED layout (from the volunteer's skeleton sketch)
 
-The volunteer sketched the section order they want. Build the page with these
-sections, in this order, no more, no less. Treat this as authoritative — do
-NOT add an extra hero, do NOT skip blocks, do NOT reorder. Each numbered item
-must map to one section on the final page:
+The volunteer sketched the section order they want and, for many blocks, the
+EXACT copy / URLs to use. Build the page with these sections, in this order, no
+more, no less. Treat this as authoritative — do NOT add an extra hero, do NOT
+skip blocks, do NOT reorder.
+
+For each block below:
+- If a field is marked "use VERBATIM", you MUST use that exact string as-is.
+  Do not paraphrase, do not "improve" it, do not change capitalisation.
+- If a field is marked "Brief", treat it as instructions for what to write
+  and generate copy that matches the brief in the same tone as the rest of the
+  page.
+- Blocks with no fields below are entirely AI-written, using the free-form
+  page description for tone and topic.
 
 ${lines.join("\n")}
 
 If the volunteer's free-form description suggests additional sections, fold
 that material INTO one of the blocks above rather than adding new sections.
-The free-form description still drives the copy, tone, and CTAs.`;
+The free-form description still drives the copy of any block whose fields are
+empty above.`;
 }
 
 function buildUserPrompt(intent: CodeGenIntent, components: ComponentInfo[], references: { route: string; source: string }[]): string {
@@ -204,7 +340,7 @@ function buildUserPrompt(intent: CodeGenIntent, components: ComponentInfo[], ref
     .map((r) => `### Reference page ${r.route}\n\`\`\`tsx\n${r.source}\n\`\`\``)
     .join("\n\n");
   const mediaSection = buildMediaSection(intent.media);
-  const layoutSection = buildLayoutSection(intent.layout);
+  const layoutSection = buildLayoutSection(intent.layout, intent.skeleton);
 
   const slugDirective = intent.requestedSlug
     ? `\n\nIMPORTANT: The slug MUST be exactly "${intent.requestedSlug}". Do not change it. This may overwrite an existing page at /${intent.requestedSlug} — that is intentional and approved by the volunteer.`

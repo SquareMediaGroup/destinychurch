@@ -9,8 +9,12 @@ import { getSupabaseBrowserClient } from "@/lib/supabase-browser";
 import type { MediaItem } from "@/lib/ai/media-types";
 import {
   type BlockKind,
+  type Skeleton,
+  type SkeletonBlock,
   parseLayoutParam,
   BLOCK_AI_GUIDE,
+  SKELETON_SESSION_KEY,
+  blockHasContent,
 } from "@/lib/ai/skeleton-types";
 
 // Top-level routes that already exist — used to warn when entering a slug that would overwrite them.
@@ -151,6 +155,7 @@ const EXAMPLES = [
 export default function AIPageCreatorPage() {
   const searchParams = useSearchParams();
   const [layout, setLayout] = useState<BlockKind[]>([]);
+  const [skeleton, setSkeleton] = useState<Skeleton | null>(null);
   const [pageType, setPageType] = useState("");
   const [context, setContext] = useState("");
   const [slug, setSlug] = useState("");
@@ -171,10 +176,31 @@ export default function AIPageCreatorPage() {
   } | null>(null);
   const [showAllExamples, setShowAllExamples] = useState(false);
 
-  // Pick up the skeleton layout from the URL on mount
+  // Pick up the skeleton from sessionStorage (full block-config payload from
+  // the Skeleton sketcher) and the simpler ?layout= URL param fallback.
   useEffect(() => {
     const raw = searchParams.get("layout");
-    setLayout(parseLayoutParam(raw));
+    const urlLayout = parseLayoutParam(raw);
+    setLayout(urlLayout);
+
+    // sessionStorage may contain a richer Skeleton object that matches the URL layout
+    try {
+      const json = sessionStorage.getItem(SKELETON_SESSION_KEY);
+      if (!json) {
+        setSkeleton(null);
+        return;
+      }
+      const parsed = JSON.parse(json) as Skeleton;
+      const kinds = parsed?.blocks?.map((b) => b.kind).join(",");
+      // Only honor if it matches the URL layout (prevents stale data from a previous session)
+      if (kinds === urlLayout.join(",") && urlLayout.length > 0) {
+        setSkeleton(parsed);
+      } else {
+        setSkeleton(null);
+      }
+    } catch {
+      setSkeleton(null);
+    }
   }, [searchParams]);
 
   const charCount = context.length;
@@ -225,6 +251,7 @@ export default function AIPageCreatorPage() {
           urgency,
           media,
           layout: layout.length > 0 ? layout : undefined,
+          skeleton: skeleton ?? undefined,
         }),
       });
 
@@ -318,20 +345,46 @@ export default function AIPageCreatorPage() {
                   </button>
                 </div>
               </div>
-              <ol className="mt-4 flex flex-wrap gap-2">
-                {layout.map((kind, i) => (
-                  <li
-                    key={`${kind}-${i}`}
-                    className="inline-flex items-center gap-2 rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-1.5 text-xs"
-                  >
-                    <span className="inline-flex h-5 w-5 items-center justify-center rounded-md bg-indigo-200 font-mono text-[10px] font-bold text-indigo-900">
-                      {i + 1}
-                    </span>
-                    <span className="font-bold text-indigo-900">
-                      {BLOCK_AI_GUIDE[kind].label}
-                    </span>
-                  </li>
-                ))}
+              <ol className="mt-4 space-y-2">
+                {layout.map((kind, i) => {
+                  const block = skeleton?.blocks[i];
+                  const configured = block ? blockHasContent(block.data) : false;
+                  const summary = block ? summarizeBlock(block) : null;
+                  return (
+                    <li
+                      key={`${kind}-${i}`}
+                      className="flex items-start gap-2 rounded-lg border border-indigo-200 bg-indigo-50/60 px-3 py-2 text-xs"
+                    >
+                      <span className="inline-flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-md bg-indigo-200 font-mono text-[10px] font-bold text-indigo-900">
+                        {i + 1}
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2">
+                          <span className="font-bold text-indigo-900">
+                            {BLOCK_AI_GUIDE[kind].label}
+                          </span>
+                          {configured ? (
+                            <span className="inline-flex items-center gap-0.5 rounded-full bg-emerald-100 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-emerald-700">
+                              <span className="material-symbols-rounded text-[10px]">
+                                check
+                              </span>
+                              Configured
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center rounded-full bg-indigo-100 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-indigo-700">
+                              AI writes
+                            </span>
+                          )}
+                        </div>
+                        {summary && (
+                          <p className="mt-0.5 truncate text-[11px] text-indigo-900/70">
+                            {summary}
+                          </p>
+                        )}
+                      </div>
+                    </li>
+                  );
+                })}
               </ol>
             </div>
           </div>
@@ -909,4 +962,75 @@ function UrgencyOption({
       </span>
     </label>
   );
+}
+
+function summarizeBlock(block: SkeletonBlock): string | null {
+  const d = block.data;
+  const parts: string[] = [];
+  switch (block.kind) {
+    case "hero":
+      if (d.heroTitle) parts.push(`"${d.heroTitle}"`);
+      if (d.heroCtaLabel) parts.push(`CTA: ${d.heroCtaLabel}`);
+      break;
+    case "heading":
+      if (d.headingText) parts.push(`"${d.headingText}"`);
+      break;
+    case "content":
+      if (d.contentBody) {
+        parts.push(
+          d.contentBody.length > 90
+            ? d.contentBody.slice(0, 90) + "…"
+            : d.contentBody
+        );
+      }
+      break;
+    case "image":
+      if (d.imageUrl) parts.push("custom image");
+      if (d.imageAlt) parts.push(`alt: ${d.imageAlt}`);
+      break;
+    case "video":
+      if (d.videoUrl) parts.push(d.videoUrl);
+      break;
+    case "churchsuite-form":
+      if (d.formUrl) parts.push(d.formUrl);
+      else if (d.formTitle) parts.push(d.formTitle);
+      break;
+    case "cta":
+      if (d.ctaHeading) parts.push(`"${d.ctaHeading}"`);
+      if (d.ctaButtonLabel)
+        parts.push(`Button: ${d.ctaButtonLabel}${d.ctaButtonHref ? ` → ${d.ctaButtonHref}` : ""}`);
+      break;
+    case "gallery":
+      if (d.galleryUrls) {
+        const count = d.galleryUrls
+          .split(/[\n,]/)
+          .map((s) => s.trim())
+          .filter(Boolean).length;
+        if (count) parts.push(`${count} image${count === 1 ? "" : "s"}`);
+      }
+      break;
+    case "testimonial":
+      if (d.testimonialQuote) parts.push(`"${d.testimonialQuote.slice(0, 70)}…"`);
+      if (d.testimonialName) parts.push(`— ${d.testimonialName}`);
+      break;
+    case "faq":
+      if (d.faqList) {
+        const count = (d.faqList.match(/^Q[:\s]/gim) || []).length;
+        if (count) parts.push(`${count} question${count === 1 ? "" : "s"}`);
+      }
+      break;
+    case "team":
+      if (d.teamList) {
+        const count = d.teamList
+          .split("\n")
+          .map((s) => s.trim())
+          .filter(Boolean).length;
+        if (count) parts.push(`${count} ${count === 1 ? "person" : "people"}`);
+      }
+      break;
+    default:
+      break;
+  }
+  if (d.notes) parts.push(`Notes: ${d.notes.slice(0, 50)}${d.notes.length > 50 ? "…" : ""}`);
+  return parts.length > 0 ? parts.join(" · ") : null;
 }

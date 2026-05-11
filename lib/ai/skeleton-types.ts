@@ -52,6 +52,93 @@ export function parseLayoutParam(raw: string | null | undefined): BlockKind[] {
 }
 
 /**
+ * Per-block configuration the volunteer can fill in when sketching a layout.
+ * All fields are optional — anything left blank tells the AI to invent that
+ * piece based on the page's overall description.
+ */
+export interface BlockData {
+  /** Volunteer note for the AI: extra context, tone, special instructions. */
+  notes?: string;
+
+  // Hero
+  heroTitle?: string;
+  heroSubtitle?: string;
+  heroCtaLabel?: string;
+  heroCtaHref?: string;
+
+  // Heading
+  headingText?: string;
+
+  // Content: a single field that doubles as either exact copy or a brief.
+  // The AI prompt explains: if it reads like prose use it verbatim, otherwise
+  // generate copy matching the brief.
+  contentBody?: string;
+
+  // Image
+  imageUrl?: string;
+  imageAlt?: string;
+  imageCaption?: string;
+
+  // Video
+  videoUrl?: string;
+  videoCaption?: string;
+
+  // ChurchSuite Form
+  formUrl?: string;
+  formTitle?: string;
+
+  // CTA
+  ctaHeading?: string;
+  ctaBody?: string;
+  ctaButtonLabel?: string;
+  ctaButtonHref?: string;
+  ctaSecondaryLabel?: string;
+  ctaSecondaryHref?: string;
+
+  // Gallery — newline- or comma-separated image URLs
+  galleryUrls?: string;
+
+  // Testimonial
+  testimonialQuote?: string;
+  testimonialName?: string;
+  testimonialRole?: string;
+
+  // FAQ — free-form Q/A; AI parses into accordion items.
+  // Volunteer types "Q: ... \n A: ..." style or any clear list.
+  faqList?: string;
+
+  // Team — free-form, one person per line ("Name — Role")
+  teamList?: string;
+}
+
+export interface SkeletonBlock {
+  kind: BlockKind;
+  data: BlockData;
+}
+
+/**
+ * The complete handoff payload from the Skeleton sketcher to the AI page
+ * creator. Travels via sessionStorage; falls back to the simpler `?layout=`
+ * URL param when only the kinds are known.
+ */
+export interface Skeleton {
+  blocks: SkeletonBlock[];
+}
+
+export const SKELETON_SESSION_KEY = "destiny:ai-skeleton";
+
+/**
+ * Returns true when any field on the block carries volunteer-supplied content.
+ * Used in the AI prompt to know whether to use the values verbatim vs invent.
+ */
+export function blockHasContent(data: BlockData | undefined): boolean {
+  if (!data) return false;
+  return Object.values(data).some(
+    (v) => typeof v === "string" && v.trim().length > 0
+  );
+}
+
+/**
  * Volunteer-friendly description used in the AI prompt to explain what each
  * block kind should produce.
  */

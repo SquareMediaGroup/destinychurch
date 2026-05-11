@@ -32,7 +32,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
   }
 
-  const { pageType, context, audience, media, slug, layout } = body as Record<string, unknown>;
+  const { pageType, context, audience, media, slug, layout, skeleton } = body as Record<string, unknown>;
   if (typeof context !== "string" || !context.trim()) {
     return NextResponse.json({ error: "context is required" }, { status: 400 });
   }
@@ -84,6 +84,12 @@ export async function POST(req: NextRequest) {
             layout: Array.isArray(layout)
               ? (layout as unknown[]).filter((v) => typeof v === "string").join(",")
               : "",
+            // Full skeleton (per-block config) — kept compact so it fits GitHub Actions input limits.
+            // Workflow inputs cap at ~64KB; we leave plenty of headroom by stringifying once.
+            skeleton:
+              typeof skeleton === "object" && skeleton !== null
+                ? JSON.stringify(skeleton).slice(0, 60_000)
+                : "",
             requesterEmail: user.email || user.id,
           },
         }),

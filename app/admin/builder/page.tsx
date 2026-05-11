@@ -97,7 +97,7 @@ export default function BuilderListPage() {
             </div>
             <div className="flex gap-2">
               <Link
-                href="/admin/builder/ai"
+                href="/admin/builder/skeleton"
                 className="inline-flex items-center gap-1.5 rounded-lg bg-destiny-orange px-4 py-2 text-sm font-bold text-white shadow-sm transition hover:brightness-110"
               >
                 <span className="material-symbols-rounded text-base">add</span>
@@ -298,7 +298,7 @@ function EmptyState({ hasSearch }: { hasSearch: boolean }) {
       </p>
       {!hasSearch && (
         <Link
-          href="/admin/builder/ai"
+          href="/admin/builder/skeleton"
           className="mt-4 inline-flex items-center gap-1.5 rounded-lg bg-destiny-orange px-3.5 py-2 text-xs font-bold text-white shadow-sm transition hover:brightness-110"
         >
           <span className="material-symbols-rounded text-sm">add</span>

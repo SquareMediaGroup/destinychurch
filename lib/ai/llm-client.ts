@@ -3,6 +3,30 @@ export interface LLMClient {
 }
 
 /**
+ * Status codes worth retrying on. 408/425/429 are throttling, 5xx are server errors.
+ */
+const RETRYABLE_STATUS = new Set([408, 425, 429, 500, 502, 503, 504]);
+const MAX_LLM_ATTEMPTS = 4;
+const BASE_BACKOFF_MS = 2000;
+
+function backoff(attempt: number, retryAfterHeader: string | null): number {
+  if (retryAfterHeader) {
+    const secs = Number(retryAfterHeader);
+    if (Number.isFinite(secs) && secs > 0) return Math.min(secs * 1000, 30_000);
+  }
+  return Math.min(BASE_BACKOFF_MS * 2 ** (attempt - 1), 30_000);
+}
+
+function isRetryableNetworkError(err: unknown): boolean {
+  if (!(err instanceof Error)) return false;
+  const code = (err as { code?: string }).code;
+  if (code && ["ECONNRESET", "ETIMEDOUT", "ECONNREFUSED", "EAI_AGAIN", "ENOTFOUND"].includes(code)) {
+    return true;
+  }
+  return /network|fetch failed|aborted|socket hang up|timed out/i.test(err.message);
+}
+
+/**
  * Vercel AI Gateway LLM Client
  * Unified interface for Claude via Vercel's platform
  */
@@ -25,6 +49,29 @@ export class VercelAIGatewayClient implements LLMClient {
   }
 
   async generatePageStructure(prompt: string): Promise<string> {
+    let lastErr: Error | null = null;
+    for (let attempt = 1; attempt <= MAX_LLM_ATTEMPTS; attempt++) {
+      try {
+        return await this.callOnce(prompt);
+      } catch (err) {
+        lastErr = err instanceof Error ? err : new Error(String(err));
+        const status = (err as { status?: number }).status;
+        const retryable = (status && RETRYABLE_STATUS.has(status)) || isRetryableNetworkError(err);
+        if (!retryable || attempt === MAX_LLM_ATTEMPTS) {
+          throw lastErr;
+        }
+        const retryAfter = (err as { retryAfter?: string }).retryAfter ?? null;
+        const waitMs = backoff(attempt, retryAfter);
+        console.warn(
+          `⚠ LLM call failed (attempt ${attempt}/${MAX_LLM_ATTEMPTS}): ${lastErr.message}. Retrying in ${waitMs}ms…`,
+        );
+        await new Promise((r) => setTimeout(r, waitMs));
+      }
+    }
+    throw lastErr ?? new Error("LLM call failed");
+  }
+
+  private async callOnce(prompt: string): Promise<string> {
     const response = await fetch(`${this.gatewayUrl}/chat/completions`, {
       method: "POST",
       headers: {
@@ -65,7 +112,13 @@ export class VercelAIGatewayClient implements LLMClient {
         // If we can't parse error response, use status
       }
 
-      throw new Error(`Vercel AI Gateway error (${response.status}): ${errorMsg}`);
+      const e = new Error(`Vercel AI Gateway error (${response.status}): ${errorMsg}`) as Error & {
+        status?: number;
+        retryAfter?: string | null;
+      };
+      e.status = response.status;
+      e.retryAfter = response.headers.get("retry-after");
+      throw e;
     }
 
     const contentType = response.headers.get("content-type");

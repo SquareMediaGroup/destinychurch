@@ -102,7 +102,24 @@ async function applyEditsToFile(
   return { applied, failed, touched: applied.length > 0 };
 }
 
+type Phase =
+  | "init"
+  | "parse-inputs"
+  | "load-page"
+  | "apply-edits"
+  | "typecheck"
+  | "commit-push"
+  | "db-update"
+  | "done";
+
+let currentPhase: Phase = "init";
+function setPhase(p: Phase, label: string): void {
+  currentPhase = p;
+  console.log(`\n[phase:${p}] ${label}`);
+}
+
 async function main() {
+  setPhase("parse-inputs", "Parsing workflow inputs…");
   const pageId = process.env.EDIT_PAGE_ID;
   const editsJson = process.env.EDIT_EDITS_JSON;
   const requesterEmail = process.env.EDIT_REQUESTER_EMAIL;
@@ -121,7 +138,7 @@ async function main() {
     throw new Error("EDIT_EDITS_JSON must be a non-empty array");
   }
 
-  console.log(`📝 Loading page ${pageId} from builder_pages…`);
+  setPhase("load-page", `Loading page ${pageId} from builder_pages…`);
   const page = await loadCodePage(pageId);
   console.log(`✓ Loaded ${page.title} (/${page.slug}) with ${page.editable_texts.length} editable texts`);
 
@@ -143,7 +160,7 @@ async function main() {
     return;
   }
 
-  console.log(`✏ Applying edits across ${byFile.size} file(s)…`);
+  setPhase("apply-edits", `Applying edits across ${byFile.size} file(s)…`);
   const allApplied: AppliedEdit[] = [];
   const allFailed: string[] = [];
   const touchedFiles: string[] = [];
@@ -165,7 +182,7 @@ async function main() {
     throw new Error("No files were modified — nothing to commit");
   }
 
-  console.log("🔍 Type-checking after edits…");
+  setPhase("typecheck", "Type-checking after edits…");
   const validation = await runTypeCheck();
   if (!validation.ok) {
     // Don't push broken code. Restore from git so disk matches main.
@@ -181,7 +198,7 @@ async function main() {
   }
   console.log(`✓ Type-check passed (${validation.durationMs}ms)`);
 
-  console.log("📤 Committing and pushing…");
+  setPhase("commit-push", "Committing and pushing…");
   const summary =
     allApplied.length === 1
       ? `1 text edit on /${page.slug}`
@@ -210,16 +227,39 @@ async function main() {
     }
     return t;
   });
+  setPhase("db-update", "Updating builder_pages.editable_texts catalog…");
   await updateEditableTexts(pageId, newCatalog, commit.hash ?? "");
-  console.log("✓ Updated builder_pages.editable_texts catalog");
+  console.log("✓ Updated catalog");
 
-  console.log(`\n✅ Done: ${allApplied.length} edit(s) applied to /${page.slug}`);
+  setPhase("done", `✅ Done: ${allApplied.length} edit(s) applied to /${page.slug}`);
   if (allFailed.length > 0) {
     process.exitCode = 1;
   }
 }
 
-main().catch((err) => {
-  console.error("❌ Error:", err instanceof Error ? err.message : err);
+// Surface async errors that would otherwise exit silently.
+process.on("unhandledRejection", (reason) => {
+  console.error(`❌ Unhandled rejection in phase: ${currentPhase}`);
+  console.error(reason instanceof Error ? reason.stack ?? reason.message : reason);
   process.exit(1);
 });
+process.on("uncaughtException", (err) => {
+  console.error(`❌ Uncaught exception in phase: ${currentPhase}`);
+  console.error(err.stack ?? err.message);
+  process.exit(1);
+});
+
+main()
+  .then(() => process.exit(process.exitCode ?? 0))
+  .catch((err) => {
+    console.error(`\n❌ Failure in phase: ${currentPhase}`);
+    if (err instanceof Error) {
+      console.error(`Message: ${err.message}`);
+      if (err.stack) console.error(`Stack:\n${err.stack}`);
+      const cause = (err as Error & { cause?: unknown }).cause;
+      if (cause) console.error("Cause:", cause);
+    } else {
+      console.error("Non-Error thrown:", err);
+    }
+    process.exit(1);
+  });

@@ -23,7 +23,50 @@ import {
   ALL_BLOCK_KINDS,
 } from "../lib/ai/skeleton-types";
 
-const MAX_TYPECHECK_ATTEMPTS = 3; // 1 initial + 2 repair attempts
+const MAX_TYPECHECK_ATTEMPTS = 4; // 1 initial + 3 repair attempts
+
+type Phase =
+  | "init"
+  | "parse-inputs"
+  | "llm-generate"
+  | "write-files"
+  | "typecheck"
+  | "typecheck-repair"
+  | "commit-push"
+  | "db-register"
+  | "audit-email"
+  | "done";
+
+/**
+ * Mutable state we want the top-level catch to see when emitting a failure email.
+ * Set fields as we make progress so any crash carries useful context.
+ */
+interface RunState {
+  phase: Phase;
+  requesterEmail: string;
+  title: string;
+  slug: string;
+  reasoning: string;
+  writtenPaths: string[];
+  lastValidation: ValidationResult | null;
+  failureEmailSent: boolean;
+}
+
+const state: RunState = {
+  phase: "init",
+  requesterEmail: "",
+  title: "",
+  slug: "",
+  reasoning: "",
+  writtenPaths: [],
+  lastValidation: null,
+  failureEmailSent: false,
+};
+
+function phaseBanner(p: Phase, label: string): void {
+  state.phase = p;
+  console.log(`\n[phase:${p}] ${label}`);
+}
 
 async function writeFiles(generated: GeneratedCode): Promise<string[]> {
   const written: string[] = [];
@@ -40,24 +83,57 @@ async function writeFiles(generated: GeneratedCode): Promise<string[]> {
   return written;
 }
 
+async function emitFailureEmail(err: unknown): Promise<void> {
+  if (state.failureEmailSent) return;
+  if (!state.requesterEmail) {
+    console.warn("⚠ No requester email captured yet — skipping failure audit email.");
+    return;
+  }
+  const errMsg = err instanceof Error ? `${err.message}\n\n${err.stack ?? ""}` : String(err);
+  const validationOutput = state.lastValidation
+    ? state.lastValidation.output
+    : `Failed in phase: ${state.phase}\n\n${errMsg}`;
+  try {
+    await sendPageAuditEmail({
+      title: state.title || "AI page generation failed",
+      slug: state.slug || "(no slug)",
+      requester: state.requesterEmail,
+      reasoning: state.reasoning || `Failed in phase: ${state.phase}`,
+      files: state.writtenPaths,
+      validation: {
+        ok: false,
+        output: `Phase: ${state.phase}\n\n${validationOutput}`,
+        durationMs: state.lastValidation?.durationMs ?? 0,
+      },
+      pushed: false,
+    });
+    state.failureEmailSent = true;
+    console.log("📧 Sent failure audit email.");
+  } catch (emailErr) {
+    console.error("⚠ Failed to send failure audit email:", emailErr);
+  }
+}
+
 async function main() {
+  phaseBanner("parse-inputs", "Parsing workflow inputs…");
+
   const context = process.env.GEN_CONTEXT;
   const pageType = process.env.GEN_PAGE_TYPE || undefined;
   const audience = process.env.GEN_AUDIENCE || undefined;
   const requestedSlug = process.env.GEN_SLUG?.trim() || undefined;
-  let media = undefined;
+  state.requesterEmail = process.env.GEN_REQUESTER_EMAIL || "";
 
+  let media = undefined;
   if (process.env.GEN_MEDIA && process.env.GEN_MEDIA.trim()) {
     try {
       media = JSON.parse(process.env.GEN_MEDIA);
     } catch (err) {
       console.error("❌ GEN_MEDIA is not valid JSON");
       console.error("Received:", process.env.GEN_MEDIA.slice(0, 200));
-      throw new Error("Invalid media JSON");
+      throw new Error(`Invalid media JSON: ${err instanceof Error ? err.message : err}`);
     }
   }
 
-  const requesterEmail = process.env.GEN_REQUESTER_EMAIL;
   const layout = parseLayoutParam(process.env.GEN_LAYOUT);
   if (layout.length > 0) {
     console.log(`📐 Skeleton layout received: ${layout.join(" → ")}`);
@@ -98,14 +174,14 @@ async function main() {
   if (!context) {
     throw new Error("GEN_CONTEXT is required");
   }
-  if (!requesterEmail) {
+  if (!state.requesterEmail) {
     throw new Error("GEN_REQUESTER_EMAIL is required");
   }
-
-  console.log("📝 Generating page...");
   if (!process.env.VERCEL_AI_GATEWAY_TOKEN) {
     throw new Error("VERCEL_AI_GATEWAY_TOKEN is required but not set");
   }
+
+  phaseBanner("llm-generate", "Calling LLM…");
   const llm = new VercelAIGatewayClient(process.env.VERCEL_AI_GATEWAY_TOKEN);
 
   let generated: GeneratedCode;
@@ -124,30 +200,35 @@ async function main() {
     );
   } catch (err) {
     const errorMsg = err instanceof Error ? err.message : String(err);
-    console.error("LLM generation failed:", errorMsg);
-    throw err;
+    throw new Error(`LLM generation failed: ${errorMsg}`);
   }
+  state.title = generated.title;
+  state.slug = generated.slug;
+  state.reasoning = generated.reasoning;
   console.log(`✓ Generated: ${generated.title}`);
 
   // Write files, type-check, and on failure ask the LLM to repair — up to MAX_TYPECHECK_ATTEMPTS.
-  let writtenPaths: string[] = [];
   let validation: ValidationResult | null = null;
   let attempt = 0;
 
   while (attempt < MAX_TYPECHECK_ATTEMPTS) {
     attempt++;
-    console.log(`\n📝 Writing files (attempt ${attempt}/${MAX_TYPECHECK_ATTEMPTS})...`);
+    phaseBanner(
+      attempt === 1 ? "write-files" : "typecheck-repair",
+      `Writing files (attempt ${attempt}/${MAX_TYPECHECK_ATTEMPTS})…`,
+    );
 
     // Roll back any files from a previous failed attempt before writing the new version.
-    if (writtenPaths.length > 0) {
-      await rollbackFiles(writtenPaths);
-      writtenPaths = [];
+    if (state.writtenPaths.length > 0) {
+      await rollbackFiles(state.writtenPaths);
+      state.writtenPaths = [];
     }
 
-    writtenPaths = await writeFiles(generated);
+    state.writtenPaths = await writeFiles(generated);
 
-    console.log("🔍 Type-checking...");
+    phaseBanner("typecheck", "Type-checking…");
     validation = await runTypeCheck();
+    state.lastValidation = validation;
     if (validation.ok) {
       console.log(`✓ Type-check passed (${validation.durationMs}ms)`);
       break;
@@ -163,6 +244,7 @@ async function main() {
       );
       console.warn("   First 600 chars of output:\n", validation.output.slice(0, 600));
       validation = { ...validation, ok: true };
+      state.lastValidation = validation;
       break;
     }
 
@@ -172,7 +254,7 @@ async function main() {
       break;
     }
 
-    console.warn(`⚠ Type-check failed (attempt ${attempt}). Asking LLM to repair...`);
+    console.warn(`⚠ Type-check failed (attempt ${attempt}). Asking LLM to repair…`);
     const errorSummary = extractErrorsForFiles(validation.output, ourFiles);
     console.warn("Errors to repair:\n" + errorSummary);
 
@@ -186,33 +268,16 @@ async function main() {
   }
 
   if (!validation || !validation.ok) {
-    // Roll back so we don't leave broken code on disk; the workflow will fail next.
-    await rollbackFiles(writtenPaths);
-    // Send a failure audit email so the volunteer knows what happened
-    try {
-      await sendPageAuditEmail({
-        title: generated.title,
-        slug: generated.slug,
-        requester: requesterEmail,
-        reasoning: generated.reasoning,
-        files: writtenPaths,
-        validation: validation ?? {
-          ok: false,
-          output: "Type-check did not run.",
-          durationMs: 0,
-        },
-        pushed: false,
-      });
-    } catch (emailErr) {
-      console.error("Failed to send failure audit email:", emailErr);
-    }
+    // Roll back so we don't leave broken code on disk.
+    await rollbackFiles(state.writtenPaths);
+    // Failure email is emitted by the outer catch via emitFailureEmail.
     throw new Error("TypeScript validation failed after repair attempts");
   }
 
-  console.log("📤 Committing and pushing...");
+  phaseBanner("commit-push", "Committing and pushing…");
   const commitResult = await commitAndPush({
-    paths: writtenPaths,
-    message: `feat: AI-generated page /${generated.slug}\n\n${generated.title}\n\nRequested by: ${requesterEmail}\nReasoning: ${generated.reasoning.slice(0, 400)}`,
+    paths: state.writtenPaths,
+    message: `feat: AI-generated page /${generated.slug}\n\n${generated.title}\n\nRequested by: ${state.requesterEmail}\nReasoning: ${generated.reasoning.slice(0, 400)}`,
     push: true,
   });
   if (!commitResult.ok) {
@@ -220,7 +285,7 @@ async function main() {
   }
   console.log(`✓ Pushed: ${commitResult.hash?.slice(0, 12)}`);
 
-  console.log("🗂  Registering page in /admin/builder dashboard...");
+  phaseBanner("db-register", "Registering page in /admin/builder dashboard…");
   try {
     const upsert = await upsertCodePage({
       slug: generated.slug,
@@ -233,26 +298,50 @@ async function main() {
     });
     console.log(`✓ Registered as builder_pages.id = ${upsert.id} (${generated.editableTexts.length} editable texts)`);
   } catch (err) {
+    // Page is live; DB registration is best-effort. Log loudly but don't fail the run.
     console.error("⚠ Failed to register page in builder_pages — page is live but won't show in /admin/builder:", err);
   }
 
-  console.log("📧 Sending audit email...");
+  phaseBanner("audit-email", "Sending audit email…");
   await sendPageAuditEmail({
     title: generated.title,
     slug: generated.slug,
-    requester: requesterEmail,
+    requester: state.requesterEmail,
     reasoning: generated.reasoning,
-    files: writtenPaths,
+    files: state.writtenPaths,
     commitHash: commitResult.hash,
     validation,
     pushed: true,
   });
   console.log("✓ Audit email sent");
 
-  console.log(`\n✅ Done: /${generated.slug}`);
+  phaseBanner("done", `✅ Done: /${generated.slug}`);
 }
 
-main().catch((err) => {
-  console.error("❌ Error:", err instanceof Error ? err.message : err);
-  process.exit(1);
+// Surface async errors that would otherwise exit silently.
+process.on("unhandledRejection", (reason) => {
+  console.error("❌ Unhandled rejection in phase:", state.phase);
+  console.error(reason instanceof Error ? reason.stack ?? reason.message : reason);
+  void emitFailureEmail(reason).finally(() => process.exit(1));
 });
+process.on("uncaughtException", (err) => {
+  console.error("❌ Uncaught exception in phase:", state.phase);
+  console.error(err.stack ?? err.message);
+  void emitFailureEmail(err).finally(() => process.exit(1));
+});
+
+main()
+  .then(() => process.exit(0))
+  .catch(async (err) => {
+    console.error(`\n❌ Failure in phase: ${state.phase}`);
+    if (err instanceof Error) {
+      console.error(`Message: ${err.message}`);
+      if (err.stack) console.error(`Stack:\n${err.stack}`);
+      const cause = (err as Error & { cause?: unknown }).cause;
+      if (cause) console.error("Cause:", cause);
+    } else {
+      console.error("Non-Error thrown:", err);
+    }
+    await emitFailureEmail(err);
+    process.exit(1);
+  });

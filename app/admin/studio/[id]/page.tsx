@@ -7,6 +7,7 @@ import { useKeymap } from "@/packages/studio-engine/src/keymap";
 import { Viewport } from "@/packages/studio-canvas/src/Viewport";
 import { CanvasNodeRenderer } from "@/packages/studio-canvas/src/NodeRenderer";
 import { SelectionOverlay } from "@/packages/studio-canvas/src/Overlay";
+import { InteractionLayer } from "@/packages/studio-canvas/src/InteractionLayer";
 import { Toolbar } from "@/packages/studio-ui/src/Toolbar";
 import { LayersPanel } from "@/packages/studio-ui/src/panels/LayersPanel";
 import { InsertPanel } from "@/packages/studio-ui/src/panels/InsertPanel";
@@ -284,6 +285,7 @@ export default function StudioEditorPage() {
             </div>
           </Viewport>
           <SelectionOverlay />
+          <InteractionLayer />
         </div>
 
         {/* Right sidebar */}

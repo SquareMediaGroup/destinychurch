@@ -17,29 +17,22 @@ export const CanvasNodeRenderer = memo(function CanvasNodeRenderer({
 }: NodeRendererProps) {
   const node = useStudio((s) => s.document.nodes[nodeId]);
   const tokens = useStudio((s) => s.document.tokens);
-  const selectedIds = useStudio((s) => s.selectedIds);
-  const hoveredId = useStudio((s) => s.hoveredId);
   const editingId = useStudio((s) => s.editingId);
   const activeBreakpoint = useStudio((s) => s.activeBreakpoint);
 
-  const select = useStudio((s) => s.select);
   const setHovered = useStudio((s) => s.setHovered);
   const setEditing = useStudio((s) => s.setEditing);
 
-  const isSelected = selectedIds.includes(nodeId);
-  const isHovered = hoveredId === nodeId;
   const isEditing = editingId === nodeId;
 
-  const handleClick = useCallback(
+  const handleDoubleClick = useCallback(
     (e: React.MouseEvent) => {
       e.stopPropagation();
-      if (e.detail === 2 && (node.type === "text" || node.type === "heading")) {
+      if (node.type === "text" || node.type === "heading") {
         setEditing(nodeId);
-        return;
       }
-      select([nodeId], e.shiftKey || e.metaKey);
     },
-    [nodeId, node?.type, select, setEditing]
+    [nodeId, node?.type, setEditing]
   );
 
   const handleMouseEnter = useCallback(() => {
@@ -60,12 +53,7 @@ export const CanvasNodeRenderer = memo(function CanvasNodeRenderer({
     ...visualStyle,
     position: node.layout.mode === "absolute" ? "absolute" : "relative",
     boxSizing: "border-box",
-    outline: isSelected
-      ? "2px solid #4f8eff"
-      : isHovered
-        ? "1px solid rgba(79, 142, 255, 0.5)"
-        : "none",
-    outlineOffset: isSelected ? -1 : 0,
+    // Selection/hover visuals rendered by Overlay canvas — no inline outlines
     cursor: editable ? "default" : undefined,
     userSelect: isEditing ? "text" : "none",
     minHeight: node.children?.length === 0 ? 40 : undefined,
@@ -81,7 +69,7 @@ export const CanvasNodeRenderer = memo(function CanvasNodeRenderer({
       data-node-type={node.type}
       className="studio-node"
       style={combinedStyle}
-      onClick={editable ? handleClick : undefined}
+      onDoubleClick={editable ? handleDoubleClick : undefined}
       onMouseEnter={editable ? handleMouseEnter : undefined}
       onMouseLeave={editable ? handleMouseLeave : undefined}
     >

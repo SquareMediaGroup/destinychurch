@@ -169,10 +169,12 @@ export default function AIPageCreatorPage() {
     runId?: number;
     runUrl?: string;
     message: string;
+    slug?: string;
   } | null>(null);
   const [completed, setCompleted] = useState<{
     success: boolean;
     runUrl?: string;
+    slug?: string;
   } | null>(null);
   const [showAllExamples, setShowAllExamples] = useState(false);
 
@@ -267,6 +269,7 @@ export default function AIPageCreatorPage() {
         runId: payload.runId as number | undefined,
         runUrl: payload.runUrl as string | undefined,
         message: (payload.message as string) ?? "Page generation queued",
+        slug: slug.trim() || undefined,
       });
     } catch (err) {
       setError(err instanceof Error ? err.message : "An error occurred");
@@ -450,10 +453,27 @@ export default function AIPageCreatorPage() {
                       : "Check the workflow logs for the failure reason."}
                   </p>
                   <div className="mt-4 flex flex-wrap gap-2">
+                    {completed.success && completed.slug && (
+                      <a
+                        href={`/${completed.slug}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1.5 rounded-xl bg-green-600 px-4 py-2 text-sm font-bold text-white shadow-sm transition hover:bg-green-700"
+                      >
+                        <span className="material-symbols-rounded text-base">
+                          open_in_new
+                        </span>
+                        View page
+                      </a>
+                    )}
                     {completed.success && (
                       <Link
                         href="/admin/builder"
-                        className="inline-flex items-center gap-1.5 rounded-xl bg-green-600 px-4 py-2 text-sm font-bold text-white shadow-sm transition hover:bg-green-700"
+                        className={`inline-flex items-center gap-1.5 rounded-xl px-4 py-2 text-sm font-bold shadow-sm transition ${
+                          completed.slug
+                            ? "border border-green-200 bg-white text-green-700 hover:bg-[#f5f7fa]"
+                            : "bg-green-600 text-white hover:bg-green-700"
+                        }`}
                       >
                         <span className="material-symbols-rounded text-base">
                           list
@@ -536,7 +556,7 @@ export default function AIPageCreatorPage() {
                   runUrl={queued.runUrl || ""}
                   ghToken={authToken}
                   onComplete={(success) => {
-                    setCompleted({ success, runUrl: queued.runUrl });
+                    setCompleted({ success, runUrl: queued.runUrl, slug: queued.slug });
                   }}
                 />
               </div>

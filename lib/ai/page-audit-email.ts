@@ -7,9 +7,9 @@ import { Resend } from "resend";
 const resend = new Resend(process.env.RESEND_API_KEY);
 
 const AUDIT_RECIPIENT = process.env.PAGE_AUDIT_RECIPIENT || "malachi@squaremediagroup.org";
-// Default to Resend's universal test sender (works without domain verification).
-// Override PAGE_AUDIT_FROM in env to use a verified custom domain.
-const FROM = process.env.PAGE_AUDIT_FROM || "Destiny AI <onboarding@resend.dev>";
+// Send from the verified support.squaremediagroup.org domain so audit emails
+// don't land in spam (same domain used by contact/hire actions).
+const FROM = process.env.PAGE_AUDIT_FROM || "Destiny AI <noreply@support.squaremediagroup.org>";
 
 export interface PageAuditEmailInput {
   title: string;

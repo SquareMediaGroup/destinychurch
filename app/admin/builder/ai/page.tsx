@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import MediaUploader from "@/components/builder/MediaUploader";
-import WorkflowProgress from "@/components/builder/WorkflowProgress";
+import WorkflowProgress, { useCycledLiveLabel } from "@/components/builder/WorkflowProgress";
 import { getSupabaseBrowserClient } from "@/lib/supabase-browser";
 import type { MediaItem } from "@/lib/ai/media-types";
 import {
@@ -529,9 +529,7 @@ export default function AIPageCreatorPage() {
                     <span className="material-symbols-rounded text-base">bolt</span>
                     Generation in progress
                   </div>
-                  <span className="rounded-full bg-indigo-50 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-[0.2em] text-indigo-700">
-                    Live
-                  </span>
+                  <LivePill />
                 </div>
                 <WorkflowProgress
                   runId={queued.runId}
@@ -834,6 +832,19 @@ export default function AIPageCreatorPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+function LivePill() {
+  const label = useCycledLiveLabel(true);
+  return (
+    <span className="ai-live-pulse inline-flex items-center gap-1.5 rounded-full bg-indigo-50 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-[0.2em] text-indigo-700">
+      <span className="relative flex h-1.5 w-1.5">
+        <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-indigo-500 opacity-75" />
+        <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-indigo-600" />
+      </span>
+      {label}
+    </span>
   );
 }
 

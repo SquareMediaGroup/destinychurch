@@ -5,6 +5,7 @@ import { useStudio } from "@/packages/studio-engine/src/store";
 import type { StudioNode, NodeId } from "@/packages/studio-schema/src/types";
 import { resolveNodeStyle } from "@/packages/studio-renderer/src/resolveStyle";
 import { resolveNodeLayout } from "@/packages/studio-renderer/src/resolveLayout";
+import { InlineEditor } from "./InlineEditor";
 
 type NodeRendererProps = {
   nodeId: NodeId;
@@ -28,7 +29,7 @@ export const CanvasNodeRenderer = memo(function CanvasNodeRenderer({
   const handleDoubleClick = useCallback(
     (e: React.MouseEvent) => {
       e.stopPropagation();
-      if (node.type === "text" || node.type === "heading") {
+      if (node.type === "text" || node.type === "heading" || node.type === "richtext") {
         setEditing(nodeId);
       }
     },
@@ -92,10 +93,16 @@ const NodeContent = memo(function NodeContent({
   node: StudioNode;
   isEditing: boolean;
 }) {
+  const closeEditor = () => useStudio.getState().setEditing(null);
+
   switch (node.props._type) {
     case "text":
       return isEditing ? (
-        <EditableText nodeId={node.id} content={node.props.content} />
+        <InlineEditor
+          nodeId={node.id}
+          content={node.props.content}
+          onClose={closeEditor}
+        />
       ) : (
         <p style={{ margin: 0 }}>{node.props.content}</p>
       );
@@ -103,18 +110,38 @@ const NodeContent = memo(function NodeContent({
     case "heading": {
       const level = node.props.level;
       const headingStyle = { margin: 0 };
-      const content = isEditing ? (
-        <EditableText nodeId={node.id} content={node.props.content} />
-      ) : (
-        node.props.content
-      );
-      if (level === 1) return <h1 style={headingStyle}>{content}</h1>;
-      if (level === 2) return <h2 style={headingStyle}>{content}</h2>;
-      if (level === 3) return <h3 style={headingStyle}>{content}</h3>;
-      if (level === 4) return <h4 style={headingStyle}>{content}</h4>;
-      if (level === 5) return <h5 style={headingStyle}>{content}</h5>;
-      return <h6 style={headingStyle}>{content}</h6>;
+      if (isEditing) {
+        return (
+          <InlineEditor
+            nodeId={node.id}
+            content={node.props.content}
+            onClose={closeEditor}
+          />
+        );
+      }
+      const textContent = node.props.content;
+      if (level === 1) return <h1 style={headingStyle}>{textContent}</h1>;
+      if (level === 2) return <h2 style={headingStyle}>{textContent}</h2>;
+      if (level === 3) return <h3 style={headingStyle}>{textContent}</h3>;
+      if (level === 4) return <h4 style={headingStyle}>{textContent}</h4>;
+      if (level === 5) return <h5 style={headingStyle}>{textContent}</h5>;
+      return <h6 style={headingStyle}>{textContent}</h6>;
     }
+
+    case "richtext":
+      return isEditing ? (
+        <InlineEditor
+          nodeId={node.id}
+          content={node.props.html}
+          isRichText
+          onClose={closeEditor}
+        />
+      ) : (
+        <div
+          dangerouslySetInnerHTML={{ __html: node.props.html }}
+          style={{ margin: 0 }}
+        />
+      );
 
     case "image":
       return (
@@ -209,44 +236,4 @@ const NodeContent = memo(function NodeContent({
   }
 });
 
-function EditableText({
-  nodeId,
-  content,
-}: {
-  nodeId: NodeId;
-  content: string;
-}) {
-  const updateNode = useStudio((s) => s.updateNode);
-
-  return (
-    <div
-      contentEditable
-      suppressContentEditableWarning
-      onBlur={(e) => {
-        const text = e.currentTarget.textContent ?? "";
-        const node = useStudio.getState().document.nodes[nodeId];
-        if (node && "content" in node.props) {
-          updateNode(nodeId, {
-            props: { ...node.props, content: text },
-          });
-        }
-        useStudio.getState().setEditing(null);
-      }}
-      onKeyDown={(e) => {
-        if (e.key === "Escape") {
-          e.currentTarget.blur();
-        }
-        e.stopPropagation();
-      }}
-      style={{
-        outline: "none",
-        cursor: "text",
-        minWidth: 4,
-        margin: 0,
-      }}
-      autoFocus
-    >
-      {content}
-    </div>
-  );
-}
+// EditableText replaced by InlineEditor (TipTap)

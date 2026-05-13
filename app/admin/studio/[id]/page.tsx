@@ -12,6 +12,7 @@ import { Toolbar } from "@/packages/studio-ui/src/Toolbar";
 import { LayersPanel } from "@/packages/studio-ui/src/panels/LayersPanel";
 import { InsertPanel } from "@/packages/studio-ui/src/panels/InsertPanel";
 import { PropertiesPanel } from "@/packages/studio-ui/src/PropertiesPanel";
+import { ContextMenuProvider, useCanvasContextMenu } from "@/packages/studio-ui/src/ContextMenu";
 import { TokenStyle } from "@/packages/studio-tokens/src/css-vars";
 import { DEFAULT_TOKENS } from "@/packages/studio-tokens/src/defaults";
 import type { StudioDocument } from "@/packages/studio-schema/src/types";
@@ -35,6 +36,7 @@ export default function StudioEditorPage() {
   const dirty = useStudio((s) => s.dirty);
   const clearSelection = useStudio((s) => s.clearSelection);
   const saveTimerRef = useRef<NodeJS.Timeout>(undefined);
+  const handleContextMenu = useCanvasContextMenu();
 
   useKeymap();
 
@@ -178,6 +180,7 @@ export default function StudioEditorPage() {
       }}
     >
       <TokenStyle tokens={document.tokens} />
+      <ContextMenuProvider />
 
       {/* Top toolbar */}
       <div style={{ display: "flex", alignItems: "center" }}>
@@ -266,6 +269,7 @@ export default function StudioEditorPage() {
           onClick={(e) => {
             if (e.target === e.currentTarget) clearSelection();
           }}
+          onContextMenu={handleContextMenu}
         >
           <Viewport>
             {/* Page frame centered at origin */}

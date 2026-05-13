@@ -32,9 +32,14 @@ export default function BuilderEditor({ initialPage }: Props) {
     return findElement(layout, selectedId);
   }, [layout, selectedId]);
 
-  const handleAdd = useCallback((type: ElementType) => {
+  const handleAdd = useCallback((type: ElementType, index?: number) => {
     const el = createElement(type);
-    setLayout((prev) => [...prev, el]);
+    setLayout((prev) => {
+      if (typeof index !== "number" || index < 0 || index > prev.length) {
+        return [...prev, el];
+      }
+      return [...prev.slice(0, index), el, ...prev.slice(index)];
+    });
     setSelectedId(el.id);
   }, []);
 

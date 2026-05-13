@@ -9,7 +9,8 @@ type Props = {
   layout: BuilderElement[];
   selectedId: string | null;
   onSelect: (id: string | null) => void;
-  onDropElement: (type: ElementType) => void;
+  // When `index` is omitted, the element is appended to the end of the layout.
+  onDropElement: (type: ElementType, index?: number) => void;
   onDropInto: (parentId: string, type: ElementType) => void;
   onUpdate?: (id: string, patch: Partial<BuilderElement>) => void;
   onDelete?: (id: string) => void;
@@ -80,7 +81,7 @@ export default function Canvas({
             onOpen={() => setInsertOpen(0)}
             onClose={() => setInsertOpen(null)}
             onPick={(t) => {
-              onDropElement(t);
+              onDropElement(t, 0);
               setInsertOpen(null);
             }}
           />
@@ -101,8 +102,7 @@ export default function Canvas({
                 onOpen={() => setInsertOpen(i + 1)}
                 onClose={() => setInsertOpen(null)}
                 onPick={(t) => {
-                  // Insert by appending — for MVP we drop to end of layout
-                  onDropElement(t);
+                  onDropElement(t, i + 1);
                   setInsertOpen(null);
                 }}
               />

@@ -128,8 +128,8 @@ export async function writePageFile(slug: string, source: string): Promise<strin
 }
 
 export async function writeComponentFile(category: string, name: string, source: string): Promise<string> {
-  if (!SAFE_DIR_ALLOWLIST.includes(category)) {
-    throw new Error(`Component category "${category}" is not allowed`);
+  if (!/^[a-z0-9][a-z0-9-]{0,60}$/.test(category)) {
+    throw new Error(`Component category "${category}" is not a valid directory name`);
   }
   if (!/^[A-Z][A-Za-z0-9]+$/.test(name)) {
     throw new Error(`Invalid component name: ${name}`);

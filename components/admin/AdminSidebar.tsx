@@ -11,7 +11,6 @@ const navItems = [
   { href: "/admin/popup", icon: "ad", label: "Popup" },
   { href: "/admin/alpha", icon: "event", label: "Alpha" },
   { href: "/admin/recovery", icon: "healing", label: "Recovery" },
-  { href: "/admin/pages", icon: "article", label: "Pages" },
   { href: "/admin/builder", icon: "design_services", label: "Builder" },
   { href: "/admin/redirects", icon: "alt_route", label: "Redirects" },
   { href: "/admin/cache", icon: "refresh", label: "Clear Cache" },

@@ -54,14 +54,6 @@ const sections = [
     bg: "bg-destiny-green/10",
   },
   {
-    href: "/admin/pages",
-    icon: "article",
-    label: "Pages",
-    description: "Edit key content fields across site pages (give, info, etc.).",
-    color: "text-destiny-grey",
-    bg: "bg-destiny-grey/10",
-  },
-  {
     href: "/admin/builder",
     icon: "design_services",
     label: "Builder",

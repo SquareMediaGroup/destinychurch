@@ -7,7 +7,7 @@ type PageRow = {
   id: string;
   slug: string;
   title: string;
-  status: "draft" | "published" | "archived";
+  status: "draft" | "published";
   source_type?: "json" | "code";
   source_path?: string | null;
   repo_commit?: string | null;
@@ -16,7 +16,7 @@ type PageRow = {
   published_at: string | null;
 };
 
-type FilterKey = "all" | "published" | "draft" | "archived";
+type FilterKey = "all" | "published" | "draft";
 
 export default function BuilderListPage() {
   const [pages, setPages] = useState<PageRow[]>([]);
@@ -57,7 +57,6 @@ export default function BuilderListPage() {
       all: pages.length,
       published: pages.filter((p) => p.status === "published").length,
       draft: pages.filter((p) => p.status === "draft").length,
-      archived: pages.filter((p) => p.status === "archived").length,
     };
   }, [pages]);
 
@@ -82,7 +81,7 @@ export default function BuilderListPage() {
   );
 
   const showDraftCards = filter === "all" || filter === "draft";
-  const showList = filter === "all" || filter === "published" || filter === "archived";
+  const showList = filter === "all" || filter === "published";
 
   return (
     <div className="min-h-screen bg-[#fafafa]">
@@ -125,7 +124,7 @@ export default function BuilderListPage() {
       <div className="mx-auto max-w-5xl px-6 py-6">
         <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex flex-wrap items-center gap-1">
-            {(["all", "published", "draft", "archived"] as FilterKey[]).map((k) => {
+            {(["all", "published", "draft"] as FilterKey[]).map((k) => {
               const active = filter === k;
               return (
                 <button
@@ -333,12 +332,7 @@ function PageRowItem({
   const isCode = page.source_type === "code";
   const editHref = isCode ? `/admin/builder/code/${page.id}` : null;
 
-  const statusDot =
-    page.status === "published"
-      ? "bg-emerald-500"
-      : page.status === "draft"
-        ? "bg-amber-500"
-        : "bg-destiny-grey/30";
+  const statusDot = page.status === "published" ? "bg-emerald-500" : "bg-amber-500";
 
   const inner = (
     <div className="flex items-center gap-3 px-4 py-3">

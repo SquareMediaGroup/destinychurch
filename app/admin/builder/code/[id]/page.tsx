@@ -268,11 +268,7 @@ export default function CodePageEditor({
               Back to pages
             </Link>
             <div className="mt-3 flex flex-wrap items-center gap-3">
-              <span className="inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-indigo-500 to-violet-500 px-2.5 py-0.5 text-[10px] font-black uppercase tracking-[0.2em] text-white">
-                <span className="material-symbols-rounded text-xs">auto_awesome</span>
-                AI generated
-              </span>
-              <span className="text-xs font-mono text-destiny-grey/50">/{page.slug}</span>
+<span className="text-xs font-mono text-destiny-grey/50">/{page.slug}</span>
               <a
                 href={`/${page.slug}`}
                 target="_blank"

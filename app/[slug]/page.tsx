@@ -1,8 +1,6 @@
 import type { Metadata } from "next";
 import { redirect, notFound } from "next/navigation";
 import { createServiceClient } from "@/utils/supabase/service";
-import BuilderPageRenderer from "@/components/builder/BuilderPageRenderer";
-import type { BuilderElement } from "@/lib/builder/types";
 
 interface Props {
   params: Promise<{ slug: string }>;
@@ -27,22 +25,6 @@ export default async function SlugPage({ params }: Props) {
   const { slug } = await params;
   const supabase = createServiceClient();
 
-  // 1. Try a published builder page first.
-  const { data: builderPage } = await supabase
-    .from("builder_pages")
-    .select("layout_json")
-    .eq("slug", slug)
-    .eq("status", "published")
-    .maybeSingle();
-
-  if (builderPage) {
-    const layout: BuilderElement[] = Array.isArray(builderPage.layout_json)
-      ? builderPage.layout_json
-      : [];
-    return <BuilderPageRenderer layout={layout} />;
-  }
-
-  // 2. Fall back to redirects table.
   const { data: redirectRow } = await supabase
     .from("redirects")
     .select("target_url")

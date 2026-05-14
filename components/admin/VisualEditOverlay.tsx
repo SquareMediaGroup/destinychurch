@@ -37,6 +37,16 @@ export default function VisualEditOverlay() {
     "loading"
   );
 
+  // Hide site chrome (header, footer, banners) immediately in edit mode
+  useEffect(() => {
+    if (!isEdit) return;
+    const style = document.createElement("style");
+    style.id = "dc-edit-chrome-hide";
+    style.textContent = `header, footer { display: none !important; }`;
+    document.head.appendChild(style);
+    return () => style.remove();
+  }, [isEdit]);
+
   useEffect(() => {
     if (!isEdit || !editId) return;
 

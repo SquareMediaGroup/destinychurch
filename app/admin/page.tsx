@@ -207,7 +207,7 @@ export default function AdminDashboard() {
           <StatCard
             icon="design_services"
             label="Builder Pages"
-            href="/admin/builder"
+            href="/admin/pages"
             loading={loading}
             primary={stats?.builderPages.published ?? 0}
             primaryLabel="published"
@@ -244,7 +244,7 @@ export default function AdminDashboard() {
             bg="bg-destiny-orange/10"
           />
           <SectionCard
-            href="/admin/builder"
+            href="/admin/pages"
             icon="design_services"
             label="Builder"
             description="Create and manage AI-generated and visual drag-drop pages."

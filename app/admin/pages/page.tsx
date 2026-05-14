@@ -103,7 +103,7 @@ export default function BuilderListPage() {
             </div>
             <div className="flex gap-2">
               <Link
-                href="/admin/builder/skeleton"
+                href="/admin/pages/skeleton"
                 className="inline-flex items-center gap-1.5 rounded-lg bg-destiny-orange px-4 py-2 text-sm font-bold text-white shadow-sm transition hover:brightness-110"
               >
                 <span className="material-symbols-rounded text-base">auto_awesome</span>
@@ -274,13 +274,6 @@ function DraftPageCard({ page, onDelete }: { page: PageRow; onDelete: () => void
           </div>
         </div>
 
-        {/* Source type badge */}
-        <div className="absolute right-3 top-3">
-          <span className="inline-flex items-center rounded-full border border-white/20 bg-black/30 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white/80 backdrop-blur-sm">
-            {isCode ? "AI" : "legacy"}
-          </span>
-        </div>
-
         {/* Delete button (hover) */}
         <button
           type="button"
@@ -358,9 +351,6 @@ function PageRowItem({
           <span className="truncate text-sm font-bold text-destiny-grey">
             {page.title}
           </span>
-          <span className="inline-flex items-center rounded border border-black/10 bg-[#fafafa] px-1.5 py-0 text-[9px] font-bold uppercase tracking-wider text-destiny-grey/60">
-            {isCode ? "AI" : "legacy"}
-          </span>
         </div>
         <p className="truncate font-mono text-[11px] text-destiny-grey/45">
           /{page.slug}
@@ -427,7 +417,7 @@ function EmptyState({ hasSearch }: { hasSearch: boolean }) {
       </p>
       {!hasSearch && (
         <Link
-          href="/admin/builder/skeleton"
+          href="/admin/pages/skeleton"
           className="mt-4 inline-flex items-center gap-1.5 rounded-lg bg-destiny-orange px-3.5 py-2 text-xs font-bold text-white shadow-sm transition hover:brightness-110"
         >
           <span className="material-symbols-rounded text-sm">auto_awesome</span>

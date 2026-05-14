@@ -163,7 +163,7 @@ export default function SkeletonBuilderPage() {
       // sessionStorage may be unavailable (private mode, etc.) — fall back to URL-only
     }
     const layout = blocks.map((b) => b.kind).join(",");
-    router.push(`/admin/builder/ai?layout=${encodeURIComponent(layout)}`);
+    router.push(`/admin/pages/ai?layout=${encodeURIComponent(layout)}`);
   }
 
   function addBlockAt(kind: BlockKind, index: number) {
@@ -269,7 +269,7 @@ export default function SkeletonBuilderPage() {
         />
         <div className="relative mx-auto max-w-7xl px-6 py-8 md:py-10">
           <Link
-            href="/admin/builder"
+            href="/admin/pages"
             className="inline-flex items-center gap-1.5 text-xs font-bold text-destiny-grey/50 hover:text-destiny-orange transition"
           >
             <span className="material-symbols-rounded text-base">arrow_back</span>
@@ -299,7 +299,7 @@ export default function SkeletonBuilderPage() {
 
           <div className="mt-4 flex flex-wrap gap-2">
             <Link
-              href="/admin/builder/ai"
+              href="/admin/pages/ai"
               className="inline-flex items-center gap-2 rounded-xl border border-black/10 bg-white px-4 py-2 text-xs font-bold text-destiny-grey/70 transition hover:bg-[#f5f7fa]"
             >
               <span className="material-symbols-rounded text-base">close</span>
@@ -513,7 +513,7 @@ export default function SkeletonBuilderPage() {
           </div>
           <div className="flex gap-2">
             <Link
-              href="/admin/builder"
+              href="/admin/pages"
               className="inline-flex items-center gap-1.5 rounded-xl border border-black/10 bg-white px-4 py-2.5 text-sm font-bold text-destiny-grey/70 transition hover:bg-[#f5f7fa]"
             >
               Cancel

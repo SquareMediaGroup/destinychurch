@@ -291,7 +291,7 @@ export default function AIPageCreatorPage() {
         />
         <div className="relative mx-auto max-w-4xl px-6 py-10 md:py-14">
           <Link
-            href="/admin/builder"
+            href="/admin/pages"
             className="inline-flex items-center gap-1.5 text-xs font-bold text-destiny-grey/50 hover:text-destiny-orange transition"
           >
             <span className="material-symbols-rounded text-base">arrow_back</span>
@@ -332,7 +332,7 @@ export default function AIPageCreatorPage() {
                 </div>
                 <div className="flex gap-2">
                   <Link
-                    href={`/admin/builder/skeleton?layout=${encodeURIComponent(layout.join(","))}`}
+                    href={`/admin/pages/skeleton?layout=${encodeURIComponent(layout.join(","))}`}
                     className="inline-flex items-center gap-1.5 rounded-lg border border-indigo-200 bg-white px-3 py-1.5 text-xs font-bold text-indigo-700 transition hover:bg-indigo-50"
                   >
                     <span className="material-symbols-rounded text-sm">edit</span>
@@ -468,7 +468,7 @@ export default function AIPageCreatorPage() {
                     )}
                     {completed.success && (
                       <Link
-                        href="/admin/builder"
+                        href="/admin/pages"
                         className={`inline-flex items-center gap-1.5 rounded-xl px-4 py-2 text-sm font-bold shadow-sm transition ${
                           completed.slug
                             ? "border border-green-200 bg-white text-green-700 hover:bg-[#f5f7fa]"
@@ -818,7 +818,7 @@ export default function AIPageCreatorPage() {
           </div>
           <div className="flex gap-2">
             <Link
-              href="/admin/builder"
+              href="/admin/pages"
               className="inline-flex items-center gap-1.5 rounded-xl border border-black/10 bg-white px-4 py-2.5 text-sm font-bold text-destiny-grey/70 transition hover:bg-[#f5f7fa]"
             >
               Cancel

@@ -20,7 +20,7 @@ const courseItems = [
 ];
 
 const bottomNavItems = [
-  { href: "/admin/builder", icon: "design_services", label: "Builder" },
+  { href: "/admin/pages", icon: "design_services", label: "Pages" },
   { href: "/admin/redirects", icon: "alt_route", label: "Redirects" },
   { href: "/admin/cache", icon: "refresh", label: "Clear Cache" },
 ];

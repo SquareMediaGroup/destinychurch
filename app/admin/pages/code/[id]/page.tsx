@@ -215,7 +215,7 @@ export default function CodePageEditor({
     return (
       <div className="mx-auto max-w-2xl px-6 py-16">
         <Link
-          href="/admin/builder"
+          href="/admin/pages"
           className="text-xs font-bold text-destiny-grey/50 hover:text-destiny-orange"
         >
           Back to pages
@@ -261,7 +261,7 @@ export default function CodePageEditor({
         <div className="border-b border-black/5 bg-white">
           <div className="mx-auto max-w-5xl px-6 py-6">
             <Link
-              href="/admin/builder"
+              href="/admin/pages"
               className="inline-flex items-center gap-1.5 text-xs font-bold text-destiny-grey/60 hover:text-destiny-orange transition"
             >
               <span className="material-symbols-rounded text-base">arrow_back</span>
@@ -420,7 +420,7 @@ export default function CodePageEditor({
                   {scanning ? "Scanning…" : "Scan for editable text"}
                 </button>
                 <Link
-                  href="/admin/builder/ai"
+                  href="/admin/pages/ai"
                   className="inline-flex items-center gap-2 rounded-xl border border-black/10 bg-white px-4 py-2.5 text-sm font-bold text-destiny-grey/70 transition hover:bg-[#f5f7fa]"
                 >
                   <span className="material-symbols-rounded text-base">auto_awesome</span>

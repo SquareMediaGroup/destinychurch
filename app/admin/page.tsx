@@ -12,73 +12,6 @@ interface Stats {
   popup: { active: boolean; title: string };
 }
 
-const sections = [
-  {
-    href: "/admin/sermons",
-    icon: "play_circle",
-    label: "Sermons",
-    description: "Hide or show YouTube videos from the public sermons listing.",
-    color: "text-destiny-orange",
-    bg: "bg-destiny-orange/10",
-  },
-  {
-    href: "/admin/banner",
-    icon: "campaign",
-    label: "Banner",
-    description: "Manage the site-wide announcement or maintenance banner.",
-    color: "text-destiny-blue",
-    bg: "bg-destiny-blue/10",
-  },
-  {
-    href: "/admin/popup",
-    icon: "ad",
-    label: "Popup",
-    description: "Configure the modal popup shown to site visitors.",
-    color: "text-destiny-purple",
-    bg: "bg-destiny-purple/10",
-  },
-  {
-    href: "/admin/alpha",
-    icon: "event",
-    label: "Alpha",
-    description: "Manage Alpha and Youth Alpha events, dates, and sign-up links.",
-    color: "text-destiny-green",
-    bg: "bg-destiny-green/10",
-  },
-  {
-    href: "/admin/recovery",
-    icon: "healing",
-    label: "Recovery",
-    description: "Manage Recovery group events and sign-up information.",
-    color: "text-destiny-green",
-    bg: "bg-destiny-green/10",
-  },
-  {
-    href: "/admin/builder",
-    icon: "design_services",
-    label: "Builder",
-    description: "Create and manage AI-generated and visual drag-drop pages.",
-    color: "text-destiny-orange",
-    bg: "bg-destiny-orange/10",
-  },
-  {
-    href: "/admin/redirects",
-    icon: "alt_route",
-    label: "Redirects",
-    description: "Create vanity URLs on destinytees.uk that redirect anywhere.",
-    color: "text-destiny-blue",
-    bg: "bg-destiny-blue/10",
-  },
-  {
-    href: "/admin/cache",
-    icon: "refresh",
-    label: "Clear Cache",
-    description: "Manually trigger revalidation of cached pages across the site.",
-    color: "text-destiny-grey",
-    bg: "bg-destiny-grey/10",
-  },
-];
-
 export default function AdminDashboard() {
   const [stats, setStats] = useState<Stats | null>(null);
   const [loading, setLoading] = useState(true);
@@ -100,27 +33,22 @@ export default function AdminDashboard() {
           redirectsRes.status === "fulfilled" && redirectsRes.value.ok
             ? await redirectsRes.value.json()
             : [];
-
         const sermonsData =
           sermonsRes.status === "fulfilled" && sermonsRes.value.ok
             ? await sermonsRes.value.json()
             : [];
-
         const builderData =
           builderRes.status === "fulfilled" && builderRes.value.ok
             ? await builderRes.value.json()
             : { pages: [] };
-
         const alphaData =
           alphaRes.status === "fulfilled" && alphaRes.value.ok
             ? await alphaRes.value.json()
             : [];
-
         const bannerData =
           bannerRes.status === "fulfilled" && bannerRes.value.ok
             ? await bannerRes.value.json()
             : { active: false, type: "announcement", message: "" };
-
         const popupData =
           popupRes.status === "fulfilled" && popupRes.value.ok
             ? await popupRes.value.json()
@@ -130,7 +58,6 @@ export default function AdminDashboard() {
         const sermonsArr = Array.isArray(sermonsData) ? sermonsData : [];
         const builderPages = Array.isArray(builderData?.pages) ? builderData.pages : [];
         const alphaArr = Array.isArray(alphaData) ? alphaData : [];
-
         const now = new Date();
 
         setStats({
@@ -144,8 +71,7 @@ export default function AdminDashboard() {
           },
           builderPages: {
             total: builderPages.length,
-            published: builderPages.filter((p: { status: string }) => p.status === "published")
-              .length,
+            published: builderPages.filter((p: { status: string }) => p.status === "published").length,
           },
           alphaEvents: {
             total: alphaArr.length,
@@ -167,7 +93,6 @@ export default function AdminDashboard() {
         setLoading(false);
       }
     }
-
     load();
   }, []);
 
@@ -233,9 +158,7 @@ export default function AdminDashboard() {
               <span className="material-symbols-rounded text-xl">refresh</span>
             </span>
             <div className="min-w-0">
-              <p className="text-xs font-bold uppercase tracking-wider text-destiny-grey/40">
-                Cache
-              </p>
+              <p className="text-xs font-bold uppercase tracking-wider text-destiny-grey/40">Cache</p>
               <p className="truncate text-sm font-bold text-destiny-grey">Clear cache</p>
             </div>
           </Link>
@@ -248,9 +171,7 @@ export default function AdminDashboard() {
               <span className="material-symbols-rounded text-xl">open_in_new</span>
             </span>
             <div className="min-w-0">
-              <p className="text-xs font-bold uppercase tracking-wider text-destiny-grey/40">
-                Website
-              </p>
+              <p className="text-xs font-bold uppercase tracking-wider text-destiny-grey/40">Website</p>
               <p className="truncate text-sm font-bold text-destiny-grey">View live site</p>
             </div>
           </Link>
@@ -278,13 +199,7 @@ export default function AdminDashboard() {
             label="Sermons"
             href="/admin/sermons"
             loading={loading}
-            primary={
-              stats
-                ? stats.sermons.total - stats.sermons.hidden > 0
-                  ? stats.sermons.total - stats.sermons.hidden
-                  : stats.sermons.total
-                : 0
-            }
+            primary={stats ? stats.sermons.total - stats.sermons.hidden : 0}
             primaryLabel="videos"
             secondary={stats?.sermons.hidden ?? 0}
             secondaryLabel="hidden"
@@ -296,56 +211,116 @@ export default function AdminDashboard() {
             loading={loading}
             primary={stats?.builderPages.published ?? 0}
             primaryLabel="published"
-            secondary={
-              stats ? stats.builderPages.total - stats.builderPages.published : 0
-            }
+            secondary={stats ? stats.builderPages.total - stats.builderPages.published : 0}
             secondaryLabel="draft"
           />
           <StatCard
             icon="event"
-            label="Alpha Events"
+            label="Courses"
             href="/admin/alpha"
             loading={loading}
             primary={stats?.alphaEvents.upcoming ?? 0}
             primaryLabel="upcoming"
-            secondary={
-              stats ? stats.alphaEvents.total - stats.alphaEvents.upcoming : 0
-            }
+            secondary={stats ? stats.alphaEvents.total - stats.alphaEvents.upcoming : 0}
             secondaryLabel="past"
           />
         </div>
       </section>
 
-      {/* Quick Links */}
-      <section>
-        <h2 className="mb-3 text-xs font-bold uppercase tracking-widest text-destiny-grey/40">
+      {/* All Sections */}
+      <section className="space-y-6">
+        <h2 className="text-xs font-bold uppercase tracking-widest text-destiny-grey/40">
           All Sections
         </h2>
+
+        {/* Standalone top items */}
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {sections.map((section) => (
-            <Link
-              key={section.href}
-              href={section.href}
-              className="group flex items-start gap-4 rounded-2xl border border-black/5 bg-white p-5 shadow-sm transition hover:shadow-md"
-            >
-              <span
-                className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${section.bg} ${section.color}`}
-              >
-                <span className="material-symbols-rounded text-xl">{section.icon}</span>
-              </span>
-              <div className="min-w-0">
-                <p className="mb-0.5 text-sm font-black text-destiny-grey group-hover:text-destiny-orange transition-colors">
-                  {section.label}
-                </p>
-                <p className="text-xs leading-relaxed text-destiny-grey/50">
-                  {section.description}
-                </p>
-              </div>
-              <span className="material-symbols-rounded ml-auto mt-0.5 shrink-0 text-base text-destiny-grey/20 transition group-hover:text-destiny-orange/50">
-                arrow_forward
-              </span>
-            </Link>
-          ))}
+          <SectionCard
+            href="/admin/sermons"
+            icon="play_circle"
+            label="Sermons"
+            description="Hide or show YouTube videos from the public sermons listing."
+            color="text-destiny-orange"
+            bg="bg-destiny-orange/10"
+          />
+          <SectionCard
+            href="/admin/builder"
+            icon="design_services"
+            label="Builder"
+            description="Create and manage AI-generated and visual drag-drop pages."
+            color="text-destiny-orange"
+            bg="bg-destiny-orange/10"
+          />
+          <SectionCard
+            href="/admin/redirects"
+            icon="alt_route"
+            label="Redirects"
+            description="Create vanity URLs on destinytees.uk that redirect anywhere."
+            color="text-destiny-blue"
+            bg="bg-destiny-blue/10"
+          />
+        </div>
+
+        {/* Announcements group */}
+        <div>
+          <p className="mb-2 text-[11px] font-bold uppercase tracking-widest text-destiny-grey/30">
+            Announcements
+          </p>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <SectionCard
+              href="/admin/banner"
+              icon="campaign"
+              label="Banner"
+              description="Manage the site-wide announcement or maintenance banner."
+              color="text-destiny-blue"
+              bg="bg-destiny-blue/10"
+            />
+            <SectionCard
+              href="/admin/popup"
+              icon="ad"
+              label="Popup"
+              description="Configure the modal popup shown to site visitors."
+              color="text-destiny-purple"
+              bg="bg-destiny-purple/10"
+            />
+          </div>
+        </div>
+
+        {/* Courses group */}
+        <div>
+          <p className="mb-2 text-[11px] font-bold uppercase tracking-widest text-destiny-grey/30">
+            Courses
+          </p>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <SectionCard
+              href="/admin/alpha"
+              icon="event"
+              label="Alpha"
+              description="Manage Alpha and Youth Alpha events, dates, and sign-up links."
+              color="text-destiny-green"
+              bg="bg-destiny-green/10"
+            />
+            <SectionCard
+              href="/admin/recovery"
+              icon="healing"
+              label="Recovery"
+              description="Manage Recovery group events and sign-up information."
+              color="text-destiny-green"
+              bg="bg-destiny-green/10"
+            />
+          </div>
+        </div>
+
+        {/* Tools */}
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          <SectionCard
+            href="/admin/cache"
+            icon="refresh"
+            label="Clear Cache"
+            description="Manually trigger revalidation of cached pages across the site."
+            color="text-destiny-grey"
+            bg="bg-destiny-grey/10"
+          />
         </div>
       </section>
     </div>
@@ -385,9 +360,7 @@ function StatusCard({
           <div className="mt-1 h-3.5 w-20 animate-pulse rounded bg-black/5" />
         ) : (
           <div className="flex items-center gap-1.5">
-            <span
-              className={`h-1.5 w-1.5 shrink-0 rounded-full ${active ? "bg-destiny-green" : "bg-black/20"}`}
-            />
+            <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${active ? "bg-destiny-green" : "bg-black/20"}`} />
             <p className="truncate text-sm font-bold text-destiny-grey">{detail}</p>
           </div>
         )}
@@ -442,6 +415,42 @@ function StatCard({
           </p>
         </>
       )}
+    </Link>
+  );
+}
+
+function SectionCard({
+  href,
+  icon,
+  label,
+  description,
+  color,
+  bg,
+}: {
+  href: string;
+  icon: string;
+  label: string;
+  description: string;
+  color: string;
+  bg: string;
+}) {
+  return (
+    <Link
+      href={href}
+      className="group flex items-start gap-4 rounded-2xl border border-black/5 bg-white p-5 shadow-sm transition hover:shadow-md"
+    >
+      <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${bg} ${color}`}>
+        <span className="material-symbols-rounded text-xl">{icon}</span>
+      </span>
+      <div className="min-w-0">
+        <p className="mb-0.5 text-sm font-black text-destiny-grey transition-colors group-hover:text-destiny-orange">
+          {label}
+        </p>
+        <p className="text-xs leading-relaxed text-destiny-grey/50">{description}</p>
+      </div>
+      <span className="material-symbols-rounded ml-auto mt-0.5 shrink-0 text-base text-destiny-grey/20 transition group-hover:text-destiny-orange/50">
+        arrow_forward
+      </span>
     </Link>
   );
 }

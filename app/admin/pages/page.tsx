@@ -241,7 +241,7 @@ export default function BuilderListPage() {
 
 function DraftPageCard({ page, onDelete }: { page: PageRow; onDelete: () => void }) {
   const isCode = page.source_type === "code";
-  const editHref = isCode ? `/admin/builder/code/${page.id}` : null;
+  const editHref = isCode ? `/admin/pages/code/${page.id}` : null;
   const updated = new Date(page.updated_at);
 
   const card = (
@@ -330,7 +330,7 @@ function PageRowItem({
   const updated = new Date(page.updated_at);
   const isPublished = page.status === "published";
   const isCode = page.source_type === "code";
-  const editHref = isCode ? `/admin/builder/code/${page.id}` : null;
+  const editHref = isCode ? `/admin/pages/code/${page.id}` : null;
 
   const statusDot = page.status === "published" ? "bg-emerald-500" : "bg-amber-500";
 

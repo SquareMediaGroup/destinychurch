@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import MediaUploader from "@/components/builder/MediaUploader";
+import MediaUploader from "@/components/admin/MediaUploader";
 import WorkflowProgress, { useCycledLiveLabel } from "@/components/builder/WorkflowProgress";
 import { getSupabaseBrowserClient } from "@/lib/supabase-browser";
 import type { MediaItem } from "@/lib/ai/media-types";

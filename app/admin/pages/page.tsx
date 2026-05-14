@@ -98,7 +98,7 @@ export default function BuilderListPage() {
                 Pages
               </h1>
               <p className="mt-1 text-sm text-destiny-grey/60">
-                AI-generated pages on the site, plus draft pages still in progress.
+                Create, Edit or Delete Pages.
               </p>
             </div>
             <div className="flex gap-2">

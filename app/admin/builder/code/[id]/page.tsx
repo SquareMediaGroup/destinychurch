@@ -237,7 +237,7 @@ export default function CodePageEditor({
     <div className="flex min-h-screen flex-col bg-[#fafafa]">
       {mode === "visual" ? (
         /* ── Visual mode: slim floating toolbar ── */
-        <div className="fixed top-3 left-1/2 z-40 flex -translate-x-1/2 items-center gap-2 rounded-2xl border border-black/10 bg-white/95 px-3 py-2 shadow-lg backdrop-blur-md">
+        <div className="fixed top-3 right-4 z-40 flex items-center gap-2 rounded-2xl border border-black/10 bg-white/95 px-3 py-2 shadow-lg backdrop-blur-md">
           <button
             type="button"
             onClick={() => setMode("form")}
@@ -289,7 +289,7 @@ export default function CodePageEditor({
               </h1>
 
               {!noTexts && (
-                <div className="flex items-center gap-1 rounded-xl border border-black/8 bg-[#f5f7fa] p-1">
+                <div className="hidden md:flex items-center gap-1 rounded-xl border border-black/8 bg-[#f5f7fa] p-1">
                   <button
                     type="button"
                     onClick={() => setMode("form")}

@@ -9,11 +9,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   // Builder edit screen takes over the full viewport
   const isBuilderEditor =
     pathname.startsWith("/admin/builder/") && pathname !== "/admin/builder";
-  // Studio editor also takes over full viewport
-  const isStudioEditor =
-    pathname.startsWith("/admin/studio/") && pathname !== "/admin/studio";
 
-  if (isLogin || isBuilderEditor || isStudioEditor) {
+  if (isLogin || isBuilderEditor) {
     return <>{children}</>;
   }
 

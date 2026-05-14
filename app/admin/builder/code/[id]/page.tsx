@@ -235,82 +235,88 @@ export default function CodePageEditor({
 
   return (
     <div className="flex min-h-screen flex-col bg-[#fafafa]">
-      {/* Header */}
-      <div className="border-b border-black/5 bg-white">
-        <div className="mx-auto max-w-5xl px-6 py-6">
-          <Link
-            href="/admin/builder"
-            className="inline-flex items-center gap-1.5 text-xs font-bold text-destiny-grey/60 hover:text-destiny-orange transition"
+      {mode === "visual" ? (
+        /* ── Visual mode: slim floating toolbar ── */
+        <div className="fixed top-3 left-1/2 z-40 flex -translate-x-1/2 items-center gap-2 rounded-2xl border border-black/10 bg-white/95 px-3 py-2 shadow-lg backdrop-blur-md">
+          <button
+            type="button"
+            onClick={() => setMode("form")}
+            className="inline-flex items-center gap-1.5 rounded-xl border border-black/10 bg-[#f5f7fa] px-3 py-1.5 text-xs font-bold text-destiny-grey/70 transition hover:bg-black/5 hover:text-destiny-grey"
           >
-            <span className="material-symbols-rounded text-base">arrow_back</span>
-            Back to pages
-          </Link>
-          <div className="mt-3 flex flex-wrap items-center gap-3">
-            <span className="inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-indigo-500 to-violet-500 px-2.5 py-0.5 text-[10px] font-black uppercase tracking-[0.2em] text-white">
-              <span className="material-symbols-rounded text-xs">auto_awesome</span>
-              AI generated
-            </span>
-            <span className="text-xs font-mono text-destiny-grey/50">/{page.slug}</span>
-            <a
-              href={`/${page.slug}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-1 text-xs font-bold text-destiny-grey/60 hover:text-destiny-orange"
+            <span className="material-symbols-rounded text-sm">arrow_back</span>
+            Form
+          </button>
+          <a
+            href={`/${page.slug}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1 rounded-xl border border-black/10 bg-[#f5f7fa] px-3 py-1.5 text-xs font-bold text-destiny-grey/70 transition hover:bg-black/5 hover:text-destiny-grey"
+          >
+            View live
+            <span className="material-symbols-rounded text-sm">open_in_new</span>
+          </a>
+        </div>
+      ) : (
+        /* ── Form mode: full header ── */
+        <div className="border-b border-black/5 bg-white">
+          <div className="mx-auto max-w-5xl px-6 py-6">
+            <Link
+              href="/admin/builder"
+              className="inline-flex items-center gap-1.5 text-xs font-bold text-destiny-grey/60 hover:text-destiny-orange transition"
             >
-              View live
-              <span className="material-symbols-rounded text-sm">open_in_new</span>
-            </a>
-          </div>
-          <div className="mt-2 flex items-end justify-between gap-4">
-            <h1 className="text-3xl font-black tracking-tight text-destiny-grey md:text-4xl">
-              {page.title}
-            </h1>
+              <span className="material-symbols-rounded text-base">arrow_back</span>
+              Back to pages
+            </Link>
+            <div className="mt-3 flex flex-wrap items-center gap-3">
+              <span className="inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-indigo-500 to-violet-500 px-2.5 py-0.5 text-[10px] font-black uppercase tracking-[0.2em] text-white">
+                <span className="material-symbols-rounded text-xs">auto_awesome</span>
+                AI generated
+              </span>
+              <span className="text-xs font-mono text-destiny-grey/50">/{page.slug}</span>
+              <a
+                href={`/${page.slug}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 text-xs font-bold text-destiny-grey/60 hover:text-destiny-orange"
+              >
+                View live
+                <span className="material-symbols-rounded text-sm">open_in_new</span>
+              </a>
+            </div>
+            <div className="mt-2 flex items-end justify-between gap-4">
+              <h1 className="text-3xl font-black tracking-tight text-destiny-grey md:text-4xl">
+                {page.title}
+              </h1>
 
-            {/* Mode toggle — only shown when there are texts to edit */}
-            {!noTexts && (
-              <div className="flex items-center gap-1 rounded-xl border border-black/8 bg-[#f5f7fa] p-1">
-                <button
-                  type="button"
-                  onClick={() => setMode("form")}
-                  className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold transition ${
-                    mode === "form"
-                      ? "bg-white text-destiny-grey shadow-sm"
-                      : "text-destiny-grey/60 hover:text-destiny-grey"
-                  }`}
-                >
-                  <span className="material-symbols-rounded text-sm">list</span>
-                  Form
-                </button>
-                <button
-                  type="button"
-                  onClick={() => { setMode("visual"); setActivePick(null); }}
-                  className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold transition ${
-                    mode === "visual"
-                      ? "bg-white text-destiny-grey shadow-sm"
-                      : "text-destiny-grey/60 hover:text-destiny-grey"
-                  }`}
-                >
-                  <span className="material-symbols-rounded text-sm">visibility</span>
-                  Visual
-                </button>
-              </div>
-            )}
-          </div>
-
-          {mode === "form" && (
+              {!noTexts && (
+                <div className="flex items-center gap-1 rounded-xl border border-black/8 bg-[#f5f7fa] p-1">
+                  <button
+                    type="button"
+                    onClick={() => setMode("form")}
+                    className="inline-flex items-center gap-1.5 rounded-lg bg-white px-3 py-1.5 text-xs font-bold text-destiny-grey shadow-sm"
+                  >
+                    <span className="material-symbols-rounded text-sm">list</span>
+                    Form
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { setMode("visual"); setActivePick(null); }}
+                    className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold text-destiny-grey/60 transition hover:text-destiny-grey"
+                  >
+                    <span className="material-symbols-rounded text-sm">visibility</span>
+                    Visual
+                  </button>
+                </div>
+              )}
+            </div>
             <p className="mt-2 max-w-2xl text-sm text-destiny-grey/70">
               Edit any text below. Saving queues a workflow that updates the
               source on <code className="rounded bg-destiny-grey/5 px-1 py-0.5 font-mono text-xs">main</code>,
               type-checks, and pushes — usually under a minute.
             </p>
-          )}
-          {mode === "visual" && (
-            <p className="mt-2 text-sm text-destiny-grey/70">
-              Click any orange-outlined text directly on the page to edit it.
-            </p>
-          )}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Alerts */}
       {submitted && (
@@ -364,7 +370,7 @@ export default function CodePageEditor({
             ref={iframeRef}
             src={iframeUrl}
             className="w-full border-0"
-            style={{ height: "calc(100vh - 72px)" }}
+            style={{ height: "100vh" }}
             title={`Visual editor — ${page.title}`}
           />
 

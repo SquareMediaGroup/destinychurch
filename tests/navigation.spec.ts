@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 
 test.beforeEach(async ({ page }) => {
-  await page.goto('https://destinychurch.vercel.app');
+  await page.goto('/');
   await page.getByRole('button', { name: 'Accept All' }).click();
 });
 
@@ -28,26 +28,26 @@ test('Nav Plan a Visit link navigates correctly', async ({ page }) => {
 });
 
 test('Sermons page loads', async ({ page }) => {
-  await page.goto('https://destinychurch.vercel.app/sermons');
+  await page.goto('/sermons');
   await expect(page).toHaveTitle(/Sermons/);
 });
 
 test("What's On page loads", async ({ page }) => {
-  await page.goto("https://destinychurch.vercel.app/whats-on");
+  await page.goto('/whats-on');
   await expect(page).toHaveTitle(/What's On/);
 });
 
 test('Connect Groups page loads', async ({ page }) => {
-  await page.goto('https://destinychurch.vercel.app/connect');
+  await page.goto('/connect');
   await expect(page).toHaveTitle(/Connect Groups/);
 });
 
 test('Serve page loads', async ({ page }) => {
-  await page.goto('https://destinychurch.vercel.app/serve');
+  await page.goto('/serve');
   await expect(page.getByRole('heading', { name: 'Serve' }).first()).toBeVisible();
 });
 
 test('New Here page loads', async ({ page }) => {
-  await page.goto('https://destinychurch.vercel.app/new-here');
+  await page.goto('/new-here');
   await expect(page).toHaveTitle(/New Here/);
 });

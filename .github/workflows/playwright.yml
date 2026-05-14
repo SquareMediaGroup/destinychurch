@@ -1,6 +1,10 @@
 name: Playwright Tests
 on:
-  workflow_dispatch:  # Manual trigger only
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
 jobs:
   test:
     timeout-minutes: 60
@@ -16,6 +20,8 @@ jobs:
       run: npx playwright install --with-deps
     - name: Run Playwright tests
       run: npx playwright test
+      env:
+        BASE_URL: https://destinychurch.vercel.app
     - uses: actions/upload-artifact@v4
       if: ${{ !cancelled() }}
       with:

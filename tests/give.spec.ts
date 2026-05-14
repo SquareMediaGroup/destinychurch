@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 
 test.beforeEach(async ({ page }) => {
-  await page.goto('https://destinychurch.vercel.app/give');
+  await page.goto('/give');
   await page.getByRole('button', { name: 'Accept All' }).click();
 });
 

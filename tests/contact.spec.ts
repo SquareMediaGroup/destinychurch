@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 
 test.beforeEach(async ({ page }) => {
-  await page.goto('https://destinychurch.vercel.app/contact');
+  await page.goto('/contact');
   await page.getByRole('button', { name: 'Accept All' }).click();
 });
 
@@ -136,7 +136,7 @@ test('Send Message button is disabled while submitting', async ({ page }) => {
 
 test('Can navigate to contact page from Plan a Visit', async ({ page }) => {
   // beforeEach already accepted cookies on /contact — navigate directly
-  await page.goto('https://destinychurch.vercel.app');
+  await page.goto('/');
   await page.getByRole('link', { name: 'Plan a Visit' }).first().click();
   await expect(page.getByRole('heading', { name: 'Plan Your Visit' })).toBeVisible();
   await page.getByRole('link', { name: 'Contact Us' }).click();

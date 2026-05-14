@@ -64,7 +64,7 @@ const STEP_DESCRIPTIONS: Array<{ match: string; name: string; description: strin
   { match: "complete job", name: "Finishing", description: "Wrapping up" },
 ];
 
-function describeStep(rawName: string): { name: string; description: string } {
+export function describeStep(rawName: string): { name: string; description: string } {
   const lower = rawName.toLowerCase();
   for (const entry of STEP_DESCRIPTIONS) {
     if (lower.includes(entry.match)) {
@@ -74,7 +74,7 @@ function describeStep(rawName: string): { name: string; description: string } {
   return { name: rawName, description: rawName };
 }
 
-function buildPhases(steps: WorkflowStep[] | undefined): {
+export function buildPhases(steps: WorkflowStep[] | undefined): {
   phases: WorkflowPhase[];
   currentIndex: number;
 } {

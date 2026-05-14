@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 
 test.beforeEach(async ({ page }) => {
-  await page.goto('https://destinychurch.vercel.app/sermons');
+  await page.goto('/sermons');
   await page.getByRole('button', { name: 'Accept All' }).click();
 });
 
@@ -22,6 +22,6 @@ test('Clicking a sermon navigates to sermon detail', async ({ page }) => {
 });
 
 test('Guest speakers page loads', async ({ page }) => {
-  await page.goto('https://destinychurch.vercel.app/sermons/guest-speakers');
+  await page.goto('/sermons/guest-speakers');
   await expect(page).toHaveTitle(/Guest Speakers/);
 });

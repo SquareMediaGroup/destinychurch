@@ -5,16 +5,149 @@ import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 
-const navItems = [
+const topNavItems = [
   { href: "/admin/sermons", icon: "play_circle", label: "Sermons" },
-  { href: "/admin/banner", icon: "campaign", label: "Banner" },
-  { href: "/admin/popup", icon: "ad", label: "Popup" },
-  { href: "/admin/alpha", icon: "event", label: "Alpha" },
-  { href: "/admin/recovery", icon: "healing", label: "Recovery" },
+];
+
+const announcementItems = [
+  { href: "/admin/banner", label: "Banner" },
+  { href: "/admin/popup", label: "Popup" },
+];
+
+const courseItems = [
+  { href: "/admin/alpha", label: "Alpha" },
+  { href: "/admin/recovery", label: "Recovery" },
+];
+
+const bottomNavItems = [
   { href: "/admin/builder", icon: "design_services", label: "Builder" },
   { href: "/admin/redirects", icon: "alt_route", label: "Redirects" },
   { href: "/admin/cache", icon: "refresh", label: "Clear Cache" },
 ];
+
+function NavDropdown({
+  label,
+  icon,
+  items,
+  pathname,
+  onNavigate,
+}: {
+  label: string;
+  icon: string;
+  items: { href: string; label: string }[];
+  pathname: string;
+  onNavigate?: () => void;
+}) {
+  const groupActive = items.some((i) => pathname.startsWith(i.href));
+  const [open, setOpen] = useState(groupActive);
+
+  return (
+    <div>
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-bold transition ${
+          groupActive
+            ? "bg-destiny-orange/10 text-destiny-orange"
+            : "text-destiny-grey/60 hover:bg-[#f5f7fa] hover:text-destiny-grey"
+        }`}
+      >
+        <span className={`material-symbols-rounded text-xl ${groupActive ? "text-destiny-orange" : ""}`}>
+          {icon}
+        </span>
+        <span className="flex-1 text-left">{label}</span>
+        <span className="material-symbols-rounded text-base opacity-50">
+          {open ? "expand_less" : "expand_more"}
+        </span>
+      </button>
+      {open && (
+        <div className="ml-9 mt-0.5 flex flex-col gap-0.5">
+          {items.map((item) => {
+            const active = pathname.startsWith(item.href);
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                onClick={onNavigate}
+                className={`rounded-lg px-3 py-2 text-sm font-bold transition ${
+                  active
+                    ? "text-destiny-orange"
+                    : "text-destiny-grey/50 hover:text-destiny-grey"
+                }`}
+              >
+                {item.label}
+              </Link>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function NavItems({ pathname, onNavigate }: { pathname: string; onNavigate?: () => void }) {
+  return (
+    <>
+      {topNavItems.map((item) => {
+        const active = pathname.startsWith(item.href);
+        return (
+          <Link
+            key={item.href}
+            href={item.href}
+            onClick={onNavigate}
+            className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-bold transition ${
+              active
+                ? "bg-destiny-orange/10 text-destiny-orange"
+                : "text-destiny-grey/60 hover:bg-[#f5f7fa] hover:text-destiny-grey"
+            }`}
+          >
+            <span className={`material-symbols-rounded text-xl ${active ? "text-destiny-orange" : ""}`}>
+              {item.icon}
+            </span>
+            {item.label}
+          </Link>
+        );
+      })}
+
+      <NavDropdown
+        label="Announcements"
+        icon="campaign"
+        items={announcementItems}
+        pathname={pathname}
+        onNavigate={onNavigate}
+      />
+
+      <NavDropdown
+        label="Courses"
+        icon="event"
+        items={courseItems}
+        pathname={pathname}
+        onNavigate={onNavigate}
+      />
+
+      {bottomNavItems.map((item) => {
+        const active = pathname.startsWith(item.href);
+        return (
+          <Link
+            key={item.href}
+            href={item.href}
+            onClick={onNavigate}
+            className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-bold transition ${
+              active
+                ? "bg-destiny-orange/10 text-destiny-orange"
+                : "text-destiny-grey/60 hover:bg-[#f5f7fa] hover:text-destiny-grey"
+            }`}
+          >
+            <span className={`material-symbols-rounded text-xl ${active ? "text-destiny-orange" : ""}`}>
+              {item.icon}
+            </span>
+            {item.label}
+          </Link>
+        );
+      })}
+    </>
+  );
+}
 
 export default function AdminSidebar() {
   const pathname = usePathname();
@@ -53,24 +186,7 @@ export default function AdminSidebar() {
       {mobileOpen && (
         <div className="border-b border-black/8 bg-white md:hidden">
           <nav className="flex flex-col gap-1 p-3">
-            {navItems.map((item) => {
-              const active = pathname.startsWith(item.href);
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  onClick={() => setMobileOpen(false)}
-                  className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-bold transition ${
-                    active
-                      ? "bg-destiny-orange/10 text-destiny-orange"
-                      : "text-destiny-grey/60 hover:bg-[#f5f7fa] hover:text-destiny-grey"
-                  }`}
-                >
-                  <span className="material-symbols-rounded text-xl">{item.icon}</span>
-                  {item.label}
-                </Link>
-              );
-            })}
+            <NavItems pathname={pathname} onNavigate={() => setMobileOpen(false)} />
             <div className="mt-2 border-t border-black/5 pt-2">
               <form action="/api/admin/logout" method="POST">
                 <button
@@ -111,25 +227,7 @@ function SidebarContents({ pathname }: { pathname: string }) {
 
       {/* Nav */}
       <nav className="flex flex-col gap-1 px-3">
-        {navItems.map((item) => {
-          const active = pathname.startsWith(item.href);
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-bold transition ${
-                active
-                  ? "bg-destiny-orange/10 text-destiny-orange"
-                  : "text-destiny-grey/60 hover:bg-[#f5f7fa] hover:text-destiny-grey"
-              }`}
-            >
-              <span className={`material-symbols-rounded text-xl ${active ? "text-destiny-orange" : ""}`}>
-                {item.icon}
-              </span>
-              {item.label}
-            </Link>
-          );
-        })}
+        <NavItems pathname={pathname} />
       </nav>
 
       {/* Bottom — view site + sign out */}

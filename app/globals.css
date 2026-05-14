@@ -29,6 +29,10 @@
   --font-heading: Arial, "Helvetica Neue", sans-serif;
 }
 
+html, body, * {
+  cursor: none !important;
+}
+
 html {
   background: #ffffff;
   overscroll-behavior: none;

@@ -204,6 +204,7 @@ export async function POST(
     .from("builder_pages")
     .update({
       editable_texts: texts,
+      status: "draft",
       updated_at: new Date().toISOString(),
     })
     .eq("id", id);

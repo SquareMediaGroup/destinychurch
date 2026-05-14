@@ -69,11 +69,20 @@ export default function BuilderListPage() {
         if (!q) return true;
         return p.title.toLowerCase().includes(q) || p.slug.toLowerCase().includes(q);
       })
-      .sort(
-        (a, b) =>
-          new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
-      );
+      .sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime());
   }, [pages, filter, search]);
+
+  const draftPages = useMemo(
+    () => filtered.filter((p) => p.status === "draft"),
+    [filtered]
+  );
+  const otherPages = useMemo(
+    () => filtered.filter((p) => p.status !== "draft"),
+    [filtered]
+  );
+
+  const showDraftCards = filter === "all" || filter === "draft";
+  const showList = filter === "all" || filter === "published" || filter === "archived";
 
   return (
     <div className="min-h-screen bg-[#fafafa]">
@@ -89,8 +98,7 @@ export default function BuilderListPage() {
                 Pages
               </h1>
               <p className="mt-1 text-sm text-destiny-grey/60">
-                AI-generated pages on the site, plus draft pages still in
-                progress.
+                AI-generated pages on the site, plus draft pages still in progress.
               </p>
             </div>
             <div className="flex gap-2">
@@ -157,32 +165,166 @@ export default function BuilderListPage() {
         </div>
 
         {loading ? (
-          <ul className="space-y-1.5">
-            {[0, 1, 2, 3, 4].map((i) => (
-              <li
-                key={i}
-                className="h-14 animate-pulse rounded-lg border border-black/5 bg-white"
-              />
-            ))}
-          </ul>
+          <div className="space-y-6">
+            {/* Draft card skeletons */}
+            <div>
+              <div className="mb-3 h-4 w-32 animate-pulse rounded bg-black/5" />
+              <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+                {[0, 1, 2].map((i) => (
+                  <div key={i} className="h-64 animate-pulse rounded-2xl bg-white shadow-[0_2px_16px_rgba(0,0,0,0.06)]" />
+                ))}
+              </div>
+            </div>
+            <ul className="space-y-1.5">
+              {[0, 1, 2].map((i) => (
+                <li key={i} className="h-14 animate-pulse rounded-lg border border-black/5 bg-white" />
+              ))}
+            </ul>
+          </div>
         ) : filtered.length === 0 ? (
           <EmptyState hasSearch={Boolean(search) || filter !== "all"} />
         ) : (
-          <ul className="overflow-hidden rounded-lg border border-black/5 bg-white">
-            {filtered.map((p, i) => (
-              <PageRowItem
-                key={p.id}
-                page={p}
-                isLast={i === filtered.length - 1}
-                onDelete={() => deletePage(p.id)}
-              />
-            ))}
-          </ul>
+          <div className="space-y-8">
+            {/* Draft pages — card grid */}
+            {showDraftCards && draftPages.length > 0 && (
+              <div>
+                <div className="mb-3 flex items-center gap-2">
+                  <span className="h-2 w-2 rounded-full bg-amber-500" />
+                  <h2 className="text-xs font-bold uppercase tracking-[0.18em] text-destiny-grey/60">
+                    Draft
+                  </h2>
+                  <span className="text-[10px] font-bold tabular-nums text-destiny-grey/35">
+                    {draftPages.length}
+                  </span>
+                </div>
+                <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+                  {draftPages.map((p) => (
+                    <DraftPageCard key={p.id} page={p} onDelete={() => deletePage(p.id)} />
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Published / archived — row list */}
+            {showList && otherPages.length > 0 && (
+              <div>
+                {showDraftCards && draftPages.length > 0 && (
+                  <div className="mb-3 flex items-center gap-2">
+                    <span className="h-2 w-2 rounded-full bg-emerald-500" />
+                    <h2 className="text-xs font-bold uppercase tracking-[0.18em] text-destiny-grey/60">
+                      Published
+                    </h2>
+                    <span className="text-[10px] font-bold tabular-nums text-destiny-grey/35">
+                      {otherPages.length}
+                    </span>
+                  </div>
+                )}
+                <ul className="overflow-hidden rounded-lg border border-black/5 bg-white">
+                  {otherPages.map((p, i) => (
+                    <PageRowItem
+                      key={p.id}
+                      page={p}
+                      isLast={i === otherPages.length - 1}
+                      onDelete={() => deletePage(p.id)}
+                    />
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
         )}
       </div>
     </div>
   );
 }
+
+// ── Draft page card (ChurchSuite-style) ─────────────────────────────────────
+
+function DraftPageCard({ page, onDelete }: { page: PageRow; onDelete: () => void }) {
+  const isCode = page.source_type === "code";
+  const editHref = isCode ? `/admin/builder/code/${page.id}` : null;
+  const updated = new Date(page.updated_at);
+
+  const card = (
+    <div className="group flex flex-col overflow-hidden rounded-2xl bg-white shadow-[0_2px_16px_rgba(0,0,0,0.08)] transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_4px_24px_rgba(0,0,0,0.12)]">
+      {/* Page screenshot thumbnail */}
+      <div className="relative h-44 w-full shrink-0 overflow-hidden bg-[#f5f7fa]">
+        <div
+          className="pointer-events-none absolute left-0 top-0 origin-top-left"
+          style={{ transform: "scale(0.25)", width: "1280px", height: "720px" }}
+        >
+          <iframe
+            src={`/${page.slug}`}
+            width={1280}
+            height={720}
+            className="border-0"
+            tabIndex={-1}
+            aria-hidden="true"
+            loading="lazy"
+          />
+        </div>
+        {/* Gradient overlay */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent" />
+
+        {/* Draft badge */}
+        <div className="absolute left-3 top-3">
+          <div className="flex items-center gap-1.5 rounded-full bg-amber-500 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide text-white shadow-md">
+            <span className="h-1.5 w-1.5 rounded-full bg-white/70" />
+            Draft
+          </div>
+        </div>
+
+        {/* Source type badge */}
+        <div className="absolute right-3 top-3">
+          <span className="inline-flex items-center rounded-full border border-white/20 bg-black/30 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white/80 backdrop-blur-sm">
+            {isCode ? "AI" : "legacy"}
+          </span>
+        </div>
+
+        {/* Delete button (hover) */}
+        <button
+          type="button"
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            onDelete();
+          }}
+          title="Delete"
+          className="absolute bottom-2 right-2 flex h-7 w-7 items-center justify-center rounded-lg bg-white/90 text-destiny-grey/60 opacity-0 shadow-sm backdrop-blur-sm transition hover:bg-red-50 hover:text-red-600 group-hover:opacity-100"
+        >
+          <span className="material-symbols-rounded text-base">delete</span>
+        </button>
+      </div>
+
+      {/* Content */}
+      <div className="flex flex-1 flex-col p-4">
+        <h3 className="mb-1 text-sm font-bold leading-snug text-destiny-grey line-clamp-2">
+          {page.title}
+        </h3>
+        <p className="font-mono text-[11px] text-destiny-grey/45">/{page.slug}</p>
+
+        <div className="mt-auto flex items-center justify-between pt-3">
+          <span className="text-[11px] text-destiny-grey/40">{formatRelative(updated)}</span>
+          {editHref && (
+            <div className="flex items-center gap-1 text-[11px] font-bold text-destiny-orange transition-transform duration-200 group-hover:translate-x-0.5">
+              <span>Edit page</span>
+              <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
+              </svg>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+
+  if (editHref) {
+    return <Link href={editHref}>{card}</Link>;
+  }
+  return <div>{card}</div>;
+}
+
+// ── Published/archived row item ──────────────────────────────────────────────
 
 function PageRowItem({
   page,
@@ -216,9 +358,7 @@ function PageRowItem({
           <span className="truncate text-sm font-bold text-destiny-grey">
             {page.title}
           </span>
-          <span
-            className="inline-flex items-center rounded border border-black/10 bg-[#fafafa] px-1.5 py-0 text-[9px] font-bold uppercase tracking-wider text-destiny-grey/60"
-          >
+          <span className="inline-flex items-center rounded border border-black/10 bg-[#fafafa] px-1.5 py-0 text-[9px] font-bold uppercase tracking-wider text-destiny-grey/60">
             {isCode ? "AI" : "legacy"}
           </span>
         </div>

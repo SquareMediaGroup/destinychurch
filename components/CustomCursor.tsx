@@ -56,8 +56,7 @@ export default function CustomCursor() {
         translate: "-50% -50%",
         willChange: "transform",
         transition: "width 0.2s ease, height 0.2s ease, opacity 0.2s ease",
-        opacity: hovered ? 0.7 : 1,
-        mixBlendMode: hovered ? "multiply" : "normal",
+        opacity: 1,
       }}
     />
   );

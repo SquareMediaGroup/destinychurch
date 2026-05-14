@@ -82,6 +82,7 @@ export default function ChurchHeader() {
   const [searchOpen, setSearchOpen] = useState(false);
   const [progress, setProgress] = useState(0);
   const [alphaActive, setAlphaActive] = useState(false);
+  const [youtubeQuotaExceeded, setYoutubeQuotaExceeded] = useState(false);
   const headerRef = useRef<HTMLElement>(null);
   const bridgeInputRef = useRef<HTMLInputElement>(null);
   const lastScrollY = useRef(0);
@@ -161,6 +162,20 @@ export default function ChurchHeader() {
     };
   }, []);
 
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/youtube/status")
+      .then((res) => (res.ok ? res.json() : { quotaExceeded: false }))
+      .then((data: { quotaExceeded?: boolean }) => {
+        if (cancelled) return;
+        setYoutubeQuotaExceeded(data.quotaExceeded === true);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   const whatsOnDropdown = useMemo(
     () =>
       alphaActive
@@ -177,27 +192,23 @@ export default function ChurchHeader() {
   const navItems = useMemo(
     () => [
       { label: "What's on", href: "/whats-on", dropdown: whatsOnDropdown },
-      { href: "/sermons", label: "Sermons" },
+      ...(!youtubeQuotaExceeded ? [{ href: "/sermons", label: "Sermons" }] : []),
       ...(alphaActive ? [{ href: "/alpha", label: "Alpha" }] : []),
       { href: "/serve", label: "Serve" },
       { label: "About", href: "/about", dropdown: aboutDropdown },
       { href: "/give", label: "Give" },
     ],
-    [alphaActive, whatsOnDropdown]
+    [alphaActive, whatsOnDropdown, youtubeQuotaExceeded]
   );
 
-  const mobileNavItems = useMemo(
-    () =>
-      alphaActive
-        ? [
-            mobileNavItemsBase[0],
-            mobileNavItemsBase[1],
-            { href: "/alpha", label: "Alpha" },
-            ...mobileNavItemsBase.slice(2),
-          ]
-        : mobileNavItemsBase,
-    [alphaActive]
-  );
+  const mobileNavItems = useMemo(() => {
+    const items = mobileNavItemsBase.filter(
+      (item) => !(youtubeQuotaExceeded && item.href === "/sermons")
+    );
+    if (!alphaActive) return items;
+    // Insert Alpha after What's On (index 0)
+    return [items[0], { href: "/alpha", label: "Alpha" }, ...items.slice(1)];
+  }, [alphaActive, youtubeQuotaExceeded]);
 
   if (pathname.startsWith("/admin")) return null;
 

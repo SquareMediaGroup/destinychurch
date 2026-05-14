@@ -1,14 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
-
-const churchLinks = [
-  { label: "Homepage", href: "/" },
-  { label: "What's on", href: "/whats-on" },
-  { label: "About us", href: "/about" },
-  { label: "Serve", href: "/serve" },
-  { label: "Give", href: "/give" },
-  { label: "Hire", href: "/hire" },
-];
+import { isYouTubeQuotaExceeded } from "@/lib/youtube";
 
 const connectLinks = [
   { label: "New Here?", href: "/new-here" },
@@ -29,7 +21,19 @@ const legalLinks = [
   { label: "Contact Us", href: "/contact" },
 ];
 
-export default function ChurchFooter() {
+export default async function ChurchFooter() {
+  const quotaExceeded = await isYouTubeQuotaExceeded();
+
+  const churchLinks = [
+    { label: "Homepage", href: "/" },
+    { label: "What's on", href: "/whats-on" },
+    { label: "About us", href: "/about" },
+    ...(!quotaExceeded ? [{ label: "Sermons", href: "/sermons" }] : []),
+    { label: "Serve", href: "/serve" },
+    { label: "Give", href: "/give" },
+    { label: "Hire", href: "/hire" },
+  ];
+
   return (
     <footer className="border-t border-white/5 text-white" style={{ background: "linear-gradient(135deg, #1c0f06 0%, #0d0d0d 100%)" }}>
       <div className="mx-auto max-w-7xl px-4 py-14 lg:px-8">

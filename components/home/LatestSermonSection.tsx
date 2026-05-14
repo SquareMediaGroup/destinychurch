@@ -1,15 +1,28 @@
 import Image from "next/image";
 import Link from "next/link";
-import { getLatestVisibleVideo } from "@/lib/sermons";
-import { formatDate } from "@/lib/youtube";
+import { type YTVideo, formatDate } from "@/lib/youtube";
 import ScrollSpeedGlow from "@/components/home/ScrollSpeedGlow";
 
-export default async function LatestSermonSection() {
-  const video = await getLatestVisibleVideo();
+const YOUTUBE_CHANNEL_URL = `https://www.youtube.com/channel/${process.env.YOUTUBE_CHANNEL_ID}`;
+
+export default function LatestSermonSection({
+  video,
+  quotaExceeded = false,
+}: {
+  video: YTVideo | null;
+  quotaExceeded?: boolean;
+}) {
   if (!video) return null;
 
   const date = formatDate(video.publishedAt);
   const shortDesc = video.description.slice(0, 160).trim();
+
+  const watchHref = quotaExceeded
+    ? `https://www.youtube.com/watch?v=${video.id}`
+    : `/sermons/${video.id}`;
+
+  const allHref = quotaExceeded ? YOUTUBE_CHANNEL_URL : "/sermons";
+  const allLabel = quotaExceeded ? "Watch on YouTube" : "See All Sermons";
 
   return (
     <div className="px-4 py-8 lg:px-8">
@@ -47,17 +60,19 @@ export default async function LatestSermonSection() {
               )}
               <div className="flex flex-wrap gap-3">
                 <Link
-                  href={`/sermons/${video.id}`}
+                  href={watchHref}
+                  {...(quotaExceeded ? { target: "_blank", rel: "noopener noreferrer" } : {})}
                   className="inline-flex items-center gap-2 rounded-full bg-destiny-orange px-5 py-2.5 text-xs font-bold text-white shadow-lg shadow-destiny-orange/25 transition hover:brightness-110 sm:px-6 sm:py-3 sm:text-sm"
                 >
                   <span className="material-symbols-rounded text-base">play_arrow</span>
                   Watch Now
                 </Link>
                 <Link
-                  href="/sermons"
+                  href={allHref}
+                  {...(quotaExceeded ? { target: "_blank", rel: "noopener noreferrer" } : {})}
                   className="inline-flex items-center gap-2 rounded-full border-2 border-white/40 px-5 py-2.5 text-xs font-bold text-white backdrop-blur transition hover:border-white/70 hover:bg-white/10 sm:px-6 sm:py-3 sm:text-sm"
                 >
-                  See All Sermons
+                  {allLabel}
                 </Link>
               </div>
             </div>
@@ -65,7 +80,8 @@ export default async function LatestSermonSection() {
             {/* Right column — thumbnail with play button */}
             <div className="md:w-1/2">
               <Link
-                href={`/sermons/${video.id}`}
+                href={watchHref}
+                {...(quotaExceeded ? { target: "_blank", rel: "noopener noreferrer" } : {})}
                 className="group relative block overflow-hidden rounded-3xl shadow-2xl"
                 style={{ aspectRatio: "16/9" }}
               >

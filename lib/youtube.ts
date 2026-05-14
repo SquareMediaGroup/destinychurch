@@ -49,6 +49,60 @@ export function formatDuration(iso8601: string | undefined): string {
 const API_KEY = process.env.YOUTUBE_API_KEY;
 const CHANNEL_ID = process.env.YOUTUBE_CHANNEL_ID;
 
+async function detectQuotaExceeded(res: Response): Promise<boolean> {
+  if (res.status !== 403) return false;
+  try {
+    const data = await res.clone().json();
+    const reason: string = data?.error?.errors?.[0]?.reason ?? "";
+    return reason === "quotaExceeded" || reason === "dailyLimitExceeded";
+  } catch {
+    return false;
+  }
+}
+
+export async function isYouTubeQuotaExceeded(): Promise<boolean> {
+  try {
+    const url = new URL("https://www.googleapis.com/youtube/v3/channels");
+    url.searchParams.set("part", "id");
+    url.searchParams.set("id", CHANNEL_ID ?? "");
+    url.searchParams.set("key", API_KEY ?? "");
+    const res = await fetch(url.toString(), { next: { revalidate: 3600 } });
+    return detectQuotaExceeded(res);
+  } catch {
+    return false;
+  }
+}
+
+export async function getLatestVideoFromRSS(): Promise<YTVideo | null> {
+  try {
+    const feedUrl = `https://www.youtube.com/feeds/videos.xml?channel_id=${CHANNEL_ID}`;
+    const res = await fetch(feedUrl, { next: { revalidate: 300 } });
+    if (!res.ok) return null;
+    const xml = await res.text();
+
+    const entryMatch = xml.match(/<entry>([\s\S]*?)<\/entry>/);
+    if (!entryMatch) return null;
+    const entry = entryMatch[1];
+
+    const id = entry.match(/<yt:videoId>([^<]+)<\/yt:videoId>/)?.[1];
+    if (!id) return null;
+
+    const title = entry.match(/<title>([^<]*)<\/title>/)?.[1]?.trim() ?? "";
+    const publishedAt = entry.match(/<published>([^<]+)<\/published>/)?.[1] ?? "";
+    const description = entry.match(/<media:description>([\s\S]*?)<\/media:description>/)?.[1]?.trim() ?? "";
+
+    return {
+      id,
+      title: title.replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/&#39;/g, "'"),
+      description,
+      thumbnail: thumbUrl(id),
+      publishedAt,
+    };
+  } catch {
+    return null;
+  }
+}
+
 export async function getLatestVideo(): Promise<YTVideo | null> {
   try {
     const searchUrl = new URL("https://www.googleapis.com/youtube/v3/search");

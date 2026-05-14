@@ -18,16 +18,23 @@ import WhatsOnSection from "@/components/home/WhatsOnSection";
 import EveryoneHasAPlaceSection from "@/components/home/EveryoneHasAPlaceSection";
 import WorshipWithUsSection from "@/components/home/WorshipWithUsSection";
 import GetInvolvedSection from "@/components/home/GetInvolvedSection";
+import { isYouTubeQuotaExceeded, getLatestVideoFromRSS } from "@/lib/youtube";
+import { getLatestVisibleVideo } from "@/lib/sermons";
 
 export const revalidate = 30;
 
-export default function HomePage() {
+export default async function HomePage() {
+  const quotaExceeded = await isYouTubeQuotaExceeded();
+  const video = quotaExceeded
+    ? await getLatestVideoFromRSS()
+    : await getLatestVisibleVideo();
+
   return (
     <>
       <HomeOverscrollColor />
       <HeroSection />
       <MissionSection />
-      <LatestSermonSection />
+      <LatestSermonSection video={video} quotaExceeded={quotaExceeded} />
       <WhatsOnSection />
       <EveryoneHasAPlaceSection />
       <WorshipWithUsSection />

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 
 interface EditableText {
@@ -33,11 +33,12 @@ export default function VisualEditOverlay() {
   const params = useSearchParams();
   const isEdit = params.get("__edit") === "1";
   const editId = params.get("__editId");
-  const [status, setStatus] = useState<"loading" | "ready" | "error">(
-    "loading"
-  );
+  const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
+  const [dismissed, setDismissed] = useState(false);
+  const [visible, setVisible] = useState(true);
+  const dismissTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Hide site chrome (header, footer, banners) immediately in edit mode
+  // Hide site chrome immediately
   useEffect(() => {
     if (!isEdit) return;
     const style = document.createElement("style");
@@ -45,6 +46,30 @@ export default function VisualEditOverlay() {
     style.textContent = `header, footer { display: none !important; }`;
     document.head.appendChild(style);
     return () => style.remove();
+  }, [isEdit]);
+
+  // Auto-dismiss tooltip after 6 s once ready
+  useEffect(() => {
+    if (status !== "ready" || dismissed) return;
+    dismissTimer.current = setTimeout(() => {
+      setVisible(false);
+      setTimeout(() => setDismissed(true), 300);
+    }, 6000);
+    return () => {
+      if (dismissTimer.current) clearTimeout(dismissTimer.current);
+    };
+  }, [status, dismissed]);
+
+  // Dismiss on first edit click (fired from activateEditMode)
+  useEffect(() => {
+    if (!isEdit) return;
+    function onFirstEdit() {
+      if (dismissTimer.current) clearTimeout(dismissTimer.current);
+      setVisible(false);
+      setTimeout(() => setDismissed(true), 300);
+    }
+    window.addEventListener("dc-first-edit", onFirstEdit);
+    return () => window.removeEventListener("dc-first-edit", onFirstEdit);
   }, [isEdit]);
 
   useEffect(() => {
@@ -61,7 +86,6 @@ export default function VisualEditOverlay() {
           setStatus("error");
           return;
         }
-        // Run after hydration settles
         setTimeout(() => {
           if (!cancelled) {
             activateEditMode(texts);
@@ -73,7 +97,6 @@ export default function VisualEditOverlay() {
         if (!cancelled) setStatus("error");
       });
 
-    // Listen for messages from parent frame
     function onMessage(e: MessageEvent) {
       if (e.data?.type === "dc-edit-update") {
         const { id, value } = e.data as EditUpdateMessage;
@@ -99,45 +122,104 @@ export default function VisualEditOverlay() {
     };
   }, [isEdit, editId]);
 
-  if (!isEdit) return null;
+  if (!isEdit || dismissed) return null;
 
-  const bg =
-    status === "error"
-      ? "#ef4444"
-      : status === "ready"
-        ? "rgba(249,115,22,0.95)"
-        : "rgba(80,80,80,0.8)";
+  function handleDismiss() {
+    if (dismissTimer.current) clearTimeout(dismissTimer.current);
+    setVisible(false);
+    setTimeout(() => setDismissed(true), 300);
+  }
 
   return (
     <div
       style={{
         position: "fixed",
-        top: 12,
+        top: 16,
         left: "50%",
         transform: "translateX(-50%)",
         zIndex: 99999,
-        background: bg,
-        color: "white",
-        fontSize: 11,
-        fontWeight: 700,
-        padding: "6px 16px",
-        borderRadius: 8,
-        letterSpacing: "0.1em",
-        boxShadow: "0 2px 16px rgba(0,0,0,0.2)",
-        pointerEvents: "none",
-        textTransform: "uppercase",
+        display: "flex",
+        alignItems: "center",
+        gap: 10,
+        background: "rgba(255,255,255,0.95)",
+        backdropFilter: "blur(16px)",
+        WebkitBackdropFilter: "blur(16px)",
+        border: "1px solid rgba(0,0,0,0.08)",
+        borderRadius: 12,
+        padding: "9px 10px 9px 14px",
+        boxShadow: "0 4px 24px rgba(0,0,0,0.08), 0 1px 4px rgba(0,0,0,0.06)",
         whiteSpace: "nowrap",
+        opacity: visible ? 1 : 0,
+        transition: "opacity 0.25s ease",
       }}
     >
-      {status === "loading" && "Activating edit mode…"}
-      {status === "ready" && "Click any highlighted text to edit"}
-      {status === "error" && "Edit mode unavailable — scan for texts first"}
+      {/* Status dot */}
+      <span
+        style={{
+          width: 7,
+          height: 7,
+          borderRadius: "50%",
+          flexShrink: 0,
+          background:
+            status === "error"
+              ? "#ef4444"
+              : status === "ready"
+                ? "#f97316"
+                : "#d1d5db",
+          boxShadow: status === "ready" ? "0 0 0 3px rgba(249,115,22,0.15)" : undefined,
+        }}
+      />
+      <span
+        style={{
+          fontSize: 12,
+          fontWeight: 600,
+          color: status === "error" ? "#dc2626" : "#374151",
+          letterSpacing: "-0.01em",
+        }}
+      >
+        {status === "loading" && "Activating edit mode…"}
+        {status === "ready" && "Click any highlighted text to edit"}
+        {status === "error" && "Scan for texts first to enable editing"}
+      </span>
+
+      {/* Dismiss */}
+      {status !== "loading" && (
+        <button
+          onClick={handleDismiss}
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            width: 22,
+            height: 22,
+            borderRadius: 6,
+            border: "none",
+            background: "none",
+            cursor: "pointer",
+            color: "rgba(0,0,0,0.35)",
+            flexShrink: 0,
+            fontSize: 14,
+            lineHeight: 1,
+            transition: "background 0.12s, color 0.12s",
+          }}
+          onMouseEnter={(e) => {
+            (e.currentTarget as HTMLButtonElement).style.background = "rgba(0,0,0,0.06)";
+            (e.currentTarget as HTMLButtonElement).style.color = "rgba(0,0,0,0.7)";
+          }}
+          onMouseLeave={(e) => {
+            (e.currentTarget as HTMLButtonElement).style.background = "none";
+            (e.currentTarget as HTMLButtonElement).style.color = "rgba(0,0,0,0.35)";
+          }}
+          aria-label="Dismiss"
+        >
+          ✕
+        </button>
+      )}
     </div>
   );
 }
 
 function activateEditMode(catalog: EditableText[]) {
-  // Inject CSS for editable highlights
   if (!document.getElementById("dc-visual-edit-styles")) {
     const style = document.createElement("style");
     style.id = "dc-visual-edit-styles";
@@ -161,7 +243,6 @@ function activateEditMode(catalog: EditableText[]) {
     document.head.appendChild(style);
   }
 
-  // Build value → catalog item map (skip hrefs)
   const byValue = new Map<string, EditableText>();
   for (const t of catalog) {
     if (t.kind !== "href") {
@@ -169,7 +250,7 @@ function activateEditMode(catalog: EditableText[]) {
     }
   }
 
-  // Tag matching elements
+  let firstClick = true;
   const TAGS =
     "h1, h2, h3, h4, h5, h6, p, span, a, button, li, figcaption, blockquote, dt, dd, label, td, th";
   const elements = document.querySelectorAll<HTMLElement>(TAGS);
@@ -188,6 +269,10 @@ function activateEditMode(catalog: EditableText[]) {
       (e) => {
         e.preventDefault();
         e.stopPropagation();
+        if (firstClick) {
+          firstClick = false;
+          window.dispatchEvent(new CustomEvent("dc-first-edit"));
+        }
         const msg: EditClickMessage = {
           type: "dc-edit-click",
           id: match.id,

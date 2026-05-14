@@ -386,7 +386,7 @@ export default function CodePageEditor({
         </div>
       ) : (
         /* ── FORM MODE ───────────────────────────────────────────── */
-        <div className="mx-auto w-full max-w-5xl px-6 py-8 pb-32">
+        <div className="mx-auto w-full max-w-5xl px-6 py-8 pb-24">
           {noTexts ? (
             <div className="rounded-3xl border border-dashed border-black/15 bg-white p-12 text-center">
               <span
@@ -478,48 +478,51 @@ export default function CodePageEditor({
         </div>
       )}
 
-      {/* Sticky save bar */}
-      <div className="fixed bottom-0 left-0 right-0 z-30 border-t border-black/5 bg-white/95 backdrop-blur-md">
-        <div className="mx-auto flex max-w-5xl items-center justify-between gap-3 px-6 py-4">
-          <div className="text-xs text-destiny-grey/70">
-            {dirtyEdits.length === 0 ? (
-              <span>No unsaved edits</span>
-            ) : (
-              <span className="font-bold text-destiny-grey">
-                {dirtyEdits.length} unsaved edit{dirtyEdits.length === 1 ? "" : "s"}
+      {/* Floating command dock */}
+      <div className="fixed bottom-6 left-1/2 z-30 -translate-x-1/2">
+        <div className="flex items-center gap-2 rounded-2xl border border-black/8 bg-white/90 px-3 py-2.5 shadow-xl shadow-black/8 backdrop-blur-xl">
+          {dirtyEdits.length === 0 ? (
+            <span className="flex items-center gap-2 px-1 text-xs text-destiny-grey/40">
+              <span className="h-1.5 w-1.5 rounded-full bg-black/15" />
+              No changes
+            </span>
+          ) : (
+            <>
+              <span className="flex items-center gap-2 pl-1 text-xs font-semibold text-destiny-grey/70">
+                <span className="flex h-5 w-5 items-center justify-center rounded-full bg-destiny-orange text-[10px] font-black text-white">
+                  {dirtyEdits.length}
+                </span>
+                unsaved
               </span>
-            )}
-          </div>
-          <div className="flex gap-2">
-            <button
-              type="button"
-              onClick={discardAll}
-              disabled={dirtyEdits.length === 0 || saving}
-              className="inline-flex items-center gap-1.5 rounded-xl border border-black/10 bg-white px-4 py-2.5 text-sm font-bold text-destiny-grey/70 transition hover:bg-[#f5f7fa] disabled:cursor-not-allowed disabled:opacity-40"
-            >
-              Discard
-            </button>
-            <button
-              type="button"
-              onClick={handleSave}
-              disabled={dirtyEdits.length === 0 || saving}
-              className="inline-flex items-center gap-2 rounded-xl bg-destiny-orange px-5 py-2.5 text-sm font-bold text-white shadow-lg shadow-destiny-orange/30 transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:bg-destiny-grey/30 disabled:shadow-none disabled:hover:translate-y-0"
-            >
-              {saving ? (
-                <>
-                  <span className="material-symbols-rounded animate-spin text-base">
-                    progress_activity
-                  </span>
-                  Saving…
-                </>
-              ) : (
-                <>
-                  <span className="material-symbols-rounded text-base">save</span>
-                  Save and publish
-                </>
-              )}
-            </button>
-          </div>
+              <div className="h-4 w-px bg-black/10" />
+              <button
+                type="button"
+                onClick={discardAll}
+                disabled={saving}
+                className="rounded-lg px-3 py-1.5 text-xs font-bold text-destiny-grey/50 transition hover:bg-black/5 hover:text-destiny-grey disabled:opacity-40"
+              >
+                Discard
+              </button>
+              <button
+                type="button"
+                onClick={handleSave}
+                disabled={saving}
+                className="inline-flex items-center gap-1.5 rounded-xl bg-destiny-orange px-4 py-2 text-xs font-bold text-white shadow-sm shadow-destiny-orange/30 transition hover:brightness-110 disabled:opacity-60"
+              >
+                {saving ? (
+                  <>
+                    <span className="material-symbols-rounded animate-spin text-sm">progress_activity</span>
+                    Publishing…
+                  </>
+                ) : (
+                  <>
+                    <span className="material-symbols-rounded text-sm">cloud_upload</span>
+                    Publish
+                  </>
+                )}
+              </button>
+            </>
+          )}
         </div>
       </div>
     </div>

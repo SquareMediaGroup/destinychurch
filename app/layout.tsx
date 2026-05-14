@@ -11,6 +11,7 @@ import SiteBanner from "@/components/SiteBanner";
 import SitePopup from "@/components/SitePopup";
 import CustomCursor from "@/components/CustomCursor";
 import BannerSpacer from "@/components/BannerSpacer";
+import VisualEditOverlay from "@/components/admin/VisualEditOverlay";
 import { createServiceClient } from "@/utils/supabase/service";
 import { unstable_noStore as noStore } from "next/cache";
 import { SpeedInsights } from "@vercel/speed-insights/next";
@@ -260,6 +261,9 @@ export default async function RootLayout({
         </Providers>
         <SpeedInsights />
         <CustomCursor />
+        <Suspense>
+          <VisualEditOverlay />
+        </Suspense>
       </body>
     </html>
   );

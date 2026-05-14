@@ -6,11 +6,8 @@ import AdminSidebar from "@/components/admin/AdminSidebar";
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const isLogin = pathname === "/admin/login";
-  // Builder edit screen takes over the full viewport
-  const isBuilderEditor =
-    pathname.startsWith("/admin/builder/") && pathname !== "/admin/builder";
 
-  if (isLogin || isBuilderEditor) {
+  if (isLogin) {
     return <>{children}</>;
   }
 

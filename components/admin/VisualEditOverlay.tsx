@@ -26,14 +26,18 @@ export type EditUpdateMessage = {
   value: string;
 };
 
+// Injected into the public page iframe when ?__edit=1&__editId=UUID is present.
+// Scans the DOM for text matching the editable_texts catalog and adds click
+// handlers that postMessage back to the admin parent frame.
 export default function VisualEditOverlay() {
   const params = useSearchParams();
   const isEdit = params.get("__edit") === "1";
   const editId = params.get("__editId");
-  const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
-  const [dismissed, setDismissed] = useState(false);
+  const [status, setStatus] = useState<"loading" | "ready" | "error">(
+    "loading"
+  );
 
-  // Hide site chrome (header, footer) immediately in edit mode
+  // Hide site chrome (header, footer, banners) immediately in edit mode
   useEffect(() => {
     if (!isEdit) return;
     const style = document.createElement("style");
@@ -57,6 +61,7 @@ export default function VisualEditOverlay() {
           setStatus("error");
           return;
         }
+        // Run after hydration settles
         setTimeout(() => {
           if (!cancelled) {
             activateEditMode(texts);
@@ -68,6 +73,7 @@ export default function VisualEditOverlay() {
         if (!cancelled) setStatus("error");
       });
 
+    // Listen for messages from parent frame
     function onMessage(e: MessageEvent) {
       if (e.data?.type === "dc-edit-update") {
         const { id, value } = e.data as EditUpdateMessage;
@@ -93,69 +99,45 @@ export default function VisualEditOverlay() {
     };
   }, [isEdit, editId]);
 
-  if (!isEdit || dismissed) return null;
+  if (!isEdit) return null;
+
+  const bg =
+    status === "error"
+      ? "#ef4444"
+      : status === "ready"
+        ? "rgba(249,115,22,0.95)"
+        : "rgba(80,80,80,0.8)";
 
   return (
     <div
       style={{
         position: "fixed",
-        top: 16,
+        top: 12,
         left: "50%",
         transform: "translateX(-50%)",
         zIndex: 99999,
-        display: "flex",
-        alignItems: "center",
-        gap: 10,
-        background: "rgba(255,255,255,0.96)",
-        backdropFilter: "blur(16px)",
-        WebkitBackdropFilter: "blur(16px)",
-        border: "1px solid rgba(0,0,0,0.08)",
-        borderRadius: 12,
-        padding: "9px 10px 9px 14px",
-        boxShadow: "0 4px 20px rgba(0,0,0,0.08), 0 1px 3px rgba(0,0,0,0.06)",
+        background: bg,
+        color: "white",
+        fontSize: 11,
+        fontWeight: 700,
+        padding: "6px 16px",
+        borderRadius: 8,
+        letterSpacing: "0.1em",
+        boxShadow: "0 2px 16px rgba(0,0,0,0.2)",
+        pointerEvents: "none",
+        textTransform: "uppercase",
         whiteSpace: "nowrap",
       }}
     >
-      <span
-        style={{
-          width: 7,
-          height: 7,
-          borderRadius: "50%",
-          flexShrink: 0,
-          background:
-            status === "error" ? "#ef4444" : status === "ready" ? "#f97316" : "#d1d5db",
-        }}
-      />
-      <span style={{ fontSize: 12, fontWeight: 600, color: "#374151", letterSpacing: "-0.01em" }}>
-        {status === "loading" && "Activating edit mode…"}
-        {status === "ready" && "Click any highlighted text to edit"}
-        {status === "error" && "Scan for texts first to enable editing"}
-      </span>
-      <button
-        onClick={() => setDismissed(true)}
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          width: 22,
-          height: 22,
-          borderRadius: 6,
-          border: "none",
-          background: "none",
-          cursor: "pointer",
-          color: "rgba(0,0,0,0.3)",
-          flexShrink: 0,
-          fontSize: 13,
-        }}
-        aria-label="Dismiss"
-      >
-        ✕
-      </button>
+      {status === "loading" && "Activating edit mode…"}
+      {status === "ready" && "Click any highlighted text to edit"}
+      {status === "error" && "Edit mode unavailable — scan for texts first"}
     </div>
   );
 }
 
 function activateEditMode(catalog: EditableText[]) {
+  // Inject CSS for editable highlights
   if (!document.getElementById("dc-visual-edit-styles")) {
     const style = document.createElement("style");
     style.id = "dc-visual-edit-styles";
@@ -179,6 +161,7 @@ function activateEditMode(catalog: EditableText[]) {
     document.head.appendChild(style);
   }
 
+  // Build value → catalog item map (skip hrefs)
   const byValue = new Map<string, EditableText>();
   for (const t of catalog) {
     if (t.kind !== "href") {
@@ -186,6 +169,7 @@ function activateEditMode(catalog: EditableText[]) {
     }
   }
 
+  // Tag matching elements
   const TAGS =
     "h1, h2, h3, h4, h5, h6, p, span, a, button, li, figcaption, blockquote, dt, dd, label, td, th";
   const elements = document.querySelectorAll<HTMLElement>(TAGS);

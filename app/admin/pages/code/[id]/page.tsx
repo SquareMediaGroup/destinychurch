@@ -361,16 +361,16 @@ export default function CodePageEditor({
       {/* Body */}
       {mode === "visual" ? (
         /* ── VISUAL MODE ─────────────────────────────────────────── */
-        <div className="relative flex-1">
+        <div className="flex flex-1" style={{ height: "100vh" }}>
           <iframe
             ref={iframeRef}
             src={iframeUrl}
-            className="w-full border-0"
+            className="flex-1 border-0"
             style={{ height: "100vh" }}
             title={`Visual editor — ${page.title}`}
           />
 
-          {/* Floating edit panel — slides in from the right */}
+          {/* Edit panel — flex sibling so it sits beside the iframe, not over it */}
           {activePick && (
             <VisualEditPanel
               pick={activePick}
@@ -561,7 +561,7 @@ function VisualEditPanel({
   }
 
   return (
-    <div className="fixed right-0 top-0 bottom-0 z-50 flex w-80 flex-col border-l border-black/10 bg-white shadow-2xl">
+    <div className="flex w-80 flex-shrink-0 flex-col border-l border-black/10 bg-white shadow-2xl" style={{ height: "100vh", overflowY: "auto" }}>
       {/* Panel header */}
       <div className="flex items-start justify-between gap-3 border-b border-black/5 p-5">
         <div className="min-w-0">

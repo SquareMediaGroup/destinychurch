@@ -23,7 +23,7 @@ interface PageRow {
   source_type: "json" | "code";
   source_path: string | null;
   repo_commit: string | null;
-  editable_texts: EditableText[];
+  editable_texts: EditableText[] | null;
   updated_at: string;
 }
 
@@ -111,7 +111,7 @@ export default function CodePageEditor({
       if (!refresh.ok) throw new Error("Scan succeeded but page reload failed — try refreshing.");
       const refreshData = (await refresh.json()) as { page: PageRow };
       setPage(refreshData.page);
-      setScanCount(refreshData.page.editable_texts.length);
+      setScanCount((refreshData.page.editable_texts ?? []).length);
     } catch (err) {
       setScanError(err instanceof Error ? err.message : "Scan failed");
     } finally {
@@ -123,7 +123,7 @@ export default function CodePageEditor({
   const grouped = useMemo(() => {
     if (!page) return [] as Array<{ section: string; items: EditableText[] }>;
     const map = new Map<string, EditableText[]>();
-    for (const t of page.editable_texts) {
+    for (const t of (page.editable_texts ?? [])) {
       if (!map.has(t.section)) map.set(t.section, []);
       map.get(t.section)!.push(t);
     }
@@ -135,7 +135,7 @@ export default function CodePageEditor({
 
   const dirtyEdits = useMemo(() => {
     if (!page) return [];
-    return page.editable_texts
+    return (page.editable_texts ?? [])
       .filter((t) => drafts[t.id] !== undefined && drafts[t.id] !== t.value)
       .map((t) => ({ id: t.id, label: t.label, value: drafts[t.id] }));
   }, [page, drafts]);
@@ -204,7 +204,7 @@ export default function CodePageEditor({
 
   if (!page) return null;
 
-  const noTexts = page.editable_texts.length === 0;
+  const noTexts = (page.editable_texts ?? []).length === 0;
   const iframeUrl = `/${page.slug}?__edit=1&__editId=${page.id}`;
 
   return (

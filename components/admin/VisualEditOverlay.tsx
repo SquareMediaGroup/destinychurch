@@ -99,14 +99,8 @@ export default function VisualEditOverlay() {
     };
   }, [isEdit, editId]);
 
-  if (!isEdit) return null;
-
-  const bg =
-    status === "error"
-      ? "#ef4444"
-      : status === "ready"
-        ? "rgba(249,115,22,0.95)"
-        : "rgba(80,80,80,0.8)";
+  // Nothing to show on error — user can switch back to form mode to scan
+  if (!isEdit || status === "error") return null;
 
   return (
     <div
@@ -116,22 +110,51 @@ export default function VisualEditOverlay() {
         left: "50%",
         transform: "translateX(-50%)",
         zIndex: 99999,
-        background: bg,
-        color: "white",
-        fontSize: 11,
-        fontWeight: 700,
-        padding: "6px 16px",
-        borderRadius: 8,
-        letterSpacing: "0.1em",
-        boxShadow: "0 2px 16px rgba(0,0,0,0.2)",
+        background: "rgba(255,255,255,0.96)",
+        backdropFilter: "blur(16px)",
+        WebkitBackdropFilter: "blur(16px)",
+        border: "1px solid rgba(0,0,0,0.08)",
+        borderRadius: 12,
+        padding: "10px 16px",
+        boxShadow: "0 4px 20px rgba(0,0,0,0.08)",
         pointerEvents: "none",
-        textTransform: "uppercase",
         whiteSpace: "nowrap",
+        minWidth: 200,
       }}
     >
-      {status === "loading" && "Activating edit mode…"}
-      {status === "ready" && "Click any highlighted text to edit"}
-      {status === "error" && "Edit mode unavailable — scan for texts first"}
+      {status === "loading" ? (
+        /* Loading bar */
+        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+          <div style={{ fontSize: 11, fontWeight: 600, color: "#9ca3af", letterSpacing: "0.02em" }}>
+            Loading editor…
+          </div>
+          <div style={{ height: 3, borderRadius: 99, background: "rgba(0,0,0,0.06)", overflow: "hidden" }}>
+            <div
+              style={{
+                height: "100%",
+                width: "40%",
+                borderRadius: 99,
+                background: "#f97316",
+                animation: "dc-bar-slide 1.2s ease-in-out infinite",
+              }}
+            />
+          </div>
+          <style>{`
+            @keyframes dc-bar-slide {
+              0%   { transform: translateX(-100%); }
+              100% { transform: translateX(350%); }
+            }
+          `}</style>
+        </div>
+      ) : (
+        /* Ready */
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <span style={{ width: 7, height: 7, borderRadius: "50%", background: "#f97316", flexShrink: 0 }} />
+          <span style={{ fontSize: 12, fontWeight: 600, color: "#374151", letterSpacing: "-0.01em" }}>
+            Click any highlighted text to edit
+          </span>
+        </div>
+      )}
     </div>
   );
 }

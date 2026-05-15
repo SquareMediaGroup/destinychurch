@@ -6,8 +6,13 @@ import AdminSidebar from "@/components/admin/AdminSidebar";
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const isLogin = pathname === "/admin/login";
+  // Code editor and studio editor take over the full viewport — no sidebar
+  const isFullViewport =
+    (pathname.startsWith("/admin/pages/code/") && pathname !== "/admin/pages/code") ||
+    (pathname.startsWith("/admin/pages/ai") ) ||
+    (pathname.startsWith("/admin/studio/") && pathname !== "/admin/studio");
 
-  if (isLogin) {
+  if (isLogin || isFullViewport) {
     return <>{children}</>;
   }
 

@@ -1,10 +1,10 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import ChurchFooter from "./ChurchFooter";
+import type { ReactNode } from "react";
 
-export default function FooterGate() {
+export default function FooterGate({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   if (pathname.startsWith("/sermons") || pathname.startsWith("/admin")) return null;
-  return <ChurchFooter />;
+  return <>{children}</>;
 }

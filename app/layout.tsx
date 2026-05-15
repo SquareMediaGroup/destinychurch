@@ -4,6 +4,7 @@ import { Roboto, Anton, Playfair_Display } from "next/font/google";
 import "./globals.css";
 import ChurchHeader from "@/components/ChurchHeader";
 import FooterGate from "@/components/FooterGate";
+import ChurchFooter from "@/components/ChurchFooter";
 import Providers from "@/components/Providers";
 import CookieBanner from "@/components/CookieBanner";
 import AnalyticsGate from "@/components/AnalyticsGate";
@@ -253,7 +254,7 @@ export default async function RootLayout({
               <ChurchHeader />
             </Suspense>
             <main className="flex-1">{children}</main>
-            <FooterGate />
+            <FooterGate><ChurchFooter /></FooterGate>
           </div>
           <AnalyticsGate />
           <SitePopup popup={popup} />

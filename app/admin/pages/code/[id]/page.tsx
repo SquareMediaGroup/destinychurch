@@ -478,8 +478,8 @@ export default function CodePageEditor({
       )}
 
       {/* Floating command dock */}
-      <div className="fixed bottom-6 left-1/2 z-30 -translate-x-1/2">
-        <div className="flex items-center gap-2 rounded-2xl border border-black/8 bg-white/90 px-3 py-2.5 shadow-xl shadow-black/8 backdrop-blur-xl">
+      <div className="fixed bottom-6 left-0 right-0 z-30 flex justify-center pointer-events-none">
+        <div className="pointer-events-auto flex items-center gap-2 rounded-2xl border border-black/10 bg-white/95 px-3 py-2.5 shadow-xl backdrop-blur-md">
           {dirtyEdits.length === 0 ? (
             <span className="flex items-center gap-2 px-1 text-xs text-destiny-grey/40">
               <span className="h-1.5 w-1.5 rounded-full bg-black/15" />

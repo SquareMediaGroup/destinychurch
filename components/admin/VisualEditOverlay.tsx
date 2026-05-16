@@ -129,17 +129,21 @@ function activateEditMode(catalog: EditableText[]) {
   // Build excluded regions: header, footer, and "Worship With Us" section
   const excludedRoots = new Set<Element>();
   document.querySelectorAll("header, footer").forEach((el) => excludedRoots.add(el));
+
+  // Find "Worship With Us" heading and exclude its nearest section-level ancestor.
+  // Walk up at most 6 levels and stop before MAIN/BODY so we never exclude the whole page.
   document.querySelectorAll("h1, h2, h3, h4, h5, h6").forEach((heading) => {
-    if (/worship with us/i.test(heading.textContent?.trim() ?? "")) {
-      // Walk up to find the containing section/div
-      let container: Element | null = heading.parentElement;
-      while (container && container !== document.body) {
-        const tag = container.tagName;
-        if (tag === "SECTION" || tag === "ARTICLE" || container.parentElement === document.body) break;
-        container = container.parentElement;
-      }
-      if (container) excludedRoots.add(container);
+    if (!/worship with us/i.test(heading.textContent?.trim() ?? "")) return;
+    let container: Element = heading;
+    for (let depth = 0; depth < 6; depth++) {
+      const parent = container.parentElement;
+      if (!parent) break;
+      const tag = parent.tagName;
+      if (tag === "MAIN" || tag === "BODY" || tag === "HTML") break;
+      container = parent;
+      if (tag === "SECTION" || tag === "ARTICLE") break;
     }
+    excludedRoots.add(container);
   });
 
   function isExcluded(el: Element): boolean {

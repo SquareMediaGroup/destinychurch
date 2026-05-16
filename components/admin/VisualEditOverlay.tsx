@@ -151,19 +151,22 @@ function activateEditMode(catalog: EditableText[]) {
     return false;
   }
 
+  // Normalise whitespace: collapse all runs of whitespace to a single space
+  const norm = (s: string) => s.replace(/\s+/g, " ").trim();
+
   // Build text → catalog map (skip hrefs)
   const byValue = new Map<string, EditableText>();
   for (const t of catalog) {
-    if (t.kind !== "href") byValue.set(t.value.trim(), t);
+    if (t.kind !== "href") byValue.set(norm(t.value), t);
   }
 
-  const TAGS = "h1, h2, h3, h4, h5, h6, p, span, a, button, li, figcaption, blockquote, dt, dd, label";
+  const TAGS = "h1, h2, h3, h4, h5, h6, p, span, a, button, li, figcaption, blockquote, dt, dd, label, strong, em, small";
   const elements = document.querySelectorAll<HTMLElement>(TAGS);
 
   for (const el of elements) {
     if (el.hasAttribute("data-edit-id")) continue;
     if (isExcluded(el)) continue;
-    const text = el.textContent?.trim();
+    const text = norm(el.textContent ?? "");
     if (!text || text.length < 2) continue;
     const match = byValue.get(text);
     if (!match) continue;

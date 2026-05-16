@@ -208,6 +208,17 @@ export default function CodePageEditor({
             <span className="material-symbols-rounded text-sm">arrow_back</span>
             Form
           </button>
+          <button
+            type="button"
+            onClick={scanForTexts}
+            disabled={scanning}
+            className="inline-flex items-center gap-1.5 rounded-xl border border-black/10 bg-[#f5f7fa] px-3 py-1.5 text-xs font-bold text-destiny-grey/70 transition hover:bg-black/5 hover:text-destiny-orange disabled:opacity-50"
+          >
+            <span className={`material-symbols-rounded text-sm ${scanning ? "animate-spin" : ""}`}>
+              {scanning ? "progress_activity" : "refresh"}
+            </span>
+            {scanning ? "Scanning…" : "Rescan"}
+          </button>
           <a
             href={`/${page.slug}`}
             target="_blank"

@@ -11,33 +11,19 @@ interface EditableText {
   kind: "heading" | "body" | "cta" | "alt" | "href";
 }
 
-export type EditClickMessage = {
-  type: "dc-edit-click";
-  id: string;
-  label: string;
-  value: string;
-  section: string;
-  kind: EditableText["kind"];
-};
-
-export type EditUpdateMessage = {
-  type: "dc-edit-update";
+export type EditChangeMessage = {
+  type: "dc-edit-change";
   id: string;
   value: string;
 };
 
-// Injected into the public page iframe when ?__edit=1&__editId=UUID is present.
-// Scans the DOM for text matching the editable_texts catalog and adds click
-// handlers that postMessage back to the admin parent frame.
 export default function VisualEditOverlay() {
   const params = useSearchParams();
   const isEdit = params.get("__edit") === "1";
   const editId = params.get("__editId");
-  const [status, setStatus] = useState<"loading" | "ready" | "error">(
-    "loading"
-  );
+  const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
 
-  // Hide site chrome (header, footer, banners) immediately in edit mode
+  // Hide header and footer in edit mode
   useEffect(() => {
     if (!isEdit) return;
     const style = document.createElement("style");
@@ -57,49 +43,16 @@ export default function VisualEditOverlay() {
       .then((data) => {
         if (cancelled) return;
         const texts: EditableText[] = data?.page?.editable_texts ?? [];
-        if (texts.length === 0) {
-          setStatus("error");
-          return;
-        }
-        // Run after hydration settles
+        if (texts.length === 0) { setStatus("error"); return; }
         setTimeout(() => {
-          if (!cancelled) {
-            activateEditMode(texts);
-            setStatus("ready");
-          }
+          if (!cancelled) { activateEditMode(texts); setStatus("ready"); }
         }, 300);
       })
-      .catch(() => {
-        if (!cancelled) setStatus("error");
-      });
+      .catch(() => { if (!cancelled) setStatus("error"); });
 
-    // Listen for messages from parent frame
-    function onMessage(e: MessageEvent) {
-      if (e.data?.type === "dc-edit-update") {
-        const { id, value } = e.data as EditUpdateMessage;
-        document
-          .querySelectorAll(`[data-edit-id="${CSS.escape(id)}"]`)
-          .forEach((el) => {
-            el.textContent = value;
-            el.setAttribute("data-edit-dirty", "1");
-          });
-      }
-      if (e.data?.type === "dc-edit-highlight") {
-        const el = document.querySelector(
-          `[data-edit-id="${CSS.escape(e.data.id)}"]`
-        );
-        el?.scrollIntoView({ behavior: "smooth", block: "center" });
-      }
-    }
-
-    window.addEventListener("message", onMessage);
-    return () => {
-      cancelled = true;
-      window.removeEventListener("message", onMessage);
-    };
+    return () => { cancelled = true; };
   }, [isEdit, editId]);
 
-  // Nothing to show on error — user can switch back to form mode to scan
   if (!isEdit || status === "error") return null;
 
   return (
@@ -123,35 +76,18 @@ export default function VisualEditOverlay() {
       }}
     >
       {status === "loading" ? (
-        /* Loading bar */
         <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-          <div style={{ fontSize: 11, fontWeight: 600, color: "#9ca3af", letterSpacing: "0.02em" }}>
-            Loading editor…
-          </div>
+          <div style={{ fontSize: 11, fontWeight: 600, color: "#9ca3af" }}>Loading editor…</div>
           <div style={{ height: 3, borderRadius: 99, background: "rgba(0,0,0,0.06)", overflow: "hidden" }}>
-            <div
-              style={{
-                height: "100%",
-                width: "40%",
-                borderRadius: 99,
-                background: "#f97316",
-                animation: "dc-bar-slide 1.2s ease-in-out infinite",
-              }}
-            />
+            <div style={{ height: "100%", width: "40%", borderRadius: 99, background: "#f97316", animation: "dc-bar-slide 1.2s ease-in-out infinite" }} />
           </div>
-          <style>{`
-            @keyframes dc-bar-slide {
-              0%   { transform: translateX(-100%); }
-              100% { transform: translateX(350%); }
-            }
-          `}</style>
+          <style>{`@keyframes dc-bar-slide { 0% { transform: translateX(-100%) } 100% { transform: translateX(350%) } }`}</style>
         </div>
       ) : (
-        /* Ready */
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <span style={{ width: 7, height: 7, borderRadius: "50%", background: "#f97316", flexShrink: 0 }} />
-          <span style={{ fontSize: 12, fontWeight: 600, color: "#374151", letterSpacing: "-0.01em" }}>
-            Click any highlighted text to edit
+          <span style={{ fontSize: 12, fontWeight: 600, color: "#374151" }}>
+            Click any highlighted text to edit inline
           </span>
         </div>
       )}
@@ -160,68 +96,134 @@ export default function VisualEditOverlay() {
 }
 
 function activateEditMode(catalog: EditableText[]) {
-  // Inject CSS for editable highlights
+  // Styles for editable elements
   if (!document.getElementById("dc-visual-edit-styles")) {
     const style = document.createElement("style");
     style.id = "dc-visual-edit-styles";
     style.textContent = `
       [data-edit-id] {
-        outline: 2px dashed rgba(249,115,22,0.5) !important;
+        outline: 2px dashed rgba(249,115,22,0.45) !important;
         outline-offset: 3px !important;
-        cursor: pointer !important;
-        transition: outline-color 0.12s, background-color 0.12s !important;
+        cursor: text !important;
         border-radius: 3px !important;
+        transition: outline-color 0.12s, background-color 0.12s !important;
       }
       [data-edit-id]:hover {
-        outline: 2px solid rgba(249,115,22,1) !important;
-        background-color: rgba(249,115,22,0.08) !important;
+        outline: 2px solid rgba(249,115,22,0.9) !important;
+        background-color: rgba(249,115,22,0.05) !important;
       }
-      [data-edit-id][data-edit-dirty] {
-        outline: 2px solid rgba(34,197,94,1) !important;
-        background-color: rgba(34,197,94,0.07) !important;
+      [data-edit-id][data-edit-active] {
+        outline: 2px solid rgba(249,115,22,1) !important;
+        background-color: rgba(255,255,255,0.95) !important;
+        border-radius: 3px !important;
+        min-width: 4px !important;
+      }
+      [data-edit-id][data-edit-dirty]:not([data-edit-active]) {
+        outline: 2px solid rgba(34,197,94,0.9) !important;
+        background-color: rgba(34,197,94,0.06) !important;
       }
     `;
     document.head.appendChild(style);
   }
 
-  // Build value → catalog item map (skip hrefs)
-  const byValue = new Map<string, EditableText>();
-  for (const t of catalog) {
-    if (t.kind !== "href") {
-      byValue.set(t.value.trim(), t);
+  // Build excluded regions: header, footer, and "Worship With Us" section
+  const excludedRoots = new Set<Element>();
+  document.querySelectorAll("header, footer").forEach((el) => excludedRoots.add(el));
+  document.querySelectorAll("h1, h2, h3, h4, h5, h6").forEach((heading) => {
+    if (/worship with us/i.test(heading.textContent?.trim() ?? "")) {
+      // Walk up to find the containing section/div
+      let container: Element | null = heading.parentElement;
+      while (container && container !== document.body) {
+        const tag = container.tagName;
+        if (tag === "SECTION" || tag === "ARTICLE" || container.parentElement === document.body) break;
+        container = container.parentElement;
+      }
+      if (container) excludedRoots.add(container);
     }
+  });
+
+  function isExcluded(el: Element): boolean {
+    let node: Element | null = el;
+    while (node && node !== document.body) {
+      if (excludedRoots.has(node)) return true;
+      node = node.parentElement;
+    }
+    return false;
   }
 
-  // Tag matching elements
-  const TAGS =
-    "h1, h2, h3, h4, h5, h6, p, span, a, button, li, figcaption, blockquote, dt, dd, label, td, th";
+  // Build text → catalog map (skip hrefs)
+  const byValue = new Map<string, EditableText>();
+  for (const t of catalog) {
+    if (t.kind !== "href") byValue.set(t.value.trim(), t);
+  }
+
+  const TAGS = "h1, h2, h3, h4, h5, h6, p, span, a, button, li, figcaption, blockquote, dt, dd, label";
   const elements = document.querySelectorAll<HTMLElement>(TAGS);
 
   for (const el of elements) {
     if (el.hasAttribute("data-edit-id")) continue;
+    if (isExcluded(el)) continue;
     const text = el.textContent?.trim();
     if (!text || text.length < 2) continue;
     const match = byValue.get(text);
     if (!match) continue;
 
-    el.setAttribute("data-edit-id", match.id);
+    const matchId = match.id;
+    const matchValue = match.value;
+    const matchKind = match.kind;
 
-    el.addEventListener(
-      "click",
-      (e) => {
-        e.preventDefault();
+    el.setAttribute("data-edit-id", matchId);
+
+    const isLink = el.tagName === "A";
+    const isBodyText = matchKind === "body";
+
+    function startEditing() {
+      el.setAttribute("data-edit-active", "1");
+      (el as HTMLElement).contentEditable = "plaintext-only";
+      el.focus();
+      // Select all text
+      const range = document.createRange();
+      range.selectNodeContents(el);
+      const sel = window.getSelection();
+      sel?.removeAllRanges();
+      sel?.addRange(range);
+    }
+
+    function finishEditing() {
+      const newValue = el.textContent?.trim() ?? "";
+      (el as HTMLElement).contentEditable = "false";
+      el.removeAttribute("data-edit-active");
+      if (newValue !== matchValue) el.setAttribute("data-edit-dirty", "1");
+      window.parent.postMessage({ type: "dc-edit-change", id: matchId, value: newValue } as EditChangeMessage, "*");
+    }
+
+    el.addEventListener("click", (e) => {
+      // Always prevent link navigation
+      if (isLink) e.preventDefault();
+      // Only intercept first click to start editing
+      if (!el.hasAttribute("data-edit-active")) {
         e.stopPropagation();
-        const msg: EditClickMessage = {
-          type: "dc-edit-click",
-          id: match.id,
-          label: match.label,
-          value: el.textContent?.trim() ?? match.value,
-          section: match.section,
-          kind: match.kind,
-        };
-        window.parent.postMessage(msg, "*");
-      },
-      true
-    );
+        startEditing();
+      }
+    }, true);
+
+    el.addEventListener("blur", finishEditing);
+
+    el.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") {
+        // Restore original text and cancel
+        el.textContent = matchValue;
+        el.removeAttribute("data-edit-dirty");
+        (el as HTMLElement).contentEditable = "false";
+        el.removeAttribute("data-edit-active");
+        window.parent.postMessage({ type: "dc-edit-change", id: matchId, value: matchValue } as EditChangeMessage, "*");
+        e.preventDefault();
+      }
+      // Enter confirms edit for non-body text
+      if (e.key === "Enter" && !isBodyText) {
+        e.preventDefault();
+        el.blur();
+      }
+    });
   }
 }

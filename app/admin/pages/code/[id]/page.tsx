@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState, use } from "react";
 import Link from "next/link";
 import { getSupabaseBrowserClient } from "@/lib/supabase-browser";
-import type { EditClickMessage, EditUpdateMessage } from "@/components/admin/VisualEditOverlay";
+import type { EditChangeMessage } from "@/components/admin/VisualEditOverlay";
 
 interface EditableText {
   id: string;
@@ -29,14 +29,6 @@ interface PageRow {
 
 type Mode = "form" | "visual";
 
-interface ActivePick {
-  id: string;
-  label: string;
-  value: string;
-  section: string;
-  kind: EditableText["kind"];
-}
-
 export default function CodePageEditor({
   params,
 }: {
@@ -58,7 +50,6 @@ export default function CodePageEditor({
   const [scanCount, setScanCount] = useState<number | null>(null);
 
   const iframeRef = useRef<HTMLIFrameElement>(null);
-  const [activePick, setActivePick] = useState<ActivePick | null>(null);
 
   // ── Load page ──────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -81,12 +72,12 @@ export default function CodePageEditor({
     return () => { cancelled = true; };
   }, [id]);
 
-  // ── postMessage bridge ─────────────────────────────────────────────────────
+  // ── postMessage bridge — receives inline edits from the iframe ─────────────
   useEffect(() => {
     function onMessage(e: MessageEvent) {
-      if (e.data?.type === "dc-edit-click") {
-        const msg = e.data as EditClickMessage;
-        setActivePick({ id: msg.id, label: msg.label, value: msg.value, section: msg.section, kind: msg.kind });
+      if (e.data?.type === "dc-edit-change") {
+        const { id, value } = e.data as EditChangeMessage;
+        setDrafts((prev) => ({ ...prev, [id]: value }));
       }
     }
     window.addEventListener("message", onMessage);
@@ -142,10 +133,6 @@ export default function CodePageEditor({
 
   function setDraft(textId: string, value: string) {
     setDrafts((prev) => ({ ...prev, [textId]: value }));
-    iframeRef.current?.contentWindow?.postMessage(
-      { type: "dc-edit-update", id: textId, value } as EditUpdateMessage,
-      "*"
-    );
   }
 
   function discardAll() {
@@ -297,7 +284,7 @@ export default function CodePageEditor({
                     </button>
                     <button
                       type="button"
-                      onClick={() => { setMode("visual"); setActivePick(null); }}
+                      onClick={() => setMode("visual")}
                       className="inline-flex items-center gap-1 rounded-lg px-3 py-1.5 text-xs font-bold text-destiny-grey/50 transition hover:text-destiny-grey"
                     >
                       <span className="material-symbols-rounded text-sm">visibility</span>
@@ -350,22 +337,14 @@ export default function CodePageEditor({
 
       {/* ── Body ── */}
       {mode === "visual" ? (
-        <div className="flex flex-1" style={{ height: "100vh" }}>
+        <div className="flex-1">
           <iframe
             ref={iframeRef}
             src={iframeUrl}
-            className="flex-1 border-0"
+            className="w-full border-0"
             style={{ height: "100vh" }}
             title={`Visual editor — ${page.title}`}
           />
-          {activePick && (
-            <VisualEditPanel
-              pick={activePick}
-              drafts={drafts}
-              onApply={(pickId, value) => setDraft(pickId, value)}
-              onClose={() => setActivePick(null)}
-            />
-          )}
         </div>
       ) : (
         <div className="mx-auto w-full max-w-3xl px-6 py-6 pb-28">
@@ -474,75 +453,6 @@ export default function CodePageEditor({
             </>
           )}
         </div>
-      </div>
-    </div>
-  );
-}
-
-// ── Visual edit panel ─────────────────────────────────────────────────────────
-
-function VisualEditPanel({
-  pick, drafts, onApply, onClose,
-}: {
-  pick: ActivePick;
-  drafts: Record<string, string>;
-  onApply: (id: string, value: string) => void;
-  onClose: () => void;
-}) {
-  const [text, setText] = useState(drafts[pick.id] ?? pick.value);
-
-  const kindMeta = {
-    heading: { label: "Heading", icon: "title", style: "bg-amber-100 text-amber-800" },
-    body:    { label: "Body",    icon: "subject", style: "bg-sky-100 text-sky-800" },
-    cta:     { label: "Button",  icon: "ads_click", style: "bg-destiny-orange/15 text-destiny-orange" },
-    alt:     { label: "Image alt", icon: "image", style: "bg-emerald-100 text-emerald-800" },
-    href:    { label: "Link URL", icon: "link", style: "bg-violet-100 text-violet-800" },
-  }[pick.kind];
-
-  return (
-    <div className="flex w-80 flex-shrink-0 flex-col border-l border-black/10 bg-white shadow-2xl" style={{ height: "100vh", overflowY: "auto" }}>
-      <div className="flex items-start justify-between gap-3 border-b border-black/5 p-5">
-        <div className="min-w-0">
-          <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-destiny-grey/40">{pick.section}</p>
-          <p className="mt-0.5 truncate text-base font-black text-destiny-grey">{pick.label}</p>
-          <span className={`mt-1.5 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.16em] ${kindMeta.style}`}>
-            <span className="material-symbols-rounded text-xs">{kindMeta.icon}</span>
-            {kindMeta.label}
-          </span>
-        </div>
-        <button type="button" onClick={onClose} className="mt-0.5 rounded-lg p-1 text-destiny-grey/35 transition hover:bg-black/5 hover:text-destiny-grey" aria-label="Close">
-          <span className="material-symbols-rounded text-xl">close</span>
-        </button>
-      </div>
-
-      <div className="flex-1 p-5">
-        <label className="mb-2 block text-xs font-bold text-destiny-grey/50">New text</label>
-        {pick.kind === "href" ? (
-          <input type="url" value={text} onChange={(e) => setText(e.target.value)} autoFocus
-            className="w-full rounded-xl border border-black/10 px-4 py-3 font-mono text-xs text-destiny-grey focus:border-destiny-orange/50 focus:outline-none focus:ring-4 focus:ring-destiny-orange/10" />
-        ) : (
-          <textarea value={text} onChange={(e) => setText(e.target.value)} autoFocus
-            rows={Math.min(10, Math.max(3, Math.ceil(text.length / 32)))}
-            className="w-full resize-none rounded-xl border border-black/10 px-4 py-3 text-sm text-destiny-grey focus:border-destiny-orange/50 focus:outline-none focus:ring-4 focus:ring-destiny-orange/10" />
-        )}
-        {pick.value !== text && (
-          <div className="mt-3 rounded-xl bg-black/[0.03] px-3 py-2.5">
-            <p className="mb-1 text-[10px] font-bold uppercase tracking-[0.16em] text-destiny-grey/35">Original</p>
-            <p className="text-xs text-destiny-grey/50 line-through">{pick.value}</p>
-          </div>
-        )}
-      </div>
-
-      <div className="flex gap-2 border-t border-black/5 p-4">
-        <button type="button" onClick={onClose}
-          className="flex-1 rounded-xl border border-black/10 py-2.5 text-sm font-bold text-destiny-grey/60 transition hover:bg-[#f5f7fa]">
-          Cancel
-        </button>
-        <button type="button" onClick={() => { onApply(pick.id, text); onClose(); }}
-          disabled={text === pick.value && !drafts[pick.id]}
-          className="flex-1 rounded-xl bg-destiny-orange py-2.5 text-sm font-bold text-white shadow-sm shadow-destiny-orange/30 transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50">
-          Apply
-        </button>
       </div>
     </div>
   );

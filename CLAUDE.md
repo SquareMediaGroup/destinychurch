@@ -13,3 +13,7 @@
   - UI: No emoji in buttons, labels, alerts. Use text labels instead: "Complete" not "✓ Complete"
   - Logs: `console.log("📝 Generating page...")` is fine
   - Workflow output: `echo "✓ Type-check passed"` is fine
+
+## General
+
+- If you have a better idea, say so

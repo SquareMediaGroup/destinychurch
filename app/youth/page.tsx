@@ -48,7 +48,7 @@ export default function YouthPage() {
         <section className="relative overflow-hidden rounded-3xl">
           <div
             className="absolute inset-0 scale-105 bg-cover bg-center blur-sm"
-            style={{ backgroundImage: "url('/img/photos/EHAP_Youth.webp')" }}
+            style={{ backgroundImage: "url('/img/photos/Youth Hero Background.webp')" }}
           />
           <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-black/40 to-black/80" />
           <div className="relative flex flex-col items-center justify-center py-[12rem] px-4 text-center">

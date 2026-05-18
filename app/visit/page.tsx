@@ -114,8 +114,8 @@ export default function VisitPage() {
             <p className="mb-12 text-center text-sm text-destiny-grey/50">We meet every Sunday — and we&apos;d love to see you there</p>
           </AnimateIn>
           <div className="grid gap-6 sm:grid-cols-3">
-            <AnimateIn delay={0}>
-              <div className="flex items-start gap-4 rounded-3xl bg-[#f5f7fa] p-6">
+            <AnimateIn delay={0} className="flex">
+              <div className="flex w-full items-center gap-4 rounded-3xl bg-[#f5f7fa] p-6">
                 <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-destiny-orange/10">
                   <span className="material-symbols-rounded text-2xl text-destiny-orange">calendar_month</span>
                 </div>
@@ -127,8 +127,8 @@ export default function VisitPage() {
                 </div>
               </div>
             </AnimateIn>
-            <AnimateIn delay={80}>
-              <div className="flex items-start gap-4 rounded-3xl bg-[#f5f7fa] p-6">
+            <AnimateIn delay={80} className="flex">
+              <div className="flex w-full items-center gap-4 rounded-3xl bg-[#f5f7fa] p-6">
                 <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-destiny-orange/10">
                   <span className="material-symbols-rounded text-2xl text-destiny-orange">location_on</span>
                 </div>
@@ -140,8 +140,8 @@ export default function VisitPage() {
                 </div>
               </div>
             </AnimateIn>
-            <AnimateIn delay={160}>
-              <div className="flex items-start gap-4 rounded-3xl bg-[#f5f7fa] p-6">
+            <AnimateIn delay={160} className="flex">
+              <div className="flex w-full items-center gap-4 rounded-3xl bg-[#f5f7fa] p-6">
                 <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-destiny-orange/10">
                   <span className="material-symbols-rounded text-2xl text-destiny-orange">local_parking</span>
                 </div>

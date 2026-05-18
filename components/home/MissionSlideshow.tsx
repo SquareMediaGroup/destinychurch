@@ -12,7 +12,7 @@ const photos = [
   "/img/photos/Community.webp",
   "/img/photos/Kids2.webp",
   "/img/photos/YA1.webp",
-  "/img/photos/Youth1.JPG",
+  "/img/photos/EHAP_Youth.webp",
   "/img/photos/Plan a Visit.webp",
   "/img/photos/Yannick Baptism Photo.webp",
   "/img/photos/Elders.webp",

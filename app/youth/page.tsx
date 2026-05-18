@@ -48,7 +48,7 @@ export default function YouthPage() {
         <section className="relative overflow-hidden rounded-3xl">
           <div
             className="absolute inset-0 scale-105 bg-cover bg-center blur-sm"
-            style={{ backgroundImage: "url('/img/photos/Youth1.JPG')" }}
+            style={{ backgroundImage: "url('/img/photos/EHAP_Youth.webp')" }}
           />
           <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-black/40 to-black/80" />
           <div className="relative flex flex-col items-center justify-center py-[12rem] px-4 text-center">
@@ -77,7 +77,7 @@ export default function YouthPage() {
             </AnimateIn>
             <AnimateIn delay={100} className="grid w-full grid-cols-2 gap-3 md:w-1/2">
               <div className="col-span-2 overflow-hidden rounded-3xl">
-                <Image src="/img/photos/Youth1.JPG" alt="Destiny Youth" width={640} height={320} className="w-full object-cover" />
+                <Image src="/img/photos/EHAP_Youth.webp" alt="Destiny Youth" width={640} height={320} className="w-full object-cover" />
               </div>
               <div className="overflow-hidden rounded-2xl">
                 <Image src="/img/Alpha/YouthAlpha/5.webp" alt="" width={300} height={220} className="w-full object-cover" />
@@ -127,7 +127,7 @@ export default function YouthPage() {
         <div className="mx-auto max-w-7xl px-4 lg:px-8">
           <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
             {[
-              { src: "/img/photos/Youth1.JPG", tall: false },
+              { src: "/img/photos/EHAP_Youth.webp", tall: false },
               { src: "/img/Alpha/YouthAlpha/5.webp", tall: false },
               { src: "/img/Alpha/YouthAlpha/6.webp", tall: false },
               { src: "/img/photos/WorshipMoment1.webp", tall: false },

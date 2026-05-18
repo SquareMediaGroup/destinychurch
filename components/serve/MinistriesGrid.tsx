@@ -80,7 +80,7 @@ const ministries: Ministry[] = [
     photos: [
       "/img/photos/Gallery/YouthCommunity.webp",
       "/img/photos/YA1.webp",
-      "/img/photos/Youth1.JPG",
+      "/img/photos/EHAP_Youth.webp",
     ],
     requirements: [
       "Enhanced DBS check (we'll help arrange this)",

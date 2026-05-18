@@ -13,7 +13,7 @@ const groups = [
   {
     title: "Youth",
     href: "/youth",
-    image: "/img/photos/Youth1.JPG",
+    image: "/img/photos/EHAP_Youth.webp",
     description:
       "Destiny Youth is vibrant and engaging, ministry with a mission encounter God, build meaningful relationships, and make an impact in their schools and communities.",
   },

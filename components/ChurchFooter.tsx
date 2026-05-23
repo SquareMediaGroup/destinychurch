@@ -18,7 +18,6 @@ const legalLinks = [
   { label: "Safeguarding Policy", href: "/safeguarding" },
   { label: "Terms of Use", href: "/terms" },
   { label: "Privacy Policy", href: "/privacy" },
-  { label: "Accessibility", href: "/accessibility" },
   { label: "Contact Us", href: "/contact" },
 ];
 

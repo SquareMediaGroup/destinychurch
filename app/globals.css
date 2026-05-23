@@ -565,3 +565,122 @@ h3 {
 .toast-close:hover {
   background: rgba(255, 255, 255, 0.15);
 }
+
+/* ============================================================
+   Accessibility toolbar — class-based site adjustments.
+   Toggled by <AccessibilityToolbar /> via classes on <html>.
+   ============================================================ */
+
+/* Hyperlegible / dyslexia-friendly font */
+html.a11y-hyperlegible,
+html.a11y-hyperlegible body,
+html.a11y-hyperlegible * {
+  font-family: var(--font-hyperlegible), "Atkinson Hyperlegible", Verdana, sans-serif !important;
+}
+
+/* Text size — applied to root so rem scales */
+html.a11y-text-lg { font-size: 112.5% !important; }
+html.a11y-text-xl { font-size: 125% !important; }
+
+/* Spacing — line height and letter spacing for easier reading */
+html.a11y-spacing body,
+html.a11y-spacing p,
+html.a11y-spacing li,
+html.a11y-spacing h1,
+html.a11y-spacing h2,
+html.a11y-spacing h3,
+html.a11y-spacing h4,
+html.a11y-spacing h5,
+html.a11y-spacing h6,
+html.a11y-spacing span,
+html.a11y-spacing a {
+  line-height: 1.9 !important;
+  letter-spacing: 0.05em !important;
+  word-spacing: 0.12em !important;
+}
+
+/* High-contrast mode — black background, yellow text, orange links */
+html.a11y-contrast,
+html.a11y-contrast body {
+  background: #000 !important;
+  color: #ffeb3b !important;
+}
+html.a11y-contrast * {
+  background-color: transparent !important;
+  color: #ffeb3b !important;
+  border-color: #ffeb3b !important;
+  box-shadow: none !important;
+  text-shadow: none !important;
+}
+html.a11y-contrast a,
+html.a11y-contrast button {
+  color: #ffa726 !important;
+  text-decoration: underline !important;
+}
+html.a11y-contrast img,
+html.a11y-contrast video,
+html.a11y-contrast iframe {
+  filter: grayscale(1) contrast(1.1) brightness(0.9);
+}
+html.a11y-contrast input,
+html.a11y-contrast textarea,
+html.a11y-contrast select {
+  background: #000 !important;
+  color: #ffeb3b !important;
+  border: 2px solid #ffeb3b !important;
+}
+
+/* Grayscale — desaturate everything */
+html.a11y-grayscale {
+  filter: grayscale(1);
+}
+
+/* Reduce motion — disable site animations and autoplay */
+html.a11y-reduce-motion *,
+html.a11y-reduce-motion *::before,
+html.a11y-reduce-motion *::after {
+  animation-duration: 0.001ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.001ms !important;
+  scroll-behavior: auto !important;
+}
+html.a11y-reduce-motion video[autoplay] { display: none !important; }
+
+/* Enhanced focus indicators — thick orange ring on any focused element */
+html.a11y-focus *:focus,
+html.a11y-focus *:focus-visible {
+  outline: 4px solid #f58021 !important;
+  outline-offset: 3px !important;
+  box-shadow: 0 0 0 6px rgba(245, 128, 33, 0.35) !important;
+  border-radius: 2px;
+}
+
+/* Hide images for a text-only experience */
+html.a11y-hide-images img,
+html.a11y-hide-images picture,
+html.a11y-hide-images svg:not(.a11y-toolbar svg),
+html.a11y-hide-images video {
+  visibility: hidden !important;
+}
+
+/* Toolbar itself — kept exempt from above rules */
+.a11y-toolbar,
+.a11y-toolbar * {
+  font-family: var(--font-roboto), system-ui, sans-serif !important;
+  letter-spacing: normal !important;
+  word-spacing: normal !important;
+  line-height: 1.4 !important;
+}
+html.a11y-contrast .a11y-toolbar {
+  background: #000 !important;
+  border: 2px solid #ffeb3b !important;
+}
+html.a11y-contrast .a11y-toolbar * {
+  color: #ffeb3b !important;
+}
+html.a11y-grayscale .a11y-toolbar {
+  filter: grayscale(0) !important;
+}
+html.a11y-hide-images .a11y-toolbar svg {
+  visibility: visible !important;
+}

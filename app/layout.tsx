@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
-import { Roboto, Anton, Playfair_Display } from "next/font/google";
+import { Roboto, Anton, Playfair_Display, Atkinson_Hyperlegible } from "next/font/google";
 import "./globals.css";
 import ChurchHeader from "@/components/ChurchHeader";
+import AccessibilityToolbar from "@/components/AccessibilityToolbar";
 import FooterGate from "@/components/FooterGate";
 import ChurchFooter from "@/components/ChurchFooter";
 import Providers from "@/components/Providers";
@@ -35,6 +36,14 @@ const playfair = Playfair_Display({
   display: "swap",
   subsets: ["latin"],
   weight: ["400", "500", "600", "700"],
+  style: ["normal", "italic"],
+});
+
+const hyperlegible = Atkinson_Hyperlegible({
+  variable: "--font-hyperlegible",
+  display: "swap",
+  subsets: ["latin"],
+  weight: ["400", "700"],
   style: ["normal", "italic"],
 });
 
@@ -243,7 +252,7 @@ export default async function RootLayout({
         />
       </head>
       <body
-        className={`${roboto.variable} ${anton.variable} ${playfair.variable} antialiased`}
+        className={`${roboto.variable} ${anton.variable} ${playfair.variable} ${hyperlegible.variable} antialiased`}
       >
         <Providers banner={banner}>
 <SiteBanner />
@@ -258,6 +267,7 @@ export default async function RootLayout({
           </div>
           <AnalyticsGate />
           <SitePopup popup={popup} />
+          <AccessibilityToolbar />
         </Providers>
         <SpeedInsights />
         <Suspense>

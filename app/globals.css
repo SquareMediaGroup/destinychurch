@@ -594,35 +594,46 @@ html.a11y-spacing li {
   line-height: 1.9 !important;
 }
 
-/* High-contrast mode — black background, yellow text, orange links */
+/* High-contrast mode — near-black background, off-white text, brand orange links.
+   Meets WCAG AAA contrast ratios while staying visually calmer than pure black/yellow. */
 html.a11y-contrast,
 html.a11y-contrast body {
-  background: #000 !important;
-  color: #ffeb3b !important;
+  background: #111111 !important;
+  color: #f5f5f5 !important;
 }
 html.a11y-contrast * {
   background-color: transparent !important;
-  color: #ffeb3b !important;
-  border-color: #ffeb3b !important;
-  box-shadow: none !important;
+  color: #f5f5f5 !important;
+  border-color: rgba(245, 245, 245, 0.35) !important;
   text-shadow: none !important;
 }
 html.a11y-contrast a,
-html.a11y-contrast button {
-  color: #ffa726 !important;
+html.a11y-contrast a * {
+  color: #ffb86b !important;
   text-decoration: underline !important;
+  text-underline-offset: 3px;
+}
+html.a11y-contrast h1,
+html.a11y-contrast h2,
+html.a11y-contrast h3,
+html.a11y-contrast h4 {
+  color: #ffffff !important;
 }
 html.a11y-contrast img,
 html.a11y-contrast video,
 html.a11y-contrast iframe {
-  filter: grayscale(1) contrast(1.1) brightness(0.9);
+  filter: brightness(0.9);
 }
 html.a11y-contrast input,
 html.a11y-contrast textarea,
 html.a11y-contrast select {
-  background: #000 !important;
-  color: #ffeb3b !important;
-  border: 2px solid #ffeb3b !important;
+  background: #1a1a1a !important;
+  color: #f5f5f5 !important;
+  border: 2px solid rgba(245, 245, 245, 0.5) !important;
+}
+html.a11y-contrast button:not(.a11y-toolbar button) {
+  background: #1a1a1a !important;
+  border: 1.5px solid rgba(245, 245, 245, 0.5) !important;
 }
 
 /* Grayscale — desaturate everything */
@@ -666,12 +677,12 @@ html.a11y-hide-images video {
   word-spacing: normal !important;
   line-height: 1.4 !important;
 }
-html.a11y-contrast .a11y-toolbar {
-  background: #000 !important;
-  border: 2px solid #ffeb3b !important;
+html.a11y-contrast .a11y-toolbar [role="dialog"] {
+  background: #1a1a1a !important;
+  border: 1.5px solid rgba(245, 245, 245, 0.4) !important;
 }
-html.a11y-contrast .a11y-toolbar * {
-  color: #ffeb3b !important;
+html.a11y-contrast .a11y-toolbar [role="dialog"] * {
+  color: #f5f5f5 !important;
 }
 html.a11y-grayscale .a11y-toolbar {
   filter: grayscale(0) !important;

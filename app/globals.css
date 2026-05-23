@@ -582,21 +582,16 @@ html.a11y-hyperlegible * {
 html.a11y-text-lg { font-size: 112.5% !important; }
 html.a11y-text-xl { font-size: 125% !important; }
 
-/* Spacing — line height and letter spacing for easier reading */
-html.a11y-spacing body,
+/* Spacing — set on body so inheritance applies but existing Tailwind
+   tracking/leading utilities still win where the designer chose them. */
+html.a11y-spacing body {
+  line-height: 1.9;
+  letter-spacing: 0.08em;
+  word-spacing: 0.18em;
+}
 html.a11y-spacing p,
-html.a11y-spacing li,
-html.a11y-spacing h1,
-html.a11y-spacing h2,
-html.a11y-spacing h3,
-html.a11y-spacing h4,
-html.a11y-spacing h5,
-html.a11y-spacing h6,
-html.a11y-spacing span,
-html.a11y-spacing a {
+html.a11y-spacing li {
   line-height: 1.9 !important;
-  letter-spacing: 0.05em !important;
-  word-spacing: 0.12em !important;
 }
 
 /* High-contrast mode — black background, yellow text, orange links */

@@ -70,7 +70,7 @@ export default function ForgotPasswordPage() {
                   Didn't receive an email? Check your spam folder or try a different email address.
                 </p>
                 <Link
-                  href="/admin/login"
+                  href="/admin-login"
                   className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-destiny-orange px-6 py-3.5 text-sm font-bold text-white shadow-lg shadow-destiny-orange/25 transition hover:brightness-110"
                 >
                   <span className="material-symbols-rounded text-base">
@@ -113,7 +113,7 @@ export default function ForgotPasswordPage() {
                 </button>
 
                 <Link
-                  href="/admin/login"
+                  href="/admin-login"
                   className="rounded-2xl border border-white/10 px-6 py-3.5 text-center text-sm font-bold text-white/60 transition hover:bg-white/5"
                 >
                   Back to login

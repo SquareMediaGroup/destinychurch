@@ -12,16 +12,13 @@ export async function proxy(request: NextRequest) {
     return supabaseResponse;
   }
 
-  // Already logged in — send away from login page
+  // The old login page is gone — /admin-login is the single front door
   if (pathname === "/admin/login") {
-    if (user) {
-      return NextResponse.redirect(new URL("/admin/redirects", request.url));
-    }
-    return supabaseResponse;
+    return NextResponse.redirect(new URL("/admin", request.url));
   }
 
   // Unauthenticated API requests: return 401 instead of redirecting
-  if (!user && pathname.startsWith("/api/admin")) {
+  if (!user && (pathname.startsWith("/api/admin") || pathname.startsWith("/api/administration"))) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -32,12 +29,17 @@ export async function proxy(request: NextRequest) {
 
   // Protect all other /admin/* routes
   if (!user) {
-    return NextResponse.redirect(new URL("/admin/login", request.url));
+    return NextResponse.redirect(new URL("/admin-login", request.url));
   }
 
   return supabaseResponse;
 }
 
 export const config = {
-  matcher: ["/admin/:path*", "/api/admin/:path*", "/administration/:path*"],
+  matcher: [
+    "/admin/:path*",
+    "/api/admin/:path*",
+    "/administration/:path*",
+    "/api/administration/:path*",
+  ],
 };

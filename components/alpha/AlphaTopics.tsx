@@ -119,13 +119,13 @@ export default function AlphaTopics() {
           <AnimateIn delay={100} className="w-full md:w-1/2">
             <div className="grid grid-cols-2 gap-3">
               <div className="overflow-hidden rounded-2xl">
-                <img src="/img/Alpha/Alpha/WiA-SC_V2-Carousel_02.webp" alt="" className="w-full object-cover h-48" />
+                <img src="/img/Alpha/Alpha/WiA-SC_V2-Carousel_02.webp" alt="" loading="lazy" className="w-full object-cover h-48" />
               </div>
               <div className="overflow-hidden rounded-2xl">
-                <img src="/img/Alpha/Alpha/WiA-SC_V2-Carousel_03.webp" alt="" className="w-full object-cover h-48" />
+                <img src="/img/Alpha/Alpha/WiA-SC_V2-Carousel_03.webp" alt="" loading="lazy" className="w-full object-cover h-48" />
               </div>
               <div className="col-span-2 overflow-hidden rounded-2xl">
-                <img src="/img/Alpha/Alpha/WiA-SC_V2-Carousel_04.webp" alt="" className="w-full object-cover h-40" />
+                <img src="/img/Alpha/Alpha/WiA-SC_V2-Carousel_04.webp" alt="" loading="lazy" className="w-full object-cover h-40" />
               </div>
             </div>
           </AnimateIn>

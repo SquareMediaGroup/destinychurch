@@ -41,6 +41,7 @@ export default function PastHighlightsSlideshow({ videos }: { videos: Video[] })
             <img
               src={current.thumbnail}
               alt={current.title}
+              loading="lazy"
               className="absolute inset-0 h-full w-full object-cover transition duration-500 group-hover:scale-105"
             />
             <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
@@ -100,6 +101,7 @@ export default function PastHighlightsSlideshow({ videos }: { videos: Video[] })
             <img
               src={v.thumbnail}
               alt={v.title}
+              loading="lazy"
               className="absolute inset-0 h-full w-full object-cover"
             />
           </button>

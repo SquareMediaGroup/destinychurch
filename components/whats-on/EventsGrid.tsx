@@ -77,6 +77,7 @@ function EventCard({ event }: { event: DeduplicatedEvent }) {
           <img
             src={imageUrl}
             alt={event.name}
+            loading="lazy"
             className="absolute inset-0 h-full w-full object-cover transition duration-500 group-hover:scale-105"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />

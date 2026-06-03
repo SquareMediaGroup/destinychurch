@@ -78,7 +78,6 @@ export default function SitePopup({ popup }: { popup: PopupData | null }) {
               src={popup.image_url}
               alt={popup.title ?? ""}
               fill
-              priority
               sizes="(max-width: 768px) 100vw, 28rem"
               className="object-cover"
             />

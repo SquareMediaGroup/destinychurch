@@ -107,7 +107,7 @@ export default function MissionsPage() {
               <AnimateIn key={p.id}>
                 <div className={p.whiteLogo ? "rounded-xl bg-destiny-grey px-4 py-2" : ""}>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={p.logo} alt={p.name} className="h-10 w-auto object-contain" />
+                  <img src={p.logo} alt={p.name} loading="lazy" className="h-10 w-auto object-contain" />
                 </div>
               </AnimateIn>
             ))}
@@ -129,7 +129,7 @@ export default function MissionsPage() {
               <AnimateIn className={i % 2 !== 0 ? "lg:order-2" : ""}>
                 <div className={partner.whiteLogo ? "mb-6 inline-block rounded-xl bg-destiny-grey px-4 py-2" : "mb-6"}>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={partner.logo} alt={partner.name} className="h-10 w-auto object-contain" />
+                  <img src={partner.logo} alt={partner.name} loading="lazy" className="h-10 w-auto object-contain" />
                 </div>
                 <h2 className="mb-5 text-3xl font-black text-destiny-grey md:text-4xl">
                   {partner.name}

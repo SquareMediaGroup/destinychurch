@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import AnimateIn from "@/components/AnimateIn";
+import ScrollLock from "@/components/sermons/ScrollLock";
 
 export const metadata: Metadata = {
   title: "Sermons — Back Soon",
@@ -26,6 +27,7 @@ const SPOTIFY_PODCAST_URL =
 export default function SermonsMaintenancePage() {
   return (
     <section className="relative flex min-h-[80vh] items-center justify-center overflow-hidden px-4 py-20 sm:py-28">
+      <ScrollLock />
       {/* Ambient brand glow behind the glass */}
       <div
         aria-hidden="true"

@@ -211,6 +211,9 @@ export default function ChurchHeader() {
   }, [alphaActive, youtubeQuotaExceeded]);
 
   if (pathname.startsWith("/admin")) return null;
+  // Sermons index is under maintenance — show a clean, chromeless page
+  // (no global header, no Sermons/Guest Speakers toggle).
+  if (pathname === "/sermons") return null;
 
   const isAdmin = pathname.startsWith("/admin");
   const isHome = pathname === "/";

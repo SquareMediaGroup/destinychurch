@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Image from "next/image";
+import Link from "next/link";
 import AnimateIn from "@/components/AnimateIn";
 
 export const metadata: Metadata = {
@@ -24,66 +25,59 @@ const SPOTIFY_PODCAST_URL =
 
 export default function SermonsMaintenancePage() {
   return (
-    <section className="relative flex min-h-[80vh] items-center justify-center overflow-hidden px-4 py-24">
-      {/* Ambient glows */}
+    <section className="relative flex min-h-[80vh] items-center justify-center overflow-hidden px-4 py-20 sm:py-28">
+      {/* Ambient brand glow behind the glass */}
       <div
         aria-hidden="true"
         className="pointer-events-none absolute inset-0"
         style={{
           background:
-            "radial-gradient(60% 50% at 50% 0%, rgba(245,128,33,0.18) 0%, transparent 70%), radial-gradient(50% 50% at 80% 100%, rgba(8,87,186,0.14) 0%, transparent 70%)",
+            "radial-gradient(55% 45% at 50% 0%, rgba(245,128,33,0.16) 0%, transparent 70%), radial-gradient(45% 45% at 85% 100%, rgba(8,87,186,0.12) 0%, transparent 70%)",
         }}
       />
 
-      <div className="relative mx-auto w-full max-w-2xl text-center">
-        {/* Logo */}
-        <AnimateIn>
+      {/* Frosted glass card */}
+      <AnimateIn className="relative mx-auto w-full max-w-xl">
+        <div className="rounded-3xl border border-white/10 bg-white/[0.06] px-6 py-12 text-center shadow-2xl backdrop-blur-xl sm:px-12 sm:py-16">
+          {/* Logo */}
           <Image
             src="/img/brand/destiny-logo-color-white.svg"
             alt="Destiny Church Tees Valley"
             width={200}
             height={56}
-            className="mx-auto h-12 w-auto opacity-90"
+            className="mx-auto h-11 w-auto opacity-90"
             priority
           />
-        </AnimateIn>
 
-        {/* Maintenance pill */}
-        <AnimateIn delay={80}>
-          <span className="mt-10 inline-flex items-center gap-2 rounded-full border border-destiny-orange/30 bg-destiny-orange/10 px-4 py-1.5 text-xs font-bold uppercase tracking-[0.25em] text-destiny-orange">
+          {/* Maintenance pill */}
+          <span className="mt-8 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-4 py-1.5 text-xs font-bold uppercase tracking-[0.25em] text-white/80 backdrop-blur">
             <span
-              className="material-symbols-rounded text-base"
+              className="material-symbols-rounded text-base text-destiny-orange"
               aria-hidden="true"
             >
               construction
             </span>
             Under Maintenance
           </span>
-        </AnimateIn>
 
-        {/* Heading */}
-        <AnimateIn delay={140}>
-          <h1 className="mt-6 text-3xl font-black leading-tight text-white sm:text-4xl md:text-5xl">
+          {/* Heading */}
+          <h1 className="mt-6 text-3xl font-black leading-tight text-white sm:text-4xl">
             Our sermons are getting a refresh
           </h1>
-        </AnimateIn>
 
-        <AnimateIn delay={200}>
-          <p className="mx-auto mt-5 max-w-lg text-base leading-relaxed text-white/60 sm:text-lg">
+          <p className="mx-auto mt-5 max-w-md text-base leading-relaxed text-white/60">
             We&apos;re rebuilding this page to make it easier to watch and
             listen. While we work, you can still catch every message on our
             YouTube channel and Spotify podcast.
           </p>
-        </AnimateIn>
 
-        {/* Buttons */}
-        <AnimateIn delay={260}>
+          {/* Buttons — site pattern: orange primary + glass secondary */}
           <div className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
             <a
               href={YOUTUBE_CHANNEL_URL}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex w-full items-center justify-center gap-3 rounded-full bg-[#ff0000] px-7 py-3.5 text-sm font-bold text-white shadow-lg shadow-[#ff0000]/25 transition hover:brightness-110 sm:w-auto"
+              className="inline-flex w-full items-center justify-center gap-2.5 rounded-full bg-destiny-orange px-7 py-3.5 text-sm font-bold text-white shadow-lg shadow-destiny-orange/25 transition hover:brightness-110 sm:w-auto"
             >
               <svg
                 viewBox="0 0 24 24"
@@ -100,7 +94,7 @@ export default function SermonsMaintenancePage() {
               href={SPOTIFY_PODCAST_URL}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex w-full items-center justify-center gap-3 rounded-full bg-[#1db954] px-7 py-3.5 text-sm font-bold text-white shadow-lg shadow-[#1db954]/25 transition hover:brightness-110 sm:w-auto"
+              className="inline-flex w-full items-center justify-center gap-2.5 rounded-full border-2 border-white/30 px-7 py-3.5 text-sm font-bold text-white backdrop-blur transition hover:border-white/60 hover:bg-white/10 sm:w-auto"
             >
               <svg
                 viewBox="0 0 24 24"
@@ -113,15 +107,24 @@ export default function SermonsMaintenancePage() {
               Listen on Spotify
             </a>
           </div>
-        </AnimateIn>
 
-        {/* Footnote */}
-        <AnimateIn delay={320}>
-          <p className="mt-10 text-xs uppercase tracking-[0.25em] text-white/30">
+          {/* Back to home */}
+          <Link
+            href="/"
+            className="mt-9 inline-flex items-center gap-1.5 text-sm font-semibold text-white/55 transition hover:text-white"
+          >
+            <span className="material-symbols-rounded text-base" aria-hidden="true">
+              arrow_back
+            </span>
+            Back to home
+          </Link>
+
+          {/* Footnote */}
+          <p className="mt-8 text-xs uppercase tracking-[0.25em] text-white/30">
             Back online soon &middot; Thanks for your patience
           </p>
-        </AnimateIn>
-      </div>
+        </div>
+      </AnimateIn>
     </section>
   );
 }

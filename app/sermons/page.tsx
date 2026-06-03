@@ -18,11 +18,11 @@ export const metadata: Metadata = {
   },
 };
 
-// YouTube channel for Destiny Church Tees Valley.
-const YOUTUBE_CHANNEL_URL = "https://www.youtube.com/@DestinyChurchTeesValley";
-// TODO: Replace with the real Destiny Church Spotify podcast show URL before launch.
+// YouTube channel for Destiny Church.
+const YOUTUBE_CHANNEL_URL = "https://www.youtube.com/@DestinyOnlineChurch";
+// Destiny Church Spotify podcast show.
 const SPOTIFY_PODCAST_URL =
-  "https://open.spotify.com/search/Destiny%20Church%20Tees%20Valley";
+  "https://open.spotify.com/show/1nj6U60XiQExt8l55E2p0Q";
 
 export default function SermonsMaintenancePage() {
   return (

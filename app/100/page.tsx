@@ -10,12 +10,12 @@ export const metadata: Metadata = {
   title: "100 Years — Our Story",
   description:
     "From a small mission hall on Norton Road in 1926 to a multi-cultural family of faith today — celebrate one hundred years of Destiny Church Tees Valley.",
-  alternates: { canonical: "/centennial" },
+  alternates: { canonical: "/100" },
   openGraph: {
     title: "100 Years of Destiny Church Tees Valley",
     description:
       "A century of faith, hope and love. Discover the story of our church — 1926 to 2026.",
-    url: "https://destinytees.uk/centennial",
+    url: "https://destinytees.uk/100",
   },
 };
 

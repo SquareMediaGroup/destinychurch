@@ -223,7 +223,7 @@ function HeroSection() {
             className="mb-2 text-[3.2vw] font-medium uppercase tracking-[0.35em] sm:text-base md:text-lg"
             style={{ color: ORANGE }}
           >
-            Est. 1925 — Tees Valley
+            Est. 1926 — Norton Road
           </p>
         </FadeIn>
 
@@ -486,7 +486,7 @@ function StorySection() {
           </h2>
         </FadeIn>
 
-        <AnimatedText text="For one hundred years, Destiny Church has been a family in the Tees Valley — a place to belong, to find faith, hope and love, and to become who God created you to be. From a small gathering in 1925 to the community we are today, the story is still being written. Here's to the next hundred years." />
+        <AnimatedText text="A century after seven families first gathered by gaslight above a draper's shop on Norton Road, Destiny Church is still a family — a place to belong, to find faith, hope and love, and to become who God created you to be. One hundred years on, we look ahead with the same stubborn hope toward the next." />
       </div>
 
       <FadeIn delay={0.1} y={30} className="relative z-10 mt-16 sm:mt-20 md:mt-24">
@@ -501,28 +501,28 @@ function StorySection() {
 const MILESTONES: [string, string, string][] = [
   [
     "01",
-    "1925 · The Beginning",
-    "A handful of believers gather to pray and worship, planting the seed of what would become Destiny Church in the heart of Stockton-on-Tees.",
+    "1926 · A Mission Is Born",
+    "Reverend Albert Hollingsworth and seven families open the Norton Road Mission in a rented hall above a draper's shop — Sunday meetings by gaslight, with a single harmonium for worship.",
   ],
   [
     "02",
-    "1950s · Taking Root",
-    "Through post-war years the fellowship grows, putting down roots in the community and becoming a steady place of hope for local families.",
+    "1930s · Bread for the Town",
+    "Through the depths of the Depression the mission runs a soup kitchen six days a week, feeding shipyard families who had run out of everything but pride.",
   ],
   [
     "03",
-    "1980s · A Wider Reach",
-    "A heart for mission carries the church beyond its walls — into schools, streets and homes — reaching a new generation across Teesside.",
+    "1940s · A Shelter in the Storm",
+    "Through the war years the hall doubles as an air-raid refuge. The congregation meets faithfully through blackouts, rationing and loss, refusing to let the lamp go out.",
   ],
   [
     "04",
-    "2008 · A New Home",
-    "The church settles into the Destiny Centre on Norton Road, a gathering place built to serve, disciple and welcome the whole community.",
+    "1958 · A New Name",
+    "After thirty-two years Hollingsworth retires; Pastor Raymond Caldwell takes the helm and the fellowship is reborn as Stockton Christian Fellowship in its first building of its own.",
   ],
   [
     "05",
-    "2025 · The Centenary",
-    "One hundred years on, we celebrate God's faithfulness — and step into the next century with the same vision: transforming lives through Jesus.",
+    "Today · Every Nation, One Family",
+    "Pastor David Okonkwo renames the church Destiny and gathers a truly multi-cultural family of faith — at home in the Destiny Centre on Norton Road, seven days a week.",
   ],
 ];
 
@@ -591,6 +591,7 @@ interface Chapter {
   num: string;
   category: string;
   name: string;
+  desc: string;
   col1: [string, string];
   col2: string;
 }
@@ -600,23 +601,26 @@ const G = (n: string) => `/img/photos/Gallery/${n}.webp`;
 const CHAPTERS: Chapter[] = [
   {
     num: "01",
-    category: "Heritage",
-    name: "Where We Began",
+    category: "1926 – 1958 · The Pioneer",
+    name: "The Hollingsworth Years",
+    desc: "A pioneer with a coalfield faith. He started the mission with nothing but conviction and carried the church through the Depression and the war on little more than prayer and porridge.",
     col1: [G("OlderPeople"), G("FamilySatTogether")],
     col2: G("WorshipMoment"),
   },
   {
     num: "02",
-    category: "Today",
-    name: "Our Family Now",
-    col1: [G("Community"), G("YouthCommunity")],
+    category: "1958 – 1990s · The Builder",
+    name: "The Caldwell Years",
+    desc: "The builder. He gave the church its first home of its own, raised a generation of young families, and first sent us out beyond our own walls to the wider world.",
+    col1: [G("Community"), G("Speaker")],
     col2: G("SingingLand"),
   },
   {
     num: "03",
-    category: "Tomorrow",
-    name: "The Next Hundred",
-    col1: [G("Photography"), G("Speaker")],
+    category: "Today · The Gatherer",
+    name: "The Okonkwo Years",
+    desc: "The gatherer. Under his leadership the church became Destiny — a true family of every nation, language and story, where all can find a place to belong and thrive.",
+    col1: [G("YouthCommunity"), G("Photography")],
     col2: G("SingingLand3"),
   },
 ];
@@ -680,6 +684,14 @@ function ChapterCard({
             </div>
             <GhostButton label="Be Part of It" />
           </div>
+
+          {/* Description */}
+          <p
+            className="mb-5 max-w-3xl px-2 font-light leading-relaxed sm:mb-7 md:mb-8"
+            style={{ color: MUTED, fontSize: "clamp(0.9rem, 1.5vw, 1.2rem)" }}
+          >
+            {chapter.desc}
+          </p>
 
           {/* Image grid */}
           <div className="flex gap-3 sm:gap-4">
@@ -759,7 +771,7 @@ function ChaptersSection() {
           className="max-w-xl font-light uppercase tracking-wide"
           style={{ color: MUTED, fontSize: "clamp(0.85rem, 1.6vw, 1.15rem)" }}
         >
-          1925 — 2025 · Here&apos;s to the next hundred years.
+          1926 — 2026 · Here&apos;s to the next hundred years.
         </p>
         <CelebrateButton />
       </FadeIn>
@@ -771,7 +783,7 @@ function ChaptersSection() {
 
 export default function CentenaryPage() {
   return (
-    <main
+    <div
       style={{
         background: INK,
         color: LIGHT,
@@ -784,6 +796,6 @@ export default function CentenaryPage() {
       <StorySection />
       <MilestonesSection />
       <ChaptersSection />
-    </main>
+    </div>
   );
 }

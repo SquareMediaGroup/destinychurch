@@ -10,6 +10,8 @@ const hrItems = [
   { href: "/administration/hr/leave", label: "Leave" },
   { href: "/administration/hr/documents", label: "Documents" },
   { href: "/administration/hr/reviews", label: "Reviews" },
+  { href: "/administration/hr/jobs", label: "Jobs & internships" },
+  { href: "/administration/hr/applications", label: "Applications" },
 ];
 
 function NavLink({

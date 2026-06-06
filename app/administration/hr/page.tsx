@@ -10,12 +10,15 @@ import {
   type LeaveRequest,
   type Review,
 } from "@/lib/hr";
+import type { Job, JobApplication } from "@/lib/jobs";
 import { HrHeader, Badge } from "@/components/administration/hr/HrUI";
 
 export default function HrDashboardPage() {
   const [staff, setStaff] = useState<Staff[]>([]);
   const [leave, setLeave] = useState<LeaveRequest[]>([]);
   const [reviews, setReviews] = useState<Review[]>([]);
+  const [jobs, setJobs] = useState<Job[]>([]);
+  const [applications, setApplications] = useState<JobApplication[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -23,11 +26,15 @@ export default function HrDashboardPage() {
       fetch(`${API}/staff`).then((r) => r.json()),
       fetch(`${API}/leave`).then((r) => r.json()),
       fetch(`${API}/reviews`).then((r) => r.json()),
+      fetch(`${API}/jobs`).then((r) => r.json()),
+      fetch(`${API}/applications`).then((r) => r.json()),
     ])
-      .then(([s, l, r]) => {
+      .then(([s, l, r, j, a]) => {
         setStaff(Array.isArray(s) ? s : []);
         setLeave(Array.isArray(l) ? l : []);
         setReviews(Array.isArray(r) ? r : []);
+        setJobs(Array.isArray(j) ? j : []);
+        setApplications(Array.isArray(a) ? a : []);
       })
       .finally(() => setLoading(false));
   }, []);
@@ -38,6 +45,8 @@ export default function HrDashboardPage() {
   const upcomingReviews = reviews
     .filter((r) => r.next_review_date && r.next_review_date >= today)
     .sort((a, b) => (a.next_review_date! < b.next_review_date! ? -1 : 1));
+  const publishedJobs = jobs.filter((j) => j.is_published).length;
+  const newApplications = applications.filter((a) => a.status === "new").length;
 
   const stats = [
     {
@@ -53,10 +62,16 @@ export default function HrDashboardPage() {
       href: "/administration/hr/leave",
     },
     {
-      icon: "rate_review",
-      label: "Upcoming reviews",
-      value: upcomingReviews.length,
-      href: "/administration/hr/reviews",
+      icon: "work",
+      label: "Open roles",
+      value: publishedJobs,
+      href: "/administration/hr/jobs",
+    },
+    {
+      icon: "inbox",
+      label: "New applications",
+      value: newApplications,
+      href: "/administration/hr/applications",
     },
   ];
 
@@ -68,7 +83,7 @@ export default function HrDashboardPage() {
         <p className="text-sm text-destiny-grey/50">Loading…</p>
       ) : (
         <>
-          <div className="mb-8 grid gap-4 sm:grid-cols-3">
+          <div className="mb-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {stats.map((s) => (
               <Link
                 key={s.label}

@@ -566,3 +566,85 @@ h3 {
   background: rgba(255, 255, 255, 0.15);
 }
 
+/* ── Rich-text job descriptions (TipTap editor + public render) ─────────── */
+.rte-content {
+  line-height: 1.75;
+}
+.rte-content h2 {
+  font-family: var(--font-roboto), system-ui, sans-serif;
+  font-weight: 900;
+  font-size: 1.5rem;
+  color: var(--color-destiny-grey);
+  margin: 1.75rem 0 0.75rem;
+}
+.rte-content h3 {
+  font-family: var(--font-roboto), system-ui, sans-serif;
+  font-weight: 900;
+  font-size: 1.125rem;
+  color: var(--color-destiny-grey);
+  margin: 1.5rem 0 0.5rem;
+}
+.rte-content p {
+  margin: 0 0 1rem;
+}
+.rte-content > :first-child {
+  margin-top: 0;
+}
+.rte-content ul,
+.rte-content ol {
+  margin: 0 0 1rem;
+  padding-left: 0;
+  list-style: none;
+}
+.rte-content li {
+  position: relative;
+  padding-left: 1.5rem;
+  margin: 0.5rem 0;
+}
+.rte-content ul li::before {
+  content: "";
+  position: absolute;
+  left: 0.25rem;
+  top: 0.7em;
+  width: 0.4rem;
+  height: 0.4rem;
+  border-radius: 9999px;
+  background: var(--color-destiny-orange);
+}
+.rte-content ol {
+  counter-reset: rte-counter;
+}
+.rte-content ol li {
+  counter-increment: rte-counter;
+}
+.rte-content ol li::before {
+  content: counter(rte-counter) ".";
+  position: absolute;
+  left: 0;
+  top: 0;
+  font-weight: 700;
+  color: var(--color-destiny-orange);
+}
+.rte-content a {
+  color: var(--color-destiny-orange);
+  text-decoration: underline;
+}
+.rte-content strong {
+  font-weight: 700;
+  color: var(--color-destiny-grey);
+}
+.rte-content blockquote {
+  border-left: 3px solid var(--color-destiny-orange);
+  padding-left: 1rem;
+  margin: 0 0 1rem;
+  font-style: italic;
+  color: rgba(54, 63, 72, 0.6);
+}
+/* Placeholder shown in the empty editor */
+.rte-content p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  color: rgba(54, 63, 72, 0.3);
+  float: left;
+  height: 0;
+  pointer-events: none;
+}

@@ -13,6 +13,7 @@ const aboutDropdown = [
   { href: "/about#team", label: "Meet the Team" },
   { href: "/beliefs", label: "What We Believe" },
   { href: "/visit", label: "Plan a Visit" },
+  { href: "/jobs", label: "Jobs & Internships" },
 ];
 
 const whatsOnDropdownBase = [

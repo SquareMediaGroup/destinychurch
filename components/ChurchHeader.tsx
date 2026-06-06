@@ -210,7 +210,7 @@ export default function ChurchHeader() {
     return [items[0], { href: "/alpha", label: "Alpha" }, ...items.slice(1)];
   }, [alphaActive, youtubeQuotaExceeded]);
 
-  if (pathname.startsWith("/admin")) return null;
+  if (pathname.startsWith("/admin") || pathname === "/100") return null;
   // Sermons index is under maintenance — show a clean, chromeless page
   // (no global header, no Sermons/Guest Speakers toggle).
   if (pathname === "/sermons") return null;

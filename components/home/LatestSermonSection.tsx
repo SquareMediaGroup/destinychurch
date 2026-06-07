@@ -44,10 +44,22 @@ export default function LatestSermonSection({
           className="absolute inset-0 scale-110 bg-cover bg-center blur-md"
           style={{ backgroundImage: `url('${video.thumbnail}')` }}
         />
-        {/* Brand gradient — dark on the left for legibility, lifting to the right */}
+        {/* DC brand gradient overlay — same treatment as the Courses
+            "Keep Growing in Faith" card on the What's On page */}
+        <div aria-hidden className="absolute inset-0 opacity-65">
+          <Image
+            src="/img/brand/DCgradient.webp"
+            alt=""
+            fill
+            className="object-cover"
+            sizes="100vw"
+            aria-hidden="true"
+          />
+        </div>
+        {/* Black to transparent overlay */}
         <div
           aria-hidden
-          className="absolute inset-0 bg-gradient-to-r from-black/85 via-black/65 to-black/45"
+          className="absolute inset-0 bg-gradient-to-r from-black/60 via-black/40 to-transparent"
         />
 
         <div className="relative mx-auto flex max-w-7xl flex-col items-center gap-8 px-6 py-12 sm:px-10 sm:py-14 md:flex-row md:items-center md:gap-12 lg:px-12">

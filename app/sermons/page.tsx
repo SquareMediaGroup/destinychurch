@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import Link from "next/link";
 import { getPodcastShow } from "@/lib/podcast";
 import { getLatestVisibleVideo } from "@/lib/sermons";
@@ -47,57 +48,57 @@ export default async function SermonsPage() {
 
   return (
     <PodcastPlayerProvider>
-      <main className="relative min-h-screen overflow-hidden bg-[#0c0a09] pb-32 text-white">
-        {/* Ambient glow + grain */}
-        <div
-          aria-hidden
-          className="pointer-events-none absolute inset-x-0 top-0 h-[70vh]"
-          style={{
-            background:
-              "radial-gradient(60% 50% at 50% 0%, rgba(245,128,33,0.18) 0%, transparent 70%), radial-gradient(40% 40% at 85% 10%, rgba(8,87,186,0.12) 0%, transparent 70%)",
-          }}
-        />
+      <main className="relative min-h-screen bg-[#0c0a09] pb-32 text-white">
+        {/* ── Hero ─────────────────────────────────────────────── */}
+        <div className="px-4 pt-8 pb-0 lg:px-8">
+          <section className="relative overflow-hidden rounded-3xl">
+            <Image
+              src="/img/photos/Bible Image Destiny Church.webp"
+              alt=""
+              aria-hidden="true"
+              fill
+              priority
+              sizes="100vw"
+              quality={82}
+              className="scale-105 object-cover object-center blur-sm"
+            />
+            <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/55 to-black/75" />
 
-        {/* ── Masthead ─────────────────────────────────────────── */}
-        <header className="relative mx-auto max-w-6xl px-5 pt-28 sm:pt-32 lg:px-8">
-          <AnimateIn>
-            <span className="inline-flex items-center gap-2 rounded-full border border-white/12 bg-white/[0.04] px-4 py-1.5 text-[11px] font-bold uppercase tracking-[0.3em] text-white/60 backdrop-blur">
-              <span className="h-1.5 w-1.5 rounded-full bg-destiny-orange" />
-              {show?.author ?? "DCTV Podcast"}
-            </span>
+            <div className="relative flex flex-col items-center justify-center px-4 py-24 text-center sm:py-32">
+              <AnimateIn>
+                <span className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-1.5 text-[11px] font-bold uppercase tracking-[0.3em] text-white/80 backdrop-blur">
+                  <span className="h-1.5 w-1.5 rounded-full bg-destiny-orange" />
+                  {show?.author ?? "DCTV Podcast"}
+                </span>
 
-            <h1
-              className="mt-6 text-[15vw] font-normal uppercase leading-[0.82] tracking-tight text-white sm:text-[10rem] lg:text-[12rem]"
-              style={{ fontFamily: "var(--font-anton)" }}
-            >
-              Sermons
-            </h1>
+                <h1 className="mt-5 text-5xl font-black text-white md:text-6xl lg:text-7xl">
+                  Sermons
+                </h1>
 
-            <p className="mt-6 max-w-xl text-lg leading-relaxed text-white/55">
-              Every message, anytime. Press play below to listen, or{" "}
-              <span className="italic text-white/80" style={{ fontFamily: "var(--font-playfair)" }}>
-                head to YouTube
-              </span>{" "}
-              to watch.
-            </p>
+                <p className="mx-auto mt-4 max-w-xl text-base text-white/70 md:text-lg">
+                  Listen to every message from Destiny Church — stream the latest
+                  here, or head to YouTube to watch.
+                </p>
 
-            {/* Platform chips */}
-            <div className="mt-8 flex flex-wrap gap-2.5">
-              {platforms.map((p) => (
-                <a
-                  key={p.label}
-                  href={p.href}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 rounded-full border border-white/12 bg-white/[0.03] px-4 py-2 text-sm font-semibold text-white/70 transition hover:border-white/30 hover:bg-white/[0.07] hover:text-white"
-                >
-                  <PlatformIcon name={p.icon} />
-                  {p.label}
-                </a>
-              ))}
+                {/* Platform chips */}
+                <div className="mt-8 flex flex-wrap justify-center gap-2.5">
+                  {platforms.map((p) => (
+                    <a
+                      key={p.label}
+                      href={p.href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-2 text-sm font-semibold text-white/80 backdrop-blur transition hover:border-white/40 hover:bg-white/20 hover:text-white"
+                    >
+                      <PlatformIcon name={p.icon} />
+                      {p.label}
+                    </a>
+                  ))}
+                </div>
+              </AnimateIn>
             </div>
-          </AnimateIn>
-        </header>
+          </section>
+        </div>
 
         {/* ── Featured latest episode ──────────────────────────── */}
         {latest ? (

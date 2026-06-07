@@ -3,12 +3,10 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 
 export type TextSize = "normal" | "large";
-export type Theme = "light" | "dark";
 
 export type Settings = {
   textSize: TextSize;
   reduceMotion: boolean;
-  theme: Theme;
 };
 
 export const SETTINGS_STORAGE_KEY = "destiny-settings";
@@ -16,9 +14,6 @@ export const SETTINGS_STORAGE_KEY = "destiny-settings";
 const DEFAULT_SETTINGS: Settings = {
   textSize: "normal",
   reduceMotion: false,
-  // Dark mode is opt-in: every visitor starts in the light theme until they
-  // flip the switch, after which their choice is remembered in localStorage.
-  theme: "light",
 };
 
 const parseBoolean = (value: unknown, fallback: boolean) =>
@@ -37,7 +32,6 @@ const readStoredSettings = (): Settings => {
     return {
       textSize: parseString(parsed.textSize, ["normal", "large"], DEFAULT_SETTINGS.textSize),
       reduceMotion: parseBoolean(parsed.reduceMotion, DEFAULT_SETTINGS.reduceMotion),
-      theme: parseString(parsed.theme, ["light", "dark"], DEFAULT_SETTINGS.theme),
     };
   } catch {
     return DEFAULT_SETTINGS;
@@ -49,10 +43,6 @@ const applySettings = (settings: Settings) => {
   const root = document.documentElement;
   root.dataset.textSize = settings.textSize;
   root.dataset.reduceMotion = settings.reduceMotion ? "true" : "false";
-  root.dataset.theme = settings.theme;
-  // Keep <meta name="theme-color"> + the root canvas in sync so the browser
-  // chrome (mobile address bar, overscroll) matches the active theme.
-  root.style.colorScheme = settings.theme;
 };
 
 type SettingsContextValue = {

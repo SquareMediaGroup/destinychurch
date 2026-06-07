@@ -38,7 +38,7 @@ export default function EventsCarousel({ children }: { children: React.ReactNode
         type="button"
         onClick={() => scroll("left")}
         aria-label="Scroll left"
-        className={`absolute -left-1 top-1/2 z-10 -translate-y-1/2 flex h-8 w-8 items-center justify-center rounded-full border border-black/10 bg-white/80 text-destiny-grey/50 shadow-sm backdrop-blur-sm transition-all duration-200 hover:text-destiny-grey sm:-left-3 sm:h-9 sm:w-9 dark:border-white/15 dark:bg-[#1d222a]/80 dark:text-white/60 dark:hover:text-white ${
+        className={`absolute -left-1 top-1/2 z-10 -translate-y-1/2 flex h-8 w-8 items-center justify-center rounded-full border border-black/10 bg-white/80 text-destiny-grey/50 shadow-sm backdrop-blur-sm transition-all duration-200 hover:text-destiny-grey sm:-left-3 sm:h-9 sm:w-9 ${
           canScrollLeft ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
         }`}
       >
@@ -60,7 +60,7 @@ export default function EventsCarousel({ children }: { children: React.ReactNode
         type="button"
         onClick={() => scroll("right")}
         aria-label="Scroll right"
-        className={`absolute -right-1 top-1/2 z-10 -translate-y-1/2 flex h-8 w-8 items-center justify-center rounded-full border border-black/10 bg-white/80 text-destiny-grey/50 shadow-sm backdrop-blur-sm transition-all duration-200 hover:text-destiny-grey sm:-right-3 sm:h-9 sm:w-9 dark:border-white/15 dark:bg-[#1d222a]/80 dark:text-white/60 dark:hover:text-white ${
+        className={`absolute -right-1 top-1/2 z-10 -translate-y-1/2 flex h-8 w-8 items-center justify-center rounded-full border border-black/10 bg-white/80 text-destiny-grey/50 shadow-sm backdrop-blur-sm transition-all duration-200 hover:text-destiny-grey sm:-right-3 sm:h-9 sm:w-9 ${
           canScrollRight ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
         }`}
       >

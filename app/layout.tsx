@@ -234,16 +234,8 @@ export default async function RootLayout({
   const popup = await getActivePopup();
 
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en">
       <head>
-        {/* Theme bootstrap — runs before first paint so dark mode never flashes
-            white. Default is light; we only opt in to dark when the visitor has
-            previously chosen it. Mirrors applySettings() in lib/settings.tsx. */}
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `(function(){try{var s=localStorage.getItem('destiny-settings');var t=s?JSON.parse(s).theme:null;if(t!=='light'&&t!=='dark')t='light';var d=document.documentElement;d.dataset.theme=t;d.style.colorScheme=t;d.style.background=t==='dark'?'#101316':'#ffffff';}catch(e){}})();`,
-          }}
-        />
         <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,500,0,0" />
         <script
           type="application/ld+json"
@@ -256,7 +248,7 @@ export default async function RootLayout({
         <Providers banner={banner}>
 <SiteBanner />
           <CookieBanner />
-          <div className="app-canvas flex min-h-screen flex-col bg-[var(--background)] text-[var(--foreground)]">
+          <div className="flex min-h-screen flex-col bg-[var(--background)] text-[var(--foreground)]">
             <BannerSpacer />
             <Suspense>
               <ChurchHeader />

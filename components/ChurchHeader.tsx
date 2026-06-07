@@ -6,7 +6,6 @@ import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { usePathname } from "next/navigation";
 import { useBanner } from "@/contexts/BannerContext";
 import GlobalSearch from "./GlobalSearch";
-import ThemeToggle from "./ThemeToggle";
 
 const aboutDropdown = [
   { href: "/about", label: "Our Mission" },
@@ -56,13 +55,13 @@ function Dropdown({
       onMouseEnter={onMouseEnter}
       onMouseLeave={onMouseLeave}
     >
-      <div className="min-w-[180px] rounded-2xl border border-black/5 bg-white p-2 shadow-xl dark:border-white/10 dark:bg-[#171b21] dark:shadow-black/50">
+      <div className="min-w-[180px] rounded-2xl border border-black/5 bg-white p-2 shadow-xl">
         {items.map((item) => (
           <Link
             key={item.label}
             href={item.href}
             onClick={onClose}
-            className="block rounded-xl px-4 py-2.5 text-sm font-medium text-destiny-grey transition hover:bg-gray-50 hover:text-destiny-orange dark:text-white/85 dark:hover:bg-white/5 dark:hover:text-destiny-orange"
+            className="block rounded-xl px-4 py-2.5 text-sm font-medium text-destiny-grey transition hover:bg-gray-50 hover:text-destiny-orange"
           >
             {item.label}
           </Link>
@@ -430,9 +429,6 @@ export default function ChurchHeader() {
                 </button>
               )}
 
-              {/* Dark / light theme switch — available site-wide from the header */}
-              {!isAdmin && <ThemeToggle />}
-
               {isAdmin ? (
                 <Link
                   href="/"
@@ -486,10 +482,10 @@ export default function ChurchHeader() {
               opacity: mobileOpen ? 1 : 0,
             }}
           >
-            <div className="mt-2 rounded-2xl bg-white p-3 shadow-xl dark:border dark:border-white/10 dark:bg-[#171b21] dark:shadow-black/50">
+            <div className="mt-2 rounded-2xl bg-white p-3 shadow-xl">
               {/* Sermons sub-toggle on mobile */}
               {pathname.startsWith("/sermons") && (
-                <div className="mb-2 flex rounded-xl border border-black/8 bg-black/5 p-1 dark:border-white/10 dark:bg-white/5">
+                <div className="mb-2 flex rounded-xl border border-black/8 bg-black/5 p-1">
                   {[
                     { label: "Sermons", href: "/sermons" },
                     { label: "Guest Speakers", href: "/sermons/guest-speakers" },
@@ -501,7 +497,7 @@ export default function ChurchHeader() {
                         href={tab.href}
                         onClick={() => setMobileOpen(false)}
                         className={`flex-1 rounded-lg px-3 py-2 text-center text-sm font-bold transition ${
-                          active ? "bg-white text-destiny-grey shadow-sm dark:bg-white/10 dark:text-white" : "text-destiny-grey/50 hover:text-destiny-grey dark:text-white/50 dark:hover:text-white"
+                          active ? "bg-white text-destiny-grey shadow-sm" : "text-destiny-grey/50 hover:text-destiny-grey"
                         }`}
                       >
                         {tab.label}
@@ -517,19 +513,14 @@ export default function ChurchHeader() {
                   key={item.href}
                   href={item.href}
                   onClick={() => setMobileOpen(false)}
-                  className="block rounded-xl px-3 py-2.5 text-sm font-medium text-destiny-grey transition hover:bg-gray-50 hover:text-destiny-orange dark:text-white/90 dark:hover:bg-white/5 dark:hover:text-destiny-orange"
+                  className="block rounded-xl px-3 py-2.5 text-sm font-medium text-destiny-grey transition hover:bg-gray-50 hover:text-destiny-orange"
                 >
                   {item.label}
                 </Link>
               ))}
 
-              {/* Theme switch */}
-              <div className="mt-1 border-t border-gray-100 pt-1 dark:border-white/10">
-                <ThemeToggle variant="row" />
-              </div>
-
               {/* New Here CTA at bottom */}
-              <div className="mt-2 border-t border-gray-100 pt-2 dark:border-white/10">
+              <div className="mt-2 border-t border-gray-100 pt-2">
                 <Link
                   href="/new-here"
                   onClick={() => setMobileOpen(false)}

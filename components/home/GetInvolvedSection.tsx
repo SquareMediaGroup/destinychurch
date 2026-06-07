@@ -23,12 +23,12 @@ const cards = [
 
 export default function GetInvolvedSection() {
   return (
-    <section className="bg-white pt-10 pb-16 sm:pt-16 sm:pb-24 dark:bg-[#101316]">
+    <section className="bg-white pt-10 pb-16 sm:pt-16 sm:pb-24">
       <div className="mx-auto max-w-7xl px-4 lg:px-8">
         <div className="grid gap-8 md:grid-cols-2">
           {cards.map((card, i) => (
             <AnimateIn key={card.title} delay={i * 100}>
-              <div className="group overflow-hidden rounded-2xl bg-white shadow-lg dark:border dark:border-white/8 dark:bg-[#171b21] dark:shadow-[0_4px_30px_rgba(0,0,0,0.5)] dark:transition-colors dark:hover:border-destiny-orange/30">
+              <div className="group overflow-hidden rounded-2xl bg-white shadow-lg">
                 {/* Image */}
                 <div className="relative h-56 w-full overflow-hidden sm:h-72 md:h-[22.5rem]">
                   <Image
@@ -46,7 +46,7 @@ export default function GetInvolvedSection() {
                   <h3 className="mb-3 text-xl font-black text-destiny-orange">
                     {card.title}
                   </h3>
-                  <p className="mb-5 text-sm leading-relaxed text-destiny-grey/70 dark:text-white/60">
+                  <p className="mb-5 text-sm leading-relaxed text-destiny-grey/70">
                     {card.description}
                   </p>
                   <Link

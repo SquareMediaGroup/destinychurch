@@ -66,12 +66,7 @@ export default async function SermonsPage() {
 
             <div className="relative flex flex-col items-center justify-center px-4 py-24 text-center sm:py-32">
               <AnimateIn>
-                <span className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-1.5 text-[11px] font-bold uppercase tracking-[0.3em] text-white/80 backdrop-blur">
-                  <span className="h-1.5 w-1.5 rounded-full bg-destiny-orange" />
-                  {show?.author ?? "DCTV Podcast"}
-                </span>
-
-                <h1 className="mt-5 text-5xl font-black text-white md:text-6xl lg:text-7xl">
+                <h1 className="text-5xl font-black text-white md:text-6xl lg:text-7xl">
                   Sermons
                 </h1>
 

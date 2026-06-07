@@ -11,7 +11,6 @@ const ALPHA_HERO_VIDEO =
 import WorshipWithUsSection from "@/components/home/WorshipWithUsSection";
 import AlphaSignupModal from "@/components/AlphaSignupModal";
 import AlphaTopics from "@/components/alpha/AlphaTopics";
-import AlphaAskAnything from "@/components/alpha/AlphaAskAnything";
 
 interface AlphaEvent {
   id: string;
@@ -401,9 +400,6 @@ export default function AlphaPage() {
 
       {/* Interactive Topics */}
       <AlphaTopics />
-
-      {/* Ask Anything */}
-      <AlphaAskAnything />
 
       {/* Youth Alpha */}
       <section style={{ background: "linear-gradient(135deg, #363f48 0%, #242e37 100%)" }} className="py-16">

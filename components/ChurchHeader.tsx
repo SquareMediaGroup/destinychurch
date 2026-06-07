@@ -5,7 +5,6 @@ import Link from "next/link";
 import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { usePathname } from "next/navigation";
 import { useBanner } from "@/contexts/BannerContext";
-import GlobalSearch from "./GlobalSearch";
 
 const aboutDropdown = [
   { href: "/about", label: "Our Mission" },
@@ -80,12 +79,10 @@ export default function ChurchHeader() {
   const [scrolled, setScrolled] = useState(false);
   const [hidden, setHidden] = useState(false);
   const [mounted, setMounted] = useState(false);
-  const [searchOpen, setSearchOpen] = useState(false);
   const [progress, setProgress] = useState(0);
   const [alphaActive, setAlphaActive] = useState(false);
   const [youtubeQuotaExceeded, setYoutubeQuotaExceeded] = useState(false);
   const headerRef = useRef<HTMLElement>(null);
-  const bridgeInputRef = useRef<HTMLInputElement>(null);
   const lastScrollY = useRef(0);
   const hoverTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const rafId = useRef<number | null>(null);
@@ -110,7 +107,6 @@ export default function ChurchHeader() {
       if (y > MORPH_DISTANCE && y > lastScrollY.current) {
         setHidden(true);
         setOpenDropdown(null);
-        setSearchOpen(false);
       } else {
         setHidden(false);
       }
@@ -135,16 +131,6 @@ export default function ChurchHeader() {
     };
     window.addEventListener("mousemove", handleMouseMove, { passive: true });
     return () => window.removeEventListener("mousemove", handleMouseMove);
-  }, []);
-
-  useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (headerRef.current && !headerRef.current.contains(e.target as Node)) {
-        setSearchOpen(false);
-      }
-    };
-    document.addEventListener("click", handleClickOutside);
-    return () => document.removeEventListener("click", handleClickOutside);
   }, []);
 
   useEffect(() => {
@@ -220,16 +206,6 @@ export default function ChurchHeader() {
 
   return (
     <>
-      {/* iOS keyboard bridge — always in DOM so focus() can be called synchronously in click handlers */}
-      <input
-        ref={bridgeInputRef}
-        type="text"
-        aria-hidden="true"
-        tabIndex={-1}
-        readOnly
-        style={{ position: "fixed", opacity: 0, width: 0, height: 0, top: 0, left: 0, pointerEvents: "none" }}
-      />
-
       <header
         ref={headerRef}
         className={`${isHome ? "fixed left-0 right-0" : "sticky"} z-50 ${bannerOffset}`}
@@ -350,49 +326,8 @@ export default function ChurchHeader() {
               )}
             </nav>
 
-            {/* Right: search icon + CTA + mobile toggle */}
+            {/* Right: CTA + mobile toggle */}
             <div className="flex items-center gap-2">
-              {/* Smart Search icon — all screen sizes, non-admin */}
-              {!isAdmin && (
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    if (!searchOpen) {
-                      bridgeInputRef.current?.focus(); // synchronous — iOS keyboard appears
-                    }
-                    setSearchOpen((v) => !v);
-                    setMobileOpen(false);
-                  }}
-                  className={`relative flex items-center justify-center rounded-full p-2 ${
-                    searchOpen
-                      ? "bg-white/10 text-destiny-orange"
-                      : "text-white/70 hover:bg-white/10 hover:text-white"
-                  }`}
-                  aria-label={searchOpen ? "Close Smart Search" : "Open Smart Search"}
-                >
-                  {searchOpen ? (
-                    <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                  ) : (
-                    <>
-                      <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
-                      </svg>
-                      {/* AI sparkle badge */}
-                      <svg
-                        className="absolute right-0.5 top-0.5 h-3 w-3 text-destiny-orange"
-                        fill="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" />
-                      </svg>
-                    </>
-                  )}
-                </button>
-              )}
-
               {isAdmin ? (
                 <Link
                   href="/"
@@ -411,7 +346,7 @@ export default function ChurchHeader() {
 
               <button
                 type="button"
-                onClick={() => { setMobileOpen(!mobileOpen); setSearchOpen(false); }}
+                onClick={() => { setMobileOpen(!mobileOpen); }}
                 aria-expanded={mobileOpen}
                 aria-label="Toggle navigation"
                 className="relative h-9 w-9 rounded-full text-white md:hidden"
@@ -424,19 +359,6 @@ export default function ChurchHeader() {
               </button>
             </div>
           </div>
-
-          {/* Global search panel — slides down below pill */}
-          {!isAdmin && (
-            <div
-              className="overflow-hidden transition-all duration-300 ease-in-out"
-              style={{
-                maxHeight: searchOpen ? "520px" : "0px",
-                opacity: searchOpen ? 1 : 0,
-              }}
-            >
-              <GlobalSearch open={searchOpen} onClose={() => setSearchOpen(false)} />
-            </div>
-          )}
 
           {/* Mobile menu */}
           <div

@@ -54,13 +54,16 @@ function Dropdown({
       onMouseEnter={onMouseEnter}
       onMouseLeave={onMouseLeave}
     >
-      <div className="min-w-[180px] rounded-2xl border border-black/5 bg-white p-2 shadow-xl">
+      <div
+        className="min-w-[180px] rounded-2xl border border-white/10 p-2 shadow-xl shadow-black/30 backdrop-blur-md"
+        style={{ backgroundColor: "rgba(54, 63, 72, 0.85)" }}
+      >
         {items.map((item) => (
           <Link
             key={item.label}
             href={item.href}
             onClick={onClose}
-            className="block rounded-xl px-4 py-2.5 text-sm font-medium text-destiny-grey transition hover:bg-gray-50 hover:text-destiny-orange"
+            className="block rounded-xl px-4 py-2.5 text-sm font-medium text-white/90 transition hover:bg-white/10 hover:text-destiny-orange"
           >
             {item.label}
           </Link>
@@ -368,21 +371,24 @@ export default function ChurchHeader() {
               opacity: mobileOpen ? 1 : 0,
             }}
           >
-            <div className="mt-2 rounded-2xl bg-white p-3 shadow-xl">
+            <div
+              className="mt-2 rounded-2xl border border-white/10 p-3 shadow-xl shadow-black/30 backdrop-blur-md"
+              style={{ backgroundColor: "rgba(54, 63, 72, 0.85)" }}
+            >
               {/* Flat nav links */}
               {mobileNavItems.map((item) => (
                 <Link
                   key={item.href}
                   href={item.href}
                   onClick={() => setMobileOpen(false)}
-                  className="block rounded-xl px-3 py-2.5 text-sm font-medium text-destiny-grey transition hover:bg-gray-50 hover:text-destiny-orange"
+                  className="block rounded-xl px-3 py-2.5 text-sm font-medium text-white/90 transition hover:bg-white/10 hover:text-destiny-orange"
                 >
                   {item.label}
                 </Link>
               ))}
 
               {/* New Here CTA at bottom */}
-              <div className="mt-2 border-t border-gray-100 pt-2">
+              <div className="mt-2 border-t border-white/10 pt-2">
                 <Link
                   href="/new-here"
                   onClick={() => setMobileOpen(false)}

@@ -28,7 +28,15 @@ export default function LatestSermonSection({
     <div className="px-4 py-8 lg:px-8">
      <ScrollSpeedGlow />
      <div className="glowing-gradient-border rounded-3xl">
-      <section className="relative w-full overflow-hidden rounded-3xl">
+      {/* Sweeping gradient glow — composited transform rotation (see globals.css).
+          Two clipped layers: a crisp 2px rim and a soft outer halo. */}
+      <span className="glow-rim" aria-hidden="true">
+        <span className="glow-rotor" />
+      </span>
+      <span className="glow-halo" aria-hidden="true">
+        <span className="glow-rotor" />
+      </span>
+      <section className="relative z-[1] w-full overflow-hidden rounded-3xl">
         {/* Blurred thumbnail background */}
         <div
           className="absolute inset-0 scale-110 bg-cover bg-center blur-sm"

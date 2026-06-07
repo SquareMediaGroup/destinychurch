@@ -46,6 +46,8 @@ export function PodcastPlayerProvider({
   const [duration, setDuration] = useState(0);
   const [speedIdx, setSpeedIdx] = useState(0);
   const [scrubbing, setScrubbing] = useState(false);
+  const [expanded, setExpanded] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   const toggle = useCallback(
     (ep: PodcastEpisode) => {
@@ -126,6 +128,47 @@ export function PodcastPlayerProvider({
     if (audioRef.current) audioRef.current.playbackRate = SPEEDS[next];
   };
 
+  // Share the episode — Buzzsprout's episode page is the .mp3 enclosure minus ".mp3".
+  const handleShare = async () => {
+    if (!current) return;
+    const url = current.audioUrl.replace(/\.mp3(\?.*)?$/, "");
+    const data = {
+      title: current.title,
+      text: `${current.title} — DCTV Podcast`,
+      url,
+    };
+    try {
+      if (navigator.share) {
+        await navigator.share(data);
+        return;
+      }
+    } catch {
+      return; // user dismissed the share sheet
+    }
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      /* clipboard blocked — nothing else to do */
+    }
+  };
+
+  // Tapping the compact bar opens the full-screen view — mobile only.
+  const openOnMobile = () => {
+    if (window.matchMedia("(max-width: 639px)").matches) setExpanded(true);
+  };
+
+  // Lock background scroll while the full-screen player is open.
+  useEffect(() => {
+    if (!expanded) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [expanded]);
+
   const progress = duration ? currentTime / duration : 0;
 
   return (
@@ -148,9 +191,22 @@ export function PodcastPlayerProvider({
       {/* Docked player bar */}
       {current && (
         <div className="pointer-events-none fixed inset-x-0 bottom-0 z-50 px-3 pb-3 sm:px-5 sm:pb-5">
-          <div className="pointer-events-auto mx-auto flex max-w-5xl items-center gap-3 rounded-2xl border border-white/10 bg-[#141210]/85 px-3 py-2.5 shadow-2xl shadow-black/60 backdrop-blur-xl sm:gap-4 sm:px-4 sm:py-3">
-            {/* Artwork */}
-            <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-lg sm:h-14 sm:w-14">
+          <div className="pointer-events-auto relative mx-auto flex max-w-5xl items-center gap-3 overflow-hidden rounded-2xl border border-white/10 bg-[#141210]/85 px-3 py-2.5 shadow-2xl shadow-black/60 backdrop-blur-xl sm:gap-4 sm:px-4 sm:py-3">
+            {/* Mobile-only progress line along the bottom edge */}
+            <div className="absolute inset-x-0 bottom-0 h-[3px] bg-white/10 sm:hidden">
+              <div
+                className="h-full bg-destiny-orange"
+                style={{ width: `${progress * 100}%` }}
+              />
+            </div>
+
+            {/* Artwork — tap to expand on mobile */}
+            <button
+              type="button"
+              onClick={openOnMobile}
+              aria-label="Open full player"
+              className="relative h-12 w-12 shrink-0 overflow-hidden rounded-lg sm:h-14 sm:w-14 sm:cursor-default"
+            >
               <Image
                 src={current.image}
                 alt=""
@@ -158,15 +214,20 @@ export function PodcastPlayerProvider({
                 sizes="56px"
                 className="object-cover"
               />
-            </div>
+            </button>
 
             {/* Title + scrubber */}
             <div className="min-w-0 flex-1">
-              <p className="truncate text-[13px] font-bold leading-tight text-white sm:text-sm">
+              <button
+                type="button"
+                onClick={openOnMobile}
+                className="block w-full truncate text-left text-[13px] font-bold leading-tight text-white sm:cursor-default sm:text-sm"
+              >
                 {current.title}
-              </p>
-              <div className="mt-1.5 flex items-center gap-2">
-                <span className="hidden w-9 shrink-0 text-right font-mono text-[10px] tabular-nums text-white/40 sm:inline">
+              </button>
+              {/* Desktop scrubber (mobile uses the bottom progress line + tap-to-expand) */}
+              <div className="mt-1.5 hidden items-center gap-2 sm:flex">
+                <span className="w-9 shrink-0 text-right font-mono text-[10px] tabular-nums text-white/40">
                   {formatClock(currentTime)}
                 </span>
                 <Scrubber
@@ -178,7 +239,7 @@ export function PodcastPlayerProvider({
                     seekTo(f);
                   }}
                 />
-                <span className="hidden w-9 shrink-0 font-mono text-[10px] tabular-nums text-white/40 sm:inline">
+                <span className="w-9 shrink-0 font-mono text-[10px] tabular-nums text-white/40">
                   {formatClock(duration)}
                 </span>
               </div>
@@ -220,6 +281,141 @@ export function PodcastPlayerProvider({
               >
                 {SPEEDS[speedIdx]}×
               </button>
+              <button
+                onClick={handleShare}
+                className="hidden h-9 w-9 items-center justify-center rounded-full text-white/60 transition hover:bg-white/10 hover:text-white sm:flex"
+                aria-label="Share episode"
+              >
+                <span className="material-symbols-rounded text-[20px]">
+                  {copied ? "check" : "ios_share"}
+                </span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Full-screen player (mobile) — Spotify-style expanded view */}
+      {current && (
+        <div
+          className={`fixed inset-0 z-[60] transition-transform duration-300 ease-out sm:hidden ${
+            expanded ? "translate-y-0" : "pointer-events-none translate-y-full"
+          }`}
+          role="dialog"
+          aria-modal="true"
+          aria-label="Now playing"
+        >
+          <div className="flex h-full flex-col bg-gradient-to-b from-[#2a1d12] via-[#15100c] to-black px-6 pb-12 pt-[max(1.25rem,env(safe-area-inset-top))] text-white">
+            {/* Top bar */}
+            <div className="flex items-center justify-between">
+              <button
+                onClick={() => setExpanded(false)}
+                aria-label="Collapse player"
+                className="flex h-10 w-10 items-center justify-center rounded-full text-white/80 transition hover:bg-white/10 hover:text-white"
+              >
+                <span className="material-symbols-rounded text-3xl">
+                  keyboard_arrow_down
+                </span>
+              </button>
+              <span className="text-[11px] font-bold uppercase tracking-[0.3em] text-white/50">
+                Now Playing
+              </span>
+              <span className="h-10 w-10" aria-hidden />
+            </div>
+
+            {/* Artwork */}
+            <div className="flex flex-1 items-center justify-center py-6">
+              <div className="relative aspect-square w-full max-w-[20rem] overflow-hidden rounded-3xl shadow-2xl shadow-black/60">
+                <Image
+                  src={current.image}
+                  alt=""
+                  fill
+                  sizes="320px"
+                  className="object-cover"
+                />
+              </div>
+            </div>
+
+            {/* Title + speaker + share */}
+            <div className="flex items-start justify-between gap-4">
+              <div className="min-w-0">
+                <h2 className="text-xl font-black leading-snug text-white line-clamp-2">
+                  {current.title}
+                </h2>
+                <p className="mt-1 truncate text-sm text-white/50">
+                  {current.speaker ?? "Destiny Church Tees Valley"}
+                </p>
+              </div>
+              <button
+                onClick={handleShare}
+                aria-label="Share episode"
+                className="mt-1 flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-white/70 transition hover:bg-white/10 hover:text-white"
+              >
+                <span className="material-symbols-rounded text-[22px]">
+                  {copied ? "check" : "ios_share"}
+                </span>
+              </button>
+            </div>
+
+            {/* Scrubber */}
+            <div className="mt-6">
+              <Scrubber
+                progress={progress}
+                onScrubStart={() => setScrubbing(true)}
+                onScrub={(f) => setCurrentTime(f * (duration || 0))}
+                onScrubEnd={(f) => {
+                  setScrubbing(false);
+                  seekTo(f);
+                }}
+              />
+              <div className="mt-1 flex justify-between font-mono text-[11px] tabular-nums text-white/45">
+                <span>{formatClock(currentTime)}</span>
+                <span>{formatClock(duration)}</span>
+              </div>
+            </div>
+
+            {/* Transport */}
+            <div className="mt-6 flex items-center justify-between">
+              <button
+                onClick={cycleSpeed}
+                aria-label="Playback speed"
+                className="flex h-11 min-w-[52px] items-center justify-center rounded-full border border-white/15 px-3 font-mono text-sm font-bold text-white/70 transition hover:border-white/40 hover:text-white"
+              >
+                {SPEEDS[speedIdx]}×
+              </button>
+
+              <div className="flex items-center gap-7">
+                <button
+                  onClick={() => seekBy(-15)}
+                  aria-label="Rewind 15 seconds"
+                  className="text-white/85 transition hover:text-white"
+                >
+                  <span className="material-symbols-rounded text-[34px]">replay</span>
+                </button>
+                <button
+                  onClick={() => current && toggle(current)}
+                  aria-label={isPlaying ? "Pause" : "Play"}
+                  className="flex h-16 w-16 items-center justify-center rounded-full bg-destiny-orange text-white shadow-lg shadow-destiny-orange/30 transition hover:brightness-110"
+                >
+                  <span
+                    className="material-symbols-rounded text-4xl"
+                    style={{ fontVariationSettings: '"FILL" 1' }}
+                  >
+                    {isPlaying ? "pause" : "play_arrow"}
+                  </span>
+                </button>
+                <button
+                  onClick={() => seekBy(30)}
+                  aria-label="Forward 30 seconds"
+                  className="text-white/85 transition hover:text-white"
+                >
+                  <span className="material-symbols-rounded text-[34px]">
+                    forward_media
+                  </span>
+                </button>
+              </div>
+
+              <span className="h-11 w-[52px]" aria-hidden />
             </div>
           </div>
         </div>

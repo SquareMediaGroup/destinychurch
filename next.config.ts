@@ -68,6 +68,10 @@ const nextConfig: NextConfig = {
         protocol: "https",
         hostname: "i.ytimg.com",
       },
+      {
+        protocol: "https",
+        hostname: "storage.buzzsprout.com",
+      },
 {
         protocol: "https",
         hostname: "storage.googleapis.com",

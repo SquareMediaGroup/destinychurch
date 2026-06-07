@@ -155,10 +155,10 @@ export default function LinksPage() {
               Take your
             </span>
             <span
-              className="links-reveal block font-[family-name:var(--font-anton)] text-[19vw] uppercase tracking-tight text-destiny-grey sm:text-[10rem] lg:text-[12rem]"
+              className="links-reveal mt-2 block font-[family-name:var(--font-anton)] text-[18vw] uppercase tracking-tight text-destiny-grey sm:mt-3 sm:text-[9.5rem] lg:text-[11.5rem]"
               style={{ animationDelay: "0.12s" }}
             >
-              Next Step
+              Next Steps
             </span>
           </h1>
 

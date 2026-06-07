@@ -45,11 +45,17 @@ function Dropdown({
 }) {
   return (
     <div
-      className="absolute left-1/2 top-full z-50 mt-2 -translate-x-1/2"
+      className="absolute left-1/2 top-full z-50 mt-2"
       style={{
         opacity: open ? 1 : 0,
+        transform: open
+          ? "translateX(-50%) translateY(0) scale(1)"
+          : "translateX(-50%) translateY(-10px) scale(0.9)",
+        transformOrigin: "top center",
         pointerEvents: open ? "auto" : "none",
-        transition: open ? "opacity 0.15s ease" : "opacity 1.2s ease",
+        transition: open
+          ? "opacity 0.25s ease, transform 0.45s cubic-bezier(0.34, 1.56, 0.64, 1)"
+          : "opacity 0.5s ease, transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
       }}
       onMouseEnter={onMouseEnter}
       onMouseLeave={onMouseLeave}
@@ -58,12 +64,17 @@ function Dropdown({
         className="min-w-[180px] rounded-2xl border border-white/10 p-2 shadow-xl shadow-black/30 backdrop-blur-md"
         style={{ backgroundColor: "rgba(54, 63, 72, 0.85)" }}
       >
-        {items.map((item) => (
+        {items.map((item, i) => (
           <Link
             key={item.label}
             href={item.href}
             onClick={onClose}
-            className="block rounded-xl px-4 py-2.5 text-sm font-medium text-white/90 transition hover:bg-white/10 hover:text-destiny-orange"
+            className="block rounded-xl px-4 py-2.5 text-sm font-medium text-white/90 transition-colors duration-200 hover:bg-white/10 hover:text-destiny-orange"
+            style={{
+              opacity: open ? 1 : 0,
+              transform: open ? "translateY(0)" : "translateY(-8px)",
+              transition: `opacity 0.3s ease ${open ? i * 0.04 + 0.06 : 0}s, transform 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) ${open ? i * 0.04 + 0.06 : 0}s`,
+            }}
           >
             {item.label}
           </Link>

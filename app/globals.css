@@ -188,13 +188,13 @@ h3 {
 }
 
 .glow-halo {
-  inset: -18px;
-  border-radius: calc(1.5rem + 18px);
+  inset: -22px;
+  border-radius: calc(1.5rem + 22px);
   z-index: -1;
-  opacity: 0.6;
+  opacity: 0.75;
   /* Feather the outer edge so the overflow clip never shows a hard line. */
-  -webkit-mask: radial-gradient(closest-side, #000 60%, transparent 100%);
-          mask: radial-gradient(closest-side, #000 60%, transparent 100%);
+  -webkit-mask: radial-gradient(closest-side, #000 72%, transparent 100%);
+          mask: radial-gradient(closest-side, #000 72%, transparent 100%);
 }
 
 /* Oversized square so a full rotation never reveals an uncovered corner

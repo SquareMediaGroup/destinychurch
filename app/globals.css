@@ -146,34 +146,50 @@ h3 {
   to   { opacity: 1; transform: translateY(0); }
 }
 
-/* Animated angle for the conic gradient. @property lets us interpolate the
-   angle so the colors actually travel around the border instead of the whole
-   element rotating in place. Supported in Chrome/Edge 85+, Safari 16.4+,
-   Firefox 128+. Older browsers fall back to a static gradient. */
+/* Registered custom properties so the angle and the two arc colours can be
+   interpolated (plain custom props can't be animated). @property lets the
+   colours actually travel around the border instead of the whole element
+   spinning in place. inherits:true lets the ::before/::after pseudo-elements
+   pick up the values the parent animates, so one keyframe set on the element
+   drives both the ring and the glow. Supported in Chrome/Edge 85+, Safari
+   16.4+, Firefox 128+; older browsers fall back to a static gradient. */
 @property --grad-angle {
   syntax: "<angle>";
   initial-value: 0deg;
-  inherits: false;
+  inherits: true;
+}
+@property --glow-c1 {
+  syntax: "<color>";
+  initial-value: #f58021;
+  inherits: true;
+}
+@property --glow-c2 {
+  syntax: "<color>";
+  initial-value: #fd0000;
+  inherits: true;
 }
 
 .glowing-gradient-border {
   position: relative;
   isolation: isolate;
-  --grad-angle: 0deg;
 }
 
+/* Gemini / Google AI Mode style: not a full rainbow ring, but a single soft
+   arc of light (~200deg lit, the rest transparent) that sweeps around the
+   perimeter. The two live colours crossfade through the brand palette as it
+   travels, so the hue is always drifting — that's what makes it feel alive
+   rather than like a spinning rainbow wheel. */
 .glowing-gradient-border::before,
 .glowing-gradient-border::after {
   content: "";
   position: absolute;
   background: conic-gradient(
     from var(--grad-angle),
-    #f58021,
-    #fd0000,
-    #8106b1,
-    #0857ba,
-    #028002,
-    #f58021
+    transparent 0deg,
+    var(--glow-c1) 50deg,
+    var(--glow-c2) 150deg,
+    transparent 200deg,
+    transparent 360deg
   );
   pointer-events: none;
 }
@@ -190,15 +206,21 @@ h3 {
 }
 
 .glowing-gradient-border::after {
-  inset: -14px;
-  border-radius: calc(1.5rem + 14px);
-  filter: blur(22px);
-  opacity: 0.55;
+  inset: -16px;
+  border-radius: calc(1.5rem + 16px);
+  filter: blur(26px);
+  opacity: 0.6;
   z-index: -1;
 }
 
+/* Arc sweeps once every 8s; the palette crossfade runs slower (24s) so within
+   any single pass the two colours are adjacent on the wheel (a clean two-tone
+   blend) while the overall hue drifts gently through the brand colours. */
 .glowing-gradient-border {
-  animation: grad-rotate 9.6s linear infinite;
+  animation:
+    grad-rotate 8s linear infinite,
+    glow-hue-1 24s linear infinite,
+    glow-hue-2 24s linear infinite;
 }
 
 /* Drop the blurred outer glow on mobile — too expensive on low-end devices. */
@@ -210,6 +232,26 @@ h3 {
 
 @keyframes grad-rotate {
   to { --grad-angle: 360deg; }
+}
+
+/* The two arc colours walk the brand palette one step apart, so the arc is
+   always a gradient between two neighbouring hues (orange→red, red→purple, …)
+   — the same trick Gemini uses with Google's four brand colours. */
+@keyframes glow-hue-1 {
+  0%   { --glow-c1: #f58021; }
+  20%  { --glow-c1: #fd0000; }
+  40%  { --glow-c1: #8106b1; }
+  60%  { --glow-c1: #0857ba; }
+  80%  { --glow-c1: #028002; }
+  100% { --glow-c1: #f58021; }
+}
+@keyframes glow-hue-2 {
+  0%   { --glow-c2: #fd0000; }
+  20%  { --glow-c2: #8106b1; }
+  40%  { --glow-c2: #0857ba; }
+  60%  { --glow-c2: #028002; }
+  80%  { --glow-c2: #f58021; }
+  100% { --glow-c2: #fd0000; }
 }
 
 @keyframes border-rotate {

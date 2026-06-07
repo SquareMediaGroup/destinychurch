@@ -148,91 +148,11 @@ h3 {
 
 /* Animatable angle for the Smart Search pill's rotating conic border
    (.search-glow). inherits:true so the pseudo-elements pick up the value the
-   parent animates. The sermon card no longer uses this — it spins a layer with
-   `transform` instead (see .glow-rotor below) for GPU compositing. */
+   parent animates. */
 @property --grad-angle {
   syntax: "<angle>";
   initial-value: 0deg;
   inherits: true;
-}
-
-.glowing-gradient-border {
-  position: relative;
-  isolation: isolate;
-}
-
-/* Gemini / Google AI Mode style: not a full rainbow ring, but a single soft
-   arc of light that sweeps around the perimeter, its hue drifting through the
-   brand palette as it travels — alive, not a spinning rainbow wheel.
-
-   Performance: the motion is a GPU-composited `transform: rotate` on an
-   oversized square layer (.glow-rotor), NOT an animated conic angle. Animating
-   the gradient angle (or its colour stops) forces a full repaint — and a
-   re-blur — every frame, which is what made the old version stutter. Here the
-   conic is painted (and the halo blurred) exactly once, then just spun.
-
-   Two clipped layers: .glow-rim is the crisp 2px rim, .glow-halo the soft
-   outer aura. The opaque <section> sits on top (z-1) covering the centre, so
-   only the rim and halo show around the card. */
-.glow-rim,
-.glow-halo {
-  position: absolute;
-  pointer-events: none;
-  overflow: hidden;
-}
-
-.glow-rim {
-  inset: -2px;
-  border-radius: calc(1.5rem + 2px);
-  z-index: 0;
-}
-
-.glow-halo {
-  inset: -22px;
-  border-radius: calc(1.5rem + 22px);
-  z-index: -1;
-  opacity: 0.75;
-  /* Feather the outer edge so the overflow clip never shows a hard line. */
-  -webkit-mask: radial-gradient(closest-side, #000 72%, transparent 100%);
-          mask: radial-gradient(closest-side, #000 72%, transparent 100%);
-}
-
-/* Oversized square so a full rotation never reveals an uncovered corner
-   (side = 150% of the card width comfortably exceeds the card's diagonal). */
-.glow-rotor {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  width: 150%;
-  aspect-ratio: 1;
-  transform: translate(-50%, -50%) rotate(0deg);
-  background: conic-gradient(
-    from 0deg,
-    transparent 0deg,
-    #f58021 36deg,
-    #fd0000 78deg,
-    #8106b1 120deg,
-    #0857ba 162deg,
-    #028002 204deg,
-    transparent 240deg
-  );
-  animation: glow-spin 8s linear infinite;
-  will-change: transform;
-}
-
-.glow-halo .glow-rotor {
-  filter: blur(26px);
-}
-
-@keyframes glow-spin {
-  to { transform: translate(-50%, -50%) rotate(360deg); }
-}
-
-/* Drop the blurred outer glow on mobile — too expensive on low-end devices. */
-@media (max-width: 768px) {
-  .glow-halo {
-    display: none;
-  }
 }
 
 @keyframes grad-rotate {
@@ -314,20 +234,8 @@ h3 {
   .ai-active-row::before { animation: none; }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .glow-rotor {
-    animation: none;
-  }
-}
-
-/* Paused when off-screen (toggled by ScrollSpeedGlow via IntersectionObserver). */
-.glowing-gradient-border.is-offscreen .glow-rotor {
-  animation-play-state: paused;
-}
-
 /* Pill-shaped rotating gradient border — used by Smart Search input while
-   the API request is in flight. Same conic gradient as the sermons card,
-   re-shaped for a rounded-full pill, and only renders while .is-loading. */
+   the API request is in flight. Renders only while .is-loading. */
 .search-glow {
   position: relative;
   isolation: isolate;

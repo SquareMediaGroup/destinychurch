@@ -7,6 +7,7 @@ import { SermonJumpProvider } from "@/components/sermons/SermonJumpContext";
 import SkipToSermonButton from "@/components/sermons/SkipToSermonButton";
 import SermonDescription from "@/components/sermons/SermonDescription";
 import ShareButton from "@/components/sermons/ShareButton";
+import WatchOnYouTubeBand from "@/components/sermons/WatchOnYouTubeBand";
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -213,6 +214,9 @@ export default async function SermonPage({ params }: PageProps) {
             </Link>
           ))}
         </div>
+
+        {/* Watch more on YouTube */}
+        <WatchOnYouTubeBand eyebrow="Want to watch more sermons" />
       </div>
     </main>
     </>

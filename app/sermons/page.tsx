@@ -5,6 +5,7 @@ import { getLatestVisibleVideo } from "@/lib/sermons";
 import { PodcastPlayerProvider } from "@/components/sermons/podcast/PodcastPlayerProvider";
 import PodcastHero from "@/components/sermons/podcast/PodcastHero";
 import EpisodeList from "@/components/sermons/podcast/EpisodeList";
+import WatchOnYouTubeBand from "@/components/sermons/WatchOnYouTubeBand";
 import AnimateIn from "@/components/AnimateIn";
 
 export const metadata: Metadata = {
@@ -22,7 +23,6 @@ export const metadata: Metadata = {
 
 export const revalidate = 1800;
 
-const YOUTUBE_CHANNEL_URL = "https://www.youtube.com/@DestinyOnlineChurch";
 const SPOTIFY_PODCAST_URL = "https://open.spotify.com/show/1nj6U60XiQExt8l55E2p0Q";
 const APPLE_PODCAST_URL =
   "https://podcasts.apple.com/gb/podcast/destiny-church-tees-valley/id1531676632";
@@ -127,42 +127,7 @@ export default async function SermonsPage() {
 
         {/* ── YouTube redirect band ────────────────────────────── */}
         <section className="relative mx-auto mt-24 max-w-6xl px-5 sm:mt-32 lg:px-8">
-          <div className="relative overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-[#1a1714] to-[#0f0d0c] px-7 py-12 sm:px-12 sm:py-16">
-            <div
-              aria-hidden
-              className="pointer-events-none absolute -right-20 -top-20 h-72 w-72 rounded-full"
-              style={{ background: "radial-gradient(circle, rgba(253,0,0,0.18), transparent 70%)" }}
-            />
-            <div className="relative flex flex-col items-start justify-between gap-8 lg:flex-row lg:items-center">
-              <div className="max-w-xl">
-                <p className="text-xs font-bold uppercase tracking-[0.3em] text-white/40">
-                  Prefer to watch?
-                </p>
-                <h2
-                  className="mt-3 text-3xl font-black leading-tight text-white sm:text-4xl"
-                  style={{ fontFamily: "var(--font-heading)" }}
-                >
-                  Every sermon, on the big screen.
-                </h2>
-                <p className="mt-4 text-[15px] leading-relaxed text-white/55">
-                  Our full back-catalogue of services lives on YouTube — worship,
-                  testimonies and the full message, all in one place.
-                </p>
-              </div>
-
-              <a
-                href={YOUTUBE_CHANNEL_URL}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex shrink-0 items-center gap-3 rounded-full bg-white px-8 py-4 text-sm font-bold text-[#0c0a09] shadow-xl transition hover:scale-[1.03]"
-              >
-                <svg viewBox="0 0 24 24" className="h-6 w-6 text-[#FF0000]" fill="currentColor" aria-hidden>
-                  <path d="M23.5 6.2a3.02 3.02 0 0 0-2.12-2.14C19.5 3.55 12 3.55 12 3.55s-7.5 0-9.38.51A3.02 3.02 0 0 0 .5 6.2 31.6 31.6 0 0 0 0 12a31.6 31.6 0 0 0 .5 5.8 3.02 3.02 0 0 0 2.12 2.14c1.88.51 9.38.51 9.38.51s7.5 0 9.38-.51a3.02 3.02 0 0 0 2.12-2.14A31.6 31.6 0 0 0 24 12a31.6 31.6 0 0 0-.5-5.8ZM9.6 15.57V8.43L15.82 12l-6.22 3.57Z" />
-                </svg>
-                Watch on YouTube
-              </a>
-            </div>
-          </div>
+          <WatchOnYouTubeBand />
 
           <p className="mt-8 text-center text-sm text-white/40">
             Looking for a guest speaker?{" "}

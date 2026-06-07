@@ -26,8 +26,6 @@ export default function LatestSermonSection({
   const title = rawTitle.trim();
   const speaker = speakerParts.join("||").trim();
 
-  const shortDesc = video.description.replace(/\s+/g, " ").slice(0, 160).trim();
-
   const watchHref = quotaExceeded
     ? `https://www.youtube.com/watch?v=${video.id}`
     : `/sermons/${video.id}`;
@@ -76,14 +74,6 @@ export default function LatestSermonSection({
                     <span aria-hidden className="h-1 w-1 rounded-full bg-destiny-orange" />
                   )}
                   {date && <span>{date}</span>}
-                </p>
-              </AnimateIn>
-            )}
-
-            {shortDesc && (
-              <AnimateIn delay={180}>
-                <p className="mt-5 max-w-md text-sm leading-relaxed text-white/70 line-clamp-2 md:text-base">
-                  {shortDesc}
                 </p>
               </AnimateIn>
             )}

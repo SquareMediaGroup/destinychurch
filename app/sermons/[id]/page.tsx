@@ -1,13 +1,12 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getVideo, getAllVideos, formatDate } from "@/lib/youtube";
+import { getVideo, formatDate } from "@/lib/youtube";
 import SermonPlayer from "@/components/sermons/SermonPlayer";
 import { SermonJumpProvider } from "@/components/sermons/SermonJumpContext";
 import SkipToSermonButton from "@/components/sermons/SkipToSermonButton";
 import SermonDescription from "@/components/sermons/SermonDescription";
 import ShareButton from "@/components/sermons/ShareButton";
-import UpNextSection from "@/components/sermons/UpNextSection";
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -111,11 +110,12 @@ function stripSermonTimestamp(description: string): string {
 
 export default async function SermonPage({ params }: PageProps) {
   const { id } = await params;
-  const [video, related] = await Promise.all([getVideo(id), getAllVideos(20)]);
+  // Only the single by-id videos.list call (1 quota unit). We deliberately avoid
+  // getAllVideos here (search.list, ~100 units) now that Up Next is gone.
+  const video = await getVideo(id);
 
   if (!video) notFound();
 
-  const recommendations = related.filter((v) => v.id !== id);
   const date = formatDate(video.publishedAt);
   const sermonStart = parseSermonStart(video.description);
   const displayDescription = stripSermonTimestamp(video.description);
@@ -213,9 +213,6 @@ export default async function SermonPage({ params }: PageProps) {
             </Link>
           ))}
         </div>
-
-        {/* Up Next */}
-        <UpNextSection videos={recommendations} />
       </div>
     </main>
     </>

@@ -69,26 +69,16 @@ const steps: Step[] = [
 
 export default function LinksPage() {
   return (
-    <div className="links-page relative min-h-screen overflow-hidden bg-[#1c0f06] text-[#f5ece2]">
+    <div className="links-page relative min-h-screen overflow-hidden bg-white text-destiny-grey">
       {/* page-scoped styling */}
       <style
         dangerouslySetInnerHTML={{
           __html: `
             .links-page {
-              background-color: #1c0f06;
+              background-color: #ffffff;
               background-image:
-                radial-gradient(120% 80% at 85% -10%, rgba(245,128,33,0.22), transparent 60%),
-                radial-gradient(90% 70% at 0% 100%, rgba(245,128,33,0.10), transparent 55%),
-                linear-gradient(180deg, #2c1a0e 0%, #1c0f06 55%, #160b04 100%);
-            }
-            .links-grain::before {
-              content: "";
-              position: absolute;
-              inset: 0;
-              pointer-events: none;
-              opacity: 0.5;
-              mix-blend-mode: overlay;
-              background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.4'/%3E%3C/svg%3E");
+                radial-gradient(110% 60% at 100% -5%, rgba(245,128,33,0.08), transparent 60%),
+                radial-gradient(90% 50% at -5% 100%, rgba(8,87,186,0.05), transparent 55%);
             }
             @keyframes links-rise {
               from { opacity: 0; transform: translateY(28px); }
@@ -106,125 +96,119 @@ export default function LinksPage() {
               transform-origin: left;
               animation: links-draw 0.9s cubic-bezier(0.16, 1, 0.3, 1) forwards;
             }
-            .step-row .step-fill {
-              transform: scaleX(0);
-              transform-origin: left;
+            .step-card {
+              transition: transform 0.45s cubic-bezier(0.16,1,0.3,1),
+                          box-shadow 0.45s ease,
+                          border-color 0.45s ease;
+            }
+            .step-card .step-fill {
+              transform: scaleY(0);
+              transform-origin: bottom;
               transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
             }
-            .step-row:hover .step-fill,
-            .step-row:focus-visible .step-fill {
-              transform: scaleX(1);
+            .step-card:hover,
+            .step-card:focus-visible {
+              transform: translateY(-6px);
+              border-color: #f58021;
+              box-shadow: 0 24px 50px -20px rgba(245,128,33,0.45);
             }
-            .step-row .step-content { transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1); }
-            .step-row:hover .step-content,
-            .step-row:focus-visible .step-content { transform: translateX(20px); }
-            .step-row .step-num,
-            .step-row .step-title,
-            .step-row .step-blurb,
-            .step-row .step-arrow,
-            .step-row .step-icon { transition: color 0.45s ease, transform 0.5s cubic-bezier(0.16,1,0.3,1), opacity 0.45s ease; }
-            .step-row:hover .step-num,
-            .step-row:focus-visible .step-num,
-            .step-row:hover .step-title,
-            .step-row:focus-visible .step-title,
-            .step-row:hover .step-blurb,
-            .step-row:focus-visible .step-blurb,
-            .step-row:hover .step-icon,
-            .step-row:focus-visible .step-icon { color: #1c0f06; }
-            .step-row:hover .step-arrow,
-            .step-row:focus-visible .step-arrow { color: #1c0f06; transform: translateX(8px); }
-            .step-row:hover .step-icon,
-            .step-row:focus-visible .step-icon { opacity: 1; transform: rotate(-4deg) scale(1.05); }
+            .step-card:hover .step-fill,
+            .step-card:focus-visible .step-fill { transform: scaleY(1); }
+            .step-card .step-num,
+            .step-card .step-title,
+            .step-card .step-blurb,
+            .step-card .step-arrow,
+            .step-card .step-icon {
+              transition: color 0.4s ease, transform 0.5s cubic-bezier(0.16,1,0.3,1);
+            }
+            .step-card:hover .step-num,
+            .step-card:focus-visible .step-num { color: rgba(255,255,255,0.85); }
+            .step-card:hover .step-title,
+            .step-card:focus-visible .step-title,
+            .step-card:hover .step-icon,
+            .step-card:focus-visible .step-icon { color: #ffffff; }
+            .step-card:hover .step-blurb,
+            .step-card:focus-visible .step-blurb { color: rgba(255,255,255,0.85); }
+            .step-card:hover .step-arrow,
+            .step-card:focus-visible .step-arrow {
+              color: #ffffff;
+              transform: translateX(6px);
+            }
+            .step-card:hover .step-icon,
+            .step-card:focus-visible .step-icon { transform: rotate(-4deg) scale(1.05); }
             @media (prefers-reduced-motion: reduce) {
               .links-reveal, .links-rule { animation: none; opacity: 1; transform: none; }
-              .step-row * { transition: none !important; }
+              .step-card, .step-card * { transition: none !important; }
             }
           `,
         }}
       />
-      <div className="links-grain absolute inset-0" />
 
       <div className="relative mx-auto max-w-5xl px-5 pb-28 pt-16 sm:px-8 lg:pt-24">
         {/* Masthead */}
-        <header className="mb-14 lg:mb-20">
-          <div
-            className="links-reveal flex items-center gap-3 text-[0.7rem] font-bold uppercase tracking-[0.32em] text-destiny-orange"
-            style={{ animationDelay: "0.05s" }}
-          >
-            <span className="material-symbols-rounded text-base">north_east</span>
-            Destiny Church · Tees Valley
-          </div>
-
-          <h1 className="mt-6 leading-[0.92]">
+        <header className="mb-12 lg:mb-16">
+          <h1 className="leading-[0.92]">
             <span
-              className="links-reveal block font-[family-name:var(--font-playfair)] text-4xl italic text-[#f5ece2]/90 sm:text-5xl"
-              style={{ animationDelay: "0.12s" }}
+              className="links-reveal block font-[family-name:var(--font-playfair)] text-4xl italic text-destiny-grey/80 sm:text-5xl"
+              style={{ animationDelay: "0.05s" }}
             >
               Take your
             </span>
             <span
-              className="links-reveal block font-[family-name:var(--font-anton)] text-[19vw] uppercase tracking-tight text-white sm:text-[10rem] lg:text-[12rem]"
-              style={{ animationDelay: "0.18s" }}
+              className="links-reveal block font-[family-name:var(--font-anton)] text-[19vw] uppercase tracking-tight text-destiny-grey sm:text-[10rem] lg:text-[12rem]"
+              style={{ animationDelay: "0.12s" }}
             >
               Next Step
             </span>
           </h1>
 
-          <p
-            className="links-reveal mt-6 max-w-md text-base leading-relaxed text-[#f5ece2]/65"
-            style={{ animationDelay: "0.26s" }}
-          >
-            Six ways to go further with us. Whatever&apos;s next for you, start here
-            — pick where you&apos;re headed and we&apos;ll meet you there.
-          </p>
-
           <div
-            className="links-rule mt-10 h-px w-full bg-[#f5ece2]/15"
-            style={{ animationDelay: "0.3s" }}
+            className="links-rule mt-8 h-1 w-24 rounded-full bg-destiny-orange"
+            style={{ animationDelay: "0.2s" }}
           />
         </header>
 
-        {/* The index */}
+        {/* The grid — 2 across, 3 down */}
         <nav aria-label="Next steps">
-          <ul>
+          <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5">
             {steps.map((step, i) => (
               <li
                 key={step.href}
                 className="links-reveal"
-                style={{ animationDelay: `${0.36 + i * 0.07}s` }}
+                style={{ animationDelay: `${0.26 + i * 0.07}s` }}
               >
                 <Link
                   href={step.href}
-                  className="step-row group relative block overflow-hidden border-b border-[#f5ece2]/12 outline-none"
+                  className="step-card group relative flex h-full flex-col overflow-hidden rounded-2xl border border-black/10 bg-white p-6 outline-none sm:p-7"
                 >
-                  {/* orange wipe */}
+                  {/* orange fill on hover */}
                   <span
                     aria-hidden
                     className="step-fill absolute inset-0 bg-destiny-orange"
                   />
 
-                  <div className="step-content relative flex items-center gap-4 px-1 py-6 sm:gap-7 sm:py-8">
-                    <span className="step-num w-10 shrink-0 font-[family-name:var(--font-anton)] text-lg text-destiny-orange sm:w-14 sm:text-2xl">
+                  <div className="relative flex items-start justify-between">
+                    <span className="step-num font-[family-name:var(--font-anton)] text-2xl text-destiny-orange">
                       {step.index}
                     </span>
-
                     <span
                       aria-hidden
-                      className="material-symbols-rounded step-icon shrink-0 text-2xl text-[#f5ece2]/40 sm:text-3xl"
+                      className="material-symbols-rounded step-icon text-3xl text-destiny-grey/30"
                     >
                       {step.icon}
                     </span>
+                  </div>
 
-                    <span className="min-w-0 flex-1">
-                      <span className="step-title block font-[family-name:var(--font-heading)] text-xl font-black leading-tight text-white sm:text-3xl lg:text-4xl">
+                  <div className="relative mt-10 flex items-end justify-between gap-3">
+                    <div className="min-w-0">
+                      <h2 className="step-title font-[family-name:var(--font-heading)] text-xl font-black leading-tight text-destiny-grey sm:text-2xl">
                         {step.title}
-                      </span>
-                      <span className="step-blurb mt-0.5 block text-sm text-[#f5ece2]/55 sm:text-base">
+                      </h2>
+                      <p className="step-blurb mt-1 text-sm text-destiny-grey/55">
                         {step.blurb}
-                      </span>
-                    </span>
-
-                    <span className="material-symbols-rounded step-arrow shrink-0 text-3xl text-[#f5ece2]/70 sm:text-4xl">
+                      </p>
+                    </div>
+                    <span className="material-symbols-rounded step-arrow shrink-0 text-3xl text-destiny-grey/40">
                       arrow_forward
                     </span>
                   </div>
@@ -234,26 +218,42 @@ export default function LinksPage() {
           </ul>
         </nav>
 
-        {/* Footer note */}
-        <p
-          className="links-reveal mt-14 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-[#f5ece2]/45"
-          style={{ animationDelay: "0.9s" }}
+        {/* CTA */}
+        <div
+          className="links-reveal mt-12 overflow-hidden rounded-3xl bg-destiny-grey px-7 py-10 sm:mt-16 sm:px-12 sm:py-12"
+          style={{ animationDelay: "0.75s" }}
         >
-          Not sure where to begin?
-          <Link
-            href="/new-here"
-            className="font-semibold text-destiny-orange underline-offset-4 hover:underline"
-          >
-            Start with New Here
-          </Link>
-          <span className="text-[#f5ece2]/25">— or</span>
-          <Link
-            href="/contact"
-            className="font-semibold text-destiny-orange underline-offset-4 hover:underline"
-          >
-            get in touch
-          </Link>
-        </p>
+          <div className="flex flex-col items-start gap-7 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="text-xs font-bold uppercase tracking-[0.28em] text-destiny-orange">
+                New to all this?
+              </p>
+              <h2 className="mt-2 font-[family-name:var(--font-heading)] text-2xl font-black text-white sm:text-3xl">
+                Not sure where to begin?
+              </h2>
+              <p className="mt-2 max-w-md text-sm text-white/60">
+                Start with the basics and we&apos;ll help you find your place — no
+                pressure, no experience needed.
+              </p>
+            </div>
+
+            <div className="flex shrink-0 flex-col gap-3 sm:items-end">
+              <Link
+                href="/new-here"
+                className="inline-flex items-center justify-center gap-2 rounded-full bg-destiny-orange px-7 py-3.5 text-sm font-bold text-white transition-transform hover:scale-[1.03] hover:bg-destiny-orange-dark"
+              >
+                Start with New Here
+                <span className="material-symbols-rounded text-lg">arrow_forward</span>
+              </Link>
+              <Link
+                href="/contact"
+                className="inline-flex items-center justify-center gap-1.5 text-sm font-semibold text-white/70 underline-offset-4 transition-colors hover:text-white hover:underline"
+              >
+                Or get in touch
+              </Link>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );

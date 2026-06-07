@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import AnimateIn from "@/components/AnimateIn";
 
 interface Topic {
@@ -118,14 +119,14 @@ export default function AlphaTopics() {
           </AnimateIn>
           <AnimateIn delay={100} className="w-full md:w-1/2">
             <div className="grid grid-cols-2 gap-3">
-              <div className="overflow-hidden rounded-2xl">
-                <img src="/img/Alpha/Alpha/WiA-SC_V2-Carousel_02.webp" alt="" className="w-full object-cover h-48" />
+              <div className="relative h-48 overflow-hidden rounded-2xl">
+                <Image src="/img/Alpha/Alpha/WiA-SC_V2-Carousel_02.webp" alt="" fill sizes="(max-width: 768px) 50vw, 25vw" className="object-cover" />
               </div>
-              <div className="overflow-hidden rounded-2xl">
-                <img src="/img/Alpha/Alpha/WiA-SC_V2-Carousel_03.webp" alt="" className="w-full object-cover h-48" />
+              <div className="relative h-48 overflow-hidden rounded-2xl">
+                <Image src="/img/Alpha/Alpha/WiA-SC_V2-Carousel_03.webp" alt="" fill sizes="(max-width: 768px) 50vw, 25vw" className="object-cover" />
               </div>
-              <div className="col-span-2 overflow-hidden rounded-2xl">
-                <img src="/img/Alpha/Alpha/WiA-SC_V2-Carousel_04.webp" alt="" className="w-full object-cover h-40" />
+              <div className="relative col-span-2 h-40 overflow-hidden rounded-2xl">
+                <Image src="/img/Alpha/Alpha/WiA-SC_V2-Carousel_04.webp" alt="" fill sizes="(max-width: 768px) 100vw, 50vw" className="object-cover" />
               </div>
             </div>
           </AnimateIn>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 
 type ChurchSuiteEvent = {
   id: number;
@@ -74,10 +75,12 @@ function EventCard({ event }: { event: DeduplicatedEvent }) {
       {imageUrl ? (
         /* With image */
         <div className="relative h-48 w-full shrink-0 overflow-hidden">
-          <img
+          <Image
             src={imageUrl}
             alt={event.name}
-            className="absolute inset-0 h-full w-full object-cover transition duration-500 group-hover:scale-105"
+            fill
+            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+            className="object-cover transition duration-500 group-hover:scale-105"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
 

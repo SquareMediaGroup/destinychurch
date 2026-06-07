@@ -84,7 +84,7 @@ function EventCard({ event }: { event: DeduplicatedEvent }) {
       href={href}
       target="_blank"
       rel="noopener noreferrer"
-      className="group flex min-w-[240px] max-w-[280px] shrink-0 flex-col overflow-hidden rounded-2xl bg-white shadow-[0_2px_16px_rgba(0,0,0,0.08)] transition-all duration-300 hover:-translate-y-1 sm:min-w-[280px] sm:max-w-[320px]"
+      className="group flex min-w-[240px] max-w-[280px] shrink-0 flex-col overflow-hidden rounded-2xl bg-white shadow-[0_2px_16px_rgba(0,0,0,0.08)] transition-all duration-300 hover:-translate-y-1 sm:min-w-[280px] sm:max-w-[320px] dark:border dark:border-white/8 dark:bg-[#171b21] dark:shadow-[0_2px_20px_rgba(0,0,0,0.5)] dark:hover:border-destiny-orange/30"
     >
       {imageUrl ? (
         /* With image */
@@ -147,10 +147,10 @@ function EventCard({ event }: { event: DeduplicatedEvent }) {
 
       {/* Content */}
       <div className="flex flex-1 flex-col p-4">
-        <h3 className="mb-3 text-sm font-bold leading-snug text-destiny-grey line-clamp-2 sm:text-base">
+        <h3 className="mb-3 text-sm font-bold leading-snug text-destiny-grey line-clamp-2 sm:text-base dark:text-white">
           {event.name}
         </h3>
-        <div className="mt-auto space-y-1.5 text-xs text-destiny-grey/60">
+        <div className="mt-auto space-y-1.5 text-xs text-destiny-grey/60 dark:text-white/55">
           <div className="flex items-center gap-2">
             <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-md bg-destiny-orange/10">
               <svg className="h-3 w-3 text-destiny-orange" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -193,7 +193,7 @@ function EventCardPlaceholder({ index }: { index: number }) {
   const item = placeholders[index % placeholders.length];
 
   return (
-    <div className="min-w-[240px] max-w-[280px] shrink-0 overflow-hidden rounded-2xl border border-black/5 bg-white shadow-md sm:min-w-[280px] sm:max-w-[320px]">
+    <div className="min-w-[240px] max-w-[280px] shrink-0 overflow-hidden rounded-2xl border border-black/5 bg-white shadow-md sm:min-w-[280px] sm:max-w-[320px] dark:border-white/8 dark:bg-[#171b21]">
       <div className="relative h-36 w-full bg-gradient-to-br from-destiny-orange/20 to-destiny-orange/5 sm:h-44">
         <div className="flex h-full items-center justify-center">
           <span className="text-4xl font-black text-destiny-orange/30">DC</span>
@@ -203,8 +203,8 @@ function EventCardPlaceholder({ index }: { index: number }) {
         </div>
       </div>
       <div className="p-4">
-        <h3 className="mb-3 text-base font-bold text-destiny-grey">{item.name}</h3>
-        <div className="space-y-1.5 text-xs text-destiny-grey/60">
+        <h3 className="mb-3 text-base font-bold text-destiny-grey dark:text-white">{item.name}</h3>
+        <div className="space-y-1.5 text-xs text-destiny-grey/60 dark:text-white/55">
           <div className="flex items-center gap-2">
             <svg className="h-3.5 w-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
@@ -224,7 +224,7 @@ export default async function WhatsOnSection() {
   const hasEvents = events.length > 0;
 
   return (
-    <section className="bg-white py-10 sm:py-16">
+    <section className="bg-white py-10 sm:py-16 dark:bg-[#101316]">
       <div className="mx-auto max-w-7xl px-4 lg:px-8">
         {/* Header */}
         <AnimateIn>
@@ -234,7 +234,7 @@ export default async function WhatsOnSection() {
             </h2>
             <Link
               href="/whats-on"
-              className="text-xs font-semibold text-destiny-grey/70 underline underline-offset-4 transition hover:text-destiny-grey sm:text-sm"
+              className="text-xs font-semibold text-destiny-grey/70 underline underline-offset-4 transition hover:text-destiny-grey sm:text-sm dark:text-white/60 dark:hover:text-white"
             >
               View Church Calendar
             </Link>

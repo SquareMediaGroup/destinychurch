@@ -4,18 +4,28 @@ import AnimateIn from "@/components/AnimateIn";
 
 export default function MissionSection() {
   return (
-    <section className="bg-white py-20">
-      <div className="mx-auto max-w-4xl px-8 text-center lg:px-12">
+    <section className="relative overflow-hidden bg-white py-20 dark:bg-[#101316]">
+      {/* Dark-mode glow — a soft orange aura rising behind the statement, tying
+          the section to the footer warmth without lighting the whole field. */}
+      <div
+        className="pointer-events-none absolute left-1/2 top-1/2 hidden h-[420px] w-[820px] max-w-[120%] -translate-x-1/2 -translate-y-1/2 dark:block"
+        style={{
+          background:
+            "radial-gradient(closest-side, rgba(245,128,33,0.12), transparent 75%)",
+        }}
+        aria-hidden="true"
+      />
+      <div className="relative mx-auto max-w-4xl px-8 text-center lg:px-12">
         <AnimateIn>
-          <p className="mb-5 text-xs font-bold uppercase tracking-widest text-destiny-grey/40">
+          <p className="mb-5 text-xs font-bold uppercase tracking-widest text-destiny-grey/40 dark:text-destiny-orange/70">
             Our Mission
           </p>
-          <h2 className="mb-8 text-3xl font-black leading-tight text-destiny-grey md:text-4xl lg:text-5xl">
+          <h2 className="mb-8 text-3xl font-black leading-tight text-destiny-grey md:text-4xl lg:text-5xl dark:text-white">
             Transforming Lives through
             <br />
             <span className="text-destiny-orange">Faith, Hope and Love</span> for Jesus.
           </h2>
-          <p className="text-lg leading-relaxed text-destiny-grey/60 md:text-xl">
+          <p className="text-lg leading-relaxed text-destiny-grey/60 md:text-xl dark:text-white/65">
             Destiny Church exists to bring people to Jesus and membership of his
             family, developing them to maturity in Christ, and equipping them for
             their ministry in the Church and mission in the world, in order to
@@ -35,8 +45,8 @@ export default function MissionSection() {
               />
             </div>
             <div className="text-left">
-              <p className="text-base font-bold text-destiny-grey">Jonathan &amp; Cath Harris</p>
-              <p className="text-sm text-destiny-grey/50">Lead Pastors</p>
+              <p className="text-base font-bold text-destiny-grey dark:text-white">Jonathan &amp; Cath Harris</p>
+              <p className="text-sm text-destiny-grey/50 dark:text-white/50">Lead Pastors</p>
             </div>
           </div>
           <Link

@@ -1,5 +1,11 @@
 @import "tailwindcss";
 
+/* Manual dark mode: `dark:` utilities activate when (or inside) an element
+   carrying data-theme="dark" — set on <html> by the theme bootstrap script and
+   lib/settings.tsx. This replaces Tailwind's default prefers-color-scheme so the
+   on-page toggle is the single source of truth. */
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
 :root {
   --background: #ffffff;
   --foreground: #363f48;
@@ -9,6 +15,23 @@
   --border-subtle: rgba(0, 0, 0, 0.05);
   --color-destiny-brown: #2c1a0e;
   --color-destiny-brown-light: #3d2b1a;
+}
+
+/* ── Dark theme ───────────────────────────────────────────────────────────
+   Built around #101316 — a deep, slightly-cool charcoal derived from the
+   destiny-grey accent — warmed by the footer's orange gradient so the palette
+   reads as "lights down at the Destiny Centre", not an inverted spreadsheet.
+   Surfaces step up in luminance for elevation; the orange brand colour is the
+   single hot accent against the near-black field. */
+[data-theme="dark"] {
+  --background: #101316;
+  --foreground: #e9edf2;
+  --surface: #171b21;
+  --surface-muted: #1d222a;
+  --surface-overlay: rgba(20, 24, 29, 0.82);
+  --border-subtle: rgba(255, 255, 255, 0.08);
+  /* Warm, slightly-glowing border used on elevated cards to echo the footer. */
+  --border-warm: rgba(245, 128, 33, 0.18);
 }
 
 @theme inline {
@@ -33,6 +56,32 @@ html {
   background: #ffffff;
   overscroll-behavior: none;
   scroll-behavior: smooth;
+}
+
+html[data-theme="dark"] {
+  background: #101316;
+}
+
+/* Atmosphere — a warm wash of orange light bleeding from the top plus a faint
+   film grain, painted on the opaque app canvas so dark sections feel lit and
+   textured rather than flatly filled. The canvas stays opaque (#101316 base) so
+   content composites reliably; each section paints its own background on top and
+   the transparent gaps between rounded sections reveal this atmosphere. The
+   radial glow is fixed-attachment so it reads as ambient light, not wallpaper. */
+[data-theme="dark"] .app-canvas {
+  background-color: var(--background);
+  background-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.4'/%3E%3C/svg%3E"),
+    radial-gradient(120% 60% at 50% -5%, rgba(245, 128, 33, 0.10), transparent 55%),
+    radial-gradient(90% 55% at 92% 108%, rgba(217, 109, 16, 0.06), transparent 60%);
+  background-attachment: scroll, fixed, fixed;
+  background-repeat: repeat, no-repeat, no-repeat;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  /* Cross-fade the canvas when the theme flips, so the switch feels deliberate
+     rather than a hard cut. Colours flip instantly; only the wash eases. */
+  html { transition: background-color 0.4s ease; }
 }
 
 @media (max-width: 768px) {

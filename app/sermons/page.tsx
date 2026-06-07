@@ -26,7 +26,7 @@ export const revalidate = 1800;
 
 const SPOTIFY_PODCAST_URL = "https://open.spotify.com/show/1nj6U60XiQExt8l55E2p0Q";
 const APPLE_PODCAST_URL =
-  "https://podcasts.apple.com/gb/podcast/destiny-church-tees-valley/id1531676632";
+  "https://podcasts.apple.com/gb/podcast/destiny-church-tees-valley/id1456522038";
 const RSS_URL = "https://feeds.buzzsprout.com/268765.rss";
 
 const platforms = [

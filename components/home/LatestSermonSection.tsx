@@ -1,9 +1,15 @@
 import Image from "next/image";
 import Link from "next/link";
+import AnimateIn from "@/components/AnimateIn";
 import { type YTVideo, formatDate } from "@/lib/youtube";
 
 const YOUTUBE_CHANNEL_URL = `https://www.youtube.com/channel/${process.env.YOUTUBE_CHANNEL_ID}`;
 
+/**
+ * Latest Sermon — dark image banner, matching the WorshipWithUs section pattern
+ * (rounded-3xl card, blurred backdrop, left-to-right black gradient, white
+ * font-black heading, orange + ghost buttons, AnimateIn staggered reveals).
+ */
 export default function LatestSermonSection({
   video,
   quotaExceeded = false,
@@ -14,98 +20,136 @@ export default function LatestSermonSection({
   if (!video) return null;
 
   const date = formatDate(video.publishedAt);
-  const shortDesc = video.description.slice(0, 160).trim();
+
+  // Upload titles often read "Message Title || Ps Speaker"; lift the speaker out.
+  const [rawTitle, ...speakerParts] = video.title.split("||");
+  const title = rawTitle.trim();
+  const speaker = speakerParts.join("||").trim();
+
+  const shortDesc = video.description.replace(/\s+/g, " ").slice(0, 160).trim();
 
   const watchHref = quotaExceeded
     ? `https://www.youtube.com/watch?v=${video.id}`
     : `/sermons/${video.id}`;
-
   const allHref = quotaExceeded ? YOUTUBE_CHANNEL_URL : "/sermons";
   const allLabel = quotaExceeded ? "Watch on YouTube" : "See All Sermons";
+  const external = quotaExceeded
+    ? { target: "_blank", rel: "noopener noreferrer" }
+    : {};
 
   return (
     <div className="px-4 py-8 lg:px-8">
-     <div className="rounded-3xl">
-      <section className="relative w-full overflow-hidden rounded-3xl">
-        {/* Blurred thumbnail background */}
+      <section className="relative overflow-hidden rounded-3xl">
+        {/* Blurred thumbnail backdrop */}
         <div
-          className="absolute inset-0 scale-110 bg-cover bg-center blur-sm"
+          aria-hidden
+          className="absolute inset-0 scale-110 bg-cover bg-center blur-md"
           style={{ backgroundImage: `url('${video.thumbnail}')` }}
         />
-        {/* Near-black tint of the destiny-grey accent (#363f48 → ~25% brightness) */}
-        <div className="absolute inset-0 bg-[#0b0f14]/70" />
+        {/* Brand gradient — dark on the left for legibility, lifting to the right */}
+        <div
+          aria-hidden
+          className="absolute inset-0 bg-gradient-to-r from-black/85 via-black/65 to-black/45"
+        />
 
-        {/* Content */}
-        <div className="relative flex min-h-[320px] items-center sm:min-h-[480px]">
-          <div className="mx-auto w-full max-w-7xl px-6 py-12 sm:px-10 lg:px-12">
-            <div className="flex flex-col gap-8 md:flex-row md:items-center">
-
-            {/* Left column */}
-            <div className="flex flex-col justify-center md:w-1/2">
-              <span className="mb-3 text-xs font-bold uppercase tracking-widest text-destiny-orange">
+        <div className="relative mx-auto flex max-w-7xl flex-col items-center gap-8 px-6 py-12 sm:px-10 sm:py-14 md:flex-row md:items-center md:gap-12 lg:px-12">
+          {/* Left — message details */}
+          <div className="w-full md:w-1/2">
+            <AnimateIn>
+              <p className="mb-4 flex items-center gap-3 text-xs font-bold uppercase tracking-widest text-destiny-orange">
+                <span className="h-px w-8 bg-destiny-orange/70" />
                 Latest Sermon
-              </span>
-              <h2 className="mb-3 text-2xl font-black leading-tight text-white sm:text-3xl md:text-4xl">
-                {video.title}
+              </p>
+            </AnimateIn>
+
+            <AnimateIn delay={80}>
+              <h2 className="text-2xl font-black leading-tight text-white sm:text-3xl md:text-4xl">
+                {title}
               </h2>
-              {date && (
-                <p className="mb-4 text-sm text-white/60">{date}</p>
-              )}
-              {shortDesc && (
-                <p className="mb-6 line-clamp-2 text-sm leading-relaxed text-white/70 md:text-base">
+            </AnimateIn>
+
+            {(speaker || date) && (
+              <AnimateIn delay={130}>
+                <p className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-white/60">
+                  {speaker && <span className="font-semibold text-white/80">{speaker}</span>}
+                  {speaker && date && (
+                    <span aria-hidden className="h-1 w-1 rounded-full bg-destiny-orange" />
+                  )}
+                  {date && <span>{date}</span>}
+                </p>
+              </AnimateIn>
+            )}
+
+            {shortDesc && (
+              <AnimateIn delay={180}>
+                <p className="mt-5 max-w-md text-sm leading-relaxed text-white/70 line-clamp-2 md:text-base">
                   {shortDesc}
                 </p>
-              )}
-              <div className="flex flex-wrap gap-3">
+              </AnimateIn>
+            )}
+
+            <AnimateIn delay={230}>
+              <div className="mt-8 flex flex-wrap gap-3">
                 <Link
                   href={watchHref}
-                  {...(quotaExceeded ? { target: "_blank", rel: "noopener noreferrer" } : {})}
-                  className="inline-flex items-center gap-2 rounded-full bg-destiny-orange px-5 py-2.5 text-xs font-bold text-white shadow-lg shadow-destiny-orange/25 transition hover:brightness-110 sm:px-6 sm:py-3 sm:text-sm"
+                  {...external}
+                  className="inline-flex items-center gap-2 rounded-full bg-destiny-orange px-6 py-3 text-sm font-bold text-white shadow-lg shadow-destiny-orange/25 transition hover:brightness-110"
                 >
                   <span className="material-symbols-rounded text-base">play_arrow</span>
                   Watch Now
                 </Link>
                 <Link
                   href={allHref}
-                  {...(quotaExceeded ? { target: "_blank", rel: "noopener noreferrer" } : {})}
-                  className="inline-flex items-center gap-2 rounded-full border-2 border-white/40 px-5 py-2.5 text-xs font-bold text-white backdrop-blur transition hover:border-white/70 hover:bg-white/10 sm:px-6 sm:py-3 sm:text-sm"
+                  {...external}
+                  className="inline-flex items-center gap-2 rounded-full border-2 border-white/40 px-6 py-3 text-sm font-bold text-white backdrop-blur transition hover:border-white/70 hover:bg-white/10"
                 >
                   {allLabel}
                 </Link>
               </div>
-            </div>
-
-            {/* Right column — thumbnail with play button */}
-            <div className="md:w-1/2">
-              <Link
-                href={watchHref}
-                {...(quotaExceeded ? { target: "_blank", rel: "noopener noreferrer" } : {})}
-                className="group relative block overflow-hidden rounded-3xl shadow-2xl"
-                style={{ aspectRatio: "16/9" }}
-              >
-                <Image
-                  src={video.thumbnail}
-                  alt={video.title}
-                  fill
-                  className="object-cover transition duration-300 group-hover:scale-105"
-                  sizes="(max-width: 768px) 100vw, 50vw"
-                />
-                {/* Play overlay */}
-                <div className="absolute inset-0 flex items-center justify-center bg-black/20 transition duration-300 group-hover:bg-black/30">
-                  <div className="flex h-16 w-16 items-center justify-center rounded-full bg-white/90 shadow-xl transition duration-300 group-hover:scale-110 group-hover:bg-white">
-                    <span className="material-symbols-rounded text-3xl text-destiny-orange" style={{ paddingLeft: "3px" }}>
-                      play_arrow
-                    </span>
-                  </div>
-                </div>
-              </Link>
-            </div>
-
-            </div>
+            </AnimateIn>
           </div>
+
+          {/* Right — thumbnail card with play button */}
+          <AnimateIn delay={150} className="w-full md:w-1/2">
+            <Link
+              href={watchHref}
+              {...external}
+              aria-label={`Watch: ${title}`}
+              className="group relative block overflow-hidden rounded-2xl shadow-2xl ring-1 ring-white/10"
+              style={{ aspectRatio: "16 / 9" }}
+            >
+              <Image
+                src={video.thumbnail}
+                alt={title}
+                fill
+                className="object-cover transition duration-500 group-hover:scale-105"
+                sizes="(max-width: 768px) 100vw, 50vw"
+              />
+              <div
+                aria-hidden
+                className="absolute inset-0 bg-black/20 transition duration-300 group-hover:bg-black/30"
+              />
+
+              {/* On-brand orange badge (matches WhatsOn event cards) */}
+              <span className="absolute left-3 top-3 rounded-full bg-destiny-orange px-3 py-1 text-[10px] font-bold uppercase tracking-wide text-white shadow-md">
+                New Message
+              </span>
+
+              {/* Play button */}
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="flex h-16 w-16 items-center justify-center rounded-full bg-white/90 shadow-xl transition duration-300 group-hover:scale-110 group-hover:bg-white">
+                  <span
+                    className="material-symbols-rounded text-3xl text-destiny-orange"
+                    style={{ paddingLeft: "3px" }}
+                  >
+                    play_arrow
+                  </span>
+                </div>
+              </div>
+            </Link>
+          </AnimateIn>
         </div>
       </section>
-     </div>
     </div>
   );
 }

@@ -434,7 +434,8 @@ export default function FloatingSmartSearch() {
           } ${expanded && loading ? "is-loading" : ""}`}
           style={{
             width: expanded ? "min(calc(100vw - 2rem), 28rem)" : "3.5rem",
-            backgroundColor: "rgba(54, 63, 72, 0.7)",
+            // Match the header pill's glassmorphism (rgba(54,63,72,0.6) at rest).
+            backgroundColor: "rgba(54, 63, 72, 0.6)",
           }}
         >
           {/* Collapsed: circular trigger */}

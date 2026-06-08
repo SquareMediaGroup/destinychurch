@@ -11,6 +11,7 @@ import AnalyticsGate from "@/components/AnalyticsGate";
 import SiteBanner from "@/components/SiteBanner";
 import SitePopup from "@/components/SitePopup";
 import FloatingSmartSearch from "@/components/FloatingSmartSearch";
+import { isSmartSearchEnabled } from "@/lib/serviceStatus";
 import BannerSpacer from "@/components/BannerSpacer";
 import VisualEditOverlay from "@/components/admin/VisualEditOverlay";
 import { createServiceClient } from "@/utils/supabase/service";
@@ -233,6 +234,7 @@ export default async function RootLayout({
 }>) {
   const banner = await getActiveBanner();
   const popup = await getActivePopup();
+  const smartSearchEnabled = await isSmartSearchEnabled();
 
   return (
     <html lang="en">
@@ -259,7 +261,7 @@ export default async function RootLayout({
           </div>
           <AnalyticsGate />
           <SitePopup popup={popup} />
-          <FloatingSmartSearch />
+          {smartSearchEnabled && <FloatingSmartSearch />}
         </Providers>
         <SpeedInsights />
         <Suspense>

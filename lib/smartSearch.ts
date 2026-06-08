@@ -5,6 +5,8 @@ export interface SmartSearchResult {
   answer: string;
   page: string | null;
   ctaLabel: string | null;
+  /** When present, `answer` is a clarifying question and these are tappable options. */
+  options?: string[];
 }
 
 // Canned, friendly responses. Smart Search must ALWAYS return a usable answer —
@@ -37,6 +39,25 @@ const CTA_BY_PAGE = new Map(PAGE_INTENTS.map((p) => [p.href, p.cta]));
  * Anything not in ALLOWED_PAGES is discarded so links can't be hallucinated.
  */
 export function parseAnswer(raw: string): SmartSearchResult {
+  // Clarifying-question options take priority: if the model offered options, it
+  // is asking rather than answering, so PAGE/CTA are ignored.
+  const options = Array.from(raw.matchAll(/^\s*OPTION:\s*(.+?)\s*$/gim))
+    .map((m) => m[1].replace(/^["']|["']$/g, "").trim())
+    .filter(Boolean)
+    .slice(0, 4);
+
+  // Strip the OPTION/PAGE/CTA lines and any stray separator from the prose.
+  const prose = raw
+    .replace(/^\s*OPTION:\s*.+$/gim, "")
+    .replace(/^\s*PAGE:\s*\S+\s*$/gim, "")
+    .replace(/^\s*CTA:\s*.+$/gim, "")
+    .replace(/^\s*[-=]{3,}\s*$/gm, "")
+    .trim();
+
+  if (options.length >= 2) {
+    return { answer: prose || FALLBACK_ANSWERS.empty, page: null, ctaLabel: null, options };
+  }
+
   const pageMatch = raw.match(/^\s*PAGE:\s*(\S+)\s*$/im);
   const ctaMatch = raw.match(/^\s*CTA:\s*(.+?)\s*$/im);
 
@@ -54,15 +75,8 @@ export function parseAnswer(raw: string): SmartSearchResult {
     else ctaLabel = CTA_BY_PAGE.get(page) ?? null;
   }
 
-  // Strip the PAGE:/CTA: lines and any trailing separator from the prose.
-  const answer = raw
-    .replace(/^\s*PAGE:\s*\S+\s*$/gim, "")
-    .replace(/^\s*CTA:\s*.+$/gim, "")
-    .replace(/^\s*[-=]{3,}\s*$/gm, "")
-    .trim();
-
   return {
-    answer: answer || FALLBACK_ANSWERS.empty,
+    answer: prose || FALLBACK_ANSWERS.empty,
     page,
     ctaLabel,
   };
@@ -73,18 +87,24 @@ export function parseAnswer(raw: string): SmartSearchResult {
  * SITE_KNOWLEDGE and returns prose + validated page/CTA. Always resolves to a
  * non-empty answer (canned fallback on missing key or error).
  */
-export async function runSmartSearch(query: string): Promise<SmartSearchResult> {
+export async function runSmartSearch(query: string, choice?: string): Promise<SmartSearchResult> {
   const openai = getOpenAI();
   if (!openai) {
     return { answer: FALLBACK_ANSWERS.unavailable, page: "/contact", ctaLabel: "Contact Us" };
   }
+
+  // A `choice` means the visitor tapped one of the AI's clarifying options — fold
+  // it into the prompt as context so the model gives a tailored final answer.
+  const userContent = choice
+    ? `Original question: "${query}"\nThe visitor tapped this option to clarify what they need: "${choice}"\nGive a direct, final answer that routes them to the best way to get this — do not ask another clarifying question.`
+    : query;
 
   try {
     const completion = await openai.chat.completions.create({
       model: SMART_SEARCH_MODEL,
       messages: [
         { role: "system", content: SITE_KNOWLEDGE },
-        { role: "user", content: query },
+        { role: "user", content: userContent },
       ],
       max_tokens: 400,
       temperature: 0.2,

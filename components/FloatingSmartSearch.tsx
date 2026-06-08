@@ -9,6 +9,7 @@ interface SearchResponse {
   answer: string;
   page: string | null;
   ctaLabel: string | null;
+  options?: string[];
   cooldown?: boolean;
 }
 
@@ -172,7 +173,7 @@ export default function FloatingSmartSearch() {
     };
   }, [expanded, collapse]);
 
-  const runSearch = useCallback((value: string) => {
+  const runSearch = useCallback((value: string, choice?: string) => {
     const trimmed = value.trim();
     if (trimmed.length < 2 || trimmed.length > 150) {
       setResult(null);
@@ -180,7 +181,10 @@ export default function FloatingSmartSearch() {
       return;
     }
     setLoading(true);
-    fetch(`/api/search?q=${encodeURIComponent(trimmed)}`)
+    const url =
+      `/api/search?q=${encodeURIComponent(trimmed)}` +
+      (choice ? `&choice=${encodeURIComponent(choice)}` : "");
+    fetch(url)
       .then((res) => res.json())
       .then((data: SearchResponse) => setResult(data))
       .catch(() =>
@@ -214,6 +218,13 @@ export default function FloatingSmartSearch() {
     clearTimeout(debounceRef.current);
     if (showFirstUse) dismissFirstUse();
     runSearch(query);
+  }
+
+  // Visitor tapped one of the AI's clarifying options — re-query with that choice
+  // as context to get a tailored answer.
+  function handleOptionClick(option: string) {
+    clearTimeout(debounceRef.current);
+    runSearch(query, option);
   }
 
   if (pathname.startsWith("/admin")) return null;
@@ -345,11 +356,27 @@ export default function FloatingSmartSearch() {
                         <span className="text-[10px] text-white/25">destinytees.uk</span>
                       </div>
 
-                      {/* Answer */}
+                      {/* Answer (or clarifying question) */}
                       <p className="text-sm leading-relaxed text-white/75">{result!.answer}</p>
 
-                      {/* CTA */}
-                      {result!.page && result!.ctaLabel && (
+                      {/* Clarifying options — tappable pre-filled answers */}
+                      {result!.options && result!.options.length > 0 && (
+                        <div className="mt-3 flex flex-wrap gap-2">
+                          {result!.options.map((option) => (
+                            <button
+                              key={option}
+                              type="button"
+                              onClick={() => handleOptionClick(option)}
+                              className="rounded-full border border-white/15 bg-white/5 px-3.5 py-2 text-xs font-medium text-white/80 transition hover:border-destiny-orange hover:bg-destiny-orange/15 hover:text-white"
+                            >
+                              {option}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* CTA (hidden while options are showing) */}
+                      {!result!.options?.length && result!.page && result!.ctaLabel && (
                         <Link
                           href={result!.page}
                           onClick={collapse}

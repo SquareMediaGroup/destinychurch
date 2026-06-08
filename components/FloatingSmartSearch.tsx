@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useCookieConsent } from "@/lib/cookieConsent";
 
@@ -60,44 +60,80 @@ function SparkleIcon({ className }: { className?: string }) {
 
 export default function FloatingSmartSearch() {
   const pathname = usePathname();
-  const router = useRouter();
   const { decided, allowAll, denyOptional } = useCookieConsent();
   const [expanded, setExpanded] = useState(false);
   const [query, setQuery] = useState("");
   const [result, setResult] = useState<SearchResponse | null>(null);
   const [loading, setLoading] = useState(false);
+  const [focused, setFocused] = useState(false);
   const [placeholderIndex, setPlaceholderIndex] = useState(0);
   const [showFirstUse, setShowFirstUse] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const scrollTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const focusOnOpenRef = useRef(false);
+
+  // The bar should not minimise while the user is actively searching (focused or
+  // has a query/results showing); the scroll handler reads this via a ref.
+  const interacting = focused || query.trim().length > 0;
+  const interactingRef = useRef(interacting);
+  interactingRef.current = interacting;
+
+  // Open the pill. Pass focus=true for explicit user intent (tapping the icon)
+  // so the input is focused; scroll-driven opens pass false to avoid stealing
+  // focus / popping the mobile keyboard.
+  const openBar = useCallback((focus: boolean) => {
+    focusOnOpenRef.current = focus;
+    setExpanded(true);
+  }, []);
 
   const collapse = useCallback(() => {
     setExpanded(false);
+    setFocused(false);
     setQuery("");
     setResult(null);
     setLoading(false);
   }, []);
 
-  // Reset transient state and focus the input whenever the bar expands.
+  // First-use banner + initial placeholder, read once on mount.
   useEffect(() => {
-    if (expanded) {
-      setQuery("");
-      setResult(null);
-      setLoading(false);
-      setPlaceholderIndex(Math.floor(Math.random() * PLACEHOLDER_PROMPTS.length));
-      try {
-        const seen = localStorage.getItem(SMART_SEARCH_SEEN_KEY);
-        setShowFirstUse(!seen);
-      } catch {
-        setShowFirstUse(false);
-      }
-      // Wait for the width morph before focusing so the keyboard/caret lands on
-      // the fully-grown pill rather than the collapsing circle.
+    setPlaceholderIndex(Math.floor(Math.random() * PLACEHOLDER_PROMPTS.length));
+    try {
+      setShowFirstUse(!localStorage.getItem(SMART_SEARCH_SEEN_KEY));
+    } catch {
+      setShowFirstUse(false);
+    }
+  }, []);
+
+  // Focus the input only when the bar was opened by explicit user intent.
+  useEffect(() => {
+    if (expanded && focusOnOpenRef.current) {
+      focusOnOpenRef.current = false;
+      // Wait for the width morph before focusing so the caret lands on the
+      // fully-grown pill rather than the collapsing circle.
       const t = setTimeout(() => inputRef.current?.focus(), 260);
       return () => clearTimeout(t);
     }
   }, [expanded]);
+
+  // Minimise to the circle while scrolling; reopen to the pill once scrolling
+  // stops. Skipped while actively searching so results stay put.
+  useEffect(() => {
+    const onScroll = () => {
+      if (interactingRef.current) return;
+      setExpanded(false);
+      clearTimeout(scrollTimerRef.current);
+      scrollTimerRef.current = setTimeout(() => {
+        if (!interactingRef.current) openBar(false);
+      }, 250);
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      clearTimeout(scrollTimerRef.current);
+    };
+  }, [openBar]);
 
   // Rotate the placeholder prompt while expanded and empty.
   useEffect(() => {
@@ -142,6 +178,23 @@ export default function FloatingSmartSearch() {
     };
   }, [expanded, collapse]);
 
+  const runSearch = useCallback((value: string) => {
+    const trimmed = value.trim();
+    if (!trimmed || trimmed.length > 150) {
+      setResult(null);
+      setLoading(false);
+      return;
+    }
+    setLoading(true);
+    fetch(`/api/search?q=${encodeURIComponent(trimmed)}`)
+      .then((res) => res.json())
+      .then((data: SearchResponse) => setResult(data))
+      .catch(() =>
+        setResult({ answer: null, page: null, ctaLabel: null, sermons: [], aiSermons: [] })
+      )
+      .finally(() => setLoading(false));
+  }, []);
+
   const handleChange = useCallback((value: string) => {
     setQuery(value);
     if (value && showFirstUse) dismissFirstUse();
@@ -151,32 +204,17 @@ export default function FloatingSmartSearch() {
       setLoading(false);
       return;
     }
-    debounceRef.current = setTimeout(async () => {
-      setLoading(true);
-      try {
-        const res = await fetch(`/api/search?q=${encodeURIComponent(value.trim())}`);
-        const data: SearchResponse = await res.json();
-        setResult(data);
-      } catch {
-        setResult({ answer: null, page: null, ctaLabel: null, sermons: [], aiSermons: [] });
-      } finally {
-        setLoading(false);
-      }
-    }, 700);
-  }, [showFirstUse, dismissFirstUse]);
+    debounceRef.current = setTimeout(() => runSearch(value), 700);
+  }, [showFirstUse, dismissFirstUse, runSearch]);
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!query.trim()) return;
-    const q = query.trim();
-    collapse();
-    router.push(`/search?q=${encodeURIComponent(q)}`);
-  }
-
-  function goToFullResults() {
-    const q = query.trim();
-    collapse();
-    router.push(`/search?q=${encodeURIComponent(q)}`);
+    // Run the search inline and stay on the page — no navigation to a results
+    // page. Skip the debounce so Return fires immediately and shows loading.
+    clearTimeout(debounceRef.current);
+    if (showFirstUse) dismissFirstUse();
+    runSearch(query);
   }
 
   if (pathname.startsWith("/admin")) return null;
@@ -374,18 +412,6 @@ export default function FloatingSmartSearch() {
                           </svg>
                         </Link>
                       )}
-
-                      {/* Full results link */}
-                      <button
-                        type="button"
-                        onClick={goToFullResults}
-                        className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-xl border border-white/8 py-2 text-xs text-white/30 transition hover:border-white/15 hover:text-white/50"
-                      >
-                        <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
-                        </svg>
-                        See full results
-                      </button>
                     </div>
                   </>
                 )}
@@ -414,7 +440,7 @@ export default function FloatingSmartSearch() {
           {/* Collapsed: circular trigger */}
           <button
             type="button"
-            onClick={() => setExpanded(true)}
+            onClick={() => openBar(true)}
             aria-label="Open Smart Search"
             aria-hidden={expanded}
             tabIndex={expanded ? -1 : 0}
@@ -444,6 +470,8 @@ export default function FloatingSmartSearch() {
                 type="text"
                 value={query}
                 onChange={(e) => handleChange(e.target.value)}
+                onFocus={() => setFocused(true)}
+                onBlur={() => setFocused(false)}
                 placeholder={PLACEHOLDER_PROMPTS[placeholderIndex]}
                 tabIndex={expanded ? 0 : -1}
                 className="relative z-10 h-full w-full rounded-full bg-transparent py-3.5 pl-5 pr-20 text-sm text-white placeholder:text-white/50 focus:outline-none"

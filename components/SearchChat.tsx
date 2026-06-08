@@ -12,7 +12,7 @@ interface Props {
   initialAnswer: string;
   initialPage: string | null;
   initialCtaLabel: string | null;
-  aiSermons: { id: string; title: string }[];
+  aiSermons?: { id: string; title: string }[];
   query: string;
 }
 
@@ -20,7 +20,7 @@ export default function SearchChat({
   initialAnswer,
   initialPage,
   initialCtaLabel,
-  aiSermons,
+  aiSermons = [],
   query,
 }: Props) {
   const [messages, setMessages] = useState<ChatMessage[]>([

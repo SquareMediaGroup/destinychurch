@@ -5,17 +5,11 @@ import { usePathname } from "next/navigation";
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useCookieConsent } from "@/lib/cookieConsent";
 
-interface SermonMatch {
-  id: string;
-  title: string;
-}
-
 interface SearchResponse {
-  answer: string | null;
+  answer: string;
   page: string | null;
   ctaLabel: string | null;
-  sermons: SermonMatch[];
-  aiSermons: SermonMatch[];
+  cooldown?: boolean;
 }
 
 const PLACEHOLDER_PROMPTS = [
@@ -180,7 +174,7 @@ export default function FloatingSmartSearch() {
 
   const runSearch = useCallback((value: string) => {
     const trimmed = value.trim();
-    if (!trimmed || trimmed.length > 150) {
+    if (trimmed.length < 2 || trimmed.length > 150) {
       setResult(null);
       setLoading(false);
       return;
@@ -190,7 +184,12 @@ export default function FloatingSmartSearch() {
       .then((res) => res.json())
       .then((data: SearchResponse) => setResult(data))
       .catch(() =>
-        setResult({ answer: null, page: null, ctaLabel: null, sermons: [], aiSermons: [] })
+        setResult({
+          answer:
+            "I can't reach the assistant right now — please try again in a moment.",
+          page: null,
+          ctaLabel: null,
+        })
       )
       .finally(() => setLoading(false));
   }, []);
@@ -199,7 +198,7 @@ export default function FloatingSmartSearch() {
     setQuery(value);
     if (value && showFirstUse) dismissFirstUse();
     clearTimeout(debounceRef.current);
-    if (!value.trim() || value.trim().length > 150) {
+    if (value.trim().length < 2 || value.trim().length > 150) {
       setResult(null);
       setLoading(false);
       return;
@@ -226,12 +225,8 @@ export default function FloatingSmartSearch() {
     : [];
 
   const hasPages      = pageMatches.length > 0;
-  const hasSermons    = (result?.sermons?.length ?? 0) > 0;
-  const hasAiSermons  = (result?.aiSermons?.length ?? 0) > 0;
   const hasAnswer     = Boolean(result?.answer);
-  const showEmpty     =
-    query.trim().length > 2 && !loading && !hasPages && !hasSermons && !hasAiSermons && !hasAnswer;
-  const showPanel     = expanded && (hasPages || hasSermons || hasAiSermons || hasAnswer || showEmpty || loading);
+  const showPanel     = expanded && (hasPages || hasAnswer || loading);
   const showConsent   = expanded && !decided;
   const showWelcome   = expanded && decided && showFirstUse && !query && !showPanel;
 
@@ -306,7 +301,7 @@ export default function FloatingSmartSearch() {
               <div className="overflow-hidden rounded-2xl border border-white/10 bg-destiny-grey/70 shadow-2xl backdrop-blur-md">
 
                 {/* Loading skeleton */}
-                {loading && !hasAnswer && !hasPages && !hasSermons && (
+                {loading && !hasAnswer && !hasPages && (
                   <div className="space-y-2.5 px-4 py-4">
                     <div className="h-3 w-20 animate-pulse rounded-full bg-white/10" />
                     <div className="h-3 animate-pulse rounded bg-white/10" />
@@ -334,35 +329,10 @@ export default function FloatingSmartSearch() {
                   </Link>
                 ))}
 
-                {/* Sermon matches */}
-                {hasSermons && (
-                  <>
-                    {hasPages && <div className="mx-4 border-t border-white/8" />}
-                    <p className="px-4 pb-1 pt-3 text-[10px] font-bold uppercase tracking-wider text-white/30">
-                      Sermons
-                    </p>
-                    {result!.sermons.map((s) => (
-                      <Link
-                        key={s.id}
-                        href={`/sermons/${s.id}`}
-                        onClick={collapse}
-                        className="group flex items-center gap-3 px-4 py-3 text-sm text-white/60 transition hover:bg-white/8 hover:text-white"
-                      >
-                        <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-destiny-orange/15 text-destiny-orange/60 transition group-hover:bg-destiny-orange group-hover:text-white">
-                          <svg className="h-3.5 w-3.5" fill="currentColor" viewBox="0 0 24 24">
-                            <path d="M8 5v14l11-7z" />
-                          </svg>
-                        </div>
-                        <span className="truncate">{s.title}</span>
-                      </Link>
-                    ))}
-                  </>
-                )}
-
                 {/* AI Overview */}
                 {hasAnswer && (
                   <>
-                    {(hasPages || hasSermons) && <div className="mx-4 border-t border-white/8" />}
+                    {hasPages && <div className="mx-4 border-t border-white/8" />}
                     <div className="px-4 py-4">
                       {/* Header */}
                       <div className="mb-3 flex items-center justify-between">
@@ -378,29 +348,8 @@ export default function FloatingSmartSearch() {
                       {/* Answer */}
                       <p className="text-sm leading-relaxed text-white/75">{result!.answer}</p>
 
-                      {/* AI-suggested sermons */}
-                      {hasAiSermons && (
-                        <div className="mt-3 space-y-0.5">
-                          {result!.aiSermons.map((s) => (
-                            <Link
-                              key={s.id}
-                              href={`/sermons/${s.id}`}
-                              onClick={collapse}
-                              className="group flex items-center gap-2.5 rounded-xl px-2 py-2 text-xs text-white/60 transition hover:bg-white/8 hover:text-white"
-                            >
-                              <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-destiny-orange/15 text-destiny-orange/60 transition group-hover:bg-destiny-orange group-hover:text-white">
-                                <svg className="h-2.5 w-2.5" fill="currentColor" viewBox="0 0 24 24">
-                                  <path d="M8 5v14l11-7z" />
-                                </svg>
-                              </div>
-                              <span className="truncate">{s.title}</span>
-                            </Link>
-                          ))}
-                        </div>
-                      )}
-
                       {/* CTA */}
-                      {result!.page && result!.ctaLabel && !hasAiSermons && (
+                      {result!.page && result!.ctaLabel && (
                         <Link
                           href={result!.page}
                           onClick={collapse}
@@ -414,13 +363,6 @@ export default function FloatingSmartSearch() {
                       )}
                     </div>
                   </>
-                )}
-
-                {/* No results */}
-                {showEmpty && (
-                  <p className="px-4 py-6 text-center text-sm text-white/30">
-                    No results found for &ldquo;{query}&rdquo;
-                  </p>
                 )}
               </div>
             )}

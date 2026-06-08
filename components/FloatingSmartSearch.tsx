@@ -2,8 +2,12 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect, useLayoutEffect, useCallback } from "react";
 import { useCookieConsent } from "@/lib/cookieConsent";
+
+// Run layout effects on the client, but fall back to useEffect during SSR to
+// avoid React's "useLayoutEffect does nothing on the server" warning.
+const useIsoLayoutEffect = typeof window !== "undefined" ? useLayoutEffect : useEffect;
 
 interface SearchResponse {
   answer: string;
@@ -68,6 +72,20 @@ export default function FloatingSmartSearch() {
   const debounceRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const scrollTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const focusOnOpenRef = useRef(false);
+  // Transient class that drives the keyframed width morph on each state change.
+  const [morph, setMorph] = useState<"" | "morph-expanding" | "morph-collapsing">("");
+  const firstMorphRef = useRef(true);
+
+  // Keyframe the circle <-> pill morph whenever `expanded` flips. Skip the first
+  // render so the bar doesn't morph on mount; set the class in a layout effect so
+  // the keyframe starts from the correct width with no one-frame flash.
+  useIsoLayoutEffect(() => {
+    if (firstMorphRef.current) {
+      firstMorphRef.current = false;
+      return;
+    }
+    setMorph(expanded ? "morph-expanding" : "morph-collapsing");
+  }, [expanded]);
 
   // The bar should not minimise while the user is actively searching (focused or
   // has a query/results showing); the scroll handler reads this via a ref.
@@ -400,9 +418,15 @@ export default function FloatingSmartSearch() {
         <div
           className={`search-glow floating-search-morph relative h-14 rounded-full border border-white/10 shadow-xl shadow-black/30 backdrop-blur-md ${
             expanded ? "is-expanded" : ""
-          } ${expanded && loading ? "is-loading" : ""}`}
+          } ${morph} ${expanded && loading ? "is-loading" : ""}`}
+          onAnimationEnd={(e) => {
+            // Only clear for the morph element's own width animation, not the
+            // loading-glow spin or child spinners that bubble up.
+            if (e.target === e.currentTarget && e.animationName.startsWith("fs-morph")) {
+              setMorph("");
+            }
+          }}
           style={{
-            width: expanded ? "min(calc(100vw - 2rem), 28rem)" : "3.5rem",
             // Match the header pill's glassmorphism (rgba(54,63,72,0.6) at rest).
             backgroundColor: "rgba(54, 63, 72, 0.6)",
           }}

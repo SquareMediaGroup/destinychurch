@@ -309,11 +309,30 @@ h3 {
 }
 
 /* Floating Smart Search — circle <-> pill morph.
-   Only the width animates; border-radius stays full. The collapsed icon and the
-   expanded input crossfade via opacity (the form fades in slightly later so it
-   appears once the pill has grown). Mirrors the header's smooth morph curve. */
+   The width is KEYFRAMED (not transitioned) with an aggressive ease-in-out so the
+   shape snaps decisively between the circular icon and the pill. Resting widths
+   are static per state; the component adds a transient .morph-expanding /
+   .morph-collapsing class only on a state change (removed on animationend), so
+   there's no morph on first paint and the loading glow is never clobbered. */
 .floating-search-morph {
-  transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  width: 3.5rem; /* collapsed (circle) */
+}
+.floating-search-morph.is-expanded {
+  width: min(calc(100vw - 2rem), 28rem); /* pill */
+}
+.floating-search-morph.morph-expanding {
+  animation: fs-morph-expand 0.5s cubic-bezier(0.85, 0, 0.15, 1) both;
+}
+.floating-search-morph.morph-collapsing {
+  animation: fs-morph-collapse 0.5s cubic-bezier(0.85, 0, 0.15, 1) both;
+}
+@keyframes fs-morph-expand {
+  from { width: 3.5rem; }
+  to   { width: min(calc(100vw - 2rem), 28rem); }
+}
+@keyframes fs-morph-collapse {
+  from { width: min(calc(100vw - 2rem), 28rem); }
+  to   { width: 3.5rem; }
 }
 
 .floating-search-trigger {
@@ -344,11 +363,14 @@ h3 {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .floating-search-morph,
   .floating-search-trigger,
   .floating-search-form,
   .floating-search-morph.is-expanded .floating-search-form {
     transition: none;
+  }
+  .floating-search-morph.morph-expanding,
+  .floating-search-morph.morph-collapsing {
+    animation: none;
   }
   .floating-search-panels {
     animation: none;

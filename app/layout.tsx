@@ -10,6 +10,7 @@ import CookieBanner from "@/components/CookieBanner";
 import AnalyticsGate from "@/components/AnalyticsGate";
 import SiteBanner from "@/components/SiteBanner";
 import SitePopup from "@/components/SitePopup";
+import FloatingSmartSearch from "@/components/FloatingSmartSearch";
 import BannerSpacer from "@/components/BannerSpacer";
 import VisualEditOverlay from "@/components/admin/VisualEditOverlay";
 import { createServiceClient } from "@/utils/supabase/service";
@@ -258,6 +259,7 @@ export default async function RootLayout({
           </div>
           <AnalyticsGate />
           <SitePopup popup={popup} />
+          <FloatingSmartSearch />
         </Providers>
         <SpeedInsights />
         <Suspense>

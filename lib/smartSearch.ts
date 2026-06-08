@@ -41,14 +41,15 @@ const CTA_BY_PAGE = new Map(PAGE_INTENTS.map((p) => [p.href, p.cta]));
 export function parseAnswer(raw: string): SmartSearchResult {
   // Clarifying-question options take priority: if the model offered options, it
   // is asking rather than answering, so PAGE/CTA are ignored.
-  const options = Array.from(raw.matchAll(/^\s*OPTION:\s*(.+?)\s*$/gim))
+  // Tolerate a leading bullet/number the model may prepend (e.g. "- OPTION:").
+  const options = Array.from(raw.matchAll(/^\s*(?:[-*•]\s*|\d+[.)]\s*)?OPTION:\s*(.+?)\s*$/gim))
     .map((m) => m[1].replace(/^["']|["']$/g, "").trim())
     .filter(Boolean)
     .slice(0, 4);
 
   // Strip the OPTION/PAGE/CTA lines and any stray separator from the prose.
   const prose = raw
-    .replace(/^\s*OPTION:\s*.+$/gim, "")
+    .replace(/^\s*(?:[-*•]\s*|\d+[.)]\s*)?OPTION:\s*.+$/gim, "")
     .replace(/^\s*PAGE:\s*\S+\s*$/gim, "")
     .replace(/^\s*CTA:\s*.+$/gim, "")
     .replace(/^\s*[-=]{3,}\s*$/gm, "")

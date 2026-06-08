@@ -308,6 +308,53 @@ h3 {
   }
 }
 
+/* Floating Smart Search — circle <-> pill morph.
+   Only the width animates; border-radius stays full. The collapsed icon and the
+   expanded input crossfade via opacity (the form fades in slightly later so it
+   appears once the pill has grown). Mirrors the header's smooth morph curve. */
+.floating-search-morph {
+  transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.floating-search-trigger {
+  transition: opacity 0.2s ease;
+}
+
+.floating-search-form {
+  transition: opacity 0.25s ease;
+}
+
+.floating-search-morph.is-expanded .floating-search-form {
+  transition: opacity 0.25s ease 0.15s;
+}
+
+.floating-search-panels {
+  animation: floating-search-panels-in 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes floating-search-panels-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .floating-search-morph,
+  .floating-search-trigger,
+  .floating-search-form,
+  .floating-search-morph.is-expanded .floating-search-form {
+    transition: none;
+  }
+  .floating-search-panels {
+    animation: none;
+  }
+}
+
 @keyframes churchsuite-spin {
   to { transform: rotate(360deg); }
 }

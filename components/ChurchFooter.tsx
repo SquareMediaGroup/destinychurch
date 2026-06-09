@@ -1,6 +1,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { isYouTubeQuotaExceeded } from "@/lib/youtube";
+import ReportBugLink from "@/components/report-bug/ReportBugLink";
 
 const connectLinks = [
   { label: "New Here?", href: "/new-here" },
@@ -119,15 +120,18 @@ export default async function ChurchFooter() {
             &copy;{new Date().getFullYear()} Destiny Church Tees Valley &middot;
             Reg Charity No. 1119951
           </span>
-          <span>
-            Telephone:{" "}
-            <a
-              href="tel:+441642559797"
-              className="underline underline-offset-2 transition hover:text-white"
-            >
-              01642 559797
-            </a>
-          </span>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-6">
+            <ReportBugLink />
+            <span>
+              Telephone:{" "}
+              <a
+                href="tel:+441642559797"
+                className="underline underline-offset-2 transition hover:text-white"
+              >
+                01642 559797
+              </a>
+            </span>
+          </div>
         </div>
       </div>
     </footer>

@@ -367,9 +367,6 @@ export default function FloatingSmartSearch() {
                       <div className="mb-3 flex items-center justify-between">
                         <div className="flex items-center gap-1.5">
                           <SparkleIcon className="h-3.5 w-3.5 text-destiny-orange" />
-                          <span className="text-xs font-bold uppercase tracking-wider text-destiny-orange">
-                            AI Overview
-                          </span>
                         </div>
                         <span className="text-[10px] text-white/25">destinytees.uk</span>
                       </div>

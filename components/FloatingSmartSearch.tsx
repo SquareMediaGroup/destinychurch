@@ -4,17 +4,25 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState, useRef, useEffect, useLayoutEffect, useCallback } from "react";
 import { useCookieConsent } from "@/lib/cookieConsent";
+import { cooldownAnswer } from "@/lib/smartSearch";
 
 // Run layout effects on the client, but fall back to useEffect during SSR to
 // avoid React's "useLayoutEffect does nothing on the server" warning.
 const useIsoLayoutEffect = typeof window !== "undefined" ? useLayoutEffect : useEffect;
 
-interface SearchResponse {
+interface ChatMessage {
+  role: "user" | "assistant";
+  content: string;
+  options?: string[];    // assistant: tappable clarifying chips
+  page?: string | null;  // assistant: CTA target
+  ctaLabel?: string | null;
+}
+
+interface ChatResponse {
   answer: string;
-  page: string | null;
-  ctaLabel: string | null;
+  page?: string | null;
+  ctaLabel?: string | null;
   options?: string[];
-  cooldown?: boolean;
 }
 
 const PLACEHOLDER_PROMPTS = [
@@ -61,20 +69,22 @@ export default function FloatingSmartSearch() {
   const pathname = usePathname();
   const { decided, allowAll, denyOptional } = useCookieConsent();
   const [expanded, setExpanded] = useState(false);
-  const [query, setQuery] = useState("");
-  const [result, setResult] = useState<SearchResponse | null>(null);
+  const [input, setInput] = useState("");
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [loading, setLoading] = useState(false);
   const [focused, setFocused] = useState(false);
   const [placeholderIndex, setPlaceholderIndex] = useState(0);
   const [showFirstUse, setShowFirstUse] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const bottomRef = useRef<HTMLDivElement>(null);
   const scrollTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const focusOnOpenRef = useRef(false);
   // Transient class that drives the keyframed width morph on each state change.
   const [morph, setMorph] = useState<"" | "morph-expanding" | "morph-collapsing">("");
   const firstMorphRef = useRef(true);
+
+  const hasMessages = messages.length > 0;
 
   // Keyframe the circle <-> pill morph whenever `expanded` flips. Skip the first
   // render so the bar doesn't morph on mount; set the class in a layout effect so
@@ -87,9 +97,9 @@ export default function FloatingSmartSearch() {
     setMorph(expanded ? "morph-expanding" : "morph-collapsing");
   }, [expanded]);
 
-  // The bar should not minimise while the user is actively searching (focused or
-  // has a query/results showing); the scroll handler reads this via a ref.
-  const interacting = focused || query.trim().length > 0;
+  // The bar should not minimise while the user is mid-search: focused, typing, or
+  // with a conversation open. The scroll handler reads this via a ref.
+  const interacting = focused || input.trim().length > 0 || hasMessages || loading;
   const interactingRef = useRef(interacting);
   interactingRef.current = interacting;
 
@@ -104,8 +114,8 @@ export default function FloatingSmartSearch() {
   const collapse = useCallback(() => {
     setExpanded(false);
     setFocused(false);
-    setQuery("");
-    setResult(null);
+    setInput("");
+    setMessages([]);
     setLoading(false);
   }, []);
 
@@ -148,14 +158,19 @@ export default function FloatingSmartSearch() {
     };
   }, [openBar]);
 
-  // Rotate the placeholder prompt while expanded and empty.
+  // Rotate the placeholder prompt while expanded, empty, and not yet chatting.
   useEffect(() => {
-    if (!expanded || query) return;
+    if (!expanded || input || hasMessages) return;
     const id = setInterval(() => {
       setPlaceholderIndex((i) => (i + 1) % PLACEHOLDER_PROMPTS.length);
     }, 2800);
     return () => clearInterval(id);
-  }, [expanded, query]);
+  }, [expanded, input, hasMessages]);
+
+  // Keep the latest message in view as the thread grows / while typing.
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  }, [messages.length, loading]);
 
   const dismissFirstUse = useCallback(() => {
     setShowFirstUse(false);
@@ -191,73 +206,76 @@ export default function FloatingSmartSearch() {
     };
   }, [expanded, collapse]);
 
-  const runSearch = useCallback((value: string, choice?: string) => {
-    const trimmed = value.trim();
-    if (trimmed.length < 2 || trimmed.length > 150) {
-      setResult(null);
-      setLoading(false);
-      return;
-    }
-    setLoading(true);
-    const url =
-      `/api/search?q=${encodeURIComponent(trimmed)}` +
-      (choice ? `&choice=${encodeURIComponent(choice)}` : "");
-    fetch(url)
-      .then((res) => res.json())
-      .then((data: SearchResponse) => setResult(data))
-      .catch(() =>
-        setResult({
-          answer:
-            "I can't reach the assistant right now — please try again in a moment.",
-          page: null,
-          ctaLabel: null,
-        })
-      )
-      .finally(() => setLoading(false));
-  }, []);
+  // Send a message (typed reply or tapped chip) and append the AI's response.
+  const sendMessage = useCallback(
+    async (text: string) => {
+      const trimmed = text.trim();
+      if (!trimmed || loading || trimmed.length > 300) return;
+      if (showFirstUse) dismissFirstUse();
 
-  const handleChange = useCallback((value: string) => {
-    setQuery(value);
-    if (value && showFirstUse) dismissFirstUse();
-    clearTimeout(debounceRef.current);
-    if (value.trim().length < 2 || value.trim().length > 150) {
-      setResult(null);
-      setLoading(false);
-      return;
-    }
-    debounceRef.current = setTimeout(() => runSearch(value), 700);
-  }, [showFirstUse, dismissFirstUse, runSearch]);
+      const history: ChatMessage[] = [...messages, { role: "user", content: trimmed }];
+      setMessages(history);
+      setInput("");
+      setLoading(true);
+
+      try {
+        const res = await fetch("/api/chat", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            messages: history.map((m) => ({ role: m.role, content: m.content })),
+          }),
+        });
+
+        if (res.status === 429) {
+          setMessages((prev) => [...prev, { role: "assistant", content: cooldownAnswer().answer }]);
+          return;
+        }
+
+        const data: ChatResponse = await res.json();
+        setMessages((prev) => [
+          ...prev,
+          {
+            role: "assistant",
+            content: data.answer,
+            options: data.options,
+            page: data.page ?? null,
+            ctaLabel: data.ctaLabel ?? null,
+          },
+        ]);
+      } catch {
+        setMessages((prev) => [
+          ...prev,
+          {
+            role: "assistant",
+            content: "I can't reach the assistant right now — please try again in a moment.",
+          },
+        ]);
+      } finally {
+        setLoading(false);
+      }
+    },
+    [loading, messages, showFirstUse, dismissFirstUse]
+  );
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!query.trim()) return;
-    // Run the search inline and stay on the page — no navigation to a results
-    // page. Skip the debounce so Return fires immediately and shows loading.
-    clearTimeout(debounceRef.current);
-    if (showFirstUse) dismissFirstUse();
-    runSearch(query);
-  }
-
-  // Visitor tapped one of the AI's clarifying options — re-query with that choice
-  // as context to get a tailored answer.
-  function handleOptionClick(option: string) {
-    clearTimeout(debounceRef.current);
-    runSearch(query, option);
+    sendMessage(input);
   }
 
   if (pathname.startsWith("/admin")) return null;
 
-  const pageMatches = query.trim().length >= 1
+  // Page-name quick matches — only offered before a conversation has started.
+  const pageMatches = !hasMessages && input.trim().length >= 1
     ? SITE_PAGES.filter((p) =>
-        p.title.toLowerCase().includes(query.trim().toLowerCase())
+        p.title.toLowerCase().includes(input.trim().toLowerCase())
       ).slice(0, 3)
     : [];
 
-  const hasPages      = pageMatches.length > 0;
-  const hasAnswer     = Boolean(result?.answer);
-  const showPanel     = expanded && (hasPages || hasAnswer || loading);
-  const showConsent   = expanded && !decided;
-  const showWelcome   = expanded && decided && showFirstUse && !query && !showPanel;
+  const hasPages    = pageMatches.length > 0;
+  const showPanel   = expanded && (hasMessages || loading || hasPages);
+  const showConsent = expanded && !decided;
+  const showWelcome = expanded && decided && showFirstUse && !hasMessages && !loading && !input;
 
   return (
     <div className="pointer-events-none fixed inset-x-0 bottom-0 z-50 flex justify-center px-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
@@ -325,20 +343,11 @@ export default function FloatingSmartSearch() {
               </div>
             )}
 
-            {/* Results panel */}
+            {/* Results / conversation panel */}
             {showPanel && (
               <div className="overflow-hidden rounded-2xl border border-white/10 bg-destiny-grey/70 shadow-2xl backdrop-blur-md">
 
-                {/* Loading skeleton */}
-                {loading && !hasAnswer && !hasPages && (
-                  <div className="space-y-2.5 px-4 py-4">
-                    <div className="h-3 w-20 animate-pulse rounded-full bg-white/10" />
-                    <div className="h-3 animate-pulse rounded bg-white/10" />
-                    <div className="h-3 w-4/5 animate-pulse rounded bg-white/10" />
-                  </div>
-                )}
-
-                {/* Page matches */}
+                {/* Page matches (only before the conversation starts) */}
                 {hasPages && pageMatches.map((page) => (
                   <Link
                     key={page.href}
@@ -358,50 +367,91 @@ export default function FloatingSmartSearch() {
                   </Link>
                 ))}
 
-                {/* AI Overview */}
-                {hasAnswer && (
-                  <>
-                    {hasPages && <div className="mx-4 border-t border-white/8" />}
-                    <div className="px-4 py-4">
-                      {/* Header */}
-                      <div className="mb-3 flex items-center justify-end">
-                        <span className="text-[10px] text-white/25">AI can sometimes make mistakes.</span>
-                      </div>
+                {/* Conversation thread */}
+                {(hasMessages || loading) && (
+                  <div className="flex max-h-[60vh] flex-col overflow-y-auto overscroll-contain">
+                    {/* Disclaimer */}
+                    <div className="flex items-center justify-end px-4 pt-3">
+                      <span className="text-[10px] text-white/25">AI can sometimes make mistakes.</span>
+                    </div>
 
-                      {/* Answer (or clarifying question) */}
-                      <p className="text-sm leading-relaxed text-white/75">{result!.answer}</p>
-
-                      {/* Clarifying options — tappable pre-filled answers */}
-                      {result!.options && result!.options.length > 0 && (
-                        <div className="mt-3 flex flex-wrap gap-2">
-                          {result!.options.map((option) => (
-                            <button
-                              key={option}
-                              type="button"
-                              onClick={() => handleOptionClick(option)}
-                              className="rounded-full border border-white/15 bg-white/5 px-3.5 py-2 text-xs font-medium text-white/80 transition hover:border-destiny-orange hover:bg-destiny-orange/15 hover:text-white"
+                    <div className="space-y-3 px-4 py-3">
+                      {messages.map((msg, i) => (
+                        <div
+                          key={i}
+                          className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
+                        >
+                          {msg.role === "assistant" && (
+                            <div className="mr-2 mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-destiny-orange/15">
+                              <SparkleIcon className="h-3 w-3 text-destiny-orange" />
+                            </div>
+                          )}
+                          <div className="max-w-[85%] min-w-0">
+                            <div
+                              className={`rounded-2xl px-4 py-2.5 text-sm leading-relaxed ${
+                                msg.role === "user"
+                                  ? "rounded-tr-sm bg-destiny-orange text-white"
+                                  : "rounded-tl-sm bg-white/10 text-white/85"
+                              }`}
                             >
-                              {option}
-                            </button>
-                          ))}
+                              {msg.content}
+                            </div>
+
+                            {/* Options + CTA on the latest assistant message only */}
+                            {msg.role === "assistant" && i === messages.length - 1 && (
+                              <>
+                                {msg.options && msg.options.length > 0 && (
+                                  <div className="mt-2 flex flex-wrap gap-2">
+                                    {msg.options.map((option) => (
+                                      <button
+                                        key={option}
+                                        type="button"
+                                        onClick={() => sendMessage(option)}
+                                        disabled={loading}
+                                        className="rounded-full border border-white/15 bg-white/5 px-3.5 py-2 text-xs font-medium text-white/80 transition hover:border-destiny-orange hover:bg-destiny-orange/15 hover:text-white disabled:opacity-40"
+                                      >
+                                        {option}
+                                      </button>
+                                    ))}
+                                  </div>
+                                )}
+
+                                {!msg.options?.length && msg.page && msg.ctaLabel && (
+                                  <Link
+                                    href={msg.page}
+                                    onClick={collapse}
+                                    className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-destiny-orange px-4 py-2 text-xs font-bold text-white transition hover:brightness-110"
+                                  >
+                                    {msg.ctaLabel}
+                                    <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                                      <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
+                                    </svg>
+                                  </Link>
+                                )}
+                              </>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+
+                      {/* Typing indicator */}
+                      {loading && (
+                        <div className="flex justify-start">
+                          <div className="mr-2 mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-destiny-orange/15">
+                            <SparkleIcon className="h-3 w-3 text-destiny-orange" />
+                          </div>
+                          <div className="rounded-2xl rounded-tl-sm bg-white/10 px-4 py-3">
+                            <div className="flex gap-1">
+                              <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-white/40" style={{ animationDelay: "0ms" }} />
+                              <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-white/40" style={{ animationDelay: "150ms" }} />
+                              <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-white/40" style={{ animationDelay: "300ms" }} />
+                            </div>
+                          </div>
                         </div>
                       )}
-
-                      {/* CTA (hidden while options are showing) */}
-                      {!result!.options?.length && result!.page && result!.ctaLabel && (
-                        <Link
-                          href={result!.page}
-                          onClick={collapse}
-                          className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-destiny-orange px-4 py-2 text-xs font-bold text-white transition hover:brightness-110"
-                        >
-                          {result!.ctaLabel}
-                          <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
-                          </svg>
-                        </Link>
-                      )}
+                      <div ref={bottomRef} />
                     </div>
-                  </>
+                  </div>
                 )}
               </div>
             )}
@@ -456,29 +506,33 @@ export default function FloatingSmartSearch() {
               <input
                 ref={inputRef}
                 type="text"
-                value={query}
-                onChange={(e) => handleChange(e.target.value)}
+                value={input}
+                onChange={(e) => {
+                  setInput(e.target.value);
+                  if (e.target.value && showFirstUse) dismissFirstUse();
+                }}
                 onFocus={() => setFocused(true)}
                 onBlur={() => setFocused(false)}
-                placeholder={PLACEHOLDER_PROMPTS[placeholderIndex]}
+                placeholder={hasMessages ? "Ask a follow-up…" : PLACEHOLDER_PROMPTS[placeholderIndex]}
+                disabled={loading}
+                maxLength={300}
                 tabIndex={expanded ? 0 : -1}
-                className="relative z-10 h-full w-full rounded-full bg-transparent py-3.5 pl-5 pr-20 text-sm text-white placeholder:text-white/50 focus:outline-none"
+                className="relative z-10 h-full w-full rounded-full bg-transparent py-3.5 pl-5 pr-20 text-sm text-white placeholder:text-white/50 focus:outline-none disabled:opacity-60"
               />
               {/* Clear / loading indicator */}
               {loading ? (
                 <div className="absolute right-12 top-1/2 z-20 -translate-y-1/2">
                   <div className="h-4 w-4 animate-spin rounded-full border-2 border-white/20 border-t-destiny-orange" />
                 </div>
-              ) : query ? (
+              ) : input ? (
                 <button
                   type="button"
                   onClick={() => {
-                    setQuery("");
-                    setResult(null);
+                    setInput("");
                     inputRef.current?.focus();
                   }}
                   className="absolute right-12 top-1/2 z-20 -translate-y-1/2 text-white/40 transition hover:text-white/70"
-                  aria-label="Clear search"
+                  aria-label="Clear input"
                 >
                   <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />

@@ -1,5 +1,4 @@
-import { getOpenAI, SMART_SEARCH_MODEL } from "@/lib/openaiClient";
-import { SITE_KNOWLEDGE, ALLOWED_PAGES, PAGE_INTENTS } from "@/lib/siteKnowledge";
+import { ALLOWED_PAGES, PAGE_INTENTS } from "@/lib/siteKnowledge";
 
 export interface SmartSearchResult {
   answer: string;
@@ -81,43 +80,4 @@ export function parseAnswer(raw: string): SmartSearchResult {
     page,
     ctaLabel,
   };
-}
-
-/**
- * The core Smart Search engine. Grounds a single grounded, free-text answer in
- * SITE_KNOWLEDGE and returns prose + validated page/CTA. Always resolves to a
- * non-empty answer (canned fallback on missing key or error).
- */
-export async function runSmartSearch(query: string, choice?: string): Promise<SmartSearchResult> {
-  const openai = getOpenAI();
-  if (!openai) {
-    return { answer: FALLBACK_ANSWERS.unavailable, page: "/contact", ctaLabel: "Contact Us" };
-  }
-
-  // A `choice` means the visitor tapped one of the AI's clarifying options — fold
-  // it into the prompt as context so the model gives a tailored final answer.
-  const userContent = choice
-    ? `Original question: "${query}"\nThe visitor tapped this option to clarify what they need: "${choice}"\nGive a direct, final answer that routes them to the best way to get this — do not ask another clarifying question.`
-    : query;
-
-  try {
-    const completion = await openai.chat.completions.create({
-      model: SMART_SEARCH_MODEL,
-      messages: [
-        { role: "system", content: SITE_KNOWLEDGE },
-        { role: "user", content: userContent },
-      ],
-      max_tokens: 400,
-      temperature: 0.2,
-    });
-
-    const raw = completion.choices[0]?.message?.content?.trim() ?? "";
-    if (!raw) {
-      return { answer: FALLBACK_ANSWERS.empty, page: "/contact", ctaLabel: "Contact Us" };
-    }
-    return parseAnswer(raw);
-  } catch (err) {
-    console.error("[smartSearch]", err);
-    return { answer: FALLBACK_ANSWERS.unavailable, page: "/contact", ctaLabel: "Contact Us" };
-  }
 }

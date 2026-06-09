@@ -1,25 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getOpenAI, SMART_SEARCH_MODEL } from "@/lib/openaiClient";
-import { CHURCH_FACTS } from "@/lib/siteKnowledge";
-
-const CHAT_SYSTEM = `
-You are a friendly, warm assistant for Destiny Church Tees Valley (destinytees.uk). The user is having a conversation with you about the church. You have already given an initial answer and the user is following up.
-
-Answer in a natural, conversational tone — like a helpful church member chatting, not a formal document. Be thorough: 2–5 sentences is fine when the question needs it. Reply in plain prose only (no PAGE/CTA tags, no JSON).
-
-RULES:
-- Only answer questions about Destiny — its services, people, events, beliefs, sermons, and practical information.
-- For off-topic questions (not related to the church), reply: "I can only help with questions about Destiny — is there something about us I can help you with?"
-- Only state facts present below. Never invent names, roles, times, or details. If you don't have it, say so briefly and point them to admin@destinytees.uk.
-- Never assign a role to anyone unless it is explicitly listed below.
-- Say "Destiny" or "we/our" instead of the full church name "Destiny Church Tees Valley".
-- Never start by restating the question.
-- NEVER give spiritual advice, theological answers, or engage with personal faith questions.
-
-────────────────────────────────────────────────────────
-KNOWLEDGE
-
-${CHURCH_FACTS}`.trim();
+import { CONVERSATIONAL_KNOWLEDGE } from "@/lib/siteKnowledge";
+import { parseAnswer, FALLBACK_ANSWERS } from "@/lib/smartSearch";
 
 // Simple rate limiting (shared in-memory store)
 const rlStore = new Map<string, { count: number; reset: number }>();
@@ -72,24 +54,33 @@ export async function POST(request: NextRequest) {
 
   const openai = getOpenAI();
   if (!openai) {
-    return NextResponse.json({ answer: "Smart Search is not available right now." });
+    return NextResponse.json({
+      answer: FALLBACK_ANSWERS.unavailable,
+      page: "/contact",
+      ctaLabel: "Contact Us",
+    });
   }
 
   try {
     const completion = await openai.chat.completions.create({
       model: SMART_SEARCH_MODEL,
       messages: [
-        { role: "system", content: CHAT_SYSTEM },
+        { role: "system", content: CONVERSATIONAL_KNOWLEDGE },
         ...messages.map((m) => ({ role: m.role, content: m.content })),
       ],
       max_tokens: 600,
       temperature: 0.3,
     });
 
-    const answer = completion.choices[0]?.message?.content?.trim() ?? "I'm not sure — please contact us at admin@destinytees.uk.";
-    return NextResponse.json({ answer });
+    const raw = completion.choices[0]?.message?.content?.trim() ?? "";
+    if (!raw) {
+      return NextResponse.json({ answer: FALLBACK_ANSWERS.empty, page: "/contact", ctaLabel: "Contact Us" });
+    }
+    // Parse prose + validated PAGE/CTA + any clarifying OPTION chips, exactly like
+    // the single-shot Smart Search, so the floating chat keeps its chips/CTA.
+    return NextResponse.json(parseAnswer(raw));
   } catch (err) {
     console.error("[chat]", err);
-    return NextResponse.json({ answer: "Something went wrong — please try again." });
+    return NextResponse.json({ answer: FALLBACK_ANSWERS.unavailable, page: "/contact", ctaLabel: "Contact Us" });
   }
 }

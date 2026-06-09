@@ -327,13 +327,8 @@ export default function GlobalSearch({
                 {(hasPages || hasSermons) && <div className="mx-4 border-t border-white/8" />}
                 <div className="px-4 py-4">
                   {/* Header */}
-                  <div className="mb-3 flex items-center justify-between">
-                    <div className="flex items-center gap-1.5">
-                      <svg className="h-3.5 w-3.5 text-destiny-orange" fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" />
-                      </svg>
-                    </div>
-                    <span className="text-[10px] text-white/25">destinytees.uk</span>
+                  <div className="mb-3 flex items-center justify-end">
+                    <span className="text-[10px] text-white/25">AI can sometimes make mistakes.</span>
                   </div>
 
                   {/* Answer */}

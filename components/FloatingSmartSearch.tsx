@@ -364,11 +364,8 @@ export default function FloatingSmartSearch() {
                     {hasPages && <div className="mx-4 border-t border-white/8" />}
                     <div className="px-4 py-4">
                       {/* Header */}
-                      <div className="mb-3 flex items-center justify-between">
-                        <div className="flex items-center gap-1.5">
-                          <SparkleIcon className="h-3.5 w-3.5 text-destiny-orange" />
-                        </div>
-                        <span className="text-[10px] text-white/25">destinytees.uk</span>
+                      <div className="mb-3 flex items-center justify-end">
+                        <span className="text-[10px] text-white/25">AI can sometimes make mistakes.</span>
                       </div>
 
                       {/* Answer (or clarifying question) */}

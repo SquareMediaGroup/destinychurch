@@ -4,7 +4,18 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState, useRef, useEffect, useLayoutEffect, useCallback } from "react";
 import { useCookieConsent } from "@/lib/cookieConsent";
-import { cooldownAnswer } from "@/lib/smartSearch";
+import { cooldownAnswer, parseAnswer } from "@/lib/smartSearch";
+
+// Hide the trailing OPTION:/PAGE:/CTA: lines while text is still streaming in, so
+// the visitor only ever sees clean prose. The full reply is parsed once complete.
+function visibleProse(raw: string): string {
+  return raw
+    .replace(/^\s*(?:[-*•]\s*|\d+[.)]\s*)?OPTION:.*$/gim, "")
+    .replace(/^\s*PAGE:.*$/gim, "")
+    .replace(/^\s*CTA:.*$/gim, "")
+    .replace(/^\s*[-=]{3,}\s*$/gm, "")
+    .trimEnd();
+}
 
 // Run layout effects on the client, but fall back to useEffect during SSR to
 // avoid React's "useLayoutEffect does nothing on the server" warning.
@@ -16,13 +27,6 @@ interface ChatMessage {
   options?: string[];    // assistant: tappable clarifying chips
   page?: string | null;  // assistant: CTA target
   ctaLabel?: string | null;
-}
-
-interface ChatResponse {
-  answer: string;
-  page?: string | null;
-  ctaLabel?: string | null;
-  options?: string[];
 }
 
 const PLACEHOLDER_PROMPTS = [
@@ -167,10 +171,11 @@ export default function FloatingSmartSearch() {
     return () => clearInterval(id);
   }, [expanded, input, hasMessages]);
 
-  // Keep the latest message in view as the thread grows / while typing.
+  // Keep the latest message in view as the thread grows and as text streams in.
+  const lastContent = messages[messages.length - 1]?.content ?? "";
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
-  }, [messages.length, loading]);
+  }, [messages.length, lastContent, loading]);
 
   const dismissFirstUse = useCallback(() => {
     setShowFirstUse(false);
@@ -232,17 +237,57 @@ export default function FloatingSmartSearch() {
           return;
         }
 
-        const data: ChatResponse = await res.json();
-        setMessages((prev) => [
-          ...prev,
-          {
-            role: "assistant",
-            content: data.answer,
-            options: data.options,
-            page: data.page ?? null,
-            ctaLabel: data.ctaLabel ?? null,
-          },
-        ]);
+        if (!res.body) {
+          // No stream (shouldn't happen) — fall back to reading the whole body.
+          const text = await res.text();
+          const parsed = parseAnswer(text);
+          setMessages((prev) => [
+            ...prev,
+            { role: "assistant", content: parsed.answer, options: parsed.options, page: parsed.page, ctaLabel: parsed.ctaLabel },
+          ]);
+          return;
+        }
+
+        // Stream tokens in: append an assistant message on the first chunk (which
+        // also clears the typing indicator), then keep rewriting its prose as text
+        // arrives. Parse the clarifying chips / CTA once the stream finishes.
+        const reader = res.body.getReader();
+        const decoder = new TextDecoder();
+        let raw = "";
+        let appended = false;
+
+        for (;;) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          raw += decoder.decode(value, { stream: true });
+          const prose = visibleProse(raw);
+          if (!prose && !appended) continue; // wait for the first visible text
+          if (!appended) {
+            appended = true;
+            setLoading(false);
+            setMessages((prev) => [...prev, { role: "assistant", content: prose }]);
+          } else {
+            setMessages((prev) =>
+              prev.map((m, i) => (i === prev.length - 1 ? { ...m, content: prose } : m))
+            );
+          }
+        }
+
+        const parsed = parseAnswer(raw);
+        if (!appended) {
+          setMessages((prev) => [
+            ...prev,
+            { role: "assistant", content: parsed.answer, options: parsed.options, page: parsed.page, ctaLabel: parsed.ctaLabel },
+          ]);
+        } else {
+          setMessages((prev) =>
+            prev.map((m, i) =>
+              i === prev.length - 1
+                ? { ...m, content: parsed.answer, options: parsed.options, page: parsed.page, ctaLabel: parsed.ctaLabel }
+                : m
+            )
+          );
+        }
       } catch {
         setMessages((prev) => [
           ...prev,

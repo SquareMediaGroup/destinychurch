@@ -1,10 +1,14 @@
 import { NextResponse } from "next/server";
 import { createServiceClient } from "@/utils/supabase/service";
+import { requireUser } from "@/lib/apiAuth";
 
 export async function GET(
   _request: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
+  const denied = await requireUser();
+  if (denied) return denied;
+
   const { id } = await params;
   const supabase = createServiceClient();
   const { data, error } = await supabase
@@ -36,6 +40,9 @@ export async function PATCH(
   request: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
+  const denied = await requireUser();
+  if (denied) return denied;
+
   const { id } = await params;
   const body = await request.json();
 
@@ -60,6 +67,9 @@ export async function DELETE(
   _request: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
+  const denied = await requireUser();
+  if (denied) return denied;
+
   const { id } = await params;
   const supabase = createServiceClient();
   const { error } = await supabase.from("hr_staff").delete().eq("id", id);

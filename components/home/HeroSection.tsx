@@ -1,4 +1,5 @@
 import Image from "next/image";
+import Link from "next/link";
 
 export default function HeroSection() {
   return (
@@ -42,18 +43,18 @@ export default function HeroSection() {
 
       {/* CTAs pinned to bottom */}
       <div className="absolute bottom-6 left-0 right-0 z-10 flex flex-wrap items-center justify-center gap-3 px-4 sm:bottom-10 sm:gap-4">
-        <a
+        <Link
           href="/visit"
           className="rounded-full bg-destiny-orange px-6 py-3 text-xs font-bold text-white shadow-lg shadow-destiny-orange/30 transition hover:brightness-110 sm:px-8 sm:py-3.5 sm:text-sm"
         >
           Plan a Visit
-        </a>
-        <a
+        </Link>
+        <Link
           href="/sermons"
           className="rounded-full border-2 border-white/30 px-6 py-3 text-xs font-bold text-white backdrop-blur-sm transition hover:border-white hover:bg-white/10 sm:px-8 sm:py-3.5 sm:text-sm"
         >
           Sermons
-        </a>
+        </Link>
       </div>
     </section>
   );

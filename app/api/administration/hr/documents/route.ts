@@ -1,9 +1,13 @@
 import { NextResponse } from "next/server";
 import { createServiceClient } from "@/utils/supabase/service";
+import { requireUser } from "@/lib/apiAuth";
 
 const BUCKET = "hr-documents";
 
 export async function GET(request: Request) {
+  const denied = await requireUser();
+  if (denied) return denied;
+
   const { searchParams } = new URL(request.url);
   const staffId = searchParams.get("staff_id");
   const scope = searchParams.get("scope"); // "org" → org-wide only (staff_id is null)
@@ -24,6 +28,9 @@ export async function GET(request: Request) {
 
 // Upload a file (multipart/form-data) → storage + metadata row.
 export async function POST(request: Request) {
+  const denied = await requireUser();
+  if (denied) return denied;
+
   const form = await request.formData();
   const file = form.get("file");
   const title = form.get("title")?.toString().trim();

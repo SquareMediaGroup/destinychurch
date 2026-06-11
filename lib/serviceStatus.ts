@@ -46,8 +46,18 @@ export async function getSmartSearchStatus(): Promise<ServiceStatus> {
   }
 }
 
+// The root layout asks for this flag on every request; cache it briefly so a
+// Supabase round-trip isn't on the critical path of every page render. The
+// kill-switch still takes effect within TTL_MS per server instance.
+const TTL_MS = 30_000;
+let cachedEnabled: { value: boolean; expires: number } | null = null;
+
 export async function isSmartSearchEnabled(): Promise<boolean> {
-  return (await getSmartSearchStatus()).enabled;
+  const now = Date.now();
+  if (cachedEnabled && now < cachedEnabled.expires) return cachedEnabled.value;
+  const enabled = (await getSmartSearchStatus()).enabled;
+  cachedEnabled = { value: enabled, expires: now + TTL_MS };
+  return enabled;
 }
 
 export async function setSmartSearchStatus(patch: {
@@ -56,6 +66,7 @@ export async function setSmartSearchStatus(patch: {
   nextCheckAt: string;
   consecutiveFailures: number;
 }): Promise<void> {
+  cachedEnabled = null;
   const supabase = createServiceClient();
   const now = new Date().toISOString();
   await supabase.from("service_status").upsert(

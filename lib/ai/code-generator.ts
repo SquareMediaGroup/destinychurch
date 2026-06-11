@@ -474,7 +474,7 @@ function stripCodeFences(raw: string): string {
 
 function tryRepairJson(s: string): string | null {
   // Salvage common truncation issues: response was cut off mid-string/object.
-  let str = s.trim();
+  const str = s.trim();
 
   let depth = 0;
   let inString = false;

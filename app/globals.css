@@ -68,6 +68,17 @@ body {
   color: #ffffff;
 }
 
+/* Self-hosted (was a render-blocking fonts.googleapis.com stylesheet).
+   font-display: block keeps raw ligature text (e.g. "menu") from flashing
+   before the icon font loads. */
+@font-face {
+  font-family: "Material Symbols Rounded";
+  font-style: normal;
+  font-weight: 500;
+  font-display: block;
+  src: url("/fonts/material-symbols-rounded.woff2") format("woff2");
+}
+
 .material-symbols-rounded {
   font-family: "Material Symbols Rounded";
   font-weight: 500;

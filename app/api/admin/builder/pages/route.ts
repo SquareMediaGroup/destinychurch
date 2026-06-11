@@ -1,8 +1,12 @@
 import { NextResponse } from "next/server";
 import { createServiceClient } from "@/utils/supabase/service";
+import { requireUser } from "@/lib/apiAuth";
 
 // GET /api/admin/builder/pages — list all builder pages
 export async function GET() {
+  const denied = await requireUser();
+  if (denied) return denied;
+
   const supabase = createServiceClient();
   const { data, error } = await supabase
     .from("builder_pages")

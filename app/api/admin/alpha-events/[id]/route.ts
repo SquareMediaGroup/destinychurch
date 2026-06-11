@@ -1,4 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
+import { requireUser } from "@/lib/apiAuth";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -9,6 +10,9 @@ export async function PATCH(
   req: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const denied = await requireUser();
+  if (denied) return denied;
+
   try {
     const body = await req.json();
     const { id } = await params;
@@ -37,6 +41,9 @@ export async function DELETE(
   req: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const denied = await requireUser();
+  if (denied) return denied;
+
   try {
     const { id } = await params;
 

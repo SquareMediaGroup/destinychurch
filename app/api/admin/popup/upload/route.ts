@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createServiceClient } from "@/utils/supabase/service";
+import { requireUser } from "@/lib/apiAuth";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -14,6 +15,9 @@ const ALLOWED = new Set([
 ]);
 
 export async function POST(request: Request) {
+  const denied = await requireUser();
+  if (denied) return denied;
+
   const form = await request.formData();
   const file = form.get("file");
 

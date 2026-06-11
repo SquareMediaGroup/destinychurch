@@ -1,8 +1,20 @@
 import { createClient } from "@/utils/supabase/middleware";
 import { type NextRequest, NextResponse } from "next/server";
 
+const SAFE_METHODS = new Set(["GET", "HEAD", "OPTIONS"]);
+
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
+
+  // CSRF defense: state-changing requests to protected routes must originate
+  // from this site. Browsers always send Origin on cross-site POST/PUT/DELETE.
+  if (!SAFE_METHODS.has(request.method)) {
+    const origin = request.headers.get("origin");
+    if (origin && new URL(origin).host !== request.nextUrl.host) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+  }
+
   const { supabase, supabaseResponse } = createClient(request);
 
   const { data: { user } } = await supabase.auth.getUser();

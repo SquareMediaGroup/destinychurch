@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createServiceClient } from "@/utils/supabase/service";
+import { requireUser } from "@/lib/apiAuth";
 
 const BUCKET = "hr-documents";
 
@@ -8,6 +9,9 @@ export async function GET(
   _request: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
+  const denied = await requireUser();
+  if (denied) return denied;
+
   const { id } = await params;
   const supabase = createServiceClient();
 
@@ -33,6 +37,9 @@ export async function DELETE(
   _request: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
+  const denied = await requireUser();
+  if (denied) return denied;
+
   const { id } = await params;
   const supabase = createServiceClient();
 

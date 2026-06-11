@@ -1,8 +1,12 @@
 import OpenAI from "openai";
+import { type NextRequest } from "next/server";
+import { checkRateLimit, clientIp } from "@/lib/rateLimit";
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
+
+const MAX_QUESTION_LENGTH = 500;
 
 const ALPHA_KNOWLEDGE = `
 You are a friendly assistant for Alpha at Destiny Church Tees Valley.
@@ -43,13 +47,31 @@ External resources (if relevant):
 - Alpha YouTube channel: https://www.youtube.com/@AlphaCourse
 `;
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   try {
+    const { limited, retryAfterMs } = checkRateLimit(clientIp(req));
+    if (limited) {
+      return Response.json(
+        { error: "Too many requests. Please try again shortly." },
+        {
+          status: 429,
+          headers: { "Retry-After": String(Math.ceil(retryAfterMs / 1000)) },
+        }
+      );
+    }
+
     const { question } = await req.json();
 
     if (!question || typeof question !== "string") {
       return Response.json(
         { error: "Question is required" },
+        { status: 400 }
+      );
+    }
+
+    if (question.length > MAX_QUESTION_LENGTH) {
+      return Response.json(
+        { error: "Question is too long" },
         { status: 400 }
       );
     }

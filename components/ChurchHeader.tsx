@@ -211,11 +211,12 @@ export default function ChurchHeader() {
     return [items[0], { href: "/alpha", label: "Alpha" }, ...items.slice(1)];
   }, [alphaActive, youtubeQuotaExceeded]);
 
+  const banner = useBanner();
+
   if (pathname.startsWith("/admin")) return null;
 
   const isAdmin = pathname.startsWith("/admin");
   const isHome = pathname === "/";
-  const banner = useBanner();
   const bannerOffset = banner.active && !isAdmin ? "top-10" : "top-0";
 
   return (

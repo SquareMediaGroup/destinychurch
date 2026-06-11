@@ -6,6 +6,7 @@ import {
   ALLOWED_IMAGE_TYPES,
   IMAGE_VARIANTS,
 } from "@/lib/ai/media-types";
+import { requireUser } from "@/lib/apiAuth";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -17,6 +18,9 @@ const BUCKET_NAME = "builder-media";
 export const maxDuration = 60; // Allow longer for image processing
 
 export async function POST(req: NextRequest) {
+  const denied = await requireUser();
+  if (denied) return denied;
+
   try {
     const formData = await req.formData();
     const file = formData.get("file") as File | null;
@@ -179,6 +183,9 @@ async function uploadOriginal(
 
 // Update media metadata (purpose, description, alt text)
 export async function PATCH(req: NextRequest) {
+  const denied = await requireUser();
+  if (denied) return denied;
+
   try {
     const body = (await req.json()) as {
       id: string;

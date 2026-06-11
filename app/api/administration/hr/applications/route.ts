@@ -1,7 +1,11 @@
 import { NextResponse } from "next/server";
 import { createServiceClient } from "@/utils/supabase/service";
+import { requireUser } from "@/lib/apiAuth";
 
 export async function GET(request: Request) {
+  const denied = await requireUser();
+  if (denied) return denied;
+
   const { searchParams } = new URL(request.url);
   const jobId = searchParams.get("job_id");
 

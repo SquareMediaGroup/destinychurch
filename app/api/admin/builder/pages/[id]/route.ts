@@ -1,8 +1,12 @@
 import { NextResponse } from "next/server";
 import { createServiceClient } from "@/utils/supabase/service";
+import { requireUser } from "@/lib/apiAuth";
 
 // GET /api/admin/builder/pages/[id]
 export async function GET(_request: Request, { params }: { params: Promise<{ id: string }> }) {
+  const denied = await requireUser();
+  if (denied) return denied;
+
   const { id } = await params;
   const supabase = createServiceClient();
   const { data, error } = await supabase
@@ -18,6 +22,9 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
 
 // PUT /api/admin/builder/pages/[id]
 export async function PUT(request: Request, { params }: { params: Promise<{ id: string }> }) {
+  const denied = await requireUser();
+  if (denied) return denied;
+
   const { id } = await params;
   const body = await request.json();
   const { slug, title, layout_json, status } = body;
@@ -49,6 +56,9 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
 
 // DELETE /api/admin/builder/pages/[id]
 export async function DELETE(_request: Request, { params }: { params: Promise<{ id: string }> }) {
+  const denied = await requireUser();
+  if (denied) return denied;
+
   const { id } = await params;
   const supabase = createServiceClient();
   const { error } = await supabase.from("builder_pages").delete().eq("id", id);

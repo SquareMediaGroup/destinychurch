@@ -6,6 +6,12 @@ export async function GET(
 ) {
   const { id } = await params;
 
+  // YouTube video IDs are exactly 11 URL-safe characters; reject anything else
+  // so this proxy can't be pointed at arbitrary ytimg paths.
+  if (!/^[A-Za-z0-9_-]{11}$/.test(id)) {
+    return new NextResponse(null, { status: 400 });
+  }
+
   const urls = [
     `https://i.ytimg.com/vi/${id}/maxresdefault.jpg`,
     `https://i.ytimg.com/vi/${id}/sddefault.jpg`,

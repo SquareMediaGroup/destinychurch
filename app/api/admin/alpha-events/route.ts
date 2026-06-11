@@ -1,4 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
+import { requireUser } from "@/lib/apiAuth";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -6,6 +7,9 @@ const supabase = createClient(
 );
 
 export async function GET() {
+  const denied = await requireUser();
+  if (denied) return denied;
+
   try {
     const { data, error } = await supabase
       .from("alpha_events")
@@ -23,6 +27,9 @@ export async function GET() {
 }
 
 export async function POST(req: Request) {
+  const denied = await requireUser();
+  if (denied) return denied;
+
   try {
     const {
       type,

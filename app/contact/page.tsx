@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import AnimateIn from "@/components/AnimateIn";
 import ContactForm from "./ContactForm";
 import ChurchSuiteEmbed from "@/components/ChurchSuiteEmbed";
+import Link from "next/link";
 
 export const metadata: Metadata = {
   title: "Contact Us",
@@ -95,7 +96,7 @@ export default function ContactPage() {
             {/* Form */}
             <AnimateIn delay={100}>
               <h2 className="mb-8 text-2xl font-black text-destiny-grey">Send a Message</h2>
-              <a
+              <Link
                 href="/connect-card"
                 className="mb-6 flex items-center gap-3 rounded-2xl border border-destiny-orange/20 bg-destiny-orange/5 px-4 py-3 transition hover:bg-destiny-orange/10"
               >
@@ -105,7 +106,7 @@ export default function ContactPage() {
                   <p className="text-xs text-destiny-grey/60">Fill in a connect card instead — it&apos;s the best way to say hello.</p>
                 </div>
                 <span className="material-symbols-rounded text-sm text-destiny-orange">arrow_forward</span>
-              </a>
+              </Link>
               <ContactForm />
             </AnimateIn>
           </div>

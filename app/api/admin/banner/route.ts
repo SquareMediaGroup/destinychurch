@@ -1,9 +1,13 @@
 import { NextResponse } from "next/server";
 import { createServiceClient } from "@/utils/supabase/service";
+import { requireUser } from "@/lib/apiAuth";
 
 const ALPHA_TYPES = new Set(["alpha", "youth_alpha", "recovery"]);
 
 export async function GET(request: Request) {
+  const denied = await requireUser();
+  if (denied) return denied;
+
   const url = new URL(request.url);
   const type = url.searchParams.get("type");
   const supabase = createServiceClient();
@@ -63,6 +67,9 @@ export async function GET(request: Request) {
 }
 
 export async function PUT(request: Request) {
+  const denied = await requireUser();
+  if (denied) return denied;
+
   const body = await request.json();
   const { active, message, type, link, link_text } = body;
   const resolvedType = type ?? "announcement";

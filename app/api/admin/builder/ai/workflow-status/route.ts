@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getWorkflowStatus } from "@/lib/github-actions";
+import { requireUser } from "@/lib/apiAuth";
 
 const GITHUB_TOKEN = process.env.GH_TOKEN;
 const GITHUB_REPO = process.env.GITHUB_REPO || "SquareMediaGroup/destinychurch";
@@ -11,6 +12,9 @@ export const runtime = "nodejs";
  * Called by the frontend to show progress.
  */
 export async function GET(req: NextRequest) {
+  const denied = await requireUser();
+  if (denied) return denied;
+
   const { searchParams } = new URL(req.url);
   const runId = searchParams.get("runId");
 

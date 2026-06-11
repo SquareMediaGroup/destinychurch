@@ -1,10 +1,14 @@
 import { NextResponse } from "next/server";
 import { createServiceClient } from "@/utils/supabase/service";
+import { requireUser } from "@/lib/apiAuth";
 
 export async function POST(
   _req: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const denied = await requireUser();
+  if (denied) return denied;
+
   const { id } = await params;
   if (!id) return NextResponse.json({ error: "Missing video id" }, { status: 400 });
 

@@ -10,10 +10,10 @@ import CookieBanner from "@/components/CookieBanner";
 import AnalyticsGate from "@/components/AnalyticsGate";
 import SiteBanner from "@/components/SiteBanner";
 import SitePopup from "@/components/SitePopup";
-import FloatingSmartSearch from "@/components/FloatingSmartSearch";
+import FloatingSmartSearch from "@/components/FloatingSmartSearchLazy";
 import { isSmartSearchEnabled } from "@/lib/serviceStatus";
 import BannerSpacer from "@/components/BannerSpacer";
-import VisualEditOverlay from "@/components/admin/VisualEditOverlay";
+import VisualEditOverlay from "@/components/admin/VisualEditOverlayGate";
 import { createServiceClient } from "@/utils/supabase/service";
 import { unstable_noStore as noStore } from "next/cache";
 import { SpeedInsights } from "@vercel/speed-insights/next";
@@ -112,9 +112,11 @@ async function getActiveBanner() {
     const recovery = banners.find((b) => b.type === "recovery");
     const other = banners.find((b) => !EVENT_TYPES.has(b.type));
 
-    const resolvedAlpha = alpha ? await resolveEvent(alpha) : null;
-    const resolvedYouth = youthAlpha ? await resolveEvent(youthAlpha) : null;
-    const resolvedRecovery = recovery ? await resolveEvent(recovery) : null;
+    const [resolvedAlpha, resolvedYouth, resolvedRecovery] = await Promise.all([
+      alpha ? resolveEvent(alpha) : null,
+      youthAlpha ? resolveEvent(youthAlpha) : null,
+      recovery ? resolveEvent(recovery) : null,
+    ]);
 
     const activeResolved = [resolvedAlpha, resolvedYouth, resolvedRecovery].filter(
       (b): b is NonNullable<typeof b> => !!b?.active
@@ -232,14 +234,22 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const banner = await getActiveBanner();
-  const popup = await getActivePopup();
-  const smartSearchEnabled = await isSmartSearchEnabled();
+  const [banner, popup, smartSearchEnabled] = await Promise.all([
+    getActiveBanner(),
+    getActivePopup(),
+    isSmartSearchEnabled(),
+  ]);
 
   return (
     <html lang="en">
       <head>
-        <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,500,0,0" />
+        <link
+          rel="preload"
+          href="/fonts/material-symbols-rounded.woff2"
+          as="font"
+          type="font/woff2"
+          crossOrigin="anonymous"
+        />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(orgSchema) }}

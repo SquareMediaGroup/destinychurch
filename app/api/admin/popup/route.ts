@@ -1,7 +1,11 @@
 import { NextResponse } from "next/server";
 import { createServiceClient } from "@/utils/supabase/service";
+import { requireUser } from "@/lib/apiAuth";
 
 export async function GET() {
+  const denied = await requireUser();
+  if (denied) return denied;
+
   const supabase = createServiceClient();
   const { data, error } = await supabase
     .from("site_popup")
@@ -26,6 +30,9 @@ export async function GET() {
 }
 
 export async function PUT(request: Request) {
+  const denied = await requireUser();
+  if (denied) return denied;
+
   const body = await request.json();
   const {
     active,

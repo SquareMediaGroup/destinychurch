@@ -33,6 +33,7 @@ export default async function ChurchFooter() {
     { label: "Serve", href: "/serve" },
     { label: "Give", href: "/give" },
     { label: "Hire", href: "/hire" },
+    { label: "MyChurchsuite", href: "https://destinytees.churchsuite.com", external: true },
   ];
 
   return (
@@ -69,15 +70,27 @@ export default async function ChurchFooter() {
           <div className="space-y-4">
             <p className="text-sm font-bold text-white">Church</p>
             <div className="grid gap-2 text-sm">
-              {churchLinks.map((link) => (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  className="text-white/70 transition hover:text-white"
-                >
-                  {link.label}
-                </Link>
-              ))}
+              {churchLinks.map((link) =>
+                link.external ? (
+                  <a
+                    key={link.href}
+                    href={link.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-white/70 transition hover:text-white"
+                  >
+                    {link.label}
+                  </a>
+                ) : (
+                  <Link
+                    key={link.href}
+                    href={link.href}
+                    className="text-white/70 transition hover:text-white"
+                  >
+                    {link.label}
+                  </Link>
+                )
+              )}
             </div>
           </div>
 

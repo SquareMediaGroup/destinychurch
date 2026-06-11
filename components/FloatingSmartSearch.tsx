@@ -71,7 +71,7 @@ function SparkleIcon({ className }: { className?: string }) {
 
 export default function FloatingSmartSearch() {
   const pathname = usePathname();
-  const { decided, allowAll, denyOptional } = useCookieConsent();
+  const { decided } = useCookieConsent();
   const [expanded, setExpanded] = useState(false);
   const [input, setInput] = useState("");
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -310,6 +310,10 @@ export default function FloatingSmartSearch() {
 
   if (pathname.startsWith("/admin")) return null;
 
+  // Don't surface Smart Search at all until the visitor has made a cookie
+  // decision — the search icon only appears once cookies have been accepted.
+  if (!decided) return null;
+
   // Page-name quick matches — only offered before a conversation has started.
   const pageMatches = !hasMessages && input.trim().length >= 1
     ? SITE_PAGES.filter((p) =>
@@ -319,8 +323,7 @@ export default function FloatingSmartSearch() {
 
   const hasPages    = pageMatches.length > 0;
   const showPanel   = expanded && (hasMessages || loading || hasPages);
-  const showConsent = expanded && !decided;
-  const showWelcome = expanded && decided && showFirstUse && !hasMessages && !loading && !input;
+  const showWelcome = expanded && showFirstUse && !hasMessages && !loading && !input;
 
   return (
     <div className="pointer-events-none fixed inset-x-0 bottom-0 z-50 flex justify-center px-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
@@ -330,42 +333,8 @@ export default function FloatingSmartSearch() {
         style={{ maxWidth: "min(calc(100vw - 2rem), 28rem)" }}
       >
         {/* Panels stack above the bar and expand upward */}
-        {(showConsent || showWelcome || showPanel) && (
+        {(showWelcome || showPanel) && (
           <div className="floating-search-panels absolute bottom-full left-0 right-0 mb-2">
-            {/* Cookie consent gate */}
-            {showConsent && (
-              <div className="rounded-2xl border border-white/15 bg-destiny-grey/60 p-5 shadow-2xl backdrop-blur-md">
-                <div className="mb-3 flex items-center gap-1.5">
-                  <SparkleIcon className="h-3.5 w-3.5 text-destiny-orange" />
-                  <span className="text-xs font-bold uppercase tracking-widest text-white/40">Smart Search</span>
-                </div>
-                <p className="text-sm font-semibold text-white">Accept cookies to use Smart Search</p>
-                <p className="mt-1.5 text-xs leading-relaxed text-white/50">
-                  Smart Search uses AI to answer your questions. Accept cookies to enable this feature.
-                </p>
-                <div className="mt-4 flex flex-wrap gap-2">
-                  <button
-                    onClick={allowAll}
-                    className="rounded-full bg-destiny-orange px-4 py-2 text-xs font-semibold uppercase tracking-wide text-white transition hover:brightness-95"
-                  >
-                    Accept All
-                  </button>
-                  <button
-                    onClick={denyOptional}
-                    className="rounded-full border border-white/15 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-white/60 transition hover:border-destiny-orange hover:text-white"
-                  >
-                    Essential Only
-                  </button>
-                  <button
-                    onClick={collapse}
-                    className="rounded-full px-4 py-2 text-xs font-semibold uppercase tracking-wide text-white/30 transition hover:text-white/60"
-                  >
-                    Dismiss
-                  </button>
-                </div>
-              </div>
-            )}
-
             {/* First-use explanation */}
             {showWelcome && (
               <div className="rounded-2xl border border-white/10 bg-destiny-grey/70 p-4 shadow-xl backdrop-blur-md">

@@ -137,9 +137,7 @@ export default function SermonsHeader() {
   }
 
   /* ── shared inline styles ── */
-  const glassClass = scrolled
-    ? "bg-destiny-grey/60 shadow-xl shadow-black/30"
-    : "bg-destiny-grey/40 shadow-lg shadow-black/10";
+  const glassClass = scrolled ? "glass-strong" : "glass-strong glass-translucent";
 
   // Elements outside the pill fade out as pill expands
   const outerFade: React.CSSProperties = {
@@ -218,7 +216,7 @@ export default function SermonsHeader() {
 
                 {/* Predictive dropdown */}
                 {showDropdown && (
-                  <div className="absolute left-0 top-full z-50 mt-2 w-72 overflow-hidden rounded-2xl border border-white/10 bg-destiny-grey/95 shadow-xl shadow-black/30 backdrop-blur-md">
+                  <div className="glass glass-strong glass-opaque absolute left-0 top-full z-50 mt-2 w-72 overflow-hidden rounded-2xl">
                     {filteredSuggestions.map((s, i) => (
                       <button
                         key={s.id}
@@ -245,7 +243,7 @@ export default function SermonsHeader() {
           {/* pointer-events-none on the wrapper so the full-width container never swallows clicks meant for search/toggle */}
           <div className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center">
             <div
-              className={`pointer-events-auto relative h-14 overflow-hidden rounded-full border border-white/10 backdrop-blur-md transition-shadow ${glassClass}`}
+              className={`glass glass-refract pointer-events-auto relative h-14 overflow-hidden rounded-full transition-shadow ${glassClass}`}
               style={{
                 width:      expanded ? "100%" : "3.5rem",
                 transition: "width 0.45s cubic-bezier(0.4, 0, 0.2, 1)",
@@ -357,7 +355,7 @@ export default function SermonsHeader() {
             className="absolute right-0 top-1/2 -translate-y-1/2 z-10 hidden md:flex"
             style={outerFade}
           >
-            <div className="flex items-center rounded-full border border-white/15 bg-white/10 p-1 backdrop-blur-sm">
+            <div className="glass glass-sm flex items-center rounded-full p-1">
               {tabs.map((tab) => {
                 const active = pathname === tab.href;
                 return (
@@ -380,7 +378,7 @@ export default function SermonsHeader() {
 
         {/* Mobile dropdown */}
         {isMobile && mobileMenuOpen && (
-          <div className="mt-2 rounded-2xl border border-white/10 bg-destiny-grey/90 p-3 shadow-xl backdrop-blur-md">
+          <div className="glass glass-strong glass-opaque mt-2 rounded-2xl p-3">
             {/* Search */}
             {showSearch && (
               <div className="relative mb-3">

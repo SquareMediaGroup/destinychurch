@@ -57,7 +57,7 @@ export default function ForgotPasswordPage() {
           </div>
 
           {/* Card */}
-          <div className="rounded-3xl border border-white/10 bg-white/5 p-8 shadow-2xl backdrop-blur-md">
+          <div className="glass rounded-3xl p-8">
             {state.message ? (
               <div className="space-y-4">
                 <div className="flex items-start gap-3 rounded-2xl bg-green-500/10 px-4 py-3">

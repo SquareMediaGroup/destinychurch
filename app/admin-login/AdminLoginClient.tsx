@@ -134,7 +134,7 @@ function LoginPanel({
       </div>
 
       {/* Card */}
-      <div className="rounded-3xl border border-white/10 bg-white/5 p-8 shadow-2xl backdrop-blur-md">
+      <div className="glass rounded-3xl p-8">
         <form action={formAction} className="flex flex-col gap-5">
           <div>
             <label className="mb-2 block text-xs font-bold uppercase tracking-wider text-white/40">
@@ -225,7 +225,7 @@ function ChoosePanel({
             key={sys.href}
             href={sys.href}
             style={{ animationDelay: `${100 + i * 90}ms` }}
-            className="group flex items-center gap-4 rounded-3xl border border-white/10 bg-white/5 p-5 shadow-xl backdrop-blur-md transition animate-[fadeInUp_0.45s_ease-out_both] hover:border-destiny-orange/40 hover:bg-white/10"
+            className="glass group flex items-center gap-4 rounded-3xl border border-white/10 p-5 transition animate-[fadeInUp_0.45s_ease-out_both] hover:border-destiny-orange/40 hover:bg-white/10"
           >
             <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-destiny-orange/15 text-destiny-orange transition group-hover:bg-destiny-orange group-hover:text-white">
               <span className="material-symbols-rounded text-[28px]">

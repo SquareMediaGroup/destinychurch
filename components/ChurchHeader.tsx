@@ -61,8 +61,7 @@ function Dropdown({
       onMouseLeave={onMouseLeave}
     >
       <div
-        className="min-w-[180px] rounded-2xl border border-white/10 p-2 shadow-xl shadow-black/30 backdrop-blur-md"
-        style={{ backgroundColor: "rgba(54, 63, 72, 0.85)" }}
+        className="glass glass-strong glass-opaque min-w-[180px] rounded-2xl p-2"
       >
         {items.map((item, i) => (
           <Link
@@ -90,7 +89,7 @@ export default function ChurchHeader() {
   const pathname = usePathname();
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [scrolled, setScrolled] = useState(false);
+  const [, setScrolled] = useState(false);
   const [hidden, setHidden] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [progress, setProgress] = useState(0);
@@ -241,9 +240,7 @@ export default function ChurchHeader() {
         >
           {/* Pill */}
           <div
-            className={`flex items-center justify-between border border-white/10 px-4 py-2 backdrop-blur-md md:px-6 ${
-              scrolled ? "shadow-xl shadow-black/30" : "shadow-lg shadow-black/10"
-            }`}
+            className="glass glass-refract flex items-center justify-between px-4 py-2 md:px-6"
             style={{
               borderRadius: `${48 * progress}px`,
               backgroundColor: `rgba(54, 63, 72, ${(isHome ? 0.6 : 1) - (isHome ? 0.2 : 0.6) * progress})`,
@@ -383,8 +380,7 @@ export default function ChurchHeader() {
             }}
           >
             <div
-              className="mt-2 rounded-2xl border border-white/10 p-3 shadow-xl shadow-black/30 backdrop-blur-md"
-              style={{ backgroundColor: "rgba(54, 63, 72, 0.85)" }}
+              className="glass glass-strong glass-opaque mt-2 rounded-2xl p-3"
             >
               {/* Flat nav links */}
               {mobileNavItems.map((item) => (

@@ -42,7 +42,7 @@ export default function KidsMinistrySection() {
         <div className="mb-12 grid gap-6 md:grid-cols-3">
           {ageGroups.map((group, i) => (
             <AnimateIn key={group.title} delay={i * 80}>
-              <div className="rounded-3xl bg-white/10 p-6 backdrop-blur-sm">
+              <div className="glass glass-sm rounded-3xl p-6">
                 <div className="mb-4 inline-block rounded-full bg-white/20 px-4 py-1.5 text-xs font-bold uppercase tracking-wide text-white">
                   {group.age}
                 </div>

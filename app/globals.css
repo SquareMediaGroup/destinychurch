@@ -308,6 +308,124 @@ h3 {
   }
 }
 
+/* ──────────────────────────────────────────────────────────────────────────
+   Site-wide glass system
+   Single source of truth for glassmorphism. Composes depth (specular edge +
+   layered elevation shadow + gradient rim) on every browser, plus real
+   refraction (SVG feDisplacementMap via backdrop-filter: url()) on engines
+   that support it — see the @supports block below. Non-supporting engines
+   (Safari, Firefox) keep the blur + faked diagonal sheen so glass never
+   renders as a flat/empty box.
+
+   Usage: add `glass` (optionally `glass-refract`) to a container that already
+   carries its own border-radius (rounded-2xl/full/etc). Modifiers tune blur
+   and tint. Override tint per-surface with inline `--glass-tint`/`--glass-alpha`.
+   Do NOT apply to elements that own their own ::before/::after (e.g. the
+   .search-glow pill) — put glass on the wrapping panel instead.
+   ────────────────────────────────────────────────────────────────────────── */
+.glass {
+  --glass-tint: 255, 255, 255;
+  --glass-alpha: 0.08;
+  --glass-blur: 12px;
+  position: relative;
+  isolation: isolate;
+  /* Diagonal sheen baked into the background so it always sits *below* content
+     (no z-index fight) — this is the faked-refraction highlight. */
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.14), rgba(255, 255, 255, 0) 46%),
+    rgba(var(--glass-tint), var(--glass-alpha));
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(1.4) brightness(1.05);
+  backdrop-filter: blur(var(--glass-blur)) saturate(1.4) brightness(1.05);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.35),  /* specular top edge */
+    inset 0 -1px 0 rgba(0, 0, 0, 0.12),       /* bottom shade */
+    0 8px 24px rgba(0, 0, 0, 0.22),           /* elevation */
+    0 2px 6px rgba(0, 0, 0, 0.12);            /* tight contact shadow */
+}
+
+/* Gradient rim — masked-border technique (same trick as .search-glow::before).
+   1px ring that's bright at the top and fades around, reading as a lit edge.
+   Sits at the very border so it never overlaps text. */
+.glass::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.5),
+    rgba(255, 255, 255, 0.08) 45%,
+    rgba(255, 255, 255, 0.18)
+  );
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+          mask-composite: exclude;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.glass-sm {
+  --glass-blur: 6px;
+}
+
+.glass-md {
+  --glass-blur: 12px;
+}
+
+.glass-xl {
+  --glass-blur: 20px;
+}
+
+/* Frosted dark-grey slab — the header pill / strong surfaces. */
+.glass-strong {
+  --glass-tint: 54, 63, 72; /* destiny grey */
+  --glass-alpha: 0.6;
+  --glass-blur: 14px;
+}
+
+.glass-pill {
+  border-radius: 9999px;
+}
+
+/* Near-opaque surface — dropdown menus / popovers where content must stay
+   legible over arbitrary page content. Combine with glass-strong for grey. */
+.glass-opaque {
+  --glass-alpha: 0.92;
+}
+
+/* Lighter fill — combine with glass-strong for a more see-through slab
+   (e.g. the sermons pill at rest, before scroll). Defined after glass-strong
+   so it wins the cascade when both are present. */
+.glass-translucent {
+  --glass-alpha: 0.4;
+}
+
+/* Real refraction. Only Chromium currently honours an SVG filter reference in
+   backdrop-filter; the @supports test is false in Safari/Firefox, so they fall
+   through to the blur + sheen above. We re-declare the full filter here (can't
+   append to backdrop-filter), keeping blur/saturate/brightness and adding the
+   displacement lens. -webkit- is intentionally NOT given the url() (Safari can't
+   render it and would drop the whole filter). */
+@supports (backdrop-filter: url("#glass-refract")) {
+  .glass-refract {
+    backdrop-filter: blur(var(--glass-blur)) saturate(1.4) brightness(1.05)
+      url(#glass-refract);
+  }
+}
+
+/* Refraction is GPU-costly when tiled across many small surfaces; drop the
+   displacement on phones and lean on the cheaper blur + sheen. */
+@media (max-width: 768px) {
+  @supports (backdrop-filter: url("#glass-refract")) {
+    .glass-refract {
+      backdrop-filter: blur(var(--glass-blur)) saturate(1.4) brightness(1.05);
+    }
+  }
+}
+
 /* Floating Smart Search — circle <-> pill morph.
    The width is KEYFRAMED (not transitioned) with an aggressive ease-in-out so the
    shape snaps decisively between the circular icon and the pill. Resting widths

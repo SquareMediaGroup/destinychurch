@@ -248,6 +248,41 @@ export default async function RootLayout({
       <body
         className={`${roboto.variable} ${anton.variable} ${playfair.variable} antialiased`}
       >
+        {/* Shared displacement filter for site-wide glass refraction. Mounted
+            once; referenced by `.glass-refract` via backdrop-filter: url() on
+            Chromium. Hidden, zero-size, decorative. */}
+        <svg
+          aria-hidden
+          focusable="false"
+          width="0"
+          height="0"
+          style={{ position: "absolute", width: 0, height: 0 }}
+        >
+          <filter
+            id="glass-refract"
+            x="0"
+            y="0"
+            width="100%"
+            height="100%"
+            colorInterpolationFilters="sRGB"
+          >
+            <feTurbulence
+              type="fractalNoise"
+              baseFrequency="0.008 0.012"
+              numOctaves={2}
+              seed={7}
+              result="noise"
+            />
+            <feGaussianBlur in="noise" stdDeviation={1.5} result="softNoise" />
+            <feDisplacementMap
+              in="SourceGraphic"
+              in2="softNoise"
+              scale={12}
+              xChannelSelector="R"
+              yChannelSelector="G"
+            />
+          </filter>
+        </svg>
         <Providers banner={banner}>
 <SiteBanner />
           <CookieBanner />

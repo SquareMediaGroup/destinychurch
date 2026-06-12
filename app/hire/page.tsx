@@ -159,7 +159,7 @@ export default async function HirePage() {
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {INCLUDED.map((item, i) => (
               <AnimateIn key={item.label} delay={i * 60} className="h-full">
-                <div className="flex h-full items-start gap-4 rounded-2xl border border-white/8 bg-white/5 p-5 backdrop-blur-sm">
+                <div className="glass glass-sm flex h-full items-start gap-4 rounded-2xl p-5">
                   <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-destiny-orange/15">
                     <span className="material-symbols-rounded text-xl text-destiny-orange">{item.icon}</span>
                   </div>

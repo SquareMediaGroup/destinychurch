@@ -14,7 +14,7 @@ export default function SermonsTabBar() {
   return (
     <div className="border-b border-white/[0.06] bg-[#0f0f0f]/95 backdrop-blur-md">
       <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 lg:px-8">
-        <div className="flex items-center rounded-full border border-white/15 bg-white/10 p-1 backdrop-blur-sm">
+        <div className="glass glass-sm flex items-center rounded-full p-1">
           {tabs.map((tab) => {
             const active = pathname === tab.href;
             return (

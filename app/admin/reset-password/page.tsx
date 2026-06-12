@@ -57,7 +57,7 @@ export default function ResetPasswordPage() {
           </div>
 
           {/* Card */}
-          <div className="rounded-3xl border border-white/10 bg-white/5 p-8 shadow-2xl backdrop-blur-md">
+          <div className="glass rounded-3xl p-8">
             <form action={formAction} className="flex flex-col gap-5">
               <div>
                 <label className="mb-2 block text-xs font-bold uppercase tracking-wider text-white/40">

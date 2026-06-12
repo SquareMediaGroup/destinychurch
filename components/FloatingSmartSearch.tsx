@@ -337,7 +337,7 @@ export default function FloatingSmartSearch() {
           <div className="floating-search-panels absolute bottom-full left-0 right-0 mb-2">
             {/* First-use explanation */}
             {showWelcome && (
-              <div className="rounded-2xl border border-white/10 bg-destiny-grey/70 p-4 shadow-xl backdrop-blur-md">
+              <div className="glass glass-strong glass-refract rounded-2xl p-4">
                 <div className="mb-2 flex items-center gap-1.5">
                   <SparkleIcon className="h-3.5 w-3.5 text-destiny-orange" />
                   <span className="text-xs font-bold uppercase tracking-widest text-destiny-orange">
@@ -359,7 +359,7 @@ export default function FloatingSmartSearch() {
 
             {/* Results / conversation panel */}
             {showPanel && (
-              <div className="overflow-hidden rounded-2xl border border-white/10 bg-destiny-grey/70 shadow-2xl backdrop-blur-md">
+              <div className="glass glass-strong glass-refract overflow-hidden rounded-2xl">
 
                 {/* Page matches (only before the conversation starts) */}
                 {hasPages && pageMatches.map((page) => (

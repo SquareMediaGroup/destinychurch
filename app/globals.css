@@ -466,6 +466,15 @@ h3 {
   --glass-alpha: 0.4;
 }
 
+/* Barely-there text shadow that lifts menu labels off translucent glass for
+   legibility. Desktop only — the dropdown sub-menus only render at md+, and
+   we keep mobile labels shadow-free per design. Intentionally faint. */
+@media (min-width: 768px) {
+  .glass-menu-legible {
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.45);
+  }
+}
+
 /* Real refraction. Only Chromium currently honours an SVG filter reference in
    backdrop-filter; the @supports test is false in Safari/Firefox, so they fall
    through to the blur + sheen above. Order matters: the lens (url) displaces

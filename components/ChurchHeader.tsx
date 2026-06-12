@@ -61,14 +61,14 @@ function Dropdown({
       onMouseLeave={onMouseLeave}
     >
       <div
-        className="glass glass-strong glass-opaque min-w-[180px] rounded-2xl p-2"
+        className="glass glass-strong glass-refract min-w-[180px] rounded-2xl p-2"
       >
         {items.map((item, i) => (
           <Link
             key={item.label}
             href={item.href}
             onClick={onClose}
-            className="block rounded-xl px-4 py-2.5 text-sm font-medium text-white/90 transition-colors duration-200 hover:bg-white/10 hover:text-destiny-orange"
+            className="glass-menu-legible block rounded-xl px-4 py-2.5 text-sm font-medium text-white/90 transition-colors duration-200 hover:bg-white/10 hover:text-destiny-orange"
             style={{
               opacity: open ? 1 : 0,
               transform: open ? "translateY(0)" : "translateY(-8px)",
@@ -380,7 +380,7 @@ export default function ChurchHeader() {
             }}
           >
             <div
-              className="glass glass-strong glass-opaque mt-2 rounded-2xl p-3"
+              className="glass glass-strong glass-refract mt-2 rounded-2xl p-3"
             >
               {/* Flat nav links */}
               {mobileNavItems.map((item) => (

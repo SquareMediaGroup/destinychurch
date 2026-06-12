@@ -474,7 +474,7 @@ export default function FloatingSmartSearch() {
 
         {/* Morphing bar: circle (collapsed) <-> pill (expanded) */}
         <div
-          className={`search-glow floating-search-morph relative h-14 rounded-full border border-white/10 shadow-xl shadow-black/30 backdrop-blur-md ${
+          className={`search-glow floating-search-morph relative h-14 rounded-full ${
             expanded ? "is-expanded" : ""
           } ${morph} ${expanded && loading ? "is-loading" : ""}`}
           onAnimationEnd={(e) => {
@@ -484,11 +484,13 @@ export default function FloatingSmartSearch() {
               setMorph("");
             }
           }}
-          style={{
-            // Match the header pill's glassmorphism (rgba(54,63,72,0.6) at rest).
-            backgroundColor: "rgba(54, 63, 72, 0.6)",
-          }}
         >
+          {/* Glass material lives on an inner layer: .search-glow owns this
+              element's ::before/::after for the loading glow, so .glass (which
+              also uses both pseudos for rim + cursor bloom) must sit one level
+              down. It fills the pill exactly and contains the interactive
+              children so the bloom tracker's closest('.glass') resolves. */}
+          <div className="glass glass-strong glass-refract absolute inset-0 rounded-full">
           {/* Collapsed: circular trigger */}
           <button
             type="button"
@@ -567,6 +569,7 @@ export default function FloatingSmartSearch() {
               </button>
             </div>
           </form>
+          </div>{/* end .glass layer */}
         </div>
       </div>
     </div>

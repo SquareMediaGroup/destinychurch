@@ -322,7 +322,14 @@ h3 {
    and tint. Override tint per-surface with inline `--glass-tint`/`--glass-alpha`.
    Do NOT apply to elements that own their own ::before/::after (e.g. the
    .search-glow pill) — put glass on the wrapping panel instead.
+
+   Lives in @layer components so Tailwind utilities (@layer utilities, which
+   sorts later) win per-property: `absolute` must beat the base
+   position: relative, and bespoke bg-/shadow- utilities must beat the glass
+   material. Unlayered, this class would silently override every utility on
+   the element (unlayered styles outrank all layers).
    ────────────────────────────────────────────────────────────────────────── */
+@layer components {
 .glass {
   --glass-tint: 255, 255, 255;
   --glass-alpha: 0.16;
@@ -483,6 +490,7 @@ h3 {
     }
   }
 }
+}/* end @layer components (glass system) */
 
 /* Floating Smart Search — circle <-> pill morph.
    The width is KEYFRAMED (not transitioned) with an aggressive ease-in-out so the

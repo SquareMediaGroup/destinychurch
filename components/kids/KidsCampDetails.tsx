@@ -22,7 +22,7 @@ export default function KidsCampDetails() {
               Transportation: Parents will be responsible for transportation (drop-off at the venue and pick-up after camp)
             </p>
             <p>
-              You have the option to either make a deposit to secure your child's space and pay the balance in two instalments or pay in full right away.
+              You have the option to either make a deposit to secure your child&apos;s space and pay the balance in two instalments or pay in full right away.
             </p>
           </div>
         </AnimateIn>

@@ -139,7 +139,7 @@ export default function KidsPage() {
                 <div>
                   <p className="mb-1 font-black text-destiny-grey">Completely Free</p>
                   <p className="text-sm text-destiny-grey/60">No registration required</p>
-                  <p className="mt-1 text-xs text-destiny-grey/40">Just bring the kids and we'll take care of the rest</p>
+                  <p className="mt-1 text-xs text-destiny-grey/40">Just bring the kids and we&apos;ll take care of the rest</p>
                 </div>
               </div>
             </AnimateIn>
@@ -198,7 +198,7 @@ export default function KidsPage() {
               <p className="mb-3 text-xs font-bold uppercase tracking-widest text-destiny-orange">Free Event</p>
               <h2 className="mb-5 text-3xl font-black text-white md:text-4xl">Tots Mornings</h2>
               <p className="mb-6 text-base leading-relaxed text-white/70">
-                Our Tots Mornings are a free, welcoming gathering for parents and their little ones aged 0–4. It's a relaxed morning of play, songs and community — a great chance to meet other parents and connect with the Destiny family.
+                Our Tots Mornings are a free, welcoming gathering for parents and their little ones aged 0–4. It&apos;s a relaxed morning of play, songs and community — a great chance to meet other parents and connect with the Destiny family.
               </p>
               <div className="mb-8 grid gap-4 sm:grid-cols-2">
                 <div className="rounded-2xl bg-white/10 p-4">
@@ -236,7 +236,7 @@ export default function KidsPage() {
               <p className="mb-1 text-xs font-bold uppercase tracking-widest text-destiny-orange">Meet the Kids Pastor</p>
               <h2 className="mb-3 text-2xl font-black text-destiny-grey">Funke Awojide</h2>
               <p className="mb-2 text-base leading-relaxed text-destiny-grey/70">
-                Funke leads our Destiny Kids ministry with passion and dedication. She and her team create a safe, fun and faith-filled environment where every child can experience God's love and grow in their faith.
+                Funke leads our Destiny Kids ministry with passion and dedication. She and her team create a safe, fun and faith-filled environment where every child can experience God&apos;s love and grow in their faith.
               </p>
               <p className="text-sm text-destiny-grey/40">Kids Pastor · funke@destinytees.uk</p>
             </AnimateIn>

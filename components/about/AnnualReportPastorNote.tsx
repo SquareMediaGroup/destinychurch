@@ -27,7 +27,7 @@ export default function AnnualReportPastorNote() {
               As we look back on this year, we are overwhelmed with gratitude. God has been faithful beyond measure, and you — the Destiny Church family — have been the hands and feet of Jesus in our community.
             </p>
             <p className="mb-4 text-base leading-relaxed text-white/70">
-              Every baptism, every new member, every volunteer hour, and every generous gift has been a testament to what God can do when His people say yes. We've seen lives transformed, families restored, and hope brought to places that desperately needed it.
+              Every baptism, every new member, every volunteer hour, and every generous gift has been a testament to what God can do when His people say yes. We&apos;ve seen lives transformed, families restored, and hope brought to places that desperately needed it.
             </p>
             <p className="mb-4 text-base leading-relaxed text-white/70">
               Thank you for your faithfulness, your generosity, and your unwavering commitment to the mission God has called us to. We are excited for what lies ahead as we continue to transform lives through faith, hope and love for Jesus.

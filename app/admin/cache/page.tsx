@@ -25,7 +25,7 @@ export default function AdminCachePage() {
           <h1 className="text-2xl font-black text-destiny-grey">Clear Cache</h1>
           <p className="mt-1 text-sm text-destiny-grey/50">
             Forces the site to re-fetch fresh data from ChurchSuite and rebuild cached pages.
-            Use this after adding or updating events if they aren't showing up.
+            Use this after adding or updating events if they aren&apos;t showing up.
           </p>
         </div>
 

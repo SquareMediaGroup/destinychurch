@@ -27,7 +27,7 @@ export default function AnnualReportFinances() {
               Financial Overview
             </h2>
             <p className="mx-auto max-w-2xl text-base leading-relaxed text-destiny-grey/60">
-              Your generosity enables us to serve, grow and impact our community. Here's how we stewarded the resources God entrusted to us.
+              Your generosity enables us to serve, grow and impact our community. Here&apos;s how we stewarded the resources God entrusted to us.
             </p>
           </div>
         </AnimateIn>

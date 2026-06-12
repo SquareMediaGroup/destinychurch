@@ -74,8 +74,24 @@ export const metadata: Metadata = {
   },
 };
 
-async function getActiveBanner() {
-  noStore();
+// Banner and popup change rarely but were queried on every page render. Cache
+// them per server instance for a short window — admin edits still go live
+// within TTL_MS. noStore() stays so pages keep rendering dynamically.
+const LAYOUT_CACHE_TTL_MS = 30_000;
+
+function ttlCached<T>(fn: () => Promise<T>): () => Promise<T> {
+  let cached: { value: T; expires: number } | null = null;
+  return async () => {
+    noStore();
+    const now = Date.now();
+    if (cached && now < cached.expires) return cached.value;
+    const value = await fn();
+    cached = { value, expires: now + LAYOUT_CACHE_TTL_MS };
+    return value;
+  };
+}
+
+const getActiveBanner = ttlCached(async function fetchActiveBanner() {
   try {
     const supabase = createServiceClient();
     const { data: rows } = await supabase
@@ -134,10 +150,9 @@ async function getActiveBanner() {
   } catch {
     return null;
   }
-}
+});
 
-async function getActivePopup() {
-  noStore();
+const getActivePopup = ttlCached(async function fetchActivePopup() {
   try {
     const supabase = createServiceClient();
     const { data } = await supabase
@@ -153,7 +168,7 @@ async function getActivePopup() {
   } catch {
     return null;
   }
-}
+});
 
 const orgSchema = {
   "@context": "https://schema.org",

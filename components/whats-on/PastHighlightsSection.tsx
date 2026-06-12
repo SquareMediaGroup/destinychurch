@@ -22,16 +22,24 @@ async function getPlaylistVideos(): Promise<Video[]> {
     if (!res.ok) return [];
     const data = await res.json();
 
-    return (data.items ?? [])
-      .filter((item: any) => item.snippet?.resourceId?.videoId)
-      .map((item: any) => ({
-        videoId: item.snippet.resourceId.videoId,
+    interface PlaylistItem {
+      snippet: {
+        title: string;
+        resourceId?: { videoId?: string };
+        thumbnails?: Record<string, { url?: string } | undefined>;
+      };
+    }
+
+    return ((data.items ?? []) as PlaylistItem[])
+      .filter((item) => item.snippet?.resourceId?.videoId)
+      .map((item) => ({
+        videoId: item.snippet.resourceId!.videoId!,
         title: item.snippet.title,
         thumbnail:
           item.snippet.thumbnails?.maxres?.url ||
           item.snippet.thumbnails?.high?.url ||
           item.snippet.thumbnails?.medium?.url ||
-          `https://i.ytimg.com/vi/${item.snippet.resourceId.videoId}/hqdefault.webp`,
+          `https://i.ytimg.com/vi/${item.snippet.resourceId!.videoId}/hqdefault.webp`,
       }));
   } catch {
     return [];

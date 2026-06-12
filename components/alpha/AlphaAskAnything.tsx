@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef } from "react";
 import AnimateIn from "@/components/AnimateIn";
 import Link from "next/link";
 
@@ -132,7 +132,7 @@ export default function AlphaAskAnything() {
                 </>
               ) : (
                 <p className="text-sm text-destiny-grey/60">
-                  I'm not able to help with that question. Feel free to ask about Alpha, our topics, or anything else about the course!
+                  I&apos;m not able to help with that question. Feel free to ask about Alpha, our topics, or anything else about the course!
                 </p>
               )}
             </div>

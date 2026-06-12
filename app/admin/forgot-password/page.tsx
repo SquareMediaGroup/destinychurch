@@ -52,7 +52,7 @@ export default function ForgotPasswordPage() {
               Forgot your password?
             </h1>
             <p className="mt-2 text-sm text-white/40">
-              Enter your email address and we'll send you a link to reset it.
+              Enter your email address and we&apos;ll send you a link to reset it.
             </p>
           </div>
 
@@ -67,7 +67,7 @@ export default function ForgotPasswordPage() {
                   <p className="text-sm text-green-400">{state.message}</p>
                 </div>
                 <p className="text-center text-xs text-white/40">
-                  Didn't receive an email? Check your spam folder or try a different email address.
+                  Didn&apos;t receive an email? Check your spam folder or try a different email address.
                 </p>
                 <Link
                   href="/admin-login"

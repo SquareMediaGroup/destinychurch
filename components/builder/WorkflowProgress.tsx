@@ -90,7 +90,6 @@ export default function WorkflowProgress({
   const [, forceRender] = useState(0);
 
   useEffect(() => {
-    let interval: NodeJS.Timeout;
 
     const poll = async () => {
       try {
@@ -121,7 +120,9 @@ export default function WorkflowProgress({
     };
 
     poll();
-    interval = setInterval(poll, POLL_INTERVAL_MS);
+    // poll() only touches `interval` after its first await, by which point
+    // the const below is initialised.
+    const interval = setInterval(poll, POLL_INTERVAL_MS);
     return () => clearInterval(interval);
   }, [runId, ghToken, onComplete]);
 

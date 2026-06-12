@@ -248,9 +248,19 @@ export default async function RootLayout({
       <body
         className={`${roboto.variable} ${anton.variable} ${playfair.variable} antialiased`}
       >
-        {/* Shared displacement filter for site-wide glass refraction. Mounted
-            once; referenced by `.glass-refract` via backdrop-filter: url() on
-            Chromium. Hidden, zero-size, decorative. */}
+        {/* Shared lens filter for site-wide glass refraction. Mounted once;
+            referenced by `.glass-refract` via backdrop-filter: url() on
+            Chromium. The displacement map is synthesised from filter
+            primitives (no feImage — Chromium resolves feImage percentage
+            subregions against this 0x0 host SVG, not the filter region):
+            blurring the backdrop's alpha gives an edge-distance ramp, and
+            differencing two offset copies of that ramp yields signed X/Y lens
+            vectors packed into the map's R/G channels. The result: a neutral
+            centre with a constant ~40px rim band that bends inward on every
+            surface regardless of its size. The backdrop is then displaced
+            three times at staggered strengths (36/48/60) and the R/G/B
+            channels recombined, so colours physically separate at the edges
+            (chromatic dispersion) like light through thick glass. */}
         <svg
           aria-hidden
           focusable="false"
@@ -266,21 +276,97 @@ export default async function RootLayout({
             height="100%"
             colorInterpolationFilters="sRGB"
           >
-            <feTurbulence
-              type="fractalNoise"
-              baseFrequency="0.008 0.012"
-              numOctaves={2}
-              seed={7}
-              result="noise"
+            <feGaussianBlur in="SourceAlpha" stdDeviation={16} result="soft" />
+            <feOffset in="soft" dx={8} dy={0} result="sxp" />
+            <feOffset in="soft" dx={-8} dy={0} result="sxn" />
+            <feComposite
+              in="sxp"
+              in2="sxn"
+              operator="arithmetic"
+              k1={0}
+              k2={-2.5}
+              k3={2.5}
+              k4={0.5}
+              result="gx"
             />
-            <feGaussianBlur in="noise" stdDeviation={1.5} result="softNoise" />
+            <feOffset in="soft" dx={0} dy={8} result="syp" />
+            <feOffset in="soft" dx={0} dy={-8} result="syn" />
+            <feComposite
+              in="syp"
+              in2="syn"
+              operator="arithmetic"
+              k1={0}
+              k2={-2.5}
+              k3={2.5}
+              k4={0.5}
+              result="gy"
+            />
+            <feColorMatrix
+              in="gx"
+              type="matrix"
+              values="0 0 0 1 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0 1"
+              result="mx"
+            />
+            <feColorMatrix
+              in="gy"
+              type="matrix"
+              values="0 0 0 0 0  0 0 0 1 0  0 0 0 0 0  0 0 0 0 1"
+              result="my"
+            />
+            <feComposite
+              in="mx"
+              in2="my"
+              operator="arithmetic"
+              k1={0}
+              k2={1}
+              k3={1}
+              k4={0}
+              result="map"
+            />
             <feDisplacementMap
               in="SourceGraphic"
-              in2="softNoise"
-              scale={12}
+              in2="map"
+              scale={36}
               xChannelSelector="R"
               yChannelSelector="G"
+              result="dispR"
             />
+            <feColorMatrix
+              in="dispR"
+              type="matrix"
+              values="1 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 1 0"
+              result="onlyR"
+            />
+            <feDisplacementMap
+              in="SourceGraphic"
+              in2="map"
+              scale={48}
+              xChannelSelector="R"
+              yChannelSelector="G"
+              result="dispG"
+            />
+            <feColorMatrix
+              in="dispG"
+              type="matrix"
+              values="0 0 0 0 0  0 1 0 0 0  0 0 0 0 0  0 0 0 1 0"
+              result="onlyG"
+            />
+            <feDisplacementMap
+              in="SourceGraphic"
+              in2="map"
+              scale={60}
+              xChannelSelector="R"
+              yChannelSelector="G"
+              result="dispB"
+            />
+            <feColorMatrix
+              in="dispB"
+              type="matrix"
+              values="0 0 0 0 0  0 0 0 0 0  0 0 1 0 0  0 0 0 1 0"
+              result="onlyB"
+            />
+            <feBlend in="onlyR" in2="onlyG" mode="screen" result="rg" />
+            <feBlend in="rg" in2="onlyB" mode="screen" />
           </filter>
         </svg>
         <Providers banner={banner}>

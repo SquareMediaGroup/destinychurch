@@ -405,14 +405,16 @@ h3 {
 
 /* Real refraction. Only Chromium currently honours an SVG filter reference in
    backdrop-filter; the @supports test is false in Safari/Firefox, so they fall
-   through to the blur + sheen above. We re-declare the full filter here (can't
-   append to backdrop-filter), keeping blur/saturate/brightness and adding the
-   displacement lens. -webkit- is intentionally NOT given the url() (Safari can't
-   render it and would drop the whole filter). */
+   through to the blur + sheen above. Order matters: the lens (url) displaces
+   the CRISP backdrop first — heavy blur before displacement would erase the
+   bend and the colour fringing — then a light 2px blur smooths the result.
+   The surface tint + sheen keep foreground text legible. -webkit- is
+   intentionally NOT given the url() (Safari can't render it and would drop
+   the whole filter). */
 @supports (backdrop-filter: url("#glass-refract")) {
   .glass-refract {
-    backdrop-filter: blur(var(--glass-blur)) saturate(1.4) brightness(1.05)
-      url(#glass-refract);
+    backdrop-filter: url(#glass-refract) blur(2px) saturate(1.4)
+      brightness(1.05);
   }
 }
 

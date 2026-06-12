@@ -350,14 +350,11 @@ h3 {
     0 8px 24px rgba(0, 0, 0, 0.22),           /* elevation */
     0 2px 6px rgba(0, 0, 0, 0.12),            /* tight contact shadow */
     0 0 32px rgba(255, 255, 255, 0);          /* bloom halo (lit on hover) */
-  /* Bloom + lift animate via box-shadow / transform / rim only — never
-     backdrop-filter, whose url() in the refract variant would force a discrete
-     (snapping) transition. The transform easing has a soft overshoot so the
-     surface settles forward like liquid rather than sliding linearly.
+  /* Bloom animates via box-shadow + rim only — never backdrop-filter, whose
+     url() in the refract variant would force a discrete (snapping) transition.
      background-color/border-color kept so Tailwind hover styles on migrated
-     surfaces still ease. */
+     surfaces still ease (this unlayered shorthand outranks the utility). */
   transition:
-    transform 0.5s cubic-bezier(0.34, 1.3, 0.5, 1),
     box-shadow 0.45s ease,
     background-color 0.2s ease,
     border-color 0.2s ease;
@@ -414,63 +411,23 @@ h3 {
 }
 
 @media (hover: hover) {
-  /* Liquid lift — the hovered surface floats forward and its elevation shadow
-     deepens, so it reads as a slab of glass rising toward the cursor. */
-  .glass:hover {
-    transform: translateY(-3px) scale(1.02);
-    box-shadow:
-      inset 0 1px 0 rgba(255, 255, 255, 0.6),
-      inset 0 -1px 0 rgba(0, 0, 0, 0.1),
-      inset 0 0 44px rgba(255, 255, 255, 0.12),
-      0 16px 44px rgba(0, 0, 0, 0.3),
-      0 4px 10px rgba(0, 0, 0, 0.12),
-      0 0 44px rgba(255, 255, 255, 0.22);
-  }
   .glass:hover::after {
     opacity: 1;
-  }
-  .glass:hover::before {
-    filter: brightness(1.7);
   }
 }
 
 .glass:focus-within {
-  transform: translateY(-3px) scale(1.02);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.75),
     inset 0 -1px 0 rgba(0, 0, 0, 0.08),
     inset 0 0 44px rgba(255, 255, 255, 0.22),
-    0 16px 44px rgba(0, 0, 0, 0.26),
-    0 4px 10px rgba(0, 0, 0, 0.1),
+    0 8px 28px rgba(0, 0, 0, 0.18),
+    0 2px 6px rgba(0, 0, 0, 0.08),
     0 0 44px rgba(255, 255, 255, 0.38);
 }
 
 .glass:focus-within::before {
   filter: brightness(2.4);
-}
-
-/* Smart Search pill: the glass material is an inner inset-0 layer, so lifting
-   it alone would shear it out of the .search-glow ring. Lift the whole pill
-   instead and cancel the inner layer's own transform. */
-.floating-search-morph {
-  transition: transform 0.5s cubic-bezier(0.34, 1.3, 0.5, 1);
-}
-
-@media (hover: hover) {
-  .floating-search-morph:hover {
-    transform: translateY(-3px) scale(1.02);
-  }
-}
-
-.floating-search-morph:focus-within {
-  transform: translateY(-3px) scale(1.02);
-}
-
-/* Cancel the inner layer's own lift in both hover and focus states so only the
-   pill (ring + glass together) moves. Higher specificity than .glass:hover. */
-.floating-search-morph:hover .glass,
-.floating-search-morph:focus-within .glass {
-  transform: none;
 }
 
 .glass-sm {

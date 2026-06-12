@@ -259,9 +259,11 @@ export default async function RootLayout({
             vectors packed into the map's R/G channels. The result: a neutral
             centre with a constant ~40px rim band that bends inward on every
             surface regardless of its size. The backdrop is then displaced
-            three times at staggered strengths (36/48/60) and the R/G/B
-            channels recombined, so colours physically separate at the edges
-            (chromatic dispersion) like light through thick glass. */}
+            three times at staggered strengths (42/48/54 — same 48 mean so the
+            refraction depth is unchanged, but a tighter ±6 spread for subtler
+            colour separation) and the R/G/B channels recombined, so colours
+            physically separate at the edges (chromatic dispersion) like light
+            through thick glass. */}
         <svg
           aria-hidden
           focusable="false"
@@ -327,7 +329,7 @@ export default async function RootLayout({
             <feDisplacementMap
               in="SourceGraphic"
               in2="map"
-              scale={36}
+              scale={42}
               xChannelSelector="R"
               yChannelSelector="G"
               result="dispR"
@@ -355,7 +357,7 @@ export default async function RootLayout({
             <feDisplacementMap
               in="SourceGraphic"
               in2="map"
-              scale={60}
+              scale={54}
               xChannelSelector="R"
               yChannelSelector="G"
               result="dispB"

@@ -82,7 +82,6 @@ export default function FloatingSmartSearch() {
   const inputRef = useRef<HTMLInputElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
-  const scrollTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const focusOnOpenRef = useRef(false);
   // Transient class that drives the keyframed width morph on each state change.
   const [morph, setMorph] = useState<"" | "morph-expanding" | "morph-collapsing">("");
@@ -144,23 +143,18 @@ export default function FloatingSmartSearch() {
     }
   }, [expanded]);
 
-  // Minimise to the circle while scrolling; reopen to the pill once scrolling
-  // stops. Skipped while actively searching so results stay put.
+  // Auto-minimise to the circle on scroll. The pill only ever expands by an
+  // explicit tap on the trigger (openBar) — it does NOT reopen on scroll-stop,
+  // so the resting state is always the compact circle. Skipped while actively
+  // searching so an open conversation isn't yanked shut mid-scroll.
   useEffect(() => {
     const onScroll = () => {
       if (interactingRef.current) return;
       setExpanded(false);
-      clearTimeout(scrollTimerRef.current);
-      scrollTimerRef.current = setTimeout(() => {
-        if (!interactingRef.current) openBar(false);
-      }, 250);
     };
     window.addEventListener("scroll", onScroll, { passive: true });
-    return () => {
-      window.removeEventListener("scroll", onScroll);
-      clearTimeout(scrollTimerRef.current);
-    };
-  }, [openBar]);
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
 
   // Rotate the placeholder prompt while expanded, empty, and not yet chatting.
   useEffect(() => {

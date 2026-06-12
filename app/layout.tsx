@@ -11,6 +11,7 @@ import AnalyticsGate from "@/components/AnalyticsGate";
 import SiteBanner from "@/components/SiteBanner";
 import SitePopup from "@/components/SitePopup";
 import FloatingSmartSearch from "@/components/FloatingSmartSearch";
+import GlassBloomTracker from "@/components/GlassBloomTracker";
 import { isSmartSearchEnabled } from "@/lib/serviceStatus";
 import BannerSpacer from "@/components/BannerSpacer";
 import VisualEditOverlay from "@/components/admin/VisualEditOverlay";
@@ -381,6 +382,7 @@ export default async function RootLayout({
             <FooterGate><ChurchFooter /></FooterGate>
           </div>
           <AnalyticsGate />
+          <GlassBloomTracker />
           <SitePopup popup={popup} />
           {smartSearchEnabled && <FloatingSmartSearch />}
         </Providers>

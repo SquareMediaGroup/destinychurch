@@ -325,8 +325,8 @@ h3 {
    ────────────────────────────────────────────────────────────────────────── */
 .glass {
   --glass-tint: 255, 255, 255;
-  --glass-alpha: 0.08;
-  --glass-blur: 12px;
+  --glass-alpha: 0.16;
+  --glass-blur: 14px;
   position: relative;
   isolation: isolate;
   /* Diagonal sheen baked into the background so it always sits *below* content
@@ -339,8 +339,18 @@ h3 {
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.35),  /* specular top edge */
     inset 0 -1px 0 rgba(0, 0, 0, 0.12),       /* bottom shade */
+    inset 0 0 32px rgba(255, 255, 255, 0),    /* bloom fill (lit on hover) */
     0 8px 24px rgba(0, 0, 0, 0.22),           /* elevation */
-    0 2px 6px rgba(0, 0, 0, 0.12);            /* tight contact shadow */
+    0 2px 6px rgba(0, 0, 0, 0.12),            /* tight contact shadow */
+    0 0 32px rgba(255, 255, 255, 0);          /* bloom halo (lit on hover) */
+  /* Bloom animates via box-shadow + rim only — never backdrop-filter, whose
+     url() in the refract variant would force a discrete (snapping) transition.
+     background-color/border-color kept so Tailwind hover styles on migrated
+     surfaces still ease (this unlayered shorthand outranks the utility). */
+  transition:
+    box-shadow 0.45s ease,
+    background-color 0.2s ease,
+    border-color 0.2s ease;
 }
 
 /* Gradient rim — masked-border technique (same trick as .search-glow::before).
@@ -365,6 +375,52 @@ h3 {
           mask-composite: exclude;
   pointer-events: none;
   z-index: 1;
+  transition: filter 0.45s ease;
+}
+
+/* Bloom — Apple Liquid Glass-style specular hotspot that TRACKS THE CURSOR.
+   GlassBloomTracker (mounted once in the root layout) writes the pointer's
+   position within the hovered glass element into --glass-mx/--glass-my; this
+   ::after layer is a radial glow centred there, fading in on hover. It sits at
+   z-index -1: above the element's own background, below all content (the
+   element is its own stacking context via isolation: isolate). Hover is gated
+   to hover-capable pointers so touch devices never get a stuck bloom; keyboard
+   users get the uniform :focus-within bloom below instead. */
+.glass::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  z-index: -1;
+  pointer-events: none;
+  background: radial-gradient(
+    200px circle at var(--glass-mx, 50%) var(--glass-my, 50%),
+    rgba(255, 255, 255, 0.3),
+    rgba(255, 255, 255, 0.08) 45%,
+    transparent 70%
+  );
+  opacity: 0;
+  transition: opacity 0.45s ease;
+}
+
+@media (hover: hover) {
+  .glass:hover::after {
+    opacity: 1;
+  }
+}
+
+.glass:focus-within {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.75),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.08),
+    inset 0 0 44px rgba(255, 255, 255, 0.22),
+    0 8px 28px rgba(0, 0, 0, 0.18),
+    0 2px 6px rgba(0, 0, 0, 0.08),
+    0 0 44px rgba(255, 255, 255, 0.38);
+}
+
+.glass:focus-within::before {
+  filter: brightness(2.4);
 }
 
 .glass-sm {
@@ -382,8 +438,8 @@ h3 {
 /* Frosted dark-grey slab — the header pill / strong surfaces. */
 .glass-strong {
   --glass-tint: 54, 63, 72; /* destiny grey */
-  --glass-alpha: 0.6;
-  --glass-blur: 14px;
+  --glass-alpha: 0.66;
+  --glass-blur: 16px;
 }
 
 .glass-pill {
@@ -413,7 +469,7 @@ h3 {
    the whole filter). */
 @supports (backdrop-filter: url("#glass-refract")) {
   .glass-refract {
-    backdrop-filter: url(#glass-refract) blur(2px) saturate(1.4)
+    backdrop-filter: url(#glass-refract) blur(5px) saturate(1.4)
       brightness(1.05);
   }
 }

@@ -40,6 +40,7 @@ export function PodcastPlayerProvider({
   children: React.ReactNode;
 }) {
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const dockRef = useRef<HTMLDivElement | null>(null);
   const [current, setCurrent] = useState<PodcastEpisode | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
@@ -169,6 +170,26 @@ export function PodcastPlayerProvider({
     };
   }, [expanded]);
 
+  // Publish the docked bar's height as a CSS var so other fixed-bottom UI
+  // (e.g. Smart Search) can lift above it instead of overlapping its controls.
+  useEffect(() => {
+    const root = document.documentElement;
+    const el = dockRef.current;
+    if (!current || !el) {
+      root.style.setProperty("--podcast-dock-height", "0px");
+      return;
+    }
+    const apply = () =>
+      root.style.setProperty("--podcast-dock-height", `${el.offsetHeight}px`);
+    apply();
+    const ro = new ResizeObserver(apply);
+    ro.observe(el);
+    return () => {
+      ro.disconnect();
+      root.style.setProperty("--podcast-dock-height", "0px");
+    };
+  }, [current]);
+
   const progress = duration ? currentTime / duration : 0;
 
   return (
@@ -190,7 +211,7 @@ export function PodcastPlayerProvider({
 
       {/* Docked player bar */}
       {current && (
-        <div className="pointer-events-none fixed inset-x-0 bottom-0 z-50 px-3 pb-3 sm:px-5 sm:pb-5">
+        <div ref={dockRef} className="pointer-events-none fixed inset-x-0 bottom-0 z-50 px-3 pb-3 sm:px-5 sm:pb-5">
           <div className="glass glass-xl glass-refract pointer-events-auto relative mx-auto flex max-w-5xl items-center gap-3 overflow-hidden rounded-2xl bg-[#141210]/85 px-3 py-2.5 sm:gap-4 sm:px-4 sm:py-3">
             {/* Mobile-only progress line along the bottom edge */}
             <div className="absolute inset-x-0 bottom-0 h-[3px] bg-white/10 sm:hidden">

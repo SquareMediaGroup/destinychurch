@@ -320,7 +320,10 @@ export default function FloatingSmartSearch() {
   const showWelcome = expanded && showFirstUse && !hasMessages && !loading && !input;
 
   return (
-    <div className="pointer-events-none fixed inset-x-0 bottom-0 z-50 flex justify-center px-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
+    <div
+      className="pointer-events-none fixed inset-x-0 bottom-0 z-50 flex justify-center px-4 pb-[max(1rem,env(safe-area-inset-bottom))] transition-[bottom] duration-300 ease-out"
+      style={{ bottom: "var(--podcast-dock-height, 0px)" }}
+    >
       <div
         ref={containerRef}
         className="pointer-events-auto relative flex w-full flex-col items-center"

@@ -49,6 +49,7 @@ export function PodcastPlayerProvider({
   const [scrubbing, setScrubbing] = useState(false);
   const [expanded, setExpanded] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [canCast, setCanCast] = useState(false);
 
   const toggle = useCallback(
     (ep: PodcastEpisode) => {
@@ -95,6 +96,46 @@ export function PodcastPlayerProvider({
       audio.removeEventListener("ended", onEnded);
     };
   }, [scrubbing]);
+
+  // Surface a Cast / AirPlay button only when a remote target is available.
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+    let cancelled = false;
+
+    // Chrome / Android — Remote Playback API.
+    if (audio.remote && typeof audio.remote.watchAvailability === "function") {
+      let watchId: number | undefined;
+      audio.remote
+        .watchAvailability((available) => {
+          if (!cancelled) setCanCast(available);
+        })
+        .then((id) => {
+          watchId = id;
+        })
+        .catch(() => {});
+      return () => {
+        cancelled = true;
+        if (watchId !== undefined) {
+          audio.remote.cancelWatchAvailability(watchId).catch(() => {});
+        }
+      };
+    }
+
+    // Safari / iOS — AirPlay availability.
+    if (typeof window !== "undefined" && "WebKitPlaybackTargetAvailabilityEvent" in window) {
+      const onAvail = (e: Event) => {
+        if (!cancelled) {
+          setCanCast((e as unknown as { availability: string }).availability === "available");
+        }
+      };
+      audio.addEventListener("webkitplaybacktargetavailabilitychanged", onAvail);
+      return () => {
+        cancelled = true;
+        audio.removeEventListener("webkitplaybacktargetavailabilitychanged", onAvail);
+      };
+    }
+  }, []);
 
   // Media Session metadata for OS-level controls.
   useEffect(() => {
@@ -155,6 +196,20 @@ export function PodcastPlayerProvider({
     }
   };
 
+  // Open the native Cast (Chrome/Android) or AirPlay (Safari/iOS) target picker.
+  const handleCast = () => {
+    const audio = audioRef.current;
+    if (!audio) return;
+    const withAirPlay = audio as HTMLAudioElement & {
+      webkitShowPlaybackTargetPicker?: () => void;
+    };
+    if (typeof withAirPlay.webkitShowPlaybackTargetPicker === "function") {
+      withAirPlay.webkitShowPlaybackTargetPicker();
+    } else if (audio.remote && typeof audio.remote.prompt === "function") {
+      audio.remote.prompt().catch(() => {});
+    }
+  };
+
   // Tapping the compact bar opens the full-screen view — mobile only.
   const openOnMobile = () => {
     if (window.matchMedia("(max-width: 639px)").matches) setExpanded(true);
@@ -191,6 +246,14 @@ export function PodcastPlayerProvider({
   }, [current]);
 
   const progress = duration ? currentTime / duration : 0;
+
+  const publishedLabel = current
+    ? new Date(current.publishedAt).toLocaleDateString("en-GB", {
+        day: "numeric",
+        month: "long",
+        year: "numeric",
+      })
+    : "";
 
   return (
     <Ctx.Provider
@@ -326,9 +389,9 @@ export function PodcastPlayerProvider({
           aria-modal="true"
           aria-label="Now playing"
         >
-          <div className="flex h-full flex-col bg-gradient-to-b from-[#2a1d12] via-[#15100c] to-black px-6 pb-12 pt-[max(1.25rem,env(safe-area-inset-top))] text-white">
+          <div className="flex h-full flex-col bg-gradient-to-b from-[#2a1d12] via-[#15100c] to-black pt-[max(1.25rem,env(safe-area-inset-top))] text-white">
             {/* Top bar */}
-            <div className="flex items-center justify-between">
+            <div className="flex shrink-0 items-center justify-between px-6">
               <button
                 onClick={() => setExpanded(false)}
                 aria-label="Collapse player"
@@ -344,99 +407,134 @@ export function PodcastPlayerProvider({
               <span className="h-10 w-10" aria-hidden />
             </div>
 
-            {/* Artwork */}
-            <div className="flex flex-1 items-center justify-center py-6">
-              <div className="relative aspect-square w-full max-w-[20rem] overflow-hidden rounded-3xl shadow-2xl shadow-black/60">
-                <Image
-                  src={current.image}
-                  alt=""
-                  fill
-                  sizes="320px"
-                  className="object-cover"
+            {/* Scrollable area — artwork, title and description */}
+            <div className="flex-1 overflow-y-auto overscroll-contain px-6">
+              {/* Artwork */}
+              <div className="flex justify-center py-6">
+                <div className="relative aspect-square w-full max-w-[18rem] overflow-hidden rounded-3xl shadow-2xl shadow-black/60">
+                  <Image
+                    src={current.image}
+                    alt=""
+                    fill
+                    sizes="288px"
+                    className="object-cover"
+                  />
+                </div>
+              </div>
+
+              {/* Title + speaker + share */}
+              <div className="flex items-start justify-between gap-4">
+                <div className="min-w-0">
+                  <h2 className="text-xl font-black leading-snug text-white line-clamp-3">
+                    {current.title}
+                  </h2>
+                  <p className="mt-1 truncate text-sm text-white/50">
+                    {current.speaker ?? "Destiny Church Tees Valley"}
+                  </p>
+                </div>
+                <button
+                  onClick={handleShare}
+                  aria-label="Share episode"
+                  className="mt-1 flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-white/70 transition hover:bg-white/10 hover:text-white"
+                >
+                  <span className="material-symbols-rounded text-[22px]">
+                    {copied ? "check" : "ios_share"}
+                  </span>
+                </button>
+              </div>
+
+              {/* Description */}
+              {current.summary && (
+                <div className="mt-7">
+                  <div className="flex items-center justify-between gap-3">
+                    <h3 className="text-[11px] font-bold uppercase tracking-[0.25em] text-white/40">
+                      About this episode
+                    </h3>
+                    {publishedLabel && (
+                      <span className="shrink-0 text-[11px] text-white/35">{publishedLabel}</span>
+                    )}
+                  </div>
+                  <p className="mt-2 whitespace-pre-line text-sm leading-relaxed text-white/65">
+                    {current.summary}
+                  </p>
+                </div>
+              )}
+
+              <div className="h-4" />
+            </div>
+
+            {/* Pinned footer — scrubber + transport */}
+            <div className="shrink-0 px-6 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-3">
+              {/* Scrubber */}
+              <div>
+                <Scrubber
+                  progress={progress}
+                  onScrubStart={() => setScrubbing(true)}
+                  onScrub={(f) => setCurrentTime(f * (duration || 0))}
+                  onScrubEnd={(f) => {
+                    setScrubbing(false);
+                    seekTo(f);
+                  }}
                 />
+                <div className="mt-1 flex justify-between font-mono text-[11px] tabular-nums text-white/45">
+                  <span>{formatClock(currentTime)}</span>
+                  <span>{formatClock(duration)}</span>
+                </div>
               </div>
-            </div>
 
-            {/* Title + speaker + share */}
-            <div className="flex items-start justify-between gap-4">
-              <div className="min-w-0">
-                <h2 className="text-xl font-black leading-snug text-white line-clamp-2">
-                  {current.title}
-                </h2>
-                <p className="mt-1 truncate text-sm text-white/50">
-                  {current.speaker ?? "Destiny Church Tees Valley"}
-                </p>
-              </div>
-              <button
-                onClick={handleShare}
-                aria-label="Share episode"
-                className="mt-1 flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-white/70 transition hover:bg-white/10 hover:text-white"
-              >
-                <span className="material-symbols-rounded text-[22px]">
-                  {copied ? "check" : "ios_share"}
-                </span>
-              </button>
-            </div>
-
-            {/* Scrubber */}
-            <div className="mt-6">
-              <Scrubber
-                progress={progress}
-                onScrubStart={() => setScrubbing(true)}
-                onScrub={(f) => setCurrentTime(f * (duration || 0))}
-                onScrubEnd={(f) => {
-                  setScrubbing(false);
-                  seekTo(f);
-                }}
-              />
-              <div className="mt-1 flex justify-between font-mono text-[11px] tabular-nums text-white/45">
-                <span>{formatClock(currentTime)}</span>
-                <span>{formatClock(duration)}</span>
-              </div>
-            </div>
-
-            {/* Transport */}
-            <div className="mt-6 flex items-center justify-between">
-              <button
-                onClick={cycleSpeed}
-                aria-label="Playback speed"
-                className="flex h-11 min-w-[52px] items-center justify-center rounded-full border border-white/15 px-3 font-mono text-sm font-bold text-white/70 transition hover:border-white/40 hover:text-white"
-              >
-                {SPEEDS[speedIdx]}×
-              </button>
-
-              <div className="flex items-center gap-7">
+              {/* Transport */}
+              <div className="mt-5 flex items-center justify-between">
                 <button
-                  onClick={() => seekBy(-15)}
-                  aria-label="Rewind 15 seconds"
-                  className="text-white/85 transition hover:text-white"
+                  onClick={cycleSpeed}
+                  aria-label="Playback speed"
+                  className="flex h-11 min-w-[52px] items-center justify-center rounded-full border border-white/15 px-3 font-mono text-sm font-bold text-white/70 transition hover:border-white/40 hover:text-white"
                 >
-                  <span className="material-symbols-rounded text-[34px]">replay</span>
+                  {SPEEDS[speedIdx]}×
                 </button>
-                <button
-                  onClick={() => current && toggle(current)}
-                  aria-label={isPlaying ? "Pause" : "Play"}
-                  className="flex h-16 w-16 items-center justify-center rounded-full bg-destiny-orange text-white shadow-lg shadow-destiny-orange/30 transition hover:brightness-110"
-                >
-                  <span
-                    className="material-symbols-rounded text-4xl"
-                    style={{ fontVariationSettings: '"FILL" 1' }}
+
+                <div className="flex items-center gap-7">
+                  <button
+                    onClick={() => seekBy(-15)}
+                    aria-label="Rewind 15 seconds"
+                    className="text-white/85 transition hover:text-white"
                   >
-                    {isPlaying ? "pause" : "play_arrow"}
-                  </span>
-                </button>
-                <button
-                  onClick={() => seekBy(30)}
-                  aria-label="Forward 30 seconds"
-                  className="text-white/85 transition hover:text-white"
-                >
-                  <span className="material-symbols-rounded text-[34px]">
-                    forward_media
-                  </span>
-                </button>
-              </div>
+                    <span className="material-symbols-rounded text-[34px]">replay</span>
+                  </button>
+                  <button
+                    onClick={() => current && toggle(current)}
+                    aria-label={isPlaying ? "Pause" : "Play"}
+                    className="flex h-16 w-16 items-center justify-center rounded-full bg-destiny-orange text-white shadow-lg shadow-destiny-orange/30 transition hover:brightness-110"
+                  >
+                    <span
+                      className="material-symbols-rounded text-4xl"
+                      style={{ fontVariationSettings: '"FILL" 1' }}
+                    >
+                      {isPlaying ? "pause" : "play_arrow"}
+                    </span>
+                  </button>
+                  <button
+                    onClick={() => seekBy(30)}
+                    aria-label="Forward 30 seconds"
+                    className="text-white/85 transition hover:text-white"
+                  >
+                    <span className="material-symbols-rounded text-[34px]">
+                      forward_media
+                    </span>
+                  </button>
+                </div>
 
-              <span className="h-11 w-[52px]" aria-hidden />
+                {canCast ? (
+                  <button
+                    onClick={handleCast}
+                    aria-label="Cast or AirPlay"
+                    className="flex h-11 w-[52px] items-center justify-center rounded-full text-white/70 transition hover:bg-white/10 hover:text-white"
+                  >
+                    <span className="material-symbols-rounded text-[26px]">cast</span>
+                  </button>
+                ) : (
+                  <span className="h-11 w-[52px]" aria-hidden />
+                )}
+              </div>
             </div>
           </div>
         </div>

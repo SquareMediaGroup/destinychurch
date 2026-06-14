@@ -3,6 +3,7 @@
 import { Resend } from "resend";
 import { cookies, headers } from "next/headers";
 import { createClient } from "@/utils/supabase/server";
+import { createServiceClient } from "@/utils/supabase/service";
 import { checkRateLimit, resetRateLimit } from "@/lib/loginRateLimit";
 import { ADMIN_ROLES, getRoles, ROLE_LABELS, type AdminRole } from "@/lib/roles";
 import { buildAccessRequestEmailHtml } from "@/lib/accessRequestEmail";
@@ -93,6 +94,29 @@ export async function requestSystemAccess(
     return { success: false, error: "Email service is not configured." };
   }
 
+  // Deep link straight to the requester's staff record (with the edit modal
+  // open) so the team can grant access in one click. Falls back to the
+  // directory if no record is linked to this login.
+  const { data: staffRow } = await createServiceClient()
+    .from("hr_staff")
+    .select("id")
+    .eq("auth_user_id", user.id)
+    .maybeSingle();
+
+  const hdrs = await headers();
+  const forwardedHost = hdrs.get("x-forwarded-host") ?? hdrs.get("host");
+  const forwardedProto = hdrs.get("x-forwarded-proto") ?? "https";
+  const origin =
+    hdrs.get("origin") ??
+    (forwardedHost ? `${forwardedProto}://${forwardedHost}` : null) ??
+    process.env.NEXT_PUBLIC_APP_URL ??
+    "http://localhost:3000";
+
+  const hasRecord = Boolean(staffRow?.id);
+  const portalUrl = hasRecord
+    ? `${origin}/administration/hr/staff/${staffRow!.id}?edit=1`
+    : `${origin}/administration/hr/staff`;
+
   const { error } = await resend.emails.send({
     from: "Destiny Church <noreply@support.squaremediagroup.org>",
     to: process.env.ACCESS_REQUEST_RECIPIENT || "techteam@destinytees.uk",
@@ -102,6 +126,8 @@ export async function requestSystemAccess(
       requesterEmail: user.email,
       systemLabel: ROLE_LABELS[role],
       requestedAt: new Date(),
+      portalUrl,
+      hasRecord,
     }),
   });
 

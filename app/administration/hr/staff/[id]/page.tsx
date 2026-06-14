@@ -76,6 +76,14 @@ export default function StaffProfilePage() {
     load();
   }, [load]);
 
+  // Deep link from the access-request email (…/staff/{id}?edit=1) opens the
+  // edit modal straight away so the backend-access roles are one click away.
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).has("edit")) {
+      setModal("edit");
+    }
+  }, []);
+
   async function openDoc(docId: string) {
     const res = await fetch(`${API}/documents/${docId}`);
     if (!res.ok) return setError("Could not open document.");

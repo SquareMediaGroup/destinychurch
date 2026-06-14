@@ -3,7 +3,7 @@
 import { useActionState, useEffect, useState, useTransition } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { adminSignIn, adminSignOut } from "./actions";
+import { adminSignIn, adminSignOut, requestSystemAccess } from "./actions";
 import type { AdminRole } from "@/lib/roles";
 
 const initialState = {
@@ -237,29 +237,7 @@ function ChoosePanel({
           const delay = { animationDelay: `${100 + i * 90}ms` };
 
           if (!hasAccess) {
-            return (
-              <div
-                key={sys.href}
-                style={delay}
-                aria-disabled="true"
-                className="glass flex cursor-not-allowed items-center gap-4 rounded-3xl border border-white/10 p-5 opacity-50 animate-[fadeInUp_0.45s_ease-out_both]"
-              >
-                <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-white/10 text-white/40">
-                  <span className="material-symbols-rounded text-[28px]">lock</span>
-                </div>
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2">
-                    <h2 className="text-base font-bold text-white/70">{sys.title}</h2>
-                    <span className="rounded-full bg-white/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white/50">
-                      No access
-                    </span>
-                  </div>
-                  <p className="mt-1 text-sm leading-snug text-white/35">
-                    You don&apos;t have permission for this system.
-                  </p>
-                </div>
-              </div>
-            );
+            return <LockedSystemCard key={sys.href} sys={sys} style={delay} />;
           }
 
           return (
@@ -305,6 +283,121 @@ function ChoosePanel({
         >
           {signingOut ? "Signing out…" : "Sign out"}
         </button>
+      </div>
+    </div>
+  );
+}
+
+// A system the user can't reach. Pristine by default (lock + "No access"); a
+// click slides down an inline panel to request access, which emails the team.
+function LockedSystemCard({
+  sys,
+  style,
+}: {
+  sys: SystemCard;
+  style: React.CSSProperties;
+}) {
+  const [expanded, setExpanded] = useState(false);
+  const [status, setStatus] = useState<"idle" | "sent" | "error">("idle");
+  const [errorMsg, setErrorMsg] = useState<string | undefined>();
+  const [sending, startSending] = useTransition();
+
+  function sendRequest() {
+    setStatus("idle");
+    setErrorMsg(undefined);
+    startSending(async () => {
+      const res = await requestSystemAccess(sys.requiredRole);
+      if (res.success) {
+        setStatus("sent");
+      } else {
+        setStatus("error");
+        setErrorMsg(res.error ?? "Something went wrong.");
+      }
+    });
+  }
+
+  return (
+    <div
+      style={style}
+      className="glass overflow-hidden rounded-3xl border border-white/10 animate-[fadeInUp_0.45s_ease-out_both]"
+    >
+      <button
+        type="button"
+        onClick={() => setExpanded((v) => !v)}
+        aria-expanded={expanded}
+        className="flex w-full items-center gap-4 p-5 text-left transition hover:bg-white/5"
+      >
+        <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-white/10 text-white/40">
+          <span className="material-symbols-rounded text-[28px]">lock</span>
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2">
+            <h2 className="text-base font-bold text-white/70">{sys.title}</h2>
+            <span className="rounded-full bg-white/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white/50">
+              No access
+            </span>
+          </div>
+          <p className="mt-1 text-sm leading-snug text-white/35">
+            You don&apos;t have permission for this system.
+          </p>
+        </div>
+        <span
+          className={`material-symbols-rounded text-white/25 transition-transform duration-300 ${expanded ? "rotate-180" : ""}`}
+        >
+          expand_more
+        </span>
+      </button>
+
+      {/* Inline slide-down — grid-rows trick keeps it smooth without a fixed height */}
+      <div
+        className={`grid transition-[grid-template-rows] duration-300 ease-out ${expanded ? "grid-rows-[1fr]" : "grid-rows-[0fr]"}`}
+      >
+        <div className="overflow-hidden">
+          <div className="border-t border-white/10 px-5 pb-5 pt-4">
+            {status === "sent" ? (
+              <div className="flex items-start gap-3">
+                <span className="material-symbols-rounded mt-0.5 text-destiny-orange">
+                  mark_email_read
+                </span>
+                <div>
+                  <p className="text-sm font-bold text-white">Request sent</p>
+                  <p className="mt-1 text-sm leading-snug text-white/45">
+                    The tech team will be in touch once access is granted.
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <>
+                <p className="text-sm font-bold text-white">Access Restricted</p>
+                <p className="mt-1 text-sm leading-snug text-white/45">
+                  Would you like to request access to the {sys.title} panel?
+                </p>
+                {status === "error" && errorMsg && (
+                  <p className="mt-3 rounded-xl bg-red-500/10 px-3 py-2 text-xs text-red-400">
+                    {errorMsg}
+                  </p>
+                )}
+                <div className="mt-4 flex gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setExpanded(false)}
+                    className="rounded-2xl border border-white/15 px-4 py-2.5 text-sm font-bold text-white/60 transition hover:bg-white/5 hover:text-white/80"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={sendRequest}
+                    disabled={sending}
+                    className="rounded-2xl bg-destiny-orange px-4 py-2.5 text-sm font-bold text-white shadow-lg shadow-destiny-orange/25 transition hover:brightness-110 disabled:opacity-60"
+                  >
+                    {sending ? "Sending…" : "Send Request"}
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
       </div>
     </div>
   );

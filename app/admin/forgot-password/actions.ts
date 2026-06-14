@@ -1,7 +1,7 @@
 "use server";
 
 import { createClient } from "@/utils/supabase/server";
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 
 export async function requestPasswordReset(
   _prev: unknown,
@@ -16,9 +16,22 @@ export async function requestPasswordReset(
   const cookieStore = await cookies();
   const supabase = createClient(cookieStore);
 
+  // Derive the real origin from the request so the email link points at the
+  // deployment the user is actually on (not a hard-coded localhost fallback).
+  const hdrs = await headers();
+  const forwardedHost = hdrs.get("x-forwarded-host") ?? hdrs.get("host");
+  const forwardedProto = hdrs.get("x-forwarded-proto") ?? "https";
+  const origin =
+    hdrs.get("origin") ??
+    (forwardedHost ? `${forwardedProto}://${forwardedHost}` : null) ??
+    process.env.NEXT_PUBLIC_APP_URL ??
+    "http://localhost:3000";
+
   try {
+    // Route through /auth/callback so the recovery code is exchanged for a
+    // session before the user lands on the reset-password form.
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/admin/reset-password`,
+      redirectTo: `${origin}/auth/callback?next=/admin/reset-password`,
     });
 
     if (error) {

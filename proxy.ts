@@ -17,6 +17,13 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(new URL("/admin", request.url));
   }
 
+  // Public auth pages must stay reachable while logged out — these are exactly
+  // the pages a user needs when they can't sign in.
+  const PUBLIC_ADMIN_PATHS = ["/admin/forgot-password", "/admin/reset-password"];
+  if (PUBLIC_ADMIN_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`))) {
+    return supabaseResponse;
+  }
+
   // Unauthenticated API requests: return 401 instead of redirecting
   if (!user && (pathname.startsWith("/api/admin") || pathname.startsWith("/api/administration"))) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

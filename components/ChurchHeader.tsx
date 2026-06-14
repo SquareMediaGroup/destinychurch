@@ -210,11 +210,13 @@ export default function ChurchHeader() {
     return [items[0], { href: "/alpha", label: "Alpha" }, ...items.slice(1)];
   }, [alphaActive, youtubeQuotaExceeded]);
 
+  // Hooks must run before any early return (Rules of Hooks).
+  const banner = useBanner();
+
   if (pathname.startsWith("/admin")) return null;
 
   const isAdmin = pathname.startsWith("/admin");
   const isHome = pathname === "/";
-  const banner = useBanner();
   const bannerOffset = banner.active && !isAdmin ? "top-10" : "top-0";
 
   return (
@@ -238,6 +240,12 @@ export default function ChurchHeader() {
             paddingRight: `${progress}rem`,
           }}
         >
+          {/* Pill + mobile menu wrapper — relative so the menu can hang off it
+              as an absolutely-positioned dropdown. Keeping the menu out of flow
+              means opening it never grows the (sticky) header on inner pages,
+              which previously shifted layout and fired a scroll event that the
+              scroll handler used to instantly close the menu again. */}
+          <div className="relative">
           {/* Pill */}
           <div
             className="glass glass-refract flex items-center justify-between px-4 py-2 md:px-6"
@@ -371,9 +379,13 @@ export default function ChurchHeader() {
             </div>
           </div>
 
-          {/* Mobile menu */}
+          {/* Mobile menu — absolute overlay (anchored under the pill) so it
+              sits on top of the page instead of expanding the header in flow.
+              On non-home pages the header is `sticky`, so in-flow expansion
+              shifted the document and triggered handleScroll → setMobileOpen(false),
+              which closed the menu the moment it opened. */}
           <div
-            className="overflow-hidden transition-all duration-300 ease-in-out md:hidden"
+            className="absolute inset-x-0 top-full z-50 overflow-hidden transition-all duration-300 ease-in-out md:hidden"
             style={{
               maxHeight: mobileOpen ? "600px" : "0px",
               opacity: mobileOpen ? 1 : 0,
@@ -405,6 +417,7 @@ export default function ChurchHeader() {
                 </Link>
               </div>
             </div>
+          </div>
           </div>
         </div>
       </header>

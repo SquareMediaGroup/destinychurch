@@ -5,11 +5,14 @@ import AdminSidebar from "@/components/admin/AdminSidebar";
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  // Code editor and studio editor take over the full viewport — no sidebar
+  // Code editor, studio editor, and the standalone auth pages take over the
+  // full viewport — no sidebar
   const isFullViewport =
     (pathname.startsWith("/admin/pages/code/") && pathname !== "/admin/pages/code") ||
     (pathname.startsWith("/admin/pages/ai") ) ||
-    (pathname.startsWith("/admin/studio/") && pathname !== "/admin/studio");
+    (pathname.startsWith("/admin/studio/") && pathname !== "/admin/studio") ||
+    pathname === "/admin/forgot-password" ||
+    pathname === "/admin/reset-password";
 
   if (isFullViewport) {
     return <>{children}</>;

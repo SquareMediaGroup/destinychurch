@@ -3,11 +3,12 @@
 import { cookies, headers } from "next/headers";
 import { createClient } from "@/utils/supabase/server";
 import { checkRateLimit, resetRateLimit } from "@/lib/loginRateLimit";
+import { getRoles, type AdminRole } from "@/lib/roles";
 
 export async function adminSignIn(
   _prev: unknown,
   formData: FormData,
-): Promise<{ success: boolean; error?: string; email?: string }> {
+): Promise<{ success: boolean; error?: string; email?: string; roles?: AdminRole[] }> {
   // Resolve client IP (works on Vercel and most reverse proxies)
   const headersList = await headers();
   const ip =
@@ -33,14 +34,14 @@ export async function adminSignIn(
 
   const cookieStore = await cookies();
   const supabase = createClient(cookieStore);
-  const { error } = await supabase.auth.signInWithPassword({ email, password });
+  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
 
   if (error) {
     return { success: false, error: "Invalid email or password." };
   }
 
   resetRateLimit(ip);
-  return { success: true, email };
+  return { success: true, email, roles: getRoles(data.user) };
 }
 
 export async function adminSignOut(): Promise<void> {

@@ -1,4 +1,5 @@
 import { createClient } from "@/utils/supabase/middleware";
+import { getRoles, requiredRoleForPath } from "@/lib/roles";
 import { type NextRequest, NextResponse } from "next/server";
 
 export async function proxy(request: NextRequest) {
@@ -36,6 +37,17 @@ export async function proxy(request: NextRequest) {
 
   // Protect all other /admin/* routes
   if (!user) {
+    return NextResponse.redirect(new URL("/admin-login", request.url));
+  }
+
+  // Authenticated — enforce that the user holds the role for this system.
+  // An account with no roles is blocked from everything (strict).
+  const required = requiredRoleForPath(pathname);
+  if (required && !getRoles(user).includes(required)) {
+    if (pathname.startsWith("/api/")) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+    // Send to the chooser, which shows the system greyed out with a reason.
     return NextResponse.redirect(new URL("/admin-login", request.url));
   }
 

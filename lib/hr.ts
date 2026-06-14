@@ -1,5 +1,7 @@
 // Shared types and labels for the Administration → HR module.
 
+import type { AdminRole } from "@/lib/roles";
+
 export type EmploymentType =
   | "full_time"
   | "part_time"
@@ -25,8 +27,12 @@ export interface Staff {
   end_date: string | null;
   annual_leave_entitlement: number;
   notes: string | null;
+  auth_user_id: string | null;
   created_at: string;
   updated_at: string;
+  // Enrichment-only (derived from the linked auth user, not stored on hr_staff):
+  roles?: AdminRole[];
+  has_login?: boolean;
 }
 
 interface StaffRef {

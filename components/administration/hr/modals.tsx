@@ -17,6 +17,7 @@ import {
   type DocumentCategory,
   type ReviewType,
 } from "@/lib/hr";
+import { ADMIN_ROLES, ROLE_LABELS, type AdminRole } from "@/lib/roles";
 import {
   Modal,
   inputClass,
@@ -106,9 +107,16 @@ export function StaffModal({
     notes: staff?.notes ?? "",
   });
   const [saving, setSaving] = useState(false);
+  const [grantAccess, setGrantAccess] = useState(staff?.has_login ?? false);
+  const [password, setPassword] = useState("");
+  const [roles, setRoles] = useState<AdminRole[]>(staff?.roles ?? []);
 
   function set<K extends keyof typeof form>(key: K, value: (typeof form)[K]) {
     setForm((f) => ({ ...f, [key]: value }));
+  }
+
+  function toggleRole(role: AdminRole) {
+    setRoles((rs) => (rs.includes(role) ? rs.filter((r) => r !== role) : [...rs, role]));
   }
 
   function submit(e: React.FormEvent) {
@@ -120,6 +128,9 @@ export function StaffModal({
         ...form,
         start_date: form.start_date || null,
         annual_leave_entitlement: Number(form.annual_leave_entitlement) || 0,
+        grant_access: grantAccess,
+        password: password || undefined,
+        roles,
       },
       onSaved,
       onError,
@@ -248,6 +259,66 @@ export function StaffModal({
             onChange={(e) => set("notes", e.target.value)}
           />
         </div>
+
+        {/* Backend access — optional login + which systems they can reach */}
+        <div className="rounded-xl border border-black/10 bg-[#f5f7fa]/70 p-4">
+          <label className="flex cursor-pointer items-start gap-3">
+            <input
+              type="checkbox"
+              checked={grantAccess}
+              onChange={(e) => setGrantAccess(e.target.checked)}
+              className="mt-0.5 h-4 w-4 rounded accent-destiny-orange"
+            />
+            <span>
+              <span className="block text-sm font-bold text-destiny-grey">
+                Grant backend access
+              </span>
+              <span className="block text-xs text-destiny-grey/50">
+                Create a login so this person can sign in. Choose which systems they can use.
+              </span>
+            </span>
+          </label>
+
+          {grantAccess && (
+            <div className="mt-4 flex flex-col gap-4">
+              <div>
+                <label className={labelClass}>Password</label>
+                <input
+                  type="password"
+                  autoComplete="new-password"
+                  className={inputClass}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder={
+                    staff?.has_login ? "Leave blank to keep current" : "Set a password (min 8 characters)"
+                  }
+                />
+                {!staff?.has_login && !form.email && (
+                  <p className="mt-1.5 text-xs text-destiny-red">
+                    An email address (above) is required to create a login.
+                  </p>
+                )}
+              </div>
+              <div>
+                <label className={labelClass}>Systems</label>
+                <div className="flex flex-col gap-2">
+                  {ADMIN_ROLES.map((role) => (
+                    <label key={role} className="flex cursor-pointer items-center gap-2.5">
+                      <input
+                        type="checkbox"
+                        checked={roles.includes(role)}
+                        onChange={() => toggleRole(role)}
+                        className="h-4 w-4 rounded accent-destiny-orange"
+                      />
+                      <span className="text-sm text-destiny-grey">{ROLE_LABELS[role]}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
         <Actions onClose={onClose} saving={saving} label={staff ? "Save changes" : "Add staff"} />
       </form>
     </Modal>

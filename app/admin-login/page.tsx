@@ -1,5 +1,6 @@
 import { cookies } from "next/headers";
 import { createClient } from "@/utils/supabase/server";
+import { getRoles } from "@/lib/roles";
 import AdminLoginClient from "./AdminLoginClient";
 
 export const metadata = {
@@ -19,7 +20,11 @@ export default async function AdminLoginPage() {
   // Already signed in — skip the form and show the system chooser directly.
   if (user) {
     return (
-      <AdminLoginClient initialPhase="choose" initialEmail={user.email ?? undefined} />
+      <AdminLoginClient
+        initialPhase="choose"
+        initialEmail={user.email ?? undefined}
+        initialRoles={getRoles(user)}
+      />
     );
   }
 

@@ -4,11 +4,13 @@ import { useActionState, useEffect, useState, useTransition } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { adminSignIn, adminSignOut } from "./actions";
+import type { AdminRole } from "@/lib/roles";
 
 const initialState = {
   success: false,
   error: undefined as string | undefined,
   email: undefined as string | undefined,
+  roles: undefined as AdminRole[] | undefined,
 };
 
 type SystemCard = {
@@ -16,6 +18,7 @@ type SystemCard = {
   icon: string;
   title: string;
   description: string;
+  requiredRole: AdminRole;
   badge?: string;
 };
 
@@ -26,6 +29,7 @@ const SYSTEMS: SystemCard[] = [
     title: "Site Editor",
     description:
       "Edit pages, sermons, banners and content across the public website.",
+    requiredRole: "site_editor",
   },
   {
     href: "/administration",
@@ -33,6 +37,7 @@ const SYSTEMS: SystemCard[] = [
     title: "Administration",
     description:
       "Day-to-day church administration — people, teams and operations.",
+    requiredRole: "administration",
     badge: "New",
   },
 ];
@@ -40,21 +45,25 @@ const SYSTEMS: SystemCard[] = [
 export default function AdminLoginClient({
   initialPhase = "login",
   initialEmail,
+  initialRoles = [],
 }: {
   initialPhase?: "login" | "choose";
   initialEmail?: string;
+  initialRoles?: AdminRole[];
 }) {
   const [state, formAction, pending] = useActionState(adminSignIn, initialState);
   const [phase, setPhase] = useState<"login" | "choose">(initialPhase);
   const [email, setEmail] = useState<string | undefined>(initialEmail);
+  const [roles, setRoles] = useState<AdminRole[]>(initialRoles);
   const [signingOut, startSignOut] = useTransition();
 
   useEffect(() => {
     if (state.success) {
       setEmail(state.email);
+      setRoles(state.roles ?? []);
       setPhase("choose");
     }
-  }, [state.success, state.email]);
+  }, [state.success, state.email, state.roles]);
 
   function handleSignOut() {
     startSignOut(async () => {
@@ -99,6 +108,7 @@ export default function AdminLoginClient({
           ) : (
             <ChoosePanel
               email={email}
+              roles={roles}
               onSignOut={handleSignOut}
               signingOut={signingOut}
             />
@@ -194,10 +204,12 @@ function LoginPanel({
 
 function ChoosePanel({
   email,
+  roles,
   onSignOut,
   signingOut,
 }: {
   email?: string;
+  roles: AdminRole[];
   onSignOut: () => void;
   signingOut: boolean;
 }) {
@@ -220,36 +232,67 @@ function ChoosePanel({
 
       {/* Cards */}
       <div className="flex flex-col gap-4">
-        {SYSTEMS.map((sys, i) => (
-          <Link
-            key={sys.href}
-            href={sys.href}
-            style={{ animationDelay: `${100 + i * 90}ms` }}
-            className="glass group flex items-center gap-4 rounded-3xl border border-white/10 p-5 transition animate-[fadeInUp_0.45s_ease-out_both] hover:border-destiny-orange/40 hover:bg-white/10"
-          >
-            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-destiny-orange/15 text-destiny-orange transition group-hover:bg-destiny-orange group-hover:text-white">
-              <span className="material-symbols-rounded text-[28px]">
-                {sys.icon}
-              </span>
-            </div>
-            <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-2">
-                <h2 className="text-base font-bold text-white">{sys.title}</h2>
-                {sys.badge && (
-                  <span className="rounded-full bg-destiny-orange/20 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-destiny-orange">
-                    {sys.badge}
-                  </span>
-                )}
+        {SYSTEMS.map((sys, i) => {
+          const hasAccess = roles.includes(sys.requiredRole);
+          const delay = { animationDelay: `${100 + i * 90}ms` };
+
+          if (!hasAccess) {
+            return (
+              <div
+                key={sys.href}
+                style={delay}
+                aria-disabled="true"
+                className="glass flex cursor-not-allowed items-center gap-4 rounded-3xl border border-white/10 p-5 opacity-50 animate-[fadeInUp_0.45s_ease-out_both]"
+              >
+                <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-white/10 text-white/40">
+                  <span className="material-symbols-rounded text-[28px]">lock</span>
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2">
+                    <h2 className="text-base font-bold text-white/70">{sys.title}</h2>
+                    <span className="rounded-full bg-white/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white/50">
+                      No access
+                    </span>
+                  </div>
+                  <p className="mt-1 text-sm leading-snug text-white/35">
+                    You don&apos;t have permission for this system.
+                  </p>
+                </div>
               </div>
-              <p className="mt-1 text-sm leading-snug text-white/45">
-                {sys.description}
-              </p>
-            </div>
-            <span className="material-symbols-rounded text-white/25 transition group-hover:translate-x-1 group-hover:text-destiny-orange">
-              chevron_right
-            </span>
-          </Link>
-        ))}
+            );
+          }
+
+          return (
+            <Link
+              key={sys.href}
+              href={sys.href}
+              style={delay}
+              className="glass group flex items-center gap-4 rounded-3xl border border-white/10 p-5 transition animate-[fadeInUp_0.45s_ease-out_both] hover:border-destiny-orange/40 hover:bg-white/10"
+            >
+              <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-destiny-orange/15 text-destiny-orange transition group-hover:bg-destiny-orange group-hover:text-white">
+                <span className="material-symbols-rounded text-[28px]">
+                  {sys.icon}
+                </span>
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2">
+                  <h2 className="text-base font-bold text-white">{sys.title}</h2>
+                  {sys.badge && (
+                    <span className="rounded-full bg-destiny-orange/20 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-destiny-orange">
+                      {sys.badge}
+                    </span>
+                  )}
+                </div>
+                <p className="mt-1 text-sm leading-snug text-white/45">
+                  {sys.description}
+                </p>
+              </div>
+              <span className="material-symbols-rounded text-white/25 transition group-hover:translate-x-1 group-hover:text-destiny-orange">
+                chevron_right
+              </span>
+            </Link>
+          );
+        })}
       </div>
 
       {/* Sign out */}

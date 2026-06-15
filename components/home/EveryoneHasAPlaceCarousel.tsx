@@ -18,8 +18,9 @@ const SPACING = 56; // % of card width each neighbour is offset to the side
 // Aggressive ease-in-out: slow at both ends, decisive through the middle.
 const EASE = "ease-[cubic-bezier(0.9,0,0.1,1)]";
 // Card footprint — portrait on phones so the caption has room, landscape up.
+// Fractions shrink on wider viewports so the full-bleed neighbours show more.
 const SIZE =
-  "w-[86%] aspect-[5/6] sm:w-[70%] sm:aspect-[16/11] lg:w-[62%] lg:aspect-[16/10]";
+  "w-[86%] aspect-[5/6] sm:w-[64%] sm:aspect-[16/11] lg:w-[52%] lg:aspect-[16/10] xl:w-[44%]";
 
 export default function EveryoneHasAPlaceCarousel({
   groups,

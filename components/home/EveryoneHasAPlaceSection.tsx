@@ -1,6 +1,5 @@
-import Image from "next/image";
-import Link from "next/link";
 import AnimateIn from "@/components/AnimateIn";
+import EveryoneHasAPlaceCarousel from "@/components/home/EveryoneHasAPlaceCarousel";
 
 const groups = [
   {
@@ -31,6 +30,13 @@ const groups = [
     description:
       "Our Connect Groups are an integral part of the life and health of the church. Together in a small group believers are effective, powerful and fruitful witnesses in the world.",
   },
+  {
+    title: "Teams",
+    href: "/serve",
+    image: "/img/photos/Training_DC-scaled.webp",
+    description:
+      "You are uniquely gifted to be a blessing to the body of Christ. Use your gifts and talents to serve on one of our teams, and together let's build His kingdom.",
+  },
 ];
 
 export default function EveryoneHasAPlaceSection() {
@@ -43,38 +49,9 @@ export default function EveryoneHasAPlaceSection() {
           </h2>
         </AnimateIn>
 
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-          {groups.map((group, i) => (
-            <AnimateIn key={group.title} delay={i * 80}>
-              <Link
-                href={group.href}
-                className="group relative block h-56 overflow-hidden rounded-2xl shadow-lg sm:h-72 lg:h-80"
-              >
-                <Image
-                  src={group.image}
-                  alt={group.title}
-                  fill
-                  className="object-cover transition duration-500 group-hover:scale-105"
-                  sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
-                />
-                {/* Base gradient — always visible */}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-black/10" />
-                {/* Hover gradient — strengthens on hover */}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/50 to-black/20 opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
-
-                {/* Text */}
-                <div className="absolute inset-x-0 bottom-0 p-5">
-                  <h3 className="text-xl font-black uppercase text-white">
-                    {group.title}
-                  </h3>
-                  <p className="mt-2 max-h-0 overflow-hidden text-sm leading-relaxed text-white/80 transition-all duration-500 group-hover:max-h-40">
-                    {group.description}
-                  </p>
-                </div>
-              </Link>
-            </AnimateIn>
-          ))}
-        </div>
+        <AnimateIn delay={120}>
+          <EveryoneHasAPlaceCarousel groups={groups} />
+        </AnimateIn>
       </div>
     </section>
   );

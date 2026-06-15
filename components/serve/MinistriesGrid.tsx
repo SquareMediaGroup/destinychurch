@@ -26,7 +26,7 @@ const ministries: Ministry[] = [
     name: "Worship",
     icon: "music_note",
     color: "#F58021",
-    lead: "David Bayode",
+    lead: "",
     tagline: "Singers, musicians & sound engineers",
     description:
       "Lead the church in encountering God through music, song and creative expression. Singers, musicians and sound engineers all welcome.",
@@ -94,7 +94,7 @@ const ministries: Ministry[] = [
     name: "Stewarding & Welcome",
     icon: "waving_hand",
     color: "#F58021",
-    lead: "Younes Moradi",
+    lead: "",
     tagline: "First impressions · Warm & safe spaces",
     description:
       "Be the first face people see. Our Welcome Team creates a warm, safe and welcoming environment every Sunday and at events.",

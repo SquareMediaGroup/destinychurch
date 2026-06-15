@@ -122,8 +122,6 @@ Lead Team:
 
 Department Leaders:
 - Funke Awojide — Kids Pastor (funke@destinytees.uk)
-- Younes Moradi — Stewarding (younes@destinytees.uk)
-- David Bayode — Worship (david@destinytees.uk)
 - Adebowale (Debo) Awojide — Prayer Team (debo@destinytees.uk)
 
 GIVING / BANK DETAILS:
@@ -172,7 +170,7 @@ ALPHA COURSE:
 - Contact church for current dates
 
 SERVE / VOLUNTEER TEAMS:
-Worship (David Bayode), Kids (Funke Awojide), Stewarding & Welcome (Younes Moradi), Prayer (Debo Awojide), Connect Groups (Tracy Reddy), Hospitality (Thandi Mathema), Production (NK), Social Media & Photography (NK), Outreach & Missions (Tracy Reddy), Administration (George Krezner), Decoration, Building Maintenance, Alpha hosting.
+Kids (Funke Awojide), Prayer (Debo Awojide), Connect Groups (Tracy Reddy), Hospitality (Thandi Mathema), Production (NK), Social Media & Photography (NK), Outreach & Missions (Tracy Reddy), Administration (George Krezner), Decoration, Building Maintenance, Alpha hosting.
 All teams require active member status. DBS check required for Kids and Youth teams.
 
 MISSION PARTNERS:

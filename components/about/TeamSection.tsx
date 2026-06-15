@@ -12,8 +12,6 @@ const leadTeam = [
 
 const departmentHeads = [
   { name: "Funke Awojide", role: "Kids Pastor", photo: "/img/brand/Team/FA.webp", email: "funke@destinytees.uk" },
-  { name: "Younes Moradi", role: "Stewarding", photo: null, email: "younes@destinytees.uk" },
-  { name: "David Bayode", role: "Worship", photo: null, email: "david@destinytees.uk" },
   { name: "Adebowale Awojide", role: "Prayer Team", photo: "/img/brand/Team/Debo.webp", email: "debo@destinytees.uk" },
 ];
 

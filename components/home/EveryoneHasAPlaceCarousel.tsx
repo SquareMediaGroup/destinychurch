@@ -203,7 +203,7 @@ export default function EveryoneHasAPlaceCarousel({
             aria-current={j === active}
             className={`h-2 rounded-full ${
               reducedMotion ? "" : `transition-all duration-500 ${EASE}`
-            } ${j === active ? "w-8 bg-white" : "w-2 bg-white/40 hover:bg-white/70"}`}
+            } ${j === active ? "w-8 bg-destiny-grey" : "w-2 bg-black/20 hover:bg-black/40"}`}
           />
         ))}
       </div>

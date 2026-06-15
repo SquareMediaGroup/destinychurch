@@ -41,16 +41,10 @@ const groups = [
 
 export default function EveryoneHasAPlaceSection() {
   return (
-    <section
-      className="py-10 sm:py-16"
-      style={{
-        background:
-          "radial-gradient(50% 60% at 50% 35%, rgba(245, 128, 33, 0.1), transparent 70%), radial-gradient(120% 90% at 50% 30%, #3d2b1a 0%, #241710 45%, #14100b 100%)",
-      }}
-    >
+    <section className="bg-white py-10 sm:py-16">
       <div className="mx-auto mb-6 max-w-7xl px-4 sm:mb-10 lg:px-8">
         <AnimateIn>
-          <h2 className="text-center text-2xl font-black uppercase tracking-tight text-white sm:text-3xl md:text-4xl">
+          <h2 className="text-center text-2xl font-black uppercase tracking-tight text-destiny-brown sm:text-3xl md:text-4xl">
             Everyone Has A Place
           </h2>
         </AnimateIn>

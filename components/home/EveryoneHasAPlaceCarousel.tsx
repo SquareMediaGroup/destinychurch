@@ -128,9 +128,10 @@ export default function EveryoneHasAPlaceCarousel({
                   }`}
                 >
                   <div
-                    className={`glass glass-strong glass-menu-legible rounded-2xl p-4 sm:p-5 ${
+                    className={`glass glass-menu-legible rounded-2xl p-4 sm:p-5 ${
                       isCenter ? "glass-refract" : ""
                     }`}
+                    style={{ backgroundColor: "rgba(54, 63, 72, 0.4)" }}
                   >
                     <h3 className="text-lg font-black uppercase tracking-tight text-white sm:text-2xl">
                       {group.title}

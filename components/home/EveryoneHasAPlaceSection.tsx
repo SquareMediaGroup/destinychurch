@@ -56,7 +56,7 @@ export default function EveryoneHasAPlaceSection() {
               <Link
                 href={group.href}
                 style={{ "--accent": group.accent } as React.CSSProperties}
-                className="group relative block h-56 overflow-hidden rounded-2xl shadow-lg ring-2 ring-transparent transition-shadow duration-300 group-hover:shadow-xl hover:ring-[var(--accent)] sm:h-72 lg:h-80"
+                className="group relative block h-56 overflow-hidden rounded-2xl shadow-lg transition-shadow duration-300 group-hover:shadow-xl sm:h-72 lg:h-80"
               >
                 <Image
                   src={group.image}
@@ -70,12 +70,12 @@ export default function EveryoneHasAPlaceSection() {
                 {/* Hover gradient — strengthens on hover */}
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/50 to-black/20 opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
                 {/* Brand-color glow — warms the bottom on hover */}
-                <div className="absolute inset-0 bg-gradient-to-t from-[var(--accent)] to-transparent opacity-0 mix-blend-soft-light transition-opacity duration-300 group-hover:opacity-60" />
+                <div className="absolute inset-0 bg-gradient-to-t from-[var(--accent)] to-transparent opacity-0 mix-blend-soft-light transition-opacity duration-300 group-hover:opacity-30" />
 
                 {/* Text */}
                 <div className="absolute inset-x-0 bottom-0 p-5">
-                  {/* Accent bar — per-group color identity */}
-                  <span className="mb-3 block h-1 w-8 rounded-full bg-[var(--accent)] transition-all duration-300 group-hover:w-16" />
+                  {/* Accent bar — per-group color identity, fading gradient */}
+                  <span className="mb-3 block h-1 w-12 rounded-full bg-gradient-to-r from-[var(--accent)] to-transparent opacity-80 transition-all duration-300 group-hover:w-20" />
                   <h3 className="text-xl font-black uppercase text-white">
                     {group.title}
                   </h3>

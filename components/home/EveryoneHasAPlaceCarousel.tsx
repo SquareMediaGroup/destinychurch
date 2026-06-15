@@ -12,10 +12,14 @@ export interface PlaceGroup {
 }
 
 const AUTO_MS = 6000;
-const GAP = 24; // px — matches the section's gap-6 rhythm
+const SIDE_SCALE = 0.84; // neighbours sit smaller + behind the active card
+const SPACING = 56; // % of card width each neighbour is offset to the side
 
 // Aggressive ease-in-out: slow at both ends, decisive through the middle.
 const EASE = "ease-[cubic-bezier(0.9,0,0.1,1)]";
+// Card footprint — portrait on phones so the caption has room, landscape up.
+const SIZE =
+  "w-[86%] aspect-[5/6] sm:w-[70%] sm:aspect-[16/11] lg:w-[62%] lg:aspect-[16/10]";
 
 export default function EveryoneHasAPlaceCarousel({
   groups,
@@ -23,107 +27,27 @@ export default function EveryoneHasAPlaceCarousel({
   groups: PlaceGroup[];
 }) {
   const n = groups.length;
-  // Triple the slides so a full set always flanks the active card (the peeks are
-  // never empty). We keep `index` inside the middle copy and, after each move
-  // that carries it into an outer copy, snap by `n` with the transition off —
-  // same content, same on-screen position, so the wrap is invisible.
-  const slides = [...groups, ...groups, ...groups];
-
-  const [index, setIndex] = useState(n); // first real slide, middle copy
-  const [animate, setAnimate] = useState(true);
+  const [active, setActive] = useState(0);
   const [paused, setPaused] = useState(false);
-  const [isDesktop, setIsDesktop] = useState(true);
   const [reducedMotion, setReducedMotion] = useState(false);
 
-  // Card width as a % of the viewport. 60% → exactly ⅓ of each neighbour peeks
-  // on desktop; a wider card on small screens keeps the caption legible.
-  const fracPct = isDesktop ? 60 : 82;
-  const peekPct = (100 - fracPct) / 2;
-  // Centre the active card. translateX % is relative to the track's own width
-  // (= viewport, since the track is w-full and its cards overflow), so the math
-  // needs no pixel measurement; only the cumulative gaps are added in px.
-  const transform = `translateX(calc(${peekPct - index * fracPct}% - ${index * GAP}px))`;
-
-  const move = useCallback((dir: number) => {
-    setAnimate(true);
-    setIndex((i) => i + dir);
-  }, []);
-
-  const realActive = ((index % n) + n) % n;
-
-  // Jump to a specific real slide by the shortest path around the ring.
-  const goToReal = useCallback(
-    (j: number) => {
-      setAnimate(true);
-      setIndex((i) => {
-        let delta = j - (((i % n) + n) % n);
-        if (delta > n / 2) delta -= n;
-        if (delta < -n / 2) delta += n;
-        return i + delta;
-      });
-    },
-    [n]
-  );
+  // Modular index → the loop is infinite for free, no clones or snapping.
+  const move = useCallback((dir: number) => setActive((a) => (a + dir + n) % n), [n]);
 
   useEffect(() => {
-    const desktop = window.matchMedia("(min-width: 768px)");
-    const motion = window.matchMedia("(prefers-reduced-motion: reduce)");
-    const apply = () => {
-      setIsDesktop(desktop.matches);
-      setReducedMotion(motion.matches);
-    };
+    const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const apply = () => setReducedMotion(mq.matches);
     apply();
-    desktop.addEventListener("change", apply);
-    motion.addEventListener("change", apply);
-    return () => {
-      desktop.removeEventListener("change", apply);
-      motion.removeEventListener("change", apply);
-    };
+    mq.addEventListener("change", apply);
+    return () => mq.removeEventListener("change", apply);
   }, []);
 
-  // Auto-advance forever, one card at a time. Pauses on hover/focus and stands
-  // down entirely when the user prefers reduced motion.
+  // Auto-advance forever; pauses on hover/focus and for reduced motion.
   useEffect(() => {
     if (reducedMotion || paused) return;
     const t = setTimeout(() => move(1), AUTO_MS);
     return () => clearTimeout(t);
-  }, [index, paused, reducedMotion, move]);
-
-  // Seamless wrap: once a move's animation finishes in an outer copy, snap back
-  // by `n` with the transition off. Only react to the track's own transform end
-  // (transitionend bubbles from children — dim/glass — so filter precisely).
-  const onTrackTransitionEnd = (e: React.TransitionEvent) => {
-    if (e.target !== e.currentTarget || e.propertyName !== "transform") return;
-    if (index >= 2 * n) {
-      setAnimate(false);
-      setIndex(index - n);
-    } else if (index < n) {
-      setAnimate(false);
-      setIndex(index + n);
-    }
-  };
-
-  // Reduced motion has no transition (so no transitionend) — keep the index
-  // bounded eagerly instead. The jump is instant either way.
-  useEffect(() => {
-    if (!reducedMotion) return;
-    if (index >= 2 * n) setIndex(index - n);
-    else if (index < n) setIndex(index + n);
-  }, [index, reducedMotion, n]);
-
-  // Re-enable the transition a frame after a seamless snap (double rAF so the
-  // no-transition reposition paints first and never animates).
-  useEffect(() => {
-    if (animate) return;
-    let raf2 = 0;
-    const raf1 = requestAnimationFrame(() => {
-      raf2 = requestAnimationFrame(() => setAnimate(true));
-    });
-    return () => {
-      cancelAnimationFrame(raf1);
-      cancelAnimationFrame(raf2);
-    };
-  }, [animate]);
+  }, [active, paused, reducedMotion, move]);
 
   const onKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "ArrowRight") {
@@ -135,9 +59,7 @@ export default function EveryoneHasAPlaceCarousel({
     }
   };
 
-  const motionOn = animate && !reducedMotion;
-  const trackTransition = motionOn ? `transition-transform duration-700 ${EASE}` : "";
-  const dimTransition = motionOn ? `transition-opacity duration-700 ${EASE}` : "";
+  const ease = reducedMotion ? "" : `transition-all duration-700 ${EASE}`;
 
   return (
     <div
@@ -151,113 +73,122 @@ export default function EveryoneHasAPlaceCarousel({
       onBlur={() => setPaused(false)}
       onKeyDown={onKeyDown}
     >
-      {/* Viewport — clips the horizontal peeks; vertical padding keeps card and
-          glass shadows from being cropped. */}
-      <div className="overflow-hidden py-4">
-        <div
-          className={`flex gap-6 will-change-transform ${trackTransition}`}
-          style={{ transform }}
-          onTransitionEnd={onTrackTransitionEnd}
-        >
-          {slides.map((group, p) => {
-            const isActive = p === index;
-            // Only the visible cards carry the costly SVG refraction; off-screen
-            // clones fall back to the cheap blur (refraction is invisible there).
-            const near = Math.abs(p - index) <= 1;
-            return (
-              <div
-                key={p}
-                className="relative shrink-0"
-                style={{ flexBasis: `${fracPct}%`, width: `${fracPct}%` }}
-                aria-roledescription="slide"
-                aria-hidden={!isActive}
-                aria-label={`${(p % n) + 1} of ${n}: ${group.title}`}
-              >
-                <div className="relative aspect-[16/10] overflow-hidden rounded-3xl shadow-2xl">
-                  <Image
-                    src={group.image}
-                    alt={group.title}
-                    fill
-                    className="object-cover"
-                    sizes="(max-width: 768px) 82vw, 60vw"
-                  />
-                  {/* Base gradient for caption legibility */}
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/25 to-transparent" />
-                  {/* Dim peeking cards so the centred one leads the eye */}
+      {/* Stage — clips side overflow; padding leaves room for card shadows. */}
+      <div className="relative overflow-hidden px-2 py-6">
+        {/* Invisible sizer establishes the stage height responsively. */}
+        <div className={`mx-auto invisible ${SIZE}`} aria-hidden="true" />
+
+        {groups.map((group, j) => {
+          // Signed distance on the ring: 0 = active, ±1 = neighbours, ±2 hidden.
+          const ring = (j - active + n) % n;
+          const o = ring > n / 2 ? ring - n : ring;
+          const abs = Math.abs(o);
+          const isCenter = o === 0;
+          const visible = abs <= 1;
+          return (
+            <div
+              key={group.title}
+              className={`absolute left-1/2 top-1/2 ${SIZE} ${ease}`}
+              style={{
+                transform: `translate(-50%, -50%) translateX(${o * SPACING}%) scale(${
+                  isCenter ? 1 : SIDE_SCALE
+                })`,
+                zIndex: 30 - abs * 10,
+                opacity: visible ? 1 : 0,
+                pointerEvents: visible ? "auto" : "none",
+              }}
+              aria-hidden={!isCenter}
+            >
+              <div className="relative h-full w-full overflow-hidden rounded-3xl shadow-2xl ring-1 ring-white/10">
+                <Image
+                  src={group.image}
+                  alt={group.title}
+                  fill
+                  className="object-cover"
+                  sizes="(max-width: 768px) 86vw, 62vw"
+                />
+                {/* Base gradient for caption legibility */}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-black/10" />
+                {/* Dim the neighbours so the centred card leads the eye */}
+                <div
+                  className={`absolute inset-0 bg-black/45 ${ease} ${
+                    isCenter ? "opacity-0" : "opacity-100"
+                  }`}
+                />
+
+                {/* Caption — only the centred card carries the costly refraction
+                    (always at scale 1, so backdrop-filter stays crisp). It rises,
+                    fades and zooms in as the card expands to centre. */}
+                <div
+                  className={`absolute inset-x-4 bottom-4 origin-bottom sm:inset-x-6 sm:bottom-6 ${ease} ${
+                    isCenter
+                      ? "translate-y-0 scale-100 opacity-100"
+                      : "translate-y-5 scale-95 opacity-0"
+                  }`}
+                >
                   <div
-                    className={`absolute inset-0 bg-black/55 ${dimTransition} ${
-                      isActive ? "opacity-0" : "opacity-100"
+                    className={`glass glass-strong glass-menu-legible rounded-2xl p-4 sm:p-5 ${
+                      isCenter ? "glass-refract" : ""
                     }`}
-                  />
-
-                  {/* Glass caption — refracts the photo behind it */}
-                  <div className="absolute inset-x-4 bottom-4 sm:inset-x-6 sm:bottom-6">
-                    <div
-                      className={`glass glass-strong glass-menu-legible rounded-2xl p-4 sm:p-5 ${
-                        near ? "glass-refract" : ""
-                      }`}
-                    >
-                      <h3 className="text-lg font-black uppercase tracking-tight text-white sm:text-2xl">
-                        {group.title}
-                      </h3>
-                      <p className="mt-1.5 text-sm leading-relaxed text-white/85 sm:mt-2">
-                        {group.description}
-                      </p>
-                      {isActive && (
-                        <Link
-                          href={group.href}
-                          className="mt-3 inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wide text-white transition-colors hover:text-destiny-orange sm:mt-4"
-                        >
-                          Explore
-                          <span aria-hidden="true">&rarr;</span>
-                        </Link>
-                      )}
-                    </div>
+                  >
+                    <h3 className="text-lg font-black uppercase tracking-tight text-white sm:text-2xl">
+                      {group.title}
+                    </h3>
+                    <p className="mt-1.5 line-clamp-4 text-sm leading-relaxed text-white/85 sm:mt-2 sm:line-clamp-none">
+                      {group.description}
+                    </p>
+                    <span className="mt-3 inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wide text-white sm:mt-4">
+                      Explore
+                      <span aria-hidden="true">&rarr;</span>
+                    </span>
                   </div>
+                </div>
 
-                  {/* Inactive cards: full-card button slides this slide to centre.
-                      Active card has no overlay, so its Explore link stays clickable.
-                      tabIndex -1 keeps the cloned cards out of the tab order. */}
-                  {!isActive && (
+                {/* Click target: centre navigates, neighbours slide to centre. */}
+                {isCenter ? (
+                  <Link
+                    href={group.href}
+                    aria-label={`Explore ${group.title}`}
+                    className="absolute inset-0 z-10"
+                  />
+                ) : (
+                  visible && (
                     <button
                       type="button"
-                      onClick={() => {
-                        setAnimate(true);
-                        setIndex(p);
-                      }}
+                      onClick={() => setActive(j)}
                       aria-label={`Show ${group.title}`}
                       tabIndex={-1}
                       className="absolute inset-0 z-10 cursor-pointer"
                     />
-                  )}
-                </div>
+                  )
+                )}
               </div>
-            );
-          })}
-        </div>
-      </div>
+            </div>
+          );
+        })}
 
-      {/* Prev / next — always enabled (the loop never ends) */}
-      <button
-        type="button"
-        onClick={() => move(-1)}
-        aria-label="Previous"
-        className="glass glass-strong glass-refract glass-pill absolute left-1 top-1/2 z-20 flex h-11 w-11 -translate-y-1/2 items-center justify-center text-white transition-opacity duration-200 hover:opacity-90 sm:left-3 sm:h-12 sm:w-12"
-      >
-        <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-        </svg>
-      </button>
-      <button
-        type="button"
-        onClick={() => move(1)}
-        aria-label="Next"
-        className="glass glass-strong glass-refract glass-pill absolute right-1 top-1/2 z-20 flex h-11 w-11 -translate-y-1/2 items-center justify-center text-white transition-opacity duration-200 hover:opacity-90 sm:right-3 sm:h-12 sm:w-12"
-      >
-        <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-        </svg>
-      </button>
+        {/* Prev / next — always enabled (the loop never ends) */}
+        <button
+          type="button"
+          onClick={() => move(-1)}
+          aria-label="Previous"
+          className="glass glass-strong glass-refract glass-pill absolute left-2 top-1/2 z-40 flex h-11 w-11 -translate-y-1/2 items-center justify-center text-white transition-opacity duration-200 hover:opacity-90 sm:left-4 sm:h-12 sm:w-12"
+        >
+          <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+          </svg>
+        </button>
+        <button
+          type="button"
+          onClick={() => move(1)}
+          aria-label="Next"
+          className="glass glass-strong glass-refract glass-pill absolute right-2 top-1/2 z-40 flex h-11 w-11 -translate-y-1/2 items-center justify-center text-white transition-opacity duration-200 hover:opacity-90 sm:right-4 sm:h-12 sm:w-12"
+        >
+          <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+          </svg>
+        </button>
+      </div>
 
       {/* Dots */}
       <div className="mt-6 flex justify-center gap-2">
@@ -265,12 +196,12 @@ export default function EveryoneHasAPlaceCarousel({
           <button
             key={group.title}
             type="button"
-            onClick={() => goToReal(j)}
+            onClick={() => setActive(j)}
             aria-label={`Go to ${group.title}`}
-            aria-current={j === realActive}
+            aria-current={j === active}
             className={`h-2 rounded-full ${
               reducedMotion ? "" : `transition-all duration-500 ${EASE}`
-            } ${j === realActive ? "w-8 bg-white" : "w-2 bg-white/40 hover:bg-white/70"}`}
+            } ${j === active ? "w-8 bg-white" : "w-2 bg-white/40 hover:bg-white/70"}`}
           />
         ))}
       </div>

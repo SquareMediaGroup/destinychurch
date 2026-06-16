@@ -48,68 +48,34 @@ export default async function TrainingPage() {
               Training content is coming soon.
             </p>
           ) : (
-            <div className="flex flex-col gap-16">
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {categories.map((category) => (
                 <AnimateIn key={category.id}>
-                  <div className="mb-6 flex items-center gap-3">
-                    {category.icon && (
-                      <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-destiny-orange/10 text-destiny-orange">
-                        <span className="material-symbols-rounded text-[24px]">
-                          {category.icon}
-                        </span>
+                  <Link
+                    href={`/training/${category.slug}`}
+                    className="group flex h-full flex-col rounded-3xl border border-black/5 bg-white p-6 shadow-sm transition hover:border-destiny-orange/30 hover:shadow-md"
+                  >
+                    <span className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-destiny-orange/10 text-destiny-orange">
+                      <span className="material-symbols-rounded text-[26px]">
+                        {category.icon || "school"}
                       </span>
+                    </span>
+                    <h2 className="text-lg font-black text-destiny-grey">
+                      {category.name}
+                    </h2>
+                    {category.description && (
+                      <p className="mt-1 flex-1 text-sm leading-snug text-destiny-grey/55">
+                        {category.description}
+                      </p>
                     )}
-                    <div>
-                      <h2 className="text-2xl font-black text-destiny-grey">
-                        {category.name}
-                      </h2>
-                      {category.description && (
-                        <p className="text-sm text-destiny-grey/55">
-                          {category.description}
-                        </p>
-                      )}
+                    <div className="mt-4 flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-destiny-grey/40">
+                      {category.subgroups.length}{" "}
+                      {category.subgroups.length === 1 ? "group" : "groups"}
+                      <span className="material-symbols-rounded ml-auto text-base text-destiny-orange transition group-hover:translate-x-0.5">
+                        arrow_forward
+                      </span>
                     </div>
-                  </div>
-
-                  {category.subgroups.length === 0 ? (
-                    <p className="rounded-2xl border border-dashed border-black/10 bg-white px-5 py-6 text-sm text-destiny-grey/45">
-                      No groups in this category yet.
-                    </p>
-                  ) : (
-                    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                      {category.subgroups.map((sub) => (
-                        <Link
-                          key={sub.id}
-                          href={`/training/${category.slug}/${sub.slug}`}
-                          className="group flex flex-col rounded-3xl border border-black/5 bg-white p-6 shadow-sm transition hover:border-destiny-orange/30 hover:shadow-md"
-                        >
-                          <h3 className="text-base font-bold text-destiny-grey">
-                            {sub.name}
-                          </h3>
-                          {sub.description && (
-                            <p className="mt-1 flex-1 text-sm leading-snug text-destiny-grey/50">
-                              {sub.description}
-                            </p>
-                          )}
-                          <div className="mt-4 flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-destiny-grey/40">
-                            {sub.has_password ? (
-                              <>
-                                <span className="material-symbols-rounded text-sm">
-                                  lock
-                                </span>
-                                Password protected
-                              </>
-                            ) : (
-                              <span className="text-destiny-orange">Open access</span>
-                            )}
-                            <span className="material-symbols-rounded ml-auto text-base text-destiny-orange transition group-hover:translate-x-0.5">
-                              arrow_forward
-                            </span>
-                          </div>
-                        </Link>
-                      ))}
-                    </div>
-                  )}
+                  </Link>
                 </AnimateIn>
               ))}
             </div>

@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import AnimateIn from "@/components/AnimateIn";
 import { useCompletedSet } from "./useTrainingProgress";
@@ -19,6 +20,7 @@ export default function CompletablePostList({
   basePath: string;
 }) {
   const completed = useCompletedSet();
+  const [activeFolderId, setActiveFolderId] = useState<string | null>(null);
 
   const getPostsInFolder = (folderId: string | null) => {
     return posts.filter((p) => p.folder_id === folderId);
@@ -68,13 +70,79 @@ export default function CompletablePostList({
 
   const ungrouped = getPostsInFolder(null);
 
+  if (activeFolderId !== null) {
+    const activeFolder = folders.find((f) => f.id === activeFolderId);
+    const folderPosts = getPostsInFolder(activeFolderId);
+
+    return (
+      <div className="flex flex-col gap-6">
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => setActiveFolderId(null)}
+            className="flex h-10 w-10 items-center justify-center rounded-full bg-black/5 text-destiny-grey transition hover:bg-black/10"
+          >
+            <span className="material-symbols-rounded text-xl">arrow_back</span>
+          </button>
+          <h2 className="text-2xl font-black text-destiny-grey">
+            {activeFolder?.name}
+          </h2>
+        </div>
+        <div className="flex flex-col gap-3">
+          {folderPosts.length === 0 ? (
+            <p className="py-10 text-center text-destiny-grey/50">No posts in this folder.</p>
+          ) : (
+            folderPosts.map(renderPost)
+          )}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col gap-10">
+      {folders.length > 0 && (
+        <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
+          {folders.map((folder) => {
+            const count = getPostsInFolder(folder.id).length;
+            // Calculate how many are completed in this folder
+            const folderPosts = getPostsInFolder(folder.id);
+            const completedCount = folderPosts.filter((p) => completed.has(p.id)).length;
+            const isFullyCompleted = count > 0 && completedCount === count;
+
+            return (
+              <button
+                key={folder.id}
+                onClick={() => setActiveFolderId(folder.id)}
+                className="group relative flex cursor-pointer flex-col gap-2 rounded-3xl border border-black/5 bg-white p-6 text-left shadow-sm transition hover:border-destiny-orange/30 hover:shadow-md"
+              >
+                <div className="flex items-center justify-between">
+                  <span
+                    className={`material-symbols-rounded text-4xl transition ${
+                      isFullyCompleted
+                        ? "text-destiny-green"
+                        : "text-destiny-orange/80 group-hover:text-destiny-orange"
+                    }`}
+                  >
+                    {isFullyCompleted ? "check_circle" : "folder"}
+                  </span>
+                </div>
+                <div className="mt-2">
+                  <h3 className="font-bold text-destiny-grey">{folder.name}</h3>
+                  <p className="text-sm font-medium text-destiny-grey/50">
+                    {completedCount} / {count} completed
+                  </p>
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      )}
+
       {ungrouped.length > 0 && (
         <div>
           {folders.length > 0 && (
             <h3 className="mb-4 text-xl font-black text-destiny-grey">
-              Ungrouped
+              Ungrouped Posts
             </h3>
           )}
           <div className="flex flex-col gap-3">
@@ -82,22 +150,6 @@ export default function CompletablePostList({
           </div>
         </div>
       )}
-      
-      {folders.map((folder) => {
-        const folderPosts = getPostsInFolder(folder.id);
-        if (folderPosts.length === 0) return null;
-        
-        return (
-          <div key={folder.id}>
-            <h3 className="mb-4 text-xl font-black text-destiny-grey">
-              {folder.name}
-            </h3>
-            <div className="flex flex-col gap-3">
-              {folderPosts.map(renderPost)}
-            </div>
-          </div>
-        );
-      })}
     </div>
   );
 }

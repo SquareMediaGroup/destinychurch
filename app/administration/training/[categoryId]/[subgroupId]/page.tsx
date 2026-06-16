@@ -15,7 +15,7 @@ import {
   EmptyState,
   primaryBtn,
 } from "@/components/administration/hr/HrUI";
-import { PostModal } from "@/components/administration/training/PostModal";
+import { PostEditor } from "@/components/administration/training/PostEditor";
 import { FolderModal } from "@/components/administration/training/FolderModal";
 import { useReorder } from "@/components/administration/training/useReorder";
 
@@ -61,13 +61,6 @@ function PostListSection({
         }
       }}
     >
-      {folder && (
-        <h3 className="mb-3 text-xl font-bold text-destiny-grey">{folder.name}</h3>
-      )}
-      {!folder && items.length > 0 && (
-        <h3 className="mb-3 text-xl font-bold text-destiny-grey">Ungrouped Posts</h3>
-      )}
-      
       {items.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-black/10 bg-[#f5f7fa] p-8 text-center text-sm font-medium text-destiny-grey/40">
           Drop posts here
@@ -172,6 +165,7 @@ export default function TrainingPostsPage() {
   const [error, setError] = useState("");
   const [editingPost, setEditingPost] = useState<TrainingPost | "new" | null>(null);
   const [editingFolder, setEditingFolder] = useState<TrainingFolder | "new" | null>(null);
+  const [activeFolderId, setActiveFolderId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     try {
@@ -194,6 +188,13 @@ export default function TrainingPostsPage() {
   useEffect(() => {
     load();
   }, [load]);
+
+  const { rowProps: folderRowProps } = useReorder(
+    folders,
+    setFolders,
+    (id) => `${API}/folders/${id}`,
+    setError
+  );
 
   async function onDropPost(postId: string, newFolderId: string | null) {
     setError("");
@@ -237,12 +238,24 @@ export default function TrainingPostsPage() {
     load();
   }
 
+  async function removeFolder(folder: TrainingFolder) {
+    if (!confirm(`Delete folder "${folder.name}"? Posts inside will become ungrouped.`)) return;
+    setError("");
+    const res = await fetch(`${API}/folders/${folder.id}`, { method: "DELETE" });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      setError(data.error || "Could not delete folder.");
+      return;
+    }
+    setActiveFolderId(null);
+    load();
+  }
+
   const liveBase =
     category && subgroup
       ? `/training/${category.slug}/${subgroup.slug}`
       : null;
 
-  // Group posts into folders
   const getPostsInFolder = (folderId: string | null) => {
     return posts.filter((p) => p.folder_id === folderId);
   };
@@ -252,6 +265,8 @@ export default function TrainingPostsPage() {
       return [...filtered, ...newItems].sort((a, b) => a.sort_order - b.sort_order);
     });
   };
+
+  const activeFolder = folders.find((f) => f.id === activeFolderId);
 
   return (
     <div className="mx-auto max-w-6xl px-5 py-10">
@@ -297,12 +312,115 @@ export default function TrainingPostsPage() {
           title="No posts yet"
           hint="Create a folder or a training post to get started."
         />
+      ) : activeFolderId === null ? (
+        // Grid View
+        <div className="flex flex-col gap-8">
+          {folders.length > 0 && (
+            <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
+              {folders.map((folder, idx) => {
+                const count = getPostsInFolder(folder.id).length;
+                return (
+                  <div
+                    key={folder.id}
+                    {...folderRowProps(idx)}
+                    onDragOver={(e) => {
+                      folderRowProps(idx).onDragOver(e);
+                      e.dataTransfer.dropEffect = "move";
+                    }}
+                    onDrop={(e) => {
+                      // Handle dropping a post into the folder
+                      const data = e.dataTransfer.getData("application/json");
+                      if (data) {
+                        try {
+                          const parsed = JSON.parse(data);
+                          if (parsed.folderId !== folder.id) {
+                            onDropPost(parsed.postId, folder.id);
+                          }
+                        } catch {}
+                      }
+                    }}
+                    onClick={() => setActiveFolderId(folder.id)}
+                    className="group relative flex cursor-pointer flex-col gap-2 rounded-3xl border border-black/5 bg-white p-5 shadow-sm transition hover:border-destiny-orange/30 hover:shadow-md"
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="material-symbols-rounded text-3xl text-destiny-orange/80 transition group-hover:text-destiny-orange">
+                        folder
+                      </span>
+                      <span
+                        className="material-symbols-rounded cursor-grab text-xl text-black/10 transition hover:text-black/30 active:cursor-grabbing"
+                        title="Drag to reorder"
+                        onClick={(e) => e.stopPropagation()} // Prevent card click when clicking drag handle
+                      >
+                        drag_indicator
+                      </span>
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-destiny-grey">{folder.name}</h3>
+                      <p className="text-xs font-medium text-destiny-grey/40">
+                        {count} post{count === 1 ? "" : "s"}
+                      </p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {getPostsInFolder(null).length > 0 && (
+            <div>
+              {folders.length > 0 && (
+                <h3 className="mb-3 text-xl font-bold text-destiny-grey">Ungrouped Posts</h3>
+              )}
+              <PostListSection
+                folder={null}
+                items={getPostsInFolder(null)}
+                setItems={(newItems) => setPostsInFolder(null, newItems as any)}
+                onDropPost={onDropPost}
+                togglePublish={togglePublish}
+                setEditing={setEditingPost}
+                remove={remove}
+                liveBase={liveBase}
+                setError={setError}
+              />
+            </div>
+          )}
+        </div>
       ) : (
-        <div>
+        // Folder View
+        <div className="flex flex-col gap-4">
+          <div className="flex items-center justify-between rounded-2xl bg-[#f5f7fa] px-4 py-3">
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => setActiveFolderId(null)}
+                className="flex h-8 w-8 items-center justify-center rounded-full bg-black/5 text-destiny-grey transition hover:bg-black/10"
+              >
+                <span className="material-symbols-rounded text-xl">arrow_back</span>
+              </button>
+              <h2 className="text-lg font-bold text-destiny-grey">
+                {activeFolder?.name}
+              </h2>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setEditingFolder(activeFolder!)}
+                className="flex h-8 w-8 items-center justify-center rounded-full text-destiny-grey/40 transition hover:bg-black/5 hover:text-destiny-orange"
+                title="Edit folder"
+              >
+                <span className="material-symbols-rounded text-xl">edit</span>
+              </button>
+              <button
+                onClick={() => removeFolder(activeFolder!)}
+                className="flex h-8 w-8 items-center justify-center rounded-full text-destiny-grey/40 transition hover:bg-black/5 hover:text-destiny-red"
+                title="Delete folder"
+              >
+                <span className="material-symbols-rounded text-xl">delete</span>
+              </button>
+            </div>
+          </div>
           <PostListSection
-            folder={null}
-            items={getPostsInFolder(null)}
-            setItems={(newItems) => setPostsInFolder(null, newItems as any)}
+            folder={activeFolder || null}
+            items={getPostsInFolder(activeFolderId)}
+            setItems={(newItems) => setPostsInFolder(activeFolderId, newItems as any)}
             onDropPost={onDropPost}
             togglePublish={togglePublish}
             setEditing={setEditingPost}
@@ -310,25 +428,11 @@ export default function TrainingPostsPage() {
             liveBase={liveBase}
             setError={setError}
           />
-          {folders.map((folder) => (
-            <PostListSection
-              key={folder.id}
-              folder={folder}
-              items={getPostsInFolder(folder.id)}
-              setItems={(newItems) => setPostsInFolder(folder.id, newItems as any)}
-              onDropPost={onDropPost}
-              togglePublish={togglePublish}
-              setEditing={setEditingPost}
-              remove={remove}
-              liveBase={liveBase}
-              setError={setError}
-            />
-          ))}
         </div>
       )}
 
       {editingPost && (
-        <PostModal
+        <PostEditor
           post={editingPost === "new" ? null : editingPost}
           folders={folders}
           subgroupId={subgroupId}

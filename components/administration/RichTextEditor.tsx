@@ -4,6 +4,10 @@ import { useEditor, EditorContent, type Editor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Placeholder from "@tiptap/extension-placeholder";
 import Youtube from "@tiptap/extension-youtube";
+import Link from "@tiptap/extension-link";
+import TextAlign from "@tiptap/extension-text-align";
+import Underline from "@tiptap/extension-underline";
+import Highlight from "@tiptap/extension-highlight";
 import { Node } from "@tiptap/core";
 import { useEffect } from "react";
 
@@ -103,10 +107,12 @@ function Toolbar({
   editor,
   enableYouTube,
   enableHtmlEmbed,
+  advanced,
 }: {
   editor: Editor;
   enableYouTube?: boolean;
   enableHtmlEmbed?: boolean;
+  advanced?: boolean;
 }) {
   const div = "mx-1 h-5 w-px bg-black/10";
 
@@ -120,6 +126,26 @@ function Toolbar({
     const html = window.prompt("Paste HTML embed code:");
     if (!html) return;
     (editor.commands as any).setHtmlEmbed({ html: html.trim() });
+  }
+
+  function setLink() {
+    if (editor.isActive("link")) {
+      editor.chain().focus().extendMarkRange("link").unsetLink().run();
+      return;
+    }
+    const prev = (editor.getAttributes("link").href as string) || "";
+    const url = window.prompt("Link URL", prev);
+    if (url === null) return; // cancelled
+    if (url.trim() === "") {
+      editor.chain().focus().extendMarkRange("link").unsetLink().run();
+      return;
+    }
+    editor
+      .chain()
+      .focus()
+      .extendMarkRange("link")
+      .setLink({ href: url.trim() })
+      .run();
   }
 
   return (
@@ -168,6 +194,54 @@ function Toolbar({
         active={editor.isActive("blockquote")}
         onClick={() => editor.chain().focus().toggleBlockquote().run()}
       />
+      {advanced && (
+        <>
+          <span className={div} />
+          <ToolbarButton
+            label="Underline"
+            icon="format_underlined"
+            active={editor.isActive("underline")}
+            onClick={() => editor.chain().focus().toggleUnderline().run()}
+          />
+          <ToolbarButton
+            label="Strikethrough"
+            icon="strikethrough_s"
+            active={editor.isActive("strike")}
+            onClick={() => editor.chain().focus().toggleStrike().run()}
+          />
+          <ToolbarButton
+            label="Highlight"
+            icon="ink_highlighter"
+            active={editor.isActive("highlight")}
+            onClick={() => editor.chain().focus().toggleHighlight().run()}
+          />
+          <ToolbarButton
+            label="Link"
+            icon="link"
+            active={editor.isActive("link")}
+            onClick={setLink}
+          />
+          <span className={div} />
+          <ToolbarButton
+            label="Align left"
+            icon="format_align_left"
+            active={editor.isActive({ textAlign: "left" })}
+            onClick={() => editor.chain().focus().setTextAlign("left").run()}
+          />
+          <ToolbarButton
+            label="Align center"
+            icon="format_align_center"
+            active={editor.isActive({ textAlign: "center" })}
+            onClick={() => editor.chain().focus().setTextAlign("center").run()}
+          />
+          <ToolbarButton
+            label="Align right"
+            icon="format_align_right"
+            active={editor.isActive({ textAlign: "right" })}
+            onClick={() => editor.chain().focus().setTextAlign("right").run()}
+          />
+        </>
+      )}
       {enableYouTube && (
         <>
           <span className={div} />
@@ -211,12 +285,16 @@ export default function RichTextEditor({
   placeholder,
   enableYouTube,
   enableHtmlEmbed,
+  advanced,
+  fill,
 }: {
   value: string;
   onChange: (html: string) => void;
   placeholder?: string;
   enableYouTube?: boolean;
   enableHtmlEmbed?: boolean;
+  advanced?: boolean;
+  fill?: boolean;
 }) {
   const editor = useEditor({
     immediatelyRender: false,
@@ -239,12 +317,25 @@ export default function RichTextEditor({
           ]
         : []),
       ...(enableHtmlEmbed ? [HtmlEmbed] : []),
+      ...(advanced
+        ? [
+            Underline,
+            Highlight,
+            Link.configure({
+              openOnClick: false,
+              autolink: true,
+              HTMLAttributes: { rel: "noopener noreferrer", target: "_blank" },
+            }),
+            TextAlign.configure({ types: ["heading", "paragraph"] }),
+          ]
+        : []),
     ],
     content: value || "",
     editorProps: {
       attributes: {
-        class:
-          "rte-content min-h-[220px] max-h-[420px] overflow-auto px-4 py-3 text-sm text-destiny-grey/80 focus:outline-none",
+        class: `rte-content overflow-auto px-4 py-3 text-sm text-destiny-grey/80 focus:outline-none ${
+          fill ? "min-h-full flex-1" : "min-h-[220px] max-h-[420px]"
+        }`,
       },
     },
     onUpdate: ({ editor }) => {
@@ -270,9 +361,25 @@ export default function RichTextEditor({
   }
 
   return (
-    <div className="overflow-hidden rounded-xl border border-black/10 bg-white focus-within:border-destiny-orange/50 focus-within:ring-2 focus-within:ring-destiny-orange/15">
-      <Toolbar editor={editor} enableYouTube={enableYouTube} enableHtmlEmbed={enableHtmlEmbed} />
-      <EditorContent editor={editor} />
+    <div
+      className={`overflow-hidden border border-black/10 bg-white focus-within:border-destiny-orange/50 focus-within:ring-2 focus-within:ring-destiny-orange/15 ${
+        fill
+          ? "flex h-full flex-col rounded-2xl"
+          : "rounded-xl"
+      }`}
+    >
+      <div className={fill ? "sticky top-0 z-10" : undefined}>
+        <Toolbar
+          editor={editor}
+          enableYouTube={enableYouTube}
+          enableHtmlEmbed={enableHtmlEmbed}
+          advanced={advanced}
+        />
+      </div>
+      <EditorContent
+        editor={editor}
+        className={fill ? "flex min-h-0 flex-1 flex-col" : undefined}
+      />
     </div>
   );
 }

@@ -185,9 +185,8 @@ export function PostEditor({
             <input
               type="number"
               min="0"
-              step="0.5"
               value={form.min_read_minutes || ""}
-              onChange={(e) => set("min_read_minutes", parseFloat(e.target.value) || 0)}
+              onChange={(e) => set("min_read_minutes", parseInt(e.target.value) || 0)}
               placeholder="Min read time (mins)"
               className="w-40 shrink-0 rounded-lg border border-black/10 bg-white px-3 py-1.5 text-sm text-destiny-grey outline-none transition focus:border-destiny-orange/50 focus:ring-2 focus:ring-destiny-orange/15"
               title="Minimum read time in minutes"
@@ -266,10 +265,9 @@ export function PostEditor({
           <input
             type="number"
             min="0"
-            step="0.5"
             className={inputClass}
             value={form.min_read_minutes || ""}
-            onChange={(e) => set("min_read_minutes", parseFloat(e.target.value) || 0)}
+            onChange={(e) => set("min_read_minutes", parseInt(e.target.value) || 0)}
             placeholder="e.g. 5"
           />
         </div>

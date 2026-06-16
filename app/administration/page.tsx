@@ -21,6 +21,13 @@ const TILES: Tile[] = [
     available: true,
   },
   {
+    href: "/administration/training",
+    icon: "school",
+    title: "Training",
+    description: "Team training categories, sub-groups and posts.",
+    available: true,
+  },
+  {
     icon: "diversity_3",
     title: "Teams & Rotas",
     description: "Serving teams, scheduling and availability.",

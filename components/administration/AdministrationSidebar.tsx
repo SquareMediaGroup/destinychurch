@@ -113,6 +113,14 @@ function NavItems({
           </div>
         )}
       </div>
+
+      <NavLink
+        href="/administration/training"
+        icon="school"
+        label="Training"
+        pathname={pathname}
+        onNavigate={onNavigate}
+      />
     </>
   );
 }

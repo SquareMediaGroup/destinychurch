@@ -845,3 +845,17 @@ h3 {
   height: 0;
   pointer-events: none;
 }
+/* Embedded YouTube videos (TipTap youtube node) — responsive 16:9 */
+.rte-content div[data-youtube-video] {
+  margin: 1.5rem 0;
+}
+.rte-content div[data-youtube-video] iframe,
+.rte-content iframe {
+  width: 100%;
+  max-width: 100%;
+  aspect-ratio: 16 / 9;
+  height: auto;
+  border: 0;
+  border-radius: 1rem;
+  display: block;
+}

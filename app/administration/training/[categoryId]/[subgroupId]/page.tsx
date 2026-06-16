@@ -150,7 +150,14 @@ export default function TrainingPostsPage() {
                     </span>
                   </td>
                   <td className="px-5 py-3.5">
-                    <p className="font-bold text-destiny-grey">{p.title}</p>
+                    <div className="flex items-center gap-2">
+                      <p className="font-bold text-destiny-grey">{p.title}</p>
+                      {p.folder_name && (
+                        <span className="rounded bg-black/5 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-destiny-grey/60">
+                          {p.folder_name}
+                        </span>
+                      )}
+                    </div>
                     {p.summary && (
                       <p className="mt-0.5 text-xs text-destiny-grey/45">
                         {p.summary}

@@ -60,6 +60,7 @@ export async function POST(request: Request) {
       subgroup_id: subgroupId,
       title,
       slug,
+      folder_name: body.folder_name?.trim() || null,
       summary: body.summary?.trim() || null,
       body: body.body?.trim() || null,
       is_published: body.is_published ?? false,

@@ -4,7 +4,67 @@ import { useEditor, EditorContent, type Editor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Placeholder from "@tiptap/extension-placeholder";
 import Youtube from "@tiptap/extension-youtube";
+import { Node } from "@tiptap/core";
 import { useEffect } from "react";
+
+const HtmlEmbed = Node.create({
+  name: "htmlEmbed",
+  group: "block",
+  atom: true,
+
+  addAttributes() {
+    return {
+      html: {
+        default: "",
+      },
+    };
+  },
+
+  parseHTML() {
+    return [
+      {
+        tag: "div[data-html-embed]",
+        getAttrs: (element) => ({
+          html: (element as HTMLElement).innerHTML,
+        }),
+      },
+    ];
+  },
+
+  renderHTML({ node }) {
+    if (typeof document !== "undefined") {
+      const div = document.createElement("div");
+      div.setAttribute("data-html-embed", "true");
+      div.innerHTML = node.attrs.html;
+      return div;
+    }
+    return ["div", { "data-html-embed": "true", "data-fallback-html": node.attrs.html }];
+  },
+
+  addNodeView() {
+    return ({ node }) => {
+      const dom = document.createElement("div");
+      dom.setAttribute("data-html-embed", "true");
+      dom.className =
+        "relative my-4 rounded-xl border-2 border-dashed border-destiny-orange/30 bg-destiny-orange/5 p-4 before:content-['HTML_Embed'] before:absolute before:-top-3 before:left-4 before:bg-white before:px-1 before:text-[10px] before:font-bold before:text-destiny-orange/60";
+      dom.innerHTML = node.attrs.html;
+      return { dom };
+    };
+  },
+
+  addCommands() {
+    return {
+      setHtmlEmbed:
+        (options: { html: string }) =>
+        ({ commands }) => {
+          return commands.insertContent({
+            type: this.name,
+            attrs: options,
+          });
+        },
+    } as any;
+  },
+});
 
 // A friendly what-you-see-is-what-you-get editor so staff never have to write
 // Markdown by hand. Outputs HTML, which is rendered on the public job/training
@@ -42,9 +102,11 @@ function ToolbarButton({
 function Toolbar({
   editor,
   enableYouTube,
+  enableHtmlEmbed,
 }: {
   editor: Editor;
   enableYouTube?: boolean;
+  enableHtmlEmbed?: boolean;
 }) {
   const div = "mx-1 h-5 w-px bg-black/10";
 
@@ -52,6 +114,12 @@ function Toolbar({
     const url = window.prompt("Paste a YouTube video URL");
     if (!url) return;
     editor.commands.setYoutubeVideo({ src: url.trim() });
+  }
+
+  function addHtmlEmbed() {
+    const html = window.prompt("Paste HTML embed code:");
+    if (!html) return;
+    (editor.commands as any).setHtmlEmbed({ html: html.trim() });
   }
 
   return (
@@ -111,6 +179,17 @@ function Toolbar({
           />
         </>
       )}
+      {enableHtmlEmbed && (
+        <>
+          <span className={div} />
+          <ToolbarButton
+            label="Embed HTML"
+            icon="code"
+            active={editor.isActive("htmlEmbed")}
+            onClick={addHtmlEmbed}
+          />
+        </>
+      )}
       <span className={div} />
       <ToolbarButton
         label="Undo"
@@ -131,11 +210,13 @@ export default function RichTextEditor({
   onChange,
   placeholder,
   enableYouTube,
+  enableHtmlEmbed,
 }: {
   value: string;
   onChange: (html: string) => void;
   placeholder?: string;
   enableYouTube?: boolean;
+  enableHtmlEmbed?: boolean;
 }) {
   const editor = useEditor({
     immediatelyRender: false,
@@ -157,6 +238,7 @@ export default function RichTextEditor({
             }),
           ]
         : []),
+      ...(enableHtmlEmbed ? [HtmlEmbed] : []),
     ],
     content: value || "",
     editorProps: {
@@ -189,7 +271,7 @@ export default function RichTextEditor({
 
   return (
     <div className="overflow-hidden rounded-xl border border-black/10 bg-white focus-within:border-destiny-orange/50 focus-within:ring-2 focus-within:ring-destiny-orange/15">
-      <Toolbar editor={editor} enableYouTube={enableYouTube} />
+      <Toolbar editor={editor} enableYouTube={enableYouTube} enableHtmlEmbed={enableHtmlEmbed} />
       <EditorContent editor={editor} />
     </div>
   );

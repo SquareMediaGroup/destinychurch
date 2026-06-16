@@ -20,6 +20,7 @@ export async function GET(
 
 const EDITABLE = [
   "title",
+  "folder_name",
   "summary",
   "body",
   "subgroup_id",

@@ -35,6 +35,7 @@ export interface TrainingPost {
   subgroup_id: string;
   title: string;
   slug: string;
+  folder_name: string | null;
   summary: string | null;
   body: string | null;
   sort_order: number;

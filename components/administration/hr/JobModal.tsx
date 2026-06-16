@@ -188,6 +188,7 @@ export function JobModal({
             value={form.description}
             onChange={(html) => set("description", html)}
             placeholder="Describe the role — use the toolbar to add headings and bullet points."
+            enableHtmlEmbed
           />
         </div>
 

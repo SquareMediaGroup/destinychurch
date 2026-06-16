@@ -28,6 +28,7 @@ export function PostModal({
 }) {
   const [form, setForm] = useState({
     title: post?.title ?? "",
+    folder_name: post?.folder_name ?? "",
     summary: post?.summary ?? "",
     body: post?.body ?? "",
     is_published: post?.is_published ?? false,
@@ -81,6 +82,16 @@ export function PostModal({
         </div>
 
         <div>
+          <label className={labelClass}>Folder (Optional)</label>
+          <input
+            className={inputClass}
+            value={form.folder_name}
+            onChange={(e) => set("folder_name", e.target.value)}
+            placeholder="e.g. Basics"
+          />
+        </div>
+
+        <div>
           <label className={labelClass}>Summary</label>
           <textarea
             className={inputClass}
@@ -98,6 +109,7 @@ export function PostModal({
             onChange={(html) => set("body", html)}
             placeholder="Write the training content — use the toolbar to add headings, lists and YouTube videos."
             enableYouTube
+            enableHtmlEmbed
           />
         </div>
 

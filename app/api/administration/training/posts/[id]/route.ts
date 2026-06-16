@@ -25,6 +25,7 @@ const EDITABLE = [
   "body",
   "subgroup_id",
   "is_published",
+  "min_read_seconds",
   "sort_order",
 ] as const;
 

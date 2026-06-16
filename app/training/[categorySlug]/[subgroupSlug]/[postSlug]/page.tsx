@@ -93,7 +93,7 @@ export default async function TrainingPostPage({
             </p>
           )}
 
-          <CompleteButton postId={post.id} />
+          <CompleteButton postId={post.id} minReadSeconds={post.min_read_seconds} />
 
           <nav className="mt-8 grid grid-cols-2 gap-3">
             {prev ? (

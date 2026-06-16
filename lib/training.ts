@@ -45,6 +45,7 @@ export interface TrainingPost {
   slug: string;
   summary: string | null;
   body: string | null;
+  min_read_seconds: number;
   sort_order: number;
   is_published: boolean;
   created_at: string;

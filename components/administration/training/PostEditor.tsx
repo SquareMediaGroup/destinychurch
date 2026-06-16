@@ -73,6 +73,7 @@ export function PostEditor({
     folder_id: post?.folder_id ?? "",
     summary: post?.summary ?? "",
     body: post?.body ?? "",
+    min_read_seconds: post?.min_read_seconds ?? 0,
     is_published: post?.is_published ?? false,
     sort_order: post?.sort_order ?? nextSortOrder,
   });
@@ -179,6 +180,15 @@ export function PostEditor({
               ))}
             </select>
             <input
+              type="number"
+              min="0"
+              value={form.min_read_seconds || ""}
+              onChange={(e) => set("min_read_seconds", parseInt(e.target.value) || 0)}
+              placeholder="Min read time (sec)"
+              className="w-36 shrink-0 rounded-lg border border-black/10 bg-white px-3 py-1.5 text-sm text-destiny-grey outline-none transition focus:border-destiny-orange/50 focus:ring-2 focus:ring-destiny-orange/15"
+              title="Minimum read time in seconds"
+            />
+            <input
               value={form.summary}
               onChange={(e) => set("summary", e.target.value)}
               placeholder="One-line summary shown in the posts list…"
@@ -244,6 +254,18 @@ export function PostEditor({
             value={form.summary}
             onChange={(e) => set("summary", e.target.value)}
             placeholder="One-line teaser shown in the posts list."
+          />
+        </div>
+
+        <div>
+          <label className={labelClass}>Min read time (seconds)</label>
+          <input
+            type="number"
+            min="0"
+            className={inputClass}
+            value={form.min_read_seconds || ""}
+            onChange={(e) => set("min_read_seconds", parseInt(e.target.value) || 0)}
+            placeholder="e.g. 30"
           />
         </div>
 

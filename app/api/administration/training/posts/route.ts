@@ -63,6 +63,7 @@ export async function POST(request: Request) {
       slug,
       summary: body.summary?.trim() || null,
       body: body.body?.trim() || null,
+      min_read_seconds: body.min_read_seconds ?? 0,
       is_published: body.is_published ?? false,
       sort_order: body.sort_order ?? 0,
     })

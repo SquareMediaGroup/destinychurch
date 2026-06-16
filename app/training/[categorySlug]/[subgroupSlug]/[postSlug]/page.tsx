@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import AnimateIn from "@/components/AnimateIn";
 import PasswordGate from "@/components/training/PasswordGate";
+import CompleteButton from "@/components/training/CompleteButton";
 import { getPostBySlugs } from "@/lib/training.server";
 import { isUnlocked } from "@/lib/trainingAccess";
 
@@ -84,6 +85,8 @@ export default async function TrainingPostPage({
               This post doesn&apos;t have any content yet.
             </p>
           )}
+
+          <CompleteButton postId={post.id} />
         </AnimateIn>
       </div>
     </article>

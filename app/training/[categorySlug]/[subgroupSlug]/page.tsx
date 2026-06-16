@@ -3,6 +3,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import AnimateIn from "@/components/AnimateIn";
 import PasswordGate from "@/components/training/PasswordGate";
+import TrainingProgress from "@/components/training/TrainingProgress";
+import CompletablePostList from "@/components/training/CompletablePostList";
 import { getSubgroupBySlugs, getPublishedPosts } from "@/lib/training.server";
 import { isUnlocked } from "@/lib/trainingAccess";
 
@@ -71,6 +73,7 @@ export default async function TrainingSubgroupPage({
                 {subgroup.description}
               </p>
             )}
+            <TrainingProgress postIds={posts.map((p) => p.id)} />
           </AnimateIn>
         </section>
       </div>
@@ -82,35 +85,10 @@ export default async function TrainingSubgroupPage({
               No training posts here yet — check back soon.
             </p>
           ) : (
-            <div className="flex flex-col gap-3">
-              {posts.map((post) => (
-                <AnimateIn key={post.id}>
-                  <Link
-                    href={`/training/${category.slug}/${subgroup.slug}/${post.slug}`}
-                    className="group flex items-start gap-4 rounded-2xl border border-black/5 bg-white p-5 shadow-sm transition hover:border-destiny-orange/30 hover:shadow-md"
-                  >
-                    <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-destiny-orange/10 text-destiny-orange">
-                      <span className="material-symbols-rounded text-[20px]">
-                        play_lesson
-                      </span>
-                    </span>
-                    <div className="flex-1">
-                      <h2 className="font-bold text-destiny-grey transition group-hover:text-destiny-orange">
-                        {post.title}
-                      </h2>
-                      {post.summary && (
-                        <p className="mt-0.5 text-sm text-destiny-grey/55">
-                          {post.summary}
-                        </p>
-                      )}
-                    </div>
-                    <span className="material-symbols-rounded mt-1 text-base text-destiny-grey/30 transition group-hover:translate-x-0.5 group-hover:text-destiny-orange">
-                      arrow_forward
-                    </span>
-                  </Link>
-                </AnimateIn>
-              ))}
-            </div>
+            <CompletablePostList
+              posts={posts}
+              basePath={`/training/${category.slug}/${subgroup.slug}`}
+            />
           )}
         </div>
       </section>

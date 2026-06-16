@@ -16,11 +16,22 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { categorySlug } = await params;
   const category = await getCategoryBySlug(categorySlug);
+  if (!category) return { title: "Training" };
+
+  const description =
+    category.description ||
+    `${category.name} training resources for serving teams at Destiny Church Tees Valley.`;
+
   return {
-    title: category
-      ? `${category.name} Training | Destiny Church`
-      : "Training",
-    robots: { index: false, follow: false },
+    title: `${category.name} Training`,
+    description,
+    alternates: { canonical: `/training/${category.slug}` },
+    openGraph: {
+      title: `${category.name} Training | Destiny Church Tees Valley`,
+      description,
+      url: `/training/${category.slug}`,
+      type: "website",
+    },
   };
 }
 

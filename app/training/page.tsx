@@ -5,11 +5,19 @@ import { getTrainingTree } from "@/lib/training.server";
 
 export const dynamic = "force-dynamic";
 
+const DESCRIPTION =
+  "Training resources for our serving teams at Destiny Church Tees Valley — production, stewarding, hospitality, kids and more.";
+
 export const metadata: Metadata = {
-  title: "Training | Destiny Church Tees Valley",
-  description:
-    "Training resources for our serving teams — production, stewarding, hospitality, kids and more.",
-  robots: { index: false, follow: false },
+  title: "Training",
+  description: DESCRIPTION,
+  alternates: { canonical: "/training" },
+  openGraph: {
+    title: "Training | Destiny Church Tees Valley",
+    description: DESCRIPTION,
+    url: "/training",
+    type: "website",
+  },
 };
 
 export default async function TrainingPage() {

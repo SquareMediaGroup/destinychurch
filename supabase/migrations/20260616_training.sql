@@ -92,5 +92,5 @@ insert into training_categories (name, slug, icon, sort_order) values
   ('Production',  'production',  'graphic_eq',   0),
   ('Stewarding',  'stewarding',  'verified_user', 1),
   ('Hospitality', 'hospitality', 'coffee',        2),
-  ('Kids & More', 'kids',        'child_care',    3)
+  ('Kids',        'kids',        'child_care',    3)
 on conflict (slug) do nothing;

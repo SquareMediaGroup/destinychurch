@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { API, type TrainingPost } from "@/lib/training";
+import { API, type TrainingPost, type TrainingFolder } from "@/lib/training";
 import {
   Modal,
   inputClass,
@@ -13,6 +13,7 @@ import RichTextEditor from "@/components/administration/RichTextEditor";
 
 export function PostModal({
   post,
+  folders = [],
   subgroupId,
   nextSortOrder = 0,
   onClose,
@@ -20,6 +21,7 @@ export function PostModal({
   onError,
 }: {
   post: TrainingPost | null;
+  folders?: TrainingFolder[];
   subgroupId: string;
   nextSortOrder?: number;
   onClose: () => void;
@@ -28,7 +30,7 @@ export function PostModal({
 }) {
   const [form, setForm] = useState({
     title: post?.title ?? "",
-    folder_name: post?.folder_name ?? "",
+    folder_id: post?.folder_id ?? "",
     summary: post?.summary ?? "",
     body: post?.body ?? "",
     is_published: post?.is_published ?? false,
@@ -83,12 +85,18 @@ export function PostModal({
 
         <div>
           <label className={labelClass}>Folder (Optional)</label>
-          <input
+          <select
             className={inputClass}
-            value={form.folder_name}
-            onChange={(e) => set("folder_name", e.target.value)}
-            placeholder="e.g. Basics"
-          />
+            value={form.folder_id || ""}
+            onChange={(e) => set("folder_id", e.target.value)}
+          >
+            <option value="">Ungrouped</option>
+            {folders.map((f) => (
+              <option key={f.id} value={f.id}>
+                {f.name}
+              </option>
+            ))}
+          </select>
         </div>
 
         <div>

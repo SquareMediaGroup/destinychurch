@@ -5,7 +5,7 @@ import AnimateIn from "@/components/AnimateIn";
 import PasswordGate from "@/components/training/PasswordGate";
 import TrainingProgress from "@/components/training/TrainingProgress";
 import CompletablePostList from "@/components/training/CompletablePostList";
-import { getSubgroupBySlugs, getPublishedPosts } from "@/lib/training.server";
+import { getSubgroupBySlugs, getPublishedPosts, getFolders } from "@/lib/training.server";
 import { isUnlocked } from "@/lib/trainingAccess";
 
 export const dynamic = "force-dynamic";
@@ -47,7 +47,10 @@ export default async function TrainingSubgroupPage({
     );
   }
 
-  const posts = await getPublishedPosts(subgroup.id);
+  const [posts, folders] = await Promise.all([
+    getPublishedPosts(subgroup.id),
+    getFolders(subgroup.id),
+  ]);
 
   return (
     <>
@@ -87,6 +90,7 @@ export default async function TrainingSubgroupPage({
           ) : (
             <CompletablePostList
               posts={posts}
+              folders={folders}
               basePath={`/training/${category.slug}/${subgroup.slug}`}
             />
           )}

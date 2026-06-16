@@ -30,12 +30,19 @@ export interface TrainingSubgroup {
   updated_at: string;
 }
 
+export interface TrainingFolder {
+  id: string;
+  subgroup_id: string;
+  name: string;
+  sort_order: number;
+}
+
 export interface TrainingPost {
   id: string;
   subgroup_id: string;
+  folder_id: string | null;
   title: string;
   slug: string;
-  folder_name: string | null;
   summary: string | null;
   body: string | null;
   sort_order: number;

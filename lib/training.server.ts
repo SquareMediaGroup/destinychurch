@@ -176,3 +176,22 @@ export async function getPostBySlugs(
   }
   return { ...found, post: data as TrainingPost };
 }
+
+/** Folders for a sub-group id, ordered. */
+export async function getFolders(
+  subgroupId: string,
+): Promise<import("@/lib/training").TrainingFolder[]> {
+  const supabase = getSupabaseAdmin();
+  const { data, error } = await supabase
+    .from("training_folders")
+    .select("*")
+    .eq("subgroup_id", subgroupId)
+    .order("sort_order", { ascending: true })
+    .order("created_at", { ascending: true });
+
+  if (error) {
+    console.error("getFolders error:", error.message);
+    return [];
+  }
+  return (data ?? []) as import("@/lib/training").TrainingFolder[];
+}

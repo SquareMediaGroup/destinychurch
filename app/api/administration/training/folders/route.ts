@@ -1,12 +1,11 @@
 import { NextResponse } from "next/server";
 import { createServiceClient } from "@/utils/supabase/service";
-import { slugify } from "@/lib/jobs";
 
 export async function GET(request: Request) {
   const subgroupId = new URL(request.url).searchParams.get("subgroup_id");
   const supabase = createServiceClient();
   let query = supabase
-    .from("training_posts")
+    .from("training_folders")
     .select("*")
     .order("sort_order", { ascending: true })
     .order("created_at", { ascending: true });
@@ -17,54 +16,34 @@ export async function GET(request: Request) {
   return NextResponse.json(data);
 }
 
-// Slug only needs to be unique within its sub-group.
-async function uniqueSlug(
-  supabase: ReturnType<typeof createServiceClient>,
-  subgroupId: string,
-  base: string,
-): Promise<string> {
-  const root = slugify(base) || "post";
-  let slug = root;
-  let n = 2;
-  for (let i = 0; i < 50; i++) {
-    const { data } = await supabase
-      .from("training_posts")
-      .select("id")
-      .eq("subgroup_id", subgroupId)
-      .eq("slug", slug)
-      .maybeSingle();
-    if (!data) return slug;
-    slug = `${root}-${n++}`;
-  }
-  return `${root}-${Date.now()}`;
-}
-
 export async function POST(request: Request) {
   const body = await request.json();
-  const title = body.title?.trim();
+  const name = body.name?.trim();
   const subgroupId = body.subgroup_id;
 
-  if (!title) {
-    return NextResponse.json({ error: "A post title is required" }, { status: 400 });
+  if (!name) {
+    return NextResponse.json({ error: "A folder name is required" }, { status: 400 });
   }
   if (!subgroupId) {
     return NextResponse.json({ error: "A sub-group is required" }, { status: 400 });
   }
 
   const supabase = createServiceClient();
-  const slug = await uniqueSlug(supabase, subgroupId, body.slug?.trim() || title);
+
+  const { data: folders } = await supabase
+    .from("training_folders")
+    .select("sort_order")
+    .eq("subgroup_id", subgroupId)
+    .order("sort_order", { ascending: false })
+    .limit(1);
+  const nextOrder = folders && folders.length > 0 ? folders[0].sort_order + 1 : 0;
 
   const { data, error } = await supabase
-    .from("training_posts")
+    .from("training_folders")
     .insert({
       subgroup_id: subgroupId,
-      folder_id: body.folder_id || null,
-      title,
-      slug,
-      summary: body.summary?.trim() || null,
-      body: body.body?.trim() || null,
-      is_published: body.is_published ?? false,
-      sort_order: body.sort_order ?? 0,
+      name,
+      sort_order: body.sort_order ?? nextOrder,
     })
     .select()
     .single();

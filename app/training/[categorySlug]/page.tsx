@@ -9,8 +9,6 @@ import {
 
 export const dynamic = "force-dynamic";
 
-const DISPLAY = { fontFamily: "var(--font-anton), Impact, sans-serif" } as const;
-
 export async function generateMetadata({
   params,
 }: {
@@ -53,10 +51,7 @@ export default async function TrainingCategoryPage({
               <span className="material-symbols-rounded text-base">arrow_back</span>
               All training
             </Link>
-            <h1
-              className="mt-4 text-4xl uppercase leading-[0.98] text-white md:text-5xl"
-              style={DISPLAY}
-            >
+            <h1 className="mt-4 text-4xl font-black text-white md:text-5xl">
               {category.name}
             </h1>
             {category.description && (

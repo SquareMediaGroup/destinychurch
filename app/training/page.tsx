@@ -12,8 +12,6 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
-const DISPLAY = { fontFamily: "var(--font-anton), Impact, sans-serif" } as const;
-
 export default async function TrainingPage() {
   const categories = await getTrainingTree();
 
@@ -30,10 +28,7 @@ export default async function TrainingPage() {
             <p className="mb-3 text-xs font-bold uppercase tracking-widest text-destiny-orange">
               For our serving teams
             </p>
-            <h1
-              className="text-4xl uppercase leading-[0.98] text-white md:text-6xl"
-              style={DISPLAY}
-            >
+            <h1 className="text-5xl font-black text-white md:text-6xl">
               Training
             </h1>
             <p className="mx-auto mt-4 max-w-xl text-base text-white/65 md:text-lg">

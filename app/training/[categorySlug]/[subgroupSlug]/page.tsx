@@ -8,8 +8,6 @@ import { isUnlocked } from "@/lib/trainingAccess";
 
 export const dynamic = "force-dynamic";
 
-const DISPLAY = { fontFamily: "var(--font-anton), Impact, sans-serif" } as const;
-
 export async function generateMetadata({
   params,
 }: {
@@ -65,10 +63,7 @@ export default async function TrainingSubgroupPage({
               <span className="material-symbols-rounded text-base">arrow_back</span>
               {category.name}
             </Link>
-            <h1
-              className="mt-4 text-4xl uppercase leading-[0.98] text-white md:text-5xl"
-              style={DISPLAY}
-            >
+            <h1 className="mt-4 text-4xl font-black text-white md:text-5xl">
               {subgroup.name}
             </h1>
             {subgroup.description && (

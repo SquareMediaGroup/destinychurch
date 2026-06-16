@@ -8,8 +8,6 @@ import { isUnlocked } from "@/lib/trainingAccess";
 
 export const dynamic = "force-dynamic";
 
-const DISPLAY = { fontFamily: "var(--font-anton), Impact, sans-serif" } as const;
-
 export async function generateMetadata({
   params,
 }: {
@@ -67,10 +65,7 @@ export default async function TrainingPostPage({
           <p className="mt-5 text-xs font-bold uppercase tracking-widest text-destiny-orange">
             {category.name} · {subgroup.name}
           </p>
-          <h1
-            className="mt-2 text-3xl uppercase leading-[1.02] text-destiny-grey md:text-4xl"
-            style={DISPLAY}
-          >
+          <h1 className="mt-2 text-3xl font-black text-destiny-grey md:text-4xl">
             {post.title}
           </h1>
           {post.summary && (

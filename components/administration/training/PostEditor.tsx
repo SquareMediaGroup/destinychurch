@@ -73,7 +73,7 @@ export function PostEditor({
     folder_id: post?.folder_id ?? "",
     summary: post?.summary ?? "",
     body: post?.body ?? "",
-    min_read_seconds: post?.min_read_seconds ?? 0,
+    min_read_minutes: (post?.min_read_seconds ?? 0) / 60,
     is_published: post?.is_published ?? false,
     sort_order: post?.sort_order ?? nextSortOrder,
   });
@@ -105,6 +105,9 @@ export function PostEditor({
     setSaving(true);
 
     const payload: Record<string, unknown> = { ...form };
+    payload.min_read_seconds = Math.round(form.min_read_minutes * 60);
+    delete payload.min_read_minutes;
+
     if (!post) payload.subgroup_id = subgroupId;
 
     const url = post ? `${API}/posts/${post.id}` : `${API}/posts`;
@@ -182,11 +185,12 @@ export function PostEditor({
             <input
               type="number"
               min="0"
-              value={form.min_read_seconds || ""}
-              onChange={(e) => set("min_read_seconds", parseInt(e.target.value) || 0)}
-              placeholder="Min read time (sec)"
-              className="w-36 shrink-0 rounded-lg border border-black/10 bg-white px-3 py-1.5 text-sm text-destiny-grey outline-none transition focus:border-destiny-orange/50 focus:ring-2 focus:ring-destiny-orange/15"
-              title="Minimum read time in seconds"
+              step="0.5"
+              value={form.min_read_minutes || ""}
+              onChange={(e) => set("min_read_minutes", parseFloat(e.target.value) || 0)}
+              placeholder="Min read time (mins)"
+              className="w-40 shrink-0 rounded-lg border border-black/10 bg-white px-3 py-1.5 text-sm text-destiny-grey outline-none transition focus:border-destiny-orange/50 focus:ring-2 focus:ring-destiny-orange/15"
+              title="Minimum read time in minutes"
             />
             <input
               value={form.summary}
@@ -258,14 +262,15 @@ export function PostEditor({
         </div>
 
         <div>
-          <label className={labelClass}>Min read time (seconds)</label>
+          <label className={labelClass}>Min read time (minutes)</label>
           <input
             type="number"
             min="0"
+            step="0.5"
             className={inputClass}
-            value={form.min_read_seconds || ""}
-            onChange={(e) => set("min_read_seconds", parseInt(e.target.value) || 0)}
-            placeholder="e.g. 30"
+            value={form.min_read_minutes || ""}
+            onChange={(e) => set("min_read_minutes", parseFloat(e.target.value) || 0)}
+            placeholder="e.g. 5"
           />
         </div>
 

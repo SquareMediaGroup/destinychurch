@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import AnimateIn from "@/components/AnimateIn";
 import PasswordGate from "@/components/training/PasswordGate";
 import CompleteButton from "@/components/training/CompleteButton";
-import { getPostBySlugs } from "@/lib/training.server";
+import { getPostBySlugs, getPublishedPosts } from "@/lib/training.server";
 import { isUnlocked } from "@/lib/trainingAccess";
 
 export const dynamic = "force-dynamic";
@@ -52,6 +52,13 @@ export default async function TrainingPostPage({
     );
   }
 
+  // Adjacent lessons in the same sub-group, by display order, for the pager.
+  const siblings = await getPublishedPosts(subgroup.id);
+  const index = siblings.findIndex((p) => p.id === post.id);
+  const prev = index > 0 ? siblings[index - 1] : null;
+  const next = index >= 0 && index < siblings.length - 1 ? siblings[index + 1] : null;
+  const base = `/training/${category.slug}/${subgroup.slug}`;
+
   return (
     <article className="bg-white pb-24">
       <div className="mx-auto max-w-3xl px-4 pt-10 lg:px-8">
@@ -87,6 +94,53 @@ export default async function TrainingPostPage({
           )}
 
           <CompleteButton postId={post.id} />
+
+          <nav className="mt-8 grid grid-cols-2 gap-3">
+            {prev ? (
+              <Link
+                href={`${base}/${prev.slug}`}
+                className="group flex flex-col rounded-2xl border border-black/5 bg-white p-4 shadow-sm transition hover:border-destiny-orange/30 hover:shadow-md"
+              >
+                <span className="flex items-center gap-1 text-[11px] font-bold uppercase tracking-wider text-destiny-grey/40">
+                  <span className="material-symbols-rounded text-sm">arrow_back</span>
+                  Previous
+                </span>
+                <span className="mt-1 line-clamp-1 text-sm font-bold text-destiny-grey transition group-hover:text-destiny-orange">
+                  {prev.title}
+                </span>
+              </Link>
+            ) : (
+              <span />
+            )}
+
+            {next ? (
+              <Link
+                href={`${base}/${next.slug}`}
+                className="group flex flex-col items-end rounded-2xl border border-black/5 bg-white p-4 text-right shadow-sm transition hover:border-destiny-orange/30 hover:shadow-md"
+              >
+                <span className="flex items-center gap-1 text-[11px] font-bold uppercase tracking-wider text-destiny-grey/40">
+                  Next
+                  <span className="material-symbols-rounded text-sm">arrow_forward</span>
+                </span>
+                <span className="mt-1 line-clamp-1 text-sm font-bold text-destiny-grey transition group-hover:text-destiny-orange">
+                  {next.title}
+                </span>
+              </Link>
+            ) : (
+              <Link
+                href={base}
+                className="group flex flex-col items-end rounded-2xl border border-black/5 bg-white p-4 text-right shadow-sm transition hover:border-destiny-orange/30 hover:shadow-md"
+              >
+                <span className="flex items-center gap-1 text-[11px] font-bold uppercase tracking-wider text-destiny-grey/40">
+                  Finish
+                  <span className="material-symbols-rounded text-sm">done_all</span>
+                </span>
+                <span className="mt-1 line-clamp-1 text-sm font-bold text-destiny-grey transition group-hover:text-destiny-orange">
+                  Back to {subgroup.name}
+                </span>
+              </Link>
+            )}
+          </nav>
         </AnimateIn>
       </div>
     </article>

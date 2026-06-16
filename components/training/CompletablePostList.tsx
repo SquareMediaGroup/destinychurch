@@ -126,11 +126,17 @@ export default function CompletablePostList({
                     {isFullyCompleted ? "check_circle" : "folder"}
                   </span>
                 </div>
-                <div className="mt-2">
+                <div className="mt-2 w-full">
                   <h3 className="font-bold text-destiny-grey">{folder.name}</h3>
                   <p className="text-sm font-medium text-destiny-grey/50">
                     {completedCount} / {count} completed
                   </p>
+                  <div className="mt-3 h-1.5 w-full overflow-hidden rounded-full bg-black/5">
+                    <div
+                      className="h-full bg-destiny-green transition-all duration-500 ease-out"
+                      style={{ width: `${count === 0 ? 0 : (completedCount / count) * 100}%` }}
+                    />
+                  </div>
                 </div>
               </button>
             );

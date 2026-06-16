@@ -8,8 +8,17 @@ import Link from "@tiptap/extension-link";
 import TextAlign from "@tiptap/extension-text-align";
 import Underline from "@tiptap/extension-underline";
 import Highlight from "@tiptap/extension-highlight";
-import { Node } from "@tiptap/core";
+import { Node, type CommandProps } from "@tiptap/core";
 import { useEffect } from "react";
+
+declare module "@tiptap/core" {
+  interface Commands<ReturnType> {
+    htmlEmbed: {
+      /** Insert a raw-HTML embed block. */
+      setHtmlEmbed: (options: { html: string }) => ReturnType;
+    };
+  }
+}
 
 const HtmlEmbed = Node.create({
   name: "htmlEmbed",
@@ -60,13 +69,12 @@ const HtmlEmbed = Node.create({
     return {
       setHtmlEmbed:
         (options: { html: string }) =>
-        ({ commands }: any) => {
-          return commands.insertContent({
+        ({ commands }: CommandProps) =>
+          commands.insertContent({
             type: this.name,
             attrs: options,
-          });
-        },
-    } as any;
+          }),
+    };
   },
 });
 
@@ -125,7 +133,7 @@ function Toolbar({
   function addHtmlEmbed() {
     const html = window.prompt("Paste HTML embed code:");
     if (!html) return;
-    (editor.commands as any).setHtmlEmbed({ html: html.trim() });
+    editor.commands.setHtmlEmbed({ html: html.trim() });
   }
 
   function setLink() {

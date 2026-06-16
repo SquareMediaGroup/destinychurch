@@ -88,10 +88,12 @@ function PostListSection({
                       JSON.stringify({ postId: p.id, folderId: p.folder_id || null })
                     );
                   }}
-                  className="transition hover:bg-[#f5f7fa]"
+                  onClick={() => setEditing(p)}
+                  className="group cursor-pointer transition hover:bg-[#f5f7fa]"
                 >
                   <td className="px-2 py-3.5 text-center">
                     <span
+                      onClick={(e) => e.stopPropagation()}
                       className="material-symbols-rounded cursor-grab text-xl text-destiny-grey/25 active:cursor-grabbing"
                       title="Drag to move or reorder"
                     >
@@ -99,13 +101,19 @@ function PostListSection({
                     </span>
                   </td>
                   <td className="px-5 py-3.5">
-                    <p className="font-bold text-destiny-grey">{p.title}</p>
+                    <p className="font-bold text-destiny-grey transition group-hover:text-destiny-orange">{p.title}</p>
                     {p.summary && (
                       <p className="mt-0.5 text-xs text-destiny-grey/45">{p.summary}</p>
                     )}
                   </td>
                   <td className="px-5 py-3.5">
-                    <button onClick={() => togglePublish(p)} title="Toggle publish">
+                    <button 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        togglePublish(p);
+                      }} 
+                      title="Toggle publish"
+                    >
                       <Badge tone={p.is_published ? "green" : "grey"}>
                         {p.is_published ? "Published" : "Draft"}
                       </Badge>
@@ -118,6 +126,7 @@ function PostListSection({
                           href={`${liveBase}/${p.slug}`}
                           target="_blank"
                           rel="noreferrer"
+                          onClick={(e) => e.stopPropagation()}
                           className="text-destiny-grey/40 transition hover:text-destiny-orange"
                           aria-label="View live"
                         >
@@ -127,14 +136,20 @@ function PostListSection({
                         </a>
                       )}
                       <button
-                        onClick={() => setEditing(p)}
-                        className="text-destiny-grey/40 transition hover:text-destiny-orange"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setEditing(p);
+                        }}
+                        className="text-destiny-grey/40 transition hover:text-destiny-orange group-hover:text-destiny-orange"
                         aria-label="Edit"
                       >
                         <span className="material-symbols-rounded text-xl">edit</span>
                       </button>
                       <button
-                        onClick={() => remove(p)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          remove(p);
+                        }}
                         className="text-destiny-grey/40 transition hover:text-destiny-red"
                         aria-label="Delete"
                       >

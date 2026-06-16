@@ -830,6 +830,19 @@ h3 {
   font-weight: 700;
   color: var(--color-destiny-grey);
 }
+/* Inline formatting from the advanced editor */
+.rte-content u {
+  text-decoration: underline;
+}
+.rte-content s {
+  text-decoration: line-through;
+}
+.rte-content mark {
+  background: rgba(245, 128, 33, 0.18);
+  border-radius: 0.25rem;
+  padding: 0 0.15em;
+  color: inherit;
+}
 .rte-content blockquote {
   border-left: 3px solid var(--color-destiny-orange);
   padding-left: 1rem;

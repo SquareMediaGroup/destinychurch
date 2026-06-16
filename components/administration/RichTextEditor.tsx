@@ -56,7 +56,7 @@ const HtmlEmbed = Node.create({
     return {
       setHtmlEmbed:
         (options: { html: string }) =>
-        ({ commands }) => {
+        ({ commands }: any) => {
           return commands.insertContent({
             type: this.name,
             attrs: options,

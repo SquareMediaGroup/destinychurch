@@ -27,21 +27,7 @@ const TILES: Tile[] = [
     description: "Team training categories, sub-groups and posts.",
     available: true,
   },
-  {
-    icon: "diversity_3",
-    title: "Teams & Rotas",
-    description: "Serving teams, scheduling and availability.",
-  },
-  {
-    icon: "how_to_reg",
-    title: "Check-In",
-    description: "Attendance for services and groups.",
-  },
-  {
-    icon: "insights",
-    title: "Reports",
-    description: "Giving, growth and engagement insights.",
-  },
+
 ];
 
 export default function AdministrationPage() {

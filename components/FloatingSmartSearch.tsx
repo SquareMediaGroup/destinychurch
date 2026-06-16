@@ -302,7 +302,7 @@ export default function FloatingSmartSearch() {
     sendMessage(input);
   }
 
-  if (pathname.startsWith("/admin")) return null;
+  if (pathname.startsWith("/admin") || pathname.startsWith("/training")) return null;
 
   // Don't surface Smart Search at all until the visitor has made a cookie
   // decision — the search icon only appears once cookies have been accepted.

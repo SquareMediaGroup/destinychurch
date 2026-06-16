@@ -15,6 +15,7 @@ import {
   primaryBtn,
 } from "@/components/administration/hr/HrUI";
 import { PostModal } from "@/components/administration/training/PostModal";
+import { useReorder } from "@/components/administration/training/useReorder";
 
 export default function TrainingPostsPage() {
   const { categoryId, subgroupId } = useParams<{
@@ -47,6 +48,13 @@ export default function TrainingPostsPage() {
   useEffect(() => {
     load();
   }, [load]);
+
+  const { rowProps } = useReorder(
+    posts,
+    setPosts,
+    (id) => `${API}/posts/${id}`,
+    setError,
+  );
 
   async function togglePublish(post: TrainingPost) {
     setError("");
@@ -120,15 +128,27 @@ export default function TrainingPostsPage() {
           <table className="w-full text-left text-sm">
             <thead className="border-b border-black/5 text-xs font-bold uppercase tracking-wider text-destiny-grey/40">
               <tr>
+                <th className="w-10 px-2 py-3.5"></th>
                 <th className="px-5 py-3.5">Post</th>
-                <th className="hidden px-5 py-3.5 sm:table-cell">Order</th>
                 <th className="px-5 py-3.5">Status</th>
                 <th className="px-5 py-3.5 text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-black/5">
-              {posts.map((p) => (
-                <tr key={p.id} className="transition hover:bg-[#f5f7fa]">
+              {posts.map((p, idx) => (
+                <tr
+                  key={p.id}
+                  {...rowProps(idx)}
+                  className="transition hover:bg-[#f5f7fa]"
+                >
+                  <td className="px-2 py-3.5 text-center">
+                    <span
+                      className="material-symbols-rounded cursor-grab text-xl text-destiny-grey/25 active:cursor-grabbing"
+                      title="Drag to reorder"
+                    >
+                      drag_indicator
+                    </span>
+                  </td>
                   <td className="px-5 py-3.5">
                     <p className="font-bold text-destiny-grey">{p.title}</p>
                     {p.summary && (
@@ -136,9 +156,6 @@ export default function TrainingPostsPage() {
                         {p.summary}
                       </p>
                     )}
-                  </td>
-                  <td className="hidden px-5 py-3.5 text-destiny-grey/70 sm:table-cell">
-                    {p.sort_order}
                   </td>
                   <td className="px-5 py-3.5">
                     <button onClick={() => togglePublish(p)} title="Toggle publish">
@@ -189,6 +206,7 @@ export default function TrainingPostsPage() {
         <PostModal
           post={editing === "new" ? null : editing}
           subgroupId={subgroupId}
+          nextSortOrder={posts.length}
           onClose={() => setEditing(null)}
           onSaved={() => {
             setEditing(null);

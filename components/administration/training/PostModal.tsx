@@ -14,12 +14,14 @@ import RichTextEditor from "@/components/administration/RichTextEditor";
 export function PostModal({
   post,
   subgroupId,
+  nextSortOrder = 0,
   onClose,
   onSaved,
   onError,
 }: {
   post: TrainingPost | null;
   subgroupId: string;
+  nextSortOrder?: number;
   onClose: () => void;
   onSaved: () => void;
   onError: (msg: string) => void;
@@ -29,7 +31,7 @@ export function PostModal({
     summary: post?.summary ?? "",
     body: post?.body ?? "",
     is_published: post?.is_published ?? false,
-    sort_order: post?.sort_order ?? 0,
+    sort_order: post?.sort_order ?? nextSortOrder,
   });
   const [saving, setSaving] = useState(false);
 
@@ -75,16 +77,6 @@ export function PostModal({
             value={form.title}
             onChange={(e) => set("title", e.target.value)}
             placeholder="e.g. Setting up the mixing desk"
-          />
-        </div>
-
-        <div>
-          <label className={labelClass}>Display order</label>
-          <input
-            type="number"
-            className={inputClass}
-            value={form.sort_order}
-            onChange={(e) => set("sort_order", Number(e.target.value))}
           />
         </div>
 

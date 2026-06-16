@@ -15,6 +15,7 @@ import {
   primaryBtn,
 } from "@/components/administration/hr/HrUI";
 import { SubgroupModal } from "@/components/administration/training/SubgroupModal";
+import { useReorder } from "@/components/administration/training/useReorder";
 
 export default function TrainingSubgroupsPage() {
   const { categoryId } = useParams<{ categoryId: string }>();
@@ -41,6 +42,13 @@ export default function TrainingSubgroupsPage() {
   useEffect(() => {
     load();
   }, [load]);
+
+  const { rowProps } = useReorder(
+    subgroups,
+    setSubgroups,
+    (id) => `${API}/subgroups/${id}`,
+    setError,
+  );
 
   async function remove(sub: TrainingSubgroup) {
     if (
@@ -92,16 +100,28 @@ export default function TrainingSubgroupsPage() {
           <table className="w-full text-left text-sm">
             <thead className="border-b border-black/5 text-xs font-bold uppercase tracking-wider text-destiny-grey/40">
               <tr>
+                <th className="w-10 px-2 py-3.5"></th>
                 <th className="px-5 py-3.5">Sub-group</th>
-                <th className="hidden px-5 py-3.5 sm:table-cell">Order</th>
                 <th className="px-5 py-3.5">Access</th>
                 <th className="px-5 py-3.5">Status</th>
                 <th className="px-5 py-3.5 text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-black/5">
-              {subgroups.map((s) => (
-                <tr key={s.id} className="transition hover:bg-[#f5f7fa]">
+              {subgroups.map((s, idx) => (
+                <tr
+                  key={s.id}
+                  {...rowProps(idx)}
+                  className="transition hover:bg-[#f5f7fa]"
+                >
+                  <td className="px-2 py-3.5 text-center">
+                    <span
+                      className="material-symbols-rounded cursor-grab text-xl text-destiny-grey/25 active:cursor-grabbing"
+                      title="Drag to reorder"
+                    >
+                      drag_indicator
+                    </span>
+                  </td>
                   <td className="px-5 py-3.5">
                     <Link
                       href={`/administration/training/${categoryId}/${s.id}`}
@@ -114,9 +134,6 @@ export default function TrainingSubgroupsPage() {
                         {s.description}
                       </p>
                     )}
-                  </td>
-                  <td className="hidden px-5 py-3.5 text-destiny-grey/70 sm:table-cell">
-                    {s.sort_order}
                   </td>
                   <td className="px-5 py-3.5">
                     <Badge tone={s.has_password ? "orange" : "grey"}>
@@ -167,6 +184,7 @@ export default function TrainingSubgroupsPage() {
         <SubgroupModal
           subgroup={editing === "new" ? null : editing}
           categoryId={categoryId}
+          nextSortOrder={subgroups.length}
           onClose={() => setEditing(null)}
           onSaved={() => {
             setEditing(null);

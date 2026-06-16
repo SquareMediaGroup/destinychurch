@@ -10,6 +10,7 @@ import {
   primaryBtn,
 } from "@/components/administration/hr/HrUI";
 import { CategoryModal } from "@/components/administration/training/CategoryModal";
+import { useReorder } from "@/components/administration/training/useReorder";
 
 export default function TrainingCategoriesPage() {
   const [categories, setCategories] = useState<TrainingCategory[]>([]);
@@ -30,6 +31,13 @@ export default function TrainingCategoriesPage() {
   useEffect(() => {
     load();
   }, [load]);
+
+  const { rowProps } = useReorder(
+    categories,
+    setCategories,
+    (id) => `${API}/categories/${id}`,
+    setError,
+  );
 
   async function remove(category: TrainingCategory) {
     if (
@@ -83,15 +91,27 @@ export default function TrainingCategoriesPage() {
           <table className="w-full text-left text-sm">
             <thead className="border-b border-black/5 text-xs font-bold uppercase tracking-wider text-destiny-grey/40">
               <tr>
+                <th className="w-10 px-2 py-3.5"></th>
                 <th className="px-5 py-3.5">Category</th>
-                <th className="hidden px-5 py-3.5 sm:table-cell">Order</th>
                 <th className="px-5 py-3.5">Status</th>
                 <th className="px-5 py-3.5 text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-black/5">
-              {categories.map((c) => (
-                <tr key={c.id} className="transition hover:bg-[#f5f7fa]">
+              {categories.map((c, idx) => (
+                <tr
+                  key={c.id}
+                  {...rowProps(idx)}
+                  className="transition hover:bg-[#f5f7fa]"
+                >
+                  <td className="px-2 py-3.5 text-center">
+                    <span
+                      className="material-symbols-rounded cursor-grab text-xl text-destiny-grey/25 active:cursor-grabbing"
+                      title="Drag to reorder"
+                    >
+                      drag_indicator
+                    </span>
+                  </td>
                   <td className="px-5 py-3.5">
                     <Link
                       href={`/administration/training/${c.id}`}
@@ -109,9 +129,6 @@ export default function TrainingCategoriesPage() {
                         {c.description}
                       </p>
                     )}
-                  </td>
-                  <td className="hidden px-5 py-3.5 text-destiny-grey/70 sm:table-cell">
-                    {c.sort_order}
                   </td>
                   <td className="px-5 py-3.5">
                     <Badge tone={c.is_published ? "green" : "grey"}>
@@ -156,6 +173,7 @@ export default function TrainingCategoriesPage() {
       {editing && (
         <CategoryModal
           category={editing === "new" ? null : editing}
+          nextSortOrder={categories.length}
           onClose={() => setEditing(null)}
           onSaved={() => {
             setEditing(null);

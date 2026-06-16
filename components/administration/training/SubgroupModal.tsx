@@ -14,12 +14,14 @@ import {
 export function SubgroupModal({
   subgroup,
   categoryId,
+  nextSortOrder = 0,
   onClose,
   onSaved,
   onError,
 }: {
   subgroup: TrainingSubgroup | null;
   categoryId: string;
+  nextSortOrder?: number;
   onClose: () => void;
   onSaved: () => void;
   onError: (msg: string) => void;
@@ -29,7 +31,7 @@ export function SubgroupModal({
     name: subgroup?.name ?? "",
     description: subgroup?.description ?? "",
     is_published: subgroup?.is_published ?? true,
-    sort_order: subgroup?.sort_order ?? 0,
+    sort_order: subgroup?.sort_order ?? nextSortOrder,
   });
   const [password, setPassword] = useState("");
   const [removePassword, setRemovePassword] = useState(false);
@@ -84,16 +86,6 @@ export function SubgroupModal({
             value={form.name}
             onChange={(e) => set("name", e.target.value)}
             placeholder="e.g. Sound"
-          />
-        </div>
-
-        <div>
-          <label className={labelClass}>Display order</label>
-          <input
-            type="number"
-            className={inputClass}
-            value={form.sort_order}
-            onChange={(e) => set("sort_order", Number(e.target.value))}
           />
         </div>
 

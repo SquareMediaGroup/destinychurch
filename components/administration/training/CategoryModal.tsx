@@ -9,14 +9,17 @@ import {
   primaryBtn,
   ghostBtn,
 } from "@/components/administration/hr/HrUI";
+import { IconPicker } from "@/components/administration/training/IconPicker";
 
 export function CategoryModal({
   category,
+  nextSortOrder = 0,
   onClose,
   onSaved,
   onError,
 }: {
   category: TrainingCategory | null;
+  nextSortOrder?: number;
   onClose: () => void;
   onSaved: () => void;
   onError: (msg: string) => void;
@@ -26,7 +29,7 @@ export function CategoryModal({
     description: category?.description ?? "",
     icon: category?.icon ?? "",
     is_published: category?.is_published ?? true,
-    sort_order: category?.sort_order ?? 0,
+    sort_order: category?.sort_order ?? nextSortOrder,
   });
   const [saving, setSaving] = useState(false);
 
@@ -73,26 +76,7 @@ export function CategoryModal({
           />
         </div>
 
-        <div className="grid grid-cols-2 gap-3">
-          <div>
-            <label className={labelClass}>Display order</label>
-            <input
-              type="number"
-              className={inputClass}
-              value={form.sort_order}
-              onChange={(e) => set("sort_order", Number(e.target.value))}
-            />
-          </div>
-          <div>
-            <label className={labelClass}>Icon (optional)</label>
-            <input
-              className={inputClass}
-              value={form.icon}
-              onChange={(e) => set("icon", e.target.value)}
-              placeholder="e.g. graphic_eq"
-            />
-          </div>
-        </div>
+        <IconPicker value={form.icon} onChange={(icon) => set("icon", icon)} />
 
         <div>
           <label className={labelClass}>Description</label>

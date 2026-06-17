@@ -15,7 +15,6 @@ import HomeOverscrollColor from "@/components/home/HomeOverscrollColor";
 import MissionSection from "@/components/home/MissionSection";
 import LatestSermonSection from "@/components/home/LatestSermonSection";
 import WhatsOnSection from "@/components/home/WhatsOnSection";
-import EveryoneHasAPlaceSection from "@/components/home/EveryoneHasAPlaceSection";
 import WorshipWithUsSection from "@/components/home/WorshipWithUsSection";
 import GetInvolvedSection from "@/components/home/GetInvolvedSection";
 import { isYouTubeQuotaExceeded, getLatestVideoFromRSS } from "@/lib/youtube";
@@ -36,7 +35,6 @@ export default async function HomePage() {
       <MissionSection />
       <LatestSermonSection video={video} quotaExceeded={quotaExceeded} />
       <WhatsOnSection />
-      <EveryoneHasAPlaceSection />
       <WorshipWithUsSection />
       <GetInvolvedSection />
     </>

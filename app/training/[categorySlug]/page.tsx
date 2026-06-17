@@ -5,6 +5,7 @@ import AnimateIn from "@/components/AnimateIn";
 import {
   getCategoryBySlug,
   getSubgroupsForCategory,
+  getSubgroupStats,
 } from "@/lib/training.server";
 
 export const dynamic = "force-dynamic";
@@ -45,6 +46,7 @@ export default async function TrainingCategoryPage({
   if (!category) notFound();
 
   const subgroups = await getSubgroupsForCategory(category.id);
+  const subgroupStats = await getSubgroupStats(subgroups.map((s) => s.id));
 
   return (
     <>
@@ -96,20 +98,33 @@ export default async function TrainingCategoryPage({
                         {sub.description}
                       </p>
                     )}
-                    <div className="mt-4 flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-destiny-grey/40">
-                      {sub.has_password ? (
-                        <>
-                          <span className="material-symbols-rounded text-sm">
-                            lock
-                          </span>
-                          Password protected
-                        </>
-                      ) : (
-                        <span className="text-destiny-orange">Open access</span>
-                      )}
-                      <span className="material-symbols-rounded ml-auto text-base text-destiny-orange transition group-hover:translate-x-0.5">
-                        arrow_forward
-                      </span>
+                    <div className="mt-4 space-y-1.5">
+                      {(() => {
+                        const stats = subgroupStats.get(sub.id);
+                        const count = stats?.postCount ?? 0;
+                        const mins = stats?.totalReadMinutes ?? 0;
+                        return count > 0 ? (
+                          <p className="text-[11px] font-bold uppercase tracking-wider text-destiny-grey/40">
+                            {count} {count === 1 ? "lesson" : "lessons"}
+                            {mins > 0 && <> · ~{mins} min</>}
+                          </p>
+                        ) : null;
+                      })()}
+                      <div className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-destiny-grey/40">
+                        {sub.has_password ? (
+                          <>
+                            <span className="material-symbols-rounded text-sm">
+                              lock
+                            </span>
+                            Password protected
+                          </>
+                        ) : (
+                          <span className="text-destiny-orange">Open access</span>
+                        )}
+                        <span className="material-symbols-rounded ml-auto text-base text-destiny-orange transition group-hover:translate-x-0.5">
+                          arrow_forward
+                        </span>
+                      </div>
                     </div>
                   </Link>
                 </AnimateIn>

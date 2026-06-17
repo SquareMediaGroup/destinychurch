@@ -6,7 +6,9 @@ import AnimateIn from "@/components/AnimateIn";
 import { useCompletedSet } from "./useTrainingProgress";
 import type { TrainingPost, TrainingFolder } from "@/lib/training";
 
-type PostItem = Pick<TrainingPost, "id" | "slug" | "title" | "summary" | "folder_id">;
+type PostItem = Pick<TrainingPost, "id" | "slug" | "title" | "summary" | "folder_id"> & {
+  readMinutes: number;
+};
 
 // Posts list with a per-post completion indicator, kept in sync with the
 // hero progress bar via the shared completed set.
@@ -54,11 +56,18 @@ export default function CompletablePostList({
                 {post.summary}
               </p>
             )}
-            {done && (
-              <span className="mt-1 inline-block text-[11px] font-bold uppercase tracking-wider text-destiny-green">
-                Completed
-              </span>
-            )}
+            <div className="mt-1 flex items-center gap-2">
+              {done && (
+                <span className="text-[11px] font-bold uppercase tracking-wider text-destiny-green">
+                  Completed
+                </span>
+              )}
+              {post.readMinutes > 0 && (
+                <span className={`text-[11px] ${done ? "text-destiny-grey/30" : "text-destiny-grey/40"}`}>
+                  {post.readMinutes} min read
+                </span>
+              )}
+            </div>
           </div>
           <span className="material-symbols-rounded mt-1 text-base text-destiny-grey/30 transition group-hover:translate-x-0.5 group-hover:text-destiny-orange">
             arrow_forward
@@ -69,6 +78,8 @@ export default function CompletablePostList({
   };
 
   const ungrouped = getPostsInFolder(null);
+  const nextIncomplete = posts.find((p) => !completed.has(p.id));
+  const hasStarted = posts.some((p) => completed.has(p.id));
 
   if (activeFolderId !== null) {
     const activeFolder = folders.find((f) => f.id === activeFolderId);
@@ -100,6 +111,29 @@ export default function CompletablePostList({
 
   return (
     <div className="flex flex-col gap-10">
+      {hasStarted && nextIncomplete && (
+        <AnimateIn>
+          <Link
+            href={`${basePath}/${nextIncomplete.slug}`}
+            className="group flex items-center gap-4 rounded-2xl border border-destiny-orange/20 bg-destiny-orange/5 p-5 transition hover:border-destiny-orange/40 hover:bg-destiny-orange/10"
+          >
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-destiny-orange text-white shadow-md shadow-destiny-orange/30">
+              <span className="material-symbols-rounded text-[22px]">play_arrow</span>
+            </span>
+            <div className="flex-1 min-w-0">
+              <p className="text-[10px] font-bold uppercase tracking-widest text-destiny-orange">
+                Continue
+              </p>
+              <p className="truncate text-sm font-bold text-destiny-grey transition group-hover:text-destiny-orange">
+                {nextIncomplete.title}
+              </p>
+            </div>
+            <span className="material-symbols-rounded text-base text-destiny-orange transition group-hover:translate-x-0.5">
+              arrow_forward
+            </span>
+          </Link>
+        </AnimateIn>
+      )}
       {folders.length > 0 && (
         <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
           {folders.map((folder) => {

@@ -12,6 +12,17 @@ export default function TrainingProgress({ postIds }: { postIds: string[] }) {
   const done = postIds.filter((id) => completed.has(id)).length;
   const pct = Math.round((done / total) * 100);
 
+  if (done === total) {
+    return (
+      <div className="mt-6 inline-flex items-center gap-2 rounded-full bg-white/10 px-4 py-2">
+        <span className="material-symbols-rounded text-xl text-destiny-green">
+          check_circle
+        </span>
+        <span className="text-sm font-bold text-white">Training complete</span>
+      </div>
+    );
+  }
+
   return (
     <div className="mt-6 max-w-md">
       <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-white/70">

@@ -6,6 +6,7 @@ import PasswordGate from "@/components/training/PasswordGate";
 import TrainingProgress from "@/components/training/TrainingProgress";
 import CompletablePostList from "@/components/training/CompletablePostList";
 import { getSubgroupBySlugs, getPublishedPosts, getFolders } from "@/lib/training.server";
+import { estimateReadMinutes } from "@/lib/training";
 import { isUnlocked } from "@/lib/trainingAccess";
 
 export const dynamic = "force-dynamic";
@@ -47,10 +48,11 @@ export default async function TrainingSubgroupPage({
     );
   }
 
-  const [posts, folders] = await Promise.all([
+  const [rawPosts, folders] = await Promise.all([
     getPublishedPosts(subgroup.id),
     getFolders(subgroup.id),
   ]);
+  const posts = rawPosts.map((p) => ({ ...p, readMinutes: estimateReadMinutes(p.body) }));
 
   return (
     <>

@@ -9,6 +9,7 @@ import type {
   TrainingPost,
   TrainingCategoryWithSubgroups,
 } from "@/lib/training";
+import { estimateReadMinutes } from "@/lib/training";
 
 // Columns safe to expose for a sub-group: everything except password_hash.
 // `password_hash is not null` is aliased to has_password by post-processing.
@@ -175,6 +176,34 @@ export async function getPostBySlugs(
     return null;
   }
   return { ...found, post: data as TrainingPost };
+}
+
+/** Post count and total estimated read time (word-count based) per subgroup id. */
+export async function getSubgroupStats(
+  subgroupIds: string[],
+): Promise<Map<string, { postCount: number; totalReadMinutes: number }>> {
+  if (subgroupIds.length === 0) return new Map();
+  const supabase = getSupabaseAdmin();
+  const { data, error } = await supabase
+    .from("training_posts")
+    .select("subgroup_id, body")
+    .in("subgroup_id", subgroupIds)
+    .eq("is_published", true);
+
+  if (error) {
+    console.error("getSubgroupStats error:", error.message);
+    return new Map();
+  }
+
+  const result = new Map<string, { postCount: number; totalReadMinutes: number }>();
+  for (const post of (data ?? []) as { subgroup_id: string; body: string | null }[]) {
+    const existing = result.get(post.subgroup_id) ?? { postCount: 0, totalReadMinutes: 0 };
+    result.set(post.subgroup_id, {
+      postCount: existing.postCount + 1,
+      totalReadMinutes: existing.totalReadMinutes + estimateReadMinutes(post.body),
+    });
+  }
+  return result;
 }
 
 /** Folders for a sub-group id, ordered. */

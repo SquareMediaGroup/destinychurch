@@ -58,3 +58,14 @@ export interface TrainingCategoryWithSubgroups extends TrainingCategory {
 }
 
 export const API = "/api/administration/training";
+
+export function estimateReadMinutes(html: string | null | undefined): number {
+  if (!html) return 0;
+  const text = html
+    .replace(/<[^>]+>/g, " ")
+    .replace(/&[a-z#0-9]+;/gi, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  const words = text.split(" ").filter(Boolean).length;
+  return Math.ceil(words / 200);
+}

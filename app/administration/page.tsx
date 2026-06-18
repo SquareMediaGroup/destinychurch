@@ -27,6 +27,13 @@ const TILES: Tile[] = [
     description: "Team training categories, sub-groups and posts.",
     available: true,
   },
+  {
+    href: "/administration/posts",
+    icon: "article",
+    title: "Posts",
+    description: "Standalone pages — campaigns, temporary pages and one-off content.",
+    available: true,
+  },
 
 ];
 

@@ -8,8 +8,24 @@ import Link from "@tiptap/extension-link";
 import TextAlign from "@tiptap/extension-text-align";
 import Underline from "@tiptap/extension-underline";
 import Highlight from "@tiptap/extension-highlight";
+import Image from "@tiptap/extension-image";
 import { Node, type CommandProps } from "@tiptap/core";
-import { useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
+
+// Account used for ChurchSuite form embeds across the site (see ConnectCardCTAs).
+const CHURCHSUITE_ACCOUNT = "destinytees.churchsuite.com";
+
+// Turn whatever the admin pastes — a full URL or just a form slug/code — into a
+// ChurchSuite form embed URL.
+function churchSuiteEmbedUrl(input: string): string | null {
+  const value = input.trim();
+  if (!value) return null;
+  if (/^https?:\/\//i.test(value)) return value;
+  // Bare slug like "kw3c1oly" → the account's hosted form page.
+  const slug = value.replace(/^\/+|\/+$/g, "");
+  if (!/^[a-z0-9-]+$/i.test(slug)) return null;
+  return `https://${CHURCHSUITE_ACCOUNT}/forms/${slug}`;
+}
 
 declare module "@tiptap/core" {
   interface Commands<ReturnType> {
@@ -115,14 +131,20 @@ function Toolbar({
   editor,
   enableYouTube,
   enableHtmlEmbed,
+  enableImages,
+  enableChurchSuite,
   advanced,
 }: {
   editor: Editor;
   enableYouTube?: boolean;
   enableHtmlEmbed?: boolean;
+  enableImages?: boolean;
+  enableChurchSuite?: boolean;
   advanced?: boolean;
 }) {
   const div = "mx-1 h-5 w-px bg-black/10";
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
 
   function addYouTube() {
     const url = window.prompt("Paste a YouTube video URL");
@@ -134,6 +156,43 @@ function Toolbar({
     const html = window.prompt("Paste HTML embed code:");
     if (!html) return;
     editor.commands.setHtmlEmbed({ html: html.trim() });
+  }
+
+  function addChurchSuite() {
+    const input = window.prompt(
+      "Paste a ChurchSuite form URL, or just the form code (e.g. kw3c1oly):",
+    );
+    if (!input) return;
+    const src = churchSuiteEmbedUrl(input);
+    if (!src) {
+      window.alert("That doesn't look like a valid ChurchSuite form link or code.");
+      return;
+    }
+    const iframe = `<iframe src="${src}" title="ChurchSuite form" loading="lazy" style="width:100%;min-height:600px;border:0;display:block;"></iframe>`;
+    editor.commands.setHtmlEmbed({ html: iframe });
+  }
+
+  async function onPickImage(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = ""; // allow re-picking the same file
+    if (!file) return;
+    setUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      const res = await fetch("/api/administration/posts/upload", {
+        method: "POST",
+        body: formData,
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.url) {
+        window.alert(data.error || "Image upload failed.");
+        return;
+      }
+      editor.chain().focus().setImage({ src: data.url }).run();
+    } finally {
+      setUploading(false);
+    }
   }
 
   function setLink() {
@@ -250,6 +309,23 @@ function Toolbar({
           />
         </>
       )}
+      {enableImages && (
+        <>
+          <span className={div} />
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/jpeg,image/png,image/webp,image/gif"
+            className="hidden"
+            onChange={onPickImage}
+          />
+          <ToolbarButton
+            label={uploading ? "Uploading image…" : "Insert image"}
+            icon={uploading ? "hourglass_top" : "add_photo_alternate"}
+            onClick={() => !uploading && fileInputRef.current?.click()}
+          />
+        </>
+      )}
       {enableYouTube && (
         <>
           <span className={div} />
@@ -258,6 +334,16 @@ function Toolbar({
             icon="smart_display"
             active={editor.isActive("youtube")}
             onClick={addYouTube}
+          />
+        </>
+      )}
+      {enableChurchSuite && (
+        <>
+          <span className={div} />
+          <ToolbarButton
+            label="Embed ChurchSuite form"
+            icon="dynamic_form"
+            onClick={addChurchSuite}
           />
         </>
       )}
@@ -293,6 +379,8 @@ export default function RichTextEditor({
   placeholder,
   enableYouTube,
   enableHtmlEmbed,
+  enableImages,
+  enableChurchSuite,
   advanced,
   fill,
 }: {
@@ -301,6 +389,8 @@ export default function RichTextEditor({
   placeholder?: string;
   enableYouTube?: boolean;
   enableHtmlEmbed?: boolean;
+  enableImages?: boolean;
+  enableChurchSuite?: boolean;
   advanced?: boolean;
   fill?: boolean;
 }) {
@@ -325,6 +415,15 @@ export default function RichTextEditor({
           ]
         : []),
       ...(enableHtmlEmbed ? [HtmlEmbed] : []),
+      ...(enableImages
+        ? [
+            Image.configure({
+              inline: false,
+              allowBase64: false,
+              HTMLAttributes: { class: "rounded-xl" },
+            }),
+          ]
+        : []),
       ...(advanced
         ? [
             Underline,
@@ -381,6 +480,8 @@ export default function RichTextEditor({
           editor={editor}
           enableYouTube={enableYouTube}
           enableHtmlEmbed={enableHtmlEmbed}
+          enableImages={enableImages}
+          enableChurchSuite={enableChurchSuite}
           advanced={advanced}
         />
       </div>

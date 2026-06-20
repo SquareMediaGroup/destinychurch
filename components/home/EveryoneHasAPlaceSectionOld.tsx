@@ -31,13 +31,6 @@ const groups = [
     description:
       "Our Connect Groups are an integral part of the life and health of the church. Together in a small group believers are effective, powerful and fruitful witnesses in the world.",
   },
-  {
-    title: "Teams",
-    href: "/serve",
-    image: "/img/photos/Training_DC-scaled.webp",
-    description:
-      "You are uniquely gifted to be a blessing to the body of Christ. Use your gifts and talents to serve on one of our teams, and together let's build His kingdom.",
-  },
 ];
 
 export default function EveryoneHasAPlaceSectionOld() {
@@ -50,16 +43,12 @@ export default function EveryoneHasAPlaceSectionOld() {
           </h2>
         </AnimateIn>
 
-        <div className="flex flex-wrap justify-center gap-6">
+        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
           {groups.map((group, i) => (
-            <AnimateIn 
-              key={group.title} 
-              delay={i * 80}
-              className="w-full sm:w-[calc(50%-12px)] lg:w-[calc(25%-18px)]"
-            >
+            <AnimateIn key={group.title} delay={i * 80}>
               <Link
                 href={group.href}
-                className="group relative block h-56 w-full overflow-hidden rounded-2xl shadow-lg sm:h-72 lg:h-80"
+                className="group relative block h-56 overflow-hidden rounded-2xl shadow-lg sm:h-72 lg:h-80"
               >
                 <Image
                   src={group.image}

@@ -7,7 +7,6 @@ export default function ReportBugLink() {
   const [open, setOpen] = useState(false);
   const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
   const [errorMsg, setErrorMsg] = useState("");
-  const [fileName, setFileName] = useState("");
   const formRef = useRef<HTMLFormElement>(null);
 
   // Close on Escape and lock body scroll while the modal is open.
@@ -28,7 +27,6 @@ export default function ReportBugLink() {
   function openModal() {
     setStatus("idle");
     setErrorMsg("");
-    setFileName("");
     setOpen(true);
   }
 
@@ -49,7 +47,6 @@ export default function ReportBugLink() {
     if (result.success) {
       setStatus("success");
       formRef.current?.reset();
-      setFileName("");
     } else {
       setStatus("error");
       setErrorMsg(result.error ?? "Something went wrong.");
@@ -86,7 +83,7 @@ export default function ReportBugLink() {
                   Report a Bug
                 </h2>
                 <p className="mt-1 text-sm text-destiny-grey/60">
-                  Found something broken? Let us know and attach a screenshot if you can.
+                  Found something broken? Let us know!
                 </p>
               </div>
               <button
@@ -158,30 +155,6 @@ export default function ReportBugLink() {
                     placeholder="What were you doing when it happened? What did you expect, and what went wrong?"
                     className="w-full resize-none rounded-2xl border border-black/10 bg-[#f5f7fa] px-4 py-3 text-sm text-destiny-grey outline-none transition focus:border-destiny-orange focus:ring-2 focus:ring-destiny-orange/20"
                   />
-                </div>
-
-                <div>
-                  <label className="mb-1.5 block text-sm font-bold text-destiny-grey" htmlFor="bug-screenshot">
-                    Screenshot <span className="font-normal text-destiny-grey/50">(optional)</span>
-                  </label>
-                  <label
-                    htmlFor="bug-screenshot"
-                    className="flex cursor-pointer items-center gap-3 rounded-2xl border border-dashed border-black/15 bg-[#f5f7fa] px-4 py-3 text-sm text-destiny-grey/70 transition hover:border-destiny-orange hover:text-destiny-grey"
-                  >
-                    <span className="material-symbols-rounded text-xl text-destiny-grey/50">image</span>
-                    <span className="truncate">{fileName || "Choose an image…"}</span>
-                  </label>
-                  <input
-                    id="bug-screenshot"
-                    name="screenshot"
-                    type="file"
-                    accept="image/*"
-                    className="sr-only"
-                    onChange={(e) => setFileName(e.target.files?.[0]?.name ?? "")}
-                  />
-                  <p className="mt-1.5 text-xs text-destiny-grey/45">
-                    Your screenshot is emailed to our team and never stored on our server.
-                  </p>
                 </div>
 
                 {status === "error" && (

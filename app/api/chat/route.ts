@@ -76,6 +76,7 @@ export async function POST(request: NextRequest) {
       max_tokens: 500,
       temperature: 0.3,
       stream: true,
+      store: true,
     });
 
     const encoder = new TextEncoder();

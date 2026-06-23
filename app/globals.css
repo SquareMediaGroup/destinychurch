@@ -872,3 +872,18 @@ h3 {
   border-radius: 1rem;
   display: block;
 }
+
+/* Accessibility Overrides */
+html[data-glassfx="off"] .glass-refract {
+  backdrop-filter: blur(var(--glass-blur)) saturate(1.4) brightness(1.05) !important;
+}
+
+html[data-motion="reduced"] *,
+html[data-motion="reduced"] *::before,
+html[data-motion="reduced"] *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+  scroll-behavior: auto !important;
+}
+

@@ -68,6 +68,7 @@ export async function POST(req: Request) {
       ],
       temperature: 0.7,
       max_tokens: 300,
+      store: true,
     });
 
     const content = response.choices[0]?.message?.content;

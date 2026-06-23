@@ -33,7 +33,7 @@ const groups = [
   },
 ];
 
-export default function EveryoneHasAPlaceSectionOld() {
+export default function EveryoneHasAPlaceSection() {
   return (
     <section className="bg-[#1a1108] py-10 sm:py-16">
       <div className="mx-auto max-w-7xl px-4 lg:px-8">

@@ -238,12 +238,39 @@ export default async function RootLayout({
   const smartSearchEnabled = await isSmartSearchEnabled();
 
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <head>
         <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,500,0,0" />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(orgSchema) }}
+        />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              try {
+                let glassFX = true;
+                let reducedMotion = false;
+                const stored = localStorage.getItem("destiny-a11y");
+                if (stored) {
+                  const parsed = JSON.parse(stored);
+                  if (typeof parsed.glassFX === "boolean") glassFX = parsed.glassFX;
+                  if (typeof parsed.reducedMotion === "boolean") reducedMotion = parsed.reducedMotion;
+                } else {
+                  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+                    reducedMotion = true;
+                  }
+                }
+                
+                if (!glassFX) {
+                  document.documentElement.dataset.glassfx = "off";
+                }
+                if (reducedMotion) {
+                  document.documentElement.dataset.motion = "reduced";
+                }
+              } catch (e) {}
+            `,
+          }}
         />
       </head>
       <body

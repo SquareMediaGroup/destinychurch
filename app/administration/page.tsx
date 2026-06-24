@@ -14,11 +14,10 @@ type Tile = {
 
 const TILES: Tile[] = [
   {
-    href: "/administration/hr",
     icon: "badge",
     title: "HR",
     description: "Staff directory, leave, documents and reviews.",
-    available: true,
+    available: false,
   },
   {
     href: "/administration/training",

@@ -58,7 +58,7 @@ export default function KidsPage() {
         <section className="relative overflow-hidden rounded-3xl">
           <div
             className="absolute inset-0 scale-105 bg-cover bg-top blur-sm"
-            style={{ backgroundImage: "url('/img/photos/WebPhotos/parachute-kids.webp')" }}
+            style={{ backgroundImage: "url('/img/photos/parachute-kids.webp')" }}
           />
           <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-black/40 to-black/75" />
           <div className="relative flex flex-col items-center justify-center py-[12rem] px-4 text-center">
@@ -87,7 +87,7 @@ export default function KidsPage() {
             </AnimateIn>
             <AnimateIn delay={100} className="grid w-full grid-cols-2 gap-3 md:w-1/2">
               <div className="col-span-2 overflow-hidden rounded-3xl">
-                <Image src="/img/photos/WebPhotos/portrait-kids.webp" alt="Destiny Kids" width={640} height={300} className="w-full object-cover" />
+                <Image src="/img/photos/portrait-kids.webp" alt="Destiny Kids" width={640} height={300} className="w-full object-cover" />
               </div>
               <div className="overflow-hidden rounded-2xl">
                 <Image src="/img/photos/Kids2.webp" alt="Destiny Kids" width={300} height={220} className="w-full object-cover" />
@@ -185,10 +185,10 @@ export default function KidsPage() {
           <div className="flex flex-col items-center gap-12 md:flex-row md:gap-16">
             <AnimateIn className="grid w-full grid-cols-2 gap-3 md:w-2/5">
               <div className="overflow-hidden rounded-2xl">
-                <Image src="/img/photos/WebPhotos/wide-kids.webp" alt="Tots Morning" width={300} height={280} className="w-full object-cover" />
+                <Image src="/img/photos/wide-kids.webp" alt="Tots Morning" width={300} height={280} className="w-full object-cover" />
               </div>
               <div className="overflow-hidden rounded-2xl">
-                <Image src="/img/photos/WebPhotos/portrait-kids-3.webp" alt="Tots Morning" width={300} height={280} className="w-full object-cover" />
+                <Image src="/img/photos/portrait-kids-3.webp" alt="Tots Morning" width={300} height={280} className="w-full object-cover" />
               </div>
               <div className="col-span-2 overflow-hidden rounded-2xl">
                 <Image src="/img/photos/Gallery/FamilySatTogether.webp" alt="" width={620} height={220} className="w-full object-cover" />

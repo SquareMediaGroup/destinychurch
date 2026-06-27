@@ -80,10 +80,10 @@ export default function ServePage() {
                 <Image src="/img/photos/Training_DC-scaled.webp" alt="Serving at Destiny" width={640} height={280} className="w-full object-cover" />
               </div>
               <div className="overflow-hidden rounded-2xl">
-                <Image src="/img/photos/WebPhotos/audience.webp" alt="" width={300} height={200} className="w-full object-cover" />
+                <Image src="/img/photos/audience.webp" alt="" width={300} height={200} className="w-full object-cover" />
               </div>
               <div className="overflow-hidden rounded-2xl">
-                <Image src="/img/photos/WebPhotos/worship-dc.webp" alt="" width={300} height={200} className="w-full object-cover" />
+                <Image src="/img/photos/worship-dc.webp" alt="" width={300} height={200} className="w-full object-cover" />
               </div>
             </AnimateIn>
           </div>

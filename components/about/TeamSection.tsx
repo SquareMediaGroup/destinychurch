@@ -13,6 +13,7 @@ const leadTeam = [
 const departmentHeads = [
   { name: "Funke Awojide", role: "Kids Pastor", photo: "/img/brand/Team/FA.webp", email: "funke@destinytees.uk" },
   { name: "Adebowale Awojide", role: "Prayer Team", photo: "/img/brand/Team/Debo.webp", email: "debo@destinytees.uk" },
+  { name: "George Krezner", role: "Administration", photo: "/img/brand/Team/GK.webp", email: "george@destinytees.uk" },
 ];
 
 function TeamCard({ name, role, photo, cardBg, email }: { name: string; role: string; photo: string | null; cardBg: string; email: string }) {

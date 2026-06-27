@@ -6,7 +6,7 @@ const groups = [
   {
     title: "Kids",
     href: "/kids",
-    image: "/img/photos/Kids2.webp",
+    image: "/img/photos/WebPhotos/portrait-kids-1.webp",
     description:
       "Destiny Kids is a fun place where children of all ages can learn more about the Bible through games, stories, and singing.",
   },

@@ -21,10 +21,17 @@ export default function ServePage() {
     <>
       {/* Hero */}
       <div className="px-4 pt-8 pb-8 lg:px-8">
-        <section className="relative overflow-hidden rounded-3xl">
-          <div
-            className="absolute inset-0 scale-105 bg-cover bg-center blur-sm"
-            style={{ backgroundImage: "url('/img/photos/Training_DC-scaled.webp')" }}
+        <section className="relative overflow-hidden rounded-3xl bg-destiny-grey">
+          {/* Background video */}
+          <video
+            src="https://destinytees.uk/wp-content/uploads/2026/06/serve-page-vid.mp4"
+            autoPlay
+            muted
+            loop
+            playsInline
+            preload="auto"
+            aria-hidden="true"
+            className="absolute inset-0 h-full w-full object-cover"
           />
           <div className="absolute inset-0 bg-gradient-to-b from-black/55 via-black/45 to-black/80" />
           <div className="relative flex flex-col items-center justify-center py-[12rem] px-4 text-center">

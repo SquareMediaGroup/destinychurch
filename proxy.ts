@@ -4,6 +4,27 @@ import { type NextRequest, NextResponse } from "next/server";
 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
+
+  // ── /lite route redirect ──────────────────────────────────────────────────
+  // Any path whose last segment is exactly "lite" (e.g. /sermons/lite, /lite)
+  // is redirected to the same base path with ?lite=1 appended so the
+  // client-side PerformanceGate can apply lite mode and show the toast.
+  //
+  //   /lite          → /?lite=1
+  //   /sermons/lite  → /sermons?lite=1
+  //   /about/lite    → /about?lite=1
+  if (pathname === "/lite" || pathname.endsWith("/lite")) {
+    const base =
+      pathname === "/lite"
+        ? "/"
+        : pathname.slice(0, -"/lite".length) || "/";
+    const url = request.nextUrl.clone();
+    url.pathname = base;
+    const params = new URLSearchParams(url.search.slice(1));
+    params.set("lite", "1");
+    url.search = "?" + params.toString();
+    return NextResponse.redirect(url, { status: 302 });
+  }
   const { supabase, supabaseResponse } = createClient(request);
 
   const { data: { user } } = await supabase.auth.getUser();
@@ -56,6 +77,10 @@ export async function proxy(request: NextRequest) {
 
 export const config = {
   matcher: [
+    // /lite redirect — must come first conceptually; order here doesn't matter
+    "/lite",
+    "/:path*/lite",
+    // Admin / administration auth guards
     "/admin/:path*",
     "/api/admin/:path*",
     "/administration/:path*",

@@ -12,6 +12,7 @@ import SiteBanner from "@/components/SiteBanner";
 import SitePopup from "@/components/SitePopup";
 import FloatingSmartSearch from "@/components/FloatingSmartSearch";
 import GlassBloomTracker from "@/components/GlassBloomTracker";
+import PerformanceGate from "@/components/PerformanceGate";
 import { isSmartSearchEnabled } from "@/lib/serviceStatus";
 import BannerSpacer from "@/components/BannerSpacer";
 import VisualEditOverlay from "@/components/admin/VisualEditOverlay";
@@ -402,6 +403,7 @@ export default async function RootLayout({
         <Providers banner={banner}>
 <SiteBanner />
           <CookieBanner />
+          <Suspense><PerformanceGate /></Suspense>
           <div className="flex min-h-screen flex-col bg-[var(--background)] text-[var(--foreground)]">
             <BannerSpacer />
             <Suspense>

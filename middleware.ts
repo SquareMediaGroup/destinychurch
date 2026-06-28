@@ -2,7 +2,7 @@ import { createClient } from "@/utils/supabase/middleware";
 import { getRoles, requiredRoleForPath } from "@/lib/roles";
 import { type NextRequest, NextResponse } from "next/server";
 
-export async function proxy(request: NextRequest) {
+export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // ── /lite route redirect ──────────────────────────────────────────────────

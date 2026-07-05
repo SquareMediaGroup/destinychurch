@@ -15,10 +15,6 @@ const navItems = [
   { href: "/give",     label: "Give"       },
 ];
 
-const tabs = [
-  { label: "Sermons",        href: "/sermons"               },
-  { label: "Guest Speakers", href: "/sermons/guest-speakers" },
-];
 
 const MAX_SUGGESTIONS = 6;
 
@@ -350,29 +346,6 @@ export default function SermonsHeader() {
             </div>
           </div>
 
-          {/* RIGHT — Sermons / Guest Speakers toggle (desktop only) */}
-          <div
-            className="absolute right-0 top-1/2 -translate-y-1/2 z-10 hidden md:flex"
-            style={outerFade}
-          >
-            <div className="glass glass-sm flex items-center rounded-full p-1">
-              {tabs.map((tab) => {
-                const active = pathname === tab.href;
-                return (
-                  <Link
-                    key={tab.href}
-                    href={tab.href}
-                    onClick={() => setQuery("")}
-                    className={`whitespace-nowrap rounded-full px-4 py-2 text-sm font-bold transition-all duration-200 ${
-                      active ? "bg-white text-[#0d0d0d] shadow-sm" : "text-white/70 hover:text-white"
-                    }`}
-                  >
-                    {tab.label}
-                  </Link>
-                );
-              })}
-            </div>
-          </div>
 
         </div>{/* end .relative.h-14 */}
 
@@ -395,24 +368,6 @@ export default function SermonsHeader() {
               </div>
             )}
 
-            {/* Section toggle */}
-            <div className="mb-2 flex rounded-xl border border-white/10 p-1">
-              {tabs.map((tab) => {
-                const active = pathname === tab.href;
-                return (
-                  <Link
-                    key={tab.href}
-                    href={tab.href}
-                    onClick={() => { setQuery(""); setMobileMenuOpen(false); setExpanded(false); }}
-                    className={`flex-1 rounded-lg px-3 py-2 text-center text-sm font-bold transition ${
-                      active ? "bg-white text-[#0d0d0d]" : "text-white/60 hover:text-white"
-                    }`}
-                  >
-                    {tab.label}
-                  </Link>
-                );
-              })}
-            </div>
 
             {/* Nav links */}
             {navItems.map((item) => (

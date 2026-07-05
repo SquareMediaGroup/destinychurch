@@ -2,7 +2,7 @@ import { createServiceClient } from "@/utils/supabase/service";
 
 export interface SermonCollection {
   id: string;
-  type: "playlist" | "series" | "guest_speaker";
+  type: "playlist" | "series";
   title: string;
   description: string | null;
   youtube_playlist_id: string;

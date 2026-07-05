@@ -123,7 +123,7 @@ export default async function HirePage() {
           </AnimateIn>
           <div className="grid gap-8 md:grid-cols-3">
             {spaces.map((space, i) => (
-              <AnimateIn key={space.name} delay={i * 80}>
+              <AnimateIn key={space.name} delay={i * 80} className="h-full">
                 <div className="flex h-full flex-col rounded-3xl bg-[#f5f7fa] p-7">
                   <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-destiny-orange/10">
                     <span className="material-symbols-rounded text-2xl text-destiny-orange">{space.icon}</span>

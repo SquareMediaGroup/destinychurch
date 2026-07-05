@@ -21,7 +21,3 @@ test('Clicking a sermon navigates to sermon detail', async ({ page }) => {
   await expect(page).toHaveURL(/\/sermons\/.+/);
 });
 
-test('Guest speakers page loads', async ({ page }) => {
-  await page.goto('https://destinychurch.vercel.app/sermons/guest-speakers');
-  await expect(page).toHaveTitle(/Guest Speakers/);
-});

@@ -411,7 +411,6 @@ const build = async () => {
       ["About (/about)", "Mission, values, team and beliefs"],
       ["What’s On (/whats-on)", "Live events calendar"],
       ["Sermons (/sermons)", "Auto-synced sermon library"],
-      ["Guest Speakers (/sermons/guest-speakers)", "Messages from visiting speakers"],
       ["Give (/give)", "Online giving, standing order, Gift Aid"],
       ["New Here (/new-here) & Plan a Visit (/visit)", "First-time visitor information"],
       ["Connect (/connect) & Connect Card (/connect-card)", "Connect Groups and digital connect card"],

@@ -5,7 +5,6 @@ import { usePathname } from "next/navigation";
 
 const items = [
   { href: "/sermons",               icon: "subscriptions", label: "All Sermons"    },
-  { href: "/sermons/guest-speakers", icon: "mic",           label: "Guest Speakers" },
 ];
 
 export default function SermonsDrawer() {
@@ -16,10 +15,7 @@ export default function SermonsDrawer() {
       {/* Content starts below the fixed header pill (~76px) */}
       <div className="flex flex-col gap-0.5 px-2 pt-20">
         {items.map((item) => {
-          const active =
-            item.href === "/sermons"
-              ? pathname === "/sermons" || (pathname.startsWith("/sermons/") && !pathname.startsWith("/sermons/guest-speakers"))
-              : pathname === item.href;
+          const active = pathname === item.href || pathname.startsWith(item.href + "/");
 
           return (
             <Link

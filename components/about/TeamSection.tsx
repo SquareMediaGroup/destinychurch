@@ -71,7 +71,7 @@ export default function TeamSection() {
             Department Heads
           </h2>
         </AnimateIn>
-        <div className="mb-6 grid grid-cols-2 gap-4 sm:mx-auto sm:grid-cols-3 sm:max-w-3xl lg:grid-cols-4 lg:max-w-none">
+        <div className="mb-6 grid grid-cols-2 gap-4 sm:mx-auto sm:max-w-3xl sm:grid-cols-3">
           {departmentHeads.map((member, i) => (
             <AnimateIn key={member.name} delay={i * 80}>
               <TeamCard {...member} cardBg="#475C70" />

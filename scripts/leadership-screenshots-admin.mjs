@@ -9,8 +9,14 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const OUT = path.join(__dirname, "..", "docs", "leadership", "screenshots");
 const BASE = process.env.BASE_URL || "http://localhost:3000";
 
-const EMAIL = "developer@destinytees.uk";
-const PASSWORD = "Matthew28:19-20";
+// Credentials come from the environment — this file is committed, so they
+// must never be hardcoded here. See CLAUDE.local.md for the current login.
+const EMAIL = process.env.ADMIN_TEST_EMAIL;
+const PASSWORD = process.env.ADMIN_TEST_PASSWORD;
+if (!EMAIL || !PASSWORD) {
+  console.error("❌ Set ADMIN_TEST_EMAIL and ADMIN_TEST_PASSWORD to run this script.");
+  process.exit(1);
+}
 
 // [slug, filename]
 const ADMIN_PAGES = [

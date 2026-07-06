@@ -27,6 +27,20 @@ const nextConfig: NextConfig = {
             key: "Permissions-Policy",
             value: "camera=(), microphone=(), geolocation=()",
           },
+          {
+            key: "X-Content-Type-Options",
+            value: "nosniff",
+          },
+          {
+            // Stops other sites framing ours (clickjacking); same-origin
+            // framing (e.g. admin previews) keeps working.
+            key: "X-Frame-Options",
+            value: "SAMEORIGIN",
+          },
+          {
+            key: "Referrer-Policy",
+            value: "strict-origin-when-cross-origin",
+          },
         ],
       },
       // Long-lived cache for static media in /public (PageSpeed flagged 5-minute

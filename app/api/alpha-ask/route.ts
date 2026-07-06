@@ -1,8 +1,7 @@
-import OpenAI from "openai";
+import { getOpenAI } from "@/lib/openaiClient";
+import { checkRateLimit, clientIp } from "@/lib/rateLimit";
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+const MAX_QUESTION_LENGTH = 500;
 
 const ALPHA_KNOWLEDGE = `
 You are a friendly assistant for Alpha at Destiny Church Tees Valley.
@@ -45,12 +44,33 @@ External resources (if relevant):
 
 export async function POST(req: Request) {
   try {
+    // Rate-limit per IP — this endpoint spends OpenAI credits, so it must not
+    // be free to hammer.
+    const { limited } = checkRateLimit(`alpha-ask:${clientIp(req)}`);
+    if (limited) {
+      return Response.json({ error: "Too many requests" }, { status: 429 });
+    }
+
     const { question } = await req.json();
 
     if (!question || typeof question !== "string") {
       return Response.json(
         { error: "Question is required" },
         { status: 400 }
+      );
+    }
+    if (question.length > MAX_QUESTION_LENGTH) {
+      return Response.json(
+        { error: "Question is too long" },
+        { status: 400 }
+      );
+    }
+
+    const openai = getOpenAI();
+    if (!openai) {
+      return Response.json(
+        { error: "Service unavailable" },
+        { status: 503 }
       );
     }
 

@@ -1,7 +1,9 @@
 "use server";
 
+import { headers } from "next/headers";
 import { getSupabaseAdmin } from "@/lib/supabase";
 import { Resend } from "resend";
+import { checkRateLimit, clientIp } from "@/lib/rateLimit";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
@@ -225,9 +227,20 @@ export async function submitContactForm(formData: FormData) {
     return { success: false, error: "Please fill in all fields." };
   }
 
+  if (name.length > 200 || email.length > 254 || subject.length > 200 || message.length > 5000) {
+    return { success: false, error: "Your message is too long. Please shorten it and try again." };
+  }
+
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   if (!emailRegex.test(email)) {
     return { success: false, error: "Please enter a valid email address." };
+  }
+
+  // Per-IP rate limit — the form writes to the database and sends email, so
+  // it must not be scriptable for spam.
+  const { limited } = checkRateLimit(`contact:${clientIp(await headers())}`);
+  if (limited) {
+    return { success: false, error: "Too many messages sent. Please wait a few minutes and try again." };
   }
 
   try {

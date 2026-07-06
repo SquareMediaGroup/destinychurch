@@ -1,7 +1,9 @@
 "use server";
 
+import { headers } from "next/headers";
 import { getSupabaseAdmin } from "@/lib/supabase";
 import { Resend } from "resend";
+import { checkRateLimit, clientIp } from "@/lib/rateLimit";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 const BUCKET = "job-applications";
@@ -111,6 +113,13 @@ export async function submitApplication(formData: FormData) {
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   if (!emailRegex.test(email)) {
     return { success: false, error: "Please enter a valid email address." };
+  }
+
+  // Per-IP rate limit — applications upload files and send email, so the
+  // action must not be scriptable for spam or storage flooding.
+  const { limited } = checkRateLimit(`jobs:${clientIp(await headers())}`);
+  if (limited) {
+    return { success: false, error: "Too many submissions. Please wait a few minutes and try again." };
   }
 
   const supabase = getSupabaseAdmin();

@@ -1,8 +1,8 @@
 Always push after a change
 Assume you have permission for 99% of things
-Supabase PAT = sbp_2890df8ab7fb8bcace0018a2b6cd0e3925b7e81e
 
-## Testing credentials
-Use these to log in and test features before publishing:
-- Email: developer@destinytees.uk
-- Password: Matthew28:19-20
+## Secrets & testing credentials
+
+Secrets (Supabase PAT) and the testing login live in `CLAUDE.local.md` at the
+repo root — it is gitignored and must never be committed. If it's missing,
+ask the user for the values; do not hardcode them anywhere tracked by git.

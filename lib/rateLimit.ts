@@ -1,9 +1,10 @@
-import { NextRequest } from "next/server";
-
 // Per-IP sliding-window rate limiter with escalating cooldowns. Extracted from
 // the search route so it can be shared. In-memory and therefore per-instance on
 // serverless — adequate for this site's volume; swap for a shared store (Redis/
 // Supabase) if true distributed limiting is ever needed.
+//
+// Keys share one store, so callers should namespace them (e.g. `contact:${ip}`)
+// to keep endpoints from tripping each other's limits.
 
 const WINDOW_MS = 60_000; // 1-minute sliding window
 const MAX_PER_WINDOW = 15; // requests allowed per window
@@ -35,10 +36,12 @@ if (typeof setInterval !== "undefined") {
   }, 10 * 60_000);
 }
 
-export function clientIp(req: NextRequest): string {
+// Accepts a Request/NextRequest or the Headers object from next/headers().
+export function clientIp(source: { headers: Headers } | Headers): string {
+  const headers = source instanceof Headers ? source : source.headers;
   return (
-    req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
-    req.headers.get("x-real-ip") ??
+    headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
+    headers.get("x-real-ip") ??
     "unknown"
   );
 }

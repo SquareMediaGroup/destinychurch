@@ -4,6 +4,7 @@ import { Resend } from "resend";
 import { headers } from "next/headers";
 import { createServiceClient } from "@/utils/supabase/service";
 import { buildPasswordResetEmailHtml } from "@/lib/passwordResetEmail";
+import { checkRateLimit, clientIp } from "@/lib/rateLimit";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
@@ -21,8 +22,18 @@ export async function requestPasswordReset(
 ): Promise<{ success: boolean; error?: string; message?: string }> {
   const email = formData.get("email")?.toString().trim() ?? "";
 
-  if (!email) {
+  if (!email || email.length > 254) {
     return { success: false, error: "Email is required." };
+  }
+
+  // Rate-limit per IP so the form can't be used to bomb an inbox with reset
+  // emails or burn through the Resend quota.
+  const { limited } = checkRateLimit(`pwreset:${clientIp(await headers())}`);
+  if (limited) {
+    return {
+      success: false,
+      error: "Too many requests. Please wait a few minutes and try again.",
+    };
   }
 
   if (!process.env.RESEND_API_KEY) {

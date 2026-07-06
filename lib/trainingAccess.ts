@@ -42,7 +42,14 @@ export function verifyPassword(plain: string, stored: string | null): boolean {
 const COOKIE_MAX_AGE = 60 * 60 * 24 * 30; // 30 days
 
 function secret(): string {
-  return process.env.SUPABASE_SERVICE_ROLE_KEY || "training-unlock-fallback";
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!key) {
+    // Never fall back to a hardcoded value — a public constant would let
+    // anyone forge unlock cookies. Without the key the app can't serve
+    // password-protected groups anyway.
+    throw new Error("SUPABASE_SERVICE_ROLE_KEY must be set to sign unlock cookies");
+  }
+  return key;
 }
 
 export function unlockCookieName(subgroupId: string): string {

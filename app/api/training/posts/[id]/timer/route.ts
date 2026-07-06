@@ -1,9 +1,23 @@
 import { NextResponse } from "next/server";
-import { createHmac } from "crypto";
+import { createHmac, randomBytes, timingSafeEqual } from "crypto";
 
-// Fallback to a hardcoded string if no secret is set. This is acceptable
-// since this token is just for anonymous training progress and not sensitive data.
-const SECRET = process.env.SUPABASE_JWT_SECRET || "fallback-training-secret";
+// HMAC key for the read-timer tokens. Prefer a dedicated secret; otherwise
+// derive one from the service-role key (never used raw) so it's stable across
+// serverless instances. A per-boot random key is the last resort — tokens then
+// only survive within one instance, which is acceptable for a reading timer.
+function timerSecret(): Buffer {
+  if (process.env.TRAINING_TIMER_SECRET) {
+    return Buffer.from(process.env.TRAINING_TIMER_SECRET);
+  }
+  if (process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    return createHmac("sha256", process.env.SUPABASE_SERVICE_ROLE_KEY)
+      .update("training-timer")
+      .digest();
+  }
+  return randomBytes(32);
+}
+
+const SECRET = timerSecret();
 
 function sign(payload: unknown) {
   const data = Buffer.from(JSON.stringify(payload)).toString("base64url");
@@ -14,8 +28,12 @@ function sign(payload: unknown) {
 function verify(token: string) {
   try {
     const [data, signature] = token.split(".");
-    const expectedSignature = createHmac("sha256", SECRET).update(data).digest("base64url");
-    if (signature !== expectedSignature) return null;
+    if (!data || !signature) return null;
+    const expected = createHmac("sha256", SECRET).update(data).digest();
+    const actual = Buffer.from(signature, "base64url");
+    if (actual.length !== expected.length || !timingSafeEqual(actual, expected)) {
+      return null;
+    }
     return JSON.parse(Buffer.from(data, "base64url").toString("utf-8"));
   } catch {
     return null;

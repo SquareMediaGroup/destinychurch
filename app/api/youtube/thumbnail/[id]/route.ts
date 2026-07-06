@@ -6,6 +6,12 @@ export async function GET(
 ) {
   const { id } = await params;
 
+  // YouTube video IDs are 11 chars of [A-Za-z0-9_-]. Reject anything else so
+  // the param can't smuggle path traversal or query strings into the fetch URL.
+  if (!/^[A-Za-z0-9_-]{11}$/.test(id)) {
+    return new NextResponse(null, { status: 400 });
+  }
+
   const urls = [
     `https://i.ytimg.com/vi/${id}/maxresdefault.jpg`,
     `https://i.ytimg.com/vi/${id}/sddefault.jpg`,

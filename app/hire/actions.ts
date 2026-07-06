@@ -1,7 +1,9 @@
 "use server";
 
+import { headers } from "next/headers";
 import { getSupabaseAdmin } from "@/lib/supabase";
 import { Resend } from "resend";
+import { checkRateLimit, clientIp } from "@/lib/rateLimit";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
@@ -127,6 +129,13 @@ export async function submitHireEnquiry(formData: FormData) {
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   if (!emailRegex.test(email)) {
     return { success: false, error: "Please enter a valid email address." };
+  }
+
+  // Per-IP rate limit — the form writes to the database and sends email, so
+  // it must not be scriptable for spam.
+  const { limited } = checkRateLimit(`hire:${clientIp(await headers())}`);
+  if (limited) {
+    return { success: false, error: "Too many enquiries sent. Please wait a few minutes and try again." };
   }
 
   const day = new Date(date).getUTCDay(); // 0 = Sun, 3 = Wed, 4 = Thu

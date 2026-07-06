@@ -54,6 +54,19 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Invalid body" }, { status: 400 });
   }
 
+  // Every message must be a plain user/assistant turn with a bounded length —
+  // never trust the client to supply roles (blocks injected "system" turns)
+  // or unbounded content (blocks token-cost abuse via padded history).
+  for (const m of messages) {
+    if (
+      (m.role !== "user" && m.role !== "assistant") ||
+      typeof m.content !== "string" ||
+      m.content.length > 2000
+    ) {
+      return NextResponse.json({ error: "Invalid messages" }, { status: 400 });
+    }
+  }
+
   // Validate the last message is from the user and is not too long
   const lastMsg = messages[messages.length - 1];
   if (lastMsg.role !== "user" || !lastMsg.content?.trim() || lastMsg.content.length > 300) {

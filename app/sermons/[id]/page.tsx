@@ -141,7 +141,11 @@ export default async function SermonPage({ params }: PageProps) {
     <>
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(videoSchema) }}
+        // Escape "<" so a title/description containing "</script>" can't
+        // break out of the JSON-LD block (video data comes from YouTube).
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(videoSchema).replace(/</g, "\\u003c"),
+        }}
       />
     <main className="min-h-screen bg-[#0f0f0f] text-white">
       <div className="mx-auto max-w-5xl px-4 pb-6 pt-24 lg:px-8">

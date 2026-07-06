@@ -5,11 +5,8 @@ import { submitHireEnquiry } from "./actions";
 
 const SPACES = [
   "Main Auditorium",
-  "Meeting Room 1",
-  "Meeting Room 2",
-  "Café / Foyer Area",
+  "Meeting Room(s)",
   "Entire Building",
-  "Other / Not sure",
 ];
 
 const EVENT_TYPES = [

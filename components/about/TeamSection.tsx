@@ -14,6 +14,7 @@ const departmentHeads = [
   { name: "Funke Awojide", role: "Kids Pastor", photo: "/img/brand/Team/FA.webp", email: "funke@destinytees.uk" },
   { name: "Adebowale Awojide", role: "Prayer Team", photo: "/img/brand/Team/Debo.webp", email: "debo@destinytees.uk" },
   { name: "George Krezner", role: "Administration", photo: "/img/brand/Team/GK.webp", email: "george@destinytees.uk" },
+  { name: "Younes Moradi", role: "Site & Stewarding", photo: null, email: "younes@destinytees.uk" },
 ];
 
 function TeamCard({ name, role, photo, cardBg, email }: { name: string; role: string; photo: string | null; cardBg: string; email: string }) {
@@ -71,7 +72,7 @@ export default function TeamSection() {
             Department Heads
           </h2>
         </AnimateIn>
-        <div className="mb-6 grid grid-cols-2 gap-4 sm:mx-auto sm:max-w-3xl sm:grid-cols-3">
+        <div className="mb-6 grid grid-cols-2 gap-4 sm:grid-cols-4">
           {departmentHeads.map((member, i) => (
             <AnimateIn key={member.name} delay={i * 80}>
               <TeamCard {...member} cardBg="#475C70" />

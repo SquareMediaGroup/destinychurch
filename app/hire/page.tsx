@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import AnimateIn from "@/components/AnimateIn";
 import HireForm from "./HireForm";
 import FaqAccordion from "./FaqAccordion";
+import SpacesGrid from "@/components/hire/SpacesGrid";
 import { getPageContent } from "@/lib/pageContent";
 
 export const metadata: Metadata = {
@@ -14,30 +15,6 @@ export const metadata: Metadata = {
     url: "https://destinytees.uk/hire",
   },
 };
-
-const spaces = [
-  {
-    icon: "stadium",
-    name: "Main Auditorium",
-    capacity: "Up to 400",
-    description: "Our main hall seats up to 400 and features a full PA system, large projection screens, stage lighting and a raised platform. Ideal for conferences, concerts, performances and large events.",
-    features: ["Full PA system", "Projection screens", "Stage lighting", "Raised platform", "Accessible seating"],
-  },
-  {
-    icon: "meeting_room",
-    name: "Meeting Rooms",
-    capacity: "Up to 30 per room",
-    description: "Two flexible meeting rooms suitable for small groups, training sessions, interviews or workshops. Both include a projector, whiteboard and air conditioning.",
-    features: ["Projector & screen", "Whiteboard", "Air conditioning", "Wi-Fi", "Configurable layout"],
-  },
-  {
-    icon: "local_cafe",
-    name: "Café / Foyer Area",
-    capacity: "Up to 80",
-    description: "Our café and foyer space is perfect for networking events, receptions, exhibitions or informal gatherings. A fully equipped kitchen is available on request.",
-    features: ["Kitchen on request", "Café furniture", "Natural light", "Ground floor access", "Ideal for receptions"],
-  },
-];
 
 const INCLUDED = [
   { icon: "local_parking",      label: "Car Park",                       detail: "Free on-site parking for all your guests" },
@@ -120,29 +97,11 @@ export default async function HirePage() {
           <AnimateIn className="mb-12 text-center">
             <p className="mb-3 text-xs font-bold uppercase tracking-widest text-destiny-orange">Our Spaces</p>
             <h2 className="text-3xl font-black text-destiny-grey md:text-4xl">What&apos;s Available</h2>
+            <p className="mx-auto mt-3 max-w-xl text-sm text-destiny-grey/50">
+              Tap a space below for photos, capacity and equipment details.
+            </p>
           </AnimateIn>
-          <div className="grid gap-8 md:grid-cols-3">
-            {spaces.map((space, i) => (
-              <AnimateIn key={space.name} delay={i * 80} className="h-full">
-                <div className="flex h-full flex-col rounded-3xl bg-[#f5f7fa] p-7">
-                  <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-destiny-orange/10">
-                    <span className="material-symbols-rounded text-2xl text-destiny-orange">{space.icon}</span>
-                  </div>
-                  <h3 className="mb-1 font-black text-destiny-grey">{space.name}</h3>
-                  <p className="mb-3 text-xs font-bold text-destiny-orange">{space.capacity}</p>
-                  <p className="mb-5 flex-1 text-sm leading-relaxed text-destiny-grey/60">{space.description}</p>
-                  <ul className="space-y-1.5">
-                    {space.features.map((f) => (
-                      <li key={f} className="flex items-center gap-2 text-xs text-destiny-grey/60">
-                        <span className="material-symbols-rounded text-sm text-destiny-orange">check</span>
-                        {f}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              </AnimateIn>
-            ))}
-          </div>
+          <SpacesGrid />
         </div>
       </section>
 

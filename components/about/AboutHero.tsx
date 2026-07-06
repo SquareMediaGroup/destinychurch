@@ -1,4 +1,5 @@
 import Image from "next/image";
+import Link from "next/link";
 import AnimateIn from "@/components/AnimateIn";
 
 export default function AboutHero() {
@@ -6,7 +7,7 @@ export default function AboutHero() {
     <div className="px-4 pt-8 pb-0 lg:px-8">
       <section className="relative overflow-hidden rounded-3xl">
         <Image
-          src="/img/photos/About Us BKG.webp"
+          src="/img/photos/audience.webp"
           alt=""
           aria-hidden="true"
           fill
@@ -25,6 +26,24 @@ export default function AboutHero() {
               Learn more about the Church &amp; What We Believe
             </p>
           </AnimateIn>
+        </div>
+
+        <div className="absolute bottom-6 left-0 right-0 z-10 flex flex-wrap items-center justify-center gap-3 px-4 sm:bottom-10 sm:gap-4">
+          <a
+            href="#mission"
+            aria-label="Scroll down"
+            className="flex h-11 w-11 items-center justify-center rounded-full border-2 border-white/30 text-white backdrop-blur-sm transition hover:border-white hover:bg-white/10 sm:h-12 sm:w-12"
+          >
+            <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+            </svg>
+          </a>
+          <Link
+            href="/beliefs"
+            className="rounded-full bg-destiny-orange px-6 py-3 text-xs font-bold text-white shadow-lg shadow-destiny-orange/30 transition hover:brightness-110 sm:px-8 sm:py-3.5 sm:text-sm"
+          >
+            Our Beliefs
+          </Link>
         </div>
       </section>
     </div>

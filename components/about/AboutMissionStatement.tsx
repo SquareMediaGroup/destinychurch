@@ -2,7 +2,7 @@ import AnimateIn from "@/components/AnimateIn";
 
 export default function AboutMissionStatement() {
   return (
-    <section className="bg-white py-20">
+    <section id="mission" className="bg-white py-20">
       <div className="mx-auto max-w-4xl px-8 lg:px-12">
         <AnimateIn>
           <p className="mb-5 text-xs font-bold uppercase tracking-widest text-destiny-grey/40">

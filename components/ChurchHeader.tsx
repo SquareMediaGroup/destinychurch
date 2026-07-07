@@ -257,13 +257,13 @@ export default function ChurchHeader() {
           >
             {/* Logo — responsive size */}
             <Link href="/" className="flex items-center gap-3">
-              <div className="relative h-8 w-[152px] md:h-[43px] md:w-[204px]">
+              <div className="relative h-8 w-[152px] lg:h-[43px] lg:w-[204px]">
                 <Image
                   src="/img/brand/destiny-logo-color-white.svg"
                   alt="Destiny Church"
                   fill
                   priority
-                  sizes="(min-width: 768px) 204px, 152px"
+                  sizes="(min-width: 1024px) 204px, 152px"
                   className="object-contain"
                 />
               </div>
@@ -284,7 +284,7 @@ export default function ChurchHeader() {
                       >
                         <Link
                           href={item.href!}
-                          className="rounded-full px-4 py-2 text-sm font-medium text-white/90 transition hover:text-destiny-orange"
+                          className="whitespace-nowrap rounded-full px-2.5 py-2 text-sm font-medium text-white/90 transition hover:text-destiny-orange lg:px-4"
                         >
                           {item.label}
                         </Link>
@@ -303,7 +303,7 @@ export default function ChurchHeader() {
                     <Link
                       key={item.href}
                       href={item.href!}
-                      className="rounded-full px-4 py-2 text-sm font-medium text-white/90 transition hover:text-destiny-orange"
+                      className="whitespace-nowrap rounded-full px-2.5 py-2 text-sm font-medium text-white/90 transition hover:text-destiny-orange lg:px-4"
                     >
                       {item.label}
                     </Link>

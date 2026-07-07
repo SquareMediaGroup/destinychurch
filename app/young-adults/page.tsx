@@ -107,7 +107,7 @@ export default function YoungAdultsPage() {
                 <Image src="/img/photos/ConnectGroups.webp" alt="" width={300} height={280} className="h-full w-full object-cover" />
               </div>
               <div className="col-span-2 overflow-hidden rounded-2xl">
-                <Image src="/img/photos/Gallery/SN1_7879.CR2.webp" alt="" width={620} height={220} className="w-full object-cover" />
+                <Image src="/img/photos/Gallery/YouthCommunity.webp" alt="" width={620} height={220} className="w-full object-cover" />
               </div>
             </AnimateIn>
             <AnimateIn delay={100} className="w-full md:w-1/2">

@@ -5,10 +5,12 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useBanner } from "@/contexts/BannerContext";
 import type { BannerData } from "@/contexts/BannerContext";
+import { useLiveStatus } from "@/contexts/LiveContext";
 import { getNextAlphaSession } from "@/lib/alphaSession";
 
 export default function SiteBanner() {
   const banner = useBanner();
+  const { live } = useLiveStatus();
   const pathname = usePathname();
 
   const isAdmin = pathname.startsWith("/admin");
@@ -50,9 +52,12 @@ export default function SiteBanner() {
   if (isAdmin) return null;
   if (!banner.active) return null;
 
-  const primary = renderBanner(banner, 0);
+  const liveVisible = live && pathname !== "/live";
+  const offset = liveVisible ? 1 : 0;
+
+  const primary = renderBanner(banner, offset);
   const companion = banner.companion?.active
-    ? renderBanner(banner.companion, 1)
+    ? renderBanner(banner.companion, offset + 1)
     : null;
 
   if (!primary && !companion) return null;

@@ -240,6 +240,85 @@ export async function getPlaylistVideos(playlistId: string, maxResults = 20): Pr
   }
 }
 
+export type LiveStatus = {
+  live: boolean;
+  videoId: string | null;
+  title?: string;
+  checkedAt: string;
+};
+
+async function confirmLiveViaApi(videoId: string): Promise<boolean | null> {
+  try {
+    const url = new URL("https://www.googleapis.com/youtube/v3/videos");
+    url.searchParams.set("part", "snippet");
+    url.searchParams.set("id", videoId);
+    url.searchParams.set("key", API_KEY ?? "");
+    const res = await fetch(url.toString(), { next: { revalidate: 60 } });
+    if (!res.ok) {
+      if (await detectQuotaExceeded(res)) return null;
+      return null;
+    }
+    const data = await res.json();
+    const item = data.items?.[0];
+    if (!item) return false;
+    return item.snippet?.liveBroadcastContent === "live";
+  } catch {
+    return null;
+  }
+}
+
+export async function getLiveStatus(): Promise<LiveStatus> {
+  const checkedAt = new Date().toISOString();
+  const notLive: LiveStatus = { live: false, videoId: null, checkedAt };
+
+  if (process.env.LIVE_DISABLED === "1") return notLive;
+  if (!CHANNEL_ID) return notLive;
+
+  try {
+    const res = await fetch(`https://www.youtube.com/channel/${CHANNEL_ID}/live`, {
+      headers: {
+        "User-Agent":
+          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        Cookie: "CONSENT=YES+",
+      },
+      next: { revalidate: 60 },
+    });
+    if (!res.ok) return notLive;
+    const html = await res.text();
+
+    const canonicalMatch = html.match(
+      /<link rel="canonical" href="https:\/\/www\.youtube\.com\/watch\?v=([\w-]{11})"/
+    );
+    if (!canonicalMatch) return notLive;
+    const videoId = canonicalMatch[1];
+
+    const title = html.match(/<meta name="title" content="([^"]*)"/)?.[1];
+    const decodedTitle = title
+      ?.replace(/&amp;/g, "&")
+      .replace(/&lt;/g, "<")
+      .replace(/&gt;/g, ">")
+      .replace(/&quot;/g, '"')
+      .replace(/&#39;/g, "'");
+
+    const isLiveNowMatch = html.match(/"isLiveNow"\s*:\s*(true|false)/);
+
+    if (isLiveNowMatch) {
+      const isLiveNow = isLiveNowMatch[1] === "true";
+      if (!isLiveNow) return notLive;
+      return { live: true, videoId, title: decodedTitle, checkedAt };
+    }
+
+    // Ambiguous scrape result — confirm with a 1-quota-unit API call.
+    const confirmed = await confirmLiveViaApi(videoId);
+    if (confirmed === true) {
+      return { live: true, videoId, title: decodedTitle, checkedAt };
+    }
+    return notLive;
+  } catch {
+    return notLive;
+  }
+}
+
 export async function getVideo(id: string): Promise<YTVideo | null> {
   try {
     const url = new URL("https://www.googleapis.com/youtube/v3/videos");

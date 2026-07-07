@@ -302,7 +302,9 @@ export default function FloatingSmartSearch() {
     sendMessage(input);
   }
 
-  if (pathname.startsWith("/admin") || pathname.startsWith("/training")) return null;
+  // Destiny AI is its own dedicated chat experience — showing the Smart Search
+  // bubble on top of it would be a redundant, competing chat surface.
+  if (pathname.startsWith("/admin") || pathname.startsWith("/training") || pathname.startsWith("/destiny-ai")) return null;
 
   // Don't surface Smart Search at all until the visitor has made a cookie
   // decision — the search icon only appears once cookies have been accepted.

@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import Image from "next/image";
 import AnimateIn from "@/components/AnimateIn";
 
@@ -17,7 +18,16 @@ const departmentHeads = [
   { name: "Younes Moradi", role: "Site & Stewarding", photo: null, email: "younes@destinytees.uk" },
 ];
 
-function TeamCard({ name, role, photo, cardBg, email }: { name: string; role: string; photo: string | null; cardBg: string; email: string }) {
+const moreDepartmentHeads = [
+  { name: "Thandi Mathema", role: "Hospitality & Catering", photo: null, email: null },
+  { name: "Nkereuwem Ekanem", role: "Production & IT", photo: null, email: null },
+  { name: "David Bayode", role: "Worship Pastor", photo: null, email: null },
+  { name: "Neil & Louise Sheekey", role: "Destiny Recovery", photo: null, email: null },
+  { name: "Mide Akinyele", role: "Youth Leader (Boys)", photo: null, email: null },
+  { name: "Phoebe Smyrell", role: "Youth Leader (Girls)", photo: null, email: null },
+];
+
+function TeamCard({ name, role, photo, cardBg, email }: { name: string; role: string; photo: string | null; cardBg: string; email?: string | null }) {
   const initials = name.split(" ").map((n) => n[0]).join("");
   return (
     <div className="group flex flex-col items-center text-center">
@@ -29,17 +39,19 @@ function TeamCard({ name, role, photo, cardBg, email }: { name: string; role: st
             {initials}
           </div>
         )}
-        <a
-          href={`mailto:${email}`}
-          className="absolute inset-0 flex items-center justify-center bg-black/60 opacity-0 transition-opacity duration-300 group-hover:opacity-100"
-        >
-          <span className="flex items-center gap-2 rounded-full bg-white/20 px-4 py-2 text-xs font-bold text-white backdrop-blur-sm">
-            <svg className="h-3.5 w-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-            </svg>
-            {email}
-          </span>
-        </a>
+        {email && (
+          <a
+            href={`mailto:${email}`}
+            className="absolute inset-0 flex items-center justify-center bg-black/60 opacity-0 transition-opacity duration-300 group-hover:opacity-100"
+          >
+            <span className="flex items-center gap-2 rounded-full bg-white/20 px-4 py-2 text-xs font-bold text-white backdrop-blur-sm">
+              <svg className="h-3.5 w-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+              </svg>
+              {email}
+            </span>
+          </a>
+        )}
       </div>
       <p className="font-bold text-destiny-grey">{name}</p>
       <p className="text-sm text-destiny-grey/50">{role}</p>
@@ -48,6 +60,8 @@ function TeamCard({ name, role, photo, cardBg, email }: { name: string; role: st
 }
 
 export default function TeamSection() {
+  const [showMore, setShowMore] = useState(false);
+
   return (
     <section id="team" className="bg-[#f5f7fa] py-10 sm:py-16">
       <div className="mx-auto max-w-7xl px-4 lg:px-8">
@@ -72,12 +86,32 @@ export default function TeamSection() {
             Department Heads
           </h2>
         </AnimateIn>
-        <div className="mb-6 grid grid-cols-2 gap-4 sm:grid-cols-4">
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
           {departmentHeads.map((member, i) => (
             <AnimateIn key={member.name} delay={i * 80}>
               <TeamCard {...member} cardBg="#475C70" />
             </AnimateIn>
           ))}
+        </div>
+
+        {showMore && (
+          <div className="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-4">
+            {moreDepartmentHeads.map((member, i) => (
+              <AnimateIn key={member.name} delay={i * 80}>
+                <TeamCard {...member} cardBg="#475C70" />
+              </AnimateIn>
+            ))}
+          </div>
+        )}
+
+        <div className="mb-6 mt-8 flex justify-center">
+          <button
+            type="button"
+            onClick={() => setShowMore((prev) => !prev)}
+            className="rounded-full border-2 border-destiny-orange px-6 py-2 text-sm font-bold text-destiny-orange transition-colors duration-300 hover:bg-destiny-orange hover:text-white"
+          >
+            {showMore ? "Show Fewer" : "View All"}
+          </button>
         </div>
       </div>
     </section>

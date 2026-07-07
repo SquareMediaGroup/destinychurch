@@ -25,18 +25,25 @@ export default function HelpAccordion({ categories }: Props) {
   return (
     <div className="flex flex-col gap-8 lg:flex-row lg:gap-12">
       {/* Category tabs */}
-      <div className="shrink-0 lg:w-56">
+      <div className="shrink-0 lg:w-60">
         <div className="flex gap-2 overflow-x-auto pb-2 lg:flex-col lg:overflow-x-visible lg:pb-0">
           {categories.map((cat, i) => (
             <button
               key={cat.label}
               onClick={() => { setActiveCategory(i); setOpenIndex(null); }}
-              className={`flex shrink-0 items-center gap-2.5 rounded-2xl px-4 py-3 text-left text-sm font-bold transition-all lg:w-full ${
+              className={`flex shrink-0 items-center gap-3 rounded-2xl border px-4 py-3 text-left text-sm font-bold transition-all lg:w-full ${
                 activeCategory === i
-                  ? "bg-destiny-orange text-white shadow-sm"
-                  : "bg-[#f5f7fa] text-destiny-grey/70 hover:bg-destiny-orange/10 hover:text-destiny-grey"
+                  ? "border-destiny-orange bg-destiny-orange text-white shadow-[0_16px_35px_-18px_rgba(245,128,33,0.55)]"
+                  : "border-black/10 bg-white text-destiny-grey/70 hover:border-destiny-orange/40 hover:text-destiny-grey"
               }`}
             >
+              <span
+                className={`font-[family-name:var(--font-anton)] text-base ${
+                  activeCategory === i ? "text-white/85" : "text-destiny-orange"
+                }`}
+              >
+                {String(i + 1).padStart(2, "0")}
+              </span>
               <span
                 className="material-symbols-rounded text-lg"
                 style={{ color: activeCategory === i ? "white" : cat.color }}
@@ -57,17 +64,26 @@ export default function HelpAccordion({ categories }: Props) {
             return (
               <div
                 key={i}
-                className={`overflow-hidden rounded-2xl border transition-all ${
+                className={`overflow-hidden rounded-2xl border bg-white transition-all ${
                   isOpen
-                    ? "border-destiny-orange/20 bg-destiny-orange/5"
-                    : "border-transparent bg-[#f5f7fa] hover:border-destiny-orange/10"
+                    ? "border-destiny-orange shadow-[0_24px_50px_-20px_rgba(245,128,33,0.35)]"
+                    : "border-black/10 hover:border-destiny-orange/40"
                 }`}
               >
                 <button
                   onClick={() => setOpenIndex(isOpen ? null : i)}
                   className="flex w-full items-center justify-between gap-4 px-5 py-4 text-left"
                 >
-                  <span className="font-bold text-destiny-grey">{faq.q}</span>
+                  <span className="flex min-w-0 items-baseline gap-3">
+                    <span
+                      className={`shrink-0 font-[family-name:var(--font-anton)] text-sm transition-colors ${
+                        isOpen ? "text-destiny-orange" : "text-destiny-grey/30"
+                      }`}
+                    >
+                      {String(i + 1).padStart(2, "0")}
+                    </span>
+                    <span className="font-bold text-destiny-grey">{faq.q}</span>
+                  </span>
                   <span
                     className={`material-symbols-rounded shrink-0 text-xl text-destiny-orange transition-transform duration-200 ${
                       isOpen ? "rotate-180" : ""
@@ -82,7 +98,7 @@ export default function HelpAccordion({ categories }: Props) {
                   }`}
                 >
                   <div className="overflow-hidden">
-                    <p className="px-5 pb-5 text-sm leading-relaxed text-destiny-grey/60">
+                    <p className="px-5 pb-5 pl-[3.1rem] text-sm leading-relaxed text-destiny-grey/60">
                       {faq.a}
                     </p>
                   </div>

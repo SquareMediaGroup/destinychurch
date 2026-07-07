@@ -15,14 +15,14 @@ export const metadata: Metadata = {
 };
 
 const quickLinks = [
-  { icon: "directions_walk", label: "Plan Your Visit", href: "/visit", color: "#F58021" },
-  { icon: "menu_book", label: "Watch Sermons", href: "/sermons", color: "#0857BA" },
-  { icon: "child_care", label: "Destiny Kids", href: "/kids", color: "#F58021" },
-  { icon: "bolt", label: "Destiny Youth", href: "/youth", color: "#8106B1" },
-  { icon: "favorite", label: "Alpha Course", href: "/alpha", color: "#FD0000" },
-  { icon: "handshake", label: "Serve With Us", href: "/serve", color: "#028002" },
-  { icon: "volunteer_activism", label: "Give", href: "/give", color: "#F58021" },
-  { icon: "mail", label: "Contact Us", href: "/contact", color: "#363F48" },
+  { index: "01", icon: "directions_walk", label: "Plan Your Visit", href: "/visit" },
+  { index: "02", icon: "menu_book", label: "Watch Sermons", href: "/sermons" },
+  { index: "03", icon: "child_care", label: "Destiny Kids", href: "/kids" },
+  { index: "04", icon: "bolt", label: "Destiny Youth", href: "/youth" },
+  { index: "05", icon: "favorite", label: "Alpha Course", href: "/alpha" },
+  { index: "06", icon: "handshake", label: "Serve With Us", href: "/serve" },
+  { index: "07", icon: "volunteer_activism", label: "Give", href: "/give" },
+  { index: "08", icon: "mail", label: "Contact Us", href: "/contact" },
 ];
 
 const categories = [
@@ -203,128 +203,223 @@ const faqSchema = {
 
 export default function HelpPage() {
   return (
-    <>
+    <div className="help-page relative min-h-screen overflow-hidden bg-white text-destiny-grey">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }}
       />
 
-      {/* Hero */}
-      <div className="px-4 pt-8 pb-8 lg:px-8">
-        <section
-          className="relative overflow-hidden rounded-3xl py-[10rem] px-4 text-center"
-          style={{ background: "linear-gradient(135deg, #363f48 0%, #242e37 100%)" }}
-        >
-          <AnimateIn>
-            <p className="mb-3 text-xs font-bold uppercase tracking-widest text-destiny-orange">
-              We&apos;re Here to Help
-            </p>
-            <h1 className="mb-4 text-5xl font-black text-white md:text-6xl lg:text-7xl">
-              Help Centre
-            </h1>
-            <p className="mx-auto max-w-xl text-base text-white/60 md:text-lg">
-              Find answers to common questions, or get in touch and we&apos;ll point you in the right direction.
-            </p>
-          </AnimateIn>
-        </section>
-      </div>
+      {/* page-scoped styling — shared visual language with /links */}
+      <style
+        dangerouslySetInnerHTML={{
+          __html: `
+            .help-page {
+              background-color: #ffffff;
+              background-image:
+                radial-gradient(110% 60% at 100% -5%, rgba(245,128,33,0.08), transparent 60%),
+                radial-gradient(90% 50% at -5% 100%, rgba(8,87,186,0.05), transparent 55%);
+            }
+            @keyframes help-rise {
+              from { opacity: 0; transform: translateY(28px); }
+              to   { opacity: 1; transform: translateY(0); }
+            }
+            @keyframes help-draw {
+              from { transform: scaleX(0); }
+              to   { transform: scaleX(1); }
+            }
+            .help-reveal {
+              opacity: 0;
+              animation: help-rise 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+            }
+            .help-rule {
+              transform-origin: left;
+              animation: help-draw 0.9s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+            }
+            .step-card {
+              transition: transform 0.45s cubic-bezier(0.16,1,0.3,1),
+                          box-shadow 0.45s ease,
+                          border-color 0.45s ease;
+            }
+            .step-card .step-fill {
+              transform: scaleY(0);
+              transform-origin: bottom;
+              transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+            }
+            .step-card:hover,
+            .step-card:focus-visible {
+              transform: translateY(-6px);
+              border-color: #f58021;
+              box-shadow: 0 24px 50px -20px rgba(245,128,33,0.45);
+            }
+            .step-card:hover .step-fill,
+            .step-card:focus-visible .step-fill { transform: scaleY(1); }
+            .step-card .step-num,
+            .step-card .step-title,
+            .step-card .step-arrow,
+            .step-card .step-icon {
+              transition: color 0.4s ease, transform 0.5s cubic-bezier(0.16,1,0.3,1);
+            }
+            .step-card:hover .step-num,
+            .step-card:focus-visible .step-num { color: rgba(255,255,255,0.85); }
+            .step-card:hover .step-title,
+            .step-card:focus-visible .step-title,
+            .step-card:hover .step-icon,
+            .step-card:focus-visible .step-icon { color: #ffffff; }
+            .step-card:hover .step-arrow,
+            .step-card:focus-visible .step-arrow {
+              color: #ffffff;
+              transform: translateX(6px);
+            }
+            .step-card:hover .step-icon,
+            .step-card:focus-visible .step-icon { transform: rotate(-4deg) scale(1.05); }
+            @media (prefers-reduced-motion: reduce) {
+              .help-reveal, .help-rule { animation: none; opacity: 1; transform: none; }
+              .step-card, .step-card * { transition: none !important; }
+            }
+          `,
+        }}
+      />
 
-      {/* Quick links */}
-      <section className="bg-white py-16">
-        <div className="mx-auto max-w-7xl px-4 lg:px-8">
-          <AnimateIn>
-            <h2 className="mb-3 text-center text-3xl font-black text-destiny-grey md:text-4xl">
-              Quick Links
-            </h2>
-            <p className="mb-10 text-center text-sm text-destiny-grey/50">
-              Jump straight to what you need
-            </p>
-          </AnimateIn>
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+      <div className="relative mx-auto max-w-5xl px-5 pb-28 pt-16 sm:px-8 lg:pt-24">
+        {/* Masthead */}
+        <header className="mb-12 lg:mb-16">
+          <h1 className="leading-[0.92]">
+            <span
+              className="help-reveal block font-[family-name:var(--font-playfair)] text-4xl italic text-destiny-grey/80 sm:text-5xl"
+              style={{ animationDelay: "0.05s" }}
+            >
+              How can we
+            </span>
+            <span
+              className="help-reveal mt-2 block font-[family-name:var(--font-anton)] text-[18vw] uppercase tracking-tight text-destiny-grey sm:mt-3 sm:text-[9.5rem] lg:text-[11.5rem]"
+              style={{ animationDelay: "0.12s" }}
+            >
+              Help You?
+            </span>
+          </h1>
+
+          <div
+            className="help-rule mt-8 h-1 w-24 rounded-full bg-destiny-orange"
+            style={{ animationDelay: "0.2s" }}
+          />
+
+          <p
+            className="help-reveal mt-6 max-w-xl text-base text-destiny-grey/55 sm:text-lg"
+            style={{ animationDelay: "0.26s" }}
+          >
+            Find answers to common questions, or get in touch and we&apos;ll
+            point you in the right direction.
+          </p>
+        </header>
+
+        {/* Quick links — compact step cards */}
+        <nav aria-label="Quick links">
+          <ul className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
             {quickLinks.map((link, i) => (
-              <AnimateIn key={link.href} delay={i * 40}>
+              <li
+                key={link.href}
+                className="help-reveal"
+                style={{ animationDelay: `${0.32 + i * 0.05}s` }}
+              >
                 <Link
                   href={link.href}
-                  className="group flex flex-col items-center gap-3 rounded-3xl bg-[#f5f7fa] p-6 text-center transition hover:bg-destiny-orange/5 hover:shadow-sm"
+                  className="step-card group relative flex h-full flex-col overflow-hidden rounded-2xl border border-black/10 bg-white p-5 outline-none"
                 >
-                  <div
-                    className="flex h-12 w-12 items-center justify-center rounded-2xl transition group-hover:scale-110"
-                    style={{ background: `${link.color}18` }}
-                  >
+                  {/* orange fill on hover */}
+                  <span
+                    aria-hidden
+                    className="step-fill absolute inset-0 bg-destiny-orange"
+                  />
+
+                  <div className="relative flex items-start justify-between">
+                    <span className="step-num font-[family-name:var(--font-anton)] text-lg text-destiny-orange">
+                      {link.index}
+                    </span>
                     <span
-                      className="material-symbols-rounded text-2xl"
-                      style={{ color: link.color }}
+                      aria-hidden
+                      className="material-symbols-rounded step-icon text-2xl text-destiny-grey/30"
                     >
                       {link.icon}
                     </span>
                   </div>
-                  <span className="text-sm font-bold text-destiny-grey group-hover:text-destiny-orange transition">
-                    {link.label}
-                  </span>
-                </Link>
-              </AnimateIn>
-            ))}
-          </div>
-        </div>
-      </section>
 
-      {/* FAQ accordion */}
-      <section className="bg-[#f5f7fa] py-20">
-        <div className="mx-auto max-w-7xl px-4 lg:px-8">
+                  <div className="relative mt-8 flex items-end justify-between gap-2">
+                    <span className="step-title min-w-0 font-[family-name:var(--font-heading)] text-sm font-black leading-tight text-destiny-grey sm:text-base">
+                      {link.label}
+                    </span>
+                    <span className="material-symbols-rounded step-arrow shrink-0 text-xl text-destiny-grey/40">
+                      arrow_forward
+                    </span>
+                  </div>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </nav>
+
+        {/* FAQ accordion */}
+        <section className="mt-20 sm:mt-24">
           <AnimateIn>
-            <p className="mb-3 text-center text-xs font-bold uppercase tracking-widest text-destiny-orange">
-              Common Questions
-            </p>
-            <h2 className="mb-3 text-center text-3xl font-black text-destiny-grey md:text-4xl">
-              Frequently Asked
-            </h2>
-            <p className="mb-12 text-center text-sm text-destiny-grey/50">
-              Browse by topic, or contact us if you can&apos;t find what you&apos;re looking for
-            </p>
+            <header className="mb-10">
+              <p className="text-xs font-bold uppercase tracking-[0.28em] text-destiny-orange">
+                Common Questions
+              </p>
+              <h2 className="mt-2 leading-[0.95]">
+                <span className="block font-[family-name:var(--font-playfair)] text-2xl italic text-destiny-grey/70 sm:text-3xl">
+                  Frequently
+                </span>
+                <span className="block font-[family-name:var(--font-anton)] text-5xl uppercase tracking-tight text-destiny-grey sm:text-6xl">
+                  Asked
+                </span>
+              </h2>
+              <p className="mt-4 max-w-xl text-sm text-destiny-grey/55 sm:text-base">
+                Browse by topic, or contact us if you can&apos;t find what
+                you&apos;re looking for.
+              </p>
+            </header>
           </AnimateIn>
           <AnimateIn delay={80}>
             <HelpAccordion categories={categories} />
           </AnimateIn>
-        </div>
-      </section>
+        </section>
 
-      {/* Still need help CTA */}
-      <section className="bg-white py-20">
-        <div className="mx-auto max-w-3xl px-4 lg:px-8 text-center">
-          <AnimateIn>
-            <div
-              className="rounded-3xl px-8 py-14"
-              style={{ background: "linear-gradient(135deg, #f58021 0%, #d96d10 100%)" }}
-            >
-              <span className="material-symbols-rounded mb-4 block text-5xl text-white/80">
-                support_agent
-              </span>
-              <h2 className="mb-3 text-3xl font-black text-white md:text-4xl">
-                Still need help?
-              </h2>
-              <p className="mb-8 text-base text-white/70">
-                Can&apos;t find the answer you&apos;re looking for? Our team are happy to help — just reach out.
-              </p>
-              <div className="flex flex-col items-center justify-center gap-4 sm:flex-row">
+        {/* Still need help CTA */}
+        <AnimateIn delay={40}>
+          <div className="mt-16 overflow-hidden rounded-3xl bg-destiny-grey px-7 py-10 sm:mt-20 sm:px-12 sm:py-12">
+            <div className="flex flex-col items-start gap-7 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="text-xs font-bold uppercase tracking-[0.28em] text-destiny-orange">
+                  We&apos;re Here to Help
+                </p>
+                <h2 className="mt-2 font-[family-name:var(--font-heading)] text-2xl font-black text-white sm:text-3xl">
+                  Still need help?
+                </h2>
+                <p className="mt-2 max-w-md text-sm text-white/60">
+                  Can&apos;t find the answer you&apos;re looking for? Our team
+                  are happy to help — just reach out.
+                </p>
+              </div>
+
+              <div className="flex shrink-0 flex-col gap-3 sm:items-end">
                 <Link
                   href="/contact"
-                  className="inline-flex items-center gap-2 rounded-2xl bg-white px-7 py-3.5 text-sm font-black text-destiny-orange shadow-sm transition hover:bg-white/90"
+                  className="inline-flex items-center justify-center gap-2 rounded-full bg-destiny-orange px-7 py-3.5 text-sm font-bold text-white transition-transform hover:scale-[1.03] hover:bg-destiny-orange-dark"
                 >
-                  <span className="material-symbols-rounded text-lg">mail</span>
                   Send a Message
+                  <span className="material-symbols-rounded text-lg">arrow_forward</span>
                 </Link>
                 <a
                   href="tel:+441642559797"
-                  className="inline-flex items-center gap-2 rounded-2xl border border-white/30 px-7 py-3.5 text-sm font-black text-white transition hover:bg-white/10"
+                  className="inline-flex items-center justify-center gap-1.5 text-sm font-semibold text-white/70 underline-offset-4 transition-colors hover:text-white hover:underline"
                 >
                   <span className="material-symbols-rounded text-lg">call</span>
-                  01642 559 797
+                  Or call 01642 559 797
                 </a>
               </div>
             </div>
-          </AnimateIn>
-        </div>
-      </section>
-    </>
+          </div>
+        </AnimateIn>
+      </div>
+    </div>
   );
 }

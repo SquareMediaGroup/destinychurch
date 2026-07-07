@@ -1,35 +1,19 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import { useBanner } from "@/contexts/BannerContext";
+import { useBannerBars } from "@/lib/useBannerBars";
 
 export default function BannerSpacer() {
-  const banner = useBanner();
   const pathname = usePathname();
+  const bars = useBannerBars();
 
-  if (!banner.active) return null;
-  if (banner.type === "sitewide") return null;
   if (pathname === "/") return null;
-  if (pathname.startsWith("/admin")) return null;
-
-  const isEventType = (t: string) =>
-    t === "alpha" || t === "youth_alpha" || t === "recovery";
-  const isVisible = (b: typeof banner) => {
-    if (!b.active) return false;
-    if (isEventType(b.type)) return !!b.alpha;
-    return !!b.message;
-  };
-
-  let visibleCount = 0;
-  if (isVisible(banner)) visibleCount += 1;
-  if (banner.companion && isVisible(banner.companion)) visibleCount += 1;
-
-  if (visibleCount === 0) return null;
+  if (bars === 0) return null;
 
   return (
     <div
       className="shrink-0"
-      style={{ height: visibleCount * 40 }}
+      style={{ height: bars * 40 }}
       aria-hidden="true"
     />
   );

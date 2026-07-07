@@ -5,33 +5,12 @@ import { useEffect, useState, useRef, useCallback } from "react";
 import Image from "next/image";
 import { useCookieConsent } from "@/lib/cookieConsent";
 import { useSermonPlayerState } from "@/lib/sermonPlayerContext";
+import { loadYTApi } from "@/lib/youtubeIframe";
 import { useSermonJump } from "./SermonJumpContext";
-
-declare global {
-  interface Window {
-    YT?: typeof YT;
-    onYouTubeIframeAPIReady?: () => void;
-  }
-}
 
 interface SermonPlayerProps {
   videoId: string;
   thumbnail?: string;
-}
-
-let apiLoading = false;
-const apiCallbacks: (() => void)[] = [];
-
-function loadYTApi(cb: () => void) {
-  if (window.YT?.Player) { cb(); return; }
-  apiCallbacks.push(cb);
-  if (apiLoading) return;
-  apiLoading = true;
-  const prev = window.onYouTubeIframeAPIReady;
-  window.onYouTubeIframeAPIReady = () => { prev?.(); apiCallbacks.forEach((fn) => fn()); apiCallbacks.length = 0; };
-  const tag = document.createElement("script");
-  tag.src = "https://www.youtube.com/iframe_api";
-  document.head.appendChild(tag);
 }
 
 function useIsMobile() {

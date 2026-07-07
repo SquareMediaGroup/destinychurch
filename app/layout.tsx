@@ -9,11 +9,13 @@ import Providers from "@/components/Providers";
 import CookieBanner from "@/components/CookieBanner";
 import AnalyticsGate from "@/components/AnalyticsGate";
 import SiteBanner from "@/components/SiteBanner";
+import LiveBanner from "@/components/LiveBanner";
 import SitePopup from "@/components/SitePopup";
 import FloatingSmartSearch from "@/components/FloatingSmartSearch";
 import GlassBloomTracker from "@/components/GlassBloomTracker";
 import PerformanceGate from "@/components/PerformanceGate";
 import { isSmartSearchEnabled } from "@/lib/serviceStatus";
+import { getLiveStatus } from "@/lib/youtube";
 import BannerSpacer from "@/components/BannerSpacer";
 import VisualEditOverlay from "@/components/admin/VisualEditOverlay";
 import { createServiceClient } from "@/utils/supabase/service";
@@ -237,6 +239,7 @@ export default async function RootLayout({
   const banner = await getActiveBanner();
   const popup = await getActivePopup();
   const smartSearchEnabled = await isSmartSearchEnabled();
+  const liveStatus = await getLiveStatus();
 
   return (
     <html lang="en" suppressHydrationWarning>
@@ -400,8 +403,9 @@ export default async function RootLayout({
             <feBlend in="rg" in2="onlyB" mode="screen" />
           </filter>
         </svg>
-        <Providers banner={banner}>
-<SiteBanner />
+        <Providers banner={banner} live={liveStatus}>
+          <LiveBanner />
+          <SiteBanner />
           <CookieBanner />
           <Suspense><PerformanceGate /></Suspense>
           <div className="flex min-h-screen flex-col bg-[var(--background)] text-[var(--foreground)]">

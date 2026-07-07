@@ -919,6 +919,7 @@ Displayed on every page:
 | `/beliefs` | `app/beliefs/page.tsx` | Statement of faith, doctrine |
 | `/sermons` | `app/sermons/page.tsx` | Archive of all sermon videos, searchable |
 | `/sermons/[id]` | `app/sermons/[id]/page.tsx` | Individual sermon detail, video embed, transcript |
+| `/live` | `app/live/page.tsx` | Livestream page — custom glass player when live, offline state otherwise |
 | `/contact` | `app/contact/page.tsx` | Contact form, address, hours |
 | `/give` | `app/give/page.tsx` | Giving info — bank details, online giving |
 | `/visit` | `app/visit/page.tsx` | First-time visitor guide, parking, service times |
@@ -1033,6 +1034,16 @@ Displayed on every page:
 #### `GlassBloomTracker.tsx`
 - **What:** Performance tracking script
 - **Purpose:** Tracks bloom/glass effect performance for optimization
+
+#### `LiveBanner.tsx`
+- **What:** "WE ARE LIVE" banner bar, styled like `SiteBanner.tsx`'s bars
+- **Data:** `LiveContext` (server-seeded in root layout via `getLiveStatus()`, then polled client-side every 60s)
+- **Behavior:** Renders at the top banner slot (offsetting any DB banner below it) whenever the channel is live; hidden on `/live` and `/admin/*`. CTA links to `/live`.
+
+#### `live/LiveExperience.tsx` + `live/LivePlayer.tsx`
+- **What:** The `/live` page's client UI
+- **`LiveExperience.tsx`:** Switches between live / offline / stream-ended states based on `LiveContext`; requires the ENDED player event or two consecutive negative polls before dropping out of the live view
+- **`LivePlayer.tsx`:** YouTube IFrame API player with `controls=0` and a fully custom glass control bar (play/pause, mute, volume, fullscreen, live-edge seek) — see `lib/youtubeIframe.ts` for the shared API loader (also used by `SermonPlayer.tsx`)
 
 ---
 
@@ -1268,6 +1279,15 @@ export async function applyForJob(jobId: string, formData: ApplicationData) {
 // 5. Return video list
 ```
 
+#### `GET /api/youtube/live`
+```typescript
+// Livestream status, polled client-side every 60s by LiveContext
+// Response: { live: boolean, videoId: string | null, title?: string, checkedAt: string }
+// revalidate = 60
+
+// Backed by lib/youtube.ts getLiveStatus() — see Libraries & Utilities.
+```
+
 #### `POST /api/webhooks/vercel`
 ```typescript
 // Triggered on Vercel deployment
@@ -1403,6 +1423,14 @@ export async function getLatestVideo(): Promise<YTVideo | null> {
   const videos = await getAllVideos(1);
   return videos[0] ?? null;
 }
+
+// Livestream detection — used by the /live page and the "WE ARE LIVE" banner.
+// Zero-quota by design: scrapes youtube.com/channel/{id}/live for the
+// canonical watch URL + "isLiveNow" flag, falling back to a 1-unit
+// videos.list confirm call only when the scrape is ambiguous (never uses
+// search?eventType=live, which costs 100 units/call). Fails closed — any
+// fetch/parse error or LIVE_DISABLED=1 returns { live: false }.
+export async function getLiveStatus(): Promise<LiveStatus> { /* ... */ }
 ```
 
 **Why Supabase Storage isn't used for videos:**
@@ -2155,6 +2183,7 @@ ENABLE_PAGE_BUILDER=false
 - `app/page.tsx` — Home (hero, latest sermon, CTAs)
 - `app/sermons/page.tsx` — Sermon archive (grid, filters)
 - `app/sermons/[id]/page.tsx` — Sermon detail (video, transcript)
+- `app/live/page.tsx` — Livestream (custom glass player / offline state)
 - `app/about/page.tsx` — About church
 - `app/beliefs/page.tsx` — Statement of faith
 - `app/kids/page.tsx` — Kids ministry

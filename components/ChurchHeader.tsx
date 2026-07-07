@@ -4,7 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { usePathname } from "next/navigation";
-import { useBanner } from "@/contexts/BannerContext";
+import { useBannerBars } from "@/lib/useBannerBars";
 
 const aboutDropdown = [
   { href: "/about", label: "Our Mission" },
@@ -211,20 +211,20 @@ export default function ChurchHeader() {
   }, [alphaActive, youtubeQuotaExceeded]);
 
   // Hooks must run before any early return (Rules of Hooks).
-  const banner = useBanner();
+  const bannerBars = useBannerBars();
 
   if (pathname.startsWith("/admin")) return null;
 
   const isAdmin = pathname.startsWith("/admin");
   const isHome = pathname === "/";
-  const bannerOffset = banner.active && !isAdmin ? "top-10" : "top-0";
 
   return (
     <>
       <header
         ref={headerRef}
-        className={`${isHome ? "fixed left-0 right-0" : "sticky"} z-50 ${bannerOffset}`}
+        className={`${isHome ? "fixed left-0 right-0" : "sticky"} z-50`}
         style={{
+          top: bannerBars * 40,
           transform: !mounted || hidden ? "translateY(-110%)" : "translateY(0)",
           transition: "transform 0.4s cubic-bezier(0.4, 0, 0.2, 1)",
           overflow: "visible",

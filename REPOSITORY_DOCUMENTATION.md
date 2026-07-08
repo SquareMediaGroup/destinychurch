@@ -1392,6 +1392,15 @@ POST /api/webhooks/stripe
 //   payment_intent.succeeded → order 'paid', decrement variant stock, Resend
 //   confirmation emails (customer + church). Idempotent. payment_failed → 'cancelled'.
 
+POST /api/store/checkout/bypass
+//   TEST ONLY. 404 unless server env SHOP_TEST_BYPASS=1. Creates a real order and
+//   finalises it WITHOUT Stripe (paid, stock decremented, emails) so the full flow
+//   can be demoed without a payment. The checkout page shows a "Complete test order"
+//   button when NEXT_PUBLIC_SHOP_TEST_BYPASS=1. Never set either flag in production.
+
+// Shared order logic (pricing recompute, order creation, paid-finalisation) lives
+// in lib/checkout.server.ts and is used by checkout, the webhook, and the bypass.
+
 // ADMIN (gated by middleware, site_editor role)
 GET|POST            /api/admin/store/products
 GET|PUT|DELETE      /api/admin/store/products/[id]        // PUT reconciles variants

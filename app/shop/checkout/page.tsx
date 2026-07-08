@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { loadStripe, type Stripe, type Appearance } from "@stripe/stripe-js";
 import { Elements } from "@stripe/react-stripe-js";
@@ -27,8 +28,11 @@ const appearance: Appearance = {
 
 type Customer = { name: string; email: string; phone: string; notes: string };
 
+const TEST_BYPASS = process.env.NEXT_PUBLIC_SHOP_TEST_BYPASS === "1";
+
 export default function CheckoutPage() {
-  const { items } = useCart();
+  const router = useRouter();
+  const { items, clear } = useCart();
   const [mounted, setMounted] = useState(false);
   const [customer, setCustomer] = useState<Customer>({
     name: "",
@@ -79,6 +83,40 @@ export default function CheckoutPage() {
       }
       setClientSecret(data.clientSecret);
       setOrderNumber(data.orderNumber);
+    } catch {
+      setError("Network error. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  // TEST ONLY — completes the order without Stripe (server-gated by
+  // SHOP_TEST_BYPASS). Lets us walk the full flow up to the success screen.
+  async function completeTestOrder() {
+    setError(null);
+    if (!customer.name.trim() || !customer.email.trim()) {
+      setError("Please enter your name and email.");
+      return;
+    }
+    setLoading(true);
+    try {
+      const res = await fetch("/api/store/checkout/bypass", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          items: items.map((i) => ({ variantId: i.variantId, quantity: i.quantity })),
+          customer,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error || "Test order failed.");
+        return;
+      }
+      clear();
+      router.push(
+        `/shop/checkout/success?order=${encodeURIComponent(data.orderNumber)}&redirect_status=succeeded`,
+      );
     } catch {
       setError("Network error. Please try again.");
     } finally {
@@ -172,6 +210,18 @@ export default function CheckoutPage() {
                   {loading ? "Starting…" : "Continue to payment"}
                   <span className="material-symbols-rounded text-lg">arrow_forward</span>
                 </button>
+
+                {TEST_BYPASS && (
+                  <button
+                    type="button"
+                    onClick={completeTestOrder}
+                    disabled={loading}
+                    className="flex w-full items-center justify-center gap-2 rounded-full border border-dashed border-destiny-grey/30 px-7 py-3 text-sm font-bold text-destiny-grey/70 transition hover:border-destiny-grey/50 hover:text-destiny-grey disabled:opacity-50"
+                  >
+                    <span className="material-symbols-rounded text-lg">science</span>
+                    Complete test order (skip payment)
+                  </button>
+                )}
               </form>
             ) : stripePromise ? (
               /* Step 2 — payment */

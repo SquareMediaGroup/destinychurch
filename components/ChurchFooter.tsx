@@ -32,6 +32,7 @@ export default async function ChurchFooter() {
     { label: "About us", href: "/about" },
     ...(!quotaExceeded ? [{ label: "Sermons", href: "/sermons" }] : []),
     { label: "Serve", href: "/serve" },
+    { label: "Shop", href: "/shop" },
     { label: "Give", href: "/give" },
     { label: "Hire", href: "/hire" },
     { label: "MyChurchsuite", href: "https://destinytees.churchsuite.com", external: true },

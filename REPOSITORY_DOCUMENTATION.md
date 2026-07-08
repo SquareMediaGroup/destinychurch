@@ -737,6 +737,64 @@ CREATE TABLE staff_logins (
 
 ### Row-Level Security (RLS) Strategy
 
+#### 18. **products / product_variants / orders / order_items** (Shop)
+**Purpose:** The Stripe-powered store (`/shop`), replacing the old WooCommerce site. Physical apparel with size + colour variants and per-variant stock; collection-only fulfilment. Prices are integer **pennies** (GBP). Migration: `supabase/migrations/20260708_shop.sql`.
+
+```sql
+CREATE TABLE products (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  slug text UNIQUE NOT NULL,
+  name text NOT NULL,
+  description text,
+  base_price_pennies integer NOT NULL DEFAULT 0,
+  category text,
+  images jsonb NOT NULL DEFAULT '[]',   -- [{ url, path, alt }]
+  is_published boolean NOT NULL DEFAULT false,
+  is_featured boolean NOT NULL DEFAULT false,
+  sort_order integer NOT NULL DEFAULT 0,
+  created_at timestamptz DEFAULT now(),
+  updated_at timestamptz DEFAULT now()
+);
+
+CREATE TABLE product_variants (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  product_id uuid REFERENCES products(id) ON DELETE CASCADE,
+  size text, color text, color_hex text, sku text,
+  price_pennies integer,                -- null → inherit product base price
+  stock integer NOT NULL DEFAULT 0,
+  is_active boolean NOT NULL DEFAULT true,
+  sort_order integer NOT NULL DEFAULT 0,
+  UNIQUE (product_id, size, color)
+);
+
+CREATE TABLE orders (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  order_number text UNIQUE NOT NULL,    -- human-friendly, e.g. DT-7F3K9Q2X
+  stripe_payment_intent_id text UNIQUE,
+  customer_name text NOT NULL, customer_email text NOT NULL, customer_phone text,
+  notes text,
+  status text NOT NULL DEFAULT 'pending',  -- pending|paid|fulfilled|cancelled|refunded
+  fulfillment_method text NOT NULL DEFAULT 'collection',
+  subtotal_pennies integer, total_pennies integer, currency text DEFAULT 'gbp',
+  paid_at timestamptz, created_at timestamptz DEFAULT now(), updated_at timestamptz DEFAULT now()
+);
+
+CREATE TABLE order_items (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  order_id uuid REFERENCES orders(id) ON DELETE CASCADE,
+  product_id uuid, variant_id uuid,     -- snapshot fields survive product deletion
+  product_name text NOT NULL, size text, color text,
+  unit_price_pennies integer NOT NULL, quantity integer NOT NULL DEFAULT 1
+);
+-- RLS: single "service only" policy on all four (like jobs). Public storefront
+-- reads via lib/shop.server.ts; checkout/webhook write via the service role.
+-- Storage: public `product-images` bucket for product photos (WebP).
+```
+
+**Used By:** `/shop` storefront, `/admin/store` CRUD, `POST /api/store/checkout`, `POST /api/webhooks/stripe`.
+
+---
+
 All tables have RLS enabled. Access rules:
 
 | Table | Public Read | Authenticated Read | Service Role | Purpose |
@@ -754,6 +812,8 @@ All tables have RLS enabled. Access rules:
 | job_applications | - | - | Yes | Protect applications |
 | service_status | Yes | - | Yes | Feature flags |
 | staff_logins | - | - | Yes | Audit trail |
+| products / product_variants | - | - | Yes | Shop catalogue (public read via server components) |
+| orders / order_items | - | - | Yes | Store orders (written by Stripe webhook) |
 
 **Key Point:** No table uses authenticated user RLS. All member-facing features use API proxy routes that enforce authentication in application code, then access the database with the service role key. This gives finer control and better error messages.
 
@@ -922,6 +982,12 @@ Displayed on every page:
 | `/live` | `app/live/page.tsx` | Livestream page — custom glass player when live, offline state otherwise |
 | `/contact` | `app/contact/page.tsx` | Contact form, address, hours |
 | `/give` | `app/give/page.tsx` | Giving info — bank details, online giving |
+| `/shop` | `app/shop/page.tsx` | Store front — published products grid (editorial `/links` style) |
+| `/shop/[slug]` | `app/shop/[slug]/page.tsx` | Product detail — gallery, size/colour variant picker, add to basket |
+| `/shop/cart` | `app/shop/cart/page.tsx` | Basket (client, zustand + localStorage) |
+| `/shop/checkout` | `app/shop/checkout/page.tsx` | Contact details + embedded Stripe Payment Element |
+| `/shop/checkout/success` | `app/shop/checkout/success/page.tsx` | Order confirmation; clears the basket |
+| Also served at `shop.destinytees.uk/*` | `next.config.ts` `rewrites()` | Legacy subdomain host-rewrites to `/shop/*` |
 | `/visit` | `app/visit/page.tsx` | First-time visitor guide, parking, service times |
 | `/new-here` | `app/new-here/page.tsx` | Onboarding for new members |
 | `/hire` | `app/hire/page.tsx` | Venue hire enquiry form |
@@ -962,6 +1028,11 @@ Displayed on every page:
 | `/admin/popup` | `app/admin/popup/page.tsx` | Manage pop-ups |
 | `/admin/redirects` | `app/admin/redirects/page.tsx` | Manage URL redirects |
 | `/admin/cache` | `app/admin/cache/page.tsx` | Invalidate ISR cache |
+| `/admin/store` | `app/admin/store/page.tsx` | Store — product list |
+| `/admin/store/products/new` | `app/admin/store/products/new/page.tsx` | Create a product (name → editor) |
+| `/admin/store/products/[id]` | `app/admin/store/products/[id]/page.tsx` | Product editor — details, photos, size/colour variants, stock |
+| `/admin/store/orders` | `app/admin/store/orders/page.tsx` | Orders list |
+| `/admin/store/orders/[id]` | `app/admin/store/orders/[id]/page.tsx` | Order detail — mark fulfilled/cancelled/refunded |
 
 ---
 
@@ -1082,6 +1153,13 @@ Displayed on every page:
 - `MinistriesGrid.tsx` — Ministry cards (kids, youth, etc.)
 - `UpcomingSermons.tsx` — Latest sermons carousel
 - `CTAButtons.tsx` — Prominent call-to-action buttons
+
+#### Shop (`components/shop/*`)
+- `ProductCard.tsx` — storefront product tile (editorial `.shop-card` hover wipe)
+- `ProductGallery.tsx` — main image + thumbnail strip (client)
+- `ProductBuyPanel.tsx` — colour swatches + size pills + quantity + add-to-basket (client)
+- `CartButton.tsx` — header basket icon with live item-count badge (client)
+- `CheckoutForm.tsx` — Stripe Payment Element + confirm-payment step (client)
 
 ---
 
@@ -1299,6 +1377,29 @@ export async function applyForJob(jobId: string, formData: ApplicationData) {
 // 3. Optionally trigger post-deploy checks (E2E tests, etc.)
 ```
 
+#### Shop API
+
+```typescript
+// PUBLIC (outside the middleware matcher)
+POST /api/store/checkout
+//   Body: { items: [{ variantId, quantity }], customer: { name, email, phone?, notes? } }
+//   Recomputes every price + stock from the DB (client prices never trusted),
+//   creates a pending order + items, creates a Stripe PaymentIntent, returns
+//   { clientSecret, orderNumber }. Rate-limited per IP.
+
+POST /api/webhooks/stripe
+//   Stripe signature-verified (STRIPE_WEBHOOK_SECRET), runtime = nodejs, raw body.
+//   payment_intent.succeeded → order 'paid', decrement variant stock, Resend
+//   confirmation emails (customer + church). Idempotent. payment_failed → 'cancelled'.
+
+// ADMIN (gated by middleware, site_editor role)
+GET|POST            /api/admin/store/products
+GET|PUT|DELETE      /api/admin/store/products/[id]        // PUT reconciles variants
+POST|DELETE         /api/admin/store/products/[id]/images // sharp → WebP → product-images bucket
+GET                 /api/admin/store/orders
+GET|PATCH           /api/admin/store/orders/[id]          // PATCH updates fulfilment status
+```
+
 ---
 
 ### Admin Page Builder API (AI-Powered)
@@ -1357,6 +1458,12 @@ export async function applyForJob(jobId: string, formData: ApplicationData) {
 ---
 
 ## Libraries & Utilities
+
+### Shop (`lib/shop*.ts`, `lib/stripe.ts`, `lib/cart-store.ts`)
+- `lib/shop.ts` — client-safe types (`Product`, `ProductVariant`, `Order`, `CartItem`), `formatPrice(pennies)`, `variantPrice`, `fromPrice`, `totalStock`. Prices are integer pennies (GBP).
+- `lib/shop.server.ts` (`server-only`) — public read fetchers: `getPublishedProducts()`, `getProductBySlug()`, `getAllProductsAdmin()` (via `getSupabaseAdmin()`).
+- `lib/stripe.ts` (`server-only`) — `getStripe()` singleton from `STRIPE_SECRET_KEY`.
+- `lib/cart-store.ts` — `useCart` zustand store persisted to `localStorage` (`destiny-cart`), plus `cartCount` / `cartSubtotal` helpers.
 
 ### `lib/sermons.ts`
 

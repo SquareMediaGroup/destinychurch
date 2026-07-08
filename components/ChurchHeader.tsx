@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { usePathname } from "next/navigation";
 import { useBannerBars } from "@/lib/useBannerBars";
+import CartButton from "@/components/shop/CartButton";
 
 const aboutDropdown = [
   { href: "/about", label: "Our Mission" },
@@ -26,6 +27,7 @@ const mobileNavItemsBase = [
   { href: "/whats-on",   label: "What's On"  },
   { href: "/sermons",    label: "Sermons"    },
   { href: "/serve",      label: "Serve"      },
+  { href: "/shop",       label: "Shop"       },
   { href: "/about",      label: "About"      },
   { href: "/give",       label: "Give"       },
 ];
@@ -195,6 +197,7 @@ export default function ChurchHeader() {
       ...(!youtubeQuotaExceeded ? [{ href: "/sermons", label: "Sermons" }] : []),
       ...(alphaActive ? [{ href: "/alpha", label: "Alpha" }] : []),
       { href: "/serve", label: "Serve" },
+      { href: "/shop", label: "Shop" },
       { label: "About", href: "/about", dropdown: aboutDropdown },
       { href: "/give", label: "Give" },
     ],
@@ -347,6 +350,7 @@ export default function ChurchHeader() {
 
             {/* Right: CTA + mobile toggle */}
             <div className="flex items-center gap-2">
+              {!isAdmin && <CartButton />}
               {isAdmin ? (
                 <Link
                   href="/"

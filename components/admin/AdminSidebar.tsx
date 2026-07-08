@@ -19,6 +19,11 @@ const courseItems = [
   { href: "/admin/recovery", label: "Recovery" },
 ];
 
+const storeItems = [
+  { href: "/admin/store", label: "Products" },
+  { href: "/admin/store/orders", label: "Orders" },
+];
+
 const bottomNavItems = [
   { href: "/admin/pages", icon: "design_services", label: "Pages" },
   { href: "/admin/redirects", icon: "alt_route", label: "Redirects" },
@@ -121,6 +126,14 @@ function NavItems({ pathname, onNavigate }: { pathname: string; onNavigate?: () 
         label="Courses"
         icon="event"
         items={courseItems}
+        pathname={pathname}
+        onNavigate={onNavigate}
+      />
+
+      <NavDropdown
+        label="Store"
+        icon="storefront"
+        items={storeItems}
         pathname={pathname}
         onNavigate={onNavigate}
       />

@@ -55,6 +55,7 @@ const ROUTE_SLUGS = [
   "safeguarding",
   "sermons",
   "serve",
+  "shop",
   "terms",
   "training",
   "visit",

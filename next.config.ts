@@ -4,6 +4,29 @@ const nextConfig: NextConfig = {
   outputFileTracingIncludes: {
     "*": ["node_modules/ffmpeg-static/ffmpeg"],
   },
+  // Serve the store at the legacy subdomain too: shop.destinytees.uk/* maps to
+  // the canonical /shop/* pages. destinytees.uk/shop remains the default.
+  // (The subdomain must also be added to the Vercel project's domains.)
+  async rewrites() {
+    return {
+      beforeFiles: [
+        {
+          source: "/",
+          has: [{ type: "host", value: "shop.destinytees.uk" }],
+          destination: "/shop",
+        },
+        {
+          // Everything except framework internals and /public assets, so the
+          // logo, fonts, Next chunks and API routes still resolve on the
+          // subdomain. Product pages (/slug), /cart, /checkout map into /shop.
+          source:
+            "/:path((?!_next/|api/|img/|fonts/|og/|shop/|favicon|robots|sitemap|manifest|\\.well-known).*)",
+          has: [{ type: "host", value: "shop.destinytees.uk" }],
+          destination: "/shop/:path",
+        },
+      ],
+    };
+  },
   async redirects() {
     return [
       {

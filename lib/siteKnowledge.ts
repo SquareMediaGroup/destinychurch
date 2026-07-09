@@ -15,6 +15,7 @@ export const PAGE_INTENTS: { href: string; cta: string; intent: string }[] = [
   { href: "/new-here",        cta: "Start Here",              intent: "new to the church, getting started, what to know" },
   { href: "/about",           cta: "Meet the Team",           intent: "pastors, leadership, staff, team, vision, mission, history" },
   { href: "/sermons",         cta: "Watch Sermons",           intent: "sermons, messages, watch, listen, talks" },
+  { href: "/live",            cta: "Watch Live",              intent: "watch live, livestream, live service, online, Sundays at 11am" },
   { href: "/alpha",           cta: "Find Out More",           intent: "Alpha course, exploring faith, big questions about life and Jesus" },
   { href: "/serve",           cta: "Get Involved",            intent: "serving, volunteering, joining a team" },
   { href: "/kids",            cta: "Destiny Kids",            intent: "kids, children, ages 0-11, Sunday children's ministry" },
@@ -27,7 +28,9 @@ export const PAGE_INTENTS: { href: string; cta: string; intent: string }[] = [
   { href: "/baptism",         cta: "Get Baptised",            intent: "baptism, getting baptised" },
   { href: "/child-dedication",cta: "Request a Dedication",    intent: "child dedication, baby dedication" },
   { href: "/hire",            cta: "Enquire About Hiring",    intent: "venue hire, hiring the building, hall, rooms, auditorium" },
+  { href: "/shop",            cta: "Browse Merch",            intent: "shop, store, merch, apparel, t-shirts, clothing, buy" },
   { href: "/safeguarding",    cta: "Safeguarding",            intent: "safeguarding, child protection, concerns" },
+  { href: "/help",            cta: "Help Centre",             intent: "help, FAQ, questions, how do I" },
   { href: "/contact",         cta: "Contact Us",              intent: "contact, get in touch, phone, email, address, or anything we don't have info on" },
 ];
 
@@ -104,6 +107,7 @@ SUNDAY SERVICES:
 - What to expect: contemporary worship, Bible-based teaching, prayer, community
 - Free on-site parking | Step-free access | Accessible toilets | BSL interpretation | Hearing loop
 - Several bus routes stop on Norton Road outside
+- LIVESTREAM: Watch live online every Sunday at 11:00am at /live (destinytees.uk/live)
 
 LEAD PASTORS:
 - Jonathan Harris — Senior Pastor. Has led Destiny for over 25 years. Passionate about building team and unleashing potential in others.
@@ -132,6 +136,13 @@ GIVING / BANK DETAILS:
 - Online: destinytees.churchsuite.com/donate (via ChurchSuite)
 - Text to give: text DCTEES to 07380 307 800 (e.g. "give 10" or "give 10/mo" for monthly)
 - Gift Aid: available for UK taxpayers — church reclaims 25p per £1, no extra cost to donor
+
+SHOP / MERCH:
+- Destiny Church apparel and merchandise store at /shop (destinytees.uk/shop)
+- Products: branded t-shirts, hoodies, and other apparel
+- Ordering: browse and order online through the shop
+- Delivery: available, or collect in person at church
+- Stripe payment processing — secure online checkout with multiple payment options
 
 DESTINY KIDS (Ages 0–11):
 - Every Sunday 10:45am – 12:30pm (no registration, free)

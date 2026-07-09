@@ -1,7 +1,7 @@
 # Destiny Church Tees Valley — Complete Repository Documentation
 
-**Version:** 1.0.0  
-**Last Updated:** June 18, 2026  
+**Version:** 1.0.1  
+**Last Updated:** July 9, 2026  
 **Repository:** Square Media Group — destinychurch  
 
 This document provides a comprehensive explanation of every major component, line of code purpose, architecture decisions, and how the system works from end-to-end.
@@ -1662,7 +1662,10 @@ export const PAGE_INTENTS = [
   { href: "/give", cta: "Give Now", intent: "giving, donations, bank details..." },
   { href: "/visit", cta: "Plan Your Visit", intent: "visiting, first time..." },
   { href: "/sermons", cta: "Watch Sermons", intent: "sermons, messages..." },
-  // ... 17 more pages
+  { href: "/live", cta: "Watch Live", intent: "livestream, live service, Sundays at 11am" },
+  { href: "/shop", cta: "Browse Merch", intent: "shop, apparel, merch, buy" },
+  { href: "/help", cta: "Help Centre", intent: "help, FAQ, questions" },
+  // ... 17 more pages (kids, youth, Alpha, serve, connect, missions, etc.)
 ];
 
 export const ALLOWED_PAGES = new Set(PAGE_INTENTS.map(p => p.href));
@@ -1688,7 +1691,7 @@ CLARIFYING QUESTIONS:
 - Do NOT ask follow-ups for simple factual questions
 
 KNOWLEDGE:
-... (church-specific facts: pastor names, service times, mission, etc.) ...
+... (church-specific facts: pastor names, service times, livestream, shop, mission, etc.) ...
 `;
 ```
 
@@ -2339,6 +2342,15 @@ ENABLE_PAGE_BUILDER=false
 - `app/whats-on/page.tsx` — Events (ChurchSuite embed)
 - `app/jobs/page.tsx` — Job listings
 - `app/jobs/[slug]/page.tsx` — Job detail
+- `app/shop/page.tsx` — Store (product grid)
+- `app/shop/[slug]/page.tsx` — Product detail (variants, gallery)
+- `app/shop/cart/page.tsx` — Shopping cart (Zustand + localStorage)
+- `app/shop/checkout/page.tsx` — Stripe Payment Element checkout
+- `app/shop/checkout/success/page.tsx` — Order confirmation
+- `app/baptism/page.tsx` — Baptism information & registration
+- `app/child-dedication/page.tsx` — Child dedication requests
+- `app/safeguarding/page.tsx` — Safeguarding & child protection
+- `app/help/page.tsx` — Help centre & FAQ
 - `app/[slug]/page.tsx` — Dynamic catchall
 
 ### Admin Pages
@@ -2351,6 +2363,11 @@ ENABLE_PAGE_BUILDER=false
 - `app/admin/popup/page.tsx` — Pop-up management
 - `app/admin/redirects/page.tsx` — Redirect management
 - `app/admin/cache/page.tsx` — Cache invalidation
+- `app/admin/store/page.tsx` — Store management
+- `app/admin/store/products/new/page.tsx` — Create product
+- `app/admin/store/products/[id]/page.tsx` — Edit product (variants, stock)
+- `app/admin/store/orders/page.tsx` — Orders list
+- `app/admin/store/orders/[id]/page.tsx` — Order detail (fulfillment)
 
 ### Component Directory
 - **109 components** organized by feature:
@@ -2371,8 +2388,9 @@ ENABLE_PAGE_BUILDER=false
   - AI utilities (code generation, validation)
 
 ### API Routes (`app/api/`)
-- **Admin endpoints:** Sermons, pages, banners, redirects, pop-ups, cache revalidation
-- **Public endpoints:** Smart search, YouTube sync, contact form
+- **Admin endpoints:** Sermons, pages, banners, redirects, pop-ups, cache revalidation, store management
+- **Public endpoints:** Destiny AI (multi-turn chat), YouTube sync, webhooks
+- **Store endpoints:** Stripe payment processing, order management
 - **Webhooks:** Vercel deployments, GitHub events
 
 ### Database Migrations
@@ -2392,10 +2410,11 @@ ENABLE_PAGE_BUILDER=false
 
 Destiny Church Tees Valley is a **professional, full-stack Next.js application** that combines:
 
-1. **Public-facing website** — Sermons, ministries, contact, events
+1. **Public-facing website** — Sermons, ministries, contact, events, livestream
 2. **Member engagement** — Prayer requests, volunteering, training, small groups
-3. **Admin dashboard** — Content management, page builder, HR tools
-4. **Intelligent features** — AI smart search, dynamic page generation, live banner management
+3. **Admin dashboard** — Content management, page builder, HR tools, store management
+4. **Ecommerce** — Online store with Stripe payments, product variants, order management
+5. **Intelligent features** — Destiny AI assistant, dynamic page generation, live banner management
 
 **Architecture:** Server-driven React with Supabase PostgreSQL, deployed to Vercel with ISR caching. All sensitive operations use service-role API proxies with explicit auth checks. Code is type-safe (TypeScript), styled with Tailwind CSS, and tested with Playwright E2E.
 

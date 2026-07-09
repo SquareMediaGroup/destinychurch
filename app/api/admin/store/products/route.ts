@@ -55,6 +55,7 @@ export async function POST(request: Request) {
         ? Math.max(0, Math.round(body.base_price_pennies))
         : 0,
       category: body.category?.trim() || null,
+      fit: body.fit || "unisex",
       is_published: body.is_published ?? false,
       is_featured: body.is_featured ?? false,
       sort_order: body.sort_order ?? 0,

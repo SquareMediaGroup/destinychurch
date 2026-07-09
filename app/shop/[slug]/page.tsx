@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getProductBySlug } from "@/lib/shop.server";
-import { fromPrice, formatPrice } from "@/lib/shop";
+import { fromPrice, formatPrice, FIT_LABELS } from "@/lib/shop";
 import ProductGallery from "@/components/shop/ProductGallery";
 import ProductBuyPanel from "@/components/shop/ProductBuyPanel";
 
@@ -71,11 +71,9 @@ export default async function ProductPage({
 
           {/* Details */}
           <div>
-            {product.category && (
-              <p className="text-xs font-bold uppercase tracking-[0.28em] text-destiny-orange">
-                {product.category}
-              </p>
-            )}
+            <p className="text-xs font-bold uppercase tracking-[0.28em] text-destiny-orange">
+              {[FIT_LABELS[product.fit], product.category].filter(Boolean).join(" · ")}
+            </p>
             <h1 className="mt-2 font-[family-name:var(--font-heading)] text-3xl font-black leading-[1.05] text-destiny-grey sm:text-4xl">
               {product.name}
             </h1>

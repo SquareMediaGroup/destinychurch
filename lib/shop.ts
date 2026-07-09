@@ -10,6 +10,46 @@ export type OrderStatus =
   | "cancelled"
   | "refunded";
 
+// Who a product is cut for. Male/Female/Unisex are adult fits (shared size
+// chart); Kids uses age-based sizes.
+export type Fit = "male" | "female" | "unisex" | "kids";
+
+export const FIT_LABELS: Record<Fit, string> = {
+  male: "Men's",
+  female: "Women's",
+  unisex: "Unisex",
+  kids: "Kids",
+};
+
+export const FIT_OPTIONS: Fit[] = ["male", "female", "unisex", "kids"];
+
+// Controlled size charts — the admin can only pick from these, so no typos or
+// sizes that don't exist. Ordered smallest → largest for display + sort_order.
+export const ADULT_SIZES = ["XS", "S", "M", "L", "XL", "2XL", "3XL"] as const;
+export const KIDS_SIZES = [
+  "2-3y",
+  "3-4y",
+  "5-6y",
+  "7-8y",
+  "9-10y",
+  "11-12y",
+  "13-14y",
+] as const;
+
+/** The size options a given fit allows. */
+export function sizesForFit(fit: Fit): readonly string[] {
+  return fit === "kids" ? KIDS_SIZES : ADULT_SIZES;
+}
+
+// Full ordering used to sort sizes for display regardless of fit.
+const SIZE_ORDER: string[] = [...ADULT_SIZES, ...KIDS_SIZES];
+
+/** Sort index for a size label (unknown sizes sort last, alphabetically). */
+export function sizeIndex(size: string): number {
+  const i = SIZE_ORDER.indexOf(size);
+  return i === -1 ? SIZE_ORDER.length : i;
+}
+
 export interface ProductImage {
   url: string;
   path: string; // storage path in the product-images bucket
@@ -38,6 +78,7 @@ export interface Product {
   description: string | null;
   base_price_pennies: number;
   category: string | null;
+  fit: Fit;
   images: ProductImage[];
   is_published: boolean;
   is_featured: boolean;

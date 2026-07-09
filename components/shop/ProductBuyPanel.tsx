@@ -6,6 +6,7 @@ import { useToast } from "@/components/ToastProvider";
 import { useCart } from "@/lib/cart-store";
 import {
   formatPrice,
+  sizeIndex,
   variantPrice,
   type ProductVariant,
   type ProductWithVariants,
@@ -30,7 +31,10 @@ export default function ProductBuyPanel({ product }: { product: ProductWithVaria
     return [...seen.entries()].map(([color, hex]) => ({ color, hex }));
   }, [active]);
   const sizes = useMemo(
-    () => [...new Set(active.map((v) => v.size).filter(Boolean))],
+    () =>
+      [...new Set(active.map((v) => v.size).filter(Boolean))].sort(
+        (a, b) => sizeIndex(a) - sizeIndex(b),
+      ),
     [active],
   );
   const hasColor = colors.length > 0;

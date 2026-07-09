@@ -1,6 +1,7 @@
 "use client";
 
 import { ToastProvider } from "./ToastProvider";
+import { DialogProvider } from "./DialogProvider";
 import { CookieConsentProvider } from "@/lib/cookieConsent";
 import { SettingsProvider } from "@/lib/settings";
 import { BannerContext, type BannerData } from "@/contexts/BannerContext";
@@ -20,7 +21,9 @@ export default function Providers({ children, banner, live }: ProvidersProps) {
         <SettingsProvider>
           <AccessibilityProvider>
             <CookieConsentProvider>
-              <ToastProvider>{children}</ToastProvider>
+              <ToastProvider>
+                <DialogProvider>{children}</DialogProvider>
+              </ToastProvider>
             </CookieConsentProvider>
           </AccessibilityProvider>
         </SettingsProvider>

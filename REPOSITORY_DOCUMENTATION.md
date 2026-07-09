@@ -917,7 +917,26 @@ Wraps children with React context providers:
 - **Supabase Client Provider** — Browser auth token management
 - **Theme Provider** — Dark/light mode
 - **Query Client** (if using) — API caching
-- **Toast Provider** — Notifications
+- **Toast Provider** (`components/ToastProvider.tsx`) — Passive notifications via `useToast()` (`success`/`error`/`info`)
+- **Dialog Provider** (`components/DialogProvider.tsx`) — Styled, promise-based modal dialogs via `useDialog()`
+
+#### Dialogs & notifications — no native browser dialogs
+
+Native `alert()`, `confirm()`, and `window.prompt()` are **banned** in this codebase — they
+look untrustworthy, can't be styled, and freeze the tab. Use the in-app equivalents instead:
+
+- **Passive message** → `useToast()` from `components/ToastProvider.tsx`:
+  `toast.error("…")`, `toast.success("…")`, `toast.info("…")`.
+- **Yes/No decision** → `useDialog().confirm(opts)` → `Promise<boolean>`. Renders a centered,
+  blocking styled modal. Options: `{ title?, message, confirmLabel?, cancelLabel?, tone? }`
+  where `tone: "danger"` gives a red confirm button for destructive actions.
+  Pattern: `if (!(await confirm({ message: "Delete this?", tone: "danger", confirmLabel: "Delete" }))) return;`
+  (the enclosing handler must be `async`).
+- **Free-text input** → `useDialog().prompt(opts)` → `Promise<string | null>` (`null` = cancelled,
+  matching native `prompt`). Options: `{ title?, message?, placeholder?, defaultValue?, confirmLabel? }`.
+
+Both dialog helpers reuse the visual conventions from `components/administration/hr/HrUI.tsx`
+(backdrop + rounded card + shared button/input classes). Escape and backdrop-click cancel.
 
 ---
 

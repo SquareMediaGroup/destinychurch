@@ -12,6 +12,7 @@ import {
 } from "@/lib/hr";
 import { HrHeader, Badge, EmptyState, primaryBtn } from "@/components/administration/hr/HrUI";
 import { DocumentModal } from "@/components/administration/hr/modals";
+import { useDialog } from "@/components/DialogProvider";
 
 async function downloadDocument(id: string): Promise<string | null> {
   const res = await fetch(`${API}/documents/${id}`);
@@ -21,6 +22,7 @@ async function downloadDocument(id: string): Promise<string | null> {
 }
 
 export default function DocumentsPage() {
+  const { confirm } = useDialog();
   const [staff, setStaff] = useState<Staff[]>([]);
   const [docs, setDocs] = useState<HrDocument[]>([]);
   const [loading, setLoading] = useState(true);
@@ -48,7 +50,15 @@ export default function DocumentsPage() {
   }
 
   async function remove(id: string) {
-    if (!confirm("Delete this document? This cannot be undone.")) return;
+    if (
+      !(await confirm({
+        title: "Delete document",
+        message: "Delete this document? This cannot be undone.",
+        confirmLabel: "Delete",
+        tone: "danger",
+      }))
+    )
+      return;
     const res = await fetch(`${API}/documents/${id}`, { method: "DELETE" });
     if (!res.ok) {
       setError("Could not delete document.");

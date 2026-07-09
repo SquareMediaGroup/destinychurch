@@ -11,6 +11,8 @@ import Highlight from "@tiptap/extension-highlight";
 import Image from "@tiptap/extension-image";
 import { Node, type CommandProps } from "@tiptap/core";
 import { useEffect, useRef, useState } from "react";
+import { useDialog } from "@/components/DialogProvider";
+import { useToast } from "@/components/ToastProvider";
 
 // Account used for ChurchSuite form embeds across the site (see ConnectCardCTAs).
 const CHURCHSUITE_ACCOUNT = "destinytees.churchsuite.com";
@@ -145,27 +147,41 @@ function Toolbar({
   const div = "mx-1 h-5 w-px bg-black/10";
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
+  const { prompt } = useDialog();
+  const toast = useToast();
 
-  function addYouTube() {
-    const url = window.prompt("Paste a YouTube video URL");
+  async function addYouTube() {
+    const url = await prompt({
+      title: "Add YouTube video",
+      message: "Paste a YouTube video URL",
+      placeholder: "https://youtube.com/...",
+    });
     if (!url) return;
     editor.commands.setYoutubeVideo({ src: url.trim() });
   }
 
-  function addHtmlEmbed() {
-    const html = window.prompt("Paste HTML embed code:");
+  async function addHtmlEmbed() {
+    const html = await prompt({
+      title: "Embed HTML",
+      message: "Paste HTML embed code",
+    });
     if (!html) return;
     editor.commands.setHtmlEmbed({ html: html.trim() });
   }
 
-  function addChurchSuite() {
-    const input = window.prompt(
-      "Paste a ChurchSuite form URL, or just the form code (e.g. kw3c1oly):",
-    );
+  async function addChurchSuite() {
+    const input = await prompt({
+      title: "ChurchSuite form",
+      message:
+        "Paste a ChurchSuite form URL, or just the form code (e.g. kw3c1oly)",
+    });
     if (!input) return;
     const src = churchSuiteEmbedUrl(input);
     if (!src) {
-      window.alert("That doesn't look like a valid ChurchSuite form link or code.");
+      toast.error(
+        "That doesn't look like a valid ChurchSuite form link or code.",
+        "Invalid form link",
+      );
       return;
     }
     const iframe = `<iframe src="${src}" title="ChurchSuite form" loading="lazy" style="width:100%;min-height:600px;border:0;display:block;"></iframe>`;
@@ -186,7 +202,7 @@ function Toolbar({
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok || !data.url) {
-        window.alert(data.error || "Image upload failed.");
+        toast.error(data.error || "Image upload failed.");
         return;
       }
       editor.chain().focus().setImage({ src: data.url }).run();
@@ -195,13 +211,18 @@ function Toolbar({
     }
   }
 
-  function setLink() {
+  async function setLink() {
     if (editor.isActive("link")) {
       editor.chain().focus().extendMarkRange("link").unsetLink().run();
       return;
     }
     const prev = (editor.getAttributes("link").href as string) || "";
-    const url = window.prompt("Link URL", prev);
+    const url = await prompt({
+      title: "Add link",
+      message: "Link URL",
+      placeholder: "https://...",
+      defaultValue: prev,
+    });
     if (url === null) return; // cancelled
     if (url.trim() === "") {
       editor.chain().focus().extendMarkRange("link").unsetLink().run();

@@ -18,6 +18,7 @@ import {
 import { PostEditor } from "@/components/administration/training/PostEditor";
 import { FolderModal } from "@/components/administration/training/FolderModal";
 import { useReorder } from "@/components/administration/training/useReorder";
+import { useDialog } from "@/components/DialogProvider";
 
 function PostListSection({
   folder,
@@ -168,6 +169,7 @@ function PostListSection({
 }
 
 export default function TrainingPostsPage() {
+  const { confirm } = useDialog();
   const { categoryId, subgroupId } = useParams<{
     categoryId: string;
     subgroupId: string;
@@ -242,7 +244,15 @@ export default function TrainingPostsPage() {
   }
 
   async function remove(post: TrainingPost) {
-    if (!confirm(`Delete "${post.title}"? This cannot be undone.`)) return;
+    if (
+      !(await confirm({
+        title: "Delete post",
+        message: `Delete "${post.title}"? This cannot be undone.`,
+        confirmLabel: "Delete",
+        tone: "danger",
+      }))
+    )
+      return;
     setError("");
     const res = await fetch(`${API}/posts/${post.id}`, { method: "DELETE" });
     if (!res.ok) {
@@ -254,7 +264,15 @@ export default function TrainingPostsPage() {
   }
 
   async function removeFolder(folder: TrainingFolder) {
-    if (!confirm(`Delete folder "${folder.name}"? Posts inside will become ungrouped.`)) return;
+    if (
+      !(await confirm({
+        title: "Delete folder",
+        message: `Delete folder "${folder.name}"? Posts inside will become ungrouped.`,
+        confirmLabel: "Delete",
+        tone: "danger",
+      }))
+    )
+      return;
     setError("");
     const res = await fetch(`${API}/folders/${folder.id}`, { method: "DELETE" });
     if (!res.ok) {

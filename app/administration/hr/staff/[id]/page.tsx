@@ -27,6 +27,7 @@ import {
   DocumentModal,
   ReviewModal,
 } from "@/components/administration/hr/modals";
+import { useDialog } from "@/components/DialogProvider";
 
 const STATUS_TONE: Record<StaffStatus, string> = {
   active: "green",
@@ -42,6 +43,7 @@ const LEAVE_TONE: Record<LeaveStatus, string> = {
 type Modal = "edit" | "leave" | "document" | "review" | null;
 
 export default function StaffProfilePage() {
+  const { confirm } = useDialog();
   const { id } = useParams<{ id: string }>();
   const [staff, setStaff] = useState<Staff | null>(null);
   const [leave, setLeave] = useState<LeaveRequest[]>([]);
@@ -92,7 +94,15 @@ export default function StaffProfilePage() {
   }
 
   async function deleteDoc(docId: string) {
-    if (!confirm("Delete this document?")) return;
+    if (
+      !(await confirm({
+        title: "Delete document",
+        message: "Delete this document?",
+        confirmLabel: "Delete",
+        tone: "danger",
+      }))
+    )
+      return;
     await fetch(`${API}/documents/${docId}`, { method: "DELETE" });
     load();
   }

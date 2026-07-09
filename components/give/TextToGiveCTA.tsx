@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { QRCodeSVG } from "qrcode.react";
+import { useToast } from "@/components/ToastProvider";
 
 interface Props {
   keyword: string;
@@ -10,6 +11,7 @@ interface Props {
 }
 
 export default function TextToGiveCTA({ keyword, number }: Props) {
+  const toast = useToast();
   const [open, setOpen] = useState(false);
   const [visible, setVisible] = useState(false);
   const [mounted, setMounted] = useState(false);
@@ -56,7 +58,7 @@ export default function TextToGiveCTA({ keyword, number }: Props) {
   const sendTextMessage = (defaultAmount?: string) => {
     const finalAmount = defaultAmount || amount;
     if (!finalAmount || isNaN(Number(finalAmount))) {
-      alert("Please enter a valid amount");
+      toast.error("Please enter a valid amount", "Invalid amount");
       return;
     }
 

@@ -11,8 +11,10 @@ import {
 } from "@/components/administration/hr/HrUI";
 import { CategoryModal } from "@/components/administration/training/CategoryModal";
 import { useReorder } from "@/components/administration/training/useReorder";
+import { useDialog } from "@/components/DialogProvider";
 
 export default function TrainingCategoriesPage() {
+  const { confirm } = useDialog();
   const [categories, setCategories] = useState<TrainingCategory[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -41,9 +43,12 @@ export default function TrainingCategoriesPage() {
 
   async function remove(category: TrainingCategory) {
     if (
-      !confirm(
-        `Delete "${category.name}"? Its sub-groups and posts will also be deleted. This cannot be undone.`,
-      )
+      !(await confirm({
+        title: "Delete category",
+        message: `Delete "${category.name}"? Its sub-groups and posts will also be deleted. This cannot be undone.`,
+        confirmLabel: "Delete",
+        tone: "danger",
+      }))
     )
       return;
     setError("");

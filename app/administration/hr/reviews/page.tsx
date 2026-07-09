@@ -11,8 +11,10 @@ import {
 } from "@/lib/hr";
 import { HrHeader, Badge, EmptyState, primaryBtn } from "@/components/administration/hr/HrUI";
 import { ReviewModal } from "@/components/administration/hr/modals";
+import { useDialog } from "@/components/DialogProvider";
 
 export default function ReviewsPage() {
+  const { confirm } = useDialog();
   const [staff, setStaff] = useState<Staff[]>([]);
   const [reviews, setReviews] = useState<Review[]>([]);
   const [loading, setLoading] = useState(true);
@@ -34,7 +36,15 @@ export default function ReviewsPage() {
   }, [load]);
 
   async function remove(id: string) {
-    if (!confirm("Delete this review?")) return;
+    if (
+      !(await confirm({
+        title: "Delete review",
+        message: "Delete this review?",
+        confirmLabel: "Delete",
+        tone: "danger",
+      }))
+    )
+      return;
     const res = await fetch(`${API}/reviews/${id}`, { method: "DELETE" });
     if (!res.ok) {
       setError("Could not delete review.");

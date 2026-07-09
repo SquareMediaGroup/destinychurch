@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState, use } from "react";
 import Link from "next/link";
 import { getSupabaseBrowserClient } from "@/lib/supabase-browser";
+import { useDialog } from "@/components/DialogProvider";
 import type { EditChangeMessage } from "@/components/admin/VisualEditOverlay";
 
 interface EditableText {
@@ -35,6 +36,7 @@ export default function CodePageEditor({
   params: Promise<{ id: string }>;
 }) {
   const { id } = use(params);
+  const { confirm } = useDialog();
 
   const [page, setPage] = useState<PageRow | null>(null);
   const [loading, setLoading] = useState(true);
@@ -135,8 +137,16 @@ export default function CodePageEditor({
     setDrafts((prev) => ({ ...prev, [textId]: value }));
   }
 
-  function discardAll() {
-    if (!confirm("Discard all unsaved edits?")) return;
+  async function discardAll() {
+    if (
+      !(await confirm({
+        title: "Discard edits",
+        message: "Discard all unsaved edits?",
+        confirmLabel: "Discard",
+        tone: "danger",
+      }))
+    )
+      return;
     setDrafts({});
   }
 

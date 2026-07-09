@@ -16,8 +16,10 @@ import {
 } from "@/components/administration/hr/HrUI";
 import { SubgroupModal } from "@/components/administration/training/SubgroupModal";
 import { useReorder } from "@/components/administration/training/useReorder";
+import { useDialog } from "@/components/DialogProvider";
 
 export default function TrainingSubgroupsPage() {
+  const { confirm } = useDialog();
   const { categoryId } = useParams<{ categoryId: string }>();
   const [category, setCategory] = useState<TrainingCategory | null>(null);
   const [subgroups, setSubgroups] = useState<TrainingSubgroup[]>([]);
@@ -52,9 +54,12 @@ export default function TrainingSubgroupsPage() {
 
   async function remove(sub: TrainingSubgroup) {
     if (
-      !confirm(
-        `Delete "${sub.name}"? Its posts will also be deleted. This cannot be undone.`,
-      )
+      !(await confirm({
+        title: "Delete sub-group",
+        message: `Delete "${sub.name}"? Its posts will also be deleted. This cannot be undone.`,
+        confirmLabel: "Delete",
+        tone: "danger",
+      }))
     )
       return;
     setError("");

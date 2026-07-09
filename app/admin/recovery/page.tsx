@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
+import { useDialog } from "@/components/DialogProvider";
 import {
   type AlphaFrequency,
   FREQUENCY_LABEL,
@@ -43,6 +44,7 @@ const FREQUENCY_OPTIONS: AlphaFrequency[] = [
 const ACCENT = "#006756";
 
 export default function RecoveryAdminPage() {
+  const { confirm } = useDialog();
   const [events, setEvents] = useState<RecoveryEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
@@ -181,7 +183,15 @@ export default function RecoveryAdminPage() {
   }
 
   async function handleDelete(id: string) {
-    if (!confirm("Delete this event?")) return;
+    if (
+      !(await confirm({
+        title: "Delete event",
+        message: "Delete this event?",
+        confirmLabel: "Delete",
+        tone: "danger",
+      }))
+    )
+      return;
     await fetch(`/api/admin/alpha-events/${id}`, { method: "DELETE" });
     setEvents((prev) => prev.filter((x) => x.id !== id));
   }

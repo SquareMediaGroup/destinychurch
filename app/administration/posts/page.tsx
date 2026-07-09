@@ -9,8 +9,10 @@ import {
   primaryBtn,
 } from "@/components/administration/hr/HrUI";
 import { PostEditor } from "@/components/administration/posts/PostEditor";
+import { useDialog } from "@/components/DialogProvider";
 
 export default function AdminPostsPage() {
+  const { confirm } = useDialog();
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -46,7 +48,15 @@ export default function AdminPostsPage() {
   }
 
   async function remove(post: Post) {
-    if (!confirm(`Delete "${post.title}"? This cannot be undone.`)) return;
+    if (
+      !(await confirm({
+        title: "Delete post",
+        message: `Delete "${post.title}"? This cannot be undone.`,
+        confirmLabel: "Delete",
+        tone: "danger",
+      }))
+    )
+      return;
     setError("");
     const res = await fetch(`${API}/${post.id}`, { method: "DELETE" });
     if (!res.ok) {

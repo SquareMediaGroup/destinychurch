@@ -9,6 +9,7 @@ import {
   type JobApplication,
 } from "@/lib/jobs";
 import { HrHeader, Badge, EmptyState } from "@/components/administration/hr/HrUI";
+import { useDialog } from "@/components/DialogProvider";
 
 type WithCv = JobApplication & { cv_url?: string | null };
 
@@ -21,6 +22,7 @@ const STATUSES: ApplicationStatus[] = [
 ];
 
 export default function ApplicationsPage() {
+  const { confirm } = useDialog();
   const [apps, setApps] = useState<JobApplication[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -63,7 +65,15 @@ export default function ApplicationsPage() {
   }
 
   async function remove(id: string) {
-    if (!confirm("Delete this application? This cannot be undone.")) return;
+    if (
+      !(await confirm({
+        title: "Delete application",
+        message: "Delete this application? This cannot be undone.",
+        confirmLabel: "Delete",
+        tone: "danger",
+      }))
+    )
+      return;
     const res = await fetch(`${API}/applications/${id}`, { method: "DELETE" });
     if (!res.ok) {
       const data = await res.json().catch(() => ({}));

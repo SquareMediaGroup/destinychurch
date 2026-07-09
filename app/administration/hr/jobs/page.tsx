@@ -16,8 +16,10 @@ import {
   primaryBtn,
 } from "@/components/administration/hr/HrUI";
 import { JobModal } from "@/components/administration/hr/JobModal";
+import { useDialog } from "@/components/DialogProvider";
 
 export default function JobsPage() {
+  const { confirm } = useDialog();
   const [jobs, setJobs] = useState<Job[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -53,7 +55,15 @@ export default function JobsPage() {
   }
 
   async function remove(job: Job) {
-    if (!confirm(`Delete "${job.title}"? This cannot be undone.`)) return;
+    if (
+      !(await confirm({
+        title: "Delete job",
+        message: `Delete "${job.title}"? This cannot be undone.`,
+        confirmLabel: "Delete",
+        tone: "danger",
+      }))
+    )
+      return;
     setError("");
     const res = await fetch(`${API}/jobs/${job.id}`, { method: "DELETE" });
     if (!res.ok) {

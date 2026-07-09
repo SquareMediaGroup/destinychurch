@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { useDialog } from "@/components/DialogProvider";
 
 type PageRow = {
   id: string;
@@ -19,6 +20,7 @@ type PageRow = {
 type FilterKey = "all" | "published" | "draft";
 
 export default function BuilderListPage() {
+  const { confirm } = useDialog();
   const [pages, setPages] = useState<PageRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -45,7 +47,15 @@ export default function BuilderListPage() {
   }, []);
 
   async function deletePage(id: string) {
-    if (!confirm("Delete this page? This cannot be undone.")) return;
+    if (
+      !(await confirm({
+        title: "Delete page",
+        message: "Delete this page? This cannot be undone.",
+        confirmLabel: "Delete",
+        tone: "danger",
+      }))
+    )
+      return;
     const res = await fetch(`/api/admin/builder/pages/${id}`, { method: "DELETE" });
     if (res.ok) {
       setPages((prev) => prev.filter((p) => p.id !== id));

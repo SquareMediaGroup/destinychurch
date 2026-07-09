@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useDialog } from "@/components/DialogProvider";
 import {
   type BlockKind,
   type BlockData,
@@ -135,6 +136,7 @@ function nextId(kind: BlockKind): string {
 }
 
 export default function SkeletonBuilderPage() {
+  const { confirm } = useDialog();
   const router = useRouter();
   const [blocks, setBlocks] = useState<CanvasBlock[]>(STARTER_BLOCKS);
   const [dragKind, setDragKind] = useState<BlockKind | null>(null);
@@ -195,8 +197,15 @@ export default function SkeletonBuilderPage() {
     if (selectedId === id) setSelectedId(null);
   }
 
-  function clearCanvas() {
-    if (!confirm("Clear all blocks?")) return;
+  async function clearCanvas() {
+    if (
+      !(await confirm({
+        title: "Clear canvas",
+        message: "Clear all blocks?",
+        confirmLabel: "Clear",
+      }))
+    )
+      return;
     setBlocks([]);
     setSelectedId(null);
   }

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
+import { useDialog } from "@/components/DialogProvider";
 
 interface Redirect {
   id: string;
@@ -12,6 +13,7 @@ interface Redirect {
 }
 
 export default function RedirectsPage() {
+  const { confirm } = useDialog();
   const [redirects, setRedirects] = useState<Redirect[]>([]);
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
@@ -75,7 +77,15 @@ export default function RedirectsPage() {
   }
 
   async function handleDelete(id: string) {
-    if (!confirm("Delete this redirect?")) return;
+    if (
+      !(await confirm({
+        title: "Delete redirect",
+        message: "Delete this redirect?",
+        confirmLabel: "Delete",
+        tone: "danger",
+      }))
+    )
+      return;
     await fetch(`/api/admin/redirects/${id}`, { method: "DELETE" });
     setRedirects((prev) => prev.filter((x) => x.id !== id));
   }

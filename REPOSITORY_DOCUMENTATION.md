@@ -1159,7 +1159,9 @@ Displayed on every page:
 - `ProductGallery.tsx` — main image + thumbnail strip (client)
 - `ProductBuyPanel.tsx` — colour swatches + size pills + quantity + add-to-basket (client)
 - `CartButton.tsx` — header basket icon with live item-count badge (client)
-- `CheckoutForm.tsx` — Stripe Payment Element + confirm-payment step (client)
+- `CheckoutForm.tsx` — Stripe Express Checkout Element (Apple Pay / Google Pay / Link, shown only when a wallet is available) above the Payment Element card form; both confirm the same PaymentIntent (client)
+
+> **Apple Pay:** enabled automatically by `automatic_payment_methods` — no extra API params. The only prerequisite is a **registered payment-method domain**; Stripe hosts the Apple domain-association file, so there is no `/.well-known` file to deploy. Register the live domain(s) once via Stripe Dashboard → Settings → Payment methods → Apple Pay, or run `scripts/register-apple-pay-domain.mjs` with the live `STRIPE_SECRET_KEY` (e.g. `destinytees.uk` and `www.destinytees.uk`). Apple Pay renders on supported devices/browsers only (Safari on Apple hardware).
 
 ---
 

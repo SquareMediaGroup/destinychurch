@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { getPublishedProducts } from "@/lib/shop.server";
+import { getPublishedProducts, getActiveShopHeroSlides } from "@/lib/shop.server";
 import ProductCard from "@/components/shop/ProductCard";
+import ShopHero from "@/components/shop/ShopHero";
 
 export const metadata: Metadata = {
   title: "Shop",
@@ -19,7 +20,10 @@ export const metadata: Metadata = {
 export const revalidate = 60;
 
 export default async function ShopPage() {
-  const products = await getPublishedProducts();
+  const [products, heroSlides] = await Promise.all([
+    getPublishedProducts(),
+    getActiveShopHeroSlides(),
+  ]);
 
   return (
     <div className="shop-page relative min-h-screen overflow-hidden bg-white text-destiny-grey">
@@ -61,7 +65,10 @@ export default async function ShopPage() {
       />
 
       <div className="relative mx-auto max-w-6xl px-5 pb-28 pt-16 sm:px-8 lg:pt-24">
-        {/* Masthead */}
+        {/* Hero — dynamic, admin-editable slides when set; else the masthead */}
+        {heroSlides.length > 0 ? (
+          <ShopHero slides={heroSlides} />
+        ) : (
         <header className="mb-12 lg:mb-16">
           <h1 className="leading-[0.92]">
             <span
@@ -89,6 +96,7 @@ export default async function ShopPage() {
             supports the mission.
           </p>
         </header>
+        )}
 
         {/* Grid */}
         {products.length === 0 ? (

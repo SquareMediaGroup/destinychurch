@@ -1,7 +1,12 @@
 // Server-only data fetchers for the public /shop pages.
 import "server-only";
 import { getSupabaseAdmin } from "@/lib/supabase";
-import type { Product, ProductVariant, ProductWithVariants } from "@/lib/shop";
+import type {
+  Product,
+  ProductVariant,
+  ProductWithVariants,
+  ShopHeroSlide,
+} from "@/lib/shop";
 
 // Order variants for display: colour, then size, then explicit sort order.
 function sortVariants(variants: ProductVariant[]): ProductVariant[] {
@@ -73,4 +78,21 @@ export async function getAllProductsAdmin(): Promise<ProductWithVariants[]> {
   }));
 }
 
-export type { Product, ProductVariant, ProductWithVariants };
+/** Active hero slides for the storefront, in display order. */
+export async function getActiveShopHeroSlides(): Promise<ShopHeroSlide[]> {
+  const supabase = getSupabaseAdmin();
+  const { data, error } = await supabase
+    .from("shop_hero_slides")
+    .select("*")
+    .eq("active", true)
+    .order("sort_order", { ascending: true })
+    .order("created_at", { ascending: true });
+
+  if (error) {
+    console.error("getActiveShopHeroSlides error:", error.message);
+    return [];
+  }
+  return (data ?? []) as ShopHeroSlide[];
+}
+
+export type { Product, ProductVariant, ProductWithVariants, ShopHeroSlide };

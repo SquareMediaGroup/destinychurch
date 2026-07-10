@@ -91,6 +91,22 @@ export interface ProductWithVariants extends Product {
   variants: ProductVariant[];
 }
 
+// A single slide in the dynamic, admin-editable /shop hero. Multiple active
+// slides auto-rotate on the storefront (see components/shop/ShopHero.tsx).
+export interface ShopHeroSlide {
+  id: string;
+  active: boolean;
+  heading: string | null;
+  subheading: string | null;
+  cta_text: string | null;
+  cta_link: string | null;
+  image_url: string | null;
+  image_path: string | null; // storage path in the shop-hero-images bucket
+  sort_order: number;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface OrderItem {
   id: string;
   order_id: string;

@@ -269,7 +269,9 @@ destinychurch/
 │       ├── 20260531_hr.sql        # HR staff, leave, reviews, documents
 │       ├── 20260606_jobs.sql      # Job listings & applications
 │       ├── 20260608_service_status.sql # Feature flags
-│       └── 20260614_staff_logins.sql # Staff login audit trail
+│       ├── 20260614_staff_logins.sql # Staff login audit trail
+│       ├── 20260708_shop.sql   # Shop: products, variants, orders, items
+│       └── 20260710_shop_hero.sql # Editable auto-rotating /shop hero slides
 │
 ├── utils/                         # Utility modules
 │   ├── supabase/                  # Supabase client factories
@@ -795,6 +797,28 @@ CREATE TABLE order_items (
 
 ---
 
+#### 19. **shop_hero_slides** (Shop hero)
+**Purpose:** Dynamic, admin-editable hero at the top of `/shop`. Multiple active slides auto-rotate (crossfade) on the storefront; with no active slides the shop shows its static "The Destiny Store" masthead. Migration: `supabase/migrations/20260710_shop_hero.sql`.
+
+```sql
+CREATE TABLE shop_hero_slides (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  active boolean NOT NULL DEFAULT true,
+  heading text, subheading text,
+  cta_text text, cta_link text,
+  image_url text, image_path text,      -- storage path in shop-hero-images bucket
+  sort_order integer NOT NULL DEFAULT 0,
+  created_at timestamptz DEFAULT now(), updated_at timestamptz DEFAULT now()
+);
+-- RLS: single "service only" policy (like the shop tables). Public storefront
+-- reads active slides via lib/shop.server.ts → getActiveShopHeroSlides().
+-- Storage: public `shop-hero-images` bucket for hero backgrounds (WebP).
+```
+
+**Used By:** `/shop` storefront (`components/shop/ShopHero.tsx`), `/admin/store/hero` CRUD.
+
+---
+
 All tables have RLS enabled. Access rules:
 
 | Table | Public Read | Authenticated Read | Service Role | Purpose |
@@ -814,6 +838,7 @@ All tables have RLS enabled. Access rules:
 | staff_logins | - | - | Yes | Audit trail |
 | products / product_variants | - | - | Yes | Shop catalogue (public read via server components) |
 | orders / order_items | - | - | Yes | Store orders (written by Stripe webhook) |
+| shop_hero_slides | - | - | Yes | Editable /shop hero (public read via server components) |
 
 **Key Point:** No table uses authenticated user RLS. All member-facing features use API proxy routes that enforce authentication in application code, then access the database with the service role key. This gives finer control and better error messages.
 
@@ -1050,6 +1075,7 @@ Displayed on every page:
 | `/admin/store` | `app/admin/store/page.tsx` | Store — product list |
 | `/admin/store/products/new` | `app/admin/store/products/new/page.tsx` | Create a product (name → editor) |
 | `/admin/store/products/[id]` | `app/admin/store/products/[id]/page.tsx` | Product editor — details, photos, size/colour variants, stock |
+| `/admin/store/hero` | `app/admin/store/hero/page.tsx` | Shop hero slides — add/edit/reorder rotating hero |
 | `/admin/store/orders` | `app/admin/store/orders/page.tsx` | Orders list |
 | `/admin/store/orders/[id]` | `app/admin/store/orders/[id]/page.tsx` | Order detail — mark fulfilled/cancelled/refunded |
 
@@ -1102,6 +1128,16 @@ Displayed on every page:
   - Title, body (markdown), image, CTA button
   - Dismiss button
   - Centered on screen
+
+#### `shop/ShopHero.tsx`
+- **What:** Dynamic, auto-rotating hero at the top of `/shop`
+- **Data:** `shop_hero_slides` table (via `getActiveShopHeroSlides()`; passed in as a prop from the server component)
+- **Features:**
+  - Image-backed slides (next/image `fill`) with dark gradient + Anton headline + orange CTA pill
+  - Auto-rotates (~6s crossfade) with 2+ slides; static with one
+  - Pauses on hover/focus; honours `prefers-reduced-motion` (no auto-advance)
+  - Keyboard-navigable dot indicators
+  - Falls back to the static "The Destiny Store" masthead when no slides are active (handled in `app/shop/page.tsx`)
 
 #### `FloatingSmartSearch.tsx`
 - **What:** AI-powered search widget (floating button)
@@ -1428,6 +1464,9 @@ GET|PUT|DELETE      /api/admin/store/products/[id]        // PUT reconciles vari
 POST|DELETE         /api/admin/store/products/[id]/images // sharp → WebP → product-images bucket
 GET                 /api/admin/store/orders
 GET|PATCH           /api/admin/store/orders/[id]          // PATCH updates fulfilment status
+GET|POST            /api/admin/shop-hero                  // list / create hero slides
+PATCH|DELETE        /api/admin/shop-hero/[id]             // update (content/active/sort_order) / delete
+POST                /api/admin/shop-hero/upload           // sharp → WebP → shop-hero-images bucket
 ```
 
 ---
@@ -2368,6 +2407,7 @@ ENABLE_PAGE_BUILDER=false
 - `app/admin/store/products/[id]/page.tsx` — Edit product (variants, stock)
 - `app/admin/store/orders/page.tsx` — Orders list
 - `app/admin/store/orders/[id]/page.tsx` — Order detail (fulfillment)
+- `app/admin/store/hero/page.tsx` — Shop hero slides (add/edit/reorder rotating hero)
 
 ### Component Directory
 - **109 components** organized by feature:

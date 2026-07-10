@@ -22,6 +22,7 @@ const courseItems = [
 const storeItems = [
   { href: "/admin/store", label: "Products" },
   { href: "/admin/store/orders", label: "Orders" },
+  { href: "/admin/store/hero", label: "Hero" },
 ];
 
 const bottomNavItems = [

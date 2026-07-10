@@ -1035,6 +1035,21 @@ html[data-glassfx="off"] .glass-refract {
   backdrop-filter: blur(var(--glass-blur)) saturate(1.4) brightness(1.05) !important;
 }
 
+/* /shop scroll-flicker fix — scoped to the shop page only (via :has(.shop-page),
+   so it applies only while that route is mounted and needs no JS).
+   The sticky glass header re-samples the bright, high-contrast product grid on
+   every scroll frame; on Chromium the SVG `url(#glass-refract)` displacement
+   backdrop intermittently drops a frame, which reads as a brief flash/"crash".
+   On /shop we fall back to a plain blur backdrop — visually near-identical but
+   far more stable — and GPU-promote the glass pill (translateZ(0)) so its
+   compositing layer stays put during scroll. Every other page keeps the full
+   glass refraction untouched. */
+html:has(.shop-page) .glass-refract {
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(1.4) brightness(1.05) !important;
+  backdrop-filter: blur(var(--glass-blur)) saturate(1.4) brightness(1.05) !important;
+  transform: translateZ(0);
+}
+
 html[data-motion="reduced"] *,
 html[data-motion="reduced"] *::before,
 html[data-motion="reduced"] *::after {

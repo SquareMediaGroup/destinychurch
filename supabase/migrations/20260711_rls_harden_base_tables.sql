@@ -33,6 +33,8 @@ declare
     'hidden_videos',
     'studio_assets',
     'studio_components',
+    'service_status',
+    'training_folders',
     'auth_users',
     'auth_codes',
     'admin_users'

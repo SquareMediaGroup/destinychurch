@@ -1,6 +1,3 @@
-"use client";
-
-import { useState } from "react";
 import Image from "next/image";
 import AnimateIn from "@/components/AnimateIn";
 
@@ -16,15 +13,6 @@ const departmentHeads = [
   { name: "Adebowale Awojide", role: "Prayer Team", photo: "/img/brand/Team/Debo.webp", email: "debo@destinytees.uk" },
   { name: "George Krezner", role: "Administration", photo: "/img/brand/Team/GK.webp", email: "george@destinytees.uk" },
   { name: "Younes Moradi", role: "Site & Stewarding", photo: null, email: "younes@destinytees.uk" },
-];
-
-const moreDepartmentHeads = [
-  { name: "Thandi Mathema", role: "Hospitality & Catering", photo: null, email: null },
-  { name: "Nkereuwem Ekanem", role: "Production & IT", photo: null, email: null },
-  { name: "David Bayode", role: "Worship Pastor", photo: null, email: null },
-  { name: "Neil & Louise Sheekey", role: "Destiny Recovery", photo: null, email: null },
-  { name: "Mide Akinyele", role: "Youth Leader (Boys)", photo: null, email: null },
-  { name: "Phoebe Smyrell", role: "Youth Leader (Girls)", photo: null, email: null },
 ];
 
 function TeamCard({ name, role, photo, cardBg, email }: { name: string; role: string; photo: string | null; cardBg: string; email?: string | null }) {
@@ -60,8 +48,6 @@ function TeamCard({ name, role, photo, cardBg, email }: { name: string; role: st
 }
 
 export default function TeamSection() {
-  const [showMore, setShowMore] = useState(false);
-
   return (
     <section id="team" className="bg-[#f5f7fa] py-10 sm:py-16">
       <div className="mx-auto max-w-7xl px-4 lg:px-8">
@@ -94,25 +80,6 @@ export default function TeamSection() {
           ))}
         </div>
 
-        {showMore && (
-          <div className="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-4">
-            {moreDepartmentHeads.map((member, i) => (
-              <AnimateIn key={member.name} delay={i * 80}>
-                <TeamCard {...member} cardBg="#475C70" />
-              </AnimateIn>
-            ))}
-          </div>
-        )}
-
-        <div className="mb-6 mt-8 flex justify-center">
-          <button
-            type="button"
-            onClick={() => setShowMore((prev) => !prev)}
-            className="rounded-full border-2 border-destiny-orange px-6 py-2 text-sm font-bold text-destiny-orange transition-colors duration-300 hover:bg-destiny-orange hover:text-white"
-          >
-            {showMore ? "Show Fewer" : "View All"}
-          </button>
-        </div>
       </div>
     </section>
   );

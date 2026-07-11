@@ -5,15 +5,6 @@ import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 
-const hrItems = [
-  { href: "/administration/hr/staff", label: "Staff" },
-  { href: "/administration/hr/leave", label: "Leave" },
-  { href: "/administration/hr/documents", label: "Documents" },
-  { href: "/administration/hr/reviews", label: "Reviews" },
-  { href: "/administration/hr/jobs", label: "Jobs & internships" },
-  { href: "/administration/hr/applications", label: "Applications" },
-];
-
 function NavLink({
   href,
   icon,
@@ -57,9 +48,6 @@ function NavItems({
   pathname: string;
   onNavigate?: () => void;
 }) {
-  const hrActive = pathname.startsWith("/administration/hr");
-  const [open, setOpen] = useState(hrActive);
-
   return (
     <>
       <NavLink
@@ -70,49 +58,6 @@ function NavItems({
         onNavigate={onNavigate}
         exact
       />
-
-      <div>
-        <button
-          type="button"
-          onClick={() => setOpen((o) => !o)}
-          className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-bold transition ${
-            hrActive
-              ? "bg-destiny-orange/10 text-destiny-orange"
-              : "text-destiny-grey/60 hover:bg-[#f5f7fa] hover:text-destiny-grey"
-          }`}
-        >
-          <span
-            className={`material-symbols-rounded text-xl ${hrActive ? "text-destiny-orange" : ""}`}
-          >
-            badge
-          </span>
-          <span className="flex-1 text-left">HR</span>
-          <span className="material-symbols-rounded text-base opacity-50">
-            {open ? "expand_less" : "expand_more"}
-          </span>
-        </button>
-        {open && (
-          <div className="ml-9 mt-0.5 flex flex-col gap-0.5">
-            {hrItems.map((item) => {
-              const active = pathname.startsWith(item.href);
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  onClick={onNavigate}
-                  className={`rounded-lg px-3 py-2 text-sm font-bold transition ${
-                    active
-                      ? "text-destiny-orange"
-                      : "text-destiny-grey/50 hover:text-destiny-grey"
-                  }`}
-                >
-                  {item.label}
-                </Link>
-              );
-            })}
-          </div>
-        )}
-      </div>
 
       <NavLink
         href="/administration/training"

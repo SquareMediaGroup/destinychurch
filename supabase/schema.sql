@@ -104,3 +104,37 @@ create index if not exists site_banner_updated_idx
 
 alter table if exists site_banner
   add column if not exists description text;
+
+-- ── Row-Level Security (secure-by-default) ──────────────────────────────────
+-- Every table in this base schema is server-accessed only (via the service /
+-- secret key, which bypasses RLS). Without RLS enabled, Supabase's default
+-- grants make these tables readable AND writable by anyone holding the public
+-- anon/publishable key over the REST API. Enable RLS + a deny-all policy so
+-- the public role gets nothing. Any table that later needs public read gets its
+-- own permissive policy in a migration (see redirects / alpha_events / site_popup).
+-- Idempotent: safe to re-run and safe if a table was dropped.
+do $$
+declare
+  t text;
+  base_tables text[] := array[
+    'sermons', 'sermon_transcripts', 'sermon_link_suggestions', 'ai_reports',
+    'playlists', 'playlist_items', 'auth_users', 'auth_codes',
+    'admin_users', 'site_banner'
+  ];
+begin
+  foreach t in array base_tables loop
+    if exists (
+      select 1 from pg_tables where schemaname = 'public' and tablename = t
+    ) then
+      execute format('alter table public.%I enable row level security', t);
+      if not exists (
+        select 1 from pg_policies
+        where schemaname = 'public' and tablename = t and policyname = 'service only'
+      ) then
+        execute format(
+          'create policy "service only" on public.%I using (false) with check (false)', t
+        );
+      end if;
+    end if;
+  end loop;
+end $$;

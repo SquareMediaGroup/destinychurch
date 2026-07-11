@@ -321,7 +321,6 @@ export default function ChurchHeader() {
                   </span>
                   {[
                     { href: "/admin/redirects", label: "Redirects" },
-                    { href: "/admin/sermons", label: "Sermons" },
                     { href: "/admin/banner", label: "Banner" },
                   ].map((item) => (
                     <Link

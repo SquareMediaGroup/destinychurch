@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { getPodcastShow } from "@/lib/podcast";
-import { getLatestVisibleVideo } from "@/lib/sermons";
+import { getLatestVideo } from "@/lib/youtube";
 import { PodcastPlayerProvider } from "@/components/sermons/podcast/PodcastPlayerProvider";
 import PodcastHero from "@/components/sermons/podcast/PodcastHero";
 import EpisodeList from "@/components/sermons/podcast/EpisodeList";
@@ -38,7 +38,7 @@ const platforms = [
 export default async function SermonsPage() {
   const [show, latestVideo] = await Promise.all([
     getPodcastShow().catch(() => null),
-    getLatestVisibleVideo().catch(() => null),
+    getLatestVideo().catch(() => null),
   ]);
 
   const episodes = show?.episodes ?? [];

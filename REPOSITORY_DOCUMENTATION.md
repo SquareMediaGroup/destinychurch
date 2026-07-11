@@ -336,23 +336,6 @@ CREATE TABLE redirects (
 
 ---
 
-#### 2. **hidden_videos**
-**Purpose:** Hide specific YouTube videos from the sermon archive
-
-```sql
-CREATE TABLE hidden_videos (
-  video_id text PRIMARY KEY            -- YouTube video ID
-);
-
--- RLS: Service role only (admin edits)
-```
-
-**Used By:**
-- `lib/sermons.ts` filters YouTube videos
-- Admin can hide/unhide individual sermon videos
-
----
-
 #### 3. **site_banner**
 **Purpose:** Sitewide announcement banners (top of every page)
 
@@ -808,7 +791,6 @@ All tables have RLS enabled. Access rules:
 | Table | Public Read | Authenticated Read | Service Role | Purpose |
 |-------|-------------|-------------------|--------------|---------|
 | redirects | Yes | - | Yes | Public navigation |
-| hidden_videos | - | - | Yes | Hide videos server-side |
 | site_banner | Yes | - | Yes | Show on every page |
 | page_content | - | - | Yes | Protect sensitive values |
 | contact_messages | - | - | Yes | Protect submissions |
@@ -966,16 +948,10 @@ Rendered on every page (server component with Suspense).
 Each page route (`app/*/page.tsx`) renders page-specific content. Examples:
 
 #### `/app/sermons/page.tsx` — Sermon Archive
-- Fetches all visible YouTube videos via `lib/sermons.ts`
+- Fetches YouTube videos via `lib/youtube.ts`
 - Filters by series/speaker/date using client-side state
 - Displays video grid with thumbnails and metadata
 - Lazy-loads videos on scroll
-
-#### `/app/admin/sermons/page.tsx` — Admin Sermon Management
-- Requires authentication (checked in layout)
-- Fetches all videos (including hidden)
-- Allows toggle visibility, edit metadata
-- Uses server actions to update database
 
 #### `/app/[slug]/page.tsx` — Dynamic Catchall
 - Looks up `slug` in `dynamic_pages` table (if exists)
@@ -1047,7 +1023,6 @@ Displayed on every page:
 | `/admin/login` | `app/admin/login/page.tsx` | Admin login form |
 | `/admin/forgot-password` | `app/admin/forgot-password/page.tsx` | Password reset request |
 | `/admin` | `app/admin/page.tsx` | Admin dashboard home |
-| `/admin/sermons` | `app/admin/sermons/page.tsx` | Manage sermon visibility, metadata |
 | `/admin/banner` | `app/admin/banner/page.tsx` | Manage site banners |
 | `/admin/popup` | `app/admin/popup/page.tsx` | Manage pop-ups |
 | `/admin/redirects` | `app/admin/redirects/page.tsx` | Manage URL redirects |
@@ -1301,18 +1276,6 @@ export async function applyForJob(jobId: string, formData: ApplicationData) {
 
 ### Admin API Routes
 
-#### `POST /api/admin/sermons/hide`
-```typescript
-// Request body: { videoId: string }
-// Response: { success: boolean }
-
-// Logic:
-// 1. Check auth (must be admin)
-// 2. Insert video_id into hidden_videos table
-// 3. Trigger ISR revalidation for /sermons and /sermons/[id]
-// 4. Return success
-```
-
 #### `POST /api/admin/redirects`
 ```typescript
 // Create or update redirect
@@ -1447,35 +1410,6 @@ POST                /api/admin/shop-hero/upload           // sharp → WebP → 
 - `lib/shop.server.ts` (`server-only`) — public read fetchers: `getPublishedProducts()`, `getProductBySlug()`, `getAllProductsAdmin()` (via `getSupabaseAdmin()`).
 - `lib/stripe.ts` (`server-only`) — `getStripe()` singleton from `STRIPE_SECRET_KEY`.
 - `lib/cart-store.ts` — `useCart` zustand store persisted to `localStorage` (`destiny-cart`), plus `cartCount` / `cartSubtotal` helpers.
-
-### `lib/sermons.ts`
-
-```typescript
-// Fetch all visible YouTube videos
-export async function getVisibleVideos(maxResults = 50): Promise<YTVideo[]> {
-  const [videos, hidden] = await Promise.all([
-    getAllVideos(maxResults),     // From YouTube API
-    getHiddenIds()                // From hidden_videos table
-  ]);
-  // Filter out any videos in the hidden list
-  return videos.filter((v) => !hidden.has(v.id));
-}
-
-// Get most recent visible video (for homepage hero)
-export async function getLatestVisibleVideo(): Promise<YTVideo | null> {
-  const [video, hidden] = await Promise.all([
-    getLatestVideo(),              // Most recent from YouTube
-    getHiddenIds()
-  ]);
-  if (!video || hidden.has(video.id)) return null;
-  return video;
-}
-```
-
-**Used By:**
-- `/sermons` page — lists all sermons
-- `/sermons/[id]` — sermon detail
-- Home page — featured sermon
 
 ---
 
@@ -1871,7 +1805,7 @@ export default async function AdminLayout({ children }) {
 
 #### Layer 2: API Route (Proxy)
 ```typescript
-// app/api/admin/sermons/route.ts
+// app/api/admin/redirects/route.ts
 export async function POST(request: NextRequest) {
   const user = request.nextUrl.searchParams.get("userId");
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -2168,7 +2102,6 @@ ENABLE_SMART_SEARCH=true
 ### Admin Pages
 - `app/admin/login/page.tsx` — Admin login
 - `app/admin/page.tsx` — Admin home (dashboard)
-- `app/admin/sermons/page.tsx` — Sermon management
 - `app/admin/banner/page.tsx` — Banner management
 - `app/admin/popup/page.tsx` — Pop-up management
 - `app/admin/redirects/page.tsx` — Redirect management
@@ -2196,10 +2129,9 @@ ENABLE_SMART_SEARCH=true
   - Email templates
   - Rate limiting, authentication checks
   - Feature flags, role checks
-  - AI utilities (code generation, validation)
 
 ### API Routes (`app/api/`)
-- **Admin endpoints:** Sermons, pages, banners, redirects, pop-ups, cache revalidation, store management
+- **Admin endpoints:** Banners, redirects, pop-ups, cache revalidation, store management
 - **Public endpoints:** Destiny AI (multi-turn chat), YouTube sync, webhooks
 - **Store endpoints:** Stripe payment processing, order management
 - **Webhooks:** Vercel deployments, GitHub events

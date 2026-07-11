@@ -18,8 +18,7 @@ import WhatsOnSection from "@/components/home/WhatsOnSection";
 import EveryoneHasAPlaceSection from "@/components/home/EveryoneHasAPlaceSection";
 import WorshipWithUsSection from "@/components/home/WorshipWithUsSection";
 import GetInvolvedSection from "@/components/home/GetInvolvedSection";
-import { isYouTubeQuotaExceeded, getLatestVideoFromRSS } from "@/lib/youtube";
-import { getLatestVisibleVideo } from "@/lib/sermons";
+import { isYouTubeQuotaExceeded, getLatestVideoFromRSS, getLatestVideo } from "@/lib/youtube";
 
 export const revalidate = 30;
 
@@ -27,7 +26,7 @@ export default async function HomePage() {
   const quotaExceeded = await isYouTubeQuotaExceeded();
   const video = quotaExceeded
     ? await getLatestVideoFromRSS()
-    : await getLatestVisibleVideo();
+    : await getLatestVideo();
 
   return (
     <>

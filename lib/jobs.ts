@@ -96,4 +96,4 @@ export function isClosed(job: Pick<Job, "closing_date">): boolean {
   return new Date(job.closing_date) < today;
 }
 
-export const API = "/api/administration/hr";
+export const API = "/api/admin/hr";

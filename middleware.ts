@@ -1,5 +1,4 @@
 import { createClient } from "@/utils/supabase/middleware";
-import { getRoles, requiredRoleForPath } from "@/lib/roles";
 import { type NextRequest, NextResponse } from "next/server";
 
 export async function middleware(request: NextRequest) {
@@ -34,7 +33,7 @@ export async function middleware(request: NextRequest) {
     return supabaseResponse;
   }
 
-  // The old login page is gone — /admin-login is the single front door
+  // Stale bookmark for the removed login page — bounce to the dashboard
   if (pathname === "/admin/login") {
     return NextResponse.redirect(new URL("/admin", request.url));
   }
@@ -47,29 +46,14 @@ export async function middleware(request: NextRequest) {
   }
 
   // Unauthenticated API requests: return 401 instead of redirecting
-  if (!user && (pathname.startsWith("/api/admin") || pathname.startsWith("/api/administration"))) {
+  if (!user && pathname.startsWith("/api/admin")) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  // Protect the Administration area — send to the staff portal to sign in
-  if (!user && pathname.startsWith("/administration")) {
-    return NextResponse.redirect(new URL("/admin-login", request.url));
-  }
-
-  // Protect all other /admin/* routes
+  // Protect all /admin/* routes — single role model: any authenticated user
+  // has full /admin access, no per-path role check needed anymore.
   if (!user) {
-    return NextResponse.redirect(new URL("/admin-login", request.url));
-  }
-
-  // Authenticated — enforce that the user holds the role for this system.
-  // An account with no roles is blocked from everything (strict).
-  const required = requiredRoleForPath(pathname);
-  if (required && !getRoles(user).includes(required)) {
-    if (pathname.startsWith("/api/")) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    }
-    // Send to the chooser, which shows the system greyed out with a reason.
-    return NextResponse.redirect(new URL("/admin-login", request.url));
+    return NextResponse.redirect(new URL("/login", request.url));
   }
 
   return supabaseResponse;
@@ -80,10 +64,8 @@ export const config = {
     // /lite redirect — must come first conceptually; order here doesn't matter
     "/lite",
     "/:path*/lite",
-    // Admin / administration auth guards
+    // Admin auth guard
     "/admin/:path*",
     "/api/admin/:path*",
-    "/administration/:path*",
-    "/api/administration/:path*",
   ],
 };

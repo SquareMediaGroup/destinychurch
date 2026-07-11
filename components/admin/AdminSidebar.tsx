@@ -5,7 +5,10 @@ import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 
-const topNavItems: { href: string; icon: string; label: string }[] = [];
+const topNavItems: { href: string; icon: string; label: string }[] = [
+  { href: "/admin/posts", icon: "article", label: "Posts" },
+  { href: "/admin/training", icon: "school", label: "Training" },
+];
 
 const announcementItems = [
   { href: "/admin/banner", label: "Banner" },

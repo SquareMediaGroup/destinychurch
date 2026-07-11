@@ -49,6 +49,7 @@ const ROUTE_SLUGS = [
   "jobs",
   "kids",
   "links",
+  "login",
   "missions",
   "new-here",
   "privacy",

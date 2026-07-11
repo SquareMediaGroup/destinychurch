@@ -156,10 +156,10 @@ destinychurch/
 │   │   ├── banner/                # Manage site banners
 │   │   ├── popup/                 # Manage pop-ups
 │   │   ├── redirects/             # Manage URL redirects
-│   │   └── cache/                 # Cache invalidation tools
-│   ├── administration/            # Member-facing admin features
+│   │   ├── cache/                 # Cache invalidation tools
+│   │   ├── posts/                 # Standalone content pages
 │   │   ├── training/              # Training/courses management
-│   │   └── hr/                    # HR staff features
+│   │   └── hr/                    # HR staff features (unlinked, in progress)
 │   ├── jobs/                      # Job listing & application
 │   │   ├── page.tsx               # Job list
 │   │   ├── [slug]/page.tsx        # Job detail
@@ -192,12 +192,9 @@ destinychurch/
 │   ├── FloatingSmartSearch.tsx    # AI search widget
 │   ├── VisualEditOverlay.tsx      # Admin edit mode overlay
 │   ├── admin/                     # Admin-specific components
-│   │   ├── MediaUploader.tsx      # File upload UI
 │   │   ├── AdminSidebar.tsx       # Admin nav menu
-│   │   └── ...
-│   ├── administration/            # Member admin components
 │   │   ├── training/              # Course management UI
-│   │   ├── hr/                    # HR management UI
+│   │   ├── hr/                    # HR management UI (unlinked, in progress)
 │   │   ├── posts/                 # Content editor
 │   │   └── ...
 │   ├── connect-card/              # Prayer form components
@@ -517,7 +514,7 @@ CREATE TABLE hr_staff (
 
 **Used By:**
 - HR admin to manage staff directory
-- `/administration/hr` member dashboard
+- `/admin/hr` dashboard
 
 ---
 
@@ -926,7 +923,7 @@ look untrustworthy, can't be styled, and freeze the tab. Use the in-app equivale
 - **Free-text input** → `useDialog().prompt(opts)` → `Promise<string | null>` (`null` = cancelled,
   matching native `prompt`). Options: `{ title?, message?, placeholder?, defaultValue?, confirmLabel? }`.
 
-Both dialog helpers reuse the visual conventions from `components/administration/hr/HrUI.tsx`
+Both dialog helpers reuse the visual conventions from `components/admin/hr/HrUI.tsx`
 (backdrop + rounded card + shared button/input classes). Escape and backdrop-click cancel.
 
 ---
@@ -1008,25 +1005,22 @@ Displayed on every page:
 | `/jobs/[slug]` | `app/jobs/[slug]/page.tsx` | Job detail page |
 | `/[slug]` | `app/[slug]/page.tsx` | Dynamic catchall (custom pages) |
 
-### Member Pages (Auth Required, Checked at Layout Level)
+### Admin Pages (Auth Required, Checked in `middleware.ts`)
+
+All admin/staff features live under a single `/admin` prefix with one login at `/login` (no per-section roles — any authenticated staff account has full access). `/admin/hr` is built but intentionally unlinked from any nav (not yet launched).
 
 | Route | File | Purpose |
 |-------|------|---------|
-| `/administration/hr` | `app/administration/hr/page.tsx` | HR dashboard (staff directory, leave, documents) |
-| `/administration/training` | `app/administration/training/page.tsx` | Training courses, learning paths |
-| `/administration/training/[categoryId]` | - | Category detail (e.g., "Pastoral Training") |
-
-### Admin Pages (Auth + Admin Role Required)
-
-| Route | File | Purpose |
-|-------|------|---------|
-| `/admin/login` | `app/admin/login/page.tsx` | Admin login form |
+| `/login` | `app/login/page.tsx` | Staff sign-in |
 | `/admin/forgot-password` | `app/admin/forgot-password/page.tsx` | Password reset request |
 | `/admin` | `app/admin/page.tsx` | Admin dashboard home |
 | `/admin/banner` | `app/admin/banner/page.tsx` | Manage site banners |
 | `/admin/popup` | `app/admin/popup/page.tsx` | Manage pop-ups |
 | `/admin/redirects` | `app/admin/redirects/page.tsx` | Manage URL redirects |
 | `/admin/cache` | `app/admin/cache/page.tsx` | Invalidate ISR cache |
+| `/admin/posts` | `app/admin/posts/page.tsx` | Standalone content pages |
+| `/admin/training` | `app/admin/training/page.tsx` | Training categories → subgroups → posts |
+| `/admin/hr` | `app/admin/hr/page.tsx` | HR dashboard (staff, leave, jobs, documents, reviews) — unlinked, in progress |
 | `/admin/store` | `app/admin/store/page.tsx` | Store — product list |
 | `/admin/store/products/new` | `app/admin/store/products/new/page.tsx` | Create a product (name → editor) |
 | `/admin/store/products/[id]` | `app/admin/store/products/[id]/page.tsx` | Product editor — details, photos, size/colour variants, stock |
@@ -1147,7 +1141,7 @@ Displayed on every page:
 - `RedirectManager.tsx` — CRUD redirects UI
 - `BannerManager.tsx` — Create/edit site banners
 
-#### Administration Components (`components/administration/*`)
+#### Admin Content/Training/HR Components (`components/admin/{posts,training,hr}/*`)
 - `HrUI.tsx` — Staff directory, leave requests, documents
 - `TrainingUI.tsx` — Course browser, access control
 - `JobsList.tsx` — Job listings (member view)
@@ -1663,7 +1657,7 @@ export async function canAccessHR(userId: string): Promise<boolean> {
 
 // Used in:
 // app/admin/layout.tsx — wraps with auth check
-// app/administration/hr/page.tsx — checks HR permission
+// app/admin/hr/page.tsx — HR dashboard
 ```
 
 ---

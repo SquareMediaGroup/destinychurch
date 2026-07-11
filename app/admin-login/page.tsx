@@ -1,32 +1,5 @@
-import { cookies } from "next/headers";
-import { createClient } from "@/utils/supabase/server";
-import { getRoles } from "@/lib/roles";
-import AdminLoginClient from "./AdminLoginClient";
+import { redirect } from "next/navigation";
 
-export const metadata = {
-  title: "Staff Sign-In",
-};
-
-// Always evaluate the session per request — never cache the login state.
-export const dynamic = "force-dynamic";
-
-export default async function AdminLoginPage() {
-  const cookieStore = await cookies();
-  const supabase = createClient(cookieStore);
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  // Already signed in — skip the form and show the system chooser directly.
-  if (user) {
-    return (
-      <AdminLoginClient
-        initialPhase="choose"
-        initialEmail={user.email ?? undefined}
-        initialRoles={getRoles(user)}
-      />
-    );
-  }
-
-  return <AdminLoginClient initialPhase="login" />;
+export default function AdminLoginRedirect() {
+  redirect("/login");
 }

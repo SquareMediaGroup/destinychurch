@@ -1,6 +1,4 @@
-// Shared types and labels for the Administration → HR module.
-
-import type { AdminRole } from "@/lib/roles";
+// Shared types and labels for the HR module.
 
 export type EmploymentType =
   | "full_time"
@@ -31,7 +29,6 @@ export interface Staff {
   created_at: string;
   updated_at: string;
   // Enrichment-only (derived from the linked auth user, not stored on hr_staff):
-  roles?: AdminRole[];
   has_login?: boolean;
 }
 
@@ -114,7 +111,7 @@ export const REVIEW_TYPE_LABELS: Record<ReviewType, string> = {
   one_to_one: "1-to-1",
 };
 
-export const API = "/api/administration/hr";
+export const API = "/api/admin/hr";
 
 export function fullName(s: { first_name: string; last_name: string }) {
   return `${s.first_name} ${s.last_name}`.trim();

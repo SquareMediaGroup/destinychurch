@@ -28,5 +28,5 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  return NextResponse.redirect(`${origin}/admin-login?error=link_expired`);
+  return NextResponse.redirect(`${origin}/login?error=link_expired`);
 }

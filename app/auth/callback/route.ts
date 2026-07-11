@@ -22,5 +22,5 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  return NextResponse.redirect(`${origin}/admin-login`);
+  return NextResponse.redirect(`${origin}/login`);
 }

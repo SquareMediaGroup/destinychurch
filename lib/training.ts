@@ -57,7 +57,7 @@ export interface TrainingCategoryWithSubgroups extends TrainingCategory {
   subgroups: TrainingSubgroup[];
 }
 
-export const API = "/api/administration/training";
+export const API = "/api/admin/training";
 
 export function estimateReadMinutes(html: string | null | undefined): number {
   if (!html) return 0;

@@ -13,7 +13,7 @@ export default function ResetPasswordPage() {
 
   useEffect(() => {
     if (state.success) {
-      router.push("/admin-login");
+      router.push("/login");
     }
   }, [state.success, router]);
 

@@ -1,0 +1,499 @@
+"use client";
+
+import { useCallback, useEffect, useState } from "react";
+import { useParams } from "next/navigation";
+import {
+  API,
+  type TrainingCategory,
+  type TrainingSubgroup,
+  type TrainingFolder,
+  type TrainingPost,
+} from "@/lib/training";
+import {
+  HrHeader,
+  Badge,
+  EmptyState,
+  primaryBtn,
+} from "@/components/admin/hr/HrUI";
+import { PostEditor } from "@/components/admin/training/PostEditor";
+import { FolderModal } from "@/components/admin/training/FolderModal";
+import { useReorder } from "@/components/admin/training/useReorder";
+import { useDialog } from "@/components/DialogProvider";
+
+function PostListSection({
+  folder,
+  items,
+  setItems,
+  onDropPost,
+  togglePublish,
+  setEditing,
+  remove,
+  liveBase,
+  setError,
+}: {
+  folder: TrainingFolder | null;
+  items: TrainingPost[];
+  setItems: React.Dispatch<React.SetStateAction<TrainingPost[]>>;
+  onDropPost: (postId: string, folderId: string | null) => void;
+  togglePublish: (p: TrainingPost) => void;
+  setEditing: (p: TrainingPost) => void;
+  remove: (p: TrainingPost) => void;
+  liveBase: string | null;
+  setError: (m: string) => void;
+}) {
+  const { rowProps } = useReorder(items, setItems, (id) => `${API}/posts/${id}`, setError);
+
+  return (
+    <div
+      className="mb-10"
+      onDragOver={(e) => {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = "move";
+      }}
+      onDrop={(e) => {
+        const data = e.dataTransfer.getData("application/json");
+        if (data) {
+          try {
+            const parsed = JSON.parse(data);
+            if (parsed.folderId !== (folder?.id || null)) {
+              onDropPost(parsed.postId, folder?.id || null);
+            }
+          } catch {}
+        }
+      }}
+    >
+      {items.length === 0 ? (
+        <div className="rounded-2xl border border-dashed border-black/10 bg-[#f5f7fa] p-8 text-center text-sm font-medium text-destiny-grey/40">
+          Drop posts here
+        </div>
+      ) : (
+        <div className="overflow-hidden rounded-3xl border border-black/5 bg-white shadow-sm">
+          <table className="w-full text-left text-sm">
+            <thead className="border-b border-black/5 text-xs font-bold uppercase tracking-wider text-destiny-grey/40">
+              <tr>
+                <th className="w-10 px-2 py-3.5"></th>
+                <th className="px-5 py-3.5">Post</th>
+                <th className="px-5 py-3.5">Status</th>
+                <th className="px-5 py-3.5 text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-black/5">
+              {items.map((p, idx) => (
+                <tr
+                  key={p.id}
+                  {...rowProps(idx)}
+                  onDragStart={(e) => {
+                    rowProps(idx).onDragStart(e);
+                    e.dataTransfer.setData(
+                      "application/json",
+                      JSON.stringify({ postId: p.id, folderId: p.folder_id || null })
+                    );
+                  }}
+                  onClick={() => setEditing(p)}
+                  className="group cursor-pointer transition hover:bg-[#f5f7fa]"
+                >
+                  <td className="px-2 py-3.5 text-center">
+                    <span
+                      onClick={(e) => e.stopPropagation()}
+                      className="material-symbols-rounded cursor-grab text-xl text-destiny-grey/25 active:cursor-grabbing"
+                      title="Drag to move or reorder"
+                    >
+                      drag_indicator
+                    </span>
+                  </td>
+                  <td className="px-5 py-3.5">
+                    <p className="font-bold text-destiny-grey transition group-hover:text-destiny-orange">{p.title}</p>
+                    {p.summary && (
+                      <p className="mt-0.5 text-xs text-destiny-grey/45">{p.summary}</p>
+                    )}
+                  </td>
+                  <td className="px-5 py-3.5">
+                    <button 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        togglePublish(p);
+                      }} 
+                      title="Toggle publish"
+                    >
+                      <Badge tone={p.is_published ? "green" : "grey"}>
+                        {p.is_published ? "Published" : "Draft"}
+                      </Badge>
+                    </button>
+                  </td>
+                  <td className="px-5 py-3.5">
+                    <div className="flex items-center justify-end gap-3">
+                      {p.is_published && liveBase && (
+                        <a
+                          href={`${liveBase}/${p.slug}`}
+                          target="_blank"
+                          rel="noreferrer"
+                          onClick={(e) => e.stopPropagation()}
+                          className="text-destiny-grey/40 transition hover:text-destiny-orange"
+                          aria-label="View live"
+                        >
+                          <span className="material-symbols-rounded text-xl">
+                            open_in_new
+                          </span>
+                        </a>
+                      )}
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setEditing(p);
+                        }}
+                        className="text-destiny-grey/40 transition hover:text-destiny-orange group-hover:text-destiny-orange"
+                        aria-label="Edit"
+                      >
+                        <span className="material-symbols-rounded text-xl">edit</span>
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          remove(p);
+                        }}
+                        className="text-destiny-grey/40 transition hover:text-destiny-red"
+                        aria-label="Delete"
+                      >
+                        <span className="material-symbols-rounded text-xl">delete</span>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+}
+
+export default function TrainingPostsPage() {
+  const { confirm } = useDialog();
+  const { categoryId, subgroupId } = useParams<{
+    categoryId: string;
+    subgroupId: string;
+  }>();
+  const [category, setCategory] = useState<TrainingCategory | null>(null);
+  const [subgroup, setSubgroup] = useState<TrainingSubgroup | null>(null);
+  const [folders, setFolders] = useState<TrainingFolder[]>([]);
+  const [posts, setPosts] = useState<TrainingPost[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [editingPost, setEditingPost] = useState<TrainingPost | "new" | null>(null);
+  const [editingFolder, setEditingFolder] = useState<TrainingFolder | "new" | null>(null);
+  const [activeFolderId, setActiveFolderId] = useState<string | null>(null);
+
+  const load = useCallback(async () => {
+    try {
+      const [catRes, subRes, folderRes, postRes] = await Promise.all([
+        fetch(`${API}/categories/${categoryId}`),
+        fetch(`${API}/subgroups/${subgroupId}`),
+        fetch(`${API}/folders?subgroup_id=${subgroupId}`),
+        fetch(`${API}/posts?subgroup_id=${subgroupId}`),
+      ]);
+      setCategory(catRes.ok ? await catRes.json() : null);
+      setSubgroup(subRes.ok ? await subRes.json() : null);
+      setFolders(folderRes.ok ? await folderRes.json() : []);
+      const data = await postRes.json();
+      setPosts(Array.isArray(data) ? data : []);
+    } finally {
+      setLoading(false);
+    }
+  }, [categoryId, subgroupId]);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  const { rowProps: folderRowProps } = useReorder(
+    folders,
+    setFolders,
+    (id) => `${API}/folders/${id}`,
+    setError
+  );
+
+  async function onDropPost(postId: string, newFolderId: string | null) {
+    setError("");
+    const res = await fetch(`${API}/posts/${postId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ folder_id: newFolderId }),
+    });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      setError(data.error || "Could not move post.");
+      return;
+    }
+    load();
+  }
+
+  async function togglePublish(post: TrainingPost) {
+    setError("");
+    const res = await fetch(`${API}/posts/${post.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ is_published: !post.is_published }),
+    });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      setError(data.error || "Could not update.");
+      return;
+    }
+    load();
+  }
+
+  async function remove(post: TrainingPost) {
+    if (
+      !(await confirm({
+        title: "Delete post",
+        message: `Delete "${post.title}"? This cannot be undone.`,
+        confirmLabel: "Delete",
+        tone: "danger",
+      }))
+    )
+      return;
+    setError("");
+    const res = await fetch(`${API}/posts/${post.id}`, { method: "DELETE" });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      setError(data.error || "Could not delete.");
+      return;
+    }
+    load();
+  }
+
+  async function removeFolder(folder: TrainingFolder) {
+    if (
+      !(await confirm({
+        title: "Delete folder",
+        message: `Delete folder "${folder.name}"? Posts inside will become ungrouped.`,
+        confirmLabel: "Delete",
+        tone: "danger",
+      }))
+    )
+      return;
+    setError("");
+    const res = await fetch(`${API}/folders/${folder.id}`, { method: "DELETE" });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      setError(data.error || "Could not delete folder.");
+      return;
+    }
+    setActiveFolderId(null);
+    load();
+  }
+
+  const liveBase =
+    category && subgroup
+      ? `/training/${category.slug}/${subgroup.slug}`
+      : null;
+
+  const getPostsInFolder = (folderId: string | null) => {
+    return posts.filter((p) => p.folder_id === folderId);
+  };
+  const setPostsInFolder = (folderId: string | null, newItems: TrainingPost[]) => {
+    setPosts((all) => {
+      const filtered = all.filter((p) => p.folder_id !== folderId);
+      return [...filtered, ...newItems].sort((a, b) => a.sort_order - b.sort_order);
+    });
+  };
+
+  const activeFolder = folders.find((f) => f.id === activeFolderId);
+
+  return (
+    <div className="mx-auto max-w-6xl px-5 py-10">
+      <HrHeader
+        title={subgroup ? `${subgroup.name} — posts` : "Posts"}
+        subtitle={
+          category && subgroup
+            ? `${category.name} · ${subgroup.has_password ? "Password protected" : "Open"}`
+            : "Training posts in this sub-group."
+        }
+        back={{
+          href: `/admin/training/${categoryId}`,
+          label: category ? category.name : "Sub-groups",
+        }}
+        action={
+          <div className="flex gap-2">
+            <button
+              className="flex items-center gap-1.5 rounded-full bg-black/5 px-4 py-2 text-sm font-bold text-destiny-grey transition hover:bg-black/10"
+              onClick={() => setEditingFolder("new")}
+            >
+              <span className="material-symbols-rounded text-lg">folder</span>
+              New Folder
+            </button>
+            <button className={primaryBtn} onClick={() => setEditingPost("new")}>
+              <span className="material-symbols-rounded text-lg">add</span>
+              New post
+            </button>
+          </div>
+        }
+      />
+
+      {error && (
+        <p className="mb-4 rounded-xl bg-destiny-red/10 px-4 py-2.5 text-sm text-destiny-red">
+          {error}
+        </p>
+      )}
+
+      {loading ? (
+        <p className="text-sm text-destiny-grey/50">Loading…</p>
+      ) : posts.length === 0 && folders.length === 0 ? (
+        <EmptyState
+          icon="article"
+          title="No posts yet"
+          hint="Create a folder or a training post to get started."
+        />
+      ) : activeFolderId === null ? (
+        // Grid View
+        <div className="flex flex-col gap-8">
+          {folders.length > 0 && (
+            <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
+              {folders.map((folder, idx) => {
+                const count = getPostsInFolder(folder.id).length;
+                return (
+                  <div
+                    key={folder.id}
+                    {...folderRowProps(idx)}
+                    onDragOver={(e) => {
+                      folderRowProps(idx).onDragOver(e);
+                      e.dataTransfer.dropEffect = "move";
+                    }}
+                    onDrop={(e) => {
+                      // Handle dropping a post into the folder
+                      const data = e.dataTransfer.getData("application/json");
+                      if (data) {
+                        try {
+                          const parsed = JSON.parse(data);
+                          if (parsed.folderId !== folder.id) {
+                            onDropPost(parsed.postId, folder.id);
+                          }
+                        } catch {}
+                      }
+                    }}
+                    onClick={() => setActiveFolderId(folder.id)}
+                    className="group relative flex cursor-pointer flex-col gap-2 rounded-3xl border border-black/5 bg-white p-5 shadow-sm transition hover:border-destiny-orange/30 hover:shadow-md"
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="material-symbols-rounded text-3xl text-destiny-orange/80 transition group-hover:text-destiny-orange">
+                        folder
+                      </span>
+                      <span
+                        className="material-symbols-rounded cursor-grab text-xl text-black/10 transition hover:text-black/30 active:cursor-grabbing"
+                        title="Drag to reorder"
+                        onClick={(e) => e.stopPropagation()} // Prevent card click when clicking drag handle
+                      >
+                        drag_indicator
+                      </span>
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-destiny-grey">{folder.name}</h3>
+                      <p className="text-xs font-medium text-destiny-grey/40">
+                        {count} post{count === 1 ? "" : "s"}
+                      </p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {getPostsInFolder(null).length > 0 && (
+            <div>
+              {folders.length > 0 && (
+                <h3 className="mb-3 text-xl font-bold text-destiny-grey">Ungrouped Posts</h3>
+              )}
+              <PostListSection
+                folder={null}
+                items={getPostsInFolder(null)}
+                setItems={(newItems) => setPostsInFolder(null, newItems as any)}
+                onDropPost={onDropPost}
+                togglePublish={togglePublish}
+                setEditing={setEditingPost}
+                remove={remove}
+                liveBase={liveBase}
+                setError={setError}
+              />
+            </div>
+          )}
+        </div>
+      ) : (
+        // Folder View
+        <div className="flex flex-col gap-4">
+          <div className="flex items-center justify-between rounded-2xl bg-[#f5f7fa] px-4 py-3">
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => setActiveFolderId(null)}
+                className="flex h-8 w-8 items-center justify-center rounded-full bg-black/5 text-destiny-grey transition hover:bg-black/10"
+              >
+                <span className="material-symbols-rounded text-xl">arrow_back</span>
+              </button>
+              <h2 className="text-lg font-bold text-destiny-grey">
+                {activeFolder?.name}
+              </h2>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setEditingFolder(activeFolder!)}
+                className="flex h-8 w-8 items-center justify-center rounded-full text-destiny-grey/40 transition hover:bg-black/5 hover:text-destiny-orange"
+                title="Edit folder"
+              >
+                <span className="material-symbols-rounded text-xl">edit</span>
+              </button>
+              <button
+                onClick={() => removeFolder(activeFolder!)}
+                className="flex h-8 w-8 items-center justify-center rounded-full text-destiny-grey/40 transition hover:bg-black/5 hover:text-destiny-red"
+                title="Delete folder"
+              >
+                <span className="material-symbols-rounded text-xl">delete</span>
+              </button>
+            </div>
+          </div>
+          <PostListSection
+            folder={activeFolder || null}
+            items={getPostsInFolder(activeFolderId)}
+            setItems={(newItems) => setPostsInFolder(activeFolderId, newItems as any)}
+            onDropPost={onDropPost}
+            togglePublish={togglePublish}
+            setEditing={setEditingPost}
+            remove={remove}
+            liveBase={liveBase}
+            setError={setError}
+          />
+        </div>
+      )}
+
+      {editingPost && (
+        <PostEditor
+          post={editingPost === "new" ? null : editingPost}
+          folders={folders}
+          subgroupId={subgroupId}
+          nextSortOrder={posts.length}
+          onClose={() => setEditingPost(null)}
+          onSaved={() => {
+            setEditingPost(null);
+            setError("");
+            load();
+          }}
+          onError={setError}
+        />
+      )}
+
+      {editingFolder && (
+        <FolderModal
+          folder={editingFolder === "new" ? null : editingFolder}
+          subgroupId={subgroupId}
+          nextSortOrder={folders.length}
+          onClose={() => setEditingFolder(null)}
+          onSaved={() => {
+            setEditingFolder(null);
+            setError("");
+            load();
+          }}
+          onError={setError}
+        />
+      )}
+    </div>
+  );
+}

@@ -13,4 +13,4 @@ export interface Post {
 }
 
 // Base path for the admin Posts API.
-export const API = "/api/administration/posts";
+export const API = "/api/admin/posts";

@@ -56,6 +56,7 @@ export async function POST(request: Request) {
         : 0,
       category: body.category?.trim() || null,
       fit: body.fit || "unisex",
+      product_type: body.product_type || "clothing",
       is_published: body.is_published ?? false,
       is_featured: body.is_featured ?? false,
       sort_order: body.sort_order ?? 0,

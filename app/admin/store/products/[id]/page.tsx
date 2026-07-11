@@ -6,13 +6,17 @@ import { use, useEffect, useMemo, useRef, useState } from "react";
 import { useToast } from "@/components/ToastProvider";
 import { useDialog } from "@/components/DialogProvider";
 import {
+  BOOK_FORMATS,
   FIT_LABELS,
   FIT_OPTIONS,
+  PRODUCT_TYPE_LABELS,
+  PRODUCT_TYPE_OPTIONS,
   SHOP_ADMIN_API,
   sizeIndex,
   sizesForFit,
   type Fit,
   type ProductImage,
+  type ProductType,
   type ProductWithVariants,
 } from "@/lib/shop";
 
@@ -70,12 +74,14 @@ export default function ProductEditorPage({
   const [images, setImages] = useState<ProductImage[]>([]);
 
   // ── Variant model: fit → colours + sizes → an auto-built stock matrix ──
+  const [productType, setProductType] = useState<ProductType>("clothing");
   const [fit, setFit] = useState<Fit>("unisex");
   const [colours, setColours] = useState<Colour[]>([]);
   const [sizes, setSizes] = useState<string[]>([]);
   const [cells, setCells] = useState<Record<string, Cell>>({});
   const [defaultStock, setDefaultStock] = useState("10");
   const [newColour, setNewColour] = useState<Colour>({ name: "", hex: "#111111" });
+  const [newOption, setNewOption] = useState("");
 
   useEffect(() => {
     fetch(`${SHOP_ADMIN_API}/products/${id}`)
@@ -92,6 +98,7 @@ export default function ProductEditorPage({
         setSortOrder(p.sort_order);
         setImages(p.images ?? []);
         setFit(p.fit ?? "unisex");
+        setProductType(p.product_type ?? "clothing");
 
         // Reconstruct colours, sizes and cells from existing variants.
         const cols: Colour[] = [];
@@ -117,26 +124,35 @@ export default function ProductEditorPage({
       .finally(() => setLoading(false));
   }, [id]);
 
-  // Chips to offer for the current fit, plus any legacy selected sizes.
+  // Chips to offer for the current product type, plus any already-selected values.
   const sizeChips = useMemo(() => {
-    const set = new Set<string>([...sizesForFit(fit), ...sizes]);
+    const presets =
+      productType === "clothing"
+        ? sizesForFit(fit)
+        : productType === "books"
+          ? BOOK_FORMATS
+          : [];
+    const set = new Set<string>([...presets, ...sizes]);
     return [...set].sort((a, b) => sizeIndex(a) - sizeIndex(b));
-  }, [fit, sizes]);
+  }, [productType, fit, sizes]);
 
-  const variantCount = useMemo(
-    () =>
-      colours.reduce(
-        (n, c) => n + sizes.filter((s) => cells[cellKey(c.name, s)]?.on !== false).length,
-        0,
-      ),
-    [colours, sizes, cells],
-  );
+  const optionLabel =
+    productType === "clothing" ? "Sizes" : productType === "books" ? "Formats" : "Variants";
+
+  const variantCount = useMemo(() => {
+    const colourList = colours.length > 0 ? colours : [{ name: "", hex: "#111111" }];
+    return colourList.reduce(
+      (n, c) => n + sizes.filter((s) => cells[cellKey(c.name, s)]?.on !== false).length,
+      0,
+    );
+  }, [colours, sizes, cells]);
 
   function ensureCells(cols: Colour[], sz: string[]) {
     setCells((prev) => {
       const next = { ...prev };
       const dflt = Math.max(0, Math.round(Number(defaultStock) || 0));
-      for (const c of cols) {
+      const colourList = cols.length > 0 ? cols : [{ name: "", hex: "#111111" }];
+      for (const c of colourList) {
         for (const s of sz) {
           const k = cellKey(c.name, s);
           if (!next[k]) next[k] = { stock: dflt, on: true };
@@ -154,6 +170,36 @@ export default function ProductEditorPage({
     setFit(next);
     setSizes(keptSizes);
     ensureCells(colours, keptSizes);
+  }
+
+  function changeProductType(next: ProductType) {
+    if (next === productType) return;
+    setProductType(next);
+    // Books/Other don't use colours — drop them so a stale colour doesn't
+    // silently multiply into every format/variant combo.
+    if (next !== "clothing" && colours.length > 0) {
+      setColours([]);
+      setCells((prev) => {
+        const kept: Record<string, Cell> = {};
+        for (const [k, v] of Object.entries(prev)) {
+          if (k.startsWith("__")) kept[k] = v; // single (no-colour) cells survive
+        }
+        return kept;
+      });
+    }
+  }
+
+  function addOption(raw: string) {
+    const s = raw.trim();
+    if (!s) return;
+    if (sizes.includes(s)) {
+      toast.info(`${s} is already added.`);
+      return;
+    }
+    const next = [...sizes, s].sort((a, b) => sizeIndex(a) - sizeIndex(b));
+    setSizes(next);
+    ensureCells(colours, [s]);
+    setNewOption("");
   }
 
   function addColour(colour: Colour) {
@@ -289,6 +335,7 @@ export default function ProductEditorPage({
           slug: slug.trim() || undefined,
           category: category.trim() || null,
           fit,
+          product_type: productType,
           description: description.trim() || null,
           base_price_pennies: poundsToPennies(basePrice),
           is_published: published,
@@ -347,6 +394,7 @@ export default function ProductEditorPage({
   }
 
   const showMatrix = colours.length > 0 && sizes.length > 0;
+  const showSimpleList = colours.length === 0 && sizes.length > 0;
 
   return (
     <div className="mx-auto max-w-3xl px-5 py-8 sm:px-8">
@@ -484,33 +532,64 @@ export default function ProductEditorPage({
           ) : null
         }
       >
-        {/* Fit */}
+        {/* Product type */}
         <div>
-          <FieldLabel>Who is it for?</FieldLabel>
+          <FieldLabel>What kind of product is this?</FieldLabel>
           <div className="inline-flex flex-wrap gap-1 rounded-full bg-[#f5f7fa] p-1">
-            {FIT_OPTIONS.map((f) => (
+            {PRODUCT_TYPE_OPTIONS.map((t) => (
               <button
-                key={f}
+                key={t}
                 type="button"
-                onClick={() => changeFit(f)}
+                onClick={() => changeProductType(t)}
                 className={`rounded-full px-4 py-2 text-sm font-bold transition ${
-                  fit === f
+                  productType === t
                     ? "bg-destiny-orange text-white shadow-sm"
                     : "text-destiny-grey/60 hover:text-destiny-grey"
                 }`}
               >
-                {FIT_LABELS[f]}
+                {PRODUCT_TYPE_LABELS[t]}
               </button>
             ))}
           </div>
           <p className="mt-2 text-xs text-destiny-grey/45">
-            {fit === "kids"
-              ? "Kids uses age-based sizes."
-              : "Adult sizing (XS–3XL)."}
+            {productType === "clothing"
+              ? "Colour + size matrix."
+              : productType === "books"
+                ? "Pick a format (or add your own)."
+                : "Add whatever custom variants this product needs."}
           </p>
         </div>
 
-        {/* Colours */}
+        {/* Fit (clothing only) */}
+        {productType === "clothing" && (
+          <div className="border-t border-black/8 pt-5">
+            <FieldLabel>Who is it for?</FieldLabel>
+            <div className="inline-flex flex-wrap gap-1 rounded-full bg-[#f5f7fa] p-1">
+              {FIT_OPTIONS.map((f) => (
+                <button
+                  key={f}
+                  type="button"
+                  onClick={() => changeFit(f)}
+                  className={`rounded-full px-4 py-2 text-sm font-bold transition ${
+                    fit === f
+                      ? "bg-destiny-orange text-white shadow-sm"
+                      : "text-destiny-grey/60 hover:text-destiny-grey"
+                  }`}
+                >
+                  {FIT_LABELS[f]}
+                </button>
+              ))}
+            </div>
+            <p className="mt-2 text-xs text-destiny-grey/45">
+              {fit === "kids"
+                ? "Kids uses age-based sizes."
+                : "Adult sizing (XS–3XL)."}
+            </p>
+          </div>
+        )}
+
+        {/* Colours (clothing only) */}
+        {productType === "clothing" && (
         <div className="border-t border-black/8 pt-5">
           <FieldLabel>Colours</FieldLabel>
           {colours.length > 0 && (
@@ -590,10 +669,11 @@ export default function ProductEditorPage({
             ))}
           </div>
         </div>
+        )}
 
-        {/* Sizes */}
+        {/* Sizes / formats / custom variants */}
         <div className="border-t border-black/8 pt-5">
-          <FieldLabel>Sizes</FieldLabel>
+          <FieldLabel>{optionLabel}</FieldLabel>
           <div className="flex flex-wrap gap-2">
             {sizeChips.map((s) => {
               const selected = sizes.includes(s);
@@ -614,9 +694,42 @@ export default function ProductEditorPage({
               );
             })}
           </div>
+
+          {productType !== "clothing" && (
+            <div className="mt-3 flex flex-wrap items-center gap-2">
+              <input
+                value={newOption}
+                onChange={(e) => setNewOption(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    addOption(newOption);
+                  }
+                }}
+                placeholder={
+                  productType === "books"
+                    ? "Custom format (e.g. Signed Edition)"
+                    : "Custom variant (e.g. Small Bundle)"
+                }
+                className="min-w-0 flex-1 rounded-xl border border-black/15 px-4 py-2.5 text-sm outline-none transition focus:border-destiny-orange focus:ring-2 focus:ring-destiny-orange/20"
+              />
+              <button
+                type="button"
+                onClick={() => addOption(newOption)}
+                className="inline-flex items-center gap-1 rounded-full bg-destiny-grey px-4 py-2.5 text-sm font-bold text-white transition hover:brightness-110"
+              >
+                <span className="material-symbols-rounded text-base">add</span>
+                Add
+              </button>
+            </div>
+          )}
+
           <p className="mt-2 text-xs text-destiny-grey/45">
-            Pick the sizes you stock — they apply to <strong>every colour</strong>. Fine-tune
-            each combination below.
+            {productType === "clothing"
+              ? "Pick the sizes you stock — they apply to every colour. Fine-tune each combination below."
+              : productType === "books"
+                ? "Pick the formats you stock, or add your own."
+                : "Add each variant this product needs, then set stock for each below."}
           </p>
         </div>
 
@@ -729,17 +842,85 @@ export default function ProductEditorPage({
               colour/size combination entirely.
             </p>
           </div>
+        ) : showSimpleList ? (
+          <div className="border-t border-black/8 pt-5">
+            <div className="mb-3 flex flex-wrap items-center gap-2">
+              <FieldLabel>Stock</FieldLabel>
+              <div className="ml-auto flex items-center gap-2">
+                <input
+                  type="number"
+                  min={0}
+                  value={defaultStock}
+                  onChange={(e) => setDefaultStock(e.target.value)}
+                  className="w-20 rounded-lg border border-black/15 px-3 py-1.5 text-sm outline-none focus:border-destiny-orange"
+                  aria-label="Default stock"
+                />
+                <button
+                  type="button"
+                  onClick={applyStockToAll}
+                  className="inline-flex items-center gap-1 rounded-full border border-black/10 px-3 py-1.5 text-xs font-bold text-destiny-grey transition hover:bg-[#f5f7fa]"
+                >
+                  <span className="material-symbols-rounded text-base">done_all</span>
+                  Apply to all
+                </button>
+              </div>
+            </div>
+            <div className="space-y-2">
+              {[...sizes]
+                .sort((a, b) => sizeIndex(a) - sizeIndex(b))
+                .map((s) => {
+                  const cell = cells[cellKey("", s)] ?? { stock: 0, on: true };
+                  return (
+                    <div key={s} className="flex items-center gap-3">
+                      <span className="flex-1 text-sm font-semibold text-destiny-grey">{s}</span>
+                      {cell.on === false ? (
+                        <button
+                          type="button"
+                          onClick={() => setCell("", s, { on: true })}
+                          className="rounded-lg border border-dashed border-black/15 px-4 py-2 text-xs font-bold text-destiny-grey/40 transition hover:border-destiny-orange hover:text-destiny-orange"
+                        >
+                          Not available — click to add
+                        </button>
+                      ) : (
+                        <input
+                          type="number"
+                          min={0}
+                          value={cell.stock}
+                          onChange={(e) =>
+                            setCell("", s, {
+                              stock: Math.max(0, Math.round(Number(e.target.value) || 0)),
+                            })
+                          }
+                          className={`h-10 w-24 rounded-lg border px-2 text-center text-sm outline-none transition focus:border-destiny-orange ${
+                            cell.stock === 0
+                              ? "border-destiny-red/30 bg-destiny-red/5 text-destiny-red"
+                              : "border-black/12"
+                          }`}
+                        />
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => toggleSize(s)}
+                        title={`Remove ${s}`}
+                        className="text-destiny-grey/40 transition hover:text-red-600"
+                      >
+                        <span className="material-symbols-rounded text-base">close</span>
+                      </button>
+                    </div>
+                  );
+                })}
+            </div>
+            <p className="mt-2 text-xs text-destiny-grey/45">Red means sold out (still listed).</p>
+          </div>
         ) : (
           <div className="rounded-xl border border-dashed border-black/15 bg-[#f9fafb] px-4 py-6 text-center text-sm text-destiny-grey/50">
-            {colours.length === 0 && sizes.length === 0
-              ? "Add at least one colour and one size to build your stock grid."
-              : colours.length === 0
-                ? "Add a colour to build your stock grid."
-                : "Pick your sizes to build your stock grid."}
+            {productType === "clothing" && colours.length === 0
+              ? `Add a colour, or pick ${optionLabel.toLowerCase()} to build your stock list.`
+              : `Pick or add ${optionLabel.toLowerCase()} to build your stock list.`}
             <br />
             <span className="text-xs">
-              No colours or sizes? Just set a base price and save — it&apos;ll sell as a
-              single one-size item.
+              No {optionLabel.toLowerCase()}? Just set a base price and save — it&apos;ll sell as
+              a single item.
             </span>
           </div>
         )}

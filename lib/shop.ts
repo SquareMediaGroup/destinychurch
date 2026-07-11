@@ -23,6 +23,29 @@ export const FIT_LABELS: Record<Fit, string> = {
 
 export const FIT_OPTIONS: Fit[] = ["male", "female", "unisex", "kids"];
 
+// What kind of product this is — drives which variant options the admin
+// editor offers (clothing gets colour/size, books get a format chooser,
+// other gets fully custom variant labels).
+export type ProductType = "clothing" | "books" | "other";
+
+export const PRODUCT_TYPE_LABELS: Record<ProductType, string> = {
+  clothing: "Clothing",
+  books: "Books",
+  other: "Other",
+};
+
+export const PRODUCT_TYPE_OPTIONS: ProductType[] = ["clothing", "books", "other"];
+
+// Controlled format chart for books, mirrors ADULT_SIZES/KIDS_SIZES below —
+// the admin can pick from these or add a custom format.
+export const BOOK_FORMATS = [
+  "Hardcover",
+  "Paperback",
+  "eBook",
+  "Audiobook",
+  "Large Print",
+] as const;
+
 // Controlled size charts — the admin can only pick from these, so no typos or
 // sizes that don't exist. Ordered smallest → largest for display + sort_order.
 export const ADULT_SIZES = ["XS", "S", "M", "L", "XL", "2XL", "3XL"] as const;
@@ -79,6 +102,7 @@ export interface Product {
   base_price_pennies: number;
   category: string | null;
   fit: Fit;
+  product_type: ProductType;
   images: ProductImage[];
   is_published: boolean;
   is_featured: boolean;

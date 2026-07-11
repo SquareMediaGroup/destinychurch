@@ -43,7 +43,7 @@ export default function ProductBuyPanel({ product }: { product: ProductWithVaria
   const [selColor, setSelColor] = useState<string>(
     hasColor ? colors[0].color : "",
   );
-  const [selSize, setSelSize] = useState<string>("");
+  const [selSize, setSelSize] = useState<string>(hasSize ? sizes[0] : "");
   const [qty, setQty] = useState(1);
 
   const stockFor = (color: string, size: string): number =>
@@ -71,10 +71,6 @@ export default function ProductBuyPanel({ product }: { product: ProductWithVaria
     : product.base_price_pennies;
 
   function handleAdd() {
-    if (hasSize && !selSize) {
-      toast.info("Please choose a size.", "Almost there");
-      return;
-    }
     if (!selected || !inStock) {
       toast.error("That option isn't available right now.");
       return;
@@ -116,7 +112,10 @@ export default function ProductBuyPanel({ product }: { product: ProductWithVaria
                   type="button"
                   onClick={() => {
                     setSelColor(color);
-                    if (hasSize && !sizeAvailable(selSize)) setSelSize("");
+                    if (hasSize && stockFor(color, selSize) <= 0) {
+                      const firstAvail = sizes.find((s) => stockFor(color, s) > 0);
+                      setSelSize(firstAvail ?? sizes[0]);
+                    }
                   }}
                   title={color}
                   aria-label={color}
@@ -196,11 +195,11 @@ export default function ProductBuyPanel({ product }: { product: ProductWithVaria
         <button
           type="button"
           onClick={handleAdd}
-          disabled={(hasSize && !selSize) || !inStock}
+          disabled={!inStock}
           className="inline-flex flex-1 items-center justify-center gap-2 rounded-full bg-destiny-orange px-7 py-3.5 text-sm font-bold text-white shadow-lg shadow-destiny-orange/25 transition hover:bg-destiny-orange-dark disabled:cursor-not-allowed disabled:bg-destiny-grey/30 disabled:shadow-none"
         >
           <span className="material-symbols-rounded text-lg">shopping_bag</span>
-          {inStock || (hasSize && !selSize) ? "Add to basket" : "Sold out"}
+          {inStock ? "Add to basket" : "Sold out"}
         </button>
       </div>
 

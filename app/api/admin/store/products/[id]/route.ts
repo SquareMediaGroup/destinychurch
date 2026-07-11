@@ -37,6 +37,7 @@ const EDITABLE = [
   "base_price_pennies",
   "category",
   "fit",
+  "product_type",
   "images",
   "is_published",
   "is_featured",

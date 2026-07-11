@@ -65,7 +65,7 @@ Destiny Church Tees Valley is a **full-stack church website platform** built by 
 3. **Edge Caching:** Long TTLs on static assets; revalidate on-demand for dynamic content
 4. **Mobile First:** Responsive Tailwind CSS; tested on real devices
 5. **Accessibility:** Semantic HTML, ARIA labels, keyboard navigation
-6. **AI-Ready:** Structured data for future AI features (smart search, content generation, page builder)
+6. **AI-Ready:** Structured data for future AI features (smart search, content generation)
 7. **No Vendor Lock-In:** Open-source stack (Next.js, React, Tailwind, Supabase PostgreSQL)
 
 ### Data Flow
@@ -153,8 +153,6 @@ destinychurch/
 │   │   ├── layout.tsx             # Admin layout (sidebar)
 │   │   ├── page.tsx               # Admin home (dashboard)
 │   │   ├── sermons/               # Manage sermons
-│   │   ├── pages/                 # Manage dynamic pages
-│   │   ├── pages/ai/              # AI page builder (beta)
 │   │   ├── banner/                # Manage site banners
 │   │   ├── popup/                 # Manage pop-ups
 │   │   ├── redirects/             # Manage URL redirects
@@ -173,7 +171,6 @@ destinychurch/
 │   │   │   ├── redirects/         # CRUD redirects
 │   │   │   ├── popup/             # CRUD pop-ups
 │   │   │   ├── revalidate/        # ISR cache invalidation
-│   │   │   ├── builder/           # Page builder API
 │   │   │   └── ...
 │   │   ├── public/                # Public API endpoints
 │   │   │   ├── youtube-sync/      # Fetch latest YouTube videos
@@ -507,19 +504,6 @@ CREATE TABLE site_popup (
 
 ---
 
-#### 9. **builder_media** (Supabase Storage)
-**Purpose:** Bucket for AI page builder media uploads
-
-- **Private bucket:** Files require signed URLs
-- **Max file size:** Per individual file limits
-- **Allowed types:** Images, documents
-
-**Used By:**
-- AI page builder (experimental feature)
-- Admin to upload media for generated pages
-
----
-
 #### 10. **hr_staff**
 **Purpose:** Employee/volunteer directory
 
@@ -700,7 +684,7 @@ CREATE TABLE job_applications (
 
 ```sql
 CREATE TABLE service_status (
-  service_name text PRIMARY KEY,       -- 'smart_search', 'page_builder', etc.
+  service_name text PRIMARY KEY,       -- 'smart_search', etc.
   enabled boolean DEFAULT false,
   updated_at timestamptz DEFAULT now()
 );
@@ -1064,10 +1048,6 @@ Displayed on every page:
 | `/admin/forgot-password` | `app/admin/forgot-password/page.tsx` | Password reset request |
 | `/admin` | `app/admin/page.tsx` | Admin dashboard home |
 | `/admin/sermons` | `app/admin/sermons/page.tsx` | Manage sermon visibility, metadata |
-| `/admin/pages` | `app/admin/pages/page.tsx` | Manage dynamic pages |
-| `/admin/pages/code/[id]` | - | Edit page code (advanced) |
-| `/admin/pages/ai` | `app/admin/pages/ai/page.tsx` | AI page builder (beta) |
-| `/admin/pages/skeleton` | - | Page templates |
 | `/admin/banner` | `app/admin/banner/page.tsx` | Manage site banners |
 | `/admin/popup` | `app/admin/popup/page.tsx` | Manage pop-ups |
 | `/admin/redirects` | `app/admin/redirects/page.tsx` | Manage URL redirects |
@@ -1333,17 +1313,6 @@ export async function applyForJob(jobId: string, formData: ApplicationData) {
 // 4. Return success
 ```
 
-#### `POST /api/admin/pages/[id]`
-```typescript
-// Update dynamic page content
-// Body: { title, slug, content, published }
-// Logic:
-// 1. Check auth
-// 2. Update page in database
-// 3. Revalidate page at its route (e.g., /[slug])
-// 4. Return updated page
-```
-
 #### `POST /api/admin/redirects`
 ```typescript
 // Create or update redirect
@@ -1467,61 +1436,6 @@ GET|PATCH           /api/admin/store/orders/[id]          // PATCH updates fulfi
 GET|POST            /api/admin/shop-hero                  // list / create hero slides
 PATCH|DELETE        /api/admin/shop-hero/[id]             // update (content/active/sort_order) / delete
 POST                /api/admin/shop-hero/upload           // sharp → WebP → shop-hero-images bucket
-```
-
----
-
-### Admin Page Builder API (AI-Powered)
-
-#### `POST /api/admin/builder/ai/generate-code`
-```typescript
-// AI generates page code from description
-// Body: { pageDescription: string, intent: string }
-// Response: { code: string, html: string }
-
-// Logic:
-// 1. Check auth (admin)
-// 2. Call OpenAI with page-generation prompt
-// 3. Model outputs TSX code for React component
-// 4. Validate code (no runtime errors, no XSS)
-// 5. Return code + preview HTML
-```
-
-#### `POST /api/admin/builder/ai/upload-media`
-```typescript
-// Upload image for AI page builder
-// FormData: { file: File }
-// Response: { url: string }
-
-// Logic:
-// 1. Check auth
-// 2. Upload to builder_media bucket
-// 3. Optimize image (resize, compress with Sharp)
-// 4. Return CDN URL
-```
-
-#### `POST /api/admin/builder/ai/add-video`
-```typescript
-// Add YouTube video to builder page
-// Body: { youtubeId: string, title: string, description: string }
-// Response: { success: boolean }
-
-// Logic:
-// 1. Validate YouTube ID exists
-// 2. Fetch video metadata from YouTube API
-// 3. Return video with thumbnail and duration
-```
-
-#### `GET /api/admin/builder/ai/workflow-status`
-```typescript
-// Check status of ongoing page generation
-// Query: { workflowId: string }
-// Response: { status, progress, result? }
-
-// Logic:
-// 1. Look up workflow in database
-// 2. Return current status (pending, generating, complete, error)
-// 3. If complete, return generated page code
 ```
 
 ---
@@ -1912,146 +1826,6 @@ Similar patterns for job listings and HR management.
 
 ---
 
-### `lib/ai/` Directory
-
-AI-specific utilities for the page builder:
-
-#### `llm-client.ts`
-
-```typescript
-// Wrapper around OpenAI API
-export async function generatePageCode(
-  description: string,
-  intent: string
-): Promise<string> {
-  const client = new OpenAI({
-    apiKey: process.env.OPENAI_API_KEY
-  });
-  
-  const response = await client.chat.completions.create({
-    model: "gpt-4-turbo",
-    messages: [
-      {
-        role: "system",
-        content: `You are a React/TypeScript code generator for church website pages...`
-      },
-      {
-        role: "user",
-        content: description
-      }
-    ],
-    temperature: 0.7,
-    max_tokens: 2000
-  });
-  
-  return response.choices[0]?.message.content ?? "";
-}
-```
-
-#### `code-validator.ts`
-
-Validates generated code for safety:
-
-```typescript
-export function validatePageCode(code: string): ValidationResult {
-  const issues = [];
-  
-  // Check for dangerous patterns
-  if (code.includes("eval(")) issues.push("eval() not allowed");
-  if (code.includes("document.write")) issues.push("document.write() not allowed");
-  if (code.includes("innerHTML =")) issues.push("innerHTML direct assignment not allowed");
-  if (code.includes("dangerouslySetInnerHTML")) {
-    // Allow but warn
-    issues.push("dangerouslySetInnerHTML: ensure content is sanitized");
-  }
-  
-  // Check for required imports
-  if (!code.includes("import")) issues.push("Missing imports");
-  
-  // Try to parse as valid TypeScript
-  try {
-    const ast = parse(code, { sourceType: "module", plugins: ["typescript", "jsx"] });
-  } catch (err) {
-    issues.push(`Syntax error: ${err.message}`);
-  }
-  
-  return {
-    valid: issues.length === 0,
-    issues
-  };
-}
-```
-
-#### `git-automation.ts`
-
-Auto-commit generated pages to Git:
-
-```typescript
-export async function commitGeneratedPage(
-  fileName: string,
-  code: string,
-  message: string
-) {
-  const octokit = new Octokit({
-    auth: process.env.GITHUB_TOKEN
-  });
-  
-  const repo = "squaremediagroup/destinychurch";
-  const branch = "main";
-  
-  // Get current commit SHA
-  const { data: refData } = await octokit.git.getRef({
-    owner: "squaremediagroup",
-    repo: "destinychurch",
-    ref: `heads/${branch}`
-  });
-  
-  const latestCommitSha = refData.object.sha;
-  
-  // Create blob for new file
-  const { data: blobData } = await octokit.git.createBlob({
-    owner: "squaremediagroup",
-    repo: "destinychurch",
-    content: code,
-    encoding: "utf-8"
-  });
-  
-  // Create tree with new file
-  const { data: treeData } = await octokit.git.createTree({
-    owner: "squaremediagroup",
-    repo: "destinychurch",
-    base_tree: latestCommitSha,
-    tree: [
-      {
-        path: fileName,
-        mode: "100644",
-        type: "blob",
-        sha: blobData.sha
-      }
-    ]
-  });
-  
-  // Create commit
-  const { data: commitData } = await octokit.git.createCommit({
-    owner: "squaremediagroup",
-    repo: "destinychurch",
-    message,
-    tree: treeData.sha,
-    parents: [latestCommitSha]
-  });
-  
-  // Update branch reference
-  await octokit.git.updateRef({
-    owner: "squaremediagroup",
-    repo: "destinychurch",
-    ref: `heads/${branch}`,
-    sha: commitData.sha
-  });
-}
-```
-
----
-
 ## Authentication & Authorization
 
 ### Supabase Auth Flow
@@ -2244,15 +2018,14 @@ YOUTUBE_CHANNEL_ID=UCxx...
 # Email
 RESEND_API_KEY=re_...
 
-# OpenAI (for Smart Search, page builder)
+# OpenAI (for Smart Search)
 OPENAI_API_KEY=sk-...
 
-# GitHub (for auto-commits, CI/CD)
+# GitHub (for CI/CD)
 GITHUB_TOKEN=ghp_...
 
 # Feature flags
 ENABLE_SMART_SEARCH=true
-ENABLE_PAGE_BUILDER=false
 ```
 
 ---
@@ -2396,8 +2169,6 @@ ENABLE_PAGE_BUILDER=false
 - `app/admin/login/page.tsx` — Admin login
 - `app/admin/page.tsx` — Admin home (dashboard)
 - `app/admin/sermons/page.tsx` — Sermon management
-- `app/admin/pages/page.tsx` — Page management
-- `app/admin/pages/ai/page.tsx` — AI page builder
 - `app/admin/banner/page.tsx` — Banner management
 - `app/admin/popup/page.tsx` — Pop-up management
 - `app/admin/redirects/page.tsx` — Redirect management
@@ -2452,9 +2223,9 @@ Destiny Church Tees Valley is a **professional, full-stack Next.js application**
 
 1. **Public-facing website** — Sermons, ministries, contact, events, livestream
 2. **Member engagement** — Prayer requests, volunteering, training, small groups
-3. **Admin dashboard** — Content management, page builder, HR tools, store management
+3. **Admin dashboard** — Content management, HR tools, store management
 4. **Ecommerce** — Online store with Stripe payments, product variants, order management
-5. **Intelligent features** — Destiny AI assistant, dynamic page generation, live banner management
+5. **Intelligent features** — Destiny AI assistant, live banner management
 
 **Architecture:** Server-driven React with Supabase PostgreSQL, deployed to Vercel with ISR caching. All sensitive operations use service-role API proxies with explicit auth checks. Code is type-safe (TypeScript), styled with Tailwind CSS, and tested with Playwright E2E.
 

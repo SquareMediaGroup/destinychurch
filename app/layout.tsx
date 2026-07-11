@@ -17,7 +17,6 @@ import PerformanceGate from "@/components/PerformanceGate";
 import { isSmartSearchEnabled } from "@/lib/serviceStatus";
 import { getLiveStatus } from "@/lib/youtube";
 import BannerSpacer from "@/components/BannerSpacer";
-import VisualEditOverlay from "@/components/admin/VisualEditOverlay";
 import { createServiceClient } from "@/utils/supabase/service";
 import { unstable_noStore as noStore } from "next/cache";
 import { SpeedInsights } from "@vercel/speed-insights/next";
@@ -422,9 +421,6 @@ export default async function RootLayout({
           {smartSearchEnabled && <FloatingSmartSearch />}
         </Providers>
         <SpeedInsights />
-        <Suspense>
-          <VisualEditOverlay />
-        </Suspense>
       </body>
     </html>
   );

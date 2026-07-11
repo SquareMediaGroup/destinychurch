@@ -6,7 +6,6 @@ import { useEffect, useState } from "react";
 interface Stats {
   redirects: { total: number; active: number };
   sermons: { total: number; hidden: number };
-  builderPages: { total: number; published: number };
   alphaEvents: { total: number; upcoming: number };
   banner: { active: boolean; type: string; message: string };
   popup: { active: boolean; title: string };
@@ -19,11 +18,10 @@ export default function AdminDashboard() {
   useEffect(() => {
     async function load() {
       try {
-        const [redirectsRes, sermonsRes, builderRes, alphaRes, bannerRes, popupRes] =
+        const [redirectsRes, sermonsRes, alphaRes, bannerRes, popupRes] =
           await Promise.allSettled([
             fetch("/api/admin/redirects"),
             fetch("/api/admin/sermons"),
-            fetch("/api/admin/builder/pages"),
             fetch("/api/admin/alpha-events"),
             fetch("/api/admin/banner"),
             fetch("/api/admin/popup"),
@@ -37,10 +35,6 @@ export default function AdminDashboard() {
           sermonsRes.status === "fulfilled" && sermonsRes.value.ok
             ? await sermonsRes.value.json()
             : [];
-        const builderData =
-          builderRes.status === "fulfilled" && builderRes.value.ok
-            ? await builderRes.value.json()
-            : { pages: [] };
         const alphaData =
           alphaRes.status === "fulfilled" && alphaRes.value.ok
             ? await alphaRes.value.json()
@@ -56,7 +50,6 @@ export default function AdminDashboard() {
 
         const redirectsArr = Array.isArray(redirectsData) ? redirectsData : [];
         const sermonsArr = Array.isArray(sermonsData) ? sermonsData : [];
-        const builderPages = Array.isArray(builderData?.pages) ? builderData.pages : [];
         const alphaArr = Array.isArray(alphaData) ? alphaData : [];
         const now = new Date();
 
@@ -68,10 +61,6 @@ export default function AdminDashboard() {
           sermons: {
             total: sermonsArr.length,
             hidden: sermonsArr.filter((s: { video_id: string }) => s.video_id).length,
-          },
-          builderPages: {
-            total: builderPages.length,
-            published: builderPages.filter((p: { status: string }) => p.status === "published").length,
           },
           alphaEvents: {
             total: alphaArr.length,
@@ -205,16 +194,6 @@ export default function AdminDashboard() {
             secondaryLabel="hidden"
           />
           <StatCard
-            icon="design_services"
-            label="Builder Pages"
-            href="/admin/pages"
-            loading={loading}
-            primary={stats?.builderPages.published ?? 0}
-            primaryLabel="published"
-            secondary={stats ? stats.builderPages.total - stats.builderPages.published : 0}
-            secondaryLabel="draft"
-          />
-          <StatCard
             icon="event"
             label="Courses"
             href="/admin/alpha"
@@ -240,14 +219,6 @@ export default function AdminDashboard() {
             icon="play_circle"
             label="Sermons"
             description="Hide or show YouTube videos from the public sermons listing."
-            color="text-destiny-orange"
-            bg="bg-destiny-orange/10"
-          />
-          <SectionCard
-            href="/admin/pages"
-            icon="design_services"
-            label="Builder"
-            description="Create and manage AI-generated and visual drag-drop pages."
             color="text-destiny-orange"
             bg="bg-destiny-orange/10"
           />

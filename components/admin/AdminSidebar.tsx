@@ -26,7 +26,6 @@ const storeItems = [
 ];
 
 const bottomNavItems = [
-  { href: "/admin/pages", icon: "design_services", label: "Pages" },
   { href: "/admin/redirects", icon: "alt_route", label: "Redirects" },
   { href: "/admin/cache", icon: "refresh", label: "Clear Cache" },
 ];

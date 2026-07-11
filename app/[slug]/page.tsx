@@ -14,15 +14,6 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   const post = await getPublishedPostBySlug(slug);
   if (post) return { title: post.title };
-
-  const supabase = createServiceClient();
-  const { data } = await supabase
-    .from("builder_pages")
-    .select("title")
-    .eq("slug", slug)
-    .eq("status", "published")
-    .maybeSingle();
-  if (data?.title) return { title: data.title };
   return {};
 }
 

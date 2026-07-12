@@ -5,7 +5,8 @@ import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 
-const topNavItems: { href: string; icon: string; label: string }[] = [
+const topNavItems: { href: string; icon: string; label: string; exact?: boolean }[] = [
+  { href: "/admin", icon: "grid_view", label: "Dashboard", exact: true },
   { href: "/admin/posts", icon: "article", label: "Posts" },
   { href: "/admin/training", icon: "school", label: "Training" },
 ];
@@ -95,7 +96,9 @@ function NavItems({ pathname, onNavigate }: { pathname: string; onNavigate?: () 
   return (
     <>
       {topNavItems.map((item) => {
-        const active = pathname.startsWith(item.href);
+        const active = item.exact
+          ? pathname === item.href
+          : pathname.startsWith(item.href);
         return (
           <Link
             key={item.href}

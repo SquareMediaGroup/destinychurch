@@ -8,7 +8,14 @@ interface Stats {
   alphaEvents: { total: number; upcoming: number };
   banner: { active: boolean; type: string; message: string };
   popup: { active: boolean; title: string };
+  shop: { totalProducts: number; totalStock: number; soldThisYearPennies: number };
 }
+
+const gbp = new Intl.NumberFormat("en-GB", {
+  style: "currency",
+  currency: "GBP",
+  maximumFractionDigits: 0,
+});
 
 export default function AdminDashboard() {
   const [stats, setStats] = useState<Stats | null>(null);
@@ -17,12 +24,14 @@ export default function AdminDashboard() {
   useEffect(() => {
     async function load() {
       try {
-        const [redirectsRes, alphaRes, bannerRes, popupRes] =
+        const [redirectsRes, alphaRes, bannerRes, popupRes, productsRes, ordersRes] =
           await Promise.allSettled([
             fetch("/api/admin/redirects"),
             fetch("/api/admin/alpha-events"),
             fetch("/api/admin/banner"),
             fetch("/api/admin/popup"),
+            fetch("/api/admin/store/products"),
+            fetch("/api/admin/store/orders"),
           ]);
 
         const redirectsData =
@@ -41,10 +50,35 @@ export default function AdminDashboard() {
           popupRes.status === "fulfilled" && popupRes.value.ok
             ? await popupRes.value.json()
             : { active: false, title: "" };
+        const productsData =
+          productsRes.status === "fulfilled" && productsRes.value.ok
+            ? await productsRes.value.json()
+            : [];
+        const ordersData =
+          ordersRes.status === "fulfilled" && ordersRes.value.ok
+            ? await ordersRes.value.json()
+            : [];
 
         const redirectsArr = Array.isArray(redirectsData) ? redirectsData : [];
         const alphaArr = Array.isArray(alphaData) ? alphaData : [];
+        const productsArr = Array.isArray(productsData) ? productsData : [];
+        const ordersArr = Array.isArray(ordersData) ? ordersData : [];
         const now = new Date();
+        const currentYear = now.getFullYear();
+
+        const totalStock = productsArr.reduce(
+          (sum: number, p: { variants?: { stock?: number }[] }) =>
+            sum + (p.variants ?? []).reduce((s, v) => s + (v.stock ?? 0), 0),
+          0,
+        );
+
+        const soldThisYearPennies = ordersArr
+          .filter((o: { status: string; paid_at: string | null; created_at: string }) => {
+            if (o.status !== "paid" && o.status !== "fulfilled") return false;
+            const date = new Date(o.paid_at ?? o.created_at);
+            return date.getFullYear() === currentYear;
+          })
+          .reduce((sum: number, o: { total_pennies: number | null }) => sum + (o.total_pennies ?? 0), 0);
 
         setStats({
           redirects: {
@@ -63,6 +97,11 @@ export default function AdminDashboard() {
           popup: {
             active: popupData.active ?? false,
             title: popupData.title ?? "",
+          },
+          shop: {
+            totalProducts: productsArr.length,
+            totalStock,
+            soldThisYearPennies,
           },
         });
       } catch {
@@ -156,6 +195,42 @@ export default function AdminDashboard() {
         </div>
       </section>
 
+      {/* Shop */}
+      <section className="mb-10">
+        <h2 className="mb-3 text-xs font-bold uppercase tracking-widest text-destiny-grey/40">
+          Shop
+        </h2>
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          <MetricCard
+            href="/admin/store"
+            icon="inventory_2"
+            iconColor="text-destiny-orange"
+            iconBg="bg-destiny-orange/10"
+            label="Total products"
+            loading={loading}
+            value={stats?.shop.totalProducts ?? 0}
+          />
+          <MetricCard
+            href="/admin/store"
+            icon="package_2"
+            iconColor="text-destiny-blue"
+            iconBg="bg-destiny-blue/10"
+            label="Units in stock"
+            loading={loading}
+            value={stats?.shop.totalStock ?? 0}
+          />
+          <MetricCard
+            href="/admin/store/orders"
+            icon="payments"
+            iconColor="text-destiny-green"
+            iconBg="bg-destiny-green/10"
+            label={`Sold in ${new Date().getFullYear()}`}
+            loading={loading}
+            value={stats ? gbp.format(stats.shop.soldThisYearPennies / 100) : "£0"}
+          />
+        </div>
+      </section>
+
       {/* Quick actions */}
       <section className="mb-10">
         <h2 className="mb-3 text-xs font-bold uppercase tracking-widest text-destiny-grey/40">
@@ -169,13 +244,6 @@ export default function AdminDashboard() {
           >
             <span className="material-symbols-rounded text-lg text-destiny-orange">open_in_new</span>
             View live site
-          </Link>
-          <Link
-            href="/admin/cache"
-            className="flex items-center gap-2 rounded-xl border border-black/8 bg-white px-4 py-2.5 text-sm font-bold text-destiny-grey shadow-sm transition hover:shadow-md"
-          >
-            <span className="material-symbols-rounded text-lg text-destiny-grey/50">refresh</span>
-            Clear cache
           </Link>
         </div>
       </section>
@@ -196,31 +264,6 @@ export default function AdminDashboard() {
             color="text-destiny-blue"
             bg="bg-destiny-blue/10"
           />
-        </div>
-
-        {/* Announcements group */}
-        <div>
-          <p className="mb-2 text-[11px] font-bold uppercase tracking-widest text-destiny-grey/30">
-            Announcements
-          </p>
-          <div className="grid gap-3 sm:grid-cols-2">
-            <SectionCard
-              href="/admin/banner"
-              icon="campaign"
-              label="Banner"
-              description="Manage the site-wide announcement or maintenance banner."
-              color="text-destiny-blue"
-              bg="bg-destiny-blue/10"
-            />
-            <SectionCard
-              href="/admin/popup"
-              icon="ad"
-              label="Popup"
-              description="Configure the modal popup shown to site visitors."
-              color="text-destiny-purple"
-              bg="bg-destiny-purple/10"
-            />
-          </div>
         </div>
 
         {/* Courses group */}
@@ -246,18 +289,6 @@ export default function AdminDashboard() {
               bg="bg-destiny-green/10"
             />
           </div>
-        </div>
-
-        {/* Tools */}
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          <SectionCard
-            href="/admin/cache"
-            icon="refresh"
-            label="Clear Cache"
-            description="Manually trigger revalidation of cached pages across the site."
-            color="text-destiny-grey"
-            bg="bg-destiny-grey/10"
-          />
         </div>
       </section>
     </div>

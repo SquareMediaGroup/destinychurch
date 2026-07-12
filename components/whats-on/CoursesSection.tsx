@@ -12,6 +12,63 @@ export default function CoursesSection() {
           </h2>
         </AnimateIn>
 
+        {/* The Bible Course — full width, above the course grid */}
+        <AnimateIn>
+          <div className="mb-6 overflow-hidden rounded-2xl shadow-md">
+            <div
+              className="relative flex flex-col items-start justify-between gap-6 p-10 md:flex-row md:items-center"
+              style={{ minHeight: "380px" }}
+            >
+              {/* Background photo */}
+              <Image
+                src="/img/BibleCourse/presenters.webp"
+                alt=""
+                fill
+                className="object-cover"
+                sizes="100vw"
+                aria-hidden="true"
+              />
+              {/* Brand colour wash */}
+              <div
+                className="absolute inset-0"
+                style={{
+                  background:
+                    "linear-gradient(to right, rgba(15,46,66,0.9) 0%, rgba(27,73,101,0.7) 45%, rgba(27,73,101,0.25) 100%)",
+                }}
+              />
+              {/* Content */}
+              <div className="relative max-w-lg">
+                <p className="mb-3 text-xs font-bold uppercase tracking-[0.28em] text-white/70">
+                  By Bible Society
+                </p>
+                <h3 className="mb-4 text-4xl font-black text-white md:text-6xl">
+                  The Bible<br />Course
+                </h3>
+                <p className="text-base leading-relaxed text-white/70">
+                  An award-winning eight-session journey through the Bible.
+                  Discover how the whole story fits together — no experience
+                  needed, everyone welcome.
+                </p>
+              </div>
+              <div className="relative flex shrink-0 flex-col gap-3">
+                <Link
+                  href="/bible-course"
+                  className="rounded-full px-8 py-3 text-center text-sm font-bold text-white shadow-lg transition hover:brightness-110"
+                  style={{ backgroundColor: "#1b4965" }}
+                >
+                  Find out more
+                </Link>
+                <Link
+                  href="/contact"
+                  className="rounded-full border-2 border-white/30 px-8 py-3 text-center text-sm font-bold text-white transition hover:border-white/60 hover:bg-white/10"
+                >
+                  Register Interest
+                </Link>
+              </div>
+            </div>
+          </div>
+        </AnimateIn>
+
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           {/* CAP Money Course */}
           <AnimateIn>

@@ -93,7 +93,12 @@ async function getActiveBanner() {
     const sitewide = banners.find((b) => b.type === "sitewide");
     if (sitewide) return sitewide;
 
-    const EVENT_TYPES = new Set(["alpha", "youth_alpha", "recovery"]);
+    const EVENT_TYPES = new Set([
+      "alpha",
+      "youth_alpha",
+      "recovery",
+      "bible_course",
+    ]);
 
     async function resolveEvent(b: (typeof banners)[number]) {
       const { data: alpha } = await supabase
@@ -113,15 +118,22 @@ async function getActiveBanner() {
     const alpha = banners.find((b) => b.type === "alpha");
     const youthAlpha = banners.find((b) => b.type === "youth_alpha");
     const recovery = banners.find((b) => b.type === "recovery");
+    const bibleCourse = banners.find((b) => b.type === "bible_course");
     const other = banners.find((b) => !EVENT_TYPES.has(b.type));
 
     const resolvedAlpha = alpha ? await resolveEvent(alpha) : null;
     const resolvedYouth = youthAlpha ? await resolveEvent(youthAlpha) : null;
     const resolvedRecovery = recovery ? await resolveEvent(recovery) : null;
+    const resolvedBibleCourse = bibleCourse
+      ? await resolveEvent(bibleCourse)
+      : null;
 
-    const activeResolved = [resolvedAlpha, resolvedYouth, resolvedRecovery].filter(
-      (b): b is NonNullable<typeof b> => !!b?.active
-    );
+    const activeResolved = [
+      resolvedAlpha,
+      resolvedYouth,
+      resolvedRecovery,
+      resolvedBibleCourse,
+    ].filter((b): b is NonNullable<typeof b> => !!b?.active);
 
     // Prefer event banners first, then any other banner.
     const primary = activeResolved[0] ?? other ?? null;

@@ -273,6 +273,14 @@ export default function AdminDashboard() {
           </p>
           <div className="grid gap-3 sm:grid-cols-2">
             <SectionCard
+              href="/admin/bible-course"
+              icon="menu_book"
+              label="The Bible Course"
+              description="Manage The Bible Course events, dates, and sign-up links."
+              color="text-destiny-blue"
+              bg="bg-destiny-blue/10"
+            />
+            <SectionCard
               href="/admin/alpha"
               icon="event"
               label="Alpha"

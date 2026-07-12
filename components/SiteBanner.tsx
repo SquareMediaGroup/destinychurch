@@ -76,7 +76,8 @@ function renderBanner(banner: BannerData, index: number) {
   if (
     banner.type === "alpha" ||
     banner.type === "youth_alpha" ||
-    banner.type === "recovery"
+    banner.type === "recovery" ||
+    banner.type === "bible_course"
   ) {
     if (!banner.alpha) return null;
     const { date, isFirst } = getNextAlphaSession(
@@ -94,6 +95,8 @@ function renderBanner(banner: BannerData, index: number) {
         ? "/youth-alpha"
         : banner.type === "recovery"
         ? "/destiny-recovery"
+        : banner.type === "bible_course"
+        ? "/bible-course"
         : "/alpha";
     const linkHref = banner.link || defaultHref;
     const linkText = banner.link_text || "Sign up";
@@ -102,6 +105,8 @@ function renderBanner(banner: BannerData, index: number) {
         ? "Youth Alpha"
         : banner.type === "recovery"
         ? "Destiny Recovery"
+        : banner.type === "bible_course"
+        ? "The Bible Course"
         : "Alpha";
     const eyebrow = banner.message?.trim() || defaultEyebrow;
     const cadenceLabel = isFirst ? "Starting" : "Next session";
@@ -110,6 +115,8 @@ function renderBanner(banner: BannerData, index: number) {
         ? "#b81313"
         : banner.type === "recovery"
         ? "#006756"
+        : banner.type === "bible_course"
+        ? "#1b4965"
         : "#e51b1b";
 
     return (

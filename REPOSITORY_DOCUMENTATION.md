@@ -256,6 +256,7 @@ destinychurch/
 │       ├── 008_alpha_events_online.sql # Online/hybrid Alpha support
 │       ├── 009_alpha_events_frequency.sql # Event recurrence
 │       ├── 010_alpha_events_recovery_type.sql # Recovery program
+│       ├── 20260712_alpha_events_bible_course_type.sql # The Bible Course
 │       ├── 20260329_contact_messages.sql # Contact form submissions
 │       ├── 20260502_site_popup.sql # Modal pop-ups
 │       ├── 20260507_builder_media_bucket.sql # AI page builder media
@@ -341,7 +342,7 @@ CREATE TABLE site_banner (
   id uuid PRIMARY KEY,
   message text NOT NULL,               -- Banner text (HTML allowed)
   active boolean DEFAULT false,        -- Toggle on/off
-  type text,                           -- 'sitewide', 'alpha', 'youth_alpha', 'recovery'
+  type text,                           -- 'sitewide', 'alpha', 'youth_alpha', 'recovery', 'bible_course'
   link text,                           -- Optional URL for banner
   link_text text,                      -- CTA button text
   created_at timestamptz DEFAULT now(),
@@ -435,7 +436,7 @@ CREATE TABLE hire_enquiries (
 ```sql
 CREATE TABLE alpha_events (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  type text NOT NULL,                  -- 'alpha', 'youth_alpha', 'recovery'
+  type text NOT NULL,                  -- 'alpha', 'youth_alpha', 'recovery', 'bible_course'
   active boolean DEFAULT true,
   start_date date NOT NULL,
   signup_url text,                     -- External booking link
@@ -453,8 +454,12 @@ CREATE TABLE alpha_events (
 
 **Used By:**
 - `app/layout.tsx` fetches to populate site-wide banner
-- `/alpha` page displays next upcoming event
-- Admin to manage event dates and URLs
+- `/alpha`, `/destiny-recovery` and `/bible-course` pages display their next upcoming event
+- Admin (`/admin/alpha`, `/admin/recovery`, `/admin/bible-course`) to manage event dates and URLs
+
+> The `bible_course` type is shared infrastructure for The Bible Course (Bible Society) — it
+> reuses this table and the `/api/admin/alpha-events` routes rather than adding new ones.
+> Added by migration `20260712_alpha_events_bible_course_type.sql`.
 
 ---
 
@@ -999,6 +1004,7 @@ Displayed on every page:
 | `/young-adults` | `app/young-adults/page.tsx` | Young adults (18-30s) |
 | `/missions` | `app/missions/page.tsx` | Mission partners, outreach |
 | `/alpha` | `app/alpha/page.tsx` | Alpha course info, next event |
+| `/bible-course` | `app/bible-course/page.tsx` | The Bible Course (Bible Society), next event |
 | `/whats-on` | `app/whats-on/page.tsx` | Events listing (ChurchSuite embed) |
 | `/connect-card` | `app/connect-card/page.tsx` | Prayer requests, connection form |
 | `/jobs` | `app/jobs/page.tsx` | Job listings |

@@ -5,7 +5,10 @@ import { useBanner, type BannerData } from "@/contexts/BannerContext";
 import { useLiveStatus } from "@/contexts/LiveContext";
 
 const isEventType = (t: string) =>
-  t === "alpha" || t === "youth_alpha" || t === "recovery";
+  t === "alpha" ||
+  t === "youth_alpha" ||
+  t === "recovery" ||
+  t === "bible_course";
 
 const isVisible = (b: BannerData) => {
   if (!b.active) return false;

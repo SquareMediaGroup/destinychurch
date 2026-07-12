@@ -257,6 +257,7 @@ destinychurch/
 │       ├── 009_alpha_events_frequency.sql # Event recurrence
 │       ├── 010_alpha_events_recovery_type.sql # Recovery program
 │       ├── 20260712_alpha_events_bible_course_type.sql # The Bible Course
+│       ├── 20260712_02_featured_course.sql # Featured course (What's On)
 │       ├── 20260329_contact_messages.sql # Contact form submissions
 │       ├── 20260502_site_popup.sql # Modal pop-ups
 │       ├── 20260507_builder_media_bucket.sql # AI page builder media
@@ -460,6 +461,30 @@ CREATE TABLE alpha_events (
 > The `bible_course` type is shared infrastructure for The Bible Course (Bible Society) — it
 > reuses this table and the `/api/admin/alpha-events` routes rather than adding new ones.
 > Added by migration `20260712_alpha_events_bible_course_type.sql`.
+
+---
+
+#### 7b. **featured_course**
+**Purpose:** Singleton setting for which course headlines the What's On "Courses" section.
+
+```sql
+CREATE TABLE featured_course (
+  id integer PRIMARY KEY DEFAULT 1,        -- always 1 (singleton)
+  course_id text NOT NULL DEFAULT 'bible_course'
+    CHECK (course_id IN ('bible_course','cap','alpha','recovery')),
+  updated_at timestamptz DEFAULT now()
+);
+-- RLS: enabled, deny-all ("service only"); server routes use the service key.
+```
+
+The four courses are defined in `lib/courses.ts` (each with a grid-card and a full-width
+"featured" config). The featured course renders as the wide banner; the other three render as
+cards, so all four are always visible. Chosen at `/admin/featured-course`.
+
+**Used By:**
+- `app/whats-on/page.tsx` reads it and passes `featuredId` to `CoursesSection`
+- `app/api/admin/featured-course` (GET/PUT) — PUT revalidates `/whats-on`
+- Migration `20260712_02_featured_course.sql`
 
 ---
 
@@ -798,6 +823,7 @@ All tables have RLS enabled. Access rules:
 | contact_messages | - | - | Yes | Protect submissions |
 | hire_enquiries | - | - | Yes | Protect submissions |
 | alpha_events | Yes | - | Yes | Public event dates |
+| featured_course | - | - | Yes | Featured course setting (read via server component) |
 | site_popup | - | - | Yes | Protect pop-up content |
 | hr_* (staff, leave, reviews, docs) | - | - | Yes | Sensitive HR data |
 | jobs | Yes | - | Yes | Public listings |

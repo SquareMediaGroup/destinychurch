@@ -273,6 +273,14 @@ export default function AdminDashboard() {
           </p>
           <div className="grid gap-3 sm:grid-cols-2">
             <SectionCard
+              href="/admin/featured-course"
+              icon="stars"
+              label="Featured (What's On)"
+              description="Choose which course headlines the What's On page."
+              color="text-destiny-orange"
+              bg="bg-destiny-orange/10"
+            />
+            <SectionCard
               href="/admin/bible-course"
               icon="menu_book"
               label="The Bible Course"

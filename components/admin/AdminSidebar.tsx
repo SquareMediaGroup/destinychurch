@@ -17,6 +17,7 @@ const announcementItems = [
 ];
 
 const courseItems = [
+  { href: "/admin/featured-course", label: "Featured (What's On)" },
   { href: "/admin/bible-course", label: "The Bible Course" },
   { href: "/admin/alpha", label: "Alpha" },
   { href: "/admin/recovery", label: "Recovery" },

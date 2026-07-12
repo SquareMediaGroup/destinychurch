@@ -82,7 +82,7 @@ export default function AdminDashboard() {
   });
 
   return (
-    <div className="mx-auto max-w-6xl px-6 py-10">
+    <div className="mx-auto max-w-6xl px-6 py-8 md:px-8 md:py-10">
       {/* Header */}
       <div className="mb-8">
         <p className="mb-1 text-xs font-bold uppercase tracking-widest text-destiny-grey/40">
@@ -94,101 +94,96 @@ export default function AdminDashboard() {
         </p>
       </div>
 
-      {/* Site Status */}
-      <section className="mb-8">
-        <h2 className="mb-3 text-xs font-bold uppercase tracking-widest text-destiny-grey/40">
-          Site Status
-        </h2>
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          <StatusCard
-            icon="campaign"
-            label="Banner"
+      {/* Overview metrics */}
+      <section className="mb-10">
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <MetricCard
+            href="/admin/redirects"
+            icon="alt_route"
+            iconColor="text-destiny-blue"
+            iconBg="bg-destiny-blue/10"
+            label="Redirects"
+            loading={loading}
+            value={stats?.redirects.active ?? 0}
+            chip={
+              stats
+                ? { text: `${stats.redirects.total} total`, tone: "muted" }
+                : undefined
+            }
+          />
+          <MetricCard
+            href="/admin/alpha"
+            icon="event"
+            iconColor="text-destiny-green"
+            iconBg="bg-destiny-green/10"
+            label="Upcoming courses"
+            loading={loading}
+            value={stats?.alphaEvents.upcoming ?? 0}
+            chip={
+              stats
+                ? { text: `${stats.alphaEvents.total} total`, tone: "muted" }
+                : undefined
+            }
+          />
+          <MetricCard
             href="/admin/banner"
+            icon="campaign"
+            iconColor={stats?.banner.active ? "text-destiny-orange" : "text-destiny-grey/40"}
+            iconBg={stats?.banner.active ? "bg-destiny-orange/10" : "bg-destiny-grey/10"}
+            label="Banner"
             loading={loading}
-            active={stats?.banner.active}
-            detail={
-              stats?.banner.active
-                ? stats.banner.message
-                  ? stats.banner.message.slice(0, 40) + (stats.banner.message.length > 40 ? "…" : "")
-                  : stats.banner.type
-                : "Not active"
-            }
+            value={stats?.banner.active ? "Active" : "Off"}
+            valueClass={stats?.banner.active ? "text-destiny-grey" : "text-destiny-grey/40"}
+            chip={{
+              text: stats?.banner.active ? "Live" : "Hidden",
+              tone: stats?.banner.active ? "active" : "muted",
+            }}
           />
-          <StatusCard
-            icon="ad"
-            label="Popup"
+          <MetricCard
             href="/admin/popup"
+            icon="ad"
+            iconColor={stats?.popup.active ? "text-destiny-purple" : "text-destiny-grey/40"}
+            iconBg={stats?.popup.active ? "bg-destiny-purple/10" : "bg-destiny-grey/10"}
+            label="Popup"
             loading={loading}
-            active={stats?.popup.active}
-            detail={
-              stats?.popup.active
-                ? stats.popup.title
-                  ? stats.popup.title.slice(0, 40) + (stats.popup.title.length > 40 ? "…" : "")
-                  : "Active"
-                : "Not active"
-            }
+            value={stats?.popup.active ? "Active" : "Off"}
+            valueClass={stats?.popup.active ? "text-destiny-grey" : "text-destiny-grey/40"}
+            chip={{
+              text: stats?.popup.active ? "Live" : "Hidden",
+              tone: stats?.popup.active ? "active" : "muted",
+            }}
           />
-          <Link
-            href="/admin/cache"
-            className="flex items-center gap-3 rounded-2xl border border-black/5 bg-white px-5 py-4 shadow-sm transition hover:shadow-md"
-          >
-            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-destiny-grey/10 text-destiny-grey">
-              <span className="material-symbols-rounded text-xl">refresh</span>
-            </span>
-            <div className="min-w-0">
-              <p className="text-xs font-bold uppercase tracking-wider text-destiny-grey/40">Cache</p>
-              <p className="truncate text-sm font-bold text-destiny-grey">Clear cache</p>
-            </div>
-          </Link>
-          <Link
-            href="/"
-            target="_blank"
-            className="flex items-center gap-3 rounded-2xl border border-black/5 bg-white px-5 py-4 shadow-sm transition hover:shadow-md"
-          >
-            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-destiny-orange/10 text-destiny-orange">
-              <span className="material-symbols-rounded text-xl">open_in_new</span>
-            </span>
-            <div className="min-w-0">
-              <p className="text-xs font-bold uppercase tracking-wider text-destiny-grey/40">Website</p>
-              <p className="truncate text-sm font-bold text-destiny-grey">View live site</p>
-            </div>
-          </Link>
         </div>
       </section>
 
-      {/* Stats */}
-      <section className="mb-8">
+      {/* Quick actions */}
+      <section className="mb-10">
         <h2 className="mb-3 text-xs font-bold uppercase tracking-widest text-destiny-grey/40">
-          Content
+          Quick actions
         </h2>
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          <StatCard
-            icon="alt_route"
-            label="Redirects"
-            href="/admin/redirects"
-            loading={loading}
-            primary={stats?.redirects.active ?? 0}
-            primaryLabel="active"
-            secondary={stats ? stats.redirects.total - stats.redirects.active : 0}
-            secondaryLabel="inactive"
-          />
-          <StatCard
-            icon="event"
-            label="Courses"
-            href="/admin/alpha"
-            loading={loading}
-            primary={stats?.alphaEvents.upcoming ?? 0}
-            primaryLabel="upcoming"
-            secondary={stats ? stats.alphaEvents.total - stats.alphaEvents.upcoming : 0}
-            secondaryLabel="past"
-          />
+        <div className="flex flex-wrap gap-3">
+          <Link
+            href="/"
+            target="_blank"
+            className="flex items-center gap-2 rounded-xl border border-black/8 bg-white px-4 py-2.5 text-sm font-bold text-destiny-grey shadow-sm transition hover:shadow-md"
+          >
+            <span className="material-symbols-rounded text-lg text-destiny-orange">open_in_new</span>
+            View live site
+          </Link>
+          <Link
+            href="/admin/cache"
+            className="flex items-center gap-2 rounded-xl border border-black/8 bg-white px-4 py-2.5 text-sm font-bold text-destiny-grey shadow-sm transition hover:shadow-md"
+          >
+            <span className="material-symbols-rounded text-lg text-destiny-grey/50">refresh</span>
+            Clear cache
+          </Link>
         </div>
       </section>
 
       {/* All Sections */}
       <section className="space-y-6">
         <h2 className="text-xs font-bold uppercase tracking-widest text-destiny-grey/40">
-          All Sections
+          Manage
         </h2>
 
         {/* Standalone top items */}
@@ -269,94 +264,71 @@ export default function AdminDashboard() {
   );
 }
 
-function StatusCard({
-  icon,
-  label,
+function MetricCard({
   href,
+  icon,
+  iconColor,
+  iconBg,
+  label,
   loading,
-  active,
-  detail,
+  value,
+  valueClass = "text-destiny-grey",
+  chip,
 }: {
-  icon: string;
-  label: string;
   href: string;
+  icon: string;
+  iconColor: string;
+  iconBg: string;
+  label: string;
   loading: boolean;
-  active?: boolean;
-  detail?: string;
+  value: number | string;
+  valueClass?: string;
+  chip?: { text: string; tone: "up" | "down" | "active" | "muted" };
 }) {
+  const chipTone =
+    chip?.tone === "active"
+      ? "bg-destiny-green/10 text-destiny-green"
+      : chip?.tone === "up"
+        ? "bg-destiny-green/10 text-destiny-green"
+        : chip?.tone === "down"
+          ? "bg-destiny-red/10 text-destiny-red"
+          : "bg-black/5 text-destiny-grey/50";
+
   return (
     <Link
       href={href}
-      className="flex items-center gap-3 rounded-2xl border border-black/5 bg-white px-5 py-4 shadow-sm transition hover:shadow-md"
+      className="group rounded-2xl border border-black/5 bg-white p-5 shadow-sm transition hover:shadow-md"
     >
       <span
-        className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl transition ${
-          active ? "bg-destiny-green/10 text-destiny-green" : "bg-destiny-grey/10 text-destiny-grey/40"
-        }`}
+        className={`flex h-11 w-11 items-center justify-center rounded-xl ${iconBg} ${iconColor}`}
       >
-        <span className="material-symbols-rounded text-xl">{icon}</span>
+        <span className="material-symbols-rounded text-2xl">{icon}</span>
       </span>
-      <div className="min-w-0">
-        <p className="text-xs font-bold uppercase tracking-wider text-destiny-grey/40">{label}</p>
-        {loading ? (
-          <div className="mt-1 h-3.5 w-20 animate-pulse rounded bg-black/5" />
-        ) : (
-          <div className="flex items-center gap-1.5">
-            <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${active ? "bg-destiny-green" : "bg-black/20"}`} />
-            <p className="truncate text-sm font-bold text-destiny-grey">{detail}</p>
-          </div>
+
+      <div className="mt-5 flex items-end justify-between gap-2">
+        <div className="min-w-0">
+          {loading ? (
+            <>
+              <div className="mb-1.5 h-8 w-16 animate-pulse rounded-lg bg-black/5" />
+              <div className="h-3 w-20 animate-pulse rounded bg-black/5" />
+            </>
+          ) : (
+            <>
+              <p className={`text-3xl font-black leading-none ${valueClass}`}>{value}</p>
+              <p className="mt-1.5 truncate text-sm font-medium text-destiny-grey/50">
+                {label}
+              </p>
+            </>
+          )}
+        </div>
+        {!loading && chip && (
+          <span
+            className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] font-bold ${chipTone}`}
+          >
+            {chip.text}
+          </span>
         )}
       </div>
-    </Link>
-  );
-}
-
-function StatCard({
-  icon,
-  label,
-  href,
-  loading,
-  primary,
-  primaryLabel,
-  secondary,
-  secondaryLabel,
-}: {
-  icon: string;
-  label: string;
-  href: string;
-  loading: boolean;
-  primary: number;
-  primaryLabel: string;
-  secondary: number;
-  secondaryLabel: string;
-}) {
-  return (
-    <Link
-      href={href}
-      className="rounded-2xl border border-black/5 bg-white px-5 py-5 shadow-sm transition hover:shadow-md"
-    >
-      <div className="mb-3 flex items-center justify-between">
-        <p className="text-xs font-bold uppercase tracking-wider text-destiny-grey/40">{label}</p>
-        <span className="material-symbols-rounded text-xl text-destiny-grey/20">{icon}</span>
-      </div>
-      {loading ? (
-        <>
-          <div className="mb-1.5 h-8 w-16 animate-pulse rounded-lg bg-black/5" />
-          <div className="h-3 w-24 animate-pulse rounded bg-black/5" />
-        </>
-      ) : (
-        <>
-          <p className="text-3xl font-black text-destiny-grey">{primary}</p>
-          <p className="mt-0.5 text-xs text-destiny-grey/40">
-            {primaryLabel}
-            {secondary > 0 && (
-              <span className="ml-2 text-destiny-grey/30">
-                · {secondary} {secondaryLabel}
-              </span>
-            )}
-          </p>
-        </>
-      )}
     </Link>
   );
 }

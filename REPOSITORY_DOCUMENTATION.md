@@ -1135,6 +1135,7 @@ All admin/staff features live under a single `/admin` prefix with one login at `
 
 #### Admin Components (`components/admin/*`)
 - `AdminSidebar.tsx` — Admin navigation menu
+- `AdminHeader.tsx` — Sticky desktop header for the admin shell; shows an "Admin / {section}" breadcrumb (title derived from the pathname) and a "View live site" button
 - `MediaUploader.tsx` — File upload widget (drag-drop, progress)
 - `AdminSermonManager.tsx` — Hide/show sermons, edit metadata
 - `PageEditor.tsx` — WYSIWYG editor for page content (TipTap)

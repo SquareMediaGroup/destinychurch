@@ -408,13 +408,6 @@ export default function HelpPage() {
                   Send a Message
                   <span className="material-symbols-rounded text-lg">arrow_forward</span>
                 </Link>
-                <Link
-                  href="/destiny-ai"
-                  className="inline-flex items-center justify-center gap-1.5 rounded-full border border-white/20 px-7 py-3 text-sm font-semibold text-white/80 transition-colors hover:border-white/40 hover:text-white"
-                >
-                  <span className="material-symbols-rounded text-lg">auto_awesome</span>
-                  Ask Destiny AI
-                </Link>
                 <a
                   href="tel:+441642559797"
                   className="inline-flex items-center justify-center gap-1.5 text-sm font-semibold text-white/70 underline-offset-4 transition-colors hover:text-white hover:underline"

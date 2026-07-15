@@ -1,7 +1,7 @@
 # Destiny Church Tees Valley — Complete Repository Documentation
 
-**Version:** 1.0.1  
-**Last Updated:** July 9, 2026  
+**Version:** 1.0.2  
+**Last Updated:** July 15, 2026  
 **Repository:** Square Media Group — destinychurch  
 
 This document provides a comprehensive explanation of every major component, line of code purpose, architecture decisions, and how the system works from end-to-end.
@@ -105,11 +105,12 @@ Responses: JSON, Server-Side HTML, Redirects, Cached Assets
 | **Storage** | Supabase Storage | File uploads (HR documents, media, images) |
 | **Video** | YouTube API v3 | Sermon hosting and metadata |
 | **Podcasts** | Buzzsprout | Podcast RSS and metadata |
-| **AI** | OpenAI (GPT-4 variant) | Smart search, page generation, code analysis |
+| **AI** | OpenAI (`gpt-4.1-mini`) | Smart Search tool-calling chat (products, weather, directions, web search) |
+| **Payments** | Stripe (Payment Element + Express Checkout) | `/shop` checkout — cards, Apple Pay, Google Pay, Link |
 | **Analytics** | Vercel Analytics + SpeedInsights | Performance and visitor tracking |
 | **Deployment** | Vercel | Edge functions, serverless, CDN |
 | **Testing** | Playwright | E2E browser testing |
-| **Media Processing** | ffmpeg, Sharp | Image/video compression (not currently used in app) |
+| **Media Processing** | Sharp | Uploaded images (posts, shop products, shop hero) resized/converted to WebP server-side; `ffmpeg-static` bundled but unused |
 | **Search** | fuse.js + rbush | Client-side fuzzy search and spatial indexing |
 | **Icons** | Phosphor + Material Symbols | Icon sets |
 | **Rich Text** | TipTap (Prosemirror) | Sermon markdown, content editing |
@@ -128,58 +129,85 @@ destinychurch/
 │   ├── page.tsx                   # Home page
 │   ├── globals.css                # Tailwind + custom CSS
 │   ├── robots.ts                  # robots.txt generation
-│   ├── (public-pages)/            # Grouped public pages
-│   │   ├── about/                 # About page
-│   │   ├── beliefs/               # Beliefs page
-│   │   ├── connect/               # Connect groups page
-│   │   ├── give/                  # Giving/donations page
-│   │   ├── kids/                  # Kids ministry
-│   │   ├── youth/                 # Youth ministry
-│   │   ├── young-adults/          # Young adults ministry
-│   │   ├── missions/              # Missions & outreach
-│   │   ├── serve/                 # Volunteer opportunities
-│   │   ├── sermons/               # Sermon archive (+ [id] detail)
-│   │   ├── contact/               # Contact form
-│   │   ├── visit/                 # Plan a visit
-│   │   ├── new-here/              # First-time visitor guide
-│   │   ├── hire/                  # Venue hire enquiries
-│   │   ├── connect-card/          # Prayer requests & connections
-│   │   ├── alpha/                 # Alpha course info
-│   │   ├── whats-on/              # Events listing
-│   │   └── [slug]/                # Dynamic catchall page
+│   │                               # NOTE: there is no `(public-pages)` route group — every
+│   │                               # page below is a flat top-level folder directly under app/
+│   ├── about/                     # About page
+│   ├── accessibility/             # Reduced-motion / glass-FX preferences (client component)
+│   ├── admin-login/                # Stale-bookmark redirect → /login
+│   ├── administration/            # Stale-bookmark redirect → /admin
+│   ├── auth/                      # callback/ + confirm/ — Supabase OAuth & email-OTP handlers
+│   ├── baptism/                   # Baptism sign-up
+│   ├── beliefs/                   # Beliefs page
+│   ├── bible-course/              # The Bible Course (Bible Society) info page
+│   ├── child-dedication/          # Child dedication request
+│   ├── connect/                   # Connect groups page
+│   ├── data-gdpr/                 # Data & GDPR policy
+│   ├── dckids/                    # Destiny Kids Camp 2026 campaign page
+│   ├── destiny-recovery/          # Recovery course info page
+│   ├── give/                      # Giving/donations page
+│   ├── help/                      # Help centre / FAQ
+│   ├── kids/                      # Kids ministry
+│   ├── links/                     # "Next Steps" link-in-bio style page
+│   ├── live/                      # Livestream page
+│   ├── login/                     # Staff sign-in
+│   ├── youth/                     # Youth ministry
+│   ├── young-adults/              # Young adults ministry
+│   ├── missions/                  # Missions & outreach
+│   ├── privacy/                   # Privacy policy
+│   ├── safeguarding/              # Safeguarding policy
+│   ├── serve/                     # Volunteer opportunities (overview)
+│   ├── sermons/                   # Sermon archive (+ [id] detail)
+│   ├── terms/                     # Terms of use
+│   ├── training/                  # /training resource library (category → subgroup → post)
+│   ├── contact/                   # Contact form
+│   ├── visit/                     # Plan a visit
+│   ├── new-here/                  # First-time visitor guide
+│   ├── hire/                      # Venue hire enquiries
+│   ├── connect-card/              # Prayer requests & connections
+│   ├── alpha/                     # Alpha course info
+│   ├── volunteer/                 # Volunteer sign-up form
+│   ├── whats-on/                  # Events listing
+│   ├── annual-report-2025/        # Annual report campaign page
+│   ├── [slug]/                    # Dynamic catchall page (posts table)
 │   ├── admin/                     # Protected admin dashboard
-│   │   ├── login/                 # Admin login page
-│   │   ├── forgot-password/       # Password recovery
+│   │   ├── forgot-password/       # Password recovery request
+│   │   ├── reset-password/        # Password reset form
 │   │   ├── layout.tsx             # Admin layout (sidebar)
 │   │   ├── page.tsx               # Admin home (dashboard)
-│   │   ├── sermons/               # Manage sermons
 │   │   ├── banner/                # Manage site banners
 │   │   ├── popup/                 # Manage pop-ups
 │   │   ├── redirects/             # Manage URL redirects
 │   │   ├── cache/                 # Cache invalidation tools
 │   │   ├── posts/                 # Standalone content pages
 │   │   ├── training/              # Training/courses management
+│   │   ├── alpha/                 # Manage Alpha course events
+│   │   ├── bible-course/          # Manage The Bible Course events
+│   │   ├── recovery/              # Manage Recovery course events
+│   │   ├── featured-course/       # Choose the What's On featured course
+│   │   ├── store/                 # Shop admin (products, orders, hero)
 │   │   └── hr/                    # HR staff features (unlinked, in progress)
 │   ├── jobs/                      # Job listing & application
 │   │   ├── page.tsx               # Job list
 │   │   ├── [slug]/page.tsx        # Job detail
 │   │   ├── ApplyForm.tsx          # Job application form
 │   │   └── actions.ts             # Server actions for applying
-│   ├── api/                       # API routes (serverless functions)
-│   │   ├── admin/                 # Admin API endpoints
+│   ├── api/                       # API routes (serverless functions) — no `public/` subfolder
+│   │   ├── admin/                 # Admin API endpoints (gated by middleware.ts)
 │   │   │   ├── logout/            # End admin session
 │   │   │   ├── redirects/         # CRUD redirects
 │   │   │   ├── popup/             # CRUD pop-ups
 │   │   │   ├── revalidate/        # ISR cache invalidation
+│   │   │   ├── posts/, training/, alpha-events/, featured-course/, hr/, store/, shop-hero/
 │   │   │   └── ...
-│   │   ├── public/                # Public API endpoints
-│   │   │   ├── youtube-sync/      # Fetch latest YouTube videos
-│   │   │   ├── smart-search/      # AI search endpoint
-│   │   │   └── ...
-│   │   ├── webhooks/              # GitHub, Vercel, etc.
-│   │   └── ...
-│   ├── [slug]/page.tsx            # Dynamic catchall (for dynamic pages)
-│   └── annual-report-2025/        # Specific campaign pages
+│   │   ├── chat/                  # POST /api/chat — Smart Search tool-calling chat
+│   │   ├── youtube/                # videos/, thumbnail/[id]/, status/, live/
+│   │   ├── alpha-ask/, alpha-events/ # Public Alpha info endpoints
+│   │   ├── store/                 # checkout/, checkout/bypass/ (public storefront)
+│   │   ├── training/               # unlock/, posts/[id]/timer/
+│   │   ├── health/                 # smart-search/ health check
+│   │   └── webhooks/               # stripe/ only — no GitHub/Vercel webhook route
+│   ├── [slug]/                    # Dynamic catchall (posts table)
+│   └── annual-report-2025/        # Specific campaign page
 │
 ├── components/                    # React components (shared across pages)
 │   ├── ChurchHeader.tsx           # Site header with nav
@@ -191,13 +219,18 @@ destinychurch/
 │   ├── SitePopup.tsx              # Modal pop-up (from DB)
 │   ├── FloatingSmartSearch.tsx    # AI search widget (tool-calling chat)
 │   ├── smartSearch/               # Smart Search result cards (products, weather, maps, web)
-│   ├── VisualEditOverlay.tsx      # Admin edit mode overlay
+│   ├── LiveBanner.tsx             # "WE ARE LIVE" banner bar
+│   ├── GlassBloomTracker.tsx      # Glass-effect performance tracking
+│   ├── FooterGate.tsx / PerformanceGate.tsx / BannerSpacer.tsx  # Layout/perf gating helpers
 │   ├── admin/                     # Admin-specific components
 │   │   ├── AdminSidebar.tsx       # Admin nav menu
-│   │   ├── training/              # Course management UI
+│   │   ├── AdminHeader.tsx        # Admin shell header (breadcrumb + "View live site")
+│   │   ├── RichTextEditor.tsx     # Shared TipTap editor — posts, training posts, HR jobs, shop products
+│   │   ├── training/              # Course management UI (uses RichTextEditor)
 │   │   ├── hr/                    # HR management UI (unlinked, in progress)
-│   │   ├── posts/                 # Content editor
+│   │   ├── posts/                 # Content editor (uses RichTextEditor)
 │   │   └── ...
+│   ├── shop/                      # Storefront components (ProductCard, ShopProductGrid, ShopHero, cart, checkout)
 │   ├── connect-card/              # Prayer form components
 │   ├── kids/                      # Kids ministry components
 │   ├── home/                      # Home page components
@@ -219,9 +252,14 @@ destinychurch/
 │   ├── pageContent.ts             # Dynamic page editing
 │   ├── posts.ts                   # Dynamic posts/pages
 │   ├── training.ts                # Training courses
-│   ├── jobs.ts                    # Job listing & applications
+│   ├── jobs.ts / jobs.server.ts   # Job listing & applications
 │   ├── hr.ts                      # HR staff operations
-│   ├── roles.ts                   # Permission checking
+│   ├── shop.ts / shop.server.ts   # Shop types, price helpers, published-product fetchers
+│   ├── stripe.ts                  # Stripe client singleton
+│   ├── cart-store.ts              # Zustand basket store (localStorage-persisted)
+│   ├── checkout.server.ts         # Shared order/pricing logic (checkout, webhook, test bypass)
+│   ├── courses.ts                 # Alpha/Recovery/Bible Course/CAP course definitions
+│   ├── openaiClient.ts            # OpenAI client + SMART_SEARCH_MODEL constant
 │   ├── siteKnowledge.ts           # AI search knowledge base
 │   ├── serviceStatus.ts           # Feature flags
 │   ├── rateLimit.ts               # Rate limiting
@@ -236,21 +274,18 @@ destinychurch/
 │   ├── cookieConsent.tsx          # Cookie preferences
 │   ├── alphaSession.ts            # Alpha course sessions
 │   ├── trainingAccess.ts          # Training permissions
-│   ├── ai/                        # AI-specific utilities
-│   │   ├── llm-client.ts          # OpenAI wrapper
-│   │   ├── code-generator.ts      # Page generation from AI
-│   │   ├── code-validator.ts      # Validation for generated code
-│   │   ├── git-automation.ts      # Git commit automation
-│   │   ├── page-audit-email.ts    # Page audit reports
-│   │   ├── media-types.ts         # Media type detection
-│   │   └── ...
+│   ├── ai/                        # Only media-types.ts remains — the AI page-generation
+│   │   └── media-types.ts         # feature (llm-client, code-generator, code-validator,
+│   │                               # git-automation, page-audit-email) was removed in 7aa899d
+│   │                               # alongside the old "Destiny AI" page. OpenAI is now used
+│   │                               # only for Smart Search (lib/openaiClient.ts, lib/smartSearch/)
 │   ├── reserved-slugs.ts          # Protected URL paths
 │   └── ...
 │
 ├── supabase/                      # Supabase configuration
-│   └── migrations/                # Database schema migrations
+│   └── migrations/                # Database schema migrations (34 files) — selected highlights:
 │       ├── 001_redirects.sql      # URL redirect table
-│       ├── 002_hidden_videos.sql  # Hidden sermon videos
+│       ├── 002_hidden_videos.sql  # Hidden sermon videos (feature since removed)
 │       ├── 003_content.sql        # Site banner & page content
 │       ├── 004_banner_type.sql    # Banner types (sitewide, alpha, etc.)
 │       ├── 006_hire_enquiries.sql # Venue hire form submissions
@@ -258,18 +293,23 @@ destinychurch/
 │       ├── 008_alpha_events_online.sql # Online/hybrid Alpha support
 │       ├── 009_alpha_events_frequency.sql # Event recurrence
 │       ├── 010_alpha_events_recovery_type.sql # Recovery program
-│       ├── 20260712_alpha_events_bible_course_type.sql # The Bible Course
-│       ├── 20260712_02_featured_course.sql # Featured course (What's On)
-│       ├── 20260329_contact_messages.sql # Contact form submissions
-│       ├── 20260502_site_popup.sql # Modal pop-ups
-│       ├── 20260507_builder_media_bucket.sql # AI page builder media
-│       ├── 20260514_studio_v2_schema.sql # Page builder schema
+│       ├── 20260329175837_add_subject_to_contact_messages.sql # Contact form subject field
+│       ├── 20260502_create_site_popup.sql # Modal pop-ups
+│       ├── 20260507_create_builder_media_bucket.sql # AI page builder media (builder since removed)
+│       ├── 20260514_studio_v2_schema.sql # Page builder schema (removed by 20260711_06_remove_page_builder.sql)
 │       ├── 20260531_hr.sql        # HR staff, leave, reviews, documents
 │       ├── 20260606_jobs.sql      # Job listings & applications
 │       ├── 20260608_service_status.sql # Feature flags
 │       ├── 20260614_staff_logins.sql # Staff login audit trail
-│       ├── 20260708_shop.sql   # Shop: products, variants, orders, items
-│       └── 20260710_shop_hero.sql # Editable auto-rotating /shop hero slides
+│       ├── 20260616_training.sql, 20260616_0{2,3,4}_*.sql # Training categories/subgroups/folders/posts
+│       ├── 20260618_posts.sql     # Standalone posts (`/[slug]` catch-all)
+│       ├── 20260708_shop.sql      # Shop: products, variants, orders, items
+│       ├── 20260708_shop_product_fit.sql # products.fit (male/female/unisex/kids)
+│       ├── 20260710_shop_hero.sql # Editable auto-rotating /shop hero slides
+│       ├── 20260711_02..07_*.sql  # RLS/security-advisor fixes; shop product_type; page builder + sermon hiding removed
+│       ├── 20260711_rls_harden_base_tables.sql # RLS hardening pass across base tables
+│       ├── 20260712_alpha_events_bible_course_type.sql # The Bible Course
+│       └── 20260712_02_featured_course.sql # Featured course (What's On)
 │
 ├── utils/                         # Utility modules
 │   ├── supabase/                  # Supabase client factories
@@ -787,7 +827,7 @@ CREATE TABLE training_posts (
 ### Row-Level Security (RLS) Strategy
 
 #### 18. **products / product_variants / orders / order_items** (Shop)
-**Purpose:** The Stripe-powered store (`/shop`), replacing the old WooCommerce site. Physical apparel with size + colour variants and per-variant stock; collection-only fulfilment. Prices are integer **pennies** (GBP). Migration: `supabase/migrations/20260708_shop.sql`.
+**Purpose:** The Stripe-powered store (`/shop`), replacing the old WooCommerce site. Physical apparel with size + colour variants and per-variant stock; collection-only fulfilment. Prices are integer **pennies** (GBP). Migration: `supabase/migrations/20260708_shop.sql`, extended by `20260708_shop_product_fit.sql` (`fit`) and `20260711_05_shop_product_type.sql` (`product_type`).
 
 ```sql
 CREATE TABLE products (
@@ -797,6 +837,10 @@ CREATE TABLE products (
   description text,
   base_price_pennies integer NOT NULL DEFAULT 0,
   category text,
+  fit text NOT NULL DEFAULT 'unisex'          -- 'male'|'female'|'unisex'|'kids' — drives size chart + storefront label
+    CHECK (fit IN ('male','female','unisex','kids')),
+  product_type text NOT NULL DEFAULT 'clothing'  -- 'clothing'|'books'|'other' — colour/size matrix vs. format vs. free-form
+    CHECK (product_type IN ('clothing','books','other')),
   images jsonb NOT NULL DEFAULT '[]',   -- [{ url, path, alt }]
   is_published boolean NOT NULL DEFAULT false,
   is_featured boolean NOT NULL DEFAULT false,
@@ -840,7 +884,7 @@ CREATE TABLE order_items (
 -- Storage: public `product-images` bucket for product photos (WebP).
 ```
 
-**Used By:** `/shop` storefront, `/admin/store` CRUD, `POST /api/store/checkout`, `POST /api/webhooks/stripe`.
+**Used By:** `/shop` storefront, `/admin/store` CRUD, `POST /api/store/checkout`, `POST /api/webhooks/stripe`. `description` is HTML written via the shared `RichTextEditor` (same component used for posts/training) — the admin editor no longer has a markdown Write/Preview toggle, and the public product page renders it with `dangerouslySetInnerHTML` (no markdown fallback).
 
 ---
 
@@ -936,7 +980,9 @@ async function getActivePopup() {
   return data ?? null;
 }
 
-// Render root HTML
+// Render root HTML (simplified — the real tree also renders LiveBanner,
+// GlassBloomTracker, FooterGate/PerformanceGate wrappers, and passes a
+// server-seeded `live` status into Providers; see components/ for each)
 export default async function RootLayout({ children }) {
   const banner = await getActiveBanner();
   const popup = await getActivePopup();
@@ -962,7 +1008,6 @@ export default async function RootLayout({ children }) {
         </Providers>
         
         <SpeedInsights />             {/* Vercel performance monitoring */}
-        <VisualEditOverlay />         {/* Admin visual editor (on admins only) */}
       </body>
     </html>
   );
@@ -1036,9 +1081,9 @@ Each page route (`app/*/page.tsx`) renders page-specific content. Examples:
 - Lazy-loads videos on scroll
 
 #### `/app/[slug]/page.tsx` — Dynamic Catchall
-- Looks up `slug` in `dynamic_pages` table (if exists)
-- Renders content with `next/image` for optimization
-- Falls back to 404 if not found
+- Looks up `slug` via `getPublishedPostBySlug()` (`lib/posts.server.ts`) against the `posts` table — there is no separate `dynamic_pages` table
+- Renders the post's HTML `body` with `dangerouslySetInnerHTML`
+- Falls back to 404 (`notFound()`) if no published post matches
 
 ---
 
@@ -1068,7 +1113,7 @@ Displayed on every page:
 | `/live` | `app/live/page.tsx` | Livestream page — custom glass player when live, offline state otherwise |
 | `/contact` | `app/contact/page.tsx` | Contact form, address, hours |
 | `/give` | `app/give/page.tsx` | Giving info — bank details, online giving |
-| `/shop` | `app/shop/page.tsx` | Store front — published products grid (editorial `/links` style) |
+| `/shop` | `app/shop/page.tsx` | Store front — published products grid with category filter chips (`ShopProductGrid`), editorial `/links` style |
 | `/shop/[slug]` | `app/shop/[slug]/page.tsx` | Product detail — gallery, size/colour variant picker, add to basket |
 | `/shop/cart` | `app/shop/cart/page.tsx` | Basket (client, zustand + localStorage) |
 | `/shop/checkout` | `app/shop/checkout/page.tsx` | Contact details + embedded Stripe Payment Element |
@@ -1089,7 +1134,23 @@ Displayed on every page:
 | `/connect-card` | `app/connect-card/page.tsx` | Prayer requests, connection form |
 | `/jobs` | `app/jobs/page.tsx` | Job listings |
 | `/jobs/[slug]` | `app/jobs/[slug]/page.tsx` | Job detail page |
-| `/[slug]` | `app/[slug]/page.tsx` | Dynamic catchall (custom pages) |
+| `/training` | `app/training/page.tsx` | `/training` resource library — category → subgroup (optional password) → post |
+| `/baptism` | `app/baptism/page.tsx` | Baptism sign-up |
+| `/child-dedication` | `app/child-dedication/page.tsx` | Child dedication request |
+| `/volunteer` | `app/volunteer/page.tsx` | Volunteer sign-up form |
+| `/help` | `app/help/page.tsx` | Help centre / FAQ |
+| `/links` | `app/links/page.tsx` | "Next Steps" link-in-bio style page |
+| `/destiny-recovery` | `app/destiny-recovery/page.tsx` | Recovery course info page |
+| `/dckids` | `app/dckids/page.tsx` | Destiny Kids Camp 2026 campaign page |
+| `/accessibility` | `app/accessibility/page.tsx` | Reduced-motion / glass-FX preferences (client component) |
+| `/privacy` | `app/privacy/page.tsx` | Privacy policy |
+| `/terms` | `app/terms/page.tsx` | Terms of use |
+| `/safeguarding` | `app/safeguarding/page.tsx` | Safeguarding policy |
+| `/data-gdpr` | `app/data-gdpr/page.tsx` | Data & GDPR policy |
+| `/annual-report-2025` | `app/annual-report-2025/page.tsx` | Annual report campaign page |
+| `/admin-login`, `/administration` | `app/admin-login/page.tsx`, `app/administration/page.tsx` | Stale-bookmark redirects to `/login` and `/admin` |
+| `/auth/callback`, `/auth/confirm` | `app/auth/callback/route.ts`, `app/auth/confirm/route.ts` | Supabase OAuth callback and email-OTP verification route handlers |
+| `/[slug]` | `app/[slug]/page.tsx` | Dynamic catchall — looks up a published row in the `posts` table |
 
 ### Admin Pages (Auth Required, Checked in `middleware.ts`)
 
@@ -1099,6 +1160,7 @@ All admin/staff features live under a single `/admin` prefix with one login at `
 |-------|------|---------|
 | `/login` | `app/login/page.tsx` | Staff sign-in |
 | `/admin/forgot-password` | `app/admin/forgot-password/page.tsx` | Password reset request |
+| `/admin/reset-password` | `app/admin/reset-password/page.tsx` | Password reset form |
 | `/admin` | `app/admin/page.tsx` | Admin dashboard home |
 | `/admin/banner` | `app/admin/banner/page.tsx` | Manage site banners |
 | `/admin/popup` | `app/admin/popup/page.tsx` | Manage pop-ups |
@@ -1106,6 +1168,10 @@ All admin/staff features live under a single `/admin` prefix with one login at `
 | `/admin/cache` | `app/admin/cache/page.tsx` | Invalidate ISR cache |
 | `/admin/posts` | `app/admin/posts/page.tsx` | Standalone content pages |
 | `/admin/training` | `app/admin/training/page.tsx` | Training categories → subgroups → posts |
+| `/admin/alpha` | `app/admin/alpha/page.tsx` | Manage Alpha course events |
+| `/admin/bible-course` | `app/admin/bible-course/page.tsx` | Manage The Bible Course events |
+| `/admin/recovery` | `app/admin/recovery/page.tsx` | Manage Recovery course events |
+| `/admin/featured-course` | `app/admin/featured-course/page.tsx` | Choose the What's On featured course |
 | `/admin/hr` | `app/admin/hr/page.tsx` | HR dashboard (staff, leave, jobs, documents, reviews) — unlinked, in progress |
 | `/admin/store` | `app/admin/store/page.tsx` | Store — product list |
 | `/admin/store/products/new` | `app/admin/store/products/new/page.tsx` | Create a product (name → editor) |
@@ -1186,14 +1252,11 @@ All admin/staff features live under a single `/admin` prefix with one login at `
   - Chat history + cards stored in component state (not persisted)
 - **Optional env vars:** `NEXT_PUBLIC_GOOGLE_MAPS_EMBED_API_KEY` (directions embed — degrades to an "Open in Maps" link without it) and `TAVILY_API_KEY` (web search — degrades to a "not configured" note). Weather and product search need no extra key.
 
-#### `VisualEditOverlay.tsx`
-- **What:** Admin visual editing mode
-- **Feature:** Only visible if user is admin + admin mode enabled
-- **Behavior:**
-  - Highlights editable sections on every page
-  - Click section → edit modal opens
-  - Changes persisted to database immediately
-  - Used for non-technical admins to edit page copy
+> **`VisualEditOverlay.tsx` does not exist.** There is no in-page visual editing
+> overlay — it was part of the removed page-builder/Studio feature (migration
+> `20260711_06_remove_page_builder.sql`). Content is now edited through dedicated
+> admin forms (`/admin/posts`, `/admin/store/products/[id]`, etc.), each using
+> `RichTextEditor.tsx` for rich text where applicable.
 
 #### `GlassBloomTracker.tsx`
 - **What:** Performance tracking script
@@ -1225,22 +1288,26 @@ All admin/staff features live under a single `/admin` prefix with one login at `
 #### Admin Components (`components/admin/*`)
 - `AdminSidebar.tsx` — Admin navigation menu
 - `AdminHeader.tsx` — Sticky desktop header for the admin shell; shows an "Admin / {section}" breadcrumb (title derived from the pathname) and a "View live site" button
-- `MediaUploader.tsx` — File upload widget (drag-drop, progress)
-- `AdminSermonManager.tsx` — Hide/show sermons, edit metadata
-- `PageEditor.tsx` — WYSIWYG editor for page content (TipTap)
-- `RedirectManager.tsx` — CRUD redirects UI
-- `BannerManager.tsx` — Create/edit site banners
+- `RichTextEditor.tsx` — Shared TipTap rich-text editor (HTML output); used by posts, training posts, HR job descriptions, and (since `a22301b`) shop product descriptions. Optional `enableHtmlEmbed` prop adds a raw-HTML embed block.
+
+> Redirects and banner management (`/admin/redirects`, `/admin/banner`) are built
+> inline in their `page.tsx` files rather than as separate reusable components —
+> there is no standalone `RedirectManager.tsx`/`BannerManager.tsx`/`MediaUploader.tsx`/
+> `PageEditor.tsx`/`AdminSermonManager.tsx`. Sermon hiding was removed entirely
+> (migration `20260711_07_remove_sermon_hiding.sql`), and the earlier page-builder/
+> Studio editor (`PageEditor.tsx`'s likely origin) was removed by `20260711_06_remove_page_builder.sql`.
 
 #### Admin Content/Training/HR Components (`components/admin/{posts,training,hr}/*`)
-- `HrUI.tsx` — Staff directory, leave requests, documents
-- `TrainingUI.tsx` — Course browser, access control
-- `JobsList.tsx` — Job listings (member view)
-- `ApplicationModal.tsx` — Submit job application
+- `posts/PostEditor.tsx` — Standalone page editor (uses `RichTextEditor`)
+- `training/PostEditor.tsx` — Training post editor (uses `RichTextEditor`)
+- `training/CategoryModal.tsx`, `SubgroupModal.tsx`, `FolderModal.tsx`, `IconPicker.tsx` — Training tree CRUD modals
+- `hr/HrUI.tsx` — Staff directory, leave requests, documents (main HR dashboard shell)
+- `hr/JobModal.tsx` — Create/edit job listing (uses `RichTextEditor`)
+- `hr/modals.tsx` — Remaining HR CRUD modals (staff, leave, reviews, applications)
 
 #### Connect Card (`components/connect-card/*`)
-- `ConnectCardForm.tsx` — Prayer request + connection form
 - `ConnectCardCTAs.tsx` — Call-to-action buttons
-- `ConnectCardSuccess.tsx` — Confirmation screen
+- The prayer/connection form itself is built inline in `app/connect-card/page.tsx`, not a separate component
 
 #### Home Page (`components/home/*`)
 - `HeroSection.tsx` — Main hero banner with video/image
@@ -1249,6 +1316,11 @@ All admin/staff features live under a single `/admin` prefix with one login at `
 - `CTAButtons.tsx` — Prominent call-to-action buttons
 
 #### Shop (`components/shop/*`)
+- `ShopProductGrid.tsx` — client wrapper around the `/shop` grid; derives a category
+  filter chip row from the distinct `product.category` values present ("All" + one
+  chip per category, alphabetical), filters the grid client-side on click, and shows
+  an empty state ("Nothing here yet — Try a different category.") when a filter
+  matches nothing. Renders no chips at all if every product shares one/no category.
 - `ProductCard.tsx` — storefront product tile (editorial `.shop-card` hover wipe)
 - `ProductGallery.tsx` — main image + thumbnail strip (client)
 - `ProductBuyPanel.tsx` — colour swatches + size pills + quantity + add-to-basket (client)
@@ -1274,7 +1346,7 @@ All admin/staff features live under a single `/admin` prefix with one login at `
 - HTTP endpoints
 - Called from fetch() or external integrations
 - Good for: Webhooks, public APIs, external tools
-- Example: `/api/public/smart-search`
+- Example: `/api/chat` (Smart Search)
 
 ---
 
@@ -1382,7 +1454,7 @@ export async function applyForJob(jobId: string, formData: ApplicationData) {
 // 4. Admin uses URL in pop-up form
 ```
 
-#### `POST /api/admin/cache/revalidate`
+#### `POST /api/admin/revalidate`
 ```typescript
 // Manually trigger ISR for a path
 // Body: { path: string }
@@ -1418,17 +1490,23 @@ export async function applyForJob(jobId: string, formData: ApplicationData) {
 //    and renders each `tool_result` as a card (ResultCards.tsx)
 ```
 
-#### `GET /api/public/youtube-sync`
+#### `GET /api/youtube/videos`
 ```typescript
-// Sync latest YouTube videos to cache/database
-// Called periodically by GitHub Actions workflow
+// Returns getAllVideos(50) — the sermon archive's video list (lib/youtube.ts).
+// Fetched client/server-side by the /sermons page; no separate sync job or
+// cache table — YouTube is queried directly on each call.
+```
 
-// Logic:
-// 1. Fetch latest videos from YouTube API
-// 2. Extract metadata: title, description, thumbnail, published_date
-// 3. Store in local cache or database
-// 4. Filter out hidden videos
-// 5. Return video list
+#### `GET /api/youtube/status`
+```typescript
+// { quotaExceeded: boolean } — lib/youtube.ts isYouTubeQuotaExceeded().
+// revalidate = 3600. Lets the client show a friendly fallback if the
+// YouTube Data API daily quota has been used up.
+```
+
+#### `GET /api/youtube/thumbnail/[id]`
+```typescript
+// Proxies a YouTube video thumbnail image (avoids hot-linking i.ytimg.com directly).
 ```
 
 #### `GET /api/youtube/live`
@@ -1440,16 +1518,9 @@ export async function applyForJob(jobId: string, formData: ApplicationData) {
 // Backed by lib/youtube.ts getLiveStatus() — see Libraries & Utilities.
 ```
 
-#### `POST /api/webhooks/vercel`
-```typescript
-// Triggered on Vercel deployment
-// Body: { deployment }
-
-// Logic:
-// 1. Validate webhook secret
-// 2. Log deployment event (analytics)
-// 3. Optionally trigger post-deploy checks (E2E tests, etc.)
-```
+> There is no `/api/webhooks/vercel` or GitHub webhook route, and no `youtube-sync`
+> cron/cache job — `app/api/webhooks/` currently only contains `stripe/` (see Shop
+> API below). YouTube data is fetched live on each request, not synced to a cache table.
 
 #### Shop API
 
@@ -1721,80 +1792,33 @@ export async function getServiceInfo() {
 
 ---
 
-### `lib/roles.ts`
-
-Check user roles and permissions:
-
-```typescript
-export async function isAdmin(userId: string): Promise<boolean> {
-  const supabase = createServiceClient();
-  const { data } = await supabase
-    .from("admin_users")
-    .select("role")
-    .eq("id", userId)
-    .maybeSingle();
-  return data?.role === "admin";
-}
-
-export async function canAccessHR(userId: string): Promise<boolean> {
-  const supabase = createServiceClient();
-  const { data } = await supabase
-    .from("staff_roles")
-    .select("can_access_hr")
-    .eq("user_id", userId)
-    .maybeSingle();
-  return data?.can_access_hr ?? false;
-}
-
-// Used in:
-// app/admin/layout.tsx — wraps with auth check
-// app/admin/hr/page.tsx — HR dashboard
-```
-
----
+> **Note:** There is no `lib/roles.ts` in the codebase — the app uses a single-role
+> admin model (any authenticated Supabase user has full `/admin` access), enforced by
+> `middleware.ts` rather than a per-user role table. See Authentication & Authorization
+> below for the actual auth flow.
 
 ### `lib/rateLimit.ts`
 
-Prevent abuse:
+Per-IP sliding-window rate limiter with escalating cooldowns, **in-memory** (a
+`Map`, not a database table) — adequate for this site's traffic, per-instance on
+serverless. Callers namespace keys (e.g. `contact:${ip}`) so endpoints don't trip
+each other's limits:
 
 ```typescript
-export async function rateLimit(
-  identifier: string,        // IP address or user ID
-  action: string,            // 'contact-form', 'search', 'login'
-  maxRequests: number,
-  windowSeconds: number      // e.g., 3600 for 1 hour
-): Promise<number> {
-  const supabase = createServiceClient();
-  const now = new Date();
-  const windowStart = new Date(now.getTime() - windowSeconds * 1000);
-  
-  // Count requests in time window
-  const { count } = await supabase
-    .from("rate_limit_log")
-    .select("*", { count: "exact" })
-    .eq("identifier", identifier)
-    .eq("action", action)
-    .gte("created_at", windowStart.toISOString());
-  
-  const remaining = maxRequests - (count ?? 0);
-  
-  if (remaining > 0) {
-    // Log this request
-    await supabase.from("rate_limit_log").insert({
-      identifier,
-      action,
-      created_at: now.toISOString()
-    });
-  }
-  
-  return remaining;
-}
+const WINDOW_MS = 60_000;      // 1-minute sliding window
+const MAX_PER_WINDOW = 15;     // requests allowed per window
+const COOLDOWN_MS = [5, 10, 20, 40, 60].map((m) => m * 60_000); // escalating cooldowns per offense
+
+const rlStore = new Map<string, { timestamps: number[]; cooldownUntil: number; offenses: number }>();
+
+export function clientIp(source: { headers: Headers } | Headers): string { /* ... */ }
+// checkRateLimit(key) reads/writes rlStore, returns { limited, retryAfterMs }
+```
 
 // Used by:
 // Form submissions (contact, hire, apply for job)
-// API endpoints (smart search, YouTube sync)
-// Login attempts
-```
+// `/api/chat` (Smart Search) — separate simpler per-IP counter, 20 req/min
+// Login attempts (`lib/loginRateLimit.ts`, a related but distinct limiter)
 
 ---
 
@@ -1870,50 +1894,49 @@ Similar patterns for job listings and HR management.
 
 ### Authorization Layers
 
-#### Layer 1: Route-Level (Layout)
+There is no `lib/roles.ts` and no per-section role model — a single authenticated
+Supabase user has full `/admin` access. Auth is enforced centrally in `middleware.ts`,
+not in `app/admin/layout.tsx` (which is a client component purely responsible for the
+sidebar/header shell; it does not check auth itself).
+
+#### Layer 1: Middleware (`middleware.ts`)
 ```typescript
-// app/admin/layout.tsx
-export default async function AdminLayout({ children }) {
-  const { user } = await getUser();
-  if (!user) {
-    redirect("/admin/login");
+// Matcher: "/admin/:path*", "/api/admin/:path*" (+ a "/lite" redirect helper, unrelated to auth)
+export async function middleware(request: NextRequest) {
+  const { supabase, supabaseResponse } = createClient(request);
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (pathname === "/api/admin/logout") return supabaseResponse;      // always reachable
+  if (pathname === "/admin/login") return NextResponse.redirect(new URL("/admin", request.url)); // stale bookmark
+
+  // Public admin auth pages must stay reachable while logged out
+  if (["/admin/forgot-password", "/admin/reset-password"].some((p) => pathname.startsWith(p))) {
+    return supabaseResponse;
   }
-  
-  const isAdmin = await isAdmin(user.id);
-  if (!isAdmin) {
-    return <ErrorPage message="Access denied" />;
+
+  if (!user && pathname.startsWith("/api/admin")) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
-  
-  return <AdminSidebar>{children}</AdminSidebar>;
+  if (!user) return NextResponse.redirect(new URL("/login", request.url));
+
+  return supabaseResponse;
 }
 ```
 
-#### Layer 2: API Route (Proxy)
-```typescript
-// app/api/admin/redirects/route.ts
-export async function POST(request: NextRequest) {
-  const user = request.nextUrl.searchParams.get("userId");
-  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  
-  const isAdmin = await isAdmin(user);
-  if (!isAdmin) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  
-  // Proceed with operation using service role
-  // (database RLS doesn't apply to service role, so this is explicit auth)
-}
-```
-
-#### Layer 3: Database (RLS)
+#### Layer 2: Database (RLS)
 ```sql
 -- Example: Only service role can read HR staff
 CREATE POLICY "service only" ON hr_staff USING (false);
 ```
+API routes use the service role key for reads/writes (RLS is bypassed), relying on the
+middleware gate above rather than per-table role checks.
 
-**Why multiple layers?**
-- **Defense in depth** — Even if one layer fails, others catch issues
-- **Clear error messages** — Can tell user if they're not logged in vs. not authorized
-- **Audit trail** — API logs show who attempted what
-- **Performance** — Early rejection saves database calls
+**Why two layers?**
+- **Defense in depth** — the middleware gate is the single source of truth for "is this
+  visitor allowed into `/admin` at all"; RLS (deny-all + service role) means even a bug
+  in the app layer can't expose sensitive tables to the anon key.
+- **Simplicity** — no role table to keep in sync; any staff account with a login has
+  full access, which matches how small the admin user base is in practice.
 
 ---
 
@@ -2037,13 +2060,23 @@ YOUTUBE_CHANNEL_ID=UCxx...
 # Email
 RESEND_API_KEY=re_...
 
-# OpenAI (for Smart Search)
+# OpenAI (for Smart Search chat — gpt-4.1-mini, tool-calling)
 OPENAI_API_KEY=sk-...
+
+# Smart Search tools (optional — each degrades gracefully without its key)
+NEXT_PUBLIC_GOOGLE_MAPS_EMBED_API_KEY=AIza...   # get_directions embed
+TAVILY_API_KEY=tvly-...                          # search_web
+
+# Stripe (shop checkout)
+STRIPE_SECRET_KEY=sk_live_...
+NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_live_...
+STRIPE_WEBHOOK_SECRET=whsec_...
+SHOP_TEST_BYPASS=            # leave unset in production — enables /api/store/checkout/bypass
 
 # GitHub (for CI/CD)
 GITHUB_TOKEN=ghp_...
 
-# Feature flags
+# Feature flags (also toggleable via the `service_status` DB table, e.g. 'smart_search')
 ENABLE_SMART_SEARCH=true
 ```
 
@@ -2182,15 +2215,21 @@ ENABLE_SMART_SEARCH=true
 - `app/child-dedication/page.tsx` — Child dedication requests
 - `app/safeguarding/page.tsx` — Safeguarding & child protection
 - `app/help/page.tsx` — Help centre & FAQ
-- `app/[slug]/page.tsx` — Dynamic catchall
+- `app/training/page.tsx` — /training resource library
+- `app/volunteer/page.tsx`, `app/links/page.tsx`, `app/destiny-recovery/page.tsx`, `app/dckids/page.tsx` — Volunteer sign-up, next-steps links, recovery info, kids camp campaign
+- `app/accessibility/page.tsx`, `app/privacy/page.tsx`, `app/terms/page.tsx`, `app/data-gdpr/page.tsx` — Preferences & legal pages
+- `app/annual-report-2025/page.tsx` — Annual report campaign page
+- `app/[slug]/page.tsx` — Dynamic catchall (posts table)
 
 ### Admin Pages
-- `app/admin/login/page.tsx` — Admin login
+- `app/login/page.tsx` — Staff sign-in (there is no `app/admin/login`; that path is a stale-bookmark redirect to `/admin`)
 - `app/admin/page.tsx` — Admin home (dashboard)
 - `app/admin/banner/page.tsx` — Banner management
 - `app/admin/popup/page.tsx` — Pop-up management
 - `app/admin/redirects/page.tsx` — Redirect management
 - `app/admin/cache/page.tsx` — Cache invalidation
+- `app/admin/alpha/page.tsx`, `app/admin/bible-course/page.tsx`, `app/admin/recovery/page.tsx` — Course event management
+- `app/admin/featured-course/page.tsx` — What's On featured course picker
 - `app/admin/store/page.tsx` — Store management
 - `app/admin/store/products/new/page.tsx` — Create product
 - `app/admin/store/products/[id]/page.tsx` — Edit product (variants, stock)
@@ -2199,38 +2238,38 @@ ENABLE_SMART_SEARCH=true
 - `app/admin/store/hero/page.tsx` — Shop hero slides (add/edit/reorder rotating hero)
 
 ### Component Directory
-- **109 components** organized by feature:
-  - Global: Header, Footer, Providers, CookieBanner, Analytics
-  - Admin: Sidebar, MediaUploader, SermonManager, PageEditor
-  - Ministry-specific: Kids, Youth, Young Adults
+- **~120 components** organized by feature:
+  - Global: Header, Footer, Providers, CookieBanner, Analytics, FloatingSmartSearch
+  - Admin: Sidebar, AdminHeader, RichTextEditor (shared editor), posts/training/hr editors
+  - Ministry-specific: Kids, Youth, Young Adults, Alpha
+  - Shop: ProductCard, ShopProductGrid, ShopHero, cart, checkout
   - Forms: ConnectCard, ContactForm, HireForm
   - Content: Training, Jobs, HR
 
 ### Libraries (`lib/`)
-- **43 utility files** including:
+- **~40 utility files** including:
   - Supabase clients (admin, browser)
-  - API wrappers (YouTube, OpenAI, Resend)
-  - Domain logic (sermons, jobs, HR, training)
+  - API wrappers (YouTube, OpenAI, Resend, Stripe)
+  - Domain logic (sermons, jobs, HR, training, shop)
   - Email templates
-  - Rate limiting, authentication checks
-  - Feature flags, role checks
+  - Rate limiting (in-memory), auth is handled by `middleware.ts` (no `roles.ts`)
+  - Feature flags (`serviceStatus.ts`)
 
 ### API Routes (`app/api/`)
-- **Admin endpoints:** Banners, redirects, pop-ups, cache revalidation, store management
-- **Public endpoints:** Destiny AI (multi-turn chat), YouTube sync, webhooks
-- **Store endpoints:** Stripe payment processing, order management
-- **Webhooks:** Vercel deployments, GitHub events
+- **Admin endpoints:** Banners, redirects, pop-ups, cache revalidation, posts, training, alpha-events, featured-course, HR, store management
+- **Public endpoints:** `/api/chat` (Smart Search tool-calling chat), YouTube (videos/status/thumbnail/live), Alpha info, training unlock
+- **Store endpoints:** Stripe checkout + Payment Element, order management
+- **Webhooks:** Stripe only (`/api/webhooks/stripe`) — no GitHub or Vercel deployment webhook route
 
 ### Database Migrations
-- **17 migration files** defining schema for:
-  - URL redirects
-  - Hidden videos
-  - Site content (banners, pop-ups, page_content)
-  - Event management (Alpha course)
+- **34 migration files** defining schema for:
+  - URL redirects, hidden videos (removed), site content (banners, pop-ups, page_content)
+  - Event management (Alpha course, Bible Course, Recovery, featured course)
   - HR management (staff, leave, documents, reviews)
   - Job listings & applications
-  - Feature flags
-  - Staff login audit
+  - Feature flags, staff login audit
+  - Training resource library, standalone posts
+  - Shop (products, variants, orders, hero slides) and RLS/security hardening passes
 
 ---
 
@@ -2242,14 +2281,14 @@ Destiny Church Tees Valley is a **professional, full-stack Next.js application**
 2. **Member engagement** — Prayer requests, volunteering, training, small groups
 3. **Admin dashboard** — Content management, HR tools, store management
 4. **Ecommerce** — Online store with Stripe payments, product variants, order management
-5. **Intelligent features** — Destiny AI assistant, live banner management
+5. **Intelligent features** — Smart Search tool-calling chat assistant, live banner management
 
 **Architecture:** Server-driven React with Supabase PostgreSQL, deployed to Vercel with ISR caching. All sensitive operations use service-role API proxies with explicit auth checks. Code is type-safe (TypeScript), styled with Tailwind CSS, and tested with Playwright E2E.
 
 **Key Differentiators:**
 - **No vendor lock-in** — Open-source stack (Next.js, React, Tailwind, PostgreSQL)
 - **Security first** — RLS, rate limiting, CSRF protection, signed URLs
-- **AI-ready** — Grounded knowledge base, code generation with validation
+- **AI-ready** — Grounded knowledge base (`siteKnowledge.ts`) powering Smart Search's tool-calling chat (products, weather, directions, web search)
 - **Accessible** — Semantic HTML, ARIA labels, keyboard nav
 - **Mobile-first** — Responsive design, tested on real devices
 - **Performant** — ISR caching, image optimization, edge functions
@@ -2258,7 +2297,7 @@ This repository serves as a **reusable platform** for churches nationwide, licen
 
 ---
 
-**Document Version:** 1.0.0  
+**Document Version:** 1.0.2  
 **Created:** June 18, 2026  
 **For:** Destiny Church Tees Valley  
 **By:** Square Media Group (Malachi <malachi@squaremediagroup.org>)

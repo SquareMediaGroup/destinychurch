@@ -708,26 +708,77 @@ CREATE TABLE service_status (
 
 ---
 
-#### 17. **staff_logins**
-**Purpose:** Audit trail of admin/staff logins
+#### 17. **posts**
+**Purpose:** Generic published pages served by the `/[slug]` catch-all route (freeform site pages outside the main nav)
 
 ```sql
-CREATE TABLE staff_logins (
+CREATE TABLE posts (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id uuid,                        -- Supabase Auth user ID
-  email text NOT NULL,
-  ip_address text,
-  user_agent text,
-  login_time timestamptz DEFAULT now()
+  title text NOT NULL,
+  slug text UNIQUE NOT NULL,
+  body text,
+  is_published boolean NOT NULL DEFAULT false,
+  created_at timestamptz DEFAULT now(),
+  updated_at timestamptz DEFAULT now()
 );
 
--- RLS: Service role only
--- Used for security auditing and unusual activity detection
+-- RLS: Service role only; public read happens server-side via lib/posts.server.ts
 ```
 
 **Used By:**
-- Login endpoints to log authentication events
-- Security monitoring
+- `lib/posts.server.ts` (`getPublishedPostBySlug`) for the public `/[slug]` catch-all
+- `app/api/admin/posts` CRUD, admin dashboard to write pages
+
+---
+
+#### 17b. **training_categories / training_subgroups / training_folders / training_posts**
+**Purpose:** The `/training` member resource library — a category → sub-group (optionally password-protected) → folder → post hierarchy.
+
+```sql
+CREATE TABLE training_categories (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  name text NOT NULL, slug text UNIQUE NOT NULL, description text, icon text,
+  sort_order integer NOT NULL DEFAULT 0,
+  is_published boolean NOT NULL DEFAULT true,
+  created_at timestamptz DEFAULT now(), updated_at timestamptz DEFAULT now()
+);
+
+CREATE TABLE training_subgroups (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  category_id uuid NOT NULL REFERENCES training_categories(id),
+  name text NOT NULL, slug text NOT NULL, description text,
+  password_hash text,                   -- NULL = no password gate; never returned to clients, only has_password
+  sort_order integer NOT NULL DEFAULT 0,
+  is_published boolean NOT NULL DEFAULT true,
+  created_at timestamptz DEFAULT now(), updated_at timestamptz DEFAULT now()
+);
+
+CREATE TABLE training_folders (
+  id uuid PRIMARY KEY DEFAULT extensions.uuid_generate_v4(),
+  subgroup_id uuid NOT NULL REFERENCES training_subgroups(id),
+  name text NOT NULL, sort_order integer NOT NULL DEFAULT 0,
+  created_at timestamptz DEFAULT now(), updated_at timestamptz DEFAULT now()
+);
+
+CREATE TABLE training_posts (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  subgroup_id uuid NOT NULL REFERENCES training_subgroups(id),
+  folder_id uuid REFERENCES training_folders(id),   -- NULL = ungrouped within the subgroup
+  title text NOT NULL, slug text NOT NULL, summary text, body text,
+  min_read_seconds integer NOT NULL DEFAULT 0,
+  sort_order integer NOT NULL DEFAULT 0,
+  is_published boolean NOT NULL DEFAULT false,
+  created_at timestamptz DEFAULT now(), updated_at timestamptz DEFAULT now()
+);
+
+-- RLS: Service role only. Public read of published rows happens server-side
+-- via lib/training.server.ts; password_hash is never selected into client-facing shapes.
+```
+
+**Used By:**
+- `lib/training.server.ts` (`getTrainingTree`) for the public `/training` tree
+- `app/api/training/unlock` to verify a sub-group password
+- `app/api/admin/training/{categories,subgroups,folders,posts}` CRUD, admin dashboard
 
 ---
 
@@ -829,7 +880,8 @@ All tables have RLS enabled. Access rules:
 | jobs | Yes | - | Yes | Public listings |
 | job_applications | - | - | Yes | Protect applications |
 | service_status | Yes | - | Yes | Feature flags |
-| staff_logins | - | - | Yes | Audit trail |
+| posts | - | - | Yes | Freeform pages (public read via server components) |
+| training_categories / training_subgroups / training_folders / training_posts | - | - | Yes | /training resource library (public read via server components; sub-group passwords hashed) |
 | products / product_variants | - | - | Yes | Shop catalogue (public read via server components) |
 | orders / order_items | - | - | Yes | Store orders (written by Stripe webhook) |
 | shop_hero_slides | - | - | Yes | Editable /shop hero (public read via server components) |

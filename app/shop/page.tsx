@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { getPublishedProducts, getActiveShopHeroSlides } from "@/lib/shop.server";
-import ProductCard from "@/components/shop/ProductCard";
 import ShopHero from "@/components/shop/ShopHero";
+import ShopProductGrid from "@/components/shop/ShopProductGrid";
 
 export const metadata: Metadata = {
   title: "Shop",
@@ -112,17 +112,7 @@ export default async function ShopPage() {
             </p>
           </div>
         ) : (
-          <ul className="grid grid-cols-2 gap-4 sm:gap-5 lg:grid-cols-3">
-            {products.map((product, i) => (
-              <li
-                key={product.id}
-                className="shop-reveal"
-                style={{ animationDelay: `${0.26 + i * 0.06}s` }}
-              >
-                <ProductCard product={product} />
-              </li>
-            ))}
-          </ul>
+          <ShopProductGrid products={products} />
         )}
 
         {/* CTA */}

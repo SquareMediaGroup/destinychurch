@@ -5,6 +5,18 @@ import { usePathname } from "next/navigation";
 import { useState, useRef, useEffect, useLayoutEffect, useCallback } from "react";
 import { useCookieConsent } from "@/lib/cookieConsent";
 import { cooldownAnswer, parseAnswer } from "@/lib/smartSearch";
+import {
+  ProductResultCards,
+  WeatherResultCard,
+  DirectionsResultCard,
+  WebResultsCard,
+} from "@/components/smartSearch/ResultCards";
+import type {
+  ProductResult,
+  WeatherToolResult,
+  DirectionsToolResult,
+  SearchWebResult,
+} from "@/lib/smartSearch/tools";
 
 // Hide the trailing OPTION:/PAGE:/CTA: lines while text is still streaming in, so
 // the visitor only ever sees clean prose. The full reply is parsed once complete.
@@ -21,7 +33,14 @@ function visibleProse(raw: string): string {
 // avoid React's "useLayoutEffect does nothing on the server" warning.
 const useIsoLayoutEffect = typeof window !== "undefined" ? useLayoutEffect : useEffect;
 
-interface ChatMessage {
+interface ToolCards {
+  products?: ProductResult[];
+  weather?: WeatherToolResult;
+  directions?: DirectionsToolResult;
+  web?: SearchWebResult;
+}
+
+interface ChatMessage extends ToolCards {
   role: "user" | "assistant";
   content: string;
   options?: string[];    // assistant: tappable clarifying chips
@@ -242,45 +261,98 @@ export default function FloatingSmartSearch() {
           return;
         }
 
-        // Stream tokens in: append an assistant message on the first chunk (which
-        // also clears the typing indicator), then keep rewriting its prose as text
-        // arrives. Parse the clarifying chips / CTA once the stream finishes.
+        // The route streams newline-delimited JSON events: `text` tokens build the
+        // prose bubble (still parsed for OPTION/PAGE/CTA), `tool_result` events
+        // attach a card. We append the assistant message once there's something to
+        // show (visible prose or a card), then keep rewriting it until `done`.
         const reader = res.body.getReader();
         const decoder = new TextDecoder();
+        let buffer = "";
         let raw = "";
+        const cards: ToolCards = {};
         let appended = false;
+
+        const hasCards = () =>
+          Boolean(cards.products || cards.weather || cards.directions || cards.web);
+
+        // Build the live (streaming) assistant message from prose + cards so far.
+        const liveMessage = (): ChatMessage => ({
+          role: "assistant",
+          content: visibleProse(raw),
+          ...cards,
+        });
+
+        const sync = () => {
+          const hasContent = visibleProse(raw).length > 0 || hasCards();
+          if (!appended && !hasContent) return; // nothing to show yet
+          const msg = liveMessage();
+          if (!appended) {
+            appended = true;
+            setLoading(false);
+            setMessages((prev) => [...prev, msg]);
+          } else {
+            setMessages((prev) => prev.map((m, i) => (i === prev.length - 1 ? msg : m)));
+          }
+        };
+
+        const handleEvent = (evt: { type: string; value?: string; name?: string; data?: unknown }) => {
+          if (evt.type === "text" && typeof evt.value === "string") {
+            raw += evt.value;
+            sync();
+          } else if (evt.type === "tool_result") {
+            switch (evt.name) {
+              case "find_products":
+                cards.products = (evt.data as { products?: ProductResult[] }).products;
+                break;
+              case "get_weather":
+                cards.weather = evt.data as WeatherToolResult;
+                break;
+              case "get_directions":
+                cards.directions = evt.data as DirectionsToolResult;
+                break;
+              case "search_web":
+                cards.web = evt.data as SearchWebResult;
+                break;
+            }
+            sync();
+          }
+        };
 
         for (;;) {
           const { done, value } = await reader.read();
           if (done) break;
-          raw += decoder.decode(value, { stream: true });
-          const prose = visibleProse(raw);
-          if (!prose && !appended) continue; // wait for the first visible text
-          if (!appended) {
-            appended = true;
-            setLoading(false);
-            setMessages((prev) => [...prev, { role: "assistant", content: prose }]);
-          } else {
-            setMessages((prev) =>
-              prev.map((m, i) => (i === prev.length - 1 ? { ...m, content: prose } : m))
-            );
+          buffer += decoder.decode(value, { stream: true });
+          let nl: number;
+          while ((nl = buffer.indexOf("\n")) !== -1) {
+            const line = buffer.slice(0, nl).trim();
+            buffer = buffer.slice(nl + 1);
+            if (!line) continue;
+            try {
+              handleEvent(JSON.parse(line));
+            } catch {
+              // ignore malformed lines
+            }
           }
         }
 
+        // Finalise: parse the completed prose for clarifying chips / CTA, and keep
+        // the collected cards. Fall back to the parsed answer only when there's no
+        // prose and no cards (so a tool-only reply doesn't show a "no results" line).
         const parsed = parseAnswer(raw);
+        const proseFinal = visibleProse(raw);
+        const finalMsg: ChatMessage = {
+          role: "assistant",
+          content: proseFinal || (hasCards() ? "" : parsed.answer),
+          options: parsed.options,
+          page: parsed.page,
+          ctaLabel: parsed.ctaLabel,
+          ...cards,
+        };
         if (!appended) {
-          setMessages((prev) => [
-            ...prev,
-            { role: "assistant", content: parsed.answer, options: parsed.options, page: parsed.page, ctaLabel: parsed.ctaLabel },
-          ]);
+          setLoading(false);
+          setMessages((prev) => [...prev, finalMsg]);
         } else {
-          setMessages((prev) =>
-            prev.map((m, i) =>
-              i === prev.length - 1
-                ? { ...m, content: parsed.answer, options: parsed.options, page: parsed.page, ctaLabel: parsed.ctaLabel }
-                : m
-            )
-          );
+          setMessages((prev) => prev.map((m, i) => (i === prev.length - 1 ? finalMsg : m)));
         }
       } catch {
         setMessages((prev) => [
@@ -398,15 +470,29 @@ export default function FloatingSmartSearch() {
                             </div>
                           )}
                           <div className="max-w-[85%] min-w-0">
-                            <div
-                              className={`rounded-2xl px-4 py-2.5 text-sm leading-relaxed ${
-                                msg.role === "user"
-                                  ? "rounded-tr-sm bg-destiny-orange text-white"
-                                  : "rounded-tl-sm bg-white/10 text-white/85"
-                              }`}
-                            >
-                              {msg.content}
-                            </div>
+                            {msg.content && (
+                              <div
+                                className={`rounded-2xl px-4 py-2.5 text-sm leading-relaxed ${
+                                  msg.role === "user"
+                                    ? "rounded-tr-sm bg-destiny-orange text-white"
+                                    : "rounded-tl-sm bg-white/10 text-white/85"
+                                }`}
+                              >
+                                {msg.content}
+                              </div>
+                            )}
+
+                            {/* Tool result cards (products, weather, directions, web) */}
+                            {msg.role === "assistant" && (
+                              <>
+                                {msg.products && msg.products.length > 0 && (
+                                  <ProductResultCards products={msg.products} />
+                                )}
+                                {msg.weather && <WeatherResultCard data={msg.weather} />}
+                                {msg.directions && <DirectionsResultCard data={msg.directions} />}
+                                {msg.web && <WebResultsCard data={msg.web} />}
+                              </>
+                            )}
 
                             {/* Options + CTA on the latest assistant message only */}
                             {msg.role === "assistant" && i === messages.length - 1 && (

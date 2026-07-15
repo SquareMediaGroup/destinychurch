@@ -189,7 +189,8 @@ destinychurch/
 │   ├── AnalyticsGate.tsx          # Conditional analytics loading
 │   ├── SiteBanner.tsx             # Announcement banner (from DB)
 │   ├── SitePopup.tsx              # Modal pop-up (from DB)
-│   ├── FloatingSmartSearch.tsx    # AI search widget
+│   ├── FloatingSmartSearch.tsx    # AI search widget (tool-calling chat)
+│   ├── smartSearch/               # Smart Search result cards (products, weather, maps, web)
 │   ├── VisualEditOverlay.tsx      # Admin edit mode overlay
 │   ├── admin/                     # Admin-specific components
 │   │   ├── AdminSidebar.tsx       # Admin nav menu
@@ -213,7 +214,8 @@ destinychurch/
 │   ├── supabase-browser.ts        # Supabase client (browser)
 │   ├── sermons.ts                 # Sermon fetching & filtering
 │   ├── youtube.ts                 # YouTube API client
-│   ├── smartSearch.ts             # AI search logic
+│   ├── smartSearch.ts             # AI search logic (parseAnswer, fallbacks)
+│   ├── smartSearch/tools.ts       # Smart Search tool-calling tools (products, weather, maps, web)
 │   ├── pageContent.ts             # Dynamic page editing
 │   ├── posts.ts                   # Dynamic posts/pages
 │   ├── training.ts                # Training courses
@@ -1173,13 +1175,16 @@ All admin/staff features live under a single `/admin` prefix with one login at `
   - Falls back to the static "The Destiny Store" masthead when no slides are active (handled in `app/shop/page.tsx`)
 
 #### `FloatingSmartSearch.tsx`
-- **What:** AI-powered search widget (floating button)
+- **What:** AI-powered conversational search widget (floating morphing pill/circle)
 - **Feature:** If `smart_search` service is enabled
 - **Behavior:**
-  - Click button → chat modal opens
-  - User types query → sent to `/api/public/smart-search` (OpenAI)
-  - Response includes answer + optional page link + CTA
-  - Chat history stored in component state (not persisted)
+  - Click button → pill expands, chat thread opens
+  - User types query → full history sent to `/api/chat` (OpenAI, `gpt-4.1-mini`)
+  - The route uses **tool-calling** and streams **NDJSON** events (`text`, `tool_result`, `done`). Prose is still parsed for the trailing `OPTION:`/`PAGE:`/`CTA:` lines (clarifying chips + a navigation CTA).
+  - **Tools** (`lib/smartSearch/tools.ts`): `find_products` (searches published shop products via `getPublishedProducts()` + fuse.js, returns cards), `get_weather` (Open-Meteo, no key), `get_directions` (Google Maps embed), `search_web` (Tavily).
+  - **Result cards** (`components/smartSearch/ResultCards.tsx`) render below the prose in Smart Search's glass style. The product card offers inline size/colour selection and **add-to-cart** (via `useCart()`), so a visitor can buy without leaving the conversation.
+  - Chat history + cards stored in component state (not persisted)
+- **Optional env vars:** `NEXT_PUBLIC_GOOGLE_MAPS_EMBED_API_KEY` (directions embed — degrades to an "Open in Maps" link without it) and `TAVILY_API_KEY` (web search — degrades to a "not configured" note). Weather and product search need no extra key.
 
 #### `VisualEditOverlay.tsx`
 - **What:** Admin visual editing mode
@@ -1391,25 +1396,26 @@ export async function applyForJob(jobId: string, formData: ApplicationData) {
 
 ### Public API Routes
 
-#### `GET /api/public/smart-search`
+#### `POST /api/chat`
 ```typescript
-// AI-powered search
-// Query: { query: string }
-// Response: { answer, page, ctaLabel, options? }
+// AI-powered conversational Smart Search (the FloatingSmartSearch widget).
+// Body: { messages: { role: "user" | "assistant"; content: string }[] }
+// Response: NDJSON stream of { type: "text" | "tool_result" | "done" | "error", ... }
 
 // Logic:
-// 1. Rate limit: 5 requests per IP per minute
-// 2. Validate query length (min 3 chars)
-// 3. Create OpenAI chat completion:
-//    - System prompt: Instructions from lib/siteKnowledge.ts
-//    - User message: The visitor's query
-//    - Model: gpt-4-turbo or similar
-// 4. Parse response:
-//    - Extract prose answer
-//    - Extract PAGE: and CTA: tags
-//    - Validate page against allowlist
-//    - Return structured response
-// 5. Log search for analytics
+// 1. Rate limit: 20 requests per IP per minute (429 on excess)
+// 2. Validate messages: user/assistant roles only (blocks injected system turns),
+//    <=2000 chars each, last must be user <=300 chars (else 400)
+// 3. getOpenAI() null-check → NDJSON fallback routing to /contact
+// 4. Tool-calling loop (up to MAX_TOOL_ROUNDS=3) on gpt-4.1-mini:
+//    - System prompt: buildSmartSearchPrompt() (lib/siteKnowledge.ts) — church
+//      facts + today's date + tool guidance
+//    - tools: TOOL_DEFINITIONS (lib/smartSearch/tools.ts) — find_products,
+//      get_weather, get_directions, search_web
+//    - Streams assistant text as `text` events; runs tool calls, emits each
+//      result as a `tool_result` event, feeds results back, repeats
+// 5. Client (FloatingSmartSearch) accumulates `text` (parsed for PAGE/CTA/OPTION)
+//    and renders each `tool_result` as a card (ResultCards.tsx)
 ```
 
 #### `GET /api/public/youtube-sync`

@@ -1,10 +1,13 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import ReactMarkdown from "react-markdown";
 import { getProductBySlug } from "@/lib/shop.server";
 import { fromPrice, formatPrice, FIT_LABELS } from "@/lib/shop";
 import ProductGallery from "@/components/shop/ProductGallery";
 import ProductBuyPanel from "@/components/shop/ProductBuyPanel";
+
+const looksLikeHtml = (s: string) => /<[a-z][\s\S]*>/i.test(s);
 
 export const revalidate = 60;
 
@@ -85,9 +88,16 @@ export default async function ProductPage({
                 <h2 className="text-xs font-bold uppercase tracking-[0.2em] text-destiny-grey/50">
                   Details
                 </h2>
-                <div className="mt-3 whitespace-pre-wrap text-sm leading-relaxed text-destiny-grey/70">
-                  {product.description}
-                </div>
+                {looksLikeHtml(product.description) ? (
+                  <div
+                    className="rte-content mt-3 text-sm leading-relaxed text-destiny-grey/70"
+                    dangerouslySetInnerHTML={{ __html: product.description }}
+                  />
+                ) : (
+                  <div className="rte-content mt-3 text-sm leading-relaxed text-destiny-grey/70">
+                    <ReactMarkdown>{product.description}</ReactMarkdown>
+                  </div>
+                )}
               </div>
             )}
           </div>

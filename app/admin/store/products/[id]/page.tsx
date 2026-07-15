@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { use, useEffect, useMemo, useRef, useState } from "react";
+import ReactMarkdown from "react-markdown";
 import { useToast } from "@/components/ToastProvider";
 import { useDialog } from "@/components/DialogProvider";
 import {
@@ -82,6 +83,7 @@ export default function ProductEditorPage({
   const [defaultStock, setDefaultStock] = useState("10");
   const [newColour, setNewColour] = useState<Colour>({ name: "", hex: "#111111" });
   const [newOption, setNewOption] = useState("");
+  const [descriptionTab, setDescriptionTab] = useState<"write" | "preview">("write");
 
   useEffect(() => {
     fetch(`${SHOP_ADMIN_API}/products/${id}`)
@@ -444,13 +446,50 @@ export default function ProductEditorPage({
           placeholder="e.g. T-Shirts"
         />
         <div>
-          <FieldLabel>Description</FieldLabel>
-          <textarea
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            rows={4}
-            className="w-full rounded-xl border border-black/15 px-4 py-3 text-sm outline-none transition focus:border-destiny-orange focus:ring-2 focus:ring-destiny-orange/20"
-          />
+          <div className="mb-1.5 flex items-center justify-between">
+            <FieldLabel>Description</FieldLabel>
+            <div className="flex rounded-full border border-black/10 bg-black/5 p-0.5 text-xs font-bold">
+              <button
+                type="button"
+                onClick={() => setDescriptionTab("write")}
+                className={`rounded-full px-3 py-1 transition ${
+                  descriptionTab === "write"
+                    ? "bg-white text-destiny-grey shadow-sm"
+                    : "text-destiny-grey/50"
+                }`}
+              >
+                Write
+              </button>
+              <button
+                type="button"
+                onClick={() => setDescriptionTab("preview")}
+                className={`rounded-full px-3 py-1 transition ${
+                  descriptionTab === "preview"
+                    ? "bg-white text-destiny-grey shadow-sm"
+                    : "text-destiny-grey/50"
+                }`}
+              >
+                Preview
+              </button>
+            </div>
+          </div>
+          {descriptionTab === "write" ? (
+            <textarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              rows={6}
+              placeholder="Supports markdown — e.g. **bold**, _italic_, - bullet points"
+              className="w-full rounded-xl border border-black/15 px-4 py-3 text-sm outline-none transition focus:border-destiny-orange focus:ring-2 focus:ring-destiny-orange/20"
+            />
+          ) : (
+            <div className="rte-content min-h-[9.5rem] rounded-xl border border-black/15 px-4 py-3 text-sm text-destiny-grey/80">
+              {description.trim() ? (
+                <ReactMarkdown>{description}</ReactMarkdown>
+              ) : (
+                <p className="text-destiny-grey/40">Nothing to preview yet.</p>
+              )}
+            </div>
+          )}
         </div>
         <div className="grid grid-cols-2 gap-3">
           <div>

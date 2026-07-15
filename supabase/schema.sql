@@ -44,27 +44,6 @@ create table if not exists ai_reports (
   created_at timestamptz default timezone('utc', now())
 );
 
-create table if not exists playlists (
-  id uuid primary key default gen_random_uuid(),
-  title text not null,
-  description text,
-  slug text unique not null,
-  is_public boolean default true,
-  created_at timestamptz default timezone('utc', now()),
-  updated_at timestamptz default timezone('utc', now())
-);
-
-create table if not exists playlist_items (
-  id uuid primary key default gen_random_uuid(),
-  playlist_id uuid not null references playlists (id) on delete cascade,
-  sermon_id text not null references sermons (id) on delete cascade,
-  position int not null default 1,
-  created_at timestamptz default timezone('utc', now())
-);
-
-create index if not exists playlist_items_playlist_position_idx
-  on playlist_items (playlist_id, position);
-
 create table if not exists sermon_transcripts (
   sermon_id text primary key references sermons (id) on delete cascade,
   segments jsonb not null,
@@ -79,17 +58,6 @@ create table if not exists auth_users (
   created_at timestamptz default timezone('utc', now()),
   last_login timestamptz default timezone('utc', now())
 );
-
-create table if not exists auth_codes (
-  id uuid primary key default gen_random_uuid(),
-  email text not null,
-  code_hash text not null,
-  expires_at timestamptz not null,
-  used boolean default false,
-  created_at timestamptz default timezone('utc', now())
-);
-
-create index if not exists auth_codes_email_idx on auth_codes (email);
 
 create table if not exists site_banner (
   id uuid primary key default gen_random_uuid(),
@@ -118,8 +86,7 @@ declare
   t text;
   base_tables text[] := array[
     'sermons', 'sermon_transcripts', 'sermon_link_suggestions', 'ai_reports',
-    'playlists', 'playlist_items', 'auth_users', 'auth_codes',
-    'admin_users', 'site_banner'
+    'auth_users', 'admin_users', 'site_banner'
   ];
 begin
   foreach t in array base_tables loop

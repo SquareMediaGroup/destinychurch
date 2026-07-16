@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Script from "next/script";
 import { usePathname } from "next/navigation";
 import { useState, useRef, useEffect, useLayoutEffect, useCallback } from "react";
 import { useCookieConsent } from "@/lib/cookieConsent";
@@ -80,6 +81,12 @@ const SITE_PAGES = [
   { title: "Connect",      href: "/connect"        },
 ];
 
+const TURNSTILE_SITE_KEY = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
+
+function hasVerifiedCookie(): boolean {
+  return typeof document !== "undefined" && document.cookie.includes("ts_verified=");
+}
+
 function SparkleIcon({ className }: { className?: string }) {
   return (
     <svg className={className} fill="currentColor" viewBox="0 0 24 24">
@@ -105,6 +112,48 @@ export default function FloatingSmartSearch() {
   // Transient class that drives the keyframed width morph on each state change.
   const [morph, setMorph] = useState<"" | "morph-expanding" | "morph-collapsing">("");
   const firstMorphRef = useRef(true);
+  const turnstileRef = useRef<HTMLDivElement>(null);
+  const turnstileWidgetId = useRef<string | undefined>(undefined);
+
+  // Runs the invisible Turnstile challenge and resolves the resulting token.
+  const getTurnstileToken = useCallback((): Promise<string | null> => {
+    return new Promise((resolve) => {
+      if (!TURNSTILE_SITE_KEY || !window.turnstile || !turnstileRef.current) {
+        resolve(null);
+        return;
+      }
+      if (turnstileWidgetId.current === undefined) {
+        turnstileWidgetId.current = window.turnstile.render(turnstileRef.current, {
+          sitekey: TURNSTILE_SITE_KEY,
+          size: "invisible",
+          execution: "execute",
+          callback: (token) => resolve(token),
+          "error-callback": () => resolve(null),
+        });
+      }
+      window.turnstile.execute(turnstileWidgetId.current);
+    });
+  }, []);
+
+  // Ensures Smart Search has a verified session cookie, running the invisible
+  // Turnstile challenge (once per session) only when it's missing.
+  const ensureTurnstileVerified = useCallback(async (): Promise<boolean> => {
+    if (hasVerifiedCookie()) return true;
+
+    const token = await getTurnstileToken();
+    if (!token) return false;
+
+    try {
+      const res = await fetch("/api/turnstile/verify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token }),
+      });
+      return res.ok;
+    } catch {
+      return false;
+    }
+  }, [getTurnstileToken]);
 
   const hasMessages = messages.length > 0;
 
@@ -237,6 +286,18 @@ export default function FloatingSmartSearch() {
       setLoading(true);
 
       try {
+        const verified = await ensureTurnstileVerified();
+        if (!verified) {
+          setMessages((prev) => [
+            ...prev,
+            {
+              role: "assistant",
+              content: "I can't reach the assistant right now — please try again in a moment.",
+            },
+          ]);
+          return;
+        }
+
         const res = await fetch("/api/chat", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -366,7 +427,7 @@ export default function FloatingSmartSearch() {
         setLoading(false);
       }
     },
-    [loading, messages, showFirstUse, dismissFirstUse]
+    [loading, messages, showFirstUse, dismissFirstUse, ensureTurnstileVerified]
   );
 
   function handleSubmit(e: React.FormEvent) {
@@ -396,6 +457,12 @@ export default function FloatingSmartSearch() {
       className="pointer-events-none fixed inset-x-0 bottom-0 z-50 flex justify-center px-4 pb-[max(1rem,env(safe-area-inset-bottom))] transition-[bottom] duration-300 ease-out"
       style={{ bottom: "var(--podcast-dock-height, 0px)" }}
     >
+      {TURNSTILE_SITE_KEY && (
+        <>
+          <Script src="https://challenges.cloudflare.com/turnstile/v0/api.js" strategy="afterInteractive" />
+          <div ref={turnstileRef} className="hidden" aria-hidden="true" />
+        </>
+      )}
       <div
         ref={containerRef}
         className="pointer-events-auto relative flex w-full flex-col items-center"

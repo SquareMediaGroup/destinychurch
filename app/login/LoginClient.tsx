@@ -1,8 +1,9 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useEffect, useRef, type RefObject } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import Script from "next/script";
 import { adminSignIn } from "./actions";
 
 const initialState = {
@@ -10,11 +11,39 @@ const initialState = {
   error: undefined as string | undefined,
 };
 
+const TURNSTILE_SITE_KEY = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
+
 export default function LoginClient() {
   const [state, formAction, pending] = useActionState(adminSignIn, initialState);
+  const turnstileRef = useRef<HTMLDivElement>(null);
+  const widgetId = useRef<string | undefined>(undefined);
+
+  const renderTurnstile = () => {
+    if (!TURNSTILE_SITE_KEY || !turnstileRef.current || !window.turnstile) return;
+    turnstileRef.current.innerHTML = "";
+    widgetId.current = window.turnstile.render(turnstileRef.current, {
+      sitekey: TURNSTILE_SITE_KEY,
+      theme: "dark",
+    });
+  };
+
+  // Tokens are single-use — reset the widget after a failed attempt so the
+  // next submission gets a fresh one.
+  useEffect(() => {
+    if (state.error && window.turnstile) {
+      window.turnstile.reset(widgetId.current);
+    }
+  }, [state.error]);
 
   return (
     <div className="relative flex min-h-screen w-full overflow-hidden bg-destiny-grey">
+      {TURNSTILE_SITE_KEY && (
+        <Script
+          src="https://challenges.cloudflare.com/turnstile/v0/api.js"
+          strategy="afterInteractive"
+          onLoad={renderTurnstile}
+        />
+      )}
       {/* Background */}
       <div
         className="absolute inset-0 bg-cover bg-center bg-no-repeat"
@@ -39,7 +68,7 @@ export default function LoginClient() {
             </div>
           </div>
 
-          <LoginPanel formAction={formAction} pending={pending} error={state.error} />
+          <LoginPanel formAction={formAction} pending={pending} error={state.error} turnstileRef={turnstileRef} />
         </div>
       </div>
     </div>
@@ -50,10 +79,12 @@ function LoginPanel({
   formAction,
   pending,
   error,
+  turnstileRef,
 }: {
   formAction: (formData: FormData) => void;
   pending: boolean;
   error?: string;
+  turnstileRef: RefObject<HTMLDivElement | null>;
 }) {
   return (
     <div className="animate-[fadeInUp_0.4s_ease-out_both]">
@@ -108,6 +139,8 @@ function LoginPanel({
               className="w-full rounded-2xl border border-white/10 bg-white/5 px-5 py-3.5 text-sm text-white placeholder:text-white/20 transition focus:border-destiny-orange/50 focus:outline-none focus:ring-2 focus:ring-destiny-orange/20"
             />
           </div>
+
+          <div ref={turnstileRef} className="flex justify-center" />
 
           {error && (
             <div className="flex items-center gap-3 rounded-2xl bg-red-500/10 px-4 py-3 text-sm text-red-400">

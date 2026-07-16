@@ -4,6 +4,7 @@ import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { createClient } from "@/utils/supabase/server";
 import { checkRateLimit, resetRateLimit } from "@/lib/loginRateLimit";
+import { verifyTurnstileToken } from "@/lib/turnstile";
 
 export async function adminSignIn(
   _prev: unknown,
@@ -30,6 +31,12 @@ export async function adminSignIn(
 
   if (!email || !password) {
     return { success: false, error: "Email and password are required." };
+  }
+
+  const turnstileToken = formData.get("cf-turnstile-response")?.toString();
+  const turnstileOk = await verifyTurnstileToken(turnstileToken, ip);
+  if (!turnstileOk) {
+    return { success: false, error: "Please complete the verification challenge." };
   }
 
   const cookieStore = await cookies();

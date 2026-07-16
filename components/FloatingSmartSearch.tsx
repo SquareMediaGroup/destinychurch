@@ -100,6 +100,7 @@ const TOOL_STATUS_LABELS: Record<string, string> = {
   get_weather: "Checking the forecast…",
   get_directions: "Looking up directions…",
   search_web: "Searching the web…",
+  extract_page: "Reading the page…",
 };
 
 export default function FloatingSmartSearch() {
@@ -664,8 +665,10 @@ export default function FloatingSmartSearch() {
                         </div>
                       ))}
 
-                      {/* Typing indicator */}
-                      {loading && (
+                      {/* Typing indicator. Also shown when a tool is mid-flight
+                          after the first card has landed (e.g. reading a page
+                          found by a search), where `loading` is already false. */}
+                      {(loading || toolStatus) && (
                         <div className="flex justify-start">
                           <div className="mr-2 mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-destiny-orange/15">
                             <SparkleIcon className="h-3 w-3 text-destiny-orange" />

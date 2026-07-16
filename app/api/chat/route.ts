@@ -3,13 +3,14 @@ import type OpenAI from "openai";
 import { getOpenAI, SMART_SEARCH_MODEL } from "@/lib/openaiClient";
 import { buildSmartSearchPrompt } from "@/lib/siteKnowledge";
 import { FALLBACK_ANSWERS } from "@/lib/smartSearch";
-import { TOOL_DEFINITIONS, executeTool } from "@/lib/smartSearch/tools";
+import { TOOL_DEFINITIONS, executeTool, createToolContext } from "@/lib/smartSearch/tools";
 import { isVerifiedCookieValid } from "@/lib/turnstile";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 30;
 
-const MAX_TOOL_ROUNDS = 3;
+// Enough for a search → extract_page → answer chain, plus a round of headroom.
+const MAX_TOOL_ROUNDS = 4;
 
 // Each streamed line is one JSON event: prose tokens, tool results, or done.
 // The client accumulates `text` into the assistant bubble (still parsed for the
@@ -168,6 +169,10 @@ export async function POST(request: NextRequest) {
   const encoder = new TextEncoder();
   const body = new ReadableStream<Uint8Array>({
     async start(controller) {
+      // Shared across every tool call in this request (tracks which URLs a
+      // search surfaced, so extract_page can only open those).
+      const toolCtx = createToolContext();
+
       try {
         const convo: OpenAI.Chat.Completions.ChatCompletionMessageParam[] = [
           { role: "system", content: buildSmartSearchPrompt() },
@@ -200,7 +205,7 @@ export async function POST(request: NextRequest) {
 
           const results = await Promise.all(
             toolCalls.map(async (tc) => {
-              const result = await executeTool(tc.name, tc.args);
+              const result = await executeTool(tc.name, tc.args, toolCtx);
               writeEvent(controller, encoder, {
                 type: "tool_result",
                 name: tc.name,

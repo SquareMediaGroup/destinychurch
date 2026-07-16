@@ -15,6 +15,24 @@ import { FIT_LABELS, fromPrice, type ProductWithVariants } from "@/lib/shop";
 
 const DESTINY_CENTRE_ADDRESS = "Destiny Centre, Norton Road, Stockton-on-Tees, TS20 2QQ";
 
+/** Per-page content budget for search results fed back to the model. */
+const SNIPPET_CHARS = 1200;
+/** Per-page content budget for a full extract_page read. */
+const EXTRACT_CHARS = 8000;
+
+/**
+ * Per-request state shared across tool calls. `seenUrls` records every URL a
+ * search returned this request, so extract_page can only open pages we found
+ * ourselves rather than any URL the conversation happens to contain.
+ */
+export interface ToolContext {
+  seenUrls: Set<string>;
+}
+
+export function createToolContext(): ToolContext {
+  return { seenUrls: new Set() };
+}
+
 export const TOOL_DEFINITIONS: OpenAI.Chat.Completions.ChatCompletionTool[] = [
   {
     type: "function",
@@ -92,6 +110,24 @@ export const TOOL_DEFINITIONS: OpenAI.Chat.Completions.ChatCompletionTool[] = [
           query: { type: "string", description: "A short, specific search query." },
         },
         required: ["query"],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "extract_page",
+      description:
+        "Open one page returned by a previous search_web call and read its full content. Use when the search snippets hint at an answer but don't actually contain it — e.g. a specific figure that lives on a Charity Commission or Companies House record. The url MUST be copied exactly from a search_web result; pages not returned by a search can't be opened.",
+      parameters: {
+        type: "object",
+        properties: {
+          url: {
+            type: "string",
+            description: "The exact URL, copied verbatim from a previous search_web result.",
+          },
+        },
+        required: ["url"],
       },
     },
   },
@@ -331,7 +367,11 @@ export interface SearchWebResult {
   results?: { title: string; url: string; snippet: string }[];
 }
 
-async function runSearchWeb(args: { query: string }): Promise<SearchWebResult> {
+// Tavily's own `include_answer` summary is deliberately NOT requested: it
+// conflated Destiny Church Tees Valley with the unrelated Scottish charity
+// "Destiny Church Trust" (SC017898) and reported a ~5x wrong income figure.
+// We pass the model real page content instead and let it ground its own answer.
+async function runSearchWeb(args: { query: string }, ctx: ToolContext): Promise<SearchWebResult> {
   const apiKey = process.env.TAVILY_API_KEY;
   if (!apiKey) {
     return { available: false, reason: "Web search isn't configured yet." };
@@ -339,23 +379,64 @@ async function runSearchWeb(args: { query: string }): Promise<SearchWebResult> {
   try {
     const res = await fetch("https://api.tavily.com/search", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
       body: JSON.stringify({
-        api_key: apiKey,
         query: args.query,
         max_results: 4,
-        include_answer: false,
+        // "advanced" returns curated, relevant chunks rather than the top of the
+        // page — without it, results are mostly cookie banners.
+        search_depth: "advanced",
       }),
-      signal: AbortSignal.timeout(10000),
+      signal: AbortSignal.timeout(15000),
     });
     if (!res.ok) return { available: false, reason: "Search service is unavailable right now." };
     const data = (await res.json()) as { results?: { title: string; url: string; content: string }[] };
-    return {
-      available: true,
-      results: (data.results ?? []).map((r) => ({ title: r.title, url: r.url, snippet: r.content?.slice(0, 300) ?? "" })),
-    };
+    const results = (data.results ?? []).map((r) => ({
+      title: r.title,
+      url: r.url,
+      snippet: r.content?.slice(0, SNIPPET_CHARS) ?? "",
+    }));
+    // Record what we surfaced so extract_page can only follow links we found.
+    for (const r of results) ctx.seenUrls.add(r.url);
+    return { available: true, results };
   } catch {
     return { available: false, reason: "Search timed out." };
+  }
+}
+
+// ── extract_page (Tavily /extract, same key) ─────────────────────────────────
+
+export interface ExtractPageResult {
+  available: boolean;
+  reason?: string;
+  url?: string;
+  content?: string;
+}
+
+async function runExtractPage(args: { url: string }, ctx: ToolContext): Promise<ExtractPageResult> {
+  const apiKey = process.env.TAVILY_API_KEY;
+  if (!apiKey) return { available: false, reason: "Page extraction isn't configured yet." };
+
+  // Only follow links a previous search actually returned. Stops the tool being
+  // steered into fetching arbitrary attacker- or visitor-supplied URLs.
+  if (!ctx.seenUrls.has(args.url)) {
+    return { available: false, reason: "That page didn't come from a search result, so it wasn't opened." };
+  }
+
+  try {
+    const res = await fetch("https://api.tavily.com/extract", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
+      body: JSON.stringify({ urls: [args.url], extract_depth: "advanced" }),
+      signal: AbortSignal.timeout(12000),
+    });
+    if (!res.ok) return { available: false, reason: "Couldn't open that page right now." };
+    const data = (await res.json()) as { results?: { url: string; raw_content: string }[] };
+    const hit = data.results?.[0];
+    if (!hit?.raw_content) return { available: false, reason: "That page couldn't be read." };
+    return { available: true, url: hit.url, content: hit.raw_content.slice(0, EXTRACT_CHARS) };
+  } catch {
+    return { available: false, reason: "Opening that page timed out." };
   }
 }
 
@@ -365,10 +446,11 @@ export type ToolResult =
   | { name: "find_products"; data: FindProductsResult }
   | { name: "get_weather"; data: WeatherToolResult }
   | { name: "get_directions"; data: DirectionsToolResult }
-  | { name: "search_web"; data: SearchWebResult };
+  | { name: "search_web"; data: SearchWebResult }
+  | { name: "extract_page"; data: ExtractPageResult };
 
 /** Execute a single tool call by name, parsing its JSON argument string. */
-export async function executeTool(name: string, rawArgs: string): Promise<ToolResult> {
+export async function executeTool(name: string, rawArgs: string, ctx: ToolContext): Promise<ToolResult> {
   let args: Record<string, unknown> = {};
   try {
     args = rawArgs ? JSON.parse(rawArgs) : {};
@@ -391,7 +473,9 @@ export async function executeTool(name: string, rawArgs: string): Promise<ToolRe
     case "get_directions":
       return { name, data: runGetDirections() };
     case "search_web":
-      return { name, data: await runSearchWeb({ query: args.query as string }) };
+      return { name, data: await runSearchWeb({ query: args.query as string }, ctx) };
+    case "extract_page":
+      return { name, data: await runExtractPage({ url: args.url as string }, ctx) };
     default:
       throw new Error(`Unknown tool: ${name}`);
   }

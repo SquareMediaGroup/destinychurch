@@ -85,7 +85,7 @@ export const TOOL_DEFINITIONS: OpenAI.Chat.Completions.ChatCompletionTool[] = [
     function: {
       name: "search_web",
       description:
-        "Search the live web for a narrow, real-world fact that directly supports visiting or planning around Destiny Church (e.g. current local travel disruption). Never use for general knowledge, unrelated topics, or anything not about visiting Destiny.",
+        "Search the live web for a real-world fact you don't already know or that could be out of date — local travel disruption, current events, or a general-knowledge question a visitor asks in passing. Use it whenever it would give a better, more current answer than guessing; don't use it for anything about Destiny's own private/internal information (finances, staff details, member data) that wouldn't be published anywhere.",
       parameters: {
         type: "object",
         properties: {

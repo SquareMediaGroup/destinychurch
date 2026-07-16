@@ -95,6 +95,13 @@ function SparkleIcon({ className }: { className?: string }) {
   );
 }
 
+const TOOL_STATUS_LABELS: Record<string, string> = {
+  find_products: "Searching the shop…",
+  get_weather: "Checking the forecast…",
+  get_directions: "Looking up directions…",
+  search_web: "Searching the web…",
+};
+
 export default function FloatingSmartSearch() {
   const pathname = usePathname();
   const { decided } = useCookieConsent();
@@ -102,6 +109,7 @@ export default function FloatingSmartSearch() {
   const [input, setInput] = useState("");
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [loading, setLoading] = useState(false);
+  const [toolStatus, setToolStatus] = useState<string | null>(null);
   const [focused, setFocused] = useState(false);
   const [placeholderIndex, setPlaceholderIndex] = useState(0);
   const [showFirstUse, setShowFirstUse] = useState(false);
@@ -304,6 +312,7 @@ export default function FloatingSmartSearch() {
       const history: ChatMessage[] = [...messages, { role: "user", content: trimmed }];
       setMessages(history);
       setInput("");
+      setToolStatus(null);
 
       try {
         const res = await fetch("/api/chat", {
@@ -368,7 +377,10 @@ export default function FloatingSmartSearch() {
           if (evt.type === "text" && typeof evt.value === "string") {
             raw += evt.value;
             sync();
+          } else if (evt.type === "tool_call" && evt.name) {
+            setToolStatus(TOOL_STATUS_LABELS[evt.name] ?? "Looking that up…");
           } else if (evt.type === "tool_result") {
+            setToolStatus(null);
             switch (evt.name) {
               case "find_products":
                 cards.products = (evt.data as { products?: ProductResult[] }).products;
@@ -433,6 +445,7 @@ export default function FloatingSmartSearch() {
         ]);
       } finally {
         setLoading(false);
+        setToolStatus(null);
       }
     },
     [loading, messages, showFirstUse, dismissFirstUse, ensureTurnstileVerified]
@@ -658,11 +671,15 @@ export default function FloatingSmartSearch() {
                             <SparkleIcon className="h-3 w-3 text-destiny-orange" />
                           </div>
                           <div className="rounded-2xl rounded-tl-sm bg-white/10 px-4 py-3">
-                            <div className="flex gap-1">
-                              <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-white/40" style={{ animationDelay: "0ms" }} />
-                              <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-white/40" style={{ animationDelay: "150ms" }} />
-                              <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-white/40" style={{ animationDelay: "300ms" }} />
-                            </div>
+                            {toolStatus ? (
+                              <span className="text-xs text-white/60">{toolStatus}</span>
+                            ) : (
+                              <div className="flex gap-1">
+                                <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-white/40" style={{ animationDelay: "0ms" }} />
+                                <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-white/40" style={{ animationDelay: "150ms" }} />
+                                <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-white/40" style={{ animationDelay: "300ms" }} />
+                              </div>
+                            )}
                           </div>
                         </div>
                       )}
@@ -750,12 +767,10 @@ export default function FloatingSmartSearch() {
                     setInput("");
                     inputRef.current?.focus();
                   }}
-                  className="absolute right-12 top-1/2 z-20 -translate-y-1/2 text-white/40 transition hover:text-white/70"
+                  className="absolute right-12 top-1/2 z-20 -translate-y-1/2 text-xs font-medium text-white/40 transition hover:text-white/70"
                   aria-label="Clear input"
                 >
-                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                  </svg>
+                  Clear
                 </button>
               ) : null}
               {/* Collapse button */}

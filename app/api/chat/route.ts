@@ -16,6 +16,7 @@ const MAX_TOOL_ROUNDS = 3;
 // trailing OPTION/PAGE/CTA lines) and attaches each `tool_result` as a card.
 type StreamEvent =
   | { type: "text"; value: string }
+  | { type: "tool_call"; name: string }
   | { type: "tool_result"; name: string; data: unknown }
   | { type: "error"; message: string }
   | { type: "done" };
@@ -192,6 +193,10 @@ export async function POST(request: NextRequest) {
               function: { name: tc.name, arguments: tc.args },
             })),
           });
+
+          for (const tc of toolCalls) {
+            writeEvent(controller, encoder, { type: "tool_call", name: tc.name });
+          }
 
           const results = await Promise.all(
             toolCalls.map(async (tc) => {

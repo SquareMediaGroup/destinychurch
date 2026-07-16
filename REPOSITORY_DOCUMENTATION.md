@@ -86,7 +86,8 @@ Responses: JSON, Server-Side HTML, Redirects, Cached Assets
 
 - **Public Pages:** No auth required; cached at edge
 - **Member Features:** Supabase Auth (email/password); tokens in secure cookies
-- **Admin Dashboard:** Supabase Auth required; additional role checks via proxy
+- **Admin Dashboard:** Supabase Auth required; additional role checks via proxy; login form gated by a Cloudflare Turnstile challenge (`lib/turnstile.ts`)
+- **Smart Search (`/api/chat`):** Gated by an invisible Turnstile challenge, run once per browser session and backed by a signed `ts_verified` cookie (see `FloatingSmartSearch.tsx` below)
 - **API Endpoints:** Service role key (server-to-database); user tokens (client-to-server)
 
 ---
@@ -200,6 +201,7 @@ destinychurch/
 │   │   │   ├── posts/, training/, alpha-events/, featured-course/, hr/, store/, shop-hero/
 │   │   │   └── ...
 │   │   ├── chat/                  # POST /api/chat — Smart Search tool-calling chat
+│   │   ├── turnstile/verify/       # POST /api/turnstile/verify — Cloudflare Turnstile token check
 │   │   ├── youtube/                # videos/, thumbnail/[id]/, status/, live/
 │   │   ├── alpha-ask/, alpha-events/ # Public Alpha info endpoints
 │   │   ├── store/                 # checkout/, checkout/bypass/ (public storefront)
@@ -264,6 +266,7 @@ destinychurch/
 │   ├── serviceStatus.ts           # Feature flags
 │   ├── rateLimit.ts               # Rate limiting
 │   ├── loginRateLimit.ts          # Login attempt limiting
+│   ├── turnstile.ts               # Cloudflare Turnstile verification + signed ts_verified cookie
 │   ├── podcast.ts                 # Podcast metadata
 │   ├── accessRequestEmail.ts      # Email templates
 │   ├── passwordResetEmail.ts      # Email templates
@@ -1158,7 +1161,7 @@ All admin/staff features live under a single `/admin` prefix with one login at `
 
 | Route | File | Purpose |
 |-------|------|---------|
-| `/login` | `app/login/page.tsx` | Staff sign-in |
+| `/login` | `app/login/page.tsx` | Staff sign-in (Cloudflare Turnstile widget required before `adminSignIn()` checks credentials — `app/login/actions.ts`) |
 | `/admin/forgot-password` | `app/admin/forgot-password/page.tsx` | Password reset request |
 | `/admin/reset-password` | `app/admin/reset-password/page.tsx` | Password reset form |
 | `/admin` | `app/admin/page.tsx` | Admin dashboard home |
@@ -1245,12 +1248,13 @@ All admin/staff features live under a single `/admin` prefix with one login at `
 - **Feature:** If `smart_search` service is enabled
 - **Behavior:**
   - Click button → pill expands, chat thread opens
+  - Before the first message of a browser session is sent, an **invisible Cloudflare Turnstile challenge** runs (`ensureTurnstileVerified()`) and posts its token to `/api/turnstile/verify`, which sets a signed, non-`httpOnly` `ts_verified` cookie (`lib/turnstile.ts`) checked by `/api/chat`. Subsequent messages in the same session skip re-challenging (`hasVerifiedCookie()` reads the cookie client-side). If the invisible check can't silently confirm the visitor, a **visible Turnstile widget** is shown in the panel with a short message; solving it auto-resends the pending message.
   - User types query → full history sent to `/api/chat` (OpenAI, `gpt-4.1-mini`)
-  - The route uses **tool-calling** and streams **NDJSON** events (`text`, `tool_result`, `done`). Prose is still parsed for the trailing `OPTION:`/`PAGE:`/`CTA:` lines (clarifying chips + a navigation CTA).
-  - **Tools** (`lib/smartSearch/tools.ts`): `find_products` (searches published shop products via `getPublishedProducts()` + fuse.js, returns cards), `get_weather` (Open-Meteo, no key), `get_directions` (Google Maps embed), `search_web` (Tavily).
+  - The route uses **tool-calling** and streams **NDJSON** events (`text`, `tool_call`, `tool_result`, `done`). Prose is still parsed for the trailing `OPTION:`/`PAGE:`/`CTA:` lines (clarifying chips + a navigation CTA). `tool_call` events drive a status line ("Searching the web…", "Reading the page…", etc. — see `TOOL_STATUS_LABELS`) shown in place of the typing indicator while a tool is mid-flight.
+  - **Tools** (`lib/smartSearch/tools.ts`): `find_products` (searches published shop products via `getPublishedProducts()` + fuse.js, returns cards), `get_weather` (Open-Meteo, no key), `get_directions` (Google Maps embed), `search_web` (Tavily search), `extract_page` (Tavily extract — reads the full content of one URL a prior `search_web` call actually returned; the tool refuses any URL not in that request's `seenUrls` set).
   - **Result cards** (`components/smartSearch/ResultCards.tsx`) render below the prose in Smart Search's glass style. The product card offers inline size/colour selection and **add-to-cart** (via `useCart()`), so a visitor can buy without leaving the conversation.
   - Chat history + cards stored in component state (not persisted)
-- **Optional env vars:** `NEXT_PUBLIC_GOOGLE_MAPS_EMBED_API_KEY` (directions embed — degrades to an "Open in Maps" link without it) and `TAVILY_API_KEY` (web search — degrades to a "not configured" note). Weather and product search need no extra key.
+- **Optional env vars:** `NEXT_PUBLIC_GOOGLE_MAPS_EMBED_API_KEY` (directions embed — degrades to an "Open in Maps" link without it) and `TAVILY_API_KEY` (web search + page extraction — degrades to a "not configured" note). Weather and product search need no extra key. `NEXT_PUBLIC_TURNSTILE_SITE_KEY` (+ server-side `TURNSTILE_SECRET_KEY`, `TURNSTILE_COOKIE_SECRET`) gate the widget behind Turnstile; without them the challenge script never loads and `/api/chat` fails closed (see `isVerifiedCookieValid()`).
 
 > **`VisualEditOverlay.tsx` does not exist.** There is no in-page visual editing
 > overlay — it was part of the removed page-builder/Studio feature (migration
@@ -1472,22 +1476,46 @@ export async function applyForJob(jobId: string, formData: ApplicationData) {
 ```typescript
 // AI-powered conversational Smart Search (the FloatingSmartSearch widget).
 // Body: { messages: { role: "user" | "assistant"; content: string }[] }
-// Response: NDJSON stream of { type: "text" | "tool_result" | "done" | "error", ... }
+// Response: NDJSON stream of { type: "text" | "tool_call" | "tool_result" | "done" | "error", ... }
 
 // Logic:
-// 1. Rate limit: 20 requests per IP per minute (429 on excess)
-// 2. Validate messages: user/assistant roles only (blocks injected system turns),
+// 1. Turnstile gate: requires a valid signed `ts_verified` cookie
+//    (isVerifiedCookieValid(), lib/turnstile.ts) — 403 if missing/expired/invalid
+// 2. Rate limit: 20 requests per IP per minute (429 on excess)
+// 3. Validate messages: user/assistant roles only (blocks injected system turns),
 //    <=2000 chars each, last must be user <=300 chars (else 400)
-// 3. getOpenAI() null-check → NDJSON fallback routing to /contact
-// 4. Tool-calling loop (up to MAX_TOOL_ROUNDS=3) on gpt-4.1-mini:
+// 4. getOpenAI() null-check → NDJSON fallback routing to /contact
+// 5. Tool-calling loop (up to MAX_TOOL_ROUNDS=4 — enough for a
+//    search_web → extract_page → answer chain, plus headroom) on gpt-4.1-mini:
 //    - System prompt: buildSmartSearchPrompt() (lib/siteKnowledge.ts) — church
 //      facts + today's date + tool guidance
 //    - tools: TOOL_DEFINITIONS (lib/smartSearch/tools.ts) — find_products,
-//      get_weather, get_directions, search_web
-//    - Streams assistant text as `text` events; runs tool calls, emits each
-//      result as a `tool_result` event, feeds results back, repeats
-// 5. Client (FloatingSmartSearch) accumulates `text` (parsed for PAGE/CTA/OPTION)
+//      get_weather, get_directions, search_web, extract_page
+//    - A per-request ToolContext (createToolContext()) tracks every URL a
+//      search_web call returned, so extract_page can only open URLs the
+//      request itself surfaced
+//    - Emits a `tool_call` event as each tool is invoked (drives the client's
+//      status line), streams assistant text as `text` events, runs tool
+//      calls, emits each result as a `tool_result` event, feeds results
+//      back, repeats
+// 6. Client (FloatingSmartSearch) accumulates `text` (parsed for PAGE/CTA/OPTION)
 //    and renders each `tool_result` as a card (ResultCards.tsx)
+```
+
+#### `POST /api/turnstile/verify`
+```typescript
+// Verifies a Cloudflare Turnstile token from the client (admin login's visible
+// widget, or Smart Search's invisible/visible widget) and, on success, sets the
+// signed `ts_verified` cookie that /api/chat checks.
+// Body: { token: string }
+// Response: { success: boolean } — 400 on malformed body, 403 if Turnstile rejects the token
+
+// verifyTurnstileToken() (lib/turnstile.ts) calls Cloudflare's siteverify
+// endpoint; fails closed (returns false) if TURNSTILE_SECRET_KEY isn't set.
+// The response cookie is HMAC-signed (TURNSTILE_COOKIE_SECRET) with a 30-minute
+// TTL (TURNSTILE_SESSION_TTL_MS) and deliberately NOT httpOnly, so the client
+// can check for an existing valid session before re-running the challenge —
+// forging it would require the server-only signing secret.
 ```
 
 #### `GET /api/youtube/videos`
@@ -1744,6 +1772,11 @@ KNOWLEDGE:
 2. **Limits links** — Only allows pages we've defined
 3. **Consistent tone** — Friendly, warm, not corporate
 4. **Scalable** — Easy to update facts without retraining
+
+**Tool-use policy (as of the Jul 2026 web-search rework):**
+- `search_web` is scoped generously — anything that helps a visitor engage with or visit Destiny, or public facts about Destiny itself (e.g. its Charity Commission accounts), not just narrow travel disruptions. The OFF-TOPIC deflection only kicks in for genuine general-knowledge trivia unrelated to Destiny.
+- The grounding rule has an explicit exception: a live tool result is a valid source of facts, not just the static KNOWLEDGE block.
+- Because an unrelated Scottish charity is also named "Destiny Church" (Destiny Church Trust, SC017898) and was previously conflated by Tavily's own answer summary (reporting a ~5x wrong income figure), the prompt pins Destiny's charity number (1119951) and company number (06261423), and instructs the model to verify any record matches before quoting a figure, using `extract_page` to read a source rather than guessing from a search snippet.
 
 ---
 
@@ -2065,7 +2098,12 @@ OPENAI_API_KEY=sk-...
 
 # Smart Search tools (optional — each degrades gracefully without its key)
 NEXT_PUBLIC_GOOGLE_MAPS_EMBED_API_KEY=AIza...   # get_directions embed
-TAVILY_API_KEY=tvly-...                          # search_web
+TAVILY_API_KEY=tvly-...                          # search_web, extract_page
+
+# Cloudflare Turnstile (gates /admin login and Smart Search /api/chat)
+NEXT_PUBLIC_TURNSTILE_SITE_KEY=0x4...
+TURNSTILE_SECRET_KEY=0x4...
+TURNSTILE_COOKIE_SECRET=...                      # signs the Smart Search ts_verified cookie
 
 # Stripe (shop checkout)
 STRIPE_SECRET_KEY=sk_live_...

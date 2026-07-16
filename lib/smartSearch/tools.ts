@@ -85,7 +85,7 @@ export const TOOL_DEFINITIONS: OpenAI.Chat.Completions.ChatCompletionTool[] = [
     function: {
       name: "search_web",
       description:
-        "Search the live web for a real-world fact you don't already know or that could be out of date — local travel disruption, current events, a general-knowledge question a visitor asks in passing, or public-record facts about Destiny itself (e.g. its Charity Commission filings/annual accounts, which UK charities must publish). Use it whenever it would give a better, more current answer than guessing; only skip it for things genuinely never published anywhere, like staff pay or member/attendee personal data.",
+        "Search the live web for a real-world fact that helps someone visit or engage with Destiny, or that concerns Destiny itself — local travel or disruption, the local area, weather for a Sunday, or public-record facts about Destiny (e.g. its Charity Commission filings/annual accounts, which UK charities must publish). Use it whenever it would give a better, more current answer than guessing. Do NOT use it for general-knowledge trivia unrelated to Destiny or to visiting us, and only skip it for things genuinely never published anywhere, like staff pay or member/attendee personal data.",
       parameters: {
         type: "object",
         properties: {

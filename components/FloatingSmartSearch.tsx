@@ -114,6 +114,11 @@ export default function FloatingSmartSearch() {
   const firstMorphRef = useRef(true);
   const turnstileRef = useRef<HTMLDivElement>(null);
   const turnstileWidgetId = useRef<string | undefined>(undefined);
+  const visibleTurnstileRef = useRef<HTMLDivElement>(null);
+  const visibleWidgetId = useRef<string | undefined>(undefined);
+  // Set when the invisible challenge couldn't silently verify the visitor;
+  // holds the message to resend once they complete the visible widget below.
+  const [turnstileChallengeText, setTurnstileChallengeText] = useState<string | null>(null);
 
   // Runs the invisible Turnstile challenge and resolves the resulting token.
   const getTurnstileToken = useCallback((): Promise<string | null> => {
@@ -135,14 +140,7 @@ export default function FloatingSmartSearch() {
     });
   }, []);
 
-  // Ensures Smart Search has a verified session cookie, running the invisible
-  // Turnstile challenge (once per session) only when it's missing.
-  const ensureTurnstileVerified = useCallback(async (): Promise<boolean> => {
-    if (hasVerifiedCookie()) return true;
-
-    const token = await getTurnstileToken();
-    if (!token) return false;
-
+  const submitTurnstileToken = useCallback(async (token: string): Promise<boolean> => {
     try {
       const res = await fetch("/api/turnstile/verify", {
         method: "POST",
@@ -153,7 +151,18 @@ export default function FloatingSmartSearch() {
     } catch {
       return false;
     }
-  }, [getTurnstileToken]);
+  }, []);
+
+  // Ensures Smart Search has a verified session cookie, running the invisible
+  // Turnstile challenge (once per session) only when it's missing.
+  const ensureTurnstileVerified = useCallback(async (): Promise<boolean> => {
+    if (hasVerifiedCookie()) return true;
+
+    const token = await getTurnstileToken();
+    if (!token) return false;
+
+    return submitTurnstileToken(token);
+  }, [getTurnstileToken, submitTurnstileToken]);
 
   const hasMessages = messages.length > 0;
 
@@ -280,24 +289,23 @@ export default function FloatingSmartSearch() {
       if (!trimmed || loading || trimmed.length > 300) return;
       if (showFirstUse) dismissFirstUse();
 
+      setLoading(true);
+      const verified = await ensureTurnstileVerified();
+      if (!verified) {
+        // The invisible challenge couldn't silently confirm the visitor —
+        // surface the visible widget so they can complete it manually, then
+        // resend this same message once they do.
+        setLoading(false);
+        setInput(trimmed);
+        setTurnstileChallengeText(trimmed);
+        return;
+      }
+
       const history: ChatMessage[] = [...messages, { role: "user", content: trimmed }];
       setMessages(history);
       setInput("");
-      setLoading(true);
 
       try {
-        const verified = await ensureTurnstileVerified();
-        if (!verified) {
-          setMessages((prev) => [
-            ...prev,
-            {
-              role: "assistant",
-              content: "I can't reach the assistant right now — please try again in a moment.",
-            },
-          ]);
-          return;
-        }
-
         const res = await fetch("/api/chat", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -430,6 +438,40 @@ export default function FloatingSmartSearch() {
     [loading, messages, showFirstUse, dismissFirstUse, ensureTurnstileVerified]
   );
 
+  // Fires when the visitor completes the visible fallback widget: confirm the
+  // token with the server, then automatically resend the message that was
+  // waiting on verification.
+  const handleTurnstileSolved = useCallback(
+    async (token: string) => {
+      const ok = await submitTurnstileToken(token);
+      const pending = turnstileChallengeText;
+      setTurnstileChallengeText(null);
+      if (ok && pending) {
+        sendMessage(pending);
+      } else if (!ok && window.turnstile) {
+        window.turnstile.reset(visibleWidgetId.current);
+      }
+    },
+    [submitTurnstileToken, turnstileChallengeText, sendMessage]
+  );
+
+  // Mount the visible widget into its container once the challenge is needed
+  // and the Turnstile script has loaded.
+  useEffect(() => {
+    if (!turnstileChallengeText || !TURNSTILE_SITE_KEY) return;
+    if (!window.turnstile || !visibleTurnstileRef.current) return;
+    if (visibleWidgetId.current !== undefined) return;
+
+    visibleWidgetId.current = window.turnstile.render(visibleTurnstileRef.current, {
+      sitekey: TURNSTILE_SITE_KEY,
+      theme: "dark",
+      callback: (token) => handleTurnstileSolved(token),
+      "error-callback": () => {
+        if (window.turnstile) window.turnstile.reset(visibleWidgetId.current);
+      },
+    });
+  }, [turnstileChallengeText, handleTurnstileSolved]);
+
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     sendMessage(input);
@@ -449,7 +491,7 @@ export default function FloatingSmartSearch() {
     : [];
 
   const hasPages    = pageMatches.length > 0;
-  const showPanel   = expanded && (hasMessages || loading || hasPages);
+  const showPanel   = expanded && (hasMessages || loading || hasPages || Boolean(turnstileChallengeText));
   const showWelcome = expanded && showFirstUse && !hasMessages && !loading && !input;
 
   return (
@@ -497,8 +539,19 @@ export default function FloatingSmartSearch() {
             {showPanel && (
               <div className="glass glass-strong glass-refract overflow-hidden rounded-2xl">
 
+                {/* Turnstile fallback — shown when the invisible check couldn't
+                    silently confirm the visitor. */}
+                {turnstileChallengeText && (
+                  <div className="flex flex-col items-center gap-3 px-4 py-5 text-center">
+                    <p className="text-sm text-white/70">
+                      Please complete the verification below to continue.
+                    </p>
+                    <div ref={visibleTurnstileRef} />
+                  </div>
+                )}
+
                 {/* Page matches (only before the conversation starts) */}
-                {hasPages && pageMatches.map((page) => (
+                {!turnstileChallengeText && hasPages && pageMatches.map((page) => (
                   <Link
                     key={page.href}
                     href={page.href}

@@ -29,7 +29,10 @@ export async function POST(request: NextRequest) {
 
   const res = NextResponse.json({ success: true });
   res.cookies.set("ts_verified", signVerifiedCookie(), {
-    httpOnly: true,
+    // Readable client-side so the widget can skip re-challenging when a
+    // valid session already exists. Safe: the value is HMAC-signed with a
+    // server-only secret, so it can't be forged from the client.
+    httpOnly: false,
     sameSite: "lax",
     secure: process.env.NODE_ENV === "production",
     maxAge: TURNSTILE_SESSION_TTL_MS / 1000,

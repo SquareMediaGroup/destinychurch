@@ -1,7 +1,7 @@
 # Destiny Church Tees Valley — Complete Repository Documentation
 
-**Version:** 1.0.2  
-**Last Updated:** July 15, 2026  
+**Version:** 1.0.3  
+**Last Updated:** July 17, 2026  
 **Repository:** Square Media Group — destinychurch  
 
 This document provides a comprehensive explanation of every major component, line of code purpose, architecture decisions, and how the system works from end-to-end.
@@ -61,7 +61,7 @@ Destiny Church Tees Valley is a **full-stack church website platform** built by 
 ### Key Design Principles
 
 1. **Server-Driven:** Use server-side rendering and server actions wherever possible; minimize client-side complexity
-2. **Security First:** Row-level security (RLS) on all sensitive data; rate limiting on public APIs; Supabase service role for backend operations
+2. **Security First:** Row-level security (RLS) on all sensitive data; rate limiting on public APIs; Cloudflare Turnstile bot-check on admin login and Smart Search; Supabase service role for backend operations
 3. **Edge Caching:** Long TTLs on static assets; revalidate on-demand for dynamic content
 4. **Mobile First:** Responsive Tailwind CSS; tested on real devices
 5. **Accessibility:** Semantic HTML, ARIA labels, keyboard navigation
@@ -86,7 +86,8 @@ Responses: JSON, Server-Side HTML, Redirects, Cached Assets
 
 - **Public Pages:** No auth required; cached at edge
 - **Member Features:** Supabase Auth (email/password); tokens in secure cookies
-- **Admin Dashboard:** Supabase Auth required; additional role checks via proxy
+- **Admin Dashboard:** Supabase Auth required; additional role checks via proxy; login form gated behind a Cloudflare Turnstile challenge (`lib/turnstile.ts`)
+- **Smart Search:** Gated behind an invisible (falling back to visible) Cloudflare Turnstile challenge; a signed `ts_verified` cookie (30 min TTL) lets a visitor chat without re-solving on every message
 - **API Endpoints:** Service role key (server-to-database); user tokens (client-to-server)
 
 ---
@@ -105,7 +106,8 @@ Responses: JSON, Server-Side HTML, Redirects, Cached Assets
 | **Storage** | Supabase Storage | File uploads (HR documents, media, images) |
 | **Video** | YouTube API v3 | Sermon hosting and metadata |
 | **Podcasts** | Buzzsprout | Podcast RSS and metadata |
-| **AI** | OpenAI (`gpt-4.1-mini`) | Smart Search tool-calling chat (products, weather, directions, web search) |
+| **AI** | OpenAI (`gpt-4.1-mini`) | Smart Search tool-calling chat (products, weather, directions, web search, page extraction) |
+| **Bot Protection** | Cloudflare Turnstile | Gates admin login and Smart Search chat |
 | **Payments** | Stripe (Payment Element + Express Checkout) | `/shop` checkout — cards, Apple Pay, Google Pay, Link |
 | **Analytics** | Vercel Analytics + SpeedInsights | Performance and visitor tracking |
 | **Deployment** | Vercel | Edge functions, serverless, CDN |
@@ -1245,12 +1247,14 @@ All admin/staff features live under a single `/admin` prefix with one login at `
 - **Feature:** If `smart_search` service is enabled
 - **Behavior:**
   - Click button → pill expands, chat thread opens
-  - User types query → full history sent to `/api/chat` (OpenAI, `gpt-4.1-mini`)
-  - The route uses **tool-calling** and streams **NDJSON** events (`text`, `tool_result`, `done`). Prose is still parsed for the trailing `OPTION:`/`PAGE:`/`CTA:` lines (clarifying chips + a navigation CTA).
-  - **Tools** (`lib/smartSearch/tools.ts`): `find_products` (searches published shop products via `getPublishedProducts()` + fuse.js, returns cards), `get_weather` (Open-Meteo, no key), `get_directions` (Google Maps embed), `search_web` (Tavily).
+  - **Turnstile gate:** before the first message of a session, the widget runs an invisible Cloudflare Turnstile check (`getTurnstileToken` → `POST /api/turnstile/verify`) and stores the resulting `ts_verified` cookie via `ensureTurnstileVerified()`. If the invisible check fails (bot score too low, network issue), it falls back to rendering a **visible** Turnstile widget (`turnstileChallengeText`, `visibleTurnstileRef`) inline in the chat thread; solving it (`handleTurnstileSolved`) auto-resends the pending message.
+  - User types query → full history sent to `/api/chat` (OpenAI, `gpt-4.1-mini`), which 403s if the `ts_verified` cookie is missing/expired
+  - The route uses **tool-calling** and streams **NDJSON** events (`text`, `tool_call`, `tool_result`, `done`). A `tool_call` event drives a "Searching the web…"-style status indicator while a tool is running. Prose is still parsed for the trailing `OPTION:`/`PAGE:`/`CTA:` lines (clarifying chips + a navigation CTA).
+  - **Tools** (`lib/smartSearch/tools.ts`): `find_products` (searches published shop products via `getPublishedProducts()` + fuse.js, returns cards), `get_weather` (Open-Meteo, no key), `get_directions` (Google Maps embed), `search_web` (Tavily, `search_depth: "advanced"`, general-knowledge + church/visitor topics, not just on-site content), `extract_page` (Tavily `/extract`, full-page read of a URL — restricted to URLs `search_web` actually surfaced in that request, tracked per-request via `createToolContext()`/`ToolContext.seenUrls`, so the model can't be steered to extract an arbitrary URL).
   - **Result cards** (`components/smartSearch/ResultCards.tsx`) render below the prose in Smart Search's glass style. The product card offers inline size/colour selection and **add-to-cart** (via `useCart()`), so a visitor can buy without leaving the conversation.
   - Chat history + cards stored in component state (not persisted)
 - **Optional env vars:** `NEXT_PUBLIC_GOOGLE_MAPS_EMBED_API_KEY` (directions embed — degrades to an "Open in Maps" link without it) and `TAVILY_API_KEY` (web search — degrades to a "not configured" note). Weather and product search need no extra key.
+- **Required env vars:** `NEXT_PUBLIC_TURNSTILE_SITE_KEY`, `TURNSTILE_SECRET_KEY`, `TURNSTILE_COOKIE_SECRET` (Turnstile gate — see `lib/turnstile.ts`).
 
 > **`VisualEditOverlay.tsx` does not exist.** There is no in-page visual editing
 > overlay — it was part of the removed page-builder/Studio feature (migration
@@ -1472,22 +1476,47 @@ export async function applyForJob(jobId: string, formData: ApplicationData) {
 ```typescript
 // AI-powered conversational Smart Search (the FloatingSmartSearch widget).
 // Body: { messages: { role: "user" | "assistant"; content: string }[] }
-// Response: NDJSON stream of { type: "text" | "tool_result" | "done" | "error", ... }
+// Response: NDJSON stream of { type: "text" | "tool_call" | "tool_result" | "done" | "error", ... }
 
 // Logic:
-// 1. Rate limit: 20 requests per IP per minute (429 on excess)
-// 2. Validate messages: user/assistant roles only (blocks injected system turns),
+// 1. Turnstile gate: 403 unless isVerifiedCookieValid(ts_verified cookie) —
+//    see lib/turnstile.ts and POST /api/turnstile/verify below
+// 2. Rate limit: 20 requests per IP per minute (429 on excess)
+// 3. Validate messages: user/assistant roles only (blocks injected system turns),
 //    <=2000 chars each, last must be user <=300 chars (else 400)
-// 3. getOpenAI() null-check → NDJSON fallback routing to /contact
-// 4. Tool-calling loop (up to MAX_TOOL_ROUNDS=3) on gpt-4.1-mini:
+// 4. getOpenAI() null-check → NDJSON fallback routing to /contact
+// 5. Tool-calling loop (up to MAX_TOOL_ROUNDS=4 — enough for a search →
+//    extract_page → answer chain, plus a round of headroom) on gpt-4.1-mini:
 //    - System prompt: buildSmartSearchPrompt() (lib/siteKnowledge.ts) — church
 //      facts + today's date + tool guidance
 //    - tools: TOOL_DEFINITIONS (lib/smartSearch/tools.ts) — find_products,
-//      get_weather, get_directions, search_web
-//    - Streams assistant text as `text` events; runs tool calls, emits each
-//      result as a `tool_result` event, feeds results back, repeats
-// 5. Client (FloatingSmartSearch) accumulates `text` (parsed for PAGE/CTA/OPTION)
-//    and renders each `tool_result` as a card (ResultCards.tsx)
+//      get_weather, get_directions, search_web, extract_page
+//    - Emits a `tool_call` event when a tool starts (drives a "Searching the
+//      web…" status indicator client-side), streams assistant text as `text`
+//      events, runs tool calls, emits each result as a `tool_result` event,
+//      feeds results back, repeats
+// 6. Client (FloatingSmartSearch) accumulates `text` (parsed for PAGE/CTA/OPTION),
+//    shows `tool_call` as a status indicator, and renders each `tool_result`
+//    as a card (ResultCards.tsx)
+```
+
+#### `POST /api/turnstile/verify`
+```typescript
+// Verifies a Cloudflare Turnstile token and, on success, sets the ts_verified
+// cookie that gates POST /api/chat. Used by FloatingSmartSearch's invisible/
+// visible Turnstile flow.
+// Body: { token: string }
+// Response: { success: boolean }
+
+// Logic:
+// 1. Parse token from JSON body (400 if missing/malformed)
+// 2. verifyTurnstileToken(token, clientIp) → Cloudflare siteverify API (403 if
+//    invalid; fails closed if TURNSTILE_SECRET_KEY is unset)
+// 3. On success, set a non-httpOnly, HMAC-signed ts_verified cookie
+//    (signVerifiedCookie(), lib/turnstile.ts) — 30 min TTL, sameSite=lax,
+//    secure in production. Non-httpOnly so the client can check for an
+//    existing valid session before challenging again; the signature (keyed by
+//    the server-only TURNSTILE_COOKIE_SECRET) prevents forging it client-side.
 ```
 
 #### `GET /api/youtube/videos`
@@ -1566,6 +1595,36 @@ POST                /api/admin/shop-hero/upload           // sharp → WebP → 
 - `lib/shop.server.ts` (`server-only`) — public read fetchers: `getPublishedProducts()`, `getProductBySlug()`, `getAllProductsAdmin()` (via `getSupabaseAdmin()`).
 - `lib/stripe.ts` (`server-only`) — `getStripe()` singleton from `STRIPE_SECRET_KEY`.
 - `lib/cart-store.ts` — `useCart` zustand store persisted to `localStorage` (`destiny-cart`), plus `cartCount` / `cartSubtotal` helpers.
+
+---
+
+### `lib/turnstile.ts`
+
+Cloudflare Turnstile bot-check used by the admin login form (`app/login/actions.ts`) and Smart Search (`POST /api/turnstile/verify`, `POST /api/chat`).
+
+```typescript
+export const TURNSTILE_SESSION_TTL_MS = 30 * 60 * 1000; // 30 min
+
+// Server-side token check against Cloudflare's siteverify API.
+// Fails closed (returns false) if TURNSTILE_SECRET_KEY isn't set.
+export async function verifyTurnstileToken(
+  token: string | null | undefined,
+  ip: string
+): Promise<boolean>;
+
+// Signs `${timestamp}.${hmac}` using TURNSTILE_COOKIE_SECRET — the value
+// stored in the ts_verified cookie once a Smart Search visitor passes Turnstile.
+export function signVerifiedCookie(): string;
+
+// Verifies the HMAC (timing-safe) and that the cookie is within TURNSTILE_SESSION_TTL_MS.
+export function isVerifiedCookieValid(value: string | undefined | null): boolean;
+```
+
+**Env vars:** `NEXT_PUBLIC_TURNSTILE_SITE_KEY` (client widget), `TURNSTILE_SECRET_KEY` (server verify), `TURNSTILE_COOKIE_SECRET` (HMAC key for the `ts_verified` cookie).
+
+**Two call sites:**
+1. **Admin login** (`app/login/actions.ts` `adminSignIn`) — a managed (visible) Turnstile widget is required on every submit; the server action rejects sign-in if `verifyTurnstileToken()` fails.
+2. **Smart Search** (`FloatingSmartSearch.tsx` + `POST /api/turnstile/verify` + `POST /api/chat`) — an invisible challenge runs once per session; success sets the `ts_verified` cookie so `/api/chat` doesn't need to re-check Turnstile on every message within the 30-minute window. If the invisible check fails, the widget falls back to a visible challenge inline in the chat thread.
 
 ---
 
@@ -1725,25 +1784,40 @@ HOW TO REPLY:
   CTA: Short Action Label
 
 GROUNDING (MOST IMPORTANT):
-- Only state facts in the KNOWLEDGE section below
+- Only state facts in the KNOWLEDGE section below, OR that a tool result just gave you —
+  tool results (search_web, get_weather, etc.) are an explicit, valid source of facts
 - Do NOT guess, invent, or assign roles unless listed
-- If you don't know, warmly say so and point to /contact
+- Try a tool before falling back. Financial questions (annual income, accounts) are NOT
+  treated as private — UK charities publish these, so search_web for them. Only genuinely
+  unpublished internals (staff pay, member/attendee personal data) skip straight to the
+  Contact Us fallback
+- If nothing (knowledge or tools) has the answer, warmly say so and point to /contact
+
+OFF-TOPIC:
+- Be generous: public info about Destiny (incl. Charity Commission accounts), getting here,
+  parking, local travel, weather for a Sunday, what to expect — all in scope, use search_web
+- Only deflect (without calling search_web) for things with no real connection to Destiny or
+  visiting/engaging with us — general trivia, homework, coding help, etc.
 
 CLARIFYING QUESTIONS:
 - If a request is ambiguous, ask ONE short question with 2–4 OPTION: choices
 - Do NOT ask follow-ups for simple factual questions
 
 KNOWLEDGE:
-... (church-specific facts: pastor names, service times, livestream, shop, mission, etc.) ...
+... (church-specific facts: pastor names, service times, livestream, shop, mission, etc.,
+including charity no. 1119951 / company no. 06261423 — pinned to disambiguate from the
+unrelated Scottish "Destiny Church Trust", SC017898, whose figures must never be quoted
+as Destiny's) ...
 `;
 ```
 
 **Why this pattern?**
 
-1. **Prevents hallucination** — Model is grounded in actual church knowledge
+1. **Prevents hallucination** — Model is grounded in actual church knowledge, with tool results as an explicit second source
 2. **Limits links** — Only allows pages we've defined
 3. **Consistent tone** — Friendly, warm, not corporate
 4. **Scalable** — Easy to update facts without retraining
+5. **Charity disambiguation** — Charity/company numbers are pinned in KNOWLEDGE and reinforced in `search_web`'s tool description, since multiple unrelated organisations share the "Destiny Church" name and search results can otherwise surface the wrong one's financials
 
 ---
 
@@ -2065,7 +2139,12 @@ OPENAI_API_KEY=sk-...
 
 # Smart Search tools (optional — each degrades gracefully without its key)
 NEXT_PUBLIC_GOOGLE_MAPS_EMBED_API_KEY=AIza...   # get_directions embed
-TAVILY_API_KEY=tvly-...                          # search_web
+TAVILY_API_KEY=tvly-...                          # search_web, extract_page
+
+# Cloudflare Turnstile (required — gates admin login and Smart Search)
+NEXT_PUBLIC_TURNSTILE_SITE_KEY=0x4...
+TURNSTILE_SECRET_KEY=0x4...
+TURNSTILE_COOKIE_SECRET=some-long-random-string
 
 # Stripe (shop checkout)
 STRIPE_SECRET_KEY=sk_live_...
@@ -2287,8 +2366,8 @@ Destiny Church Tees Valley is a **professional, full-stack Next.js application**
 
 **Key Differentiators:**
 - **No vendor lock-in** — Open-source stack (Next.js, React, Tailwind, PostgreSQL)
-- **Security first** — RLS, rate limiting, CSRF protection, signed URLs
-- **AI-ready** — Grounded knowledge base (`siteKnowledge.ts`) powering Smart Search's tool-calling chat (products, weather, directions, web search)
+- **Security first** — RLS, rate limiting, CSRF protection, signed URLs, Cloudflare Turnstile bot-check on admin login and Smart Search
+- **AI-ready** — Grounded knowledge base (`siteKnowledge.ts`) powering Smart Search's tool-calling chat (products, weather, directions, web search, page extraction)
 - **Accessible** — Semantic HTML, ARIA labels, keyboard nav
 - **Mobile-first** — Responsive design, tested on real devices
 - **Performant** — ISR caching, image optimization, edge functions
@@ -2297,7 +2376,7 @@ This repository serves as a **reusable platform** for churches nationwide, licen
 
 ---
 
-**Document Version:** 1.0.2  
+**Document Version:** 1.0.3  
 **Created:** June 18, 2026  
 **For:** Destiny Church Tees Valley  
 **By:** Square Media Group (Malachi <malachi@squaremediagroup.org>)

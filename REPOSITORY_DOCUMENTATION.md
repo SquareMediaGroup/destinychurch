@@ -1,7 +1,7 @@
 # Destiny Church Tees Valley — Complete Repository Documentation
 
-**Version:** 1.0.2  
-**Last Updated:** July 15, 2026  
+**Version:** 1.0.3  
+**Last Updated:** July 20, 2026  
 **Repository:** Square Media Group — destinychurch  
 
 This document provides a comprehensive explanation of every major component, line of code purpose, architecture decisions, and how the system works from end-to-end.
@@ -105,7 +105,9 @@ Responses: JSON, Server-Side HTML, Redirects, Cached Assets
 | **Storage** | Supabase Storage | File uploads (HR documents, media, images) |
 | **Video** | YouTube API v3 | Sermon hosting and metadata |
 | **Podcasts** | Buzzsprout | Podcast RSS and metadata |
-| **AI** | OpenAI (`gpt-4.1-mini`) | Smart Search tool-calling chat (products, weather, directions, web search) |
+| **AI** | OpenAI (`gpt-4.1-mini`) | Smart Search tool-calling chat (products, weather, directions, web search, page extraction) |
+| **Web Search** | Tavily (`search` + `extract` APIs) | Smart Search's `search_web`/`extract_page` tools — live facts, page content |
+| **Bot Protection** | Cloudflare Turnstile | Gates `/login` sign-in and the Smart Search `/api/chat` endpoint |
 | **Payments** | Stripe (Payment Element + Express Checkout) | `/shop` checkout — cards, Apple Pay, Google Pay, Link |
 | **Analytics** | Vercel Analytics + SpeedInsights | Performance and visitor tracking |
 | **Deployment** | Vercel | Edge functions, serverless, CDN |
@@ -205,6 +207,7 @@ destinychurch/
 │   │   ├── store/                 # checkout/, checkout/bypass/ (public storefront)
 │   │   ├── training/               # unlock/, posts/[id]/timer/
 │   │   ├── health/                 # smart-search/ health check
+│   │   ├── turnstile/               # verify/ — Cloudflare Turnstile token check (sets ts_verified cookie)
 │   │   └── webhooks/               # stripe/ only — no GitHub/Vercel webhook route
 │   ├── [slug]/                    # Dynamic catchall (posts table)
 │   └── annual-report-2025/        # Specific campaign page
@@ -264,6 +267,7 @@ destinychurch/
 │   ├── serviceStatus.ts           # Feature flags
 │   ├── rateLimit.ts               # Rate limiting
 │   ├── loginRateLimit.ts          # Login attempt limiting
+│   ├── turnstile.ts               # Cloudflare Turnstile verification + signed ts_verified cookie
 │   ├── podcast.ts                 # Podcast metadata
 │   ├── accessRequestEmail.ts      # Email templates
 │   ├── passwordResetEmail.ts      # Email templates
@@ -319,7 +323,12 @@ destinychurch/
 │
 ├── contexts/                      # React context definitions
 ├── content/                       # Static content (markdown, text)
-├── docs/                          # Additional documentation
+├── docs/                          # Additional documentation, incl. mobile-app-scope.md (+ .pdf export)
+├── mobile/                        # Placeholder for the future React Native/Expo iOS+Android app — no code yet
+├── packages/
+│   └── shared/                    # Placeholder for types/zod schemas shared between web and mobile — no code yet
+├── types/
+│   └── turnstile.d.ts             # Declares window.turnstile (Cloudflare Turnstile JS API)
 ├── public/                        # Static files
 │   ├── img/                       # Church logos, backgrounds
 │   ├── og/                        # Open Graph images (social share)
@@ -1245,12 +1254,13 @@ All admin/staff features live under a single `/admin` prefix with one login at `
 - **Feature:** If `smart_search` service is enabled
 - **Behavior:**
   - Click button → pill expands, chat thread opens
-  - User types query → full history sent to `/api/chat` (OpenAI, `gpt-4.1-mini`)
-  - The route uses **tool-calling** and streams **NDJSON** events (`text`, `tool_result`, `done`). Prose is still parsed for the trailing `OPTION:`/`PAGE:`/`CTA:` lines (clarifying chips + a navigation CTA).
-  - **Tools** (`lib/smartSearch/tools.ts`): `find_products` (searches published shop products via `getPublishedProducts()` + fuse.js, returns cards), `get_weather` (Open-Meteo, no key), `get_directions` (Google Maps embed), `search_web` (Tavily).
+  - Before the first message of a session, silently runs an **invisible Cloudflare Turnstile** challenge (`size: "invisible"`, `execution: "execute"`) and posts the token to `POST /api/turnstile/verify`, which sets a signed `ts_verified` cookie (see Authentication & Authorization). If the invisible check can't silently confirm the visitor, a **visible fallback widget** renders inline in the chat panel; solving it verifies and auto-resends the pending message. Skipped entirely once `ts_verified` is present and unexpired.
+  - User types query → full history sent to `/api/chat` (OpenAI, `gpt-4.1-mini`); the request is rejected (403) if `ts_verified` is missing/expired.
+  - The route uses **tool-calling** and streams **NDJSON** events (`text`, `tool_call`, `tool_result`, `done`). Prose is still parsed for the trailing `OPTION:`/`PAGE:`/`CTA:` lines (clarifying chips + a navigation CTA). Each `tool_call` event shows a short status line ("Searching the web…", "Reading the page…", etc.) while that tool runs.
+  - **Tools** (`lib/smartSearch/tools.ts`): `find_products` (searches published shop products via `getPublishedProducts()` + fuse.js, returns cards), `get_weather` (Open-Meteo, no key), `get_directions` (Google Maps embed), `search_web` (Tavily search, `search_depth: "advanced"`), `extract_page` (Tavily extract — reads the full content of one URL a prior `search_web` call actually returned; rejects any URL not in that request's `seenUrls` set, so the model can't be steered into fetching arbitrary pages).
   - **Result cards** (`components/smartSearch/ResultCards.tsx`) render below the prose in Smart Search's glass style. The product card offers inline size/colour selection and **add-to-cart** (via `useCart()`), so a visitor can buy without leaving the conversation.
   - Chat history + cards stored in component state (not persisted)
-- **Optional env vars:** `NEXT_PUBLIC_GOOGLE_MAPS_EMBED_API_KEY` (directions embed — degrades to an "Open in Maps" link without it) and `TAVILY_API_KEY` (web search — degrades to a "not configured" note). Weather and product search need no extra key.
+- **Optional env vars:** `NEXT_PUBLIC_GOOGLE_MAPS_EMBED_API_KEY` (directions embed — degrades to an "Open in Maps" link without it) and `TAVILY_API_KEY` (web search + page extraction — degrades to a "not configured" note). Weather and product search need no extra key. `NEXT_PUBLIC_TURNSTILE_SITE_KEY`/`TURNSTILE_SECRET_KEY` gate the widget; without them Turnstile verification is skipped client-side but the server fails closed (see below).
 
 > **`VisualEditOverlay.tsx` does not exist.** There is no in-page visual editing
 > overlay — it was part of the removed page-builder/Studio feature (migration
@@ -1472,22 +1482,42 @@ export async function applyForJob(jobId: string, formData: ApplicationData) {
 ```typescript
 // AI-powered conversational Smart Search (the FloatingSmartSearch widget).
 // Body: { messages: { role: "user" | "assistant"; content: string }[] }
-// Response: NDJSON stream of { type: "text" | "tool_result" | "done" | "error", ... }
+// Response: NDJSON stream of { type: "text" | "tool_call" | "tool_result" | "done" | "error", ... }
 
 // Logic:
-// 1. Rate limit: 20 requests per IP per minute (429 on excess)
-// 2. Validate messages: user/assistant roles only (blocks injected system turns),
+// 1. Requires a valid signed `ts_verified` cookie (Cloudflare Turnstile, see
+//    Authentication & Authorization) — 403 if missing/expired
+// 2. Rate limit: 20 requests per IP per minute (429 on excess)
+// 3. Validate messages: user/assistant roles only (blocks injected system turns),
 //    <=2000 chars each, last must be user <=300 chars (else 400)
-// 3. getOpenAI() null-check → NDJSON fallback routing to /contact
-// 4. Tool-calling loop (up to MAX_TOOL_ROUNDS=3) on gpt-4.1-mini:
+// 4. getOpenAI() null-check → NDJSON fallback routing to /contact
+// 5. Tool-calling loop (up to MAX_TOOL_ROUNDS=4 — enough for search → extract_page
+//    → answer, plus headroom) on gpt-4.1-mini:
 //    - System prompt: buildSmartSearchPrompt() (lib/siteKnowledge.ts) — church
 //      facts + today's date + tool guidance
 //    - tools: TOOL_DEFINITIONS (lib/smartSearch/tools.ts) — find_products,
-//      get_weather, get_directions, search_web
-//    - Streams assistant text as `text` events; runs tool calls, emits each
-//      result as a `tool_result` event, feeds results back, repeats
-// 5. Client (FloatingSmartSearch) accumulates `text` (parsed for PAGE/CTA/OPTION)
+//      get_weather, get_directions, search_web, extract_page
+//    - A per-request ToolContext (createToolContext(), tracks seenUrls) is
+//      threaded through every executeTool() call so extract_page can only
+//      open URLs a search_web call in this same request actually returned
+//    - Streams assistant text as `text` events; emits a `tool_call` event per
+//      tool invoked (drives the client's "Searching the web…" status line),
+//      runs tool calls, emits each result as a `tool_result` event, feeds
+//      results back, repeats
+// 6. Client (FloatingSmartSearch) accumulates `text` (parsed for PAGE/CTA/OPTION)
 //    and renders each `tool_result` as a card (ResultCards.tsx)
+```
+
+#### `POST /api/turnstile/verify`
+```typescript
+// Verifies a Cloudflare Turnstile token (siteverify) and, on success, sets a
+// signed `ts_verified` cookie (HMAC via TURNSTILE_COOKIE_SECRET, TTL 30 min —
+// lib/turnstile.ts TURNSTILE_SESSION_TTL_MS). Called by both the /login form
+// and FloatingSmartSearch before it will hit /api/chat.
+// Body: { token: string }  →  200 { success: true } | 403 { success: false }
+// Cookie is readable client-side (httpOnly: false) so the widget can check
+// hasVerifiedCookie() before re-challenging, but can't be forged — the value
+// is `${timestamp}.${hmac}` checked with a timing-safe comparison.
 ```
 
 #### `GET /api/youtube/videos`
@@ -1698,7 +1728,17 @@ export function cooldownAnswer(): SmartSearchResult {
 
 ### `lib/siteKnowledge.ts`
 
-Single source of truth for the AI assistant:
+Single source of truth for the AI assistant. Its system prompt also includes:
+
+- **Charity/company identity guardrail:** the church's registered charity number (1119951)
+  and company number (06261423), plus an explicit warning that other unrelated
+  organisations share the "Destiny Church" name (notably a Scottish charity, SC017898) —
+  the model is told to confirm any record it reads matches before quoting a figure from it.
+- **Widened, tool-first web search guidance:** the model is told to prefer calling
+  `search_web`/`extract_page` over guessing or deflecting for real-world or financial
+  questions about the church (UK charities publish their accounts), reserving the
+  `/contact` fallback for genuinely unpublished internals (staff pay, member data) or
+  requests with no connection to Destiny at all.
 
 ```typescript
 export const PAGE_INTENTS = [
@@ -1796,6 +1836,39 @@ export async function getServiceInfo() {
 > admin model (any authenticated Supabase user has full `/admin` access), enforced by
 > `middleware.ts` rather than a per-user role table. See Authentication & Authorization
 > below for the actual auth flow.
+
+### `lib/turnstile.ts`
+
+Cloudflare Turnstile verification, shared by `/login` and Smart Search:
+
+```typescript
+export async function verifyTurnstileToken(token: string | null | undefined, ip: string): Promise<boolean>
+// POSTs to challenges.cloudflare.com/turnstile/v0/siteverify with TURNSTILE_SECRET_KEY.
+// Fails closed: returns false if the secret isn't set, the token is missing, or the request errors.
+
+export function signVerifiedCookie(): string        // `${Date.now()}.${hmac}` using TURNSTILE_COOKIE_SECRET
+export function isVerifiedCookieValid(value): boolean // timing-safe compare + TTL check (30 min)
+export const TURNSTILE_SESSION_TTL_MS = 30 * 60 * 1000;
+```
+
+**Used by:**
+- `app/api/turnstile/verify/route.ts` — verifies a token, sets the `ts_verified` cookie
+- `app/login/actions.ts` (`adminSignIn`) — verifies the `cf-turnstile-response` form field before attempting sign-in
+- `app/api/chat/route.ts` — requires `isVerifiedCookieValid(cookies.ts_verified)` before running Smart Search
+
+### `lib/smartSearch/tools.ts` — Smart Search tools
+
+```typescript
+export interface ToolContext { seenUrls: Set<string> }
+export function createToolContext(): ToolContext   // one per /api/chat request
+
+export async function executeTool(name: string, rawArgs: string, ctx: ToolContext): Promise<ToolResult>
+```
+
+- `find_products`, `get_weather`, `get_directions` — unchanged from prior behavior (see Components → `FloatingSmartSearch.tsx`).
+- `search_web` — Tavily `/search` with `search_depth: "advanced"` (curated chunks, not raw page tops) and the API key sent as an `Authorization: Bearer` header (not in the body). Snippets truncated to `SNIPPET_CHARS` (1200 chars). Every result URL is recorded into `ctx.seenUrls`.
+- `extract_page` — Tavily `/extract`, `extract_depth: "advanced"`. **Only** opens a URL already present in `ctx.seenUrls` for that request — this is the sole guard against the model being prompted (by a visitor or by web content) into fetching an arbitrary URL. Content truncated to `EXTRACT_CHARS` (8000 chars).
+- Deliberately does **not** request Tavily's own `include_answer` summary: it was observed conflating Destiny Church Tees Valley with an unrelated Scottish charity of a similar name and reporting a wrong income figure. The model instead reads raw snippets/page content and is told (via `lib/siteKnowledge.ts`) to cross-check the charity/company number before quoting any figure.
 
 ### `lib/rateLimit.ts`
 
@@ -1938,6 +2011,27 @@ middleware gate above rather than per-table role checks.
 - **Simplicity** — no role table to keep in sync; any staff account with a login has
   full access, which matches how small the admin user base is in practice.
 
+#### Layer 0: Cloudflare Turnstile (bot gate, ahead of both layers above)
+
+Two public surfaces are bot-gated with Cloudflare Turnstile before the layers above ever
+run — the admin login form (protects password-guessing) and the Smart Search chat API
+(protects the OpenAI/Tavily spend behind it):
+
+- **`/login`** (`LoginClient.tsx` + `app/login/actions.ts`) renders a **visible** Turnstile
+  widget inline in the form. `adminSignIn()` verifies the submitted `cf-turnstile-response`
+  token server-side (`verifyTurnstileToken()`) before even attempting `signInWithPassword`.
+- **Smart Search** (`FloatingSmartSearch.tsx`) runs an **invisible** challenge
+  (`size: "invisible"`, `execution: "execute"`) the first time a visitor sends a message in
+  a session, posts the resulting token to `POST /api/turnstile/verify`, and gets back a
+  signed `ts_verified` cookie (HMAC'd, 30-minute TTL — `lib/turnstile.ts`). `POST /api/chat`
+  rejects any request without a valid, unexpired cookie (403), independent of the
+  per-IP rate limit. If the invisible challenge can't silently pass, the widget falls back
+  to rendering a **visible** Turnstile challenge in the chat panel and auto-resends the
+  pending message once solved.
+- Both paths share `lib/turnstile.ts`, which fails closed: if `TURNSTILE_SECRET_KEY` or
+  `TURNSTILE_COOKIE_SECRET` isn't configured, verification/cookie-validation always fails
+  rather than silently letting requests through.
+
 ---
 
 ### Session Management
@@ -2065,7 +2159,12 @@ OPENAI_API_KEY=sk-...
 
 # Smart Search tools (optional — each degrades gracefully without its key)
 NEXT_PUBLIC_GOOGLE_MAPS_EMBED_API_KEY=AIza...   # get_directions embed
-TAVILY_API_KEY=tvly-...                          # search_web
+TAVILY_API_KEY=tvly-...                          # search_web + extract_page
+
+# Cloudflare Turnstile (gates /login and /api/chat — see Authentication & Authorization)
+NEXT_PUBLIC_TURNSTILE_SITE_KEY=0x...
+TURNSTILE_SECRET_KEY=0x...
+TURNSTILE_COOKIE_SECRET=                         # random secret for signing the ts_verified cookie
 
 # Stripe (shop checkout)
 STRIPE_SECRET_KEY=sk_live_...
@@ -2257,9 +2356,18 @@ ENABLE_SMART_SEARCH=true
 
 ### API Routes (`app/api/`)
 - **Admin endpoints:** Banners, redirects, pop-ups, cache revalidation, posts, training, alpha-events, featured-course, HR, store management
-- **Public endpoints:** `/api/chat` (Smart Search tool-calling chat), YouTube (videos/status/thumbnail/live), Alpha info, training unlock
+- **Public endpoints:** `/api/chat` (Smart Search tool-calling chat, Turnstile-gated), `/api/turnstile/verify` (Cloudflare Turnstile token check), YouTube (videos/status/thumbnail/live), Alpha info, training unlock
 - **Store endpoints:** Stripe checkout + Payment Element, order management
 - **Webhooks:** Stripe only (`/api/webhooks/stripe`) — no GitHub or Vercel deployment webhook route
+
+### Mobile App Scoping (not yet built)
+- `mobile/` and `packages/shared/` are empty placeholder folders (`README.md` only) for a future
+  React Native/Expo iOS+Android app and its shared types/schemas package
+- `docs/mobile-app-scope.md` (+ printable `docs/mobile-app-scope.pdf`) is the scoping document —
+  covers the proposed BFF architecture, a self-hosted Matrix homeserver for group chat with
+  safeguarding constraints (adult/minor boundary via ChurchSuite DOB data), ChurchSuite API
+  integration (currently only public embeds/iframes exist), and payments/sermon-feed reuse
+  from this repo. No app code exists yet — this is a planning document only.
 
 ### Database Migrations
 - **34 migration files** defining schema for:
@@ -2297,7 +2405,7 @@ This repository serves as a **reusable platform** for churches nationwide, licen
 
 ---
 
-**Document Version:** 1.0.2  
+**Document Version:** 1.0.3  
 **Created:** June 18, 2026  
 **For:** Destiny Church Tees Valley  
 **By:** Square Media Group (Malachi <malachi@squaremediagroup.org>)

@@ -60,21 +60,24 @@ export const brandGradientStops = [
 ] as const;
 
 /**
- * Typography roles from the guide. Note: the guide's display face is **Bison**
- * (bold & firm, used for the word mark and occasionally in designs). The web
- * currently approximates that display role with **Anton on the homepage only**
- * — elsewhere use a heavy weight rather than Anton/Bison. The Expo app should
- * bundle the licensed fonts it actually ships and map them to these roles.
+ * Typography roles — mirrors the fonts the website actually ships (see
+ * `app/layout.tsx` + `app/globals.css`), NOT the brand guide's Bison/Dosis,
+ * which are not used. The three custom faces (Roboto, Anton, Playfair Display)
+ * are Google Fonts, so the Expo app can bundle them via `@expo-google-fonts/*`.
+ * Arial is a system font on web; iOS falls back to San Francisco.
  */
 export const typography = {
-  /** Display / word-mark face — bold, firm. */
-  display: "Bison",
-  /** Headers. */
-  heading: "Arial",
-  /** Sub-headers — rounded sans serif. */
-  subheading: "Dosis",
-  /** Body text. */
+  /** Body text — Roboto (web: `--font-roboto`). */
   body: "Roboto",
+  /** Headers — Arial on web (system font; iOS → San Francisco). */
+  heading: "Arial",
+  /**
+   * Display / hero — Anton. Used sparingly: homepage/hero only, matching the
+   * web. Elsewhere use a heavy Roboto weight, never Anton (and never Bison).
+   */
+  display: "Anton",
+  /** Serif accent — Playfair Display (web: `--font-playfair`). */
+  serif: "Playfair Display",
 } as const;
 
 /**

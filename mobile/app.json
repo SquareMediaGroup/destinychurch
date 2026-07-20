@@ -1,0 +1,25 @@
+{
+  "expo": {
+    "name": "Destiny Church",
+    "slug": "destiny-church",
+    "version": "0.0.1",
+    "orientation": "portrait",
+    "scheme": "destinychurch",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "uk.destinytees.app"
+    },
+    "android": {
+      "package": "uk.destinytees.app"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-font"
+    ],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}

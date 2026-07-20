@@ -324,7 +324,12 @@ destinychurch/
 ├── contexts/                      # React context definitions
 ├── content/                       # Static content (markdown, text)
 ├── docs/                          # Additional documentation, incl. mobile-app-scope.md (+ .pdf export)
-├── mobile/                        # Placeholder for the future React Native/Expo iOS+Android app — no code yet
+├── mobile/                        # React Native / Expo app (iOS-first). Expo Router bottom-tab shell
+│                                   # (Home/Sermons/Events/Give), theme from @destiny/shared tokens.
+│                                   # ISOLATED from npm workspaces (own node_modules) so RN can't clash
+│                                   # with the web's React; consumes @destiny/shared by source via Metro.
+│                                   # Excluded from the web tsconfig + eslint. Run: `cd mobile && npm install`.
+│                                   # App BFF routes live under app/api/app/* (e.g. app/api/app/events).
 ├── packages/                      # npm workspaces (root package.json `workspaces: ["packages/*"]`)
 │   └── shared/                    # @destiny/shared — framework-agnostic types/logic shared by web,
 │                                   # mobile, and the app BFF. Ships raw TS (Next transpiles it via

@@ -16,10 +16,11 @@ import {
 } from "@destiny/shared";
 import { theme } from "@/theme";
 
-// The app talks only to the BFF (never ChurchSuite directly). Point this at the
-// deployed site by default; override with EXPO_PUBLIC_API_BASE_URL in dev.
+// The app talks only to the BFF (never ChurchSuite directly). Defaults to the
+// current Vercel deployment; override with EXPO_PUBLIC_API_BASE_URL in dev.
+// (Switch back to https://destinytees.uk once that domain serves the app BFF.)
 const API_BASE =
-  process.env.EXPO_PUBLIC_API_BASE_URL ?? "https://destinytees.uk";
+  process.env.EXPO_PUBLIC_API_BASE_URL ?? "https://destinychurch.vercel.app";
 
 type LoadState = "loading" | "ready" | "error";
 

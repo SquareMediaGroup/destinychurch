@@ -242,3 +242,87 @@ Penetration/abuse testing of the chat rules specifically (attempt to create DMs,
 3. **Enforcement correctness** — the 2-adult and no-1:1 rules are only as good as the Synapse module; hence server-side enforcement (never UI-only), nightly reconciliation, and a dedicated abuse-testing pass in Phase 4.
 4. **Operational ownership of the homeserver** — someone must own patching, backups, and monitoring long-term; feeds the D2 decision.
 5. **GDPR surface grows substantially** (children's data, reviewable private messages, new processors) — privacy notice, DPIA-style assessment, and retention policy work should run alongside Phase 2/3, not after.
+
+---
+
+## Appendix A — ChurchSuite API v2 technical reference
+
+Sourced directly from the OpenAPI 3.0 specifications in [github.com/ChurchSuite/churchsuite-api](https://github.com/ChurchSuite/churchsuite-api) (`src/*.yaml`, spec version 2.89.2). This supersedes the general statements in §5 with concrete endpoint- and field-level detail for build planning. **v1 is deprecated and expected to be discontinued in 2027 — build against v2 only.**
+
+### A.1 Authentication & account model
+
+- **Base URL:** `https://api.churchsuite.com/v2` — a single global endpoint; the ChurchSuite **account is identified by the credential itself** (API key or OAuth token), not by a subdomain in the URL. The BFF holds one credential per account (Destiny's) and never needs per-user ChurchSuite auth.
+- **Two auth schemes**, usable per-endpoint:
+  - `api_enabled_user` — an API key sent as an `Authorization` header (apiKey-style).
+  - `oauth_app` — OAuth2 **client-credentials** flow (app-to-app, no user login step) against `https://api.churchsuite.com/v2/oauth/token`. This is the right fit for our BFF: it's a server-to-server integration, not a "sign in with ChurchSuite" flow for members.
+- **Scopes are granular per module and per read/write**, e.g. `addressbook.read`, `addressbook.write`, `children.read`, `children.write`, `smallgroups.read`, `smallgroups.write`, `calendar.read`, `calendar.write`, `giving.read`, `giving.write`, `bookings.read`, `bookings.write`, plus account-level `profile.read`, `account`, `brands.read`, `users.read`, `usergroups.read`, or the all-encompassing `full_access`. **Recommendation: request the narrowest scope set the app actually needs** (e.g. `addressbook.read`, `children.read`, `smallgroups.read`+`.write`, `calendar.read`, `giving.read`) rather than `full_access` — this is the concrete list to put in front of ChurchSuite for the D3 access-scope conversation.
+- **Pagination:** `page` / `per_page` query params on all list endpoints (`per_page` capped at 250 on the modules checked); responses return a `data` array plus a `pagination` object.
+- **Rate limiting:** the spec documents a `429 Too Many Requests` response; exact limits/headers aren't published in the spec itself — confirm numeric limits directly with ChurchSuite during Phase 0 so the BFF's short-TTL caching (§5.3) is sized correctly.
+
+### A.2 Modules and what they mean for each app surface
+
+| Module (`src/*.yaml`) | Relevant endpoints | What it gives the app |
+|---|---|---|
+| `addressbook.yaml` | `GET/POST /addressbook/contacts`, `/{id}`, `/notes`, `/tags`, `/key_dates` | **Adult contact records.** Contact schema includes `date_of_birth` (optional field — confirms the "no DOB → treat as minor" fail-safe in §3 is necessary, not paranoid), `email`, `mobile`/`telephone` (never surfaced in-app per the no-phone-numbers rule), `spouse_id`, `communication` consent flags, `privacy` visibility flags, and a `status` (active/archived/pending) — useful for filtering out archived contacts from group-eligibility checks. **No parent/child linkage lives here** — that's a separate module. |
+| `children.yaml` | `GET/POST /children/children`, `/parent_carer_relationships`, `/key_dates`, `/tags` | **Minor records, held deliberately separate from adult contacts.** Confirms the DOB-based adult/minor split in §3 maps directly onto ChurchSuite's own data model (Addressbook = adults, Children = minors, linked via `/children/parent_carer_relationships`). Also carries `photo_video_consent` (internal/external) and `additional_needs`/`medical` fields — **not needed by the app**, but their presence is a reminder that any BFF sync job touching this module must scope its ChurchSuite request tightly (i.e. never pull the full child record when only DOB + parent/carer linkage is needed) to avoid over-fetching safeguarding-sensitive medical data into app infrastructure. |
+| `smallgroups.yaml` | `GET /smallgroups/groups`, `GET/POST/PUT/DELETE /smallgroups/members`, `/roles` | **Connect Groups.** `Member.person` is a tagged union of `{type: contact|child}` — i.e. **ChurchSuite's own model already allows minors as group members**, which is exactly the case our 2-adult rule has to guard. `Role` has `my_edit` (can edit group) and other booleans that map naturally onto our `group_leader` role — driving who can create the *matching* Matrix room. Groups have a `signup_options.capacity`, useful for surfacing "this group is full" state in the app. |
+| `calendar.yaml` | `GET /calendar/events`, `/invites`, `/signups`, `/tickets` | **Events.** Confirms the public JSON embed already used on `/whats-on` (§1) has a fuller authenticated equivalent; `signup_options` carries `capacity`, `allow_cancel`, `confirmation_email` — richer than the public embed. No payment fields on the Event object itself (see Bookings, below). |
+| `bookings.yaml` | `GET /bookings/bookings`, `/charges`, `/prices`, `/types` | **Paid events/camps.** `Charge.payment_method` (api/bank/card/cash/cheque) and `Price.amount`/`time_unit` exist for *reporting*, but **the spec exposes no endpoint to create a checkout session or payment URL** — payment initiation only happens through ChurchSuite's own hosted flow. This is a direct, spec-level confirmation of §6: **there is no API path to a native/custom checkout even if we wanted one** — the WebView-to-hosted-checkout approach in §6 isn't just the sensible choice, it's the only one the API supports. |
+| `giving.yaml` | `GET /giving/donations`, `/funds`, `/givers`, `/pledges`, `/declarations` | **Giving.** `Donation.giftaid` (UK Gift Aid claim tracking) and `Declaration` (Gift Aid declarations) are read-only via the API — Gift Aid administration stays entirely in ChurchSuite as required. `Fund.visible_in_donate` / `donate_frequency` (oneoff/oneoff_recurring/recurring) confirm funds are configured for the hosted Donate page we already embed; again, **no donation-creation endpoint exists** — same conclusion as Bookings, reinforcing §6's "no native payment rebuild." `Account.integrations.stripe.accounts` (`GET /account/integrations/stripe/accounts`) confirms ChurchSuite's payment processing sits on Stripe underneath its own hosted checkout. |
+| `account.yaml` | `GET /account`, `/brands`, `/sites`, `/users`, `/user_groups` | Multi-site (`site_ids`/`all_sites` appear throughout every module) — relevant only if Destiny is or becomes multi-site; otherwise ignorable for MVP. `GET /account/users` + `/user_groups` is a plausible source for the `senior_leadership` role mapping in §3, worth checking against however Destiny's staff/leaders are actually tagged today. |
+| `attendance.yaml`, `planning.yaml`, `rotas.yaml`, `network.yaml` | — | Rota/service-planning/multi-church-network modules — **out of scope**, no app surface calls for them. |
+
+### A.3 What this changes in the plan
+
+- **D3 (API scope check) can now be a specific ask, not a vague one:** request `addressbook.read`, `children.read`, `smallgroups.read`+`write`, `calendar.read`, `giving.read` (and `bookings.read` if in-app booking status is wanted) on Destiny's plan, via either an API key or an OAuth client-credentials app — confirm ChurchSuite offers OAuth client-credentials apps on Destiny's plan tier, not just static API keys.
+- **The "no native payment rebuild" decision in §6 is now spec-confirmed, not just policy-preferred** — Bookings and Giving expose no payment-initiation endpoints at all, so the WebView-to-hosted-checkout approach is the only technically possible one, which resolves any residual "could we integrate more tightly later" question.
+- **The adult/minor data split in §3 matches ChurchSuite's own Addressbook/Children module boundary** — the BFF's role-sync job should read `date_of_birth` from Addressbook for members 18+ and treat anyone who only exists in the Children module (or has no DOB in Addressbook) as a minor by default, per the fail-safe already specified.
+- **Over-fetching risk:** the Children module schema carries medical/safeguarding fields the app has no legitimate use for; the BFF's ChurchSuite client should request field-limited responses where the API supports it, or immediately discard unused fields server-side, so no medical data is retained in app infrastructure it doesn't belong in.
+
+---
+
+## Appendix B — Apple Human Interface Guidelines considerations
+
+Apple's HIG (developer.apple.com/design/human-interface-guidelines) is a large, JavaScript-rendered reference rather than a fixed document, so this appendix summarises the **stable, well-established guidance areas** relevant to this app's specific surfaces, to brief against during design and to revisit page-by-page at high-fidelity design time rather than treat as exhaustive or verbatim-quoted.
+
+### B.1 Navigation shell
+
+- **Tab bar:** Apple's guidance caps practical usage at **5 visible tabs**; this app's four content pillars (Sermons/Podcast, Events, Groups/Chat, Give) plus a Home/More tab fits comfortably. Use SF Symbols for tab icons for free dark-mode/Dynamic Type/accessibility behaviour rather than custom icon assets. Avoid overloading the tab bar with actions that belong on a screen instead (e.g. "New Group" is a leader-only in-context button, not a tab).
+- **Modality:** ChurchSuite WebView screens (forms, giving, event signup) should generally push onto the navigation stack like any other screen, not present as a sheet/modal, so the back gesture and nav bar back button behave predictably — reserve modal presentation for short, self-contained tasks the user explicitly opts into and expects to dismiss (e.g. a confirmation flow), not for a form that's really "content" in the app's structure.
+
+### B.2 WebViews (ChurchSuite embeds)
+
+- Use **`WKWebView`** (via `react-native-webview`, which wraps it on iOS) — Apple has required this over the deprecated `UIWebView` for years; App Review will reject apps using the old API.
+- Give every WebView screen native chrome around it — a native nav bar with a title and back button, a loading state, and an explicit error state for the "ChurchSuite unavailable" case from §5.3 — so a ChurchSuite outage doesn't look like the *app* crashed.
+- For the Give/Donate and event-payment WebViews specifically: since these are external payment flows under the nonprofit/physical-goods carve-outs in §6, HIG and App Review guidance both expect the flow to be clearly presented as leaving the app's own checkout context — a plain in-app WebView screen (not a disguised native-looking form) satisfies this.
+
+### B.3 Push notifications
+
+- Request notification permission **contextually**, not on first launch — e.g. right after a member joins their first group, with a one-line explanation of what they'll be notified about. Cold, unexplained permission prompts on launch have a materially worse opt-in rate and read as generic rather than considered.
+- Per §8/D4, notifications for chat should be **content-free** ("New message in your group") — this is also simply good HIG practice for lock-screen privacy, independent of the safeguarding rationale.
+- Respect the user's **notification settings granularity** — Apple's guidance expects apps with multiple notification "types" (chat messages, event reminders, giving receipts) to let users control each category independently in-app, mirrored to iOS's per-app notification settings where practical.
+
+### B.4 Chat / messaging UI
+
+- There is no dedicated Apple "Messaging" HIG page as a component, but the **Messages app's own patterns are the de facto reference** iOS users expect: grouped bubbles by sender, timestamps, a group name/member-avatar header, and a composer pinned above the keyboard with safe-area handling. Given there's no 1:1 pattern in this app (§4), the group header (member list, "leave group") is more prominent UI real estate than in a typical consumer chat app — worth designing deliberately rather than borrowing a DM-first layout.
+- Since chat is not E2EE (§4.2.4) and is safeguarding-reviewable, the UI should **not** borrow visual language (lock icons, "end-to-end encrypted" badges) from apps like WhatsApp/Signal that would misrepresent the privacy model to members — HIG's broader principle of clarity/honesty in UI applies directly here, and it's also a straightforward safeguarding-transparency requirement from §4.5.
+
+### B.5 Onboarding & sign-in
+
+- Because accounts are **provisioned against ChurchSuite records, not self-signed-up** (§3), the first-run flow is a "verify who you are" flow rather than a generic sign-up form — HIG's onboarding guidance favours getting users to value quickly with minimal upfront friction; here that means a short flow (email/invite-link verification) rather than a long profile-creation form, since ChurchSuite already holds the profile data.
+- No phone number field anywhere in onboarding, consistent with §3/§4 — this also means skip Apple's SMS auto-fill/one-time-code affordances entirely, since there's no SMS step to autofill.
+
+### B.6 Audio/video playback
+
+- **Video (sermons):** must use the official YouTube player surface per §7 — this already inherits Apple's expected playback controls (scrubber, fullscreen, AirPlay) via the YouTube SDK, so no custom playback-control design is needed there.
+- **Audio (podcast):** a custom native player is worthwhile (§7). Follow the standard **Now Playing / lock-screen and Control Center integration** (`MPNowPlayingInfoCenter` under the hood of libraries like `expo-audio`/`react-native-track-player`) so playback controls, artwork, and scrubbing appear correctly outside the app — this is expected baseline behaviour for any audio app on iOS, not an optional nicety.
+
+### B.7 Accessibility
+
+- **Dynamic Type:** all text (including inside chat bubbles and event/sermon cards) should scale with the user's chosen text size; avoid fixed-height containers that clip scaled text.
+- **VoiceOver:** every icon-only control (tab bar icons aside, which get automatic labels from SF Symbols) needs an explicit accessibility label — particularly relevant for the chat composer, group member avatars, and audio player transport controls.
+- **Sufficient touch targets** (44×44pt minimum) — relevant for chat message action affordances (redact/report) and player scrubbers, which are easy to design too small.
+
+### B.8 What to do with this appendix
+
+Treat B.1–B.7 as a checklist to walk through with whoever does the actual visual/interaction design (Phase 1 onward), not as final decisions — at that stage, pull the live HIG pages for the specific components in play (tab bars, notifications, web content) since Apple does refine specifics over time even where the broad principles above are stable.

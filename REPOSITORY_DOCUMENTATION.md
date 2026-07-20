@@ -331,6 +331,8 @@ destinychurch/
 │                                   # `transpilePackages`). First module: src/churchsuite/events.ts
 │                                   # (ChurchSuiteEvent, deduplicateEvents, fetchChurchSuiteEvents) —
 │                                   # de-duplicates logic previously copied across whats-on/home events UI.
+│                                   # Also src/design/tokens.ts — canonical DC brand palette/typography
+│                                   # (pillar colours, accent, gradient) matching app/globals.css.
 ├── types/
 │   └── turnstile.d.ts             # Declares window.turnstile (Cloudflare Turnstile JS API)
 ├── public/                        # Static files

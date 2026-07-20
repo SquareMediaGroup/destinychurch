@@ -19,31 +19,9 @@ import PastHighlightsSection from "@/components/whats-on/PastHighlightsSection";
 import WorshipWithUsSection from "@/components/home/WorshipWithUsSection";
 import { createServiceClient } from "@/utils/supabase/service";
 import { isCourseId, type CourseId } from "@/lib/courses";
+import { fetchChurchSuiteEvents } from "@destiny/shared";
 
 export const revalidate = 300;
-
-type ChurchSuiteEvent = {
-  id: number;
-  name: string;
-  datetime_start: string;
-  datetime_end: string;
-  location?: { name?: string } | null;
-  images?: { original_500?: string; md?: string } | null;
-  identifier?: string;
-};
-
-async function getEvents(): Promise<ChurchSuiteEvent[]> {
-  try {
-    const res = await fetch(
-      "https://destinytees.churchsuite.com/embed/calendar/json",
-      { next: { revalidate: 300 } }
-    );
-    if (!res.ok) return [];
-    return await res.json();
-  } catch {
-    return [];
-  }
-}
 
 async function getFeaturedCourseId(): Promise<CourseId> {
   try {
@@ -61,7 +39,7 @@ async function getFeaturedCourseId(): Promise<CourseId> {
 
 export default async function WhatsOnPage() {
   const [events, featuredCourseId] = await Promise.all([
-    getEvents(),
+    fetchChurchSuiteEvents({ next: { revalidate: 300 } }),
     getFeaturedCourseId(),
   ]);
 

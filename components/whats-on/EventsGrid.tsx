@@ -2,34 +2,12 @@
 
 import { useState } from "react";
 import Image from "next/image";
-
-type ChurchSuiteEvent = {
-  id: number;
-  name: string;
-  datetime_start: string;
-  datetime_end: string;
-  location?: { name?: string } | null;
-  images?: { original_500?: string; md?: string } | null;
-  identifier?: string;
-};
-
-type DeduplicatedEvent = ChurchSuiteEvent & { sessionCount: number };
-
-function deduplicateEvents(events: ChurchSuiteEvent[]): DeduplicatedEvent[] {
-  const map = new Map<string, { event: ChurchSuiteEvent; count: number }>();
-  for (const event of events) {
-    const key = event.name.toLowerCase().trim();
-    if (map.has(key)) {
-      map.get(key)!.count++;
-    } else {
-      map.set(key, { event, count: 1 });
-    }
-  }
-  return Array.from(map.values()).map(({ event, count }) => ({
-    ...event,
-    sessionCount: count,
-  }));
-}
+import {
+  type ChurchSuiteEvent,
+  type DeduplicatedEvent,
+  churchSuiteEventUrl,
+  deduplicateEvents,
+} from "@destiny/shared";
 
 function formatDate(dateStr: string) {
   const d = new Date(dateStr);
@@ -59,9 +37,7 @@ function EventCard({ event }: { event: DeduplicatedEvent }) {
   const start = formatDate(event.datetime_start);
   const end = formatDate(event.datetime_end);
   const imageUrl = event.images?.original_500 || event.images?.md;
-  const href = event.identifier
-    ? `https://destinytees.churchsuite.com/events/${event.identifier}`
-    : "https://destinytees.churchsuite.com/events";
+  const href = churchSuiteEventUrl(event.identifier);
   const isCourse = event.sessionCount > 1;
   const isMultiday = new Date(event.datetime_start).toDateString() !== new Date(event.datetime_end).toDateString();
 

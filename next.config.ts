@@ -1,6 +1,8 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // Shared workspace package ships raw TypeScript; Next must transpile it.
+  transpilePackages: ["@destiny/shared"],
   outputFileTracingIncludes: {
     "*": ["node_modules/ffmpeg-static/ffmpeg"],
   },

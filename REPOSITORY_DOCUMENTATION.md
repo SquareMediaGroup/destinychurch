@@ -325,8 +325,12 @@ destinychurch/
 ├── content/                       # Static content (markdown, text)
 ├── docs/                          # Additional documentation, incl. mobile-app-scope.md (+ .pdf export)
 ├── mobile/                        # Placeholder for the future React Native/Expo iOS+Android app — no code yet
-├── packages/
-│   └── shared/                    # Placeholder for types/zod schemas shared between web and mobile — no code yet
+├── packages/                      # npm workspaces (root package.json `workspaces: ["packages/*"]`)
+│   └── shared/                    # @destiny/shared — framework-agnostic types/logic shared by web,
+│                                   # mobile, and the app BFF. Ships raw TS (Next transpiles it via
+│                                   # `transpilePackages`). First module: src/churchsuite/events.ts
+│                                   # (ChurchSuiteEvent, deduplicateEvents, fetchChurchSuiteEvents) —
+│                                   # de-duplicates logic previously copied across whats-on/home events UI.
 ├── types/
 │   └── turnstile.d.ts             # Declares window.turnstile (Cloudflare Turnstile JS API)
 ├── public/                        # Static files

@@ -2,48 +2,12 @@ import Link from "next/link";
 import Image from "next/image";
 import AnimateIn from "@/components/AnimateIn";
 import EventsCarousel from "@/components/home/EventsCarousel";
-
-type ChurchSuiteEvent = {
-  id: number;
-  name: string;
-  datetime_start: string;
-  datetime_end: string;
-  location?: { name?: string } | null;
-  signup_options?: { signup_enabled?: boolean } | null;
-  images?: { original_500?: string; md?: string } | null;
-  identifier?: string;
-};
-
-type DeduplicatedEvent = ChurchSuiteEvent & { sessionCount: number };
-
-function deduplicateEvents(events: ChurchSuiteEvent[]): DeduplicatedEvent[] {
-  const map = new Map<string, { event: ChurchSuiteEvent; count: number }>();
-  for (const event of events) {
-    const key = event.name.toLowerCase().trim();
-    if (map.has(key)) {
-      map.get(key)!.count++;
-    } else {
-      map.set(key, { event, count: 1 });
-    }
-  }
-  return Array.from(map.values()).map(({ event, count }) => ({
-    ...event,
-    sessionCount: count,
-  }));
-}
-
-async function getEvents(): Promise<ChurchSuiteEvent[]> {
-  try {
-    const res = await fetch(
-      "https://destinytees.churchsuite.com/embed/calendar/json",
-      { next: { revalidate: 300 } }
-    );
-    if (!res.ok) return [];
-    return await res.json();
-  } catch {
-    return [];
-  }
-}
+import {
+  type DeduplicatedEvent,
+  churchSuiteEventUrl,
+  deduplicateEvents,
+  fetchChurchSuiteEvents,
+} from "@destiny/shared";
 
 function formatDate(dateStr: string) {
   const d = new Date(dateStr);
@@ -73,9 +37,7 @@ function EventCard({ event }: { event: DeduplicatedEvent }) {
   const start = formatDate(event.datetime_start);
   const end = formatDate(event.datetime_end);
   const imageUrl = event.images?.original_500 || event.images?.md;
-  const href = event.identifier
-    ? `https://destinytees.churchsuite.com/events/${event.identifier}`
-    : "https://destinytees.churchsuite.com/events";
+  const href = churchSuiteEventUrl(event.identifier);
   const isCourse = event.sessionCount > 1;
   const isMultiday = new Date(event.datetime_start).toDateString() !== new Date(event.datetime_end).toDateString();
 
@@ -219,7 +181,7 @@ function EventCardPlaceholder({ index }: { index: number }) {
 }
 
 export default async function WhatsOnSection() {
-  const rawEvents = await getEvents();
+  const rawEvents = await fetchChurchSuiteEvents({ next: { revalidate: 300 } });
   const events = deduplicateEvents(rawEvents);
   const hasEvents = events.length > 0;
 

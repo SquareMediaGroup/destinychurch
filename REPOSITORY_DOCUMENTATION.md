@@ -1,7 +1,7 @@
 # Destiny Church Tees Valley — Complete Repository Documentation
 
-**Version:** 1.0.3  
-**Last Updated:** July 20, 2026  
+**Version:** 1.0.4  
+**Last Updated:** July 21, 2026  
 **Repository:** Square Media Group — destinychurch  
 
 This document provides a comprehensive explanation of every major component, line of code purpose, architecture decisions, and how the system works from end-to-end.
@@ -2370,15 +2370,43 @@ ENABLE_SMART_SEARCH=true
 - **Public endpoints:** `/api/chat` (Smart Search tool-calling chat, Turnstile-gated), `/api/turnstile/verify` (Cloudflare Turnstile token check), YouTube (videos/status/thumbnail/live), Alpha info, training unlock
 - **Store endpoints:** Stripe checkout + Payment Element, order management
 - **Webhooks:** Stripe only (`/api/webhooks/stripe`) — no GitHub or Vercel deployment webhook route
+- **App BFF (`/api/app/*`):** Backend-for-frontend routes serving the mobile app. `/api/app/events`
+  proxies the ChurchSuite public calendar live via `@destiny/shared` (`fetchChurchSuiteEvents` +
+  `deduplicateEvents`), returning the normalized events shape with a 5-minute edge cache
+  (`s-maxage=300, stale-while-revalidate=60`) and no persisted shadow store.
 
-### Mobile App Scoping (not yet built)
-- `mobile/` and `packages/shared/` are empty placeholder folders (`README.md` only) for a future
-  React Native/Expo iOS+Android app and its shared types/schemas package
-- `docs/mobile-app-scope.md` (+ printable `docs/mobile-app-scope.pdf`) is the scoping document —
-  covers the proposed BFF architecture, a self-hosted Matrix homeserver for group chat with
-  safeguarding constraints (adult/minor boundary via ChurchSuite DOB data), ChurchSuite API
-  integration (currently only public embeds/iframes exist), and payments/sermon-feed reuse
-  from this repo. No app code exists yet — this is a planning document only.
+### Mobile App (Phase 1 — Expo)
+- **`mobile/`** is a real React Native / Expo app (iOS-first), no longer a placeholder. It uses
+  Expo Router with a bottom-tab shell — **Home / Sermons / Events / Give** (`app/(tabs)/`) — and
+  `expo-router/entry` as its entry point. Fonts are Anton / Playfair Display / Roboto via
+  `@expo-google-fonts`, icons via `@expo/vector-icons` (Ionicons). Key deps: `expo ~53`,
+  `react-native 0.79`, `react 19`, `expo-router ~5`.
+  - **Theme** (`mobile/theme/index.ts`) is derived from `@destiny/shared` design tokens so the app
+    matches the website's DC brand palette/typography.
+  - **Data flow:** screens talk only to the App BFF (`/api/app/events`), never to ChurchSuite
+    directly. `API_BASE` defaults to `https://destinychurch.vercel.app` and is overridable in dev
+    via `EXPO_PUBLIC_API_BASE_URL` (to be switched to `https://destinytees.uk` once that domain
+    serves the BFF).
+  - **Isolation:** `mobile/` is excluded from the npm workspaces (its own `node_modules`) so React
+    Native can't clash with the web's React, and it consumes `@destiny/shared` by source through
+    Metro (`metro.config.js`). It is excluded from the web `tsconfig` + eslint. Setup:
+    `cd mobile && npm install`.
+  - **Builds:** `eas.json` defines `development` (dev client, internal), `preview` (internal,
+    device build), and `production` (auto-incrementing) EAS build profiles.
+- **`packages/shared/`** (`@destiny/shared`) is an npm workspace of framework-agnostic
+  types/logic shared by the web app, the mobile app, and the App BFF. It ships raw TypeScript
+  (Next transpiles it via `transpilePackages: ["@destiny/shared"]`). Modules:
+  `src/churchsuite/events.ts` (`ChurchSuiteEvent`, `deduplicateEvents`, `fetchChurchSuiteEvents`,
+  `churchSuiteEventUrl` — de-duplicating logic previously copied across the whats-on/home events
+  UI) and `src/design/tokens.ts` (canonical DC brand palette/typography — pillar colours, accent,
+  gradient — matching `app/globals.css`).
+- **`docs/mobile-app-scope.md`** (+ printable `docs/mobile-app-scope.pdf`) remains the scoping
+  document — BFF architecture, a self-hosted Matrix homeserver for group chat with safeguarding
+  constraints (adult/minor boundary via ChurchSuite DOB data), ChurchSuite API integration, and
+  payments/sermon-feed reuse. It now also includes **Appendix A (ChurchSuite API v2 technical
+  reference)** and **Appendix B (Apple Human Interface Guidelines considerations)**. Phase 1
+  (the Expo tab shell + events BFF) is now built; later phases (chat, payments, push) are still
+  planning-only.
 
 ### Database Migrations
 - **34 migration files** defining schema for:
@@ -2416,7 +2444,7 @@ This repository serves as a **reusable platform** for churches nationwide, licen
 
 ---
 
-**Document Version:** 1.0.3  
+**Document Version:** 1.0.4  
 **Created:** June 18, 2026  
 **For:** Destiny Church Tees Valley  
 **By:** Square Media Group (Malachi <malachi@squaremediagroup.org>)

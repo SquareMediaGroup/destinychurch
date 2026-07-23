@@ -1,7 +1,7 @@
 # Destiny Church Tees Valley — Complete Repository Documentation
 
 **Version:** 1.0.4  
-**Last Updated:** July 21, 2026  
+**Last Updated:** July 23, 2026  
 **Repository:** Square Media Group — destinychurch  
 
 This document provides a comprehensive explanation of every major component, line of code purpose, architecture decisions, and how the system works from end-to-end.
@@ -264,7 +264,8 @@ destinychurch/
 │   ├── courses.ts                 # Alpha/Recovery/Bible Course/CAP course definitions
 │   ├── openaiClient.ts            # OpenAI client + SMART_SEARCH_MODEL constant
 │   ├── siteKnowledge.ts           # AI search knowledge base
-│   ├── serviceStatus.ts           # Feature flags
+│   ├── serviceStatus.ts           # Smart Search health / kill-switch state (service_status table)
+│   ├── smartSearchAlertEmail.ts   # Resend email on Smart Search down/recovered transitions
 │   ├── rateLimit.ts               # Rate limiting
 │   ├── loginRateLimit.ts          # Login attempt limiting
 │   ├── turnstile.ts               # Cloudflare Turnstile verification + signed ts_verified cookie
@@ -752,21 +753,28 @@ CREATE TABLE job_applications (
 ---
 
 #### 16. **service_status**
-**Purpose:** Feature flags for experimental/beta features
+**Purpose:** Runtime health / kill-switch state for backend services (currently only `smart_search`). The self-healing health check (`GET /api/health/smart-search`) writes this row; the site reads `enabled` to decide whether to render Smart Search.
 
 ```sql
 CREATE TABLE service_status (
-  service_name text PRIMARY KEY,       -- 'smart_search', etc.
-  enabled boolean DEFAULT false,
-  updated_at timestamptz DEFAULT now()
+  service               text PRIMARY KEY,   -- 'smart_search'
+  enabled               boolean NOT NULL DEFAULT true,
+  reason                text,               -- why it was last disabled (OpenAI error, etc.)
+  last_check_at         timestamptz,
+  next_check_at         timestamptz,        -- daily when healthy, hourly while down
+  consecutive_failures  int NOT NULL DEFAULT 0,
+  updated_at            timestamptz NOT NULL DEFAULT now()
 );
 
--- RLS: Public read; service role write
+-- RLS enabled with NO policies: only the service-role client (which bypasses
+-- RLS) touches this table; anon/authenticated get no access.
 ```
+Migration: `supabase/migrations/20260608_service_status.sql`.
 
 **Used By:**
-- `lib/serviceStatus.ts` to check if features are active
-- Admin to toggle features on/off without deploying
+- `lib/serviceStatus.ts` — `getSmartSearchStatus()` / `isSmartSearchEnabled()` (reads **fail open**: a status-store blip never disables the feature) and `setSmartSearchStatus()`
+- `app/layout.tsx` — reads `isSmartSearchEnabled()` to decide whether to mount `FloatingSmartSearch`
+- `GET /api/health/smart-search` — the cron health check that flips `enabled` and schedules the next check
 
 ---
 
@@ -945,7 +953,7 @@ All tables have RLS enabled. Access rules:
 | hr_* (staff, leave, reviews, docs) | - | - | Yes | Sensitive HR data |
 | jobs | Yes | - | Yes | Public listings |
 | job_applications | - | - | Yes | Protect applications |
-| service_status | Yes | - | Yes | Feature flags |
+| service_status | - | - | Yes | Service health / Smart Search kill-switch (service-role only) |
 | posts | - | - | Yes | Freeform pages (public read via server components) |
 | training_categories / training_subgroups / training_folders / training_posts | - | - | Yes | /training resource library (public read via server components; sub-group passwords hashed) |
 | products / product_variants | - | - | Yes | Shop catalogue (public read via server components) |
@@ -1563,6 +1571,27 @@ export async function applyForJob(jobId: string, formData: ApplicationData) {
 > cron/cache job — `app/api/webhooks/` currently only contains `stripe/` (see Shop
 > API below). YouTube data is fetched live on each request, not synced to a cache table.
 
+#### `GET /api/health/smart-search` — self-healing health check (cron)
+
+```typescript
+// Vercel Cron endpoint that keeps Smart Search from showing a broken chat when
+// OpenAI is unreachable. Auth: Authorization: Bearer <CRON_SECRET> (Vercel Cron)
+// or a manual ?secret=<CRON_SECRET> run; if CRON_SECRET is unset (local/dev) it
+// runs open. maxDuration = 30.
+//
+//   1. Reads service_status via getSmartSearchStatus(). While healthy it only
+//      actually pings once next_check_at is due (daily), so an hourly cron can
+//      retry fast while DOWN but stays cheap while UP ({ skipped: true } otherwise).
+//   2. Live-pings OpenAI (SMART_SEARCH_MODEL, max_tokens 1, 15s timeout, no retry).
+//   3. On success  → enabled = true, next check in 24h, failures reset to 0.
+//      On failure   → enabled = false, next check in 1h, failures++, reason stored.
+//   4. Emails an alert (lib/smartSearchAlertEmail.ts, via Resend) ONLY on a state
+//      change — healthy→down or down→recovered — so the inbox never gets hourly spam.
+//
+// app/layout.tsx reads isSmartSearchEnabled() to decide whether to mount
+// FloatingSmartSearch, so a disabled service simply hides the feature site-wide.
+```
+
 #### Shop API
 
 ```typescript
@@ -2164,6 +2193,8 @@ YOUTUBE_CHANNEL_ID=UCxx...
 
 # Email
 RESEND_API_KEY=re_...
+PAGE_AUDIT_FROM=Destiny AI <noreply@support.squaremediagroup.org>  # from-address for system alert emails
+SMART_SEARCH_ALERT_RECIPIENT=malachi@squaremediagroup.org          # Smart Search down/recovered alerts
 
 # OpenAI (for Smart Search chat — gpt-4.1-mini, tool-calling)
 OPENAI_API_KEY=sk-...
@@ -2185,6 +2216,9 @@ SHOP_TEST_BYPASS=            # leave unset in production — enables /api/store/
 
 # GitHub (for CI/CD)
 GITHUB_TOKEN=ghp_...
+
+# Smart Search health cron (GET /api/health/smart-search) — Vercel Cron bearer token
+CRON_SECRET=            # if unset, the health check runs unauthenticated (local/dev)
 
 # Feature flags (also toggleable via the `service_status` DB table, e.g. 'smart_search')
 ENABLE_SMART_SEARCH=true

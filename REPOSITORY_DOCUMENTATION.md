@@ -1,7 +1,7 @@
 # Destiny Church Tees Valley — Complete Repository Documentation
 
-**Version:** 1.0.4  
-**Last Updated:** July 23, 2026  
+**Version:** 1.0.5  
+**Last Updated:** July 24, 2026  
 **Repository:** Square Media Group — destinychurch  
 
 This document provides a comprehensive explanation of every major component, line of code purpose, architecture decisions, and how the system works from end-to-end.
@@ -341,6 +341,8 @@ destinychurch/
 │                                   # (pillar colours, accent, gradient) matching app/globals.css.
 ├── types/
 │   └── turnstile.d.ts             # Declares window.turnstile (Cloudflare Turnstile JS API)
+├── tests/                         # Playwright E2E specs (contact, cookies, give,
+│                                   # navigation, sermons) — run via `npx playwright test`
 ├── public/                        # Static files
 │   ├── img/                       # Church logos, backgrounds
 │   ├── og/                        # Open Graph images (social share)
@@ -938,6 +940,25 @@ CREATE TABLE shop_hero_slides (
 
 ---
 
+#### 20. Base-schema & legacy tables (`supabase/schema.sql`)
+
+`supabase/schema.sql` defines the original **base-schema** tables that predate the migration-per-feature workflow. They still exist in the live database (and are recreated by a fresh rebuild), but are **not read by the current Next.js app** — the live site serves sermons directly from the YouTube Data API (`lib/youtube.ts`), so these DB tables are effectively legacy/service-only and are populated (if at all) by external tooling rather than the web app:
+
+| Table | Shape (key columns) | Status |
+|-------|---------------------|--------|
+| `sermons` | `id`, `title`, `date`, `podcast_*`, `youtube_video_id`, `summary`, `summary_points` (jsonb), `transcript` | Legacy sermon catalogue — app now reads from YouTube API, not this table |
+| `sermon_transcripts` | `sermon_id` (→ sermons), `segments` (jsonb), `status` | Legacy per-sermon transcript segments |
+| `sermon_link_suggestions` | `podcast_guid`, `youtube_video_id`, `status` | Legacy podcast↔YouTube link matching |
+| `ai_reports` | `sermon_id`, `issue_type`, `name`, `email`, `description` | Legacy "report an issue" submissions |
+| `auth_users` | `email` (unique), `last_login` | Legacy auth bookkeeping (current auth is Supabase Auth) |
+| `admin_users` | `username`, `password_hash` | Legacy admin credentials (current admin auth is Supabase Auth) |
+
+All base-schema tables have RLS enabled with a deny-all `"service only"` policy (see the `do $$ … $$` block at the foot of `schema.sql`, codified for rebuilds by `supabase/migrations/20260711_rls_harden_base_tables.sql`). The service/secret key bypasses RLS; the public anon key gets nothing.
+
+**Orphaned Studio tables:** `studio_assets` and `studio_components` were created by `supabase/migrations/20260514_studio_v2_schema.sql` for an experimental page/Studio builder. The builder was later removed, but `20260711_06_remove_page_builder.sql` only drops `builder_pages` / `builder_templates` / `builder_media` — the two `studio_*` tables were **never dropped**, so they still exist in the database (RLS service-only) as dead schema. They are unused by the app.
+
+---
+
 All tables have RLS enabled. Access rules:
 
 | Table | Public Read | Authenticated Read | Service Role | Purpose |
@@ -959,6 +980,8 @@ All tables have RLS enabled. Access rules:
 | products / product_variants | - | - | Yes | Shop catalogue (public read via server components) |
 | orders / order_items | - | - | Yes | Store orders (written by Stripe webhook) |
 | shop_hero_slides | - | - | Yes | Editable /shop hero (public read via server components) |
+| sermons / sermon_transcripts / sermon_link_suggestions / ai_reports / auth_users / admin_users | - | - | Yes | Base-schema legacy tables (deny-all "service only"; not read by the app) |
+| studio_assets / studio_components | - | - | Yes | Orphaned Studio-builder tables (never dropped; unused) |
 
 **Key Point:** No table uses authenticated user RLS. All member-facing features use API proxy routes that enforce authentication in application code, then access the database with the service role key. This gives finer control and better error messages.
 
@@ -1338,6 +1361,10 @@ All admin/staff features live under a single `/admin` prefix with one login at `
 - `ConnectCardCTAs.tsx` — Call-to-action buttons
 - The prayer/connection form itself is built inline in `app/connect-card/page.tsx`, not a separate component
 
+#### Report a Bug (`components/report-bug/*`)
+- `ReportBugLink.tsx` — a "Report a Bug" link rendered in `ChurchFooter.tsx`. Opens an accessible in-app modal (Escape-to-close, body-scroll lock) with a small form: **Full Name**, **Email**, and **How to reproduce**. On submit it captures the current `window.location.href` as `pageUrl` and calls the `submitBugReport` server action, showing inline loading / success / error states.
+- `actions.ts` — `submitBugReport(formData)` server action. Validates name/email/steps, then uses `GITHUB_TOKEN` to open a GitHub Issue on `SquareMediaGroup/destinychurch` via the GitHub REST API (`POST /repos/.../issues`), titled `Bug Report: <name>` with the reporter, page URL, and reproduction steps in the body. Returns `{ success, error? }`; a missing `GITHUB_TOKEN` yields a friendly server-misconfiguration error. **Requires the `GITHUB_TOKEN` env var** (see Configuration).
+
 #### Home Page (`components/home/*`)
 - `HeroSection.tsx` — Main hero banner with video/image
 - `MinistriesGrid.tsx` — Ministry cards (kids, youth, etc.)
@@ -1491,6 +1518,17 @@ export async function applyForJob(jobId: string, formData: ApplicationData) {
 // 1. Check auth
 // 2. Call revalidatePath(path) or revalidateTag(tag)
 // 3. Return success
+```
+
+#### `GET /api/admin/posts/check-slug`
+```typescript
+// Live slug-availability check for the post editor
+// Query: ?slug=<candidate>&excludeId=<postId?>
+// Logic:
+// 1. Delegate to lib/posts-slug.ts → checkSlug() with the service client
+// 2. Always returns 200 with { available, slug, reason? } so the editor
+//    can show inline validation feedback while typing (excludeId lets an
+//    existing post keep its own slug when editing)
 ```
 
 ---
@@ -2214,7 +2252,8 @@ NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_live_...
 STRIPE_WEBHOOK_SECRET=whsec_...
 SHOP_TEST_BYPASS=            # leave unset in production — enables /api/store/checkout/bypass
 
-# GitHub (for CI/CD)
+# GitHub (CI/CD + "Report a Bug" footer form — used by components/report-bug/actions.ts
+# to open issues on SquareMediaGroup/destinychurch via the GitHub REST API)
 GITHUB_TOKEN=ghp_...
 
 # Smart Search health cron (GET /api/health/smart-search) — Vercel Cron bearer token

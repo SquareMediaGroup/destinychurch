@@ -1,86 +1,39 @@
-// Background gradients for the post promo cards.
+// Server-side gradient extraction for the post promo cards.
 //
-// Each card sits on a gradient pulled from its own artwork, so the panel always
-// harmonises with the image on it (see components/posts/PostRails.tsx). Cards
-// with no artwork fall back to the Destiny orange gradient.
+// Deliberately does NOT use `sharp`. Importing sharp here pulls ~20MB of libvips
+// into every function that renders a post, which pushed the `/[slug]` Vercel
+// function past the 250MB uncompressed limit and broke the deploy. jpeg-js +
+// pngjs are ~800KB combined and only ever decode a small thumbnail, so the cost
+// is trivial and the function stays well inside the limit.
 //
-// The dominant colour is normalised through HSL rather than simply darkened:
-// keeping the hue but pinning saturation and lightness means a near-black photo
-// and a blown-out white one both produce a usable panel with legible white text.
+// ChurchSuite serves JPEG and PNG, which is all this handles. Course artwork is
+// WebP and never changes, so those gradients are precomputed instead — see
+// COURSE_GRADIENTS in lib/courses.ts and scripts/precompute-course-gradients.ts.
 import "server-only";
-import { readFile } from "node:fs/promises";
-import path from "node:path";
-import sharp from "sharp";
+import jpeg from "jpeg-js";
+import { PNG } from "pngjs";
+import { DESTINY_GRADIENT, dominantColour, gradientFrom } from "@/lib/promo-gradient";
 
-type Rgb = { r: number; g: number; b: number };
+export { DESTINY_GRADIENT };
 
-/** Destiny orange — the fallback when a card has no artwork to sample. */
-const DESTINY_ORANGE: Rgb = { r: 245, g: 128, b: 33 };
-
-// Lightness of the three gradient stops, top to bottom. Tuned against the
-// Rocknations artwork: a mid-tone band at the top fading to near-black, which
-// keeps white body text above 7:1 contrast for the whole card.
-const STOPS: Array<[lightness: number, position: number]> = [
-  [0.3, 0],
-  [0.16, 52],
-  [0.06, 100],
-];
-
-const SATURATION_RANGE = { min: 0.35, max: 0.75 };
-
-/** Cache keyed by image URL. Artwork is immutable per URL, so this never staler. */
+/** Cache keyed by image URL. Artwork is immutable per URL, so this never stales. */
 const cache = new Map<string, string>();
 
-function rgbToHsl({ r, g, b }: Rgb): { h: number; s: number; l: number } {
-  const rn = r / 255;
-  const gn = g / 255;
-  const bn = b / 255;
-  const max = Math.max(rn, gn, bn);
-  const min = Math.min(rn, gn, bn);
-  const l = (max + min) / 2;
-  const d = max - min;
+/** RGBA pixels from a JPEG or PNG buffer, or null for anything else. */
+function decode(buffer: Buffer): Uint8Array | null {
+  const isJpeg = buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[2] === 0xff;
+  const isPng =
+    buffer[0] === 0x89 && buffer[1] === 0x50 && buffer[2] === 0x4e && buffer[3] === 0x47;
 
-  if (d === 0) return { h: 0, s: 0, l };
-
-  const s = d / (1 - Math.abs(2 * l - 1));
-  let h: number;
-  if (max === rn) h = ((gn - bn) / d) % 6;
-  else if (max === gn) h = (bn - rn) / d + 2;
-  else h = (rn - gn) / d + 4;
-
-  return { h: (h * 60 + 360) % 360, s, l };
+  if (isJpeg) return jpeg.decode(buffer, { useTArray: true }).data;
+  if (isPng) return Uint8Array.from(PNG.sync.read(buffer).data);
+  return null;
 }
 
 /**
- * A three-stop vertical gradient in the hue of `rgb`. Saturation is clamped so
- * a greyscale image still reads as a deliberate colour rather than mud.
- */
-function gradientFrom(rgb: Rgb): string {
-  const { h, s } = rgbToHsl(rgb);
-  const sat = Math.min(SATURATION_RANGE.max, Math.max(SATURATION_RANGE.min, s));
-  const stops = STOPS.map(
-    ([l, pos]) => `hsl(${h.toFixed(0)} ${(sat * 100).toFixed(0)}% ${(l * 100).toFixed(0)}%) ${pos}%`,
-  );
-  return `linear-gradient(180deg, ${stops.join(", ")})`;
-}
-
-/** The branded gradient used for cards with no artwork. */
-export const DESTINY_GRADIENT = gradientFrom(DESTINY_ORANGE);
-
-/** Read a local `/img/...` path out of `public/`, or fetch a remote URL. */
-async function loadImage(src: string): Promise<Buffer> {
-  if (src.startsWith("/")) {
-    return readFile(path.join(process.cwd(), "public", src));
-  }
-  const res = await fetch(src, { next: { revalidate: 86400 } });
-  if (!res.ok) throw new Error(`image fetch failed: ${res.status}`);
-  return Buffer.from(await res.arrayBuffer());
-}
-
-/**
- * The gradient for a card's artwork. Falls back to the Destiny gradient when
- * `src` is missing or the image can't be read — a promo card must never fail
- * the page it sits on.
+ * The gradient for a remote JPEG/PNG. Falls back to the Destiny gradient when
+ * `src` is missing or the image can't be read — a promo card must never fail the
+ * page it sits on.
  */
 export async function gradientForImage(src?: string): Promise<string> {
   if (!src) return DESTINY_GRADIENT;
@@ -89,7 +42,15 @@ export async function gradientForImage(src?: string): Promise<string> {
   if (cached) return cached;
 
   try {
-    const { dominant } = await sharp(await loadImage(src)).stats();
+    const res = await fetch(src, { next: { revalidate: 86400 } });
+    if (!res.ok) return DESTINY_GRADIENT;
+
+    const pixels = decode(Buffer.from(await res.arrayBuffer()));
+    if (!pixels) return DESTINY_GRADIENT;
+
+    const dominant = dominantColour(pixels);
+    if (!dominant) return DESTINY_GRADIENT;
+
     const gradient = gradientFrom(dominant);
     cache.set(src, gradient);
     return gradient;

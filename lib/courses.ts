@@ -14,6 +14,28 @@ export const COURSE_ORDER: CourseId[] = [
   "recovery",
 ];
 
+/**
+ * Background gradient for each course's promo card (components/posts/PromoRail.tsx),
+ * sampled from that course's `card.image`.
+ *
+ * Precomputed rather than derived at request time: the artwork is WebP, which the
+ * runtime decoders don't handle, and pulling `sharp` into the request path pushed
+ * the /[slug] Vercel function past its 250MB limit. These images are static and
+ * committed, so a literal is both cheaper and safer.
+ *
+ * Regenerate after changing any `card.image`:
+ *   npx tsx scripts/precompute-course-gradients.ts
+ */
+export const COURSE_GRADIENTS: Record<CourseId, string> = {
+  bible_course:
+    "linear-gradient(180deg, hsl(53 75% 30%) 0%, hsl(53 75% 16%) 52%, hsl(53 75% 6%) 100%)",
+  cap: "linear-gradient(180deg, hsl(80 64% 30%) 0%, hsl(80 64% 16%) 52%, hsl(80 64% 6%) 100%)",
+  alpha:
+    "linear-gradient(180deg, hsl(20 35% 30%) 0%, hsl(20 35% 16%) 52%, hsl(20 35% 6%) 100%)",
+  recovery:
+    "linear-gradient(180deg, hsl(0 35% 30%) 0%, hsl(0 35% 16%) 52%, hsl(0 35% 6%) 100%)",
+};
+
 export function isCourseId(value: unknown): value is CourseId {
   return (
     typeof value === "string" &&

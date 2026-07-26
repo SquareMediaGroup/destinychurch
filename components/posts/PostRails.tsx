@@ -22,7 +22,7 @@ import {
   type ChurchSuiteEvent,
   type DeduplicatedEvent,
 } from "@destiny/shared";
-import { COURSES, COURSE_ORDER } from "@/lib/courses";
+import { COURSES, COURSE_GRADIENTS, COURSE_ORDER } from "@/lib/courses";
 import { getFeaturedCourseId } from "@/lib/courses.server";
 import { gradientForImage } from "@/lib/promo-gradient.server";
 import PromoRail, { type PromoCard } from "./PromoRail";
@@ -115,24 +115,23 @@ export async function CoursesRail() {
   const featuredId = await getFeaturedCourseId();
   const ids = [featuredId, ...COURSE_ORDER.filter((id) => id !== featuredId)];
 
-  const cards: PromoCard[] = await Promise.all(
-    ids.map(async (id) => {
-      const { card } = COURSES[id];
-      return {
-        id,
-        href: card.cta.href,
-        external: false,
-        image: card.image,
-        title: card.title,
-        description:
-          card.description.length > DESCRIPTION_LIMIT
-            ? `${card.description.slice(0, DESCRIPTION_LIMIT).trimEnd()}…`
-            : card.description,
-        cta: card.cta.label,
-        gradient: await gradientForImage(card.image),
-      };
-    }),
-  );
+  const cards: PromoCard[] = ids.map((id) => {
+    const { card } = COURSES[id];
+    return {
+      id,
+      href: card.cta.href,
+      external: false,
+      image: card.image,
+      title: card.title,
+      description:
+        card.description.length > DESCRIPTION_LIMIT
+          ? `${card.description.slice(0, DESCRIPTION_LIMIT).trimEnd()}…`
+          : card.description,
+      cta: card.cta.label,
+      // Precomputed — course artwork is WebP and static. See COURSE_GRADIENTS.
+      gradient: COURSE_GRADIENTS[id],
+    };
+  });
 
   return <PromoRail side="right" label="Courses" cards={cards} />;
 }

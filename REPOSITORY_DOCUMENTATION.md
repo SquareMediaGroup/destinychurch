@@ -1368,10 +1368,24 @@ Desktop-only internal advertising in the empty margins of a post page. Added 202
 - `PromoRail.tsx` — **Client.** Renders one 300×600 card and rotates to the next every
   15s. Pauses on hover/focus and does not auto-rotate under `prefers-reduced-motion`
   (WCAG 2.2.2). Card = date, artwork, Anton title, clamped description, CTA.
-- `lib/promo-gradient.server.ts` — Samples each card's artwork with `sharp` (`.stats().dominant`)
-  and normalises it through HSL to a three-stop gradient, so white text keeps its contrast
-  whatever the source image. Cards with no artwork get `DESTINY_GRADIENT` (brand orange).
-  Results are memoised per image URL.
+- `lib/promo-gradient.ts` — Pure colour maths: 4-bit histogram dominant colour, and the
+  HSL normalisation that turns it into a three-stop gradient. Pinning saturation and
+  lightness (rather than just darkening) means white text keeps its contrast whatever the
+  source image. Near-black/near-white histogram buckets are skipped so cards don't all take
+  the colour of a white studio backdrop.
+- `lib/promo-gradient.server.ts` — Fetches and decodes remote artwork (JPEG/PNG only),
+  memoised per image URL. Cards with no usable artwork get `DESTINY_GRADIENT` (brand orange).
+- `scripts/precompute-course-gradients.ts` — Regenerates `COURSE_GRADIENTS` in `lib/courses.ts`.
+  Run after changing any course `card.image`: `npx tsx scripts/precompute-course-gradients.ts`.
+
+> **Why no `sharp` here.** The first version used `sharp().stats().dominant`. That traced
+> ~20MB of libvips into the `/[slug]` function and pushed it to 256MB, over Vercel's 250MB
+> uncompressed limit — the build passed and the *deploy* failed. `jpeg-js` + `pngjs` are
+> ~800KB combined and produce identical output. Course artwork is WebP, which neither decodes,
+> so those four gradients are precomputed into `lib/courses.ts` instead — they're static
+> images, so a literal is cheaper and safer than any runtime decode. **Do not import `sharp`
+> into anything reachable from a page component.** It is fine in the admin upload routes,
+> which are their own functions.
 
 Layout lives in `app/[slug]/page.tsx`: below 1560px the page is byte-identical to before;
 at 1560px+ it becomes `grid-cols-[300px_minmax(0,768px)_300px]`. The article is first in the

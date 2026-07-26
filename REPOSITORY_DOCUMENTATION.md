@@ -1201,7 +1201,7 @@ Displayed on every page:
 | `/annual-report-2025` | `app/annual-report-2025/page.tsx` | Annual report campaign page |
 | `/admin-login`, `/administration` | `app/admin-login/page.tsx`, `app/administration/page.tsx` | Stale-bookmark redirects to `/login` and `/admin` |
 | `/auth/callback`, `/auth/confirm` | `app/auth/callback/route.ts`, `app/auth/confirm/route.ts` | Supabase OAuth callback and email-OTP verification route handlers |
-| `/[slug]` | `app/[slug]/page.tsx` | Dynamic catchall — looks up a published row in the `posts` table |
+| `/[slug]` | `app/[slug]/page.tsx` | Dynamic catchall — looks up a published row in the `posts` table. At ≥1560px viewport the layout becomes a three-track grid with a promo card in each margin (see `posts/PostRails.tsx`); the 768px article column is unchanged at every width |
 
 ### Admin Pages (Auth Required, Checked in `middleware.ts`)
 
@@ -1356,6 +1356,28 @@ All admin/staff features live under a single `/admin` prefix with one login at `
 - `hr/HrUI.tsx` — Staff directory, leave requests, documents (main HR dashboard shell)
 - `hr/JobModal.tsx` — Create/edit job listing (uses `RichTextEditor`)
 - `hr/modals.tsx` — Remaining HR CRUD modals (staff, leave, reviews, applications)
+
+#### Post Promo Rails (`components/posts/*`)
+Desktop-only internal advertising in the empty margins of a post page. Added 2026-07-26.
+
+- `PostRails.tsx` — **Server.** Exports `EventsRail` (left) and `CoursesRail` (right).
+  Builds serialisable `PromoCard[]` and hands them to the client rotator. Events come
+  from `fetchChurchSuiteEvents` (filtered to future dates and sorted — unlike
+  `EventsGrid`/`WhatsOnSection`, which show past events too); courses come from
+  `lib/courses.ts` with the admin-featured one first via `getFeaturedCourseId`.
+- `PromoRail.tsx` — **Client.** Renders one 300×600 card and rotates to the next every
+  15s. Pauses on hover/focus and does not auto-rotate under `prefers-reduced-motion`
+  (WCAG 2.2.2). Card = date, artwork, Anton title, clamped description, CTA.
+- `lib/promo-gradient.server.ts` — Samples each card's artwork with `sharp` (`.stats().dominant`)
+  and normalises it through HSL to a three-stop gradient, so white text keeps its contrast
+  whatever the source image. Cards with no artwork get `DESTINY_GRADIENT` (brand orange).
+  Results are memoised per image URL.
+
+Layout lives in `app/[slug]/page.tsx`: below 1560px the page is byte-identical to before;
+at 1560px+ it becomes `grid-cols-[300px_minmax(0,768px)_300px]`. The article is first in the
+DOM and placed with `col-start-2`, so promo content never precedes it for crawlers or screen
+readers. **Do not add `self-start`/`h-fit` to the rail `<aside>`** — the grid's default stretch
+is what gives the sticky card its scroll range; hugging the content silently disables sticky.
 
 #### Connect Card (`components/connect-card/*`)
 - `ConnectCardCTAs.tsx` — Call-to-action buttons

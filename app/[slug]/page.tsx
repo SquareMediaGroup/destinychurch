@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { redirect, notFound } from "next/navigation";
 import { createServiceClient } from "@/utils/supabase/service";
 import { getPublishedPostBySlug } from "@/lib/posts.server";
+import { EventsRail, CoursesRail } from "@/components/posts/PostRails";
 
 interface Props {
   params: Promise<{ slug: string }>;
@@ -25,16 +27,31 @@ export default async function SlugPage({ params }: Props) {
   if (post) {
     return (
       <article className="bg-white pb-24">
-        <div className="mx-auto max-w-3xl px-4 pt-12 lg:px-8">
-          <h1 className="text-3xl font-black text-destiny-grey md:text-4xl">
-            {post.title}
-          </h1>
-          {post.body ? (
-            <div
-              className="rte-content mt-8 text-[0.97rem] text-destiny-grey/80"
-              dangerouslySetInnerHTML={{ __html: post.body }}
-            />
-          ) : null}
+        {/*
+          Below 1560px this is the same single centred column it has always been.
+          At 1560px+ it becomes a three-track grid so the promo rails can sit in
+          the margins — the article track stays pinned at 768px, so the reading
+          width never changes. See components/posts/PostRails.tsx.
+        */}
+        <div className="mx-auto grid w-full max-w-3xl px-4 pt-12 lg:px-8 min-[1560px]:max-w-[1512px] min-[1560px]:grid-cols-[300px_minmax(0,768px)_300px] min-[1560px]:gap-10">
+          {/* Article stays first in the DOM so promo never precedes the content. */}
+          <div className="min-w-0 min-[1440px]:col-start-2 min-[1440px]:row-start-1">
+            <h1 className="text-3xl font-black text-destiny-grey md:text-4xl">
+              {post.title}
+            </h1>
+            {post.body ? (
+              <div
+                className="rte-content mt-8 text-[0.97rem] text-destiny-grey/80"
+                dangerouslySetInnerHTML={{ __html: post.body }}
+              />
+            ) : null}
+          </div>
+
+          {/* Streamed so a slow ChurchSuite feed can't hold up the post body. */}
+          <Suspense fallback={null}>
+            <EventsRail />
+          </Suspense>
+          <CoursesRail />
         </div>
       </article>
     );

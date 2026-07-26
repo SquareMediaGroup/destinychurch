@@ -17,25 +17,10 @@ import CoursesSection from "@/components/whats-on/CoursesSection";
 import TogetherMissionSection from "@/components/whats-on/TogetherMissionSection";
 import PastHighlightsSection from "@/components/whats-on/PastHighlightsSection";
 import WorshipWithUsSection from "@/components/home/WorshipWithUsSection";
-import { createServiceClient } from "@/utils/supabase/service";
-import { isCourseId, type CourseId } from "@/lib/courses";
+import { getFeaturedCourseId } from "@/lib/courses.server";
 import { fetchChurchSuiteEvents } from "@destiny/shared";
 
 export const revalidate = 300;
-
-async function getFeaturedCourseId(): Promise<CourseId> {
-  try {
-    const supabase = createServiceClient();
-    const { data } = await supabase
-      .from("featured_course")
-      .select("course_id")
-      .eq("id", 1)
-      .maybeSingle();
-    return isCourseId(data?.course_id) ? data.course_id : "bible_course";
-  } catch {
-    return "bible_course";
-  }
-}
 
 export default async function WhatsOnPage() {
   const [events, featuredCourseId] = await Promise.all([

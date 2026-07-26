@@ -12,11 +12,19 @@ export type ChurchSuiteEvent = {
   name: string;
   datetime_start: string;
   datetime_end: string;
+  /** HTML, not plain text. Blank on most recurring services. */
+  description?: string | null;
   location?: { name?: string } | null;
-  images?: { original_500?: string; md?: string } | null;
+  images?: { original_500?: string; original_1000?: string; md?: string } | null;
   identifier?: string;
-  /** Present on the feed; used to know whether an event accepts signups. */
-  signup_options?: { signup_enabled?: boolean } | null;
+  /**
+   * ChurchSuite sends "1" / "0" *strings* here, not booleans — use
+   * `eventSignupUrl` rather than testing these fields directly.
+   */
+  signup_options?: {
+    signup_enabled?: string | boolean;
+    tickets?: { enabled?: string | boolean; url?: string } | null;
+  } | null;
 };
 
 /**
@@ -58,6 +66,47 @@ export function churchSuiteEventUrl(identifier?: string): string {
   return identifier
     ? `${CHURCHSUITE_EVENTS_URL}/${identifier}`
     : CHURCHSUITE_EVENTS_URL;
+}
+
+/** ChurchSuite encodes booleans as the strings "1" and "0". */
+function isEnabled(value?: string | boolean): boolean {
+  return value === true || value === "1";
+}
+
+/**
+ * Whether an event takes signups, and where. Returns null when signups are off,
+ * so callers can fall back to a plain "find out more" link.
+ */
+export function eventSignupUrl(event: ChurchSuiteEvent): string | null {
+  const options = event.signup_options;
+  if (!options || !isEnabled(options.signup_enabled)) return null;
+  return options.tickets?.url ?? churchSuiteEventUrl(event.identifier);
+}
+
+/**
+ * The event description as plain text. The feed returns HTML with links; promo
+ * surfaces want a clean single paragraph, optionally clamped to `maxLength`.
+ */
+export function eventDescriptionText(
+  event: ChurchSuiteEvent,
+  maxLength?: number,
+): string {
+  const text = (event.description ?? "")
+    .replace(/<br\s*\/?>/gi, " ")
+    .replace(/<\/p>/gi, " ")
+    .replace(/<[^>]+>/g, "")
+    .replace(/&nbsp;/g, " ")
+    .replace(/&amp;/g, "&")
+    .replace(/&#39;|&rsquo;/g, "'")
+    .replace(/&quot;|&ldquo;|&rdquo;/g, '"')
+    .replace(/\s+/g, " ")
+    .trim();
+
+  if (!maxLength || text.length <= maxLength) return text;
+  // Trim back to a word boundary so the ellipsis doesn't land mid-word.
+  const cut = text.slice(0, maxLength);
+  const lastSpace = cut.lastIndexOf(" ");
+  return `${(lastSpace > maxLength * 0.6 ? cut.slice(0, lastSpace) : cut).replace(/[,.;:]$/, "")}…`;
 }
 
 /**

@@ -1,20 +1,19 @@
-// Server-side gradient extraction for the post promo cards.
+// Server-side colour sampling for the post promo cards.
 //
 // Deliberately does NOT use `sharp`. Importing sharp here pulls ~20MB of libvips
 // into every function that renders a post, which pushed the `/[slug]` Vercel
 // function past the 250MB uncompressed limit and broke the deploy. jpeg-js +
-// pngjs are ~800KB combined and only ever decode a small thumbnail, so the cost
-// is trivial and the function stays well inside the limit.
+// pngjs are ~800KB combined and produce identical output.
 //
 // ChurchSuite serves JPEG and PNG, which is all this handles. Course artwork is
-// WebP and never changes, so those gradients are precomputed instead — see
-// COURSE_GRADIENTS in lib/courses.ts and scripts/precompute-course-gradients.ts.
+// WebP and never changes, so those palettes are precomputed instead — see
+// COURSE_PALETTES in lib/courses.ts and scripts/precompute-course-palettes.ts.
 import "server-only";
 import jpeg from "jpeg-js";
 import { PNG } from "pngjs";
-import { DESTINY_GRADIENT, dominantColour, gradientFrom } from "@/lib/promo-gradient";
+import { DESTINY_PALETTE, dominantColour, paletteFrom } from "@/lib/promo-palette";
 
-export { DESTINY_GRADIENT };
+export { DESTINY_PALETTE };
 
 /** Cache keyed by image URL. Artwork is immutable per URL, so this never stales. */
 const cache = new Map<string, string>();
@@ -31,30 +30,30 @@ function decode(buffer: Buffer): Uint8Array | null {
 }
 
 /**
- * The gradient for a remote JPEG/PNG. Falls back to the Destiny gradient when
- * `src` is missing or the image can't be read — a promo card must never fail the
- * page it sits on.
+ * The "H S%" palette for a remote JPEG/PNG. Falls back to the Destiny palette
+ * when `src` is missing or the image can't be read — a promo card must never
+ * fail the page it sits on.
  */
-export async function gradientForImage(src?: string): Promise<string> {
-  if (!src) return DESTINY_GRADIENT;
+export async function paletteForImage(src?: string): Promise<string> {
+  if (!src) return DESTINY_PALETTE;
 
   const cached = cache.get(src);
   if (cached) return cached;
 
   try {
     const res = await fetch(src, { next: { revalidate: 86400 } });
-    if (!res.ok) return DESTINY_GRADIENT;
+    if (!res.ok) return DESTINY_PALETTE;
 
     const pixels = decode(Buffer.from(await res.arrayBuffer()));
-    if (!pixels) return DESTINY_GRADIENT;
+    if (!pixels) return DESTINY_PALETTE;
 
     const dominant = dominantColour(pixels);
-    if (!dominant) return DESTINY_GRADIENT;
+    if (!dominant) return DESTINY_PALETTE;
 
-    const gradient = gradientFrom(dominant);
-    cache.set(src, gradient);
-    return gradient;
+    const palette = paletteFrom(dominant);
+    cache.set(src, palette);
+    return palette;
   } catch {
-    return DESTINY_GRADIENT;
+    return DESTINY_PALETTE;
   }
 }

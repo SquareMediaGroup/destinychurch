@@ -5,12 +5,12 @@
 // while the article scrolls and rotates to the next item every 15 seconds:
 // upcoming ChurchSuite events on the left, the four courses on the right.
 //
-// Every card sits on a gradient sampled from its own artwork (see
-// lib/promo-gradient.server.ts). This file does the data work on the server and
+// Every card takes a light tint and CTA colour sampled from its own artwork (see
+// lib/promo-palette.server.ts). This file does the data work on the server and
 // hands plain props to the client rotator in components/posts/PromoRail.tsx.
 //
-// Hidden below 1560px — the narrowest viewport where two 300px rails fit without
-// narrowing the article. See the grid in app/[slug]/page.tsx.
+// Hidden below 1600px — the narrowest viewport where two 300px rails plus 64px
+// gutters fit without narrowing the article. See the grid in app/[slug]/page.tsx.
 
 import {
   churchSuiteEventUrl,
@@ -22,9 +22,9 @@ import {
   type ChurchSuiteEvent,
   type DeduplicatedEvent,
 } from "@destiny/shared";
-import { COURSES, COURSE_GRADIENTS, COURSE_ORDER } from "@/lib/courses";
+import { COURSES, COURSE_ORDER, COURSE_PALETTES } from "@/lib/courses";
 import { getFeaturedCourseId } from "@/lib/courses.server";
-import { gradientForImage } from "@/lib/promo-gradient.server";
+import { paletteForImage } from "@/lib/promo-palette.server";
 import PromoRail, { type PromoCard } from "./PromoRail";
 
 /** How many events the left rail cycles through. */
@@ -102,7 +102,7 @@ export async function EventsRail() {
         // Only show the second line when the event actually spans days.
         dateEnd: end !== start ? end : undefined,
         cta: signupUrl ? "Sign up" : "Find out more",
-        gradient: await gradientForImage(image),
+        accent: await paletteForImage(image),
       };
     }),
   );
@@ -128,8 +128,8 @@ export async function CoursesRail() {
           ? `${card.description.slice(0, DESCRIPTION_LIMIT).trimEnd()}…`
           : card.description,
       cta: card.cta.label,
-      // Precomputed — course artwork is WebP and static. See COURSE_GRADIENTS.
-      gradient: COURSE_GRADIENTS[id],
+      // Precomputed — course artwork is WebP and static. See COURSE_PALETTES.
+      accent: COURSE_PALETTES[id],
     };
   });
 

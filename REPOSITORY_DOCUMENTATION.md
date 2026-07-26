@@ -1201,7 +1201,7 @@ Displayed on every page:
 | `/annual-report-2025` | `app/annual-report-2025/page.tsx` | Annual report campaign page |
 | `/admin-login`, `/administration` | `app/admin-login/page.tsx`, `app/administration/page.tsx` | Stale-bookmark redirects to `/login` and `/admin` |
 | `/auth/callback`, `/auth/confirm` | `app/auth/callback/route.ts`, `app/auth/confirm/route.ts` | Supabase OAuth callback and email-OTP verification route handlers |
-| `/[slug]` | `app/[slug]/page.tsx` | Dynamic catchall — looks up a published row in the `posts` table. At ≥1560px viewport the layout becomes a three-track grid with a promo card in each margin (see `posts/PostRails.tsx`); the 768px article column is unchanged at every width |
+| `/[slug]` | `app/[slug]/page.tsx` | Dynamic catchall — looks up a published row in the `posts` table. At ≥1600px viewport the layout becomes a three-track grid with a promo card in each margin (see `posts/PostRails.tsx`); the 768px article column is unchanged at every width |
 
 ### Admin Pages (Auth Required, Checked in `middleware.ts`)
 
@@ -1365,30 +1365,46 @@ Desktop-only internal advertising in the empty margins of a post page. Added 202
   from `fetchChurchSuiteEvents` (filtered to future dates and sorted — unlike
   `EventsGrid`/`WhatsOnSection`, which show past events too); courses come from
   `lib/courses.ts` with the admin-featured one first via `getFeaturedCourseId`.
-- `PromoRail.tsx` — **Client.** Renders one 300×600 card and rotates to the next every
-  15s. Pauses on hover/focus and does not auto-rotate under `prefers-reduced-motion`
+- `PromoRail.tsx` — **Client.** Mounts every card stacked and shows one at a time, advancing
+  every 15s. Pauses on hover/focus and does not auto-rotate under `prefers-reduced-motion`
   (WCAG 2.2.2). Card = date, artwork, Anton title, clamped description, CTA.
-- `lib/promo-gradient.ts` — Pure colour maths: 4-bit histogram dominant colour, and the
-  HSL normalisation that turns it into a three-stop gradient. Pinning saturation and
-  lightness (rather than just darkening) means white text keeps its contrast whatever the
-  source image. Near-black/near-white histogram buckets are skipped so cards don't all take
+- `lib/promo-palette.ts` — Pure colour maths: 4-bit histogram dominant colour, reduced to an
+  `"H S%"` pair. Near-black/near-white histogram buckets are skipped so cards don't all take
   the colour of a white studio backdrop.
-- `lib/promo-gradient.server.ts` — Fetches and decodes remote artwork (JPEG/PNG only),
-  memoised per image URL. Cards with no usable artwork get `DESTINY_GRADIENT` (brand orange).
-- `scripts/precompute-course-gradients.ts` — Regenerates `COURSE_GRADIENTS` in `lib/courses.ts`.
-  Run after changing any course `card.image`: `npx tsx scripts/precompute-course-gradients.ts`.
+- `lib/promo-palette.server.ts` — Fetches and decodes remote artwork (JPEG/PNG only),
+  memoised per image URL. Cards with no usable artwork get `DESTINY_PALETTE` (brand orange).
+- `scripts/precompute-course-palettes.ts` — Regenerates `COURSE_PALETTES` in `lib/courses.ts`.
+  Run after changing any course `card.image`: `npx tsx scripts/precompute-course-palettes.ts`.
+
+**Card treatment.** The card is light on purpose: a near-white tint of the sampled hue, a
+hairline border, dark text, and the sampled colour at full strength only in the CTA pill.
+One `"H S%"` pair drives all three (`hsl(${accent} 97%)` / `88%` / `30%`), so the whole
+lightness ramp is tunable in one place. An earlier version filled the card with a dark
+gradient, which made two 300×600 slabs the heaviest thing on the page and pulled the eye off
+the article — if you are tempted to add weight back, that is the trade being made.
+
+**Why the rotation has no animation.** Cross-fading double-exposed two opaque text-bearing
+cards (both titles legible at 50%), and fading the incoming card up from `opacity: 0` left it
+stranded invisible when a background tab throttled the transition. The swap is instant and
+nothing transitions opacity. Unannounced motion in the page margins also competes with the
+article. The hover lift stays — that one is user-driven. All cards stay mounted so their
+images load once up front; mounting only the active card meant every rotation inserted a
+fresh lazy `<img>` that flashed blank. Inactive cards are `aria-hidden` with `tabIndex={-1}`.
 
 > **Why no `sharp` here.** The first version used `sharp().stats().dominant`. That traced
 > ~20MB of libvips into the `/[slug]` function and pushed it to 256MB, over Vercel's 250MB
 > uncompressed limit — the build passed and the *deploy* failed. `jpeg-js` + `pngjs` are
 > ~800KB combined and produce identical output. Course artwork is WebP, which neither decodes,
-> so those four gradients are precomputed into `lib/courses.ts` instead — they're static
+> so those four palettes are precomputed into `lib/courses.ts` instead — they're static
 > images, so a literal is cheaper and safer than any runtime decode. **Do not import `sharp`
 > into anything reachable from a page component.** It is fine in the admin upload routes,
 > which are their own functions.
 
-Layout lives in `app/[slug]/page.tsx`: below 1560px the page is byte-identical to before;
-at 1560px+ it becomes `grid-cols-[300px_minmax(0,768px)_300px]`. The article is first in the
+Layout lives in `app/[slug]/page.tsx`: below 1600px the page is byte-identical to before;
+at 1600px+ it becomes `grid-cols-[300px_minmax(0,768px)_300px]` with `gap-16`. The maths is
+`300 + 64 + 768 + 64 + 300 = 1496` of content, `+64` of `lg:px-8` = the `max-w-[1560px]` cap,
+which is why the breakpoint sits at 1600. **Every pixel of gutter costs two**, so changing
+the gap means recomputing the cap and the breakpoint together. The article is first in the
 DOM and placed with `col-start-2`, so promo content never precedes it for crawlers or screen
 readers. **Do not add `self-start`/`h-fit` to the rail `<aside>`** — the grid's default stretch
 is what gives the sticky card its scroll range; hugging the content silently disables sticky.

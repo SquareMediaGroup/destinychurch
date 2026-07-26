@@ -1,25 +1,20 @@
-// Colour maths for the post promo card gradients. Pure — no Node APIs, no image
-// decoding — so it can be shared by the server module (lib/promo-gradient.server.ts)
-// and by scripts/precompute-course-gradients.ts.
+// Colour maths for the post promo cards. Pure — no Node APIs, no image decoding —
+// so it can be shared by the server module (lib/promo-palette.server.ts) and by
+// scripts/precompute-course-palettes.ts.
 //
-// The dominant colour is normalised through HSL rather than simply darkened:
-// keeping the hue but pinning saturation and lightness means a near-black photo
-// and a blown-out white one both produce a usable panel with legible white text.
+// A card is described by a single "H S%" pair sampled from its artwork. The card
+// derives everything from that one value: a near-white tint for the background, a
+// hairline border, and a saturated fill for the CTA. Keeping it to hue+saturation
+// (rather than baked colours) means the card owns its own lightness ramp, so the
+// visual weight can be tuned in one place without recomputing anything.
 
 export type Rgb = { r: number; g: number; b: number };
 
 /** Destiny orange — the fallback when a card has no usable artwork. */
 export const DESTINY_ORANGE: Rgb = { r: 245, g: 128, b: 33 };
 
-// Lightness of the three gradient stops, top to bottom. Tuned against the
-// Rocknations artwork: a mid-tone band at the top fading to near-black, which
-// keeps white body text well clear of contrast minimums for the whole card.
-const STOPS: Array<[lightness: number, position: number]> = [
-  [0.3, 0],
-  [0.16, 52],
-  [0.06, 100],
-];
-
+// Saturation is clamped so a greyscale photo still reads as a deliberate colour
+// rather than mud, and a neon graphic doesn't produce a garish tint.
 const SATURATION_RANGE = { min: 0.35, max: 0.75 };
 
 function rgbToHsl({ r, g, b }: Rgb): { h: number; s: number; l: number } {
@@ -43,20 +38,17 @@ function rgbToHsl({ r, g, b }: Rgb): { h: number; s: number; l: number } {
 }
 
 /**
- * A three-stop vertical gradient in the hue of `rgb`. Saturation is clamped so
- * a greyscale image still reads as a deliberate colour rather than mud.
+ * The "H S%" pair for a colour, ready to drop into `hsl(...)` with a lightness.
+ * e.g. `hsl(${palette} 97%)`.
  */
-export function gradientFrom(rgb: Rgb): string {
+export function paletteFrom(rgb: Rgb): string {
   const { h, s } = rgbToHsl(rgb);
   const sat = Math.min(SATURATION_RANGE.max, Math.max(SATURATION_RANGE.min, s));
-  const stops = STOPS.map(
-    ([l, pos]) => `hsl(${h.toFixed(0)} ${(sat * 100).toFixed(0)}% ${(l * 100).toFixed(0)}%) ${pos}%`,
-  );
-  return `linear-gradient(180deg, ${stops.join(", ")})`;
+  return `${h.toFixed(0)} ${(sat * 100).toFixed(0)}%`;
 }
 
-/** The branded gradient used for cards with no artwork. */
-export const DESTINY_GRADIENT = gradientFrom(DESTINY_ORANGE);
+/** The branded palette used for cards with no artwork. */
+export const DESTINY_PALETTE = paletteFrom(DESTINY_ORANGE);
 
 /**
  * The most common colour in RGBA pixel data, on a 4-bit-per-channel histogram

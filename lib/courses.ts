@@ -15,8 +15,9 @@ export const COURSE_ORDER: CourseId[] = [
 ];
 
 /**
- * Background gradient for each course's promo card (components/posts/PromoRail.tsx),
- * sampled from that course's `card.image`.
+ * The "H S%" colour pair for each course's promo card (components/posts/PromoRail.tsx),
+ * sampled from that course's `card.image`. The card supplies its own lightness,
+ * so one pair drives the tint, border and CTA fill.
  *
  * Precomputed rather than derived at request time: the artwork is WebP, which the
  * runtime decoders don't handle, and pulling `sharp` into the request path pushed
@@ -24,16 +25,13 @@ export const COURSE_ORDER: CourseId[] = [
  * committed, so a literal is both cheaper and safer.
  *
  * Regenerate after changing any `card.image`:
- *   npx tsx scripts/precompute-course-gradients.ts
+ *   npx tsx scripts/precompute-course-palettes.ts
  */
-export const COURSE_GRADIENTS: Record<CourseId, string> = {
-  bible_course:
-    "linear-gradient(180deg, hsl(53 75% 30%) 0%, hsl(53 75% 16%) 52%, hsl(53 75% 6%) 100%)",
-  cap: "linear-gradient(180deg, hsl(80 64% 30%) 0%, hsl(80 64% 16%) 52%, hsl(80 64% 6%) 100%)",
-  alpha:
-    "linear-gradient(180deg, hsl(20 35% 30%) 0%, hsl(20 35% 16%) 52%, hsl(20 35% 6%) 100%)",
-  recovery:
-    "linear-gradient(180deg, hsl(0 35% 30%) 0%, hsl(0 35% 16%) 52%, hsl(0 35% 6%) 100%)",
+export const COURSE_PALETTES: Record<CourseId, string> = {
+  bible_course: "53 75%",
+  cap: "80 64%",
+  alpha: "20 35%",
+  recovery: "0 35%",
 };
 
 export function isCourseId(value: unknown): value is CourseId {

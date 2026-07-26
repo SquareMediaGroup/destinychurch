@@ -84,23 +84,55 @@ export function eventSignupUrl(event: ChurchSuiteEvent): string | null {
 }
 
 /**
+ * Emoji, variation selectors, skin-tone modifiers, ZWJ joiners, regional
+ * indicators and keycap marks.
+ *
+ * Deliberately NOT `\p{Emoji}` — that property also matches plain digits, `#`
+ * and `*`, so it would eat "2026" out of an event name. `Extended_Pictographic`
+ * only covers actual pictographs.
+ */
+const EMOJI_PATTERN =
+  /[\p{Extended_Pictographic}\p{Regional_Indicator}\u{FE0F}\u{FE0E}\u{20E3}\u{200D}\u{1F3FB}-\u{1F3FF}]/gu;
+
+/**
+ * Strip emoji from ChurchSuite-authored copy. The site's convention is no emoji
+ * in user-facing UI, and feed content is written in ChurchSuite where authors do
+ * use them. Also tidies the whitespace a removed emoji leaves behind.
+ */
+/**
+ * Typographic marks that Unicode classes as Extended_Pictographic but which are
+ * legitimate copy, not emoji — "Alpha®" must keep its ®.
+ */
+const KEEP_MARKS = new Set(["©", "®", "™"]);
+
+export function stripEmoji(text: string): string {
+  return text
+    .replace(EMOJI_PATTERN, (char) => (KEEP_MARKS.has(char) ? char : ""))
+    .replace(/\s+/g, " ")
+    // A removed trailing emoji can strand a space before punctuation.
+    .replace(/\s+([,.!?;:])/g, "$1")
+    .trim();
+}
+
+/**
  * The event description as plain text. The feed returns HTML with links; promo
  * surfaces want a clean single paragraph, optionally clamped to `maxLength`.
+ * Emoji are stripped before clamping so the limit counts visible characters.
  */
 export function eventDescriptionText(
   event: ChurchSuiteEvent,
   maxLength?: number,
 ): string {
-  const text = (event.description ?? "")
-    .replace(/<br\s*\/?>/gi, " ")
-    .replace(/<\/p>/gi, " ")
-    .replace(/<[^>]+>/g, "")
-    .replace(/&nbsp;/g, " ")
-    .replace(/&amp;/g, "&")
-    .replace(/&#39;|&rsquo;/g, "'")
-    .replace(/&quot;|&ldquo;|&rdquo;/g, '"')
-    .replace(/\s+/g, " ")
-    .trim();
+  const text = stripEmoji(
+    (event.description ?? "")
+      .replace(/<br\s*\/?>/gi, " ")
+      .replace(/<\/p>/gi, " ")
+      .replace(/<[^>]+>/g, "")
+      .replace(/&nbsp;/g, " ")
+      .replace(/&amp;/g, "&")
+      .replace(/&#39;|&rsquo;/g, "'")
+      .replace(/&quot;|&ldquo;|&rdquo;/g, '"'),
+  );
 
   if (!maxLength || text.length <= maxLength) return text;
   // Trim back to a word boundary so the ellipsis doesn't land mid-word.

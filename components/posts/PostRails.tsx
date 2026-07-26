@@ -18,6 +18,7 @@ import {
   eventDescriptionText,
   eventSignupUrl,
   fetchChurchSuiteEvents,
+  stripEmoji,
   type ChurchSuiteEvent,
   type DeduplicatedEvent,
 } from "@destiny/shared";
@@ -94,7 +95,8 @@ export async function EventsRail() {
         href: signupUrl ?? churchSuiteEventUrl(event.identifier),
         external: true,
         image,
-        title: event.name,
+        // Event names are ChurchSuite-authored too, so they can carry emoji.
+        title: stripEmoji(event.name),
         description: eventDescriptionText(event, DESCRIPTION_LIMIT) || undefined,
         dateStart: start,
         // Only show the second line when the event actually spans days.

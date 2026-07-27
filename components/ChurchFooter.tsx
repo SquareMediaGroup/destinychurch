@@ -132,7 +132,7 @@ export default async function ChurchFooter() {
         {/* Bottom bar */}
         <div className="mt-10 flex flex-col gap-3 border-t border-white/10 pt-6 text-xs text-white/50 sm:flex-row sm:items-center sm:justify-between">
           <span>
-            &copy;{new Date().getFullYear()} Destiny Church Tees Valley &middot;
+            &copy; {new Date().getFullYear()} Destiny Church Tees Valley &middot;
             Reg Charity No. 1119951
           </span>
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-6">

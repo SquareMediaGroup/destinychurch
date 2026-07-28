@@ -42,11 +42,37 @@ export type EventCardProps = {
  */
 const TITLE_FONT = { fontFamily: "var(--font-roboto)" } as const;
 
-function secondaryLine(event: EventSeries): string | null {
+/**
+ * The line under the title. Location when we have one, otherwise the session
+ * count for a recurring series. Only a real location gets the pin icon — a
+ * pin next to "7 sessions" would be nonsense.
+ */
+function secondaryLine(
+  event: EventSeries,
+): { text: string; isLocation: boolean } | null {
   const location = event.primary.location?.name?.trim();
-  if (location) return location;
-  if (event.sessionCount > 1) return `${event.sessionCount} sessions`;
+  if (location) return { text: location, isLocation: true };
+  if (event.sessionCount > 1)
+    return { text: `${event.sessionCount} sessions`, isLocation: false };
   return null;
+}
+
+function LocationPin({ className = "" }: { className?: string }) {
+  return (
+    <svg
+      aria-hidden
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={`h-[15px] w-[15px] shrink-0 ${className}`}
+    >
+      <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 1116 0z" />
+      <circle cx="12" cy="10" r="3" />
+    </svg>
+  );
 }
 
 function ctaLabel(event: EventSeries): string {
@@ -90,14 +116,17 @@ export default function EventCard({
           </p>
           <h3
             style={TITLE_FONT}
-            className="mt-1.5 text-[22px] font-semibold leading-[1.15] tracking-[-0.02em] text-white"
+            className="mt-2 text-[22px] font-semibold leading-[1.15] tracking-[-0.02em] text-white"
           >
             {event.name}
           </h3>
           {secondary && (
-            <p className="mt-1.5 text-sm text-white/75">{secondary}</p>
+            <p className="mt-2 flex items-center gap-1.5 text-sm text-white/75">
+              {secondary.isLocation && <LocationPin />}
+              <span className="min-w-0 truncate">{secondary.text}</span>
+            </p>
           )}
-          <span className="mt-3.5 inline-flex rounded-full bg-white px-4 py-2 text-[13px] font-bold text-destiny-grey transition-transform duration-300 group-hover:scale-[1.03]">
+          <span className="mt-4 inline-flex rounded-full bg-white px-4 py-2 text-[13px] font-bold text-destiny-grey transition-transform duration-300 group-hover:scale-[1.03]">
             {ctaLabel(event)}
           </span>
         </div>
@@ -120,48 +149,43 @@ export default function EventCard({
         />
         {(variant === "a-pill" || featured) && (category || featured) && (
           <>
-            {/* Over artwork: a scrim keeps the white chip legible on pale
-                photos. Over the light-grey fallback there is nothing to darken,
-                so the chip switches to dark-on-white instead — white-on-glass
-                against #f5f7fa is unreadable. */}
+            {/* The scrim only earns its place over real artwork, where a pale
+                photo would swallow the white chip. The orange fallback is
+                already dark enough to carry white text on its own. */}
             {hasArtwork && (
               <div
                 aria-hidden
                 className="absolute inset-x-0 top-0 h-16 bg-gradient-to-b from-black/35 to-transparent"
               />
             )}
-            <span
-              className={`absolute left-3 top-3 rounded-full px-3 py-1 text-[10.5px] font-bold uppercase tracking-[0.08em] ${
-                hasArtwork
-                  ? "glass glass-sm glass-pill text-white"
-                  : "bg-white text-destiny-grey/70 shadow-[0_1px_2px_rgba(16,24,40,.06)] ring-1 ring-black/[0.06]"
-              }`}
-            >
+            <span className="glass glass-sm glass-pill absolute left-3 top-3 px-3 py-1 text-[10.5px] font-bold uppercase tracking-[0.08em] text-white">
               {featured ? "Featured" : category}
             </span>
           </>
         )}
       </div>
 
-      <div className="flex flex-1 flex-col p-5">
+      <div className="flex flex-1 flex-col p-5 sm:p-6">
         <p className="text-[11.5px] font-bold uppercase tracking-[0.09em] text-destiny-orange">
           {kicker}
         </p>
         <h3
           style={TITLE_FONT}
-          className="mt-1.5 text-[20px] font-semibold leading-[1.22] tracking-[-0.017em] text-destiny-grey"
+          className="mt-2 text-[20px] font-semibold leading-[1.22] tracking-[-0.017em] text-destiny-grey"
         >
           {event.name}
         </h3>
         {secondary && (
-          <p className="mt-1.5 text-sm leading-[1.45] text-destiny-grey/55">
-            {secondary}
+          <p className="mt-2 flex items-center gap-1.5 text-sm leading-[1.45] text-destiny-grey/55">
+            {secondary.isLocation && <LocationPin className="text-destiny-grey/35" />}
+            <span className="min-w-0 truncate">{secondary.text}</span>
           </p>
         )}
 
-        {/* mt-auto pins the footer to the card bottom, so cards in a row keep
-            a shared baseline regardless of title length. */}
-        <div className="mt-auto flex items-center justify-between gap-3 border-t border-black/[0.07] pt-3.5">
+        {/* mt-auto pins the footer to the card bottom so cards in a row share a
+            baseline; pt-5 is the floor, guaranteeing breathing room even when a
+            two-line title leaves no slack to distribute. */}
+        <div className="mt-auto flex items-center justify-between gap-4 pt-5">
           <span className="inline-flex items-center gap-1 text-sm font-semibold text-destiny-orange">
             {ctaLabel(event)}
             <span aria-hidden className="transition-transform duration-200 group-hover:translate-x-0.5">
@@ -169,7 +193,7 @@ export default function EventCard({
             </span>
           </span>
           {category && (
-            <span className="truncate text-[11.5px] text-destiny-grey/45">
+            <span className="min-w-0 truncate text-[11.5px] text-destiny-grey/45">
               {category}
             </span>
           )}

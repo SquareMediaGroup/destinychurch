@@ -35,7 +35,7 @@ export default function EventCardArtwork({
     ) : (
       // Brand panel with an oversized ghost numeral, so the poster silhouette
       // survives even with nothing to show.
-      <div className="absolute inset-0 bg-destiny-orange">
+      <div className="absolute inset-0 bg-gradient-to-br from-destiny-orange to-[#d9530f]">
         <span
           aria-hidden
           className="absolute -right-4 top-2 text-[160px] font-black leading-none text-white/15"
@@ -58,11 +58,16 @@ export default function EventCardArtwork({
           className="object-cover transition-transform duration-700 group-hover:scale-[1.03]"
         />
       ) : (
-        <div className="flex h-full flex-col items-center justify-center">
-          <span className="text-[52px] font-black leading-none tracking-[-0.03em] text-destiny-grey/25">
+        // The same full-strength brand gradient the previous What's On cards
+        // used, so an artwork-less event still reads as Destiny rather than an
+        // empty slot.
+        <div className="relative flex h-full flex-col items-center justify-center overflow-hidden bg-gradient-to-br from-destiny-orange to-destiny-orange/80">
+          <span aria-hidden className="absolute -right-4 -top-4 h-24 w-24 rounded-full bg-white/10" />
+          <span aria-hidden className="absolute -bottom-6 -left-3 h-16 w-16 rounded-full bg-white/10" />
+          <span className="relative text-[52px] font-black leading-none tracking-[-0.03em] text-white">
             {day}
           </span>
-          <span className="mt-1.5 text-[11px] font-bold uppercase tracking-[0.18em] text-destiny-grey/35">
+          <span className="relative mt-2 text-[11px] font-bold uppercase tracking-[0.18em] text-white/75">
             {month}
           </span>
         </div>

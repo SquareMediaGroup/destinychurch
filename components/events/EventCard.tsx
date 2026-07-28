@@ -19,6 +19,7 @@ import {
   eventImage,
   eventSignupUrl,
   formatKicker,
+  isMultiday,
   type EventSeries,
 } from "@destiny/shared";
 import type { EventCardVariant } from "@/lib/events";
@@ -43,18 +44,50 @@ export type EventCardProps = {
 const TITLE_FONT = { fontFamily: "var(--font-roboto)" } as const;
 
 /**
- * The line under the title. Location when we have one, otherwise the session
- * count for a recurring series. Only a real location gets the pin icon — a
- * pin next to "7 sessions" would be nonsense.
+ * The line under the title: the venue, when the feed gives us one. The session
+ * count used to fall back into this slot, but it lives in the tag row now, so
+ * this is location-only and always earns the pin icon.
  */
-function secondaryLine(
+function locationName(event: EventSeries): string | null {
+  return event.primary.location?.name?.trim() || null;
+}
+
+/**
+ * The pills overlaid on the artwork.
+ *
+ * `Multiday` and `N Sessions` are the two the old cards carried; `Featured`
+ * marks the admin-promoted event. Category joins them only on the variants with
+ * no footer to put it in, so it never appears twice on one card.
+ */
+function eventTags(
   event: EventSeries,
-): { text: string; isLocation: boolean } | null {
-  const location = event.primary.location?.name?.trim();
-  if (location) return { text: location, isLocation: true };
-  if (event.sessionCount > 1)
-    return { text: `${event.sessionCount} sessions`, isLocation: false };
-  return null;
+  featured: boolean,
+  includeCategory: boolean,
+): string[] {
+  const tags: string[] = [];
+  if (featured) tags.push("Featured");
+  if (isMultiday(event.primary)) tags.push("Multiday");
+  if (event.sessionCount > 1) tags.push(`${event.sessionCount} Sessions`);
+  const category = event.primary.category?.name;
+  if (includeCategory && category) tags.push(category);
+  return tags;
+}
+
+/** One shared pill treatment, so every tag reads the same as `Featured`. */
+function EventTags({ tags, inset }: { tags: string[]; inset: string }) {
+  if (tags.length === 0) return null;
+  return (
+    <div className={`absolute ${inset} flex flex-wrap items-center gap-2`}>
+      {tags.map((tag) => (
+        <span
+          key={tag}
+          className="glass glass-sm glass-pill px-3 py-1 text-[10.5px] font-bold uppercase tracking-[0.08em] text-white"
+        >
+          {tag}
+        </span>
+      ))}
+    </div>
+  );
 }
 
 function LocationPin({ className = "" }: { className?: string }) {
@@ -90,10 +123,13 @@ export default function EventCard({
 }: EventCardProps) {
   const target = href ?? `/whats-on/${event.slug}`;
   const kicker = formatKicker(event.primary);
-  const secondary = secondaryLine(event);
+  const location = locationName(event);
   const category = event.primary.category?.name;
   // Roughly half the feed has no artwork, which changes how overlays read.
   const hasArtwork = Boolean(eventImage(event.primary));
+  // `a` keeps its category in the footer, so only the footer-less variants
+  // fold it into the tag row.
+  const tags = eventTags(event, featured, variant !== "a");
 
   if (variant === "c") {
     return (
@@ -104,11 +140,7 @@ export default function EventCard({
         <EventCardArtwork event={event} variant="c" priority={priority} sizes={sizes} />
         <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/35 to-transparent" />
 
-        {(featured || category) && (
-          <span className="glass glass-sm glass-pill absolute left-4 top-4 px-3 py-1 text-[10.5px] font-bold uppercase tracking-[0.08em] text-white">
-            {featured ? "Featured" : category}
-          </span>
-        )}
+        <EventTags tags={tags} inset="left-4 top-4 right-4" />
 
         <div className="glass glass-md absolute inset-x-3 bottom-3 rounded-2xl p-4">
           <p className="text-[11px] font-bold uppercase tracking-[0.1em] text-white/85">
@@ -120,10 +152,10 @@ export default function EventCard({
           >
             {event.name}
           </h3>
-          {secondary && (
+          {location && (
             <p className="mt-2 flex items-center gap-1.5 text-sm text-white/75">
-              {secondary.isLocation && <LocationPin />}
-              <span className="min-w-0 truncate">{secondary.text}</span>
+              <LocationPin />
+              <span className="min-w-0 truncate">{location}</span>
             </p>
           )}
           <span className="mt-4 inline-flex rounded-full bg-white px-4 py-2 text-[13px] font-bold text-destiny-grey transition-transform duration-300 group-hover:scale-[1.03]">
@@ -147,10 +179,10 @@ export default function EventCard({
           priority={priority}
           sizes={sizes}
         />
-        {(variant === "a-pill" || featured) && (category || featured) && (
+        {tags.length > 0 && (
           <>
             {/* The scrim only earns its place over real artwork, where a pale
-                photo would swallow the white chip. The orange fallback is
+                photo would swallow the white pills. The orange fallback is
                 already dark enough to carry white text on its own. */}
             {hasArtwork && (
               <div
@@ -158,9 +190,7 @@ export default function EventCard({
                 className="absolute inset-x-0 top-0 h-16 bg-gradient-to-b from-black/35 to-transparent"
               />
             )}
-            <span className="glass glass-sm glass-pill absolute left-3 top-3 px-3 py-1 text-[10.5px] font-bold uppercase tracking-[0.08em] text-white">
-              {featured ? "Featured" : category}
-            </span>
+            <EventTags tags={tags} inset="left-3 top-3 right-3" />
           </>
         )}
       </div>
@@ -175,10 +205,10 @@ export default function EventCard({
         >
           {event.name}
         </h3>
-        {secondary && (
+        {location && (
           <p className="mt-2 flex items-center gap-1.5 text-sm leading-[1.45] text-destiny-grey/55">
-            {secondary.isLocation && <LocationPin className="text-destiny-grey/35" />}
-            <span className="min-w-0 truncate">{secondary.text}</span>
+            <LocationPin className="text-destiny-grey/35" />
+            <span className="min-w-0 truncate">{location}</span>
           </p>
         )}
 

@@ -5,9 +5,16 @@ import EventCard from "@/components/events/EventCard";
 import { getEventIndex, getFeaturedEvent } from "@/lib/events.server";
 import type { EventCardVariant } from "@/lib/events";
 
-/** Carousel cards are narrower than grid cards; the width lives here now. */
-const CARD_WIDTH =
-  "min-w-[240px] max-w-[280px] shrink-0 sm:min-w-[280px] sm:max-w-[320px]";
+/**
+ * Carousel cards are narrower than grid cards; the width lives here now.
+ *
+ * A fixed width, not a min/max range. Flex sizes a ranged card to its intrinsic
+ * content, so a long title pushed that card to the ceiling while short ones sat
+ * at the floor — and since the artwork is `aspect-[16/10]`, the extra width
+ * became extra height and the row stopped lining up. The old card got away with
+ * a range only because its image had a fixed pixel height.
+ */
+const CARD_WIDTH = "w-[280px] shrink-0 sm:w-[320px]";
 
 /**
  * The degraded state. `fetchChurchSuiteEvents` returns [] on any error, so an

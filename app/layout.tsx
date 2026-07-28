@@ -11,6 +11,8 @@ import AnalyticsGate from "@/components/AnalyticsGate";
 import SiteBanner from "@/components/SiteBanner";
 import LiveBanner from "@/components/LiveBanner";
 import SitePopup from "@/components/SitePopup";
+import EventPopup from "@/components/events/EventPopup";
+import { getActiveEventPopup } from "@/lib/events.server";
 import FloatingSmartSearch from "@/components/FloatingSmartSearch";
 import GlassBloomTracker from "@/components/GlassBloomTracker";
 import PerformanceGate from "@/components/PerformanceGate";
@@ -248,7 +250,10 @@ export default async function RootLayout({
   children: React.ReactNode;
 }>) {
   const banner = await getActiveBanner();
-  const popup = await getActivePopup();
+  const [popup, eventPopup] = await Promise.all([
+    getActivePopup(),
+    getActiveEventPopup(),
+  ]);
   const smartSearchEnabled = await isSmartSearchEnabled();
   const liveStatus = await getLiveStatus();
 
@@ -429,7 +434,11 @@ export default async function RootLayout({
           </div>
           <AnalyticsGate />
           <GlassBloomTracker />
-          <SitePopup popup={popup} />
+          {/* An active event popup suppresses the generic one — passing null
+              here is the whole mechanism, so only ever one modal shows and
+              there's no client-side coordination to get wrong. */}
+          <SitePopup popup={eventPopup ? null : popup} />
+          <EventPopup popup={eventPopup} />
           {smartSearchEnabled && <FloatingSmartSearch />}
         </Providers>
         <SpeedInsights />

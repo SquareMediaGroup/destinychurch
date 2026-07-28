@@ -1,9 +1,24 @@
 import type { MetadataRoute } from "next";
 import { getTrainingTree } from "@/lib/training.server";
+import { getEventIndex } from "@/lib/events.server";
 
 const BASE_URL = "https://destinytees.uk";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+  // One entry per upcoming event series. Events drop out of the ChurchSuite
+  // feed once they finish, so these URLs are intentionally short-lived.
+  let events: MetadataRoute.Sitemap = [];
+  try {
+    const { series } = await getEventIndex();
+    events = series.map((s) => ({
+      url: `${BASE_URL}/whats-on/${s.slug}`,
+      changeFrequency: "weekly" as const,
+      priority: 0.6,
+    }));
+  } catch {
+    // A ChurchSuite outage shouldn't take the whole sitemap down.
+  }
+
   // Public training landing + category pages. Sub-group and post pages are
   // password-gated, so they're intentionally left out (and kept noindex).
   let training: MetadataRoute.Sitemap = [
@@ -24,6 +39,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   return [
     ...training,
+    ...events,
     { url: `${BASE_URL}/`,             changeFrequency: "weekly",  priority: 1.0 },
     { url: `${BASE_URL}/about`,        changeFrequency: "monthly", priority: 0.9 },
     { url: `${BASE_URL}/beliefs`,      changeFrequency: "yearly",  priority: 0.7 },

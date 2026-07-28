@@ -1,8 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Image from "next/image";
-import Link from "next/link";
+import PopupShell from "@/components/PopupShell";
 
 interface PopupData {
   active: boolean;
@@ -17,17 +16,24 @@ interface PopupData {
 
 const STORAGE_KEY = "dc-popup-dismissed";
 
+/**
+ * The general announcement popup.
+ *
+ * app/layout.tsx passes `null` here whenever an event popup is live, so the two
+ * can never stack — see components/events/EventPopup.tsx.
+ */
 export default function SitePopup({ popup }: { popup: PopupData | null }) {
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
     if (!popup || !popup.active) return;
-    const hasContent =
-      !!popup.title || !!popup.body || !!popup.image_url;
+    const hasContent = !!popup.title || !!popup.body || !!popup.image_url;
     if (!hasContent) return;
 
     if (popup.show_once) {
       try {
+        // Keyed on updated_at, so editing the popup re-shows it to everyone
+        // who had already dismissed the previous version.
         const dismissed = window.localStorage.getItem(STORAGE_KEY);
         if (dismissed && dismissed === (popup.updated_at ?? "")) return;
       } catch {
@@ -53,63 +59,13 @@ export default function SitePopup({ popup }: { popup: PopupData | null }) {
   if (!popup || !popup.active || !open) return null;
 
   return (
-    <div
-      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 px-4 py-6 backdrop-blur-sm animate-in fade-in"
-      onClick={close}
-      role="dialog"
-      aria-modal="true"
-    >
-      <div
-        className="relative w-full max-w-md overflow-hidden rounded-2xl bg-white shadow-2xl ring-1 ring-black/5"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <button
-          type="button"
-          onClick={close}
-          aria-label="Close"
-          className="absolute right-3 top-3 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-black/50 text-white backdrop-blur transition hover:bg-black/70"
-        >
-          <span className="material-symbols-rounded text-lg">close</span>
-        </button>
-
-        {popup.image_url && (
-          <div className="relative aspect-[16/9] w-full bg-[#f5f7fa]">
-            <Image
-              src={popup.image_url}
-              alt={popup.title ?? ""}
-              fill
-              priority
-              sizes="(max-width: 768px) 100vw, 28rem"
-              className="object-cover"
-            />
-          </div>
-        )}
-
-        <div className="flex flex-col gap-3 p-6">
-          {popup.title && (
-            <h2 className="text-2xl font-black text-destiny-grey">
-              {popup.title}
-            </h2>
-          )}
-          {popup.body && (
-            <p className="whitespace-pre-line text-sm leading-relaxed text-destiny-grey/70">
-              {popup.body}
-            </p>
-          )}
-          {popup.cta_text && popup.cta_link && (
-            <Link
-              href={popup.cta_link}
-              onClick={close}
-              className="mt-3 inline-flex w-fit items-center gap-2 rounded-xl bg-destiny-orange px-5 py-3 text-sm font-bold text-white shadow-sm shadow-destiny-orange/20 transition hover:brightness-110"
-            >
-              {popup.cta_text}
-              <span className="material-symbols-rounded text-base">
-                arrow_forward
-              </span>
-            </Link>
-          )}
-        </div>
-      </div>
-    </div>
+    <PopupShell
+      title={popup.title}
+      body={popup.body}
+      imageUrl={popup.image_url}
+      ctaText={popup.cta_text}
+      ctaLink={popup.cta_link}
+      onClose={close}
+    />
   );
 }

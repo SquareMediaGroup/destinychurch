@@ -14,10 +14,12 @@ const topNavItems: { href: string; icon: string; label: string; exact?: boolean 
 const announcementItems = [
   { href: "/admin/banner", label: "Banner" },
   { href: "/admin/popup", label: "Popup" },
+  { href: "/admin/featured-event", label: "Featured Event" },
+  { href: "/admin/event-popup", label: "Event Popup" },
 ];
 
 const courseItems = [
-  { href: "/admin/featured-course", label: "Featured (What's On)" },
+  { href: "/admin/featured-course", label: "Featured Course" },
   { href: "/admin/bible-course", label: "The Bible Course" },
   { href: "/admin/alpha", label: "Alpha" },
   { href: "/admin/recovery", label: "Recovery" },

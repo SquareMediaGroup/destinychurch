@@ -6,16 +6,69 @@
 // `fetchChurchSuiteEvents`; the BFF applies its own short-TTL cache. This module
 // stays framework-agnostic.
 
+/**
+ * One sized variant inside `images`. Note the URL lives on `.url` — the sibling
+ * `original_*` keys are bare strings, these are objects. Confusing the two puts
+ * an object where a URL string is expected.
+ */
+export type ChurchSuiteImageVariant = {
+  px: number;
+  square: boolean;
+  mtime: number;
+  url: string;
+};
+
+/**
+ * The `images` payload. ChurchSuite sends an empty *array* (not null, not `{}`)
+ * when an event has no artwork, so every read must guard with `Array.isArray`
+ * — use `eventImage` rather than reaching in directly.
+ */
+export type ChurchSuiteImages = {
+  thumb?: ChurchSuiteImageVariant;
+  sm?: ChurchSuiteImageVariant;
+  md?: ChurchSuiteImageVariant;
+  lg?: ChurchSuiteImageVariant;
+  original_16?: string;
+  original_100?: string;
+  original_500?: string;
+  original_1000?: string;
+  square_16?: string;
+  square_100?: string;
+};
+
 /** A single event as returned by the ChurchSuite calendar JSON embed. */
 export type ChurchSuiteEvent = {
   id: number;
   name: string;
   datetime_start: string;
   datetime_end: string;
+  /**
+   * The series key. Every occurrence of a recurring event shares one value;
+   * one-offs are null. Group by `sequence ?? id` — grouping by name merges
+   * unrelated series that happen to share a title.
+   */
+  sequence?: number | null;
   /** HTML, not plain text. Blank on most recurring services. */
   description?: string | null;
-  location?: { name?: string } | null;
-  images?: { original_500?: string; original_1000?: string; md?: string } | null;
+  category?: { id: number; name: string; color: string } | null;
+  /** "confirmed" in practice; ChurchSuite also supports pending/cancelled. */
+  status?: string;
+  public_visible?: boolean;
+  /** Null on every event in the feed today, but the field is real. */
+  capacity?: number | null;
+  pin?: number;
+  site?: { id: number; name: string; color?: string } | null;
+  location?: {
+    name?: string;
+    /** Sometimes a full address, sometimes just a postcode. Often "". */
+    address?: string;
+    type?: string;
+    url?: string | null;
+    latitude?: number | null;
+    longitude?: number | null;
+  } | null;
+  images?: ChurchSuiteImages | [] | null;
+  /** Unique per *occurrence*, not per series. The stable link/redirect key. */
   identifier?: string;
   /**
    * ChurchSuite sends "1" / "0" *strings* here, not booleans — use
@@ -24,6 +77,11 @@ export type ChurchSuiteEvent = {
   signup_options?: {
     signup_enabled?: string | boolean;
     tickets?: { enabled?: string | boolean; url?: string } | null;
+    public?: {
+      visible?: boolean;
+      enabled?: string | boolean;
+      featured?: boolean;
+    } | null;
   } | null;
 };
 
@@ -59,6 +117,25 @@ export function deduplicateEvents(events: ChurchSuiteEvent[]): DeduplicatedEvent
     ...event,
     sessionCount: count,
   }));
+}
+
+/**
+ * The best artwork URL for an event, or undefined when it has none.
+ *
+ * Guards the two shapes the feed actually uses: `images` is an empty *array*
+ * for artwork-less events, and the `thumb/sm/md/lg` entries are objects whose
+ * URL sits on `.url` (only the `original_*` keys are bare strings). Reaching in
+ * directly is how you end up passing an object to an <img src>.
+ */
+export function eventImage(
+  event: Pick<ChurchSuiteEvent, "images">,
+  size: "card" | "hero" = "card",
+): string | undefined {
+  const images = event.images;
+  if (!images || Array.isArray(images)) return undefined;
+  return size === "hero"
+    ? images.original_1000 ?? images.lg?.url ?? images.original_500 ?? images.md?.url
+    : images.original_500 ?? images.md?.url ?? images.original_1000 ?? images.lg?.url;
 }
 
 /** Public ChurchSuite page for an event (falls back to the events index). */

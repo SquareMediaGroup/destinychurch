@@ -168,7 +168,7 @@ destinychurch/
 │   ├── connect-card/              # Prayer requests & connections
 │   ├── alpha/                     # Alpha course info
 │   ├── volunteer/                 # Volunteer sign-up form
-│   ├── whats-on/                  # Events listing
+│   ├── whats-on/                  # Events listing + per-event pages ([slug])
 │   ├── annual-report-2025/        # Annual report campaign page
 │   ├── [slug]/                    # Dynamic catchall page (posts table)
 │   ├── admin/                     # Protected admin dashboard
@@ -314,7 +314,8 @@ destinychurch/
 │       ├── 20260711_02..07_*.sql  # RLS/security-advisor fixes; shop product_type; page builder + sermon hiding removed
 │       ├── 20260711_rls_harden_base_tables.sql # RLS hardening pass across base tables
 │       ├── 20260712_alpha_events_bible_course_type.sql # The Bible Course
-│       └── 20260712_02_featured_course.sql # Featured course (What's On)
+│       ├── 20260712_02_featured_course.sql # Featured course (What's On)
+│       └── 20260728_featured_event.sql   # Featured ChurchSuite event + its popup
 │
 ├── utils/                         # Utility modules
 │   ├── supabase/                  # Supabase client factories
@@ -550,6 +551,69 @@ cards, so all four are always visible. Chosen at `/admin/featured-course`.
 - `app/whats-on/page.tsx` reads it and passes `featuredId` to `CoursesSection`
 - `app/api/admin/featured-course` (GET/PUT) — PUT revalidates `/whats-on`
 - Migration `20260712_02_featured_course.sql`
+
+---
+
+#### 7b. **featured_event**
+**Purpose:** The one ChurchSuite event promoted across the site — banner on What's On, first card on the homepage, and a site-wide popup.
+
+Events are **not stored in this database** (they come live from the ChurchSuite calendar feed), so this
+holds a *pointer* to a feed event plus the copy that overrides it. `lib/events.server.ts` merges the
+overrides over live feed data at render time; anything left blank falls back to ChurchSuite.
+
+```sql
+CREATE TABLE featured_event (
+  id integer PRIMARY KEY DEFAULT 1,          -- singleton, CHECK (id = 1)
+  -- target
+  event_identifier text,                     -- ChurchSuite occurrence id — the lookup key
+  event_sequence   integer,                  -- series key (null for one-offs)
+  event_id         integer,
+  event_name       text,                     -- snapshots, for admin display and
+  event_slug       text,                     --   the feed-outage fallback
+  event_ends_at    timestamptz,
+  active        boolean NOT NULL DEFAULT false,
+  promote_from  timestamptz,                 -- optional scheduling window
+  promote_until timestamptz,
+  -- hero overrides (all nullable → fall back to the feed)
+  headline text, blurb text, image_url text, image_path text,
+  cta_text text, cta_link text,
+  -- event popup
+  popup_active boolean NOT NULL DEFAULT false,
+  popup_title text, popup_body text,
+  popup_image_url text, popup_image_path text,
+  popup_cta_text text, popup_cta_link text,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now()
+);
+-- RLS: enabled, deny-all ("service only"); server routes use the service key.
+```
+
+**Why the hero and popup share one row** rather than living in two tables: the popup must always
+advertise the same event as the hero. Two tables means either a duplicated `event_identifier` that
+drifts, or a foreign key that reduces to one row anyway — and auto-expiry plus the promote window
+have to apply identically to both surfaces. Two admin pages write to the one row, which is why
+`/api/admin/featured-event/popup` issues a **partial** update of `popup_*` only: a full-row upsert
+from that page would blank every hero override.
+
+**Constraints worth knowing:** `active` requires an `event_identifier`; `popup_active` requires
+`active` (the event-popup admin page catches this and explains it rather than surfacing a raw
+Postgres error); `promote_until > promote_from`.
+
+**Expiry** is computed in code, not SQL. The feed is forward-only, so a finished event simply stops
+appearing and the promotion ends. `event_ends_at` exists for the outage case: `fetchChurchSuiteEvents`
+returns `[]` on *any* error, which would otherwise silently un-feature the event for five minutes —
+so when the feed is empty but the stored copy is complete and the event has not ended, the hero
+renders from the snapshot.
+
+**Images** reuse the existing public `popup-images` bucket with a `featured-event-` / `event-popup-`
+filename prefix, so there is no new bucket or storage policy.
+
+**Used By:**
+- `lib/events.server.ts` — `getFeaturedEvent()`, `getActiveEventPopup()`
+- `components/events/FeaturedEventHero.tsx` (What's On), `components/home/WhatsOnSection.tsx` (carousel pin)
+- `components/events/EventPopup.tsx`, wired in `app/layout.tsx`
+- `app/api/admin/featured-event` (GET/PUT, revalidates `/whats-on` and `/`) and `.../popup` (PUT)
+- Migration `20260728_featured_event.sql`
 
 ---
 
@@ -1182,7 +1246,10 @@ Displayed on every page:
 | `/missions` | `app/missions/page.tsx` | Mission partners, outreach |
 | `/alpha` | `app/alpha/page.tsx` | Alpha course info, next event |
 | `/bible-course` | `app/bible-course/page.tsx` | The Bible Course (Bible Society), next event |
-| `/whats-on` | `app/whats-on/page.tsx` | Events listing (ChurchSuite embed) |
+| `/whats-on` | `app/whats-on/page.tsx` | Events listing — featured-event banner, then upcoming events grouped by month |
+| `/whats-on/[slug]` | `app/whats-on/[slug]/page.tsx` | On-site event page — one per ChurchSuite *series*, with all upcoming sessions, sanitised description, map link, signup and .ics |
+| `/home` | `app/home/page.tsx` | **Temporary** event-card variant preview of the homepage (`?card=a\|a-pill\|c`). noindex — delete once a variant is chosen |
+| `/whats-on/new` | `app/whats-on/new/page.tsx` | **Temporary** event-card variant preview of What's On. noindex — delete once a variant is chosen |
 | `/connect-card` | `app/connect-card/page.tsx` | Prayer requests, connection form |
 | `/jobs` | `app/jobs/page.tsx` | Job listings |
 | `/jobs/[slug]` | `app/jobs/[slug]/page.tsx` | Job detail page |
@@ -1224,6 +1291,8 @@ All admin/staff features live under a single `/admin` prefix with one login at `
 | `/admin/bible-course` | `app/admin/bible-course/page.tsx` | Manage The Bible Course events |
 | `/admin/recovery` | `app/admin/recovery/page.tsx` | Manage Recovery course events |
 | `/admin/featured-course` | `app/admin/featured-course/page.tsx` | Choose the What's On featured course |
+| `/admin/featured-event` | `app/admin/featured-event/page.tsx` | Promote one ChurchSuite event — picker plus headline/blurb/image/CTA overrides and a promote window |
+| `/admin/event-popup` | `app/admin/event-popup/page.tsx` | Copy for the popup advertising the featured event (writes `popup_*` on the same row) |
 | `/admin/hr` | `app/admin/hr/page.tsx` | HR dashboard (staff, leave, jobs, documents, reviews) — unlinked, in progress |
 | `/admin/store` | `app/admin/store/page.tsx` | Store — product list |
 | `/admin/store/products/new` | `app/admin/store/products/new/page.tsx` | Create a product (name → editor) |
@@ -1337,6 +1406,40 @@ All admin/staff features live under a single `/admin` prefix with one login at `
 
 #### Youth Ministry (`components/youth/*`)
 - Similar structure to kids
+
+#### Events (`components/events/*`)
+
+The one place event UI lives, shared by What's On, the homepage carousel and the preview routes.
+Before this existed the card was duplicated three times (`whats-on/EventsGrid`, `home/WhatsOnSection`,
+`posts/PromoRail`) and the copies had drifted.
+
+- `EventCard.tsx` — **the** event card, in three trial variants selected by a `variant` prop:
+  `a` (restrained: neutral surface, hairline border, orange kicker + CTA only — the default that
+  ships live), `a-pill` (`a` plus a category chip on the artwork), `c` (full-bleed poster, copy on a
+  `.glass` panel). Variants `a-pill` and `c` exist only for the preview routes; delete the unused
+  bodies once a variant is chosen. Server-safe (no `"use client"`, no hooks) and — importantly —
+  **never reads the clock**: filtering and month grouping happen server-side, or the client would
+  hydrate a different set of events than the server rendered at midnight and DST boundaries.
+- `EventCardArtwork.tsx` — artwork plus the two no-artwork fallbacks. Roughly half the feed has no
+  image, so the fallback is a first-class state (large date numeral, or a brand panel for `c`).
+- `EventsGrid.tsx` — the What's On grid. Receives month groups pre-filtered and pre-sorted from the
+  server and does **only** the text search. Sticky month headings; keeps `id="events"`, which
+  ChurchHeader, the footer and the sitemap all deep-link to.
+- `FeaturedEventHero.tsx` — the wide banner above the grid. Takes an *already-merged*
+  `ResolvedFeaturedEvent`, so it holds no fallback logic and renders `null` when nothing is live.
+  Sits deliberately **outside** the `#events` section so that anchor still lands on the grid.
+- `EventPopup.tsx` — the featured-event popup. `sessionStorage` (once per visit, unlike SitePopup's
+  `localStorage` once-per-visitor), keyed on `identifier:updated_at` so changing the event or editing
+  the copy re-shows it. Suppressed on `/whats-on` and the event's own page via `usePathname`, because
+  the root layout is a server component and cannot know the path.
+
+#### `PopupShell.tsx`
+
+Shared modal chrome (backdrop, close button, image, title, body, CTA, `z-[100]`, 600ms delay),
+extracted from `SitePopup` so it and `EventPopup` cannot drift visually. The *behaviour* around it
+stays with each caller. **An active event popup suppresses the site popup**: `app/layout.tsx` passes
+`null` to `<SitePopup>` whenever `getActiveEventPopup()` resolves, so only ever one modal shows and
+there is no client-side coordination to get wrong.
 
 #### Admin Components (`components/admin/*`)
 - `AdminSidebar.tsx` — Admin navigation menu
@@ -1561,10 +1664,34 @@ export async function applyForJob(jobId: string, formData: ApplicationData) {
 // 4. Return success or error
 ```
 
+#### `GET /api/admin/events`
+```typescript
+// Event picker feed for /admin/featured-event.
+// Projects the ChurchSuite index to { slug, identifier, sequence, id, name,
+// start, end, endsAt, image, category, location, sessionCount }.
+// force-dynamic — admin must never see a stale list.
+```
+
+#### `GET|PUT /api/admin/featured-event`
+```typescript
+// Read/write the featured_event singleton: target + hero overrides.
+// PUT deletes the superseded image from `popup-images`, then
+// revalidatePath("/whats-on") and revalidatePath("/").
+// Deliberately never writes popup_* — see /api/admin/featured-event/popup.
+```
+
+#### `PUT /api/admin/featured-event/popup`
+```typescript
+// Partial update of the popup_* columns only. A full-row upsert from the
+// event-popup admin page would blank every hero override.
+// Rejects popup_active when no event is featured, with a readable message.
+// No revalidatePath — app/layout.tsx reads the popup with noStore().
+```
+
 #### `POST /api/admin/popup/upload`
 ```typescript
-// Upload image for pop-up
-// FormData: { file: File }
+// Upload image for pop-up (also used by the featured-event admin)
+// FormData: { file: File, prefix?: "popup" | "featured-event" | "event-popup" }
 // Logic:
 // 1. Check auth
 // 2. Upload to storage bucket
@@ -2098,6 +2225,19 @@ export async function getUserCourseProgress(userId: string) {
 
 ---
 
+### `lib/events.ts` & `lib/events.server.ts`
+
+`lib/events.ts` is client-safe: the `EventCardVariant` union, `parseCardVariant` for the preview
+routes' `?card=` param, and `RESERVED_EVENT_SLUGS` (currently `{"new"}`, because `app/whats-on/new/`
+statically shadows `[slug]`).
+
+`lib/events.server.ts` is `server-only` and holds everything touching the feed or Supabase:
+- `getEventIndex()` — fetch + `buildEventIndex`, `revalidate: 300`
+- `getFeaturedEvent()` — merges admin overrides over live feed data, applies the promote window and
+  auto-expiry, and handles the feed-outage snapshot fallback
+- `getActiveEventPopup()` — the same row projected for the popup; returning non-null is what
+  suppresses the generic site popup
+
 ### `lib/jobs.ts` & `lib/hr.ts`
 
 Similar patterns for job listings and HR management.
@@ -2553,10 +2693,29 @@ ENABLE_SMART_SEARCH=true
 - **`packages/shared/`** (`@destiny/shared`) is an npm workspace of framework-agnostic
   types/logic shared by the web app, the mobile app, and the App BFF. It ships raw TypeScript
   (Next transpiles it via `transpilePackages: ["@destiny/shared"]`). Modules:
-  `src/churchsuite/events.ts` (`ChurchSuiteEvent`, `deduplicateEvents`, `fetchChurchSuiteEvents`,
-  `churchSuiteEventUrl` — de-duplicating logic previously copied across the whats-on/home events
-  UI) and `src/design/tokens.ts` (canonical DC brand palette/typography — pillar colours, accent,
-  gradient — matching `app/globals.css`).
+  - `src/churchsuite/events.ts` — `ChurchSuiteEvent`, `deduplicateEvents`, `fetchChurchSuiteEvents`,
+    `churchSuiteEventUrl`, `eventSignupUrl`, `stripEmoji`, `eventDescriptionText`, and `eventImage`.
+    Two feed shapes to be careful with: `images` is an empty **array** when an event has no artwork,
+    and the `thumb/sm/md/lg` entries are *objects* whose URL sits on `.url` (only the `original_*`
+    keys are bare strings) — always go through `eventImage`, which guards both.
+  - `src/churchsuite/dates.ts` — `parseFeedDate` and friends. The feed sends
+    `"2026-07-30 00:00:00"` (a space, not `T`), which Safari parses as Invalid Date, so **every**
+    read of a feed timestamp goes through `parseFeedDate` and that fix lives in one place.
+    `isUpcoming` compares `datetime_end`, so a multiday event already in progress stays visible.
+  - `src/churchsuite/series.ts` — `buildEventIndex`, the single source of truth for event slugs
+    (grid, cards, detail pages, `generateStaticParams`, sitemap and the admin picker all read it).
+    Groups occurrences by `sequence ?? id` — ChurchSuite's `sequence` is the series key, so the
+    seven "Destiny 12:2" rows collapse to one entry. Slugs are assigned in date order, so the
+    soonest event wins a contested name and later claimants take an identifier suffix.
+  - `src/churchsuite/sanitize.ts` — `sanitizeEventHtml`. An allowlist rewriter that drops every
+    attribute except a validated `href`, because the live feed carries `class="branded"` and
+    `style="color:#f9c100"` (invisible on white) written against ChurchSuite's own stylesheet.
+    Dependency-free on purpose: `isomorphic-dompurify` drags jsdom into the server bundle, which is
+    the trap commit `2185023` had to unwind at the 250MB function limit.
+  - `src/churchsuite/ics.ts` — `buildIcs`. Emits local wall-clock times with `TZID=Europe/London`
+    plus a `VTIMEZONE` block rather than converting to UTC, so DST is the calendar client's problem.
+  - `src/design/tokens.ts` — canonical DC brand palette/typography (pillar colours, accent,
+    gradient), matching `app/globals.css`.
 - **`docs/mobile-app-scope.md`** (+ printable `docs/mobile-app-scope.pdf`) remains the scoping
   document — BFF architecture, a self-hosted Matrix homeserver for group chat with safeguarding
   constraints (adult/minor boundary via ChurchSuite DOB data), ChurchSuite API integration, and
@@ -2566,9 +2725,9 @@ ENABLE_SMART_SEARCH=true
   planning-only.
 
 ### Database Migrations
-- **34 migration files** defining schema for:
+- **35 migration files** defining schema for:
   - URL redirects, hidden videos (removed), site content (banners, pop-ups, page_content)
-  - Event management (Alpha course, Bible Course, Recovery, featured course)
+  - Event management (Alpha course, Bible Course, Recovery, featured course, featured event)
   - HR management (staff, leave, documents, reviews)
   - Job listings & applications
   - Feature flags, staff login audit

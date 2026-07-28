@@ -13,17 +13,16 @@
 // gutters fit without narrowing the article. See the grid in app/[slug]/page.tsx.
 
 import {
-  churchSuiteEventUrl,
-  deduplicateEvents,
   eventDescriptionText,
+  eventImage,
   eventSignupUrl,
-  fetchChurchSuiteEvents,
+  parseFeedDate,
   stripEmoji,
-  type ChurchSuiteEvent,
-  type DeduplicatedEvent,
+  type EventSeries,
 } from "@destiny/shared";
 import { COURSES, COURSE_ORDER, COURSE_PALETTES } from "@/lib/courses";
 import { getFeaturedCourseId } from "@/lib/courses.server";
+import { getEventIndex } from "@/lib/events.server";
 import { paletteForImage } from "@/lib/promo-palette.server";
 import PromoRail, { type PromoCard } from "./PromoRail";
 
@@ -33,67 +32,58 @@ const MAX_EVENTS = 5;
 /** Roughly six lines in the card — long feed descriptions run to 1200+ chars. */
 const DESCRIPTION_LIMIT = 240;
 
-/** Same image fallback chain the existing event cards use. */
-function eventImage(event: DeduplicatedEvent): string | undefined {
-  return event.images?.original_500 || event.images?.md;
-}
-
 /** "Thursday, 30-Jul-2026" — formatted server-side so hydration can't disagree. */
 function formatDate(value: string): string {
-  const date = new Date(value.replace(" ", "T"));
+  const date = parseFeedDate(value);
   const weekday = date.toLocaleDateString("en-GB", { weekday: "long" });
   const day = String(date.getDate()).padStart(2, "0");
   const month = date.toLocaleDateString("en-GB", { month: "short" });
   return `${weekday}, ${day}-${month}-${date.getFullYear()}`;
 }
 
-const byStart = (a: DeduplicatedEvent, b: DeduplicatedEvent) =>
-  new Date(a.datetime_start).getTime() - new Date(b.datetime_start).getTime();
-
 /**
- * The events the left rail should cycle through. Reads the clock, so it lives
- * outside the component — calling `Date.now()` during render is impure.
+ * Which series the left rail cycles through. `getEventIndex` has already
+ * dropped past events and collapsed recurring sessions, so this only picks.
  */
-function selectRailEvents(raw: ChurchSuiteEvent[]): DeduplicatedEvent[] {
-  const now = Date.now();
-
-  // Unlike EventsGrid / WhatsOnSection this filters to future events — a past
-  // event in a promo card just looks broken.
-  const upcoming = deduplicateEvents(raw)
-    .filter((e) => new Date(e.datetime_start.replace(" ", "T")).getTime() >= now)
-    .sort(byStart)
-    .slice(0, MAX_EVENTS * 2);
-
+function selectRailEvents(series: EventSeries[]): EventSeries[] {
   // The card is mostly artwork and description, so events carrying both promote
   // far better. Prefer them for the slots, then show in date order.
-  const score = (e: DeduplicatedEvent) =>
-    (eventImage(e) ? 2 : 0) + (eventDescriptionText(e) ? 1 : 0);
+  const score = (s: EventSeries) =>
+    (eventImage(s.primary) ? 2 : 0) + (eventDescriptionText(s.primary) ? 1 : 0);
 
-  return [...upcoming]
+  return series
+    .slice(0, MAX_EVENTS * 2)
     .sort((a, b) => score(b) - score(a))
     .slice(0, MAX_EVENTS)
-    .sort(byStart);
+    .sort(
+      (a, b) =>
+        parseFeedDate(a.primary.datetime_start).getTime() -
+        parseFeedDate(b.primary.datetime_start).getTime(),
+    );
 }
 
 /** Left rail — upcoming ChurchSuite events. */
 export async function EventsRail() {
-  const raw = await fetchChurchSuiteEvents({ next: { revalidate: 300 } });
-  const chosen = selectRailEvents(raw);
+  const { series } = await getEventIndex();
+  const chosen = selectRailEvents(series);
 
   // The feed returns [] on any error, so this is also the degraded state.
   if (chosen.length === 0) return null;
 
   const cards: PromoCard[] = await Promise.all(
-    chosen.map(async (event) => {
+    chosen.map(async (item) => {
+      const event = item.primary;
       const image = eventImage(event);
       const signupUrl = eventSignupUrl(event);
       const start = formatDate(event.datetime_start);
       const end = formatDate(event.datetime_end);
 
       return {
-        id: String(event.id),
-        href: signupUrl ?? churchSuiteEventUrl(event.identifier),
-        external: true,
+        id: item.seriesKey,
+        // Points at the on-site event page now rather than off to ChurchSuite;
+        // the signup link is one click further in, on the page itself.
+        href: `/whats-on/${item.slug}`,
+        external: false,
         image,
         // Event names are ChurchSuite-authored too, so they can carry emoji.
         title: stripEmoji(event.name),

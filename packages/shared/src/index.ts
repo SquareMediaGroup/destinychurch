@@ -4,4 +4,8 @@
 // (no `next`, no React, no react-native) so every consumer can use it.
 
 export * from "./churchsuite/events";
+export * from "./churchsuite/dates";
+export * from "./churchsuite/series";
+export * from "./churchsuite/sanitize";
+export * from "./churchsuite/ics";
 export * from "./design/tokens";

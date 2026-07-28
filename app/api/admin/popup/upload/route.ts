@@ -38,7 +38,17 @@ export async function POST(request: Request) {
   const ext = file.name.includes(".")
     ? file.name.split(".").pop()!.toLowerCase()
     : "bin";
-  const path = `popup-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+
+  // The featured-event admin shares this bucket and route; `prefix` just
+  // namespaces the filename so the two sets of images stay tellable apart.
+  // Allowlisted rather than interpolated so it can't escape into a path.
+  const requested = form.get("prefix");
+  const prefix =
+    requested === "featured-event" || requested === "event-popup"
+      ? String(requested)
+      : "popup";
+
+  const path = `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
 
   const supabase = createServiceClient();
   const buffer = Buffer.from(await file.arrayBuffer());

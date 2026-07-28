@@ -1,7 +1,7 @@
 # Destiny Church Tees Valley — Complete Repository Documentation
 
-**Version:** 1.0.5  
-**Last Updated:** July 24, 2026  
+**Version:** 1.0.6  
+**Last Updated:** July 28, 2026  
 **Repository:** Square Media Group — destinychurch  
 
 This document provides a comprehensive explanation of every major component, line of code purpose, architecture decisions, and how the system works from end-to-end.
@@ -850,6 +850,7 @@ CREATE TABLE training_posts (
 **Used By:**
 - `lib/training.server.ts` (`getTrainingTree`) for the public `/training` tree
 - `app/api/training/unlock` to verify a sub-group password
+- `app/api/training/posts/[id]/timer` to enforce `min_read_seconds` before a post can be marked complete (HMAC-signed read timer; see Training API)
 - `app/api/admin/training/{categories,subgroups,folders,posts}` CRUD, admin dashboard
 
 ---
@@ -1349,6 +1350,15 @@ All admin/staff features live under a single `/admin` prefix with one login at `
 > (migration `20260711_07_remove_sermon_hiding.sql`), and the earlier page-builder/
 > Studio editor (`PageEditor.tsx`'s likely origin) was removed by `20260711_06_remove_page_builder.sql`.
 
+#### Public Training Components (`components/training/*`)
+The member-facing pieces of the `/training` resource library.
+
+- `PasswordGate.tsx` — **Client.** Shown in place of a sub-group's content until the correct password is entered; on success the server sets a signed unlock cookie (via `/api/training/unlock`) and the route refreshes to render the real content server-side.
+- `CompleteButton.tsx` — **Client.** "Mark complete" control on a post. When `min_read_seconds > 0` it drives the HMAC read timer (`/api/training/posts/[id]/timer`): it `start`s a token on mount, counts down, and only allows completion once the server `verify`s the minimum read time.
+- `CompletablePostList.tsx` — **Client.** Post list with a per-post completion indicator, kept in sync with the hero progress bar via the shared completed set.
+- `TrainingProgress.tsx` — **Client.** Completion progress bar in the sub-group hero — shows how many of the group's posts are done.
+- `useTrainingProgress.ts` — Per-browser completion store in `localStorage` (no per-user accounts; trainees share a group password). Exposes `useCompletedSet()` and `toggleCompleted()`; starts empty on first render to avoid hydration mismatch, then fills in after mount and stays reactive across tabs via a custom event + the `storage` event.
+
 #### Admin Content/Training/HR Components (`components/admin/{posts,training,hr}/*`)
 - `posts/PostEditor.tsx` — Standalone page editor (uses `RichTextEditor`)
 - `training/PostEditor.tsx` — Training post editor (uses `RichTextEditor`)
@@ -1680,6 +1690,28 @@ export async function applyForJob(jobId: string, formData: ApplicationData) {
 //
 // app/layout.tsx reads isSmartSearchEnabled() to decide whether to mount
 // FloatingSmartSearch, so a disabled service simply hides the feature site-wide.
+```
+
+#### Training API
+
+```typescript
+// PUBLIC (outside the middleware matcher)
+POST /api/training/unlock
+//   Body: { subgroupId, password }. Verifies a sub-group password against the
+//   hashed password_hash (server-side only; the hash is never sent to clients).
+//   On success sets a scoped cookie so the gated sub-group's posts render.
+
+POST /api/training/posts/[id]/timer
+//   Enforces a training post's min_read_seconds "minimum read time" before the
+//   member can mark it complete. Stateless — no DB writes; state rides an
+//   HMAC-signed, base64url token so it survives across serverless instances.
+//     action: "start"  → returns { token } signed over { postId, startedAt }.
+//     action: "verify" → re-checks the token (timingSafeEqual) and postId, then
+//                        compares elapsed time to minReadSeconds. Returns
+//                        { success:true } once met, else 403 with { remaining }.
+//   HMAC key precedence: TRAINING_TIMER_SECRET → HMAC of SUPABASE_SERVICE_ROLE_KEY
+//   (never used raw) → a per-boot random key (last resort, instance-local).
+//   Driven by components/training/CompleteButton.tsx on the training post page.
 ```
 
 #### Shop API
@@ -2492,7 +2524,7 @@ ENABLE_SMART_SEARCH=true
 
 ### API Routes (`app/api/`)
 - **Admin endpoints:** Banners, redirects, pop-ups, cache revalidation, posts, training, alpha-events, featured-course, HR, store management
-- **Public endpoints:** `/api/chat` (Smart Search tool-calling chat, Turnstile-gated), `/api/turnstile/verify` (Cloudflare Turnstile token check), YouTube (videos/status/thumbnail/live), Alpha info, training unlock
+- **Public endpoints:** `/api/chat` (Smart Search tool-calling chat, Turnstile-gated), `/api/turnstile/verify` (Cloudflare Turnstile token check), YouTube (videos/status/thumbnail/live), Alpha info, training unlock + read timer (`/api/training/posts/[id]/timer`)
 - **Store endpoints:** Stripe checkout + Payment Element, order management
 - **Webhooks:** Stripe only (`/api/webhooks/stripe`) — no GitHub or Vercel deployment webhook route
 - **App BFF (`/api/app/*`):** Backend-for-frontend routes serving the mobile app. `/api/app/events`

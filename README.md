@@ -11,7 +11,7 @@ Designed, engineered, and deployed by [Square Media Group](mailto:hello@squareme
 ## Features
 
 - Sermon streaming and archive with series/speaker filtering and live-stream banner
-- Events and "What's On" listings, with a swappable featured course
+- Events and "What's On" listings — unified event cards, on-site event pages, a swappable featured event/course, ICS calendar downloads, and on-site ChurchSuite signup
 - Ministry pages (Kids/DC Kids, Youth, Young Adults, Missions, Connect groups)
 - The Bible Course and Alpha journeys, including Alpha signup and event management
 - Merchandise shop with Stripe checkout (cards, Apple Pay, Google Pay, Link) and category filtering

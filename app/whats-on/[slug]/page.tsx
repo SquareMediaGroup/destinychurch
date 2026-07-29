@@ -21,6 +21,7 @@ import {
   type EventIndex,
   type EventSeries,
 } from "@destiny/shared";
+import EventSignupButton from "@/components/events/EventSignupButton";
 import { getEventIndex } from "@/lib/events.server";
 
 export const revalidate = 300;
@@ -293,14 +294,17 @@ export default async function EventPage({ params }: Props) {
         )}
 
         <section className="mt-10 flex flex-wrap items-center gap-3">
-          <a
-            href={signup ?? `https://destinytees.churchsuite.com/events/${event.identifier ?? ""}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center justify-center rounded-full bg-destiny-orange px-7 py-3 text-sm font-bold text-white shadow-sm shadow-destiny-orange/20 transition hover:brightness-110"
-          >
-            {signup ? "Sign up" : "View on ChurchSuite"}
-          </a>
+          {/* Opens in a modal rather than sending people to ChurchSuite; the
+              whole multi-step signup runs inside it. */}
+          <EventSignupButton
+            url={
+              signup ??
+              `https://destinytees.churchsuite.com/events/${event.identifier ?? ""}`
+            }
+            label={signup ? "Sign up" : "View details"}
+            eventName={series.name}
+            subtitle={formatDateRange(event)}
+          />
           <a
             href={`/api/events/${series.slug}/ics`}
             className="inline-flex items-center justify-center rounded-full border border-black/10 px-7 py-3 text-sm font-bold text-destiny-grey transition hover:bg-[#f5f7fa]"

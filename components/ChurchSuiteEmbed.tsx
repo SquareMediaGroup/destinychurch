@@ -7,13 +7,31 @@ interface Props {
   title: string;
   height?: number;
   minHeight?: number;
+  /**
+   * Fill the parent's height instead of taking a fixed one, so the embedded
+   * page scrolls inside itself. Used by the event modal, where the content is
+   * arbitrarily long (description + ticket picker + a multi-step form) and a
+   * fixed height would mean either dead space or two nested scrollbars.
+   */
+  fill?: boolean;
   className?: string;
 }
 
-export default function ChurchSuiteEmbed({ src, title, height, minHeight, className }: Props) {
+export default function ChurchSuiteEmbed({
+  src,
+  title,
+  height,
+  minHeight,
+  fill,
+  className,
+}: Props) {
   const [loaded, setLoaded] = useState(false);
 
-  const sizeStyle = height ? { height } : { minHeight: minHeight ?? 500 };
+  const sizeStyle = fill
+    ? { height: "100%" }
+    : height
+      ? { height }
+      : { minHeight: minHeight ?? 500 };
 
   return (
     <div className={`relative overflow-hidden ${className ?? ""}`} style={sizeStyle}>

@@ -1432,6 +1432,19 @@ Before this existed the card was duplicated three times (`whats-on/EventsGrid`, 
   `localStorage` once-per-visitor), keyed on `identifier:updated_at` so changing the event or editing
   the copy re-shows it. Suppressed on `/whats-on` and the event's own page via `usePathname`, because
   the root layout is a server component and cannot know the path.
+- `EventSignupButton.tsx` — the event page's primary CTA. Opens the ChurchSuite event **in a modal**
+  (`AlphaSignupModal` at `size="lg"`) instead of a new tab, so the whole multi-step signup — ticket
+  picker, details form, confirmation — completes without leaving the site. ChurchSuite's own event
+  pages frame fine and submit over AJAX. Third-party ticket URLs (Eventbrite and friends) send
+  `X-Frame-Options: DENY`, so any non-`churchsuite.com` host keeps the old new-tab link.
+
+#### `AlphaSignupModal.tsx` / `ChurchSuiteEmbed.tsx`
+
+The one ChurchSuite-in-a-modal treatment, used by the course pages and now by every event.
+`size="lg"` gives a `h-[88vh] max-w-3xl` panel whose embed **fills** it (`ChurchSuiteEmbed fill`)
+rather than taking a fixed height: an event page is arbitrarily long, and a fixed height would mean
+either dead space or two nested scrollbars. The default `md` size keeps the fixed 620px box the
+course forms were built against.
 
 #### `PopupShell.tsx`
 

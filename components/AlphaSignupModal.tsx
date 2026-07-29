@@ -10,6 +10,12 @@ interface Props {
   signupUrl: string;
   title: string;
   subtitle?: string;
+  /**
+   * `lg` widens the panel and lets the embed scroll inside it. Course signup
+   * forms fit the default 620px box; a full ChurchSuite event page (artwork,
+   * description, ticket picker, then the form) does not.
+   */
+  size?: "md" | "lg";
 }
 
 export default function AlphaSignupModal({
@@ -18,6 +24,7 @@ export default function AlphaSignupModal({
   signupUrl,
   title,
   subtitle,
+  size = "md",
 }: Props) {
   const [visible, setVisible] = useState(false);
   const [mounted, setMounted] = useState(false);
@@ -61,7 +68,11 @@ export default function AlphaSignupModal({
       onClick={onClose}
     >
       <div
-        className="relative w-full max-w-2xl overflow-hidden rounded-3xl bg-white shadow-2xl"
+        className={`relative flex w-full flex-col overflow-hidden rounded-3xl bg-white shadow-2xl ${
+          // A definite height, not max-h: the embed fills it, and percentage
+          // heights don't resolve against an auto-height parent.
+          size === "lg" ? "h-[88vh] max-w-3xl" : "max-w-2xl"
+        }`}
         style={{
           transform: visible ? "scale(1)" : "scale(0.92)",
           opacity: visible ? 1 : 0,
@@ -70,7 +81,7 @@ export default function AlphaSignupModal({
         }}
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between border-b border-black/5 px-6 py-4">
+        <div className="flex shrink-0 items-center justify-between border-b border-black/5 px-6 py-4">
           <div>
             <p className="font-black text-destiny-grey">{title}</p>
             {subtitle && (
@@ -85,7 +96,13 @@ export default function AlphaSignupModal({
             <span className="material-symbols-rounded text-xl">close</span>
           </button>
         </div>
-        <ChurchSuiteEmbed src={signupUrl} title={title} height={620} />
+        {size === "lg" ? (
+          <div className="min-h-0 flex-1">
+            <ChurchSuiteEmbed src={signupUrl} title={title} fill className="h-full" />
+          </div>
+        ) : (
+          <ChurchSuiteEmbed src={signupUrl} title={title} height={620} />
+        )}
       </div>
     </div>,
     document.body

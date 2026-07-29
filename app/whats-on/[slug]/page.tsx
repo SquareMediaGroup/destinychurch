@@ -304,6 +304,7 @@ export default async function EventPage({ params }: Props) {
             label={signup ? "Sign up" : "View details"}
             eventName={series.name}
             subtitle={formatDateRange(event)}
+            jumpToSignup={Boolean(signup)}
           />
           <a
             href={`/api/events/${series.slug}/ics`}

@@ -1437,6 +1437,12 @@ Before this existed the card was duplicated three times (`whats-on/EventsGrid`, 
   picker, details form, confirmation — completes without leaving the site. ChurchSuite's own event
   pages frame fine and submit over AJAX. Third-party ticket URLs (Eventbrite and friends) send
   `X-Frame-Options: DENY`, so any non-`churchsuite.com` host keeps the old new-tab link.
+  When the event takes signups the embed loads at `#form_event_signup`, so it opens scrolled past
+  the artwork, dates, description and map that the page around the modal already shows. A fragment
+  is the only lever available — the iframe is cross-origin, so its DOM is opaque to our CSS and JS,
+  and none of ChurchSuite's URL variants (`/embed/events/…`, `/events/…/signup`, `?embedded=1`)
+  serve a signup-only view; all return the identical full page. Events with signups closed have no
+  such element and open at the top, which is the right fallback.
 
 #### `AlphaSignupModal.tsx` / `ChurchSuiteEmbed.tsx`
 

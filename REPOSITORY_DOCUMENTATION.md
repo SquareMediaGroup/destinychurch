@@ -1785,6 +1785,22 @@ export async function applyForJob(jobId: string, formData: ApplicationData) {
 // is `${timestamp}.${hmac}` checked with a timing-safe comparison.
 ```
 
+#### `GET /api/events/[slug]/ics`
+```typescript
+// Calendar download for an event series — the .ics link on every /whats-on/[slug]
+// page and event card. Public and outside the /api/admin/* matcher: it serves only
+// what the ChurchSuite feed already publishes, so it needs no auth.
+// Logic:
+// 1. getEventIndex() (lib/events.server.ts), then resolve `slug` via bySlug with the
+//    same identifier fallback as the event page (a `-<identifier>` suffix on a
+//    renamed/disambiguated URL still downloads instead of 404ing). 404 if unmatched.
+// 2. buildIcs({ series, occurrence, baseUrl }) from @destiny/shared builds the VCALENDAR.
+//    Without ?occurrence= the file contains every upcoming session, so subscribing to a
+//    recurring event adds the whole run at once; ?occurrence=<id> narrows it to one.
+// 3. Returns text/calendar as an attachment (filename `<slug>.ics`).
+// revalidate = 300; Cache-Control public, s-maxage=300, stale-while-revalidate=600.
+```
+
 #### `GET /api/youtube/videos`
 ```typescript
 // Returns getAllVideos(50) — the sermon archive's video list (lib/youtube.ts).

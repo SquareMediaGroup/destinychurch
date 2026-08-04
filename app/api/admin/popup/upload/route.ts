@@ -39,12 +39,14 @@ export async function POST(request: Request) {
     ? file.name.split(".").pop()!.toLowerCase()
     : "bin";
 
-  // The featured-event admin shares this bucket and route; `prefix` just
-  // namespaces the filename so the two sets of images stay tellable apart.
+  // The featured-event and NFC-tile admins share this bucket and route; `prefix`
+  // just namespaces the filename so the sets of images stay tellable apart.
   // Allowlisted rather than interpolated so it can't escape into a path.
   const requested = form.get("prefix");
   const prefix =
-    requested === "featured-event" || requested === "event-popup"
+    requested === "featured-event" ||
+    requested === "event-popup" ||
+    requested === "nfc"
       ? String(requested)
       : "popup";
 

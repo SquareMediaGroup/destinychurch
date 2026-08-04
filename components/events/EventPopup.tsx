@@ -8,7 +8,7 @@
 //   rather than once ever. Event promotion is time-boxed; a returning visitor
 //   next week should see it again.
 //
-//   Placement — suppressed on /whats-on and on the event's own page, where the
+//   Placement — suppressed on /nfc, on /whats-on and on the event's own page, where the
 //   promo would be telling people about something they are already looking at.
 //   The root layout is a server component and can't know the path, and a route
 //   group would mean duplicating the whole layout, so the check happens here
@@ -31,6 +31,8 @@ function isExcluded(pathname: string, eventSlug: string): boolean {
     path === "/whats-on" ||
     // Temporary: the card-variant preview route. Remove with app/whats-on/new/.
     path === "/whats-on/new" ||
+    // The in-service NFC page is chrome-free and already a grid of popups.
+    path === "/nfc" ||
     (Boolean(eventSlug) && path === `/whats-on/${eventSlug}`)
   );
 }

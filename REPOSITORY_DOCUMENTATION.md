@@ -643,6 +643,43 @@ CREATE TABLE site_popup (
 
 ---
 
+#### 9. **nfc_tiles**
+**Purpose:** The admin-managed tiles on `/nfc`, the "digital back of seats" page
+
+```sql
+CREATE TABLE nfc_tiles (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  active boolean NOT NULL DEFAULT true,
+  sort_order integer NOT NULL DEFAULT 0,
+  title text NOT NULL,                 -- ≤ 60 chars (DB check)
+  subtitle text,                       -- ≤ 90 chars, the line under the title on the card
+  icon text NOT NULL DEFAULT 'star',   -- Material Symbols Rounded ligature
+  mode text NOT NULL DEFAULT 'info'    -- 'embed' = ChurchSuite form, 'info' = copy + CTA
+    CHECK (mode IN ('embed','info')),
+  embed_url text,                      -- Required when mode = 'embed' (DB check)
+  embed_size text NOT NULL DEFAULT 'md' CHECK (embed_size IN ('md','lg')),
+  body text,                           -- ≤ 600 chars, mode = 'info'
+  image_url text, image_path text,     -- Shared `popup-images` bucket, `nfc-` prefix
+  cta_text text, cta_link text,        -- Link through to a full page on the site
+  created_at timestamptz DEFAULT now(),
+  updated_at timestamptz DEFAULT now()
+);
+
+-- RLS: public read of active rows; writes service-role only
+```
+
+**Why the two fixtures aren't rows:** Connect Card and Giving are hardcoded as `PINNED_TILES` in
+`lib/nfcTiles.ts` and always render first. They have to survive an empty table, an unrun migration,
+or a Supabase blip ten minutes into a service — and a row with a delete button next to it is a row
+that eventually gets deleted. `/admin/nfc` shows them as read-only "Always shown" entries so it's
+obvious why they can't be edited there.
+
+**Used By:**
+- `lib/nfcTiles.ts` → `getNfcTiles()`, read by `app/nfc/page.tsx`
+- `app/api/admin/nfc/route.ts` + `app/admin/nfc/page.tsx` for CRUD
+
+---
+
 #### 10. **hr_staff**
 **Purpose:** Employee/volunteer directory
 
@@ -1036,6 +1073,7 @@ All tables have RLS enabled. Access rules:
 | alpha_events | Yes | - | Yes | Public event dates |
 | featured_course | - | - | Yes | Featured course setting (read via server component) |
 | site_popup | - | - | Yes | Protect pop-up content |
+| nfc_tiles | Yes | - | Yes | Public tiles on /nfc (read via server component) |
 | hr_* (staff, leave, reviews, docs) | - | - | Yes | Sensitive HR data |
 | jobs | Yes | - | Yes | Public listings |
 | job_applications | - | - | Yes | Protect applications |
@@ -1259,6 +1297,7 @@ Displayed on every page:
 | `/volunteer` | `app/volunteer/page.tsx` | Volunteer sign-up form |
 | `/help` | `app/help/page.tsx` | Help centre / FAQ |
 | `/links` | `app/links/page.tsx` | "Next Steps" link-in-bio style page |
+| `/nfc` | `app/nfc/page.tsx` | "Digital back of seats" — what an NFC tag or QR code on a seat opens during a service. Standalone (no header, footer, site popup or smart search) and `noindex`. Connect Card and Giving are hardcoded fixtures; everything else comes from `nfc_tiles` |
 | `/destiny-recovery` | `app/destiny-recovery/page.tsx` | Recovery course info page |
 | `/dckids` | `app/dckids/page.tsx` | Destiny Kids Camp 2026 campaign page |
 | `/accessibility` | `app/accessibility/page.tsx` | Reduced-motion / glass-FX preferences (client component) |
@@ -1293,6 +1332,7 @@ All admin/staff features live under a single `/admin` prefix with one login at `
 | `/admin/featured-course` | `app/admin/featured-course/page.tsx` | Choose the What's On featured course |
 | `/admin/featured-event` | `app/admin/featured-event/page.tsx` | Promote one ChurchSuite event — picker plus headline/blurb/image/CTA overrides and a promote window |
 | `/admin/event-popup` | `app/admin/event-popup/page.tsx` | Copy for the popup advertising the featured event (writes `popup_*` on the same row) |
+| `/admin/nfc` | `app/admin/nfc/page.tsx` | Tiles on the `/nfc` page — add/edit/reorder/hide, either a ChurchSuite form embed or artwork + copy + CTA |
 | `/admin/hr` | `app/admin/hr/page.tsx` | HR dashboard (staff, leave, jobs, documents, reviews) — unlinked, in progress |
 | `/admin/store` | `app/admin/store/page.tsx` | Store — product list |
 | `/admin/store/products/new` | `app/admin/store/products/new/page.tsx` | Create a product (name → editor) |
@@ -1541,6 +1581,29 @@ DOM and placed with `col-start-2`, so promo content never precedes it for crawle
 readers. **Do not add `self-start`/`h-fit` to the rail `<aside>`** — the grid's default stretch
 is what gives the sticky card its scroll range; hugging the content silently disables sticky.
 
+#### NFC Page (`components/nfc/*`)
+
+The tiles on `/nfc` — the "digital back of seats" page an NFC tag or QR code on a seat opens.
+
+- `NfcTileGrid.tsx` — the card grid. Cards are `<button>`s, not links: everything opens in place,
+  because the page exists to be finished before the next song starts. Holds the open-tile state and
+  the ref to the invoking card so focus can be restored on close.
+- `NfcTileModal.tsx` — the popup. Two modes: `embed` frames a ChurchSuite form (`ChurchSuiteEmbed`)
+  with the "more details" link hung off the bottom, so the popup answers the question *and* the full
+  page stays one tap away; `info` shows artwork + copy + an orange CTA, the `PopupShell` layout.
+  Unlike the four older copies of this modal (`AlphaSignupModal`, `ConnectCardCTAs`, `GiveCTA`,
+  `YouSaidYesButton`) it has real dialog semantics — `role="dialog"`, `aria-labelledby`, focus in on
+  open, focus restored on close, and a Tab trap — because `/nfc` is the one page used cold by people
+  who have never been to the site. Its entrance is a CSS keyframe (`.nfc-modal-*` in `globals.css`)
+  rather than the visible-state-plus-double-rAF the others use: closing unmounts immediately, so the
+  entrance was the only transition that ever ran.
+
+**Chrome suppression.** `/nfc` is deliberately standalone. Four components carry the path check:
+`ChurchHeader.tsx`, `FooterGate.tsx`, `FloatingSmartSearch.tsx`, and both popups (`SitePopup.tsx`,
+`events/EventPopup.tsx`). The popups matter most — an announcement auto-opening on top of a tile
+popup, mid-service, is the one failure this page can't afford. The cookie banner and site banners
+stay: they're consent and legal, not chrome.
+
 #### Connect Card (`components/connect-card/*`)
 - `ConnectCardCTAs.tsx` — Call-to-action buttons
 - The prayer/connection form itself is built inline in `app/connect-card/page.tsx`, not a separate component
@@ -1710,12 +1773,32 @@ export async function applyForJob(jobId: string, formData: ApplicationData) {
 #### `POST /api/admin/popup/upload`
 ```typescript
 // Upload image for pop-up (also used by the featured-event admin)
-// FormData: { file: File, prefix?: "popup" | "featured-event" | "event-popup" }
+// FormData: { file: File, prefix?: "popup" | "featured-event" | "event-popup" | "nfc" }
+// `prefix` is allowlisted rather than interpolated so it can't escape into a path.
 // Logic:
 // 1. Check auth
 // 2. Upload to storage bucket
 // 3. Return public URL or signed URL
 // 4. Admin uses URL in pop-up form
+```
+
+#### `GET|POST|PUT|DELETE /api/admin/nfc`
+```typescript
+// CRUD for the nfc_tiles rows behind /nfc. Auth is free: middleware.ts matches
+// /api/admin/:path*, so an unauthenticated caller never reaches the handler.
+//
+// Writes go through one buildPayload() validator so POST and PUT can't drift:
+//   - mode = "embed" requires an embed_url that passes isEmbeddable()
+//     (hostname ends with churchsuite.com). Anything else sets X-Frame-Options
+//     and would render as a blank white box, so it's rejected with a sentence
+//     telling the admin to use a details tile instead.
+//   - cta_link must start with "/" or "https://".
+//   - Length limits mirror the DB checks so the admin gets a readable error
+//     rather than a Postgres constraint string.
+//
+// PUT/DELETE remove the superseded image from `popup-images` only *after* the
+// row write succeeds, so a failed write can't orphan the live artwork.
+// No revalidatePath — getNfcTiles() reads with noStore().
 ```
 
 #### `POST /api/admin/revalidate`
@@ -2108,6 +2191,27 @@ KNOWLEDGE:
 2. **Limits links** — Only allows pages we've defined
 3. **Consistent tone** — Friendly, warm, not corporate
 4. **Scalable** — Easy to update facts without retraining
+
+---
+
+### `lib/nfcTiles.ts`
+
+The tile list behind `/nfc`.
+
+```typescript
+export const PINNED_TILES: NfcTile[];              // Connect Card, Giving — always first
+export function isEmbeddable(url: string): boolean; // hostname ends with churchsuite.com
+export async function getNfcTiles(): Promise<NfcTile[]>;
+```
+
+`getNfcTiles()` is `noStore()` + service client, returns `[...PINNED_TILES, ...activeRows]`, and
+**catches everything** — a Supabase outage returns the two fixtures rather than a blank page, which
+matters because the page's whole audience is holding a phone in a service right now.
+
+`mapRow()` re-checks `isEmbeddable()` on read, not just on write: a row that somehow holds a
+non-framable URL is demoted to `info` mode so the tile shows copy and a link instead of a dead white
+iframe. `isEmbeddable` is the same rule as `components/events/EventSignupButton.tsx` — only our own
+ChurchSuite subdomain permits framing.
 
 ---
 

@@ -16,6 +16,7 @@ const announcementItems = [
   { href: "/admin/popup", label: "Popup" },
   { href: "/admin/featured-event", label: "Featured Event" },
   { href: "/admin/event-popup", label: "Event Popup" },
+  { href: "/admin/nfc", label: "NFC Page" },
 ];
 
 const courseItems = [

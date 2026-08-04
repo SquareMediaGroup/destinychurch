@@ -689,6 +689,34 @@ h3 {
   pointer-events: none;
 }
 
+/* Entrance for the /nfc tile popup — see components/nfc/NfcTileModal.tsx. */
+@keyframes nfc-modal-backdrop-in {
+  from { background: rgba(0, 0, 0, 0); backdrop-filter: blur(0px); }
+  to   { background: rgba(0, 0, 0, 0.75); backdrop-filter: blur(6px); }
+}
+
+@keyframes nfc-modal-panel-in {
+  from { opacity: 0; transform: scale(0.96); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+.nfc-modal-backdrop {
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(6px);
+  animation: nfc-modal-backdrop-in 0.35s ease forwards;
+}
+
+.nfc-modal-panel {
+  animation: nfc-modal-panel-in 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nfc-modal-backdrop,
+  .nfc-modal-panel {
+    animation: none;
+  }
+}
+
 .animate-slide-up {
   animation: slide-up 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }

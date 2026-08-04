@@ -491,7 +491,13 @@ export default function FloatingSmartSearch() {
     sendMessage(input);
   }
 
-  if (pathname.startsWith("/admin") || pathname.startsWith("/training")) return null;
+  // /nfc is the chrome-free in-service page: the tiles are the whole interface.
+  if (
+    pathname.startsWith("/admin") ||
+    pathname.startsWith("/training") ||
+    pathname.startsWith("/nfc")
+  )
+    return null;
 
   // Don't surface Smart Search at all until the visitor has made a cookie
   // decision — the search icon only appears once cookies have been accepted.

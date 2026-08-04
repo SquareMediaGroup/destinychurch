@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
 import PopupShell from "@/components/PopupShell";
 
 interface PopupData {
@@ -21,11 +22,19 @@ const STORAGE_KEY = "dc-popup-dismissed";
  *
  * app/layout.tsx passes `null` here whenever an event popup is live, so the two
  * can never stack — see components/events/EventPopup.tsx.
+ *
+ * Suppressed on /nfc: that page is a grid of popups people opened on purpose,
+ * mid-service, and an announcement landing on top of one is the one failure it
+ * can't afford. The layout is a server component and can't know the path, so
+ * the check happens here with usePathname, as EventPopup does.
  */
 export default function SitePopup({ popup }: { popup: PopupData | null }) {
   const [open, setOpen] = useState(false);
+  const pathname = usePathname();
+  const excluded = pathname.startsWith("/nfc");
 
   useEffect(() => {
+    if (excluded) return;
     if (!popup || !popup.active) return;
     const hasContent = !!popup.title || !!popup.body || !!popup.image_url;
     if (!hasContent) return;
@@ -43,7 +52,7 @@ export default function SitePopup({ popup }: { popup: PopupData | null }) {
 
     const t = window.setTimeout(() => setOpen(true), 600);
     return () => window.clearTimeout(t);
-  }, [popup]);
+  }, [popup, excluded]);
 
   function close() {
     setOpen(false);
@@ -56,7 +65,7 @@ export default function SitePopup({ popup }: { popup: PopupData | null }) {
     }
   }
 
-  if (!popup || !popup.active || !open) return null;
+  if (excluded || !popup || !popup.active || !open) return null;
 
   return (
     <PopupShell

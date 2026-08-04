@@ -216,7 +216,8 @@ export default function ChurchHeader() {
   // Hooks must run before any early return (Rules of Hooks).
   const bannerBars = useBannerBars();
 
-  if (pathname.startsWith("/admin")) return null;
+  // /nfc is the in-service NFC landing page: standalone, no site nav.
+  if (pathname.startsWith("/admin") || pathname.startsWith("/nfc")) return null;
 
   const isAdmin = pathname.startsWith("/admin");
   const isHome = pathname === "/";

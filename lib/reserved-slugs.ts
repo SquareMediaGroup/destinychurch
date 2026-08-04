@@ -55,6 +55,7 @@ const ROUTE_SLUGS = [
   "login",
   "missions",
   "new-here",
+  "nfc",
   "privacy",
   "safeguarding",
   "sermons",

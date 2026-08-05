@@ -20,6 +20,7 @@ Designed, engineered, and deployed by [Square Media Group](mailto:hello@squareme
 - Venue hire enquiry system
 - Connect card, prayer request, and contact forms
 - Giving, volunteer, and serve pages
+- `/nfc` "digital back of seats" — a standalone page an NFC tag or QR code on a seat opens during a service, with admin-managed tiles
 - AI Smart Search — OpenAI tool-calling chat with product cards, weather, maps/directions, and live web search
 - Cloudflare Turnstile bot protection on sign-in and Smart Search
 - Protected admin dashboard (sermons, pages/posts, redirects, banner, popup, shop, training, HR, Alpha, recovery)
@@ -143,6 +144,7 @@ app/
 ├── live/             # Live stream
 ├── missions/         # Missions & outreach
 ├── new-here/         # First-time visitor guide
+├── nfc/              # "Digital back of seats" — NFC/QR tap-to-open service page
 ├── safeguarding/     # Safeguarding policy
 ├── sermons/          # Sermon archive & individual pages
 ├── serve/            # Volunteer opportunities
@@ -177,6 +179,7 @@ The `/admin` area is protected by Supabase Auth. Log in at `/login` to manage:
 - **Alpha & Recovery** — signups and events
 - **Redirects** — configure URL redirects
 - **Banner & Popup** — control the site-wide announcement banner and popups
+- **NFC** — manage the tiles shown on the `/nfc` "digital back of seats" page
 - **Cache** — trigger on-demand revalidation
 
 ---

@@ -5,10 +5,12 @@
 // Structurally this is AlphaSignupModal — portal to body, backdrop blur, scale-in
 // on a double-rAF so the transition has a frame to start from — with two additions:
 //
-//   Two modes. `embed` frames a ChurchSuite form (Connect Card, Giving) and hangs
-//   the "more details" link off the bottom, so the popup answers the question and
-//   the page behind it stays available. `info` shows artwork + copy + a CTA, for
-//   Alpha and the custom promos an admin adds.
+//   Three modes, two layouts. `embed` frames a ChurchSuite form (Connect Card,
+//   Giving) and hangs the "more details" link off the bottom, so the popup answers
+//   the question and the page behind it stays available. `event` is the same
+//   layout — an event tile resolves its ChurchSuite signup URL into `embedUrl`
+//   server-side, so it needs no branch of its own here. `info` shows artwork +
+//   copy + a CTA, for Alpha and the custom promos an admin adds.
 //
 //   Real dialog semantics. The four existing copies of this modal (ConnectCardCTAs,
 //   GiveCTA, YouSaidYesButton, AlphaSignupModal) have no role, no focus management
@@ -93,7 +95,8 @@ export default function NfcTileModal({
   // against — but the portal still needs a document to attach to.
   if (!tile || typeof document === "undefined") return null;
 
-  const isEmbed = tile.mode === "embed" && Boolean(tile.embedUrl);
+  const isEmbed =
+    (tile.mode === "embed" || tile.mode === "event") && Boolean(tile.embedUrl);
   const large = isEmbed && tile.embedSize === "lg";
   const external = Boolean(tile.ctaLink && /^https?:\/\//i.test(tile.ctaLink));
   const titleId = `nfc-modal-title-${tile.id}`;

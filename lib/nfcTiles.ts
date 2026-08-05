@@ -1,15 +1,11 @@
-// Tiles for the /nfc "digital back of seats" page.
+// Tile types and fixtures for the /nfc "digital back of seats" page.
 //
-// The list served to the page is always PINNED_TILES followed by the active
-// rows of `nfc_tiles`. Connect Card and Giving are hardcoded rather than seeded
-// as rows because they are the two things a back-of-seat card has always had:
-// they must render even if the table is empty, the migration hasn't run, or
-// Supabase is unreachable ten minutes into a service.
+// Client-safe by design: the admin page is a client component and imports
+// PINNED_TILES from here, so nothing in this file may reach for the service
+// client or anything marked server-only. The reads live next door in
+// lib/nfcTiles.server.ts.
 
-import { createServiceClient } from "@/utils/supabase/service";
-import { unstable_noStore as noStore } from "next/cache";
-
-export type NfcTileMode = "embed" | "info";
+export type NfcTileMode = "embed" | "info" | "event";
 
 export interface NfcTile {
   id: string;
@@ -18,15 +14,19 @@ export interface NfcTile {
   /** Material Symbols Rounded ligature name. */
   icon: string;
   mode: NfcTileMode;
-  /** mode="embed": the ChurchSuite URL to iframe. */
+  /** mode="embed": the ChurchSuite URL to iframe. mode="event": its signup URL. */
   embedUrl: string | null;
   embedSize: "md" | "lg";
   /** mode="info": the description copy. */
   body: string | null;
   imageUrl: string | null;
-  /** Both modes: the link through to the full page on the site. */
+  /** All modes: the link through to the full page on the site. */
   ctaText: string | null;
   ctaLink: string | null;
+  /** mode="event": the resolved /whats-on slug, when the feed still has it. */
+  eventSlug: string | null;
+  /** mode="event": end of the last occurrence — the tile hides after this. */
+  eventEndsAt: string | null;
 }
 
 /**
@@ -43,6 +43,19 @@ export function isEmbeddable(url: string): boolean {
   }
 }
 
+/**
+ * Loading a ChurchSuite event page at this fragment opens it scrolled to the
+ * signup form. Same trick, same caveats as components/events/EventSignupButton.tsx
+ * — see the long comment there. Degrades to "opens at the top", which is fine.
+ */
+export const SIGNUP_ANCHOR = "#form_event_signup";
+
+/**
+ * Connect Card and Giving are hardcoded rather than seeded as rows because they
+ * are the two things a back-of-seat card has always had: they must render even
+ * if the table is empty, the migration hasn't run, or Supabase is unreachable
+ * ten minutes into a service.
+ */
 export const PINNED_TILES: NfcTile[] = [
   {
     id: "pinned-connect-card",
@@ -56,6 +69,8 @@ export const PINNED_TILES: NfcTile[] = [
     imageUrl: null,
     ctaText: "More about connecting",
     ctaLink: "/connect-card",
+    eventSlug: null,
+    eventEndsAt: null,
   },
   {
     id: "pinned-giving",
@@ -69,11 +84,13 @@ export const PINNED_TILES: NfcTile[] = [
     imageUrl: null,
     ctaText: "Other ways to give",
     ctaLink: "/give",
+    eventSlug: null,
+    eventEndsAt: null,
   },
 ];
 
 /** Shape of a `nfc_tiles` row as it comes back from Supabase. */
-interface NfcTileRow {
+export interface NfcTileRow {
   id: string;
   title: string;
   subtitle: string | null;
@@ -85,46 +102,13 @@ interface NfcTileRow {
   image_url: string | null;
   cta_text: string | null;
   cta_link: string | null;
+  event_identifier: string | null;
+  event_sequence: number | null;
+  event_slug: string | null;
+  event_name: string | null;
+  event_ends_at: string | null;
 }
 
-function mapRow(row: NfcTileRow): NfcTile {
-  const mode: NfcTileMode = row.mode === "embed" ? "embed" : "info";
-  // A non-framable URL (someone pasted an Eventbrite link) would render as a
-  // blank iframe, so demote the tile to info mode and let the CTA carry it.
-  const embeddable =
-    mode === "embed" && !!row.embed_url && isEmbeddable(row.embed_url);
-
-  return {
-    id: row.id,
-    title: row.title,
-    subtitle: row.subtitle,
-    icon: row.icon || "star",
-    mode: embeddable ? "embed" : "info",
-    embedUrl: embeddable ? row.embed_url : null,
-    embedSize: row.embed_size === "lg" ? "lg" : "md",
-    body: row.body,
-    imageUrl: row.image_url,
-    ctaText: row.cta_text,
-    ctaLink: row.cta_link,
-  };
-}
-
-/** Pinned fixtures first, then the active admin-managed tiles in order. */
-export async function getNfcTiles(): Promise<NfcTile[]> {
-  noStore();
-  try {
-    const supabase = createServiceClient();
-    const { data } = await supabase
-      .from("nfc_tiles")
-      .select(
-        "id, title, subtitle, icon, mode, embed_url, embed_size, body, image_url, cta_text, cta_link"
-      )
-      .eq("active", true)
-      .order("sort_order", { ascending: true })
-      .order("created_at", { ascending: true });
-
-    return [...PINNED_TILES, ...((data ?? []) as NfcTileRow[]).map(mapRow)];
-  } catch {
-    return PINNED_TILES;
-  }
-}
+/** The columns lib/nfcTiles.server.ts selects, kept beside the row type. */
+export const NFC_TILE_COLUMNS =
+  "id, title, subtitle, icon, mode, embed_url, embed_size, body, image_url, cta_text, cta_link, event_identifier, event_sequence, event_slug, event_name, event_ends_at";

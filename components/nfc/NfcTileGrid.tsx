@@ -6,7 +6,14 @@
 
 import { useCallback, useRef, useState } from "react";
 import NfcTileModal from "@/components/nfc/NfcTileModal";
-import type { NfcTile } from "@/lib/nfcTiles";
+import type { NfcTile, NfcTileMode } from "@/lib/nfcTiles";
+
+/** What the card promises before you tap it. */
+const BADGE: Record<NfcTileMode, string> = {
+  embed: "Form",
+  event: "Sign up",
+  info: "Details",
+};
 
 export default function NfcTileGrid({ tiles }: { tiles: NfcTile[] }) {
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -49,7 +56,7 @@ export default function NfcTileGrid({ tiles }: { tiles: NfcTile[] }) {
                   {tile.icon}
                 </span>
                 <span className="nfc-badge text-[10px] font-bold uppercase tracking-[0.2em] text-destiny-grey/35">
-                  {tile.mode === "embed" ? "Form" : "Details"}
+                  {BADGE[tile.mode]}
                 </span>
               </div>
 

@@ -11,6 +11,8 @@ import Image from "next/image";
 import { useDialog } from "@/components/DialogProvider";
 import { PINNED_TILES } from "@/lib/nfcTiles";
 
+type TileMode = "embed" | "info" | "event";
+
 interface Tile {
   id: string;
   active: boolean;
@@ -18,7 +20,7 @@ interface Tile {
   title: string;
   subtitle: string;
   icon: string;
-  mode: "embed" | "info";
+  mode: TileMode;
   embed_url: string;
   embed_size: "md" | "lg";
   body: string;
@@ -26,6 +28,26 @@ interface Tile {
   image_path: string | null;
   cta_text: string;
   cta_link: string;
+  /** mode="event": the pointer. Everything else on the row is derived server-side. */
+  event_identifier: string;
+  event_sequence: number | null;
+  event_slug: string;
+  event_name: string;
+  event_ends_at: string;
+}
+
+/** One upcoming event as /api/admin/events projects it. */
+interface PickerEvent {
+  slug: string;
+  identifier: string | null;
+  sequence: number | null;
+  name: string;
+  start: string;
+  endsAt: string;
+  location: string | null;
+  sessionCount: number;
+  signupUrl: string | null;
+  signupEmbeddable: boolean;
 }
 
 const MAX_BYTES = 50 * 1024 * 1024;
@@ -45,7 +67,30 @@ const EMPTY: Tile = {
   image_path: null,
   cta_text: "",
   cta_link: "",
+  event_identifier: "",
+  event_sequence: null,
+  event_slug: "",
+  event_name: "",
+  event_ends_at: "",
 };
+
+/** Mirrors formatStart in /admin/featured-event — feed dates are space-separated. */
+function formatStart(value: string): string {
+  return new Date(value.replace(" ", "T")).toLocaleDateString("en-GB", {
+    weekday: "short",
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
+}
+
+/**
+ * Event names arrive emoji-free — buildEventIndex runs stripEmoji before the
+ * picker ever sees them — so prefilling a title only has to respect the limit.
+ */
+function titleFromEvent(name: string): string {
+  return name.trim().slice(0, 60);
+}
 
 const inputClass =
   "w-full rounded-xl border border-black/10 px-4 py-2.5 text-sm text-destiny-grey placeholder:text-destiny-grey/30 focus:border-destiny-orange/50 focus:outline-none focus:ring-2 focus:ring-destiny-orange/20";
@@ -75,7 +120,8 @@ function normalise(row: Record<string, unknown>): Tile {
     title: String(row.title ?? ""),
     subtitle: String(row.subtitle ?? ""),
     icon: String(row.icon ?? "star"),
-    mode: row.mode === "embed" ? "embed" : "info",
+    mode:
+      row.mode === "embed" ? "embed" : row.mode === "event" ? "event" : "info",
     embed_url: String(row.embed_url ?? ""),
     embed_size: row.embed_size === "lg" ? "lg" : "md",
     body: String(row.body ?? ""),
@@ -83,7 +129,20 @@ function normalise(row: Record<string, unknown>): Tile {
     image_path: (row.image_path as string) ?? null,
     cta_text: String(row.cta_text ?? ""),
     cta_link: String(row.cta_link ?? ""),
+    event_identifier: String(row.event_identifier ?? ""),
+    event_sequence:
+      row.event_sequence == null ? null : Number(row.event_sequence),
+    event_slug: String(row.event_slug ?? ""),
+    event_name: String(row.event_name ?? ""),
+    event_ends_at: String(row.event_ends_at ?? ""),
   };
+}
+
+/** An event tile stops rendering on /nfc once its last occurrence has passed. */
+function hasEnded(tile: Tile): boolean {
+  if (tile.mode !== "event" || !tile.event_ends_at) return false;
+  const ends = new Date(tile.event_ends_at).getTime();
+  return Number.isFinite(ends) && ends <= Date.now();
 }
 
 export default function AdminNfcPage() {
@@ -95,6 +154,31 @@ export default function AdminNfcPage() {
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState("");
   const fileInput = useRef<HTMLInputElement>(null);
+
+  // The ChurchSuite feed, loaded lazily: most edits never touch an event tile.
+  const [events, setEvents] = useState<PickerEvent[] | null>(null);
+  const [eventsLoading, setEventsLoading] = useState(false);
+  const [eventFilter, setEventFilter] = useState("");
+
+  const loadEvents = useCallback(async () => {
+    setEventsLoading(true);
+    try {
+      const res = await fetch("/api/admin/events");
+      const data = await res.json();
+      setEvents((data.events ?? []) as PickerEvent[]);
+    } catch {
+      setEvents([]);
+      setError("Could not load the ChurchSuite calendar. Try again in a moment.");
+    } finally {
+      setEventsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (editing?.mode === "event" && events === null && !eventsLoading) {
+      loadEvents();
+    }
+  }, [editing?.mode, events, eventsLoading, loadEvents]);
 
   const load = useCallback(async () => {
     try {
@@ -305,13 +389,26 @@ export default function AdminNfcPage() {
                 </span>
 
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-bold text-destiny-grey">
-                    {tile.title}
+                  <p className="flex items-center gap-2 text-sm font-bold text-destiny-grey">
+                    <span className="truncate">{tile.title}</span>
+                    {hasEnded(tile) && (
+                      <span className="shrink-0 rounded-full bg-black/5 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-destiny-grey/50">
+                        Ended
+                      </span>
+                    )}
                   </p>
                   <p className="truncate text-xs text-destiny-grey/50">
-                    {tile.mode === "embed"
-                      ? `Form · ${tile.embed_url}`
-                      : `Details${tile.cta_link ? ` · ${tile.cta_link}` : ""}`}
+                    {tile.mode === "event"
+                      ? hasEnded(tile)
+                        ? `Not showing on /nfc — "${tile.event_name}" has finished. Pick a new event or delete this tile.`
+                        : `Event signup · ${tile.event_name}${
+                            tile.event_ends_at
+                              ? ` · until ${formatStart(tile.event_ends_at)}`
+                              : ""
+                          }`
+                      : tile.mode === "embed"
+                        ? `Form · ${tile.embed_url}`
+                        : `Details${tile.cta_link ? ` · ${tile.cta_link}` : ""}`}
                   </p>
                 </div>
 
@@ -400,9 +497,14 @@ export default function AdminNfcPage() {
             {/* What kind of tile */}
             <div>
               <label className={labelClass}>What happens when someone taps it</label>
-              <div className="grid gap-3 sm:grid-cols-2">
+              <div className="grid gap-3 sm:grid-cols-3">
                 {(
                   [
+                    {
+                      mode: "event" as const,
+                      label: "Event signup",
+                      hint: "Pick an event — the tile shows its date and opens the signup form",
+                    },
                     {
                       mode: "embed" as const,
                       label: "Opens a form",
@@ -419,7 +521,20 @@ export default function AdminNfcPage() {
                     key={opt.mode}
                     type="button"
                     onClick={() =>
-                      setEditing((t) => (t ? { ...t, mode: opt.mode } : t))
+                      setEditing((t) =>
+                        t
+                          ? {
+                              ...t,
+                              mode: opt.mode,
+                              // Only nudge the icon while it's still the default,
+                              // so a deliberate choice is never overwritten.
+                              icon:
+                                opt.mode === "event" && t.icon === "star"
+                                  ? "event"
+                                  : t.icon,
+                            }
+                          : t
+                      )
                     }
                     className={`rounded-xl border-2 p-4 text-left transition ${
                       editing.mode === opt.mode
@@ -462,9 +577,19 @@ export default function AdminNfcPage() {
                   onChange={(e) =>
                     setEditing((t) => (t ? { ...t, subtitle: e.target.value } : t))
                   }
-                  placeholder="Explore life, faith and meaning"
+                  placeholder={
+                    editing.mode === "event"
+                      ? "Leave blank to show the event's date"
+                      : "Explore life, faith and meaning"
+                  }
                   className={inputClass}
                 />
+                {editing.mode === "event" && (
+                  <p className="mt-1.5 text-xs text-destiny-grey/45">
+                    Left blank, the tile shows when the event is — and keeps up if
+                    ChurchSuite moves it.
+                  </p>
+                )}
               </div>
             </div>
 
@@ -490,7 +615,129 @@ export default function AdminNfcPage() {
               </div>
             </div>
 
-            {editing.mode === "embed" ? (
+            {editing.mode === "event" ? (
+              <div>
+                <label className={labelClass}>Which event</label>
+
+                {editing.event_identifier && (
+                  <div className="mb-3 flex items-center gap-3 rounded-xl border-2 border-destiny-orange bg-destiny-orange/5 px-4 py-3">
+                    <span className="material-symbols-rounded text-xl text-destiny-orange">
+                      event_available
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-bold text-destiny-grey">
+                        {editing.event_name || "Selected event"}
+                      </p>
+                      {editing.event_ends_at && (
+                        <p className="truncate text-xs text-destiny-grey/50">
+                          {hasEnded(editing)
+                            ? "This event has finished — pick another one."
+                            : `Runs until ${formatStart(editing.event_ends_at)}`}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                <input
+                  type="search"
+                  value={eventFilter}
+                  onChange={(e) => setEventFilter(e.target.value)}
+                  placeholder="Search upcoming events"
+                  className={inputClass}
+                />
+
+                <div className="mt-3 max-h-80 overflow-y-auto rounded-xl border border-black/10">
+                  {eventsLoading || events === null ? (
+                    <p className="px-4 py-8 text-center text-sm text-destiny-grey/45">
+                      Loading the ChurchSuite calendar…
+                    </p>
+                  ) : events.length === 0 ? (
+                    <p className="px-4 py-8 text-center text-sm text-destiny-grey/45">
+                      No upcoming events in ChurchSuite.
+                    </p>
+                  ) : (
+                    <ul className="divide-y divide-black/5">
+                      {events
+                        .filter((ev) =>
+                          ev.name.toLowerCase().includes(eventFilter.toLowerCase())
+                        )
+                        .map((ev) => {
+                          const chosen =
+                            !!ev.identifier &&
+                            ev.identifier === editing.event_identifier;
+                          // Disabled rather than hidden: "why isn't my event
+                          // here?" is a worse question than a visible reason.
+                          const reason = !ev.signupUrl
+                            ? "No signups in ChurchSuite"
+                            : !ev.signupEmbeddable
+                              ? "Books on another site"
+                              : null;
+
+                          return (
+                            <li key={ev.slug}>
+                              <button
+                                type="button"
+                                disabled={!!reason || !ev.identifier}
+                                onClick={() =>
+                                  setEditing((t) =>
+                                    t
+                                      ? {
+                                          ...t,
+                                          event_identifier: ev.identifier ?? "",
+                                          event_sequence: ev.sequence,
+                                          event_slug: ev.slug,
+                                          event_name: ev.name,
+                                          event_ends_at: ev.endsAt,
+                                          title:
+                                            t.title || titleFromEvent(ev.name),
+                                        }
+                                      : t
+                                  )
+                                }
+                                className={`flex w-full items-center gap-3 px-4 py-3 text-left transition disabled:cursor-not-allowed disabled:opacity-45 ${
+                                  chosen
+                                    ? "bg-destiny-orange/5"
+                                    : "hover:bg-gray-50 disabled:hover:bg-transparent"
+                                }`}
+                              >
+                                <div className="min-w-0 flex-1">
+                                  <p className="truncate text-sm font-bold text-destiny-grey">
+                                    {ev.name}
+                                  </p>
+                                  <p className="truncate text-xs text-destiny-grey/50">
+                                    {formatStart(ev.start)}
+                                    {ev.sessionCount > 1
+                                      ? ` · ${ev.sessionCount} sessions`
+                                      : ""}
+                                    {ev.location ? ` · ${ev.location}` : ""}
+                                  </p>
+                                </div>
+                                {reason ? (
+                                  <span className="shrink-0 text-xs font-bold text-destiny-grey/40">
+                                    {reason}
+                                  </span>
+                                ) : chosen ? (
+                                  <span className="material-symbols-rounded shrink-0 text-lg text-destiny-orange">
+                                    check_circle
+                                  </span>
+                                ) : null}
+                              </button>
+                            </li>
+                          );
+                        })}
+                    </ul>
+                  )}
+                </div>
+
+                <p className="mt-1.5 text-xs text-destiny-grey/45">
+                  Tapping the tile opens the event&rsquo;s ChurchSuite signup form
+                  in the page. Events without signups, or that book through another
+                  site, can&rsquo;t be used here — add a details tile linking to
+                  them instead.
+                </p>
+              </div>
+            ) : editing.mode === "embed" ? (
               <>
                 <div>
                   <label className={labelClass}>ChurchSuite URL</label>
@@ -647,9 +894,15 @@ export default function AdminNfcPage() {
               </div>
             </div>
             <p className="-mt-2 text-xs text-destiny-grey/45">
-              {editing.mode === "embed"
-                ? "Shown as a small link under the form, for people who want the full page."
-                : "Where the button in the popup takes people. Use /alpha for a page on this site."}
+              {editing.mode === "info"
+                ? "Where the button in the popup takes people. Use /alpha for a page on this site."
+                : editing.mode === "event"
+                  ? `Shown as a small link under the signup form. ${
+                      editing.event_slug
+                        ? `Use /whats-on/${editing.event_slug} for the full event page.`
+                        : "Pick an event to see its page link."
+                    }`
+                  : "Shown as a small link under the form, for people who want the full page."}
             </p>
 
             <div className="flex items-center justify-end gap-3">

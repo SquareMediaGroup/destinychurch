@@ -654,17 +654,24 @@ CREATE TABLE nfc_tiles (
   title text NOT NULL,                 -- ≤ 60 chars (DB check)
   subtitle text,                       -- ≤ 90 chars, the line under the title on the card
   icon text NOT NULL DEFAULT 'star',   -- Material Symbols Rounded ligature
-  mode text NOT NULL DEFAULT 'info'    -- 'embed' = ChurchSuite form, 'info' = copy + CTA
-    CHECK (mode IN ('embed','info')),
-  embed_url text,                      -- Required when mode = 'embed' (DB check)
+  mode text NOT NULL DEFAULT 'info'    -- 'embed' = ChurchSuite form, 'info' = copy + CTA,
+    CHECK (mode IN ('embed','info','event')),  -- 'event' = a ChurchSuite event's signup
+  embed_url text,                      -- Required when mode = 'embed'; the signup URL when 'event'
   embed_size text NOT NULL DEFAULT 'md' CHECK (embed_size IN ('md','lg')),
   body text,                           -- ≤ 600 chars, mode = 'info'
   image_url text, image_path text,     -- Shared `popup-images` bucket, `nfc-` prefix
   cta_text text, cta_link text,        -- Link through to a full page on the site
+  -- mode = 'event': a pointer into the ChurchSuite feed plus snapshots
+  event_identifier text,               -- Occurrence identifier — the feed lookup key
+  event_sequence integer,              -- Series key (null for one-offs); durable fallback lookup
+  event_slug text,                     -- Resolved /whats-on slug
+  event_name text,                     -- For the admin list without hitting the feed
+  event_ends_at timestamptz,           -- End of the last occurrence — drives auto-expiry
   created_at timestamptz DEFAULT now(),
   updated_at timestamptz DEFAULT now()
 );
 
+-- CHECK (mode <> 'event' OR (event_identifier IS NOT NULL AND embed_url IS NOT NULL))
 -- RLS: public read of active rows; writes service-role only
 ```
 
@@ -674,9 +681,17 @@ or a Supabase blip ten minutes into a service — and a row with a delete button
 that eventually gets deleted. `/admin/nfc` shows them as read-only "Always shown" entries so it's
 obvious why they can't be edited there.
 
+**Why event tiles reuse `embed_url`:** an event tile *is* an embed tile once resolved — the popup
+frames the event's ChurchSuite signup form the same way the Connect Card tile frames its form. So
+the resolved signup URL lands in `embed_url` rather than a column of its own: the renderer needs one
+widened condition instead of a second code path, and the row stays renderable when the feed is
+unreachable. `event_ends_at` is what hides the tile once the event has run; the row itself stays, so
+`/admin/nfc` can show an "Ended" pill and offer a repoint instead of leaving a mystery gap.
+
 **Used By:**
-- `lib/nfcTiles.ts` → `getNfcTiles()`, read by `app/nfc/page.tsx`
+- `lib/nfcTiles.server.ts` → `getNfcTiles()`, read by `app/nfc/page.tsx`
 - `app/api/admin/nfc/route.ts` + `app/admin/nfc/page.tsx` for CRUD
+- `app/api/admin/events/route.ts` supplies the event picker (shared with `/admin/featured-event`)
 
 ---
 
@@ -1297,7 +1312,7 @@ Displayed on every page:
 | `/volunteer` | `app/volunteer/page.tsx` | Volunteer sign-up form |
 | `/help` | `app/help/page.tsx` | Help centre / FAQ |
 | `/links` | `app/links/page.tsx` | "Next Steps" link-in-bio style page |
-| `/nfc` | `app/nfc/page.tsx` | "Digital back of seats" — what an NFC tag or QR code on a seat opens during a service. Standalone (no header, footer, site popup or smart search) and `noindex`. Connect Card and Giving are hardcoded fixtures; everything else comes from `nfc_tiles` |
+| `/nfc` | `app/nfc/page.tsx` | "Digital back of seats" — what an NFC tag or QR code on a seat opens during a service. Standalone (no header, footer, site popup or smart search) and `noindex`. Connect Card and Giving are hardcoded fixtures; everything else comes from `nfc_tiles`, including event tiles that resolve against the live ChurchSuite feed and hide themselves once the event has run |
 | `/destiny-recovery` | `app/destiny-recovery/page.tsx` | Recovery course info page |
 | `/dckids` | `app/dckids/page.tsx` | Destiny Kids Camp 2026 campaign page |
 | `/accessibility` | `app/accessibility/page.tsx` | Reduced-motion / glass-FX preferences (client component) |
@@ -1332,7 +1347,7 @@ All admin/staff features live under a single `/admin` prefix with one login at `
 | `/admin/featured-course` | `app/admin/featured-course/page.tsx` | Choose the What's On featured course |
 | `/admin/featured-event` | `app/admin/featured-event/page.tsx` | Promote one ChurchSuite event — picker plus headline/blurb/image/CTA overrides and a promote window |
 | `/admin/event-popup` | `app/admin/event-popup/page.tsx` | Copy for the popup advertising the featured event (writes `popup_*` on the same row) |
-| `/admin/nfc` | `app/admin/nfc/page.tsx` | Tiles on the `/nfc` page — add/edit/reorder/hide, either a ChurchSuite form embed or artwork + copy + CTA |
+| `/admin/nfc` | `app/admin/nfc/page.tsx` | Tiles on the `/nfc` page — add/edit/reorder/hide. A ChurchSuite form embed, artwork + copy + CTA, or an event picked from the live calendar (events without a framable signup are shown disabled with the reason) |
 | `/admin/hr` | `app/admin/hr/page.tsx` | HR dashboard (staff, leave, jobs, documents, reviews) — unlinked, in progress |
 | `/admin/store` | `app/admin/store/page.tsx` | Store — product list |
 | `/admin/store/products/new` | `app/admin/store/products/new/page.tsx` | Create a product (name → editor) |
@@ -1587,10 +1602,13 @@ The tiles on `/nfc` — the "digital back of seats" page an NFC tag or QR code o
 
 - `NfcTileGrid.tsx` — the card grid. Cards are `<button>`s, not links: everything opens in place,
   because the page exists to be finished before the next song starts. Holds the open-tile state and
-  the ref to the invoking card so focus can be restored on close.
-- `NfcTileModal.tsx` — the popup. Two modes: `embed` frames a ChurchSuite form (`ChurchSuiteEmbed`)
-  with the "more details" link hung off the bottom, so the popup answers the question *and* the full
-  page stays one tap away; `info` shows artwork + copy + an orange CTA, the `PopupShell` layout.
+  the ref to the invoking card so focus can be restored on close. The `BADGE` lookup is what the
+  card promises before you tap it — "Form", "Sign up", "Details".
+- `NfcTileModal.tsx` — the popup. Three modes, two layouts: `embed` frames a ChurchSuite form
+  (`ChurchSuiteEmbed`) with the "more details" link hung off the bottom, so the popup answers the
+  question *and* the full page stays one tap away; `event` is the same layout with no branch of its
+  own, because `getNfcTiles()` resolves an event tile's signup URL into `embedUrl` server-side;
+  `info` shows artwork + copy + an orange CTA, the `PopupShell` layout.
   Unlike the four older copies of this modal (`AlphaSignupModal`, `ConnectCardCTAs`, `GiveCTA`,
   `YouSaidYesButton`) it has real dialog semantics — `role="dialog"`, `aria-labelledby`, focus in on
   open, focus restored on close, and a Tab trap — because `/nfc` is the one page used cold by people
@@ -1792,6 +1810,12 @@ export async function applyForJob(jobId: string, formData: ApplicationData) {
 //     (hostname ends with churchsuite.com). Anything else sets X-Frame-Options
 //     and would render as a blank white box, so it's rejected with a sentence
 //     telling the admin to use a details tile instead.
+//   - mode = "event" takes only an event_identifier from the client and
+//     re-resolves it server-side via resolveEvent() → getEventIndex(). That's
+//     where embed_url (the signup URL + #form_event_signup), event_slug,
+//     event_name, event_sequence and event_ends_at are written. Three named
+//     failures, each naming the way out: the event is gone from the calendar,
+//     it takes no signups, or it books through a site that refuses framing.
 //   - cta_link must start with "/" or "https://".
 //   - Length limits mirror the DB checks so the admin gets a readable error
 //     rather than a Postgres constraint string.
@@ -2194,15 +2218,26 @@ KNOWLEDGE:
 
 ---
 
-### `lib/nfcTiles.ts`
+### `lib/nfcTiles.ts` / `lib/nfcTiles.server.ts`
 
-The tile list behind `/nfc`.
+The tile list behind `/nfc`, deliberately split in two.
 
 ```typescript
-export const PINNED_TILES: NfcTile[];              // Connect Card, Giving — always first
+// lib/nfcTiles.ts — client-safe: types, fixtures, pure helpers
+export type NfcTileMode = "embed" | "info" | "event";
+export const PINNED_TILES: NfcTile[];               // Connect Card, Giving — always first
+export const SIGNUP_ANCHOR: string;                 // "#form_event_signup"
+export const NFC_TILE_COLUMNS: string;              // the explicit select list
 export function isEmbeddable(url: string): boolean; // hostname ends with churchsuite.com
+
+// lib/nfcTiles.server.ts — `import "server-only"`
 export async function getNfcTiles(): Promise<NfcTile[]>;
 ```
+
+**Why the split:** `/admin/nfc` is a client component and imports `PINNED_TILES`. Event resolution
+needs `getEventIndex()` from `lib/events.server.ts`, which is `server-only` — putting the two in one
+file would break the admin bundle. Keeping them apart also stops the service client being reachable
+from a client bundle at all.
 
 `getNfcTiles()` is `noStore()` + service client, returns `[...PINNED_TILES, ...activeRows]`, and
 **catches everything** — a Supabase outage returns the two fixtures rather than a blank page, which
@@ -2212,6 +2247,18 @@ matters because the page's whole audience is holding a phone in a service right 
 non-framable URL is demoted to `info` mode so the tile shows copy and a link instead of a dead white
 iframe. `isEmbeddable` is the same rule as `components/events/EventSignupButton.tsx` — only our own
 ChurchSuite subdomain permits framing.
+
+**Event tiles** cost a feed fetch only when a row actually has `mode = "event"`. For each one,
+`resolveEventTile()`:
+- drops the tile when `event_ends_at` has passed (a *server-side* clock read — the same reason
+  `EventsGrid` and `EventCard` are clock-free is why this can't move to the client);
+- looks the series up by identifier, then by `event_sequence` — ChurchSuite reissues occurrence
+  identifiers when a series is edited, so the sequence is the more durable key;
+- on a hit, refreshes the signup URL, the slug and `event_ends_at` from the feed, and fills a blank
+  subtitle with `formatKicker()` so the tile face carries the live date;
+- on a miss — feed down (`fetchChurchSuiteEvents` returns `[]` on any error) or the event pulled
+  from ChurchSuite — keeps the stored snapshots, which is why the signup URL is snapshotted into
+  `embed_url` at write time.
 
 ---
 

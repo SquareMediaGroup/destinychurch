@@ -9,7 +9,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import NfcTileGrid from "@/components/nfc/NfcTileGrid";
-import { getNfcTiles } from "@/lib/nfcTiles";
+import { getNfcTiles } from "@/lib/nfcTiles.server";
 
 export const metadata: Metadata = {
   title: "Welcome",

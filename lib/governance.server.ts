@@ -200,7 +200,7 @@ function humanise(slug: string): string {
  * ("HARRIS, Jonathan"). Flip to natural order and sentence-case the surname —
  * these are people's names on a church page, not database rows.
  */
-function formatPersonName(raw: string): string {
+export function formatPersonName(raw: string): string {
   const titleCase = (part: string) =>
     part
       .toLowerCase()
@@ -390,63 +390,92 @@ async function fetchCompaniesHouse(): Promise<GovernanceData["company"] | null> 
 // ---------------------------------------------------------------------------
 // Charity Commission
 //
-// Routes come from the Commission's published function list:
-//   allcharitydetails/{RegisteredNumber}/{suffix}
-//   charitytrusteenames/{RegisteredNumber}/{suffix}
-//   charityfinancialhistory/{RegisteredNumber}/{suffix}   (last 5 years)
-//   charityaraccounts/{RegisteredNumber}/{suffix}          (AR + accounts dates)
+// Routes come from the Commission's published function list, and the field names
+// below were confirmed against live responses for charity 1119951:
+//   allcharitydetails/{n}/{suffix}        identity, reg_status, registration date
+//   charitygoverningdocument/{n}/{suffix} charitable_objects + governing doc
+//   charityoverview/{n}/{suffix}          plain-English `activities`
+//   charityareaofoperation/{n}/{suffix}   areas of operation
+//   charitytrusteenames/{n}/{suffix}      trustee_name rows
+//   charityfinancialhistory/{n}/{suffix}  last 5 years income/expenditure
+//   charityaraccounts/{n}/{suffix}        one row per document, not per year
+//
+// The data is deliberately scattered: objects, activities and areas are NOT on
+// allcharitydetails despite its name, which is why this takes seven requests.
+// At weekly revalidation that is seven upstream calls a week.
 // ---------------------------------------------------------------------------
 
-function parseCharityDetails(payload: unknown): CharityDetails | null {
-  // allcharitydetails sometimes answers with a single object and sometimes with
-  // a one-element array, depending on endpoint revision.
-  const record = Array.isArray(payload) ? payload[0] : payload;
+/** `reg_status` is a single-letter code, not display text. */
+const REG_STATUS: Record<string, string> = {
+  R: "Registered",
+  RM: "Removed",
+};
+
+/**
+ * The charity's public profile, assembled from four endpoints — the Commission
+ * splits this data across them rather than returning it whole:
+ *   allcharitydetails      → identity, status, registration date
+ *   charitygoverningdocument → charitable objects + governing document
+ *   charityoverview        → plain-English activities
+ *   charityareaofoperation → where it operates
+ */
+function parseCharityDetails(
+  detailsRaw: unknown,
+  govDocRaw: unknown,
+  overviewRaw: unknown,
+  areasRaw: unknown,
+): CharityDetails | null {
+  // Answers as a bare object today, but has shipped as a one-element array.
+  const record = Array.isArray(detailsRaw) ? detailsRaw[0] : detailsRaw;
   if (!isObject(record)) return null;
 
-  const number = str(
-    record,
-    "reg_charity_number",
-    "charity_number",
-    "registered_charity_number",
-  );
+  const number = str(record, "reg_charity_number", "charity_number");
   const name = str(record, "charity_name", "name");
   // The SC017898 guard, applied at the charity layer.
   if (!name || !sameNumber(number, CHARITY_NUMBER)) return null;
 
-  const areasOfOperation = asArray(
-    field(record, "area_of_operation", "areas_of_operation"),
-  )
+  // Second, independent identity check: the register records the charity's own
+  // company number, so it must agree with the company we looked up. The Scottish
+  // body is not a company at all, making this a decisive tell.
+  const linkedCompany = str(record, "charity_co_reg_number");
+  if (linkedCompany && !sameNumber(linkedCompany, COMPANY_NUMBER)) {
+    console.warn(
+      `⚠️  governance: charity ${CHARITY_NUMBER} reports company ${linkedCompany}, expected ${COMPANY_NUMBER} — discarding`,
+    );
+    return null;
+  }
+
+  const rawStatus = str(record, "reg_status");
+  const areasOfOperation = asArray(areasRaw, "items")
     .map((entry) =>
-      typeof entry === "string"
-        ? entry
-        : str(entry, "area_of_operation_name", "area_of_operation", "name"),
+      typeof entry === "string" ? entry : str(entry, "area_of_operation"),
     )
     .filter((entry): entry is string => Boolean(entry));
 
   return {
     name,
     number: CHARITY_NUMBER,
-    status: str(record, "reg_status", "charity_registration_status", "status"),
-    registeredOn: str(record, "date_of_registration", "registration_date"),
-    objects: str(record, "charity_objects", "objects"),
-    activities: str(record, "charity_activities", "activities"),
+    status: rawStatus ? (REG_STATUS[rawStatus] ?? rawStatus) : null,
+    registeredOn: str(record, "date_of_registration"),
+    objects: str(govDocRaw, "charitable_objects"),
+    activities: str(overviewRaw, "activities"),
     areasOfOperation: [...new Set(areasOfOperation)],
-    governingDocument: str(
-      record,
-      "charity_governing_document",
-      "governing_document_description",
-    ),
+    governingDocument: str(govDocRaw, "governing_document_description"),
   };
 }
 
+/**
+ * Trustee names arrive with inconsistent casing — the register holds some
+ * shouted ("PASTOR JONATHAN MARK HARRIS") and some already cased. Normalise so
+ * the list reads evenly.
+ */
 function parseTrustees(payload: unknown): string[] {
   const names = asArray(payload, "trustees", "items")
     .map((entry) =>
-      typeof entry === "string"
-        ? entry
-        : str(entry, "trustee_name", "name", "trustee_names"),
+      typeof entry === "string" ? entry : str(entry, "trustee_name", "name"),
     )
-    .filter((entry): entry is string => Boolean(entry));
+    .filter((entry): entry is string => Boolean(entry))
+    .map(formatPersonName);
   return [...new Set(names)];
 }
 
@@ -464,16 +493,36 @@ function parseFinancials(payload: unknown): FinancialYear[] {
     .sort((a, b) => b.financialYearEnd.localeCompare(a.financialYearEnd));
 }
 
+/**
+ * charityaraccounts returns one row per *document*, not per year — typically an
+ * "Annual return" row and an "Accounts and TAR" row sharing a period end. Fold
+ * them into a single row per financial year so the page shows one entry per
+ * year with both received dates.
+ */
 function parseSubmissions(payload: unknown): AccountsSubmission[] {
-  return asArray(payload, "ar_accounts", "items")
-    .map((entry) => ({
-      financialYearEnd:
-        str(entry, "financial_period_end_date", "financial_year_end") ?? "",
-      annualReturnReceived: str(entry, "ar_received_date", "annual_return_received"),
-      accountsReceived: str(entry, "accounts_received_date", "accounts_received"),
-    }))
-    .filter((entry) => entry.financialYearEnd.length > 0)
-    .sort((a, b) => b.financialYearEnd.localeCompare(a.financialYearEnd));
+  const byYear = new Map<string, AccountsSubmission>();
+
+  for (const entry of asArray(payload, "items")) {
+    const year = str(entry, "reporting_period_year_end");
+    if (!year) continue;
+
+    const title = (str(entry, "title") ?? "").toLowerCase();
+    const received = str(entry, "date_received");
+    const current = byYear.get(year) ?? {
+      financialYearEnd: year,
+      annualReturnReceived: null,
+      accountsReceived: null,
+    };
+
+    if (title.includes("annual return")) current.annualReturnReceived = received;
+    else if (title.includes("account")) current.accountsReceived = received;
+
+    byYear.set(year, current);
+  }
+
+  return [...byYear.values()].sort((a, b) =>
+    b.financialYearEnd.localeCompare(a.financialYearEnd),
+  );
 }
 
 async function fetchCharityCommission(): Promise<GovernanceData["charity"] | null> {
@@ -481,15 +530,30 @@ async function fetchCharityCommission(): Promise<GovernanceData["charity"] | nul
   if (!headers) return null;
 
   const suffix = `${CHARITY_NUMBER}/${CHARITY_SUFFIX}`;
-  const [detailsRaw, trusteesRaw, financialsRaw, submissionsRaw] =
-    await Promise.all([
-      getJson(`${CC_BASE}/allcharitydetails/${suffix}`, headers),
-      getJson(`${CC_BASE}/charitytrusteenames/${suffix}`, headers),
-      getJson(`${CC_BASE}/charityfinancialhistory/${suffix}`, headers),
-      getJson(`${CC_BASE}/charityaraccounts/${suffix}`, headers),
-    ]);
+  const [
+    detailsRaw,
+    govDocRaw,
+    overviewRaw,
+    areasRaw,
+    trusteesRaw,
+    financialsRaw,
+    submissionsRaw,
+  ] = await Promise.all([
+    getJson(`${CC_BASE}/allcharitydetails/${suffix}`, headers),
+    getJson(`${CC_BASE}/charitygoverningdocument/${suffix}`, headers),
+    getJson(`${CC_BASE}/charityoverview/${suffix}`, headers),
+    getJson(`${CC_BASE}/charityareaofoperation/${suffix}`, headers),
+    getJson(`${CC_BASE}/charitytrusteenames/${suffix}`, headers),
+    getJson(`${CC_BASE}/charityfinancialhistory/${suffix}`, headers),
+    getJson(`${CC_BASE}/charityaraccounts/${suffix}`, headers),
+  ]);
 
-  const details = parseCharityDetails(detailsRaw);
+  const details = parseCharityDetails(
+    detailsRaw,
+    govDocRaw,
+    overviewRaw,
+    areasRaw,
+  );
   if (!details) return null;
 
   // allcharitydetails is documented as including trustees; the dedicated

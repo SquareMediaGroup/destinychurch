@@ -1580,6 +1580,7 @@ there is no client-side coordination to get wrong.
 - `AdminSidebar.tsx` — Admin navigation menu
 - `AdminHeader.tsx` — Sticky desktop header for the admin shell; shows an "Admin / {section}" breadcrumb (title derived from the pathname) and a "View live site" button
 - `RichTextEditor.tsx` — Shared TipTap rich-text editor (HTML output); used by posts, training posts, HR job descriptions, and (since `a22301b`) shop product descriptions. Optional `enableHtmlEmbed` prop adds a raw-HTML embed block.
+- `ChurchSuiteEventFill.tsx` — **Client.** Collapsible "Fill from ChurchSuite event" picker embedded in the Alpha/Bible Course/Recovery "Add Event" forms (`/admin/alpha`, `/admin/bible-course`, `/admin/recovery`). Fetches the same picker feed as `/admin/featured-event` (`/api/admin/events`) and, on selection, calls `onFill({ startDate, location, signupUrl, name })` to prefill those three form fields — no new table or API route. Deliberately leaves `format`/`frequency`/meeting fields untouched, since those `alpha_events` columns have no ChurchSuite equivalent.
 
 > Redirects and banner management (`/admin/redirects`, `/admin/banner`) are built
 > inline in their `page.tsx` files rather than as separate reusable components —

@@ -11,7 +11,7 @@ import WorshipWithUsSection from "@/components/home/WorshipWithUsSection";
 
 export const metadata: Metadata = {
   title: "Destiny Kids",
-  description: "Destiny Kids runs every Sunday from 10:45am for children aged 0–11 at Destiny Church Stockton-on-Tees. Safe, fun and faith-filled classes for every age group.",
+  description: "Destiny Kids runs every Sunday with check-in from 10:45am, for children aged 0–11 at Destiny Church Stockton-on-Tees. Safe, fun and faith-filled classes for every age group.",
   alternates: { canonical: "/kids" },
   openGraph: {
     title: "Destiny Kids | Destiny Church Tees Valley",
@@ -65,7 +65,7 @@ const facts = [
     icon: "calendar_month",
     label: "When",
     value: "Every Sunday",
-    note: "10:45am – 12:30pm. Children are welcomed during the main service.",
+    note: "Check-in from 10:45am, finishing at 12:30pm. Children are welcomed during the main service.",
   },
   {
     icon: "location_on",
@@ -92,7 +92,7 @@ export default function KidsPage() {
         objectPosition="top"
         chips={[
           { icon: "calendar_month", label: "Every Sunday" },
-          { icon: "schedule", label: "10:45am – 12:30pm" },
+          { icon: "schedule", label: "Check-in from 10:45am" },
           { icon: "child_care", label: "Ages 0–11" },
         ]}
       />
@@ -113,7 +113,7 @@ export default function KidsPage() {
         }
       >
         <p>
-          Destiny Kids runs every Sunday from 10:45am to 12:30pm, giving children aged 0–11 their own exciting, age-appropriate experience of church. Our classes are designed to make faith real, relevant and fun for every child.
+          Destiny Kids runs every Sunday, with check-in from 10:45am and the morning finishing at 12:30pm, giving children aged 0–11 their own exciting, age-appropriate experience of church. Our classes are designed to make faith real, relevant and fun for every child.
         </p>
         <p>
           All of our leaders are DBS-checked and trained, and we take the safety and wellbeing of every child seriously. Destiny Kids is a safe, nurturing space where children can encounter God for themselves.

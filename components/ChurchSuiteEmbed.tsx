@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useCookieConsent } from "@/lib/cookieConsent";
 
 interface Props {
   src: string;
@@ -26,12 +27,51 @@ export default function ChurchSuiteEmbed({
   className,
 }: Props) {
   const [loaded, setLoaded] = useState(false);
+  const [mounted, setMounted] = useState(false);
+  const { consent, allowAll, savePreferences } = useCookieConsent();
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const sizeStyle = fill
     ? { height: "100%" }
     : height
       ? { height }
       : { minHeight: minHeight ?? 500 };
+
+  const canEmbed = mounted && consent?.media === true;
+
+  if (!mounted || !canEmbed) {
+    return (
+      <div
+        className={`relative flex flex-col items-center justify-center gap-4 overflow-hidden bg-[#f5f7fa] px-6 text-center ${className ?? ""}`}
+        style={sizeStyle}
+      >
+        <span className="material-symbols-rounded text-4xl text-destiny-grey/30">cookie</span>
+        <div>
+          <p className="text-base font-black text-destiny-grey">Cookies required to load this form</p>
+          <p className="mt-1 max-w-xs text-sm text-destiny-grey/50">
+            This form is provided by ChurchSuite. Accept cookies to load it here.
+          </p>
+        </div>
+        <div className="flex flex-wrap justify-center gap-3">
+          <button
+            onClick={allowAll}
+            className="rounded-full bg-destiny-orange px-5 py-2.5 text-sm font-bold text-white transition hover:brightness-110"
+          >
+            Accept all cookies
+          </button>
+          <button
+            onClick={() => savePreferences({ media: true, analytics: false })}
+            className="rounded-full border border-destiny-grey/20 px-5 py-2.5 text-sm font-medium text-destiny-grey/70 transition hover:border-destiny-grey/40 hover:text-destiny-grey"
+          >
+            Allow forms only
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={`relative overflow-hidden ${className ?? ""}`} style={sizeStyle}>

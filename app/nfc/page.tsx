@@ -109,8 +109,8 @@ export default async function NfcPage() {
             Great to have you
           </p>
           <h1
-            className="nfc-reveal mt-2 font-[family-name:var(--font-anton)] text-[17vw] uppercase leading-[0.92] tracking-tight text-destiny-grey sm:mt-3 sm:text-[8.5rem] lg:text-[10rem]"
-            style={{ animationDelay: "0.12s" }}
+            className="nfc-reveal mt-2 text-[17vw] uppercase leading-[0.92] tracking-tight text-destiny-grey sm:mt-3 sm:text-[8.5rem] lg:text-[10rem]"
+            style={{ fontFamily: "var(--font-anton)", animationDelay: "0.12s" }}
           >
             Welcome
           </h1>

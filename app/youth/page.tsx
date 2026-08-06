@@ -13,6 +13,11 @@ export const metadata: Metadata = {
     title: "Destiny Youth | Destiny Church Tees Valley",
     description: "Every Wednesday 7pm–8:30pm. KS3, KS4 & KS5 groups for young people aged 11–18 in Stockton-on-Tees.",
     url: "https://destinytees.uk/youth",
+    images: [{ url: "/og/youth.webp", width: 1200, height: 630, alt: "Destiny Youth | Destiny Church Tees Valley" }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    images: ["/og/youth.webp"],
   },
 };
 

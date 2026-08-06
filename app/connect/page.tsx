@@ -12,6 +12,11 @@ export const metadata: Metadata = {
     title: "Connect Groups | Destiny Church Tees Valley",
     description: "Find your people. Join a Connect Group and do life together with others in Stockton-on-Tees and beyond.",
     url: "https://destinytees.uk/connect",
+    images: [{ url: "/og/connect.webp", width: 1200, height: 630, alt: "Connect Groups | Destiny Church Tees Valley" }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    images: ["/og/connect.webp"],
   },
 };
 

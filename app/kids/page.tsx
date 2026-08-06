@@ -12,6 +12,11 @@ export const metadata: Metadata = {
     title: "Destiny Kids | Destiny Church Tees Valley",
     description: "Fun, safe and faith-filled Sunday classes for children aged 0–11. Led by DBS-checked volunteers who love little ones.",
     url: "https://destinytees.uk/kids",
+    images: [{ url: "/og/kids.webp", width: 1200, height: 630, alt: "Destiny Kids | Destiny Church Tees Valley" }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    images: ["/og/kids.webp"],
   },
 };
 

@@ -15,6 +15,11 @@ export const metadata: Metadata = {
     title: "New Here? | Destiny Church Tees Valley",
     description: "Welcome! Find out what to expect and how to get connected at Destiny Church Stockton-on-Tees.",
     url: "https://destinytees.uk/new-here",
+    images: [{ url: "/og/new-here.webp", width: 1200, height: 630, alt: "New Here? | Destiny Church Tees Valley" }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    images: ["/og/new-here.webp"],
   },
 };
 

@@ -13,6 +13,11 @@ export const metadata: Metadata = {
     title: "Serve | Destiny Church Tees Valley",
     description: "You were made for more than just attending. Find your team and use your gifts at Destiny Church.",
     url: "https://destinytees.uk/serve",
+    images: [{ url: "/og/serve.webp", width: 1200, height: 630, alt: "Serve | Destiny Church Tees Valley" }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    images: ["/og/serve.webp"],
   },
 };
 

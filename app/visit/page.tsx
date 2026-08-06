@@ -12,6 +12,11 @@ export const metadata: Metadata = {
     title: "Plan Your Visit | Destiny Church Tees Valley",
     description: "Sunday 11am at Destiny Centre, Norton Road, Stockton-on-Tees. Free parking, BSL available, kids provision from 10:45am.",
     url: "https://destinytees.uk/visit",
+    images: [{ url: "/og/visit.webp", width: 1200, height: 630, alt: "Plan Your Visit | Destiny Church Tees Valley" }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    images: ["/og/visit.webp"],
   },
 };
 

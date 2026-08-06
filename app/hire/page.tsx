@@ -13,6 +13,11 @@ export const metadata: Metadata = {
     title: "Hire Our Venue | Destiny Church Tees Valley",
     description: "Hire Destiny Centre, Norton Road, Stockton-on-Tees for events, meetings, conferences and more.",
     url: "https://destinytees.uk/hire",
+    images: [{ url: "/og/hire.webp", width: 1200, height: 630, alt: "Hire Our Venue | Destiny Church Tees Valley" }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    images: ["/og/hire.webp"],
   },
 };
 

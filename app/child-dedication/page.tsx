@@ -12,6 +12,11 @@ export const metadata: Metadata = {
     title: "Child Dedication | Destiny Church Tees Valley",
     description: "Dedicate your child to the Lord at Destiny Church Tees Valley.",
     url: "https://destinytees.uk/child-dedication",
+    images: [{ url: "/og/child-dedication.webp", width: 1200, height: 630, alt: "Child Dedication | Destiny Church Tees Valley" }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    images: ["/og/child-dedication.webp"],
   },
 };
 

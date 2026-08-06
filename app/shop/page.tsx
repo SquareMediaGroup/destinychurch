@@ -13,6 +13,11 @@ export const metadata: Metadata = {
     title: "Shop | Destiny Church Tees Valley",
     description: "Apparel and merch — order online, collect at church.",
     url: "https://destinytees.uk/shop",
+    images: [{ url: "/og/shop.webp", width: 1200, height: 630, alt: "Shop | Destiny Church Tees Valley" }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    images: ["/og/shop.webp"],
   },
 };
 

@@ -14,6 +14,11 @@ export const metadata: Metadata = {
     title: "Annual Report 2025 | Destiny Church Tees Valley",
     description: "Celebrating a year of faith, growth and community at Destiny Church.",
     url: "https://destinytees.uk/annual-report-2025",
+    images: [{ url: "/og/annual-report-2025.webp", width: 1200, height: 630, alt: "Annual Report 2025 | Destiny Church Tees Valley" }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    images: ["/og/annual-report-2025.webp"],
   },
 };
 

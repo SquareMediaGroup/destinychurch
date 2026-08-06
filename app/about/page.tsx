@@ -9,6 +9,11 @@ export const metadata: Metadata = {
     title: "About Destiny Church Tees Valley",
     description: "Our mission: transforming lives through Faith, Hope and Love for Jesus. Meet our pastors and team.",
     url: "https://destinytees.uk/about",
+    images: [{ url: "/og/about.webp", width: 1200, height: 630, alt: "About Destiny Church Tees Valley" }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    images: ["/og/about.webp"],
   },
 };
 import AboutMissionStatement from "@/components/about/AboutMissionStatement";

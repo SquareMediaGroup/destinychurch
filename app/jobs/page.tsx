@@ -19,6 +19,11 @@ export const metadata: Metadata = {
     description:
       "It's not a career — it's a calling. Find out more about working in ministry at Destiny Church.",
     url: "https://destinytees.uk/jobs",
+    images: [{ url: "/og/jobs.webp", width: 1200, height: 630, alt: "Jobs & Internships | Destiny Church Tees Valley" }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    images: ["/og/jobs.webp"],
   },
 };
 

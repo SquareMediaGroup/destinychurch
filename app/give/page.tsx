@@ -32,6 +32,11 @@ export const metadata: Metadata = {
     title: "Give | Destiny Church Tees Valley",
     description: "Support Destiny Church — give online, by bank transfer or text. Every gift makes a difference.",
     url: "https://destinytees.uk/give",
+    images: [{ url: "/og/give.webp", width: 1200, height: 630, alt: "Give | Destiny Church Tees Valley" }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    images: ["/og/give.webp"],
   },
 };
 

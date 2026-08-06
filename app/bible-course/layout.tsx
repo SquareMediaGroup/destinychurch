@@ -10,6 +10,11 @@ export const metadata: Metadata = {
     description:
       "An award-winning eight-session journey through the Bible with Bible Society. See how the whole story fits together — everyone welcome.",
     url: "https://destinytees.uk/bible-course",
+    images: [{ url: "/og/bible-course.webp", width: 1200, height: 630, alt: "The Bible Course | Destiny Church Tees Valley" }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    images: ["/og/bible-course.webp"],
   },
 };
 

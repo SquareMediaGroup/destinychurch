@@ -12,6 +12,11 @@ export const metadata: Metadata = {
     title: "Baptism | Destiny Church Tees Valley",
     description: "Take the next step of faith and get baptised at Destiny Church Tees Valley.",
     url: "https://destinytees.uk/baptism",
+    images: [{ url: "/og/baptism.webp", width: 1200, height: 630, alt: "Baptism | Destiny Church Tees Valley" }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    images: ["/og/baptism.webp"],
   },
 };
 

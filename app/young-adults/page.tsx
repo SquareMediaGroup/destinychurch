@@ -12,6 +12,11 @@ export const metadata: Metadata = {
     title: "Young Adults | Destiny Church Tees Valley",
     description: "A community of 18–30s figuring out life, faith and everything in between. Based in Stockton-on-Tees.",
     url: "https://destinytees.uk/young-adults",
+    images: [{ url: "/og/young-adults.webp", width: 1200, height: 630, alt: "Young Adults | Destiny Church Tees Valley" }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    images: ["/og/young-adults.webp"],
   },
 };
 

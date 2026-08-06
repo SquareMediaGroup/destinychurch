@@ -14,6 +14,11 @@ export const metadata: Metadata = {
     title: "Kids Camp 2026 | Destiny Church Tees Valley",
     description: "Join us for Destiny Kids Camp in May 2026 — 3 days of discipleship, worship and adventure for children in Year 1 to Year 6.",
     url: "https://destinytees.uk/dckids",
+    images: [{ url: "/og/dckids.webp", width: 1200, height: 630, alt: "Kids Camp 2026 | Destiny Church Tees Valley" }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    images: ["/og/dckids.webp"],
   },
 };
 

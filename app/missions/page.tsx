@@ -13,6 +13,11 @@ export const metadata: Metadata = {
     title: "Missions | Destiny Church Tees Valley",
     description: "Partnering with The Moses Project, Compassion, and Safe Families to serve the vulnerable and transform lives.",
     url: "https://destinytees.uk/missions",
+    images: [{ url: "/og/missions.webp", width: 1200, height: 630, alt: "Missions | Destiny Church Tees Valley" }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    images: ["/og/missions.webp"],
   },
 };
 

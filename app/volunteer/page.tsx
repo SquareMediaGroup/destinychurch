@@ -11,6 +11,11 @@ export const metadata: Metadata = {
     title: "Volunteer | Destiny Church Tees Valley",
     description: "Discover how you can serve and make a difference. Join our worship, kids, hospitality or tech teams.",
     url: "https://destinytees.uk/volunteer",
+    images: [{ url: "/og/volunteer.webp", width: 1200, height: 630, alt: "Volunteer | Destiny Church Tees Valley" }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    images: ["/og/volunteer.webp"],
   },
 };
 

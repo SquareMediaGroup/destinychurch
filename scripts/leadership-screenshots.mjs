@@ -34,7 +34,7 @@ const PUBLIC_PAGES = [
   ["/missions", "13-missions", true],
   ["/contact", "14-contact", true],
   ["/hire", "15-hire", true],
-  ["/annual-report-2025", "16-annual-report", true],
+  ["/governance", "16-governance", true],
   ["/give", "17-give-hero", false], // above-the-fold for hero shot
 ];
 

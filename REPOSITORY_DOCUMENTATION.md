@@ -170,7 +170,6 @@ destinychurch/
 │   ├── alpha/                     # Alpha course info
 │   ├── volunteer/                 # Volunteer sign-up form
 │   ├── whats-on/                  # Events listing + per-event pages ([slug])
-│   ├── annual-report-2025/        # Annual report campaign page
 │   ├── [slug]/                    # Dynamic catchall page (posts table)
 │   ├── admin/                     # Protected admin dashboard
 │   │   ├── forgot-password/       # Password recovery request
@@ -211,7 +210,6 @@ destinychurch/
 │   │   ├── turnstile/               # verify/ — Cloudflare Turnstile token check (sets ts_verified cookie)
 │   │   └── webhooks/               # stripe/ only — no GitHub/Vercel webhook route
 │   ├── [slug]/                    # Dynamic catchall (posts table)
-│   └── annual-report-2025/        # Specific campaign page
 │
 ├── components/                    # React components (shared across pages)
 │   ├── ChurchHeader.tsx           # Site header with nav
@@ -1323,7 +1321,6 @@ Displayed on every page:
 | `/safeguarding` | `app/safeguarding/page.tsx` | Safeguarding policy |
 | `/data-gdpr` | `app/data-gdpr/page.tsx` | Data & GDPR policy |
 | `/governance` | `app/governance/page.tsx` | Transparency page: charity + company registration details, trustees/directors, charitable objects, five-year financial history and filings. Data comes live from the Charity Commission and Companies House APIs via `lib/governance.server.ts`, cached weekly (`revalidate = 604800`), falling back to a stored snapshot per-regulator when a key is missing or an API is down |
-| `/annual-report-2025` | `app/annual-report-2025/page.tsx` | Annual report campaign page |
 | `/admin-login`, `/administration` | `app/admin-login/page.tsx`, `app/administration/page.tsx` | Stale-bookmark redirects to `/login` and `/admin` |
 | `/auth/callback`, `/auth/confirm` | `app/auth/callback/route.ts`, `app/auth/confirm/route.ts` | Supabase OAuth callback and email-OTP verification route handlers |
 | `/[slug]` | `app/[slug]/page.tsx` | Dynamic catchall — looks up a published row in the `posts` table. At ≥1600px viewport the layout becomes a three-track grid with a promo card in each margin (see `posts/PostRails.tsx`); the 768px article column is unchanged at every width |
@@ -2606,7 +2603,9 @@ const nextConfig: NextConfig = {
   async redirects() {
     return [
       { source: "/prayer-request", destination: "/connect-card", permanent: true },
-      { source: "/prayer-requests", destination: "/connect-card", permanent: true }
+      { source: "/prayer-requests", destination: "/connect-card", permanent: true },
+      // Retired 2026-08-06; /governance now carries its financial content
+      { source: "/annual-report-2025", destination: "/governance", permanent: true }
     ];
   },
   
@@ -2876,7 +2875,6 @@ ENABLE_SMART_SEARCH=true
 - `app/training/page.tsx` — /training resource library
 - `app/volunteer/page.tsx`, `app/links/page.tsx`, `app/destiny-recovery/page.tsx`, `app/dckids/page.tsx` — Volunteer sign-up, next-steps links, recovery info, kids camp campaign
 - `app/accessibility/page.tsx`, `app/privacy/page.tsx`, `app/terms/page.tsx`, `app/data-gdpr/page.tsx` — Preferences & legal pages
-- `app/annual-report-2025/page.tsx` — Annual report campaign page
 - `app/[slug]/page.tsx` — Dynamic catchall (posts table)
 
 ### Admin Pages

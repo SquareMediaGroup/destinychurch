@@ -41,6 +41,14 @@ const nextConfig: NextConfig = {
         destination: "/connect-card",
         permanent: true,
       },
+      {
+        // The 2025 annual report page was retired. /governance carries the
+        // financial history it used to show, live from the Charity Commission,
+        // so existing links land somewhere useful rather than on a 404.
+        source: "/annual-report-2025",
+        destination: "/governance",
+        permanent: true,
+      },
     ];
   },
   async headers() {

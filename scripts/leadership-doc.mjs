@@ -426,7 +426,7 @@ const build = async () => {
       ["Missions (/missions)", "Outreach and partnerships"],
       ["Contact (/contact)", "Contact form and details"],
       ["Hire (/hire)", "Venue hire"],
-      ["Annual Report (/annual-report-2025)", "Yearly report"],
+      ["Governance (/governance)", "Charity and company registration, trustees, finances and filings"],
       ["Help (/help)", "Help and support"],
       ["Privacy, Terms, Safeguarding, Data & GDPR", "Legal and compliance policies"],
     ]),

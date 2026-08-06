@@ -2,6 +2,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { isYouTubeQuotaExceeded } from "@/lib/youtube";
 import ReportBugLink from "@/components/report-bug/ReportBugLink";
+import FooterLinkGroup from "@/components/FooterLinkGroup";
 
 const connectLinks = [
   { label: "New Here?", href: "/new-here" },
@@ -41,9 +42,9 @@ export default async function ChurchFooter() {
   return (
     <footer className="border-t border-white/5 text-white" style={{ background: "linear-gradient(135deg, #1c0f06 0%, #0d0d0d 100%)" }}>
       <div className="mx-auto max-w-7xl px-4 py-14 lg:px-8">
-        <div className="grid gap-10 md:grid-cols-[1.3fr_1fr_1fr_1fr]">
+        <div className="grid gap-0 md:grid-cols-[1.3fr_1fr_1fr_1fr] md:gap-10">
           {/* Brand column */}
-          <div className="space-y-5">
+          <div className="space-y-5 pb-6 md:pb-0">
             <Link href="/" aria-label="Destiny Church" className="-ml-[30px] -mt-[7px] block">
               <div className="relative h-11 w-[200px]">
                 <Image
@@ -68,71 +69,16 @@ export default async function ChurchFooter() {
             </div>
           </div>
 
-          {/* Church column */}
-          <div className="space-y-4">
-            <p className="text-sm font-bold text-white">Church</p>
-            <div className="grid gap-2 text-sm">
-              {churchLinks.map((link) =>
-                link.external ? (
-                  <a
-                    key={link.href}
-                    href={link.href}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-white/70 transition hover:text-white"
-                  >
-                    {link.label}
-                  </a>
-                ) : (
-                  <Link
-                    key={link.href}
-                    href={link.href}
-                    className="text-white/70 transition hover:text-white"
-                  >
-                    {link.label}
-                  </Link>
-                )
-              )}
-            </div>
-          </div>
-
-          {/* Connect column */}
-          <div className="space-y-4">
-            <p className="text-sm font-bold text-white">Connect</p>
-            <div className="grid gap-2 text-sm">
-              {connectLinks.map((link) => (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  className="text-white/70 transition hover:text-white"
-                >
-                  {link.label}
-                </Link>
-              ))}
-            </div>
-          </div>
-
-          {/* Legal column */}
-          <div className="space-y-4">
-            <p className="text-sm font-bold text-white">Legal</p>
-            <div className="grid gap-2 text-sm">
-              {legalLinks.map((link) => (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  className="text-white/70 transition hover:text-white"
-                >
-                  {link.label}
-                </Link>
-              ))}
-            </div>
-          </div>
+          {/* Link columns — accordions on mobile, plain columns from md: up */}
+          <FooterLinkGroup title="Church" links={churchLinks} />
+          <FooterLinkGroup title="Connect" links={connectLinks} />
+          <FooterLinkGroup title="Legal" links={legalLinks} />
         </div>
 
         {/* Bottom bar */}
         <div className="mt-10 flex flex-col gap-3 border-t border-white/10 pt-6 text-xs text-white/50 sm:flex-row sm:items-center sm:justify-between">
           <span>
-            &copy; {new Date().getFullYear()} Destiny Church Tees Valley &middot;
+            &copy; {new Date().getFullYear()}{" "}Destiny Church Tees Valley &middot;
             Reg Charity No. 1119951
           </span>
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-6">

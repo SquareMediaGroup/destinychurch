@@ -215,6 +215,7 @@ destinychurch/
 ├── components/                    # React components (shared across pages)
 │   ├── ChurchHeader.tsx           # Site header with nav
 │   ├── ChurchFooter.tsx           # Site footer
+│   ├── FooterLinkGroup.tsx        # Footer link column (accordion on mobile)
 │   ├── Providers.tsx              # Client context providers
 │   ├── CookieBanner.tsx           # GDPR cookie consent
 │   ├── AnalyticsGate.tsx          # Conditional analytics loading
@@ -1372,9 +1373,16 @@ All admin/staff features live under a single `/admin` prefix with one login at `
   - Search filters sermons by title/speaker (client-side fuse.js)
 
 #### `ChurchFooter.tsx`
-- **What:** Sitewide footer
-- **Displays:** Contact info, quick links, social, copyright
-- **Dynamic content:** Address and hours from `page_content` table
+- **What:** Sitewide footer (server component — awaits `isYouTubeQuotaExceeded()` to drop the Sermons link when the YouTube quota is blown)
+- **Displays:** Brand blurb + address, three link columns (Church / Connect / Legal), copyright, Report a Bug, phone
+- **Layout:** 4-column grid from `md:` up; on mobile the three link columns render as accordions via `FooterLinkGroup`
+
+#### `FooterLinkGroup.tsx`
+- **What:** One footer link column — a client component so it can hold open/closed state
+- **Mobile:** Collapsed accordion with a chevron header (~44px tap targets), so the footer isn't ~23 stacked links
+- **Desktop:** Forced open with CSS only (`md:grid-rows-[1fr]`, `md:pointer-events-none`, chevron wrapper `md:hidden`) — no JS media query, so no hydration mismatch
+- **Why it matters:** Links stay in the DOM at every breakpoint (SEO/crawl-safe). Collapsed panels also get `invisible` so hidden links leave the keyboard tab order
+- **Gotcha:** The chevron's `md:hidden` lives on a plain wrapper `<span>` — the global `.material-symbols-rounded` rule in `app/globals.css` overrides Tailwind display utilities applied directly to the icon
 
 #### `CookieBanner.tsx`
 - **What:** GDPR cookie consent banner

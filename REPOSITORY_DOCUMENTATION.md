@@ -1466,14 +1466,43 @@ All admin/staff features live under a single `/admin` prefix with one login at `
 
 ### Page-Specific Components
 
-#### Kids Ministry (`components/kids/*`)
-- `KidsHero.tsx` — Hero banner for kids section
-- `KidsAges.tsx` — Age groupings (babies, toddlers, kids)
-- `KidsProgram.tsx` — Sunday program overview
-- `KidsContact.tsx` — Parent contact form
+#### Ministry pages (`components/ministry/*`)
 
-#### Youth Ministry (`components/youth/*`)
-- Similar structure to kids
+The shared vocabulary for the five ministry pages — `/child-dedication`, `/kids`, `/youth`,
+`/young-adults` and `/connect`. Before this existed each page carried its own byte-identical copy of
+the hero and the feature-card grid, so the five were visually interchangeable and a change meant
+editing five files. All server components.
+
+- `MinistryHero.tsx` — the page hero. Sharp photo through `next/image` `fill` + `priority` +
+  `sizes="100vw"` (the previous heroes used a blurred CSS `background-image`, which could be neither
+  optimised nor prioritised as the LCP element). Responsive `min-h`, centred content, and a `chips`
+  prop rendering `glass glass-sm glass-pill` fact pills — those chips are what differentiate the five
+  heroes, and they're where `/kids` and `/youth` carry their schedule instead of cramming it into the
+  eyebrow. `objectPosition` frames per-page (`/kids` needs `top`).
+- `SplitSection.tsx` — image-and-copy split on a 7/5 asymmetric 12-column grid rather than an even
+  50/50. `reverse` swaps columns via `lg:order-*` so JSX stays in reading order; `wideMedia` flips the
+  ratio for photo-led sections; `tone="dark"` renders the shared `#363f48 → #242e37` band.
+- `ImageMosaic.tsx` — 3-or-4 image offset mosaic replacing the old `col-span-2`-plus-two-squares
+  collage. Every tile is `fill` inside a fixed aspect box with a real `sizes`, which is what removes
+  the layout shift and oversized downloads the old fixed-`width`/`height` collages caused.
+- `FeatureGrid.tsx` — the "why join / what we're about" cards. Card shell borrowed from
+  `events/EventCard` (hairline border, two-layer shadow, hover lift); the orange-tinted icon square
+  was dropped in favour of an oversized index numeral. One `AnimateIn` wraps the whole grid —
+  `AnimateIn` renders a plain `<div>`, so wrapping cells individually would break the grid.
+- `AgeGroupCards.tsx` — age-banded groups (`/kids` classes, `/youth` key stages), which previously
+  had two different designs for the same job. Colours come from the `destiny-*` theme tokens, not the
+  inline hex strings the pages used to carry.
+- `FactStrip.tsx` — when/where/cost as one divided panel instead of a third identical card row.
+- `FormSection.tsx` — the dark ChurchSuite band on `/child-dedication` and `/connect`. Wraps
+  `ChurchSuiteEmbed` in a white panel; the embed keeps its own cookie-consent gate untouched.
+
+#### Kids Camp (`components/kids/*`)
+
+Section components for `/dckids` (Kids Camp). Separate from `components/ministry/*` — this page has
+not been brought onto the shared vocabulary yet.
+
+- `KidsCampHero.tsx`, `KidsCampDetails.tsx`, `KidsCampTeam.tsx` (safeguarding leads),
+  `KidsCampVideo.tsx`, `KidsCampForm.tsx`, `KidsCampFAQ.tsx` (client-side accordion)
 
 #### Governance (`components/governance/*`)
 

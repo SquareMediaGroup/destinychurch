@@ -1383,18 +1383,24 @@ All admin/staff features live under a single `/admin` prefix with one login at `
 - **Why it matters:** Links stay in the DOM at every breakpoint (SEO/crawl-safe). Collapsed panels also get `invisible` so hidden links leave the keyboard tab order
 - **Gotcha:** The chevron's `md:hidden` lives on a plain wrapper `<span>` — the global `.material-symbols-rounded` rule in `app/globals.css` overrides Tailwind display utilities applied directly to the icon
 
-#### `CookieBanner.tsx`
-- **What:** GDPR cookie consent banner
-- **Behavior:**
-  - Shows once per session
-  - User can accept all / essential only
-  - Preference stored in localStorage
-  - Disables analytics if rejected
+#### `CookieBanner.tsx` + `lib/cookieConsent.tsx`
+- **What:** GDPR cookie consent, split into **three categories** rather than a single on/off:
+  - `essential` — always `true`, keeps the site running
+  - `media` — third-party embeds: ChurchSuite forms, and YouTube in the live/sermon/missions players
+  - `analytics` — Vercel Analytics
+- **State:** `CookieConsentProvider` (a React context, hook `useCookieConsent`) holds the choice and persists it to `localStorage` under `destiny-cookie-consent`. `decided` is `true` once any choice is stored.
+- **Banner behavior:**
+  - Renders only after mount and only while no choice is stored (hydration-guarded so SSR/client markup match)
+  - Two buttons: **"Accept all cookies"** (`allowAll` → media + analytics on) and **"Necessary cookies only"** (`denyOptional` → both off). Both link out to the Privacy Policy and Terms of Use
+  - A finer `savePreferences({ media, analytics })` also exists for per-category control
+- **Gotcha:** Because consent loads from `localStorage` in an effect, `consent` is `null` on first render. Every gated component waits for `mounted` before reading it, so nothing embeds or tracks until the stored choice (or its absence) is known.
 
 #### `AnalyticsGate.tsx`
 - **What:** Conditional analytics loading
-- **Logic:** Only loads Vercel Analytics if cookie consent given
-- **Files:** `_document.js` or inline script tag
+- **Logic:** Renders `<Analytics />` (Vercel) only when `consent?.analytics` is `true`; returns `null` otherwise
+
+#### Media-gated embeds (`consent?.media`)
+`ChurchSuiteEmbed.tsx`, `live/LivePlayer.tsx`, `sermons/SermonPlayer.tsx` and `missions/MediaEmbed.tsx` all gate their third-party `<iframe>` on `consent?.media === true`. Until media cookies are accepted they render an in-place placeholder ("Cookies required to load this form/video") with an **Accept all cookies** action wired to the same `useCookieConsent` context, so a visitor can opt in without scrolling back to the banner.
 
 #### `SiteBanner.tsx`
 - **What:** Top-of-page announcement banner

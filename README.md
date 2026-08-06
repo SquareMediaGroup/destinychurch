@@ -20,6 +20,7 @@ Designed, engineered, and deployed by [Square Media Group](mailto:hello@squareme
 - Venue hire enquiry system
 - Connect card, prayer request, and contact forms
 - Giving, volunteer, and serve pages
+- `/governance` transparency page — charity and company registration, trustees/directors, charitable objects, and five-year financial and filing history, drawn live from the Charity Commission and Companies House registers
 - `/nfc` "digital back of seats" — a standalone page an NFC tag or QR code on a seat opens during a service, with admin-managed tiles
 - AI Smart Search — OpenAI tool-calling chat with product cards, weather, maps/directions, and live web search
 - Cloudflare Turnstile bot protection on sign-in and Smart Search
@@ -41,6 +42,7 @@ Designed, engineered, and deployed by [Square Media Group](mailto:hello@squareme
 | Payments | Stripe (Payment Element + Express Checkout) |
 | AI Smart Search | OpenAI (tool-calling chat) |
 | Web Search | Tavily (search + extract) |
+| Governance data | Charity Commission + Companies House public APIs |
 | Bot Protection | Cloudflare Turnstile |
 | Email | Resend |
 | Video | YouTube Data API v3 |
@@ -137,6 +139,7 @@ app/
 ├── dckids/           # DC Kids ministry
 ├── destiny-recovery/ # Recovery ministry
 ├── give/             # Giving & donations
+├── governance/       # Charity/company registration & transparency (live regulator data)
 ├── hire/             # Venue hire enquiries
 ├── jobs/             # Job board & applications
 ├── kids/             # Kids ministry

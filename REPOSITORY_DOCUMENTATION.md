@@ -156,6 +156,7 @@ destinychurch/
 │   ├── young-adults/              # Young adults ministry
 │   ├── missions/                  # Missions & outreach
 │   ├── privacy/                   # Privacy policy
+│   ├── governance/               # Charity & company registration / transparency page
 │   ├── safeguarding/              # Safeguarding policy
 │   ├── serve/                     # Volunteer opportunities (overview)
 │   ├── sermons/                   # Sermon archive (+ [id] detail)
@@ -1321,6 +1322,7 @@ Displayed on every page:
 | `/terms` | `app/terms/page.tsx` | Terms of use |
 | `/safeguarding` | `app/safeguarding/page.tsx` | Safeguarding policy |
 | `/data-gdpr` | `app/data-gdpr/page.tsx` | Data & GDPR policy |
+| `/governance` | `app/governance/page.tsx` | Transparency page: charity + company registration details, trustees/directors, charitable objects, five-year financial history and filings. Data comes live from the Charity Commission and Companies House APIs via `lib/governance.server.ts`, cached weekly (`revalidate = 604800`), falling back to a stored snapshot per-regulator when a key is missing or an API is down |
 | `/annual-report-2025` | `app/annual-report-2025/page.tsx` | Annual report campaign page |
 | `/admin-login`, `/administration` | `app/admin-login/page.tsx`, `app/administration/page.tsx` | Stale-bookmark redirects to `/login` and `/admin` |
 | `/auth/callback`, `/auth/confirm` | `app/auth/callback/route.ts`, `app/auth/confirm/route.ts` | Supabase OAuth callback and email-OTP verification route handlers |
@@ -1469,6 +1471,25 @@ All admin/staff features live under a single `/admin` prefix with one login at `
 
 #### Youth Ministry (`components/youth/*`)
 - Similar structure to kids
+
+#### Governance (`components/governance/*`)
+
+Section components for `/governance`. All are server components taking plain props from
+`getGovernanceData()`, and each returns `null` when it has nothing verified to show — an absent
+section is better than an empty heading on a transparency page.
+
+- `GovernanceHero.tsx` — eyebrow, title, lede
+- `RegistrationCards.tsx` — paired charity/company cards with numbers, status, dates, registered
+  office and outbound links to each official register
+- `CharitableObjects.tsx` — charitable objects, activities and areas of operation
+- `TrusteesDirectors.tsx` — trustee and director lists. Deliberately name-and-role only: both APIs
+  also return dates of birth and correspondence addresses, which are not republished here
+- `FinancialHistory.tsx` — headline income/expenditure plus per-year bars scaled against the largest
+  figure across all years, so years stay comparable to each other
+- `FilingHistory.tsx` — recent Companies House filings (linked to the official documents) and charity
+  annual-return submission dates
+- `GovernanceSourceNote.tsx` — attribution, refresh cadence, and an explicit notice naming any
+  regulator whose data is being served from the stored snapshot rather than live
 
 #### Events (`components/events/*`)
 
@@ -2432,6 +2453,37 @@ statically shadows `[slug]`).
 - `getActiveEventPopup()` — the same row projected for the popup; returning non-null is what
   suppresses the generic site popup
 
+### `lib/governance.server.ts`
+
+`server-only`. The single place the site talks to either regulator, powering `/governance`.
+
+- `getGovernanceData()` — the only public entry point. Fetches Companies House and the Charity
+  Commission concurrently and returns registration details, officers, filings, trustees, five-year
+  financial history and annual-return submissions, plus a `sources` flag marking each regulator
+  `"live"` or `"fallback"`.
+- Exports `CHARITY_NUMBER` (1119951), `COMPANY_NUMBER` (06261423), the two public register URLs, and
+  the `formatRegisterDate` / `formatCurrency` helpers the section components share.
+
+Two rules shape the implementation:
+
+1. **Never look up by name.** Several unrelated organisations are also called "Destiny Church" —
+   notably Scottish charity SC017898, "Destiny Church Trust". Every request is a direct lookup by the
+   hardcoded number, and each response is checked to confirm the number returned matches the number
+   requested. A mismatch is discarded and the section falls back, so a wrong-entity record can never
+   reach the page. The same warning lives in `lib/siteKnowledge.ts` and `lib/smartSearch/tools.ts`.
+2. **Never throw.** Same contract as `lib/events.server.ts`: a missing key, timeout, non-OK status or
+   malformed payload resolves to `null`, and the page renders a stored snapshot instead of 500-ing.
+   The two regulators degrade independently — a Companies House outage leaves charity data live.
+
+Auth differs per regulator: Companies House uses HTTP Basic with the API key as the username and a
+blank password; the Charity Commission uses an `Ocp-Apim-Subscription-Key` header. Charity Commission
+responses are read through a case- and underscore-insensitive `field()` helper because their payload
+casing has shifted between endpoint revisions and the full schema sits behind the developer-portal
+login — a casing change upstream degrades one field rather than the whole section.
+
+Caching is weekly (`revalidate: 604800` on every fetch, matching the page), which keeps both keys far
+inside their rate limits (Companies House allows 600 requests per 5 minutes).
+
 ### `lib/jobs.ts` & `lib/hr.ts`
 
 Similar patterns for job listings and HR management.
@@ -2655,6 +2707,10 @@ SMART_SEARCH_ALERT_RECIPIENT=malachi@squaremediagroup.org          # Smart Searc
 # OpenAI (for Smart Search chat — gpt-4.1-mini, tool-calling)
 OPENAI_API_KEY=sk-...
 
+# Regulator APIs for /governance (optional — page falls back to a stored snapshot without them)
+COMPANIES_HOUSE_API_KEY=                         # HTTP Basic, key as username + blank password
+CHARITY_COMMISSION_API_KEY=                      # sent as the Ocp-Apim-Subscription-Key header
+
 # Smart Search tools (optional — each degrades gracefully without its key)
 NEXT_PUBLIC_GOOGLE_MAPS_EMBED_API_KEY=AIza...   # get_directions embed
 TAVILY_API_KEY=tvly-...                          # search_web + extract_page
@@ -2815,6 +2871,7 @@ ENABLE_SMART_SEARCH=true
 - `app/baptism/page.tsx` — Baptism information & registration
 - `app/child-dedication/page.tsx` — Child dedication requests
 - `app/safeguarding/page.tsx` — Safeguarding & child protection
+- `app/governance/page.tsx` — Charity/company registration, trustees, finances & filings (live from both regulators)
 - `app/help/page.tsx` — Help centre & FAQ
 - `app/training/page.tsx` — /training resource library
 - `app/volunteer/page.tsx`, `app/links/page.tsx`, `app/destiny-recovery/page.tsx`, `app/dckids/page.tsx` — Volunteer sign-up, next-steps links, recovery info, kids camp campaign
@@ -2843,6 +2900,7 @@ ENABLE_SMART_SEARCH=true
   - Global: Header, Footer, Providers, CookieBanner, Analytics, FloatingSmartSearch
   - Admin: Sidebar, AdminHeader, RichTextEditor (shared editor), posts/training/hr editors
   - Ministry-specific: Kids, Youth, Young Adults, Alpha
+  - Governance: registration cards, trustees/directors, financial history, filings, source note
   - Shop: ProductCard, ShopProductGrid, ShopHero, cart, checkout
   - Forms: ConnectCard, ContactForm, HireForm
   - Content: Training, Jobs, HR
@@ -2850,7 +2908,7 @@ ENABLE_SMART_SEARCH=true
 ### Libraries (`lib/`)
 - **~40 utility files** including:
   - Supabase clients (admin, browser)
-  - API wrappers (YouTube, OpenAI, Resend, Stripe)
+  - API wrappers (YouTube, OpenAI, Resend, Stripe, Companies House + Charity Commission)
   - Domain logic (sermons, jobs, HR, training, shop)
   - Email templates
   - Rate limiting (in-memory), auth is handled by `middleware.ts` (no `roles.ts`)

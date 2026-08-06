@@ -14,6 +14,7 @@ const aboutDropdown = [
   { href: "/beliefs", label: "What We Believe" },
   { href: "/visit", label: "Plan a Visit" },
   { href: "/jobs", label: "Jobs & Internships" },
+  { href: "/governance", label: "Governance" },
 ];
 
 const whatsOnDropdownBase = [

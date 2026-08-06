@@ -16,6 +16,7 @@ const connectLinks = [
 ];
 
 const legalLinks = [
+  { label: "Governance", href: "/governance" },
   { label: "Data & GDPR Policy", href: "/data-gdpr" },
   { label: "Safeguarding Policy", href: "/safeguarding" },
   { label: "Terms of Use", href: "/terms" },
@@ -78,8 +79,13 @@ export default async function ChurchFooter() {
         {/* Bottom bar */}
         <div className="mt-10 flex flex-col gap-3 border-t border-white/10 pt-6 text-xs text-white/50 sm:flex-row sm:items-center sm:justify-between">
           <span>
-            &copy; {new Date().getFullYear()}{" "}Destiny Church Tees Valley &middot;
-            Reg Charity No. 1119951
+            &copy; {new Date().getFullYear()}{" "}Destiny Church Tees Valley &middot;{" "}
+            <Link
+              href="/governance"
+              className="underline underline-offset-2 transition hover:text-white"
+            >
+              Reg Charity No. 1119951
+            </Link>
           </span>
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-6">
             <ReportBugLink />

@@ -30,6 +30,7 @@ export const PAGE_INTENTS: { href: string; cta: string; intent: string }[] = [
   { href: "/hire",            cta: "Enquire About Hiring",    intent: "venue hire, hiring the building, hall, rooms, auditorium" },
   { href: "/shop",            cta: "Browse Merch",            intent: "shop, store, merch, apparel, t-shirts, clothing, buy" },
   { href: "/safeguarding",    cta: "Safeguarding",            intent: "safeguarding, child protection, concerns" },
+  { href: "/governance",      cta: "Governance & Registration", intent: "charity number, company number, registered charity, trustees, directors, accounts, income, finances, annual return, filings, how the church is governed" },
   { href: "/help",            cta: "Help Centre",             intent: "help, FAQ, questions, how do I" },
   { href: "/contact",         cta: "Contact Us",              intent: "contact, get in touch, phone, email, address, or anything we don't have info on" },
 ];
@@ -103,6 +104,10 @@ CHURCH BASICS:
   When looking anything up about Destiny (especially finances), always use charity
   number 1119951 to make sure you have the right one, and never quote a figure from
   a record that doesn't match it.
+  The /governance page is the canonical on-site source for registration details,
+  trustees, directors, financial history and filings — it is generated directly from
+  the Charity Commission and Companies House registers using those two numbers, so
+  prefer sending people there over quoting figures from a web search.
 - Mission: "Transforming Lives through Faith, Hope and Love for Jesus"
 - Purpose: Bring people to Jesus, develop them to maturity in Christ, equip them for ministry and mission
 - Bible-based, Pentecostal Christian church in Tees Valley.

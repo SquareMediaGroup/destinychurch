@@ -44,6 +44,7 @@ const ROUTE_SLUGS = [
   "dckids",
   "destiny-recovery",
   "give",
+  "governance",
   "help",
   "hire",
   // Temporary: app/home/ is the event-card variant preview. Remove this entry

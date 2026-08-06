@@ -5,6 +5,7 @@ import { getProductBySlug } from "@/lib/shop.server";
 import { fromPrice, formatPrice, FIT_LABELS } from "@/lib/shop";
 import ProductGallery from "@/components/shop/ProductGallery";
 import ProductBuyPanel from "@/components/shop/ProductBuyPanel";
+import RichContent from "@/components/content/RichContent";
 
 export const revalidate = 60;
 
@@ -85,9 +86,12 @@ export default async function ProductPage({
                 <h2 className="text-xs font-bold uppercase tracking-[0.2em] text-destiny-grey/50">
                   Details
                 </h2>
-                <div
+                {/* jsonLd off: this page already emits its own Product entity
+                    below, and a second <script> would compete with it. */}
+                <RichContent
+                  html={product.description}
                   className="rte-content mt-3 text-sm leading-relaxed text-destiny-grey/70"
-                  dangerouslySetInnerHTML={{ __html: product.description }}
+                  jsonLd={false}
                 />
               </div>
             )}

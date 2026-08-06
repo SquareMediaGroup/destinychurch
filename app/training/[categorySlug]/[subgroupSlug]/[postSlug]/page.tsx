@@ -6,6 +6,7 @@ import PasswordGate from "@/components/training/PasswordGate";
 import CompleteButton from "@/components/training/CompleteButton";
 import { getPostBySlugs, getPublishedPosts } from "@/lib/training.server";
 import { isUnlocked } from "@/lib/trainingAccess";
+import RichContent from "@/components/content/RichContent";
 
 export const dynamic = "force-dynamic";
 
@@ -83,9 +84,9 @@ export default async function TrainingPostPage({
 
         <AnimateIn className="mt-8">
           {post.body ? (
-            <div
+            <RichContent
+              html={post.body}
               className="rte-content text-[0.97rem] text-destiny-grey/80"
-              dangerouslySetInnerHTML={{ __html: post.body }}
             />
           ) : (
             <p className="text-sm text-destiny-grey/55">

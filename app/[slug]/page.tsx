@@ -4,6 +4,7 @@ import { redirect, notFound } from "next/navigation";
 import { createServiceClient } from "@/utils/supabase/service";
 import { getPublishedPostBySlug } from "@/lib/posts.server";
 import { EventsRail, CoursesRail } from "@/components/posts/PostRails";
+import RichContent from "@/components/content/RichContent";
 
 interface Props {
   params: Promise<{ slug: string }>;
@@ -43,12 +44,10 @@ export default async function SlugPage({ params }: Props) {
             <h1 className="text-3xl font-black text-destiny-grey md:text-4xl">
               {post.title}
             </h1>
-            {post.body ? (
-              <div
-                className="rte-content mt-8 text-[0.97rem] text-destiny-grey/80"
-                dangerouslySetInnerHTML={{ __html: post.body }}
-              />
-            ) : null}
+            <RichContent
+              html={post.body}
+              className="rte-content mt-8 text-[0.97rem] text-destiny-grey/80"
+            />
           </div>
 
           {/* Streamed so a slow ChurchSuite feed can't hold up the post body. */}

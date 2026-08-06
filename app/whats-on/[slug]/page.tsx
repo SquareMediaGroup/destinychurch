@@ -23,6 +23,7 @@ import {
 } from "@destiny/shared";
 import EventSignupButton from "@/components/events/EventSignupButton";
 import { getEventIndex } from "@/lib/events.server";
+import RichContent from "@/components/content/RichContent";
 
 export const revalidate = 300;
 // New events appear in the feed between builds; render them on demand rather
@@ -251,9 +252,12 @@ export default async function EventPage({ params }: Props) {
             <h2 className="text-[11.5px] font-bold uppercase tracking-[0.09em] text-destiny-grey/45">
               About
             </h2>
-            <div
+            {/* Routed through RichContent for one code path, though this
+                content comes from the sanitised ChurchSuite feed and so will
+                never contain blocks — it always takes the safety-valve path. */}
+            <RichContent
+              html={description}
               className="rte-content mt-3 text-[0.97rem] text-destiny-grey/80"
-              dangerouslySetInnerHTML={{ __html: description }}
             />
           </section>
         )}

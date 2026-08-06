@@ -6,6 +6,7 @@ import AnimateIn from "@/components/AnimateIn";
 import ApplyForm from "../ApplyForm";
 import { getJobBySlug, getPublishedJobs } from "@/lib/jobs.server";
 import { EMPLOYMENT_LABELS, KIND_LABELS, isClosed } from "@/lib/jobs";
+import RichContent from "@/components/content/RichContent";
 
 export const revalidate = 300;
 
@@ -163,9 +164,9 @@ export default async function JobDetailPage({
           <AnimateIn className="order-2 lg:order-1">
             {job.description ? (
               looksLikeHtml(job.description) ? (
-                <div
+                <RichContent
+                  html={job.description}
                   className="rte-content text-[0.95rem] text-destiny-grey/80"
-                  dangerouslySetInnerHTML={{ __html: job.description }}
                 />
               ) : (
                 <div className="rte-content text-[0.95rem] text-destiny-grey/80">

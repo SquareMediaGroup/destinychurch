@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { useDialog } from "@/components/DialogProvider";
+import ChurchSuiteEventFill from "@/components/admin/ChurchSuiteEventFill";
 import {
   type AlphaFrequency,
   FREQUENCY_LABEL,
@@ -270,6 +271,13 @@ export default function BibleCourseAdminPage() {
             Add Event
           </h2>
           <form onSubmit={handleCreate} className="flex flex-col gap-4">
+            <ChurchSuiteEventFill
+              onFill={(d) => {
+                setStartDate(d.startDate);
+                if (d.location) setLocation(d.location);
+                if (d.signupUrl) setSignupUrl(d.signupUrl);
+              }}
+            />
             <div className="grid gap-4 sm:grid-cols-2">
               <div>
                 <label className="mb-1.5 block text-xs font-bold text-destiny-grey/60">

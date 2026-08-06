@@ -94,10 +94,26 @@ body {
   scroll-behavior: auto !important;
 }
 
-h1,
-h2,
-h3 {
-  font-family: var(--font-heading);
+/*
+  Site-wide heading font.
+
+  This MUST stay inside `@layer base`. Unlayered it would outrank every layered
+  rule regardless of specificity — including `.rte-content h2` (which sets
+  Roboto) and every Tailwind `font-*` utility, so rich-text headings silently
+  rendered in Arial and any utility that tried to change a heading's font was
+  ignored.
+
+  Safe to layer: every h1–h3 in the codebase that carries a font utility uses
+  `font-[family-name:var(--font-heading)]`, i.e. this same value, so the
+  computed result is unchanged. Layering just means a utility *could* now
+  override it, which is the behaviour you'd expect.
+*/
+@layer base {
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-heading);
+  }
 }
 
 @keyframes mission-wipe-in {
@@ -949,6 +965,21 @@ h3 {
 }
 
 /* ── Rich-text job descriptions (TipTap editor + public render) ─────────── */
+/*
+  These rules MUST stay inside `@layer components`.
+
+  `@import "tailwindcss"` (line 1) establishes `@layer theme, base, components,
+  utilities`. Unlayered CSS beats *all* layered CSS regardless of specificity, so
+  when these rules sat outside a layer they silently outranked every Tailwind
+  utility — `.rte-content h2 { font-size: 1.5rem }` beat `class="text-3xl"`, and
+  the orange ::before bullets leaked into every list. That made the content
+  blocks (see [data-dc-block] below) impossible to style. Inside `components`,
+  Tailwind utilities win, which is what block components rely on.
+
+  Deliberately not re-indented: the wrapper was added to ~110 existing lines and
+  keeping their indentation makes the diff readable.
+*/
+@layer components {
 .rte-content {
   line-height: 1.75;
 }
@@ -1057,6 +1088,126 @@ h3 {
   border-radius: 1rem;
   display: block;
 }
+
+/* ── Content blocks ──────────────────────────────────────────────────────
+   Admin-authored blocks (FAQ, callout, cards…) stored in the same HTML
+   string as the prose above. See components/blocks/ and
+   components/content/RichContent.tsx. */
+
+/* RichContent splits the stored HTML into prose segments and block segments.
+   Prose segments are wrapped in .dc-html purely so React has an element to
+   hang dangerouslySetInnerHTML on — `display: contents` makes that wrapper
+   layout-transparent so margins collapse exactly as they did before. */
+.dc-html {
+  display: contents;
+}
+/* `display: contents` removes the box but NOT the selector match, so
+   `.rte-content > :first-child { margin-top: 0 }` above now targets the
+   invisible wrapper instead of the first real element. Restore it. */
+.rte-content > .dc-html:first-child > :first-child {
+  margin-top: 0;
+}
+
+/* Blocks own their internal typography completely. Neutralise the prose
+   rules inside them so the Tailwind utilities in the block components
+   actually apply. Specificity (0,2,1) beats the (0,1,1) prose rules, and
+   both live in this same layer. */
+.rte-content [data-dc-block] {
+  margin-block: 2rem;
+  /* Blocks render in four different reading columns (posts 768px, plus the
+     training, jobs and shop pages) so they size themselves against their own
+     width, never the viewport. This is what makes the `cqi` units and
+     `@container` queries in components/blocks/ resolve. */
+  container-type: inline-size;
+}
+.rte-content [data-dc-block] :is(h1, h2, h3, h4) {
+  font: inherit;
+  color: inherit;
+  margin: 0;
+}
+.rte-content [data-dc-block] p {
+  margin: 0;
+}
+.rte-content [data-dc-block] :is(ul, ol) {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: none;
+}
+.rte-content [data-dc-block] li {
+  margin: 0;
+  padding: 0;
+}
+.rte-content [data-dc-block] :is(ul, ol) li::before {
+  content: none;
+}
+.rte-content [data-dc-block] a {
+  color: inherit;
+  text-decoration: none;
+}
+.rte-content [data-dc-block] strong {
+  color: inherit;
+}
+.rte-content [data-dc-block] blockquote {
+  border: 0;
+  margin: 0;
+  padding: 0;
+  font-style: normal;
+  color: inherit;
+}
+.rte-content [data-dc-block] iframe {
+  aspect-ratio: auto;
+  border-radius: 0;
+}
+
+/* ── FAQ block ───────────────────────────────────────────────────────────
+   The FAQ block uses native <details>/<summary> so it ships zero JS and gets
+   UA-managed aria-expanded, keyboard support and find-in-page expansion.
+   The cost is that we can't animate with the grid-rows-[0fr]→[1fr] trick
+   used by components/help/HelpAccordion.tsx, so we use ::details-content —
+   progressively enhanced, snapping open where unsupported. */
+.dc-faq {
+  /* Scoped deliberately. On :root this would change `height: auto`
+     transition behaviour site-wide. */
+  interpolate-size: allow-keywords;
+}
+.dc-faq summary::-webkit-details-marker {
+  display: none;
+}
+.dc-faq summary::marker {
+  content: "";
+}
+@media (prefers-reduced-motion: no-preference) {
+  .dc-faq details::details-content {
+    block-size: 0;
+    overflow: hidden;
+    transition:
+      block-size 0.22s ease,
+      content-visibility 0.22s allow-discrete;
+  }
+  .dc-faq details[open]::details-content {
+    block-size: auto;
+  }
+}
+
+/* ── Block chrome, editor only ───────────────────────────────────────────
+   Everything else in the chrome is plain Tailwind; these are the bits that
+   need to reach into ProseMirror's own classes. */
+.ProseMirror .dc-block-shell {
+  position: relative;
+}
+/* We draw our own selection ring in BlockNodeView. */
+.ProseMirror .dc-block-shell.ProseMirror-selectednode {
+  outline: none;
+}
+.ProseMirror [data-drag-handle] {
+  cursor: grab;
+}
+.ProseMirror [data-drag-handle]:active {
+  cursor: grabbing;
+}
+}
+/* ── end @layer components ─────────────────────────────────────────────── */
 
 /* Accessibility Overrides */
 html[data-glassfx="off"] .glass-refract {

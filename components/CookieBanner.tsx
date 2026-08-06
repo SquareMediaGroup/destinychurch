@@ -31,15 +31,21 @@ export default function CookieBanner() {
             onClick={allowAll}
             className="rounded-full bg-destiny-orange px-4 py-2 text-xs font-semibold uppercase tracking-wide text-white shadow-sm transition hover:brightness-110"
           >
-            Accept all
+            Accept all cookies
           </button>
           <button
             onClick={denyOptional}
             className="rounded-full border border-white/15 bg-white/5 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-white/80 transition hover:border-destiny-orange hover:bg-destiny-orange/15 hover:text-white"
           >
-            Essential only
+            Necessary cookies only
           </button>
         </div>
+        <p className="mt-3 text-[11px] leading-relaxed text-white/45">
+          By accepting, you agree to our{" "}
+          <Link href="/privacy" className="underline underline-offset-2 hover:text-destiny-orange">Privacy Policy</Link>{" "}
+          and{" "}
+          <Link href="/terms" className="underline underline-offset-2 hover:text-destiny-orange">Terms of Use</Link>.
+        </p>
       </div>
     </div>
   );

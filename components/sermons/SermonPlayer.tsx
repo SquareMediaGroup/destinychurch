@@ -3,6 +3,7 @@
 
 import { useEffect, useState, useRef, useCallback } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { useCookieConsent } from "@/lib/cookieConsent";
 import { useSermonPlayerState } from "@/lib/sermonPlayerContext";
 import { loadYTApi } from "@/lib/youtubeIframe";
@@ -180,9 +181,15 @@ export default function SermonPlayer({ videoId, thumbnail }: SermonPlayerProps) 
               Accept all cookies
             </button>
             <button onClick={() => savePreferences({ media: true, analytics: false })} className="rounded-full border border-white/20 px-5 py-2.5 text-sm font-medium text-white/70 transition hover:border-white/40 hover:text-white">
-              Allow media only
+              Necessary + media only, no tracking
             </button>
           </div>
+          <p className="mt-1 max-w-xs text-[11px] leading-relaxed text-white/40">
+            By accepting, you agree to our{" "}
+            <Link href="/privacy" className="underline underline-offset-2 hover:text-destiny-orange">Privacy Policy</Link>{" "}
+            and{" "}
+            <Link href="/terms" className="underline underline-offset-2 hover:text-destiny-orange">Terms of Use</Link>.
+          </p>
         </div>
       </div>
     );

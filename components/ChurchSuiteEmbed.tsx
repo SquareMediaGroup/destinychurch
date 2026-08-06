@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { useCookieConsent } from "@/lib/cookieConsent";
 
 interface Props {
@@ -66,9 +67,15 @@ export default function ChurchSuiteEmbed({
             onClick={() => savePreferences({ media: true, analytics: false })}
             className="rounded-full border border-destiny-grey/20 px-5 py-2.5 text-sm font-medium text-destiny-grey/70 transition hover:border-destiny-grey/40 hover:text-destiny-grey"
           >
-            Allow forms only
+            Necessary + forms only, no tracking
           </button>
         </div>
+        <p className="mt-4 max-w-xs text-[11px] leading-relaxed text-destiny-grey/40">
+          By accepting, you agree to our{" "}
+          <Link href="/privacy" className="underline underline-offset-2 hover:text-destiny-orange">Privacy Policy</Link>{" "}
+          and{" "}
+          <Link href="/terms" className="underline underline-offset-2 hover:text-destiny-orange">Terms of Use</Link>.
+        </p>
       </div>
     );
   }

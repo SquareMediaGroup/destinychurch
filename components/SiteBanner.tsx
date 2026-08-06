@@ -90,6 +90,12 @@ function renderBanner(banner: BannerData, index: number) {
       day: "numeric",
       month: "long",
     });
+    // Mobile has ~375px to fit eyebrow + date + link on one 40px line
+    const dateLabelShort = date.toLocaleDateString("en-GB", {
+      weekday: "short",
+      day: "numeric",
+      month: "short",
+    });
     const defaultHref =
       banner.type === "youth_alpha"
         ? "/youth-alpha"
@@ -120,25 +126,31 @@ function renderBanner(banner: BannerData, index: number) {
         : "#e51b1b";
 
     return (
-      <div
+      <Link
         key={`${banner.type}-${index}`}
-        className="fixed left-0 right-0 z-[60] flex h-10 items-center justify-center gap-3 px-4"
+        href={linkHref}
+        className="group fixed left-0 right-0 z-[60] flex h-10 items-center justify-center gap-2 overflow-hidden px-3 sm:gap-3 sm:px-4"
         style={{ backgroundColor: bg, top }}
       >
-        <span className="text-[11px] font-black uppercase tracking-[0.32em] text-white">
+        <span className="min-w-0 truncate text-[10px] font-black uppercase tracking-[0.16em] text-white sm:text-[11px] sm:tracking-[0.32em]">
           {eyebrow}
         </span>
-        <span aria-hidden="true" className="h-3 w-px bg-white/40" />
-        <p className="text-sm text-white">
-          {cadenceLabel} <span className="font-bold">{dateLabel}</span>
+        <span aria-hidden="true" className="h-3 w-px shrink-0 bg-white/40" />
+        <p className="shrink-0 whitespace-nowrap text-xs text-white sm:text-sm">
+          <span className="hidden sm:inline">{cadenceLabel} </span>
+          <span className="font-bold sm:hidden">{dateLabelShort}</span>
+          <span className="hidden font-bold sm:inline">{dateLabel}</span>
         </p>
-        <Link
-          href={linkHref}
-          className="ml-1 text-sm font-bold text-white underline underline-offset-2 transition hover:no-underline"
-        >
+        <span className="ml-1 hidden shrink-0 whitespace-nowrap text-sm font-bold text-white underline underline-offset-2 transition group-hover:no-underline sm:inline">
           {linkText} →
-        </Link>
-      </div>
+        </span>
+        <span
+          aria-hidden="true"
+          className="shrink-0 text-sm font-bold text-white sm:hidden"
+        >
+          →
+        </span>
+      </Link>
     );
   }
 
@@ -148,15 +160,15 @@ function renderBanner(banner: BannerData, index: number) {
   return (
     <div
       key={`${banner.type}-${index}`}
-      className={`fixed left-0 right-0 z-[60] flex h-10 items-center justify-center gap-3 px-4 ${
+      className={`fixed left-0 right-0 z-[60] flex h-10 items-center justify-center gap-3 overflow-hidden px-4 ${
         isNotice ? "bg-[#6b7280]" : "bg-destiny-orange"
       }`}
       style={{ top }}
     >
-      <span className="material-symbols-rounded text-sm text-white/80">
+      <span className="material-symbols-rounded shrink-0 text-sm text-white/80">
         {isNotice ? "info" : "campaign"}
       </span>
-      <p className="text-sm font-medium text-white">
+      <p className="min-w-0 truncate text-sm font-medium text-white">
         {banner.message}
         {banner.link && (
           <Link

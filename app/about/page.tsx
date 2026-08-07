@@ -21,6 +21,7 @@ import MeetPastorsSection from "@/components/about/MeetPastorsSection";
 import TeamSection from "@/components/about/TeamSection";
 import BeliefsSection from "@/components/about/BeliefsSection";
 import MagnifySection from "@/components/about/MagnifySection";
+import AboutGovernanceNote from "@/components/about/AboutGovernanceNote";
 import WorshipWithUsSection from "@/components/home/WorshipWithUsSection";
 
 export default function AboutPage() {
@@ -32,6 +33,7 @@ export default function AboutPage() {
       <TeamSection />
       <BeliefsSection />
       <MagnifySection />
+      <AboutGovernanceNote />
       <WorshipWithUsSection />
     </>
   );

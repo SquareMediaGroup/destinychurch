@@ -5,6 +5,9 @@ import { quoteBlock } from "./quote/def";
 import { cardGridBlock } from "./card-grid/def";
 import { galleryBlock } from "./gallery/def";
 import { buttonsBlock } from "./buttons/def";
+import { videoBlock } from "./video/def";
+import { churchSuiteBlock } from "./churchsuite/def";
+import { embedBlock } from "./embed/def";
 
 /**
  * The block registry — the single source of truth for what blocks exist.
@@ -27,8 +30,11 @@ export const BLOCK_LIST: AnyBlockDefinition[] = [
   calloutBlock,
   quoteBlock,
   cardGridBlock,
+  videoBlock,
   galleryBlock,
   buttonsBlock,
+  churchSuiteBlock,
+  embedBlock,
 ];
 
 /** Lookup by wire name (the `data-block` attribute). */
@@ -49,10 +55,16 @@ export function blockNameFromNode(nodeName: string): string | null {
   return nodeName.slice("dcBlock_".length).replace(/_/g, "-");
 }
 
-/** Sidebar grouping. Order here is the order shown to admins. */
+/**
+ * Sidebar grouping. Order here is the order shown to admins.
+ *
+ * `advanced` is last on purpose: it holds the raw-HTML escape hatch, which
+ * should be the thing you reach for only after scanning everything above it.
+ */
 export const BLOCK_CATEGORIES = [
   { id: "content", label: "Content" },
   { id: "layout", label: "Layout" },
   { id: "media", label: "Media" },
   { id: "action", label: "Action" },
+  { id: "advanced", label: "Advanced" },
 ] as const;

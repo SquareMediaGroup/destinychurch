@@ -80,7 +80,6 @@ export default function BlockSandbox() {
               enableYouTube
               enableHtmlEmbed
               enableImages
-              enableChurchSuite
               blocks={BLOCK_LIST}
               onEditor={setEditor}
             />

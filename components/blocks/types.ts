@@ -163,7 +163,8 @@ export interface BlockDefinition<P extends object = Record<string, unknown>> {
   label: string;
   /** Material Symbols Rounded ligature, for the sidebar tile. */
   icon: string;
-  category: "content" | "layout" | "media" | "action";
+  /** Sidebar grouping. `advanced` sorts last — see BLOCK_CATEGORIES. */
+  category: "content" | "layout" | "media" | "action" | "advanced";
   /** One line, shown under the label in the sidebar. */
   description: string;
   width: BlockWidth;

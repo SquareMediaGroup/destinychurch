@@ -19,21 +19,6 @@ import { UnknownBlock } from "./blocks/UnknownBlockNode";
 import { BlockDocument } from "./blocks/BlockDocument";
 import { blockDropHandler } from "./blocks/insertBlock";
 
-// Account used for ChurchSuite form embeds across the site (see ConnectCardCTAs).
-const CHURCHSUITE_ACCOUNT = "destinytees.churchsuite.com";
-
-// Turn whatever the admin pastes — a full URL or just a form slug/code — into a
-// ChurchSuite form embed URL.
-function churchSuiteEmbedUrl(input: string): string | null {
-  const value = input.trim();
-  if (!value) return null;
-  if (/^https?:\/\//i.test(value)) return value;
-  // Bare slug like "kw3c1oly" → the account's hosted form page.
-  const slug = value.replace(/^\/+|\/+$/g, "");
-  if (!/^[a-z0-9-]+$/i.test(slug)) return null;
-  return `https://${CHURCHSUITE_ACCOUNT}/forms/${slug}`;
-}
-
 declare module "@tiptap/core" {
   interface Commands<ReturnType> {
     htmlEmbed: {
@@ -136,17 +121,11 @@ function ToolbarButton({
 
 function Toolbar({
   editor,
-  enableYouTube,
-  enableHtmlEmbed,
   enableImages,
-  enableChurchSuite,
   advanced,
 }: {
   editor: Editor;
-  enableYouTube?: boolean;
-  enableHtmlEmbed?: boolean;
   enableImages?: boolean;
-  enableChurchSuite?: boolean;
   advanced?: boolean;
 }) {
   const div = "mx-1 h-5 w-px bg-black/10";
@@ -154,44 +133,6 @@ function Toolbar({
   const [uploading, setUploading] = useState(false);
   const { prompt } = useDialog();
   const toast = useToast();
-
-  async function addYouTube() {
-    const url = await prompt({
-      title: "Add YouTube video",
-      message: "Paste a YouTube video URL",
-      placeholder: "https://youtube.com/...",
-    });
-    if (!url) return;
-    editor.commands.setYoutubeVideo({ src: url.trim() });
-  }
-
-  async function addHtmlEmbed() {
-    const html = await prompt({
-      title: "Embed HTML",
-      message: "Paste HTML embed code",
-    });
-    if (!html) return;
-    editor.commands.setHtmlEmbed({ html: html.trim() });
-  }
-
-  async function addChurchSuite() {
-    const input = await prompt({
-      title: "ChurchSuite form",
-      message:
-        "Paste a ChurchSuite form URL, or just the form code (e.g. kw3c1oly)",
-    });
-    if (!input) return;
-    const src = churchSuiteEmbedUrl(input);
-    if (!src) {
-      toast.error(
-        "That doesn't look like a valid ChurchSuite form link or code.",
-        "Invalid form link",
-      );
-      return;
-    }
-    const iframe = `<iframe src="${src}" title="ChurchSuite form" loading="lazy" style="width:100%;min-height:600px;border:0;display:block;"></iframe>`;
-    editor.commands.setHtmlEmbed({ html: iframe });
-  }
 
   async function onPickImage(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -354,38 +295,21 @@ function Toolbar({
           />
         </>
       )}
-      {enableYouTube && (
-        <>
-          <span className={div} />
-          <ToolbarButton
-            label="Embed YouTube video"
-            icon="smart_display"
-            active={editor.isActive("youtube")}
-            onClick={addYouTube}
-          />
-        </>
-      )}
-      {enableChurchSuite && (
-        <>
-          <span className={div} />
-          <ToolbarButton
-            label="Embed ChurchSuite form"
-            icon="dynamic_form"
-            onClick={addChurchSuite}
-          />
-        </>
-      )}
-      {enableHtmlEmbed && (
-        <>
-          <span className={div} />
-          <ToolbarButton
-            label="Embed HTML"
-            icon="code"
-            active={editor.isActive("htmlEmbed")}
-            onClick={addHtmlEmbed}
-          />
-        </>
-      )}
+      {/*
+        The YouTube, ChurchSuite and HTML buttons that used to sit here are now
+        blocks in the Blocks sidebar (Video, ChurchSuite form, Custom embed).
+
+        They never belonged in this toolbar: everything else here reformats text
+        you've selected, whereas those three inserted a new object from nothing —
+        which is exactly what the sidebar is for. As blocks they also became
+        editable after insertion (the old ChurchSuite button baked the form code
+        into the markup, so fixing a typo meant deleting and starting again), and
+        the video and form embeds now sit behind the site's cookie-consent gate
+        instead of loading third-party iframes unprompted.
+
+        The `youtube` and `htmlEmbed` NODES are still registered below, so pages
+        authored with the old buttons keep parsing and rendering unchanged.
+      */}
       <span className={div} />
       <ToolbarButton
         label="Undo"
@@ -408,7 +332,6 @@ export default function RichTextEditor({
   enableYouTube,
   enableHtmlEmbed,
   enableImages,
-  enableChurchSuite,
   advanced,
   fill,
   blocks,
@@ -420,7 +343,6 @@ export default function RichTextEditor({
   enableYouTube?: boolean;
   enableHtmlEmbed?: boolean;
   enableImages?: boolean;
-  enableChurchSuite?: boolean;
   advanced?: boolean;
   fill?: boolean;
   /**
@@ -552,14 +474,7 @@ export default function RichTextEditor({
       }`}
     >
       <div className={fill ? "sticky top-0 z-10" : undefined}>
-        <Toolbar
-          editor={editor}
-          enableYouTube={enableYouTube}
-          enableHtmlEmbed={enableHtmlEmbed}
-          enableImages={enableImages}
-          enableChurchSuite={enableChurchSuite}
-          advanced={advanced}
-        />
+        <Toolbar editor={editor} enableImages={enableImages} advanced={advanced} />
       </div>
       <EditorContent
         editor={editor}

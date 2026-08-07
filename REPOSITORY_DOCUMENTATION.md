@@ -1626,7 +1626,8 @@ there is no client-side coordination to get wrong.
 #### Admin Components (`components/admin/*`)
 - `AdminSidebar.tsx` — Admin navigation menu
 - `AdminHeader.tsx` — Sticky desktop header for the admin shell; shows an "Admin / {section}" breadcrumb (title derived from the pathname) and a "View live site" button
-- `RichTextEditor.tsx` — Shared TipTap rich-text editor (HTML output); used by posts, training posts, HR job descriptions, and (since `a22301b`) shop product descriptions. Optional `enableHtmlEmbed` prop adds a raw-HTML embed block. Optional `blocks` / `onEditor` props admit [content blocks](#content-blocks) — schema and drop handling only; the blocks UI is a separate surface owned by the parent, deliberately **not** part of this toolbar.
+- `RichTextEditor.tsx` — Shared TipTap rich-text editor (HTML output); used by posts, training posts, HR job descriptions, and (since `a22301b`) shop product descriptions. Optional `blocks` / `onEditor` props admit [content blocks](#content-blocks) — schema and drop handling only; the blocks UI is a separate surface owned by the parent, deliberately **not** part of this toolbar.
+  The toolbar does exactly one job: reformat the current text selection. The old "Embed YouTube video", "Embed ChurchSuite form" and "Embed HTML" buttons are now the Video, ChurchSuite form and Custom embed blocks — they inserted new objects rather than formatting a selection, so they belonged in the sidebar. `enableYouTube` and `enableHtmlEmbed` now only register the legacy `youtube` / `htmlEmbed` nodes so pages authored with those buttons keep parsing; `enableChurchSuite` is gone entirely (it only ever drove a button, since ChurchSuite embeds were stored as `htmlEmbed`).
 - `blocks/*` — **Client.** Editor side of the content-block system: the TipTap node factory, node-view chrome, the Blocks sidebar, the schema-driven settings inspector and its field components. See [Content Blocks](#content-blocks).
 - `ChurchSuiteEventFill.tsx` — **Client.** Collapsible "Fill from ChurchSuite event" picker embedded in the Alpha/Bible Course/Recovery "Add Event" forms (`/admin/alpha`, `/admin/bible-course`, `/admin/recovery`). Fetches the same picker feed as `/admin/featured-event` (`/api/admin/events`) and, on selection, calls `onFill({ startDate, location, signupUrl, name })` to prefill those three form fields — no new table or API route. Deliberately leaves `format`/`frequency`/meeting fields untouched, since those `alpha_events` columns have no ChurchSuite equivalent.
 
@@ -2257,6 +2258,28 @@ Things that will bite you:
 | `components/admin/blocks/BlockInspector.tsx` | Schema-driven settings panel |
 | `components/admin/blocks/BlockTools.tsx` | Compact blocks/settings sheets for modal editors |
 | `app/dev/blocks` | Development-only gallery; 404s in production |
+
+### Embeds go through the cookie-consent gate
+
+`MediaEmbed` and `ChurchSuiteEmbed` hold third-party iframes behind a consent
+placeholder until the visitor opts in to media cookies (`consent.media`). The
+Video and ChurchSuite form blocks wrap those components rather than emitting
+their own `<iframe>`, so admin-authored embeds behave like the rest of the site.
+
+The old toolbar buttons did not: they wrote a bare `<iframe>` into the stored
+HTML, which loads YouTube or ChurchSuite — and their cookies — before the
+visitor has agreed to anything. **Content authored with those buttons still
+renders that way**; this only changes what new content does. Worth a pass over
+existing posts if that matters.
+
+Two consequences:
+
+- These two blocks are the only ones that ship client JavaScript, because the
+  consent hook needs it. Everything else stays a shared component and renders
+  with zero JS.
+- The Custom embed block *can't* be gated — we have no idea what's in it. It
+  sits in the sidebar's Advanced group precisely so it's the last thing reached
+  for, and its help text points at the other two.
 
 ### Non-obvious things that will waste your time
 

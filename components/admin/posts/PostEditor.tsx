@@ -265,7 +265,6 @@ export function PostEditor({
       enableYouTube
       enableHtmlEmbed
       enableImages
-      enableChurchSuite
       blocks={BLOCK_LIST}
       onEditor={setEditorInstance}
     />

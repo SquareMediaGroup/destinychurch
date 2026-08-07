@@ -24,6 +24,7 @@ Designed, engineered, and deployed by [Square Media Group](mailto:hello@squareme
 - `/nfc` "digital back of seats" — a standalone page an NFC tag or QR code on a seat opens during a service, with admin-managed tiles
 - AI Smart Search — OpenAI tool-calling chat with product cards, weather, maps/directions, and live web search
 - Cloudflare Turnstile bot protection on sign-in and Smart Search
+- Block-based rich-text editor — drag-and-drop content blocks (FAQ accordions, callouts, quotes, card grids, galleries, buttons) across page, post, training, jobs, and product editors, server-rendered with zero client JS on public pages
 - Protected admin dashboard (sermons, pages/posts, redirects, banner, popup, shop, training, HR, Alpha, recovery)
 - Companion React Native / Expo mobile app (Phase 1 — Home/Sermons/Events/Give tabs) sharing brand tokens and event logic via `@destiny/shared`
 - Mobile-first, fully responsive, accessibility-focused

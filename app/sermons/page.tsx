@@ -1,12 +1,13 @@
 import type { Metadata } from "next";
 import Image from "next/image";
-import Link from "next/link";
 import { getPodcastShow } from "@/lib/podcast";
 import { getLatestVideo } from "@/lib/youtube";
+import { pairAudioForVideo } from "@/lib/sermonPairing";
 import { PodcastPlayerProvider } from "@/components/sermons/podcast/PodcastPlayerProvider";
-import PodcastHero from "@/components/sermons/podcast/PodcastHero";
+import FeaturedSermon from "@/components/sermons/FeaturedSermon";
 import EpisodeList from "@/components/sermons/podcast/EpisodeList";
 import WatchOnYouTubeBand from "@/components/sermons/WatchOnYouTubeBand";
+import WorshipWithUsSection from "@/components/home/WorshipWithUsSection";
 import AnimateIn from "@/components/AnimateIn";
 
 export const metadata: Metadata = {
@@ -42,13 +43,17 @@ export default async function SermonsPage() {
   ]);
 
   const episodes = show?.episodes ?? [];
-  const latest = episodes[0] ?? null;
-  const rest = episodes.slice(1);
-  const watchHref = latestVideo ? `/sermons/${latestVideo.id}` : null;
+
+  // Two feeds that know nothing about each other — pair the latest video with
+  // its audio so the featured card can offer both, and keep whichever episode
+  // that turns out to be from appearing again in the archive below.
+  const { episode: featuredEpisode } = pairAudioForVideo(latestVideo, episodes);
+  const rest = episodes.filter((ep) => ep.id !== featuredEpisode?.id);
+  const hasFeature = Boolean(latestVideo || featuredEpisode);
 
   return (
     <PodcastPlayerProvider>
-      <main className="relative min-h-screen bg-[#0c0a09] pb-32 text-white">
+      <>
         {/* ── Hero ─────────────────────────────────────────────── */}
         <div className="px-4 pt-8 pb-0 lg:px-8">
           <section className="relative overflow-hidden rounded-3xl">
@@ -71,8 +76,8 @@ export default async function SermonsPage() {
                 </h1>
 
                 <p className="mx-auto mt-4 max-w-xl text-base text-white/70 md:text-lg">
-                  Listen to every message from Destiny Church — stream the latest
-                  here, or head to YouTube to watch.
+                  Every message from Destiny Church — watch the latest, or listen
+                  back to the whole archive wherever you are.
                 </p>
 
                 {/* Platform chips */}
@@ -83,7 +88,7 @@ export default async function SermonsPage() {
                       href={p.href}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-2 text-sm font-semibold text-white/80 backdrop-blur transition hover:border-white/40 hover:bg-white/20 hover:text-white"
+                      className="glass glass-sm glass-pill inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white transition hover:brightness-125"
                     >
                       <PlatformIcon name={p.icon} />
                       {p.label}
@@ -95,37 +100,46 @@ export default async function SermonsPage() {
           </section>
         </div>
 
-        {/* ── Featured latest episode ──────────────────────────── */}
-        {latest ? (
-          <section className="relative mx-auto mt-16 max-w-6xl px-5 sm:mt-20 lg:px-8">
+        {/* ── Featured latest message ──────────────────────────── */}
+        <section className="bg-white py-16">
+          <div className="mx-auto max-w-7xl px-4 lg:px-8">
             <AnimateIn>
-              <PodcastHero episode={latest} watchHref={watchHref} />
+              {hasFeature ? (
+                <FeaturedSermon video={latestVideo} episode={featuredEpisode} />
+              ) : (
+                <p className="rounded-2xl border border-black/[0.07] bg-[#f5f7fa] p-8 text-center text-sm text-destiny-grey/60">
+                  Messages are loading. Catch every one on{" "}
+                  <a
+                    href={SPOTIFY_PODCAST_URL}
+                    className="font-bold text-destiny-orange underline"
+                  >
+                    Spotify
+                  </a>{" "}
+                  meanwhile.
+                </p>
+              )}
             </AnimateIn>
-          </section>
-        ) : (
-          <section className="relative mx-auto mt-16 max-w-6xl px-5 lg:px-8">
-            <p className="rounded-2xl border border-white/10 bg-white/[0.03] p-8 text-center text-white/50">
-              Episodes are loading. Catch every message on{" "}
-              <a href={SPOTIFY_PODCAST_URL} className="text-destiny-orange underline">
-                Spotify
-              </a>{" "}
-              meanwhile.
-            </p>
-          </section>
-        )}
+          </div>
+        </section>
 
         {/* ── Episode archive ──────────────────────────────────── */}
         {rest.length > 0 && (
-          <section className="relative mx-auto mt-20 max-w-6xl px-5 sm:mt-28 lg:px-8">
-            <EpisodeList episodes={rest} />
+          <section className="bg-[#f5f7fa] py-16">
+            <div className="mx-auto max-w-7xl px-4 lg:px-8">
+              <EpisodeList episodes={rest} />
+            </div>
           </section>
         )}
 
         {/* ── YouTube redirect band ────────────────────────────── */}
-        <section className="relative mx-auto mt-24 max-w-6xl px-5 sm:mt-32 lg:px-8">
-          <WatchOnYouTubeBand />
+        <section className="bg-white py-16">
+          <div className="mx-auto max-w-7xl px-4 lg:px-8">
+            <WatchOnYouTubeBand />
+          </div>
         </section>
-      </main>
+
+        <WorshipWithUsSection />
+      </>
     </PodcastPlayerProvider>
   );
 }

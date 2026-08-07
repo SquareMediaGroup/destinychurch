@@ -275,7 +275,7 @@ export function PodcastPlayerProvider({
       {/* Docked player bar */}
       {current && (
         <div ref={dockRef} className="pointer-events-none fixed inset-x-0 bottom-0 z-50 px-3 pb-3 sm:px-5 sm:pb-5">
-          <div className="glass glass-xl glass-refract pointer-events-auto relative mx-auto flex max-w-5xl items-center gap-3 overflow-hidden rounded-2xl bg-[#141210]/85 px-3 py-2.5 sm:gap-4 sm:px-4 sm:py-3">
+          <div className="glass glass-xl glass-strong glass-refract pointer-events-auto relative mx-auto flex max-w-5xl items-center gap-3 overflow-hidden rounded-2xl px-3 py-2.5 sm:gap-4 sm:px-4 sm:py-3">
             {/* Mobile-only progress line along the bottom edge */}
             <div className="absolute inset-x-0 bottom-0 h-[3px] bg-white/10 sm:hidden">
               <div
@@ -389,7 +389,7 @@ export function PodcastPlayerProvider({
           aria-modal="true"
           aria-label="Now playing"
         >
-          <div className="flex h-full flex-col bg-gradient-to-b from-[#2a1d12] via-[#15100c] to-black pt-[max(1.25rem,env(safe-area-inset-top))] text-white">
+          <div className="flex h-full flex-col bg-gradient-to-b from-[#363f48] via-[#242e37] to-[#14181c] pt-[max(1.25rem,env(safe-area-inset-top))] text-white">
             {/* Top bar */}
             <div className="flex shrink-0 items-center justify-between px-6">
               <button

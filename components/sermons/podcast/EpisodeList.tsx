@@ -34,20 +34,17 @@ export default function EpisodeList({
       {/* Header row */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h2
-            className="text-2xl font-black text-white sm:text-3xl"
-            style={{ fontFamily: "var(--font-heading)" }}
-          >
-            All Episodes
+          <h2 className="text-3xl font-black text-destiny-grey md:text-4xl">
+            All episodes
           </h2>
-          <p className="mt-1 text-sm text-white/45">
+          <p className="mt-2 text-sm text-destiny-grey/55">
             {episodes.length} messages and counting
           </p>
         </div>
 
         {/* Search */}
         <div className="relative w-full sm:w-72">
-          <span className="material-symbols-rounded pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-xl text-white/35">
+          <span className="material-symbols-rounded pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-xl text-destiny-grey/40">
             search
           </span>
           <input
@@ -57,18 +54,19 @@ export default function EpisodeList({
               setVisible(PAGE);
             }}
             placeholder="Search episodes…"
-            className="w-full rounded-full border border-white/10 bg-white/[0.04] py-2.5 pl-11 pr-4 text-sm text-white placeholder:text-white/35 outline-none transition focus:border-destiny-orange/60 focus:bg-white/[0.06]"
+            aria-label="Search episodes"
+            className="w-full rounded-full border border-black/10 bg-white py-2.5 pl-11 pr-4 text-sm text-destiny-grey outline-none transition placeholder:text-destiny-grey/40 focus:border-destiny-orange focus:ring-2 focus:ring-destiny-orange/20"
           />
         </div>
       </div>
 
       {/* List */}
-      <ul className="mt-6 divide-y divide-white/[0.06] overflow-hidden rounded-2xl border border-white/[0.06] bg-white/[0.02]">
+      <ul className="mt-6 divide-y divide-black/[0.06] overflow-hidden rounded-[20px] border border-black/[0.07] bg-white shadow-[0_1px_2px_rgba(16,24,40,.04),0_8px_24px_-8px_rgba(16,24,40,.10)]">
         {shown.map((ep, i) => (
           <EpisodeRow key={ep.id} ep={ep} index={i} />
         ))}
         {shown.length === 0 && (
-          <li className="px-5 py-12 text-center text-sm text-white/40">
+          <li className="px-5 py-12 text-center text-sm text-destiny-grey/50">
             No episodes match “{query}”.
           </li>
         )}
@@ -78,7 +76,7 @@ export default function EpisodeList({
         <div className="mt-8 flex justify-center">
           <button
             onClick={() => setVisible((v) => v + PAGE)}
-            className="inline-flex items-center gap-2 rounded-full border border-white/15 px-7 py-3 text-sm font-bold text-white/80 transition hover:border-white/40 hover:text-white"
+            className="inline-flex items-center justify-center gap-2 rounded-full border-2 border-destiny-grey/15 px-7 py-3 text-sm font-bold text-destiny-grey transition hover:border-destiny-grey/40 hover:bg-black/[0.03]"
           >
             Load more
             <span className="material-symbols-rounded text-lg">expand_more</span>
@@ -97,7 +95,7 @@ function EpisodeRow({ ep, index }: { ep: PodcastEpisode; index: number }) {
   return (
     <li
       className={`group flex items-center gap-4 px-3 py-3 transition sm:px-4 ${
-        active ? "bg-destiny-orange/[0.07]" : "hover:bg-white/[0.03]"
+        active ? "bg-destiny-orange/[0.06]" : "hover:bg-black/[0.02]"
       }`}
     >
       {/* Artwork + play */}
@@ -134,19 +132,19 @@ function EpisodeRow({ ep, index }: { ep: PodcastEpisode; index: number }) {
       >
         <p
           className={`truncate text-[15px] font-bold leading-snug ${
-            active ? "text-destiny-orange" : "text-white"
+            active ? "text-destiny-orange" : "text-destiny-grey"
           }`}
         >
           {ep.title}
         </p>
-        <p className="mt-0.5 truncate text-xs text-white/45">
+        <p className="mt-0.5 truncate text-xs text-destiny-grey/55">
           {ep.speaker ? `${ep.speaker} · ` : ""}
           {formatEpisodeDate(ep.publishedAt)}
         </p>
       </button>
 
       {/* Duration */}
-      <span className="hidden shrink-0 font-mono text-xs tabular-nums text-white/40 sm:block">
+      <span className="hidden shrink-0 font-mono text-xs tabular-nums text-destiny-grey/45 sm:block">
         {formatEpisodeDuration(ep.durationSeconds)}
       </span>
 

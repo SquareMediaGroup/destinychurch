@@ -137,9 +137,10 @@ export async function getPodcastShow(): Promise<PodcastShow> {
       id: guid.replace(/[^a-zA-Z0-9-]/g, ""),
       title,
       speaker,
-      summary: stripHtml(
-        tag(item, "itunes:summary") ?? tag(item, "description") ?? ""
-      ).slice(0, 400),
+      summary: truncate(
+        stripHtml(tag(item, "itunes:summary") ?? tag(item, "description") ?? ""),
+        400
+      ),
       audioUrl,
       image: attr(item, "itunes:image", "href") ?? showImage,
       publishedAt: toIso(stripHtml(tag(item, "pubDate") ?? "")),
@@ -149,6 +150,19 @@ export async function getPodcastShow(): Promise<PodcastShow> {
 
   cache = { at: Date.now(), show };
   return show;
+}
+
+/**
+ * Cut to a whole word and mark the cut.
+ *
+ * Show notes run long; a hard slice leaves the card ending mid-word, which is
+ * visible whenever the copy is short enough to escape the CSS line clamp.
+ */
+function truncate(text: string, max: number): string {
+  if (text.length <= max) return text;
+  const cut = text.slice(0, max);
+  const lastSpace = cut.lastIndexOf(" ");
+  return `${(lastSpace > max * 0.6 ? cut.slice(0, lastSpace) : cut).trimEnd()}…`;
 }
 
 /** Buzzsprout uses raw seconds, but handle HH:MM:SS just in case. */

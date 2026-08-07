@@ -15,13 +15,13 @@ export default function SermonDescription({ text }: SermonDescriptionProps) {
 
   return (
     <div>
-      <p className="whitespace-pre-line text-sm leading-relaxed text-white/70">
+      <p className="whitespace-pre-line text-sm leading-relaxed text-destiny-grey/70">
         {displayed}
       </p>
       {isLong && (
         <button
           onClick={() => setExpanded((v) => !v)}
-          className="mt-2 text-sm font-bold text-white/50 transition hover:text-white"
+          className="mt-2 text-sm font-bold text-destiny-orange transition hover:underline"
         >
           {expanded ? "Show less" : "Show more"}
         </button>

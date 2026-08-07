@@ -424,7 +424,13 @@ export default async function RootLayout({
           <SiteBanner />
           <CookieBanner />
           <Suspense><PerformanceGate /></Suspense>
-          <div className="flex min-h-screen flex-col bg-[var(--background)] text-[var(--foreground)]">
+          {/* The padding is 0 until the sermons audio dock mounts and publishes
+              its height (see PodcastPlayerProvider) — it keeps the fixed dock
+              from covering the end of the footer. */}
+          <div
+            className="flex min-h-screen flex-col bg-[var(--background)] text-[var(--foreground)]"
+            style={{ paddingBottom: "var(--podcast-dock-height, 0px)" }}
+          >
             <BannerSpacer />
             <Suspense>
               <ChurchHeader />

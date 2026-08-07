@@ -249,7 +249,8 @@ destinychurch/
 ├── lib/                           # Utility functions and helpers
 │   ├── supabase.ts                # Supabase admin client (server-only)
 │   ├── supabase-browser.ts        # Supabase client (browser)
-│   ├── sermons.ts                 # Sermon fetching & filtering
+│   ├── podcast.ts                 # Buzzsprout RSS feed (sermon audio)
+│   ├── sermonPairing.ts           # Matches the latest video to its podcast episode
 │   ├── youtube.ts                 # YouTube API client
 │   ├── smartSearch.ts             # AI search logic (parseAnswer, fallbacks)
 │   ├── smartSearch/tools.ts       # Smart Search tool-calling tools (products, weather, maps, web)
@@ -1243,11 +1244,41 @@ Rendered on every page (server component with Suspense).
 
 Each page route (`app/*/page.tsx`) renders page-specific content. Examples:
 
-#### `/app/sermons/page.tsx` — Sermon Archive
-- Fetches YouTube videos via `lib/youtube.ts`
-- Filters by series/speaker/date using client-side state
-- Displays video grid with thumbnails and metadata
-- Lazy-loads videos on scroll
+#### `/app/sermons/page.tsx` — Sermons
+
+Video for the latest message, audio for everything else. Structure, top to
+bottom: photo hero with podcast-platform chips → **featured message** →
+**All episodes** archive → "Every sermon, on the big screen" YouTube band →
+`WorshipWithUsSection`. It uses the same light bands, container widths and card
+shell as every other content page — it was hard-coded dark until August 2026,
+which made it look like a different site, and there is no dark mode here to
+opt into.
+
+**The featured card** (`components/sermons/FeaturedSermon.tsx`) opens on
+**Watch** — a privacy-enhanced `youtube-nocookie` embed behind
+`VideoConsentGate` — with a **Listen** tab for the same message's podcast
+audio. Only the active pane is mounted; unmounting the iframe is what stops
+video playback on switch. Starting audio anywhere on the page flips the card to
+Listen.
+
+**Pairing the two feeds.** Video comes from the YouTube Data API
+(`lib/youtube.ts`), audio from the Buzzsprout RSS feed (`lib/podcast.ts`), and
+nothing joins them — `supabase/schema.sql`'s `sermons` table would, but the app
+does not read it. `lib/sermonPairing.ts` matches the latest video to an episode
+on publish-date proximity plus title-word overlap (boilerplate like "Sunday
+Service" and speaker suffixes are stripped first). No confident match falls back
+to the newest episode rather than disabling the toggle, so Listen is never a
+dead control. Whichever episode is featured is filtered out of the archive so it
+cannot appear twice.
+
+**Archive** (`components/sermons/podcast/EpisodeList.tsx`) — audio only,
+client-side search over title/speaker/summary, 12 per "Load more".
+`PodcastPlayerProvider` owns the single `<audio>` element, the docked bar and
+the mobile now-playing sheet. Those stay dark on purpose (a media surface, like
+Spotify's) but are tinted with the brand `#363f48` rather than an off-palette
+near-black. The dock publishes its height as `--podcast-dock-height`, which the
+root layout uses as bottom padding so the dock never covers the footer, and
+`FloatingSmartSearch` uses to lift itself clear.
 
 #### `/app/[slug]/page.tsx` — Dynamic Catchall
 - Looks up `slug` via `getPublishedPostBySlug()` (`lib/posts.server.ts`) against the `posts` table — there is no separate `dynamic_pages` table
@@ -1285,8 +1316,8 @@ Displayed on every page:
 | `/` | `app/page.tsx` | Home page — hero, featured sermon, CTAs |
 | `/about` | `app/about/page.tsx` | About church, team, vision, mission |
 | `/beliefs` | `app/beliefs/page.tsx` | Statement of faith, doctrine |
-| `/sermons` | `app/sermons/page.tsx` | Archive of all sermon videos, searchable |
-| `/sermons/[id]` | `app/sermons/[id]/page.tsx` | Individual sermon detail, video embed, transcript |
+| `/sermons` | `app/sermons/page.tsx` | Latest message as video (with an audio switch) + searchable podcast archive |
+| `/sermons/[id]` | `app/sermons/[id]/page.tsx` | Individual sermon — YouTube embed, skip-to-sermon, next steps |
 | `/live` | `app/live/page.tsx` | Livestream page — custom glass player when live, offline state otherwise |
 | `/contact` | `app/contact/page.tsx` | Contact form, address, hours |
 | `/give` | `app/give/page.tsx` | Giving info — bank details, online giving |
@@ -3083,8 +3114,8 @@ ENABLE_SMART_SEARCH=true
 
 ### Public Pages
 - `app/page.tsx` — Home (hero, latest sermon, CTAs)
-- `app/sermons/page.tsx` — Sermon archive (grid, filters)
-- `app/sermons/[id]/page.tsx` — Sermon detail (video, transcript)
+- `app/sermons/page.tsx` — Sermons (video-first featured message, audio archive)
+- `app/sermons/[id]/page.tsx` — Sermon detail (video, next steps)
 - `app/live/page.tsx` — Livestream (custom glass player / offline state)
 - `app/about/page.tsx` — About church
 - `app/beliefs/page.tsx` — Statement of faith

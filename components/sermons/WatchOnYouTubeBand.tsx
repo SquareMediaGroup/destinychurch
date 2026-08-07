@@ -7,7 +7,13 @@ export default function WatchOnYouTubeBand({
   eyebrow?: string;
 }) {
   return (
-    <div className="relative overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-[#1a1714] to-[#0f0d0c] px-7 py-12 sm:px-12 sm:py-16">
+    // The site's sanctioned dark band (see ministry/SplitSection tone="dark").
+    <div
+      className="relative overflow-hidden rounded-3xl px-7 py-12 sm:px-12 sm:py-16"
+      style={{
+        background: "linear-gradient(135deg, #363f48 0%, #242e37 100%)",
+      }}
+    >
       <div
         aria-hidden
         className="pointer-events-none absolute -right-20 -top-20 h-72 w-72 rounded-full"
@@ -18,16 +24,13 @@ export default function WatchOnYouTubeBand({
       />
       <div className="relative flex flex-col items-start justify-between gap-8 lg:flex-row lg:items-center">
         <div className="max-w-xl">
-          <p className="text-xs font-bold uppercase tracking-[0.3em] text-white/40">
+          <p className="text-xs font-bold uppercase tracking-widest text-destiny-orange">
             {eyebrow}
           </p>
-          <h2
-            className="mt-3 text-3xl font-black leading-tight text-white sm:text-4xl"
-            style={{ fontFamily: "var(--font-heading)" }}
-          >
+          <h2 className="mt-3 text-3xl font-black leading-tight text-white sm:text-4xl">
             Every sermon, on the big screen.
           </h2>
-          <p className="mt-4 text-[15px] leading-relaxed text-white/55">
+          <p className="mt-4 text-[15px] leading-relaxed text-white/65">
             Our full back-catalogue of services lives on YouTube — worship,
             testimonies and the full message, all in one place.
           </p>
@@ -37,7 +40,7 @@ export default function WatchOnYouTubeBand({
           href={YOUTUBE_CHANNEL_URL}
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex shrink-0 items-center gap-3 rounded-full bg-white px-8 py-4 text-sm font-bold text-[#0c0a09] shadow-xl transition hover:scale-[1.03]"
+          className="inline-flex shrink-0 items-center gap-3 rounded-full bg-white px-8 py-4 text-sm font-bold text-destiny-grey shadow-xl transition hover:scale-[1.03]"
         >
           <svg
             viewBox="0 0 24 24"

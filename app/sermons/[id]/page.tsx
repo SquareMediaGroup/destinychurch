@@ -8,6 +8,7 @@ import SkipToSermonButton from "@/components/sermons/SkipToSermonButton";
 import SermonDescription from "@/components/sermons/SermonDescription";
 import ShareButton from "@/components/sermons/ShareButton";
 import WatchOnYouTubeBand from "@/components/sermons/WatchOnYouTubeBand";
+import WorshipWithUsSection from "@/components/home/WorshipWithUsSection";
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -73,21 +74,21 @@ const actionCards = [
     icon: "volunteer_activism",
     label: "Give",
     sub: "Support the mission",
-    color: "#F58021",
+    tile: "bg-destiny-orange/10 text-destiny-orange",
   },
   {
     href: "/connect-card",
     icon: "contact_mail",
     label: "Connect Card",
     sub: "We'd love to hear from you",
-    color: "#3B82F6",
+    tile: "bg-destiny-blue/10 text-destiny-blue",
   },
   {
     href: "/whats-on",
     icon: "event",
     label: "What's On",
     sub: "Don't miss what's next",
-    color: "#8B5CF6",
+    tile: "bg-destiny-purple/10 text-destiny-purple",
   },
 ];
 
@@ -147,13 +148,13 @@ export default async function SermonPage({ params }: PageProps) {
           __html: JSON.stringify(videoSchema).replace(/</g, "\\u003c"),
         }}
       />
-    <main className="min-h-screen bg-[#0f0f0f] text-white">
-      <div className="mx-auto max-w-5xl px-4 pb-6 pt-24 lg:px-8">
+
+      <div className="mx-auto max-w-5xl px-4 pb-12 pt-24 lg:px-8">
         {/* Back link + Share */}
         <div className="mb-4 flex items-center justify-between">
           <Link
             href="/sermons"
-            className="inline-flex items-center gap-1.5 text-sm text-white/60 transition hover:text-white"
+            className="inline-flex items-center gap-1.5 text-sm font-semibold text-destiny-grey/60 transition hover:text-destiny-orange"
           >
             <span className="material-symbols-rounded text-base">arrow_back</span>
             Back to Sermons
@@ -169,12 +170,12 @@ export default async function SermonPage({ params }: PageProps) {
 
           {/* Title row — server-rendered, no CLS */}
           <div className="mt-4 flex items-start justify-between gap-4">
-            <h1 className="text-xl font-black leading-snug text-white">{video.title}</h1>
+            <h1 className="text-2xl font-black leading-snug text-destiny-grey">{video.title}</h1>
             <SkipToSermonButton />
           </div>
 
           {/* Meta row — server-rendered */}
-          <p className="mb-4 mt-1 text-sm text-white/50">
+          <p className="mb-4 mt-1 text-sm text-destiny-grey/55">
             Destiny Church Tees Valley{date && <> &middot; {date}</>}
           </p>
         </SermonJumpProvider>
@@ -187,30 +188,30 @@ export default async function SermonPage({ params }: PageProps) {
         )}
 
         {/* Divider */}
-        <div className="mb-6 border-t border-white/10" />
+        <div className="mb-6 border-t border-black/[0.07]" />
 
         {/* Action cards */}
-        <p className="mb-3 text-xs font-bold uppercase tracking-widest text-white/30">What are your Next Steps?</p>
-        <div className="mb-8 grid gap-3 sm:grid-cols-3">
+        <p className="mb-3 text-xs font-bold uppercase tracking-widest text-destiny-orange">
+          What are your next steps?
+        </p>
+        <div className="mb-10 grid gap-4 sm:grid-cols-3">
           {actionCards.map((card) => (
             <Link
               key={card.href}
               href={card.href}
-              className="group relative overflow-hidden rounded-2xl p-5 transition hover:scale-[1.02]"
-              style={{ background: `linear-gradient(135deg, ${card.color}22, ${card.color}08)`, border: `1px solid ${card.color}25` }}
+              className="group relative overflow-hidden rounded-[20px] border border-black/[0.07] bg-white p-5 shadow-[0_1px_2px_rgba(16,24,40,.04),0_8px_24px_-8px_rgba(16,24,40,.10)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_2px_4px_rgba(16,24,40,.05),0_16px_36px_-12px_rgba(16,24,40,.16)]"
             >
               <div
-                className="mb-3 flex h-11 w-11 items-center justify-center rounded-xl"
-                style={{ background: `${card.color}20` }}
+                className={`mb-3 flex h-11 w-11 items-center justify-center rounded-xl ${card.tile}`}
               >
-                <span className="material-symbols-rounded text-2xl" style={{ color: card.color }}>
+                <span className="material-symbols-rounded text-2xl">
                   {card.icon}
                 </span>
               </div>
-              <p className="text-sm font-bold text-white">{card.label}</p>
-              <p className="mt-0.5 text-xs text-white/50">{card.sub}</p>
+              <p className="text-sm font-bold text-destiny-grey">{card.label}</p>
+              <p className="mt-0.5 text-xs text-destiny-grey/55">{card.sub}</p>
               <svg
-                className="absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-white/20 transition group-hover:translate-x-1 group-hover:text-white/50"
+                className="absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-destiny-grey/25 transition group-hover:translate-x-1 group-hover:text-destiny-orange"
                 fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
               >
                 <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
@@ -222,7 +223,8 @@ export default async function SermonPage({ params }: PageProps) {
         {/* Watch more on YouTube */}
         <WatchOnYouTubeBand eyebrow="Want to watch more sermons" />
       </div>
-    </main>
+
+      <WorshipWithUsSection />
     </>
   );
 }

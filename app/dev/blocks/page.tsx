@@ -63,6 +63,9 @@ export default function DevBlocksPage() {
  * gated on having content (the FAQ's JSON-LD needs a filled-in answer) never
  * fire, so the gallery fills the blanks with obvious placeholder text.
  */
+/** Keys whose values aren't prose — filling these produces nonsense. */
+const NOT_COPY = new Set(["id", "icon", "src", "href", "tone", "align", "crop", "columns", "marker", "style", "defaultOpen"]);
+
 function fillBlanks<T>(value: T): T {
   if (typeof value === "string") {
     return (value === "" ? "Example text for previewing this block." : value) as T;
@@ -74,8 +77,7 @@ function fillBlanks<T>(value: T): T {
     return Object.fromEntries(
       Object.entries(value).map(([key, inner]) => [
         key,
-        // ids are structural, not copy.
-        key === "id" ? inner : fillBlanks(inner),
+        NOT_COPY.has(key) ? inner : fillBlanks(inner),
       ]),
     ) as T;
   }

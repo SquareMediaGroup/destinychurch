@@ -1,5 +1,10 @@
 import type { AnyBlockDefinition } from "./types";
 import { faqBlock } from "./faq/def";
+import { calloutBlock } from "./callout/def";
+import { quoteBlock } from "./quote/def";
+import { cardGridBlock } from "./card-grid/def";
+import { galleryBlock } from "./gallery/def";
+import { buttonsBlock } from "./buttons/def";
 
 /**
  * The block registry — the single source of truth for what blocks exist.
@@ -16,7 +21,15 @@ import { faqBlock } from "./faq/def";
  * import anything client-only (no "use client" modules, no Tiptap).
  */
 
-export const BLOCK_LIST: AnyBlockDefinition[] = [faqBlock];
+// Order within a category is the order shown in the Blocks sidebar.
+export const BLOCK_LIST: AnyBlockDefinition[] = [
+  faqBlock,
+  calloutBlock,
+  quoteBlock,
+  cardGridBlock,
+  galleryBlock,
+  buttonsBlock,
+];
 
 /** Lookup by wire name (the `data-block` attribute). */
 export const BLOCKS: Record<string, AnyBlockDefinition> = Object.fromEntries(

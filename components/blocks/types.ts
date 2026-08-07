@@ -73,6 +73,12 @@ export type LeafFieldSchema =
       step?: number;
     }
   | { kind: "toggle"; name: string; label: string; help?: string }
+  /**
+   * A dropdown. NOTE: the value is always a string — that's what a <select>
+   * yields. A block whose schema expects a number here will fail to parse and
+   * silently reset itself to defaults, so model numeric choices as a string
+   * enum (`z.enum(["2","3"])`) and compare against strings in the component.
+   */
   | {
       kind: "select";
       name: string;

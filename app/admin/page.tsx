@@ -20,6 +20,11 @@ const gbp = new Intl.NumberFormat("en-GB", {
 export default function AdminDashboard() {
   const [stats, setStats] = useState<Stats | null>(null);
   const [loading, setLoading] = useState(true);
+  const [forbidden, setForbidden] = useState(false);
+
+  useEffect(() => {
+    setForbidden(new URLSearchParams(window.location.search).get("forbidden") === "1");
+  }, []);
 
   useEffect(() => {
     async function load() {
@@ -122,6 +127,12 @@ export default function AdminDashboard() {
 
   return (
     <div className="mx-auto max-w-6xl px-6 py-8 md:px-8 md:py-10">
+      {forbidden && (
+        <div className="mb-6 flex items-center gap-2 rounded-xl bg-destiny-red/10 px-4 py-3 text-sm font-bold text-destiny-red">
+          <span className="material-symbols-rounded text-lg">lock</span>
+          You don&apos;t have access to that section.
+        </div>
+      )}
       {/* Header */}
       <div className="mb-8">
         <p className="mb-1 text-xs font-bold uppercase tracking-widest text-destiny-grey/40">

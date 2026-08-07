@@ -3,39 +3,60 @@
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import type { AdminRole, RoleFlags } from "@/lib/adminRoles";
+import { NO_ROLES } from "@/lib/adminRoles";
 
-const topNavItems: { href: string; icon: string; label: string; exact?: boolean }[] = [
-  { href: "/admin", icon: "grid_view", label: "Dashboard", exact: true },
-  { href: "/admin/posts", icon: "article", label: "Posts" },
-  { href: "/admin/training", icon: "school", label: "Training" },
+// null = visible to every authenticated admin, regardless of role.
+const topNavItems: { href: string; icon: string; label: string; exact?: boolean; role: AdminRole | null }[] = [
+  { href: "/admin", icon: "grid_view", label: "Dashboard", exact: true, role: null },
+  { href: "/admin/posts", icon: "article", label: "Posts", role: "site_admin" },
+  { href: "/admin/training", icon: "school", label: "Training", role: "training_admin" },
 ];
 
-const announcementItems = [
-  { href: "/admin/banner", label: "Banner" },
-  { href: "/admin/popup", label: "Popup" },
-  { href: "/admin/featured-event", label: "Featured Event" },
-  { href: "/admin/event-popup", label: "Event Popup" },
-  { href: "/admin/nfc", label: "NFC Page" },
+const announcementItems: { href: string; label: string; role: AdminRole }[] = [
+  { href: "/admin/banner", label: "Banner", role: "super_admin" },
+  { href: "/admin/popup", label: "Popup", role: "event_admin" },
+  { href: "/admin/featured-event", label: "Featured Event", role: "event_admin" },
+  { href: "/admin/event-popup", label: "Event Popup", role: "event_admin" },
+  { href: "/admin/nfc", label: "NFC Page", role: "event_admin" },
 ];
 
-const courseItems = [
-  { href: "/admin/featured-course", label: "Featured Course" },
-  { href: "/admin/bible-course", label: "The Bible Course" },
-  { href: "/admin/alpha", label: "Alpha" },
-  { href: "/admin/recovery", label: "Recovery" },
+const courseItems: { href: string; label: string; role: AdminRole }[] = [
+  { href: "/admin/featured-course", label: "Featured Course", role: "event_admin" },
+  { href: "/admin/bible-course", label: "The Bible Course", role: "event_admin" },
+  { href: "/admin/alpha", label: "Alpha", role: "event_admin" },
+  { href: "/admin/recovery", label: "Recovery", role: "event_admin" },
 ];
 
-const storeItems = [
-  { href: "/admin/store", label: "Products" },
-  { href: "/admin/store/orders", label: "Orders" },
-  { href: "/admin/store/hero", label: "Hero" },
+const storeItems: { href: string; label: string; role: AdminRole }[] = [
+  { href: "/admin/store", label: "Products", role: "store_admin" },
+  { href: "/admin/store/orders", label: "Orders", role: "store_admin" },
+  { href: "/admin/store/hero", label: "Hero", role: "store_admin" },
 ];
 
-const bottomNavItems = [
-  { href: "/admin/redirects", icon: "alt_route", label: "Redirects" },
-  { href: "/admin/cache", icon: "refresh", label: "Clear Cache" },
+const bottomNavItems: { href: string; icon: string; label: string; role: AdminRole }[] = [
+  { href: "/admin/redirects", icon: "alt_route", label: "Redirects", role: "site_admin" },
+  { href: "/admin/cache", icon: "refresh", label: "Clear Cache", role: "super_admin" },
+  { href: "/admin/users", icon: "group", label: "Users", role: "super_admin" },
 ];
+
+function canSee(roles: RoleFlags, role: AdminRole | null): boolean {
+  if (roles.super_admin) return true;
+  if (role === null) return true;
+  return roles[role];
+}
+
+function useAdminRoles(): RoleFlags {
+  const [roles, setRoles] = useState<RoleFlags>(NO_ROLES);
+  useEffect(() => {
+    fetch("/api/admin/me/roles")
+      .then((r) => (r.ok ? r.json() : NO_ROLES))
+      .then(setRoles)
+      .catch(() => {});
+  }, []);
+  return roles;
+}
 
 function NavDropdown({
   label,
@@ -52,6 +73,8 @@ function NavDropdown({
 }) {
   const groupActive = items.some((i) => pathname.startsWith(i.href));
   const [open, setOpen] = useState(groupActive);
+
+  if (items.length === 0) return null;
 
   return (
     <div>
@@ -97,10 +120,18 @@ function NavDropdown({
   );
 }
 
-function NavItems({ pathname, onNavigate }: { pathname: string; onNavigate?: () => void }) {
+function NavItems({
+  pathname,
+  roles,
+  onNavigate,
+}: {
+  pathname: string;
+  roles: RoleFlags;
+  onNavigate?: () => void;
+}) {
   return (
     <>
-      {topNavItems.map((item) => {
+      {topNavItems.filter((item) => canSee(roles, item.role)).map((item) => {
         const active = item.exact
           ? pathname === item.href
           : pathname.startsWith(item.href);
@@ -126,7 +157,7 @@ function NavItems({ pathname, onNavigate }: { pathname: string; onNavigate?: () 
       <NavDropdown
         label="Announcements"
         icon="campaign"
-        items={announcementItems}
+        items={announcementItems.filter((item) => canSee(roles, item.role))}
         pathname={pathname}
         onNavigate={onNavigate}
       />
@@ -134,7 +165,7 @@ function NavItems({ pathname, onNavigate }: { pathname: string; onNavigate?: () 
       <NavDropdown
         label="Courses"
         icon="event"
-        items={courseItems}
+        items={courseItems.filter((item) => canSee(roles, item.role))}
         pathname={pathname}
         onNavigate={onNavigate}
       />
@@ -142,12 +173,12 @@ function NavItems({ pathname, onNavigate }: { pathname: string; onNavigate?: () 
       <NavDropdown
         label="Store"
         icon="storefront"
-        items={storeItems}
+        items={storeItems.filter((item) => canSee(roles, item.role))}
         pathname={pathname}
         onNavigate={onNavigate}
       />
 
-      {bottomNavItems.map((item) => {
+      {bottomNavItems.filter((item) => canSee(roles, item.role)).map((item) => {
         const active = pathname.startsWith(item.href);
         return (
           <Link
@@ -174,12 +205,13 @@ function NavItems({ pathname, onNavigate }: { pathname: string; onNavigate?: () 
 export default function AdminSidebar() {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const roles = useAdminRoles();
 
   return (
     <>
       {/* ── Desktop sidebar ───────────────────────────────────────────── */}
       <aside className="hidden md:flex md:w-56 md:shrink-0 md:flex-col md:border-r md:border-black/8 md:bg-white">
-        <SidebarContents pathname={pathname} />
+        <SidebarContents pathname={pathname} roles={roles} />
       </aside>
 
       {/* ── Mobile top bar ────────────────────────────────────────────── */}
@@ -208,7 +240,7 @@ export default function AdminSidebar() {
       {mobileOpen && (
         <div className="border-b border-black/8 bg-white md:hidden">
           <nav className="flex flex-col gap-1 p-3">
-            <NavItems pathname={pathname} onNavigate={() => setMobileOpen(false)} />
+            <NavItems pathname={pathname} roles={roles} onNavigate={() => setMobileOpen(false)} />
             <div className="mt-2 border-t border-black/5 pt-2">
               <form action="/api/admin/logout" method="POST">
                 <button
@@ -227,7 +259,7 @@ export default function AdminSidebar() {
   );
 }
 
-function SidebarContents({ pathname }: { pathname: string }) {
+function SidebarContents({ pathname, roles }: { pathname: string; roles: RoleFlags }) {
   return (
     <div className="flex h-full flex-col">
       {/* Logo */}
@@ -249,7 +281,7 @@ function SidebarContents({ pathname }: { pathname: string }) {
 
       {/* Nav */}
       <nav className="flex flex-col gap-1 px-3">
-        <NavItems pathname={pathname} />
+        <NavItems pathname={pathname} roles={roles} />
       </nav>
 
       {/* Bottom — view site + sign out */}

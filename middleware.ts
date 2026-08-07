@@ -1,4 +1,6 @@
 import { createClient } from "@/utils/supabase/middleware";
+import { createServiceClient } from "@/utils/supabase/service";
+import { getRoles, hasAccess } from "@/lib/adminRoles";
 import { type NextRequest, NextResponse } from "next/server";
 
 export async function middleware(request: NextRequest) {
@@ -50,10 +52,19 @@ export async function middleware(request: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  // Protect all /admin/* routes — single role model: any authenticated user
-  // has full /admin access, no per-path role check needed anymore.
+  // Protect all /admin/* routes.
   if (!user) {
     return NextResponse.redirect(new URL("/login", request.url));
+  }
+
+  // Access levels — each admin section requires a specific role (or
+  // super_admin); see lib/adminRoles.ts for the route → role mapping.
+  const roles = await getRoles(createServiceClient(), user.id);
+  if (!hasAccess(roles, pathname)) {
+    if (pathname.startsWith("/api/admin")) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+    return NextResponse.redirect(new URL("/admin?forbidden=1", request.url));
   }
 
   return supabaseResponse;

@@ -132,9 +132,15 @@ export interface BlockRenderContext {
   mode: "edit" | "view";
 }
 
-export interface BlockDefinition<
-  P extends Record<string, unknown> = Record<string, unknown>,
-> {
+/*
+ * Note the `object` constraint rather than `Record<string, unknown>`.
+ *
+ * A TypeScript `interface` has no implicit index signature, so an ordinary
+ * `interface FaqProps { … }` fails a `Record<string, unknown>` constraint while
+ * an equivalent `type` alias passes. That distinction is invisible and would
+ * bite whoever writes the next block. `object` accepts both.
+ */
+export interface BlockDefinition<P extends object = Record<string, unknown>> {
   /**
    * kebab-case, unique.
    *
@@ -163,7 +169,13 @@ export interface BlockDefinition<
    * defaults, `safeParse` fails and `decodeProps` silently falls back to the
    * whole default object — losing everything the author wrote.
    */
-  schema: z.ZodType<P>;
+  /*
+   * Input is `unknown`, not `P`. Every key carries `.default()`, which makes
+   * the schema's *input* type have optional keys while its *output* type is a
+   * fully-populated `P` — so the default `z.ZodType<P>` (input === output)
+   * would reject exactly the schemas we require.
+   */
+  schema: z.ZodType<P, z.ZodTypeDef, unknown>;
   defaults: P;
   fields: FieldSchema[];
   Component: ComponentType<P & BlockRenderContext>;

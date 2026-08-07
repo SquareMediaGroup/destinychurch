@@ -10,9 +10,14 @@ import Underline from "@tiptap/extension-underline";
 import Highlight from "@tiptap/extension-highlight";
 import Image from "@tiptap/extension-image";
 import { Node, type CommandProps } from "@tiptap/core";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useDialog } from "@/components/DialogProvider";
 import { useToast } from "@/components/ToastProvider";
+import type { AnyBlockDefinition } from "@/components/blocks/types";
+import { createBlockNode } from "./blocks/createBlockNode";
+import { UnknownBlock } from "./blocks/UnknownBlockNode";
+import { BlockDocument } from "./blocks/BlockDocument";
+import { blockDropHandler } from "./blocks/insertBlock";
 
 // Account used for ChurchSuite form embeds across the site (see ConnectCardCTAs).
 const CHURCHSUITE_ACCOUNT = "destinytees.churchsuite.com";
@@ -404,6 +409,8 @@ export default function RichTextEditor({
   enableChurchSuite,
   advanced,
   fill,
+  blocks,
+  onEditor,
 }: {
   value: string;
   onChange: (html: string) => void;
@@ -414,13 +421,35 @@ export default function RichTextEditor({
   enableChurchSuite?: boolean;
   advanced?: boolean;
   fill?: boolean;
+  /**
+   * Content blocks to admit. Adds schema and drop handling only — the blocks
+   * UI is a separate sidebar owned by the parent, deliberately NOT part of this
+   * toolbar. The toolbar's job is inline formatting; blocks are page furniture,
+   * and mixing them makes both harder to find.
+   *
+   * Undefined (the default) leaves the editor byte-identical to before, which
+   * is what keeps the non-post surfaces unaffected.
+   */
+  blocks?: AnyBlockDefinition[];
+  /** Hands the editor instance to the parent, for the sidebar and inspector. */
+  onEditor?: (editor: Editor | null) => void;
 }) {
+  // Nodes are built once per definition set. Rebuilding them would recreate the
+  // schema and blow away the document.
+  const blockExtensions = useMemo(() => {
+    if (!blocks || blocks.length === 0) return [];
+    return [BlockDocument, ...blocks.map(createBlockNode), UnknownBlock];
+  }, [blocks]);
+
   const editor = useEditor({
     immediatelyRender: false,
     extensions: [
       StarterKit.configure({
         heading: { levels: [2, 3] },
+        // BlockDocument replaces it — see components/admin/blocks/BlockDocument.ts
+        ...(blockExtensions.length > 0 ? { document: false as const } : {}),
       }),
+      ...blockExtensions,
       Placeholder.configure({
         placeholder: placeholder || "Describe the role…",
       }),
@@ -465,6 +494,9 @@ export default function RichTextEditor({
           fill ? "min-h-full flex-1" : "min-h-[220px] max-h-[420px]"
         }`,
       },
+      // Returns false for anything that isn't a palette drag, leaving
+      // ProseMirror's own drop handling (node moves, text) untouched.
+      ...(blockExtensions.length > 0 ? { handleDrop: blockDropHandler } : {}),
     },
     onUpdate: ({ editor }) => {
       const html = editor.getHTML();
@@ -473,13 +505,34 @@ export default function RichTextEditor({
     },
   });
 
-  // Keep the editor in sync if the value is replaced from outside (e.g. opening
-  // the modal on a different role).
+  // Seed the editor once, when it is first created (e.g. opening the modal on a
+  // different role).
+  //
+  // DO NOT add `value` to the dependency array, and do not "fix" the missing
+  // dep. The parent re-renders with a new `value` on every keystroke — that's
+  // what `onChange` above feeds it — so a `value` dep is an infinite loop, and
+  // even a guarded version would call `setContent` mid-edit. `setContent`
+  // rebuilds the whole document: it destroys and recreates every React node
+  // view, drops the current selection, and wipes undo history. This effect
+  // running exactly once per editor instance is the behaviour we want.
+  //
+  // If genuine external sync is ever needed, gate it on a ref holding the last
+  // HTML emitted by `onUpdate` rather than comparing against `value`.
   useEffect(() => {
     if (editor && value !== editor.getHTML() && value !== "") {
       editor.commands.setContent(value);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editor]);
+
+  // Publish the instance so a parent can drive the blocks sidebar and inspector.
+  // Kept in an effect (not render) so the parent's setState never fires during
+  // this component's render pass.
+  const onEditorRef = useRef(onEditor);
+  onEditorRef.current = onEditor;
+  useEffect(() => {
+    onEditorRef.current?.(editor ?? null);
+    return () => onEditorRef.current?.(null);
   }, [editor]);
 
   if (!editor) {

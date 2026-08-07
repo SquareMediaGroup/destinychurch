@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { API, type Post } from "@/lib/posts";
 import { slugify } from "@/lib/jobs";
 import {
@@ -11,18 +11,35 @@ import {
   ghostBtn,
 } from "@/components/admin/hr/HrUI";
 import RichTextEditor from "@/components/admin/RichTextEditor";
+import type { Editor } from "@tiptap/react";
+import { BLOCK_LIST } from "@/components/blocks/registry";
+import { BlockPalette } from "@/components/admin/blocks/BlockPalette";
+import { BlockInspector } from "@/components/admin/blocks/BlockInspector";
 
 // Desktop gets a full-screen, document-style editor; mobile keeps the popup.
+//
+// Read synchronously via useSyncExternalStore rather than useState + useEffect.
+// The effect version returned `false` on the first client render and `true` on
+// the second, so on desktop React mounted the Modal branch, then swapped to the
+// fixed-layout branch — two different trees, which unmounts and recreates the
+// whole TipTap instance. That silently discarded undo history on every open,
+// and once the block inspector exists it would also drop the selected block and
+// any in-flight inspector edit. getServerSnapshot returns false so SSR and the
+// first client paint agree.
+const DESKTOP_QUERY = "(min-width: 1024px)";
+
+function subscribeToDesktop(onChange: () => void) {
+  const mq = window.matchMedia(DESKTOP_QUERY);
+  mq.addEventListener("change", onChange);
+  return () => mq.removeEventListener("change", onChange);
+}
+
 function useIsDesktop() {
-  const [isDesktop, setIsDesktop] = useState(false);
-  useEffect(() => {
-    const mq = window.matchMedia("(min-width: 1024px)");
-    const update = () => setIsDesktop(mq.matches);
-    update();
-    mq.addEventListener("change", update);
-    return () => mq.removeEventListener("change", update);
-  }, []);
-  return isDesktop;
+  return useSyncExternalStore(
+    subscribeToDesktop,
+    () => window.matchMedia(DESKTOP_QUERY).matches,
+    () => false,
+  );
 }
 
 function PublishToggle({
@@ -48,6 +65,68 @@ function PublishToggle({
         }`}
       />
     </button>
+  );
+}
+
+/**
+ * A collapsible desktop sidebar. Collapsed it becomes a thin vertical rail so
+ * the way back is always visible — a fully hidden panel with no affordance is
+ * how people conclude a feature has disappeared.
+ */
+function SidePanel({
+  side,
+  open,
+  onToggle,
+  label,
+  icon,
+  children,
+}: {
+  side: "left" | "right";
+  open: boolean;
+  onToggle: () => void;
+  label: string;
+  icon: string;
+  children: React.ReactNode;
+}) {
+  const border = side === "left" ? "border-r" : "border-l";
+
+  if (!open) {
+    return (
+      <div className={`hidden w-11 shrink-0 ${border} border-black/8 bg-white lg:block`}>
+        <button
+          type="button"
+          onClick={onToggle}
+          title={`Show ${label}`}
+          aria-label={`Show ${label}`}
+          className="flex h-full w-full flex-col items-center gap-2 pt-3 text-destiny-grey/45 transition hover:bg-[#f5f7fa] hover:text-destiny-grey"
+        >
+          <span className="material-symbols-rounded text-[19px]">{icon}</span>
+          <span className="text-[11px] font-bold uppercase tracking-wider [writing-mode:vertical-rl]">
+            {label}
+          </span>
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div
+      className={`hidden shrink-0 ${border} border-black/8 bg-white lg:flex lg:flex-col ${
+        side === "left" ? "w-60" : "w-80"
+      }`}
+    >
+      <div className="min-h-0 flex-1">{children}</div>
+      <button
+        type="button"
+        onClick={onToggle}
+        className="flex items-center justify-center gap-1 border-t border-black/8 py-2 text-[11px] font-bold uppercase tracking-wider text-destiny-grey/35 transition hover:bg-[#f5f7fa] hover:text-destiny-grey"
+      >
+        <span className="material-symbols-rounded text-[15px]">
+          {side === "left" ? "chevron_left" : "chevron_right"}
+        </span>
+        Hide
+      </button>
+    </div>
   );
 }
 
@@ -119,6 +198,13 @@ export function PostEditor({
   onError: (msg: string) => void;
 }) {
   const isDesktop = useIsDesktop();
+  // The editor instance, published by RichTextEditor via onEditor, so the
+  // Blocks sidebar and the inspector can drive it.
+  const [editorInstance, setEditorInstance] = useState<Editor | null>(null);
+  const [paletteOpen, setPaletteOpen] = useState(true);
+  const [inspectorOpen, setInspectorOpen] = useState(true);
+  // Mobile: which bottom sheet is up, if any.
+  const [sheet, setSheet] = useState<"blocks" | "settings" | null>(null);
   const [form, setForm] = useState({
     title: post?.title ?? "",
     slug: post?.slug ?? "",
@@ -196,13 +282,15 @@ export function PostEditor({
     <RichTextEditor
       value={form.body}
       onChange={(html) => set("body", html)}
-      placeholder="Write the page content — use the toolbar to add headings, images, videos, ChurchSuite forms and embeds."
+      placeholder="Write the page content — use the toolbar for text, and the Blocks panel for FAQs, callouts and cards."
       advanced
       fill={isDesktop}
       enableYouTube
       enableHtmlEmbed
       enableImages
       enableChurchSuite
+      blocks={BLOCK_LIST}
+      onEditor={setEditorInstance}
     />
   );
 
@@ -262,8 +350,27 @@ export function PostEditor({
           </div>
         </div>
 
-        <div className="flex-1 overflow-hidden bg-[#f5f7fa] p-4 lg:p-6">
-          <div className="mx-auto h-full max-w-3xl">{editor}</div>
+        {/*
+          Blocks sidebar | canvas | settings sidebar.
+
+          The sidebars sit outside the editor's bordered card, on the grey
+          canvas, so the hierarchy reads page chrome → blocks → document →
+          settings. Blocks deliberately do NOT appear in the editor toolbar:
+          that toolbar formats the current text selection, and mixing page
+          structure into it makes both harder to find.
+        */}
+        <div className="flex min-h-0 flex-1 bg-[#f5f7fa]">
+          <SidePanel side="left" open={paletteOpen} onToggle={() => setPaletteOpen((v) => !v)} label="Blocks" icon="widgets">
+            <BlockPalette editor={editorInstance} />
+          </SidePanel>
+
+          <div className="min-w-0 flex-1 overflow-hidden p-4 lg:p-6">
+            <div className="mx-auto h-full max-w-3xl">{editor}</div>
+          </div>
+
+          <SidePanel side="right" open={inspectorOpen} onToggle={() => setInspectorOpen((v) => !v)} label="Settings" icon="tune">
+            <BlockInspector editor={editorInstance} />
+          </SidePanel>
         </div>
       </div>
     );
@@ -302,7 +409,29 @@ export function PostEditor({
         </div>
 
         <div>
-          <label className={labelClass}>Content</label>
+          <div className="mb-1.5 flex items-center justify-between">
+            <label className={labelClass + " mb-0"}>Content</label>
+            {/* Same separation as desktop: blocks are reached from outside the
+                editor, never from its formatting toolbar. */}
+            <div className="flex gap-1.5">
+              <button
+                type="button"
+                onClick={() => setSheet("blocks")}
+                className="inline-flex items-center gap-1 rounded-lg border border-black/10 px-2.5 py-1 text-xs font-bold text-destiny-grey/60 transition hover:bg-[#f5f7fa]"
+              >
+                <span className="material-symbols-rounded text-[15px]">widgets</span>
+                Blocks
+              </button>
+              <button
+                type="button"
+                onClick={() => setSheet("settings")}
+                className="inline-flex items-center gap-1 rounded-lg border border-black/10 px-2.5 py-1 text-xs font-bold text-destiny-grey/60 transition hover:bg-[#f5f7fa]"
+              >
+                <span className="material-symbols-rounded text-[15px]">tune</span>
+                Settings
+              </button>
+            </div>
+          </div>
           {editor}
         </div>
 
@@ -328,6 +457,68 @@ export function PostEditor({
           </button>
         </div>
       </form>
+
+      {sheet && (
+        <BottomSheet
+          title={sheet === "blocks" ? "Blocks" : "Block settings"}
+          onClose={() => setSheet(null)}
+        >
+          {sheet === "blocks" ? (
+            <BlockPalette
+              editor={editorInstance}
+              // Straight from picking a block into configuring it — on a phone
+              // there's no room to show both, and an unconfigured block is not
+              // a useful place to be left.
+              onInserted={() => setSheet("settings")}
+            />
+          ) : (
+            <BlockInspector editor={editorInstance} onClose={() => setSheet(null)} />
+          )}
+        </BottomSheet>
+      )}
     </Modal>
+  );
+}
+
+/** Mobile equivalent of the desktop side panels. */
+function BottomSheet({
+  title,
+  onClose,
+  children,
+}: {
+  title: string;
+  onClose: () => void;
+  children: React.ReactNode;
+}) {
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [onClose]);
+
+  return (
+    // z-60 so it clears the Modal this sits inside (z-50).
+    <div className="fixed inset-0 z-[60] flex flex-col justify-end bg-black/40">
+      <button
+        type="button"
+        aria-label={`Close ${title}`}
+        className="flex-1"
+        onClick={onClose}
+      />
+      <div className="flex max-h-[75vh] flex-col rounded-t-3xl border-t border-black/5 bg-white shadow-2xl">
+        <div className="flex items-center justify-between border-b border-black/8 px-4 py-3">
+          <p className="text-sm font-black text-destiny-grey">{title}</p>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Close"
+            className="flex h-8 w-8 items-center justify-center rounded-lg text-destiny-grey/50 transition hover:bg-[#f5f7fa]"
+          >
+            <span className="material-symbols-rounded text-xl">close</span>
+          </button>
+        </div>
+        <div className="min-h-0 flex-1 overflow-y-auto">{children}</div>
+      </div>
+    </div>
   );
 }

@@ -49,10 +49,18 @@ export const CARD_LABEL =
 
 /**
  * Section heading. Pair with style={{ fontFamily: FONT_ROBOTO }} — see note 1.
- * Fluid rather than breakpoint-driven so it works in any column width.
+ *
+ * Fluid via container query units rather than viewport breakpoints, so it sizes
+ * to the column it lands in (see note 2). `[data-dc-block]` carries
+ * `container-type: inline-size` in globals.css to make `cqi` resolve.
+ *
+ * The underscores are load-bearing: they become spaces, and CSS requires
+ * whitespace around `+` inside clamp()/calc(). Without them the whole
+ * declaration is invalid and silently dropped, and the heading falls back to
+ * the generic `.rte-content h2` size.
  */
 export const HEADING =
-  "text-[clamp(1.5rem,1.1rem+1.6cqi,2rem)] font-black leading-tight tracking-[-0.02em] text-destiny-grey";
+  "text-[clamp(1.5rem,1.1rem_+_1.6cqi,2rem)] font-black leading-tight tracking-[-0.02em] text-destiny-grey";
 
 /** Card/item title. Roboto semibold with tight negative tracking. */
 export const CARD_TITLE =

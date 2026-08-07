@@ -1,4 +1,5 @@
 import type { AnyBlockDefinition } from "./types";
+import { faqBlock } from "./faq/def";
 
 /**
  * The block registry — the single source of truth for what blocks exist.
@@ -15,7 +16,7 @@ import type { AnyBlockDefinition } from "./types";
  * import anything client-only (no "use client" modules, no Tiptap).
  */
 
-export const BLOCK_LIST: AnyBlockDefinition[] = [];
+export const BLOCK_LIST: AnyBlockDefinition[] = [faqBlock];
 
 /** Lookup by wire name (the `data-block` attribute). */
 export const BLOCKS: Record<string, AnyBlockDefinition> = Object.fromEntries(

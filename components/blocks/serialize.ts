@@ -105,7 +105,7 @@ export function unescapeAttr(value: string): string {
  * `raw` must already be entity-decoded — the editor gets that for free from
  * `getAttribute()`, the public renderer must call `unescapeAttr` first.
  */
-export function decodeProps<P extends Record<string, unknown>>(
+export function decodeProps<P extends object = Record<string, unknown>>(
   def: AnyBlockDefinition,
   raw: string | null | undefined,
   storedVersion?: number,

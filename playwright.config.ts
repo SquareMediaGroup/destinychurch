@@ -34,18 +34,35 @@ export default defineConfig({
 
   /* Configure projects for major browsers */
   projects: [
+    /*
+     * Plain-Node unit tests — no browser, no dev server.
+     *
+     * Playwright is already a devDependency and runs these perfectly well, so
+     * the content-block invariants get covered without adding Vitest/Jest and a
+     * second test runner to the project.
+     *
+     * Run just these with:  npx playwright test --project=unit
+     */
+    {
+      name: 'unit',
+      testMatch: /tests\/unit\/.*\.spec\.ts/,
+    },
+
     {
       name: 'chromium',
+      testIgnore: /tests\/unit\//,
       use: { ...devices['Desktop Chrome'] },
     },
 
     {
       name: 'firefox',
+      testIgnore: /tests\/unit\//,
       use: { ...devices['Desktop Firefox'] },
     },
 
     {
       name: 'webkit',
+      testIgnore: /tests\/unit\//,
       use: { ...devices['Desktop Safari'] },
     },
 

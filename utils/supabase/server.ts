@@ -1,10 +1,15 @@
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
+import { stripMaxAge } from "./sessionCookie";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY;
 
-export const createClient = (cookieStore: Awaited<ReturnType<typeof cookies>>) => {
+export const createClient = (
+  cookieStore: Awaited<ReturnType<typeof cookies>>,
+  options?: { remember?: boolean },
+) => {
+  const remember = options?.remember ?? true;
   return createServerClient(
     supabaseUrl!,
     supabaseKey!,
@@ -16,7 +21,11 @@ export const createClient = (cookieStore: Awaited<ReturnType<typeof cookies>>) =
         setAll(cookiesToSet) {
           try {
             cookiesToSet.forEach(({ name, value, options }) =>
-              cookieStore.set(name, value, options)
+              cookieStore.set(
+                name,
+                value,
+                remember || !value ? options : stripMaxAge(options),
+              )
             );
           } catch {
             // Called from a Server Component — safe to ignore if middleware

@@ -2769,6 +2769,30 @@ Similar patterns for job listings and HR management.
    - Query database with service role (not user role)
    - Apply RLS policies based on table settings
 
+### "Keep me signed in"
+
+The login form (`app/login/LoginClient.tsx`) has a "Keep me signed in" checkbox
+(`name="remember"`, checked by default). `app/login/actions.ts`'s `adminSignIn`
+reads it and:
+
+- Passes `{ remember }` into `utils/supabase/server.ts`'s `createClient`, which
+  strips `maxAge`/`expires` from the Supabase auth cookies it writes when
+  `remember` is `false`, turning them into browser-session cookies.
+- Sets a small side cookie, `sb-remember` (`utils/supabase/sessionCookie.ts`),
+  recording the choice — `"1"` with a 400-day `maxAge` when remembered, `"0"`
+  as a session cookie when not.
+
+This side cookie exists because `@supabase/ssr` unconditionally re-applies its
+own 400-day default `maxAge` every time it refreshes the auth cookies — which
+happens on every `/admin/*` request via `utils/supabase/middleware.ts`. Without
+it, a "don't remember me" session would silently become persistent the moment
+middleware refreshed the token. Middleware reads `sb-remember` on each request
+and re-strips `maxAge` on any cookies it sets when the value is `"0"`. A missing
+`sb-remember` cookie (e.g. sessions created before this feature) defaults to
+remembered, so existing sessions aren't unexpectedly downgraded.
+
+`adminSignOut` deletes the `sb-remember` cookie alongside signing out of Supabase.
+
 ### Authorization Layers
 
 There is no `lib/roles.ts` and no per-section role model — a single authenticated

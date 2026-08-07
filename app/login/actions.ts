@@ -3,8 +3,11 @@
 import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { createClient } from "@/utils/supabase/server";
+import { REMEMBER_COOKIE_NAME } from "@/utils/supabase/sessionCookie";
 import { checkRateLimit, resetRateLimit } from "@/lib/loginRateLimit";
 import { verifyTurnstileToken } from "@/lib/turnstile";
+
+const REMEMBER_MAX_AGE = 60 * 60 * 24 * 400; // matches Supabase's own default cookie lifetime
 
 export async function adminSignIn(
   _prev: unknown,
@@ -39,13 +42,23 @@ export async function adminSignIn(
     return { success: false, error: "Please complete the verification challenge." };
   }
 
+  const remember = formData.get("remember") === "on";
+
   const cookieStore = await cookies();
-  const supabase = createClient(cookieStore);
+  const supabase = createClient(cookieStore, { remember });
   const { error } = await supabase.auth.signInWithPassword({ email, password });
 
   if (error) {
     return { success: false, error: "Invalid email or password." };
   }
+
+  cookieStore.set(REMEMBER_COOKIE_NAME, remember ? "1" : "0", {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    path: "/",
+    ...(remember ? { maxAge: REMEMBER_MAX_AGE } : {}),
+  });
 
   resetRateLimit(ip);
   redirect("/admin");
@@ -55,4 +68,5 @@ export async function adminSignOut(): Promise<void> {
   const cookieStore = await cookies();
   const supabase = createClient(cookieStore);
   await supabase.auth.signOut();
+  cookieStore.delete(REMEMBER_COOKIE_NAME);
 }

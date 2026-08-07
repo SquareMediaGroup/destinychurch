@@ -140,6 +140,16 @@ function LoginPanel({
             />
           </div>
 
+          <label className="flex items-center gap-2.5 text-sm text-white/60">
+            <input
+              type="checkbox"
+              name="remember"
+              defaultChecked
+              className="h-4 w-4 rounded border-white/20 bg-white/5 text-destiny-orange accent-destiny-orange focus:ring-2 focus:ring-destiny-orange/20 focus:ring-offset-0"
+            />
+            Keep me signed in
+          </label>
+
           <div ref={turnstileRef} className="flex justify-center" />
 
           {error && (

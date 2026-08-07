@@ -4,6 +4,9 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { use, useEffect, useMemo, useRef, useState } from "react";
 import RichTextEditor from "@/components/admin/RichTextEditor";
+import type { Editor } from "@tiptap/react";
+import { BLOCK_LIST } from "@/components/blocks/registry";
+import { BlockTools } from "@/components/admin/blocks/BlockTools";
 import { useToast } from "@/components/ToastProvider";
 import { useDialog } from "@/components/DialogProvider";
 import {
@@ -68,6 +71,8 @@ export default function ProductEditorPage({
   const [slug, setSlug] = useState("");
   const [category, setCategory] = useState("");
   const [description, setDescription] = useState("");
+  // Published by RichTextEditor so BlockTools can drive the same instance.
+  const [descriptionEditor, setDescriptionEditor] = useState<Editor | null>(null);
   const [basePrice, setBasePrice] = useState("0.00");
   const [published, setPublished] = useState(false);
   const [featured, setFeatured] = useState(false);
@@ -445,12 +450,17 @@ export default function ProductEditorPage({
           placeholder="e.g. T-Shirts"
         />
         <div>
-          <FieldLabel>Description</FieldLabel>
+          <div className="flex items-center justify-between">
+            <FieldLabel>Description</FieldLabel>
+            <BlockTools editor={descriptionEditor} />
+          </div>
           <RichTextEditor
             value={description}
             onChange={setDescription}
-            placeholder="Write the product description — use the toolbar to add headings, links and lists."
+            placeholder="Write the product description — use the toolbar for text, and Blocks for FAQs and callouts."
             enableHtmlEmbed
+            blocks={BLOCK_LIST}
+            onEditor={setDescriptionEditor}
           />
         </div>
         <div className="grid grid-cols-2 gap-3">

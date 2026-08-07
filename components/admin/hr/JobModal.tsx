@@ -17,6 +17,9 @@ import {
   ghostBtn,
 } from "@/components/admin/hr/HrUI";
 import RichTextEditor from "@/components/admin/RichTextEditor";
+import type { Editor } from "@tiptap/react";
+import { BLOCK_LIST } from "@/components/blocks/registry";
+import { BlockTools } from "@/components/admin/blocks/BlockTools";
 
 export function JobModal({
   job,
@@ -44,6 +47,8 @@ export function JobModal({
     sort_order: job?.sort_order ?? 0,
   });
   const [saving, setSaving] = useState(false);
+  // Published by RichTextEditor so BlockTools can drive the same instance.
+  const [bodyEditor, setBodyEditor] = useState<Editor | null>(null);
 
   function set<K extends keyof typeof form>(key: K, value: (typeof form)[K]) {
     setForm((f) => ({ ...f, [key]: value }));
@@ -183,12 +188,17 @@ export function JobModal({
         </div>
 
         <div>
-          <label className={labelClass}>Description</label>
+          <div className="mb-1.5 flex items-center justify-between">
+            <label className={`${labelClass} mb-0`}>Description</label>
+            <BlockTools editor={bodyEditor} />
+          </div>
           <RichTextEditor
             value={form.description}
             onChange={(html) => set("description", html)}
-            placeholder="Describe the role — use the toolbar to add headings and bullet points."
+            placeholder="Describe the role — use the toolbar for text, and Blocks for FAQs and callouts."
             enableHtmlEmbed
+            blocks={BLOCK_LIST}
+            onEditor={setBodyEditor}
           />
         </div>
 

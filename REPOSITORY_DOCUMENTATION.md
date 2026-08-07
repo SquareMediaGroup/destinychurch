@@ -19,10 +19,11 @@ This document provides a comprehensive explanation of every major component, lin
 7. [Routing & Pages](#routing--pages)
 8. [Components](#components)
 9. [API Routes & Server Actions](#api-routes--server-actions)
-10. [Libraries & Utilities](#libraries--utilities)
-11. [Authentication & Authorization](#authentication--authorization)
-12. [Configuration](#configuration)
-13. [Deployment & Performance](#deployment--performance)
+10. [Content Blocks](#content-blocks)
+11. [Libraries & Utilities](#libraries--utilities)
+12. [Authentication & Authorization](#authentication--authorization)
+13. [Configuration](#configuration)
+14. [Deployment & Performance](#deployment--performance)
 
 ---
 
@@ -356,7 +357,6 @@ destinychurch/
 ├── .claude/                       # Claude Code settings
 ├── .vscode/                       # VS Code workspace settings
 ├── next.config.ts                 # Next.js configuration
-├── tailwind.config.ts             # Tailwind CSS customization
 ├── playwright.config.ts           # E2E test configuration
 ├── eslint.config.mjs              # ESLint rules
 ├── postcss.config.mjs             # PostCSS plugins
@@ -1270,6 +1270,14 @@ Displayed on every page:
 
 ## Routing & Pages
 
+### Development-only Routes
+
+- `/dev/blocks` — Gallery of every registered content block, rendered through the
+  real serialise → parse → render pipeline rather than by importing the
+  components directly, so it exercises the same path a live post does. Calls
+  `notFound()` when `NODE_ENV === "production"`. Useful when building a block:
+  no need to create a draft post to look at it.
+
 ### Public Pages (No Auth Required)
 
 | Route | File | Purpose |
@@ -1579,7 +1587,8 @@ there is no client-side coordination to get wrong.
 #### Admin Components (`components/admin/*`)
 - `AdminSidebar.tsx` — Admin navigation menu
 - `AdminHeader.tsx` — Sticky desktop header for the admin shell; shows an "Admin / {section}" breadcrumb (title derived from the pathname) and a "View live site" button
-- `RichTextEditor.tsx` — Shared TipTap rich-text editor (HTML output); used by posts, training posts, HR job descriptions, and (since `a22301b`) shop product descriptions. Optional `enableHtmlEmbed` prop adds a raw-HTML embed block.
+- `RichTextEditor.tsx` — Shared TipTap rich-text editor (HTML output); used by posts, training posts, HR job descriptions, and (since `a22301b`) shop product descriptions. Optional `enableHtmlEmbed` prop adds a raw-HTML embed block. Optional `blocks` / `onEditor` props admit [content blocks](#content-blocks) — schema and drop handling only; the blocks UI is a separate surface owned by the parent, deliberately **not** part of this toolbar.
+- `blocks/*` — **Client.** Editor side of the content-block system: the TipTap node factory, node-view chrome, the Blocks sidebar, the schema-driven settings inspector and its field components. See [Content Blocks](#content-blocks).
 - `ChurchSuiteEventFill.tsx` — **Client.** Collapsible "Fill from ChurchSuite event" picker embedded in the Alpha/Bible Course/Recovery "Add Event" forms (`/admin/alpha`, `/admin/bible-course`, `/admin/recovery`). Fetches the same picker feed as `/admin/featured-event` (`/api/admin/events`) and, on selection, calls `onFill({ startDate, location, signupUrl, name })` to prefill those three form fields — no new table or API route. Deliberately leaves `format`/`frequency`/meeting fields untouched, since those `alpha_events` columns have no ChurchSuite equivalent.
 
 > Redirects and banner management (`/admin/redirects`, `/admin/banner`) are built
@@ -1588,6 +1597,12 @@ there is no client-side coordination to get wrong.
 > `PageEditor.tsx`/`AdminSermonManager.tsx`. Sermon hiding was removed entirely
 > (migration `20260711_07_remove_sermon_hiding.sql`), and the earlier page-builder/
 > Studio editor (`PageEditor.tsx`'s likely origin) was removed by `20260711_06_remove_page_builder.sql`.
+
+#### Content Rendering (`components/content/*`)
+- `RichContent.tsx` — **Shared (server-first).** Renders admin-authored rich text and upgrades any embedded content blocks into real React components. Replaces the bare `dangerouslySetInnerHTML` previously used on `/[slug]`, `/jobs/[slug]`, `/training/.../[postSlug]`, `/shop/[slug]` and `/whats-on/[slug]`. Content with no blocks takes the exact previous code path, so adopting it everywhere was a no-op. Also emits merged schema.org JSON-LD contributed by blocks. See [Content Blocks](#content-blocks).
+
+#### Content Blocks (`components/blocks/*`)
+- **Shared (no `"use client"`).** The blocks themselves — FAQ, callout, quote, card grid, gallery, buttons — plus the registry, wire-format serialisation and design tokens. These server-render with zero client JS on public pages and the same modules render inside the editor. See [Content Blocks](#content-blocks).
 
 #### Public Training Components (`components/training/*`)
 The member-facing pieces of the `/training` resource library.
@@ -2082,7 +2097,176 @@ POST                /api/admin/shop-hero/upload           // sharp → WebP → 
 
 ---
 
+## Content Blocks
+
+Admin-authored, configurable components that staff drop into a page from the
+**Blocks** sidebar in the editor — FAQ accordions, callouts, quotes, card grids,
+image galleries and button rows. The point is that a new FAQ or a new set of
+cards no longer needs a developer and a deploy.
+
+### Why it is built this way
+
+A JSONB page builder (`builder_pages.document`, `studio_components`) was built
+here previously and removed in
+`supabase/migrations/20260711_06_remove_page_builder.sql`. This deliberately
+does **not** rebuild that.
+
+Content stays exactly what it always was: **a single HTML string** in
+`posts.body` (and `jobs.description`, `training_posts.body`,
+`products.description`). There is no migration, no new table, and no second
+representation of a page that can drift out of sync with the first. A block is
+just a marker inside that string.
+
+### Wire format
+
+A block serialises into the stored HTML as one **empty, top-level** div:
+
+```html
+<div data-block="faq" data-block-version="1" data-props="{&quot;heading&quot;:&quot;FAQs&quot;,…}"></div>
+```
+
+All of the block's settings are JSON in `data-props`. `components/content/
+RichContent.tsx` splits the stored HTML on these markers and renders the real
+component in their place.
+
+That split is done with a regex rather than an HTML parser, which is only safe
+because of **two invariants**. Both are enforced, not assumed:
+
+1. **The attribute value never contains `"`, `<` or `>`.** The browser's DOM
+   serialiser escapes `&`, `"` and U+00A0 in attribute values — but *not* `<`
+   and `>`. So `encodeProps` escapes those itself (plus U+2028/9), with a
+   dev-mode invariant throw. The value provably matches `/^[^"<>]*$/`.
+2. **A block can never nest.** Blocks belong to the ProseMirror group `dcblock`,
+   and `Document` is extended to `content: "(block | dcblock)+"`. Since
+   `blockquote` and `listItem` declare `content: "block+"`, a block inside one
+   is structurally impossible — so a block div is always a self-contained
+   top-level token and can never split surrounding markup into unbalanced
+   halves.
+
+`tests/unit/blocks-serialize.spec.ts` and `blocks-wire-format.spec.ts` guard
+both, and `RichContent` warns in development if the format ever drifts.
+
+### Why not `html-react-parser`
+
+Five live routes render stored HTML. A parser would re-parse and *re-serialise*
+all of that existing content as React elements — `class`→`className`, style
+strings to objects, boolean attributes, whitespace — and every one of those is
+a chance to change output on pages nobody intended to touch. The split approach
+passes block-free content through the identical code path it used before, so
+adopting it everywhere was a provable no-op. It also avoids shipping ~15–20KB
+of parser to every public page.
+
+### The three layers
+
+```
+components/blocks/          SHARED — no "use client"
+components/content/         RichContent — the public renderer
+components/admin/blocks/    "use client" — TipTap nodes, sidebar, inspector
+```
+
+**Block components carry no `"use client"` directive.** That makes them RSC
+"shared" components: they server-render on the public page with **zero client
+JS**, and the identical module renders inside the editor's React node view.
+That is what makes the editor genuinely WYSIWYG rather than a placeholder
+preview — and it is why no block may import `AnimateIn`, `motion`, `next/image`
+or anything else client-only.
+
+### Adding a block
+
+1. Create `components/blocks/<name>/{def.ts,<Name>Block.tsx}`
+2. Import the def in `components/blocks/registry.ts` and add it to `BLOCK_LIST`
+
+That is the whole checklist. One `BlockDefinition` drives the sidebar tile, the
+settings form, the TipTap node and the public renderer. **If adding a block ever
+requires touching the sidebar, the inspector, the TipTap plumbing or
+RichContent, the abstraction has leaked — fix that rather than special-casing.**
+
+Things that will bite you:
+
+- **Every schema key must have `.default()`.** Props are parsed as
+  `{ ...defaults, ...stored }`, which is what lets content authored before a
+  field existed keep working. Without the default, `safeParse` fails and the
+  block silently resets to defaults, losing the author's content.
+- **A `<select>` always yields a string.** A schema expecting `z.literal(2)`
+  will fail to parse and reset the block. Model numeric choices as string enums
+  (`z.enum(["2","3"])`).
+- **Never rename a `name`.** It is the wire format, written into every page
+  using the block.
+- **Anything used as `href` or `src` must go through `safeUrl`.** React escapes
+  props it renders as children but not values placed in those attributes.
+- **Blocks render in four different column widths** (posts, training, jobs,
+  shop). Size with `@container` queries and `cqi` units, never viewport
+  breakpoints. `[data-dc-block]` carries `container-type: inline-size`.
+- Block widths are `column` or `wide` only. There is deliberately no full-bleed:
+  at ≥1600px `app/[slug]/page.tsx` places the article in an off-centre grid
+  track beside the promo rails, so the usual `margin-inline: calc(50% - 50vw)`
+  trick would be wrong there.
+
+### Key files
+
+| File | Role |
+|---|---|
+| `components/blocks/types.ts` | `BlockDefinition`, `FieldSchema` |
+| `components/blocks/serialize.ts` | `encodeProps` / `decodeProps` / `unescapeAttr` / `BLOCK_RE` |
+| `components/blocks/tokens.ts` | Shared design vocabulary — card shell, eyebrow, heading scale, tones, buttons, `safeUrl` |
+| `components/blocks/registry.ts` | `BLOCK_LIST` — the single source of truth |
+| `components/content/RichContent.tsx` | Public renderer + merged JSON-LD |
+| `components/admin/blocks/createBlockNode.tsx` | Generic TipTap node factory |
+| `components/admin/blocks/UnknownBlockNode.tsx` | Data-preserving fallback |
+| `components/admin/blocks/BlockNodeView.tsx` | Editor chrome, drag grip, click shield |
+| `components/admin/blocks/BlockPalette.tsx` | The Blocks sidebar |
+| `components/admin/blocks/BlockInspector.tsx` | Schema-driven settings panel |
+| `components/admin/blocks/BlockTools.tsx` | Compact blocks/settings sheets for modal editors |
+| `app/dev/blocks` | Development-only gallery; 404s in production |
+
+### Non-obvious things that will waste your time
+
+- **`UnknownBlockNode` is not optional.** ProseMirror drops elements its schema
+  doesn't recognise. If a block is removed from the registry, or a deploy is
+  rolled back, opening an affected page would quietly discard the block and the
+  author's next save would write that loss to the database permanently. This
+  node round-trips the marker verbatim (it does **not** re-encode `data-props`,
+  since there's no schema to re-encode against) and shows a placeholder.
+- **The drag grip must not be a `<button>`.** TipTap's `NodeView.stopEvent`
+  returns early for `INPUT/BUTTON/SELECT/TEXTAREA` targets *before* the
+  bookkeeping that records a drag started from `[data-drag-handle]`. A
+  `<button data-drag-handle>` is silently undraggable. It is a
+  `<span role="button">`. The other chrome buttons *are* real buttons, because
+  that same early return is what they want.
+- **Never pass a custom `stopEvent` to `ReactNodeViewRenderer`** — it
+  short-circuits the whole default, including that drag bookkeeping.
+- **`renderHTML` is hand-written, not `mergeAttributes`.** That pins attribute
+  order so `BLOCK_RE` cannot drift. "Tidying" it back would make every block
+  silently vanish from every public page.
+- **Do not add `value` to the `[editor]` effect in `RichTextEditor.tsx`.** The
+  parent re-renders with a new `value` on every keystroke, so a `value` dep is
+  an infinite loop — and even a guarded version calls `setContent`, which
+  rebuilds the document, destroys every node view, drops the selection and wipes
+  undo history mid-edit.
+- **Blocks are never in the rich-text toolbar.** That toolbar formats the
+  current text selection; blocks are page structure. The post editor gives them
+  a persistent sidebar; the modal editors get `BlockTools` sheets.
+- The inspector debounces writes ~200ms and derives its draft during render
+  rather than syncing via an effect, so a typed word is one undo step and an
+  external Cmd+Z is reflected.
+
+### Testing
+
+`npx playwright test --project=unit` runs the block specs in plain Node — no
+browser, no dev server, no second test runner. They cover the wire format
+against an adversarial corpus (script tags, quotes, HTML entities, U+2028/9,
+angle brackets, 200-item arrays), registry integrity (every field name exists in
+`defaults`; every schema parses `{}`), and attribute-order drift.
+
+---
+
 ## Libraries & Utilities
+
+### Admin helpers (`lib/adminUpload.ts`, `lib/useIsDesktop.ts`)
+- `lib/adminUpload.ts` — `uploadPostImage(file)` posts to `/api/admin/posts/upload` (auto-rotate from EXIF, resize to max 1600px, re-encode to WebP q82, `post-media` bucket). Extracted from `RichTextEditor`'s inline toolbar handler so the block inspector's image field shares one implementation. Exports `UPLOAD_ACCEPT` and `UPLOAD_MAX_BYTES`, which mirror the route's own limits so an oversized file fails before the upload rather than after.
+- `lib/useIsDesktop.ts` — the ≥1024px breakpoint, read **synchronously** via `useSyncExternalStore`. The admin editors branch their whole layout on this, and the obvious `useState(false)` + effect version mounted the mobile tree first and then swapped to a different one, silently destroying and recreating the TipTap instance (and its undo history) on every open. `getServerSnapshot` returns `false` so SSR and the first client paint agree.
+
+---
 
 ### Shop (`lib/shop*.ts`, `lib/stripe.ts`, `lib/cart-store.ts`)
 - `lib/shop.ts` — client-safe types (`Product`, `ProductVariant`, `Order`, `CartItem`), `formatPrice(pennies)`, `variantPrice`, `fromPrice`, `totalStock`. Prices are integer pennies (GBP).
@@ -2682,39 +2866,61 @@ const nextConfig: NextConfig = {
 };
 ```
 
-### `tailwind.config.ts`
+### Styling: Tailwind v4, no `tailwind.config.ts`
 
-```typescript
-import type { Config } from "tailwindcss";
+This project uses **Tailwind CSS v4**, which has no JavaScript config file.
+Everything lives in `app/globals.css`:
 
-const config: Config = {
-  content: [
-    "./app/**/*.{js,ts,jsx,tsx}",
-    "./components/**/*.{js,ts,jsx,tsx}"
-  ],
-  theme: {
-    extend: {
-      colors: {
-        brand: "#FF6B35",      // Church brand color
-        accent: "#004E89",
-        light: "#F7F7F9"
-      },
-      fontFamily: {
-        display: ["var(--font-anton)"],      // Bold, display headings
-        serif: ["var(--font-playfair)"],     // Editorial headings
-        sans: ["var(--font-roboto)"]         // Body text
-      },
-      animation: {
-        "fade-in": "fadeIn 0.5s ease-in",
-        "slide-up": "slideUp 0.6s ease-out"
-      }
-    }
-  },
-  plugins: []
-};
+```css
+@import "tailwindcss";          /* establishes @layer theme, base, components, utilities */
 
-export default config;
+@theme inline {
+  --color-destiny-orange: #f58021;
+  --color-destiny-orange-dark: #d96d10;
+  --color-destiny-red: #fd0000;
+  --color-destiny-blue: #0857ba;
+  --color-destiny-green: #028002;
+  --color-destiny-purple: #8106b1;
+  --color-destiny-grey: #363f48;
+  --color-destiny-white: #ffffff;
+  --color-destiny-black: #000000;
+  --color-destiny-brown: #2c1a0e;
+  --font-sans: var(--font-roboto), system-ui, -apple-system, sans-serif;
+  --font-heading: Arial, "Helvetica Neue", sans-serif;
+}
 ```
+
+Tokens declared in `@theme inline` become utilities automatically, so
+`--color-destiny-orange` gives you `text-destiny-orange`, `bg-destiny-orange`,
+`border-destiny-orange` and so on. Add a colour or font by adding a variable
+here — there is no config file to edit.
+
+Fonts are loaded by `next/font` in `app/layout.tsx` (Roboto for body, Anton for
+display) and exposed as `--font-roboto` / `--font-anton`.
+
+#### Cascade layers — read this before adding global CSS
+
+`@import "tailwindcss"` establishes `@layer theme, base, components, utilities`.
+**Unlayered CSS beats every layered rule regardless of specificity**, so a
+global style written outside a layer will silently outrank every Tailwind
+utility, and no amount of specificity in the utility will win.
+
+Two rule sets in `globals.css` were unlayered and caused exactly that:
+
+- `h1, h2, h3 { font-family: var(--font-heading) }` beat every `font-*`
+  utility, so a utility could never change a heading's font. Now in
+  `@layer base`.
+- The `.rte-content` prose rules beat every utility used inside rich-text
+  content, which made content blocks impossible to style. Now in
+  `@layer components`.
+
+When adding global CSS, put it in the right layer. Base element defaults go in
+`@layer base`; reusable classes go in `@layer components`. Leave it unlayered
+only when you genuinely intend it to beat everything.
+
+Note that `@layer base` still loses to utilities, which is why blocks that want
+a non-Arial heading set `style={{ fontFamily: FONT_ROBOTO }}` — an inline style
+beats layered CSS entirely. See `components/blocks/tokens.ts`.
 
 ### `tsconfig.json`
 

@@ -10,19 +10,14 @@ import {
   ghostBtn,
 } from "@/components/admin/hr/HrUI";
 import RichTextEditor from "@/components/admin/RichTextEditor";
+import type { Editor } from "@tiptap/react";
+import { BLOCK_LIST } from "@/components/blocks/registry";
+import { BlockTools } from "@/components/admin/blocks/BlockTools";
+import { useIsDesktop } from "@/lib/useIsDesktop";
 
 // Desktop gets a full-screen, document-style editor; mobile keeps the popup.
-function useIsDesktop() {
-  const [isDesktop, setIsDesktop] = useState(false);
-  useEffect(() => {
-    const mq = window.matchMedia("(min-width: 1024px)");
-    const update = () => setIsDesktop(mq.matches);
-    update();
-    mq.addEventListener("change", update);
-    return () => mq.removeEventListener("change", update);
-  }, []);
-  return isDesktop;
-}
+// Shared with the post editor. See lib/useIsDesktop for why this must be read
+// synchronously rather than set from an effect.
 
 function PublishToggle({
   value,
@@ -78,6 +73,8 @@ export function PostEditor({
     sort_order: post?.sort_order ?? nextSortOrder,
   });
   const [saving, setSaving] = useState(false);
+  // Published by RichTextEditor so BlockTools can drive the same instance.
+  const [bodyEditor, setBodyEditor] = useState<Editor | null>(null);
 
   function set<K extends keyof typeof form>(key: K, value: (typeof form)[K]) {
     setForm((f) => ({ ...f, [key]: value }));
@@ -201,16 +198,22 @@ export function PostEditor({
         </div>
 
         {/* Editor body */}
-        <div className="flex-1 overflow-hidden bg-[#f5f7fa] p-4 lg:p-6">
-          <div className="mx-auto h-full max-w-3xl">
+        <div className="flex flex-1 flex-col overflow-hidden bg-[#f5f7fa] p-4 lg:p-6">
+          <div className="mx-auto flex h-full w-full max-w-3xl flex-col">
+            {/* Blocks live outside the formatting toolbar — see BlockTools. */}
+            <div className="mb-2 flex justify-end">
+              <BlockTools editor={bodyEditor} />
+            </div>
             <RichTextEditor
               value={form.body}
               onChange={(html) => set("body", html)}
-              placeholder="Write the training content — use the toolbar to add headings, links, lists, videos and embeds."
+              placeholder="Write the training content — use the toolbar for text, and Blocks for FAQs, callouts and cards."
               advanced
               fill
               enableYouTube
               enableHtmlEmbed
+              blocks={BLOCK_LIST}
+              onEditor={setBodyEditor}
             />
           </div>
         </div>
@@ -273,14 +276,19 @@ export function PostEditor({
         </div>
 
         <div>
-          <label className={labelClass}>Content</label>
+          <div className="mb-1.5 flex items-center justify-between">
+            <label className={`${labelClass} mb-0`}>Content</label>
+            <BlockTools editor={bodyEditor} />
+          </div>
           <RichTextEditor
             value={form.body}
             onChange={(html) => set("body", html)}
-            placeholder="Write the training content — use the toolbar to add headings, links, lists and videos."
+            placeholder="Write the training content — use the toolbar for text, and Blocks for FAQs, callouts and cards."
             advanced
             enableYouTube
             enableHtmlEmbed
+            blocks={BLOCK_LIST}
+            onEditor={setBodyEditor}
           />
         </div>
 

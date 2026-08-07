@@ -1305,9 +1305,17 @@ Displayed on every page:
 
 - `/dev/blocks` — Gallery of every registered content block, rendered through the
   real serialise → parse → render pipeline rather than by importing the
-  components directly, so it exercises the same path a live post does. Calls
-  `notFound()` when `NODE_ENV === "production"`. Useful when building a block:
-  no need to create a draft post to look at it.
+  components directly, so it exercises the same path a live post does. Useful
+  when building a block: no need to create a draft post to look at it.
+- `/dev/blocks/editor` — Harness that mounts the real editor with the real
+  Blocks sidebar and inspector, with no auth, no database and no save. It exists
+  because `/login` is gated by Cloudflare Turnstile, which makes the editor UI
+  hard to exercise otherwise. Shows the stored HTML and a live public render
+  beneath the editor, so serialisation problems are visible as you type, and
+  exposes the TipTap instance as `window.editor` for console work.
+
+Both call `notFound()` when `NODE_ENV === "production"`. They mount admin UI
+without an auth check, so they must never be reachable on the live site.
 
 ### Public Pages (No Auth Required)
 

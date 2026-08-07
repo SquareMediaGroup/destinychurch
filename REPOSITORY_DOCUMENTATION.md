@@ -142,6 +142,7 @@ destinychurch/
 │   ├── baptism/                   # Baptism sign-up
 │   ├── beliefs/                   # Beliefs page
 │   ├── bible-course/              # The Bible Course (Bible Society) info page
+│   ├── cap-money/                 # CAP Money Course (Christians Against Poverty) info page
 │   ├── child-dedication/          # Child dedication request
 │   ├── connect/                   # Connect groups page
 │   ├── data-gdpr/                 # Data & GDPR policy
@@ -1378,6 +1379,7 @@ without an auth check, so they must never be reachable on the live site.
 | `/missions` | `app/missions/page.tsx` | Mission partners, outreach |
 | `/alpha` | `app/alpha/page.tsx` | Alpha course info, next event |
 | `/bible-course` | `app/bible-course/page.tsx` | The Bible Course (Bible Society), next event |
+| `/cap-money` | `app/cap-money/page.tsx` | CAP Money Course (Christians Against Poverty). **Static** — no `alpha_events` type, so there is no admin screen and no next-event card; both CTAs point at `/contact` |
 | `/whats-on` | `app/whats-on/page.tsx` | Events listing — featured-event banner, then upcoming events grouped by month |
 | `/whats-on/[slug]` | `app/whats-on/[slug]/page.tsx` | On-site event page — one per ChurchSuite *series*, with all upcoming sessions, sanitised description, map link, signup and .ics |
 | `/home` | `app/home/page.tsx` | **Temporary** event-card variant preview of the homepage (`?card=a\|a-pill\|c`). noindex — delete once a variant is chosen |

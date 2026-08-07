@@ -47,6 +47,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${BASE_URL}/sermons`,      changeFrequency: "weekly",  priority: 0.9 },
     { url: `${BASE_URL}/alpha`,        changeFrequency: "monthly", priority: 0.8 },
     { url: `${BASE_URL}/bible-course`, changeFrequency: "monthly", priority: 0.8 },
+    { url: `${BASE_URL}/cap-money`,    changeFrequency: "monthly", priority: 0.8 },
     { url: `${BASE_URL}/new-here`,     changeFrequency: "monthly", priority: 0.9 },
     { url: `${BASE_URL}/visit`,        changeFrequency: "monthly", priority: 0.9 },
     { url: `${BASE_URL}/connect`,      changeFrequency: "monthly", priority: 0.8 },

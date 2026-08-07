@@ -36,6 +36,7 @@ const ROUTE_SLUGS = [
   "annual-report-2025",
   "baptism",
   "beliefs",
+  "cap-money",
   "child-dedication",
   "connect",
   "connect-card",

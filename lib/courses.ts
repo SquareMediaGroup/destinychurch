@@ -116,7 +116,7 @@ export const COURSES: Record<CourseId, CourseDef> = {
       titleColor: "#f58021",
       description:
         "The CAP Money Course is a revolutionary money management course that teaches a simple budgeting system that really works.",
-      cta: { label: "Register Interest", href: "/contact", color: "#363f48" },
+      cta: { label: "Find out more", href: "/cap-money", color: "#363f48" },
     },
     featured: {
       image: "/img/photos/Courses/Cap.webp",
@@ -126,7 +126,8 @@ export const COURSES: Record<CourseId, CourseDef> = {
       titleLines: ["CAP Money", "Course"],
       description:
         "A revolutionary money management course that teaches a simple budgeting system that really works — free, friendly and genuinely practical.",
-      primary: { label: "Register Interest", href: "/contact", color: "#363f48" },
+      primary: { label: "Find out more", href: "/cap-money", color: "#363f48" },
+      secondary: { label: "Register Interest", href: "/contact" },
     },
   },
 

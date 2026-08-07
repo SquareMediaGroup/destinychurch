@@ -730,6 +730,38 @@ CREATE TABLE hr_staff (
 
 ---
 
+#### 10b. **admin_roles**
+**Purpose:** Access levels for `/admin` — five independent booleans per admin login, checked by `middleware.ts` on every `/admin/*` and `/api/admin/*` request
+
+```sql
+CREATE TABLE admin_roles (
+  auth_user_id uuid PRIMARY KEY REFERENCES auth.users (id) ON DELETE CASCADE,
+  email text,
+  training_admin boolean NOT NULL DEFAULT false,
+  event_admin boolean NOT NULL DEFAULT false,
+  store_admin boolean NOT NULL DEFAULT false,
+  site_admin boolean NOT NULL DEFAULT false,
+  super_admin boolean NOT NULL DEFAULT false,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now()
+);
+
+-- RLS: Service role only (deny-all "service only" policy, same as every other table)
+```
+
+Distinct from the legacy, unused `admin_users` table in `supabase/schema.sql`
+(username/password_hash — predates the Supabase Auth migration; not read by
+any app code). Managed by Super Admins at `/admin/users`. See
+[Authorization Layers](#authorization-layers) for the role → route mapping
+and `lib/adminRoles.ts` for the enforcement logic.
+
+**Used By:**
+- `middleware.ts` — role check on every admin request
+- `/admin/users` + `app/api/admin/users/**` — role management UI
+- `app/api/admin/me/roles` — lets the sidebar know what to show
+
+---
+
 #### 11. **hr_leave_requests**
 **Purpose:** Time-off and leave requests
 
@@ -1374,7 +1406,11 @@ without an auth check, so they must never be reachable on the live site.
 
 ### Admin Pages (Auth Required, Checked in `middleware.ts`)
 
-All admin/staff features live under a single `/admin` prefix with one login at `/login` (no per-section roles — any authenticated staff account has full access). `/admin/hr` is built but intentionally unlinked from any nav (not yet launched).
+All admin/staff features live under a single `/admin` prefix with one login at `/login`.
+Each section requires a specific access-level role (see
+[Authorization Layers](#authorization-layers)); Super Admins get everything.
+`/admin/hr` is built but intentionally unlinked from any nav (not yet launched;
+Super Admin only).
 
 | Route | File | Purpose |
 |-------|------|---------|
@@ -1402,6 +1438,7 @@ All admin/staff features live under a single `/admin` prefix with one login at `
 | `/admin/store/hero` | `app/admin/store/hero/page.tsx` | Shop hero slides — add/edit/reorder rotating hero |
 | `/admin/store/orders` | `app/admin/store/orders/page.tsx` | Orders list |
 | `/admin/store/orders/[id]` | `app/admin/store/orders/[id]/page.tsx` | Order detail — mark fulfilled/cancelled/refunded |
+| `/admin/users` | `app/admin/users/page.tsx` | Manage admin logins and their access-level roles (Super Admin only) |
 
 ---
 
@@ -2615,10 +2652,10 @@ export async function getServiceInfo() {
 
 ---
 
-> **Note:** There is no `lib/roles.ts` in the codebase — the app uses a single-role
-> admin model (any authenticated Supabase user has full `/admin` access), enforced by
-> `middleware.ts` rather than a per-user role table. See Authentication & Authorization
-> below for the actual auth flow.
+> **Note:** Role logic lives in `lib/adminRoles.ts` (not `lib/roles.ts`) — five
+> independent per-user booleans stored in the `admin_roles` table, enforced by
+> `middleware.ts` on every `/admin/*` and `/api/admin/*` request. See
+> Authentication & Authorization below for the route → role mapping.
 
 ### `lib/turnstile.ts`
 
@@ -2818,10 +2855,30 @@ remembered, so existing sessions aren't unexpectedly downgraded.
 
 ### Authorization Layers
 
-There is no `lib/roles.ts` and no per-section role model — a single authenticated
-Supabase user has full `/admin` access. Auth is enforced centrally in `middleware.ts`,
-not in `app/admin/layout.tsx` (which is a client component purely responsible for the
-sidebar/header shell; it does not check auth itself).
+Access levels live in `lib/adminRoles.ts` + the `admin_roles` table — five
+independent per-user booleans (`training_admin`, `event_admin`, `store_admin`,
+`site_admin`, `super_admin`; see [admin_roles](#10b-admin_roles)). Auth *and*
+role enforcement both happen centrally in `middleware.ts`, not in
+`app/admin/layout.tsx` (which is a client component purely responsible for the
+sidebar/header shell; it does not check auth or roles itself).
+
+**Route → role mapping** (`ROUTE_RULES` in `lib/adminRoles.ts`; `super_admin`
+always passes and isn't repeated per rule; anything under `/admin` or
+`/api/admin` that isn't listed is Super Admin only — fail closed):
+
+| Role | Admin pages | API routes |
+|---|---|---|
+| `training_admin` | `/admin/training/**` | `/api/admin/training/**` |
+| `event_admin` | Courses (`alpha`, `recovery`, `bible-course`, `featured-course`) + Announcements except Banner (`popup`, `featured-event`, `event-popup`, `nfc`) | `/api/admin/{alpha-events,events,featured-course,featured-event,popup,nfc}` |
+| `store_admin` | `/admin/store/**` | `/api/admin/{store,shop-hero}/**` |
+| `site_admin` | `/admin/posts`, `/admin/redirects` | `/api/admin/{posts,redirects}/**` |
+| `super_admin` | Everything, plus Banner, Clear Cache, HR, and `/admin/users` | `/api/admin/{banner,revalidate,hr,users}/**` |
+
+`/admin` (dashboard) and `/api/admin/logout` stay open to any authenticated admin.
+`/admin/users` (Super Admin only, `app/api/admin/users/**`) is where roles are
+assigned — a tickbox per role per user. `GET /api/admin/me/roles` lets the
+sidebar (`AdminSidebar.tsx`) know which sections to show; it's a UI convenience
+only, not an authorization boundary.
 
 #### Layer 1: Middleware (`middleware.ts`)
 ```typescript
@@ -2843,6 +2900,15 @@ export async function middleware(request: NextRequest) {
   }
   if (!user) return NextResponse.redirect(new URL("/login", request.url));
 
+  // Access levels — see lib/adminRoles.ts for the route → role mapping.
+  const roles = await getRoles(createServiceClient(), user.id);
+  if (!hasAccess(roles, pathname)) {
+    if (pathname.startsWith("/api/admin")) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+    return NextResponse.redirect(new URL("/admin?forbidden=1", request.url));
+  }
+
   return supabaseResponse;
 }
 ```
@@ -2853,14 +2919,15 @@ export async function middleware(request: NextRequest) {
 CREATE POLICY "service only" ON hr_staff USING (false);
 ```
 API routes use the service role key for reads/writes (RLS is bypassed), relying on the
-middleware gate above rather than per-table role checks.
+middleware gate above rather than per-table role checks. `admin_roles` itself follows
+the same deny-all pattern — read only via `createServiceClient()`.
 
 **Why two layers?**
 - **Defense in depth** — the middleware gate is the single source of truth for "is this
-  visitor allowed into `/admin` at all"; RLS (deny-all + service role) means even a bug
-  in the app layer can't expose sensitive tables to the anon key.
-- **Simplicity** — no role table to keep in sync; any staff account with a login has
-  full access, which matches how small the admin user base is in practice.
+  visitor allowed into this `/admin` section"; RLS (deny-all + service role) means even a
+  bug in the app layer can't expose sensitive tables to the anon key.
+- **Fail closed** — a new admin page that isn't added to `ROUTE_RULES` is Super Admin
+  only by default, rather than accidentally open to everyone.
 
 #### Layer 0: Cloudflare Turnstile (bot gate, ahead of both layers above)
 

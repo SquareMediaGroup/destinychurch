@@ -126,8 +126,8 @@ export default function VisitPage() {
                 </div>
                 <div>
                   <p className="mb-1 font-black text-destiny-grey">Every Sunday</p>
-                  <p className="text-sm text-destiny-grey/70">Main Service: 11:00am – 12:30pm</p>
-                  <p className="mt-1 text-sm text-destiny-grey/70">Prayer Service: 10:00am – 10:30am</p>
+                  <p className="text-sm text-destiny-grey/70">Prayer Service: 10:00am – 10:30am</p>
+                  <p className="mt-1 text-sm text-destiny-grey/70">Main Service: 11:00am – 12:30pm</p>
                   <p className="mt-1 text-xs text-destiny-grey/40">Doors open from 9:45am</p>
                 </div>
               </div>

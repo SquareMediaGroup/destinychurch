@@ -47,7 +47,12 @@ export default function CardGridBlock({
   tone,
   mode,
 }: CardGridProps & BlockRenderContext) {
-  const usable = items.filter((item) => item.title.trim() || item.body.trim());
+  // Blank cards stay visible to the author — otherwise "Add card" looks like it
+  // did nothing, since a new card is empty by definition.
+  const usable =
+    mode === "edit"
+      ? items
+      : items.filter((item) => item.title.trim() || item.body.trim());
   if (usable.length === 0) {
     return mode === "edit" ? (
       <div className="rounded-2xl border border-dashed border-black/15 px-5 py-6 text-center text-sm text-destiny-grey/45">

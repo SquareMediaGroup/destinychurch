@@ -282,7 +282,9 @@ function Toolbar({
         onClick={() => editor.chain().focus().toggleOrderedList().run()}
       />
       <ToolbarButton
-        label="Quote"
+        // "Blockquote", not "Quote" — the Blocks sidebar has a Pull quote block,
+        // and these do different things. This reformats the current paragraph.
+        label="Blockquote"
         icon="format_quote"
         active={editor.isActive("blockquote")}
         onClick={() => editor.chain().focus().toggleBlockquote().run()}

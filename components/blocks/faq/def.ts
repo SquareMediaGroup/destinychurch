@@ -101,8 +101,10 @@ export const faqBlock: BlockDefinition<FaqProps> = {
 
   Component: FaqBlock,
 
+  // Counts every row, matching the number the inspector shows. Counting only
+  // filled-in ones made the chrome disagree with the panel next to it.
   summary: (props) => {
-    const count = props.items.filter((item) => item.q.trim()).length;
+    const count = props.items.length;
     return `FAQ · ${count} question${count === 1 ? "" : "s"}`;
   },
 

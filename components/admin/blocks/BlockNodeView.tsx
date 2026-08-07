@@ -33,7 +33,10 @@ export function makeBlockNodeView(def: AnyBlockDefinition) {
       <NodeViewWrapper
         as="div"
         data-dc-block={def.name}
-        className={`dc-block-shell group relative my-8 rounded-xl transition ${
+        // my-12 rather than my-8: the chrome bar below sits in this margin
+        // (~37px plus a 4px gap), and it needs room without colliding with the
+        // block above.
+        className={`dc-block-shell group relative my-12 rounded-xl transition ${
           selected ? "outline outline-2 outline-offset-4 outline-destiny-orange/60" : ""
         }`}
         onClick={select}
@@ -41,7 +44,11 @@ export function makeBlockNodeView(def: AnyBlockDefinition) {
         <div
           contentEditable={false}
           data-on={selected}
-          className="absolute -top-3 left-3 z-10 flex items-center gap-0.5 rounded-lg border border-black/10 bg-white px-1 py-0.5 opacity-0 shadow-sm transition focus-within:opacity-100 group-hover:opacity-100 data-[on=true]:opacity-100"
+          // bottom-full anchors the bar's bottom edge to the block's top edge,
+          // so it always clears the block's own first element whatever height
+          // the chrome happens to be. A fixed negative offset doesn't: -top-8
+          // assumed ~28px and the bar is 37px, so it sat 5px over the heading.
+          className="absolute bottom-full left-3 z-10 mb-1 flex items-center gap-0.5 rounded-lg border border-black/10 bg-white px-1 py-0.5 opacity-0 shadow-sm transition focus-within:opacity-100 group-hover:opacity-100 data-[on=true]:opacity-100"
         >
           {/*
             Deliberately a <span>, not a <button>.

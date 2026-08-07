@@ -26,7 +26,10 @@ export default function ButtonsBlock({
   align,
   mode,
 }: ButtonsProps & BlockRenderContext) {
-  const usable = items.filter((item) => item.label.trim());
+  // Blank rows stay visible to the author — otherwise "Add button" looks like
+  // it did nothing, since a new row has no label yet.
+  const usable =
+    mode === "edit" ? items : items.filter((item) => item.label.trim());
   if (usable.length === 0) {
     return mode === "edit" ? (
       <div className="rounded-2xl border border-dashed border-black/15 px-5 py-6 text-center text-sm text-destiny-grey/45">

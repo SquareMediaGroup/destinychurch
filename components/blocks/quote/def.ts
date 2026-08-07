@@ -3,12 +3,16 @@ import type { BlockDefinition } from "../types";
 import QuoteBlock, { type QuoteProps } from "./QuoteBlock";
 
 export const quoteBlock: BlockDefinition<QuoteProps> = {
+  // `name` is the wire format and must never change. `label` is what admins
+  // see, and is deliberately NOT "Quote": the toolbar already has a Blockquote
+  // button, and the two are different operations. That one reformats the
+  // paragraph you're in; this one inserts a designed quote with attribution.
   name: "quote",
   version: 1,
-  label: "Quote",
+  label: "Pull quote",
   icon: "format_quote",
   category: "content",
-  description: "A pull quote or testimonial.",
+  description: "Large quote with attribution.",
   width: "column",
 
   schema: z.object({

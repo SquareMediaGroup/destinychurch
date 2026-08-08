@@ -2,7 +2,7 @@ import Image from "next/image";
 import AnimateIn from "@/components/AnimateIn";
 
 const leadTeam = [
-  { name: "Faith Harris", role: "Associate Pastor", photo: "/img/brand/Team/FH.webp", email: "faith@destinytees.uk" },
+  { name: "Faith Moradi", role: "Associate Pastor", photo: "/img/brand/Team/FH.webp", email: "faith@destinytees.uk" },
   { name: "Tracy Reddy", role: "Small Groups", photo: "/img/brand/Team/TR.webp", email: "tracy@destinytees.uk" },
   { name: "Deveshin Reddy", role: "Finance & Facilities", photo: "/img/brand/Team/DR.webp", email: "deveshin@destinytees.uk" },
   { name: "Nkereuwem Ekanem", role: "Creativity & Innovation", photo: "/img/brand/Team/NE.webp", email: "nk@destinytees.uk" },

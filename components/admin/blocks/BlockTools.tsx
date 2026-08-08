@@ -1,24 +1,65 @@
 "use client";
 
-import { useEffect, useState, type ReactNode } from "react";
+import { useState } from "react";
+import { createPortal } from "react-dom";
 import type { Editor } from "@tiptap/react";
+import { BLOCKS } from "@/components/blocks/registry";
+import type { AnyBlockDefinition } from "@/components/blocks/types";
+import { Sheet } from "@/components/admin/Sheet";
+import { useIsClient } from "@/lib/useIsClient";
+import { useKeyboardInset } from "@/lib/useKeyboardInset";
 import { BlockPalette } from "./BlockPalette";
 import { BlockInspector } from "./BlockInspector";
+import {
+  addParagraphAfter,
+  deleteBlockAt,
+  duplicateBlockAt,
+  moveBlockAt,
+} from "./blockCommands";
+import { useSelectedBlock } from "./useSelectedBlock";
 
 /**
- * The compact blocks affordance, for editors that have no room for sidebars.
+ * The blocks affordance for every editor that has no room for sidebars — and
+ * the whole of the blocks UI on a phone.
  *
  * The post editor is a full-screen surface and gets persistent Blocks and
- * Settings panels. The job, training and product editors are modals, so they
- * get the same two surfaces as bottom sheets instead.
+ * Settings panels on desktop. The job, training and product editors are modals,
+ * so they get the same two surfaces as bottom sheets instead.
  *
- * The separation is the same either way, and it is the point: these buttons sit
- * OUTSIDE the rich-text toolbar. That toolbar formats the current text
- * selection; blocks are page structure. Mixing them makes both harder to find,
- * and would mean touching RichTextEditor's toolbar for every new block.
+ * Either way these buttons sit OUTSIDE the rich-text toolbar. That toolbar
+ * formats the current text selection; blocks are page structure. Mixing them
+ * makes both harder to find, and would mean touching RichTextEditor's toolbar
+ * for every new block.
+ *
+ * ── The mobile model ──────────────────────────────────────────────────────
+ *
+ * Desktop edits a block by hovering it, reading the chrome bar that appears and
+ * clicking a 24px control. None of those three steps exist on a touch screen,
+ * which is why blocks were close to unusable there.
+ *
+ * So mobile uses the model every touch editor converged on instead: tap a block
+ * to select it, and a toolbar docks to the bottom of the screen carrying that
+ * block's actions at thumb size. Reorder and delete are one tap from anywhere on
+ * the page; settings open in a half-height sheet so the block stays visible
+ * above it and updates as you type. It is a different interaction from desktop
+ * on purpose — the desktop one is not a smaller version of anything, it is a
+ * mouse-shaped one.
  */
 export function BlockTools({ editor }: { editor: Editor | null }) {
-  const [sheet, setSheet] = useState<"blocks" | "settings" | null>(null);
+  const [sheet, setSheet] = useState<"blocks" | "settings" | "more" | null>(null);
+  const selected = useSelectedBlock(editor);
+  const def = selected ? BLOCKS[selected.blockName] : undefined;
+  const keyboard = useKeyboardInset();
+  const isClient = useIsClient();
+
+  /** Run a command on the selected block, then dismiss any open action sheet. */
+  function act(run: (editor: Editor, pos: number) => void) {
+    if (!editor || !selected) return;
+    run(editor, selected.pos);
+    setSheet(null);
+  }
+
+  const summary = def && selected ? summarise(def, selected.propsJson) : "";
 
   return (
     <>
@@ -27,26 +68,138 @@ export function BlockTools({ editor }: { editor: Editor | null }) {
         <ToolButton icon="tune" label="Settings" onClick={() => setSheet("settings")} />
       </div>
 
-      {sheet && (
-        <BlockSheet
-          title={sheet === "blocks" ? "Blocks" : "Block settings"}
+      {/*
+        The selected-block toolbar. Portalled to the body because these editors
+        are modals whose backdrop uses backdrop-filter, which makes it a
+        containing block for `fixed` descendants — the bar would anchor to the
+        modal rather than to the screen.
+
+        Hidden while a sheet is open (the sheet owns the screen) and above `lg`,
+        where hovering the block is the better interaction and this would just
+        be a bar covering the page.
+      */}
+      {isClient &&
+        selected &&
+        def &&
+        !sheet &&
+        createPortal(
+          <div
+            className="fixed inset-x-0 z-[105] lg:hidden"
+            style={{ bottom: keyboard }}
+          >
+            <div className="mx-2 mb-[max(0.5rem,env(safe-area-inset-bottom))] flex items-center gap-1 rounded-2xl border border-black/8 bg-white/95 p-1.5 shadow-[0_8px_30px_rgba(0,0,0,0.18)] backdrop-blur">
+              <BarButton
+                icon="keyboard_arrow_up"
+                label="Move block up"
+                disabled={!selected.canMoveUp}
+                onClick={() => act((instance, pos) => moveBlockAt(instance, pos, -1))}
+              />
+              <BarButton
+                icon="keyboard_arrow_down"
+                label="Move block down"
+                disabled={!selected.canMoveDown}
+                onClick={() => act((instance, pos) => moveBlockAt(instance, pos, 1))}
+              />
+
+              <button
+                type="button"
+                onClick={() => setSheet("settings")}
+                className="flex min-w-0 flex-1 items-center gap-1.5 rounded-xl px-2 py-2 text-left"
+              >
+                <span
+                  aria-hidden
+                  className="material-symbols-rounded shrink-0 text-[18px] text-destiny-orange"
+                >
+                  {def.icon}
+                </span>
+                <span className="min-w-0 flex-1 truncate text-sm font-bold text-destiny-grey">
+                  {summary}
+                </span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setSheet("settings")}
+                className="flex h-11 shrink-0 items-center gap-1 rounded-xl bg-destiny-orange px-3 text-sm font-bold text-white"
+              >
+                <span aria-hidden className="material-symbols-rounded text-[18px]">tune</span>
+                Edit
+              </button>
+              <BarButton
+                icon="more_horiz"
+                label="More block actions"
+                onClick={() => setSheet("more")}
+              />
+            </div>
+          </div>,
+          document.body,
+        )}
+
+      {sheet === "blocks" && (
+        <Sheet
+          title="Add a block"
+          subtitle="Tap a block to drop it into the page."
           onClose={() => setSheet(null)}
         >
-          {sheet === "blocks" ? (
-            <BlockPalette
-              editor={editor}
-              // Straight from picking a block into configuring it. There's no
-              // room to show both, and a block left at its defaults isn't a
-              // useful place to stop.
-              onInserted={() => setSheet("settings")}
+          <BlockPalette
+            editor={editor}
+            layout="sheet"
+            // Straight from picking a block into configuring it. There's no
+            // room to show both, and a block left at its defaults isn't a
+            // useful place to stop.
+            onInserted={() => setSheet("settings")}
+          />
+        </Sheet>
+      )}
+
+      {sheet === "settings" && (
+        <Sheet
+          title={def ? def.label : "Block settings"}
+          subtitle={def ? summary : undefined}
+          // Half height so the block being edited stays on screen and visibly
+          // updates. That live feedback is most of what makes the settings
+          // legible at all on a small screen.
+          detent="half"
+          onClose={() => setSheet(null)}
+        >
+          {/* No onClose: the sheet owns the header, and its own close button. */}
+          <BlockInspector editor={editor} layout="sheet" />
+        </Sheet>
+      )}
+
+      {sheet === "more" && def && (
+        <Sheet title={def.label} detent="auto" onClose={() => setSheet(null)}>
+          <div className="flex flex-col gap-1 px-3 py-3">
+            <ActionRow
+              icon="content_copy"
+              label="Duplicate block"
+              onClick={() => act(duplicateBlockAt)}
             />
-          ) : (
-            <BlockInspector editor={editor} onClose={() => setSheet(null)} />
-          )}
-        </BlockSheet>
+            <ActionRow
+              icon="add"
+              label="Add a paragraph below"
+              onClick={() => act(addParagraphAfter)}
+            />
+            <ActionRow
+              icon="delete"
+              label="Delete block"
+              destructive
+              onClick={() => act(deleteBlockAt)}
+            />
+          </div>
+        </Sheet>
       )}
     </>
   );
+}
+
+/** The block's chrome label, e.g. "FAQ · 4 questions". */
+function summarise(def: AnyBlockDefinition, propsJson: string): string {
+  try {
+    return def.summary?.(JSON.parse(propsJson)) ?? def.label;
+  } catch {
+    return def.label;
+  }
 }
 
 function ToolButton({
@@ -62,52 +215,64 @@ function ToolButton({
     <button
       type="button"
       onClick={onClick}
-      className="inline-flex items-center gap-1 rounded-lg border border-black/10 px-2.5 py-1 text-xs font-bold text-destiny-grey/60 transition hover:bg-[#f5f7fa] hover:text-destiny-grey"
+      // min-h-10 on touch: the old 26px pill was under half the 44px a thumb
+      // needs, and it was the entry point to the entire blocks feature.
+      className="inline-flex min-h-10 items-center gap-1 rounded-xl border border-black/10 px-3 text-xs font-bold text-destiny-grey/60 transition hover:bg-[#f5f7fa] hover:text-destiny-grey lg:min-h-8 lg:rounded-lg lg:px-2.5"
     >
-      <span className="material-symbols-rounded text-[15px]">{icon}</span>
+      <span aria-hidden className="material-symbols-rounded text-[15px]">{icon}</span>
       {label}
     </button>
   );
 }
 
-export function BlockSheet({
-  title,
-  onClose,
-  children,
+function BarButton({
+  icon,
+  label,
+  disabled,
+  onClick,
 }: {
-  title: string;
-  onClose: () => void;
-  children: ReactNode;
+  icon: string;
+  label: string;
+  disabled?: boolean;
+  onClick: () => void;
 }) {
-  useEffect(() => {
-    const onKey = (event: KeyboardEvent) => event.key === "Escape" && onClose();
-    document.addEventListener("keydown", onKey);
-    return () => document.removeEventListener("keydown", onKey);
-  }, [onClose]);
-
   return (
-    // z-60 clears the host Modal, which sits at z-50.
-    <div className="fixed inset-0 z-[60] flex flex-col justify-end bg-black/40">
-      <button
-        type="button"
-        aria-label={`Close ${title}`}
-        className="flex-1"
-        onClick={onClose}
-      />
-      <div className="flex max-h-[75vh] flex-col rounded-t-3xl border-t border-black/5 bg-white shadow-2xl">
-        <div className="flex items-center justify-between border-b border-black/8 px-4 py-3">
-          <p className="text-sm font-black text-destiny-grey">{title}</p>
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label="Close"
-            className="flex h-8 w-8 items-center justify-center rounded-lg text-destiny-grey/50 transition hover:bg-[#f5f7fa]"
-          >
-            <span className="material-symbols-rounded text-xl">close</span>
-          </button>
-        </div>
-        <div className="min-h-0 flex-1 overflow-y-auto">{children}</div>
-      </div>
-    </div>
+    <button
+      type="button"
+      aria-label={label}
+      disabled={disabled}
+      // Keep focus in the editor so the node selection — and therefore this
+      // whole toolbar — survives the tap.
+      onMouseDown={(event) => event.preventDefault()}
+      onClick={onClick}
+      className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-destiny-grey/60 transition active:bg-black/5 disabled:opacity-25"
+    >
+      <span aria-hidden className="material-symbols-rounded text-[22px]">{icon}</span>
+    </button>
+  );
+}
+
+function ActionRow({
+  icon,
+  label,
+  destructive,
+  onClick,
+}: {
+  icon: string;
+  label: string;
+  destructive?: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`flex min-h-14 w-full items-center gap-3 rounded-xl px-3 text-left text-sm font-bold transition active:bg-black/5 ${
+        destructive ? "text-destiny-red" : "text-destiny-grey"
+      }`}
+    >
+      <span aria-hidden className="material-symbols-rounded text-[22px]">{icon}</span>
+      {label}
+    </button>
   );
 }

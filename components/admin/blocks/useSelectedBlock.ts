@@ -9,6 +9,16 @@ export interface SelectedBlock {
   blockName: string;
   /** Serialised so the selector can compare by value, not identity. */
   propsJson: string;
+  /**
+   * Whether a neighbour exists in that direction.
+   *
+   * Computed here rather than at the call site because it has to be part of the
+   * memoised snapshot: inserting a block *after* the selected one leaves `pos`
+   * untouched, so anything derived outside the selector would go stale and the
+   * toolbar would show "move down" as unavailable when it isn't.
+   */
+  canMoveUp: boolean;
+  canMoveDown: boolean;
 }
 
 /**
@@ -33,15 +43,22 @@ export function useSelectedBlock(editor: Editor | null): SelectedBlock | null {
       const blockName = blockNameFromNode(selection.node.type.name);
       if (!blockName) return null;
 
+      const $pos = instance.state.doc.resolve(selection.from);
+      const index = $pos.index();
+
       return {
         pos: selection.from,
         blockName,
         propsJson: JSON.stringify(selection.node.attrs.props ?? {}),
+        canMoveUp: index > 0,
+        canMoveDown: index < $pos.parent.childCount - 1,
       };
     },
     equalityFn: (a, b) =>
       a?.pos === b?.pos &&
       a?.blockName === b?.blockName &&
-      a?.propsJson === b?.propsJson,
+      a?.propsJson === b?.propsJson &&
+      a?.canMoveUp === b?.canMoveUp &&
+      a?.canMoveDown === b?.canMoveDown,
   });
 }

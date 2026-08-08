@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { Editor } from "@tiptap/react";
 import { BLOCKS } from "@/components/blocks/registry";
+import { BlockOutline } from "./BlockOutline";
 import { FieldRenderer } from "./fields/FieldRenderer";
 import { useSelectedBlock } from "./useSelectedBlock";
 
@@ -22,10 +23,18 @@ interface Draft {
 export function BlockInspector({
   editor,
   onClose,
+  layout = "sidebar",
 }: {
   editor: Editor | null;
   /** Mobile only — the desktop panel is always present. */
   onClose?: () => void;
+  /**
+   * `sheet` drops the panel's own title bar (the sheet already has one) and
+   * turns the empty state into something useful on a phone: a list of the
+   * blocks in the page, since the canvas is behind the sheet and "click a block"
+   * is not advice a thumb can follow.
+   */
+  layout?: "sidebar" | "sheet";
 }) {
   const selected = useSelectedBlock(editor);
   const def = selected ? BLOCKS[selected.blockName] : undefined;
@@ -111,7 +120,30 @@ export function BlockInspector({
     }, FLUSH_DELAY_MS);
   }
 
+  const sheet = layout === "sheet";
+
   if (!selected || !def) {
+    // On a phone the canvas is behind the sheet, so "click a block" is useless
+    // advice — offer the blocks themselves instead.
+    if (sheet) {
+      return (
+        <div className="px-4 py-4">
+          <p className="mb-2 text-xs font-bold uppercase tracking-wider text-destiny-grey/40">
+            Blocks in this page
+          </p>
+          <BlockOutline
+            editor={editor}
+            emptyState={
+              <p className="rounded-xl bg-[#f5f7fa] px-4 py-6 text-center text-sm leading-relaxed text-destiny-grey/50">
+                This page has no blocks yet. Add one from Blocks, then its
+                settings appear here.
+              </p>
+            }
+          />
+        </div>
+      );
+    }
+
     return (
       <div className="flex h-full flex-col items-center justify-center px-6 py-10 text-center">
         <span className="material-symbols-rounded text-3xl text-destiny-grey/20">
@@ -130,26 +162,32 @@ export function BlockInspector({
 
   return (
     <div className="flex h-full flex-col">
-      <div className="flex items-center gap-2 border-b border-black/8 px-4 py-3">
-        <span className="material-symbols-rounded text-[19px] text-destiny-orange">
-          {def.icon}
-        </span>
-        <span className="min-w-0 flex-1 truncate text-sm font-black text-destiny-grey">
-          {def.label}
-        </span>
-        {onClose && (
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label="Close settings"
-            className="flex h-7 w-7 items-center justify-center rounded-lg text-destiny-grey/45 transition hover:bg-[#f5f7fa]"
-          >
-            <span className="material-symbols-rounded text-lg">close</span>
-          </button>
-        )}
-      </div>
+      {!sheet && (
+        <div className="flex items-center gap-2 border-b border-black/8 px-4 py-3">
+          <span className="material-symbols-rounded text-[19px] text-destiny-orange">
+            {def.icon}
+          </span>
+          <span className="min-w-0 flex-1 truncate text-sm font-black text-destiny-grey">
+            {def.label}
+          </span>
+          {onClose && (
+            <button
+              type="button"
+              onClick={onClose}
+              aria-label="Close settings"
+              className="flex h-7 w-7 items-center justify-center rounded-lg text-destiny-grey/45 transition hover:bg-[#f5f7fa]"
+            >
+              <span className="material-symbols-rounded text-lg">close</span>
+            </button>
+          )}
+        </div>
+      )}
 
-      <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-4 py-4">
+      <div
+        className={`flex min-h-0 flex-1 flex-col overflow-y-auto px-4 ${
+          sheet ? "gap-5 pb-6 pt-4" : "gap-4 py-4"
+        }`}
+      >
         {def.fields.map((field) => (
           <FieldRenderer
             key={field.name}

@@ -5,6 +5,7 @@ import type { Editor } from "@tiptap/react";
 import RichTextEditor from "@/components/admin/RichTextEditor";
 import { BlockPalette } from "@/components/admin/blocks/BlockPalette";
 import { BlockInspector } from "@/components/admin/blocks/BlockInspector";
+import { BlockTools } from "@/components/admin/blocks/BlockTools";
 import { BLOCK_LIST } from "@/components/blocks/registry";
 import RichContent from "@/components/content/RichContent";
 
@@ -69,8 +70,13 @@ export default function BlockSandbox() {
           <BlockPalette editor={editor} />
         </aside>
 
-        <div className="flex min-w-0 flex-1 flex-col overflow-hidden p-4">
+        <div className="flex min-w-0 flex-1 flex-col overflow-hidden p-2 lg:p-4">
           <div className="mx-auto flex h-full w-full max-w-3xl flex-col">
+            {/* Below `lg` the two sidebars are gone, so the sheets are the only
+                way in — same as the real modal editors. */}
+            <div className="mb-2 flex justify-end lg:hidden">
+              <BlockTools editor={editor} />
+            </div>
             <RichTextEditor
               value={html}
               onChange={setHtml}

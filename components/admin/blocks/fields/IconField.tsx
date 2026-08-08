@@ -1,8 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { inputClass } from "@/components/admin/hr/HrUI";
-import { FieldShell } from "./BasicFields";
+import { FieldShell, fieldInputClass } from "./BasicFields";
 
 /**
  * A curated starting set. The free-text input below stays the escape hatch, so
@@ -41,14 +40,14 @@ export function IconField({
             as its own text, which is self-explaining feedback. */}
         <span
           aria-hidden
-          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-black/10 bg-[#f5f7fa] text-destiny-grey/70"
+          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-black/10 bg-[#f5f7fa] text-destiny-grey/70 lg:h-10 lg:w-10"
         >
           <span className="material-symbols-rounded text-[20px]">
             {value || "add"}
           </span>
         </span>
         <input
-          className={inputClass}
+          className={fieldInputClass}
           value={value}
           placeholder="calendar_month"
           onChange={(event) => onChange(event.target.value.trim())}
@@ -57,14 +56,14 @@ export function IconField({
           type="button"
           onClick={() => setOpen((previous) => !previous)}
           aria-expanded={open}
-          className="shrink-0 rounded-xl border border-black/10 px-2.5 py-2 text-xs font-bold text-destiny-grey/60 transition hover:bg-[#f5f7fa]"
+          className="min-h-11 shrink-0 rounded-xl border border-black/10 px-3 text-xs font-bold text-destiny-grey/60 transition hover:bg-[#f5f7fa] lg:min-h-10 lg:px-2.5"
         >
           {open ? "Close" : "Browse"}
         </button>
       </div>
 
       {open && (
-        <div className="mt-2 grid max-h-52 grid-cols-8 gap-1 overflow-y-auto rounded-xl border border-black/10 bg-white p-2">
+        <div className="mt-2 grid max-h-64 grid-cols-6 gap-1 overflow-y-auto rounded-xl border border-black/10 bg-white p-2 lg:max-h-52 lg:grid-cols-8">
           {SUGGESTED_ICONS.map((icon) => (
             <button
               key={icon}
@@ -74,11 +73,11 @@ export function IconField({
                 onChange(icon);
                 setOpen(false);
               }}
-              className={`flex h-9 items-center justify-center rounded-lg transition hover:bg-destiny-orange/10 ${
+              className={`flex h-11 items-center justify-center rounded-lg transition hover:bg-destiny-orange/10 lg:h-9 ${
                 value === icon ? "bg-destiny-orange/15 text-destiny-orange" : "text-destiny-grey/60"
               }`}
             >
-              <span className="material-symbols-rounded text-[19px]">{icon}</span>
+              <span aria-hidden className="material-symbols-rounded text-[19px]">{icon}</span>
             </button>
           ))}
         </div>

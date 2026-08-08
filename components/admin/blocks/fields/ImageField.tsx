@@ -1,10 +1,9 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { inputClass } from "@/components/admin/hr/HrUI";
 import { useToast } from "@/components/ToastProvider";
 import { UPLOAD_ACCEPT, uploadPostImage } from "@/lib/adminUpload";
-import { FieldShell } from "./BasicFields";
+import { FieldShell, fieldInputClass } from "./BasicFields";
 
 export function ImageField({
   label,
@@ -53,14 +52,14 @@ export function ImageField({
                 type="button"
                 disabled={uploading}
                 onClick={() => inputRef.current?.click()}
-                className="rounded-lg border border-black/10 px-2.5 py-1 text-xs font-bold text-destiny-grey/60 transition hover:bg-[#f5f7fa]"
+                className="min-h-10 rounded-lg border border-black/10 px-3 text-xs font-bold text-destiny-grey/60 transition hover:bg-[#f5f7fa] lg:min-h-0 lg:px-2.5 lg:py-1"
               >
                 {uploading ? "Uploading…" : "Replace"}
               </button>
               <button
                 type="button"
                 onClick={() => onChange("")}
-                className="rounded-lg px-2.5 py-1 text-xs font-bold text-destiny-grey/45 transition hover:bg-black/5 hover:text-destiny-red"
+                className="min-h-10 rounded-lg px-3 text-xs font-bold text-destiny-grey/45 transition hover:bg-black/5 hover:text-destiny-red lg:min-h-0 lg:px-2.5 lg:py-1"
               >
                 Remove
               </button>
@@ -91,7 +90,16 @@ export function ImageField({
             {uploading ? "hourglass_top" : "add_photo_alternate"}
           </span>
           <p className="mt-1 text-xs font-bold text-destiny-grey/60">
-            {uploading ? "Uploading…" : "Drop an image or click to choose"}
+            {uploading ? (
+              "Uploading…"
+            ) : (
+              <>
+                <span className="lg:hidden">Tap to choose an image</span>
+                <span className="hidden lg:inline">
+                  Drop an image or click to choose
+                </span>
+              </>
+            )}
           </p>
           <p className="mt-0.5 text-[11px] text-destiny-grey/40">
             JPG, PNG, WebP or GIF, up to 5MB
@@ -112,7 +120,7 @@ export function ImageField({
       />
 
       <input
-        className={`${inputClass} mt-2`}
+        className={`${fieldInputClass} mt-2`}
         value={value}
         placeholder="…or paste an image URL"
         onChange={(event) => onChange(event.target.value)}

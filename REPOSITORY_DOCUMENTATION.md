@@ -1693,8 +1693,8 @@ The member-facing pieces of the `/training` resource library.
 - `useTrainingProgress.ts` — Per-browser completion store in `localStorage` (no per-user accounts; trainees share a group password). Exposes `useCompletedSet()` and `toggleCompleted()`; starts empty on first render to avoid hydration mismatch, then fills in after mount and stays reactive across tabs via a custom event + the `storage` event.
 
 #### Admin Content/Training/HR Components (`components/admin/{posts,training,hr}/*`)
-- `posts/PostEditor.tsx` — Standalone page editor (uses `RichTextEditor`)
-- `training/PostEditor.tsx` — Training post editor (uses `RichTextEditor`)
+- `posts/PostEditor.tsx` — Standalone page editor (uses `RichTextEditor`). Full-screen at **both** breakpoints; only the panel placement differs. Desktop gets the permanent Blocks and Settings sidebars; mobile edits the title in the header, puts the slug and published switch behind a "Page settings" sheet, and gives the rest of the screen to the editor. It was previously a `Modal` on mobile — the whole form inside a scrolling popup, with the editor capped at 420px and scrolling separately inside that, so the page content got about a third of the screen and a newly added block was immediately pushed out of sight.
+- `training/PostEditor.tsx` — Training post editor (uses `RichTextEditor`). Still a `Modal` on mobile: its body is one field among many rather than the whole point of the screen, and it inherits the mobile block sheets and toolbar from `BlockTools` either way.
 - `training/CategoryModal.tsx`, `SubgroupModal.tsx`, `FolderModal.tsx`, `IconPicker.tsx` — Training tree CRUD modals
 - `hr/HrUI.tsx` — Staff directory, leave requests, documents (main HR dashboard shell)
 - `hr/JobModal.tsx` — Create/edit job listing (uses `RichTextEditor`)
@@ -2293,10 +2293,58 @@ Things that will bite you:
 | `components/admin/blocks/createBlockNode.tsx` | Generic TipTap node factory |
 | `components/admin/blocks/UnknownBlockNode.tsx` | Data-preserving fallback |
 | `components/admin/blocks/BlockNodeView.tsx` | Editor chrome, drag grip, click shield |
-| `components/admin/blocks/BlockPalette.tsx` | The Blocks sidebar |
+| `components/admin/blocks/BlockPalette.tsx` | The block inserter — sidebar on desktop, searchable grid in the sheet |
 | `components/admin/blocks/BlockInspector.tsx` | Schema-driven settings panel |
-| `components/admin/blocks/BlockTools.tsx` | Compact blocks/settings sheets for modal editors |
+| `components/admin/blocks/BlockOutline.tsx` | Jump list of every block in the document |
+| `components/admin/blocks/blockCommands.ts` | Move / duplicate / delete / add-paragraph, by position |
+| `components/admin/blocks/BlockTools.tsx` | Sheets + the mobile selected-block toolbar |
+| `components/admin/Sheet.tsx` | The admin bottom sheet (grabber, detents, drag-to-dismiss) |
 | `app/dev/blocks` | Development-only gallery; 404s in production |
+
+### Mobile is a different interaction, not a narrower one
+
+Desktop edits a block by hovering it, reading the chrome bar that appears and
+clicking a 24px control. None of those three steps exist on a touch screen, so
+below `lg` the blocks UI is replaced rather than reflowed — the same model every
+touch editor converged on:
+
+- **Tap a block to select it**, and a toolbar docks to the bottom of the screen
+  with that block's actions at 44px: move up, move down, its name, Settings, and
+  a "more" action sheet holding duplicate / add-paragraph / delete. The
+  hover-revealed chrome bar in `BlockNodeView` is `hidden lg:flex`; what mobile
+  keeps is a standing label chip above each block, because with no hover there
+  is otherwise nothing saying a block is one tappable object.
+- **Settings open at the `half` detent**, so the block stays on screen above the
+  sheet and visibly updates as you type. That live feedback is most of what
+  makes the settings legible on a small screen.
+- **With nothing selected**, the settings sheet lists the blocks in the page
+  (`BlockOutline`) instead of saying "click a block" — the canvas is behind the
+  sheet, so that was advice a thumb could not follow.
+- **The inserter is a searchable two-column grid** in the sheet, and its copy
+  does not mention dragging, which touch cannot do.
+- **Every inspector input is 16px on touch** (`fieldInputClass`). Below that,
+  iOS Safari zooms the page on focus and does not zoom back out, which put the
+  block being edited off-screen on the first tap of the first field.
+- Repeater rows keep move up/down in the header and moved duplicate/remove into
+  the open row as labelled buttons — four 24px icon buttons in a row put
+  "remove" a thumb-width from "duplicate".
+- `RichTextEditor`'s formatting toolbar is one horizontally scrolling row below
+  `lg`. Wrapped, its nineteen controls took six rows — about a third of a phone
+  screen — above an editor with no room left.
+
+`components/admin/Sheet.tsx` is the shared surface underneath all of it: grabber,
+drag down to dismiss (full → half → closed) and up to expand, `auto`/`half`/`full`
+detents, safe-area inset, body-scroll lock, and it lifts above the keyboard via
+`useKeyboardInset`. Escape is handled in the **capture** phase: these sheets open
+on top of admin modals that close on Escape too, and the modal's document
+listener is registered first, so nothing in the bubble phase can stop it.
+
+It portals to `document.body` at `z-[110]` (the toolbar at `z-[105]`). Portalled
+because the admin modal backdrops use `backdrop-filter`, which makes them a
+containing block for `fixed` descendants — the toolbar would anchor to the modal
+instead of the screen. The z-indexes sit above the admin modals (`z-50`) and the
+dev sandbox (`z-[100]`), and below `DialogProvider` (`z-[200]`) so the editor's
+link prompt still opens over a sheet rather than underneath one.
 
 ### Embeds go through the cookie-consent gate
 
@@ -2345,8 +2393,10 @@ Two consequences:
   rebuilds the document, destroys every node view, drops the selection and wipes
   undo history mid-edit.
 - **Blocks are never in the rich-text toolbar.** That toolbar formats the
-  current text selection; blocks are page structure. The post editor gives them
-  a persistent sidebar; the modal editors get `BlockTools` sheets.
+  current text selection; blocks are page structure. On desktop the post editor
+  gives them a persistent sidebar and the modal editors get `BlockTools` sheets;
+  on mobile they are sheets plus a docked toolbar for the selected block. All
+  three are outside the formatting strip.
 - The inspector debounces writes ~200ms and derives its draft during render
   rather than syncing via an effect, so a typed word is one undo step and an
   external Cmd+Z is reflected.
@@ -2363,9 +2413,11 @@ angle brackets, 200-item arrays), registry integrity (every field name exists in
 
 ## Libraries & Utilities
 
-### Admin helpers (`lib/adminUpload.ts`, `lib/useIsDesktop.ts`)
+### Admin helpers (`lib/adminUpload.ts`, `lib/useIsDesktop.ts`, `lib/useKeyboardInset.ts`, `lib/useIsClient.ts`)
 - `lib/adminUpload.ts` — `uploadPostImage(file)` posts to `/api/admin/posts/upload` (auto-rotate from EXIF, resize to max 1600px, re-encode to WebP q82, `post-media` bucket). Extracted from `RichTextEditor`'s inline toolbar handler so the block inspector's image field shares one implementation. Exports `UPLOAD_ACCEPT` and `UPLOAD_MAX_BYTES`, which mirror the route's own limits so an oversized file fails before the upload rather than after.
 - `lib/useIsDesktop.ts` — the ≥1024px breakpoint, read **synchronously** via `useSyncExternalStore`. The admin editors branch their whole layout on this, and the obvious `useState(false)` + effect version mounted the mobile tree first and then swapped to a different one, silently destroying and recreating the TipTap instance (and its undo history) on every open. `getServerSnapshot` returns `false` so SSR and the first client paint agree.
+- `lib/useKeyboardInset.ts` — how many pixels the on-screen keyboard covers at the bottom of the window, from `visualViewport`. `position: fixed` resolves against the *layout* viewport, which iOS Safari does not shrink for the keyboard, so bottom-anchored sheets and toolbars would otherwise sit underneath it. Thresholded at 120px and rounded: URL-bar collapse and pinch-zoom also move the visual viewport, and an unrounded value hands `useSyncExternalStore` a new snapshot on every scroll frame.
+- `lib/useIsClient.ts` — false on the server and the hydrating render, true after. Guards `createPortal(…, document.body)`. `useSyncExternalStore` rather than `useState` + effect because the latter is a synchronous setState inside an effect, which the React lint rules reject as a cascading render.
 
 ---
 
@@ -3293,7 +3345,7 @@ ENABLE_SMART_SEARCH=true
 ### Component Directory
 - **~120 components** organized by feature:
   - Global: Header, Footer, Providers, CookieBanner, Analytics, FloatingSmartSearch
-  - Admin: Sidebar, AdminHeader, RichTextEditor (shared editor), posts/training/hr editors
+  - Admin: Sidebar, AdminHeader, RichTextEditor (shared editor), Sheet (mobile bottom sheet), blocks/ (palette, inspector, outline, tools), posts/training/hr editors
   - Ministry-specific: Kids, Youth, Young Adults, Alpha
   - Governance: registration cards, trustees/directors, financial history, filings, source note
   - Shop: ProductCard, ShopProductGrid, ShopHero, cart, checkout

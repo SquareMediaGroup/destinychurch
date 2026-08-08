@@ -1,10 +1,12 @@
 "use client";
 
 import { NodeViewWrapper, type ReactNodeViewProps } from "@tiptap/react";
-import type { Editor } from "@tiptap/react";
-import { NodeSelection } from "@tiptap/pm/state";
-import type { Node as PMNode } from "@tiptap/pm/model";
 import type { AnyBlockDefinition } from "@/components/blocks/types";
+import {
+  addParagraphAfter,
+  duplicateBlockAt,
+  moveBlockAt,
+} from "./blockCommands";
 
 /**
  * The editor-side shell around a block.
@@ -12,6 +14,13 @@ import type { AnyBlockDefinition } from "@/components/blocks/types";
  * Renders the real, shared block component — the same module the public page
  * uses — wrapped in selection chrome. That is what makes the editor properly
  * WYSIWYG rather than showing a placeholder.
+ *
+ * The chrome bar is desktop-only. It is revealed on hover, which touch does not
+ * have, and its controls are 24px, which a thumb does not have either — so on
+ * phones a block is selected by tapping it and driven from the fixed toolbar in
+ * BlockTools instead. What stays on mobile is the part that was missing: an
+ * always-visible label, so a block reads as one tappable object rather than as
+ * page content the author is about to try (and fail) to edit inline.
  */
 export function makeBlockNodeView(def: AnyBlockDefinition) {
   return function BlockNodeView({
@@ -23,11 +32,15 @@ export function makeBlockNodeView(def: AnyBlockDefinition) {
   }: ReactNodeViewProps) {
     const props = node.attrs.props as Record<string, unknown>;
     const Component = def.Component;
+    const summary = def.summary?.(props) ?? def.label;
 
-    const select = () => {
+    /** Run a command against this block's live position. */
+    const at = (run: (pos: number) => void) => () => {
       const pos = getPos();
-      if (typeof pos === "number") editor.commands.setNodeSelection(pos);
+      if (typeof pos === "number") run(pos);
     };
+
+    const select = at((pos) => editor.commands.setNodeSelection(pos));
 
     return (
       <NodeViewWrapper
@@ -36,11 +49,26 @@ export function makeBlockNodeView(def: AnyBlockDefinition) {
         // my-12 rather than my-8: the chrome bar below sits in this margin
         // (~37px plus a 4px gap), and it needs room without colliding with the
         // block above.
-        className={`dc-block-shell group relative my-12 rounded-xl transition ${
+        //
+        // scroll-mb clears the mobile block toolbar, so a block selected from
+        // the palette or the outline doesn't land underneath it.
+        className={`dc-block-shell group relative my-12 scroll-mb-32 rounded-xl transition lg:scroll-mb-0 ${
           selected ? "outline outline-2 outline-offset-4 outline-destiny-orange/60" : ""
         }`}
         onClick={select}
       >
+        {/* Mobile: a standing label, because there is no hover to reveal one. */}
+        <div
+          contentEditable={false}
+          data-on={selected}
+          className="absolute bottom-full left-2 z-10 mb-1 flex max-w-[calc(100%-1rem)] items-center gap-1 rounded-md bg-black/5 px-1.5 py-0.5 text-destiny-grey/45 transition data-[on=true]:bg-destiny-orange/15 data-[on=true]:text-destiny-orange lg:hidden"
+        >
+          <span aria-hidden className="material-symbols-rounded text-[13px]">{def.icon}</span>
+          <span className="truncate text-[10px] font-bold uppercase tracking-wider">
+            {summary}
+          </span>
+        </div>
+
         <div
           contentEditable={false}
           data-on={selected}
@@ -48,7 +76,7 @@ export function makeBlockNodeView(def: AnyBlockDefinition) {
           // so it always clears the block's own first element whatever height
           // the chrome happens to be. A fixed negative offset doesn't: -top-8
           // assumed ~28px and the bar is 37px, so it sat 5px over the heading.
-          className="absolute bottom-full left-3 z-10 mb-1 flex items-center gap-0.5 rounded-lg border border-black/10 bg-white px-1 py-0.5 opacity-0 shadow-sm transition focus-within:opacity-100 group-hover:opacity-100 data-[on=true]:opacity-100"
+          className="absolute bottom-full left-3 z-10 mb-1 hidden items-center gap-0.5 rounded-lg border border-black/10 bg-white px-1 py-0.5 opacity-0 shadow-sm transition focus-within:opacity-100 group-hover:opacity-100 data-[on=true]:opacity-100 lg:flex"
         >
           {/*
             Deliberately a <span>, not a <button>.
@@ -71,28 +99,28 @@ export function makeBlockNodeView(def: AnyBlockDefinition) {
           </span>
 
           <span className="px-1 text-[11px] font-bold uppercase tracking-wider text-destiny-grey/45">
-            {def.summary?.(props) ?? def.label}
+            {summary}
           </span>
 
           <ChromeButton
             icon="keyboard_arrow_up"
             label="Move up"
-            onClick={() => moveBlock(editor, getPos, -1)}
+            onClick={at((pos) => moveBlockAt(editor, pos, -1))}
           />
           <ChromeButton
             icon="keyboard_arrow_down"
             label="Move down"
-            onClick={() => moveBlock(editor, getPos, 1)}
+            onClick={at((pos) => moveBlockAt(editor, pos, 1))}
           />
           <ChromeButton
             icon="content_copy"
             label="Duplicate"
-            onClick={() => duplicateBlock(editor, getPos, node)}
+            onClick={at((pos) => duplicateBlockAt(editor, pos))}
           />
           <ChromeButton
             icon="add"
             label="Add paragraph below"
-            onClick={() => addParagraphBelow(editor, getPos, node)}
+            onClick={at((pos) => addParagraphAfter(editor, pos))}
           />
           <ChromeButton icon="delete" label="Delete" onClick={deleteNode} />
         </div>
@@ -135,64 +163,4 @@ function ChromeButton({
       <span className="material-symbols-rounded text-[16px]">{icon}</span>
     </button>
   );
-}
-
-type GetPos = () => number | undefined;
-
-/**
- * Move a block past its neighbour.
- *
- * This is the touch and keyboard reorder path — HTML5 drag has neither, so the
- * grip alone would make reordering impossible on a tablet.
- */
-function moveBlock(editor: Editor, getPos: GetPos, direction: -1 | 1) {
-  const pos = getPos();
-  if (typeof pos !== "number") return;
-
-  const { state } = editor;
-  const node = state.doc.nodeAt(pos);
-  if (!node) return;
-
-  const $pos = state.doc.resolve(pos);
-  const index = $pos.index();
-  const parent = $pos.parent;
-  const targetIndex = index + direction;
-  if (targetIndex < 0 || targetIndex >= parent.childCount) return;
-
-  const neighbour = parent.child(targetIndex);
-  const insertAt =
-    direction === 1
-      ? pos + neighbour.nodeSize // past the node that follows
-      : pos - neighbour.nodeSize;
-
-  const tr = state.tr.delete(pos, pos + node.nodeSize);
-  tr.insert(tr.mapping.map(insertAt), node);
-  tr.setSelection(NodeSelection.create(tr.doc, tr.mapping.map(insertAt)));
-  editor.view.dispatch(tr.scrollIntoView());
-}
-
-function duplicateBlock(editor: Editor, getPos: GetPos, node: PMNode) {
-  const pos = getPos();
-  if (typeof pos !== "number") return;
-  const at = pos + node.nodeSize;
-  const tr = editor.state.tr.insert(at, node.copy(node.content));
-  tr.setSelection(NodeSelection.create(tr.doc, at));
-  editor.view.dispatch(tr.scrollIntoView());
-}
-
-/**
- * Gapcursor already lets you click below a trailing block and type, but it is
- * not discoverable — an explicit button is.
- */
-function addParagraphBelow(editor: Editor, getPos: GetPos, node: PMNode) {
-  const pos = getPos();
-  if (typeof pos !== "number") return;
-  const at = pos + node.nodeSize;
-  const paragraph = editor.state.schema.nodes.paragraph.create();
-  const tr = editor.state.tr.insert(at, paragraph);
-  tr.setSelection(
-    NodeSelection.near(tr.doc.resolve(Math.min(at + 1, tr.doc.content.size))),
-  );
-  editor.view.dispatch(tr.scrollIntoView());
-  editor.commands.focus();
 }

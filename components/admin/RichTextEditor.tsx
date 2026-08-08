@@ -108,7 +108,7 @@ function ToolbarButton({
       onClick={onClick}
       aria-label={label}
       title={label}
-      className={`flex h-8 min-w-8 items-center justify-center rounded-lg px-2 text-sm font-bold transition ${
+      className={`flex h-9 min-w-9 shrink-0 items-center justify-center rounded-lg px-2 text-sm font-bold transition lg:h-8 lg:min-w-8 ${
         active
           ? "bg-destiny-orange/15 text-destiny-orange"
           : "text-destiny-grey/60 hover:bg-black/5"
@@ -128,7 +128,7 @@ function Toolbar({
   enableImages?: boolean;
   advanced?: boolean;
 }) {
-  const div = "mx-1 h-5 w-px bg-black/10";
+  const div = "mx-1 h-5 w-px shrink-0 bg-black/10";
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const { prompt } = useDialog();
@@ -183,7 +183,16 @@ function Toolbar({
   }
 
   return (
-    <div className="flex flex-wrap items-center gap-0.5 border-b border-black/10 bg-[#f9fafb] px-2 py-1.5">
+    /*
+      One scrolling row on a phone, wrapped rows on desktop.
+
+      There are nineteen controls here. Wrapped at 390px that is six rows —
+      roughly a third of the screen spent on formatting buttons, above an editor
+      that then has no room left. Every mobile editor scrolls this strip
+      sideways instead, so the first controls are always in the same place and
+      the rest are a swipe away.
+    */
+    <div className="flex flex-nowrap items-center gap-0.5 overflow-x-auto overscroll-x-contain border-b border-black/10 bg-[#f9fafb] px-2 py-1.5 [scrollbar-width:none] lg:flex-wrap lg:overflow-x-visible">
       <ToolbarButton
         label="Bold"
         icon="format_bold"
@@ -416,6 +425,11 @@ export default function RichTextEditor({
       attributes: {
         class: `rte-content overflow-auto px-4 py-3 text-sm text-destiny-grey/80 focus:outline-none ${
           fill ? "min-h-full flex-1" : "min-h-[220px] max-h-[420px]"
+        }${
+          // Room at the end of the document for the mobile block toolbar, which
+          // docks over the bottom of the editor whenever a block is selected.
+          // Without it the last block sits underneath its own controls.
+          blockExtensions.length > 0 ? " pb-24 lg:pb-3" : ""
         }`,
       },
       // Returns false for anything that isn't a palette drag, leaving

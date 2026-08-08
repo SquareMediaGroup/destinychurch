@@ -266,7 +266,8 @@ destinychurch/
 │   ├── cart-store.ts              # Zustand basket store (localStorage-persisted)
 │   ├── checkout.server.ts         # Shared order/pricing logic (checkout, webhook, test bypass)
 │   ├── courses.ts                 # Alpha/Recovery/Bible Course/CAP course definitions
-│   ├── courseEvents.ts            # alpha_events type registry (label/href/banner colour)
+│   ├── courseEvents.ts            # alpha_events type registry — banner surfaces + admin pages
+│   ├── cn.ts                      # className joiner (no Tailwind conflict resolution)
 │   ├── openaiClient.ts            # OpenAI client + SMART_SEARCH_MODEL constant
 │   ├── siteKnowledge.ts           # AI search knowledge base
 │   ├── serviceStatus.ts           # Smart Search health / kill-switch state (service_status table)
@@ -330,8 +331,9 @@ destinychurch/
 │   └── ...
 │
 ├── contexts/                      # React context definitions
-├── content/                       # Static content (markdown, text)
 ├── docs/                          # Additional documentation, incl. mobile-app-scope.md (+ .pdf export)
+│   └── content/                   # Source copy for policy/partner text — the live pages render
+│                                   # an edited subset, so these are the fuller source. See its README.
 ├── mobile/                        # React Native / Expo app (iOS-first). Expo Router bottom-tab shell
 │                                   # (Home/Sermons/Events/Give), theme from @destiny/shared tokens.
 │                                   # ISOLATED from npm workspaces (own node_modules) so RN can't clash
@@ -535,8 +537,12 @@ CREATE TABLE alpha_events (
 > `20260712_alpha_events_bible_course_type.sql` and `20260807_alpha_events_cap_type.sql`.
 >
 > The type list lives in **`lib/courseEvents.ts`** (`COURSE_EVENT_TYPES`) and drives every
-> banner surface. Adding a type there without the matching `alpha_events_type_check`
-> migration means inserts fail with a check-constraint error.
+> banner surface *and* all four admin pages. Adding a type there without the matching
+> `alpha_events_type_check` migration means inserts fail with a check-constraint error.
+>
+> **Adding a course is now three steps:** the migration, a `COURSE_EVENT_META` entry, and a
+> `COURSE_ADMIN_PAGES` entry plus a four-line route file. See *Course admin pages* under
+> Components.
 
 ---
 
@@ -1434,10 +1440,10 @@ Super Admin only).
 | `/admin/cache` | `app/admin/cache/page.tsx` | Invalidate ISR cache |
 | `/admin/posts` | `app/admin/posts/page.tsx` | Standalone content pages |
 | `/admin/training` | `app/admin/training/page.tsx` | Training categories → subgroups → posts |
-| `/admin/alpha` | `app/admin/alpha/page.tsx` | Manage Alpha course events |
-| `/admin/bible-course` | `app/admin/bible-course/page.tsx` | Manage The Bible Course events |
-| `/admin/cap-money` | `app/admin/cap-money/page.tsx` | Manage CAP Money Course events |
-| `/admin/recovery` | `app/admin/recovery/page.tsx` | Manage Recovery course events |
+| `/admin/alpha` | `app/admin/alpha/page.tsx` | Manage Alpha **and Youth Alpha** events — wrapper over `CourseAdminPage` |
+| `/admin/bible-course` | `app/admin/bible-course/page.tsx` | Manage The Bible Course events — wrapper over `CourseAdminPage` |
+| `/admin/cap-money` | `app/admin/cap-money/page.tsx` | Manage CAP Money Course events — wrapper over `CourseAdminPage` |
+| `/admin/recovery` | `app/admin/recovery/page.tsx` | Manage Recovery course events — wrapper over `CourseAdminPage` |
 | `/admin/featured-course` | `app/admin/featured-course/page.tsx` | Choose the What's On featured course |
 | `/admin/featured-event` | `app/admin/featured-event/page.tsx` | Promote one ChurchSuite event — picker plus headline/blurb/image/CTA overrides and a promote window |
 | `/admin/event-popup` | `app/admin/event-popup/page.tsx` | Copy for the popup advertising the featured event (writes `popup_*` on the same row) |
@@ -1456,6 +1462,36 @@ Super Admin only).
 ## Components
 
 ### Global Components
+
+#### `ui/Button.tsx`
+**Client-safe, no directive.** The site's one button. Before it existed there was no UI layer
+at all: every button was a hand-written Tailwind string, and a survey found ~60 variations of
+the orange pill alone — same intent, drifting padding and shadow.
+
+```tsx
+<Button href="/contact" size="lg">Find out more</Button>
+<Button variant="onDark" onClick={openSignup}>Sign up</Button>
+```
+
+| Prop | Values | Notes |
+|---|---|---|
+| `variant` | `primary` · `secondary` · `outline` · `onDark` · `glass` | `onDark`/`glass` are for hero photography |
+| `shape` | `pill` (default) · `soft` | `soft` is `rounded-xl`, the `/admin` chrome |
+| `size` | `xs` · `sm` · `md` · `lg` · `xl` | `sm` is the `/admin` default |
+| `href` | string | Renders `next/link`; `http(s):`/`mailto:`/`tel:` get an external anchor |
+| `fullWidth` | boolean | |
+
+Every size is a padding cluster that already existed in the codebase (`px-6 py-3` appeared
+14×, `px-7 py-3` 13×, `px-6 py-2.5` 13×), so adopting it does not shift anything by a few
+pixels. It also adds focus-visible rings and disabled states, which most of the hand-written
+buttons lacked.
+
+> **Do not override padding through `className`.** `lib/cn.ts` is a plain join with no
+> Tailwind conflict resolution (no `tailwind-merge`), so a `px-7` beating a size's `px-6`
+> depends on stylesheet order rather than anything guaranteed. Add a size instead.
+>
+> Genuinely one-off buttons should stay plain `<button>` elements — this is for the repeated
+> cases. Migration is opportunistic; most call sites are still hand-written strings.
 
 #### `ChurchHeader.tsx`
 - **What:** Site navigation header
@@ -1677,7 +1713,46 @@ there is no client-side coordination to get wrong.
 - `RichTextEditor.tsx` — Shared TipTap rich-text editor (HTML output); used by posts, training posts, HR job descriptions, and (since `a22301b`) shop product descriptions. Optional `blocks` / `onEditor` props admit [content blocks](#content-blocks) — schema and drop handling only; the blocks UI is a separate surface owned by the parent, deliberately **not** part of this toolbar.
   The toolbar does exactly one job: reformat the current text selection. The old "Embed YouTube video", "Embed ChurchSuite form" and "Embed HTML" buttons are now the Video, ChurchSuite form and Custom embed blocks — they inserted new objects rather than formatting a selection, so they belonged in the sidebar. `enableYouTube` and `enableHtmlEmbed` now only register the legacy `youtube` / `htmlEmbed` nodes so pages authored with those buttons keep parsing; `enableChurchSuite` is gone entirely (it only ever drove a button, since ChurchSuite embeds were stored as `htmlEmbed`).
 - `blocks/*` — **Client.** Editor side of the content-block system: the TipTap node factory, node-view chrome, the Blocks sidebar, the schema-driven settings inspector and its field components. See [Content Blocks](#content-blocks).
-- `ChurchSuiteEventFill.tsx` — **Client.** Collapsible "Fill from ChurchSuite event" picker embedded in the Alpha/Bible Course/Recovery "Add Event" forms (`/admin/alpha`, `/admin/bible-course`, `/admin/recovery`). Fetches the same picker feed as `/admin/featured-event` (`/api/admin/events`) and, on selection, calls `onFill({ startDate, location, signupUrl, name })` to prefill those three form fields — no new table or API route. Deliberately leaves `format`/`frequency`/meeting fields untouched, since those `alpha_events` columns have no ChurchSuite equivalent.
+- `ChurchSuiteEventFill.tsx` — **Client.** Collapsible "Fill from ChurchSuite event" picker embedded in the "Add Event" form of every course admin page. Fetches the same picker feed as `/admin/featured-event` (`/api/admin/events`) and, on selection, calls `onFill({ startDate, location, signupUrl, name })` to prefill those three form fields — no new table or API route. Deliberately leaves `format`/`frequency`/meeting fields untouched, since those `alpha_events` columns have no ChurchSuite equivalent.
+- `CourseAdminPage.tsx` — **Client.** The single implementation behind `/admin/alpha`, `/admin/recovery`, `/admin/bible-course` and `/admin/cap-money`. See below.
+
+##### Course admin pages
+
+The four course pages used to be four copies of the same ~630-line file, differing only in
+slug, accent colour and wording — `bible-course` and `cap-money` were 627 lines each and
+differed by 84. Adding CAP meant copying one wholesale, and a fix to the event list had to
+be applied four times with nothing in the code to say so. They are now four-line route
+files over `CourseAdminPage`, driven by `COURSE_ADMIN_PAGES` in `lib/courseEvents.ts`
+(2,620 lines across 4 files → 766 across 5).
+
+```tsx
+// app/admin/cap-money/page.tsx — the whole file
+import CourseAdminPage from "@/components/admin/CourseAdminPage";
+
+export default function CapMoneyAdminPage() {
+  return <CourseAdminPage page="cap-money" />;
+}
+```
+
+**To add a course:** write the `alpha_events_type_check` migration, add a
+`COURSE_EVENT_META` entry (label, href, colour, hint, events label, banner message and link
+text), add a `COURSE_ADMIN_PAGES` entry (heading, blurb, accent, promote copy, and the
+types it owns), and create the four-line route file. `tests/unit/course-events.spec.ts`
+fails if a type has incomplete metadata, is owned by two pages, or is owned by none.
+
+Notes worth knowing before changing it:
+- **A page can own several types.** `/admin/alpha` manages Alpha and Youth Alpha together,
+  which is why `types` is a list; the create form only shows the Type selector when there
+  is more than one, and each type gets its own banner card and event list.
+- **Accent colour is applied as inline `rgba()`**, not Tailwind opacity classes, because the
+  accent is per-course data and cannot be a compile-time class name. `hexToRgb` reproduces
+  the `ACCENT_RGB` constants the pages used to hardcode.
+- **Headings are stored verbatim, not derived** — the article does not follow a rule
+  ("Promote Destiny Recovery", "Promote The Bible Course", "Promote the CAP Money Course").
+- **The routes stayed put.** Keeping the four URLs as wrappers rather than moving to a
+  `[type]` route means no redirects, no `ROUTE_RULES` change and no sidebar change.
+- `tests/admin-courses.spec.ts` covers the rendered pages but is skipped unless
+  `ADMIN_EMAIL`/`ADMIN_PASSWORD` are set.
 
 > Redirects and banner management (`/admin/redirects`, `/admin/banner`) are built
 > inline in their `page.tsx` files rather than as separate reusable components —
@@ -2412,11 +2487,18 @@ Two consequences:
 
 ### Testing
 
-`npx playwright test --project=unit` runs the block specs in plain Node — no
-browser, no dev server, no second test runner. They cover the wire format
-against an adversarial corpus (script tags, quotes, HTML entities, U+2028/9,
-angle brackets, 200-item arrays), registry integrity (every field name exists in
-`defaults`; every schema parses `{}`), and attribute-order drift.
+`npm run test:unit` (or `npx playwright test --project=unit`) runs the unit specs
+in plain Node — no browser, no dev server, no second test runner. They cover the
+block wire format against an adversarial corpus (script tags, quotes, HTML
+entities, U+2028/9, angle brackets, 200-item arrays), block registry integrity
+(every field name exists in `defaults`; every schema parses `{}`), attribute-order
+drift, sermon/podcast pairing, and course-registry integrity (`course-events.spec.ts`
+— every type has complete metadata, no type is owned by two admin pages or none).
+
+Browser specs run with `npm run test:e2e`. Those needing an admin session
+(`admin-blocks`, `admin-courses`) skip themselves unless `ADMIN_EMAIL` and
+`ADMIN_PASSWORD` are set; credentials come from the environment only and live in
+the gitignored `CLAUDE.local.md`.
 
 ---
 
@@ -3342,7 +3424,7 @@ ENABLE_SMART_SEARCH=true
 - `app/admin/popup/page.tsx` — Pop-up management
 - `app/admin/redirects/page.tsx` — Redirect management
 - `app/admin/cache/page.tsx` — Cache invalidation
-- `app/admin/alpha/page.tsx`, `app/admin/bible-course/page.tsx`, `app/admin/cap-money/page.tsx`, `app/admin/recovery/page.tsx` — Course event management
+- `app/admin/alpha/page.tsx`, `app/admin/bible-course/page.tsx`, `app/admin/cap-money/page.tsx`, `app/admin/recovery/page.tsx` — Course event management; four-line wrappers over `components/admin/CourseAdminPage.tsx`
 - `app/admin/featured-course/page.tsx` — What's On featured course picker
 - `app/admin/store/page.tsx` — Store management
 - `app/admin/store/products/new/page.tsx` — Create product

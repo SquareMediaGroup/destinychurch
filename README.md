@@ -190,8 +190,18 @@ The `/admin` area is protected by Supabase Auth. Log in at `/login` to manage:
 ## Testing & Linting
 
 ```bash
-npx playwright test   # E2E tests
+npm test              # Everything
+npm run test:unit     # Plain-Node unit specs — no browser, no dev server
+npm run test:e2e      # Browser E2E (chromium)
+npm run typecheck     # tsc --noEmit
 npm run lint          # Linting
+```
+
+Some E2E specs need an admin session and skip themselves unless credentials are
+supplied. The test login lives in the gitignored `CLAUDE.local.md`:
+
+```bash
+ADMIN_EMAIL=... ADMIN_PASSWORD=... npm run test:e2e
 ```
 
 ---

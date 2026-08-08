@@ -92,7 +92,7 @@ export default function AdminDashboard() {
           },
           alphaEvents: {
             total: alphaArr.length,
-            upcoming: alphaArr.filter((e: { date: string }) => new Date(e.date) >= now).length,
+            upcoming: alphaArr.filter((e: { start_date: string }) => new Date(e.start_date) >= now).length,
           },
           banner: {
             active: bannerData.active ?? false,

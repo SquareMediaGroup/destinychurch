@@ -1,7 +1,7 @@
 # Destiny Church Tees Valley — Complete Repository Documentation
 
-**Version:** 1.0.7  
-**Last Updated:** July 29, 2026  
+**Version:** 1.0.8  
+**Last Updated:** August 8, 2026  
 **Repository:** Square Media Group — destinychurch  
 
 This document provides a comprehensive explanation of every major component, line of code purpose, architecture decisions, and how the system works from end-to-end.
@@ -1701,9 +1701,11 @@ course forms were built against.
 
 #### `PopupShell.tsx`
 
-Shared modal chrome (backdrop, close button, image, title, body, CTA, `z-[100]`, 600ms delay),
+Shared modal chrome (backdrop, close button, image, title, body, CTA, `z-[100]`),
 extracted from `SitePopup` so it and `EventPopup` cannot drift visually. The *behaviour* around it
-stays with each caller. **An active event popup suppresses the site popup**: `app/layout.tsx` passes
+stays with each caller — including the open delay: both `SitePopup` and `EventPopup` wait **7 seconds
+after load** (`setTimeout(..., 7000)`) before showing, so a visitor sees the page before a modal
+covers it. **An active event popup suppresses the site popup**: `app/layout.tsx` passes
 `null` to `<SitePopup>` whenever `getActiveEventPopup()` resolves, so only ever one modal shows and
 there is no client-side coordination to get wrong.
 

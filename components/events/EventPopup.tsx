@@ -62,7 +62,7 @@ export default function EventPopup({
       /* ignore */
     }
 
-    const t = window.setTimeout(() => setOpen(true), 600);
+    const t = window.setTimeout(() => setOpen(true), 7000);
     return () => window.clearTimeout(t);
   }, [popup, pathname]);
 

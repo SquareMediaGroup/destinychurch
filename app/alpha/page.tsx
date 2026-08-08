@@ -2,8 +2,8 @@
 
 import { useState, useEffect } from "react";
 import Image from "next/image";
-import Link from "next/link";
 import AnimateIn from "@/components/AnimateIn";
+import Button from "@/components/ui/Button";
 import { getNextAlphaSession } from "@/lib/alphaSession";
 
 const ALPHA_HERO_VIDEO =
@@ -430,12 +430,9 @@ export default function AlphaPage() {
                 Same big questions, same open conversations — just in a format that connects
                 with a younger generation.
               </p>
-              <Link
-                href="/youth"
-                className="inline-flex items-center rounded-full bg-destiny-orange px-7 py-3 text-sm font-bold text-white shadow-lg shadow-destiny-orange/25 transition hover:brightness-110"
-              >
+              <Button href="/youth" size="lg">
                 Find out more
-              </Link>
+              </Button>
             </AnimateIn>
           </div>
         </div>

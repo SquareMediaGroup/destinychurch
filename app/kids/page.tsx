@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Image from "next/image";
-import Link from "next/link";
 import AnimateIn from "@/components/AnimateIn";
+import Button from "@/components/ui/Button";
 import MinistryHero from "@/components/ministry/MinistryHero";
 import SplitSection from "@/components/ministry/SplitSection";
 import ImageMosaic from "@/components/ministry/ImageMosaic";
@@ -166,12 +166,9 @@ export default function KidsPage() {
           </div>
         </div>
         <div className="pt-2">
-          <Link
-            href="/contact"
-            className="inline-flex items-center rounded-full bg-destiny-orange px-7 py-3 text-sm font-bold text-white shadow-lg shadow-destiny-orange/25 transition hover:brightness-110"
-          >
+          <Button href="/contact" size="lg">
             Find out more
-          </Link>
+          </Button>
         </div>
       </SplitSection>
 

@@ -5,6 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import AnimateIn from "@/components/AnimateIn";
 import AlphaSignupModal from "@/components/AlphaSignupModal";
+import Button from "@/components/ui/Button";
 
 interface AlphaEvent {
   id: string;
@@ -111,12 +112,9 @@ export default function YouthAlphaSection() {
               <div className="mt-8 flex flex-col gap-3 sm:flex-row">
                 {!loading && event ? (
                   <>
-                    <button
-                      onClick={openSignup}
-                      className="inline-flex items-center rounded-full bg-destiny-orange px-7 py-3 text-sm font-bold text-white shadow-lg shadow-destiny-orange/25 transition hover:brightness-110"
-                    >
+                    <Button onClick={openSignup} size="lg">
                       Sign up for Youth Alpha
-                    </button>
+                    </Button>
                     <Link
                       href="/alpha"
                       className="inline-flex items-center rounded-full border-2 border-white/25 px-7 py-3 text-sm font-bold text-white transition hover:border-destiny-orange hover:bg-destiny-orange/5"
@@ -125,12 +123,9 @@ export default function YouthAlphaSection() {
                     </Link>
                   </>
                 ) : (
-                  <Link
-                    href="/alpha"
-                    className="inline-flex items-center rounded-full bg-destiny-orange px-7 py-3 text-sm font-bold text-white shadow-lg shadow-destiny-orange/25 transition hover:brightness-110"
-                  >
+                  <Button href="/alpha" size="lg">
                     Find out about Alpha
-                  </Link>
+                  </Button>
                 )}
               </div>
             </AnimateIn>

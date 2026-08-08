@@ -300,6 +300,14 @@ export default function AdminDashboard() {
               bg="bg-destiny-blue/10"
             />
             <SectionCard
+              href="/admin/cap-money"
+              icon="savings"
+              label="CAP Money"
+              description="Manage CAP Money Course dates and sign-up links."
+              color="text-destiny-green"
+              bg="bg-destiny-green/10"
+            />
+            <SectionCard
               href="/admin/alpha"
               icon="event"
               label="Alpha"

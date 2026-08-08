@@ -186,6 +186,7 @@ destinychurch/
 │   │   ├── training/              # Training/courses management
 │   │   ├── alpha/                 # Manage Alpha course events
 │   │   ├── bible-course/          # Manage The Bible Course events
+│   │   ├── cap-money/             # Manage CAP Money Course events
 │   │   ├── recovery/              # Manage Recovery course events
 │   │   ├── featured-course/       # Choose the What's On featured course
 │   │   ├── store/                 # Shop admin (products, orders, hero)
@@ -265,6 +266,7 @@ destinychurch/
 │   ├── cart-store.ts              # Zustand basket store (localStorage-persisted)
 │   ├── checkout.server.ts         # Shared order/pricing logic (checkout, webhook, test bypass)
 │   ├── courses.ts                 # Alpha/Recovery/Bible Course/CAP course definitions
+│   ├── courseEvents.ts            # alpha_events type registry (label/href/banner colour)
 │   ├── openaiClient.ts            # OpenAI client + SMART_SEARCH_MODEL constant
 │   ├── siteKnowledge.ts           # AI search knowledge base
 │   ├── serviceStatus.ts           # Smart Search health / kill-switch state (service_status table)
@@ -318,7 +320,8 @@ destinychurch/
 │       ├── 20260711_rls_harden_base_tables.sql # RLS hardening pass across base tables
 │       ├── 20260712_alpha_events_bible_course_type.sql # The Bible Course
 │       ├── 20260712_02_featured_course.sql # Featured course (What's On)
-│       └── 20260728_featured_event.sql   # Featured ChurchSuite event + its popup
+│       ├── 20260728_featured_event.sql   # Featured ChurchSuite event + its popup
+│       └── 20260807_alpha_events_cap_type.sql # CAP Money Course
 │
 ├── utils/                         # Utility modules
 │   ├── supabase/                  # Supabase client factories
@@ -523,12 +526,17 @@ CREATE TABLE alpha_events (
 
 **Used By:**
 - `app/layout.tsx` fetches to populate site-wide banner
-- `/alpha`, `/destiny-recovery` and `/bible-course` pages display their next upcoming event
-- Admin (`/admin/alpha`, `/admin/recovery`, `/admin/bible-course`) to manage event dates and URLs
+- `/alpha`, `/destiny-recovery`, `/bible-course` and `/cap-money` pages display their next upcoming event
+- Admin (`/admin/alpha`, `/admin/recovery`, `/admin/bible-course`, `/admin/cap-money`) to manage event dates and URLs
 
-> The `bible_course` type is shared infrastructure for The Bible Course (Bible Society) — it
-> reuses this table and the `/api/admin/alpha-events` routes rather than adding new ones.
-> Added by migration `20260712_alpha_events_bible_course_type.sql`.
+> The `bible_course` and `cap` types are shared infrastructure for The Bible Course (Bible
+> Society) and the CAP Money Course (Christians Against Poverty) — they reuse this table and
+> the `/api/admin/alpha-events` routes rather than adding new ones. Added by migrations
+> `20260712_alpha_events_bible_course_type.sql` and `20260807_alpha_events_cap_type.sql`.
+>
+> The type list lives in **`lib/courseEvents.ts`** (`COURSE_EVENT_TYPES`) and drives every
+> banner surface. Adding a type there without the matching `alpha_events_type_check`
+> migration means inserts fail with a check-constraint error.
 
 ---
 
@@ -1379,7 +1387,7 @@ without an auth check, so they must never be reachable on the live site.
 | `/missions` | `app/missions/page.tsx` | Mission partners, outreach |
 | `/alpha` | `app/alpha/page.tsx` | Alpha course info, next event |
 | `/bible-course` | `app/bible-course/page.tsx` | The Bible Course (Bible Society), next event |
-| `/cap-money` | `app/cap-money/page.tsx` | CAP Money Course (Christians Against Poverty). **Static** — no `alpha_events` type, so there is no admin screen and no next-event card; both CTAs point at `/contact` |
+| `/cap-money` | `app/cap-money/page.tsx` | CAP Money Course (Christians Against Poverty), next event. CTAs fall back to `/contact` when nothing is scheduled |
 | `/whats-on` | `app/whats-on/page.tsx` | Events listing — featured-event banner, then upcoming events grouped by month |
 | `/whats-on/[slug]` | `app/whats-on/[slug]/page.tsx` | On-site event page — one per ChurchSuite *series*, with all upcoming sessions, sanitised description, map link, signup and .ics |
 | `/home` | `app/home/page.tsx` | **Temporary** event-card variant preview of the homepage (`?card=a\|a-pill\|c`). noindex — delete once a variant is chosen |
@@ -1428,6 +1436,7 @@ Super Admin only).
 | `/admin/training` | `app/admin/training/page.tsx` | Training categories → subgroups → posts |
 | `/admin/alpha` | `app/admin/alpha/page.tsx` | Manage Alpha course events |
 | `/admin/bible-course` | `app/admin/bible-course/page.tsx` | Manage The Bible Course events |
+| `/admin/cap-money` | `app/admin/cap-money/page.tsx` | Manage CAP Money Course events |
 | `/admin/recovery` | `app/admin/recovery/page.tsx` | Manage Recovery course events |
 | `/admin/featured-course` | `app/admin/featured-course/page.tsx` | Choose the What's On featured course |
 | `/admin/featured-event` | `app/admin/featured-event/page.tsx` | Promote one ChurchSuite event — picker plus headline/blurb/image/CTA overrides and a promote window |
@@ -2923,7 +2932,7 @@ always passes and isn't repeated per rule; anything under `/admin` or
 | Role | Admin pages | API routes |
 |---|---|---|
 | `training_admin` | `/admin/training/**` | `/api/admin/training/**` |
-| `event_admin` | Courses (`alpha`, `recovery`, `bible-course`, `featured-course`) + Announcements except Banner (`popup`, `featured-event`, `event-popup`, `nfc`) | `/api/admin/{alpha-events,events,featured-course,featured-event,popup,nfc}` |
+| `event_admin` | Courses (`alpha`, `recovery`, `bible-course`, `cap-money`, `featured-course`) + Announcements except Banner (`popup`, `featured-event`, `event-popup`, `nfc`) | `/api/admin/{alpha-events,events,featured-course,featured-event,popup,nfc}` |
 | `store_admin` | `/admin/store/**` | `/api/admin/{store,shop-hero}/**` |
 | `site_admin` | `/admin/posts`, `/admin/redirects` | `/api/admin/{posts,redirects}/**` |
 | `super_admin` | Everything, plus Banner, Clear Cache, HR, and `/admin/users` | `/api/admin/{banner,revalidate,hr,users}/**` |
@@ -3333,7 +3342,7 @@ ENABLE_SMART_SEARCH=true
 - `app/admin/popup/page.tsx` — Pop-up management
 - `app/admin/redirects/page.tsx` — Redirect management
 - `app/admin/cache/page.tsx` — Cache invalidation
-- `app/admin/alpha/page.tsx`, `app/admin/bible-course/page.tsx`, `app/admin/recovery/page.tsx` — Course event management
+- `app/admin/alpha/page.tsx`, `app/admin/bible-course/page.tsx`, `app/admin/cap-money/page.tsx`, `app/admin/recovery/page.tsx` — Course event management
 - `app/admin/featured-course/page.tsx` — What's On featured course picker
 - `app/admin/store/page.tsx` — Store management
 - `app/admin/store/products/new/page.tsx` — Create product
@@ -3426,7 +3435,7 @@ ENABLE_SMART_SEARCH=true
 ### Database Migrations
 - **35 migration files** defining schema for:
   - URL redirects, hidden videos (removed), site content (banners, pop-ups, page_content)
-  - Event management (Alpha course, Bible Course, Recovery, featured course, featured event)
+  - Event management (Alpha course, Bible Course, CAP Money, Recovery, featured course, featured event)
   - HR management (staff, leave, documents, reviews)
   - Job listings & applications
   - Feature flags, staff login audit

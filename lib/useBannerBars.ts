@@ -3,16 +3,11 @@
 import { usePathname } from "next/navigation";
 import { useBanner, type BannerData } from "@/contexts/BannerContext";
 import { useLiveStatus } from "@/contexts/LiveContext";
-
-const isEventType = (t: string) =>
-  t === "alpha" ||
-  t === "youth_alpha" ||
-  t === "recovery" ||
-  t === "bible_course";
+import { isCourseEventType } from "@/lib/courseEvents";
 
 const isVisible = (b: BannerData) => {
   if (!b.active) return false;
-  if (isEventType(b.type)) return !!b.alpha;
+  if (isCourseEventType(b.type)) return !!b.alpha;
   return !!b.message;
 };
 

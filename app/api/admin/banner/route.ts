@@ -1,13 +1,9 @@
 import { NextResponse } from "next/server";
 import { createServiceClient } from "@/utils/supabase/service";
-
-const ALPHA_TYPES = new Set([
-  "alpha",
-  "youth_alpha",
-  "recovery",
-  "bible_course",
-]);
-const ALPHA_TYPES_SQL = "(alpha,youth_alpha,recovery,bible_course)";
+import {
+  COURSE_EVENT_TYPES_SQL as ALPHA_TYPES_SQL,
+  isCourseEventType,
+} from "@/lib/courseEvents";
 
 export async function GET(request: Request) {
   const url = new URL(request.url);
@@ -72,7 +68,7 @@ export async function PUT(request: Request) {
   const body = await request.json();
   const { active, message, type, link, link_text } = body;
   const resolvedType = type ?? "announcement";
-  const isAlphaType = ALPHA_TYPES.has(resolvedType);
+  const isAlphaType = isCourseEventType(resolvedType);
 
   const supabase = createServiceClient();
 

@@ -45,6 +45,7 @@ const ROUTE_RULES: { pattern: RegExp; roles: AdminRole[] }[] = [
   { pattern: /^\/admin\/alpha(\/|$)/, roles: ["event_admin"] },
   { pattern: /^\/admin\/recovery(\/|$)/, roles: ["event_admin"] },
   { pattern: /^\/admin\/bible-course(\/|$)/, roles: ["event_admin"] },
+  { pattern: /^\/admin\/cap-money(\/|$)/, roles: ["event_admin"] },
   { pattern: /^\/admin\/featured-course(\/|$)/, roles: ["event_admin"] },
   { pattern: /^\/api\/admin\/alpha-events(\/|$)/, roles: ["event_admin"] },
   { pattern: /^\/api\/admin\/events(\/|$)/, roles: ["event_admin"] },

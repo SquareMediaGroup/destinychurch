@@ -1,14 +1,37 @@
+"use client";
+
+import { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import AnimateIn from "@/components/AnimateIn";
+import AlphaSignupModal from "@/components/AlphaSignupModal";
 import WorshipWithUsSection from "@/components/home/WorshipWithUsSection";
+import { getNextAlphaSession } from "@/lib/alphaSession";
 
-// CAP brand palette: money-course green over CAP's dark grey.
-const ACCENT = "#78be20";
+// CAP brand palette. Their green (#78be20) is too light to carry white text,
+// so ACCENT is a darkened version for buttons/text and CAP_GREEN is kept for
+// tints and icon fills only.
+const ACCENT = "#4e7d14";
+const CAP_GREEN = "#78be20";
 const ACCENT_DARK = "#363f48";
 const ACCENT_TINT = "#f2f8ea";
 
 const CAP_URL = "https://capuk.org/i-want-help/cap-money-course/introduction";
+
+interface CapEvent {
+  id: string;
+  type: string;
+  start_date: string;
+  signup_url: string;
+  location: string | null;
+  format?: "in_person" | "online";
+  meeting_platform?: "zoom" | "google_meet" | null;
+  meeting_url?: string | null;
+  meeting_id?: string | null;
+  frequency?: string | null;
+  custom_interval_days?: number | null;
+  active?: boolean;
+}
 
 const features = [
   {
@@ -60,6 +83,47 @@ const audience = [
 ];
 
 export default function CapMoneyPage() {
+  const [signupOpen, setSignupOpen] = useState(false);
+  const [events, setEvents] = useState<CapEvent[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchEvents() {
+      try {
+        const res = await fetch("/api/alpha-events");
+        const data = await res.json();
+        const active = Array.isArray(data)
+          ? data.filter(
+              (e: CapEvent) => e.type === "cap" && e.active !== false
+            )
+          : [];
+        setEvents(active);
+      } catch (err) {
+        console.error("Failed to fetch CAP Money events:", err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchEvents();
+  }, []);
+
+  const primaryEvent = events[0] ?? null;
+  const sessionInfo = primaryEvent
+    ? getNextAlphaSession(
+        primaryEvent.start_date,
+        primaryEvent.frequency,
+        primaryEvent.custom_interval_days
+      )
+    : null;
+  const startDateFormatted = sessionInfo
+    ? sessionInfo.date.toLocaleDateString("en-GB", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      })
+    : null;
+  const sessionLeadIn = sessionInfo?.isFirst ? "Starting" : "Next session";
+
   return (
     <>
       {/* Hero */}
@@ -102,19 +166,35 @@ export default function CapMoneyPage() {
                 with confidence.
               </p>
               <div className="flex flex-col items-center justify-center gap-3 sm:flex-row">
-                <Link
-                  href="/contact"
-                  className="inline-flex items-center gap-3 rounded-full px-7 py-3 text-sm font-bold text-white shadow-lg transition hover:brightness-110"
-                  style={{
-                    backgroundColor: ACCENT,
-                    boxShadow: "0 12px 30px -10px rgba(120,190,32,0.7)",
-                  }}
-                >
-                  <span className="material-symbols-rounded text-lg">
-                    person_add
-                  </span>
-                  Register your interest
-                </Link>
+                {!loading && primaryEvent ? (
+                  <button
+                    onClick={() => setSignupOpen(true)}
+                    className="inline-flex items-center gap-3 rounded-full px-7 py-3 text-sm font-bold text-white shadow-lg transition hover:brightness-110"
+                    style={{
+                      backgroundColor: ACCENT,
+                      boxShadow: "0 12px 30px -10px rgba(78,125,20,0.7)",
+                    }}
+                  >
+                    <span className="material-symbols-rounded text-lg">
+                      person_add
+                    </span>
+                    Sign up
+                  </button>
+                ) : (
+                  <Link
+                    href="/contact"
+                    className="inline-flex items-center gap-3 rounded-full px-7 py-3 text-sm font-bold text-white shadow-lg transition hover:brightness-110"
+                    style={{
+                      backgroundColor: ACCENT,
+                      boxShadow: "0 12px 30px -10px rgba(78,125,20,0.7)",
+                    }}
+                  >
+                    <span className="material-symbols-rounded text-lg">
+                      person_add
+                    </span>
+                    Register your interest
+                  </Link>
+                )}
                 <a
                   href={CAP_URL}
                   target="_blank"
@@ -131,6 +211,156 @@ export default function CapMoneyPage() {
           </div>
         </section>
       </div>
+
+      {/* Event card(s) */}
+      {events.length > 0 && (
+        <div
+          className={`mx-auto max-w-5xl px-4 pb-14 lg:px-8 ${
+            events.length > 1 ? "space-y-6" : ""
+          }`}
+        >
+          {events.map((event) => {
+            const session = getNextAlphaSession(
+              event.start_date,
+              event.frequency,
+              event.custom_interval_days
+            );
+            const d = session.date;
+            const weekday = d.toLocaleDateString("en-GB", { weekday: "long" });
+            const day = d.toLocaleDateString("en-GB", { day: "numeric" });
+            const month = d.toLocaleDateString("en-GB", { month: "long" });
+            const year = d.toLocaleDateString("en-GB", { year: "numeric" });
+            const cadenceLabel = session.isFirst ? "Starting" : "Next session";
+            const isOnline = event.format === "online";
+            const platformLabel =
+              event.meeting_platform === "zoom"
+                ? "Zoom"
+                : event.meeting_platform === "google_meet"
+                ? "Google Meet"
+                : "Online";
+
+            return (
+              <AnimateIn key={event.id}>
+                <div
+                  className="relative overflow-hidden rounded-3xl bg-white ring-1 ring-black/5"
+                  style={{ boxShadow: "0 30px 60px -30px rgba(78,125,20,0.35)" }}
+                >
+                  <span
+                    aria-hidden="true"
+                    className="absolute left-0 top-1/2 h-6 w-6 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#f5f7fa]"
+                  />
+                  <span
+                    aria-hidden="true"
+                    className="absolute right-0 top-1/2 h-6 w-6 translate-x-1/2 -translate-y-1/2 rounded-full bg-[#f5f7fa]"
+                  />
+                  <div className="grid grid-cols-1 md:grid-cols-2">
+                    <div className="border-b border-dashed border-destiny-grey/15 px-8 py-7 md:border-b-0 md:border-r md:px-10">
+                      <div
+                        className="mb-3 flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.28em]"
+                        style={{ color: ACCENT }}
+                      >
+                        <span className="material-symbols-rounded text-sm leading-none">
+                          event
+                        </span>
+                        {cadenceLabel}
+                      </div>
+                      <div className="text-[11px] uppercase tracking-[0.2em] text-destiny-grey/50">
+                        {weekday}
+                      </div>
+                      <div className="mt-1 flex items-baseline gap-3">
+                        <span
+                          className="text-5xl font-normal italic leading-none text-destiny-grey md:text-6xl"
+                          style={{
+                            fontFamily: "var(--font-playfair), Georgia, serif",
+                          }}
+                        >
+                          {day}
+                        </span>
+                        <span className="text-lg font-black uppercase tracking-wide text-destiny-grey md:text-xl">
+                          {month}{" "}
+                          <span className="text-destiny-grey/40">{year}</span>
+                        </span>
+                      </div>
+                    </div>
+                    {isOnline ? (
+                      <div className="px-8 py-7 md:px-10">
+                        <div
+                          className="mb-3 flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.28em]"
+                          style={{ color: ACCENT }}
+                        >
+                          <span className="material-symbols-rounded text-sm leading-none">
+                            videocam
+                          </span>
+                          Online
+                        </div>
+                        <div className="text-[11px] uppercase tracking-[0.2em] text-destiny-grey/50">
+                          Join via
+                        </div>
+                        <div className="mt-1 text-2xl font-black leading-tight text-destiny-grey md:text-3xl">
+                          {platformLabel}
+                        </div>
+                        {event.meeting_url && (
+                          <a
+                            href={event.meeting_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="mt-3 inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-[11px] font-bold uppercase tracking-wide text-white transition hover:brightness-110"
+                            style={{ backgroundColor: ACCENT }}
+                          >
+                            <span className="material-symbols-rounded text-[14px] leading-none">
+                              open_in_new
+                            </span>
+                            Join meeting
+                          </a>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="px-8 py-7 md:px-10">
+                        <div
+                          className="mb-3 flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.28em]"
+                          style={{ color: ACCENT }}
+                        >
+                          <span className="material-symbols-rounded text-sm leading-none">
+                            place
+                          </span>
+                          Where
+                        </div>
+                        {event.location ? (
+                          <>
+                            <div className="text-[11px] uppercase tracking-[0.2em] text-destiny-grey/50">
+                              Join us at
+                            </div>
+                            <div className="mt-1 text-2xl font-black leading-tight text-destiny-grey md:text-3xl">
+                              {event.location}
+                            </div>
+                          </>
+                        ) : (
+                          <>
+                            <div className="text-[11px] uppercase tracking-[0.2em] text-destiny-grey/50">
+                              Venue
+                            </div>
+                            <div className="mt-1 flex items-baseline gap-2">
+                              <span
+                                className="text-5xl font-normal italic leading-none text-destiny-grey/40 md:text-6xl"
+                                style={{
+                                  fontFamily:
+                                    "var(--font-playfair), Georgia, serif",
+                                }}
+                              >
+                                tba
+                              </span>
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </AnimateIn>
+            );
+          })}
+        </div>
+      )}
 
       {/* Headline facts */}
       <section className="bg-white pb-16 pt-4">
@@ -265,7 +495,7 @@ export default function CapMoneyPage() {
                 <div className="flex h-full flex-col items-start rounded-3xl bg-[#f5f7fa] p-8 shadow-sm">
                   <div
                     className="mb-5 flex h-14 w-14 items-center justify-center rounded-2xl"
-                    style={{ backgroundColor: "rgba(120,190,32,0.14)" }}
+                    style={{ backgroundColor: `${CAP_GREEN}2e` }}
                   >
                     <span
                       className="material-symbols-rounded text-3xl"
@@ -384,25 +614,53 @@ export default function CapMoneyPage() {
               Save your seat
             </h2>
             <p className="mb-8 text-base leading-relaxed text-destiny-grey/60">
-              Courses run a few times a year and places are limited. Register
-              your interest and we&apos;ll let you know as soon as the next
-              dates are set.
+              Courses run a few times a year and places are limited.
+              {primaryEvent
+                ? " Grab a seat on the next one."
+                : " Register your interest and we'll let you know as soon as the next dates are set."}
             </p>
-            <Link
-              href="/contact"
-              className="inline-block rounded-full px-8 py-3 text-sm font-bold text-white shadow-lg transition hover:brightness-110"
-              style={{
-                backgroundColor: ACCENT,
-                boxShadow: "0 12px 30px -10px rgba(120,190,32,0.5)",
-              }}
-            >
-              Register your interest
-            </Link>
+            {!loading && primaryEvent ? (
+              <button
+                onClick={() => setSignupOpen(true)}
+                className="rounded-full px-8 py-3 text-sm font-bold text-white shadow-lg transition hover:brightness-110"
+                style={{
+                  backgroundColor: ACCENT,
+                  boxShadow: "0 12px 30px -10px rgba(78,125,20,0.5)",
+                }}
+              >
+                Sign up
+              </button>
+            ) : (
+              <Link
+                href="/contact"
+                className="inline-block rounded-full px-8 py-3 text-sm font-bold text-white shadow-lg transition hover:brightness-110"
+                style={{
+                  backgroundColor: ACCENT,
+                  boxShadow: "0 12px 30px -10px rgba(78,125,20,0.5)",
+                }}
+              >
+                Register your interest
+              </Link>
+            )}
           </AnimateIn>
         </div>
       </section>
 
       <WorshipWithUsSection />
+
+      {primaryEvent && (
+        <AlphaSignupModal
+          open={signupOpen}
+          onClose={() => setSignupOpen(false)}
+          signupUrl={primaryEvent.signup_url}
+          title="Sign up for the CAP Money Course"
+          subtitle={
+            startDateFormatted
+              ? `${sessionLeadIn} ${startDateFormatted}`
+              : undefined
+          }
+        />
+      )}
     </>
   );
 }

@@ -17,6 +17,7 @@ import FloatingSmartSearch from "@/components/FloatingSmartSearch";
 import GlassBloomTracker from "@/components/GlassBloomTracker";
 import PerformanceGate from "@/components/PerformanceGate";
 import { isSmartSearchEnabled } from "@/lib/serviceStatus";
+import { COURSE_EVENT_TYPES, isCourseEventType } from "@/lib/courseEvents";
 import { getLiveStatus } from "@/lib/youtube";
 import BannerSpacer from "@/components/BannerSpacer";
 import { createServiceClient } from "@/utils/supabase/service";
@@ -95,13 +96,6 @@ async function getActiveBanner() {
     const sitewide = banners.find((b) => b.type === "sitewide");
     if (sitewide) return sitewide;
 
-    const EVENT_TYPES = new Set([
-      "alpha",
-      "youth_alpha",
-      "recovery",
-      "bible_course",
-    ]);
-
     async function resolveEvent(b: (typeof banners)[number]) {
       const { data: alpha } = await supabase
         .from("alpha_events")
@@ -117,25 +111,19 @@ async function getActiveBanner() {
       return { ...b, alpha };
     }
 
-    const alpha = banners.find((b) => b.type === "alpha");
-    const youthAlpha = banners.find((b) => b.type === "youth_alpha");
-    const recovery = banners.find((b) => b.type === "recovery");
-    const bibleCourse = banners.find((b) => b.type === "bible_course");
-    const other = banners.find((b) => !EVENT_TYPES.has(b.type));
+    // Course banners resolve in COURSE_EVENT_TYPES order, which is also the
+    // priority order when more than one is switched on.
+    const resolved = await Promise.all(
+      COURSE_EVENT_TYPES.map(async (type) => {
+        const row = banners.find((b) => b.type === type);
+        return row ? await resolveEvent(row) : null;
+      })
+    );
+    const other = banners.find((b) => !isCourseEventType(b.type));
 
-    const resolvedAlpha = alpha ? await resolveEvent(alpha) : null;
-    const resolvedYouth = youthAlpha ? await resolveEvent(youthAlpha) : null;
-    const resolvedRecovery = recovery ? await resolveEvent(recovery) : null;
-    const resolvedBibleCourse = bibleCourse
-      ? await resolveEvent(bibleCourse)
-      : null;
-
-    const activeResolved = [
-      resolvedAlpha,
-      resolvedYouth,
-      resolvedRecovery,
-      resolvedBibleCourse,
-    ].filter((b): b is NonNullable<typeof b> => !!b?.active);
+    const activeResolved = resolved.filter(
+      (b): b is NonNullable<typeof b> => !!b?.active
+    );
 
     // Prefer event banners first, then any other banner.
     const primary = activeResolved[0] ?? other ?? null;

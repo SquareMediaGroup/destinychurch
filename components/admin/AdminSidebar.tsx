@@ -25,6 +25,7 @@ const announcementItems: { href: string; label: string; role: AdminRole }[] = [
 const courseItems: { href: string; label: string; role: AdminRole }[] = [
   { href: "/admin/featured-course", label: "Featured Course", role: "event_admin" },
   { href: "/admin/bible-course", label: "The Bible Course", role: "event_admin" },
+  { href: "/admin/cap-money", label: "CAP Money", role: "event_admin" },
   { href: "/admin/alpha", label: "Alpha", role: "event_admin" },
   { href: "/admin/recovery", label: "Recovery", role: "event_admin" },
 ];

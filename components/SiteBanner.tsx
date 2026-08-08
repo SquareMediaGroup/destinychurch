@@ -7,6 +7,7 @@ import { useBanner } from "@/contexts/BannerContext";
 import type { BannerData } from "@/contexts/BannerContext";
 import { useLiveStatus } from "@/contexts/LiveContext";
 import { getNextAlphaSession } from "@/lib/alphaSession";
+import { COURSE_EVENT_META, isCourseEventType } from "@/lib/courseEvents";
 
 export default function SiteBanner() {
   const banner = useBanner();
@@ -73,13 +74,9 @@ export default function SiteBanner() {
 function renderBanner(banner: BannerData, index: number) {
   const top = index * 40; // each bar is h-10 (40px)
 
-  if (
-    banner.type === "alpha" ||
-    banner.type === "youth_alpha" ||
-    banner.type === "recovery" ||
-    banner.type === "bible_course"
-  ) {
+  if (isCourseEventType(banner.type)) {
     if (!banner.alpha) return null;
+    const meta = COURSE_EVENT_META[banner.type];
     const { date, isFirst } = getNextAlphaSession(
       banner.alpha.start_date,
       banner.alpha.frequency,
@@ -96,34 +93,11 @@ function renderBanner(banner: BannerData, index: number) {
       day: "numeric",
       month: "short",
     });
-    const defaultHref =
-      banner.type === "youth_alpha"
-        ? "/youth-alpha"
-        : banner.type === "recovery"
-        ? "/destiny-recovery"
-        : banner.type === "bible_course"
-        ? "/bible-course"
-        : "/alpha";
-    const linkHref = banner.link || defaultHref;
+    const linkHref = banner.link || meta.href;
     const linkText = banner.link_text || "Sign up";
-    const defaultEyebrow =
-      banner.type === "youth_alpha"
-        ? "Youth Alpha"
-        : banner.type === "recovery"
-        ? "Destiny Recovery"
-        : banner.type === "bible_course"
-        ? "The Bible Course"
-        : "Alpha";
-    const eyebrow = banner.message?.trim() || defaultEyebrow;
+    const eyebrow = banner.message?.trim() || meta.label;
     const cadenceLabel = isFirst ? "Starting" : "Next session";
-    const bg =
-      banner.type === "youth_alpha"
-        ? "#b81313"
-        : banner.type === "recovery"
-        ? "#006756"
-        : banner.type === "bible_course"
-        ? "#1b4965"
-        : "#e51b1b";
+    const bg = meta.color;
 
     return (
       <Link

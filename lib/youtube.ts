@@ -49,10 +49,22 @@ export function formatDuration(iso8601: string | undefined): string {
 const API_KEY = process.env.YOUTUBE_API_KEY;
 const CHANNEL_ID = process.env.YOUTUBE_CHANNEL_ID;
 
-// Second way in when YOUTUBE_CHANNEL_ID is unset or stale. The /live URL works
-// off a handle just as well as a channel id, and a missing env var used to make
-// live detection fail silently and permanently.
-const CHANNEL_HANDLE = (process.env.YOUTUBE_CHANNEL_HANDLE ?? "DestinyOnlineChurch").replace(/^@/, "");
+/**
+ * The church's YouTube channel, in one place.
+ *
+ * Two different strings for the same channel, and they are not interchangeable:
+ * the `@` handle is `DestinyOnlineChurch`, the custom URL is
+ * `/destinychurchteesvalley`. `@DestinyChurchTeesValley` is neither and resolves
+ * to nothing — which is what the org schema and `/help` were both pointing at.
+ *
+ * Plain constants, not env reads: this module is reachable from client
+ * components, and a non-`NEXT_PUBLIC_` variable is `undefined` in the browser
+ * bundle, which would hydrate a different href than the server rendered.
+ */
+export const CHANNEL_HANDLE = "DestinyOnlineChurch";
+export const CHANNEL_VANITY = "destinychurchteesvalley";
+/** Canonical public link — the custom URL. */
+export const CHANNEL_URL = `https://www.youtube.com/${CHANNEL_VANITY}`;
 
 export function decodeEntities(text: string | undefined): string {
   if (!text) return "";
@@ -437,9 +449,17 @@ export function parseLivePage(html: string): PageVerdict {
     return { kind: "candidate", videoId };
   }
 
-  // No broadcast on air: /live redirects to the channel home, whose canonical
-  // is the channel URL. That is a definitive answer, not a failure.
-  if (/youtube\.com\/(?:channel\/UC[\w-]+|@[\w.-]+)\/?$/.test(canonical)) {
+  // No broadcast on air: /live redirects to the channel home, whose canonical is
+  // the channel URL. That is a definitive answer, not a failure. All four forms
+  // are accepted — YouTube normally canonicalises to the @handle, but the same
+  // channel is also reachable as /channel/UC…, /c/name and a bare custom URL,
+  // and treating one of those as "unreadable" would escalate to a quota-costing
+  // API call every minute we aren't streaming.
+  if (
+    /youtube\.com\/(?:channel\/UC[\w-]+|@[\w.-]+|(?:c|user)\/[\w.-]+|[\w.-]+)\/?$/.test(
+      canonical
+    )
+  ) {
     return { kind: "offline" };
   }
 
@@ -539,11 +559,19 @@ async function detectLiveStatus(): Promise<LiveStatus> {
   });
 
   if (process.env.LIVE_DISABLED === "1") return offline("disabled");
-  if (!CHANNEL_ID && !CHANNEL_HANDLE) return offline("no-channel");
+
+  // Three URL forms for the same channel, tried in order. The handle and custom
+  // URL are the way back in when YOUTUBE_CHANNEL_ID is unset or stale, which
+  // used to make detection fail silently and permanently. Overridable for a
+  // rename without a deploy; server-side only, so no client bundle reads this.
+  const handle = (process.env.YOUTUBE_CHANNEL_HANDLE ?? CHANNEL_HANDLE).replace(/^@/, "");
+  const vanity = (process.env.YOUTUBE_CHANNEL_VANITY ?? CHANNEL_VANITY).replace(/^\//, "");
+  if (!CHANNEL_ID && !handle && !vanity) return offline("no-channel");
 
   const pages = [
     CHANNEL_ID ? `https://www.youtube.com/channel/${CHANNEL_ID}/live` : null,
-    CHANNEL_HANDLE ? `https://www.youtube.com/@${CHANNEL_HANDLE}/live` : null,
+    handle ? `https://www.youtube.com/@${handle}/live` : null,
+    vanity ? `https://www.youtube.com/${vanity}/live` : null,
   ].filter((u): u is string => Boolean(u));
 
   const candidates: string[] = [];
@@ -563,14 +591,21 @@ async function detectLiveStatus(): Promise<LiveStatus> {
         source: "channel-page",
       };
     }
+    // A definitive answer from any one URL form settles it — they are the same
+    // channel, so the remaining forms only get tried when this one was blocked
+    // or unreadable. The offline path stays at exactly one fetch.
     if (verdict.kind === "upcoming") {
-      upcoming ??= offline("channel-page", {
+      upcoming = offline("channel-page", {
         scheduledFor: verdict.scheduledFor,
         title: verdict.title,
       });
       sawDefiniteOffline = true;
+      break;
     }
-    if (verdict.kind === "offline") sawDefiniteOffline = true;
+    if (verdict.kind === "offline") {
+      sawDefiniteOffline = true;
+      break;
+    }
     if (verdict.kind === "candidate" && !candidates.includes(verdict.videoId)) {
       candidates.push(verdict.videoId);
     }

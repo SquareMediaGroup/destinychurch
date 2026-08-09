@@ -2566,6 +2566,27 @@ mid-service behaviour.
 
 ### `lib/youtube.ts`
 
+**`CHANNEL_HANDLE` / `CHANNEL_VANITY` / `CHANNEL_URL`** — the church's YouTube
+channel, in one place. The channel answers on **two different names** and they are
+not interchangeable:
+
+| Form | Value | URL |
+|---|---|---|
+| `@` handle | `DestinyOnlineChurch` | `youtube.com/@DestinyOnlineChurch` |
+| Custom URL | `destinychurchteesvalley` | `youtube.com/destinychurchteesvalley` |
+
+`CHANNEL_URL` is the custom-URL form and is what every public link uses (sermons
+platform chips, `WatchOnYouTubeBand`, `LatestSermonSection`, the org schema's
+`sameAs`). Mixing the two produced `@DestinyChurchTeesValley` — neither name, and
+a dead link — which is what the org schema and the `/help` FAQ both used to point
+at.
+
+Deliberately plain constants rather than env reads: `lib/youtube.ts` is reachable
+from client components, and a non-`NEXT_PUBLIC_` variable is `undefined` in the
+browser bundle, which would hydrate a different `href` than the server rendered.
+Live detection alone may override them server-side via `YOUTUBE_CHANNEL_HANDLE` /
+`YOUTUBE_CHANNEL_VANITY`.
+
 ```typescript
 // Wrapper around YouTube Data API v3
 export async function getAllVideos(maxResults = 50): Promise<YTVideo[]> {
@@ -2606,9 +2627,9 @@ export async function getLiveStatus(): Promise<LiveStatus> { /* ... */ }
 
 **How `getLiveStatus()` decides, in order:**
 
-1. **Scrape `youtube.com/channel/{id}/live`**, then `youtube.com/@{handle}/live`. The handle is the safety net for a missing or stale `YOUTUBE_CHANNEL_ID`, which previously made detection fail silently and permanently.
+1. **Scrape the `/live` URL**, trying all three forms of the same channel in order: `youtube.com/channel/{id}/live`, `youtube.com/@DestinyOnlineChurch/live`, `youtube.com/destinychurchteesvalley/live`. The handle and custom URL are the safety net for a missing or stale `YOUTUBE_CHANNEL_ID`, which previously made detection fail silently and permanently. A definitive verdict from any one form breaks the loop — the later forms are only tried when the earlier one came back blocked or unreadable, so the offline path stays at exactly one fetch.
 2. **Parse properly.** `parseLivePage()` brace-matches the `ytInitialPlayerResponse` blob out of the HTML and reads `videoDetails.isLive` / `liveBroadcastDetails.isLiveNow` from *that object*. The old code regex-matched `"isLiveNow":(true|false)` anywhere in the page — and YouTube emits `ytInitialData`, full of recommendation shelves each carrying their own `isLiveNow`, **before** the player response. The first match was routinely an unrelated video's flag, so real broadcasts were scored offline. It also never distinguished `isLiveContent` ("was a broadcast at some point", true of every past Sunday) from `isLive` ("streaming right now").
-3. **A clean "no" costs nothing.** A watch page with an `endTimestamp`, or a redirect to the channel home (canonical is the channel URL), returns `offline` outright — that is the path taken every minute of every day the church isn't streaming, and it must never spend quota.
+3. **A clean "no" costs nothing.** A watch page with an `endTimestamp`, or a redirect to the channel home, returns `offline` outright — that is the path taken every minute of every day the church isn't streaming, and it must never spend quota. All four channel-home canonical forms (`/channel/UC…`, `/@handle`, `/c/name`, bare custom URL) are recognised; treating any of them as unreadable would escalate to an API call on every check.
 4. **Inconclusive results escalate** — consent wall, bot check, or an unrecognised shell. First the free second opinion: `embed/live_stream?channel={id}`, a few KB rather than a few MB and not consent-gated. Then the RSS feed's recent uploads (also free). Then **one** `videos.list` call over the collected candidate ids (1 unit) for YouTube's own `liveBroadcastContent === "live"` verdict.
 5. **Never `search?eventType=live`** — 100 units a call would burn the entire 10,000/day quota inside an hour of polling, taking the sermon pages down with it.
 
@@ -3295,7 +3316,8 @@ SUPABASE_SERVICE_ROLE_KEY=eyJ...
 # YouTube
 YOUTUBE_API_KEY=AIza...
 YOUTUBE_CHANNEL_ID=UCxx...
-YOUTUBE_CHANNEL_HANDLE=DestinyOnlineChurch  # optional; fallback for live detection if the id is missing/stale
+YOUTUBE_CHANNEL_HANDLE=DestinyOnlineChurch       # optional; overrides the CHANNEL_HANDLE constant (the @ name) for live detection
+YOUTUBE_CHANNEL_VANITY=destinychurchteesvalley   # optional; overrides the CHANNEL_VANITY constant (the custom URL)
 LIVE_DISABLED=                              # set to 1 to force the /live page and banner off air
 
 # Email

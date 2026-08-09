@@ -1,4 +1,4 @@
-const YOUTUBE_CHANNEL_URL = "https://www.youtube.com/@DestinyOnlineChurch";
+import { CHANNEL_URL } from "@/lib/youtube";
 
 /** Editorial call-out pointing people to the full sermon archive on YouTube. */
 export default function WatchOnYouTubeBand({
@@ -37,7 +37,7 @@ export default function WatchOnYouTubeBand({
         </div>
 
         <a
-          href={YOUTUBE_CHANNEL_URL}
+          href={CHANNEL_URL}
           target="_blank"
           rel="noopener noreferrer"
           className="inline-flex shrink-0 items-center gap-3 rounded-full bg-white px-8 py-4 text-sm font-bold text-destiny-grey shadow-xl transition hover:scale-[1.03]"

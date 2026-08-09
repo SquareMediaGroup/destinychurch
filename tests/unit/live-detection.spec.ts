@@ -102,16 +102,26 @@ test("a scheduled broadcast reports as upcoming with its start time", () => {
 });
 
 test("a redirect to the channel home is a definitive offline, not a failure", () => {
-  const html = [
-    "<html><head>",
-    '<link rel="canonical" href="https://www.youtube.com/@DestinyOnlineChurch">',
-    "</head><body>",
-    shelvesBefore(false, false),
-    "</body></html>",
-  ].join("");
-  // Must not be "unknown": that would escalate to a quota-costing API call
-  // every minute of every day we aren't streaming.
-  expect(parseLivePage(html).kind).toBe("offline");
+  // Every URL form the same channel answers on. Any of these coming back
+  // "unknown" would escalate to a quota-costing API call every minute of every
+  // day we aren't streaming.
+  const canonicals = [
+    "https://www.youtube.com/@DestinyOnlineChurch",
+    "https://www.youtube.com/destinychurchteesvalley",
+    "https://www.youtube.com/c/destinychurchteesvalley",
+    "https://www.youtube.com/channel/UCabcdefghijklmnopqrstuv",
+  ];
+
+  for (const canonical of canonicals) {
+    const html = [
+      "<html><head>",
+      `<link rel="canonical" href="${canonical}">`,
+      "</head><body>",
+      shelvesBefore(false, false),
+      "</body></html>",
+    ].join("");
+    expect(parseLivePage(html).kind, canonical).toBe("offline");
+  }
 });
 
 test("a consent wall is unknown so detection escalates instead of guessing", () => {

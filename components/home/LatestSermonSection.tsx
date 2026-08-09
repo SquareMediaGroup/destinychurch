@@ -1,9 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import AnimateIn from "@/components/AnimateIn";
-import { type YTVideo, formatDate } from "@/lib/youtube";
-
-const YOUTUBE_CHANNEL_URL = `https://www.youtube.com/channel/${process.env.YOUTUBE_CHANNEL_ID}`;
+import { CHANNEL_URL, type YTVideo, formatDate } from "@/lib/youtube";
 
 /**
  * Latest Sermon — dark image banner, matching the WorshipWithUs section pattern
@@ -29,7 +27,7 @@ export default function LatestSermonSection({
   const watchHref = quotaExceeded
     ? `https://www.youtube.com/watch?v=${video.id}`
     : `/sermons/${video.id}`;
-  const allHref = quotaExceeded ? YOUTUBE_CHANNEL_URL : "/sermons";
+  const allHref = quotaExceeded ? CHANNEL_URL : "/sermons";
   const allLabel = quotaExceeded ? "Watch on YouTube" : "See All Sermons";
   const external = quotaExceeded
     ? { target: "_blank", rel: "noopener noreferrer" }

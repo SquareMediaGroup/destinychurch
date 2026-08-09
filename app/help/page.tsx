@@ -141,7 +141,7 @@ const categories = [
       },
       {
         q: "Where can I follow Destiny Church on social media?",
-        a: "Find us on Facebook and Instagram @destinychurchteesvalley, and on YouTube @DestinyChurchTeesValley.",
+        a: "Find us on Facebook and Instagram @destinychurchteesvalley, and on YouTube at youtube.com/destinychurchteesvalley.",
       },
       {
         q: "Is there a church app?",

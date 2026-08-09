@@ -18,7 +18,7 @@ import GlassBloomTracker from "@/components/GlassBloomTracker";
 import PerformanceGate from "@/components/PerformanceGate";
 import { isSmartSearchEnabled } from "@/lib/serviceStatus";
 import { COURSE_EVENT_TYPES, isCourseEventType } from "@/lib/courseEvents";
-import { getLiveStatus } from "@/lib/youtube";
+import { CHANNEL_URL, getLiveStatus } from "@/lib/youtube";
 import BannerSpacer from "@/components/BannerSpacer";
 import { createServiceClient } from "@/utils/supabase/service";
 import { unstable_noStore as noStore } from "next/cache";
@@ -194,7 +194,7 @@ const orgSchema = {
         },
       ],
       sameAs: [
-        "https://www.youtube.com/@DestinyChurchTeesValley",
+        CHANNEL_URL,
         "https://www.facebook.com/destinychurchteesvalley",
         "https://www.instagram.com/destinychurchteesvalley",
       ],

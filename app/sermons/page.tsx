@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import { getPodcastShow } from "@/lib/podcast";
-import { getLatestVideo } from "@/lib/youtube";
+import { CHANNEL_URL, getLatestVideo } from "@/lib/youtube";
 import { pairAudioForVideo } from "@/lib/sermonPairing";
 import { PodcastPlayerProvider } from "@/components/sermons/podcast/PodcastPlayerProvider";
 import FeaturedSermon from "@/components/sermons/FeaturedSermon";
@@ -28,12 +28,10 @@ export const revalidate = 1800;
 const SPOTIFY_PODCAST_URL = "https://open.spotify.com/show/1nj6U60XiQExt8l55E2p0Q";
 const APPLE_PODCAST_URL =
   "https://podcasts.apple.com/gb/podcast/destiny-church-tees-valley/id1456522038";
-const YOUTUBE_CHANNEL_URL = "https://www.youtube.com/@DestinyOnlineChurch";
-
 const platforms = [
   { href: SPOTIFY_PODCAST_URL, label: "Spotify", icon: "spotify" },
   { href: APPLE_PODCAST_URL, label: "Apple Podcasts", icon: "apple" },
-  { href: YOUTUBE_CHANNEL_URL, label: "YouTube", icon: "youtube" },
+  { href: CHANNEL_URL, label: "YouTube", icon: "youtube" },
 ];
 
 export default async function SermonsPage() {

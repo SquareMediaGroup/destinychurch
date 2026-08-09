@@ -1592,10 +1592,21 @@ Once consent is in, `ChurchSuiteEmbed` and `MediaEmbed` cover the iframe with `u
   full-width **"Just browsing, thanks"** button, not a hidden X.
 - **Decision logic:** `decideWelcome()` in `lib/welcomeOverlay.ts` is a pure function returning
   `show | suppress | wait`, covered by `tests/unit/welcome-overlay.spec.ts`.
-- **Styling:** `.welcome-*` in `app/globals.css`, reusing `.nfc-modal-backdrop` / `.nfc-modal-panel`
-  for the entrance. Same card anatomy as `/links` and `/nfc` (number, Material icon, orange hover
-  sweep), except the hover rules are wrapped in `@media (hover: hover)` — those are pages you scroll
-  past, this is a modal you tap and dismiss, and on touch `:hover` would stick to the tapped card.
+- **Styling:** the surfaces are the **glass system** — `glass glass-strong glass-refract glass-xl`
+  on the panel (same recipe as the header pill and `CookieBanner`), `glass glass-sm` on the cards, so
+  the hero reads through both. Refraction is on the panel only: it is GPU-costly tiled across small
+  surfaces, and five refracting cards inside a refracting panel is that case. The cards carry **no
+  `bg-*` utility** — a Tailwind background would outrank `.glass`'s own, since utilities sort after
+  `@layer components`. Text is the white scale (`text-white`, `/70`, `/60`) rather than
+  `destiny-grey`.
+- **Motion:** `.welcome-*` in `app/globals.css` — staggered card reveal, the drawn orange rule, the
+  orange hover sweep — plus `.nfc-modal-panel` for the entrance. `.welcome-backdrop` is its own
+  rather than `.nfc-modal-backdrop`: that one lands on `rgba(0,0,0,0.75)`, which would leave the
+  glass nothing to refract but a black sheet. Card anatomy matches `/links` and `/nfc` (number,
+  Material icon, arrow), except the hover rules are wrapped in `@media (hover: hover)` — those are
+  pages you scroll past, this is a modal you tap and dismiss, and on touch `:hover` would stick to
+  the tapped card. The `.welcome-card` rules are unlayered, so they replace `.glass`'s `transition`
+  shorthand wholesale; `background-color` is carried over deliberately, or the tint would snap.
 
 #### `shop/ShopHero.tsx`
 - **What:** Dynamic, auto-rotating hero at the top of `/shop`

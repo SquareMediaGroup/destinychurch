@@ -23,6 +23,18 @@
 //   semantics here are lifted from components/nfc/NfcTileModal.tsx, which is the
 //   reference implementation in this repo — labelled dialog, focus in on open,
 //   focus restored on close, Tab held inside.
+//
+// The surfaces are the site glass system, not a solid panel: `glass-strong` for
+// the slab (same recipe as the header pill and the cookie banner) and a lighter
+// `glass-sm` for the cards, so the hero reads through both. Two consequences
+// worth knowing — the cards carry no bg-* utility, because a Tailwind background
+// would outrank .glass's own (utilities sort after @layer components); and the
+// backdrop is .welcome-backdrop rather than .nfc-modal-backdrop, which lands on
+// 75% black and would leave the glass nothing to refract but a black sheet.
+//
+// Refraction is on the panel only. It is GPU-costly tiled across small surfaces
+// — the reason globals.css already drops it on phones — and five refracting
+// cards inside a refracting panel is exactly that case.
 
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { createPortal } from "react-dom";
@@ -164,7 +176,7 @@ export default function WelcomeOverlay() {
   return createPortal(
     <div
       data-nosnippet
-      className="nfc-modal-backdrop fixed inset-0 z-[200] flex items-center justify-center overflow-y-auto p-4"
+      className="welcome-backdrop fixed inset-0 z-[200] flex items-center justify-center overflow-y-auto p-4"
       onClick={close}
     >
       <div
@@ -172,7 +184,7 @@ export default function WelcomeOverlay() {
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
-        className="welcome-panel nfc-modal-panel relative my-auto flex max-h-[94vh] w-full max-w-3xl flex-col overflow-hidden rounded-3xl bg-white shadow-2xl"
+        className="nfc-modal-panel glass glass-strong glass-refract glass-xl relative my-auto flex max-h-[94vh] w-full max-w-3xl flex-col overflow-hidden rounded-3xl"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="relative shrink-0 px-6 pt-6 sm:px-8 sm:pt-7">
@@ -181,24 +193,24 @@ export default function WelcomeOverlay() {
             type="button"
             onClick={close}
             aria-label="Close welcome"
-            className="absolute right-3 top-3 flex h-10 w-10 items-center justify-center rounded-full text-destiny-grey/40 transition hover:bg-black/5 hover:text-destiny-grey"
+            className="absolute right-3 top-3 flex h-10 w-10 items-center justify-center rounded-full text-white/50 transition hover:bg-white/10 hover:text-white"
           >
             <span aria-hidden className="material-symbols-rounded text-xl">
               close
             </span>
           </button>
 
-          <p className="font-[family-name:var(--font-playfair)] text-lg italic text-destiny-grey/70 sm:text-xl">
+          <p className="font-[family-name:var(--font-playfair)] text-lg italic text-white/70 sm:text-xl">
             Glad you&apos;re here
           </p>
           <h2
             id={titleId}
-            className="mt-0.5 font-[family-name:var(--font-anton)] text-3xl uppercase leading-[0.95] tracking-tight text-destiny-grey sm:text-5xl"
+            className="mt-0.5 font-[family-name:var(--font-anton)] text-3xl uppercase leading-[0.95] tracking-tight text-white sm:text-5xl"
           >
             Welcome to Destiny
           </h2>
           <div className="welcome-rule mt-3 h-1 w-16 rounded-full bg-destiny-orange" />
-          <p className="mt-3 text-xs font-bold uppercase tracking-[0.24em] text-destiny-grey/45">
+          <p className="mt-3 text-xs font-bold uppercase tracking-[0.24em] text-white/60">
             What would you like to do?
           </p>
         </div>
@@ -214,7 +226,7 @@ export default function WelcomeOverlay() {
                 <Link
                   href={option.href}
                   onClick={close}
-                  className="welcome-card group relative flex h-full flex-col overflow-hidden rounded-2xl border border-black/10 bg-white p-4 outline-none sm:p-5"
+                  className="welcome-card glass glass-sm group relative flex h-full flex-col overflow-hidden rounded-2xl border border-white/10 p-4 outline-none sm:p-5"
                 >
                   {/* orange fill on hover / focus */}
                   <span
@@ -228,7 +240,7 @@ export default function WelcomeOverlay() {
                     </span>
                     <span
                       aria-hidden
-                      className="material-symbols-rounded welcome-icon text-2xl text-destiny-grey/30"
+                      className="material-symbols-rounded welcome-icon text-2xl text-white/35"
                     >
                       {option.icon}
                     </span>
@@ -236,16 +248,16 @@ export default function WelcomeOverlay() {
 
                   <div className="relative mt-3 flex items-end justify-between gap-2 sm:mt-4">
                     <div className="min-w-0">
-                      <h3 className="welcome-title font-[family-name:var(--font-heading)] text-base font-black leading-tight text-destiny-grey sm:text-lg">
+                      <h3 className="welcome-title font-[family-name:var(--font-heading)] text-base font-black leading-tight text-white sm:text-lg">
                         {option.title}
                       </h3>
-                      <p className="welcome-blurb mt-0.5 text-xs leading-snug text-destiny-grey/55 sm:text-sm">
+                      <p className="welcome-blurb mt-0.5 text-xs leading-snug text-white/70 sm:text-sm">
                         {option.blurb}
                       </p>
                     </div>
                     <span
                       aria-hidden
-                      className="material-symbols-rounded welcome-arrow shrink-0 text-xl text-destiny-grey/40"
+                      className="material-symbols-rounded welcome-arrow shrink-0 text-xl text-white/45"
                     >
                       arrow_forward
                     </span>
@@ -258,11 +270,11 @@ export default function WelcomeOverlay() {
 
         {/* The skip is a real control, not a hidden X — it's the honest answer for
             most people who land here, so it gets a full-width button of its own. */}
-        <div className="shrink-0 border-t border-black/5 bg-[#f5f7fa] px-6 py-3 sm:px-8">
+        <div className="shrink-0 border-t border-white/10 bg-white/5 px-6 py-3 sm:px-8">
           <button
             type="button"
             onClick={close}
-            className="welcome-skip flex w-full items-center justify-center gap-2 rounded-full py-2.5 text-sm font-bold text-destiny-grey/60 outline-none transition hover:bg-black/5 hover:text-destiny-grey focus-visible:ring-2 focus-visible:ring-destiny-orange"
+            className="welcome-skip flex w-full items-center justify-center gap-2 rounded-full py-2.5 text-sm font-bold text-white/75 outline-none transition hover:bg-white/10 hover:text-white focus-visible:ring-2 focus-visible:ring-destiny-orange"
           >
             Just browsing, thanks
             <span aria-hidden className="material-symbols-rounded text-base">

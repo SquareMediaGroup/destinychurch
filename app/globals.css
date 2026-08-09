@@ -776,13 +776,24 @@ body {
 }
 
 /* The homepage welcome overlay — see components/WelcomeOverlay.tsx.
-   Same card anatomy as /links and /nfc, scoped here because the overlay is
-   mounted from the root layout rather than by a page of its own. */
-.welcome-panel {
-  background-color: #ffffff;
-  background-image:
-    radial-gradient(110% 60% at 100% -5%, rgba(245, 128, 33, 0.08), transparent 60%),
-    radial-gradient(90% 50% at -5% 100%, rgba(8, 87, 186, 0.05), transparent 55%);
+   The panel and cards are the site glass system (`glass glass-strong
+   glass-refract` / `glass glass-sm`); what lives here is the motion and the
+   card anatomy borrowed from /links and /nfc, scoped here because the overlay
+   is mounted from the root layout rather than by a page of its own.
+
+   Its own backdrop rather than .nfc-modal-backdrop: that one lands on
+   rgba(0,0,0,0.75), which would leave the glass nothing to refract but a black
+   sheet. This is light enough that the hero reads through the panel. */
+@keyframes welcome-backdrop-in {
+  from { background: rgba(0, 0, 0, 0); backdrop-filter: blur(0px); }
+  to   { background: rgba(0, 0, 0, 0.5); backdrop-filter: blur(3px); }
+}
+
+.welcome-backdrop {
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
+  animation: welcome-backdrop-in 0.35s ease forwards;
 }
 
 @keyframes welcome-rise {
@@ -805,11 +816,15 @@ body {
   animation: welcome-draw 0.7s cubic-bezier(0.16, 1, 0.3, 1) 0.15s forwards;
 }
 
+/* These rules are unlayered, so they replace .glass's own `transition` shorthand
+   wholesale (@layer components sorts earlier). background-color is carried over
+   from it deliberately — without it the glass tint would snap on hover. */
 .welcome-card {
   transition:
     transform 0.45s cubic-bezier(0.16, 1, 0.3, 1),
     box-shadow 0.45s ease,
-    border-color 0.45s ease;
+    border-color 0.45s ease,
+    background-color 0.2s ease;
 }
 
 .welcome-card .welcome-fill {
@@ -872,6 +887,7 @@ body {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .welcome-backdrop { animation: none; }
   .welcome-reveal,
   .welcome-rule {
     animation: none;

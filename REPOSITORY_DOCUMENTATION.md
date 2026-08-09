@@ -1592,21 +1592,37 @@ Once consent is in, `ChurchSuiteEmbed` and `MediaEmbed` cover the iframe with `u
   full-width **"Just browsing, thanks"** button, not a hidden X.
 - **Decision logic:** `decideWelcome()` in `lib/welcomeOverlay.ts` is a pure function returning
   `show | suppress | wait`, covered by `tests/unit/welcome-overlay.spec.ts`.
-- **Styling:** the surfaces are the **glass system** — `glass glass-strong glass-refract glass-xl`
-  on the panel (same recipe as the header pill and `CookieBanner`), `glass glass-sm` on the cards, so
-  the hero reads through both. Refraction is on the panel only: it is GPU-costly tiled across small
-  surfaces, and five refracting cards inside a refracting panel is that case. The cards carry **no
-  `bg-*` utility** — a Tailwind background would outrank `.glass`'s own, since utilities sort after
-  `@layer components`. Text is the white scale (`text-white`, `/70`, `/60`) rather than
-  `destiny-grey`.
+- **Styling:** the surfaces are the **glass system**, and the glass is **full-bleed** — a fixed,
+  viewport-sized sheet with the panel floating on it, not a contained slab. Three layers, back to
+  front: `.welcome-scrim` (dims the page) → `.welcome-glass` (`glass glass-refract glass-xl`, frosts
+  the dimmed result) → the panel (`relative z-10`, no background of its own). The order is load-
+  bearing: `backdrop-filter` samples everything painted below it and an earlier sibling counts, so
+  the glass picks up the scrim. A scrim laid *over* the glass would flatten its sheen and bloom.
+  Both layers are `fixed`, not `absolute`, so they stay put when a short viewport scrolls the panel.
+- **Getting it dark:** glass *lightens* — `.glass` carries a white diagonal sheen and
+  `brightness(1.05)`. Taking it full-bleed washed out the margins that used to be a plain dark
+  backdrop (measured ~43/255 mean background luminance against ~23 for the contained-panel version).
+  So the darkening is done twice: the scrim at `rgba(0,0,0,0.74)` **and** a near-black
+  `--glass-tint: 8, 10, 13` / `--glass-alpha: 0.68` on the sheet itself (the system's documented
+  per-surface override). The scrim alone can't get there — the tint sets a floor no scrim drops
+  below. Net result is ~45% darker overall than the slab version. Those two values are the dial.
+  `.welcome-glass::before` is hidden: the gradient rim is right on a card, but at full bleed it
+  draws a bright 1px line along the top of the viewport. `::after` (the cursor bloom) stays.
+- **Cards:** `glass glass-sm`, so they still read against the sheet. Refraction is on the full-bleed
+  layer only, never the cards — it is GPU-costly tiled across small surfaces (the reason
+  `globals.css` already drops it on phones) and five refracting cards is that case. They carry **no
+  `bg-*` utility**: a Tailwind background would outrank `.glass`'s own, since utilities sort after
+  `@layer components`. Text is the white scale (`text-white`, `/70`, `/60`), not `destiny-grey`.
 - **Motion:** `.welcome-*` in `app/globals.css` — staggered card reveal, the drawn orange rule, the
-  orange hover sweep — plus `.nfc-modal-panel` for the entrance. `.welcome-backdrop` is its own
-  rather than `.nfc-modal-backdrop`: that one lands on `rgba(0,0,0,0.75)`, which would leave the
-  glass nothing to refract but a black sheet. Card anatomy matches `/links` and `/nfc` (number,
-  Material icon, arrow), except the hover rules are wrapped in `@media (hover: hover)` — those are
-  pages you scroll past, this is a modal you tap and dismiss, and on touch `:hover` would stick to
-  the tapped card. The `.welcome-card` rules are unlayered, so they replace `.glass`'s `transition`
-  shorthand wholesale; `background-color` is carried over deliberately, or the tint would snap.
+  orange hover sweep, `welcome-layer-in` on both full-bleed layers — plus `.nfc-modal-panel` for the
+  entrance. Card anatomy matches `/links` and `/nfc` (number, Material icon, arrow), except the
+  hover rules are wrapped in `@media (hover: hover)` — those are pages you scroll past, this is a
+  modal you tap and dismiss, and on touch `:hover` would stick to the tapped card. The
+  `.welcome-card` rules are unlayered, so they replace `.glass`'s `transition` shorthand wholesale;
+  `background-color` is carried over deliberately, or the tint would snap.
+- **Note on the bloom:** `GlassBloomTracker` resolves the hovered surface with `closest(".glass")`.
+  `.welcome-glass` is a **sibling** of the panel, not an ancestor, so hovering panel chrome doesn't
+  drive its bloom — only hovering outside the panel does, and hovering a card drives that card's own.
 
 #### `shop/ShopHero.tsx`
 - **What:** Dynamic, auto-rotating hero at the top of `/shop`

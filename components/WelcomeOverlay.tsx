@@ -24,17 +24,20 @@
 //   reference implementation in this repo — labelled dialog, focus in on open,
 //   focus restored on close, Tab held inside.
 //
-// The surfaces are the site glass system, not a solid panel: `glass-strong` for
-// the slab (same recipe as the header pill and the cookie banner) and a lighter
-// `glass-sm` for the cards, so the hero reads through both. Two consequences
-// worth knowing — the cards carry no bg-* utility, because a Tailwind background
-// would outrank .glass's own (utilities sort after @layer components); and the
-// backdrop is .welcome-backdrop rather than .nfc-modal-backdrop, which lands on
-// 75% black and would leave the glass nothing to refract but a black sheet.
+// The surfaces are the site glass system, and the glass is full-bleed: a fixed,
+// viewport-sized sheet with the panel floating on it, rather than a contained
+// slab. Three layers, back to front — scrim, glass, content — and that order is
+// the point. backdrop-filter samples everything painted below it, and an earlier
+// sibling counts, so the glass frosts an already-dimmed page. Tinting the glass
+// darker instead, or laying the scrim over the top, would both flatten its sheen
+// and cursor bloom. Both layers are fixed rather than absolute so they stay put
+// when a short viewport scrolls the panel.
 //
-// Refraction is on the panel only. It is GPU-costly tiled across small surfaces
-// — the reason globals.css already drops it on phones — and five refracting
-// cards inside a refracting panel is exactly that case.
+// Two things the glass system dictates. The cards carry no bg-* utility, because
+// a Tailwind background outranks .glass's own (utilities sort after @layer
+// components). And refraction is on the full-bleed sheet only, never the cards:
+// it is GPU-costly tiled across small surfaces — the reason globals.css already
+// drops it on phones — and five refracting cards is exactly that case.
 
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { createPortal } from "react-dom";
@@ -176,15 +179,25 @@ export default function WelcomeOverlay() {
   return createPortal(
     <div
       data-nosnippet
-      className="welcome-backdrop fixed inset-0 z-[200] flex items-center justify-center overflow-y-auto p-4"
+      className="fixed inset-0 z-[200] flex items-center justify-center overflow-y-auto p-4"
       onClick={close}
     >
+      {/* Two full-bleed layers, in this order on purpose: the scrim dims the
+          page, then the glass frosts the already-dimmed result. A scrim laid
+          over the glass instead would flatten its sheen and bloom. Both are
+          fixed, so they stay put when a short viewport scrolls the panel. */}
+      <div aria-hidden className="welcome-scrim fixed inset-0" />
+      <div
+        aria-hidden
+        className="welcome-glass glass glass-refract glass-xl fixed inset-0"
+      />
+
       <div
         ref={panelRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
-        className="nfc-modal-panel glass glass-strong glass-refract glass-xl relative my-auto flex max-h-[94vh] w-full max-w-3xl flex-col overflow-hidden rounded-3xl"
+        className="nfc-modal-panel relative z-10 my-auto flex max-h-[94vh] w-full max-w-3xl flex-col overflow-hidden rounded-3xl"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="relative shrink-0 px-6 pt-6 sm:px-8 sm:pt-7">

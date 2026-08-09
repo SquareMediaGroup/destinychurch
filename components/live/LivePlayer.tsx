@@ -4,6 +4,7 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import Link from "next/link";
 import { useCookieConsent } from "@/lib/cookieConsent";
+import { useIsClient } from "@/lib/useIsClient";
 import { loadYTApi } from "@/lib/youtubeIframe";
 
 interface LivePlayerProps {
@@ -13,7 +14,7 @@ interface LivePlayerProps {
 
 export default function LivePlayer({ videoId, onEnded }: LivePlayerProps) {
   const { consent, allowAll, savePreferences } = useCookieConsent();
-  const [mounted, setMounted] = useState(false);
+  const mounted = useIsClient();
 
   const playerRef = useRef<YT.Player | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -29,7 +30,13 @@ export default function LivePlayer({ videoId, onEnded }: LivePlayerProps) {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [hasUnmuted, setHasUnmuted] = useState(false);
 
-  useEffect(() => setMounted(true), []);
+  // Held in a ref so the player-mount effect can stay keyed on the video id
+  // alone: re-running it on every parent render would tear down and rebuild the
+  // iframe mid-service.
+  const onEndedRef = useRef(onEnded);
+  useEffect(() => {
+    onEndedRef.current = onEnded;
+  }, [onEnded]);
 
   const canPlay = mounted && consent?.media === true;
   const reducedMotion =
@@ -72,18 +79,22 @@ export default function LivePlayer({ videoId, onEnded }: LivePlayerProps) {
           },
           onStateChange: (e: YT.OnStateChangeEvent) => {
             if (e.data === window.YT!.PlayerState.ENDED) {
-              onEnded?.();
+              onEndedRef.current?.();
             }
             setPlaying(e.data === window.YT!.PlayerState.PLAYING);
           },
+          // A pulled or privated broadcast leaves the player wedged on a black
+          // rectangle; treat it the same as the stream ending so the page falls
+          // back to the offline card.
+          onError: () => onEndedRef.current?.(),
         },
       });
     });
     return () => {
       playerRef.current?.destroy();
       playerRef.current = null;
+      setReady(false);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [canPlay, videoId]);
 
   // Poll mute/volume state (no events for these on the IFrame API)

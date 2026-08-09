@@ -1373,7 +1373,7 @@ without an auth check, so they must never be reachable on the live site.
 | `/beliefs` | `app/beliefs/page.tsx` | Statement of faith, doctrine |
 | `/sermons` | `app/sermons/page.tsx` | Latest message as video (with an audio switch) + searchable podcast archive |
 | `/sermons/[id]` | `app/sermons/[id]/page.tsx` | Individual sermon — YouTube embed, skip-to-sermon, next steps |
-| `/live` | `app/live/page.tsx` | Livestream page — custom glass player when live, offline state otherwise |
+| `/live` | `app/live/page.tsx` | Livestream page — standard hero + section rhythm, with a client island that swaps between the custom glass player and an off-air card |
 | `/contact` | `app/contact/page.tsx` | Contact form, address, hours |
 | `/give` | `app/give/page.tsx` | Giving info — bank details, online giving |
 | `/shop` | `app/shop/page.tsx` | Store front — published products grid with category filter chips (`ShopProductGrid`), editorial `/links` style |
@@ -1585,13 +1585,27 @@ buttons lacked.
 
 #### `LiveBanner.tsx`
 - **What:** "WE ARE LIVE" banner bar, styled like `SiteBanner.tsx`'s bars
-- **Data:** `LiveContext` (server-seeded in root layout via `getLiveStatus()`, then polled client-side every 60s)
+- **Data:** `LiveContext` (server-seeded in root layout via `getLiveStatus()`, then polled client-side every 30s)
 - **Behavior:** Renders at the top banner slot (offsetting any DB banner below it) whenever the channel is live; hidden on `/live` and `/admin/*`. CTA links to `/live`.
 
-#### `live/LiveExperience.tsx` + `live/LivePlayer.tsx`
-- **What:** The `/live` page's client UI
-- **`LiveExperience.tsx`:** Switches between live / offline / stream-ended states based on `LiveContext`; requires the ENDED player event or two consecutive negative polls before dropping out of the live view
-- **`LivePlayer.tsx`:** YouTube IFrame API player with `controls=0` and a fully custom glass control bar (play/pause, mute, volume, fullscreen, live-edge seek) — see `lib/youtubeIframe.ts` for the shared API loader (also used by `SermonPlayer.tsx`)
+#### `contexts/LiveContext.tsx`
+- **What:** The single client-side source of live state, consumed by the banner and every part of `/live`
+- **Seeding:** The root layout passes `getLiveStatus()` straight in, so the first paint is already correct — polling only ever corrects it afterwards
+- **Polling:** `/api/youtube/live` every 30s, plus an immediate poll on mount and on `visibilitychange` / `focus` / `online`. The mount poll matters: the server render can be a minute stale, and "we went live 40 seconds ago" is exactly when someone opens the page.
+- **Grace period:** `live` does not drop to false until **two consecutive** negative polls (`OFFLINE_GRACE`), so one flaky request doesn't pull a running service off someone's screen. The streak is counted per poll — an earlier version counted it in an effect keyed on `live`, which only re-runs when the boolean flips, so it could never reach two.
+- **`markOffline()`:** lets the player tear the live view down immediately on its ENDED/error event, well before YouTube's own pages agree
+
+#### `/live` components (`components/live/*`)
+The page itself is a server component carrying the site's normal hero + alternating
+`bg-white` / `bg-[#f5f7fa]` sections (`AnimateIn` reveals, `font-black` headings,
+orange eyebrows, `WatchOnYouTubeBand`, `WorshipWithUsSection`). Only the parts that
+change with the broadcast are client islands:
+
+- **`LiveStage.tsx`** — the player when we're on air, an off-air card the rest of the week. Live: red "On air now" eyebrow, the broadcast title (splitting the `Title || Ps Speaker` upload convention), start time, and an "Open on YouTube" escape hatch. Off air: next-service countdown, links to `/sermons` and `/visit`, and the latest message as a thumbnail card.
+- **`LiveHeroStatus.tsx`** — the hero eyebrow. A red pulsing "Live now" pill while streaming, the site's standard orange eyebrow otherwise.
+- **`useLiveNow.ts`** — the one place the "are we live?" rule is derived, so the hero badge and the player can't disagree.
+- **`NextServiceCountdown.tsx`** — "Sunday 14 September, 11:00am · in 2 days 4 hours". The date renders on the server too (it's identical either side of hydration); the relative half waits for the client, since a countdown computed server-side is wrong by however long the response sat in a cache.
+- **`LivePlayer.tsx`** — YouTube IFrame API player with `controls=0` and a fully custom glass control bar (play/pause, mute, volume, fullscreen, live-edge seek). See `lib/youtubeIframe.ts` for the shared API loader (also used by `SermonPlayer.tsx`). `onEnded` is held in a ref so the mount effect stays keyed on the video id alone, and `onError` is treated as an ending too — a pulled or privated broadcast otherwise leaves the player wedged on a black rectangle.
 
 ---
 
@@ -2171,9 +2185,14 @@ export async function applyForJob(jobId: string, formData: ApplicationData) {
 
 #### `GET /api/youtube/live`
 ```typescript
-// Livestream status, polled client-side every 60s by LiveContext
-// Response: { live: boolean, videoId: string | null, title?: string, checkedAt: string }
-// revalidate = 60
+// Livestream status, polled client-side every 30s by LiveContext.
+// Response: { live, videoId, title?, startedAt?, scheduledFor?, checkedAt }
+// dynamic = "force-dynamic"; Cache-Control: s-maxage=30, stale-while-revalidate=30
+//
+// ?debug=1 additionally returns `source` — which detection layer answered
+// (channel-page | videos.list | confirmed-offline | no-signal | disabled |
+// no-channel | error) — and sets no-store. That is the fastest way to work out
+// why the banner is or isn't showing in production without a redeploy.
 
 // Backed by lib/youtube.ts getLiveStatus() — see Libraries & Utilities.
 ```
@@ -2494,8 +2513,13 @@ in plain Node — no browser, no dev server, no second test runner. They cover t
 block wire format against an adversarial corpus (script tags, quotes, HTML
 entities, U+2028/9, angle brackets, 200-item arrays), block registry integrity
 (every field name exists in `defaults`; every schema parses `{}`), attribute-order
-drift, sermon/podcast pairing, and course-registry integrity (`course-events.spec.ts`
-— every type has complete metadata, no type is owned by two admin pages or none).
+drift, sermon/podcast pairing, course-registry integrity (`course-events.spec.ts`
+— every type has complete metadata, no type is owned by two admin pages or none),
+livestream page parsing (`live-detection.spec.ts` — a live broadcast is detected
+even when recommendation shelves carry `isLiveNow: false` first, a finished
+broadcast isn't, and a channel-home redirect is a definitive offline rather than an
+escalation), and Sunday service times across both DST boundaries
+(`service-times.spec.ts`).
 
 Browser specs run with `npm run test:e2e`. Those needing an admin session
 (`admin-blocks`, `admin-courses`) skip themselves unless `ADMIN_EMAIL` and
@@ -2511,6 +2535,24 @@ the gitignored `CLAUDE.local.md`.
 - `lib/useIsDesktop.ts` — the ≥1024px breakpoint, read **synchronously** via `useSyncExternalStore`. The admin editors branch their whole layout on this, and the obvious `useState(false)` + effect version mounted the mobile tree first and then swapped to a different one, silently destroying and recreating the TipTap instance (and its undo history) on every open. `getServerSnapshot` returns `false` so SSR and the first client paint agree.
 - `lib/useKeyboardInset.ts` — how many pixels the on-screen keyboard covers at the bottom of the window, from `visualViewport`. `position: fixed` resolves against the *layout* viewport, which iOS Safari does not shrink for the keyboard, so bottom-anchored sheets and toolbars would otherwise sit underneath it. Thresholded at 120px and rounded: URL-bar collapse and pinch-zoom also move the visual viewport, and an unrounded value hands `useSyncExternalStore` a new snapshot on every scroll frame.
 - `lib/useIsClient.ts` — false on the server and the hydrating render, true after. Guards `createPortal(…, document.body)`. `useSyncExternalStore` rather than `useState` + effect because the latter is a synchronous setState inside an effect, which the React lint rules reject as a cascading render.
+
+---
+
+### `lib/serviceTimes.ts`
+
+Sunday service times in the church's own timezone. The site is served from UTC
+infrastructure and read on phones set to anything, but "11am" always means 11am in
+Stockton-on-Tees — so this resolves London wall-clock times to real instants rather
+than trusting the runtime's local zone. `Intl` only: no date library, and no
+hardcoded BST/GMT switchover dates to go stale.
+
+- `nextSundayService(from?)` — the start of the next Sunday 11am service. Returns *today's* service right up to the 12:30 finish, so someone watching the stream isn't told the next one is a week away. Steps forward from London noon rather than from `from`, because adding raw 24h multiples across a DST boundary can shunt the result onto the Saturday.
+- `formatServiceDay(date)` — "Sunday 14 September" in London's calendar.
+- `formatCountdown(target, from?)` — "2 days 4 hours" → "18 minutes"; null once the target has passed.
+
+Used by `components/live/NextServiceCountdown.tsx`. Covered by
+`tests/unit/service-times.spec.ts`, which pins both DST boundaries and the
+mid-service behaviour.
 
 ---
 
@@ -2558,13 +2600,27 @@ export async function getLatestVideo(): Promise<YTVideo | null> {
 }
 
 // Livestream detection — used by the /live page and the "WE ARE LIVE" banner.
-// Zero-quota by design: scrapes youtube.com/channel/{id}/live for the
-// canonical watch URL + "isLiveNow" flag, falling back to a 1-unit
-// videos.list confirm call only when the scrape is ambiguous (never uses
-// search?eventType=live, which costs 100 units/call). Fails closed — any
-// fetch/parse error or LIVE_DISABLED=1 returns { live: false }.
+// Zero-quota on the happy path; escalates only when scraping is inconclusive.
 export async function getLiveStatus(): Promise<LiveStatus> { /* ... */ }
 ```
+
+**How `getLiveStatus()` decides, in order:**
+
+1. **Scrape `youtube.com/channel/{id}/live`**, then `youtube.com/@{handle}/live`. The handle is the safety net for a missing or stale `YOUTUBE_CHANNEL_ID`, which previously made detection fail silently and permanently.
+2. **Parse properly.** `parseLivePage()` brace-matches the `ytInitialPlayerResponse` blob out of the HTML and reads `videoDetails.isLive` / `liveBroadcastDetails.isLiveNow` from *that object*. The old code regex-matched `"isLiveNow":(true|false)` anywhere in the page — and YouTube emits `ytInitialData`, full of recommendation shelves each carrying their own `isLiveNow`, **before** the player response. The first match was routinely an unrelated video's flag, so real broadcasts were scored offline. It also never distinguished `isLiveContent` ("was a broadcast at some point", true of every past Sunday) from `isLive` ("streaming right now").
+3. **A clean "no" costs nothing.** A watch page with an `endTimestamp`, or a redirect to the channel home (canonical is the channel URL), returns `offline` outright — that is the path taken every minute of every day the church isn't streaming, and it must never spend quota.
+4. **Inconclusive results escalate** — consent wall, bot check, or an unrecognised shell. First the free second opinion: `embed/live_stream?channel={id}`, a few KB rather than a few MB and not consent-gated. Then the RSS feed's recent uploads (also free). Then **one** `videos.list` call over the collected candidate ids (1 unit) for YouTube's own `liveBroadcastContent === "live"` verdict.
+5. **Never `search?eventType=live`** — 100 units a call would burn the entire 10,000/day quota inside an hour of polling, taking the sermon pages down with it.
+
+**Caching.** The scrape uses `cache: "no-store"` and `getLiveStatus()` memoises the
+result in-process instead (30s while live, 60s otherwise, with concurrent callers
+sharing one detection pass). A watch page is several MB — past the 2MB ceiling on
+Next's fetch data cache — so the previous `next: { revalidate: 60 }` was caching
+nothing and re-scraping YouTube on every render of every page, which is both slow
+and enough traffic to earn a bot check. On a detection failure the last known
+answer is kept rather than yanking a running stream off the page.
+
+**Fails closed.** Any unexpected state, or `LIVE_DISABLED=1`, returns `{ live: false }`.
 
 **Why Supabase Storage isn't used for videos:**
 - YouTube handles CDN/caching automatically
@@ -3239,6 +3295,8 @@ SUPABASE_SERVICE_ROLE_KEY=eyJ...
 # YouTube
 YOUTUBE_API_KEY=AIza...
 YOUTUBE_CHANNEL_ID=UCxx...
+YOUTUBE_CHANNEL_HANDLE=DestinyOnlineChurch  # optional; fallback for live detection if the id is missing/stale
+LIVE_DISABLED=                              # set to 1 to force the /live page and banner off air
 
 # Email
 RESEND_API_KEY=re_...
@@ -3385,7 +3443,7 @@ ENABLE_SMART_SEARCH=true
 - `app/page.tsx` — Home (hero, latest sermon, CTAs)
 - `app/sermons/page.tsx` — Sermons (video-first featured message, audio archive)
 - `app/sermons/[id]/page.tsx` — Sermon detail (video, next steps)
-- `app/live/page.tsx` — Livestream (custom glass player / offline state)
+- `app/live/page.tsx` — Livestream (hero + sections, with a client island for the glass player / off-air card)
 - `app/about/page.tsx` — About church
 - `app/beliefs/page.tsx` — Statement of faith
 - `app/kids/page.tsx` — Kids ministry

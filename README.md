@@ -79,6 +79,7 @@ SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
 # YouTube
 YOUTUBE_API_KEY=your_youtube_api_key
 YOUTUBE_CHANNEL_ID=your_youtube_channel_id
+YOUTUBE_CHANNEL_HANDLE=DestinyOnlineChurch  # optional — live-detection fallback if the channel id is missing or stale
 
 # Email
 RESEND_API_KEY=your_resend_api_key

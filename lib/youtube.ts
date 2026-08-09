@@ -49,6 +49,21 @@ export function formatDuration(iso8601: string | undefined): string {
 const API_KEY = process.env.YOUTUBE_API_KEY;
 const CHANNEL_ID = process.env.YOUTUBE_CHANNEL_ID;
 
+// Second way in when YOUTUBE_CHANNEL_ID is unset or stale. The /live URL works
+// off a handle just as well as a channel id, and a missing env var used to make
+// live detection fail silently and permanently.
+const CHANNEL_HANDLE = (process.env.YOUTUBE_CHANNEL_HANDLE ?? "DestinyOnlineChurch").replace(/^@/, "");
+
+export function decodeEntities(text: string | undefined): string {
+  if (!text) return "";
+  return text
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'");
+}
+
 async function detectQuotaExceeded(res: Response): Promise<boolean> {
   if (res.status !== 403) return false;
   try {
@@ -93,13 +108,32 @@ export async function getLatestVideoFromRSS(): Promise<YTVideo | null> {
 
     return {
       id,
-      title: title.replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/&#39;/g, "'"),
+      title: decodeEntities(title),
       description,
       thumbnail: thumbUrl(id),
       publishedAt,
     };
   } catch {
     return null;
+  }
+}
+
+/**
+ * The channel's most recent uploads, newest first, straight from the public RSS
+ * feed. Costs no API quota, which is why live detection leans on it as a source
+ * of candidate video ids when scraping the /live page comes back empty.
+ */
+export async function getRecentVideoIdsFromRSS(channelId: string): Promise<string[]> {
+  try {
+    const res = await fetch(
+      `https://www.youtube.com/feeds/videos.xml?channel_id=${channelId}`,
+      { cache: "no-store" }
+    );
+    if (!res.ok) return [];
+    const xml = await res.text();
+    return Array.from(xml.matchAll(/<yt:videoId>([\w-]{11})<\/yt:videoId>/g)).map((m) => m[1]);
+  } catch {
+    return [];
   }
 }
 
@@ -240,83 +274,381 @@ export async function getPlaylistVideos(playlistId: string, maxResults = 20): Pr
   }
 }
 
+/* ── Livestream detection ─────────────────────────────────────────────────────
+   Answers one question — "are we streaming right now, and on which video?" —
+   for both the /live page and the site-wide "WE ARE LIVE" banner.
+
+   Zero-quota in the common case: it reads YouTube's own /live URL, which
+   resolves to the current broadcast when there is one and to the channel home
+   when there isn't. The Data API is only touched when that read is
+   *inconclusive* (consent wall, bot check, or a page shape we don't recognise),
+   and then only through videos.list at 1 unit — never search?eventType=live,
+   which costs 100 units a call and would burn the whole daily quota inside an
+   hour of 60-second polling.
+
+   Fails closed: anything unexpected returns { live: false }, so a YouTube
+   outage shows the offline page rather than an empty player.
+   ────────────────────────────────────────────────────────────────────────── */
+
 export type LiveStatus = {
   live: boolean;
   videoId: string | null;
   title?: string;
+  /** When the broadcast actually started, if YouTube reports it. */
+  startedAt?: string;
+  /** Start time of a scheduled-but-not-yet-started broadcast. */
+  scheduledFor?: string;
+  /** Which detection layer produced this answer. Surfaced by ?debug=1. */
+  source?: string;
   checkedAt: string;
 };
 
-async function confirmLiveViaApi(videoId: string): Promise<boolean | null> {
-  try {
-    const url = new URL("https://www.googleapis.com/youtube/v3/videos");
-    url.searchParams.set("part", "snippet");
-    url.searchParams.set("id", videoId);
-    url.searchParams.set("key", API_KEY ?? "");
-    const res = await fetch(url.toString(), { next: { revalidate: 60 } });
-    if (!res.ok) {
-      if (await detectQuotaExceeded(res)) return null;
-      return null;
+const YT_PAGE_HEADERS: Record<string, string> = {
+  "User-Agent":
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+  Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+  "Accept-Language": "en-GB,en;q=0.9",
+  // Without these YouTube serves EU/datacentre traffic the "Before you continue"
+  // consent wall instead of the page, and every marker we look for disappears.
+  Cookie: "CONSENT=YES+cb; SOCS=CAI",
+};
+
+/**
+ * Pull a top-level JSON object out of a YouTube page by brace-matching from the
+ * first `{` after `marker`.
+ *
+ * A regex can't do this job. The blobs are ~1MB of nested JSON whose strings
+ * contain braces and escaped quotes, so a non-greedy match truncates and a
+ * greedy one swallows the rest of the document. Worse, the old code matched
+ * `"isLiveNow":…` *anywhere* in the HTML — including the recommendation shelves
+ * that YouTube renders above the player response — so a page for a stream that
+ * really was live could be decided by some unrelated video's flag. That is the
+ * bug that made the page miss live services.
+ */
+function extractJsonAfter(html: string, marker: string): unknown | null {
+  const markerAt = html.indexOf(marker);
+  if (markerAt === -1) return null;
+  const start = html.indexOf("{", markerAt);
+  if (start === -1) return null;
+
+  let depth = 0;
+  let inString = false;
+  let escaped = false;
+
+  for (let i = start; i < html.length; i++) {
+    const ch = html[i];
+    if (inString) {
+      if (escaped) escaped = false;
+      else if (ch === "\\") escaped = true;
+      else if (ch === '"') inString = false;
+      continue;
     }
-    const data = await res.json();
-    const item = data.items?.[0];
-    if (!item) return false;
-    return item.snippet?.liveBroadcastContent === "live";
+    if (ch === '"') inString = true;
+    else if (ch === "{") depth++;
+    else if (ch === "}" && --depth === 0) {
+      try {
+        return JSON.parse(html.slice(start, i + 1));
+      } catch {
+        return null;
+      }
+    }
+  }
+  return null;
+}
+
+type PlayerResponse = {
+  videoDetails?: {
+    videoId?: string;
+    title?: string;
+    /** Streaming right now. */
+    isLive?: boolean;
+    /** Was *ever* a broadcast — true of every past Sunday, so never trust it alone. */
+    isLiveContent?: boolean;
+    isUpcoming?: boolean;
+  };
+  microformat?: {
+    playerMicroformatRenderer?: {
+      title?: { simpleText?: string };
+      liveBroadcastDetails?: {
+        isLiveNow?: boolean;
+        startTimestamp?: string;
+        endTimestamp?: string;
+      };
+    };
+  };
+  playabilityStatus?: {
+    liveStreamability?: {
+      liveStreamabilityRenderer?: {
+        offlineSlate?: {
+          liveStreamOfflineSlateRenderer?: { scheduledStartTime?: string };
+        };
+      };
+    };
+  };
+};
+
+export type PageVerdict =
+  | { kind: "live"; videoId: string; title?: string; startedAt?: string }
+  | { kind: "upcoming"; videoId: string; title?: string; scheduledFor?: string }
+  /** Page read cleanly and there is definitively no broadcast on air. */
+  | { kind: "offline" }
+  /** Saw a video id but couldn't tell — worth a 1-unit API confirm. */
+  | { kind: "candidate"; videoId: string }
+  /** Consent wall, bot check, or an unrecognised shell. Escalate. */
+  | { kind: "unknown" };
+
+/** Exported for tests/unit/live-detection.spec.ts — the parsing is the bit that broke. */
+export function parseLivePage(html: string): PageVerdict {
+  const player = extractJsonAfter(html, "ytInitialPlayerResponse") as PlayerResponse | null;
+  const canonical = html.match(/<link rel="canonical" href="([^"]+)"/)?.[1] ?? "";
+  const canonicalVideoId =
+    canonical.match(/youtube\.com\/watch\?v=([\w-]{11})/)?.[1] ?? null;
+
+  const details = player?.videoDetails;
+  const micro = player?.microformat?.playerMicroformatRenderer;
+  const broadcast = micro?.liveBroadcastDetails;
+  const videoId = details?.videoId ?? canonicalVideoId;
+
+  if (videoId && (details || broadcast)) {
+    const title =
+      decodeEntities(details?.title ?? micro?.title?.simpleText) ||
+      decodeEntities(html.match(/<meta name="title" content="([^"]*)"/)?.[1]) ||
+      undefined;
+
+    if (details?.isLive === true || broadcast?.isLiveNow === true) {
+      return { kind: "live", videoId, title, startedAt: broadcast?.startTimestamp };
+    }
+
+    const scheduledSeconds =
+      player?.playabilityStatus?.liveStreamability?.liveStreamabilityRenderer
+        ?.offlineSlate?.liveStreamOfflineSlateRenderer?.scheduledStartTime;
+    if (details?.isUpcoming === true || scheduledSeconds) {
+      const scheduledFor = scheduledSeconds
+        ? new Date(Number(scheduledSeconds) * 1000).toISOString()
+        : broadcast?.startTimestamp;
+      return { kind: "upcoming", videoId, title, scheduledFor };
+    }
+
+    // A finished broadcast (isLiveContent with an end timestamp) is a clean
+    // "no" — /live only lands here once the stream is over.
+    if (broadcast?.endTimestamp || details?.isLiveContent === false) {
+      return { kind: "offline" };
+    }
+    return { kind: "candidate", videoId };
+  }
+
+  // No broadcast on air: /live redirects to the channel home, whose canonical
+  // is the channel URL. That is a definitive answer, not a failure.
+  if (/youtube\.com\/(?:channel\/UC[\w-]+|@[\w.-]+)\/?$/.test(canonical)) {
+    return { kind: "offline" };
+  }
+
+  if (videoId) return { kind: "candidate", videoId };
+  return { kind: "unknown" };
+}
+
+async function scrapeLivePage(url: string): Promise<PageVerdict> {
+  try {
+    // `cache: "no-store"` on purpose. A watch page is several MB, well past the
+    // 2MB ceiling on Next's fetch data cache, so `next: { revalidate }` was
+    // silently caching nothing and re-scraping YouTube on every single render —
+    // slow, and enough traffic to earn a bot check. Caching is handled by the
+    // in-process memo on getLiveStatus() instead.
+    const res = await fetch(url, { headers: YT_PAGE_HEADERS, cache: "no-store" });
+    if (!res.ok) return { kind: "unknown" };
+    // A bounce to consent.youtube.com means we never saw the real page.
+    if (/consent\.(youtube|google)\./.test(res.url)) return { kind: "unknown" };
+    return parseLivePage(await res.text());
+  } catch {
+    return { kind: "unknown" };
+  }
+}
+
+/**
+ * The endpoint YouTube's own "latest live" embed uses. It is a few KB rather
+ * than a few MB and isn't consent-gated, so it still answers in places the full
+ * channel page doesn't.
+ */
+async function scrapeLiveEmbed(channelId: string): Promise<string | null> {
+  try {
+    const res = await fetch(
+      `https://www.youtube.com/embed/live_stream?channel=${channelId}`,
+      { headers: YT_PAGE_HEADERS, cache: "no-store" }
+    );
+    if (!res.ok) return null;
+    const html = await res.text();
+    return (
+      html.match(/["']video_id["']\s*:\s*["']([\w-]{11})["']/)?.[1] ??
+      html.match(/["']videoId["']\s*:\s*["']([\w-]{11})["']/)?.[1] ??
+      null
+    );
   } catch {
     return null;
   }
 }
 
-export async function getLiveStatus(): Promise<LiveStatus> {
-  const checkedAt = new Date().toISOString();
-  const notLive: LiveStatus = { live: false, videoId: null, checkedAt };
+type ApiLiveHit = { videoId: string; title?: string; startedAt?: string };
 
-  if (process.env.LIVE_DISABLED === "1") return notLive;
-  if (!CHANNEL_ID) return notLive;
-
+/**
+ * Authoritative check on up to 50 candidate ids for one quota unit.
+ * `liveBroadcastContent === "live"` is YouTube's own answer to the question —
+ * no scraping heuristics involved.
+ */
+async function confirmLiveViaApi(videoIds: string[]): Promise<ApiLiveHit | null> {
+  if (!API_KEY || videoIds.length === 0) return null;
   try {
-    const res = await fetch(`https://www.youtube.com/channel/${CHANNEL_ID}/live`, {
-      headers: {
-        "User-Agent":
-          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-        Cookie: "CONSENT=YES+",
-      },
-      next: { revalidate: 60 },
-    });
-    if (!res.ok) return notLive;
-    const html = await res.text();
+    const url = new URL("https://www.googleapis.com/youtube/v3/videos");
+    url.searchParams.set("part", "snippet,liveStreamingDetails");
+    url.searchParams.set("id", videoIds.slice(0, 50).join(","));
+    url.searchParams.set("key", API_KEY);
 
-    const canonicalMatch = html.match(
-      /<link rel="canonical" href="https:\/\/www\.youtube\.com\/watch\?v=([\w-]{11})"/
-    );
-    if (!canonicalMatch) return notLive;
-    const videoId = canonicalMatch[1];
+    const res = await fetch(url.toString(), { cache: "no-store" });
+    if (!res.ok) return null;
 
-    const title = html.match(/<meta name="title" content="([^"]*)"/)?.[1];
-    const decodedTitle = title
-      ?.replace(/&amp;/g, "&")
-      .replace(/&lt;/g, "<")
-      .replace(/&gt;/g, ">")
-      .replace(/&quot;/g, '"')
-      .replace(/&#39;/g, "'");
-
-    const isLiveNowMatch = html.match(/"isLiveNow"\s*:\s*(true|false)/);
-
-    if (isLiveNowMatch) {
-      const isLiveNow = isLiveNowMatch[1] === "true";
-      if (!isLiveNow) return notLive;
-      return { live: true, videoId, title: decodedTitle, checkedAt };
+    const data = await res.json();
+    type Item = {
+      id?: string;
+      snippet?: { title?: string; liveBroadcastContent?: string };
+      liveStreamingDetails?: { actualStartTime?: string; actualEndTime?: string };
+    };
+    for (const item of (data.items ?? []) as Item[]) {
+      if (!item.id) continue;
+      if (item.snippet?.liveBroadcastContent !== "live") continue;
+      // A stream with an end time has finished, whatever the snippet says.
+      if (item.liveStreamingDetails?.actualEndTime) continue;
+      return {
+        videoId: item.id,
+        title: item.snippet?.title,
+        startedAt: item.liveStreamingDetails?.actualStartTime,
+      };
     }
-
-    // Ambiguous scrape result — confirm with a 1-quota-unit API call.
-    const confirmed = await confirmLiveViaApi(videoId);
-    if (confirmed === true) {
-      return { live: true, videoId, title: decodedTitle, checkedAt };
-    }
-    return notLive;
+    return null;
   } catch {
-    return notLive;
+    return null;
   }
+}
+
+async function detectLiveStatus(): Promise<LiveStatus> {
+  const checkedAt = new Date().toISOString();
+  const offline = (source: string, extra?: Partial<LiveStatus>): LiveStatus => ({
+    live: false,
+    videoId: null,
+    checkedAt,
+    source,
+    ...extra,
+  });
+
+  if (process.env.LIVE_DISABLED === "1") return offline("disabled");
+  if (!CHANNEL_ID && !CHANNEL_HANDLE) return offline("no-channel");
+
+  const pages = [
+    CHANNEL_ID ? `https://www.youtube.com/channel/${CHANNEL_ID}/live` : null,
+    CHANNEL_HANDLE ? `https://www.youtube.com/@${CHANNEL_HANDLE}/live` : null,
+  ].filter((u): u is string => Boolean(u));
+
+  const candidates: string[] = [];
+  let sawDefiniteOffline = false;
+  let upcoming: LiveStatus | null = null;
+
+  for (const url of pages) {
+    const verdict = await scrapeLivePage(url);
+
+    if (verdict.kind === "live") {
+      return {
+        live: true,
+        videoId: verdict.videoId,
+        title: verdict.title,
+        startedAt: verdict.startedAt,
+        checkedAt,
+        source: "channel-page",
+      };
+    }
+    if (verdict.kind === "upcoming") {
+      upcoming ??= offline("channel-page", {
+        scheduledFor: verdict.scheduledFor,
+        title: verdict.title,
+      });
+      sawDefiniteOffline = true;
+    }
+    if (verdict.kind === "offline") sawDefiniteOffline = true;
+    if (verdict.kind === "candidate" && !candidates.includes(verdict.videoId)) {
+      candidates.push(verdict.videoId);
+    }
+  }
+
+  // A clean read said no. Trust it and spend nothing — this is the path taken
+  // every minute of every day the church isn't streaming.
+  if (sawDefiniteOffline && candidates.length === 0) {
+    return upcoming ?? offline("channel-page");
+  }
+
+  // Otherwise the scrape was inconclusive. Try the cheap second opinion first…
+  if (CHANNEL_ID) {
+    const embedId = await scrapeLiveEmbed(CHANNEL_ID);
+    if (embedId && !candidates.includes(embedId)) candidates.push(embedId);
+
+    // …then the last few uploads, where a stream we were redirected away from
+    // still shows up. Both are free; only the confirm below costs quota.
+    if (candidates.length === 0) {
+      const recent = await getRecentVideoIdsFromRSS(CHANNEL_ID);
+      candidates.push(...recent.slice(0, 5));
+    }
+  }
+
+  const hit = await confirmLiveViaApi(candidates);
+  if (hit) {
+    return {
+      live: true,
+      videoId: hit.videoId,
+      title: hit.title,
+      startedAt: hit.startedAt,
+      checkedAt,
+      source: "videos.list",
+    };
+  }
+
+  return upcoming ?? offline(candidates.length ? "confirmed-offline" : "no-signal");
+}
+
+/* Cached in-process rather than through Next's fetch cache: the underlying
+   pages are too big for it, and one memo covers the root layout's banner check
+   and the /live page render in the same request. Kept short so the banner and
+   the player flip over within a minute of the stream starting or ending. */
+const LIVE_TTL_MS = 30_000;
+const OFFLINE_TTL_MS = 60_000;
+
+let liveCache: { value: LiveStatus; expiresAt: number } | null = null;
+let liveInFlight: Promise<LiveStatus> | null = null;
+
+export async function getLiveStatus(): Promise<LiveStatus> {
+  if (liveCache && liveCache.expiresAt > Date.now()) return liveCache.value;
+  // Concurrent callers (layout + page) share one detection pass.
+  if (liveInFlight) return liveInFlight;
+
+  liveInFlight = detectLiveStatus()
+    .then((value) => {
+      liveCache = {
+        value,
+        expiresAt: Date.now() + (value.live ? LIVE_TTL_MS : OFFLINE_TTL_MS),
+      };
+      return value;
+    })
+    .catch(
+      (): LiveStatus =>
+        // Keep the last known answer over a transient failure rather than
+        // yanking a running stream off the page.
+        liveCache?.value ?? {
+          live: false,
+          videoId: null,
+          checkedAt: new Date().toISOString(),
+          source: "error",
+        }
+    )
+    .finally(() => {
+      liveInFlight = null;
+    });
+
+  return liveInFlight;
 }
 
 export async function getVideo(id: string): Promise<YTVideo | null> {

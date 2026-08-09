@@ -3,6 +3,7 @@ import Image from "next/image";
 import { isYouTubeQuotaExceeded } from "@/lib/youtube";
 import ReportBugLink from "@/components/report-bug/ReportBugLink";
 import FooterLinkGroup from "@/components/FooterLinkGroup";
+import { LocaleSelector } from "gt-next";
 
 const connectLinks = [
   { label: "New Here?", href: "/new-here" },
@@ -88,6 +89,7 @@ export default async function ChurchFooter() {
             </Link>
           </span>
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-6">
+            <LocaleSelector />
             <ReportBugLink />
             <span>
               Telephone:{" "}

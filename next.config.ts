@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import { withGTConfig } from "gt-next/config";
 
 const nextConfig: NextConfig = {
   // Shared workspace package ships raw TypeScript; Next must transpile it.
@@ -155,4 +156,4 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+export default withGTConfig(nextConfig);

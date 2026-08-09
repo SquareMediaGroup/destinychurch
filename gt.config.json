@@ -1,0 +1,9 @@
+{
+  "defaultLocale": "en-GB",
+  "locales": ["pl", "ro", "fa"],
+  "files": {
+    "gt": {
+      "output": "public/_gt/[locale].json"
+    }
+  }
+}

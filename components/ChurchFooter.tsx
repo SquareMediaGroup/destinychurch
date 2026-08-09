@@ -3,7 +3,7 @@ import Image from "next/image";
 import { isYouTubeQuotaExceeded } from "@/lib/youtube";
 import ReportBugLink from "@/components/report-bug/ReportBugLink";
 import FooterLinkGroup from "@/components/FooterLinkGroup";
-import { LocaleSelector } from "gt-next";
+import { LocaleSelector, T } from "gt-next";
 
 const connectLinks = [
   { label: "New Here?", href: "/new-here" },
@@ -58,11 +58,13 @@ export default async function ChurchFooter() {
                 />
               </div>
             </Link>
-            <p className="max-w-[220px] text-sm text-white/70">
-              Destiny Church Tees Valley is a multi-cultural church where all
-              can find a place to belong and thrive. We&apos;d love to welcome
-              you through our doors!
-            </p>
+            <T>
+              <p className="max-w-[220px] text-sm text-white/70">
+                Destiny Church Tees Valley is a multi-cultural church where all
+                can find a place to belong and thrive. We&apos;d love to welcome
+                you through our doors!
+              </p>
+            </T>
             <div className="text-sm text-white/70">
               <p className="font-bold text-white/90">Destiny Centre</p>
               <p>Norton Road</p>

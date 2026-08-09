@@ -775,6 +775,113 @@ body {
   }
 }
 
+/* The homepage welcome overlay — see components/WelcomeOverlay.tsx.
+   Same card anatomy as /links and /nfc, scoped here because the overlay is
+   mounted from the root layout rather than by a page of its own. */
+.welcome-panel {
+  background-color: #ffffff;
+  background-image:
+    radial-gradient(110% 60% at 100% -5%, rgba(245, 128, 33, 0.08), transparent 60%),
+    radial-gradient(90% 50% at -5% 100%, rgba(8, 87, 186, 0.05), transparent 55%);
+}
+
+@keyframes welcome-rise {
+  from { opacity: 0; transform: translateY(18px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes welcome-draw {
+  from { transform: scaleX(0); }
+  to   { transform: scaleX(1); }
+}
+
+.welcome-reveal {
+  opacity: 0;
+  animation: welcome-rise 0.55s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.welcome-rule {
+  transform-origin: left;
+  animation: welcome-draw 0.7s cubic-bezier(0.16, 1, 0.3, 1) 0.15s forwards;
+}
+
+.welcome-card {
+  transition:
+    transform 0.45s cubic-bezier(0.16, 1, 0.3, 1),
+    box-shadow 0.45s ease,
+    border-color 0.45s ease;
+}
+
+.welcome-card .welcome-fill {
+  transform: scaleY(0);
+  transform-origin: bottom;
+  transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.welcome-card .welcome-num,
+.welcome-card .welcome-title,
+.welcome-card .welcome-blurb,
+.welcome-card .welcome-arrow,
+.welcome-card .welcome-icon {
+  transition:
+    color 0.4s ease,
+    transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* The lifted-and-filled state, driven by keyboard focus. */
+.welcome-card:focus-visible {
+  transform: translateY(-4px);
+  border-color: #f58021;
+  box-shadow: 0 20px 40px -18px rgba(245, 128, 33, 0.45);
+}
+.welcome-card:focus-visible .welcome-fill { transform: scaleY(1); }
+.welcome-card:focus-visible .welcome-num { color: rgba(255, 255, 255, 0.85); }
+.welcome-card:focus-visible .welcome-blurb { color: rgba(255, 255, 255, 0.85); }
+.welcome-card:focus-visible .welcome-title { color: #ffffff; }
+.welcome-card:focus-visible .welcome-arrow {
+  color: #ffffff;
+  transform: translateX(5px);
+}
+.welcome-card:focus-visible .welcome-icon {
+  color: #ffffff;
+  transform: rotate(-4deg) scale(1.05);
+}
+
+/* Same state on hover, but only where there is a real pointer. The /links and
+   /nfc grids don't need this guard — they are pages you scroll past. These cards
+   are in a modal you tap and dismiss, and on touch :hover sticks to the last
+   thing tapped, which would leave a card frozen orange behind the closing panel. */
+@media (hover: hover) {
+  .welcome-card:hover {
+    transform: translateY(-4px);
+    border-color: #f58021;
+    box-shadow: 0 20px 40px -18px rgba(245, 128, 33, 0.45);
+  }
+  .welcome-card:hover .welcome-fill { transform: scaleY(1); }
+  .welcome-card:hover .welcome-num { color: rgba(255, 255, 255, 0.85); }
+  .welcome-card:hover .welcome-blurb { color: rgba(255, 255, 255, 0.85); }
+  .welcome-card:hover .welcome-title { color: #ffffff; }
+  .welcome-card:hover .welcome-arrow {
+    color: #ffffff;
+    transform: translateX(5px);
+  }
+  .welcome-card:hover .welcome-icon {
+    color: #ffffff;
+    transform: rotate(-4deg) scale(1.05);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .welcome-reveal,
+  .welcome-rule {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+  .welcome-card,
+  .welcome-card * { transition: none !important; }
+}
+
 .animate-slide-up {
   animation: slide-up 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }

@@ -223,6 +223,7 @@ destinychurch/
 │   ├── AnalyticsGate.tsx          # Conditional analytics loading
 │   ├── SiteBanner.tsx             # Announcement banner (from DB)
 │   ├── SitePopup.tsx              # Modal pop-up (from DB)
+│   ├── WelcomeOverlay.tsx         # Homepage "what would you like to do?" overlay
 │   ├── FloatingSmartSearch.tsx    # AI search widget (tool-calling chat)
 │   ├── smartSearch/               # Smart Search result cards (products, weather, maps, web)
 │   ├── LiveBanner.tsx             # "WE ARE LIVE" banner bar
@@ -270,6 +271,8 @@ destinychurch/
 │   ├── courses.ts                 # Alpha/Recovery/Bible Course/CAP course definitions
 │   ├── courseEvents.ts            # alpha_events type registry — banner surfaces + admin pages
 │   ├── cn.ts                      # className joiner (no Tailwind conflict resolution)
+│   ├── welcomeOverlay.ts          # Homepage overlay options + decideWelcome() (pure, unit-tested)
+│   ├── popupGate.ts               # Which popup owns the screen (welcome > event > site)
 │   ├── openaiClient.ts            # OpenAI client + SMART_SEARCH_MODEL constant
 │   ├── siteKnowledge.ts           # AI search knowledge base
 │   ├── serviceStatus.ts           # Smart Search health / kill-switch state (service_status table)
@@ -1222,6 +1225,7 @@ export default async function RootLayout({ children }) {
             <ChurchFooter />
           </div>
           <AnalyticsGate />        {/* Conditionally load Vercel Analytics */}
+          <WelcomeOverlay />       {/* Homepage-only, once per session; outranks both popups */}
           <SitePopup popup={popup} />
           {smartSearchEnabled && <FloatingSmartSearch />}  {/* AI chat widget */}
         </Providers>
@@ -1562,6 +1566,37 @@ Once consent is in, `ChurchSuiteEmbed` and `MediaEmbed` cover the iframe with `u
   - Dismiss button
   - Centered on screen
 
+#### `WelcomeOverlay.tsx`
+- **What:** "Welcome to Destiny — what would you like to do?" The homepage front door: the five
+  things nearly everyone arrives to do, in one place, instead of spread across a hero CTA, the
+  header, two anchors inside `/whats-on` and a footer link group.
+- **Data:** none. The five options are a hardcoded `WELCOME_OPTIONS` array in `lib/welcomeOverlay.ts`
+  — Plan a Visit (`/visit`), Connect Card (`/connect-card`), Give (`/give`), What's On
+  (`/whats-on#events`), Courses (`/whats-on#courses`).
+- **When it opens:** `sessionStorage` key `dc-welcome-seen` — once per browser session, not once
+  ever. Only on `/`, only when `/` was the session's *entry* page, and only after the cookie banner
+  has been answered (it sits at `z-[200]` and would otherwise bury the `z-50` consent bar). Opens on
+  a 900 ms delay so the hero lands first, and marks itself seen on open rather than on close.
+- **Why entry-page-only:** someone who landed on `/give` from search already has intent. That
+  session is suppressed outright, including if they later navigate to the homepage.
+- **SEO:** deliberately invisible to the indexed page. It is a client component that renders `null`
+  until an effect opens it, so **nothing** reaches the SSR HTML; it portals to `document.body`
+  outside `<main>`, carries `data-nosnippet`, adds no route, metadata or sitemap entry, and every
+  destination is a route that was already in the sitemap. (Googlebot executes JS, so it can still
+  *render* the overlay — what this guarantees is that it contributes nothing to the indexed HTML or
+  to snippets, and that a delayed, fully-dismissible overlay stays outside Google's intrusive-
+  interstitial definition.)
+- **A11y:** full dialog semantics, modelled on `nfc/NfcTileModal.tsx` rather than `PopupShell` —
+  `role="dialog" aria-modal aria-labelledby`, focus to the close button on open, focus restored on
+  close, Tab trapped inside, Escape and backdrop click to dismiss, body scroll locked. The skip is a
+  full-width **"Just browsing, thanks"** button, not a hidden X.
+- **Decision logic:** `decideWelcome()` in `lib/welcomeOverlay.ts` is a pure function returning
+  `show | suppress | wait`, covered by `tests/unit/welcome-overlay.spec.ts`.
+- **Styling:** `.welcome-*` in `app/globals.css`, reusing `.nfc-modal-backdrop` / `.nfc-modal-panel`
+  for the entrance. Same card anatomy as `/links` and `/nfc` (number, Material icon, orange hover
+  sweep), except the hover rules are wrapped in `@media (hover: hover)` — those are pages you scroll
+  past, this is a modal you tap and dismiss, and on touch `:hover` would stick to the tapped card.
+
 #### `shop/ShopHero.tsx`
 - **What:** Dynamic, auto-rotating hero at the top of `/shop`
 - **Data:** `shop_hero_slides` table (via `getActiveShopHeroSlides()`; passed in as a prop from the server component)
@@ -1734,6 +1769,13 @@ after load** (`setTimeout(..., 7000)`) before showing, so a visitor sees the pag
 covers it. **An active event popup suppresses the site popup**: `app/layout.tsx` passes
 `null` to `<SitePopup>` whenever `getActiveEventPopup()` resolves, so only ever one modal shows and
 there is no client-side coordination to get wrong.
+
+**Popup precedence is `WelcomeOverlay` > `EventPopup` > `SitePopup`.** The second half of that chain
+is the server-side `null` above. The first half cannot be: whether the welcome overlay opens depends
+on the path and on `sessionStorage`, which only the client knows. So `lib/popupGate.ts` holds a
+one-field zustand store — `welcomeOpen` — that `WelcomeOverlay` raises while it owns the screen, and
+that both promo popups check before arming their 7-second timer. The flag is in their effect deps, so
+the timer starts when the overlay closes: the announcement still lands, just after.
 
 #### Admin Components (`components/admin/*`)
 - `AdminSidebar.tsx` — Admin navigation menu
@@ -2547,6 +2589,23 @@ the gitignored `CLAUDE.local.md`.
 - `lib/useIsDesktop.ts` — the ≥1024px breakpoint, read **synchronously** via `useSyncExternalStore`. The admin editors branch their whole layout on this, and the obvious `useState(false)` + effect version mounted the mobile tree first and then swapped to a different one, silently destroying and recreating the TipTap instance (and its undo history) on every open. `getServerSnapshot` returns `false` so SSR and the first client paint agree.
 - `lib/useKeyboardInset.ts` — how many pixels the on-screen keyboard covers at the bottom of the window, from `visualViewport`. `position: fixed` resolves against the *layout* viewport, which iOS Safari does not shrink for the keyboard, so bottom-anchored sheets and toolbars would otherwise sit underneath it. Thresholded at 120px and rounded: URL-bar collapse and pinch-zoom also move the visual viewport, and an unrounded value hands `useSyncExternalStore` a new snapshot on every scroll frame.
 - `lib/useIsClient.ts` — false on the server and the hydrating render, true after. Guards `createPortal(…, document.body)`. `useSyncExternalStore` rather than `useState` + effect because the latter is a synchronous setState inside an effect, which the React lint rules reject as a cascading render.
+
+---
+
+### `lib/welcomeOverlay.ts` + `lib/popupGate.ts`
+
+The two halves of the homepage welcome overlay (see `WelcomeOverlay.tsx` under Components).
+
+`lib/welcomeOverlay.ts` holds `WELCOME_OPTIONS` — the five destinations — and `decideWelcome()`,
+which returns `show | suppress | wait` from four inputs: the current path, the session's entry path,
+the `dc-welcome-seen` marker, and whether cookie consent has been answered. It is kept free of React
+and of any import so the edge cases (deep-link entry, an unanswered cookie banner, a session that has
+already seen it) are plain data and testable without a browser — `tests/unit/welcome-overlay.spec.ts`.
+`WELCOME_VERSION` is the marker's value: bump it when the options change and open sessions re-see it.
+
+`lib/popupGate.ts` is a one-field zustand store, `welcomeOpen`, that resolves popup precedence on the
+client. See `PopupShell.tsx` under Components for why the server-side `null` trick can't cover this
+case.
 
 ---
 

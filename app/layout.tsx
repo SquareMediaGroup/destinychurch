@@ -12,6 +12,7 @@ import SiteBanner from "@/components/SiteBanner";
 import LiveBanner from "@/components/LiveBanner";
 import SitePopup from "@/components/SitePopup";
 import EventPopup from "@/components/events/EventPopup";
+import WelcomeOverlay from "@/components/WelcomeOverlay";
 import { getActiveEventPopup } from "@/lib/events.server";
 import FloatingSmartSearch from "@/components/FloatingSmartSearch";
 import GlassBloomTracker from "@/components/GlassBloomTracker";
@@ -430,7 +431,12 @@ export default async function RootLayout({
           <GlassBloomTracker />
           {/* An active event popup suppresses the generic one — passing null
               here is the whole mechanism, so only ever one modal shows and
-              there's no client-side coordination to get wrong. */}
+              there's no client-side coordination to get wrong.
+
+              The welcome overlay sits above both, but it can't be resolved here:
+              it depends on the path and on sessionStorage. It raises a flag in
+              lib/popupGate.ts instead, which these two check before arming. */}
+          <WelcomeOverlay />
           <SitePopup popup={eventPopup ? null : popup} />
           <EventPopup popup={eventPopup} />
           {smartSearchEnabled && <FloatingSmartSearch />}

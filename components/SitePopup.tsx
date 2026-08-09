@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import PopupShell from "@/components/PopupShell";
+import { usePopupGate } from "@/lib/popupGate";
 
 interface PopupData {
   active: boolean;
@@ -27,14 +28,19 @@ const STORAGE_KEY = "dc-popup-dismissed";
  * mid-service, and an announcement landing on top of one is the one failure it
  * can't afford. The layout is a server component and can't know the path, so
  * the check happens here with usePathname, as EventPopup does.
+ *
+ * Also held off while the homepage welcome overlay is open — see lib/popupGate.ts.
+ * The timer arms once it closes, so the announcement still lands, just after.
  */
 export default function SitePopup({ popup }: { popup: PopupData | null }) {
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
+  const welcomeOpen = usePopupGate((s) => s.welcomeOpen);
   const excluded = pathname.startsWith("/nfc");
 
   useEffect(() => {
     if (excluded) return;
+    if (welcomeOpen) return;
     if (!popup || !popup.active) return;
     const hasContent = !!popup.title || !!popup.body || !!popup.image_url;
     if (!hasContent) return;
@@ -52,7 +58,7 @@ export default function SitePopup({ popup }: { popup: PopupData | null }) {
 
     const t = window.setTimeout(() => setOpen(true), 7000);
     return () => window.clearTimeout(t);
-  }, [popup, excluded]);
+  }, [popup, excluded, welcomeOpen]);
 
   function close() {
     setOpen(false);

@@ -246,6 +246,7 @@ destinychurch/
 │   ├── alpha/                     # Alpha course components
 │   ├── AnimateIn.tsx              # Scroll-triggered animations
 │   ├── ChurchSuiteEmbed.tsx       # ChurchSuite integration (events)
+│   ├── ui/EmbedLoadingOverlay.tsx # Spinner + escalating copy over a loading iframe
 │   └── ...
 │
 ├── lib/                           # Utility functions and helpers
@@ -256,6 +257,7 @@ destinychurch/
 │   ├── youtube.ts                 # YouTube API client
 │   ├── smartSearch.ts             # AI search logic (parseAnswer, fallbacks)
 │   ├── smartSearch/tools.ts       # Smart Search tool-calling tools (products, weather, maps, web)
+│   ├── embedLoading.ts            # Stage timings for the embed loading overlay
 │   ├── pageContent.ts             # Dynamic page editing
 │   ├── posts.ts                   # Dynamic posts/pages
 │   ├── training.ts                # Training courses
@@ -1533,6 +1535,16 @@ buttons lacked.
 #### Media-gated embeds (`consent?.media`)
 `ChurchSuiteEmbed.tsx`, `live/LivePlayer.tsx`, `sermons/SermonPlayer.tsx` and `missions/MediaEmbed.tsx` all gate their third-party `<iframe>` on `consent?.media === true`. Until media cookies are accepted they render an in-place placeholder ("Cookies required to load this form/video") with an **Accept all cookies** action wired to the same `useCookieConsent` context, so a visitor can opt in without scrolling back to the banner.
 
+Once consent is in, `ChurchSuiteEmbed` and `MediaEmbed` cover the iframe with `ui/EmbedLoadingOverlay` until it fires `onLoad` — see below.
+
+#### `ui/EmbedLoadingOverlay.tsx`
+- **What:** The spinner-and-copy layer over a third-party iframe that hasn't painted yet. Used by `ChurchSuiteEmbed` (forms, light tone) and `MediaEmbed` (video, dark tone).
+- **Why it escalates:** a cross-origin iframe gives us exactly one signal, `onLoad` — there is no progress to report. A single static "Loading" sitting there past a few seconds reads as *broken* rather than slow, and the visitor closes the modal. On `/give`, `/connect` and the `/nfc` tiles that is the whole conversion. So the line changes as time passes: movement is what says something is still happening.
+- **Stages:** `Loading` → `Still loading` (3s) → `Taking longer than usual` (8s) → `Thanks for waiting` (14s), the last one alongside an **Open the form in a new tab** link. Timings live in `lib/embedLoading.ts` and are pinned by `tests/unit/embed-loading.spec.ts`.
+- **The copy is true at the point it appears**, deliberately. Invented machinery ("Connecting to secure server", "Encrypting your details") holds attention *because* it claims things the site is not doing, and half these embeds are the giving form — being caught inventing a security step on a donation page costs more than the bounce it saves. The escalation does the work without the claim.
+- **Props:** `loaded` (drives the fade), `tone` (`light` | `dark`), `fallbackHref` / `fallbackLabel` (omit to leave the escape hatch out — worth having for a form the visitor came to fill in, less so for a video).
+- **A11y:** the message is a `role="status"` live region — "taking longer than usual" is the one thing a screen-reader user cannot otherwise get from an iframe that hasn't painted. The spinner is `aria-hidden`. On load the overlay fades and *then* flips to `visibility: hidden` (stepped transition in `globals.css`), which takes the stale copy out of the accessibility tree and the fallback link out of the tab order without cutting the fade short.
+
 #### `SiteBanner.tsx`
 - **What:** Top-of-page announcement banner
 - **Data:** `site_banner` table (fetched in root layout)
@@ -2535,6 +2547,21 @@ the gitignored `CLAUDE.local.md`.
 - `lib/useIsDesktop.ts` — the ≥1024px breakpoint, read **synchronously** via `useSyncExternalStore`. The admin editors branch their whole layout on this, and the obvious `useState(false)` + effect version mounted the mobile tree first and then swapped to a different one, silently destroying and recreating the TipTap instance (and its undo history) on every open. `getServerSnapshot` returns `false` so SSR and the first client paint agree.
 - `lib/useKeyboardInset.ts` — how many pixels the on-screen keyboard covers at the bottom of the window, from `visualViewport`. `position: fixed` resolves against the *layout* viewport, which iOS Safari does not shrink for the keyboard, so bottom-anchored sheets and toolbars would otherwise sit underneath it. Thresholded at 120px and rounded: URL-bar collapse and pinch-zoom also move the visual viewport, and an unrounded value hands `useSyncExternalStore` a new snapshot on every scroll frame.
 - `lib/useIsClient.ts` — false on the server and the hydrating render, true after. Guards `createPortal(…, document.body)`. `useSyncExternalStore` rather than `useState` + effect because the latter is a synchronous setState inside an effect, which the React lint rules reject as a cascading render.
+
+---
+
+### `lib/embedLoading.ts`
+
+The stage timings behind `ui/EmbedLoadingOverlay` (see Components), kept apart
+from the component so the boundaries are plain data and can be unit-tested
+without a browser — `tests/unit/embed-loading.spec.ts`.
+
+`stageIndexAt(elapsed)` picks the line to show, and `msUntilNextStage(elapsed)`
+says how long until the next one. Both derive from elapsed milliseconds rather
+than counting ticks, because browsers clamp timers in a backgrounded tab: a
+counter would walk through every stage it slept through, one per wake-up,
+whereas this lands straight on the right line. `msUntilNextStage` returns
+`null` on the last stage, which is how the component knows to stop scheduling.
 
 ---
 

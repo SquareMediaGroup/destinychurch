@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import EmbedLoadingOverlay from "@/components/ui/EmbedLoadingOverlay";
 import { useCookieConsent } from "@/lib/cookieConsent";
 
 interface Props {
@@ -82,24 +83,13 @@ export default function ChurchSuiteEmbed({
 
   return (
     <div className={`relative overflow-hidden ${className ?? ""}`} style={sizeStyle}>
-      <div
-        aria-hidden="true"
-        className={`churchsuite-loading-overlay${loaded ? " is-loaded" : ""}`}
-      >
-        <div className="churchsuite-spinner" />
-        <p
-          style={{
-            marginTop: 14,
-            fontSize: 10,
-            fontWeight: 700,
-            textTransform: "uppercase",
-            letterSpacing: "0.18em",
-            color: "rgba(54, 63, 72, 0.35)",
-          }}
-        >
-          Loading
-        </p>
-      </div>
+      <EmbedLoadingOverlay
+        loaded={loaded}
+        // A form is what the visitor came for, so a slow one gets a way
+        // through: ChurchSuite serves these URLs as full pages too.
+        fallbackHref={src}
+        fallbackLabel="Open the form in a new tab"
+      />
       <iframe
         src={src}
         className="w-full"

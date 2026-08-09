@@ -675,20 +675,28 @@ body {
   .ehap-card:hover .ehap-card-desc     { max-height: 10rem; opacity: 1; }
 }
 
-@keyframes churchsuite-spin {
+/* The loading layer over a third-party iframe — see
+   components/ui/EmbedLoadingOverlay.tsx. Named for embeds generally rather
+   than ChurchSuite: the video embeds use it too, on the dark tone. */
+@keyframes embed-spin {
   to { transform: rotate(360deg); }
 }
 
-.churchsuite-spinner {
+@keyframes embed-loading-message-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.embed-spinner {
   width: 44px;
   height: 44px;
   border-radius: 50%;
   border: 3px solid rgba(245, 128, 33, 0.18);
   border-top-color: #f58021;
-  animation: churchsuite-spin 0.75s linear infinite;
+  animation: embed-spin 0.75s linear infinite;
 }
 
-.churchsuite-loading-overlay {
+.embed-loading-overlay {
   position: absolute;
   inset: 0;
   z-index: 10;
@@ -696,14 +704,48 @@ body {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  background: #ffffff;
-  transition: opacity 0.4s ease;
+  padding: 0 1.5rem;
+  text-align: center;
+  /* visibility is stepped, not eased, and only once the fade has finished:
+     that takes the stale copy out of the accessibility tree and the fallback
+     link out of the tab order, without cutting the fade short. */
+  transition: opacity 0.4s ease, visibility 0s linear 0.4s;
 }
 
-.churchsuite-loading-overlay.is-loaded {
+.embed-loading-overlay--light { background: #ffffff; }
+.embed-loading-overlay--dark  { background: #000000; }
+
+.embed-loading-overlay.is-loaded {
   opacity: 0;
+  visibility: hidden;
   pointer-events: none;
 }
+
+.embed-loading-message {
+  margin-top: 14px;
+  max-width: 18rem;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1.5;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  animation: embed-loading-message-in 0.35s ease both;
+}
+
+.embed-loading-overlay--light .embed-loading-message { color: rgba(54, 63, 72, 0.35); }
+.embed-loading-overlay--dark  .embed-loading-message { color: rgba(255, 255, 255, 0.4); }
+
+.embed-loading-fallback {
+  margin-top: 10px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #f58021;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  animation: embed-loading-message-in 0.35s ease both;
+}
+
+.embed-loading-fallback:hover { filter: brightness(1.1); }
 
 /* Entrance for the /nfc tile popup — see components/nfc/NfcTileModal.tsx. */
 @keyframes nfc-modal-backdrop-in {

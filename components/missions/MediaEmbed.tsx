@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import EmbedLoadingOverlay from "@/components/ui/EmbedLoadingOverlay";
 import { useCookieConsent } from "@/lib/cookieConsent";
 
 interface Props {
@@ -14,6 +15,7 @@ interface Props {
 export default function MediaEmbed({ src, title, thumbnail }: Props) {
   const { consent, allowAll, savePreferences } = useCookieConsent();
   const [mounted, setMounted] = useState(false);
+  const [loaded, setLoaded] = useState(false);
 
   useEffect(() => { setMounted(true); }, []);
 
@@ -63,13 +65,17 @@ export default function MediaEmbed({ src, title, thumbnail }: Props) {
   }
 
   return (
-    <div className="aspect-video w-full overflow-hidden rounded-2xl bg-black">
+    <div className="relative aspect-video w-full overflow-hidden rounded-2xl bg-black">
+      {/* No new-tab fallback here: a slow video is a wait, not a blocked
+          errand, and YouTube's own player is what would open anyway. */}
+      <EmbedLoadingOverlay loaded={loaded} tone="dark" />
       <iframe
         src={src}
         title={title}
         allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
         allowFullScreen
         className="h-full w-full"
+        onLoad={() => setLoaded(true)}
       />
     </div>
   );

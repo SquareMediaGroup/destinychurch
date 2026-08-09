@@ -24,8 +24,6 @@ import BannerSpacer from "@/components/BannerSpacer";
 import { createServiceClient } from "@/utils/supabase/service";
 import { unstable_noStore as noStore } from "next/cache";
 import { SpeedInsights } from "@vercel/speed-insights/next";
-import { GTProvider } from "gt-next";
-import { getLocale, getLocaleDirection } from "gt-next/server";
 
 const roboto = Roboto({
   variable: "--font-roboto",
@@ -247,13 +245,9 @@ export default async function RootLayout({
   ]);
   const smartSearchEnabled = await isSmartSearchEnabled();
   const liveStatus = await getLiveStatus();
-  // Farsi is right-to-left, so dir has to follow the locale rather than being
-  // hardcoded — getLocaleDirection returns "rtl" for fa and "ltr" for en/pl/ro.
-  const locale = await getLocale();
-  const dir = await getLocaleDirection(locale);
 
   return (
-    <html lang={locale} dir={dir} suppressHydrationWarning>
+    <html lang="en" suppressHydrationWarning>
       <head>
         <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,500,0,0" />
         <script
@@ -414,7 +408,6 @@ export default async function RootLayout({
             <feBlend in="rg" in2="onlyB" mode="screen" />
           </filter>
         </svg>
-        <GTProvider>
         <Providers banner={banner} live={liveStatus}>
           <LiveBanner />
           <SiteBanner />
@@ -448,7 +441,6 @@ export default async function RootLayout({
           <EventPopup popup={eventPopup} />
           {smartSearchEnabled && <FloatingSmartSearch />}
         </Providers>
-        </GTProvider>
         <SpeedInsights />
       </body>
     </html>

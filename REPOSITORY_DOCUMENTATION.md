@@ -3300,45 +3300,6 @@ run — the admin login form (protects password-guessing) and the Smart Search c
 
 ## Configuration
 
-### Internationalisation (`gt-next`)
-
-Translation is handled by [General Translation](https://generaltranslation.com)
-(`gt-next` runtime + the `gt` CLI). Setup lives in three places:
-
-| File | Role |
-| --- | --- |
-| `gt.config.json` | Source locale (`en-GB`) and targets (`pl`, `ro`, `fa`) |
-| `loadTranslations.ts` | Tells `gt-next` to read `public/_gt/[locale].json` |
-| `next.config.ts` | Exports `withGTConfig(nextConfig)`, which wires the above at build time |
-
-**Why these locales.** Polish, Romanian and Farsi are the largest non-English
-first languages in the congregation. Farsi is **right-to-left**, which is why
-`app/layout.tsx` derives *both* attributes from the active locale rather than
-hardcoding `lang="en"`:
-
-```tsx
-const locale = await getLocale();
-const dir = await getLocaleDirection(locale); // "rtl" for fa, "ltr" otherwise
-return <html lang={locale} dir={dir}>
-```
-
-`getLocale`/`getLocaleDirection` come from `gt-next/server` — the root layout is
-`async`, so the `useLocale()` hook shown in the GT quickstart cannot be used here.
-
-**Locale selection is cookie-based** (`generaltranslation.locale`), not path-based.
-This was deliberate: path-based routing would collide with the `shop.destinytees.uk`
-rewrites in `next.config.ts` and with the admin rules in `middleware.ts`. The
-`<LocaleSelector />` in `ChurchFooter` sets that cookie.
-
-**Generated files.** `public/_gt/*.json` is produced by `npx gt generate`
-(no credentials) or `npx gt translate` (with credentials) and is **gitignored**.
-The app fails to compile if they are absent, so run one of those after a fresh
-clone.
-
-> **Note:** `withGTConfig` must not be applied from an npm *workspace root*.
-> This repo is both the workspace root and the Next.js app, so the GT setup
-> wizard (`npx gt@latest`) refuses to run here — configure by hand instead.
-
 ### `next.config.ts`
 
 ```typescript

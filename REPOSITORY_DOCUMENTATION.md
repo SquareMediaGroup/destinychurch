@@ -1594,11 +1594,11 @@ Once consent is in, `ChurchSuiteEmbed` and `MediaEmbed` cover the iframe with `u
   `show | suppress | wait`, covered by `tests/unit/welcome-overlay.spec.ts`.
 - **Styling:** the surfaces are the **glass system**, and the glass is **full-bleed** — a fixed,
   viewport-sized sheet with the panel floating on it, not a contained slab. Three layers, back to
-  front: `.welcome-scrim` (dims the page) → `.welcome-glass` (`glass glass-refract glass-xl`, frosts
-  the dimmed result) → the panel (`relative z-10`, no background of its own). The order is load-
-  bearing: `backdrop-filter` samples everything painted below it and an earlier sibling counts, so
-  the glass picks up the scrim. A scrim laid *over* the glass would flatten its sheen and bloom.
-  Both layers are `fixed`, not `absolute`, so they stay put when a short viewport scrolls the panel.
+  front: `.welcome-scrim` (dims the page) → `.welcome-glass` (`glass glass-xl`, frosts the dimmed
+  result) → the panel (`relative z-10`, no background of its own). The order is load-bearing:
+  `backdrop-filter` samples everything painted below it and an earlier sibling counts, so the glass
+  picks up the scrim. A scrim laid *over* the glass would flatten its sheen and bloom. Both layers
+  are `fixed`, not `absolute`, so they stay put when a short viewport scrolls the panel.
 - **Getting it dark:** glass *lightens* — `.glass` carries a white diagonal sheen and
   `brightness(1.05)`. Taking it full-bleed washed out the margins that used to be a plain dark
   backdrop (measured ~43/255 mean background luminance against ~23 for the contained-panel version).
@@ -1608,9 +1608,12 @@ Once consent is in, `ChurchSuiteEmbed` and `MediaEmbed` cover the iframe with `u
   below. Net result is ~45% darker overall than the slab version. Those two values are the dial.
   `.welcome-glass::before` is hidden: the gradient rim is right on a card, but at full bleed it
   draws a bright 1px line along the top of the viewport. `::after` (the cursor bloom) stays.
-- **Cards:** `glass glass-sm`, so they still read against the sheet. Refraction is on the full-bleed
-  layer only, never the cards — it is GPU-costly tiled across small surfaces (the reason
-  `globals.css` already drops it on phones) and five refracting cards is that case. They carry **no
+- **Cards:** `glass glass-sm glass-refract`, so they still read against the sheet. Refraction lives
+  on the cards, not the full-bleed sheet — the sheet uses the cheaper blur + sheen fallback, since
+  refracting the whole viewport behind a cursor-tracked bloom is the costlier surface to run every
+  frame, and the bend reads better on five bounded panels than smeared across the screen. Mobile
+  still drops refraction to plain blur automatically, via `glass-refract`'s own
+  `@media (max-width: 768px)` rule — unaffected by which element carries the class. Cards carry **no
   `bg-*` utility**: a Tailwind background would outrank `.glass`'s own, since utilities sort after
   `@layer components`. Text is the white scale (`text-white`, `/70`, `/60`), not `destiny-grey`.
 - **Motion:** `.welcome-*` in `app/globals.css` — staggered card reveal, the drawn orange rule, the

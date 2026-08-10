@@ -776,9 +776,10 @@ body {
 }
 
 /* The homepage welcome overlay — see components/WelcomeOverlay.tsx.
-   The glass is full-bleed: a fixed, viewport-sized `glass glass-refract` sheet
-   with the panel content floating on top, rather than a contained slab. Cards
-   stay `glass glass-sm` so they still read against it. What lives here is the
+   The glass is full-bleed: a fixed, viewport-sized `glass glass-xl` sheet with
+   the panel content floating on top, rather than a contained slab. Refraction
+   lives on the cards (`glass glass-sm glass-refract`) instead of the sheet —
+   see the component's own header comment for why. What lives here is the
    motion and the card anatomy borrowed from /links and /nfc, scoped here
    because the overlay is mounted from the root layout, not by a page.
 

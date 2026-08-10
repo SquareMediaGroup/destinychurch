@@ -35,9 +35,14 @@
 //
 // Two things the glass system dictates. The cards carry no bg-* utility, because
 // a Tailwind background outranks .glass's own (utilities sort after @layer
-// components). And refraction is on the full-bleed sheet only, never the cards:
-// it is GPU-costly tiled across small surfaces — the reason globals.css already
-// drops it on phones — and five refracting cards is exactly that case.
+// components). And refraction (glass-refract) sits on the cards, not on the
+// full-bleed sheet: refracting the entire viewport behind a cursor-tracked
+// bloom is the more expensive surface to run every frame, and the visible
+// bend reads better on five bounded panels than smeared across the whole
+// screen. The sheet keeps the cheaper blur + sheen fallback instead. Mobile
+// still drops refraction to plain blur automatically — that's glass-refract's
+// own @media (max-width: 768px) rule in globals.css, unaffected by which
+// element carries the class.
 
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { createPortal } from "react-dom";
@@ -189,7 +194,7 @@ export default function WelcomeOverlay() {
       <div aria-hidden className="welcome-scrim fixed inset-0" />
       <div
         aria-hidden
-        className="welcome-glass glass glass-refract glass-xl fixed inset-0"
+        className="welcome-glass glass glass-xl fixed inset-0"
       />
 
       <div
@@ -239,7 +244,7 @@ export default function WelcomeOverlay() {
                 <Link
                   href={option.href}
                   onClick={close}
-                  className="welcome-card glass glass-sm group relative flex h-full flex-col overflow-hidden rounded-2xl border border-white/10 p-4 outline-none sm:p-5"
+                  className="welcome-card glass glass-sm glass-refract group relative flex h-full flex-col overflow-hidden rounded-2xl border border-white/10 p-4 outline-none sm:p-5"
                 >
                   {/* orange fill on hover / focus */}
                   <span

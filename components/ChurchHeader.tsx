@@ -93,7 +93,6 @@ export default function ChurchHeader() {
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [, setScrolled] = useState(false);
-  const [hidden, setHidden] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [progress, setProgress] = useState(0);
   const [alphaActive, setAlphaActive] = useState(false);
@@ -120,12 +119,6 @@ export default function ChurchHeader() {
       setMobileOpen(false);
       setScrolled(y > 50);
       setProgress(Math.min(1, Math.max(0, y / MORPH_DISTANCE)));
-      if (y > MORPH_DISTANCE && y > lastScrollY.current) {
-        setHidden(true);
-        setOpenDropdown(null);
-      } else {
-        setHidden(false);
-      }
       lastScrollY.current = y;
     });
   }, []);
@@ -140,14 +133,6 @@ export default function ChurchHeader() {
       if (rafId.current != null) cancelAnimationFrame(rafId.current);
     };
   }, [handleScroll]);
-
-  useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
-      if (e.clientY < 80) setHidden(false);
-    };
-    window.addEventListener("mousemove", handleMouseMove, { passive: true });
-    return () => window.removeEventListener("mousemove", handleMouseMove);
-  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -230,7 +215,7 @@ export default function ChurchHeader() {
         className={`${isHome ? "fixed left-0 right-0" : "sticky"} z-50`}
         style={{
           top: bannerBars * 40,
-          transform: !mounted || hidden ? "translateY(-110%)" : "translateY(0)",
+          transform: !mounted ? "translateY(-110%)" : "translateY(0)",
           transition: "transform 0.4s cubic-bezier(0.4, 0, 0.2, 1)",
           overflow: "visible",
         }}

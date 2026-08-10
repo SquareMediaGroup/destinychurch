@@ -961,6 +961,45 @@ body {
   overflow: hidden;
 }
 
+/* ── Full-bleed autoscrolling rail (homepage What's On) ────────────────── */
+/*
+ * The track holds two identical groups laid out as [group][gap][group]. Total
+ * width W = 2C + G, so landing group two exactly where group one started needs
+ * a shift of C + G — which is W/2 + G/2, hence the `-50% - gap/2`. Translating
+ * a flat -50% would drift by half a gap on every loop.
+ */
+@keyframes marquee-scroll {
+  from {
+    transform: translate3d(0, 0, 0);
+  }
+  to {
+    transform: translate3d(calc(-50% - (var(--marquee-gap) / 2)), 0, 0);
+  }
+}
+
+.marquee-track {
+  animation: marquee-scroll var(--marquee-duration, 60s) linear infinite;
+  will-change: transform;
+}
+
+/* Pause on hover so a card can actually be read and clicked, and on
+   focus-within so keyboard tabbing doesn't chase a moving target. */
+.marquee:hover .marquee-track,
+.marquee:focus-within .marquee-track {
+  animation-play-state: paused;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .marquee-track {
+    animation: none;
+  }
+  /* No motion means the second group is unreachable dead weight, but the rail
+     still has to be scrollable by hand. */
+  .marquee {
+    overflow-x: auto;
+  }
+}
+
 /* Scrollbar hide for carousels */
 .scrollbar-hide {
   -ms-overflow-style: none;

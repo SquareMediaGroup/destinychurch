@@ -631,7 +631,7 @@ filename prefix, so there is no new bucket or storage policy.
 
 **Used By:**
 - `lib/events.server.ts` — `getFeaturedEvent()`, `getActiveEventPopup()`
-- `components/events/FeaturedEventHero.tsx` (What's On), `components/home/WhatsOnSection.tsx` (carousel pin)
+- `components/events/FeaturedEventHero.tsx` (What's On), `components/home/WhatsOnSection.tsx` (rail pin)
 - `components/events/EventPopup.tsx`, wired in `app/layout.tsx`
 - `app/api/admin/featured-event` (GET/PUT, revalidates `/whats-on` and `/`) and `.../popup` (PUT)
 - Migration `20260728_featured_event.sql`
@@ -1972,6 +1972,20 @@ stay: they're consent and legal, not chrome.
 
 #### Home Page (`components/home/*`)
 - `HeroSection.tsx` — Main hero banner with video/image
+- `WhatsOnSection.tsx` — the What's On block: header + "View Church Calendar" and
+  the "View All" button stay in the `max-w-7xl` container, while the event rail
+  goes full bleed. Repeats the (max 6) feed events until the rail holds at least
+  8 cards, so a short feed still covers an ultrawide screen, and falls back to
+  three standing weekly gatherings when the ChurchSuite feed is empty or down.
+- `EventsMarquee.tsx` — the full-bleed rail itself. Two identical card groups
+  scrolling on a CSS animation (`marquee-scroll` in globals.css), shifted by one
+  group width **plus one gap** so the loop is seamless; a flat `-50%` drifts by
+  half a gap per pass. Pauses on hover and focus-within; `prefers-reduced-motion`
+  swaps the animation for a hand-scrollable rail. The duplicate group is
+  `aria-hidden` + `inert`, so assistive tech and Tab see each event once.
+  Its `pt-3 pb-10` is load-bearing: `overflow-x` clips the cross axis too, so
+  without it the cards' hover lift and drop shadows are sliced off (the bug that
+  killed the previous arrow carousel).
 - `MinistriesGrid.tsx` — Ministry cards (kids, youth, etc.)
 - `UpcomingSermons.tsx` — Latest sermons carousel
 - `CTAButtons.tsx` — Prominent call-to-action buttons

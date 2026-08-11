@@ -219,20 +219,60 @@ export function eventDescriptionText(
 }
 
 /**
- * Fetch and parse the ChurchSuite calendar feed. Returns `[]` on any error or
- * non-OK response so callers can render a graceful empty/degraded state.
+ * The outcome of a feed fetch, with failure distinguishable from emptiness.
+ *
+ * `{ ok: true, events: [] }` genuinely means "nothing on the calendar";
+ * `{ ok: false }` means we could not reach or read ChurchSuite. The website
+ * treats both the same (see `fetchChurchSuiteEvents` below), but the app BFF
+ * has to tell them apart to satisfy the graceful-degradation requirement in
+ * docs/mobile-app-scope.md §5.3 — an app showing "nothing on" during an outage
+ * is worse than one saying "temporarily unavailable".
+ */
+export type ChurchSuiteFetchResult =
+  | { ok: true; events: ChurchSuiteEvent[] }
+  | { ok: false; reason: "network" | "http" | "parse"; statusCode?: number };
+
+/**
+ * Fetch and parse the ChurchSuite calendar feed, reporting failures.
  *
  * `init` is passed straight to `fetch`, so a Next.js caller can supply
  * `{ next: { revalidate: 300 } }` and the BFF can supply its own cache options.
  */
+export async function fetchChurchSuiteEventsResult(
+  init?: RequestInit,
+): Promise<ChurchSuiteFetchResult> {
+  let res: Response;
+  try {
+    res = await fetch(CHURCHSUITE_CALENDAR_JSON_URL, init);
+  } catch {
+    return { ok: false, reason: "network" };
+  }
+
+  if (!res.ok) return { ok: false, reason: "http", statusCode: res.status };
+
+  try {
+    const events = (await res.json()) as ChurchSuiteEvent[];
+    // A feed that parses to something other than an array is a parse failure,
+    // not an empty calendar — downstream code assumes it can iterate.
+    if (!Array.isArray(events)) return { ok: false, reason: "parse" };
+    return { ok: true, events };
+  } catch {
+    return { ok: false, reason: "parse" };
+  }
+}
+
+/**
+ * Fetch and parse the ChurchSuite calendar feed. Returns `[]` on any error or
+ * non-OK response so callers can render a graceful empty/degraded state.
+ *
+ * Kept as the website's entry point: several callers (notably
+ * `lib/events.server.ts`) are written around "empty index is also the degraded
+ * state". New code that needs to tell those apart should call
+ * `fetchChurchSuiteEventsResult` directly.
+ */
 export async function fetchChurchSuiteEvents(
   init?: RequestInit,
 ): Promise<ChurchSuiteEvent[]> {
-  try {
-    const res = await fetch(CHURCHSUITE_CALENDAR_JSON_URL, init);
-    if (!res.ok) return [];
-    return (await res.json()) as ChurchSuiteEvent[];
-  } catch {
-    return [];
-  }
+  const result = await fetchChurchSuiteEventsResult(init);
+  return result.ok ? result.events : [];
 }

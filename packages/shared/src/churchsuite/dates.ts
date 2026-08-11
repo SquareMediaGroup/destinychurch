@@ -15,6 +15,67 @@ export function parseFeedDate(value: string): Date {
   return new Date(value.replace(" ", "T"));
 }
 
+const LONDON_PARTS = new Intl.DateTimeFormat("en-GB", {
+  timeZone: "Europe/London",
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+  hour: "2-digit",
+  minute: "2-digit",
+  second: "2-digit",
+  hour12: false,
+});
+
+/** London's offset from UTC, in minutes, at a given instant. */
+function londonOffsetMinutes(ts: number): number {
+  const parts = LONDON_PARTS.formatToParts(new Date(ts));
+  const get = (type: string) => Number(parts.find((p) => p.type === type)?.value ?? "0");
+  const hour = get("hour");
+  const asIfUtc = Date.UTC(
+    get("year"),
+    get("month") - 1,
+    get("day"),
+    // Some engines render midnight as "24" under hour12: false.
+    hour === 24 ? 0 : hour,
+    get("minute"),
+    get("second"),
+  );
+  return Math.round((asIfUtc - ts) / 60_000);
+}
+
+/**
+ * Turn a naive feed timestamp into an unambiguous RFC3339 string:
+ * `"2026-07-30 00:00:00"` → `"2026-07-30T00:00:00+01:00"`.
+ *
+ * Why this exists: the feed's timestamps are Europe/London wall clock with no
+ * offset, so `parseFeedDate` resolves them in whatever zone the runtime is in —
+ * UTC on Vercel. The website never notices, because it formats without an
+ * explicit `timeZone` and the error round-trips. A native client decoding these
+ * as instants would be an hour out for the whole of BST, so every timestamp
+ * crossing the app BFF boundary goes through here instead.
+ *
+ * The offset is derived from `Intl`, never from hardcoded DST dates. Two passes
+ * settle the ambiguity: the first guess uses the offset in force at the naive
+ * instant, the second re-reads it at the corrected one.
+ */
+export function feedDateToIso(value: string): string {
+  const m = /^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2})(?::(\d{2}))?/.exec(value.trim());
+  // Anything already carrying a zone, or otherwise unparseable, is passed
+  // through — better a wrong-looking string than a silently invented offset.
+  if (!m || /[Zz]|[+-]\d{2}:?\d{2}$/.test(value.trim())) return value;
+
+  const [, y, mo, d, h, mi, s = "00"] = m;
+  const naive = Date.UTC(+y, +mo - 1, +d, +h, +mi, +s);
+  let ts = naive - londonOffsetMinutes(naive) * 60_000;
+  ts = naive - londonOffsetMinutes(ts) * 60_000;
+
+  const offset = londonOffsetMinutes(ts);
+  const sign = offset < 0 ? "-" : "+";
+  const abs = Math.abs(offset);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${y}-${mo}-${d}T${h}:${mi}:${s}${sign}${pad(Math.floor(abs / 60))}:${pad(abs % 60)}`;
+}
+
 /**
  * Is this event still worth showing?
  *

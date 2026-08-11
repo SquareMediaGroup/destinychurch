@@ -1,0 +1,95 @@
+# Destiny Church iOS — XcodeGen project definition.
+#
+# The .xcodeproj is generated, not committed: a .pbxproj is a graph of opaque
+# UUIDs that merges badly and is easy to corrupt, and every added file touches
+# it. This file is the source of truth instead — `xcodegen generate` (or
+# `make project`) rebuilds the project deterministically, and because sources
+# are globbed, adding a Swift file requires no edit here at all.
+#
+# See REPOSITORY_DOCUMENTATION.md → Mobile App for the wider architecture.
+
+name: DestinyChurch
+
+options:
+  bundleIdPrefix: uk.destinytees
+  createIntermediateGroups: true
+  # Built against the iOS 26 SDK — that is what opts standard components into
+  # Liquid Glass. The deployment target below is deliberately much lower.
+  deploymentTarget:
+    iOS: "18.0"
+  groupSortPosition: top
+  generateEmptyDirectories: true
+
+settings:
+  base:
+    SWIFT_VERSION: "6.0"
+    # Turned on at file zero. Retrofitting strict concurrency onto a finished
+    # app is a painful refactor; starting with it costs nothing.
+    SWIFT_STRICT_CONCURRENCY: complete
+    SWIFT_UPCOMING_FEATURE_EXISTENTIAL_ANY: YES
+    ENABLE_USER_SCRIPT_SANDBOXING: YES
+    DEAD_CODE_STRIPPING: YES
+    CLANG_ENABLE_MODULES: YES
+    GCC_WARN_ABOUT_RETURN_TYPE: YES_ERROR
+    MARKETING_VERSION: "1.0"
+    CURRENT_PROJECT_VERSION: "1"
+  configs:
+    Debug:
+      SWIFT_ACTIVE_COMPILATION_CONDITIONS: DEBUG
+      # The simulator talks to `npm run dev` on the host.
+      DC_API_BASE: http://localhost:3000
+    Release:
+      SWIFT_COMPILATION_MODE: wholemodule
+      DC_API_BASE: https://destinytees.uk
+
+targets:
+  DestinyChurch:
+    type: application
+    platform: iOS
+    sources:
+      - path: DestinyChurch
+        excludes:
+          - "**/.DS_Store"
+    configFiles:
+      Debug: Signing.xcconfig
+      Release: Signing.xcconfig
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: uk.destinytees.app
+        PRODUCT_NAME: Destiny Church
+        INFOPLIST_FILE: DestinyChurch/Resources/Info.plist
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: BrandAccent
+        TARGETED_DEVICE_FAMILY: "1,2"
+        SUPPORTS_MACCATALYST: NO
+        # Portrait-only: every screen is a vertical list, a player or a
+        # WebView, and none of them earn a landscape layout.
+        INFOPLIST_KEY_UISupportedInterfaceOrientations: UIInterfaceOrientationPortrait
+        ENABLE_PREVIEWS: YES
+
+  DestinyChurchTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - path: DestinyChurchTests
+    dependencies:
+      - target: DestinyChurch
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: uk.destinytees.app.tests
+        GENERATE_INFOPLIST_FILE: YES
+
+schemes:
+  DestinyChurch:
+    build:
+      targets:
+        DestinyChurch: all
+        DestinyChurchTests: [test]
+    run:
+      config: Debug
+    test:
+      config: Debug
+      targets:
+        - DestinyChurchTests
+    archive:
+      config: Release

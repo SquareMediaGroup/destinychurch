@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CFBundleDevelopmentRegion</key>
+	<string>en_GB</string>
+	<key>CFBundleDisplayName</key>
+	<string>Destiny</string>
+	<key>CFBundleExecutable</key>
+	<string>$(EXECUTABLE_NAME)</string>
+	<key>CFBundleIdentifier</key>
+	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+	<key>CFBundleInfoDictionaryVersion</key>
+	<string>6.0</string>
+	<key>CFBundleName</key>
+	<string>$(PRODUCT_NAME)</string>
+	<key>CFBundlePackageType</key>
+	<string>APPL</string>
+	<key>CFBundleShortVersionString</key>
+	<string>$(MARKETING_VERSION)</string>
+	<key>CFBundleVersion</key>
+	<string>$(CURRENT_PROJECT_VERSION)</string>
+
+	<!-- The BFF origin, set per-configuration in project.yml: localhost in
+	     Debug, destinytees.uk in Release. Overridable at runtime by the
+	     DC_API_BASE environment variable so the simulator can be pointed
+	     elsewhere without a rebuild. -->
+	<key>DCAPIBase</key>
+	<string>$(DC_API_BASE)</string>
+
+	<!-- Background audio for the podcast player. Without this iOS suspends
+	     playback the moment the screen locks. -->
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>audio</string>
+	</array>
+
+	<!-- Answers the export-compliance question at submission: the app uses
+	     only HTTPS, which is exempt. -->
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
+
+	<!-- TODO: bundle Anton-Regular.ttf (+ its OFL licence) and re-add UIAppFonts.
+	     The website loads Anton from Google's CDN, so there is no copy in this
+	     repo to embed; until one is added, Font.destinyDisplay falls back to a
+	     heavy system weight. Declaring a font file that isn't in the bundle
+	     would just log a warning at every launch. -->
+
+	<!-- Declarative launch screen. A storyboard would be XIB XML for no gain;
+	     this is three keys and lives in source control legibly. -->
+	<key>UILaunchScreen</key>
+	<dict>
+		<key>UIColorName</key>
+		<string>LaunchBackground</string>
+		<key>UIImageName</key>
+		<string>LaunchLogo</string>
+		<key>UIImageRespectsSafeAreaInsets</key>
+		<true/>
+	</dict>
+
+	<!-- Lets the simulator reach `npm run dev` over plain HTTP on localhost.
+	     NSAllowsLocalNetworking is the documented exception for exactly this
+	     and needs no App Review justification; it permits no other cleartext. -->
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<key>NSAllowsLocalNetworking</key>
+		<true/>
+	</dict>
+
+	<key>UIApplicationSceneManifest</key>
+	<dict>
+		<key>UIApplicationSupportsMultipleScenes</key>
+		<false/>
+	</dict>
+</dict>
+</plist>

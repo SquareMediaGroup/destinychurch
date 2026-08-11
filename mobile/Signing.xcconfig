@@ -1,0 +1,15 @@
+// Code signing. The team ID is deliberately NOT committed.
+//
+// Create `Signing.local.xcconfig` next to this file (it is gitignored) with:
+//
+//     DEVELOPMENT_TEAM = ABCDE12345
+//
+// The optional include below is last, so anything set there wins. Without it
+// the project still generates and builds for the simulator, which needs no
+// signing — only device builds and archives require a team.
+
+CODE_SIGN_STYLE = Automatic
+CODE_SIGN_IDENTITY = Apple Development
+DEVELOPMENT_TEAM =
+
+#include? "Signing.local.xcconfig"

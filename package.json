@@ -13,7 +13,8 @@
     "typecheck": "tsc --noEmit",
     "test": "playwright test",
     "test:unit": "playwright test --project=unit",
-    "test:e2e": "playwright test --project=chromium"
+    "test:e2e": "playwright test --project=chromium",
+    "gen:ios-assets": "node scripts/generate-ios-assets.mjs"
   },
   "dependencies": {
     "@phosphor-icons/react": "^2.1.10",

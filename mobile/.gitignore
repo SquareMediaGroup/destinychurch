@@ -1,0 +1,17 @@
+# The Xcode project is generated from project.yml — never commit it.
+*.xcodeproj/
+*.xcworkspace/
+xcuserdata/
+
+# Build output. DerivedData is redirected to the SSD by the Makefile, but keep
+# the local path ignored in case someone builds from the Xcode UI.
+DerivedData/
+build/
+*.ipa
+*.dSYM.zip
+.swiftpm/
+
+# Real team ID — see Signing.xcconfig.
+Signing.local.xcconfig
+
+.DS_Store

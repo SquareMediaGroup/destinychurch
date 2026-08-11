@@ -775,154 +775,74 @@ body {
   }
 }
 
-/* The homepage welcome overlay — see components/WelcomeOverlay.tsx.
-   The glass is full-bleed: a fixed, viewport-sized `glass glass-xl` sheet with
-   the panel content floating on top, rather than a contained slab. Refraction
-   lives on the cards (`glass glass-sm glass-refract`) instead of the sheet —
-   see the component's own header comment for why. What lives here is the
-   motion and the card anatomy borrowed from /links and /nfc, scoped here
-   because the overlay is mounted from the root layout, not by a page.
-
-   Two layers, not one, and the order matters: the scrim dims the page, then the
-   glass frosts the already-dimmed result. backdrop-filter samples everything
-   painted below it in the backdrop root, and an earlier sibling counts — so the
-   glass picks up the scrim. Tinting the glass darker instead, or laying the
-   scrim over the top, would both flatten its sheen and cursor bloom. */
-@keyframes welcome-layer-in {
-  from { opacity: 0; }
-  to   { opacity: 1; }
+/* The "New here?" floating widget — see components/WelcomeWidget.tsx.
+   The panel and trigger are the site glass system, so almost nothing is needed
+   here: what remains is the typing indicator, the entrance, and the trigger's
+   resting lift. Scoped here rather than in the component because the widget is
+   mounted from the root layout, not by a page. */
+@keyframes welcome-panel-in {
+  from { opacity: 0; transform: translateY(8px) scale(0.98); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
 }
 
-/* Glass lightens — that is the trap here. .glass carries a white diagonal sheen
-   and brightness(1.05) in its backdrop-filter, so taking it full-bleed washes
-   out the margins that used to be a plain dark backdrop. Measured on the hero,
-   the sheet alone came out at ~43/255 mean background luminance against ~23 for
-   the contained-panel version it replaced: lighter, not darker.
-
-   So the darkening is done twice over: this scrim under the glass, and a near
-   black tint on the glass itself (the system's documented per-surface override).
-   The scrim alone could not get there — the tint sets a floor no scrim can drop
-   below. These two numbers are what to tune for overall darkness. */
-.welcome-scrim {
-  background: rgba(0, 0, 0, 0.74);
-  animation: welcome-layer-in 0.35s ease forwards;
+.welcome-panel {
+  transform-origin: bottom left;
+  animation: welcome-panel-in 0.28s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
-.welcome-glass {
-  --glass-tint: 8, 10, 13;
-  --glass-alpha: 0.68;
-  animation: welcome-layer-in 0.35s ease forwards;
+/* The trigger sits on the page rather than over a scrim, so it carries its own
+   contact shadow — .glass's elevation alone reads flat against bright hero
+   imagery. */
+.welcome-trigger {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.35),
+    0 8px 24px rgba(0, 0, 0, 0.35),
+    0 2px 6px rgba(0, 0, 0, 0.2);
+  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-/* .glass's gradient rim is right on a card; at full bleed it draws a bright 1px
-   line along the top of the viewport, which reads as a rendering artifact.
-   ::after (the cursor bloom) is deliberately kept — a full-screen surface is
-   where it looks best. */
-.welcome-glass::before {
-  display: none;
-}
-
-@keyframes welcome-rise {
-  from { opacity: 0; transform: translateY(18px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-
-@keyframes welcome-draw {
-  from { transform: scaleX(0); }
-  to   { transform: scaleX(1); }
-}
-
-.welcome-reveal {
-  opacity: 0;
-  animation: welcome-rise 0.55s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-}
-
-.welcome-rule {
-  transform-origin: left;
-  animation: welcome-draw 0.7s cubic-bezier(0.16, 1, 0.3, 1) 0.15s forwards;
-}
-
-/* These rules are unlayered, so they replace .glass's own `transition` shorthand
-   wholesale (@layer components sorts earlier). background-color is carried over
-   from it deliberately — without it the glass tint would snap on hover. */
-.welcome-card {
-  transition:
-    transform 0.45s cubic-bezier(0.16, 1, 0.3, 1),
-    box-shadow 0.45s ease,
-    border-color 0.45s ease,
-    background-color 0.2s ease;
-}
-
-.welcome-card .welcome-fill {
-  transform: scaleY(0);
-  transform-origin: bottom;
-  transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.welcome-card .welcome-num,
-.welcome-card .welcome-title,
-.welcome-card .welcome-blurb,
-.welcome-card .welcome-arrow,
-.welcome-card .welcome-icon {
-  transition:
-    color 0.4s ease,
-    transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-/* The lifted-and-filled state, driven by keyboard focus. */
-.welcome-card:focus-visible {
-  transform: translateY(-4px);
-  border-color: #f58021;
-  box-shadow: 0 20px 40px -18px rgba(245, 128, 33, 0.45);
-}
-.welcome-card:focus-visible .welcome-fill { transform: scaleY(1); }
-.welcome-card:focus-visible .welcome-num { color: rgba(255, 255, 255, 0.85); }
-.welcome-card:focus-visible .welcome-blurb { color: rgba(255, 255, 255, 0.85); }
-.welcome-card:focus-visible .welcome-title { color: #ffffff; }
-.welcome-card:focus-visible .welcome-arrow {
-  color: #ffffff;
-  transform: translateX(5px);
-}
-.welcome-card:focus-visible .welcome-icon {
-  color: #ffffff;
-  transform: rotate(-4deg) scale(1.05);
-}
-
-/* Same state on hover, but only where there is a real pointer. The /links and
-   /nfc grids don't need this guard — they are pages you scroll past. These cards
-   are in a modal you tap and dismiss, and on touch :hover sticks to the last
-   thing tapped, which would leave a card frozen orange behind the closing panel. */
 @media (hover: hover) {
-  .welcome-card:hover {
-    transform: translateY(-4px);
-    border-color: #f58021;
-    box-shadow: 0 20px 40px -18px rgba(245, 128, 33, 0.45);
-  }
-  .welcome-card:hover .welcome-fill { transform: scaleY(1); }
-  .welcome-card:hover .welcome-num { color: rgba(255, 255, 255, 0.85); }
-  .welcome-card:hover .welcome-blurb { color: rgba(255, 255, 255, 0.85); }
-  .welcome-card:hover .welcome-title { color: #ffffff; }
-  .welcome-card:hover .welcome-arrow {
-    color: #ffffff;
-    transform: translateX(5px);
-  }
-  .welcome-card:hover .welcome-icon {
-    color: #ffffff;
-    transform: rotate(-4deg) scale(1.05);
-  }
+  .welcome-trigger:hover { transform: translateY(-2px); }
+}
+
+/* Three dots while the next scripted line lands. Staggered by nth-child so the
+   markup stays three bare <i>s. */
+@keyframes welcome-typing-dot {
+  0%, 60%, 100% { opacity: 0.25; transform: translateY(0); }
+  30%           { opacity: 1;    transform: translateY(-3px); }
+}
+
+.welcome-typing {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.welcome-typing i {
+  width: 5px;
+  height: 5px;
+  border-radius: 9999px;
+  background: #ffffff;
+  animation: welcome-typing-dot 1.2s ease-in-out infinite;
+}
+
+.welcome-typing i:nth-child(2) { animation-delay: 0.15s; }
+.welcome-typing i:nth-child(3) { animation-delay: 0.3s; }
+
+.welcome-choice {
+  transition:
+    background-color 0.2s ease,
+    border-color 0.2s ease,
+    color 0.2s ease,
+    filter 0.2s ease;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .welcome-scrim,
-  .welcome-glass { animation: none; }
-  .welcome-reveal,
-  .welcome-rule {
-    animation: none;
-    opacity: 1;
-    transform: none;
-  }
-  .welcome-card,
-  .welcome-card * { transition: none !important; }
+  .welcome-panel,
+  .welcome-typing i { animation: none; }
+  .welcome-trigger,
+  .welcome-choice { transition: none !important; }
+  .welcome-typing i { opacity: 0.6; }
 }
 
 .animate-slide-up {

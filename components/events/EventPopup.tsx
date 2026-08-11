@@ -21,7 +21,6 @@
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import PopupShell from "@/components/PopupShell";
-import { usePopupGate } from "@/lib/popupGate";
 import type { ResolvedEventPopup } from "@/lib/events.server";
 
 const STORAGE_KEY = "dc-event-popup-seen";
@@ -44,7 +43,6 @@ export default function EventPopup({
   popup: ResolvedEventPopup | null;
 }) {
   const pathname = usePathname();
-  const welcomeOpen = usePopupGate((s) => s.welcomeOpen);
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
@@ -54,10 +52,6 @@ export default function EventPopup({
     // needs no state change: the render guard below returns null while the
     // path is excluded, and the effect re-runs on every navigation.
     if (isExcluded(pathname, popup.eventSlug)) return;
-
-    // Nor underneath the homepage welcome overlay — see lib/popupGate.ts. The
-    // timer arms when it closes, so the promo still lands, just after.
-    if (welcomeOpen) return;
 
     // Both parts matter: switching the featured event *or* editing its copy
     // bumps updated_at, and either should show the popup again this session.
@@ -70,7 +64,7 @@ export default function EventPopup({
 
     const t = window.setTimeout(() => setOpen(true), 7000);
     return () => window.clearTimeout(t);
-  }, [popup, pathname, welcomeOpen]);
+  }, [popup, pathname]);
 
   function close() {
     setOpen(false);

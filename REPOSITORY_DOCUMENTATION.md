@@ -223,7 +223,7 @@ destinychurch/
 │   ├── AnalyticsGate.tsx          # Conditional analytics loading
 │   ├── SiteBanner.tsx             # Announcement banner (from DB)
 │   ├── SitePopup.tsx              # Modal pop-up (from DB)
-│   ├── WelcomeOverlay.tsx         # Homepage "what would you like to do?" overlay
+│   ├── WelcomeWidget.tsx          # "New here?" corner widget — scripted, no-AI chat
 │   ├── FloatingSmartSearch.tsx    # AI search widget (tool-calling chat)
 │   ├── smartSearch/               # Smart Search result cards (products, weather, maps, web)
 │   ├── LiveBanner.tsx             # "WE ARE LIVE" banner bar
@@ -271,8 +271,7 @@ destinychurch/
 │   ├── courses.ts                 # Alpha/Recovery/Bible Course/CAP course definitions
 │   ├── courseEvents.ts            # alpha_events type registry — banner surfaces + admin pages
 │   ├── cn.ts                      # className joiner (no Tailwind conflict resolution)
-│   ├── welcomeOverlay.ts          # Homepage overlay options + decideWelcome() (pure, unit-tested)
-│   ├── popupGate.ts               # Which popup owns the screen (welcome > event > site)
+│   ├── welcomeChat.ts             # Scripted "New here?" conversation tree (pure, unit-tested)
 │   ├── openaiClient.ts            # OpenAI client + SMART_SEARCH_MODEL constant
 │   ├── siteKnowledge.ts           # AI search knowledge base
 │   ├── serviceStatus.ts           # Smart Search health / kill-switch state (service_status table)
@@ -1225,7 +1224,7 @@ export default async function RootLayout({ children }) {
             <ChurchFooter />
           </div>
           <AnalyticsGate />        {/* Conditionally load Vercel Analytics */}
-          <WelcomeOverlay />       {/* Homepage-only, once per session; outranks both popups */}
+          <WelcomeWidget />        {/* Corner widget; click to expand, never auto-opens */}
           <SitePopup popup={popup} />
           {smartSearchEnabled && <FloatingSmartSearch />}  {/* AI chat widget */}
         </Providers>
@@ -1566,66 +1565,40 @@ Once consent is in, `ChurchSuiteEmbed` and `MediaEmbed` cover the iframe with `u
   - Dismiss button
   - Centered on screen
 
-#### `WelcomeOverlay.tsx`
-- **What:** "Welcome to Destiny — what would you like to do?" The homepage front door: the five
-  things nearly everyone arrives to do, in one place, instead of spread across a hero CTA, the
-  header, two anchors inside `/whats-on` and a footer link group.
-- **Data:** none. The five options are a hardcoded `WELCOME_OPTIONS` array in `lib/welcomeOverlay.ts`
-  — Plan a Visit (`/visit`), Connect Card (`/connect-card`), Give (`/give`), What's On
-  (`/whats-on#events`), Courses (`/whats-on#courses`).
-- **When it opens:** `sessionStorage` key `dc-welcome-seen` — once per browser session, not once
-  ever. Only on `/`, only when `/` was the session's *entry* page, and only after the cookie banner
-  has been answered (it sits at `z-[200]` and would otherwise bury the `z-50` consent bar). Opens on
-  a 900 ms delay so the hero lands first, and marks itself seen on open rather than on close.
-- **Why entry-page-only:** someone who landed on `/give` from search already has intent. That
-  session is suppressed outright, including if they later navigate to the homepage.
-- **SEO:** deliberately invisible to the indexed page. It is a client component that renders `null`
-  until an effect opens it, so **nothing** reaches the SSR HTML; it portals to `document.body`
-  outside `<main>`, carries `data-nosnippet`, adds no route, metadata or sitemap entry, and every
-  destination is a route that was already in the sitemap. (Googlebot executes JS, so it can still
-  *render* the overlay — what this guarantees is that it contributes nothing to the indexed HTML or
-  to snippets, and that a delayed, fully-dismissible overlay stays outside Google's intrusive-
-  interstitial definition.)
-- **A11y:** full dialog semantics, modelled on `nfc/NfcTileModal.tsx` rather than `PopupShell` —
-  `role="dialog" aria-modal aria-labelledby`, focus to the close button on open, focus restored on
-  close, Tab trapped inside, Escape and backdrop click to dismiss, body scroll locked. The skip is a
-  full-width **"Just browsing, thanks"** button, not a hidden X.
-- **Decision logic:** `decideWelcome()` in `lib/welcomeOverlay.ts` is a pure function returning
-  `show | suppress | wait`, covered by `tests/unit/welcome-overlay.spec.ts`.
-- **Styling:** the surfaces are the **glass system**, and the glass is **full-bleed** — a fixed,
-  viewport-sized sheet with the panel floating on it, not a contained slab. Three layers, back to
-  front: `.welcome-scrim` (dims the page) → `.welcome-glass` (`glass glass-xl`, frosts the dimmed
-  result) → the panel (`relative z-10`, no background of its own). The order is load-bearing:
-  `backdrop-filter` samples everything painted below it and an earlier sibling counts, so the glass
-  picks up the scrim. A scrim laid *over* the glass would flatten its sheen and bloom. Both layers
-  are `fixed`, not `absolute`, so they stay put when a short viewport scrolls the panel.
-- **Getting it dark:** glass *lightens* — `.glass` carries a white diagonal sheen and
-  `brightness(1.05)`. Taking it full-bleed washed out the margins that used to be a plain dark
-  backdrop (measured ~43/255 mean background luminance against ~23 for the contained-panel version).
-  So the darkening is done twice: the scrim at `rgba(0,0,0,0.74)` **and** a near-black
-  `--glass-tint: 8, 10, 13` / `--glass-alpha: 0.68` on the sheet itself (the system's documented
-  per-surface override). The scrim alone can't get there — the tint sets a floor no scrim drops
-  below. Net result is ~45% darker overall than the slab version. Those two values are the dial.
-  `.welcome-glass::before` is hidden: the gradient rim is right on a card, but at full bleed it
-  draws a bright 1px line along the top of the viewport. `::after` (the cursor bloom) stays.
-- **Cards:** `glass glass-sm glass-refract`, so they still read against the sheet. Refraction lives
-  on the cards, not the full-bleed sheet — the sheet uses the cheaper blur + sheen fallback, since
-  refracting the whole viewport behind a cursor-tracked bloom is the costlier surface to run every
-  frame, and the bend reads better on five bounded panels than smeared across the screen. Mobile
-  still drops refraction to plain blur automatically, via `glass-refract`'s own
-  `@media (max-width: 768px)` rule — unaffected by which element carries the class. Cards carry **no
-  `bg-*` utility**: a Tailwind background would outrank `.glass`'s own, since utilities sort after
-  `@layer components`. Text is the white scale (`text-white`, `/70`, `/60`), not `destiny-grey`.
-- **Motion:** `.welcome-*` in `app/globals.css` — staggered card reveal, the drawn orange rule, the
-  orange hover sweep, `welcome-layer-in` on both full-bleed layers — plus `.nfc-modal-panel` for the
-  entrance. Card anatomy matches `/links` and `/nfc` (number, Material icon, arrow), except the
-  hover rules are wrapped in `@media (hover: hover)` — those are pages you scroll past, this is a
-  modal you tap and dismiss, and on touch `:hover` would stick to the tapped card. The
-  `.welcome-card` rules are unlayered, so they replace `.glass`'s `transition` shorthand wholesale;
-  `background-color` is carried over deliberately, or the tint would snap.
-- **Note on the bloom:** `GlassBloomTracker` resolves the hovered surface with `closest(".glass")`.
-  `.welcome-glass` is a **sibling** of the panel, not an ancestor, so hovering panel chrome doesn't
-  drive its bloom — only hovering outside the panel does, and hovering a card drives that card's own.
+#### `WelcomeWidget.tsx`
+- **What:** the "New here? Start here" pill in the bottom-left corner, on every page. Click it and it
+  expands into a **scripted conversation** that walks someone to the right page — a guided front door
+  for the visitor who doesn't yet know what to ask for.
+- **It replaced an auto-opening overlay.** The first version interrupted everyone on the homepage with
+  "what would you like to do?". That shape needed suppressing for deep-link entries, holding off until
+  the cookie banner was answered, and a client-side gate so the promo popups couldn't stack underneath
+  it. A widget that waits to be clicked needs none of that machinery, and is available on every page
+  instead of one. `lib/popupGate.ts`, `lib/welcomeOverlay.ts` and the gating inside
+  `SitePopup`/`EventPopup` were all removed with it.
+- **No AI, on purpose.** Every reply and every route is hand-written in `lib/welcomeChat.ts`, so the
+  widget cannot invent a service time or link somewhere that doesn't exist. It is Smart Search's twin,
+  not a second copy: `FloatingSmartSearch` asks a model and suits someone who knows their question;
+  this walks a fixed script and suits someone who doesn't. Same corner-widget idiom, same glass panel,
+  same chat bubbles.
+- **Position:** bottom-left, offset by `--podcast-dock-height` like Smart Search. Smart Search is a
+  centred pill and the podcast dock is full-width, so the left corner is the one free at every
+  breakpoint. (In dev the Next.js indicator sits there too; that badge is dev-only.)
+- **Suppressed on** `/nfc` and `/admin` — chrome-free surfaces, matching `ChurchHeader`. Also holds
+  back until cookie consent is **decided**: on mobile the banner is `bottom-4 left-4 right-4`, the
+  exact corner this occupies, and stacking on the one thing a first-time visitor must answer is worse
+  than appearing a moment later.
+- **Not a modal.** It doesn't cover the page, so there is no focus trap and no scroll lock — the page
+  underneath stays usable by design. Escape and click-outside close it, `aria-expanded` /
+  `aria-controls` wire the trigger to the panel, and the thread is an `aria-live="polite"` region so
+  replies are announced without stealing focus. "Start over" appears once past the root question.
+- **Styling:** `glass glass-strong glass-opaque glass-refract` on the panel — `glass-opaque` because
+  this is a popover over arbitrary page content, which is exactly what the system reserves that fill
+  for. Without it, body copy landed on top of the homepage hero's 9rem display type. `.welcome-*` in
+  `app/globals.css` carries the entrance, the trigger's contact shadow and hover lift, and the typing
+  indicator.
+- **Conversation state** lives in the component; the thread resets lazily in `expand()` when the page
+  differs from the one it was started on, rather than from an effect on `pathname` (which would be a
+  synchronous `setState` on every navigation, for a thread nobody is looking at).
 
 #### `shop/ShopHero.tsx`
 - **What:** Dynamic, auto-rotating hero at the top of `/shop`
@@ -1800,12 +1773,10 @@ covers it. **An active event popup suppresses the site popup**: `app/layout.tsx`
 `null` to `<SitePopup>` whenever `getActiveEventPopup()` resolves, so only ever one modal shows and
 there is no client-side coordination to get wrong.
 
-**Popup precedence is `WelcomeOverlay` > `EventPopup` > `SitePopup`.** The second half of that chain
-is the server-side `null` above. The first half cannot be: whether the welcome overlay opens depends
-on the path and on `sessionStorage`, which only the client knows. So `lib/popupGate.ts` holds a
-one-field zustand store — `welcomeOpen` — that `WelcomeOverlay` raises while it owns the screen, and
-that both promo popups check before arming their 7-second timer. The flag is in their effect deps, so
-the timer starts when the overlay closes: the announcement still lands, just after.
+These two are the only self-opening surfaces on the site. `WelcomeWidget` shares the screen with them
+but needs no coordination, because it never opens itself — an earlier auto-opening version did, and
+carried a `lib/popupGate.ts` zustand flag that both popups checked before arming their timer. That
+gate was deleted along with the overlay.
 
 #### Admin Components (`components/admin/*`)
 - `AdminSidebar.tsx` — Admin navigation menu
@@ -2685,20 +2656,20 @@ the gitignored `CLAUDE.local.md`.
 
 ---
 
-### `lib/welcomeOverlay.ts` + `lib/popupGate.ts`
+### `lib/welcomeChat.ts`
 
-The two halves of the homepage welcome overlay (see `WelcomeOverlay.tsx` under Components).
+The scripted conversation behind `WelcomeWidget.tsx` (see Components). **Church copy and routes are
+edited here** — the component only renders whatever this file says.
 
-`lib/welcomeOverlay.ts` holds `WELCOME_OPTIONS` — the five destinations — and `decideWelcome()`,
-which returns `show | suppress | wait` from four inputs: the current path, the session's entry path,
-the `dc-welcome-seen` marker, and whether cookie consent has been answered. It is kept free of React
-and of any import so the edge cases (deep-link entry, an unanswered cookie banner, a session that has
-already seen it) are plain data and testable without a browser — `tests/unit/welcome-overlay.spec.ts`.
-`WELCOME_VERSION` is the marker's value: bump it when the options change and open sessions re-see it.
+A `ChatNode` is `{ id, message, choices }`. A `ChatChoice` either advances the thread (`next`) or
+opens a page (`href`), **never both**, so there is never a hidden branch behind a link. Routes are
+validated against `ALLOWED_PAGES` from `lib/siteKnowledge.ts` — the same allowlist Smart Search uses
+to reject hallucinated links — with `routeOf()` stripping any `#section` first.
 
-`lib/popupGate.ts` is a one-field zustand store, `welcomeOpen`, that resolves popup precedence on the
-client. See `PopupShell.tsx` under Components for why the server-side `null` trick can't cover this
-case.
+None of that is enforced by types, because a typo'd `next` renders a dead button rather than failing
+to compile. It is enforced by `tests/unit/welcome-chat.spec.ts`, which checks ids are unique, every
+`next` resolves, every `href` is a real page, every node is reachable from the root, and every node
+can eventually reach a page (no dead ends).
 
 ---
 

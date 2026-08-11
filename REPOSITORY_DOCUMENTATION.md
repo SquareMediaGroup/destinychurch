@@ -223,8 +223,7 @@ destinychurch/
 │   ├── AnalyticsGate.tsx          # Conditional analytics loading
 │   ├── SiteBanner.tsx             # Announcement banner (from DB)
 │   ├── SitePopup.tsx              # Modal pop-up (from DB)
-│   ├── WelcomeWidget.tsx          # "New here?" corner widget — scripted, no-AI chat
-│   ├── FloatingSmartSearch.tsx    # AI search widget (tool-calling chat)
+│   ├── FloatingSmartSearch.tsx    # The one floating widget: AI chat + scripted "New here?"
 │   ├── smartSearch/               # Smart Search result cards (products, weather, maps, web)
 │   ├── LiveBanner.tsx             # "WE ARE LIVE" banner bar
 │   ├── GlassBloomTracker.tsx      # Glass-effect performance tracking
@@ -1224,9 +1223,8 @@ export default async function RootLayout({ children }) {
             <ChurchFooter />
           </div>
           <AnalyticsGate />        {/* Conditionally load Vercel Analytics */}
-          <WelcomeWidget />        {/* Corner widget; click to expand, never auto-opens */}
           <SitePopup popup={popup} />
-          {smartSearchEnabled && <FloatingSmartSearch />}  {/* AI chat widget */}
+          <FloatingSmartSearch searchEnabled={smartSearchEnabled} />  {/* AI chat + guided script */}
         </Providers>
         
         <SpeedInsights />             {/* Vercel performance monitoring */}
@@ -1565,40 +1563,10 @@ Once consent is in, `ChurchSuiteEmbed` and `MediaEmbed` cover the iframe with `u
   - Dismiss button
   - Centered on screen
 
-#### `WelcomeWidget.tsx`
-- **What:** the "New here? Start here" pill in the bottom-left corner, on every page. Click it and it
-  expands into a **scripted conversation** that walks someone to the right page — a guided front door
-  for the visitor who doesn't yet know what to ask for.
-- **It replaced an auto-opening overlay.** The first version interrupted everyone on the homepage with
-  "what would you like to do?". That shape needed suppressing for deep-link entries, holding off until
-  the cookie banner was answered, and a client-side gate so the promo popups couldn't stack underneath
-  it. A widget that waits to be clicked needs none of that machinery, and is available on every page
-  instead of one. `lib/popupGate.ts`, `lib/welcomeOverlay.ts` and the gating inside
-  `SitePopup`/`EventPopup` were all removed with it.
-- **No AI, on purpose.** Every reply and every route is hand-written in `lib/welcomeChat.ts`, so the
-  widget cannot invent a service time or link somewhere that doesn't exist. It is Smart Search's twin,
-  not a second copy: `FloatingSmartSearch` asks a model and suits someone who knows their question;
-  this walks a fixed script and suits someone who doesn't. Same corner-widget idiom, same glass panel,
-  same chat bubbles.
-- **Position:** bottom-left, offset by `--podcast-dock-height` like Smart Search. Smart Search is a
-  centred pill and the podcast dock is full-width, so the left corner is the one free at every
-  breakpoint. (In dev the Next.js indicator sits there too; that badge is dev-only.)
-- **Suppressed on** `/nfc` and `/admin` — chrome-free surfaces, matching `ChurchHeader`. Also holds
-  back until cookie consent is **decided**: on mobile the banner is `bottom-4 left-4 right-4`, the
-  exact corner this occupies, and stacking on the one thing a first-time visitor must answer is worse
-  than appearing a moment later.
-- **Not a modal.** It doesn't cover the page, so there is no focus trap and no scroll lock — the page
-  underneath stays usable by design. Escape and click-outside close it, `aria-expanded` /
-  `aria-controls` wire the trigger to the panel, and the thread is an `aria-live="polite"` region so
-  replies are announced without stealing focus. "Start over" appears once past the root question.
-- **Styling:** `glass glass-strong glass-opaque glass-refract` on the panel — `glass-opaque` because
-  this is a popover over arbitrary page content, which is exactly what the system reserves that fill
-  for. Without it, body copy landed on top of the homepage hero's 9rem display type. `.welcome-*` in
-  `app/globals.css` carries the entrance, the trigger's contact shadow and hover lift, and the typing
-  indicator.
-- **Conversation state** lives in the component; the thread resets lazily in `expand()` when the page
-  differs from the one it was started on, rather than from an effect on `pathname` (which would be a
-  synchronous `setState` on every navigation, for a thread nobody is looking at).
+#### `WelcomeWidget.tsx` — **removed; merged into `FloatingSmartSearch`**
+The "New here?" script is no longer a separate widget. Two floating controls in two corners was two
+things to notice; there is now one. See `FloatingSmartSearch.tsx` above — the script lives there as
+its `welcome` mode, and the copy still lives in `lib/welcomeChat.ts`.
 
 #### `shop/ShopHero.tsx`
 - **What:** Dynamic, auto-rotating hero at the top of `/shop`
@@ -1611,8 +1579,31 @@ Once consent is in, `ChurchSuiteEmbed` and `MediaEmbed` cover the iframe with `u
   - Falls back to the static "The Destiny Store" masthead when no slides are active (handled in `app/shop/page.tsx`)
 
 #### `FloatingSmartSearch.tsx`
-- **What:** AI-powered conversational search widget (floating morphing pill/circle)
-- **Feature:** If `smart_search` service is enabled
+- **What:** the site's single floating widget. Two ways in from one control: the AI conversational
+  search, and a hand-written **"New here?" script** for visitors who don't yet know what to ask.
+- **Two modes.** `mode: "search" | "welcome"`. Search is the AI thread (`/api/chat`); welcome walks
+  the tree in `lib/welcomeChat.ts` with no network call at all. Threads are held in separate state
+  (`messages` vs `welcomeTurns`) so a scripted reply can never render into a streaming one. Typing a
+  question while the script is open switches to search and drops the script — one thread at a time.
+- **The teaser.** Resting, it's the familiar circle. Every **8s** the icon flips (`.fs-flip`,
+  `rotateY(180deg)`, two backface-hidden faces) from the search mark to the sparkle, and the pill
+  grows to **13.5rem** reading "New here? Start here"; it holds ~3.6s, then turns back. Clicking it
+  in that state opens the script; clicking the search mark opens the AI bar as before. This is the
+  only advertisement the guided path gets, since nothing auto-opens.
+- **Reduced motion:** no cycling at all — something that changes width every few seconds is exactly
+  the unsolicited movement `prefers-reduced-motion` asks us not to make. Those visitors get the
+  label **permanently** instead, so they lose the motion without losing the discoverability.
+- **Three widths, transitioned not keyframed.** `--fs-w` holds the resting width per state (circle
+  `3.5rem` → teaser `13.5rem` → pill `min(100vw-2rem, 28rem)`) with `transition: width`. It was
+  keyframes while there were only two states; three made the pairs combinatorial, and the keyframes
+  sat on the same `animation` property as `.search-glow`'s loading spin **on the same element**, so a
+  morph mid-request stopped the glow rotating. A transition frees `animation` for the glow and
+  doesn't run on first paint, which is what the old transient `.morph-*` classes existed to prevent.
+- **`searchEnabled` prop.** The widget is now **always mounted**; the prop only governs the AI half.
+  The guided script is hand-written and has no service to be down, so the Smart Search kill-switch
+  must not take it with it. With the prop false the input form is absent and the trigger opens the
+  script directly.
+- **Feature:** the AI half runs if the `smart_search` service is enabled
 - **Behavior:**
   - Click button → pill expands, chat thread opens
   - Before the first message of a session, silently runs an **invisible Cloudflare Turnstile** challenge (`size: "invisible"`, `execution: "execute"`) and posts the token to `POST /api/turnstile/verify`, which sets a signed `ts_verified` cookie (see Authentication & Authorization). If the invisible check can't silently confirm the visitor, a **visible fallback widget** renders inline in the chat panel; solving it verifies and auto-resends the pending message. Skipped entirely once `ts_verified` is present and unexpired.
@@ -1773,7 +1764,7 @@ covers it. **An active event popup suppresses the site popup**: `app/layout.tsx`
 `null` to `<SitePopup>` whenever `getActiveEventPopup()` resolves, so only ever one modal shows and
 there is no client-side coordination to get wrong.
 
-These two are the only self-opening surfaces on the site. `WelcomeWidget` shares the screen with them
+These two are the only self-opening surfaces on the site. `FloatingSmartSearch` shares the screen with them
 but needs no coordination, because it never opens itself — an earlier auto-opening version did, and
 carried a `lib/popupGate.ts` zustand flag that both popups checked before arming their timer. That
 gate was deleted along with the overlay.
@@ -2658,7 +2649,7 @@ the gitignored `CLAUDE.local.md`.
 
 ### `lib/welcomeChat.ts`
 
-The scripted conversation behind `WelcomeWidget.tsx` (see Components). **Church copy and routes are
+The scripted conversation behind `FloatingSmartSearch`'s `welcome` mode (see Components). **Church copy and routes are
 edited here** — the component only renders whatever this file says.
 
 A `ChatNode` is `{ id, message, choices }`. A `ChatChoice` either advances the thread (`next`) or

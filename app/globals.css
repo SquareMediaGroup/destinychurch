@@ -517,35 +517,57 @@ body {
 }
 }/* end @layer components (glass system) */
 
-/* Floating Smart Search — circle <-> pill morph.
-   The width is KEYFRAMED (not transitioned) with an aggressive ease-in-out so the
-   shape snaps decisively between the circular icon and the pill. Resting widths
-   are static per state; the component adds a transient .morph-expanding /
-   .morph-collapsing class only on a state change (removed on animationend), so
-   there's no morph on first paint and the loading glow is never clobbered. */
+/* Floating Smart Search — circle <-> teaser <-> pill morph.
+   Three resting widths held in --fs-w and TRANSITIONED, with the same aggressive
+   ease-in-out that used to be keyframed. It was keyframes while there were only
+   two states; three made the pairs combinatorial, and the keyframes sat on the
+   same `animation` property as .search-glow's loading spin on the same element,
+   so a morph mid-request stopped the glow rotating. A transition leaves
+   `animation` to the glow entirely, and does not run on first paint, which is
+   what the transient .morph-* classes existed to prevent. */
 .floating-search-morph {
-  width: 3.5rem; /* collapsed (circle) */
+  width: var(--fs-w, 3.5rem); /* collapsed (circle) */
+  transition: width 0.5s cubic-bezier(0.85, 0, 0.15, 1);
+}
+.floating-search-morph.is-teasing {
+  --fs-w: 13.5rem; /* teaser pill — "New here? Start here" */
 }
 .floating-search-morph.is-expanded {
-  width: min(calc(100vw - 2rem), 28rem); /* pill */
+  --fs-w: min(calc(100vw - 2rem), 28rem); /* full pill */
 }
-.floating-search-morph.morph-expanding {
-  animation: fs-morph-expand 0.5s cubic-bezier(0.85, 0, 0.15, 1) both;
+
+/* The resting icon turns over to advertise the guided path and turns back. Two
+   faces on one rotating card, so the search and sparkle marks are never both
+   legible mid-turn. */
+.fs-flip {
+  position: relative;
+  transform-style: preserve-3d;
+  transition: transform 0.55s cubic-bezier(0.85, 0, 0.15, 1);
 }
-.floating-search-morph.morph-collapsing {
-  animation: fs-morph-collapse 0.5s cubic-bezier(0.85, 0, 0.15, 1) both;
+.fs-flip.is-flipped {
+  transform: rotateY(180deg);
 }
-@keyframes fs-morph-expand {
-  from { width: 3.5rem; }
-  to   { width: min(calc(100vw - 2rem), 28rem); }
+.fs-flip-face {
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
 }
-@keyframes fs-morph-collapse {
-  from { width: min(calc(100vw - 2rem), 28rem); }
-  to   { width: 3.5rem; }
+.fs-flip-back {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transform: rotateY(180deg);
 }
 
 .floating-search-trigger {
   transition: opacity 0.2s ease;
+}
+
+/* The teaser label fades in behind the flip rather than sliding, so the only
+   thing moving horizontally is the pill itself. */
+.fs-teaser-label {
+  transition: opacity 0.25s ease 0.12s;
 }
 
 .floating-search-form {
@@ -574,12 +596,11 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .floating-search-trigger,
   .floating-search-form,
+  .floating-search-morph,
+  .fs-flip,
+  .fs-teaser-label,
   .floating-search-morph.is-expanded .floating-search-form {
     transition: none;
-  }
-  .floating-search-morph.morph-expanding,
-  .floating-search-morph.morph-collapsing {
-    animation: none;
   }
   .floating-search-panels {
     animation: none;
@@ -773,76 +794,6 @@ body {
   .nfc-modal-panel {
     animation: none;
   }
-}
-
-/* The "New here?" floating widget — see components/WelcomeWidget.tsx.
-   The panel and trigger are the site glass system, so almost nothing is needed
-   here: what remains is the typing indicator, the entrance, and the trigger's
-   resting lift. Scoped here rather than in the component because the widget is
-   mounted from the root layout, not by a page. */
-@keyframes welcome-panel-in {
-  from { opacity: 0; transform: translateY(8px) scale(0.98); }
-  to   { opacity: 1; transform: translateY(0) scale(1); }
-}
-
-.welcome-panel {
-  transform-origin: bottom left;
-  animation: welcome-panel-in 0.28s cubic-bezier(0.16, 1, 0.3, 1) both;
-}
-
-/* The trigger sits on the page rather than over a scrim, so it carries its own
-   contact shadow — .glass's elevation alone reads flat against bright hero
-   imagery. */
-.welcome-trigger {
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.35),
-    0 8px 24px rgba(0, 0, 0, 0.35),
-    0 2px 6px rgba(0, 0, 0, 0.2);
-  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-@media (hover: hover) {
-  .welcome-trigger:hover { transform: translateY(-2px); }
-}
-
-/* Three dots while the next scripted line lands. Staggered by nth-child so the
-   markup stays three bare <i>s. */
-@keyframes welcome-typing-dot {
-  0%, 60%, 100% { opacity: 0.25; transform: translateY(0); }
-  30%           { opacity: 1;    transform: translateY(-3px); }
-}
-
-.welcome-typing {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-}
-
-.welcome-typing i {
-  width: 5px;
-  height: 5px;
-  border-radius: 9999px;
-  background: #ffffff;
-  animation: welcome-typing-dot 1.2s ease-in-out infinite;
-}
-
-.welcome-typing i:nth-child(2) { animation-delay: 0.15s; }
-.welcome-typing i:nth-child(3) { animation-delay: 0.3s; }
-
-.welcome-choice {
-  transition:
-    background-color 0.2s ease,
-    border-color 0.2s ease,
-    color 0.2s ease,
-    filter 0.2s ease;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .welcome-panel,
-  .welcome-typing i { animation: none; }
-  .welcome-trigger,
-  .welcome-choice { transition: none !important; }
-  .welcome-typing i { opacity: 0.6; }
 }
 
 .animate-slide-up {

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import Script from "next/script";
 import { usePathname } from "next/navigation";
-import { useState, useRef, useEffect, useLayoutEffect, useCallback } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { useCookieConsent } from "@/lib/cookieConsent";
 import { cooldownAnswer, parseAnswer } from "@/lib/smartSearch";
 import {
@@ -12,12 +12,29 @@ import {
   DirectionsResultCard,
   WebResultsCard,
 } from "@/components/smartSearch/ResultCards";
+import {
+  ROOT_NODE_ID,
+  getChatNode,
+  isLinkChoice,
+  type ChatChoice,
+} from "@/lib/welcomeChat";
 import type {
   ProductResult,
   WeatherToolResult,
   DirectionsToolResult,
   SearchWebResult,
 } from "@/lib/smartSearch/tools";
+
+/** How often the resting circle turns over to advertise the guided path. */
+const TEASE_EVERY_MS = 8000;
+/** How long it stays turned over before going back to a circle. */
+const TEASE_HOLD_MS = 3600;
+/** Beat before a scripted reply lands, so it reads as a reply and not a jump. */
+const WELCOME_REPLY_MS = 450;
+
+type WelcomeTurn =
+  | { role: "user"; text: string }
+  | { role: "church"; text: string; nodeId: string };
 
 // Hide the trailing OPTION:/PAGE:/CTA: lines while text is still streaming in, so
 // the visitor only ever sees clean prose. The full reply is parsed once complete.
@@ -29,10 +46,6 @@ function visibleProse(raw: string): string {
     .replace(/^\s*[-=]{3,}\s*$/gm, "")
     .trimEnd();
 }
-
-// Run layout effects on the client, but fall back to useEffect during SSR to
-// avoid React's "useLayoutEffect does nothing on the server" warning.
-const useIsoLayoutEffect = typeof window !== "undefined" ? useLayoutEffect : useEffect;
 
 interface ToolCards {
   products?: ProductResult[];
@@ -103,7 +116,12 @@ const TOOL_STATUS_LABELS: Record<string, string> = {
   extract_page: "Reading the page…",
 };
 
-export default function FloatingSmartSearch() {
+export default function FloatingSmartSearch({
+  searchEnabled = true,
+}: {
+  /** Whether the AI half is live. False leaves the guided script working alone. */
+  searchEnabled?: boolean;
+}) {
   const pathname = usePathname();
   const { decided } = useCookieConsent();
   const [expanded, setExpanded] = useState(false);
@@ -118,9 +136,18 @@ export default function FloatingSmartSearch() {
   const containerRef = useRef<HTMLDivElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const focusOnOpenRef = useRef(false);
-  // Transient class that drives the keyframed width morph on each state change.
-  const [morph, setMorph] = useState<"" | "morph-expanding" | "morph-collapsing">("");
-  const firstMorphRef = useRef(true);
+  // Which conversation the expanded bar is having: the AI one, or the scripted
+  // "New here?" one from lib/welcomeChat.ts. One widget, two ways in.
+  const [mode, setMode] = useState<"search" | "welcome">("search");
+  // The resting circle periodically turns over into a labelled pill to advertise
+  // the guided path. Suppressed entirely while expanded or mid-search.
+  const [teasing, setTeasing] = useState(false);
+  const [staticTeaser, setStaticTeaser] = useState(false);
+  // Scripted-chat thread. Kept apart from `messages` so the two conversations
+  // can't bleed into one another.
+  const [welcomeTurns, setWelcomeTurns] = useState<WelcomeTurn[]>([]);
+  const [welcomePending, setWelcomePending] = useState(false);
+  const welcomeTimer = useRef<number | undefined>(undefined);
   const turnstileRef = useRef<HTMLDivElement>(null);
   const turnstileWidgetId = useRef<string | undefined>(undefined);
   const visibleTurnstileRef = useRef<HTMLDivElement>(null);
@@ -175,17 +202,6 @@ export default function FloatingSmartSearch() {
 
   const hasMessages = messages.length > 0;
 
-  // Keyframe the circle <-> pill morph whenever `expanded` flips. Skip the first
-  // render so the bar doesn't morph on mount; set the class in a layout effect so
-  // the keyframe starts from the correct width with no one-frame flash.
-  useIsoLayoutEffect(() => {
-    if (firstMorphRef.current) {
-      firstMorphRef.current = false;
-      return;
-    }
-    setMorph(expanded ? "morph-expanding" : "morph-collapsing");
-  }, [expanded]);
-
   // The bar should not minimise while the user is mid-search: focused, typing, or
   // with a conversation open. The scroll handler reads this via a ref.
   const interacting = focused || input.trim().length > 0 || hasMessages || loading;
@@ -206,7 +222,51 @@ export default function FloatingSmartSearch() {
     setInput("");
     setMessages([]);
     setLoading(false);
+    setMode("search");
+    setWelcomeTurns([]);
+    setWelcomePending(false);
+    if (welcomeTimer.current !== undefined) {
+      window.clearTimeout(welcomeTimer.current);
+      welcomeTimer.current = undefined;
+    }
   }, []);
+
+  /** Open the guided script rather than the search input. */
+  const openWelcome = useCallback(() => {
+    const root = getChatNode(ROOT_NODE_ID);
+    setMode("welcome");
+    setWelcomeTurns(
+      root ? [{ role: "church", text: root.message, nodeId: root.id }] : [],
+    );
+    setWelcomePending(false);
+    setTeasing(false);
+    focusOnOpenRef.current = false;
+    setExpanded(true);
+  }, []);
+
+  function pickWelcome(choice: ChatChoice) {
+    // Link choices navigate; next/link does the work, collapse tidies up behind.
+    if (isLinkChoice(choice)) {
+      collapse();
+      return;
+    }
+    const next = choice.next ? getChatNode(choice.next) : undefined;
+    if (!next) return;
+
+    setWelcomeTurns((prev) => [...prev, { role: "user", text: choice.label }]);
+    setWelcomePending(true);
+    if (welcomeTimer.current !== undefined) {
+      window.clearTimeout(welcomeTimer.current);
+    }
+    welcomeTimer.current = window.setTimeout(() => {
+      setWelcomeTurns((prev) => [
+        ...prev,
+        { role: "church", text: next.message, nodeId: next.id },
+      ]);
+      setWelcomePending(false);
+      welcomeTimer.current = undefined;
+    }, WELCOME_REPLY_MS);
+  }
 
   // First-use banner + initial placeholder, read once on mount.
   useEffect(() => {
@@ -240,6 +300,47 @@ export default function FloatingSmartSearch() {
     };
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
+  // The teaser. Every TEASE_EVERY_MS the resting circle turns over into a
+  // labelled pill for TEASE_HOLD_MS, then turns back — the only advertisement
+  // the guided path gets, since nothing auto-opens any more.
+  //
+  // Under prefers-reduced-motion it doesn't cycle at all: something that changes
+  // width every few seconds is exactly the unsolicited movement that setting is
+  // asking us not to make. Those visitors get the label permanently instead, so
+  // they lose the motion without losing the discoverability.
+  useEffect(() => {
+    const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const apply = () => setStaticTeaser(mq.matches);
+    apply();
+    mq.addEventListener("change", apply);
+    return () => mq.removeEventListener("change", apply);
+  }, []);
+
+  useEffect(() => {
+    if (staticTeaser || expanded || interacting) {
+      setTeasing(false);
+      return;
+    }
+    let hold: number | undefined;
+    const cycle = window.setInterval(() => {
+      setTeasing(true);
+      hold = window.setTimeout(() => setTeasing(false), TEASE_HOLD_MS);
+    }, TEASE_EVERY_MS);
+    return () => {
+      window.clearInterval(cycle);
+      if (hold !== undefined) window.clearTimeout(hold);
+      setTeasing(false);
+    };
+  }, [staticTeaser, expanded, interacting]);
+
+  useEffect(() => {
+    return () => {
+      if (welcomeTimer.current !== undefined) {
+        window.clearTimeout(welcomeTimer.current);
+      }
+    };
   }, []);
 
   // Rotate the placeholder prompt while expanded, empty, and not yet chatting.
@@ -488,6 +589,13 @@ export default function FloatingSmartSearch() {
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    // Typing a question is a vote for the AI side, even if the guided script is
+    // what's currently on screen. Drop the script rather than stack two threads.
+    if (mode === "welcome") {
+      setMode("search");
+      setWelcomeTurns([]);
+      setWelcomePending(false);
+    }
     sendMessage(input);
   }
 
@@ -511,8 +619,21 @@ export default function FloatingSmartSearch() {
     : [];
 
   const hasPages    = pageMatches.length > 0;
-  const showPanel   = expanded && (hasMessages || loading || hasPages || Boolean(turnstileChallengeText));
-  const showWelcome = expanded && showFirstUse && !hasMessages && !loading && !input;
+  const inWelcome   = mode === "welcome";
+  const showPanel   = expanded && !inWelcome && (hasMessages || loading || hasPages || Boolean(turnstileChallengeText));
+  // The AI first-use explainer has no business appearing over the scripted chat.
+  const showWelcome = expanded && !inWelcome && showFirstUse && !hasMessages && !loading && !input;
+  // The teaser is a resting state, so anything that isn't the resting circle
+  // wins: expanding, typing, or a live conversation all cancel it.
+  const showTeaser  = !expanded && (staticTeaser || teasing);
+  // The node whose choices are live: the last thing the church said.
+  const welcomeNodeId =
+    [...welcomeTurns].reverse().find(
+      (t): t is Extract<WelcomeTurn, { role: "church" }> => t.role === "church",
+    )?.nodeId ?? ROOT_NODE_ID;
+  const welcomeChoices = welcomePending
+    ? []
+    : (getChatNode(welcomeNodeId)?.choices ?? []);
 
   return (
     <div
@@ -530,6 +651,118 @@ export default function FloatingSmartSearch() {
         className="pointer-events-auto relative flex w-full flex-col items-center"
         style={{ maxWidth: "min(calc(100vw - 2rem), 28rem)" }}
       >
+        {/* The guided script. Its own panel rather than a branch inside the AI
+            one: the two share bubble styling but nothing else, and interleaving
+            them was the fastest way to end up rendering a scripted reply into a
+            streaming thread. glass-opaque because this floats over whatever page
+            you're on — the translucent fill put body copy on the hero's display
+            type. */}
+        {expanded && inWelcome && (
+          <div className="floating-search-panels absolute bottom-full left-0 right-0 mb-2">
+            <div className="glass glass-strong glass-opaque glass-refract flex flex-col overflow-hidden rounded-2xl">
+              <div className="flex shrink-0 items-center justify-between gap-3 border-b border-white/10 px-4 py-3">
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-black text-white">New to Destiny?</p>
+                  <p className="truncate text-[11px] text-white/50">
+                    A few questions to point you the right way
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={collapse}
+                  aria-label="Close"
+                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-white/50 transition hover:bg-white/10 hover:text-white"
+                >
+                  <span aria-hidden className="material-symbols-rounded text-lg">close</span>
+                </button>
+              </div>
+
+              <div
+                className="flex max-h-[min(26rem,50vh)] flex-col gap-3 overflow-y-auto overscroll-contain px-4 py-4"
+                aria-live="polite"
+              >
+                {welcomeTurns.map((turn, i) =>
+                  turn.role === "church" ? (
+                    <div key={i} className="flex items-start gap-2">
+                      <span
+                        aria-hidden
+                        className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-destiny-orange/15 text-destiny-orange"
+                      >
+                        <span className="material-symbols-rounded text-sm">waving_hand</span>
+                      </span>
+                      <p className="max-w-[85%] rounded-2xl rounded-tl-sm bg-white/10 px-3.5 py-2.5 text-sm leading-relaxed text-white/85">
+                        {turn.text}
+                      </p>
+                    </div>
+                  ) : (
+                    <p
+                      key={i}
+                      className="ml-auto max-w-[85%] rounded-2xl rounded-tr-sm bg-destiny-orange px-3.5 py-2.5 text-sm leading-relaxed text-white"
+                    >
+                      {turn.text}
+                    </p>
+                  ),
+                )}
+
+                {welcomePending && (
+                  <div className="flex items-center gap-2">
+                    <span
+                      aria-hidden
+                      className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-destiny-orange/15 text-destiny-orange"
+                    >
+                      <span className="material-symbols-rounded text-sm">waving_hand</span>
+                    </span>
+                    <span className="rounded-2xl rounded-tl-sm bg-white/10 px-3.5 py-3">
+                      <span className="flex gap-1">
+                        <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-white/40" style={{ animationDelay: "0ms" }} />
+                        <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-white/40" style={{ animationDelay: "150ms" }} />
+                        <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-white/40" style={{ animationDelay: "300ms" }} />
+                      </span>
+                      <span className="sr-only">Typing</span>
+                    </span>
+                  </div>
+                )}
+              </div>
+
+              {welcomeChoices.length > 0 && (
+                <div className="flex shrink-0 flex-wrap gap-2 border-t border-white/10 bg-white/5 px-4 py-3">
+                  {welcomeChoices.map((choice) =>
+                    isLinkChoice(choice) ? (
+                      <Link
+                        key={choice.label}
+                        href={choice.href}
+                        onClick={() => pickWelcome(choice)}
+                        className="inline-flex items-center gap-1.5 rounded-full bg-destiny-orange px-3.5 py-2 text-xs font-bold text-white outline-none transition hover:brightness-110 focus-visible:ring-2 focus-visible:ring-white/60"
+                      >
+                        {choice.label}
+                        <span aria-hidden className="material-symbols-rounded text-sm">arrow_forward</span>
+                      </Link>
+                    ) : (
+                      <button
+                        key={choice.label}
+                        type="button"
+                        onClick={() => pickWelcome(choice)}
+                        className="rounded-full border border-white/15 px-3.5 py-2 text-xs font-bold text-white/80 outline-none transition hover:border-destiny-orange hover:bg-white/10 hover:text-white focus-visible:ring-2 focus-visible:ring-destiny-orange"
+                      >
+                        {choice.label}
+                      </button>
+                    ),
+                  )}
+                  {welcomeNodeId !== ROOT_NODE_ID && (
+                    <button
+                      type="button"
+                      onClick={openWelcome}
+                      className="rounded-full px-3 py-2 text-xs font-semibold text-white/40 outline-none transition hover:text-white/80 focus-visible:ring-2 focus-visible:ring-destiny-orange"
+                    >
+                      Start over
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* Panels stack above the bar and expand upward */}
         {(showWelcome || showPanel) && (
           <div className="floating-search-panels absolute bottom-full left-0 right-0 mb-2">
@@ -701,18 +934,11 @@ export default function FloatingSmartSearch() {
           </div>
         )}
 
-        {/* Morphing bar: circle (collapsed) <-> pill (expanded) */}
+        {/* Morphing bar: circle -> teaser pill -> full pill */}
         <div
           className={`search-glow floating-search-morph relative h-14 rounded-full ${
-            expanded ? "is-expanded" : ""
-          } ${morph} ${expanded && loading ? "is-loading" : ""}`}
-          onAnimationEnd={(e) => {
-            // Only clear for the morph element's own width animation, not the
-            // loading-glow spin or child spinners that bubble up.
-            if (e.target === e.currentTarget && e.animationName.startsWith("fs-morph")) {
-              setMorph("");
-            }
-          }}
+            expanded ? "is-expanded" : showTeaser ? "is-teasing" : ""
+          } ${expanded && loading ? "is-loading" : ""}`}
         >
           {/* Glass material lives on an inner layer: .search-glow owns this
               element's ::before/::after for the loading glow, so .glass (which
@@ -720,29 +946,51 @@ export default function FloatingSmartSearch() {
               down. It fills the pill exactly and contains the interactive
               children so the bloom tracker's closest('.glass') resolves. */}
           <div className="glass glass-strong glass-refract absolute inset-0 rounded-full">
-          {/* Collapsed: circular trigger */}
+          {/* Collapsed: the resting trigger. One button, two faces — the search
+              mark opens the AI bar, and every 8s it turns over to a sparkle and
+              the pill grows a "New here? Start here" label that opens the
+              scripted conversation instead. Both live on the same control so there is
+              one floating widget on the page, not two. */}
           <button
             type="button"
-            onClick={() => openBar(true)}
-            aria-label="Open Smart Search"
+            onClick={() => (showTeaser || !searchEnabled ? openWelcome() : openBar(true))}
+            aria-label={showTeaser || !searchEnabled ? "New here? Start here" : "Open Smart Search"}
             aria-hidden={expanded}
             tabIndex={expanded ? -1 : 0}
-            className={`floating-search-trigger absolute inset-0 flex items-center justify-center text-white transition-opacity ${
-              expanded ? "pointer-events-none opacity-0" : "opacity-100"
-            }`}
+            className={`floating-search-trigger absolute inset-0 flex items-center text-white transition-opacity ${
+              showTeaser ? "justify-start gap-2.5 pl-4 pr-4" : "justify-center"
+            } ${expanded ? "pointer-events-none opacity-0" : "opacity-100"}`}
           >
-            <span className="relative">
-              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
-              </svg>
-              <SparkleIcon className="absolute -right-1.5 -top-1.5 h-2.5 w-2.5 text-destiny-orange" />
+            <span className={`fs-flip relative h-5 w-5 shrink-0 ${showTeaser ? "is-flipped" : ""}`}>
+              <span className="fs-flip-face relative flex h-full w-full items-center justify-center">
+                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+                </svg>
+                <SparkleIcon className="absolute -right-1.5 -top-1.5 h-2.5 w-2.5 text-destiny-orange" />
+              </span>
+              <span className="fs-flip-face fs-flip-back">
+                <SparkleIcon className="h-5 w-5 text-destiny-orange" />
+              </span>
+            </span>
+
+            {/* Width is the pill's job; this only fades, so nothing slides. */}
+            <span
+              aria-hidden={!showTeaser}
+              className={`fs-teaser-label min-w-0 truncate text-xs font-bold ${
+                showTeaser ? "opacity-100" : "pointer-events-none opacity-0"
+              }`}
+            >
+              New here? <span className="font-semibold text-white/60">Start here</span>
             </span>
           </button>
 
-          {/* Expanded: input form */}
+          {/* Expanded: input form. Absent entirely when the AI half is off — the
+              guided script needs no text box, and an input that can't submit is
+              worse than none. */}
           <form
             onSubmit={handleSubmit}
             aria-hidden={!expanded}
+            hidden={!searchEnabled}
             className={`floating-search-form absolute inset-0 flex items-center transition-opacity ${
               expanded ? "opacity-100" : "pointer-events-none opacity-0"
             }`}

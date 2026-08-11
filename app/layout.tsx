@@ -12,7 +12,6 @@ import SiteBanner from "@/components/SiteBanner";
 import LiveBanner from "@/components/LiveBanner";
 import SitePopup from "@/components/SitePopup";
 import EventPopup from "@/components/events/EventPopup";
-import WelcomeWidget from "@/components/WelcomeWidget";
 import { getActiveEventPopup } from "@/lib/events.server";
 import FloatingSmartSearch from "@/components/FloatingSmartSearch";
 import GlassBloomTracker from "@/components/GlassBloomTracker";
@@ -431,14 +430,13 @@ export default async function RootLayout({
           <GlassBloomTracker />
           {/* An active event popup suppresses the generic one — passing null
               here is the whole mechanism, so only ever one modal shows and
-              there's no client-side coordination to get wrong.
-
-              The welcome widget needs no coordination at all: it never opens
-              itself, so it can't land on top of either popup. */}
-          <WelcomeWidget />
+              there's no client-side coordination to get wrong. */}
           <SitePopup popup={eventPopup ? null : popup} />
           <EventPopup popup={eventPopup} />
-          {smartSearchEnabled && <FloatingSmartSearch />}
+          {/* Always mounted. `searchEnabled` only governs the AI half — the
+              guided "New here?" script inside it is hand-written and has no
+              service to be down, so the kill-switch must not take it with it. */}
+          <FloatingSmartSearch searchEnabled={smartSearchEnabled} />
         </Providers>
         <SpeedInsights />
       </body>

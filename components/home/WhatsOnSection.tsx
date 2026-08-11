@@ -1,6 +1,6 @@
 import Link from "next/link";
 import AnimateIn from "@/components/AnimateIn";
-import EventsMarquee from "@/components/home/EventsMarquee";
+import EventsCarousel from "@/components/home/EventsCarousel";
 import EventCard from "@/components/events/EventCard";
 import { getEventIndex, getFeaturedEvent } from "@/lib/events.server";
 import type { EventCardVariant } from "@/lib/events";
@@ -75,18 +75,10 @@ export default async function WhatsOnSection({
   const events = ordered.slice(0, 6);
   const hasEvents = events.length > 0;
 
-  // A marquee group narrower than the viewport leaves a visible hole between
-  // the two copies, so a short feed gets repeated until the rail is wide enough
-  // to cover an ultrawide screen (MIN_CARDS × 320px + gaps ≈ 2900px).
-  const MIN_CARDS = 8;
-  const repeats = hasEvents ? Math.ceil(MIN_CARDS / events.length) : 0;
-  const rail = Array.from({ length: repeats }, () => events).flat();
-
   return (
-    <section className="overflow-hidden bg-white py-10 sm:py-16">
-      {/* Header — kept in the page container so it lines up with every other
-          section; only the rail below goes full bleed. */}
+    <section className="bg-white py-10 sm:py-16">
       <div className="mx-auto max-w-7xl px-4 lg:px-8">
+        {/* Header */}
         <AnimateIn>
           <div className="mb-8 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
             <h2 className="text-2xl font-black text-destiny-orange sm:text-3xl md:text-4xl">
@@ -100,36 +92,32 @@ export default async function WhatsOnSection({
             </Link>
           </div>
         </AnimateIn>
-      </div>
 
-      {/* Autoscrolling rail, edge to edge */}
-      <AnimateIn delay={100}>
-        <EventsMarquee duration={(hasEvents ? rail.length : 9) * 7}>
-          {hasEvents
-            ? rail.map((event, i) => (
-                <EventCard
-                  // The feed repeats to fill the rail, so the slug alone isn't
-                  // unique across the group.
-                  key={`${event.slug}-${i}`}
-                  event={event}
-                  variant={cardVariant}
-                  featured={event.slug === featuredSlug}
-                  priority={i === 0}
-                  className={CARD_WIDTH}
-                  sizes="(max-width: 640px) 280px, 320px"
-                />
-              ))
-            : Array.from({ length: 9 }).map((_, i) => (
-                <EventCardPlaceholder key={i} index={i} />
-              ))}
-        </EventsMarquee>
-      </AnimateIn>
+        {/* Event cards carousel */}
+        <AnimateIn delay={100}>
+          <EventsCarousel>
+            {hasEvents
+              ? events.map((event, i) => (
+                  <EventCard
+                    key={event.slug}
+                    event={event}
+                    variant={cardVariant}
+                    featured={event.slug === featuredSlug}
+                    priority={i === 0}
+                    className={CARD_WIDTH}
+                    sizes="(max-width: 640px) 280px, 320px"
+                  />
+                ))
+              : Array.from({ length: 3 }).map((_, i) => (
+                  <EventCardPlaceholder key={i} index={i} />
+                ))}
+          </EventsCarousel>
+        </AnimateIn>
 
-      {/* View all button */}
-      <div className="mx-auto max-w-7xl px-4 lg:px-8">
+        {/* View all button */}
         <AnimateIn delay={200}>
-          {/* mt-1, not mt-6: the rail's own bottom padding (shadow clearance)
-              already supplies most of the gap. */}
+          {/* mt-1, not mt-6: the carousel track's own bottom padding (shadow
+              clearance) already supplies most of the gap. */}
           <div className="mt-1 text-center">
             <Link
               href="/whats-on"

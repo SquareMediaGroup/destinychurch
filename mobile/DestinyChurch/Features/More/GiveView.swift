@@ -8,16 +8,25 @@ import SwiftUI
 /// to present plainly as one rather than as a native-looking form (scope doc
 /// §6 and Appendix B.2).
 struct GiveView: View {
-    // TODO: source this from /api/app/v1/config once AppConfigStore lands, so
-    // the URL can change without an App Store release. The constant is the
-    // same value the website embeds today.
-    private let donateURL = URL(string: "https://destinytees.churchsuite.com/donate")!
+    @Environment(AppConfigStore.self) private var configStore
 
     var body: some View {
-        BrowserView(url: donateURL, title: "Give")
+        if let url = configStore.config?.givingUrl {
+            BrowserView(url: url, title: "Give")
+        } else {
+            // Only reachable if the bundled fallback config failed to decode,
+            // which would be a build problem rather than a runtime one.
+            ContentUnavailableView(
+                "Giving is unavailable",
+                systemImage: "heart.slash",
+                description: Text("Please try again shortly.")
+            )
+        }
     }
 }
 
 #Preview {
-    GiveView().tint(Brand.accent)
+    GiveView()
+        .environment(AppConfigStore())
+        .tint(Brand.accent)
 }

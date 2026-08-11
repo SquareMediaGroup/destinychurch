@@ -1,0 +1,91 @@
+{
+  "minSupportedBuild": 1,
+  "forceUpdateMessage": null,
+  "givingUrl": "https://destinytees.churchsuite.com/donate",
+  "forms": [
+    {
+      "id": "new-here",
+      "title": "I'm New",
+      "subtitle": "Tell us a bit about yourself",
+      "url": "https://destinytees.churchsuite.com/embed/addressbook/form",
+      "systemImage": "hand.wave"
+    },
+    {
+      "id": "connect",
+      "title": "Connect",
+      "subtitle": "Join a Connect Group",
+      "url": "https://destinytees.churchsuite.com/forms/twuneiil",
+      "systemImage": "person.2"
+    },
+    {
+      "id": "connect-card",
+      "title": "Connect Card",
+      "subtitle": "Let us know how we can help",
+      "url": "https://destinytees.churchsuite.com/forms/kw3c1oly",
+      "systemImage": "square.and.pencil"
+    },
+    {
+      "id": "prayer",
+      "title": "Prayer Request",
+      "subtitle": "We'd love to pray with you",
+      "url": "https://destinytees.churchsuite.com/forms/1yctuibm",
+      "systemImage": "hands.sparkles"
+    },
+    {
+      "id": "baptism",
+      "title": "Baptism",
+      "subtitle": "Take your next step",
+      "url": "https://destinytees.churchsuite.com/forms/sdxbpkle",
+      "systemImage": "drop"
+    },
+    {
+      "id": "child-dedication",
+      "title": "Child Dedication",
+      "subtitle": "Dedicate your child",
+      "url": "https://destinytees.churchsuite.com/forms/tb7deesr",
+      "systemImage": "figure.and.child.holdinghands"
+    },
+    {
+      "id": "serve",
+      "title": "Serve",
+      "subtitle": "Join a team",
+      "url": "https://destinytees.churchsuite.com/-/forms/cdgkeqkm",
+      "systemImage": "hands.and.sparkles"
+    },
+    {
+      "id": "contact",
+      "title": "Contact Us",
+      "subtitle": "Get in touch",
+      "url": "https://destinytees.churchsuite.com/-/forms/fhq8ahuc",
+      "systemImage": "envelope"
+    }
+  ],
+  "serviceTimes": [
+    {
+      "label": "Prayer",
+      "day": "Sunday",
+      "start": "10:00",
+      "end": "10:30"
+    },
+    {
+      "label": "Main Gathering",
+      "day": "Sunday",
+      "start": "11:00",
+      "end": "12:30"
+    }
+  ],
+  "timeZone": "Europe/London",
+  "venue": {
+    "name": "Destiny Centre",
+    "address": "395 Norton Rd, Stockton-on-Tees, TS20 2QQ",
+    "latitude": 54.5798,
+    "longitude": -1.3162
+  },
+  "links": {
+    "website": "https://destinytees.uk",
+    "youtube": "https://www.youtube.com/destinychurchteesvalley",
+    "churchSuite": "https://destinytees.churchsuite.com",
+    "privacy": "https://destinytees.uk/privacy",
+    "safeguarding": "https://destinytees.uk/safeguarding"
+  }
+}

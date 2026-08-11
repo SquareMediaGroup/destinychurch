@@ -1997,6 +1997,47 @@ stay: they're consent and legal, not chrome.
 - `ProductBuyPanel.tsx` — colour swatches + size pills + quantity + add-to-basket (client)
 - `CartButton.tsx` — header basket icon with live item-count badge (client)
 - `CheckoutForm.tsx` — Stripe Express Checkout Element (Apple Pay / Google Pay / Link, shown only when a wallet is available) above the Payment Element card form; both confirm the same PaymentIntent (client)
+- `ShopDiagnostics.tsx` — **TEMPORARY.** Mounted for every `/shop` route by
+  `app/shop/layout.tsx` to chase an intermittent blank/white page in Chrome.
+  Renders nothing. See "Shop blank-page diagnostic" below; delete this component,
+  the layout and `/api/shop-diagnostics` once the cause is confirmed.
+
+##### Shop blank-page diagnostic (temporary)
+
+The bug: `/shop` and its sub-routes intermittently paint blank/white in Chrome.
+Ruled out by investigation — server errors (12/12 identical 200s), JS heap growth
+(flat ~15MB), image weight (largest source image 110KB), console errors (none) and
+a renderer crash (Chrome's Crashpad directory empty). Not reproducible on demand,
+hence instrumentation rather than a speculative fix.
+
+Two candidate failure modes need different evidence, which is what the payload is
+shaped around:
+
+| Mode | What the report looks like |
+|---|---|
+| React/JS died | `dom.mainChildren === 0`, plus a `js-error` / `dom-blank` reason |
+| Compositing failed | DOM completely intact, **no** error — the GPU simply never painted |
+
+The second mode is invisible to any automatic check, which is why a **manual
+hotkey (Ctrl/Cmd + Shift + 9)** exists: a `manual` report showing a healthy DOM and
+zero errors is itself the finding, because it eliminates the first mode.
+
+Automatic tripwires: `window.onerror`, `unhandledrejection`, a 1x1 WebGL context
+listening for `webglcontextlost` (the only JS-visible signal of a GPU process
+reset), a `PerformanceObserver` for long tasks, and a 3s poll for an emptied
+`<main>`. Observation is deliberately passive — `PerformanceObserver` rather than a
+`requestAnimationFrame` loop — so the instrument does not perturb the compositing
+behaviour it is measuring.
+
+`render.refractActive` is the key field: it records whether the SVG refraction
+`backdrop-filter: url(#glass-refract)` is live at that moment. It differs by route
+— the `/shop` index disables it via `html:has(.shop-page)` in `globals.css`, the
+sub-routes do not — so it discriminates the prime suspect automatically.
+
+Per-route state: the report budget, event buffer and timers all reset on `pathname`
+change. The component lives in the shop layout and survives client-side navigation,
+so without that reset the budget would be spent once per browsing session and the
+instrument would fall silent exactly when the bug next appeared.
 
 > **Apple Pay:** enabled automatically by `automatic_payment_methods` — no extra API params. The only prerequisite is a **registered payment-method domain**; Stripe hosts the Apple domain-association file, so there is no `/.well-known` file to deploy. Register the live domain(s) once via Stripe Dashboard → Settings → Payment methods → Apple Pay, or run `scripts/register-apple-pay-domain.mjs` with the live `STRIPE_SECRET_KEY` (e.g. `destinytees.uk` and `www.destinytees.uk`). Apple Pay renders on supported devices/browsers only (Safari on Apple hardware).
 
@@ -2361,6 +2402,18 @@ POST /api/store/checkout/bypass
 
 // Shared order logic (pricing recompute, order creation, paid-finalisation) lives
 // in lib/checkout.server.ts and is used by checkout, the webhook, and the bypass.
+
+POST /api/shop-diagnostics
+//   TEMPORARY — remove with components/shop/ShopDiagnostics.tsx once the /shop
+//   blank-page bug is identified. Receives a client snapshot captured when /shop
+//   renders blank and does two things with it:
+//     1. console.error → Vercel runtime logs. Always runs; the reliable channel.
+//     2. Files/comments a GitHub issue via the GITHUB_TOKEN already used by
+//        components/report-bug/actions.ts, deduped by reason+route (label
+//        "shop-blank-page") so a recurring bug appends to one issue.
+//   Public and unauthenticated but fenced: same-origin only (403), 32KB body cap
+//   (413), 5 reports per IP per 10 min (throttled), and localhost skips the
+//   GitHub write so dev noise never reaches the issue tracker.
 
 // ADMIN (gated by middleware, site_editor role)
 GET|POST            /api/admin/store/products

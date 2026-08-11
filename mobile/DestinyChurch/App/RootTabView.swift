@@ -10,27 +10,29 @@ import SwiftUI
 /// instead as a hero card on Home while live, a badge on Sermons, and a row in
 /// More — all three pushing the same destination.
 struct RootTabView: View {
-    enum Tab: Hashable {
+    /// Named `AppTab`, not `Tab` — SwiftUI's own `Tab` is used below, and a
+    /// nested type of the same name shadows it.
+    enum AppTab: Hashable {
         case home, sermons, events, give, more
     }
 
-    @State private var selection: Tab = .home
+    @State private var selection: AppTab = .home
 
     var body: some View {
         TabView(selection: $selection) {
-            Tab("Home", systemImage: "house.fill", value: Tab.home) {
+            Tab("Home", systemImage: "house.fill", value: AppTab.home) {
                 HomeView()
             }
-            Tab("Sermons", systemImage: "play.rectangle.on.rectangle.fill", value: Tab.sermons) {
+            Tab("Sermons", systemImage: "play.rectangle.on.rectangle.fill", value: AppTab.sermons) {
                 SermonsView()
             }
-            Tab("Events", systemImage: "calendar", value: Tab.events) {
+            Tab("Events", systemImage: "calendar", value: AppTab.events) {
                 EventsListView()
             }
-            Tab("Give", systemImage: "heart.fill", value: Tab.give) {
+            Tab("Give", systemImage: "heart.fill", value: AppTab.give) {
                 GiveView()
             }
-            Tab("More", systemImage: "ellipsis.circle", value: Tab.more) {
+            Tab("More", systemImage: "ellipsis.circle", value: AppTab.more) {
                 MoreView()
             }
         }

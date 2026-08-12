@@ -337,20 +337,18 @@ destinychurch/
 ├── docs/                          # Additional documentation, incl. mobile-app-scope.md (+ .pdf export)
 │   └── content/                   # Source copy for policy/partner text — the live pages render
 │                                   # an edited subset, so these are the fuller source. See its README.
-├── mobile/                        # React Native / Expo app (iOS-first). Expo Router bottom-tab shell
-│                                   # (Home/Sermons/Events/Give), theme from @destiny/shared tokens.
-│                                   # ISOLATED from npm workspaces (own node_modules) so RN can't clash
-│                                   # with the web's React; consumes @destiny/shared by source via Metro.
-│                                   # Excluded from the web tsconfig + eslint. Run: `cd mobile && npm install`.
-│                                   # App BFF routes live under app/api/app/* (e.g. app/api/app/events).
+├── mobile/                        # Native SwiftUI iOS app (Swift 6, strict concurrency). Five tabs —
+│                                   # Home/Sermons/Events/Give/More. XcodeGen project (project.yml is
+│                                   # the source of truth; the .xcodeproj is generated, not committed).
+│                                   # Talks only to the /api/app/v1/* BFF — no @destiny/shared import,
+│                                   # the BFF does all normalising. Build via `make` (see mobile/Makefile).
+│                                   # Asset catalog is generated from brand tokens: `npm run gen:ios-assets`.
 ├── packages/                      # npm workspaces (root package.json `workspaces: ["packages/*"]`)
-│   └── shared/                    # @destiny/shared — framework-agnostic types/logic shared by web,
-│                                   # mobile, and the app BFF. Ships raw TS (Next transpiles it via
-│                                   # `transpilePackages`). First module: src/churchsuite/events.ts
-│                                   # (ChurchSuiteEvent, deduplicateEvents, fetchChurchSuiteEvents) —
-│                                   # de-duplicates logic previously copied across whats-on/home events UI.
-│                                   # Also src/design/tokens.ts — canonical DC brand palette/typography
-│                                   # (pillar colours, accent, gradient) matching app/globals.css.
+│   └── shared/                    # @destiny/shared — framework-agnostic types/logic shared by the web
+│                                   # app and the app BFF (the Swift app can't import TS). Ships raw TS
+│                                   # (Next transpiles it via `transpilePackages`). Modules under src/:
+│                                   # churchsuite/{events,dates,series,sanitize,ics} and design/tokens.ts
+│                                   # (canonical DC brand palette/typography matching app/globals.css).
 ├── types/
 │   └── turnstile.d.ts             # Declares window.turnstile (Cloudflare Turnstile JS API)
 ├── tests/                         # Playwright E2E specs (contact, cookies, give,
@@ -3680,31 +3678,60 @@ ENABLE_SMART_SEARCH=true
 - **Public endpoints:** `/api/chat` (Smart Search tool-calling chat, Turnstile-gated), `/api/turnstile/verify` (Cloudflare Turnstile token check), YouTube (videos/status/thumbnail/live), Alpha info, training unlock + read timer (`/api/training/posts/[id]/timer`)
 - **Store endpoints:** Stripe checkout + Payment Element, order management
 - **Webhooks:** Stripe only (`/api/webhooks/stripe`) — no GitHub or Vercel deployment webhook route
-- **App BFF (`/api/app/*`):** Backend-for-frontend routes serving the mobile app. `/api/app/events`
-  proxies the ChurchSuite public calendar live via `@destiny/shared` (`fetchChurchSuiteEvents` +
-  `deduplicateEvents`), returning the normalized events shape with a 5-minute edge cache
-  (`s-maxage=300, stale-while-revalidate=60`) and no persisted shadow store.
+- **App BFF (`/api/app/v1/*`):** Backend-for-frontend routes serving the native iOS app. Because the
+  Swift client cannot import `@destiny/shared`, every one of these routes fully normalises its payload
+  server-side (absolute URLs, timezone-qualified timestamps, sanitised HTML, real booleans) and wraps
+  it in a versioned envelope (`{ status: "ok"|"degraded", generatedAt, data, notice }`) via
+  `lib/appApi.ts` + `lib/appSerializers.ts`. Seven endpoints:
+  - `config` — remote config for the More tab (ChurchSuite form links, service times, venue, giving
+    URL, `minSupportedBuild` kill switch); `revalidate = 300`.
+  - `home` — the whole Home screen in one request (featured event, next service, live status, latest
+    sermon, latest podcast episode) to avoid five cold-launch round trips.
+  - `events` / `events/[slug]` — the events feed, built with `buildEventIndex` so app and web share the
+    same slugs; the full payload ships in the list response so the detail screen needs no network.
+  - `sermons` — YouTube sermon videos; a quota trip degrades (with a "Watch on YouTube" link) rather
+    than errors.
+  - `podcast` — the DCTV Buzzsprout feed (direct-MP3 `audioUrl` for AVPlayer range streaming).
+  - `live` — live-stream status, polled every 30s, mirroring `contexts/LiveContext.tsx`'s offline grace.
+  - A degraded response overrides the caller's cache down to `s-maxage=30` so a ChurchSuite blip isn't
+    pinned in the edge cache for the full TTL. Dev-only `?simulate=degraded|empty|error` exercises the
+    app's non-happy states (hard-disabled in production). The legacy `/api/app/events` route is removed.
 
-### Mobile App (Phase 1 — Expo)
-- **`mobile/`** is a real React Native / Expo app (iOS-first), no longer a placeholder. It uses
-  Expo Router with a bottom-tab shell — **Home / Sermons / Events / Give** (`app/(tabs)/`) — and
-  `expo-router/entry` as its entry point. Fonts are Anton / Playfair Display / Roboto via
-  `@expo-google-fonts`, icons via `@expo/vector-icons` (Ionicons). Key deps: `expo ~53`,
-  `react-native 0.79`, `react 19`, `expo-router ~5`.
-  - **Theme** (`mobile/theme/index.ts`) is derived from `@destiny/shared` design tokens so the app
-    matches the website's DC brand palette/typography.
-  - **Data flow:** screens talk only to the App BFF (`/api/app/events`), never to ChurchSuite
-    directly. `API_BASE` defaults to `https://destinychurch.vercel.app` and is overridable in dev
-    via `EXPO_PUBLIC_API_BASE_URL` (to be switched to `https://destinytees.uk` once that domain
-    serves the BFF).
-  - **Isolation:** `mobile/` is excluded from the npm workspaces (its own `node_modules`) so React
-    Native can't clash with the web's React, and it consumes `@destiny/shared` by source through
-    Metro (`metro.config.js`). It is excluded from the web `tsconfig` + eslint. Setup:
-    `cd mobile && npm install`.
-  - **Builds:** `eas.json` defines `development` (dev client, internal), `preview` (internal,
-    device build), and `production` (auto-incrementing) EAS build profiles.
+### Mobile App (Native SwiftUI iOS)
+The Expo/React Native scaffold was removed in favour of a **native SwiftUI app** (commits `3f68680`
+onward). The app lives in `mobile/` and is a pure renderer over the `/api/app/v1/*` BFF — it does no
+feed normalisation of its own, because the BFF already does all of it.
+- **Project & build.** Swift 6 with `SWIFT_STRICT_CONCURRENCY: complete`, built against the iOS 26 SDK
+  (which opts standard components into Liquid Glass) with an iOS 18 deployment target. The Xcode project
+  is **generated, not committed**: `mobile/project.yml` is the XcodeGen source of truth (sources are
+  globbed, so adding a Swift file needs no project edit), and `mobile/Makefile` wraps the
+  `xcodegen generate` + `xcodebuild` flow (`make project` / `make build` / `make test` / `make launch`).
+  Bundle id `uk.destinytees.app`, portrait-only, iPhone + iPad. `DC_API_BASE` is set per-configuration
+  (`http://localhost:3000` in Debug, `https://destinytees.uk` in Release).
+- **Structure** (`mobile/DestinyChurch/`):
+  - `App/` — `DestinyChurchApp` entry point and `RootTabView`, the five-tab shell
+    (**Home / Sermons / Events / Give / More**). Live is deliberately *not* a tab — it surfaces as a
+    Home hero card, a Sermons badge, and a More row instead.
+  - `Features/` — one folder per tab (`Home`, `Sermons`, `Events`, `More` incl. `GiveView`), each with
+    its SwiftUI views and an `@Observable` model.
+  - `Networking/` — `APIClient` (the single network entry point; `Endpoint` enum is the only place a
+    path string appears), `Envelope` (decodes the BFF's status/notice wrapper), `APIError`, `LoadState`.
+  - `Models/` — `Codable` mirrors of the BFF payloads (`AppConfig`, `EventSeries`, `Sermon`,
+    `PodcastShow`).
+  - `Design/` — `Brand` (colours), `Typography`, `GlassSurface`, `StateContainer` (loading/empty/error
+    scaffolding), `ComingSoonView`.
+  - `Web/` — `BrowserView`, an in-app browser for ChurchSuite forms opened from the More tab.
+  - `Resources/` — `Info.plist`, `config-fallback.json` (a baked-in copy of `/api/app/v1/config` so the
+    first launch has content before the network returns), and the generated `Assets.xcassets`.
+- **Generated assets.** `scripts/generate-ios-assets.mjs` (`npm run gen:ios-assets`) rasterises the app
+  icon and launch logo from the brand SVGs in `public/` and emits colorsets from
+  `packages/shared/src/design/tokens.ts`, so the app's colours can never drift from the website's.
+- **Remote config.** The More tab, giving link, service times and venue all render from
+  `/api/app/v1/config`, so changing a ChurchSuite form slug is a server-side JSON edit, not an App Store
+  release; `minSupportedBuild` in that payload is a kill switch for a bad build.
 - **`packages/shared/`** (`@destiny/shared`) is an npm workspace of framework-agnostic
-  types/logic shared by the web app, the mobile app, and the App BFF. It ships raw TypeScript
+  types/logic shared by the web app and the App BFF (the native app consumes it only indirectly, via
+  the BFF's JSON). It ships raw TypeScript
   (Next transpiles it via `transpilePackages: ["@destiny/shared"]`). Modules:
   - `src/churchsuite/events.ts` — `ChurchSuiteEvent`, `deduplicateEvents`, `fetchChurchSuiteEvents`,
     `churchSuiteEventUrl`, `eventSignupUrl`, `stripEmoji`, `eventDescriptionText`, and `eventImage`.
@@ -3734,8 +3761,8 @@ ENABLE_SMART_SEARCH=true
   constraints (adult/minor boundary via ChurchSuite DOB data), ChurchSuite API integration, and
   payments/sermon-feed reuse. It now also includes **Appendix A (ChurchSuite API v2 technical
   reference)** and **Appendix B (Apple Human Interface Guidelines considerations)**. Phase 1
-  (the Expo tab shell + events BFF) is now built; later phases (chat, payments, push) are still
-  planning-only.
+  (the native SwiftUI tab shell over the `/api/app/v1` BFF) is now built; later phases (chat, payments,
+  push) are still planning-only.
 
 ### Database Migrations
 - **35 migration files** defining schema for:

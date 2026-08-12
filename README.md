@@ -25,7 +25,7 @@ Designed, engineered, and deployed by [Square Media Group](mailto:hello@squareme
 - AI Smart Search — OpenAI tool-calling chat with product cards, weather, maps/directions, and live web search
 - Cloudflare Turnstile bot protection on sign-in and Smart Search
 - Protected admin dashboard (sermons, pages/posts, redirects, banner, popup, shop, training, HR, Alpha, recovery)
-- Companion React Native / Expo mobile app (Phase 1 — Home/Sermons/Events/Give tabs) sharing brand tokens and event logic via `@destiny/shared`
+- Companion native SwiftUI iOS app (Home/Sermons/Events/Give/More tabs) rendering a dedicated, versioned `/api/app/v1` backend-for-frontend
 - Mobile-first, fully responsive, accessibility-focused
 
 ---
@@ -35,7 +35,7 @@ Designed, engineered, and deployed by [Square Media Group](mailto:hello@squareme
 | Layer | Technology |
 |---|---|
 | Framework | Next.js 16 (App Router), React 19 |
-| Mobile | React Native 0.79 / Expo 53 (Expo Router) |
+| Mobile | Native iOS — SwiftUI, Swift 6 (XcodeGen project) |
 | Language | TypeScript |
 | Styling | Tailwind CSS v4 |
 | Backend / Auth | Supabase (PostgreSQL + Row-Level Security) |
@@ -166,9 +166,9 @@ components/           # Shared UI components (incl. smartSearch, admin, shop, tr
 lib/                  # Server actions, data access, Stripe, Smart Search, HR, training utilities
 supabase/
 └── migrations/       # Database schema migrations
-mobile/               # React Native / Expo app — Phase 1 (Home/Sermons/Events/Give tabs)
-packages/shared/      # @destiny/shared — types & logic shared by web, mobile & app BFF
-app/api/app/          # App BFF — mobile-facing endpoints (e.g. /api/app/events)
+mobile/               # Native SwiftUI iOS app (Home/Sermons/Events/Give/More tabs)
+packages/shared/      # @destiny/shared — types & logic shared by the web app & app BFF
+app/api/app/v1/       # App BFF — versioned, mobile-facing endpoints (config/home/events/…)
 ```
 
 ---

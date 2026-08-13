@@ -49,10 +49,10 @@ export default function HeroSection() {
           Plan a Visit
         </a>
         <a
-          href="/sermons"
+          href="/new-here"
           className="rounded-full border-2 border-white/30 px-6 py-3 text-xs font-bold text-white backdrop-blur-sm transition hover:border-white hover:bg-white/10 sm:px-8 sm:py-3.5 sm:text-sm"
         >
-          Sermons
+          New Here?
         </a>
       </div>
     </section>

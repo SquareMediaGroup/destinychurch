@@ -3687,7 +3687,10 @@ ENABLE_SMART_SEARCH=true
   Swift client cannot import `@destiny/shared`, every one of these routes fully normalises its payload
   server-side (absolute URLs, timezone-qualified timestamps, sanitised HTML, real booleans) and wraps
   it in a versioned envelope (`{ status: "ok"|"degraded", generatedAt, data, notice }`) via
-  `lib/appApi.ts` + `lib/appSerializers.ts`. Seven endpoints:
+  `lib/appApi.ts` + `lib/appSerializers.ts`. Absolute URLs are stamped from `SITE_ORIGIN`, which
+  resolves in order `NEXT_PUBLIC_SITE_URL` → `VERCEL_PROJECT_PRODUCTION_URL` → the Vercel literal
+  (`https://destinychurch.vercel.app`), so emitted thumbnail/event/`.ics` links always point at the
+  origin that serves this app rather than the church's `destinytees.uk` nginx site. Seven endpoints:
   - `config` — remote config for the More tab (ChurchSuite form links, service times, venue, giving
     URL, `minSupportedBuild` kill switch); `revalidate = 300`.
   - `home` — the whole Home screen in one request (featured event, next service, live status, latest
@@ -3712,7 +3715,10 @@ feed normalisation of its own, because the BFF already does all of it.
   globbed, so adding a Swift file needs no project edit), and `mobile/Makefile` wraps the
   `xcodegen generate` + `xcodebuild` flow (`make project` / `make build` / `make test` / `make launch`).
   Bundle id `uk.destinytees.app`, portrait-only, iPhone + iPad. `DC_API_BASE` is set per-configuration
-  (`http://localhost:3000` in Debug, `https://destinytees.uk` in Release).
+  (`http://localhost:3000` in Debug, `https://destinychurch.vercel.app` in Release). The Release base
+  points at the Vercel origin that actually serves this Next.js app, **not** the church's public
+  `destinytees.uk` domain (currently an nginx site that 404s every `/api` route); it moves back to the
+  public domain only once that domain is pointed at Vercel.
 - **Structure** (`mobile/DestinyChurch/`):
   - `App/` — `DestinyChurchApp` entry point and `RootTabView`, the five-tab shell
     (**Home / Sermons / Events / Give / More**). Live is deliberately *not* a tab — it surfaces as a
@@ -3770,7 +3776,7 @@ feed normalisation of its own, because the BFF already does all of it.
   push) are still planning-only.
 
 ### Database Migrations
-- **35 migration files** defining schema for:
+- **39 migration files** defining schema for:
   - URL redirects, hidden videos (removed), site content (banners, pop-ups, page_content)
   - Event management (Alpha course, Bible Course, CAP Money, Recovery, featured course, featured event)
   - HR management (staff, leave, documents, reviews)
@@ -3778,6 +3784,7 @@ feed normalisation of its own, because the BFF already does all of it.
   - Feature flags, staff login audit
   - Training resource library, standalone posts
   - Shop (products, variants, orders, hero slides) and RLS/security hardening passes
+  - NFC tiles (the `/nfc` "digital back of seats" page, incl. event mode) and admin roles
 
 ---
 

@@ -25,10 +25,9 @@ import type {
   SearchWebResult,
 } from "@/lib/smartSearch/tools";
 
-/** How often the resting circle turns over to advertise the guided path. */
-const TEASE_EVERY_MS = 8000;
-/** How long it stays turned over before going back to a circle. */
-const TEASE_HOLD_MS = 3600;
+/** How long each resting face is held before turning over to the other one.
+ *  The search circle and the "New here?" pill get the same slice. */
+const TEASE_PHASE_MS = 10000;
 /** Beat before a scripted reply lands, so it reads as a reply and not a jump. */
 const WELCOME_REPLY_MS = 450;
 
@@ -302,8 +301,8 @@ export default function FloatingSmartSearch({
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  // The teaser. Every TEASE_EVERY_MS the resting circle turns over into a
-  // labelled pill for TEASE_HOLD_MS, then turns back — the only advertisement
+  // The teaser. The resting control alternates between the search circle and the
+  // labelled "New here?" pill, TEASE_PHASE_MS on each — the only advertisement
   // the guided path gets, since nothing auto-opens any more.
   //
   // Under prefers-reduced-motion it doesn't cycle at all: something that changes
@@ -323,14 +322,12 @@ export default function FloatingSmartSearch({
       setTeasing(false);
       return;
     }
-    let hold: number | undefined;
-    const cycle = window.setInterval(() => {
-      setTeasing(true);
-      hold = window.setTimeout(() => setTeasing(false), TEASE_HOLD_MS);
-    }, TEASE_EVERY_MS);
+    const cycle = window.setInterval(
+      () => setTeasing((on) => !on),
+      TEASE_PHASE_MS,
+    );
     return () => {
       window.clearInterval(cycle);
-      if (hold !== undefined) window.clearTimeout(hold);
       setTeasing(false);
     };
   }, [staticTeaser, expanded, interacting]);
@@ -961,8 +958,8 @@ export default function FloatingSmartSearch({
               showTeaser ? "justify-start gap-2.5 pl-4 pr-4" : "justify-center"
             } ${expanded ? "pointer-events-none opacity-0" : "opacity-100"}`}
           >
-            <span className={`fs-flip relative h-5 w-5 shrink-0 ${showTeaser ? "is-flipped" : ""}`}>
-              <span className="fs-flip-face relative flex h-full w-full items-center justify-center">
+            <span className={`fs-flip h-5 w-5 shrink-0 ${showTeaser ? "is-flipped" : ""}`}>
+              <span className="fs-flip-face">
                 <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
                 </svg>

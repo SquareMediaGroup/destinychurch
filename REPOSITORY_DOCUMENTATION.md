@@ -1583,11 +1583,16 @@ its `welcome` mode, and the copy still lives in `lib/welcomeChat.ts`.
   the tree in `lib/welcomeChat.ts` with no network call at all. Threads are held in separate state
   (`messages` vs `welcomeTurns`) so a scripted reply can never render into a streaming one. Typing a
   question while the script is open switches to search and drops the script — one thread at a time.
-- **The teaser.** Resting, it's the familiar circle. Every **8s** the icon flips (`.fs-flip`,
-  `rotateY(180deg)`, two backface-hidden faces) from the search mark to the sparkle, and the pill
-  grows to **13.5rem** reading "New here? Start here"; it holds ~3.6s, then turns back. Clicking it
-  in that state opens the script; clicking the search mark opens the AI bar as before. This is the
-  only advertisement the guided path gets, since nothing auto-opens.
+- **The teaser.** The resting control alternates between two faces on an even **10s / 10s** split
+  (`TEASE_PHASE_MS`): the familiar circle with the search mark, then the sparkle with the pill grown
+  to **13.5rem** reading "New here? Start here". Clicking it in that state opens the script; clicking
+  the search mark opens the AI bar as before. This is the only advertisement the guided path gets,
+  since nothing auto-opens.
+- **The icon turn is 2D on purpose.** `.fs-flip` cross-fades its two `.fs-flip-face` children with
+  `opacity` + `scaleX`, not a `preserve-3d` card with `backface-visibility: hidden`. The flip lives
+  inside `.glass`, whose `backdrop-filter` flattens the 3D rendering context; Safari then painted
+  both faces mirrored on top of each other and the icon looked broken. Nothing about the effect needs
+  real 3D, so the 2D version renders identically everywhere.
 - **Reduced motion:** no cycling at all — something that changes width every few seconds is exactly
   the unsolicited movement `prefers-reduced-motion` asks us not to make. Those visitors get the
   label **permanently** instead, so they lose the motion without losing the discoverability.

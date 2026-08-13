@@ -537,27 +537,40 @@ body {
 }
 
 /* The resting icon turns over to advertise the guided path and turns back. Two
-   faces on one rotating card, so the search and sparkle marks are never both
-   legible mid-turn. */
+   faces cross-fade through a half-turn, so the search and sparkle marks are
+   never both legible at once.
+
+   Deliberately 2D (scaleX + opacity), not a preserve-3d card with
+   backface-visibility: the flip sits inside .glass, whose backdrop-filter
+   flattens the 3D rendering context. Safari then paints both faces mirrored on
+   top of one another, which is what "broken icon" looked like. Nothing here
+   depends on 3D, so it renders the same everywhere. */
 .fs-flip {
   position: relative;
-  transform-style: preserve-3d;
-  transition: transform 0.55s cubic-bezier(0.85, 0, 0.15, 1);
-}
-.fs-flip.is-flipped {
-  transform: rotateY(180deg);
 }
 .fs-flip-face {
-  backface-visibility: hidden;
-  -webkit-backface-visibility: hidden;
-}
-.fs-flip-back {
   position: absolute;
   inset: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  transform: rotateY(180deg);
+  transition:
+    opacity 0.28s ease,
+    transform 0.55s cubic-bezier(0.85, 0, 0.15, 1);
+}
+/* Resting: search mark shown, sparkle waiting side-on. */
+.fs-flip-back {
+  opacity: 0;
+  transform: scaleX(0);
+}
+/* Turned over: the two swap. */
+.fs-flip.is-flipped > .fs-flip-face {
+  opacity: 0;
+  transform: scaleX(0);
+}
+.fs-flip.is-flipped > .fs-flip-back {
+  opacity: 1;
+  transform: scaleX(1);
 }
 
 .floating-search-trigger {
@@ -597,7 +610,7 @@ body {
   .floating-search-trigger,
   .floating-search-form,
   .floating-search-morph,
-  .fs-flip,
+  .fs-flip-face,
   .fs-teaser-label,
   .floating-search-morph.is-expanded .floating-search-form {
     transition: none;

@@ -30,9 +30,31 @@ export type AppEnvelope<T> = {
  *
  * The app deliberately has no URL-joining logic: if a client ever needs to
  * build a URL from a fragment, that is a bug here, not there.
+ *
+ * This must be the origin that actually serves *this* app, which is not the
+ * same as the church's public domain. `destinytees.uk` is currently an nginx
+ * site; the Next.js app runs on Vercel, so hardcoding the former made every
+ * emitted URL — thumbnail proxy, event page, .ics — 404 for app clients.
+ *
+ * Resolution order, so this self-corrects rather than needing a code change
+ * when the domain moves:
+ *  1. `NEXT_PUBLIC_SITE_URL`, if someone sets it explicitly.
+ *  2. `VERCEL_PROJECT_PRODUCTION_URL` — the project's primary production
+ *     domain. This follows the domain automatically once `destinytees.uk` is
+ *     pointed at Vercel.
+ *  3. The Vercel domain, as a last-resort literal.
  */
-export const SITE_ORIGIN =
-  process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") ?? "https://destinytees.uk";
+function resolveSiteOrigin(): string {
+  const explicit = process.env.NEXT_PUBLIC_SITE_URL?.trim();
+  if (explicit) return explicit.replace(/\/$/, "");
+
+  const vercelDomain = process.env.VERCEL_PROJECT_PRODUCTION_URL?.trim();
+  if (vercelDomain) return `https://${vercelDomain.replace(/^https?:\/\//, "").replace(/\/$/, "")}`;
+
+  return "https://destinychurch.vercel.app";
+}
+
+export const SITE_ORIGIN = resolveSiteOrigin();
 
 /** Absolutise a site-relative path. Already-absolute URLs pass through. */
 export function absolute(path: string): string;

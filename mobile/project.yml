@@ -40,7 +40,10 @@ settings:
       DC_API_BASE: http://localhost:3000
     Release:
       SWIFT_COMPILATION_MODE: wholemodule
-      DC_API_BASE: https://destinytees.uk
+      # The app the BFF runs in, which is NOT the church's public domain:
+      # destinytees.uk is an nginx site and 404s every /api route. Change this
+      # only when destinytees.uk actually points at the Vercel project.
+      DC_API_BASE: https://destinychurch.vercel.app
 
 targets:
   DestinyChurch:

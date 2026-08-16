@@ -963,18 +963,20 @@ export default function FloatingSmartSearch({
                 <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
                 </svg>
-                <SparkleIcon className="absolute -right-1.5 -top-1.5 h-2.5 w-2.5 text-destiny-orange" />
               </span>
               <span className="fs-flip-face fs-flip-back">
                 <SparkleIcon className="h-5 w-5 text-destiny-orange" />
               </span>
             </span>
 
-            {/* Width is the pill's job; this only fades, so nothing slides. */}
+            {/* Width is the pill's job; this only fades, so nothing slides. It
+                must collapse to zero width when resting, though: `truncate`
+                alone still shrinks to a ~36px sliver inside the 56px circle,
+                which shoves the search mark off centre. */}
             <span
               aria-hidden={!showTeaser}
               className={`fs-teaser-label min-w-0 truncate text-xs font-bold ${
-                showTeaser ? "opacity-100" : "pointer-events-none opacity-0"
+                showTeaser ? "opacity-100" : "pointer-events-none w-0 opacity-0"
               }`}
             >
               New here? <span className="font-semibold text-white/60">Start here</span>

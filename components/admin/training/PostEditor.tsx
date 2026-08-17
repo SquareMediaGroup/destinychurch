@@ -8,7 +8,7 @@ import {
   labelClass,
   primaryBtn,
   ghostBtn,
-} from "@/components/admin/hr/HrUI";
+} from "@/components/admin/AdminUI";
 import RichTextEditor from "@/components/admin/RichTextEditor";
 import type { Editor } from "@tiptap/react";
 import { BLOCK_LIST } from "@/components/blocks/registry";

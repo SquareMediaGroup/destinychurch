@@ -7,7 +7,7 @@ import {
   ghostBtn,
   inputClass,
   labelClass,
-} from "@/components/admin/hr/HrUI";
+} from "@/components/admin/AdminUI";
 
 export function FolderModal({
   folder,

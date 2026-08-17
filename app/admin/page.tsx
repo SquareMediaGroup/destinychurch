@@ -1,15 +1,38 @@
 "use client";
 
-import Link from "next/link";
-import { useEffect, useState } from "react";
+// The admin dashboard.
+//
+// Three things were wrong with the old version and all three are fixed here:
+//
+//  1. The "Manage" grid was hand-written and had drifted — it listed Redirects
+//     and the five course pages and nothing else, so Posts, Training, Store,
+//     Announcements and Users were reachable only through the sidebar. It now
+//     comes from lib/adminNav, role-filtered, so it can never fall behind.
+//  2. Every visitor fetched every section's data, including sections their role
+//     can't open, producing a row of 403s and empty cards. Fetches are now
+//     gated on the signed-in roles.
+//  3. It showed counts but never what needed doing. "Needs attention" surfaces
+//     the handful of states someone actually opens the admin to deal with —
+//     orders waiting to be fulfilled, stock about to run out, drafts left
+//     unpublished, a banner still live after the event.
 
-interface Stats {
-  redirects: { total: number; active: number };
-  alphaEvents: { total: number; upcoming: number };
-  banner: { active: boolean; type: string; message: string };
-  popup: { active: boolean; title: string };
-  shop: { totalProducts: number; totalStock: number; soldThisYearPennies: number };
-}
+import Link from "next/link";
+import { useSearchParams } from "next/navigation";
+import { useEffect, useMemo, useState } from "react";
+import {
+  visibleGroups,
+  visibleQuickActions,
+  ADMIN_NAV_ITEMS,
+  type AdminNavItem,
+} from "@/lib/adminNav";
+import { useAdminSession } from "@/lib/useAdminSession";
+import { useAdminRecents } from "@/lib/adminRecents";
+import { totalStock, type ProductWithVariants, type Order } from "@/lib/shop";
+import type { Post } from "@/lib/posts";
+import { CommandTrigger } from "@/components/admin/AdminCommandPalette";
+
+/** A variant at or below this many units is called out before it sells out. */
+const LOW_STOCK_THRESHOLD = 3;
 
 const gbp = new Intl.NumberFormat("en-GB", {
   style: "currency",
@@ -17,113 +40,244 @@ const gbp = new Intl.NumberFormat("en-GB", {
   maximumFractionDigits: 0,
 });
 
+interface Snapshot {
+  redirects: { total: number; active: number } | null;
+  courses: { total: number; upcoming: number } | null;
+  banner: { active: boolean; message: string } | null;
+  popup: { active: boolean; title: string } | null;
+  posts: { total: number; drafts: number } | null;
+  shop: {
+    totalProducts: number;
+    drafts: number;
+    totalStock: number;
+    lowStock: { id: string; name: string; units: number }[];
+    soldThisYearPennies: number;
+    pendingOrders: number;
+    paidUnfulfilled: number;
+  } | null;
+}
+
+const EMPTY: Snapshot = {
+  redirects: null,
+  courses: null,
+  banner: null,
+  popup: null,
+  posts: null,
+  shop: null,
+};
+
+/**
+ * Today's date, assembled field by field.
+ *
+ * Formatting the whole date in one `toLocaleDateString` call caused a real
+ * hydration error: Node and Chrome ship different ICU versions, and their en-GB
+ * long-date patterns disagree about the comma after the weekday ("Monday, 17
+ * August" vs "Monday 17 August"). React saw mismatched text and threw away the
+ * whole client tree on every dashboard load. The individual field names are
+ * stable across ICU versions — only the pattern that joins them isn't — so we
+ * join them ourselves.
+ */
+function formatToday(now = new Date()): string {
+  const weekday = now.toLocaleDateString("en-GB", { weekday: "long" });
+  const month = now.toLocaleDateString("en-GB", { month: "long" });
+  return `${weekday} ${now.getDate()} ${month} ${now.getFullYear()}`;
+}
+
+/** Fetch that resolves to null instead of throwing, so one 403 can't blank the page. */
+async function getJson<T>(url: string): Promise<T | null> {
+  try {
+    const res = await fetch(url);
+    if (!res.ok) return null;
+    return (await res.json()) as T;
+  } catch {
+    return null;
+  }
+}
+
+const asArray = <T,>(value: unknown): T[] => (Array.isArray(value) ? (value as T[]) : []);
+
 export default function AdminDashboard() {
-  const [stats, setStats] = useState<Stats | null>(null);
+  const { roles, loaded } = useAdminSession();
+  const { recents } = useAdminRecents();
+  const [snapshot, setSnapshot] = useState<Snapshot>(EMPTY);
   const [loading, setLoading] = useState(true);
-  const [forbidden, setForbidden] = useState(false);
+  // Middleware bounces here with ?forbidden=1 when someone opens a section
+  // their role can't reach. Read straight from the router — it's derived, not
+  // state.
+  const forbidden = useSearchParams().get("forbidden") === "1";
 
   useEffect(() => {
-    setForbidden(new URLSearchParams(window.location.search).get("forbidden") === "1");
-  }, []);
+    if (!loaded) return;
+    const su = roles.super_admin;
+    const may = {
+      site: su || roles.site_admin,
+      events: su || roles.event_admin,
+      store: su || roles.store_admin,
+    };
 
-  useEffect(() => {
-    async function load() {
-      try {
-        const [redirectsRes, alphaRes, bannerRes, popupRes, productsRes, ordersRes] =
-          await Promise.allSettled([
-            fetch("/api/admin/redirects"),
-            fetch("/api/admin/alpha-events"),
-            fetch("/api/admin/banner"),
-            fetch("/api/admin/popup"),
-            fetch("/api/admin/store/products"),
-            fetch("/api/admin/store/orders"),
-          ]);
+    let cancelled = false;
 
-        const redirectsData =
-          redirectsRes.status === "fulfilled" && redirectsRes.value.ok
-            ? await redirectsRes.value.json()
-            : [];
-        const alphaData =
-          alphaRes.status === "fulfilled" && alphaRes.value.ok
-            ? await alphaRes.value.json()
-            : [];
-        const bannerData =
-          bannerRes.status === "fulfilled" && bannerRes.value.ok
-            ? await bannerRes.value.json()
-            : { active: false, type: "announcement", message: "" };
-        const popupData =
-          popupRes.status === "fulfilled" && popupRes.value.ok
-            ? await popupRes.value.json()
-            : { active: false, title: "" };
-        const productsData =
-          productsRes.status === "fulfilled" && productsRes.value.ok
-            ? await productsRes.value.json()
-            : [];
-        const ordersData =
-          ordersRes.status === "fulfilled" && ordersRes.value.ok
-            ? await ordersRes.value.json()
-            : [];
+    (async () => {
+      const [redirects, courses, banner, popup, posts, products, orders] =
+        await Promise.all([
+          may.site ? getJson<unknown>("/api/admin/redirects") : null,
+          may.events ? getJson<unknown>("/api/admin/alpha-events") : null,
+          su ? getJson<{ active?: boolean; message?: string }>("/api/admin/banner") : null,
+          may.events ? getJson<{ active?: boolean; title?: string }>("/api/admin/popup") : null,
+          may.site ? getJson<unknown>("/api/admin/posts") : null,
+          may.store ? getJson<unknown>("/api/admin/store/products") : null,
+          may.store ? getJson<unknown>("/api/admin/store/orders") : null,
+        ]);
 
-        const redirectsArr = Array.isArray(redirectsData) ? redirectsData : [];
-        const alphaArr = Array.isArray(alphaData) ? alphaData : [];
-        const productsArr = Array.isArray(productsData) ? productsData : [];
-        const ordersArr = Array.isArray(ordersData) ? ordersData : [];
-        const now = new Date();
-        const currentYear = now.getFullYear();
+      if (cancelled) return;
 
-        const totalStock = productsArr.reduce(
-          (sum: number, p: { variants?: { stock?: number }[] }) =>
-            sum + (p.variants ?? []).reduce((s, v) => s + (v.stock ?? 0), 0),
-          0,
-        );
+      const now = new Date();
+      const year = now.getFullYear();
 
-        const soldThisYearPennies = ordersArr
-          .filter((o: { status: string; paid_at: string | null; created_at: string }) => {
-            if (o.status !== "paid" && o.status !== "fulfilled") return false;
-            const date = new Date(o.paid_at ?? o.created_at);
-            return date.getFullYear() === currentYear;
-          })
-          .reduce((sum: number, o: { total_pennies: number | null }) => sum + (o.total_pennies ?? 0), 0);
+      const redirectRows = asArray<{ active: boolean }>(redirects);
+      const courseRows = asArray<{ start_date: string }>(courses);
+      const postRows = asArray<Post>(posts);
+      const productRows = asArray<ProductWithVariants>(products);
+      const orderRows = asArray<Order>(orders);
 
-        setStats({
-          redirects: {
-            total: redirectsArr.length,
-            active: redirectsArr.filter((r: { active: boolean }) => r.active).length,
-          },
-          alphaEvents: {
-            total: alphaArr.length,
-            upcoming: alphaArr.filter((e: { date: string }) => new Date(e.date) >= now).length,
-          },
-          banner: {
-            active: bannerData.active ?? false,
-            type: bannerData.type ?? "announcement",
-            message: bannerData.message ?? "",
-          },
-          popup: {
-            active: popupData.active ?? false,
-            title: popupData.title ?? "",
-          },
-          shop: {
-            totalProducts: productsArr.length,
-            totalStock,
-            soldThisYearPennies,
-          },
-        });
-      } catch {
-        // render without stats
-      } finally {
-        setLoading(false);
-      }
+      const lowStock = productRows
+        .filter((p) => p.is_published)
+        .map((p) => ({ id: p.id, name: p.name, units: totalStock(p) }))
+        .filter((p) => p.units <= LOW_STOCK_THRESHOLD)
+        .sort((a, b) => a.units - b.units)
+        .slice(0, 5);
+
+      setSnapshot({
+        redirects: redirects
+          ? {
+              total: redirectRows.length,
+              active: redirectRows.filter((r) => r.active).length,
+            }
+          : null,
+        courses: courses
+          ? {
+              total: courseRows.length,
+              upcoming: courseRows.filter((e) => new Date(e.start_date) >= now).length,
+            }
+          : null,
+        banner: banner
+          ? { active: Boolean(banner.active), message: banner.message ?? "" }
+          : null,
+        popup: popup ? { active: Boolean(popup.active), title: popup.title ?? "" } : null,
+        posts: posts
+          ? {
+              total: postRows.length,
+              drafts: postRows.filter((p) => !p.is_published).length,
+            }
+          : null,
+        shop:
+          products || orders
+            ? {
+                totalProducts: productRows.length,
+                drafts: productRows.filter((p) => !p.is_published).length,
+                totalStock: productRows.reduce((sum, p) => sum + totalStock(p), 0),
+                lowStock,
+                soldThisYearPennies: orderRows
+                  .filter((o) => {
+                    if (o.status !== "paid" && o.status !== "fulfilled") return false;
+                    return new Date(o.paid_at ?? o.created_at).getFullYear() === year;
+                  })
+                  .reduce((sum, o) => sum + (o.total_pennies ?? 0), 0),
+                pendingOrders: orderRows.filter((o) => o.status === "pending").length,
+                paidUnfulfilled: orderRows.filter((o) => o.status === "paid").length,
+              }
+            : null,
+      });
+      setLoading(false);
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [loaded, roles]);
+
+  /* ── Needs attention ─────────────────────────────────────────────────── */
+
+  const alerts = useMemo(() => {
+    const out: {
+      icon: string;
+      tone: "orange" | "blue" | "red";
+      text: string;
+      href: string;
+      cta: string;
+    }[] = [];
+    const { shop, posts, banner } = snapshot;
+
+    if (shop?.paidUnfulfilled) {
+      out.push({
+        icon: "local_shipping",
+        tone: "blue",
+        text: `${shop.paidUnfulfilled} paid order${shop.paidUnfulfilled === 1 ? "" : "s"} waiting to be fulfilled`,
+        href: "/admin/store/orders?status=paid",
+        cta: "Fulfil",
+      });
     }
-    load();
-  }, []);
+    if (shop?.pendingOrders) {
+      out.push({
+        icon: "hourglass_top",
+        tone: "orange",
+        text: `${shop.pendingOrders} order${shop.pendingOrders === 1 ? "" : "s"} still pending payment`,
+        href: "/admin/store/orders?status=pending",
+        cta: "Review",
+      });
+    }
+    if (shop?.lowStock.length) {
+      out.push({
+        icon: "inventory",
+        tone: "red",
+        text:
+          shop.lowStock.length === 1
+            ? `${shop.lowStock[0].name} is down to ${shop.lowStock[0].units} in stock`
+            : `${shop.lowStock.length} published products are low on stock`,
+        href: "/admin/store?stock=low",
+        cta: "Restock",
+      });
+    }
+    if (posts?.drafts) {
+      out.push({
+        icon: "edit_note",
+        tone: "orange",
+        text: `${posts.drafts} post${posts.drafts === 1 ? "" : "s"} still in draft`,
+        href: "/admin/posts?status=draft",
+        cta: "Open",
+      });
+    }
+    if (banner?.active) {
+      out.push({
+        icon: "campaign",
+        tone: "orange",
+        text: `The sitewide banner is live: “${banner.message.slice(0, 70)}${banner.message.length > 70 ? "…" : ""}”`,
+        href: "/admin/banner",
+        cta: "Edit",
+      });
+    }
+    return out;
+  }, [snapshot]);
 
-  const today = new Date().toLocaleDateString("en-GB", {
-    weekday: "long",
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  });
+  /* ── Recents ─────────────────────────────────────────────────────────── */
+
+  const recentItems = useMemo(() => {
+    const allowed = new Set(
+      visibleGroups(roles)
+        .flatMap((g) => g.items)
+        .map((i) => i.href),
+    );
+    return recents
+      .map((href) => ADMIN_NAV_ITEMS.find((i) => i.href === href))
+      .filter((i): i is AdminNavItem => Boolean(i && allowed.has(i.href)))
+      .slice(0, 5);
+  }, [recents, roles]);
+
+  const groups = visibleGroups(roles);
+  const quickActions = visibleQuickActions(roles);
+  const busy = loading || !loaded;
+
+  const today = formatToday();
 
   return (
     <div className="mx-auto max-w-6xl px-6 py-8 md:px-8 md:py-10">
@@ -133,198 +287,260 @@ export default function AdminDashboard() {
           You don&apos;t have access to that section.
         </div>
       )}
+
       {/* Header */}
-      <div className="mb-8">
-        <p className="mb-1 text-xs font-bold uppercase tracking-widest text-destiny-grey/40">
-          {today}
-        </p>
-        <h1 className="text-3xl font-black text-destiny-grey">Dashboard</h1>
-        <p className="mt-1 text-sm text-destiny-grey/50">
-          Overview of your site, content, and tools.
-        </p>
+      <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <p className="mb-1 text-xs font-bold uppercase tracking-widest text-destiny-grey/40">
+            {today}
+          </p>
+          <h1 className="text-3xl font-black text-destiny-grey">Dashboard</h1>
+          <p className="mt-1 text-sm text-destiny-grey/50">
+            Everything you can manage, and anything that needs you.
+          </p>
+        </div>
+        <CommandTrigger className="md:hidden" />
       </div>
 
-      {/* Overview metrics */}
+      {/* Needs attention */}
+      {!busy && alerts.length > 0 && (
+        <section className="mb-10">
+          <h2 className="mb-3 text-xs font-bold uppercase tracking-widest text-destiny-grey/40">
+            Needs attention
+          </h2>
+          <ul className="flex flex-col gap-2">
+            {alerts.map((alert) => (
+              <li key={alert.text}>
+                <Link
+                  href={alert.href}
+                  className="group flex items-center gap-3 rounded-2xl border border-black/5 bg-white px-4 py-3 shadow-sm transition hover:shadow-md"
+                >
+                  <span
+                    className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${
+                      alert.tone === "red"
+                        ? "bg-destiny-red/10 text-destiny-red"
+                        : alert.tone === "blue"
+                          ? "bg-destiny-blue/10 text-destiny-blue"
+                          : "bg-destiny-orange/10 text-destiny-orange"
+                    }`}
+                  >
+                    <span className="material-symbols-rounded text-xl">{alert.icon}</span>
+                  </span>
+                  <p className="min-w-0 flex-1 text-sm font-bold text-destiny-grey">
+                    {alert.text}
+                  </p>
+                  <span className="shrink-0 text-xs font-bold text-destiny-orange opacity-0 transition group-hover:opacity-100">
+                    {alert.cta}
+                  </span>
+                  <span className="material-symbols-rounded shrink-0 text-base text-destiny-grey/25 transition group-hover:text-destiny-orange">
+                    arrow_forward
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      {/* Metrics — only the sections this admin can actually open */}
       <section className="mb-10">
+        <h2 className="mb-3 text-xs font-bold uppercase tracking-widest text-destiny-grey/40">
+          At a glance
+        </h2>
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          <MetricCard
-            href="/admin/redirects"
-            icon="alt_route"
-            iconColor="text-destiny-blue"
-            iconBg="bg-destiny-blue/10"
-            label="Redirects"
-            loading={loading}
-            value={stats?.redirects.active ?? 0}
-            chip={
-              stats
-                ? { text: `${stats.redirects.total} total`, tone: "muted" }
-                : undefined
-            }
-          />
-          <MetricCard
-            href="/admin/alpha"
-            icon="event"
-            iconColor="text-destiny-green"
-            iconBg="bg-destiny-green/10"
-            label="Upcoming courses"
-            loading={loading}
-            value={stats?.alphaEvents.upcoming ?? 0}
-            chip={
-              stats
-                ? { text: `${stats.alphaEvents.total} total`, tone: "muted" }
-                : undefined
-            }
-          />
-          <MetricCard
-            href="/admin/banner"
-            icon="campaign"
-            iconColor={stats?.banner.active ? "text-destiny-orange" : "text-destiny-grey/40"}
-            iconBg={stats?.banner.active ? "bg-destiny-orange/10" : "bg-destiny-grey/10"}
-            label="Banner"
-            loading={loading}
-            value={stats?.banner.active ? "Active" : "Off"}
-            valueClass={stats?.banner.active ? "text-destiny-grey" : "text-destiny-grey/40"}
-            chip={{
-              text: stats?.banner.active ? "Live" : "Hidden",
-              tone: stats?.banner.active ? "active" : "muted",
-            }}
-          />
-          <MetricCard
-            href="/admin/popup"
-            icon="ad"
-            iconColor={stats?.popup.active ? "text-destiny-purple" : "text-destiny-grey/40"}
-            iconBg={stats?.popup.active ? "bg-destiny-purple/10" : "bg-destiny-grey/10"}
-            label="Popup"
-            loading={loading}
-            value={stats?.popup.active ? "Active" : "Off"}
-            valueClass={stats?.popup.active ? "text-destiny-grey" : "text-destiny-grey/40"}
-            chip={{
-              text: stats?.popup.active ? "Live" : "Hidden",
-              tone: stats?.popup.active ? "active" : "muted",
-            }}
-          />
+          {snapshot.posts !== null || busy ? (
+            <MetricCard
+              href="/admin/posts"
+              icon="article"
+              iconColor="text-destiny-purple"
+              iconBg="bg-destiny-purple/10"
+              label="Published posts"
+              loading={busy}
+              value={(snapshot.posts?.total ?? 0) - (snapshot.posts?.drafts ?? 0)}
+              chip={
+                snapshot.posts?.drafts
+                  ? { text: `${snapshot.posts.drafts} draft`, tone: "muted" }
+                  : undefined
+              }
+            />
+          ) : null}
+          {snapshot.redirects !== null || busy ? (
+            <MetricCard
+              href="/admin/redirects"
+              icon="alt_route"
+              iconColor="text-destiny-blue"
+              iconBg="bg-destiny-blue/10"
+              label="Active redirects"
+              loading={busy}
+              value={snapshot.redirects?.active ?? 0}
+              chip={
+                snapshot.redirects
+                  ? { text: `${snapshot.redirects.total} total`, tone: "muted" }
+                  : undefined
+              }
+            />
+          ) : null}
+          {snapshot.courses !== null || busy ? (
+            <MetricCard
+              href="/admin/alpha"
+              icon="event"
+              iconColor="text-destiny-green"
+              iconBg="bg-destiny-green/10"
+              label="Upcoming course dates"
+              loading={busy}
+              value={snapshot.courses?.upcoming ?? 0}
+              chip={
+                snapshot.courses
+                  ? { text: `${snapshot.courses.total} total`, tone: "muted" }
+                  : undefined
+              }
+            />
+          ) : null}
+          {snapshot.popup !== null || busy ? (
+            <MetricCard
+              href="/admin/popup"
+              icon="ad"
+              iconColor={snapshot.popup?.active ? "text-destiny-orange" : "text-destiny-grey/40"}
+              iconBg={snapshot.popup?.active ? "bg-destiny-orange/10" : "bg-destiny-grey/10"}
+              label="Popup"
+              loading={busy}
+              value={snapshot.popup?.active ? "Live" : "Off"}
+              valueClass={
+                snapshot.popup?.active ? "text-destiny-grey" : "text-destiny-grey/40"
+              }
+            />
+          ) : null}
         </div>
       </section>
 
       {/* Shop */}
-      <section className="mb-10">
-        <h2 className="mb-3 text-xs font-bold uppercase tracking-widest text-destiny-grey/40">
-          Shop
-        </h2>
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-          <MetricCard
-            href="/admin/store"
-            icon="inventory_2"
-            iconColor="text-destiny-orange"
-            iconBg="bg-destiny-orange/10"
-            label="Total products"
-            loading={loading}
-            value={stats?.shop.totalProducts ?? 0}
-          />
-          <MetricCard
-            href="/admin/store"
-            icon="package_2"
-            iconColor="text-destiny-blue"
-            iconBg="bg-destiny-blue/10"
-            label="Units in stock"
-            loading={loading}
-            value={stats?.shop.totalStock ?? 0}
-          />
-          <MetricCard
-            href="/admin/store/orders"
-            icon="payments"
-            iconColor="text-destiny-green"
-            iconBg="bg-destiny-green/10"
-            label={`Sold in ${new Date().getFullYear()}`}
-            loading={loading}
-            value={stats ? gbp.format(stats.shop.soldThisYearPennies / 100) : "£0"}
-          />
-        </div>
-      </section>
+      {(snapshot.shop !== null || busy) && (
+        <section className="mb-10">
+          <h2 className="mb-3 text-xs font-bold uppercase tracking-widest text-destiny-grey/40">
+            Shop
+          </h2>
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            <MetricCard
+              href="/admin/store"
+              icon="inventory_2"
+              iconColor="text-destiny-orange"
+              iconBg="bg-destiny-orange/10"
+              label="Products"
+              loading={busy}
+              value={snapshot.shop?.totalProducts ?? 0}
+              chip={
+                snapshot.shop?.drafts
+                  ? { text: `${snapshot.shop.drafts} draft`, tone: "muted" }
+                  : undefined
+              }
+            />
+            <MetricCard
+              href="/admin/store"
+              icon="package_2"
+              iconColor="text-destiny-blue"
+              iconBg="bg-destiny-blue/10"
+              label="Units in stock"
+              loading={busy}
+              value={snapshot.shop?.totalStock ?? 0}
+              chip={
+                snapshot.shop?.lowStock.length
+                  ? { text: `${snapshot.shop.lowStock.length} low`, tone: "down" }
+                  : undefined
+              }
+            />
+            <MetricCard
+              href="/admin/store/orders?status=paid"
+              icon="local_shipping"
+              iconColor="text-destiny-purple"
+              iconBg="bg-destiny-purple/10"
+              label="To fulfil"
+              loading={busy}
+              value={snapshot.shop?.paidUnfulfilled ?? 0}
+            />
+            <MetricCard
+              href="/admin/store/orders"
+              icon="payments"
+              iconColor="text-destiny-green"
+              iconBg="bg-destiny-green/10"
+              label={`Sold in ${new Date().getFullYear()}`}
+              loading={busy}
+              value={
+                snapshot.shop ? gbp.format(snapshot.shop.soldThisYearPennies / 100) : "£0"
+              }
+            />
+          </div>
+        </section>
+      )}
+
+      {/* Jump back in */}
+      {recentItems.length > 0 && (
+        <section className="mb-10">
+          <h2 className="mb-3 text-xs font-bold uppercase tracking-widest text-destiny-grey/40">
+            Jump back in
+          </h2>
+          <div className="flex flex-wrap gap-2">
+            {recentItems.map((item) => (
+              <Link
+                key={item.href}
+                href={item.href}
+                className="flex items-center gap-2 rounded-xl border border-black/8 bg-white px-3.5 py-2 text-sm font-bold text-destiny-grey shadow-sm transition hover:shadow-md"
+              >
+                <span className="material-symbols-rounded text-lg text-destiny-orange">
+                  {item.icon}
+                </span>
+                {item.label}
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* Quick actions */}
-      <section className="mb-10">
-        <h2 className="mb-3 text-xs font-bold uppercase tracking-widest text-destiny-grey/40">
-          Quick actions
-        </h2>
-        <div className="flex flex-wrap gap-3">
-          <Link
-            href="/"
-            target="_blank"
-            className="flex items-center gap-2 rounded-xl border border-black/8 bg-white px-4 py-2.5 text-sm font-bold text-destiny-grey shadow-sm transition hover:shadow-md"
-          >
-            <span className="material-symbols-rounded text-lg text-destiny-orange">open_in_new</span>
-            View live site
-          </Link>
-        </div>
-      </section>
+      {quickActions.length > 0 && (
+        <section className="mb-10">
+          <h2 className="mb-3 text-xs font-bold uppercase tracking-widest text-destiny-grey/40">
+            Quick actions
+          </h2>
+          <div className="flex flex-wrap gap-2">
+            {quickActions.map((action) => (
+              <Link
+                key={action.id}
+                href={action.href}
+                target={action.external ? "_blank" : undefined}
+                rel={action.external ? "noreferrer" : undefined}
+                className="flex items-center gap-2 rounded-xl border border-black/8 bg-white px-3.5 py-2 text-sm font-bold text-destiny-grey shadow-sm transition hover:shadow-md"
+              >
+                <span className="material-symbols-rounded text-lg text-destiny-orange">
+                  {action.icon}
+                </span>
+                {action.label}
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
 
-      {/* All Sections */}
+      {/* Everything, straight from the registry */}
       <section className="space-y-6">
         <h2 className="text-xs font-bold uppercase tracking-widest text-destiny-grey/40">
           Manage
         </h2>
-
-        {/* Standalone top items */}
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          <SectionCard
-            href="/admin/redirects"
-            icon="alt_route"
-            label="Redirects"
-            description="Create vanity URLs on destinytees.uk that redirect anywhere."
-            color="text-destiny-blue"
-            bg="bg-destiny-blue/10"
-          />
-        </div>
-
-        {/* Courses group */}
-        <div>
-          <p className="mb-2 text-[11px] font-bold uppercase tracking-widest text-destiny-grey/30">
-            Courses
-          </p>
-          <div className="grid gap-3 sm:grid-cols-2">
-            <SectionCard
-              href="/admin/featured-course"
-              icon="stars"
-              label="Featured (What's On)"
-              description="Choose which course headlines the What's On page."
-              color="text-destiny-orange"
-              bg="bg-destiny-orange/10"
-            />
-            <SectionCard
-              href="/admin/bible-course"
-              icon="menu_book"
-              label="The Bible Course"
-              description="Manage The Bible Course events, dates, and sign-up links."
-              color="text-destiny-blue"
-              bg="bg-destiny-blue/10"
-            />
-            <SectionCard
-              href="/admin/cap-money"
-              icon="savings"
-              label="CAP Money"
-              description="Manage CAP Money Course dates and sign-up links."
-              color="text-destiny-green"
-              bg="bg-destiny-green/10"
-            />
-            <SectionCard
-              href="/admin/alpha"
-              icon="event"
-              label="Alpha"
-              description="Manage Alpha and Youth Alpha events, dates, and sign-up links."
-              color="text-destiny-green"
-              bg="bg-destiny-green/10"
-            />
-            <SectionCard
-              href="/admin/recovery"
-              icon="healing"
-              label="Recovery"
-              description="Manage Recovery group events and sign-up information."
-              color="text-destiny-green"
-              bg="bg-destiny-green/10"
-            />
+        {groups.map((group) => (
+          <div key={group.label ?? "top"}>
+            {group.label && (
+              <p className="mb-2 text-[11px] font-bold uppercase tracking-widest text-destiny-grey/30">
+                {group.label}
+              </p>
+            )}
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {group.items
+                .filter((item) => !item.exact) // skip the Dashboard card on the dashboard
+                .map((item) => (
+                  <SectionCard key={item.href} item={item} />
+                ))}
+            </div>
           </div>
-        </div>
+        ))}
       </section>
     </div>
   );
@@ -352,13 +568,11 @@ function MetricCard({
   chip?: { text: string; tone: "up" | "down" | "active" | "muted" };
 }) {
   const chipTone =
-    chip?.tone === "active"
+    chip?.tone === "active" || chip?.tone === "up"
       ? "bg-destiny-green/10 text-destiny-green"
-      : chip?.tone === "up"
-        ? "bg-destiny-green/10 text-destiny-green"
-        : chip?.tone === "down"
-          ? "bg-destiny-red/10 text-destiny-red"
-          : "bg-black/5 text-destiny-grey/50";
+      : chip?.tone === "down"
+        ? "bg-destiny-red/10 text-destiny-red"
+        : "bg-black/5 text-destiny-grey/50";
 
   return (
     <Link
@@ -399,34 +613,20 @@ function MetricCard({
   );
 }
 
-function SectionCard({
-  href,
-  icon,
-  label,
-  description,
-  color,
-  bg,
-}: {
-  href: string;
-  icon: string;
-  label: string;
-  description: string;
-  color: string;
-  bg: string;
-}) {
+function SectionCard({ item }: { item: AdminNavItem }) {
   return (
     <Link
-      href={href}
+      href={item.href}
       className="group flex items-start gap-4 rounded-2xl border border-black/5 bg-white p-5 shadow-sm transition hover:shadow-md"
     >
-      <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${bg} ${color}`}>
-        <span className="material-symbols-rounded text-xl">{icon}</span>
+      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-destiny-orange/10 text-destiny-orange">
+        <span className="material-symbols-rounded text-xl">{item.icon}</span>
       </span>
       <div className="min-w-0">
         <p className="mb-0.5 text-sm font-black text-destiny-grey transition-colors group-hover:text-destiny-orange">
-          {label}
+          {item.label}
         </p>
-        <p className="text-xs leading-relaxed text-destiny-grey/50">{description}</p>
+        <p className="text-xs leading-relaxed text-destiny-grey/50">{item.description}</p>
       </div>
       <span className="material-symbols-rounded ml-auto mt-0.5 shrink-0 text-base text-destiny-grey/20 transition group-hover:text-destiny-orange/50">
         arrow_forward

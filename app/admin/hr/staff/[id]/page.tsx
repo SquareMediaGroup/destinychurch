@@ -20,7 +20,7 @@ import {
   type StaffStatus,
   type LeaveStatus,
 } from "@/lib/hr";
-import { HrHeader, Badge, ghostBtn } from "@/components/admin/hr/HrUI";
+import { PageHeader, Badge, ghostBtn, PageLoading } from "@/components/admin/AdminUI";
 import {
   StaffModal,
   LeaveModal,
@@ -113,12 +113,11 @@ export default function StaffProfilePage() {
     load();
   }
 
-  if (loading)
-    return <p className="px-5 py-10 text-sm text-destiny-grey/50">Loading…</p>;
+  if (loading) return <PageLoading label="Loading staff member" />;
   if (notFound || !staff)
     return (
       <div className="mx-auto max-w-3xl px-5 py-10">
-        <HrHeader
+        <PageHeader
           title="Staff member not found"
           back={{ href: "/admin/hr/staff", label: "Staff directory" }}
         />
@@ -141,7 +140,7 @@ export default function StaffProfilePage() {
 
   return (
     <div className="mx-auto max-w-5xl px-5 py-10">
-      <HrHeader
+      <PageHeader
         title={fullName(staff)}
         back={{ href: "/admin/hr/staff", label: "Staff directory" }}
         action={

@@ -10,8 +10,19 @@ import {
   type Staff,
   type LeaveRequest,
   type LeaveStatus,
+  type LeaveType,
 } from "@/lib/hr";
-import { HrHeader, Badge, EmptyState, primaryBtn } from "@/components/admin/hr/HrUI";
+import {
+  PageHeader,
+  Badge,
+  EmptyState,
+  ErrorNote,
+  ListToolbar,
+  FilterChips,
+  CardSkeleton,
+  primaryBtn,
+} from "@/components/admin/AdminUI";
+import { useAdminList } from "@/lib/useAdminList";
 import { LeaveModal } from "@/components/admin/hr/modals";
 
 const STATUS_TONE: Record<LeaveStatus, string> = {
@@ -55,6 +66,35 @@ export default function LeavePage() {
     load();
   }
 
+  const list = useAdminList<LeaveRequest>({
+    items: leave,
+    searchKeys: [
+      { name: "hr_staff.first_name", weight: 0.35 },
+      { name: "hr_staff.last_name", weight: 0.35 },
+      { name: "reason", weight: 0.3 },
+    ],
+    filters: [
+      {
+        key: "status",
+        options: (Object.keys(LEAVE_STATUS_LABELS) as LeaveStatus[]).map((s) => ({
+          value: s,
+          label: LEAVE_STATUS_LABELS[s],
+        })),
+        match: (l, value) => l.status === value,
+      },
+      {
+        key: "type",
+        options: (Object.keys(LEAVE_TYPE_LABELS) as LeaveType[]).map((t) => ({
+          value: t,
+          label: LEAVE_TYPE_LABELS[t],
+        })),
+        match: (l, value) => l.type === value,
+      },
+    ],
+    sorts: { start: (a, b) => a.start_date.localeCompare(b.start_date) },
+    defaultSort: { field: "start", direction: "desc" },
+  });
+
   const pending = leave.filter((l) => l.status === "pending");
   const balances = staff
     .filter((s) => s.status !== "left")
@@ -69,7 +109,7 @@ export default function LeavePage() {
 
   return (
     <div className="mx-auto max-w-6xl px-5 py-10">
-      <HrHeader
+      <PageHeader
         title="Leave & time-off"
         subtitle="Approve requests and track holiday balances."
         back={{ href: "/admin/hr", label: "HR" }}
@@ -81,14 +121,10 @@ export default function LeavePage() {
         }
       />
 
-      {error && (
-        <p className="mb-4 rounded-xl bg-destiny-red/10 px-4 py-2.5 text-sm text-destiny-red">
-          {error}
-        </p>
-      )}
+      <ErrorNote>{error}</ErrorNote>
 
       {loading ? (
-        <p className="text-sm text-destiny-grey/50">Loading…</p>
+        <CardSkeleton count={4} />
       ) : (
         <div className="flex flex-col gap-8">
           {/* Approvals queue */}
@@ -174,7 +210,50 @@ export default function LeavePage() {
             {leave.length === 0 ? (
               <EmptyState icon="event_busy" title="No leave requests yet" />
             ) : (
-              <div className="overflow-hidden rounded-3xl border border-black/5 bg-white shadow-sm">
+              <>
+              <ListToolbar
+                search={list.search}
+                onSearchChange={list.setSearch}
+                searchPlaceholder="Search person or reason"
+                noun="request"
+                total={list.total}
+                shown={list.shown}
+                filters={
+                  <div className="flex flex-wrap items-center gap-2">
+                    <FilterChips
+                      label="Status"
+                      options={list.filterOptions("status")}
+                      value={list.filterValues.status}
+                      onChange={(v) => list.setFilter("status", v)}
+                    />
+                    <FilterChips
+                      label="Type"
+                      options={list.filterOptions("type").filter((o) => o.value !== "all")}
+                      value={list.filterValues.type}
+                      onChange={(v) =>
+                        list.setFilter("type", list.filterValues.type === v ? "all" : v)
+                      }
+                    />
+                  </div>
+                }
+              />
+
+              {list.visible.length === 0 ? (
+                <EmptyState
+                  icon="search_off"
+                  title="No requests match"
+                  hint="Try a person's name, or clear the filters."
+                  action={
+                    <button
+                      className="text-sm font-bold text-destiny-orange hover:brightness-110"
+                      onClick={list.clearAll}
+                    >
+                      Clear search and filters
+                    </button>
+                  }
+                />
+              ) : (
+              <div className="overflow-x-auto rounded-3xl border border-black/5 bg-white shadow-sm">
                 <table className="w-full text-left text-sm">
                   <thead className="border-b border-black/5 text-xs font-bold uppercase tracking-wider text-destiny-grey/40">
                     <tr>
@@ -185,7 +264,7 @@ export default function LeavePage() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-black/5">
-                    {leave.map((l) => (
+                    {list.visible.map((l) => (
                       <tr key={l.id} className="transition hover:bg-[#f5f7fa]">
                         <td className="px-5 py-3.5 font-bold text-destiny-grey">
                           {l.hr_staff ? fullName(l.hr_staff) : "Unknown"}
@@ -206,6 +285,8 @@ export default function LeavePage() {
                   </tbody>
                 </table>
               </div>
+              )}
+              </>
             )}
           </section>
         </div>

@@ -1,13 +1,24 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   formatPrice,
   ORDER_STATUS_LABELS,
   SHOP_ADMIN_API,
   type Order,
+  type OrderStatus,
 } from "@/lib/shop";
+import {
+  PageHeader,
+  EmptyState,
+  ListToolbar,
+  FilterChips,
+  CardSkeleton,
+  ghostBtn,
+} from "@/components/admin/AdminUI";
+import { useAdminList } from "@/lib/useAdminList";
+import { downloadCsv, toCsv } from "@/lib/csv";
 
 const TONE_CLASS: Record<string, string> = {
   orange: "bg-destiny-orange/10 text-destiny-orange",
@@ -24,6 +35,20 @@ const STATUS_TONE: Record<string, string> = {
   refunded: "grey",
 };
 
+const STATUSES: OrderStatus[] = [
+  "pending",
+  "paid",
+  "fulfilled",
+  "cancelled",
+  "refunded",
+];
+
+const dateFmt = new Intl.DateTimeFormat("en-GB", {
+  day: "numeric",
+  month: "short",
+  year: "numeric",
+});
+
 export default function AdminOrdersPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
@@ -36,70 +61,177 @@ export default function AdminOrdersPage() {
       .finally(() => setLoading(false));
   }, []);
 
+  const list = useAdminList<Order>({
+    items: orders,
+    // An order gets looked up from an email, a name, or the number on the
+    // customer's receipt — all three now work.
+    searchKeys: [
+      { name: "order_number", weight: 0.4 },
+      { name: "customer_name", weight: 0.3 },
+      { name: "customer_email", weight: 0.2 },
+      { name: "customer_phone", weight: 0.1 },
+    ],
+    filters: [
+      {
+        key: "status",
+        options: STATUSES.map((s) => ({ value: s, label: ORDER_STATUS_LABELS[s] })),
+        match: (o, value) => o.status === value,
+      },
+    ],
+    sorts: {
+      created: (a, b) => a.created_at.localeCompare(b.created_at),
+      total: (a, b) => (a.total_pennies ?? 0) - (b.total_pennies ?? 0),
+      customer: (a, b) => a.customer_name.localeCompare(b.customer_name),
+    },
+    defaultSort: { field: "created", direction: "desc" },
+  });
+
+  /** Total of everything currently shown — useful when a filter is applied. */
+  const shownTotal = useMemo(
+    () =>
+      list.visible
+        .filter((o) => o.status === "paid" || o.status === "fulfilled")
+        .reduce((sum, o) => sum + (o.total_pennies ?? 0), 0),
+    [list.visible],
+  );
+
+  /** Export whatever is on screen, so a filter doubles as a report selector. */
+  function exportCsv() {
+    const csv = toCsv(
+      [
+        "Order number",
+        "Date",
+        "Status",
+        "Customer",
+        "Email",
+        "Phone",
+        "Fulfilment",
+        "Subtotal (GBP)",
+        "Total (GBP)",
+        "Paid at",
+        "Notes",
+      ],
+      list.visible.map((o) => [
+        o.order_number,
+        new Date(o.created_at).toISOString().slice(0, 10),
+        ORDER_STATUS_LABELS[o.status],
+        o.customer_name,
+        o.customer_email,
+        o.customer_phone ?? "",
+        o.fulfillment_method,
+        ((o.subtotal_pennies ?? 0) / 100).toFixed(2),
+        ((o.total_pennies ?? 0) / 100).toFixed(2),
+        o.paid_at ? new Date(o.paid_at).toISOString().slice(0, 10) : "",
+        o.notes ?? "",
+      ]),
+    );
+    downloadCsv(`destiny-orders-${new Date().toISOString().slice(0, 10)}.csv`, csv);
+  }
+
   return (
-    <div className="mx-auto max-w-5xl px-5 py-8 sm:px-8">
-      <div className="mb-8 flex items-center justify-between gap-4">
-        <div>
-          <Link
-            href="/admin/store"
-            className="mb-1 inline-flex items-center gap-1 text-sm font-semibold text-destiny-grey/60 hover:text-destiny-grey"
-          >
-            <span className="material-symbols-rounded text-base">arrow_back</span>
-            Store
-          </Link>
-          <h1 className="font-[family-name:var(--font-heading)] text-2xl font-black text-destiny-grey">
-            Orders
-          </h1>
-        </div>
-      </div>
+    <div className="mx-auto max-w-5xl px-5 py-10 sm:px-8">
+      <PageHeader
+        title="Orders"
+        subtitle="Customer orders, fulfilment and refunds."
+        back={{ href: "/admin/store", label: "Products" }}
+        action={
+          orders.length > 0 ? (
+            <button
+              className={ghostBtn}
+              onClick={exportCsv}
+              title="Download the orders currently shown as a spreadsheet"
+            >
+              <span className="material-symbols-rounded text-lg">download</span>
+              Export CSV
+            </button>
+          ) : undefined
+        }
+      />
 
       {loading ? (
-        <p className="text-sm text-destiny-grey/50">Loading…</p>
+        <CardSkeleton count={4} />
       ) : orders.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-black/15 bg-white p-12 text-center">
-          <span className="material-symbols-rounded text-4xl text-destiny-grey/25">
-            receipt_long
-          </span>
-          <p className="mt-3 font-bold text-destiny-grey">No orders yet</p>
-        </div>
+        <EmptyState
+          icon="receipt_long"
+          title="No orders yet"
+          hint="Orders placed in the shop will appear here."
+        />
       ) : (
-        <ul className="space-y-2">
-          {orders.map((o) => (
-            <li key={o.id}>
-              <Link
-                href={`/admin/store/orders/${o.id}`}
-                className="flex items-center gap-4 rounded-xl border border-black/8 bg-white p-4 transition hover:border-destiny-orange/40 hover:bg-[#fffaf5]"
-              >
-                <div className="min-w-0 flex-1">
-                  <p className="font-bold text-destiny-grey">
-                    {o.order_number}
-                    <span className="ml-2 font-normal text-destiny-grey/50">
-                      {o.customer_name}
-                    </span>
-                  </p>
-                  <p className="text-sm text-destiny-grey/55">
-                    {new Date(o.created_at).toLocaleDateString("en-GB", {
-                      day: "numeric",
-                      month: "short",
-                      year: "numeric",
-                    })}{" "}
-                    · {formatPrice(o.total_pennies)}
-                  </p>
-                </div>
-                <span
-                  className={`shrink-0 rounded-full px-3 py-1 text-xs font-bold ${
-                    TONE_CLASS[STATUS_TONE[o.status]] ?? TONE_CLASS.grey
-                  }`}
+        <>
+          <ListToolbar
+            search={list.search}
+            onSearchChange={list.setSearch}
+            searchPlaceholder="Search order number, name or email"
+            noun="order"
+            total={list.total}
+            shown={list.shown}
+            filters={
+              <FilterChips
+                label="Status"
+                options={list.filterOptions("status")}
+                value={list.filterValues.status}
+                onChange={(v) => list.setFilter("status", v)}
+              />
+            }
+          />
+
+          {shownTotal > 0 && (
+            <p className="mb-4 text-xs font-bold text-destiny-grey/45">
+              Paid and fulfilled in this view:{" "}
+              <span className="text-destiny-grey">{formatPrice(shownTotal)}</span>
+            </p>
+          )}
+
+          {list.visible.length === 0 ? (
+            <EmptyState
+              icon="search_off"
+              title="No orders match"
+              hint="Search an order number, a customer name or an email address."
+              action={
+                <button
+                  className="text-sm font-bold text-destiny-orange hover:brightness-110"
+                  onClick={list.clearAll}
                 >
-                  {ORDER_STATUS_LABELS[o.status]}
-                </span>
-                <span className="material-symbols-rounded text-destiny-grey/30">
-                  chevron_right
-                </span>
-              </Link>
-            </li>
-          ))}
-        </ul>
+                  Clear search and filters
+                </button>
+              }
+            />
+          ) : (
+            <ul className="space-y-2">
+              {list.visible.map((o) => (
+                <li key={o.id}>
+                  <Link
+                    href={`/admin/store/orders/${o.id}`}
+                    className="flex items-center gap-4 rounded-xl border border-black/8 bg-white p-4 transition hover:border-destiny-orange/40 hover:bg-[#fffaf5]"
+                  >
+                    <div className="min-w-0 flex-1">
+                      <p className="font-bold text-destiny-grey">
+                        {o.order_number}
+                        <span className="ml-2 font-normal text-destiny-grey/50">
+                          {o.customer_name}
+                        </span>
+                      </p>
+                      <p className="truncate text-sm text-destiny-grey/55">
+                        {dateFmt.format(new Date(o.created_at))} ·{" "}
+                        {formatPrice(o.total_pennies)} · {o.customer_email}
+                      </p>
+                    </div>
+                    <span
+                      className={`shrink-0 rounded-full px-3 py-1 text-xs font-bold ${
+                        TONE_CLASS[STATUS_TONE[o.status]] ?? TONE_CLASS.grey
+                      }`}
+                    >
+                      {ORDER_STATUS_LABELS[o.status]}
+                    </span>
+                    <span className="material-symbols-rounded shrink-0 text-destiny-grey/30">
+                      chevron_right
+                    </span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
+        </>
       )}
     </div>
   );

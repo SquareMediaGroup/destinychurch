@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { use, useEffect, useMemo, useRef, useState } from "react";
 import RichTextEditor from "@/components/admin/RichTextEditor";
+import { PageLoading } from "@/components/admin/AdminUI";
 import type { Editor } from "@tiptap/react";
 import { BLOCK_LIST } from "@/components/blocks/registry";
 import { BlockTools } from "@/components/admin/blocks/BlockTools";
@@ -396,7 +397,7 @@ export default function ProductEditorPage({
   }
 
   if (loading) {
-    return <p className="px-8 py-10 text-sm text-destiny-grey/50">Loading…</p>;
+    return <PageLoading label="Loading product" />;
   }
 
   const showMatrix = colours.length > 0 && sizes.length > 0;

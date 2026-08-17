@@ -11,7 +11,14 @@ import {
   type Review,
 } from "@/lib/hr";
 import type { Job, JobApplication } from "@/lib/jobs";
-import { HrHeader, Badge } from "@/components/admin/hr/HrUI";
+import { PageHeader, Badge, CardSkeleton } from "@/components/admin/AdminUI";
+import { ADMIN_GROUPS } from "@/lib/adminNav";
+
+/** The HR group from the nav registry, minus the HR landing page itself. */
+const HR_SECTIONS =
+  ADMIN_GROUPS.find((g) => g.label === "HR")?.items.filter(
+    (i) => i.href !== "/admin/hr",
+  ) ?? [];
 
 export default function HrDashboardPage() {
   const [staff, setStaff] = useState<Staff[]>([]);
@@ -77,10 +84,14 @@ export default function HrDashboardPage() {
 
   return (
     <div className="mx-auto max-w-6xl px-5 py-10">
-      <HrHeader title="HR" subtitle="People, leave, documents and reviews at a glance." />
+      <PageHeader
+        title="HR"
+        subtitle="People, leave, documents and reviews at a glance."
+        back={{ href: "/admin", label: "Dashboard" }}
+      />
 
       {loading ? (
-        <p className="text-sm text-destiny-grey/50">Loading…</p>
+        <CardSkeleton count={4} />
       ) : (
         <>
           <div className="mb-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -170,6 +181,36 @@ export default function HrDashboardPage() {
               )}
             </section>
           </div>
+
+          {/* Every HR section, from the nav registry. HR is unlisted in the
+              sidebar (not launched yet), so without this Documents and Reviews
+              were only reachable by typing the URL. */}
+          <section className="mt-8">
+            <h2 className="mb-3 text-xs font-bold uppercase tracking-widest text-destiny-grey/40">
+              Sections
+            </h2>
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {HR_SECTIONS.map((item) => (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className="group flex items-start gap-4 rounded-2xl border border-black/5 bg-white p-5 shadow-sm transition hover:shadow-md"
+                >
+                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-destiny-orange/10 text-destiny-orange">
+                    <span className="material-symbols-rounded text-xl">{item.icon}</span>
+                  </span>
+                  <div className="min-w-0">
+                    <p className="mb-0.5 text-sm font-black text-destiny-grey transition-colors group-hover:text-destiny-orange">
+                      {item.label}
+                    </p>
+                    <p className="text-xs leading-relaxed text-destiny-grey/50">
+                      {item.description}
+                    </p>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </section>
         </>
       )}
     </div>

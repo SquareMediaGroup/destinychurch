@@ -1,7 +1,22 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
+import { useSearchParams } from "next/navigation";
 import { useDialog } from "@/components/DialogProvider";
+import {
+  PageHeader,
+  EmptyState,
+  ErrorNote,
+  ListToolbar,
+  FilterChips,
+  TableSkeleton,
+  Toggle,
+  inputClass,
+  labelClass,
+  primaryBtn,
+  ghostBtn,
+} from "@/components/admin/AdminUI";
+import { useAdminList } from "@/lib/useAdminList";
 
 interface Redirect {
   id: string;
@@ -14,13 +29,16 @@ interface Redirect {
 
 export default function RedirectsPage() {
   const { confirm } = useDialog();
+  const searchParams = useSearchParams();
   const [redirects, setRedirects] = useState<Redirect[]>([]);
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState("");
   const [copied, setCopied] = useState<string | null>(null);
+  // The create form used to sit permanently above the list, pushing every
+  // existing redirect below the fold. It now opens on demand.
+  const [showForm, setShowForm] = useState(false);
 
-  // Form state
   const [label, setLabel] = useState("");
   const [slug, setSlug] = useState("");
   const [targetUrl, setTargetUrl] = useState("");
@@ -44,6 +62,34 @@ export default function RedirectsPage() {
     fetchRedirects();
   }, [fetchRedirects]);
 
+  useEffect(() => {
+    if (searchParams.get("new") === "1") setShowForm(true);
+  }, [searchParams]);
+
+  const list = useAdminList<Redirect>({
+    items: redirects,
+    searchKeys: [
+      { name: "slug", weight: 0.4 },
+      { name: "label", weight: 0.4 },
+      { name: "target_url", weight: 0.2 },
+    ],
+    filters: [
+      {
+        key: "state",
+        options: [
+          { value: "active", label: "Active" },
+          { value: "off", label: "Off" },
+        ],
+        match: (r, value) => (value === "active" ? r.active : !r.active),
+      },
+    ],
+    sorts: {
+      slug: (a, b) => a.slug.localeCompare(b.slug),
+      created: (a, b) => a.created_at.localeCompare(b.created_at),
+    },
+    defaultSort: { field: "created", direction: "desc" },
+  });
+
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault();
     setCreating(true);
@@ -57,37 +103,47 @@ export default function RedirectsPage() {
       setLabel("");
       setSlug("");
       setTargetUrl("");
+      setShowForm(false);
       await fetchRedirects();
     } else {
-      const d = await res.json();
+      const d = await res.json().catch(() => ({}));
       setError(d.error ?? "Something went wrong");
     }
     setCreating(false);
   }
 
   async function handleToggle(r: Redirect) {
-    await fetch(`/api/admin/redirects/${r.id}`, {
+    // Optimistic — the toggle should feel instant; roll back if the write fails.
+    setRedirects((prev) =>
+      prev.map((x) => (x.id === r.id ? { ...x, active: !r.active } : x)),
+    );
+    const res = await fetch(`/api/admin/redirects/${r.id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ active: !r.active }),
     });
-    setRedirects((prev) =>
-      prev.map((x) => (x.id === r.id ? { ...x, active: !r.active } : x))
-    );
+    if (!res.ok) {
+      setError("Could not change that redirect. Reloading the list.");
+      fetchRedirects();
+    }
   }
 
-  async function handleDelete(id: string) {
+  async function handleDelete(r: Redirect) {
     if (
       !(await confirm({
         title: "Delete redirect",
-        message: "Delete this redirect?",
+        message: `Delete /${r.slug}? Anyone using that link will get a 404.`,
         confirmLabel: "Delete",
         tone: "danger",
       }))
     )
       return;
-    await fetch(`/api/admin/redirects/${id}`, { method: "DELETE" });
-    setRedirects((prev) => prev.filter((x) => x.id !== id));
+    const res = await fetch(`/api/admin/redirects/${r.id}`, { method: "DELETE" });
+    if (!res.ok) {
+      setError("Could not delete that redirect.");
+      return;
+    }
+    setRedirects((prev) => prev.filter((x) => x.id !== r.id));
   }
 
   function handleCopy(slug: string) {
@@ -96,7 +152,6 @@ export default function RedirectsPage() {
     setTimeout(() => setCopied(null), 2000);
   }
 
-  // Auto-format slug from label
   function handleLabelChange(val: string) {
     setLabel(val);
     if (!slug) {
@@ -105,170 +160,213 @@ export default function RedirectsPage() {
   }
 
   return (
-    <div className="mx-auto max-w-6xl px-6 py-10">
-    <div className="max-w-4xl">
-      <div className="mb-6">
-        <h1 className="text-2xl font-black text-destiny-grey">Redirects</h1>
-        <p className="mt-1 text-sm text-destiny-grey/50">
-          Create vanity URLs that redirect to any destination.
-        </p>
-      </div>
+    <div className="mx-auto max-w-5xl px-6 py-10">
+      <PageHeader
+        title="Redirects"
+        subtitle="Vanity URLs on destinytees.uk that point anywhere — print one on a flyer and change where it goes later."
+        back={{ href: "/admin", label: "Dashboard" }}
+        action={
+          <button className={primaryBtn} onClick={() => setShowForm((s) => !s)}>
+            <span className="material-symbols-rounded text-lg">
+              {showForm ? "close" : "add"}
+            </span>
+            {showForm ? "Cancel" : "New redirect"}
+          </button>
+        }
+      />
 
-      {/* Create form */}
-      <div className="mb-8 rounded-2xl border border-black/5 bg-white p-6 shadow-sm">
-        <h2 className="mb-4 text-sm font-bold uppercase tracking-wider text-destiny-grey/50">
-          New Redirect
-        </h2>
-        <form onSubmit={handleCreate} className="flex flex-col gap-4">
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div>
-              <label className="mb-1.5 block text-xs font-bold text-destiny-grey/60">
-                Label <span className="font-normal">(optional)</span>
-              </label>
-              <input
-                type="text"
-                value={label}
-                onChange={(e) => handleLabelChange(e.target.value)}
-                placeholder="e.g. Alpha Sign Up"
-                className="w-full rounded-xl border border-black/10 px-4 py-2.5 text-sm text-destiny-grey placeholder:text-destiny-grey/30 focus:border-destiny-orange/50 focus:outline-none focus:ring-2 focus:ring-destiny-orange/20"
-              />
-            </div>
-            <div>
-              <label className="mb-1.5 block text-xs font-bold text-destiny-grey/60">
-                Slug <span className="text-red-400">*</span>
-              </label>
-              <div className="flex rounded-xl border border-black/10 overflow-hidden focus-within:border-destiny-orange/50 focus-within:ring-2 focus-within:ring-destiny-orange/20">
-                <span className="flex items-center bg-black/5 px-3 text-xs text-destiny-grey/40 border-r border-black/10 whitespace-nowrap">
-                  destinytees.uk/
-                </span>
+      <ErrorNote>{error}</ErrorNote>
+
+      {showForm && (
+        <div className="mb-8 rounded-3xl border border-black/5 bg-white p-6 shadow-sm">
+          <h2 className="mb-4 text-sm font-bold uppercase tracking-wider text-destiny-grey/50">
+            New redirect
+          </h2>
+          <form onSubmit={handleCreate} className="flex flex-col gap-4">
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div>
+                <label className={labelClass} htmlFor="redirect-label">
+                  Label (optional)
+                </label>
                 <input
+                  id="redirect-label"
                   type="text"
-                  value={slug}
-                  onChange={(e) =>
-                    setSlug(e.target.value.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, ""))
-                  }
-                  required
-                  placeholder="alpha-signup"
-                  className="flex-1 min-w-0 px-3 py-2.5 text-sm text-destiny-grey placeholder:text-destiny-grey/30 focus:outline-none"
+                  value={label}
+                  onChange={(e) => handleLabelChange(e.target.value)}
+                  placeholder="e.g. Alpha Sign Up"
+                  className={inputClass}
                 />
               </div>
-            </div>
-          </div>
-
-          <div>
-            <label className="mb-1.5 block text-xs font-bold text-destiny-grey/60">
-              Target URL <span className="text-red-400">*</span>
-            </label>
-            <input
-              type="url"
-              value={targetUrl}
-              onChange={(e) => setTargetUrl(e.target.value)}
-              required
-              placeholder="https://destinytees.churchsuite.com/..."
-              className="w-full rounded-xl border border-black/10 px-4 py-2.5 text-sm text-destiny-grey placeholder:text-destiny-grey/30 focus:border-destiny-orange/50 focus:outline-none focus:ring-2 focus:ring-destiny-orange/20"
-            />
-          </div>
-
-          {error && (
-            <p className="rounded-xl bg-red-50 px-4 py-3 text-sm text-red-600">{error}</p>
-          )}
-
-          <div className="flex justify-end">
-            <button
-              type="submit"
-              disabled={creating}
-              className="rounded-xl bg-destiny-orange px-6 py-2.5 text-sm font-bold text-white shadow-sm shadow-destiny-orange/20 transition hover:brightness-110 disabled:opacity-60"
-            >
-              {creating ? "Creating…" : "Create redirect"}
-            </button>
-          </div>
-        </form>
-      </div>
-
-      {/* Table */}
-      <div className="rounded-2xl border border-black/5 bg-white shadow-sm overflow-hidden">
-        <div className="border-b border-black/5 px-6 py-4">
-          <p className="text-sm font-bold text-destiny-grey">
-            {redirects.length} redirect{redirects.length !== 1 ? "s" : ""}
-          </p>
-        </div>
-
-        {loading ? (
-          <div className="flex items-center justify-center py-16">
-            <span className="material-symbols-rounded animate-spin text-3xl text-destiny-grey/20">
-              progress_activity
-            </span>
-          </div>
-        ) : redirects.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-16 text-center">
-            <span className="material-symbols-rounded mb-3 text-4xl text-destiny-grey/20">link_off</span>
-            <p className="text-sm font-bold text-destiny-grey/40">No redirects yet</p>
-            <p className="text-xs text-destiny-grey/30">Create your first redirect above</p>
-          </div>
-        ) : (
-          <div className="divide-y divide-black/5">
-            {redirects.map((r) => (
-              <div
-                key={r.id}
-                className={`flex items-center gap-4 px-6 py-4 transition ${!r.active ? "opacity-50" : ""}`}
-              >
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-0.5">
-                    <span className="text-sm font-bold text-destiny-grey">
-                      /{r.slug}
-                    </span>
-                    {r.label && (
-                      <span className="rounded-full bg-destiny-orange/10 px-2 py-0.5 text-[10px] font-bold text-destiny-orange">
-                        {r.label}
-                      </span>
-                    )}
-                  </div>
-                  <p className="truncate text-xs text-destiny-grey/40">{r.target_url}</p>
-                </div>
-
-                {/* Actions */}
-                <div className="flex items-center gap-1 shrink-0">
-                  {/* Copy */}
-                  <button
-                    onClick={() => handleCopy(r.slug)}
-                    title="Copy URL"
-                    className="flex h-8 w-8 items-center justify-center rounded-lg text-destiny-grey/40 transition hover:bg-black/5 hover:text-destiny-grey"
-                  >
-                    <span className="material-symbols-rounded text-base">
-                      {copied === r.slug ? "check" : "content_copy"}
-                    </span>
-                  </button>
-
-                  {/* Toggle active */}
-                  <button
-                    onClick={() => handleToggle(r)}
-                    title={r.active ? "Deactivate" : "Activate"}
-                    className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors ${
-                      r.active ? "bg-destiny-orange" : "bg-black/10"
-                    }`}
-                  >
-                    <span
-                      className={`inline-block h-3.5 w-3.5 rounded-full bg-white shadow transition-transform ${
-                        r.active ? "translate-x-4" : "translate-x-0.5"
-                      }`}
-                    />
-                  </button>
-
-                  {/* Delete */}
-                  <button
-                    onClick={() => handleDelete(r.id)}
-                    title="Delete"
-                    className="flex h-8 w-8 items-center justify-center rounded-lg text-destiny-grey/30 transition hover:bg-red-50 hover:text-red-500"
-                  >
-                    <span className="material-symbols-rounded text-base">delete</span>
-                  </button>
+              <div>
+                <label className={labelClass} htmlFor="redirect-slug">
+                  Slug (required)
+                </label>
+                <div className="flex overflow-hidden rounded-xl border border-black/10 focus-within:border-destiny-orange/50 focus-within:ring-2 focus-within:ring-destiny-orange/15">
+                  <span className="flex items-center whitespace-nowrap border-r border-black/10 bg-black/5 px-3 text-xs text-destiny-grey/40">
+                    destinytees.uk/
+                  </span>
+                  <input
+                    id="redirect-slug"
+                    type="text"
+                    value={slug}
+                    onChange={(e) =>
+                      setSlug(
+                        e.target.value
+                          .toLowerCase()
+                          .replace(/\s+/g, "-")
+                          .replace(/[^a-z0-9-]/g, ""),
+                      )
+                    }
+                    required
+                    placeholder="alpha-signup"
+                    className="min-w-0 flex-1 px-3 py-2.5 text-sm text-destiny-grey placeholder:text-destiny-grey/30 focus:outline-none"
+                  />
                 </div>
               </div>
-            ))}
-          </div>
-        )}
-      </div>
-    </div>
+            </div>
+
+            <div>
+              <label className={labelClass} htmlFor="redirect-target">
+                Target URL (required)
+              </label>
+              <input
+                id="redirect-target"
+                type="url"
+                value={targetUrl}
+                onChange={(e) => setTargetUrl(e.target.value)}
+                required
+                placeholder="https://destinytees.churchsuite.com/..."
+                className={inputClass}
+              />
+            </div>
+
+            <div className="flex justify-end gap-3">
+              <button type="button" className={ghostBtn} onClick={() => setShowForm(false)}>
+                Cancel
+              </button>
+              <button type="submit" disabled={creating} className={primaryBtn}>
+                {creating ? "Creating…" : "Create redirect"}
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {loading ? (
+        <TableSkeleton columns={3} />
+      ) : redirects.length === 0 ? (
+        <EmptyState
+          icon="link_off"
+          title="No redirects yet"
+          hint="Create a short link like destinytees.uk/alpha that you can repoint whenever the sign-up form moves."
+          action={
+            <button className={primaryBtn} onClick={() => setShowForm(true)}>
+              <span className="material-symbols-rounded text-lg">add</span>
+              New redirect
+            </button>
+          }
+        />
+      ) : (
+        <>
+          <ListToolbar
+            search={list.search}
+            onSearchChange={list.setSearch}
+            searchPlaceholder="Search slug, label or target"
+            noun="redirect"
+            total={list.total}
+            shown={list.shown}
+            filters={
+              <FilterChips
+                label="State"
+                options={list.filterOptions("state")}
+                value={list.filterValues.state}
+                onChange={(v) => list.setFilter("state", v)}
+              />
+            }
+          />
+
+          {list.visible.length === 0 ? (
+            <EmptyState
+              icon="search_off"
+              title="No redirects match"
+              hint="Try part of the slug, the label, or the destination."
+              action={
+                <button
+                  className="text-sm font-bold text-destiny-orange hover:brightness-110"
+                  onClick={list.clearAll}
+                >
+                  Clear search and filters
+                </button>
+              }
+            />
+          ) : (
+            <div className="overflow-hidden rounded-3xl border border-black/5 bg-white shadow-sm">
+              <div className="divide-y divide-black/5">
+                {list.visible.map((r) => (
+                  <div
+                    key={r.id}
+                    className={`flex items-center gap-4 px-5 py-4 transition ${
+                      r.active ? "" : "opacity-55"
+                    }`}
+                  >
+                    <div className="min-w-0 flex-1">
+                      <div className="mb-0.5 flex flex-wrap items-center gap-2">
+                        <span className="text-sm font-bold text-destiny-grey">/{r.slug}</span>
+                        {r.label && (
+                          <span className="rounded-full bg-destiny-orange/10 px-2 py-0.5 text-[10px] font-bold text-destiny-orange">
+                            {r.label}
+                          </span>
+                        )}
+                      </div>
+                      <p className="truncate text-xs text-destiny-grey/45">{r.target_url}</p>
+                    </div>
+
+                    <div className="flex shrink-0 items-center gap-1">
+                      <a
+                        href={`https://destinytees.uk/${r.slug}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        title="Open this link"
+                        aria-label={`Open /${r.slug}`}
+                        className="flex h-8 w-8 items-center justify-center rounded-lg text-destiny-grey/40 transition hover:bg-black/5 hover:text-destiny-orange"
+                      >
+                        <span className="material-symbols-rounded text-base">open_in_new</span>
+                      </a>
+                      <button
+                        onClick={() => handleCopy(r.slug)}
+                        title="Copy URL"
+                        aria-label={`Copy the URL for /${r.slug}`}
+                        className="flex h-8 w-8 items-center justify-center rounded-lg text-destiny-grey/40 transition hover:bg-black/5 hover:text-destiny-grey"
+                      >
+                        <span
+                          className={`material-symbols-rounded text-base ${
+                            copied === r.slug ? "text-destiny-green" : ""
+                          }`}
+                        >
+                          {copied === r.slug ? "check" : "content_copy"}
+                        </span>
+                      </button>
+                      <Toggle
+                        checked={r.active}
+                        onChange={() => handleToggle(r)}
+                        label={r.active ? `Deactivate /${r.slug}` : `Activate /${r.slug}`}
+                      />
+                      <button
+                        onClick={() => handleDelete(r)}
+                        title="Delete"
+                        aria-label={`Delete /${r.slug}`}
+                        className="flex h-8 w-8 items-center justify-center rounded-lg text-destiny-grey/30 transition hover:bg-destiny-red/10 hover:text-destiny-red"
+                      >
+                        <span className="material-symbols-rounded text-base">delete</span>
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </>
+      )}
     </div>
   );
 }

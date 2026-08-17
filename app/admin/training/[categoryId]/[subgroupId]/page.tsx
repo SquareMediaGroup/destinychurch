@@ -1,7 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
-import { useParams } from "next/navigation";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { useParams, useSearchParams } from "next/navigation";
+import Fuse from "fuse.js";
 import {
   API,
   type TrainingCategory,
@@ -10,11 +11,14 @@ import {
   type TrainingPost,
 } from "@/lib/training";
 import {
-  HrHeader,
+  PageHeader,
   Badge,
   EmptyState,
+  ErrorNote,
+  SearchInput,
+  TableSkeleton,
   primaryBtn,
-} from "@/components/admin/hr/HrUI";
+} from "@/components/admin/AdminUI";
 import { PostEditor } from "@/components/admin/training/PostEditor";
 import { FolderModal } from "@/components/admin/training/FolderModal";
 import { useReorder } from "@/components/admin/training/useReorder";
@@ -168,12 +172,130 @@ function PostListSection({
   );
 }
 
+/**
+ * Flat list of every matching post across all folders, shown while a search is
+ * active. Posts here live in hand-ordered folders, so a filtered view can't
+ * offer drag-reorder — but "which folder is that video in?" is exactly the
+ * question this page couldn't answer before, so search returns the answer with
+ * the folder named on each row.
+ */
+function SearchResults({
+  posts,
+  folders,
+  onEdit,
+  togglePublish,
+  remove,
+  liveBase,
+}: {
+  posts: TrainingPost[];
+  folders: TrainingFolder[];
+  onEdit: (p: TrainingPost) => void;
+  togglePublish: (p: TrainingPost) => void;
+  remove: (p: TrainingPost) => void;
+  liveBase: string | null;
+}) {
+  const folderName = (id: string | null) =>
+    id ? (folders.find((f) => f.id === id)?.name ?? "Unknown folder") : "Ungrouped";
+
+  return (
+    <div className="overflow-x-auto rounded-3xl border border-black/5 bg-white shadow-sm">
+      <table className="w-full text-left text-sm">
+        <thead className="border-b border-black/5 text-xs font-bold uppercase tracking-wider text-destiny-grey/40">
+          <tr>
+            <th className="px-5 py-3.5">Post</th>
+            <th className="hidden px-5 py-3.5 sm:table-cell">Folder</th>
+            <th className="px-5 py-3.5">Status</th>
+            <th className="px-5 py-3.5 text-right">Actions</th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-black/5">
+          {posts.map((p) => (
+            <tr
+              key={p.id}
+              onClick={() => onEdit(p)}
+              className="group cursor-pointer transition hover:bg-[#f5f7fa]"
+            >
+              <td className="px-5 py-3.5">
+                <p className="font-bold text-destiny-grey transition group-hover:text-destiny-orange">
+                  {p.title}
+                </p>
+                {p.summary && (
+                  <p className="mt-0.5 text-xs text-destiny-grey/45">{p.summary}</p>
+                )}
+              </td>
+              <td className="hidden px-5 py-3.5 sm:table-cell">
+                <span className="inline-flex items-center gap-1.5 text-xs font-bold text-destiny-grey/50">
+                  <span className="material-symbols-rounded text-base text-destiny-orange/60">
+                    {p.folder_id ? "folder" : "folder_open"}
+                  </span>
+                  {folderName(p.folder_id)}
+                </span>
+              </td>
+              <td className="px-5 py-3.5">
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    togglePublish(p);
+                  }}
+                  title={p.is_published ? "Unpublish" : "Publish"}
+                >
+                  <Badge tone={p.is_published ? "green" : "grey"}>
+                    {p.is_published ? "Published" : "Draft"}
+                  </Badge>
+                </button>
+              </td>
+              <td className="px-5 py-3.5">
+                <div className="flex items-center justify-end gap-3">
+                  {p.is_published && liveBase && (
+                    <a
+                      href={`${liveBase}/${p.slug}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      onClick={(e) => e.stopPropagation()}
+                      className="text-destiny-grey/40 transition hover:text-destiny-orange"
+                      aria-label={`View ${p.title} live`}
+                    >
+                      <span className="material-symbols-rounded text-xl">open_in_new</span>
+                    </a>
+                  )}
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onEdit(p);
+                    }}
+                    className="text-destiny-grey/40 transition hover:text-destiny-orange group-hover:text-destiny-orange"
+                    aria-label={`Edit ${p.title}`}
+                  >
+                    <span className="material-symbols-rounded text-xl">edit</span>
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      remove(p);
+                    }}
+                    className="text-destiny-grey/40 transition hover:text-destiny-red"
+                    aria-label={`Delete ${p.title}`}
+                  >
+                    <span className="material-symbols-rounded text-xl">delete</span>
+                  </button>
+                </div>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
 export default function TrainingPostsPage() {
   const { confirm } = useDialog();
+  const searchParams = useSearchParams();
   const { categoryId, subgroupId } = useParams<{
     categoryId: string;
     subgroupId: string;
   }>();
+  const [search, setSearch] = useState("");
   const [category, setCategory] = useState<TrainingCategory | null>(null);
   const [subgroup, setSubgroup] = useState<TrainingSubgroup | null>(null);
   const [folders, setFolders] = useState<TrainingFolder[]>([]);
@@ -205,6 +327,31 @@ export default function TrainingPostsPage() {
   useEffect(() => {
     load();
   }, [load]);
+
+  // ?open=<id> comes from a ⌘K search hit — jump straight into that post.
+  const openId = searchParams.get("open");
+  useEffect(() => {
+    if (!openId || posts.length === 0) return;
+    const match = posts.find((p) => p.id === openId);
+    if (match) setEditingPost(match);
+  }, [openId, posts]);
+
+  const matches = useMemo(() => {
+    const query = search.trim();
+    if (!query) return [];
+    const fuse = new Fuse(posts, {
+      keys: [
+        { name: "title", weight: 0.6 },
+        { name: "summary", weight: 0.4 },
+      ],
+      threshold: 0.4,
+      ignoreLocation: true,
+      minMatchCharLength: 2,
+    });
+    return fuse.search(query).map((hit) => hit.item);
+  }, [posts, search]);
+
+  const searching = search.trim().length > 0;
 
   const { rowProps: folderRowProps } = useReorder(
     folders,
@@ -303,7 +450,7 @@ export default function TrainingPostsPage() {
 
   return (
     <div className="mx-auto max-w-6xl px-5 py-10">
-      <HrHeader
+      <PageHeader
         title={subgroup ? `${subgroup.name} — posts` : "Posts"}
         subtitle={
           category && subgroup
@@ -331,20 +478,63 @@ export default function TrainingPostsPage() {
         }
       />
 
-      {error && (
-        <p className="mb-4 rounded-xl bg-destiny-red/10 px-4 py-2.5 text-sm text-destiny-red">
-          {error}
-        </p>
+      <ErrorNote>{error}</ErrorNote>
+
+      {!loading && posts.length > 0 && (
+        <div className="mb-5 flex flex-wrap items-center gap-3">
+          <SearchInput
+            value={search}
+            onChange={setSearch}
+            placeholder="Search posts in this sub-group"
+          />
+          <p className="text-xs font-bold tabular-nums text-destiny-grey/40">
+            {searching ? `${matches.length} of ${posts.length}` : posts.length} post
+            {posts.length === 1 && !searching ? "" : "s"}
+          </p>
+        </div>
       )}
 
       {loading ? (
-        <p className="text-sm text-destiny-grey/50">Loading…</p>
+        <TableSkeleton columns={4} />
       ) : posts.length === 0 && folders.length === 0 ? (
         <EmptyState
           icon="article"
           title="No posts yet"
           hint="Create a folder or a training post to get started."
+          action={
+            <button className={primaryBtn} onClick={() => setEditingPost("new")}>
+              <span className="material-symbols-rounded text-lg">add</span>
+              New post
+            </button>
+          }
         />
+      ) : searching ? (
+        // Search spans every folder — the whole point is not needing to know
+        // which one a post is in.
+        matches.length === 0 ? (
+          <EmptyState
+            icon="search_off"
+            title="No posts match"
+            hint="Search looks at every folder in this sub-group."
+            action={
+              <button
+                className="text-sm font-bold text-destiny-orange hover:brightness-110"
+                onClick={() => setSearch("")}
+              >
+                Clear search
+              </button>
+            }
+          />
+        ) : (
+          <SearchResults
+            posts={matches}
+            folders={folders}
+            onEdit={setEditingPost}
+            togglePublish={togglePublish}
+            remove={remove}
+            liveBase={liveBase}
+          />
+        )
       ) : activeFolderId === null ? (
         // Grid View
         <div className="flex flex-col gap-8">

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { use, useEffect, useState } from "react";
 import { useToast } from "@/components/ToastProvider";
+import { PageLoading } from "@/components/admin/AdminUI";
 import {
   formatPrice,
   ORDER_STATUS_LABELS,
@@ -55,7 +56,7 @@ export default function AdminOrderDetailPage({
     }
   }
 
-  if (loading) return <p className="px-8 py-10 text-sm text-destiny-grey/50">Loading…</p>;
+  if (loading) return <PageLoading label="Loading order" />;
   if (!order) return <p className="px-8 py-10 text-sm text-destiny-grey/50">Order not found.</p>;
 
   return (

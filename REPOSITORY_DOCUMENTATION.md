@@ -774,7 +774,10 @@ and `lib/adminRoles.ts` for the enforcement logic.
 **Used By:**
 - `middleware.ts` — role check on every admin request
 - `/admin/users` + `app/api/admin/users/**` — role management UI
-- `app/api/admin/me/roles` — lets the sidebar know what to show
+- `app/api/admin/me` — the caller's own email + role flags, shared by the sidebar, header and
+  ⌘K palette via `lib/useAdminSession.ts`; `app/api/admin/me/roles` remains for existing callers
+- `app/api/admin/search` — cross-section record search for the ⌘K palette. Open to any signed-in
+  admin, but it re-reads the caller's roles and only queries the sections that role can open
 
 ---
 
@@ -1458,6 +1461,38 @@ Super Admin only).
 | `/admin/store/orders/[id]` | `app/admin/store/orders/[id]/page.tsx` | Order detail — mark fulfilled/cancelled/refunded |
 | `/admin/users` | `app/admin/users/page.tsx` | Manage admin logins and their access-level roles (Super Admin only) |
 
+#### Admin navigation, search and keyboard shortcuts
+
+Everywhere you can go inside `/admin` is declared once, in
+[`lib/adminNav.ts`](#libadminnavts). The sidebar, the header breadcrumbs, the
+dashboard's "Manage" grid and the ⌘K palette all render from that one list, so
+adding a section means editing one file.
+
+**Finding things.** Every list page has the same toolbar — fuzzy search on the
+left, status filter chips with live counts beside it, a "showing x of y" count
+on the right — built on [`lib/useAdminList.ts`](#libuseadminlistts). Search,
+filters and sort are mirrored into the query string, so a filtered list is a
+link you can send someone and Back behaves. `/` jumps to the search box.
+
+**⌘K palette** (`components/admin/AdminCommandPalette.tsx`) searches two things
+at once: admin pages and quick actions locally from the registry, and real
+records — posts, products, orders, redirects, training, course dates, users —
+from `GET /api/admin/search`. Opening it with an empty box lists your recently
+visited sections. Records are role-filtered server-side, so a Store Admin's
+results contain orders and products and nothing else.
+
+| Shortcut | Does |
+|----------|------|
+| `⌘K` / `Ctrl-K` | Open the palette |
+| `?` | Keyboard shortcut help |
+| `/` | Focus the current list's search box |
+| `g` then `d`/`p`/`t`/`s`/`o`/`r`/`b`/`u` | Dashboard, Posts, Training, Store, Orders, Redirects, Banner, Users |
+
+HR is deliberately excluded from the sidebar, the dashboard grid **and** the
+palette — the section is built but unlaunched, and staff records, leave reasons
+and applicant CVs shouldn't surface in a fuzzy search box. Its entries carry
+`unlisted: true` in the registry; `/admin/hr` links its own sub-pages.
+
 ---
 
 ## Components
@@ -2109,6 +2144,38 @@ export async function applyForJob(jobId: string, formData: ApplicationData) {
 
 ### Admin API Routes
 
+#### `GET /api/admin/search`
+```typescript
+// Cross-section record search — the records half of the ⌘K palette.
+// Query: ?q=<at least 2 characters>
+// Returns: { hits: AdminSearchHit[] }  — up to 6 per section
+//
+// Sections searched: posts, redirects, products, orders, training categories,
+// training posts, course dates, admin users.
+//
+// AUTHORIZATION: this path is in OPEN_PATHS (lib/adminRoles.ts) because every
+// admin needs the palette — but it is NOT unguarded. The route re-reads the
+// caller's roles from the service client and only queries the sections that
+// role can open, so results can never include a section the caller would be
+// bounced out of. Each section runs in parallel and a failing one is dropped
+// rather than blanking the whole palette.
+//
+// HR is deliberately not searched. See "Admin navigation, search and keyboard
+// shortcuts".
+```
+
+#### `GET /api/admin/me`
+```typescript
+// The signed-in admin's own email, id and role flags, in one request.
+// Returns: { email, id, roles }
+//
+// Shared by the sidebar, header and palette through lib/useAdminSession.ts,
+// which caches the promise at module scope so mounting three consumers is
+// still one request. /api/admin/me/roles remains for existing callers.
+//
+// Also in OPEN_PATHS: it only ever returns the caller's own details.
+```
+
 #### `POST /api/admin/redirects`
 ```typescript
 // Create or update redirect
@@ -2630,8 +2697,12 @@ drift, sermon/podcast pairing, course-registry integrity (`course-events.spec.ts
 livestream page parsing (`live-detection.spec.ts` — a live broadcast is detected
 even when recommendation shelves carry `isLiveNow: false` first, a finished
 broadcast isn't, and a channel-home redirect is a definitive offline rather than an
-escalation), and Sunday service times across both DST boundaries
-(`service-times.spec.ts`).
+escalation), Sunday service times across both DST boundaries
+(`service-times.spec.ts`), admin navigation integrity (`admin-nav.spec.ts` — every
+registry entry's declared role actually grants its own path, so drift between
+`lib/adminNav.ts` and `ROUTE_RULES` fails the suite instead of shipping a link
+that bounces; plus role filtering, longest-prefix path resolution, and that no
+breadcrumb dead-ends), and CSV quoting for the orders export (`csv.spec.ts`).
 
 Browser specs run with `npm run test:e2e`. Those needing an admin session
 (`admin-blocks`, `admin-courses`) skip themselves unless `ADMIN_EMAIL` and
@@ -2641,6 +2712,78 @@ the gitignored `CLAUDE.local.md`.
 ---
 
 ## Libraries & Utilities
+
+### `lib/adminNav.ts`
+
+The one list of everywhere you can go inside `/admin`: `href`, `label`, icon,
+required role, group, a one-line description and search keywords.
+
+Before it existed the same navigation was written out three times — in
+`AdminSidebar` (with roles), as a title map in `AdminHeader` (without), and as
+hand-written cards on the dashboard. The dashboard's copy had already drifted:
+it listed Redirects and the five course pages and nothing else, so Posts,
+Training, Store, Announcements and Users were reachable only via the sidebar.
+The ⌘K palette would have made it a fourth copy.
+
+Exports `visibleGroups`/`visibleItems`/`visibleQuickActions` (role-filtered),
+`itemForPath` (longest-prefix match, so `/admin/store/products/123` resolves to
+Products rather than Store), `titleForPath` and `breadcrumbsFor`.
+
+Two things to keep in mind when editing it:
+
+- **The `role` on each entry must match `ROUTE_RULES` in `lib/adminRoles.ts`.**
+  This file decides what a user is *shown*; that one decides what they can
+  reach. Showing a link that bounces to `?forbidden=1` is worse than not
+  showing it. `tests/unit/admin-nav.spec.ts` asserts every declared role
+  actually grants its own path, so drift fails the suite rather than shipping.
+- **`unlisted: true`** keeps an entry out of the sidebar, dashboard and palette
+  while leaving it reachable and resolvable for breadcrumbs. HR uses this.
+
+`ADMIN_QUICK_ACTIONS` holds things you *do* rather than places you go ("New
+post", "Clear the cache"). Those hrefs use `?new=1`, which the list pages read
+to open their editor straight away.
+
+### `lib/useAdminList.ts`
+
+The hook behind every searchable admin list: fuzzy search, status filters with
+live counts, optional sorting, and all three mirrored into the query string.
+
+Before it, none of the admin lists had search at all — finding one redirect
+among a hundred, or one order in a year, meant Cmd-F over whatever the browser
+had rendered.
+
+- **Fuzzy, not `includes()`.** Uses Fuse.js (already a dependency for Smart
+  Search) at `threshold: 0.4`, `ignoreLocation: true`. Typo tolerance matters
+  here — "aplha" finds Alpha, "obrien" finds O'Brien — and matches are usually
+  mid-string, in a long product name.
+- **Client-side on purpose.** Every one of these endpoints already returns its
+  whole collection in one request, so filtering in the browser is instant and
+  needs no new API surface. If a collection outgrows that (orders, most
+  likely), move it behind `/api/admin/search`.
+- **Counts are taken against the searched set, not the filtered one**, so the
+  number on each chip tells you what clicking it would show.
+- `useRowSelection` is separate, so lists that don't need bulk actions pay
+  nothing. It filters dead ids on read rather than pruning them in an effect —
+  deleting a selected row would otherwise leave a phantom in the count.
+
+**Sorting and drag-reorder don't mix.** On the training pages a row's position
+*is* the public ordering, so dragging inside a filtered view would write a
+meaningless `sort_order`. Those pages hide the drag handles while a search or
+filter is active and say so.
+
+### `lib/useAdminSession.ts` / `lib/adminRecents.ts` / `lib/csv.ts`
+
+- `useAdminSession` — the signed-in admin's email and roles from
+  `/api/admin/me`, with the promise cached at module scope. The sidebar, header
+  and palette all need it; without sharing, mounting the palette would have
+  added a second and third identical request per navigation.
+- `adminRecents` — the last six admin paths you opened, in `localStorage`.
+  Feeds the dashboard's "Jump back in" strip and the palette's empty state.
+  **Paths only, never record contents**, so nothing sensitive is left behind on
+  a shared office machine.
+- `csv.ts` — `toCsv` + `downloadCsv` for the orders export. RFC 4180 quoting
+  (doubled quotes, CRLF rows) and a UTF-8 BOM, without which Excel on Windows
+  mangles the £ in every price column.
 
 ### Admin helpers (`lib/adminUpload.ts`, `lib/useIsDesktop.ts`, `lib/useKeyboardInset.ts`, `lib/useIsClient.ts`)
 - `lib/adminUpload.ts` — `uploadPostImage(file)` posts to `/api/admin/posts/upload` (auto-rotate from EXIF, resize to max 1600px, re-encode to WebP q82, `post-media` bucket). Extracted from `RichTextEditor`'s inline toolbar handler so the block inspector's image field shares one implementation. Exports `UPLOAD_ACCEPT` and `UPLOAD_MAX_BYTES`, which mirror the route's own limits so an oversized file fails before the upload rather than after.
@@ -3242,11 +3385,24 @@ always passes and isn't repeated per rule; anything under `/admin` or
 | `site_admin` | `/admin/posts`, `/admin/redirects` | `/api/admin/{posts,redirects}/**` |
 | `super_admin` | Everything, plus Banner, Clear Cache, HR, and `/admin/users` | `/api/admin/{banner,revalidate,hr,users}/**` |
 
-`/admin` (dashboard) and `/api/admin/logout` stay open to any authenticated admin.
+**`OPEN_PATHS`** — reachable by any authenticated admin regardless of role:
+`/admin` (the dashboard), `/api/admin/logout`, `/api/admin/me`,
+`/api/admin/me/roles` and `/api/admin/search`.
+
+The first four are trivially safe: a signed-in admin's own identity and roles
+tell them nothing they don't already have. **`/api/admin/search` is the one that
+needs care.** It is open because every admin needs the ⌘K palette, but it is not
+unguarded — the route re-reads the caller's roles from the service client and
+only queries the sections that role can open, so a Store Admin's results contain
+orders and products and nothing else. If you add a section to that route, gate
+its query on a role the same way. HR is deliberately not searched at all.
+
 `/admin/users` (Super Admin only, `app/api/admin/users/**`) is where roles are
-assigned — a tickbox per role per user. `GET /api/admin/me/roles` lets the
-sidebar (`AdminSidebar.tsx`) know which sections to show; it's a UI convenience
-only, not an authorization boundary.
+assigned — a tickbox per role per user. `GET /api/admin/me` (and the older
+`/me/roles`) lets the sidebar, header and palette know which sections to show;
+that's a UI convenience only, not an authorization boundary. What a user is
+*shown* comes from `lib/adminNav.ts`, which must stay in step with the table
+above — `tests/unit/admin-nav.spec.ts` enforces it.
 
 #### Layer 1: Middleware (`middleware.ts`)
 ```typescript
@@ -3658,11 +3814,15 @@ ENABLE_SMART_SEARCH=true
 - `app/admin/store/orders/page.tsx` — Orders list
 - `app/admin/store/orders/[id]/page.tsx` — Order detail (fulfillment)
 - `app/admin/store/hero/page.tsx` — Shop hero slides (add/edit/reorder rotating hero)
+- `app/admin/users/page.tsx` — Admin logins and access-level roles (Super Admin only)
+- `app/admin/posts/page.tsx` — Standalone pages; search, status filter, sort, bulk publish/delete
+- `app/admin/training/page.tsx` (+ `[categoryId]`, `[categoryId]/[subgroupId]`) — Training categories → sub-groups → posts
 
 ### Component Directory
 - **~120 components** organized by feature:
   - Global: Header, Footer, Providers, CookieBanner, Analytics, FloatingSmartSearch
-  - Admin: Sidebar, AdminHeader, RichTextEditor (shared editor), Sheet (mobile bottom sheet), blocks/ (palette, inspector, outline, tools), posts/training/hr editors
+  - Admin: Sidebar, AdminHeader, AdminUI (the shared kit — PageHeader, Badge, Modal, EmptyState, SearchInput, FilterChips, ListToolbar, SortHeader, skeletons, Toggle, BulkBar), AdminCommandPalette (⌘K + global shortcuts), RichTextEditor (shared editor), Sheet (mobile bottom sheet), blocks/ (palette, inspector, outline, tools), posts/training/hr editors
+    - `components/admin/hr/HrUI.tsx` is now a re-export shim over `AdminUI`. The kit used to live there, under a feature folder, with its page header named `HrHeader` — which Posts and Training both imported, reading as if those pages were part of HR. `HrHeader` remains as an alias for `PageHeader`; new code should import from `@/components/admin/AdminUI`.
   - Ministry-specific: Kids, Youth, Young Adults, Alpha
   - Governance: registration cards, trustees/directors, financial history, filings, source note
   - Shop: ProductCard, ShopProductGrid, ShopHero, cart, checkout
@@ -3677,9 +3837,12 @@ ENABLE_SMART_SEARCH=true
   - Email templates
   - Rate limiting (in-memory), auth is handled by `middleware.ts` (no `roles.ts`)
   - Feature flags (`serviceStatus.ts`)
+  - Admin shell: `adminNav.ts` (the one navigation registry), `useAdminList.ts`
+    (list search/filter/sort), `useAdminSession.ts`, `adminRecents.ts`, `csv.ts`
 
 ### API Routes (`app/api/`)
-- **Admin endpoints:** Banners, redirects, pop-ups, cache revalidation, posts, training, alpha-events, featured-course, HR, store management
+- **Admin endpoints:** Banners, redirects, pop-ups, cache revalidation, posts, training, alpha-events, featured-course, HR, store management,
+  plus `me` (signed-in identity + roles) and `search` (role-filtered cross-section record search behind the ⌘K palette)
 - **Public endpoints:** `/api/chat` (Smart Search tool-calling chat, Turnstile-gated), `/api/turnstile/verify` (Cloudflare Turnstile token check), YouTube (videos/status/thumbnail/live), Alpha info, training unlock + read timer (`/api/training/posts/[id]/timer`)
 - **Store endpoints:** Stripe checkout + Payment Element, order management
 - **Webhooks:** Stripe only (`/api/webhooks/stripe`) — no GitHub or Vercel deployment webhook route

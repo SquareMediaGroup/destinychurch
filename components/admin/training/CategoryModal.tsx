@@ -8,7 +8,7 @@ import {
   labelClass,
   primaryBtn,
   ghostBtn,
-} from "@/components/admin/hr/HrUI";
+} from "@/components/admin/AdminUI";
 import { IconPicker } from "@/components/admin/training/IconPicker";
 
 export function CategoryModal({

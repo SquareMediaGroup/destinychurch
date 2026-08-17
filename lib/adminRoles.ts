@@ -73,7 +73,20 @@ const ROUTE_RULES: { pattern: RegExp; roles: AdminRole[] }[] = [
 ];
 
 // Paths any authenticated admin can reach regardless of role.
-const OPEN_PATHS = [/^\/admin$/, /^\/api\/admin\/logout$/, /^\/api\/admin\/me\/roles$/];
+//
+// /api/admin/search is open because every admin needs the ⌘K palette, but it
+// is *not* unguarded: the route re-reads the caller's roles and only queries
+// the sections they can open, so a Store Admin's results contain orders and
+// products and nothing else. See app/api/admin/search/route.ts.
+//
+// /api/admin/me only ever returns the caller's own email and role flags.
+const OPEN_PATHS = [
+  /^\/admin$/,
+  /^\/api\/admin\/logout$/,
+  /^\/api\/admin\/me$/,
+  /^\/api\/admin\/me\/roles$/,
+  /^\/api\/admin\/search$/,
+];
 
 export function hasAccess(roles: RoleFlags, pathname: string): boolean {
   if (roles.super_admin) return true;

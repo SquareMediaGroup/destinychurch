@@ -1,6 +1,6 @@
 "use client";
 
-import { labelClass } from "@/components/admin/hr/HrUI";
+import { labelClass } from "@/components/admin/AdminUI";
 import {
   TONE_LABELS,
   TONE_SWATCH,

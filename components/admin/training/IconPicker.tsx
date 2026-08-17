@@ -1,6 +1,6 @@
 "use client";
 
-import { labelClass } from "@/components/admin/hr/HrUI";
+import { labelClass } from "@/components/admin/AdminUI";
 
 // Curated set of Material Symbols that suit church serving teams.
 const ICONS = [

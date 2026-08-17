@@ -9,7 +9,7 @@ import {
   primaryBtn,
   ghostBtn,
   Badge,
-} from "@/components/admin/hr/HrUI";
+} from "@/components/admin/AdminUI";
 
 export function SubgroupModal({
   subgroup,

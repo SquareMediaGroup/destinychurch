@@ -8,7 +8,16 @@ import {
   type ApplicationStatus,
   type JobApplication,
 } from "@/lib/jobs";
-import { HrHeader, Badge, EmptyState } from "@/components/admin/hr/HrUI";
+import {
+  PageHeader,
+  Badge,
+  EmptyState,
+  ErrorNote,
+  ListToolbar,
+  FilterChips,
+  TableSkeleton,
+} from "@/components/admin/AdminUI";
+import { useAdminList } from "@/lib/useAdminList";
 import { useDialog } from "@/components/DialogProvider";
 
 type WithCv = JobApplication & { cv_url?: string | null };
@@ -41,6 +50,32 @@ export default function ApplicationsPage() {
   useEffect(() => {
     load();
   }, [load]);
+
+  const list = useAdminList<JobApplication>({
+    items: apps,
+    searchKeys: [
+      { name: "first_name", weight: 0.25 },
+      { name: "last_name", weight: 0.25 },
+      { name: "email", weight: 0.25 },
+      { name: "job_title", weight: 0.25 },
+    ],
+    filters: [
+      {
+        key: "status",
+        options: STATUSES.map((s) => ({
+          value: s,
+          label: APPLICATION_STATUS_LABELS[s],
+        })),
+        match: (a, value) => a.status === value,
+      },
+    ],
+    sorts: {
+      applied: (a, b) => a.created_at.localeCompare(b.created_at),
+      name: (a, b) =>
+        `${a.last_name} ${a.first_name}`.localeCompare(`${b.last_name} ${b.first_name}`),
+    },
+    defaultSort: { field: "applied", direction: "desc" },
+  });
 
   async function openDetail(app: JobApplication) {
     setError("");
@@ -86,20 +121,16 @@ export default function ApplicationsPage() {
 
   return (
     <div className="mx-auto max-w-6xl px-5 py-10">
-      <HrHeader
+      <PageHeader
         title="Applications"
         subtitle="Candidates who have applied through the public /jobs page."
         back={{ href: "/admin/hr/jobs", label: "Jobs & internships" }}
       />
 
-      {error && (
-        <p className="mb-4 rounded-xl bg-destiny-red/10 px-4 py-2.5 text-sm text-destiny-red">
-          {error}
-        </p>
-      )}
+      <ErrorNote>{error}</ErrorNote>
 
       {loading ? (
-        <p className="text-sm text-destiny-grey/50">Loading…</p>
+        <TableSkeleton columns={4} />
       ) : apps.length === 0 ? (
         <EmptyState
           icon="inbox"
@@ -107,7 +138,40 @@ export default function ApplicationsPage() {
           hint="Applications submitted on the website will appear here."
         />
       ) : (
-        <div className="overflow-hidden rounded-3xl border border-black/5 bg-white shadow-sm">
+        <>
+        <ListToolbar
+          search={list.search}
+          onSearchChange={list.setSearch}
+          searchPlaceholder="Search candidate, email or role"
+          noun="application"
+          total={list.total}
+          shown={list.shown}
+          filters={
+            <FilterChips
+              label="Status"
+              options={list.filterOptions("status")}
+              value={list.filterValues.status}
+              onChange={(v) => list.setFilter("status", v)}
+            />
+          }
+        />
+
+        {list.visible.length === 0 ? (
+          <EmptyState
+            icon="search_off"
+            title="No applications match"
+            hint="Try a name, an email address, or the role applied for."
+            action={
+              <button
+                className="text-sm font-bold text-destiny-orange hover:brightness-110"
+                onClick={list.clearAll}
+              >
+                Clear search and filters
+              </button>
+            }
+          />
+        ) : (
+        <div className="overflow-x-auto rounded-3xl border border-black/5 bg-white shadow-sm">
           <table className="w-full text-left text-sm">
             <thead className="border-b border-black/5 text-xs font-bold uppercase tracking-wider text-destiny-grey/40">
               <tr>
@@ -118,7 +182,7 @@ export default function ApplicationsPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-black/5">
-              {apps.map((a) => (
+              {list.visible.map((a) => (
                 <tr
                   key={a.id}
                   className="cursor-pointer transition hover:bg-[#f5f7fa]"
@@ -150,6 +214,8 @@ export default function ApplicationsPage() {
             </tbody>
           </table>
         </div>
+        )}
+        </>
       )}
 
       {open && (

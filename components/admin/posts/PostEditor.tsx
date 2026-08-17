@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useIsDesktop } from "@/lib/useIsDesktop";
 import { API, type Post } from "@/lib/posts";
 import { slugify } from "@/lib/jobs";
-import { primaryBtn, ghostBtn } from "@/components/admin/hr/HrUI";
+import { primaryBtn, ghostBtn } from "@/components/admin/AdminUI";
 import { Sheet } from "@/components/admin/Sheet";
 import RichTextEditor from "@/components/admin/RichTextEditor";
 import type { Editor } from "@tiptap/react";

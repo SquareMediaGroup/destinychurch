@@ -152,7 +152,7 @@ destinychurch/
 │   ├── help/                      # Help centre / FAQ
 │   ├── kids/                      # Kids ministry
 │   ├── links/                     # "Next Steps" link-in-bio style page
-│   ├── live/                      # Livestream page
+│   ├── live/                      # Livestream page (real broadcast or simulated live)
 │   ├── login/                     # Staff sign-in
 │   ├── youth/                     # Youth ministry
 │   ├── young-adults/              # Young adults ministry
@@ -203,6 +203,7 @@ destinychurch/
 │   │   │   ├── popup/             # CRUD pop-ups
 │   │   │   ├── revalidate/        # ISR cache invalidation
 │   │   │   ├── posts/, training/, alpha-events/, featured-course/, hr/, store/, shop-hero/
+│   │   │   ├── simulated-live/    # Simulated live config + YouTube link lookup (Host)
 │   │   │   └── ...
 │   │   ├── chat/                  # POST /api/chat — Smart Search tool-calling chat
 │   │   ├── youtube/                # videos/, thumbnail/[id]/, status/, live/
@@ -1154,6 +1155,7 @@ All tables have RLS enabled. Access rules:
 | sermons / sermon_transcripts / sermon_link_suggestions / ai_reports / auth_users / admin_users | - | - | Yes | Base-schema legacy tables (deny-all "service only"; not read by the app) |
 | studio_assets / studio_components | - | - | Yes | Orphaned Studio-builder tables (never dropped; unused) |
 | live_chat_sessions / live_chat_messages / live_chat_prayer_requests / live_chat_blocks | - | - | Yes | Live chat on /live (deny-all "service only"; delivery is Realtime Broadcast, not table reads) |
+| simulated_live | - | - | Yes | Simulated live broadcast on /live (deny-all "service only"; singleton) |
 
 #### 21. **live_chat_sessions / live_chat_messages / live_chat_prayer_requests / live_chat_blocks**
 
@@ -1259,6 +1261,62 @@ requests and closed sessions older than 7 days. Called daily at 04:00 by
 - `app/api/admin/live-chat/*` — Host console routes (gated by `middleware.ts`)
 - `app/admin/live-chat/page.tsx` — the Host console
 - `lib/liveChat.server.ts`, `lib/liveChatGuest.ts`, `lib/liveChatModeration.ts`, `lib/liveChatAuth.ts`
+
+#### 22. **simulated_live**
+
+**Purpose:** Playing a pre-uploaded YouTube video on `/live` as though it were a
+broadcast — our version of Church Online Platform's simulated live. The entire
+feature is one row and one idea: a video id plus the instant the "broadcast"
+starts. Everyone loads the same video seeked to `now - starts_at`, so a viewer who
+opens the page twenty minutes in joins twenty minutes in.
+
+```sql
+create table simulated_live (
+  id integer primary key default 1 check (id = 1),   -- singleton
+
+  active           boolean not null default false,   -- admin intent, not "on air"
+  video_id         text,                             -- 11-char id; public or unlisted
+  title            text,                             -- heading above the player
+  starts_at        timestamptz,                      -- the playhead origin
+  duration_seconds integer,                          -- resolved from contentDetails
+  notice           text,                             -- optional line under the player
+
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+
+  -- A draft can be saved half-filled; it can never be switched on half-filled.
+  constraint simulated_live_ready_when_active check (
+    not active
+    or (video_id is not null and starts_at is not null and duration_seconds is not null)
+  ),
+  constraint simulated_live_video_id_format
+    check (video_id is null or video_id ~ '^[A-Za-z0-9_-]{11}$'),
+  constraint simulated_live_duration_positive
+    check (duration_seconds is null or (duration_seconds > 0 and duration_seconds <= 86400))
+);
+```
+
+**Why a singleton rather than a schedule table.** `/live` shows one thing at a
+time, and a list of scheduled simulcasts would need conflict rules, overlap
+resolution and a "which one is on air right now" picker — all to express something
+the church currently does once a week. If recurring simulated services are wanted
+later, this row becomes the resolved *current* broadcast and a
+`simulated_live_schedule` table feeds it.
+
+**`active` is intent, not state.** Whether it is on air is `active` **plus the
+clock**: before `starts_at` it is scheduled, after `starts_at + duration_seconds`
+it is finished, and `/live` returns to the off-air card on its own without anyone
+switching anything off.
+
+**A real broadcast always wins.** `lib/liveStatus.server.ts` checks YouTube first
+and only falls through to this row when the channel genuinely isn't streaming, so
+a simulated event left switched on cannot hide an actual service.
+
+**Used By:**
+- `lib/simulatedLive.server.ts` (the only reader) → `lib/liveStatus.server.ts`
+- `app/api/admin/simulated-live/*` — save and link lookup (Host)
+- `app/admin/live/page.tsx` — the admin console
+- `lib/simulatedLive.ts` — the shared arithmetic, also used client-side
 
 ---
 
@@ -1486,7 +1544,7 @@ without an auth check, so they must never be reachable on the live site.
 | `/beliefs` | `app/beliefs/page.tsx` | Statement of faith, doctrine |
 | `/sermons` | `app/sermons/page.tsx` | Latest message as video (with an audio switch) + searchable podcast archive |
 | `/sermons/[id]` | `app/sermons/[id]/page.tsx` | Individual sermon — YouTube embed, skip-to-sermon, next steps |
-| `/live` | `app/live/page.tsx` | Livestream page — standard hero + section rhythm, with a client island that swaps between the custom glass player and an off-air card |
+| `/live` | `app/live/page.tsx` | Livestream page — standard hero + section rhythm, with a client island that swaps between the custom glass player and an off-air card. On air for a real YouTube broadcast, or for a **simulated** one (a pre-recorded video played from a fixed start time; see `lib/simulatedLive.ts`) |
 | `/contact` | `app/contact/page.tsx` | Contact form, address, hours |
 | `/give` | `app/give/page.tsx` | Giving info — bank details, online giving |
 | `/shop` | `app/shop/page.tsx` | Store front — published products grid with category filter chips (`ShopProductGrid`), editorial `/links` style |
@@ -1569,6 +1627,7 @@ Super Admin only).
 | `/admin/store/orders` | `app/admin/store/orders/page.tsx` | Orders list |
 | `/admin/store/orders/[id]` | `app/admin/store/orders/[id]/page.tsx` | Order detail — mark fulfilled/cancelled/refunded |
 | `/admin/users` | `app/admin/users/page.tsx` | Manage admin logins and their access-level roles (Super Admin only) |
+| `/admin/live` | `app/admin/live/page.tsx` | Simulated Live — schedule a pre-recorded video to play on `/live` as though it were a broadcast. Paste a link (preview resolves title, thumbnail and runtime), pick a start time or press **Start now**, and a once-a-second status strip reports scheduled / on air with the exact position / finished (Host) |
 | `/admin/live-chat` | `app/admin/live-chat/page.tsx` | Live chat console — room state, held queue, muted guests, prayer queue, direct threads, history (Host) |
 
 #### Admin navigation, search and keyboard shortcuts
@@ -1814,6 +1873,9 @@ its `welcome` mode, and the copy still lives in `lib/welcomeChat.ts`.
 - **Polling:** `/api/youtube/live` every 30s, plus an immediate poll on mount and on `visibilitychange` / `focus` / `online`. The mount poll matters: the server render can be a minute stale, and "we went live 40 seconds ago" is exactly when someone opens the page.
 - **Grace period:** `live` does not drop to false until **two consecutive** negative polls (`OFFLINE_GRACE`), so one flaky request doesn't pull a running service off someone's screen. The streak is counted per poll — an earlier version counted it in an effect keyed on `live`, which only re-runs when the boolean flips, so it could never reach two.
 - **`markOffline()`:** lets the player tear the live view down immediately on its ENDED/error event, well before YouTube's own pages agree
+- **Clock skew:** every payload carries `serverTime`; the provider stores `serverTime - Date.now()` on each poll and exposes `getPositionSeconds()`, the shared playhead for a simulated broadcast (`now + skew - startedAt`). Derived from the origin rather than from a number the server sent, so a payload that took a moment to arrive is still right.
+- **`synced`:** true once any poll has landed (including a failed one — an offline device must not leave a player permanently unmounted waiting for a clock). A *simulated* player waits for it before mounting; a real one never does. Costs a fraction of a second, against dropping everyone into the service at a point derived from an unchecked device clock.
+- **Gotcha:** `startedAtRef` is written from inside the poll, not from an effect on `state`. Child effects run before parent ones, so the player's mount effect — which reads the position to decide where to start — would otherwise see the *previous* broadcast's origin on the very render that put it on screen.
 
 #### `/live` components (`components/live/*`)
 The page itself is a server component carrying the site's normal hero + alternating
@@ -1821,11 +1883,17 @@ The page itself is a server component carrying the site's normal hero + alternat
 orange eyebrows, `WatchOnYouTubeBand`, `WorshipWithUsSection`). Only the parts that
 change with the broadcast are client islands:
 
-- **`LiveStage.tsx`** — the player when we're on air, an off-air card the rest of the week. Live: red "On air now" eyebrow, the broadcast title (splitting the `Title || Ps Speaker` upload convention), start time, and an "Open on YouTube" escape hatch. Off air: next-service countdown, links to `/sermons` and `/visit`, and the latest message as a thumbnail card.
+- **`LiveStage.tsx`** — the player when we're on air, an off-air card the rest of the week. Live: red "On air now" eyebrow, the broadcast title (splitting the `Title || Ps Speaker` upload convention), start time, and an "Open on YouTube" escape hatch. Off air: next-service countdown, links to `/sermons` and `/visit`, and the latest message as a thumbnail card. **During a simulated broadcast both YouTube links are dropped** — sending someone to YouTube mid-simulcast hands them a scrubbable video with a view count, which is a worse experience *and* gives the game away. An optional `notice` renders under the player.
 - **`LiveHeroStatus.tsx`** — the hero eyebrow. A red pulsing "Live now" pill while streaming, the site's standard orange eyebrow otherwise.
-- **`useLiveNow.ts`** — the one place the "are we live?" rule is derived, so the hero badge and the player can't disagree.
-- **`NextServiceCountdown.tsx`** — "Sunday 14 September, 11:00am · in 2 days 4 hours". The date renders on the server too (it's identical either side of hydration); the relative half waits for the client, since a countdown computed server-side is wrong by however long the response sat in a cache.
+- **`useLiveNow.ts`** — the one place the "are we live?" rule is derived, so the hero badge and the player can't disagree. A simulated broadcast is live in exactly the same sense; only the *player* has the extra `playerReady` condition (below).
+- **`NextServiceCountdown.tsx`** — "Sunday 14 September, 11:00am · in 2 days 4 hours". The date renders on the server too (it's identical either side of hydration); the relative half waits for the client, since a countdown computed server-side is wrong by however long the response sat in a cache. An optional `startsAt` overrides the standing Sunday rhythm with a scheduled simulated broadcast — which may well be a Wednesday evening, so the time comes from the value rather than being assumed to be 11:00am. A `startsAt` already in the past is ignored, which covers the half-minute between a broadcast starting and the next poll noticing.
 - **`LivePlayer.tsx`** — YouTube IFrame API player with `controls=0` and a fully custom glass control bar (play/pause, mute, volume, fullscreen, live-edge seek). See `lib/youtubeIframe.ts` for the shared API loader (also used by `SermonPlayer.tsx`). `onEnded` is held in a ref so the mount effect stays keyed on the video id alone, and `onError` is treated as an ending too — a pulled or privated broadcast otherwise leaves the player wedged on a black rectangle.
+
+  **Simulated mode** is switched on by the presence of a `getTargetTime` prop — a *getter*, not a number, because a number would change every second and re-key the effect that owns the iframe, tearing the player down mid-service. In that mode:
+  - It joins at `playerVars.start`, not by seeking after `onReady`, so YouTube buffers from the right place and nobody sees the opening seconds flash past.
+  - **There is no DVR.** A drift check every 10s pulls the playhead back if it is more than 5s out (buffering, a phone locking, a throttled background tab), and pressing play after a pause rejoins where the service *is* — the same thing pressing play on a real live stream does. Drift is only corrected while the player reports `PLAYING`; yanking a deliberately paused player forward would be a jump-scare rather than a sync.
+  - The **LIVE** pill seeks to the shared position rather than `getDuration()`. For a real stream the live edge is the end of the buffer; for a simulated one the end of the file is where the broadcast *finishes*, and seeking there would skip the rest of the service.
+  - Running past the end of the video ends the broadcast even if `ENDED` never fires — it doesn't when the tab was asleep.
 
 #### Live chat (`components/live/chat/*`)
 The chat beside the player, and our own version of the Church Online Platform.
@@ -2417,6 +2485,29 @@ establishes who you are; `lib/liveChatAuth.ts` decides what that lets you do.
 // No revalidatePath — getNfcTiles() reads with noStore().
 ```
 
+#### Simulated live admin routes (`/api/admin/simulated-live/*`)
+```typescript
+// Host role (ROUTE_RULES in lib/adminRoles.ts) — the same people who run the
+// chat on a Sunday are the ones who start the broadcast.
+
+GET  /api/admin/simulated-live          // the row + derived { phase, endsAt, serverTime }
+PUT  /api/admin/simulated-live          // { active, video, title, notice, startsAt, durationSeconds }
+GET  /api/admin/simulated-live/lookup   // ?url= → { videoId, title, durationSeconds, thumbnail }
+
+// PUT re-resolves the runtime from YouTube rather than trusting the form: an
+// admin who edits the start time after pasting the link must not be able to
+// leave a stale duration behind. The submitted value is the fallback for when
+// YouTube can't be reached (no API key, exhausted quota) — which is exactly when
+// the admin page shows the manual runtime field.
+//
+// PUT calls clearSimulatedLiveCache() on the way out; without it "Start now"
+// appears to do nothing for up to ten seconds on that instance.
+//
+// lookup returns 200 with `unreadable: true` for a well-formed id YouTube won't
+// describe. An unlisted video that the API declines to describe will usually
+// still *play*, so the id is handed back and the runtime typed in by hand.
+```
+
 #### Live chat admin routes (`/api/admin/live-chat/*`)
 ```typescript
 // Auth comes free: middleware.ts matches /api/admin/:path*, and lib/adminRoles.ts
@@ -2538,16 +2629,26 @@ author from the row, which is why no guest id is ever broadcast to the room.
 #### `GET /api/youtube/live`
 ```typescript
 // Livestream status, polled client-side every 30s by LiveContext.
-// Response: { live, videoId, title?, startedAt?, scheduledFor?, checkedAt }
+// Response: { live, videoId, title?, startedAt?, scheduledFor?,
+//             simulated?, endsAt?, notice?, serverTime?, checkedAt }
 // dynamic = "force-dynamic"; Cache-Control: s-maxage=30, stale-while-revalidate=30
 //
 // ?debug=1 additionally returns `source` — which detection layer answered
-// (channel-page | videos.list | confirmed-offline | no-signal | disabled |
-// no-channel | error) — and sets no-store. That is the fastest way to work out
-// why the banner is or isn't showing in production without a redeploy.
+// (channel-page | videos.list | simulated | simulated-scheduled |
+// confirmed-offline | no-signal | disabled | no-channel | error) — and sets
+// no-store. That is the fastest way to work out why the banner is or isn't
+// showing in production without a redeploy.
 
-// Backed by lib/youtube.ts getLiveStatus() — see Libraries & Utilities.
+// Backed by lib/liveStatus.server.ts getLiveStatus() — see Libraries & Utilities.
 ```
+
+**Why the cache header is conditional.** When `simulated` is set (a simulated
+broadcast airing *or* scheduled) the response switches to `no-store`. The payload
+carries `serverTime`, which the browser subtracts from its own clock to work out
+how far into the video to be; a response held at the edge for 30 seconds would
+hand every viewer a 30-second-old clock and put them 30 seconds behind the room.
+Nothing in a real broadcast's payload is time-sensitive to the second, so those
+still cache normally.
 
 #### Live chat public routes (`/api/live-chat/*`)
 ```typescript
@@ -3120,12 +3221,14 @@ export async function getLatestVideo(): Promise<YTVideo | null> {
   return videos[0] ?? null;
 }
 
-// Livestream detection — used by the /live page and the "WE ARE LIVE" banner.
-// Zero-quota on the happy path; escalates only when scraping is inconclusive.
-export async function getLiveStatus(): Promise<LiveStatus> { /* ... */ }
+// Livestream detection — the *real broadcast* half. Zero-quota on the happy
+// path; escalates only when scraping is inconclusive. Callers want
+// getLiveStatus() from lib/liveStatus.server.ts, which layers simulated live
+// underneath this.
+export async function getYouTubeLiveStatus(): Promise<LiveStatus> { /* ... */ }
 ```
 
-**How `getLiveStatus()` decides, in order:**
+**How `getYouTubeLiveStatus()` decides, in order:**
 
 1. **Scrape the `/live` URL**, trying all three forms of the same channel in order: `youtube.com/channel/{id}/live`, `youtube.com/@DestinyOnlineChurch/live`, `youtube.com/destinychurchteesvalley/live`. The handle and custom URL are the safety net for a missing or stale `YOUTUBE_CHANNEL_ID`, which previously made detection fail silently and permanently. A definitive verdict from any one form breaks the loop — the later forms are only tried when the earlier one came back blocked or unreadable, so the offline path stays at exactly one fetch.
 2. **Parse properly.** `parseLivePage()` brace-matches the `ytInitialPlayerResponse` blob out of the HTML and reads `videoDetails.isLive` / `liveBroadcastDetails.isLiveNow` from *that object*. The old code regex-matched `"isLiveNow":(true|false)` anywhere in the page — and YouTube emits `ytInitialData`, full of recommendation shelves each carrying their own `isLiveNow`, **before** the player response. The first match was routinely an unrelated video's flag, so real broadcasts were scored offline. It also never distinguished `isLiveContent` ("was a broadcast at some point", true of every past Sunday) from `isLive` ("streaming right now").
@@ -3133,7 +3236,7 @@ export async function getLiveStatus(): Promise<LiveStatus> { /* ... */ }
 4. **Inconclusive results escalate** — consent wall, bot check, or an unrecognised shell. First the free second opinion: `embed/live_stream?channel={id}`, a few KB rather than a few MB and not consent-gated. Then the RSS feed's recent uploads (also free). Then **one** `videos.list` call over the collected candidate ids (1 unit) for YouTube's own `liveBroadcastContent === "live"` verdict.
 5. **Never `search?eventType=live`** — 100 units a call would burn the entire 10,000/day quota inside an hour of polling, taking the sermon pages down with it.
 
-**Caching.** The scrape uses `cache: "no-store"` and `getLiveStatus()` memoises the
+**Caching.** The scrape uses `cache: "no-store"` and `getYouTubeLiveStatus()` memoises the
 result in-process instead (30s while live, 60s otherwise, with concurrent callers
 sharing one detection pass). A watch page is several MB — past the 2MB ceiling on
 Next's fetch data cache — so the previous `next: { revalidate: 60 }` was caching
@@ -3148,6 +3251,89 @@ answer is kept rather than yanking a running stream off the page.
 - Bandwidth costs for video are lower on YouTube
 - YouTube playlist/channel management features
 - Comments, engagement metrics built-in
+
+---
+
+### `lib/liveStatus.server.ts` — the composed "are we live?"
+
+**The one function the site should ask.** Two different things can put `/live` on
+air, and nothing downstream — the banner, the player, the live-chat guard, the
+mobile app's BFF — should have to know which:
+
+```typescript
+export async function getLiveStatus(): Promise<LiveStatus>
+```
+
+1. **A real YouTube broadcast** — `getYouTubeLiveStatus()` from `lib/youtube.ts`.
+2. **A simulated one** — the `simulated_live` row, played as a broadcast.
+
+**The real broadcast is checked first and always wins.** That ordering is the
+safety property, not an optimisation: a simulated event someone forgot to switch
+off can never take an actual Sunday stream off the page. It costs nothing either
+way, since the YouTube check is memoised in-process regardless.
+
+Every answer now carries `serverTime`. A simulated answer additionally carries
+`simulated: true`, `endsAt` and `notice`, and its `startedAt` is the instant the
+simulated broadcast began — the origin every viewer's playhead is measured from.
+A simulated broadcast that hasn't started yet returns off-air *plus*
+`scheduledFor`, so the off-air card counts down to a real time instead of the
+standing "next Sunday, 11am" guess.
+
+`simulated` is set on exactly the airing and the scheduled answers, which makes
+it the flag the routes check before allowing a CDN cache.
+
+---
+
+### `lib/simulatedLive.ts` / `lib/simulatedLive.server.ts` — simulated live
+
+**What it is.** Playing a pre-uploaded YouTube video on `/live` as though it were
+a broadcast — our version of what Church Online Platform does. Paste a link, set a
+start time, and everyone watching is at the same moment; someone who opens the
+page twenty minutes in joins twenty minutes in and can't rewind to the beginning.
+
+**The whole idea is one subtraction.** Nothing is streamed and nothing is pushed.
+Every viewer loads the same video seeked to `now - startsAt`:
+
+```
+before startsAt                        → scheduled  (off air, counting down)
+startsAt … startsAt + durationSeconds  → airing at that many seconds in
+after that                             → finished   (off air, on its own)
+```
+
+Because the position is *derived* rather than stored or broadcast, viewers stay in
+sync with no coordination, and a response that sat in a cache for ten seconds is
+still correct — `now - startsAt` doesn't go stale the way a "you are at 00:14:32"
+number would.
+
+**Split across two files for bundling reasons.** `lib/simulatedLive.ts` is pure
+arithmetic (`simulatedPhase`, `simulatedPosition`, `simulatedEndsAt`,
+`parseYouTubeId`, `parseIsoDurationSeconds`, `formatTimecode`) and is imported by
+the admin page as well as the server. `lib/simulatedLive.server.ts` holds the
+service-role read of the singleton row and is `server-only`, memoised for 10
+seconds (shorter than the YouTube path's 30 — this is the row an admin has just
+pressed "Start now" on while watching `/live` in another tab), with
+`clearSimulatedLiveCache()` called after an admin write.
+
+**Clock skew is handled, because it has to be.** Each viewer computes their own
+position, so a device whose clock is two minutes fast would watch two minutes
+ahead of the chat it is reading. Every live-status payload carries `serverTime`;
+`LiveContext` stores `serverTime - Date.now()` on each poll and adds it before
+subtracting `startedAt`. It re-measures every 30s, so it also self-corrects if the
+device clock is adjusted mid-service.
+
+**Runtime is resolved, not trusted.** `duration_seconds` comes from
+`contentDetails.duration` when the link is saved (`parseIsoDurationSeconds`), and
+is re-resolved on every save so editing the start time can't leave a stale one
+behind. It is *stored* rather than fetched per request because it is the only
+thing that says when to go off air, and it must keep working if the YouTube API
+key is missing or out of quota — which is exactly when the admin page offers a
+manual runtime field instead.
+
+**What `parseYouTubeId` has to get right.** Watch URLs, `youtu.be`, `/live/`,
+`/embed/`, `/shorts/`, bare ids, and — the case a loose regex fails — *channel*
+links. `youtube.com/@DestinyOnlineChurch` contains eleven plausible characters and
+must come back null rather than scheduling a broadcast of nothing. Pinned by
+`tests/unit/simulated-live.spec.ts`.
 
 ---
 
@@ -3596,7 +3782,7 @@ always passes and isn't repeated per rule; anything under `/admin` or
 | `event_admin` | Courses (`alpha`, `recovery`, `bible-course`, `cap-money`, `featured-course`) + Announcements except Banner (`popup`, `featured-event`, `event-popup`, `nfc`) | `/api/admin/{alpha-events,events,featured-course,featured-event,popup,nfc}` |
 | `store_admin` | `/admin/store/**` | `/api/admin/{store,shop-hero}/**` |
 | `site_admin` | `/admin/posts`, `/admin/redirects` | `/api/admin/{posts,redirects}/**` |
-| `host` | `/admin/live-chat` | `/api/admin/live-chat/**` |
+| `host` | `/admin/live-chat`, `/admin/live` | `/api/admin/live-chat/**`, `/api/admin/simulated-live/**` |
 | `super_admin` | Everything, plus Banner, Clear Cache, HR, and `/admin/users` | `/api/admin/{banner,revalidate,hr,users}/**` |
 
 **`OPEN_PATHS`** — reachable by any authenticated admin regardless of role:
@@ -3726,7 +3912,8 @@ anything sent to another client.
 Same rate limit, Turnstile and Supabase password checks (`signInCore` in
 `app/login/actions.ts`).
 
-> The `host` role gates `/admin/live-chat` through the normal `ROUTE_RULES`
+> The `host` role gates `/admin/live-chat` and `/admin/live` (Simulated Live)
+> through the normal `ROUTE_RULES`
 > table, but Hosts also act on `/live`, which is public and unmatched by
 > middleware. Those routes call `requireHost()` in `lib/liveChatAuth.ts` — the
 > single place that decides who someone is on the public side.
@@ -4071,6 +4258,7 @@ ENABLE_SMART_SEARCH=true
 - `app/admin/store/orders/page.tsx` — Orders list
 - `app/admin/store/orders/[id]/page.tsx` — Order detail (fulfillment)
 - `app/admin/store/hero/page.tsx` — Shop hero slides (add/edit/reorder rotating hero)
+- `app/admin/live/page.tsx` — Simulated Live (schedule a pre-recorded video to play on `/live` as a broadcast)
 - `app/admin/users/page.tsx` — Admin logins and access-level roles (Super Admin only)
 - `app/admin/posts/page.tsx` — Standalone pages; search, status filter, sort, bulk publish/delete
 - `app/admin/training/page.tsx` (+ `[categoryId]`, `[categoryId]/[subgroupId]`) — Training categories → sub-groups → posts
@@ -4098,7 +4286,7 @@ ENABLE_SMART_SEARCH=true
     (list search/filter/sort), `useAdminSession.ts`, `adminRecents.ts`, `csv.ts`
 
 ### API Routes (`app/api/`)
-- **Admin endpoints:** Banners, redirects, pop-ups, cache revalidation, posts, training, alpha-events, featured-course, HR, store management,
+- **Admin endpoints:** Banners, redirects, pop-ups, cache revalidation, posts, training, alpha-events, featured-course, HR, store management, simulated live,
   plus `me` (signed-in identity + roles) and `search` (role-filtered cross-section record search behind the ⌘K palette)
 - **Public endpoints:** `/api/chat` (Smart Search tool-calling chat, Turnstile-gated), `/api/turnstile/verify` (Cloudflare Turnstile token check), YouTube (videos/status/thumbnail/live), Alpha info, training unlock + read timer (`/api/training/posts/[id]/timer`)
 - **Store endpoints:** Stripe checkout + Payment Element, order management
@@ -4196,7 +4384,7 @@ feed normalisation of its own, because the BFF already does all of it.
   push) are still planning-only.
 
 ### Database Migrations
-- **39 migration files** defining schema for:
+- **42 migration files** defining schema for:
   - URL redirects, hidden videos (removed), site content (banners, pop-ups, page_content)
   - Event management (Alpha course, Bible Course, CAP Money, Recovery, featured course, featured event)
   - HR management (staff, leave, documents, reviews)
@@ -4205,6 +4393,7 @@ feed normalisation of its own, because the BFF already does all of it.
   - Training resource library, standalone posts
   - Shop (products, variants, orders, hero slides) and RLS/security hardening passes
   - NFC tiles (the `/nfc` "digital back of seats" page, incl. event mode) and admin roles
+  - Live chat (sessions, messages, prayer requests, blocks) and simulated live
 
 ---
 

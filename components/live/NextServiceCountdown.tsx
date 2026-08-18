@@ -15,8 +15,18 @@ import {
  * next Sunday doesn't change between render and hydration). The relative half
  * waits for the client, because a countdown computed server-side is wrong by
  * however long the response sat in a cache.
+ *
+ * `startsAt` overrides the standing Sunday rhythm with a specific instant —
+ * a scheduled simulated broadcast, which may well be a Wednesday evening. When
+ * it's set the time comes from it rather than being assumed to be 11:00am.
  */
-export default function NextServiceCountdown({ className = "" }: { className?: string }) {
+export default function NextServiceCountdown({
+  className = "",
+  startsAt,
+}: {
+  className?: string;
+  startsAt?: string;
+}) {
   const isClient = useIsClient();
   const [now, setNow] = useState(() => new Date());
 
@@ -25,13 +35,21 @@ export default function NextServiceCountdown({ className = "" }: { className?: s
     return () => clearInterval(id);
   }, []);
 
-  const next = nextSundayService(now);
+  // A start time that has already passed is ignored rather than counted down
+  // to: /live keeps sending one for the half-minute between a simulated
+  // broadcast starting and the next poll noticing.
+  const scheduled = startsAt ? new Date(startsAt) : null;
+  const usable =
+    scheduled && !Number.isNaN(scheduled.getTime()) && scheduled > now
+      ? scheduled
+      : null;
+  const next = usable ?? nextSundayService(now);
   const countdown = isClient ? formatCountdown(next, now) : null;
 
   return (
     <p className={`text-sm text-destiny-grey/60 ${className}`.trim()}>
       <span className="font-bold text-destiny-grey">
-        {formatServiceDay(next)}, 11:00am
+        {formatServiceDay(next)}, {usable ? formatClockTime(usable) : "11:00am"}
       </span>
       {countdown && (
         <>
@@ -41,4 +59,16 @@ export default function NextServiceCountdown({ className = "" }: { className?: s
       )}
     </p>
   );
+}
+
+function formatClockTime(date: Date): string {
+  return new Intl.DateTimeFormat("en-GB", {
+    timeZone: "Europe/London",
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
+  })
+    .format(date)
+    .replace(/\s/g, "")
+    .toLowerCase();
 }

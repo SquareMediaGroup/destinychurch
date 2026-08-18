@@ -306,10 +306,31 @@ export type LiveStatus = {
   live: boolean;
   videoId: string | null;
   title?: string;
-  /** When the broadcast actually started, if YouTube reports it. */
+  /**
+   * When the broadcast started. For a real stream, what YouTube reports; for a
+   * simulated one, the instant the "broadcast" began — which is also the
+   * origin every viewer's playhead is measured from.
+   */
   startedAt?: string;
   /** Start time of a scheduled-but-not-yet-started broadcast. */
   scheduledFor?: string;
+  /**
+   * True when this is a pre-uploaded video being played as a broadcast rather
+   * than an actual stream. The player uses it to sync the playhead to
+   * `startedAt`; /live uses it to drop the "open on YouTube" links, which
+   * would hand the viewer a scrubbable video and break the illusion.
+   */
+  simulated?: boolean;
+  /** Simulated only: when it goes off air (`startedAt` + the video's runtime). */
+  endsAt?: string;
+  /** Simulated only: optional line under the player. */
+  notice?: string;
+  /**
+   * Server clock at the moment this was produced. The browser subtracts its
+   * own clock to get a skew correction, so a viewer whose device is two
+   * minutes out still watches at the same point as everyone else.
+   */
+  serverTime?: string;
   /** Which detection layer produced this answer. Surfaced by ?debug=1. */
   source?: string;
   checkedAt: string;
@@ -655,7 +676,15 @@ const OFFLINE_TTL_MS = 60_000;
 let liveCache: { value: LiveStatus; expiresAt: number } | null = null;
 let liveInFlight: Promise<LiveStatus> | null = null;
 
-export async function getLiveStatus(): Promise<LiveStatus> {
+/**
+ * Is the YouTube channel actually streaming right now?
+ *
+ * This is the real-broadcast half only. Callers want `getLiveStatus()` from
+ * lib/liveStatus.server.ts, which layers simulated live underneath it — a real
+ * stream always wins, so a simulated service left switched on can never hide
+ * an actual one.
+ */
+export async function getYouTubeLiveStatus(): Promise<LiveStatus> {
   if (liveCache && liveCache.expiresAt > Date.now()) return liveCache.value;
   // Concurrent callers (layout + page) share one detection pass.
   if (liveInFlight) return liveInFlight;

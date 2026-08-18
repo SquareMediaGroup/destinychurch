@@ -79,6 +79,12 @@ const ROUTE_RULES: { pattern: RegExp; roles: AdminRole[] }[] = [
   // themselves via lib/liveChatAuth.ts.
   { pattern: /^\/admin\/live-chat(\/|$)/, roles: ["host"] },
   { pattern: /^\/api\/admin\/live-chat(\/|$)/, roles: ["host"] },
+
+  // Host — simulated live. Same people, same Sunday: whoever is running the
+  // room is who starts the broadcast. Note these patterns require a `/` or the
+  // end of the string after "live", so they can't swallow /admin/live-chat.
+  { pattern: /^\/admin\/live(\/|$)/, roles: ["host"] },
+  { pattern: /^\/api\/admin\/simulated-live(\/|$)/, roles: ["host"] },
 ];
 
 // Paths any authenticated admin can reach regardless of role.

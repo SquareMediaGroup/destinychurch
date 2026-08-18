@@ -10,9 +10,26 @@ import { loadYTApi } from "@/lib/youtubeIframe";
 interface LivePlayerProps {
   videoId: string;
   onEnded?: () => void;
+  /**
+   * Simulated live. Returns the second of the video everyone should be at right
+   * now, from the shared clock in LiveContext. Its presence is what switches
+   * this player from "real stream" to "pre-uploaded video pretending to be one":
+   * it starts there instead of at zero, holds itself there, and treats the end
+   * of the video as the end of the broadcast.
+   *
+   * Passed as a getter rather than a number on purpose. A number would change
+   * every second and re-key the effect that owns the iframe, tearing the player
+   * down and rebuilding it mid-service.
+   */
+  getTargetTime?: () => number;
 }
 
-export default function LivePlayer({ videoId, onEnded }: LivePlayerProps) {
+/** Seconds out of sync before the playhead is pulled back. */
+const DRIFT_TOLERANCE = 5;
+/** How often to check. Frequent enough to be invisible, rare enough to be free. */
+const DRIFT_CHECK_MS = 10_000;
+
+export default function LivePlayer({ videoId, onEnded, getTargetTime }: LivePlayerProps) {
   const { consent, allowAll, savePreferences } = useCookieConsent();
   const mounted = useIsClient();
 
@@ -37,6 +54,14 @@ export default function LivePlayer({ videoId, onEnded }: LivePlayerProps) {
   useEffect(() => {
     onEndedRef.current = onEnded;
   }, [onEnded]);
+
+  // Same reasoning as onEnded, and the same reason `simulated` below is derived
+  // from a ref rather than the prop: neither may re-key the mount effect.
+  const targetTimeRef = useRef(getTargetTime);
+  useEffect(() => {
+    targetTimeRef.current = getTargetTime;
+  }, [getTargetTime]);
+  const simulated = Boolean(getTargetTime);
 
   const canPlay = mounted && consent?.media === true;
   const reducedMotion =
@@ -65,6 +90,13 @@ export default function LivePlayer({ videoId, onEnded }: LivePlayerProps) {
         playerVars: {
           autoplay: 1,
           mute: 1,
+          // Simulated live: drop straight in at the point everyone else is at.
+          // Passing it as a player var rather than seeking after onReady means
+          // YouTube buffers from there, so nobody sees the opening seconds of
+          // the service flash past before the jump.
+          start: simulated
+            ? Math.max(0, Math.floor(targetTimeRef.current?.() ?? 0))
+            : undefined,
           controls: 0,
           rel: 0,
           playsinline: 1,
@@ -95,7 +127,47 @@ export default function LivePlayer({ videoId, onEnded }: LivePlayerProps) {
       playerRef.current = null;
       setReady(false);
     };
+    // `simulated` is read through a ref-backed getter and never changes for a
+    // given broadcast, so it is deliberately not a dependency: re-running this
+    // rebuilds the iframe.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [canPlay, videoId]);
+
+  /**
+   * Simulated live has no DVR. The whole point is that everyone is at the same
+   * moment, so the playhead is pulled back whenever it drifts — from buffering,
+   * from a phone locking mid-service, from a tab that got throttled in the
+   * background. Only while the viewer is actually watching: someone who pressed
+   * pause has chosen to stop, and yanking a paused player forward would be a
+   * jump-scare rather than a sync. Pressing play again catches them up.
+   */
+  useEffect(() => {
+    if (!ready || !simulated) return;
+
+    const id = setInterval(() => {
+      const p = playerRef.current;
+      const target = targetTimeRef.current?.();
+      if (!p?.getCurrentTime || target === undefined) return;
+
+      // Past the end of the video is the end of the broadcast, whether or not
+      // the ENDED event has fired — it doesn't when the tab was asleep.
+      const duration = p.getDuration?.() ?? 0;
+      if (duration > 0 && target >= duration - 1) {
+        onEndedRef.current?.();
+        return;
+      }
+
+      // Asked of the player rather than tracked in state: a viewer who pressed
+      // pause has chosen to stop, and yanking a paused player forward would be
+      // a jump-scare rather than a sync.
+      if (p.getPlayerState?.() !== window.YT?.PlayerState.PLAYING) return;
+      if (Math.abs(p.getCurrentTime() - target) > DRIFT_TOLERANCE) {
+        p.seekTo(target, true);
+      }
+    }, DRIFT_CHECK_MS);
+
+    return () => clearInterval(id);
+  }, [ready, simulated]);
 
   // Poll mute/volume state (no events for these on the IFrame API)
   useEffect(() => {
@@ -120,8 +192,16 @@ export default function LivePlayer({ videoId, onEnded }: LivePlayerProps) {
   const togglePlay = () => {
     const p = playerRef.current;
     if (!p) return;
-    if (playing) p.pauseVideo();
-    else p.playVideo();
+    if (playing) {
+      p.pauseVideo();
+    } else {
+      // Resuming a simulated broadcast rejoins it where it is now, not where it
+      // was when you paused — the same thing pressing play on a real live
+      // stream does.
+      const target = targetTimeRef.current?.();
+      if (target !== undefined) p.seekTo(target, true);
+      p.playVideo();
+    }
     showControls();
   };
 
@@ -154,7 +234,12 @@ export default function LivePlayer({ videoId, onEnded }: LivePlayerProps) {
   const goToLiveEdge = () => {
     const p = playerRef.current;
     if (!p?.seekTo) return;
-    p.seekTo(p.getDuration(), true);
+    // For a real stream the live edge is the end of the buffer. For a simulated
+    // one it is wherever the shared clock says the service has got to — the end
+    // of the file is where the broadcast *finishes*, which is not the same
+    // thing and would skip the rest of the service.
+    const target = targetTimeRef.current?.() ?? p.getDuration();
+    p.seekTo(target, true);
     p.playVideo();
     showControls();
   };

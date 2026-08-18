@@ -13,7 +13,19 @@ import { useLiveNow } from "./useLiveNow";
  * is static and server-rendered.
  */
 export default function LiveStage({ latestSermon }: { latestSermon: YTVideo | null }) {
-  const { live, videoId, title, startedAt, markOffline, refresh } = useLiveNow();
+  const {
+    live,
+    videoId,
+    title,
+    startedAt,
+    scheduledFor,
+    simulated,
+    notice,
+    playerReady,
+    getPositionSeconds,
+    markOffline,
+    refresh,
+  } = useLiveNow();
 
   if (live && videoId) {
     return (
@@ -21,6 +33,13 @@ export default function LiveStage({ latestSermon }: { latestSermon: YTVideo | nu
         videoId={videoId}
         title={title}
         startedAt={startedAt}
+        simulated={simulated}
+        notice={notice}
+        // A simulated broadcast waits for the first poll to establish the
+        // server clock — a fraction of a second, against joining the service at
+        // the wrong point for as long as the viewer's device clock is wrong.
+        playerReady={playerReady}
+        getPositionSeconds={getPositionSeconds}
         onEnded={() => {
           markOffline();
           refresh();
@@ -29,7 +48,9 @@ export default function LiveStage({ latestSermon }: { latestSermon: YTVideo | nu
     );
   }
 
-  return <Offline latestSermon={latestSermon} />;
+  // A simulated broadcast that hasn't started yet has a real start time, which
+  // beats the standing "next Sunday, 11am" guess — and is often not a Sunday.
+  return <Offline latestSermon={latestSermon} scheduledFor={scheduledFor} />;
 }
 
 /* ── Live ───────────────────────────────────────────────────────────────── */
@@ -38,11 +59,19 @@ function LiveNow({
   videoId,
   title,
   startedAt,
+  simulated,
+  notice,
+  playerReady,
+  getPositionSeconds,
   onEnded,
 }: {
   videoId: string;
   title?: string;
   startedAt?: string;
+  simulated: boolean;
+  notice?: string;
+  playerReady: boolean;
+  getPositionSeconds: () => number;
   onEnded: () => void;
 }) {
   // Upload titles read "Message Title || Ps Speaker" — same convention the
@@ -68,35 +97,64 @@ function LiveNow({
           </p>
         </div>
 
-        <a
-          href={`https://www.youtube.com/watch?v=${videoId}`}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-flex shrink-0 items-center gap-2 self-start rounded-full border-2 border-black/10 px-5 py-2.5 text-sm font-bold text-destiny-grey transition hover:border-destiny-orange hover:text-destiny-orange sm:self-auto"
-        >
-          <span className="material-symbols-rounded text-lg">open_in_new</span>
-          Open on YouTube
-        </a>
+        {/* Off-site only for a real broadcast. Sending someone to YouTube
+            mid-simulcast hands them a video with a scrubber and a view count,
+            which is a worse experience *and* gives the game away. */}
+        {!simulated && (
+          <a
+            href={`https://www.youtube.com/watch?v=${videoId}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex shrink-0 items-center gap-2 self-start rounded-full border-2 border-black/10 px-5 py-2.5 text-sm font-bold text-destiny-grey transition hover:border-destiny-orange hover:text-destiny-orange sm:self-auto"
+          >
+            <span className="material-symbols-rounded text-lg">open_in_new</span>
+            Open on YouTube
+          </a>
+        )}
       </div>
 
       <div
         className="relative mt-7 w-full overflow-hidden rounded-2xl bg-black shadow-[0_1px_2px_rgba(16,24,40,.04),0_8px_24px_-8px_rgba(16,24,40,.10)]"
         style={{ aspectRatio: "16/9" }}
       >
-        <LivePlayer videoId={videoId} onEnded={onEnded} />
+        {playerReady ? (
+          <LivePlayer
+            videoId={videoId}
+            onEnded={onEnded}
+            getTargetTime={simulated ? getPositionSeconds : undefined}
+          />
+        ) : (
+          <div className="absolute inset-0 flex items-center justify-center bg-black">
+            <span
+              className="material-symbols-rounded animate-spin text-3xl text-white/30"
+              role="status"
+              aria-label="Connecting to the stream"
+            >
+              progress_activity
+            </span>
+          </div>
+        )}
       </div>
 
+      {notice && <p className="mt-5 text-sm text-destiny-grey/55">{notice}</p>}
+
       <p className="mt-5 text-sm text-destiny-grey/55">
-        Trouble with the stream? Refresh the page, or{" "}
-        <a
-          href={`https://www.youtube.com/watch?v=${videoId}`}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="font-bold text-destiny-orange transition hover:underline"
-        >
-          watch it on YouTube
-        </a>
-        .
+        {simulated ? (
+          "Trouble with the stream? Refresh the page — you'll rejoin right where we are."
+        ) : (
+          <>
+            Trouble with the stream? Refresh the page, or{" "}
+            <a
+              href={`https://www.youtube.com/watch?v=${videoId}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-bold text-destiny-orange transition hover:underline"
+            >
+              watch it on YouTube
+            </a>
+            .
+          </>
+        )}
       </p>
     </div>
   );
@@ -120,7 +178,13 @@ function formatClockTime(iso: string): string {
 
 /* ── Offline ────────────────────────────────────────────────────────────── */
 
-function Offline({ latestSermon }: { latestSermon: YTVideo | null }) {
+function Offline({
+  latestSermon,
+  scheduledFor,
+}: {
+  latestSermon: YTVideo | null;
+  scheduledFor?: string;
+}) {
   const title = latestSermon?.title.split("||")[0].trim();
 
   return (
@@ -146,7 +210,7 @@ function Offline({ latestSermon }: { latestSermon: YTVideo | null }) {
           </div>
           <div className="min-w-0">
             <p className="text-sm font-black text-destiny-grey">Next live service</p>
-            <NextServiceCountdown className="mt-0.5" />
+            <NextServiceCountdown className="mt-0.5" startsAt={scheduledFor} />
           </div>
         </div>
 

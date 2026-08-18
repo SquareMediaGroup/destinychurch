@@ -11,7 +11,7 @@
 
 import "server-only";
 import { createServiceClient } from "@/utils/supabase/service";
-import { getLiveStatus } from "@/lib/youtube";
+import { getLiveStatus } from "@/lib/liveStatus.server";
 import { publicTopic, hostTopic, dmTopic } from "@/lib/liveChatGuest";
 
 export type ChatChannel = "public" | "backstage" | "direct";

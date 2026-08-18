@@ -76,6 +76,26 @@ export const ADMIN_GROUPS: AdminNavGroup[] = [
         keywords: ["team", "volunteers", "courses", "sound", "production", "av"],
       },
       {
+        href: "/admin/live",
+        label: "Simulated Live",
+        icon: "smart_display",
+        role: "host",
+        description:
+          "Play a pre-recorded video on /live as if it were a live broadcast.",
+        keywords: [
+          "live",
+          "stream",
+          "premiere",
+          "prerecorded",
+          "pre-recorded",
+          "replay",
+          "youtube",
+          "simulcast",
+          "broadcast",
+          "sunday",
+        ],
+      },
+      {
         href: "/admin/live-chat",
         label: "Live Chat",
         icon: "forum",

@@ -12,7 +12,8 @@ import { RESERVED_EVENT_SLUGS } from "@/lib/events";
 import { getFeaturedEvent } from "@/lib/events.server";
 import { getPodcastShow } from "@/lib/podcast";
 import { formatServiceDay, nextSundayService } from "@/lib/serviceTimes";
-import { getLatestVideo, getLiveStatus } from "@/lib/youtube";
+import { getLiveStatus } from "@/lib/liveStatus.server";
+import { getLatestVideo } from "@/lib/youtube";
 
 // App BFF — the Home screen, in one request.
 //

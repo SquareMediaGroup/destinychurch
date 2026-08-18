@@ -809,6 +809,26 @@ body {
   }
 }
 
+/* Entrance for the shared dialog shell — see components/ui/Modal.tsx. Same
+   motion as the /nfc popup above, under its own class names so that one can
+   keep its bespoke sizing while new modals share this. */
+.dc-modal-backdrop {
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(6px);
+  animation: nfc-modal-backdrop-in 0.35s ease forwards;
+}
+
+.dc-modal-panel {
+  animation: nfc-modal-panel-in 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dc-modal-backdrop,
+  .dc-modal-panel {
+    animation: none;
+  }
+}
+
 .animate-slide-up {
   animation: slide-up 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }

@@ -10,6 +10,7 @@ export type AdminRole =
   | "event_admin"
   | "store_admin"
   | "site_admin"
+  | "host"
   | "super_admin";
 
 export const ADMIN_ROLES: AdminRole[] = [
@@ -17,6 +18,7 @@ export const ADMIN_ROLES: AdminRole[] = [
   "event_admin",
   "store_admin",
   "site_admin",
+  "host",
   "super_admin",
 ];
 
@@ -27,6 +29,7 @@ export const NO_ROLES: RoleFlags = {
   event_admin: false,
   store_admin: false,
   site_admin: false,
+  host: false,
   super_admin: false,
 };
 
@@ -70,6 +73,12 @@ const ROUTE_RULES: { pattern: RegExp; roles: AdminRole[] }[] = [
   { pattern: /^\/admin\/redirects(\/|$)/, roles: ["site_admin"] },
   { pattern: /^\/api\/admin\/posts(\/|$)/, roles: ["site_admin"] },
   { pattern: /^\/api\/admin\/redirects(\/|$)/, roles: ["site_admin"] },
+
+  // Host — the live chat console. Hosts also moderate from /live itself, which
+  // is a public page and so sits outside this table; those routes authorise
+  // themselves via lib/liveChatAuth.ts.
+  { pattern: /^\/admin\/live-chat(\/|$)/, roles: ["host"] },
+  { pattern: /^\/api\/admin\/live-chat(\/|$)/, roles: ["host"] },
 ];
 
 // Paths any authenticated admin can reach regardless of role.
@@ -102,9 +111,13 @@ export async function getRoles(
   supabase: ServiceClient,
   authUserId: string,
 ): Promise<RoleFlags> {
+  // The column list is spelled out rather than `*` so a new access level has to
+  // be added here deliberately — but that also means forgetting this line makes
+  // the new role silently read as false everywhere. Keep it in step with
+  // AdminRole above.
   const { data } = await supabase
     .from("admin_roles")
-    .select("training_admin, event_admin, store_admin, site_admin, super_admin")
+    .select("training_admin, event_admin, store_admin, site_admin, host, super_admin")
     .eq("auth_user_id", authUserId)
     .maybeSingle();
 
@@ -114,6 +127,7 @@ export async function getRoles(
     event_admin: Boolean(data.event_admin),
     store_admin: Boolean(data.store_admin),
     site_admin: Boolean(data.site_admin),
+    host: Boolean(data.host),
     super_admin: Boolean(data.super_admin),
   };
 }

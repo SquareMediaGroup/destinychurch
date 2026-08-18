@@ -3,6 +3,7 @@ import Link from "next/link";
 import { getLatestVideo } from "@/lib/youtube";
 import AnimateIn from "@/components/AnimateIn";
 import LiveStage from "@/components/live/LiveStage";
+import LiveChatPanel from "@/components/live/chat/LiveChatPanel";
 import LiveHeroStatus from "@/components/live/LiveHeroStatus";
 import WatchOnYouTubeBand from "@/components/sermons/WatchOnYouTubeBand";
 import WorshipWithUsSection from "@/components/home/WorshipWithUsSection";
@@ -36,7 +37,7 @@ const serviceFacts = [
     icon: "live_tv",
     title: "Watch anywhere",
     lines: ["Right here on this page", "Or on our YouTube channel"],
-    note: "No account or sign-up needed",
+    note: "Chat with us live — no account needed",
   },
   {
     icon: "location_on",
@@ -103,7 +104,7 @@ export default async function LivePage() {
               </p>
 
               <div className="mt-8 flex flex-wrap justify-center gap-2.5">
-                {["Sundays 11am", "Free to watch", "No sign-up"].map((chip) => (
+                {["Sundays 11am", "Free to watch", "Live chat"].map((chip) => (
                   <span
                     key={chip}
                     className="glass glass-sm glass-pill inline-flex items-center px-4 py-2 text-sm font-semibold text-white"
@@ -118,9 +119,20 @@ export default async function LivePage() {
       </div>
 
       {/* ── Player / offline card ────────────────────────────── */}
+      {/* The chat sits beside the player on desktop and under it on mobile.
+          Flex rather than a fixed two-column grid on purpose: LiveChatPanel
+          renders null when we're off air, and a grid template would still hold
+          its 380px column open, leaving the offline card narrow with dead space
+          beside it. With flex the absent panel reserves nothing and the card
+          takes the full width. */}
       <section className="bg-white py-14 sm:py-16">
-        <div className="mx-auto max-w-6xl px-4 lg:px-8">
-          <LiveStage latestSermon={latestSermon} />
+        <div className="mx-auto max-w-7xl px-4 lg:px-8">
+          <div className="flex flex-col gap-8 lg:flex-row lg:items-start">
+            <div className="min-w-0 flex-1">
+              <LiveStage latestSermon={latestSermon} />
+            </div>
+            <LiveChatPanel />
+          </div>
         </div>
       </section>
 

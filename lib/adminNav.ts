@@ -75,6 +75,23 @@ export const ADMIN_GROUPS: AdminNavGroup[] = [
         description: "Team training categories, sub-groups and posts.",
         keywords: ["team", "volunteers", "courses", "sound", "production", "av"],
       },
+      {
+        href: "/admin/live-chat",
+        label: "Live Chat",
+        icon: "forum",
+        role: "host",
+        description: "Moderate the chat on /live, work the prayer queue and review what was said.",
+        keywords: [
+          "chat",
+          "host",
+          "moderate",
+          "prayer",
+          "stream",
+          "sunday",
+          "held",
+          "mute",
+        ],
+      },
     ],
   },
   {

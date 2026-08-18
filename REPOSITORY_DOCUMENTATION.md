@@ -747,7 +747,7 @@ CREATE TABLE hr_staff (
 ---
 
 #### 10b. **admin_roles**
-**Purpose:** Access levels for `/admin` — five independent booleans per admin login, checked by `middleware.ts` on every `/admin/*` and `/api/admin/*` request
+**Purpose:** Access levels for `/admin` — six independent booleans per admin login, checked by `middleware.ts` on every `/admin/*` and `/api/admin/*` request
 
 ```sql
 CREATE TABLE admin_roles (
@@ -757,6 +757,7 @@ CREATE TABLE admin_roles (
   event_admin boolean NOT NULL DEFAULT false,
   store_admin boolean NOT NULL DEFAULT false,
   site_admin boolean NOT NULL DEFAULT false,
+  host boolean NOT NULL DEFAULT false,      -- live chat: /admin/live-chat + moderating on /live
   super_admin boolean NOT NULL DEFAULT false,
   created_at timestamptz NOT NULL DEFAULT now(),
   updated_at timestamptz NOT NULL DEFAULT now()
@@ -1152,6 +1153,114 @@ All tables have RLS enabled. Access rules:
 | shop_hero_slides | - | - | Yes | Editable /shop hero (public read via server components) |
 | sermons / sermon_transcripts / sermon_link_suggestions / ai_reports / auth_users / admin_users | - | - | Yes | Base-schema legacy tables (deny-all "service only"; not read by the app) |
 | studio_assets / studio_components | - | - | Yes | Orphaned Studio-builder tables (never dropped; unused) |
+| live_chat_sessions / live_chat_messages / live_chat_prayer_requests / live_chat_blocks | - | - | Yes | Live chat on /live (deny-all "service only"; delivery is Realtime Broadcast, not table reads) |
+
+#### 21. **live_chat_sessions / live_chat_messages / live_chat_prayer_requests / live_chat_blocks**
+
+**Purpose:** The live chat on `/live` — public chat, a host backstage channel,
+host↔guest direct threads and prayer requests.
+
+```sql
+-- One row per broadcast. `state` gates the room: the panel follows the YouTube
+-- live status, but a Host can open early, pause mid-service, or close it.
+create table live_chat_sessions (
+  id uuid primary key default gen_random_uuid(),
+  video_id text,                    -- unique where not null: one room per broadcast
+  title text,
+  state text not null default 'closed'   -- closed | open | paused
+    check (state in ('closed','open','paused')),
+  opened_at timestamptz,
+  closed_at timestamptz,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+-- status: visible | held | hidden. `held` is the auto-hold queue — the message
+-- is stored and shown to its author and to Hosts, and to nobody else, until a
+-- Host approves it. Held/hidden rows are kept rather than deleted so there is
+-- something to review after an incident.
+create table live_chat_messages (
+  id uuid primary key default gen_random_uuid(),
+  session_id uuid not null references live_chat_sessions (id) on delete cascade,
+  channel text not null check (channel in ('public','backstage','direct')),
+  thread_key text,                  -- the guest id, for `direct` threads only
+  author_kind text not null check (author_kind in ('guest','host')),
+  author_guest_id text,             -- guests: the signed-cookie id
+  author_user_id uuid references auth.users (id) on delete set null,  -- hosts
+  display_name text not null,
+  body text not null check (char_length(body) between 1 and 500),
+  status text not null default 'visible'
+    check (status in ('visible','held','hidden')),
+  held_reason text,
+  moderated_by uuid references auth.users (id) on delete set null,
+  moderated_at timestamptz,
+  created_at timestamptz not null default now()
+);
+
+-- A separate table, not a fourth channel: these must never be reachable by the
+-- code paths that publish to the public channel, and a table boundary makes
+-- that impossible rather than merely unlikely.
+create table live_chat_prayer_requests (
+  id uuid primary key default gen_random_uuid(),
+  session_id uuid references live_chat_sessions (id) on delete cascade,
+  guest_id text,
+  display_name text not null,
+  body text not null check (char_length(body) between 1 and 1000),
+  status text not null default 'new' check (status in ('new','praying','done')),
+  claimed_by uuid references auth.users (id) on delete set null,
+  claimed_at timestamptz,
+  created_at timestamptz not null default now()
+);
+
+-- scope='session' mutes for one service; scope='global' carries across them.
+create table live_chat_blocks (
+  id uuid primary key default gen_random_uuid(),
+  session_id uuid references live_chat_sessions (id) on delete cascade,
+  guest_id text not null,
+  scope text not null default 'session' check (scope in ('session','global')),
+  reason text,
+  blocked_by uuid references auth.users (id) on delete set null,
+  created_at timestamptz not null default now(),
+  expires_at timestamptz
+);
+
+-- RLS: deny-all "service only" on all four, like every other table here. The
+-- browser never reads these — see the Realtime note below.
+```
+
+**Realtime.** This is the repo's first use of Supabase Realtime. Delivery is
+**Broadcast**, not Postgres Changes: Postgres Changes would have meant opening
+`anon` SELECT on `live_chat_messages`, which contradicts the deny-all convention
+and would have shipped held messages to the very people they were held from.
+Instead the API moderates a message, stores it, and calls `live_chat_emit()` —
+which pushes it onto a private topic. Topics are:
+
+| Topic | Audience |
+|-------|----------|
+| `live-chat:<session>:public` | anyone, including signed-out guests |
+| `live-chat:<session>:host` | Hosts only (backstage, held queue, prayer queue) |
+| `live-chat:<session>:dm:<dm key>` | one guest's direct thread |
+
+Authorization is RLS on `realtime.messages` with **anchored regex** topic
+patterns (so the three cannot overlap). Clients get SELECT (receive) and
+deliberately **no broadcast INSERT** — a client holding the anon key can never
+put a message, least of all one wearing a HOST badge, onto a channel. The one
+INSERT policy is scoped to `extension = 'presence'`, which is what powers the
+"N here now" count. Host checks go through `public.is_live_chat_host()`, which is
+`SECURITY DEFINER` because `admin_roles` is itself deny-all.
+
+**Retention:** `live_chat_purge(retain_days default 7)` deletes messages, prayer
+requests and closed sessions older than 7 days. Called daily at 04:00 by
+`/api/cron/live-chat-purge` (see `vercel.json`).
+
+**Used By:**
+- `components/live/chat/*` — the panel on `/live`
+- `app/api/live-chat/*` — public routes (self-authorising; outside the middleware matcher)
+- `app/api/admin/live-chat/*` — Host console routes (gated by `middleware.ts`)
+- `app/admin/live-chat/page.tsx` — the Host console
+- `lib/liveChat.server.ts`, `lib/liveChatGuest.ts`, `lib/liveChatModeration.ts`, `lib/liveChatAuth.ts`
+
+---
 
 **Key Point:** No table uses authenticated user RLS. All member-facing features use API proxy routes that enforce authentication in application code, then access the database with the service role key. This gives finer control and better error messages.
 
@@ -1460,6 +1569,7 @@ Super Admin only).
 | `/admin/store/orders` | `app/admin/store/orders/page.tsx` | Orders list |
 | `/admin/store/orders/[id]` | `app/admin/store/orders/[id]/page.tsx` | Order detail — mark fulfilled/cancelled/refunded |
 | `/admin/users` | `app/admin/users/page.tsx` | Manage admin logins and their access-level roles (Super Admin only) |
+| `/admin/live-chat` | `app/admin/live-chat/page.tsx` | Live chat console — room state, held queue, muted guests, prayer queue, direct threads, history (Host) |
 
 #### Admin navigation, search and keyboard shortcuts
 
@@ -1528,6 +1638,37 @@ buttons lacked.
 >
 > Genuinely one-off buttons should stay plain `<button>` elements — this is for the repeated
 > cases. Migration is opportunistic; most call sites are still hand-written strings.
+
+#### `ui/Modal.tsx`
+**Client component (`"use client"`).** The shared dialog shell.
+
+```tsx
+<Modal open={open} onClose={close} title="Team sign-in" size="sm">
+  {children}
+</Modal>
+```
+
+| Prop | Values | Notes |
+|------|--------|-------|
+| `open` | `boolean` | Renders nothing when false; no portal is mounted |
+| `onClose` | `() => void` | Fired by Escape, the close button, and the backdrop |
+| `title` | `string` | Becomes the dialog's accessible name (`aria-labelledby`) |
+| `description` | `string?` | Optional sub-line; wired to `aria-describedby` |
+| `size` | `"sm" \| "md" \| "lg"` | `max-w-md` / `max-w-2xl` / `max-w-3xl`. Default `md` |
+| `showClose` | `boolean` | Default true |
+| `closeOnBackdrop` | `boolean` | Default true; turn off for forms where a stray click loses typed input |
+| `footer` | `ReactNode?` | Pinned below the scrolling body |
+
+Portals to `document.body` at `z-[200]`, traps Tab inside the panel, returns
+focus to whatever opened it, and locks body scroll — restoring the *previous*
+`overflow` value rather than blanking it. Entrance animation is the CSS keyframes
+`.dc-modal-backdrop` / `.dc-modal-panel` in `globals.css`, with a
+`prefers-reduced-motion` block.
+
+> Written for the Host sign-in popup on `/live`. Before it there were six one-off
+> modals and only `NfcTileModal` had real dialog semantics — its own header
+> comment notes the others have "no role, no focus management and no trap". New
+> modals should use this; the existing six can migrate when next touched.
 
 #### `ChurchHeader.tsx`
 - **What:** Site navigation header
@@ -1685,6 +1826,19 @@ change with the broadcast are client islands:
 - **`useLiveNow.ts`** — the one place the "are we live?" rule is derived, so the hero badge and the player can't disagree.
 - **`NextServiceCountdown.tsx`** — "Sunday 14 September, 11:00am · in 2 days 4 hours". The date renders on the server too (it's identical either side of hydration); the relative half waits for the client, since a countdown computed server-side is wrong by however long the response sat in a cache.
 - **`LivePlayer.tsx`** — YouTube IFrame API player with `controls=0` and a fully custom glass control bar (play/pause, mute, volume, fullscreen, live-edge seek). See `lib/youtubeIframe.ts` for the shared API loader (also used by `SermonPlayer.tsx`). `onEnded` is held in a ref so the mount effect stays keyed on the video id alone, and `onError` is treated as an ending too — a pulled or privated broadcast otherwise leaves the player wedged on a black rectangle.
+
+#### Live chat (`components/live/chat/*`)
+The chat beside the player, and our own version of the Church Online Platform.
+Mounts only when a room exists, and a room only exists while we're on air — an
+always-present chat box under an offline player is an empty room someone
+eventually wanders into alone, and a moderated space nobody is moderating.
+
+- **`LiveChatPanel.tsx`** — the shell. Holds session state, both subscriptions, and every action. Renders `null` when off air, so the offline card keeps the full width of the section.
+- **`useLiveChat.ts`** — the one place the codebase opens a websocket. Subscribes to a private Broadcast topic with `setAuth()` + `{ config: { private: true } }`, plus Presence for the viewer count. **Must use the memoised `getSupabaseBrowserClient()`** — `utils/supabase/client.ts` builds a new client per call, and a new client means a new socket per mount. Receive-only by design: sending goes over HTTP to `/api/live-chat/messages`, gets moderated, and comes back down the channel.
+- **`ChatMessageList.tsx`** — the transcript. Follows the bottom only while you're already at the bottom, with a "jump to latest" button otherwise, so reading back doesn't get yanked. Host rows carry inline approve/delete/mute controls.
+- **`ChatComposer.tsx`** — message box with the guest name field inline above it, rather than a modal demanding a name before the chat is readable. Enter sends, Shift+Enter breaks the line.
+- **`HostLoginModal.tsx`** — Host sign-in without leaving the service. Same rate limit, Turnstile and Supabase checks as `/login` (it's the same server-action core), but returns instead of redirecting — a Host opens this mid-service and being thrown to `/admin` is the one thing that must not happen.
+- **`PrayerRequestModal.tsx`** — prayer requests. Never touches the public channel; states plainly above the box who reads it.
 
 ---
 
@@ -2142,6 +2296,21 @@ export async function applyForJob(jobId: string, formData: ApplicationData) {
 
 ---
 
+#### `app/login/actions.ts`
+```typescript
+// signInCore(formData)  — internal: IP → checkRateLimit → verifyTurnstileToken
+//                         → signInWithPassword → sb-remember cookie
+// adminSignIn(prev, fd) — signInCore, then redirect("/admin")
+// hostSignIn(prev, fd)  — signInCore, then returns { success } and stays put
+// adminSignOut()        — signOut + delete sb-remember
+```
+Split because `redirect()` throws to unwind the request, which works for a
+full-page form and not at all for the Host popup on `/live`, which has to stay
+where it is and re-render. `hostSignIn` does **not** check the host role — it
+establishes who you are; `lib/liveChatAuth.ts` decides what that lets you do.
+
+---
+
 ### Admin API Routes
 
 #### `GET /api/admin/search`
@@ -2247,6 +2416,22 @@ export async function applyForJob(jobId: string, formData: ApplicationData) {
 // row write succeeds, so a failed write can't orphan the live artwork.
 // No revalidatePath — getNfcTiles() reads with noStore().
 ```
+
+#### Live chat admin routes (`/api/admin/live-chat/*`)
+```typescript
+// Auth comes free: middleware.ts matches /api/admin/:path*, and lib/adminRoles.ts
+// maps these to the `host` role. Route bodies contain no auth code.
+
+GET  /api/admin/live-chat/session    // current room + last 20 sessions
+POST /api/admin/live-chat/session    // { session, state: open|paused|closed }
+GET  /api/admin/live-chat/moderate   // ?session= → { held[], blocks[] }
+POST /api/admin/live-chat/moderate   // { action: approve|hide|mute|unmute, message|blockId }
+GET  /api/admin/live-chat/prayer     // ?session= → the prayer queue
+POST /api/admin/live-chat/prayer     // { id, status: new|praying|done } — claims/releases
+GET  /api/admin/live-chat/threads    // ?session= → open direct threads
+```
+Moderation actions name a **message**, never a guest: the server resolves the
+author from the row, which is why no guest id is ever broadcast to the room.
 
 #### `POST /api/admin/revalidate`
 ```typescript
@@ -2362,6 +2547,34 @@ export async function applyForJob(jobId: string, formData: ApplicationData) {
 // why the banner is or isn't showing in production without a redeploy.
 
 // Backed by lib/youtube.ts getLiveStatus() — see Libraries & Utilities.
+```
+
+#### Live chat public routes (`/api/live-chat/*`)
+```typescript
+// ⚠️ NOT covered by middleware.ts (its matcher is /admin/* and /api/admin/*).
+// Every route here authorises itself via lib/liveChatAuth.ts — readGuest() or
+// requireHost(). A handler that reads a body before establishing the caller is
+// a bug.
+
+GET  /api/live-chat/me         // { guest, host, isHost } — derived server-side
+GET  /api/live-chat/session    // current room + the topics this caller may join
+POST /api/live-chat/identity   // { name } → sets the signed dc_live_guest cookie
+GET  /api/live-chat/messages   // ?session=&channel=[&thread=] — history
+POST /api/live-chat/messages   // { session, channel, body } — the moderated path
+POST /api/live-chat/prayer     // { session, name, body } — never public
+```
+
+`POST /messages` runs its checks in a deliberate order — room open? → who is
+asking? → muted? → rate limited? → what did they say? — so nothing the caller
+typed is read before the caller is established, and a flooder can't use the word
+filter as a CPU sink. Verdicts are `allow` / `hold` / `reject`; a held message is
+returned to its own author marked as waiting, so they don't retype it.
+
+#### `GET /api/cron/live-chat-purge`
+```typescript
+// Daily at 04:00 (vercel.json). Bearer CRON_SECRET — fails closed with 503 if
+// the secret is unset, since an open "delete the chat history" endpoint is worse
+// than the cron not running. Calls live_chat_purge(7).
 ```
 
 > There is no `/api/webhooks/vercel` or GitHub webhook route, and no `youtube-sync`
@@ -3366,9 +3579,9 @@ remembered, so existing sessions aren't unexpectedly downgraded.
 
 ### Authorization Layers
 
-Access levels live in `lib/adminRoles.ts` + the `admin_roles` table — five
+Access levels live in `lib/adminRoles.ts` + the `admin_roles` table — six
 independent per-user booleans (`training_admin`, `event_admin`, `store_admin`,
-`site_admin`, `super_admin`; see [admin_roles](#10b-admin_roles)). Auth *and*
+`site_admin`, `host`, `super_admin`; see [admin_roles](#10b-admin_roles)). Auth *and*
 role enforcement both happen centrally in `middleware.ts`, not in
 `app/admin/layout.tsx` (which is a client component purely responsible for the
 sidebar/header shell; it does not check auth or roles itself).
@@ -3383,6 +3596,7 @@ always passes and isn't repeated per rule; anything under `/admin` or
 | `event_admin` | Courses (`alpha`, `recovery`, `bible-course`, `cap-money`, `featured-course`) + Announcements except Banner (`popup`, `featured-event`, `event-popup`, `nfc`) | `/api/admin/{alpha-events,events,featured-course,featured-event,popup,nfc}` |
 | `store_admin` | `/admin/store/**` | `/api/admin/{store,shop-hero}/**` |
 | `site_admin` | `/admin/posts`, `/admin/redirects` | `/api/admin/{posts,redirects}/**` |
+| `host` | `/admin/live-chat` | `/api/admin/live-chat/**` |
 | `super_admin` | Everything, plus Banner, Clear Cache, HR, and `/admin/users` | `/api/admin/{banner,revalidate,hr,users}/**` |
 
 **`OPEN_PATHS`** — reachable by any authenticated admin regardless of role:
@@ -3403,6 +3617,20 @@ assigned — a tickbox per role per user. `GET /api/admin/me` (and the older
 that's a UI convenience only, not an authorization boundary. What a user is
 *shown* comes from `lib/adminNav.ts`, which must stay in step with the table
 above — `tests/unit/admin-nav.spec.ts` enforces it.
+
+> **Adding an access level.** Add it to the `AdminRole` union, `ADMIN_ROLES` and
+> `NO_ROLES` in `lib/adminRoles.ts`, give it `ROUTE_RULES` entries (without them
+> the new section is Super Admin only), add labels in `app/admin/users/page.tsx`
+> and a nav entry in `lib/adminNav.ts` (which now drives the sidebar, the header
+> breadcrumbs, the dashboard grid and the ⌘K palette) — and add the column to the **hand-written
+> `.select(...)` string in `getRoles()`**, plus the matching line in the object it
+> returns. That last one is the trap: it isn't `*`, so a role missing from it
+> silently reads as `false` everywhere and the feature dies quietly.
+
+> The `host` level is the first one that also governs a **public** page. `/live`
+> is not matched by `middleware.ts`, so the chat routes under `/api/live-chat`
+> authorise themselves via `lib/liveChatAuth.ts`; `ROUTE_RULES` only covers the
+> `/admin/live-chat` console. See [Live chat identity](#live-chat-identity-live).
 
 #### Layer 1: Middleware (`middleware.ts`)
 ```typescript
@@ -3473,6 +3701,35 @@ run — the admin login form (protects password-guessing) and the Smart Search c
 - Both paths share `lib/turnstile.ts`, which fails closed: if `TURNSTILE_SECRET_KEY` or
   `TURNSTILE_COOKIE_SECRET` isn't configured, verification/cookie-validation always fails
   rather than silently letting requests through.
+
+---
+
+### Live chat identity (`/live`)
+
+Two different things sign in on the live page, and only one of them is an account.
+
+**Guests have no account at all.** A display name goes into `dc_live_guest`, an
+HMAC-signed HTTP-only cookie (`lib/liveChatGuest.ts`, same construction as
+`lib/trainingAccess.ts`). No email, no password, no `auth.users` row. It is
+*signed* for two reasons: a mute is applied to the guest id, so an unsigned
+cookie would just be edited to shed it; and the server needs an id it can trust
+to rate-limit on. Renaming keeps the id, so a mute survives a name change — the
+obvious first thing someone tries.
+
+The direct-message channel key is **derived**, not stored:
+`dmKeyFor(id) = HMAC(secret, "dm:" + id)`. The topic name is therefore itself the
+capability — unguessable without the server secret — and the key never appears in
+anything sent to another client.
+
+**Hosts are staff logins** with the `host` access level, signing in through
+`HostLoginModal` on the page itself rather than being redirected to `/login`.
+Same rate limit, Turnstile and Supabase password checks (`signInCore` in
+`app/login/actions.ts`).
+
+> The `host` role gates `/admin/live-chat` through the normal `ROUTE_RULES`
+> table, but Hosts also act on `/live`, which is public and unmatched by
+> middleware. Those routes call `requireHost()` in `lib/liveChatAuth.ts` — the
+> single place that decides who someone is on the public side.
 
 ---
 

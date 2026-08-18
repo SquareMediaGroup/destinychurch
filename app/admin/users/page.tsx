@@ -25,6 +25,7 @@ const ROLE_LABELS: Record<AdminRole, string> = {
   event_admin: "Event Admin",
   store_admin: "Store Admin",
   site_admin: "Site Admin",
+  host: "Host",
   super_admin: "Super Admin",
 };
 
@@ -33,6 +34,7 @@ const ROLE_HINTS: Record<AdminRole, string> = {
   event_admin: "Courses + announcements (not the sitewide banner).",
   store_admin: "Store: products, orders, hero.",
   site_admin: "Posts and redirects.",
+  host: "Moderates the live chat, and can sign in on /live itself.",
   super_admin: "Full access, including the sitewide banner, cache and users.",
 };
 

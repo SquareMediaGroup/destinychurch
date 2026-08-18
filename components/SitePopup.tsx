@@ -25,13 +25,14 @@ const STORAGE_KEY = "dc-popup-dismissed";
  *
  * Suppressed on /nfc: that page is a grid of popups people opened on purpose,
  * mid-service, and an announcement landing on top of one is the one failure it
- * can't afford. The layout is a server component and can't know the path, so
+ * can't afford. Suppressed on /admin/*: admin pages should never show popups
+ * to staff. The layout is a server component and can't know the path, so
  * the check happens here with usePathname, as EventPopup does.
  */
 export default function SitePopup({ popup }: { popup: PopupData | null }) {
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
-  const excluded = pathname.startsWith("/nfc");
+  const excluded = pathname.startsWith("/nfc") || pathname.startsWith("/admin");
 
   useEffect(() => {
     if (excluded) return;

@@ -10,6 +10,7 @@
 //
 //   Placement — suppressed on /nfc, on /whats-on and on the event's own page, where the
 //   promo would be telling people about something they are already looking at.
+//   Suppressed on /admin/*: admin pages should never show popups to staff.
 //   The root layout is a server component and can't know the path, and a route
 //   group would mean duplicating the whole layout, so the check happens here
 //   with usePathname (which, unlike useSearchParams, needs no Suspense
@@ -33,6 +34,8 @@ function isExcluded(pathname: string, eventSlug: string): boolean {
     path === "/whats-on/new" ||
     // The in-service NFC page is chrome-free and already a grid of popups.
     path === "/nfc" ||
+    // Admin pages should never show popups to staff.
+    path.startsWith("/admin") ||
     (Boolean(eventSlug) && path === `/whats-on/${eventSlug}`)
   );
 }

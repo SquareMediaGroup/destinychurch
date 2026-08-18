@@ -20,8 +20,10 @@ export function useBannerBars(): number {
   if (pathname.startsWith("/admin")) return 0;
   if (banner.active && banner.type === "sitewide") return 0;
 
+  // The live banner takes priority — other banners don't stack under it.
+  if (live.live && pathname !== "/live") return 1;
+
   let count = 0;
-  if (live.live && pathname !== "/live") count += 1;
   if (isVisible(banner)) count += 1;
   if (banner.companion && isVisible(banner.companion)) count += 1;
 

@@ -1544,7 +1544,7 @@ without an auth check, so they must never be reachable on the live site.
 | `/beliefs` | `app/beliefs/page.tsx` | Statement of faith, doctrine |
 | `/sermons` | `app/sermons/page.tsx` | Latest message as video (with an audio switch) + searchable podcast archive |
 | `/sermons/[id]` | `app/sermons/[id]/page.tsx` | Individual sermon — YouTube embed, skip-to-sermon, next steps |
-| `/live` | `app/live/page.tsx` | Livestream page — standard hero + section rhythm, with a client island that swaps between the custom glass player and an off-air card. On air for a real YouTube broadcast, or for a **simulated** one (a pre-recorded video played from a fixed start time; see `lib/simulatedLive.ts`) |
+| `/live` | `app/live/page.tsx` | Livestream page — standard hero + section rhythm, with a client island that swaps between the custom glass player and an off-air card. On air for a real YouTube broadcast, or for a **simulated** one (a pre-recorded video played from a fixed start time; see `lib/simulatedLive.ts`). Signed-in Hosts also get the **broadcast controls** inline at the top of the page (`LiveHostBar`), so starting, editing or removing a service never means leaving `/live` |
 | `/contact` | `app/contact/page.tsx` | Contact form, address, hours |
 | `/give` | `app/give/page.tsx` | Giving info — bank details, online giving |
 | `/shop` | `app/shop/page.tsx` | Store front — published products grid with category filter chips (`ShopProductGrid`), editorial `/links` style |
@@ -1627,7 +1627,7 @@ Super Admin only).
 | `/admin/store/orders` | `app/admin/store/orders/page.tsx` | Orders list |
 | `/admin/store/orders/[id]` | `app/admin/store/orders/[id]/page.tsx` | Order detail — mark fulfilled/cancelled/refunded |
 | `/admin/users` | `app/admin/users/page.tsx` | Manage admin logins and their access-level roles (Super Admin only) |
-| `/admin/live` | `app/admin/live/page.tsx` | Simulated Live — schedule a pre-recorded video to play on `/live` as though it were a broadcast. Paste a link (preview resolves title, thumbnail and runtime), pick a start time or press **Start now**, and a once-a-second status strip reports scheduled / on air with the exact position / finished (Host) |
+| `/admin/live` | `app/admin/live/page.tsx` | Simulated Live — schedule a pre-recorded video to play on `/live` as though it were a broadcast. Paste a link (preview resolves title, thumbnail and runtime), pick a start time or press **Start now**, and a once-a-second status strip reports scheduled / on air with the exact position / finished (Host). A thin wrapper over `SimulatedLiveControls`, the same component the Host bar on `/live` mounts — the on-page version is the one that gets used on a Sunday; this is the admin-shell entry point the sidebar and ⌘K palette land on |
 | `/admin/live-chat` | `app/admin/live-chat/page.tsx` | Live chat console — room state, held queue, muted guests, prayer queue, direct threads, history (Host) |
 
 #### Admin navigation, search and keyboard shortcuts
@@ -1894,6 +1894,12 @@ change with the broadcast are client islands:
   - **There is no DVR.** A drift check every 10s pulls the playhead back if it is more than 5s out (buffering, a phone locking, a throttled background tab), and pressing play after a pause rejoins where the service *is* — the same thing pressing play on a real live stream does. Drift is only corrected while the player reports `PLAYING`; yanking a deliberately paused player forward would be a jump-scare rather than a sync.
   - The **LIVE** pill seeks to the shared position rather than `getDuration()`. For a real stream the live edge is the end of the buffer; for a simulated one the end of the file is where the broadcast *finishes*, and seeking there would skip the rest of the service.
   - Running past the end of the video ends the broadcast even if `ENDED` never fires — it doesn't when the tab was asleep.
+
+- **`LiveHostBar.tsx`** — the broadcast controls, on `/live` itself. A Host starts and stops a service *during* one, usually on a phone, while watching the page the congregation is watching; sending them to `/admin/live` means leaving the thing they are trying to check at the moment they can least afford to. So the controls come to the page.
+  - **Visibility is decided on the server.** `app/live/page.tsx` calls `readHost()` and passes the answer down. A visitor pays no request for it, there is no flash of admin UI while a fetch resolves, and the client cannot promote itself — `/api/live-control` re-checks with `requireHost()` regardless of what the component believes. Anonymous visitors cost nothing either: with no auth cookie `getUser()` answers null without a network call, and the page is already `force-dynamic` so nothing is cached across viewers.
+  - **Signing in when you aren't:** `/live#host` reveals a prompt that opens the same `HostLoginModal` the chat panel uses. That escape hatch exists because the chat panel — the only other way in — renders nothing while off air, which is exactly when someone needs to schedule next Sunday.
+  - `SimulatedLiveControls` is loaded with `next/dynamic` (`ssr: false`) so its bundle only downloads when a Host actually opens the panel.
+- **`SimulatedLiveControls.tsx`** — the form itself, written once and mounted in two places: this bar and `/admin/live`. They differ only in the `endpoint` prop, because the route hanging off the public page has to authorise itself while the admin one is covered by middleware. Holds the link preview, the runtime fallback, the start time, the once-a-second status strip, **Start now**, **Take off air**, and **Remove this service** (a two-tap confirm, since it clears every field).
 
 #### Live chat (`components/live/chat/*`)
 The chat beside the player, and our own version of the Church Online Platform.
@@ -2490,9 +2496,21 @@ establishes who you are; `lib/liveChatAuth.ts` decides what that lets you do.
 // Host role (ROUTE_RULES in lib/adminRoles.ts) — the same people who run the
 // chat on a Sunday are the ones who start the broadcast.
 
-GET  /api/admin/simulated-live          // the row + derived { phase, endsAt, serverTime }
-PUT  /api/admin/simulated-live          // { active, video, title, notice, startsAt, durationSeconds }
-GET  /api/admin/simulated-live/lookup   // ?url= → { videoId, title, durationSeconds, thumbnail }
+GET    /api/admin/simulated-live          // the row + derived { phase, endsAt, serverTime }
+PUT    /api/admin/simulated-live          // { active, video, title, notice, startsAt, durationSeconds }
+DELETE /api/admin/simulated-live          // blank the row entirely — "remove this service"
+GET    /api/admin/simulated-live/lookup   // ?url= → { videoId, title, durationSeconds, thumbnail }
+
+// Thin wrappers. The logic is in lib/simulatedLiveControl.server.ts and is
+// shared with /api/live-control (the same controls, mounted on /live). Two
+// surfaces editing one row must not be able to disagree about what a valid
+// broadcast is, and one implementation is how that is guaranteed rather than
+// hoped for.
+//
+// DELETE is deliberately distinct from `active: false`. Taking something off
+// air is a thing you do mid-service and might undo; removing it is "we're not
+// doing this", and leaving a half-remembered video id and last week's start
+// time in the form is how someone accidentally re-broadcasts it.
 
 // PUT re-resolves the runtime from YouTube rather than trusting the form: an
 // admin who edits the start time after pasting the link must not be able to
@@ -2649,6 +2667,29 @@ how far into the video to be; a response held at the edge for 30 seconds would
 hand every viewer a 30-second-old clock and put them 30 seconds behind the room.
 Nothing in a real broadcast's payload is time-sensitive to the second, so those
 still cache normally.
+
+#### Broadcast control from /live (`/api/live-control/*`)
+```typescript
+// ⚠️ NOT covered by middleware.ts (its matcher is /admin/* and /api/admin/*).
+// These hang off the public /live page, exactly like /api/live-chat/*, so every
+// handler authorises itself with requireHost() from lib/liveChatAuth.ts as its
+// first statement — before reading a body, a query string or the database.
+
+GET    /api/live-control          // current config + { phase, endsAt, serverTime }
+PUT    /api/live-control          // save (same body as the admin route)
+DELETE /api/live-control          // blank the row — "remove this service"
+GET    /api/live-control/lookup   // ?url= → video title, runtime, thumbnail
+
+// 401 when signed out, 403 when signed in without the `host` role.
+//
+// The lookup route is gated too, not just the writes: it spends YouTube API
+// quota, so it must not be callable by anyone who finds the path.
+//
+// tests/unit/live-control-auth.spec.ts reads this folder's source and fails if
+// a handler is added without requireHost(), or with it after something that
+// touches caller input. The failure mode otherwise is silent — an unguarded
+// route works perfectly for whoever is testing it, because they are signed in.
+```
 
 #### Live chat public routes (`/api/live-chat/*`)
 ```typescript
@@ -3915,8 +3956,10 @@ Same rate limit, Turnstile and Supabase password checks (`signInCore` in
 > The `host` role gates `/admin/live-chat` and `/admin/live` (Simulated Live)
 > through the normal `ROUTE_RULES`
 > table, but Hosts also act on `/live`, which is public and unmatched by
-> middleware. Those routes call `requireHost()` in `lib/liveChatAuth.ts` — the
-> single place that decides who someone is on the public side.
+> middleware. Those routes — `/api/live-chat/*` for moderation and
+> `/api/live-control/*` for running the broadcast — call `requireHost()` in
+> `lib/liveChatAuth.ts`, the single place that decides who someone is on the
+> public side.
 
 ---
 

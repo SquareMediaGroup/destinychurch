@@ -4,6 +4,8 @@ import { getLatestVideo } from "@/lib/youtube";
 import AnimateIn from "@/components/AnimateIn";
 import LiveStage from "@/components/live/LiveStage";
 import LiveChatPanel from "@/components/live/chat/LiveChatPanel";
+import LiveHostBar from "@/components/live/LiveHostBar";
+import { readHost } from "@/lib/liveChatAuth";
 import LiveHeroStatus from "@/components/live/LiveHeroStatus";
 import WatchOnYouTubeBand from "@/components/sermons/WatchOnYouTubeBand";
 import WorshipWithUsSection from "@/components/home/WorshipWithUsSection";
@@ -75,7 +77,16 @@ export default async function LivePage() {
   // The live status itself comes through LiveContext, which the root layout
   // seeds from the same memoised getLiveStatus() call — so this page only needs
   // the fallback content.
-  const latestSermon = await getLatestVideo();
+  //
+  // Host is resolved here rather than fetched by the client so that a visitor
+  // pays nothing for a feature they can't see and there is no flash of admin UI
+  // while a request resolves. It costs an anonymous visitor nothing either:
+  // with no auth cookie, getUser() answers null without a network call. The
+  // page is already force-dynamic, so no response is cached across viewers.
+  const [latestSermon, host] = await Promise.all([
+    getLatestVideo(),
+    readHost().catch(() => null),
+  ]);
 
   return (
     <>
@@ -117,6 +128,12 @@ export default async function LivePage() {
           </div>
         </section>
       </div>
+
+      {/* ── Host controls ────────────────────────────────────── */}
+      {/* Renders null for everyone who isn't a signed-in Host. Sits above the
+          player so a Host can start or stop a service without leaving the page
+          they're checking; see components/live/LiveHostBar.tsx. */}
+      <LiveHostBar isHost={Boolean(host)} hostName={host?.name ?? null} />
 
       {/* ── Player / offline card ────────────────────────────── */}
       {/* The chat sits beside the player on desktop and under it on mobile.

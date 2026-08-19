@@ -11,6 +11,8 @@ Designed, engineered, and deployed by [Square Media Group](mailto:hello@squareme
 ## Features
 
 - Sermon streaming and archive with series/speaker filtering and live-stream banner
+- Live chat on `/live` — public chat with a host backstage channel, moderation, and prayer requests (Supabase Realtime)
+- Simulated live — play a pre-recorded video on `/live` as a self-synchronising broadcast, with on-page host broadcast controls
 - Events and "What's On" listings — unified event cards, on-site event pages, a swappable featured event/course, ICS calendar downloads, and on-site ChurchSuite signup
 - Ministry pages (Kids/DC Kids, Youth, Young Adults, Missions, Connect groups)
 - The Bible Course and Alpha journeys, including Alpha signup and event management
@@ -182,10 +184,14 @@ The `/admin` area is protected by Supabase Auth. Log in at `/login` to manage:
 - **Training** — courses, modules, and featured course
 - **HR & Jobs** — job listings, applications, staff directory, leave, documents, reviews
 - **Alpha & Recovery** — signups and events
+- **Live Chat** — host console for the `/live` chat: room state, moderation queue, muted guests, and prayer requests
+- **Simulated Live** — configure the pre-recorded broadcast shown on `/live` (video and start time)
 - **Redirects** — configure URL redirects
 - **Banner & Popup** — control the site-wide announcement banner and popups
 - **NFC** — manage the tiles shown on the `/nfc` "digital back of seats" page
 - **Cache** — trigger on-demand revalidation
+
+Every admin list is fuzzy-searchable with live status filters (mirrored into the URL), and a global ⌘K palette jumps to any page, quick action, or record. Navigation is driven from a single registry (`lib/adminNav.ts`) shared by the sidebar, breadcrumbs, dashboard grid, and palette.
 
 ---
 

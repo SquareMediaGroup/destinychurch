@@ -1,7 +1,7 @@
 # Destiny Church Tees Valley — Complete Repository Documentation
 
-**Version:** 1.0.8  
-**Last Updated:** August 8, 2026  
+**Version:** 1.0.9  
+**Last Updated:** August 20, 2026  
 **Repository:** Square Media Group — destinychurch  
 
 This document provides a comprehensive explanation of every major component, line of code purpose, architecture decisions, and how the system works from end-to-end.
@@ -1795,6 +1795,7 @@ Once consent is in, `ChurchSuiteEmbed` and `MediaEmbed` cover the iframe with `u
   - Title, body (markdown), image, CTA button
   - Dismiss button
   - Centered on screen
+- **Suppressed on `/nfc` and `/admin/*`:** the layout is a server component and can't know the path, so both pop-ups check `usePathname()` themselves. `/nfc` is a grid of pop-ups people opened on purpose mid-service, and `/admin/*` should never interrupt staff with announcements. `EventPopup.tsx` applies the same two exclusions (plus `/whats-on` and the event's own page).
 
 #### `WelcomeWidget.tsx` — **removed; merged into `FloatingSmartSearch`**
 The "New here?" script is no longer a separate widget. Two floating controls in two corners was two
@@ -1865,7 +1866,7 @@ its `welcome` mode, and the copy still lives in `lib/welcomeChat.ts`.
 #### `LiveBanner.tsx`
 - **What:** "WE ARE LIVE" banner bar, styled like `SiteBanner.tsx`'s bars
 - **Data:** `LiveContext` (server-seeded in root layout via `getLiveStatus()`, then polled client-side every 30s)
-- **Behavior:** Renders at the top banner slot (offsetting any DB banner below it) whenever the channel is live; hidden on `/live` and `/admin/*`. CTA links to `/live`.
+- **Behavior:** Renders at the top banner slot whenever the channel is live; hidden on `/live` and `/admin/*`. CTA links to `/live`. The live bar **takes priority over the DB banners** — while it shows, the sitewide/alpha/recovery banners are hidden rather than stacked beneath it (`lib/useBannerBars.ts` returns `1` when live off `/live`), so there is only ever one bar to notice during a service.
 
 #### `contexts/LiveContext.tsx`
 - **What:** The single client-side source of live state, consumed by the banner and every part of `/live`

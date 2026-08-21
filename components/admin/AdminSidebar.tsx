@@ -371,7 +371,11 @@ function SidebarContents({
       </div>
 
       {/* Nav */}
-      <nav aria-label="Admin sections" className="flex flex-col gap-1 overflow-y-auto px-3">
+      <nav
+        aria-label="Admin sections"
+        data-tour="sidebar"
+        className="flex flex-col gap-1 overflow-y-auto px-3"
+      >
         <NavItems
           groups={groups}
           pathname={pathname}

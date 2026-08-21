@@ -11,6 +11,7 @@ export type AdminRole =
   | "store_admin"
   | "site_admin"
   | "host"
+  | "hr_admin"
   | "super_admin";
 
 export const ADMIN_ROLES: AdminRole[] = [
@@ -19,6 +20,7 @@ export const ADMIN_ROLES: AdminRole[] = [
   "store_admin",
   "site_admin",
   "host",
+  "hr_admin",
   "super_admin",
 ];
 
@@ -30,6 +32,7 @@ export const NO_ROLES: RoleFlags = {
   store_admin: false,
   site_admin: false,
   host: false,
+  hr_admin: false,
   super_admin: false,
 };
 
@@ -85,6 +88,10 @@ const ROUTE_RULES: { pattern: RegExp; roles: AdminRole[] }[] = [
   // end of the string after "live", so they can't swallow /admin/live-chat.
   { pattern: /^\/admin\/live(\/|$)/, roles: ["host"] },
   { pattern: /^\/api\/admin\/simulated-live(\/|$)/, roles: ["host"] },
+
+  // HR — staff directory, leave, jobs, applications, documents, reviews
+  { pattern: /^\/admin\/hr(\/|$)/, roles: ["hr_admin"] },
+  { pattern: /^\/api\/admin\/hr(\/|$)/, roles: ["hr_admin"] },
 ];
 
 // Paths any authenticated admin can reach regardless of role.
@@ -101,6 +108,9 @@ const OPEN_PATHS = [
   /^\/api\/admin\/me$/,
   /^\/api\/admin\/me\/roles$/,
   /^\/api\/admin\/search$/,
+  // Everyone's own onboarding progress — the route only ever reads and writes
+  // the caller's row, keyed off their cookie session.
+  /^\/api\/admin\/onboarding$/,
 ];
 
 export function hasAccess(roles: RoleFlags, pathname: string): boolean {
@@ -123,7 +133,9 @@ export async function getRoles(
   // AdminRole above.
   const { data } = await supabase
     .from("admin_roles")
-    .select("training_admin, event_admin, store_admin, site_admin, host, super_admin")
+    .select(
+      "training_admin, event_admin, store_admin, site_admin, host, hr_admin, super_admin",
+    )
     .eq("auth_user_id", authUserId)
     .maybeSingle();
 
@@ -134,6 +146,7 @@ export async function getRoles(
     store_admin: Boolean(data.store_admin),
     site_admin: Boolean(data.site_admin),
     host: Boolean(data.host),
+    hr_admin: Boolean(data.hr_admin),
     super_admin: Boolean(data.super_admin),
   };
 }

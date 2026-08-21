@@ -58,6 +58,7 @@ export default function NewProductPage() {
           </label>
           <input
             autoFocus
+            data-tour="product-name"
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="e.g. Destiny Logo Tee"
@@ -71,6 +72,7 @@ export default function NewProductPage() {
         )}
         <button
           type="submit"
+          data-tour="product-submit"
           disabled={saving || !name.trim()}
           className="inline-flex items-center gap-2 rounded-full bg-destiny-orange px-6 py-3 text-sm font-bold text-white transition hover:brightness-110 disabled:bg-destiny-grey/30"
         >

@@ -747,7 +747,41 @@ CREATE TABLE hr_staff (
 
 ---
 
-#### 10b. **admin_roles**
+#### 10b. **admin_onboarding**
+**Purpose:** Per-admin onboarding progress for `/admin` — one row per admin, read/written only by `app/api/admin/onboarding`
+
+```sql
+CREATE TABLE admin_onboarding (
+  auth_user_id uuid PRIMARY KEY REFERENCES auth.users (id) ON DELETE CASCADE,
+  completed_steps text[] NOT NULL DEFAULT '{}',  -- TourSection ids from lib/adminOnboarding.ts
+  gate_seen boolean NOT NULL DEFAULT false,      -- welcome modal answered (started or skipped)
+  dismissed boolean NOT NULL DEFAULT false,      -- checklist hidden by the user
+  updated_at timestamptz NOT NULL DEFAULT now()
+);
+
+-- RLS: Service role only (deny-all "service only" policy, mirroring admin_roles)
+```
+
+Created lazily by the API's upsert — there is no backfill, and super admins
+simply never grow a row since `toursFor()` returns nothing for them. See
+[`lib/adminOnboarding.ts`](#libadminonboardingts--libonboardingprogressts--libdemomodets).
+
+**Used By:**
+- `app/api/admin/onboarding` — the only reader/writer, keyed off the caller's
+  own cookie session
+- `lib/onboardingProgress.ts` — the client cache read by the welcome gate, the
+  checklist and the running tour
+
+> **Not yet applied.** This migration
+> (`supabase/migrations/20260821_admin_onboarding.sql`) has not been run against
+> the project — `CLAUDE.local.md` has no Supabase PAT to apply it with. Until it
+> is, `GET /api/admin/onboarding` 500s and the client fails open (gate already
+> seen, checklist already dismissed) rather than blocking anyone. Apply the
+> migration and run `get_advisors` once a PAT is added.
+
+---
+
+#### 10c. **admin_roles**
 **Purpose:** Access levels for `/admin` — six independent booleans per admin login, checked by `middleware.ts` on every `/admin/*` and `/api/admin/*` request
 
 ```sql
@@ -1627,6 +1661,7 @@ Super Admin only).
 | `/admin/store/orders` | `app/admin/store/orders/page.tsx` | Orders list |
 | `/admin/store/orders/[id]` | `app/admin/store/orders/[id]/page.tsx` | Order detail — mark fulfilled/cancelled/refunded |
 | `/admin/users` | `app/admin/users/page.tsx` | Manage admin logins and their access-level roles (Super Admin only) |
+| `/admin/onboarding` | `app/admin/onboarding/page.tsx` | What each access level is taught on first sign-in, and the admin previewed from their side (Super Admin only) |
 | `/admin/live` | `app/admin/live/page.tsx` | Simulated Live — schedule a pre-recorded video to play on `/live` as though it were a broadcast. Paste a link (preview resolves title, thumbnail and runtime), pick a start time or press **Start now**, and a once-a-second status strip reports scheduled / on air with the exact position / finished (Host). A thin wrapper over `SimulatedLiveControls`, the same component the Host bar on `/live` mounts — the on-page version is the one that gets used on a Sunday; this is the admin-shell entry point the sidebar and ⌘K palette land on |
 | `/admin/live-chat` | `app/admin/live-chat/page.tsx` | Live chat console — room state, held queue, muted guests, prayer queue, direct threads, history (Host) |
 
@@ -2036,6 +2071,37 @@ but needs no coordination, because it never opens itself — an earlier auto-ope
 carried a `lib/popupGate.ts` zustand flag that both popups checked before arming their timer. That
 gate was deleted along with the overlay.
 
+#### Onboarding (`components/admin/onboarding/*`)
+Role-based guided tours for `/admin`. See
+[`lib/adminOnboarding.ts`](#libadminonboardingts--libonboardingprogressts--libdemomodets)
+for the registry and the "nothing is saved" guarantee this whole surface exists
+to keep.
+
+- `OnboardingProvider.tsx` — **Client.** Mounted in `app/admin/layout.tsx`
+  inside `AdminCommandProvider`. Owns the state machine: which section a step
+  belongs to, navigating to a step's route, polling for its `data-tour` anchor
+  (the page it lands on is usually still fetching), and switching demo mode on
+  for the whole run — not just the sandbox steps, because a tour where only
+  some buttons are safe is a tour nobody trusts. Exposes `useOnboardingTour()`
+  (`sections`, `completed`, `running`, `start`, `startRole`, `stop`) to the rest
+  of the tree.
+- `WelcomeGate.tsx` — Full-screen modal on a person's first `/admin` visit,
+  naming the access levels they hold and how long their tour takes. "Skip for
+  now" is a real answer and is recorded as one — this is a gate, not a wall.
+- `OnboardingChecklist.tsx` — The persistent "Get Started" launcher
+  (bottom-right, remaining-count badge) and its expanding panel — percent bar,
+  tickable sections, "Dismiss checklist". Reuses `.search-glow` (the Smart
+  Search rainbow, `app/globals.css`) as the attention cue while anything is
+  left to do.
+- `TourSpotlight.tsx` — The overlay itself: four scrim rectangles frame the
+  anchored element rather than a clip-path, so the real element stays fully
+  clickable — the sandbox steps depend on that. An orange ring lights the
+  target; the tooltip card carries Back/Next/Exit and picks whichever side of
+  the anchor actually has room.
+- `RolePreviewBar.tsx` — Sticky bar shown while a super admin is previewing
+  another access level (from `/admin/onboarding`). States plainly that this is
+  presentation only — middleware still knows they're a super admin.
+
 #### Admin Components (`components/admin/*`)
 - `AdminSidebar.tsx` — Admin navigation menu
 - `AdminHeader.tsx` — Sticky desktop header for the admin shell; shows an "Admin / {section}" breadcrumb (title derived from the pathname) and a "View live site" button
@@ -2387,6 +2453,22 @@ establishes who you are; `lib/liveChatAuth.ts` decides what that lets you do.
 ---
 
 ### Admin API Routes
+
+#### `GET|PATCH /api/admin/onboarding`
+```typescript
+// The signed-in admin's own onboarding progress.
+// GET    → { completed_steps: string[], gate_seen: boolean, dismissed: boolean }
+// PATCH  → the same, after merging the body in
+//
+// AUTHORIZATION: in OPEN_PATHS (lib/adminRoles.ts) because every admin needs
+// their own progress regardless of role. The row is keyed off auth_user_id
+// taken from the caller's cookie session, never from the body, so there is no
+// path here to read or write anybody else's.
+//
+// PATCH merges rather than replaces: completed_steps unions with what's
+// already stored, so two tabs finishing different sections can't clobber each
+// other. Pass reset: true to clear it (the "run it again" button).
+```
 
 #### `GET /api/admin/search`
 ```typescript
@@ -3099,6 +3181,64 @@ Two things to keep in mind when editing it:
 post", "Clear the cache"). Those hrefs use `?new=1`, which the list pages read
 to open their editor straight away.
 
+### `lib/adminOnboarding.ts` / `lib/onboardingProgress.ts` / `lib/demoMode.ts`
+
+Role-based onboarding for `/admin`. Same idea as `lib/adminNav.ts`: one
+registry, everything derives from it.
+
+**`lib/adminOnboarding.ts`** holds every tour, keyed by access level. A tour is
+sections, a section is steps, and a step names a `route`, a `data-tour` anchor,
+a title and a body. `toursFor(roles)` returns the tours a person is owed —
+someone with three roles is taught three tours back to back — and
+`checklistFor(roles)` prefixes them with the shared Orientation section.
+
+`super_admin` deliberately has no tour: it can reach everything, so "the super
+admin tour" would be every tour at once. Super admins preview a single role from
+`/admin/onboarding` instead.
+
+Progress is counted in **sections**, not steps. "Add a product" is the unit a
+person recognises, and step ids churn every time a tour is reworded.
+`tests/unit/admin-onboarding.spec.ts` asserts every step's route actually passes
+`hasAccess()` for its own role — the same drift guard `admin-nav.spec.ts`
+applies to the sidebar, and for the same reason: a tour that bounces someone to
+`?forbidden=1` is worse than no tour.
+
+**`lib/onboardingProgress.ts`** is the client half — the module-scope cached
+promise pattern from `lib/useAdminSession.ts`, so the welcome gate, the
+checklist and the running tour share one request. **It fails open**: if
+`/api/admin/onboarding` can't be read it resolves to "gate already seen,
+checklist already dismissed". A welcome modal that gates the dashboard must
+never be able to lock someone out because a table is missing.
+
+**`lib/demoMode.ts`** is the guarantee that nothing done inside a tour is real.
+Teaching "add a product" must not add a product, and building a parallel set of
+fake admin screens would have drifted from the real ones within a month — so
+the tour drives the real pages and this cuts the wire.
+
+It works because every write in `/admin` goes through `window.fetch` to
+`/api/admin/*`: there are no server actions under `app/admin` except the two
+logged-out password pages, no client-side Supabase writes, and no
+`XMLHttpRequest` anywhere. So swapping `window.fetch` is a complete boundary,
+not a best-effort one.
+
+- **GET** passes through to the real API, then overlays this session's phantom
+  mutations onto the JSON — which is what makes a "saved" product appear in the
+  list a moment later. Two shapes cover everything: an array of `{ id }`, and a
+  singleton object (banner, popup, featured event — see `SINGLETONS`).
+- **POST/PUT/PATCH/DELETE** are never sent. They're recorded in memory and
+  answered with a synthesised `Response` in the shape the real route returns.
+- **`*/upload`** is answered with an object URL for the file the user picked, so
+  the preview looks right and nothing reaches storage.
+- A GET for a `demo-` id is answered from memory, so the editor the tour
+  navigates into after "create" doesn't 404 on a row that was never real.
+
+**Two independent layers.** Entering demo mode also sets a `dc-demo-mode`
+cookie, and `middleware.ts` rejects every non-GET to `/api/admin/*` while it is
+present. The interceptor means the request never gets that far; the cookie is
+what catches it if the interceptor is ever bypassed. The cookie is cleared on
+exit, on `beforeunload`, and again on every admin mount where no tour is
+running — a tab closed mid-tour must not leave an admin unable to save.
+
 ### `lib/useAdminList.ts`
 
 The hook behind every searchable admin list: fuzzy search, status filters with
@@ -3128,6 +3268,19 @@ meaningless `sort_order`. Those pages hide the drag handles while a search or
 filter is active and say so.
 
 ### `lib/useAdminSession.ts` / `lib/adminRecents.ts` / `lib/csv.ts`
+
+`useAdminSession` also carries the **role preview**: a super admin can ask to see
+the admin as one of the other access levels, to check what a new Store Admin
+will actually be handed. The override is applied inside the hook rather than in
+each consumer, so the sidebar, the header, the dashboard grid and the ⌘K palette
+all narrow with no changes of their own. `roles` becomes the effective flags and
+`actualRoles` keeps the truth.
+
+It is presentation only, and the preview bar says so. Middleware still sees a
+real super admin and will still open anything they type into the address bar —
+this narrows what the interface *offers*, which is the question being asked. It
+must never be treated as a security boundary.
+
 
 - `useAdminSession` — the signed-in admin's email and roles from
   `/api/admin/me`, with the promise cached at module scope. The sidebar, header
@@ -3807,9 +3960,9 @@ remembered, so existing sessions aren't unexpectedly downgraded.
 
 ### Authorization Layers
 
-Access levels live in `lib/adminRoles.ts` + the `admin_roles` table — six
+Access levels live in `lib/adminRoles.ts` + the `admin_roles` table — seven
 independent per-user booleans (`training_admin`, `event_admin`, `store_admin`,
-`site_admin`, `host`, `super_admin`; see [admin_roles](#10b-admin_roles)). Auth *and*
+`site_admin`, `host`, `hr_admin`, `super_admin`; see [admin_roles](#10b-admin_roles)). Auth *and*
 role enforcement both happen centrally in `middleware.ts`, not in
 `app/admin/layout.tsx` (which is a client component purely responsible for the
 sidebar/header shell; it does not check auth or roles itself).
@@ -3825,7 +3978,8 @@ always passes and isn't repeated per rule; anything under `/admin` or
 | `store_admin` | `/admin/store/**` | `/api/admin/{store,shop-hero}/**` |
 | `site_admin` | `/admin/posts`, `/admin/redirects` | `/api/admin/{posts,redirects}/**` |
 | `host` | `/admin/live-chat`, `/admin/live` | `/api/admin/live-chat/**`, `/api/admin/simulated-live/**` |
-| `super_admin` | Everything, plus Banner, Clear Cache, HR, and `/admin/users` | `/api/admin/{banner,revalidate,hr,users}/**` |
+| `hr_admin` | `/admin/hr/**` (staff, leave, jobs, applications, documents, reviews, checklists) | `/api/admin/hr/**` |
+| `super_admin` | Everything, plus Banner, Clear Cache, and `/admin/users` | `/api/admin/{banner,revalidate,users}/**` |
 
 **`OPEN_PATHS`** — reachable by any authenticated admin regardless of role:
 `/admin` (the dashboard), `/api/admin/logout`, `/api/admin/me`,
@@ -3837,7 +3991,9 @@ needs care.** It is open because every admin needs the ⌘K palette, but it is n
 unguarded — the route re-reads the caller's roles from the service client and
 only queries the sections that role can open, so a Store Admin's results contain
 orders and products and nothing else. If you add a section to that route, gate
-its query on a role the same way. HR is deliberately not searched at all.
+its query on a role the same way. HR is deliberately not searched at all — its
+records are the most sensitive in the admin (staff records, leave reasons,
+applicant CVs), so they don't belong in a fuzzy search box regardless of role.
 
 `/admin/users` (Super Admin only, `app/api/admin/users/**`) is where roles are
 assigned — a tickbox per role per user. `GET /api/admin/me` (and the older

@@ -517,6 +517,124 @@ body {
 }
 }/* end @layer components (glass system) */
 
+/* ── Admin onboarding ───────────────────────────────────────────────────────
+   /admin is flat white cards on #f5f7fa and uses none of the glass system
+   above. The onboarding layer uses it on purpose: a dark tinted slab floating
+   over the light admin canvas reads instantly as "this is the tutorial, not the
+   page", which no amount of extra white card could do.
+
+   .admin-glass is a tint on top of .glass, not a fork of it — the rim, the
+   cursor bloom, the reduced-motion and glassfx=off escape hatches all still
+   apply. Use it as `class="glass admin-glass"`. */
+@layer components {
+  .admin-glass {
+    --glass-tint: 24, 29, 34;
+    --glass-alpha: 0.82;
+    --glass-blur: 20px;
+    color: #ffffff;
+  }
+
+  /* The four panels that frame the spotlit element.
+     A clip-path or box-shadow cut-out would have been fewer nodes, but both
+     swallow pointer events over the hole — and the sandbox steps need the real
+     button underneath to stay clickable. Four rectangles leave a genuine gap. */
+  .tour-scrim {
+    position: fixed;
+    background: rgba(12, 15, 18, 0.55);
+    z-index: 300;
+    pointer-events: auto;
+    transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .tour-scrim {
+      transition: none;
+    }
+  }
+
+  html[data-motion="reduced"] .tour-scrim {
+    transition: none;
+  }
+
+  /* The ring drawn around whatever is being explained. Sits above the scrim so
+     it reads as lit rather than merely un-dimmed, but takes no pointer events
+     so the element underneath still works. */
+  .tour-ring {
+    position: fixed;
+    z-index: 301;
+    pointer-events: none;
+    border-radius: 14px;
+    box-shadow:
+      0 0 0 2px #f58021,
+      0 0 0 7px rgba(245, 128, 33, 0.28),
+      0 0 34px rgba(245, 128, 33, 0.35);
+    transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .tour-ring {
+      transition: none;
+    }
+  }
+
+  html[data-motion="reduced"] .tour-ring {
+    transition: none;
+  }
+
+  /* The tooltip card and the Get Started launcher both sit above the ring. */
+  .tour-card {
+    position: fixed;
+    z-index: 302;
+  }
+
+  /* Entrance for the tooltip as it moves between anchors. */
+  @keyframes tour-card-in {
+    from {
+      opacity: 0;
+      transform: translateY(8px) scale(0.98);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+
+  .tour-card-enter {
+    animation: tour-card-in 0.35s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .tour-card-enter {
+      animation: none;
+    }
+  }
+
+  html[data-motion="reduced"] .tour-card-enter {
+    animation: none;
+  }
+
+  /* A field the tour typed into for you — briefly tinted so it's obvious the
+     text arrived from the tutorial and not from your own keyboard. */
+  @keyframes tour-prefill {
+    from {
+      background-color: rgba(245, 128, 33, 0.22);
+    }
+    to {
+      background-color: transparent;
+    }
+  }
+
+  .tour-prefilled {
+    animation: tour-prefill 1.2s ease both;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .tour-prefilled {
+      animation: none;
+    }
+  }
+}
+
 /* Floating Smart Search — circle <-> teaser <-> pill morph.
    Three resting widths held in --fs-w and TRANSITIONED, with the same aggressive
    ease-in-out that used to be keyframed. It was keyframes while there were only

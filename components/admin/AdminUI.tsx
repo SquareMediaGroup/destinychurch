@@ -50,8 +50,11 @@ export function PageHeader({
   back?: { href: string; label: string };
   action?: ReactNode;
 }) {
+  // data-tour anchors: the onboarding tours spotlight the shared primitives
+  // rather than per-page markup, so five role tours need almost no page edits.
+  // See lib/adminOnboarding.ts.
   return (
-    <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
+    <div data-tour="page-header" className="mb-8 flex flex-wrap items-end justify-between gap-4">
       <div>
         {back && (
           <a
@@ -65,7 +68,7 @@ export function PageHeader({
         <h1 className="text-2xl font-black text-destiny-grey md:text-3xl">{title}</h1>
         {subtitle && <p className="mt-1 text-sm text-destiny-grey/55">{subtitle}</p>}
       </div>
-      {action}
+      {action && <div data-tour="page-action">{action}</div>}
     </div>
   );
 }
@@ -213,7 +216,7 @@ export function SearchInput({
   }, []);
 
   return (
-    <div className={`relative min-w-0 flex-1 sm:max-w-xs ${className}`}>
+    <div data-tour="list-search" className={`relative min-w-0 flex-1 sm:max-w-xs ${className}`}>
       <span className="material-symbols-rounded pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-lg text-destiny-grey/35">
         search
       </span>
@@ -339,7 +342,7 @@ export function ListToolbar({
 }) {
   const filtered = shown !== total;
   return (
-    <div className="mb-4 flex flex-col gap-3">
+    <div data-tour="list-toolbar" className="mb-4 flex flex-col gap-3">
       <div className="flex flex-wrap items-center gap-3">
         <SearchInput
           value={search}

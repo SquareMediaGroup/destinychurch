@@ -48,7 +48,7 @@ function Dropdown({
 }) {
   return (
     <div
-      className="absolute left-1/2 top-full z-50 mt-2"
+      className="absolute left-1/2 top-full z-50 mt-4"
       style={{
         opacity: open ? 1 : 0,
         transform: open

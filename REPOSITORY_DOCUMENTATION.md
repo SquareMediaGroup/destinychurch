@@ -190,7 +190,13 @@ destinychurch/
 │   │   ├── recovery/              # Manage Recovery course events
 │   │   ├── featured-course/       # Choose the What's On featured course
 │   │   ├── store/                 # Shop admin (products, orders, hero)
-│   │   └── hr/                    # HR staff features (unlinked, in progress)
+│   │   ├── hr/                    # HR admin (staff, leave, jobs, docs, reviews, checklists) — hr_admin
+│   │   └── onboarding/            # Super-admin preview of each role's onboarding tour
+│   ├── portal/                    # Staff self-service — own profile, leave, documents (linked hr_staff)
+│   │   ├── layout.tsx             # Portal shell (separate auth boundary from /admin)
+│   │   ├── page.tsx               # Profile + leave balance overview
+│   │   ├── leave/page.tsx         # Request/withdraw own leave
+│   │   └── documents/page.tsx     # Download own + org-wide documents
 │   ├── jobs/                      # Job listing & application
 │   │   ├── page.tsx               # Job list
 │   │   ├── [slug]/page.tsx        # Job detail
@@ -202,9 +208,13 @@ destinychurch/
 │   │   │   ├── redirects/         # CRUD redirects
 │   │   │   ├── popup/             # CRUD pop-ups
 │   │   │   ├── revalidate/        # ISR cache invalidation
+│   │   │   ├── onboarding/        # Per-admin tour progress
 │   │   │   ├── posts/, training/, alpha-events/, featured-course/, hr/, store/, shop-hero/
+│   │   │   │                      #   hr/ includes checklists/ + checklist-templates/
 │   │   │   ├── simulated-live/    # Simulated live config + YouTube link lookup (Host)
 │   │   │   └── ...
+│   │   ├── portal/                # Staff self-service API — me/, leave/, documents/ (linked hr_staff)
+│   │   ├── cron/                  # Vercel Cron — live-chat-purge/, hr-review-reminders/ (Bearer CRON_SECRET)
 │   │   ├── chat/                  # POST /api/chat — Smart Search tool-calling chat
 │   │   ├── youtube/                # videos/, thumbnail/[id]/, status/, live/
 │   │   ├── alpha-ask/, alpha-events/ # Public Alpha info endpoints
@@ -263,7 +273,9 @@ destinychurch/
 │   ├── posts.ts                   # Dynamic posts/pages
 │   ├── training.ts                # Training courses
 │   ├── jobs.ts / jobs.server.ts   # Job listing & applications
-│   ├── hr.ts                      # HR staff operations
+│   ├── hr.ts                      # HR staff operations, types, leave/review label maps
+│   ├── hrEmail.ts                 # HR notification emails (leave request/decision, review digest) via Resend
+│   ├── staffPortalAuth.ts         # /portal + /api/portal auth boundary (linked hr_staff row, not admin_roles)
 │   ├── shop.ts / shop.server.ts   # Shop types, price helpers, published-product fetchers
 │   ├── stripe.ts                  # Stripe client singleton
 │   ├── cart-store.ts              # Zustand basket store (localStorage-persisted)
@@ -298,7 +310,7 @@ destinychurch/
 │   └── ...
 │
 ├── supabase/                      # Supabase configuration
-│   └── migrations/                # Database schema migrations (34 files) — selected highlights:
+│   └── migrations/                # Database schema migrations (46 files) — selected highlights:
 │       ├── 001_redirects.sql      # URL redirect table
 │       ├── 002_hidden_videos.sql  # Hidden sermon videos (feature since removed)
 │       ├── 003_content.sql        # Site banner & page content
@@ -326,7 +338,13 @@ destinychurch/
 │       ├── 20260712_alpha_events_bible_course_type.sql # The Bible Course
 │       ├── 20260712_02_featured_course.sql # Featured course (What's On)
 │       ├── 20260728_featured_event.sql   # Featured ChurchSuite event + its popup
-│       └── 20260807_alpha_events_cap_type.sql # CAP Money Course
+│       ├── 20260807_alpha_events_cap_type.sql # CAP Money Course
+│       ├── 20260817_live_chat.sql, 20260817_02_host_role.sql # /live chat rooms/messages + `host` admin role
+│       ├── 20260818_simulated_live.sql # Pre-recorded broadcast config for /live
+│       ├── 20260821_admin_onboarding.sql # Per-admin onboarding/tour progress (admin_onboarding)
+│       ├── 20260822_hr_admin_role.sql  # `hr_admin` access level on admin_roles
+│       ├── 20260824_hr_review_reminders.sql # hr_reviews.reminder_sent_at for the daily digest
+│       └── 20260825_hr_checklists.sql  # Onboarding/offboarding checklists (hr_checklist_* tables)
 │
 ├── utils/                         # Utility modules
 │   ├── supabase/                  # Supabase client factories
@@ -886,19 +904,71 @@ CREATE TABLE hr_reviews (
   review_date date NOT NULL,
   type text NOT NULL DEFAULT 'one_to_one'
     CHECK (type IN ('appraisal','one_to_one')),
-  reviewer text,                       -- Name of reviewer
+  reviewer text,                       -- Name of reviewer (free text, not a linked account)
   summary text,                        -- Notes/outcomes
   next_review_date date,               -- Scheduled follow-up
+  reminder_sent_at timestamptz,        -- 20260824: set once the digest has flagged this review, so it isn't re-sent daily
   created_at timestamptz DEFAULT now()
 );
 
 -- RLS: Service role only
--- Indexes: staff_id
+-- Indexes: staff_id; a partial index on next_review_date WHERE reminder_sent_at IS NULL
 ```
 
 **Used By:**
 - Admin to log reviews
 - HR dashboard to track review schedule
+- `GET /api/cron/hr-review-reminders` — daily digest of reviews due within 14 days (see API Routes)
+
+---
+
+#### 13b. **hr_checklist_templates / hr_checklist_template_items / hr_checklist_items**
+**Purpose:** New-hire onboarding and leaver offboarding paperwork (contract, DBS/safeguarding checks, induction, equipment return) — **distinct from and unrelated to** the admin-dashboard product tour (`admin_onboarding`, `lib/demoMode.ts`), which is a UI walkthrough. The `hr_checklist_*` naming keeps that separation explicit. Migration: `supabase/migrations/20260825_hr_checklists.sql`.
+
+```sql
+CREATE TABLE hr_checklist_templates (       -- reusable named lists
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  name text NOT NULL,
+  kind text NOT NULL CHECK (kind IN ('onboarding','offboarding')),
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now()   -- hr_set_updated_at() trigger
+);
+
+CREATE TABLE hr_checklist_template_items (  -- the items on a template
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  template_id uuid NOT NULL REFERENCES hr_checklist_templates(id) ON DELETE CASCADE,
+  label text NOT NULL,
+  sort_order integer NOT NULL DEFAULT 0,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE TABLE hr_checklist_items (           -- a staff member's own live checklist
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  staff_id uuid NOT NULL REFERENCES hr_staff(id) ON DELETE CASCADE,
+  kind text NOT NULL CHECK (kind IN ('onboarding','offboarding')),
+  label text NOT NULL,
+  is_done boolean NOT NULL DEFAULT false,
+  done_at timestamptz,
+  due_date date,
+  sort_order integer NOT NULL DEFAULT 0,
+  notes text,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now()   -- hr_set_updated_at() trigger
+);
+
+-- RLS: all three service-role only ("service only" deny-all policy)
+-- Indexes: template_items(template_id); items(staff_id) and items(staff_id, kind)
+```
+
+**Semantics:** *starting* a checklist on a staff member **copies** the template's
+items into that person's own `hr_checklist_items` rows. Editing the template
+afterward never retroactively changes an already-started checklist, and HR can
+add one-off items to an individual's list freely.
+
+**Used By:**
+- `/admin/hr/checklists` — template management (HR Admin)
+- `/admin/hr/staff/[id]` — a staff member's live checklists
+- `components/admin/hr/ChecklistUI.tsx`, `app/api/admin/hr/checklists`, `app/api/admin/hr/checklist-templates`
 
 ---
 
@@ -1653,7 +1723,10 @@ Each section requires a specific access-level role (see
 | `/admin/nfc` | `app/admin/nfc/page.tsx` | Tiles on the `/nfc` page — add/edit/reorder/hide. A ChurchSuite form embed, artwork + copy + CTA, or an event picked from the live calendar (events without a framable signup are shown disabled with the reason) |
 | `/admin/hr` | `app/admin/hr/page.tsx` | HR dashboard (staff, leave, jobs, documents, reviews, checklists) (HR Admin) |
 | `/admin/hr/checklists` | `app/admin/hr/checklists/page.tsx` | Onboarding/offboarding checklist templates (HR Admin) |
+| `/admin/hr/staff/[id]` | `app/admin/hr/staff/[id]/page.tsx` | Staff record — profile, leave, reviews, documents, live checklists (HR Admin) |
 | `/portal` | `app/portal/page.tsx` | Staff self-service — own profile, leave requests + balance, documents. Separate auth boundary from `/admin`; see [Authorization Layers](#authorization-layers) |
+| `/portal/leave` | `app/portal/leave/page.tsx` | Staff self-service — request and withdraw own leave |
+| `/portal/documents` | `app/portal/documents/page.tsx` | Staff self-service — download own + org-wide documents |
 | `/admin/store` | `app/admin/store/page.tsx` | Store — product list |
 | `/admin/store/products/new` | `app/admin/store/products/new/page.tsx` | Create a product (name → editor) |
 | `/admin/store/products/[id]` | `app/admin/store/products/[id]/page.tsx` | Product editor — details, photos, size/colour variants, stock |
@@ -2441,7 +2514,9 @@ export async function applyForJob(jobId: string, formData: ApplicationData) {
 ```typescript
 // signInCore(formData)  — internal: IP → checkRateLimit → verifyTurnstileToken
 //                         → signInWithPassword → sb-remember cookie
-// adminSignIn(prev, fd) — signInCore, then redirect("/admin")
+// adminSignIn(prev, fd) — signInCore, then redirect(resolvePostLoginPath(...))
+//                         → /admin for an admin, /portal for a linked staff
+//                         member, else an "account not set up" error
 // hostSignIn(prev, fd)  — signInCore, then returns { success } and stays put
 // adminSignOut()        — signOut + delete sb-remember
 ```
@@ -2449,6 +2524,9 @@ Split because `redirect()` throws to unwind the request, which works for a
 full-page form and not at all for the Host popup on `/live`, which has to stay
 where it is and re-render. `hostSignIn` does **not** check the host role — it
 establishes who you are; `lib/liveChatAuth.ts` decides what that lets you do.
+`adminSignIn` sends admins to `/admin` and non-admin staff (a linked `hr_staff`
+row) to `/portal`; admin roles take priority, so someone who is both lands on
+`/admin` and can still reach `/portal` by URL.
 
 ---
 
@@ -2468,6 +2546,17 @@ establishes who you are; `lib/liveChatAuth.ts` decides what that lets you do.
 // PATCH merges rather than replaces: completed_steps unions with what's
 // already stored, so two tabs finishing different sections can't clobber each
 // other. Pass reset: true to clear it (the "run it again" button).
+```
+
+#### HR checklist routes (`/api/admin/hr/checklist-templates/*`, `/api/admin/hr/checklists/*`)
+```typescript
+// HR Admin only (hr_admin/super_admin, via /api/admin/hr/** route rules).
+// Templates:
+GET|POST         /api/admin/hr/checklist-templates       // list / create a reusable template
+PATCH|DELETE     /api/admin/hr/checklist-templates/[id]  // rename / edit items / delete
+// A staff member's live checklist (rows copied from a template on start):
+GET|POST         /api/admin/hr/checklists                // ?staffId= — list / start from a template
+PATCH|DELETE     /api/admin/hr/checklists/[id]           // tick an item / edit / remove
 ```
 
 #### `GET /api/admin/search`
@@ -2802,9 +2891,43 @@ returned to its own author marked as waiting, so they don't retype it.
 // than the cron not running. Calls live_chat_purge(7).
 ```
 
+#### `GET /api/cron/hr-review-reminders`
+```typescript
+// Daily at 06:00 (vercel.json). Bearer CRON_SECRET — fails closed with 503 if
+// unset (an open "send an email" endpoint is worse than not running).
+//
+// Finds hr_reviews with next_review_date within the next 14 days that haven't
+// been reminded yet (reminder_sent_at IS NULL; no lower bound, so overdue-but-
+// never-reminded reviews still surface), emails ONE digest to HR_NOTIFICATIONS_EMAIL
+// via lib/hrEmail.ts (reviewer is free text, so there's no per-reviewer address),
+// then stamps reminder_sent_at so the same review isn't re-sent each day it stays
+// in the window. NOT under /api/admin, so middleware.ts doesn't guard it.
+```
+
 > There is no `/api/webhooks/vercel` or GitHub webhook route, and no `youtube-sync`
 > cron/cache job — `app/api/webhooks/` currently only contains `stripe/` (see Shop
 > API below). YouTube data is fetched live on each request, not synced to a cache table.
+
+#### Staff Portal API (`/api/portal/*`)
+
+```typescript
+// The staff self-service side of HR — a SEPARATE auth boundary from /admin.
+// middleware.ts guards /api/portal (matcher covers it), but "signed in" is not
+// enough: the caller must have a linked hr_staff row (lib/staffPortalAuth.ts,
+// isLinkedToStaff / readPortalUser). Every handler re-derives identity via
+// readPortalUser() — never trusting request state from middleware — and scopes
+// every query to the returned staff.id, never to anything the client supplies.
+
+GET  /api/portal/me            // the caller's own hr_staff profile
+GET  /api/portal/leave         // own leave requests (newest first)
+POST /api/portal/leave         // file own leave — staff_id + status forced server-side, never from the body
+DELETE /api/portal/leave/[id]  // withdraw own request, pending only; 404 (not 403) on a mismatch, so IDs can't be probed
+GET  /api/portal/documents     // own documents + org-wide ones (staff_id IS NULL)
+GET  /api/portal/documents/[id] // 60s signed download URL from the hr-documents bucket; 404 on a foreign doc
+```
+
+A leave request/decision here (and from `/admin/hr`) triggers a notification
+email via `lib/hrEmail.ts`.
 
 #### `GET /api/health/smart-search` — self-healing health check (cron)
 
@@ -3909,7 +4032,35 @@ inside their rate limits (Companies House allows 600 requests per 5 minutes).
 
 ### `lib/jobs.ts` & `lib/hr.ts`
 
-Similar patterns for job listings and HR management.
+Similar patterns for job listings and HR management. `lib/hr.ts` also carries the
+shared HR types (`Staff`, `LeaveRequest`, …), the `dayCount()` / `fullName()` /
+`formatDate()` helpers and the `LEAVE_TYPE_LABELS` / `REVIEW_TYPE_LABELS` label
+maps used by both the admin UI and the notification emails.
+
+### `lib/staffPortalAuth.ts`
+
+`server-only`. The authorisation boundary for the staff self-service portal
+(`/portal`, `/api/portal/*`) — deliberately separate from the admin RBAC in
+`lib/adminRoles.ts`. A portal user's identity is "does this auth user have a
+linked `hr_staff` row", **not** an access-level boolean, and must never become
+one: conflating it with `admin_roles` would let "can see my own payslip" leak
+into "can manage HR". This mirrors `lib/liveChatAuth.ts`'s `readHost()` — the
+other place the app authorises an authenticated user outside `admin_roles`.
+
+- `isLinkedToStaff(supabase, authUserId)` — cheap boolean for `middleware.ts`.
+- `readPortalUser()` — returns `{ userId, staff }` or `null`; every `/api/portal/*`
+  handler calls it (never trusting middleware) and scopes every query to
+  `staff.id`, never to a client-supplied id.
+- `resolvePostLoginPath(supabase, userId)` — used by `adminSignIn` to route an
+  admin to `/admin`, a linked-but-non-admin staff member to `/portal`, else `null`.
+
+### `lib/hrEmail.ts`
+
+`server-only`. HR notification emails via Resend — leave requested, leave
+decision, and the review-reminder digest — over one shared badge/heading/rows/CTA
+card template (generalised from the job-application email in `app/jobs/actions.ts`).
+Sends to `HR_NOTIFICATIONS_EMAIL` (falling back to the recruitment inbox). Called
+from `/api/portal/leave`, the admin leave routes, and `/api/cron/hr-review-reminders`.
 
 ---
 
@@ -4018,9 +4169,23 @@ above — `tests/unit/admin-nav.spec.ts` enforces it.
 > authorise themselves via `lib/liveChatAuth.ts`; `ROUTE_RULES` only covers the
 > `/admin/live-chat` console. See [Live chat identity](#live-chat-identity-live).
 
+##### The staff portal — a second auth boundary
+
+`/portal` and `/api/portal/*` (staff self-service — own profile, leave,
+documents) are **not** part of the `admin_roles` RBAC above. `middleware.ts`
+matches them but applies a different test: the caller must be signed in **and**
+have a linked `hr_staff` row (`lib/staffPortalAuth.ts` → `isLinkedToStaff`),
+checked independently of `hasAccess()`. A signed-in admin with no staff record
+cannot reach the portal, and a staff member with no admin role cannot reach
+`/admin` — the two boundaries are deliberately orthogonal. Every `/api/portal/*`
+handler re-derives identity with `readPortalUser()` and scopes queries to that
+staff id, so the portal never trusts request state it can't verify itself. This
+is the same "authorise outside `admin_roles`" pattern as the Host on `/live`.
+
 #### Layer 1: Middleware (`middleware.ts`)
 ```typescript
-// Matcher: "/admin/:path*", "/api/admin/:path*" (+ a "/lite" redirect helper, unrelated to auth)
+// Matcher: "/admin/:path*", "/api/admin/:path*", "/portal/:path*", "/api/portal/:path*"
+//          (+ a "/lite" redirect helper, unrelated to auth)
 export async function middleware(request: NextRequest) {
   const { supabase, supabaseResponse } = createClient(request);
   const { data: { user } } = await supabase.auth.getUser();
@@ -4270,6 +4435,7 @@ LIVE_DISABLED=                              # set to 1 to force the /live page a
 RESEND_API_KEY=re_...
 PAGE_AUDIT_FROM=Destiny AI <noreply@support.squaremediagroup.org>  # from-address for system alert emails
 SMART_SEARCH_ALERT_RECIPIENT=malachi@squaremediagroup.org          # Smart Search down/recovered alerts
+HR_NOTIFICATIONS_EMAIL=techteam@destinytees.uk                     # optional; inbox for HR leave/decision + review-reminder emails (lib/hrEmail.ts). Falls back to techteam@destinytees.uk
 
 # OpenAI (for Smart Search chat — gpt-4.1-mini, tool-calling)
 OPENAI_API_KEY=sk-...
@@ -4297,8 +4463,11 @@ SHOP_TEST_BYPASS=            # leave unset in production — enables /api/store/
 # to open issues on SquareMediaGroup/destinychurch via the GitHub REST API)
 GITHUB_TOKEN=ghp_...
 
-# Smart Search health cron (GET /api/health/smart-search) — Vercel Cron bearer token
-CRON_SECRET=            # if unset, the health check runs unauthenticated (local/dev)
+# Cron bearer token — gates the daily jobs declared in vercel.json:
+#   /api/cron/live-chat-purge       (04:00) — deletes chat history older than 7 days
+#   /api/cron/hr-review-reminders   (06:00) — HR review digest to HR_NOTIFICATIONS_EMAIL
+# and the self-healing Smart Search health check (GET /api/health/smart-search).
+CRON_SECRET=            # the two /api/cron jobs FAIL CLOSED (503) if unset; the health check runs unauthenticated (local/dev)
 
 # Feature flags (also toggleable via the `service_status` DB table, e.g. 'smart_search')
 ENABLE_SMART_SEARCH=true

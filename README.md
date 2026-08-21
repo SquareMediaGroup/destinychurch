@@ -18,7 +18,9 @@ Designed, engineered, and deployed by [Square Media Group](mailto:hello@squareme
 - The Bible Course and Alpha journeys, including Alpha signup and event management
 - Merchandise shop with Stripe checkout (cards, Apple Pay, Google Pay, Link) and category filtering
 - Staff training courses with progress tracking and timed modules
-- HR & jobs system — job board, applications, staff directory, leave requests, documents, reviews
+- HR & jobs system — job board, applications, staff directory, leave requests, documents, reviews, onboarding/offboarding checklists, and email notifications (leave decisions + a daily review-reminder digest)
+- Staff self-service portal (`/portal`) — a separate login surface where staff view their profile, request leave, and download documents (an `hr_admin` access level runs HR without full super-admin)
+- Role-based admin onboarding — new admins are walked through a guided tour scoped to their access level, with nothing saved during the tour
 - Venue hire enquiry system
 - Connect card, prayer request, and contact forms
 - Giving, volunteer, and serve pages
@@ -152,6 +154,7 @@ app/
 ├── missions/         # Missions & outreach
 ├── new-here/         # First-time visitor guide
 ├── nfc/              # "Digital back of seats" — NFC/QR tap-to-open service page
+├── portal/           # Staff self-service (profile, leave, documents)
 ├── safeguarding/     # Safeguarding policy
 ├── sermons/          # Sermon archive & individual pages
 ├── serve/            # Volunteer opportunities
@@ -182,7 +185,7 @@ The `/admin` area is protected by Supabase Auth. Log in at `/login` to manage:
 - **Sermons & Posts** — add, edit, or hide sermon videos and content pages
 - **Shop** — products, categories, hero, and orders
 - **Training** — courses, modules, and featured course
-- **HR & Jobs** — job listings, applications, staff directory, leave, documents, reviews
+- **HR & Jobs** — job listings, applications, staff directory, leave, documents, reviews, onboarding/offboarding checklists (HR Admin access level)
 - **Alpha & Recovery** — signups and events
 - **Live Chat** — host console for the `/live` chat: room state, moderation queue, muted guests, and prayer requests
 - **Simulated Live** — configure the pre-recorded broadcast shown on `/live` (video and start time)

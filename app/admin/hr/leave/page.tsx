@@ -5,6 +5,7 @@ import {
   API,
   fullName,
   formatDate,
+  leaveRemaining,
   LEAVE_TYPE_LABELS,
   LEAVE_STATUS_LABELS,
   type Staff,
@@ -98,14 +99,10 @@ export default function LeavePage() {
   const pending = leave.filter((l) => l.status === "pending");
   const balances = staff
     .filter((s) => s.status !== "left")
-    .map((s) => {
-      const used = leave
-        .filter(
-          (l) => l.staff_id === s.id && l.status === "approved" && l.type === "holiday",
-        )
-        .reduce((sum, l) => sum + Number(l.days || 0), 0);
-      return { staff: s, used, remaining: Number(s.annual_leave_entitlement) - used };
-    });
+    .map((s) => ({
+      staff: s,
+      remaining: leaveRemaining(s, leave.filter((l) => l.staff_id === s.id)),
+    }));
 
   return (
     <div className="mx-auto max-w-6xl px-5 py-10">

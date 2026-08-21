@@ -10,6 +10,7 @@ export type LeaveType = "holiday" | "sick" | "other";
 export type LeaveStatus = "pending" | "approved" | "rejected";
 export type DocumentCategory = "contract" | "policy" | "payslip" | "other";
 export type ReviewType = "appraisal" | "one_to_one";
+export type ChecklistKind = "onboarding" | "offboarding";
 
 export interface Staff {
   id: string;
@@ -74,6 +75,36 @@ export interface Review extends StaffRef {
   created_at: string;
 }
 
+export interface ChecklistTemplate {
+  id: string;
+  name: string;
+  kind: ChecklistKind;
+  created_at: string;
+  updated_at: string;
+  // Enrichment-only, from a joined query — not a column on the table.
+  items?: ChecklistTemplateItem[];
+}
+
+export interface ChecklistTemplateItem {
+  id: string;
+  template_id: string;
+  label: string;
+  sort_order: number;
+}
+
+export interface ChecklistItem {
+  id: string;
+  staff_id: string;
+  kind: ChecklistKind;
+  label: string;
+  is_done: boolean;
+  done_at: string | null;
+  due_date: string | null;
+  sort_order: number;
+  notes: string | null;
+  created_at: string;
+}
+
 export const EMPLOYMENT_LABELS: Record<EmploymentType, string> = {
   full_time: "Full-time",
   part_time: "Part-time",
@@ -111,10 +142,27 @@ export const REVIEW_TYPE_LABELS: Record<ReviewType, string> = {
   one_to_one: "1-to-1",
 };
 
+export const CHECKLIST_KIND_LABELS: Record<ChecklistKind, string> = {
+  onboarding: "Onboarding",
+  offboarding: "Offboarding",
+};
+
 export const API = "/api/admin/hr";
+export const PORTAL_API = "/api/portal";
 
 export function fullName(s: { first_name: string; last_name: string }) {
   return `${s.first_name} ${s.last_name}`.trim();
+}
+
+/** Holiday days remaining: entitlement minus approved holiday leave taken. */
+export function leaveRemaining(
+  staff: Pick<Staff, "annual_leave_entitlement">,
+  leave: Pick<LeaveRequest, "status" | "type" | "days">[],
+): number {
+  const used = leave
+    .filter((l) => l.status === "approved" && l.type === "holiday")
+    .reduce((sum, l) => sum + Number(l.days || 0), 0);
+  return Number(staff.annual_leave_entitlement) - used;
 }
 
 export function formatDate(value: string | null): string {

@@ -13,7 +13,43 @@ const initialState = {
 
 const TURNSTILE_SITE_KEY = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
 
-export default function LoginClient() {
+export default function LoginClient({ unassigned = false }: { unassigned?: boolean }) {
+  if (unassigned) return <UnassignedPanel />;
+
+  return <SignInScreen />;
+}
+
+function UnassignedPanel() {
+  return (
+    <div className="relative flex min-h-screen w-full items-center justify-center overflow-hidden bg-destiny-grey px-4">
+      <div
+        className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+        style={{ backgroundImage: "url('/img/photos/Hero%20BKG.webp')" }}
+      />
+      <div className="absolute inset-0 bg-gradient-to-br from-black/85 via-black/65 to-destiny-grey/90" />
+      <div className="glass relative z-10 w-full max-w-md rounded-3xl p-8 text-center">
+        <span className="material-symbols-rounded mb-4 text-4xl text-white/40">
+          person_off
+        </span>
+        <h1 className="text-xl font-black text-white">Account not set up</h1>
+        <p className="mt-2 text-sm text-white/50">
+          Your account isn&apos;t set up for the dashboard or the staff portal yet.
+          Contact an administrator.
+        </p>
+        <form action="/api/admin/logout" method="POST" className="mt-6">
+          <button
+            type="submit"
+            className="rounded-2xl bg-white/10 px-6 py-3 text-sm font-bold text-white transition hover:bg-white/15"
+          >
+            Sign out
+          </button>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+function SignInScreen() {
   const [state, formAction, pending] = useActionState(adminSignIn, initialState);
   const turnstileRef = useRef<HTMLDivElement>(null);
   const widgetId = useRef<string | undefined>(undefined);

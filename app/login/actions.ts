@@ -3,9 +3,11 @@
 import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { createClient } from "@/utils/supabase/server";
+import { createServiceClient } from "@/utils/supabase/service";
 import { REMEMBER_COOKIE_NAME } from "@/utils/supabase/sessionCookie";
 import { checkRateLimit, resetRateLimit } from "@/lib/loginRateLimit";
 import { verifyTurnstileToken } from "@/lib/turnstile";
+import { resolvePostLoginPath } from "@/lib/staffPortalAuth";
 
 const REMEMBER_MAX_AGE = 60 * 60 * 24 * 400; // matches Supabase's own default cookie lifetime
 
@@ -20,7 +22,7 @@ const REMEMBER_MAX_AGE = 60 * 60 * 24 * 400; // matches Supabase's own default c
  */
 async function signInCore(
   formData: FormData,
-): Promise<{ success: boolean; error?: string }> {
+): Promise<{ success: boolean; error?: string; userId?: string }> {
   // Resolve client IP (works on Vercel and most reverse proxies)
   const headersList = await headers();
   const ip =
@@ -54,9 +56,9 @@ async function signInCore(
 
   const cookieStore = await cookies();
   const supabase = createClient(cookieStore, { remember });
-  const { error } = await supabase.auth.signInWithPassword({ email, password });
+  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
 
-  if (error) {
+  if (error || !data.user) {
     return { success: false, error: "Invalid email or password." };
   }
 
@@ -69,7 +71,7 @@ async function signInCore(
   });
 
   resetRateLimit(ip);
-  return { success: true };
+  return { success: true, userId: data.user.id };
 }
 
 export async function adminSignIn(
@@ -77,10 +79,20 @@ export async function adminSignIn(
   formData: FormData,
 ): Promise<{ success: boolean; error?: string }> {
   const result = await signInCore(formData);
-  if (!result.success) return result;
+  if (!result.success || !result.userId) return result;
+
+  // Admin roles take priority over a staff link — someone who is both signs
+  // in to the more powerful surface and can still reach /portal by URL.
+  const destination = await resolvePostLoginPath(createServiceClient(), result.userId);
+  if (!destination) {
+    return {
+      success: false,
+      error: "Your account isn't set up for the dashboard or the staff portal yet. Contact an administrator.",
+    };
+  }
 
   // redirect() throws, so nothing after this runs on the happy path.
-  redirect("/admin");
+  redirect(destination);
 }
 
 /**

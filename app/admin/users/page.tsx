@@ -26,6 +26,7 @@ const ROLE_LABELS: Record<AdminRole, string> = {
   store_admin: "Store Admin",
   site_admin: "Site Admin",
   host: "Host",
+  hr_admin: "HR Admin",
   super_admin: "Super Admin",
 };
 
@@ -35,6 +36,7 @@ const ROLE_HINTS: Record<AdminRole, string> = {
   store_admin: "Store: products, orders, hero.",
   site_admin: "Posts and redirects.",
   host: "Moderates the live chat, and can sign in on /live itself.",
+  hr_admin: "Staff directory, leave, jobs, applications, documents and reviews.",
   super_admin: "Full access, including the sitewide banner, cache and users.",
 };
 

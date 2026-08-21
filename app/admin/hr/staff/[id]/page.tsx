@@ -7,6 +7,7 @@ import {
   fullName,
   formatDate,
   formatBytes,
+  leaveRemaining,
   EMPLOYMENT_LABELS,
   STATUS_LABELS,
   LEAVE_TYPE_LABELS,
@@ -19,6 +20,7 @@ import {
   type Review,
   type StaffStatus,
   type LeaveStatus,
+  type ChecklistItem,
 } from "@/lib/hr";
 import { PageHeader, Badge, ghostBtn, PageLoading } from "@/components/admin/AdminUI";
 import {
@@ -27,6 +29,7 @@ import {
   DocumentModal,
   ReviewModal,
 } from "@/components/admin/hr/modals";
+import { ChecklistSection } from "@/components/admin/hr/ChecklistUI";
 import { useDialog } from "@/components/DialogProvider";
 
 const STATUS_TONE: Record<StaffStatus, string> = {
@@ -49,6 +52,8 @@ export default function StaffProfilePage() {
   const [leave, setLeave] = useState<LeaveRequest[]>([]);
   const [docs, setDocs] = useState<HrDocument[]>([]);
   const [reviews, setReviews] = useState<Review[]>([]);
+  const [onboarding, setOnboarding] = useState<ChecklistItem[]>([]);
+  const [offboarding, setOffboarding] = useState<ChecklistItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
   const [error, setError] = useState("");
@@ -61,16 +66,20 @@ export default function StaffProfilePage() {
       setLoading(false);
       return;
     }
-    const [s, l, d, r] = await Promise.all([
+    const [s, l, d, r, checklists] = await Promise.all([
       sRes.json(),
       fetch(`${API}/leave?staff_id=${id}`).then((x) => x.json()),
       fetch(`${API}/documents?staff_id=${id}`).then((x) => x.json()),
       fetch(`${API}/reviews?staff_id=${id}`).then((x) => x.json()),
+      fetch(`${API}/checklists?staff_id=${id}`).then((x) => x.json()),
     ]);
     setStaff(s);
     setLeave(Array.isArray(l) ? l : []);
     setDocs(Array.isArray(d) ? d : []);
     setReviews(Array.isArray(r) ? r : []);
+    const items: ChecklistItem[] = Array.isArray(checklists) ? checklists : [];
+    setOnboarding(items.filter((i) => i.kind === "onboarding"));
+    setOffboarding(items.filter((i) => i.kind === "offboarding"));
     setLoading(false);
   }, [id]);
 
@@ -124,10 +133,7 @@ export default function StaffProfilePage() {
       </div>
     );
 
-  const used = leave
-    .filter((l) => l.status === "approved" && l.type === "holiday")
-    .reduce((sum, l) => sum + Number(l.days || 0), 0);
-  const remaining = Number(staff.annual_leave_entitlement) - used;
+  const remaining = leaveRemaining(staff, leave);
 
   const details = [
     { label: "Job title", value: staff.job_title || "—" },
@@ -285,6 +291,10 @@ export default function StaffProfilePage() {
             </ul>
           )}
         </Section>
+
+        {/* Onboarding / offboarding checklists */}
+        <ChecklistSection staffId={staff.id} kind="onboarding" items={onboarding} onChange={load} />
+        <ChecklistSection staffId={staff.id} kind="offboarding" items={offboarding} onChange={load} />
       </div>
 
       {modal === "edit" && (

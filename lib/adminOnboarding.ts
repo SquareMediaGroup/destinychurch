@@ -22,11 +22,10 @@ import type { AdminRole, RoleFlags } from "@/lib/adminRoles";
 
 /**
  * Roles with a tour. Deliberately not "every AdminRole except super_admin" —
- * HR is built but not yet launched (see the `unlisted` entries in
- * lib/adminNav.ts) and has no tour of its own yet. Listing the roles
- * explicitly means a future access level lands with no tour and no build
- * error, rather than forcing a placeholder tour into existence just to
- * satisfy a type.
+ * hr_admin has no tour of its own yet (HR launched without one; add it here
+ * once one exists). Listing the roles explicitly means a future access level
+ * lands with no tour and no build error, rather than forcing a placeholder
+ * tour into existence just to satisfy a type.
  */
 export type OnboardedRole = "training_admin" | "event_admin" | "store_admin" | "site_admin" | "host";
 

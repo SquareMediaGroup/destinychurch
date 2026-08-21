@@ -93,14 +93,20 @@ test("a super admin sees every listed section", () => {
   expect(visibleItems(roles("super_admin"))).toHaveLength(listed.length);
 });
 
-test("HR stays out of the nav until it is asked for explicitly", () => {
-  // HR is built but unlaunched; it must not appear in the sidebar, the
-  // dashboard grid, or the palette.
-  const hrefs = visibleItems(roles("super_admin")).map((i) => i.href);
-  expect(hrefs.some((h) => h.startsWith("/admin/hr"))).toBe(false);
+test("an hr_admin sees HR and nothing else", () => {
+  const items = visibleItems(roles("hr_admin"));
+  const hrefs = items.map((i) => i.href);
+  expect(hrefs).toContain("/admin/hr");
+  expect(hrefs).toContain("/admin/hr/staff");
+  expect(hrefs).toContain("/admin/hr/checklists");
+  expect(hrefs).not.toContain("/admin/store");
+  expect(hrefs).not.toContain("/admin/users");
+  expect(hrefs).not.toContain("/admin/posts");
+});
 
-  const withUnlisted = visibleItems(roles("super_admin"), { includeUnlisted: true });
-  expect(withUnlisted.some((i) => i.href === "/admin/hr")).toBe(true);
+test("a super admin sees HR listed too, now that it's launched", () => {
+  const hrefs = visibleItems(roles("super_admin")).map((i) => i.href);
+  expect(hrefs).toContain("/admin/hr");
 });
 
 test("groups left empty by role filtering are dropped, not rendered blank", () => {

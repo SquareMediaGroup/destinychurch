@@ -33,8 +33,8 @@ export interface AdminNavItem {
   /** Match the pathname exactly rather than by prefix (for /admin itself). */
   exact?: boolean;
   /**
-   * Reachable and searchable, but never listed in the sidebar or dashboard.
-   * HR is built but not launched, so it stays off the nav on purpose.
+   * Reachable and searchable, but never listed in the sidebar or dashboard —
+   * for a section that's built but not ready to launch yet.
    */
   unlisted?: boolean;
 }
@@ -275,8 +275,7 @@ export const ADMIN_GROUPS: AdminNavGroup[] = [
     ],
   },
   {
-    // Built but not launched — unlisted keeps it out of the sidebar and
-    // dashboard while leaving the pages reachable for whoever is building it.
+    // Launched 2026-08-25 — was unlisted (built but hidden) since it shipped.
     // Gated to hr_admin (super_admin still gets it, as with every section).
     label: "HR",
     icon: "badge",
@@ -287,7 +286,6 @@ export const ADMIN_GROUPS: AdminNavGroup[] = [
         icon: "badge",
         role: "hr_admin",
         description: "People, leave, documents and reviews.",
-        unlisted: true,
       },
       {
         href: "/admin/hr/staff",
@@ -295,7 +293,6 @@ export const ADMIN_GROUPS: AdminNavGroup[] = [
         icon: "groups",
         role: "hr_admin",
         description: "Everyone on the team and their key details.",
-        unlisted: true,
       },
       {
         href: "/admin/hr/leave",
@@ -303,7 +300,6 @@ export const ADMIN_GROUPS: AdminNavGroup[] = [
         icon: "event_busy",
         role: "hr_admin",
         description: "Approve requests and track holiday balances.",
-        unlisted: true,
       },
       {
         href: "/admin/hr/jobs",
@@ -311,7 +307,6 @@ export const ADMIN_GROUPS: AdminNavGroup[] = [
         icon: "work",
         role: "hr_admin",
         description: "Roles published on the public /jobs page.",
-        unlisted: true,
       },
       {
         href: "/admin/hr/applications",
@@ -319,7 +314,6 @@ export const ADMIN_GROUPS: AdminNavGroup[] = [
         icon: "inbox",
         role: "hr_admin",
         description: "Candidates who applied through /jobs.",
-        unlisted: true,
       },
       {
         href: "/admin/hr/documents",
@@ -327,7 +321,6 @@ export const ADMIN_GROUPS: AdminNavGroup[] = [
         icon: "folder_open",
         role: "hr_admin",
         description: "Contracts, policies and staff files.",
-        unlisted: true,
       },
       {
         href: "/admin/hr/reviews",
@@ -335,7 +328,6 @@ export const ADMIN_GROUPS: AdminNavGroup[] = [
         icon: "rate_review",
         role: "hr_admin",
         description: "Appraisals, catch-ups and what's coming up.",
-        unlisted: true,
       },
       {
         href: "/admin/hr/checklists",
@@ -343,7 +335,6 @@ export const ADMIN_GROUPS: AdminNavGroup[] = [
         icon: "checklist",
         role: "hr_admin",
         description: "Onboarding and offboarding templates.",
-        unlisted: true,
       },
     ],
   },

@@ -1630,8 +1630,6 @@ without an auth check, so they must never be reachable on the live site.
 All admin/staff features live under a single `/admin` prefix with one login at `/login`.
 Each section requires a specific access-level role (see
 [Authorization Layers](#authorization-layers)); Super Admins get everything.
-`/admin/hr` is built but intentionally unlinked from any nav (not yet launched;
-Super Admin only).
 
 | Route | File | Purpose |
 |-------|------|---------|
@@ -1653,7 +1651,9 @@ Super Admin only).
 | `/admin/featured-event` | `app/admin/featured-event/page.tsx` | Promote one ChurchSuite event — picker plus headline/blurb/image/CTA overrides and a promote window |
 | `/admin/event-popup` | `app/admin/event-popup/page.tsx` | Copy for the popup advertising the featured event (writes `popup_*` on the same row) |
 | `/admin/nfc` | `app/admin/nfc/page.tsx` | Tiles on the `/nfc` page — add/edit/reorder/hide. A ChurchSuite form embed, artwork + copy + CTA, or an event picked from the live calendar (events without a framable signup are shown disabled with the reason) |
-| `/admin/hr` | `app/admin/hr/page.tsx` | HR dashboard (staff, leave, jobs, documents, reviews) — unlinked, in progress |
+| `/admin/hr` | `app/admin/hr/page.tsx` | HR dashboard (staff, leave, jobs, documents, reviews, checklists) (HR Admin) |
+| `/admin/hr/checklists` | `app/admin/hr/checklists/page.tsx` | Onboarding/offboarding checklist templates (HR Admin) |
+| `/portal` | `app/portal/page.tsx` | Staff self-service — own profile, leave requests + balance, documents. Separate auth boundary from `/admin`; see [Authorization Layers](#authorization-layers) |
 | `/admin/store` | `app/admin/store/page.tsx` | Store — product list |
 | `/admin/store/products/new` | `app/admin/store/products/new/page.tsx` | Create a product (name → editor) |
 | `/admin/store/products/[id]` | `app/admin/store/products/[id]/page.tsx` | Product editor — details, photos, size/colour variants, stock |
@@ -1692,10 +1692,10 @@ results contain orders and products and nothing else.
 | `/` | Focus the current list's search box |
 | `g` then `d`/`p`/`t`/`s`/`o`/`r`/`b`/`u` | Dashboard, Posts, Training, Store, Orders, Redirects, Banner, Users |
 
-HR is deliberately excluded from the sidebar, the dashboard grid **and** the
-palette — the section is built but unlaunched, and staff records, leave reasons
-and applicant CVs shouldn't surface in a fuzzy search box. Its entries carry
-`unlisted: true` in the registry; `/admin/hr` links its own sub-pages.
+HR is in the sidebar and dashboard grid like any other section, but it is
+deliberately excluded from the ⌘K palette's record search — staff records,
+leave reasons and applicant CVs shouldn't surface in a fuzzy search box,
+regardless of who's searching. See `app/api/admin/search/route.ts`.
 
 ---
 
@@ -3175,7 +3175,9 @@ Two things to keep in mind when editing it:
   showing it. `tests/unit/admin-nav.spec.ts` asserts every declared role
   actually grants its own path, so drift fails the suite rather than shipping.
 - **`unlisted: true`** keeps an entry out of the sidebar, dashboard and palette
-  while leaving it reachable and resolvable for breadcrumbs. HR uses this.
+  while leaving it reachable and resolvable for breadcrumbs — for a section
+  that's built but not ready to launch. HR used this until it launched
+  2026-08-25; nothing uses it currently.
 
 `ADMIN_QUICK_ACTIONS` holds things you *do* rather than places you go ("New
 post", "Clear the cache"). Those hrefs use `?new=1`, which the list pages read

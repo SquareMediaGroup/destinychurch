@@ -182,9 +182,9 @@ export default function HrDashboardPage() {
             </section>
           </div>
 
-          {/* Every HR section, from the nav registry. HR is unlisted in the
-              sidebar (not launched yet), so without this Documents and Reviews
-              were only reachable by typing the URL. */}
+          {/* Every HR section, from the nav registry — a quick-nav grid so
+              Documents and Reviews (not surfaced anywhere else on this page)
+              are one click away. */}
           <section className="mt-8">
             <h2 className="mb-3 text-xs font-bold uppercase tracking-widest text-destiny-grey/40">
               Sections

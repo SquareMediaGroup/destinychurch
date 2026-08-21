@@ -14,9 +14,10 @@ import { getRoles, type AdminRole, type RoleFlags } from "@/lib/adminRoles";
 // roles, so results can never include a section they can't open. Roles are
 // re-read here from the service client rather than trusted from the request.
 //
-// Deliberately excluded: HR. Those pages are unlaunched and unlisted, and
-// staff records, leave reasons and applicant CVs are the last thing that should
-// surface in a fuzzy search box.
+// Deliberately excluded: HR. Its records — staff details, leave reasons,
+// applicant CVs — are the most sensitive in the admin, and that isn't a
+// launch-status thing: they stay out of a fuzzy search box regardless of
+// which role is searching. If you're tempted to add HR here, don't.
 
 export const dynamic = "force-dynamic";
 

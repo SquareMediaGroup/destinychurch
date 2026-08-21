@@ -368,13 +368,24 @@ export default function ChurchHeader() {
           transform (which would otherwise turn "inset-0" into "cover the
           header's own box" instead of the viewport). */}
       <div
-        className="fixed inset-0 z-40 flex flex-col items-center justify-center overflow-y-auto bg-destiny-orange px-8 py-24 md:hidden"
-        style={{
-          opacity: mobileOpen ? 1 : 0,
-          pointerEvents: mobileOpen ? "auto" : "none",
-          transition: "opacity 0.25s cubic-bezier(0.4, 0, 0.2, 1)",
-        }}
+        className="fixed inset-0 z-40 md:hidden"
+        style={{ pointerEvents: mobileOpen ? "auto" : "none" }}
       >
+        <div
+          className="absolute inset-0 bg-destiny-orange/60 backdrop-blur"
+          style={{
+            clipPath: mobileOpen ? "inset(0 0 0% 0)" : "inset(0 0 100% 0)",
+            transition: "clip-path 0.72s cubic-bezier(0.4, 0, 0.2, 1)",
+          }}
+        />
+        <div
+          className="relative flex h-full flex-col items-center justify-center overflow-y-auto px-8 pb-16 pt-32"
+          style={{
+            opacity: mobileOpen ? 1 : 0,
+            pointerEvents: mobileOpen ? "auto" : "none",
+            transition: "opacity 0.15s ease",
+          }}
+        >
         {mobileSubmenu ? (
           <div className="flex w-full flex-col items-center gap-1">
             <button
@@ -434,7 +445,7 @@ export default function ChurchHeader() {
               )
             )}
 
-            <div className="mt-8 w-full border-t border-white/25 pt-8">
+            <div className="mt-8 w-full">
               <Link
                 href="/new-here"
                 onClick={closeMobileMenu}
@@ -445,6 +456,7 @@ export default function ChurchHeader() {
             </div>
           </div>
         )}
+        </div>
       </div>
     </>
   );

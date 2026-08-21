@@ -206,10 +206,10 @@ export default function AdminPopupPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-bold text-destiny-grey">
-                    Show once per visitor
+                    Show once per session
                   </p>
                   <p className="text-xs text-destiny-grey/50">
-                    If on, the popup is hidden after a visitor closes it
+                    If on, the popup only shows once per browser session
                   </p>
                 </div>
                 <button

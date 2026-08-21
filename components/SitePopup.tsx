@@ -15,7 +15,7 @@ interface PopupData {
   updated_at?: string | null;
 }
 
-const STORAGE_KEY = "dc-popup-dismissed";
+const STORAGE_KEY = "dc-popup-seen";
 
 /**
  * The general announcement popup.
@@ -40,30 +40,33 @@ export default function SitePopup({ popup }: { popup: PopupData | null }) {
     const hasContent = !!popup.title || !!popup.body || !!popup.image_url;
     if (!hasContent) return;
 
+    // Keyed on updated_at, so editing the popup shows it again this session
+    // even to visitors who already saw the previous version.
+    const key = popup.updated_at ?? "1";
+
     if (popup.show_once) {
       try {
-        // Keyed on updated_at, so editing the popup re-shows it to everyone
-        // who had already dismissed the previous version.
-        const dismissed = window.localStorage.getItem(STORAGE_KEY);
-        if (dismissed && dismissed === (popup.updated_at ?? "")) return;
+        if (window.sessionStorage.getItem(STORAGE_KEY) === key) return;
       } catch {
         /* ignore */
       }
     }
 
-    const t = window.setTimeout(() => setOpen(true), 7000);
+    const t = window.setTimeout(() => {
+      setOpen(true);
+      if (popup.show_once) {
+        try {
+          window.sessionStorage.setItem(STORAGE_KEY, key);
+        } catch {
+          /* ignore */
+        }
+      }
+    }, 7000);
     return () => window.clearTimeout(t);
   }, [popup, excluded]);
 
   function close() {
     setOpen(false);
-    if (popup?.show_once) {
-      try {
-        window.localStorage.setItem(STORAGE_KEY, popup.updated_at ?? "1");
-      } catch {
-        /* ignore */
-      }
-    }
   }
 
   if (excluded || !popup || !popup.active || !open) return null;

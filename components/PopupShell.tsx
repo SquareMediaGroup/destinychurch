@@ -4,8 +4,8 @@
 //
 // Extracted from SitePopup so the generic site popup and the event popup can't
 // drift visually. The *behaviour* around it differs and stays with each caller:
-// SitePopup dismisses via localStorage (once per visitor, reset when edited),
-// EventPopup via sessionStorage (once per visit) plus a path exclusion.
+// both dismiss via sessionStorage (once per browser session, reset when
+// edited), EventPopup additionally has a path exclusion.
 
 import Image from "next/image";
 import Link from "next/link";

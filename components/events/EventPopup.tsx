@@ -65,21 +65,19 @@ export default function EventPopup({
       /* ignore */
     }
 
-    const t = window.setTimeout(() => setOpen(true), 7000);
+    const t = window.setTimeout(() => {
+      setOpen(true);
+      try {
+        window.sessionStorage.setItem(STORAGE_KEY, key);
+      } catch {
+        /* ignore */
+      }
+    }, 7000);
     return () => window.clearTimeout(t);
   }, [popup, pathname]);
 
   function close() {
     setOpen(false);
-    if (!popup) return;
-    try {
-      window.sessionStorage.setItem(
-        STORAGE_KEY,
-        `${popup.identifier ?? popup.eventSlug}:${popup.updatedAt ?? ""}`,
-      );
-    } catch {
-      /* ignore */
-    }
   }
 
   if (!popup || !open || isExcluded(pathname, popup.eventSlug)) return null;

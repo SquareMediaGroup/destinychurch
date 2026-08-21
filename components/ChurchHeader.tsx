@@ -24,14 +24,6 @@ const whatsOnDropdownBase = [
   { href: "/whats-on#highlights", label: "Highlights" },
 ];
 
-const mobileNavItemsBase = [
-  { href: "/whats-on",   label: "What's On"  },
-  { href: "/sermons",    label: "Sermons"    },
-  { href: "/serve",      label: "Serve"      },
-  { href: "/shop",       label: "Shop"       },
-  { href: "/about",      label: "About"      },
-  { href: "/give",       label: "Give"       },
-];
 
 function Dropdown({
   items,
@@ -89,6 +81,7 @@ export default function ChurchHeader() {
   const pathname = usePathname();
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [mobileSubmenu, setMobileSubmenu] = useState<string | null>(null);
   const [, setScrolled] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [progress, setProgress] = useState(0);
@@ -108,12 +101,18 @@ export default function ChurchHeader() {
     hoverTimeoutRef.current = setTimeout(() => setOpenDropdown(null), 50);
   };
 
+  const closeMobileMenu = () => {
+    setMobileOpen(false);
+    setMobileSubmenu(null);
+  };
+
   const handleScroll = useCallback(() => {
     if (rafId.current != null) return;
     rafId.current = requestAnimationFrame(() => {
       rafId.current = null;
       const y = window.scrollY;
       setMobileOpen(false);
+      setMobileSubmenu(null);
       setScrolled(y > 50);
       setProgress(Math.min(1, Math.max(0, y / MORPH_DISTANCE)));
       lastScrollY.current = y;
@@ -187,14 +186,6 @@ export default function ChurchHeader() {
     [alphaActive, whatsOnDropdown, youtubeQuotaExceeded]
   );
 
-  const mobileNavItems = useMemo(() => {
-    const items = mobileNavItemsBase.filter(
-      (item) => !(youtubeQuotaExceeded && item.href === "/sermons")
-    );
-    if (!alphaActive) return items;
-    // Insert Alpha after What's On (index 0)
-    return [items[0], { href: "/alpha", label: "Alpha" }, ...items.slice(1)];
-  }, [alphaActive, youtubeQuotaExceeded]);
 
   // Hooks must run before any early return (Rules of Hooks).
   const bannerBars = useBannerBars();
@@ -352,10 +343,13 @@ export default function ChurchHeader() {
 
               <button
                 type="button"
-                onClick={() => { setMobileOpen(!mobileOpen); }}
+                onClick={() => {
+                  setMobileOpen(!mobileOpen);
+                  setMobileSubmenu(null);
+                }}
                 aria-expanded={mobileOpen}
                 aria-label="Toggle navigation"
-                className="relative h-9 w-9 rounded-full text-white md:hidden"
+                className="relative z-10 h-9 w-9 rounded-full text-white md:hidden"
               >
                 <span className="absolute inset-0 flex flex-col items-center justify-center gap-[5px]">
                   <span className={`block h-0.5 w-5 bg-current transition-all duration-300 ease-in-out ${mobileOpen ? "translate-y-[7px] rotate-45" : ""}`} />
@@ -365,49 +359,93 @@ export default function ChurchHeader() {
               </button>
             </div>
           </div>
-
-          {/* Mobile menu — absolute overlay (anchored under the pill) so it
-              sits on top of the page instead of expanding the header in flow.
-              On non-home pages the header is `sticky`, so in-flow expansion
-              shifted the document and triggered handleScroll → setMobileOpen(false),
-              which closed the menu the moment it opened. */}
-          <div
-            className="absolute inset-x-0 top-full z-50 overflow-hidden transition-all duration-300 ease-in-out md:hidden"
-            style={{
-              maxHeight: mobileOpen ? "600px" : "0px",
-              opacity: mobileOpen ? 1 : 0,
-            }}
-          >
-            <div
-              className="glass glass-strong glass-refract mt-2 rounded-2xl p-3"
-            >
-              {/* Flat nav links */}
-              {mobileNavItems.map((item) => (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  onClick={() => setMobileOpen(false)}
-                  className="block rounded-xl px-3 py-2.5 text-sm font-medium text-white/90 transition hover:bg-white/10 hover:text-destiny-orange"
-                >
-                  {item.label}
-                </Link>
-              ))}
-
-              {/* New Here CTA at bottom */}
-              <div className="mt-2 border-t border-white/10 pt-2">
-                <Link
-                  href="/new-here"
-                  onClick={() => setMobileOpen(false)}
-                  className="flex items-center justify-center rounded-xl bg-destiny-orange px-4 py-2.5 text-sm font-bold text-white transition hover:brightness-110"
-                >
-                  New Here?
-                </Link>
-              </div>
-            </div>
-          </div>
           </div>
         </div>
       </header>
+
+      {/* Mobile menu — full-screen brand-color overlay, sibling of <header>
+          so its `fixed` positioning isn't scoped by the header's own
+          transform (which would otherwise turn "inset-0" into "cover the
+          header's own box" instead of the viewport). */}
+      <div
+        className="fixed inset-0 z-40 flex flex-col items-center justify-center overflow-y-auto bg-destiny-orange px-8 py-24 md:hidden"
+        style={{
+          opacity: mobileOpen ? 1 : 0,
+          pointerEvents: mobileOpen ? "auto" : "none",
+          transition: "opacity 0.25s cubic-bezier(0.4, 0, 0.2, 1)",
+        }}
+      >
+        {mobileSubmenu ? (
+          <div className="flex w-full flex-col items-center gap-1">
+            <button
+              type="button"
+              onClick={() => setMobileSubmenu(null)}
+              className="mb-5 rounded-full bg-black/10 px-5 py-2 text-sm font-bold text-white"
+            >
+              ← Back
+            </button>
+            {(mobileSubmenu === "What's on" ? whatsOnDropdown : aboutDropdown).map((item, i) => (
+              <Link
+                key={item.label}
+                href={item.href}
+                onClick={closeMobileMenu}
+                className="py-2.5 text-center text-2xl font-extrabold text-white"
+                style={{
+                  opacity: mobileOpen ? 1 : 0,
+                  transform: mobileOpen ? "translateY(0)" : "translateY(-8px)",
+                  transition: `opacity 0.25s ease ${i * 0.04 + 0.05}s, transform 0.25s ease ${i * 0.04 + 0.05}s`,
+                }}
+              >
+                {item.label}
+              </Link>
+            ))}
+          </div>
+        ) : (
+          <div className="flex w-full flex-col items-center gap-1">
+            {navItems.map((item, i) =>
+              item.dropdown ? (
+                <button
+                  key={item.label}
+                  type="button"
+                  onClick={() => setMobileSubmenu(item.label)}
+                  className="py-2.5 text-center text-3xl font-extrabold text-white"
+                  style={{
+                    opacity: mobileOpen ? 1 : 0,
+                    transform: mobileOpen ? "translateY(0)" : "translateY(-8px)",
+                    transition: `opacity 0.25s ease ${i * 0.04 + 0.05}s, transform 0.25s ease ${i * 0.04 + 0.05}s`,
+                  }}
+                >
+                  {item.label}
+                </button>
+              ) : (
+                <Link
+                  key={item.href}
+                  href={item.href!}
+                  onClick={closeMobileMenu}
+                  className="py-2.5 text-center text-3xl font-extrabold text-white"
+                  style={{
+                    opacity: mobileOpen ? 1 : 0,
+                    transform: mobileOpen ? "translateY(0)" : "translateY(-8px)",
+                    transition: `opacity 0.25s ease ${i * 0.04 + 0.05}s, transform 0.25s ease ${i * 0.04 + 0.05}s`,
+                  }}
+                >
+                  {item.label}
+                </Link>
+              )
+            )}
+
+            <div className="mt-8 w-full border-t border-white/25 pt-8">
+              <Link
+                href="/new-here"
+                onClick={closeMobileMenu}
+                className="mx-auto flex w-fit items-center justify-center rounded-full bg-white px-6 py-3 text-sm font-bold text-destiny-orange-dark transition hover:brightness-95"
+              >
+                New Here?
+              </Link>
+            </div>
+          </div>
+        )}
+      </div>
     </>
   );
 }

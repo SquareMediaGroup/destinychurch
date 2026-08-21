@@ -52,30 +52,27 @@ function Dropdown({
       style={{
         opacity: open ? 1 : 0,
         transform: open
-          ? "translateX(-50%) translateY(0) scale(1)"
-          : "translateX(-50%) translateY(-10px) scale(0.9)",
-        transformOrigin: "top center",
+          ? "translateX(-50%) translateY(0)"
+          : "translateX(-50%) translateY(-6px)",
         pointerEvents: open ? "auto" : "none",
         transition: open
-          ? "opacity 0.25s ease, transform 0.45s cubic-bezier(0.34, 1.56, 0.64, 1)"
-          : "opacity 0.5s ease, transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+          ? "opacity 0.2s cubic-bezier(0.4, 0, 0.2, 1), transform 0.2s cubic-bezier(0.4, 0, 0.2, 1)"
+          : "opacity 0.15s cubic-bezier(0.4, 0, 0.2, 1), transform 0.15s cubic-bezier(0.4, 0, 0.2, 1)",
       }}
       onMouseEnter={onMouseEnter}
       onMouseLeave={onMouseLeave}
     >
-      <div
-        className="glass glass-strong glass-refract min-w-[180px] rounded-2xl p-2"
-      >
+      <div className="min-w-[190px] rounded-2xl bg-white p-2.5 shadow-[0_12px_32px_rgba(0,0,0,0.35),0_2px_8px_rgba(0,0,0,0.15)]">
         {items.map((item, i) => (
           <Link
             key={item.label}
             href={item.href}
             onClick={onClose}
-            className="glass-menu-legible block rounded-xl px-4 py-2.5 text-sm font-medium text-white/90 transition-colors duration-200 hover:bg-white/10 hover:text-destiny-orange"
+            className="block rounded-xl px-3.5 py-2.5 text-sm font-medium text-slate-700 transition-colors duration-150 hover:bg-slate-100 hover:text-destiny-orange"
             style={{
               opacity: open ? 1 : 0,
-              transform: open ? "translateY(0)" : "translateY(-8px)",
-              transition: `opacity 0.3s ease ${open ? i * 0.04 + 0.06 : 0}s, transform 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) ${open ? i * 0.04 + 0.06 : 0}s`,
+              transform: open ? "translateY(0)" : "translateY(-4px)",
+              transition: `opacity 0.2s cubic-bezier(0.4, 0, 0.2, 1) ${open ? i * 0.03 + 0.04 : 0}s, transform 0.2s cubic-bezier(0.4, 0, 0.2, 1) ${open ? i * 0.03 + 0.04 : 0}s`,
             }}
           >
             {item.label}

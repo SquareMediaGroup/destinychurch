@@ -1,7 +1,7 @@
 # Destiny Church Tees Valley — Complete Repository Documentation
 
-**Version:** 1.0.9  
-**Last Updated:** August 20, 2026  
+**Version:** 1.0.10  
+**Last Updated:** August 22, 2026  
 **Repository:** Square Media Group — destinychurch  
 
 This document provides a comprehensive explanation of every major component, line of code purpose, architecture decisions, and how the system works from end-to-end.
@@ -1555,10 +1555,12 @@ Both dialog helpers reuse the visual conventions from `components/admin/hr/HrUI.
 Rendered on every page (server component with Suspense).
 
 - **Logo** — Clickable link to home
-- **Navigation menu** — Links to all main pages
-- **Mobile menu** — Hamburger on small screens
-- **Search bar** — Filters sermons/content (client-side with fuse.js)
+- **Navigation menu** — Top-level links plus hover **dropdowns** ("About", "What's on") that fade in as white rounded cards with a staggered per-item reveal
+- **Mobile menu** — Animated hamburger (bars morph into an X) opens a **full-screen brand-colour overlay** with drill-down submenus and a top-down reveal (see `ChurchHeader.tsx` below); no left-hand drawer
+- **Scroll morph** — The header pill reshapes as you scroll (progress ramps over `MORPH_DISTANCE`)
 - **Auth indicator** — Login/logout buttons
+
+Site search is **not** in the header — it lives in the floating `FloatingSmartSearch` mark (Smart Search); see that component below.
 
 ---
 
@@ -1839,12 +1841,13 @@ focus to whatever opened it, and locks body scroll — restoring the *previous*
 
 #### `ChurchHeader.tsx`
 - **What:** Site navigation header
-- **Props:** None (uses client context for mobile menu state)
+- **Props:** None (client component; holds its own open/submenu/scroll state and reads `useBannerBars()` + `usePathname()`)
 - **Behavior:**
-  - Desktop: Horizontal menu bar with search
-  - Mobile: Hamburger menu (drawer slides from left)
+  - Desktop: horizontal menu bar; "About" and "What's on" open hover **dropdowns** (`Dropdown`) rendered as white rounded cards that fade in with a staggered per-item reveal (a brief close delay keeps them from flickering shut between the trigger and the card)
+  - Mobile: an animated hamburger (bars morph into an X) toggles a **full-screen brand-colour overlay** (`fixed inset-0`, `bg-destiny-orange/60 backdrop-blur`, a sibling of `<header>`) with **drill-down submenus** (`mobileSubmenu` state) and a top-down reveal; scrolling auto-closes it
+  - A scroll-driven **morph** reshapes the header pill (`progress` ramps 0→1 over `MORPH_DISTANCE`)
   - Active route highlighting
-  - Search filters sermons by title/speaker (client-side fuse.js)
+  - Search is not in the header — it lives in `FloatingSmartSearch`
 
 #### `ChurchFooter.tsx`
 - **What:** Sitewide footer (server component — awaits `isYouTubeQuotaExceeded()` to drop the Sermons link when the YouTube quota is blown)

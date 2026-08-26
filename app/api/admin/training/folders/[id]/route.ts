@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createServiceClient } from "@/utils/supabase/service";
+import { readForAudit, recordAudit } from "@/lib/audit.server";
 
 const EDITABLE = ["name", "sort_order", "subgroup_id"];
 
@@ -19,6 +20,7 @@ export async function PATCH(
   }
 
   const supabase = createServiceClient();
+  const before = await readForAudit("training_folders", id);
   const { data, error } = await supabase
     .from("training_folders")
     .update(updates)
@@ -27,6 +29,18 @@ export async function PATCH(
     .single();
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+  await recordAudit({
+    action: "update",
+    section: "training",
+    entity: "training folder",
+    entityId: id,
+    entityLabel: data.name,
+    summary: `Edited the training folder “${data.name}”`,
+    before,
+    after: updates,
+  });
+
   return NextResponse.json(data);
 }
 
@@ -36,7 +50,19 @@ export async function DELETE(
 ) {
   const { id } = await params;
   const supabase = createServiceClient();
+  const before = await readForAudit("training_folders", id);
   const { error } = await supabase.from("training_folders").delete().eq("id", id);
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+  await recordAudit({
+    action: "delete",
+    section: "training",
+    entity: "training folder",
+    entityId: id,
+    entityLabel: (before?.name as string) ?? null,
+    summary: `Deleted the training folder “${before?.name ?? id}”`,
+    before,
+  });
+
   return new NextResponse(null, { status: 204 });
 }

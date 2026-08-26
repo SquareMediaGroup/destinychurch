@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createServiceClient } from "@/utils/supabase/service";
+import { readForAudit, recordAudit } from "@/lib/audit.server";
 
 export async function GET() {
   const supabase = createServiceClient();
@@ -58,6 +59,10 @@ export async function PUT(request: Request) {
     updated_at: new Date().toISOString(),
   };
 
+  // Read the current row before it is overwritten — the audit entry needs the
+  // "from" side of the diff.
+  const before = existing?.id ? await readForAudit("site_popup", existing.id) : null;
+
   let error;
   if (existing?.id) {
     // If image was replaced, delete the old file from storage.
@@ -78,5 +83,24 @@ export async function PUT(request: Request) {
   }
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+  const wasActive = Boolean(before?.active);
+  const verb = payload.active && !wasActive
+    ? "Switched on"
+    : !payload.active && wasActive
+      ? "Switched off"
+      : "Edited";
+
+  await recordAudit({
+    action: "update",
+    section: "announcements",
+    entity: "site popup",
+    entityId: existing?.id ?? null,
+    entityLabel: payload.title || "Site popup",
+    summary: `${verb} the first-visit popup “${payload.title || "(untitled)"}”`,
+    before,
+    after: payload,
+  });
+
   return NextResponse.json({ ok: true });
 }

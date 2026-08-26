@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { createServiceClient } from "@/utils/supabase/service";
 import { sendLeaveDecisionEmail } from "@/lib/hrEmail";
-import type { LeaveRequest } from "@/lib/hr";
+import { fullName, LEAVE_TYPE_LABELS, type LeaveRequest, type LeaveType } from "@/lib/hr";
+import { readForAudit, recordAudit } from "@/lib/audit.server";
 
 // The joined shape below is a single row (hr_leave_requests.staff_id → one
 // hr_staff row), but supabase-js's select-string parser has no schema/FK
@@ -31,6 +32,7 @@ export async function PATCH(
   }
 
   const supabase = createServiceClient();
+  const before = await readForAudit("hr_leave_requests", id);
   const { data, error } = await supabase
     .from("hr_leave_requests")
     .update(update)
@@ -40,6 +42,21 @@ export async function PATCH(
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   const row = data as unknown as LeaveWithStaff;
+
+  const who = row.hr_staff ? fullName(row.hr_staff) : "a staff member";
+  await recordAudit({
+    action: body.status === "approved" ? "approve" : body.status === "rejected" ? "reject" : "update",
+    section: "hr",
+    entity: "leave request",
+    entityId: id,
+    entityLabel: who,
+    summary: isDecision
+      ? `${body.status === "approved" ? "Approved" : "Declined"} ${LEAVE_TYPE_LABELS[row.type as LeaveType] ?? row.type} leave for ${who}, ${row.start_date} to ${row.end_date}`
+      : `Edited the leave request for ${who}, ${row.start_date} to ${row.end_date}`,
+    before,
+    after: update,
+    redactFields: ["reason"],
+  });
 
   // Best-effort: the approval/rejection itself already succeeded above, so a
   // Resend hiccup here must never surface as a failed decision.
@@ -60,11 +77,30 @@ export async function DELETE(
 ) {
   const { id } = await params;
   const supabase = createServiceClient();
+  const before = await readForAudit("hr_leave_requests", id);
+  const staff = before?.staff_id
+    ? await readForAudit("hr_staff", before.staff_id as string, "first_name, last_name")
+    : null;
   const { error } = await supabase
     .from("hr_leave_requests")
     .delete()
     .eq("id", id);
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+  const who = staff
+    ? fullName(staff as { first_name: string; last_name: string })
+    : "a staff member";
+  await recordAudit({
+    action: "delete",
+    section: "hr",
+    entity: "leave request",
+    entityId: id,
+    entityLabel: who,
+    summary: `Deleted the leave request for ${who}${before ? `, ${before.start_date} to ${before.end_date}` : ""}`,
+    before,
+    redactFields: ["reason"],
+  });
+
   return NextResponse.json({ success: true });
 }

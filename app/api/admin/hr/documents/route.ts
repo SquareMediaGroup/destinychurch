@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createServiceClient } from "@/utils/supabase/service";
+import { recordAudit } from "@/lib/audit.server";
 
 const BUCKET = "hr-documents";
 
@@ -71,6 +72,26 @@ export async function POST(request: Request) {
     await supabase.storage.from(BUCKET).remove([path]);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
+
+  await recordAudit({
+    action: "upload",
+    section: "hr",
+    entity: "HR document",
+    entityId: data.id,
+    entityLabel: title,
+    summary: `Uploaded the HR document “${title}” (${category})${
+      staffId ? " to a staff member's file" : " to the org-wide files"
+    }`,
+    // File name and size only — the contents of an HR document are never
+    // summarised into the log.
+    metadata: {
+      file_name: file.name,
+      size_bytes: file.size,
+      category,
+      staff_id: staffId,
+    },
+    changes: null,
+  });
 
   return NextResponse.json(data, { status: 201 });
 }

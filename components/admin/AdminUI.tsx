@@ -99,10 +99,16 @@ export function Badge({ tone = "grey", children }: { tone?: string; children: Re
 export function Modal({
   title,
   onClose,
+  size = "md",
   children,
 }: {
   title: string;
   onClose: () => void;
+  /**
+   * `lg` for content that is a table rather than a form — the audit log's
+   * before/after diff is unreadable squeezed into a form-width column.
+   */
+  size?: "md" | "lg";
   children: ReactNode;
 }) {
   useEffect(() => {
@@ -118,7 +124,9 @@ export function Modal({
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/40 p-4 backdrop-blur-sm">
       <div
-        className="my-8 w-full max-w-lg rounded-3xl border border-black/5 bg-white p-6 shadow-2xl"
+        className={`my-8 w-full rounded-3xl border border-black/5 bg-white p-6 shadow-2xl ${
+          size === "lg" ? "max-w-3xl" : "max-w-lg"
+        }`}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-5 flex items-center justify-between">

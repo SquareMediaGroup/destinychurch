@@ -5,6 +5,8 @@ import {
   deleteLogin,
   updateLogin,
 } from "@/lib/staffLogins";
+import { fullName } from "@/lib/hr";
+import { readForAudit, recordAudit } from "@/lib/audit.server";
 
 export async function GET(
   _request: Request,
@@ -96,8 +98,24 @@ export async function PATCH(
       .eq("id", id)
       .single();
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+    // Nothing changed on the row, but something did happen: this branch is
+    // reached by a password reset on an existing login, which is precisely the
+    // sort of thing that must not go unrecorded just because no column moved.
+    await recordAudit({
+      action: "update",
+      section: "hr",
+      entity: "staff member",
+      entityId: id,
+      entityLabel: fullName(data),
+      summary: `Reset the backend login password for ${fullName(data)}`,
+      changes: null,
+    });
+
     return NextResponse.json(data);
   }
+
+  const before = await readForAudit("hr_staff", id);
 
   const { data, error } = await supabase
     .from("hr_staff")
@@ -107,6 +125,26 @@ export async function PATCH(
     .single();
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+  const accessNote =
+    "grant_access" in body
+      ? body.grant_access
+        ? " and gave them a backend login"
+        : " and removed their backend login"
+      : "";
+
+  await recordAudit({
+    action: "update",
+    section: "hr",
+    entity: "staff member",
+    entityId: id,
+    entityLabel: fullName(data),
+    summary: `Edited the staff record for ${fullName(data)}${accessNote}`,
+    before,
+    after: update,
+    redactFields: ["notes", "phone"],
+  });
+
   return NextResponse.json(data);
 }
 
@@ -119,17 +157,28 @@ export async function DELETE(
 
   // Remove the linked login first so we don't leave an account that can still
   // sign in after its staff record is gone.
-  const { data: existing } = await supabase
-    .from("hr_staff")
-    .select("auth_user_id")
-    .eq("id", id)
-    .single();
+  const existing = await readForAudit("hr_staff", id);
   if (existing?.auth_user_id) {
-    await deleteLogin(supabase, existing.auth_user_id);
+    await deleteLogin(supabase, existing.auth_user_id as string);
   }
 
   const { error } = await supabase.from("hr_staff").delete().eq("id", id);
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+  await recordAudit({
+    action: "delete",
+    section: "hr",
+    entity: "staff member",
+    entityId: id,
+    entityLabel: existing ? fullName(existing as { first_name: string; last_name: string }) : null,
+    summary: existing
+      ? `Deleted the staff record for ${fullName(existing as { first_name: string; last_name: string })}`
+      : `Deleted a staff record (${id})`,
+    before: existing,
+    redactFields: ["notes", "phone"],
+    metadata: { login_removed: Boolean(existing?.auth_user_id) },
+  });
+
   return NextResponse.json({ success: true });
 }

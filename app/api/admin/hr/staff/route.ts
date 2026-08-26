@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { createServiceClient } from "@/utils/supabase/service";
 import { createLogin, authUsersById } from "@/lib/staffLogins";
+import { fullName } from "@/lib/hr";
+import { recordAudit } from "@/lib/audit.server";
 
 export async function GET() {
   const supabase = createServiceClient();
@@ -84,5 +86,22 @@ export async function POST(request: Request) {
     if (auth_user_id) await supabase.auth.admin.deleteUser(auth_user_id);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
+
+  // HR values are held back from the log the way HR is held back from ⌘K
+  // search: who did what to whose record is the point, the notes on it aren't.
+  await recordAudit({
+    action: "create",
+    section: "hr",
+    entity: "staff member",
+    entityId: data.id,
+    entityLabel: fullName(data),
+    summary: `Added ${fullName(data)} to the staff directory${
+      auth_user_id ? " and created a login for them" : ""
+    }`,
+    after: data,
+    redactFields: ["notes", "phone"],
+    metadata: { login_created: Boolean(auth_user_id) },
+  });
+
   return NextResponse.json(data, { status: 201 });
 }

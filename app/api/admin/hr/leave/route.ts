@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 import { createServiceClient } from "@/utils/supabase/service";
+import { fullName, LEAVE_TYPE_LABELS, type LeaveType } from "@/lib/hr";
+import { readForAudit, recordAudit } from "@/lib/audit.server";
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -44,5 +46,22 @@ export async function POST(request: Request) {
     .single();
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+  const staff = await readForAudit("hr_staff", body.staff_id, "first_name, last_name");
+  const who = staff
+    ? fullName(staff as { first_name: string; last_name: string })
+    : "a staff member";
+
+  await recordAudit({
+    action: "create",
+    section: "hr",
+    entity: "leave request",
+    entityId: data.id,
+    entityLabel: who,
+    summary: `Logged ${LEAVE_TYPE_LABELS[data.type as LeaveType] ?? data.type} leave for ${who}, ${data.start_date} to ${data.end_date} (${data.days} day(s))`,
+    after: data,
+    redactFields: ["reason"],
+  });
+
   return NextResponse.json(data, { status: 201 });
 }

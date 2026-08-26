@@ -1,4 +1,11 @@
 import { createClient } from "@supabase/supabase-js";
+import { COURSE_EVENT_META, isCourseEventType } from "@/lib/courseEvents";
+import { recordAudit } from "@/lib/audit.server";
+
+/** "Alpha" rather than "youth_alpha" in the log sentence. */
+function courseLabel(type: unknown): string {
+  return isCourseEventType(type) ? COURSE_EVENT_META[type].label : String(type ?? "course");
+}
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -76,6 +83,17 @@ export async function POST(req: Request) {
       .single();
 
     if (error) throw error;
+
+    await recordAudit({
+      action: "create",
+      section: "courses",
+      entity: "course date",
+      entityId: data.id,
+      entityLabel: `${courseLabel(data.type)} — ${data.start_date}`,
+      summary: `Added a ${courseLabel(data.type)} date starting ${data.start_date} (${data.frequency}, ${data.format === "online" ? "online" : data.location || "in person"})`,
+      after: data,
+    });
+
     return Response.json(data, { status: 201 });
   } catch (error) {
     return Response.json(

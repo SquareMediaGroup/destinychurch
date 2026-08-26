@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createServiceClient } from "@/utils/supabase/service";
+import { recordAudit } from "@/lib/audit.server";
 
 export async function GET() {
   const supabase = createServiceClient();
@@ -27,5 +28,16 @@ export async function POST(request: Request) {
     .single();
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+  await recordAudit({
+    action: "create",
+    section: "site",
+    entity: "redirect",
+    entityId: data.id,
+    entityLabel: `/${data.slug}`,
+    summary: `Created the redirect /${data.slug} → ${data.target_url}`,
+    after: data,
+  });
+
   return NextResponse.json(data, { status: 201 });
 }

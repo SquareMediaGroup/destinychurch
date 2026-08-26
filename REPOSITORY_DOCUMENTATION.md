@@ -1424,6 +1424,85 @@ a simulated event left switched on cannot hide an actual service.
 
 ---
 
+#### 23. **audit_log / audit_reports**
+
+**Purpose:** One row for every change an admin makes, and the weekly AI report
+written over them. This is the record behind `/admin/audit` — "who added that to
+the store", "who gave them Super Admin", "what did we delete last month".
+
+```sql
+create table audit_log (
+  id           bigint generated always as identity primary key,
+  created_at   timestamptz not null default now(),
+
+  actor_id     uuid,                          -- deliberately NOT an FK (see below)
+  actor_email  text,
+  actor_roles  text[] not null default '{}',  -- what they held *at the time*
+
+  action       text not null,                 -- create | update | delete | upload |
+                                              -- approve | reject | moderate |
+                                              -- revalidate | login | logout
+  section      text not null,                 -- store | hr | posts | training | …
+  entity       text not null,                 -- "product", "leave request"
+  entity_id    text,
+  entity_label text,                          -- "Faith Hoodie", captured at the time
+
+  summary      text not null,                 -- one plain-English sentence
+  changes      jsonb,                         -- { field: { from, to } }
+  metadata     jsonb,                         -- anything that isn't a field change
+
+  method       text,  path text,  ip text,  user_agent text
+);
+
+create table audit_reports (
+  id           uuid primary key default gen_random_uuid(),
+  period_start timestamptz not null,
+  period_end   timestamptz not null,
+  headline     text,
+  body         text not null,                 -- markdown, written by the model
+  stats        jsonb not null default '{}',   -- counted in code, not by the model
+  entry_count  integer not null default 0,
+  emailed_to   text[] not null default '{}',
+  created_at   timestamptz not null default now()
+);
+```
+
+**Why a table rather than server logs.** The question people ask names a *thing*
+("who added the Faith Hoodie"), and answering it needs the actor as a person, the
+entity by its name, and the fields that moved. None of that survives in a request
+log, and Supabase's own logs are short-retention anyway.
+
+**No foreign key on `actor_id`.** Removing someone's admin login is itself one of
+the things this table exists to record; `on delete cascade`/`set null` would erase
+their history at exactly the moment it matters. The email is denormalised for the
+same reason, and the roles are a snapshot so "they were a Store Admin when they
+did this" stays true after their access changes.
+
+**Every entry is a sentence first.** `summary` is what the search box matches and
+the only thing the AI reads; the structured columns exist for filtering and for
+the detail view. Call sites write that sentence by hand — see the entity/label
+conventions in `lib/audit.server.ts`.
+
+**Secrets never get in.** Everything routes through `sanitiseValue()` in
+`lib/audit.ts`, which redacts any field whose name contains password/token/secret
+(so `password_hash` is caught as well as `password`), clips long values, and
+summarises big nested arrays. HR call sites additionally pass `redactFields` for
+free text like leave reasons and one-to-one notes: *that* they changed is
+recorded, what they say is not — the same instinct that keeps HR out of the ⌘K
+search.
+
+**Append-only in practice.** Nothing in the app updates or deletes a row except
+the retention purge at the end of the weekly cron (`AUDIT_RETENTION_DAYS`,
+default 365).
+
+**Used By:**
+- `lib/audit.server.ts` — `recordAudit()`, the only writer
+- `app/api/admin/audit/*` — list, ask, reports (Super Admin only)
+- `app/api/cron/audit-weekly-report` — writes `audit_reports`, runs the purge
+- `app/admin/audit/page.tsx` — the console
+
+---
+
 **Key Point:** No table uses authenticated user RLS. All member-facing features use API proxy routes that enforce authentication in application code, then access the database with the service role key. This gives finer control and better error messages.
 
 ---
@@ -1737,6 +1816,7 @@ Each section requires a specific access-level role (see
 | `/admin/store/orders/[id]` | `app/admin/store/orders/[id]/page.tsx` | Order detail — mark fulfilled/cancelled/refunded |
 | `/admin/users` | `app/admin/users/page.tsx` | Manage admin logins and their access-level roles (Super Admin only) |
 | `/admin/onboarding` | `app/admin/onboarding/page.tsx` | What each access level is taught on first sign-in, and the admin previewed from their side (Super Admin only) |
+| `/admin/audit` | `app/admin/audit/page.tsx` | Audit log — everything anyone does in the admin. Ask it in plain English ("who added the Faith Hoodie to the store?") or read it: search, filter by person/area/kind/date, open any entry for the field-by-field before and after. Second tab holds the weekly AI reports (Super Admin only) |
 | `/admin/live` | `app/admin/live/page.tsx` | Simulated Live — schedule a pre-recorded video to play on `/live` as though it were a broadcast. Paste a link (preview resolves title, thumbnail and runtime), pick a start time or press **Start now**, and a once-a-second status strip reports scheduled / on air with the exact position / finished (Host). A thin wrapper over `SimulatedLiveControls`, the same component the Host bar on `/live` mounts — the on-page version is the one that gets used on a Sunday; this is the admin-shell entry point the sidebar and ⌘K palette land on |
 | `/admin/live-chat` | `app/admin/live-chat/page.tsx` | Live chat console — room state, held queue, muted guests, prayer queue, direct threads, history (Host) |
 
@@ -2186,6 +2266,18 @@ to keep.
 - `blocks/*` — **Client.** Editor side of the content-block system: the TipTap node factory, node-view chrome, the Blocks sidebar, the schema-driven settings inspector and its field components. See [Content Blocks](#content-blocks).
 - `ChurchSuiteEventFill.tsx` — **Client.** Collapsible "Fill from ChurchSuite event" picker embedded in the "Add Event" form of every course admin page. Fetches the same picker feed as `/admin/featured-event` (`/api/admin/events`) and, on selection, calls `onFill({ startDate, location, signupUrl, name })` to prefill those three form fields — no new table or API route. Deliberately leaves `format`/`frequency`/meeting fields untouched, since those `alpha_events` columns have no ChurchSuite equivalent.
 - `CourseAdminPage.tsx` — **Client.** The single implementation behind `/admin/alpha`, `/admin/recovery`, `/admin/bible-course` and `/admin/cap-money`. See below.
+- `audit/*` — **Client.** The three pieces of `/admin/audit`, split out because the page is two
+  different tools sharing a filter state:
+  - `AuditAsk.tsx` — the ask box. The answer never appears alone: the entries the model read come
+    back with it and are listed underneath, openable. The AI is a way *into* the record, not a
+    replacement for reading it — when an answer looks wrong, the rows that produced it are right
+    there.
+  - `AuditDetail.tsx` — one entry in full. The field-by-field before/after (long values get their
+    own stacked panel rather than a table cell, which turns a paragraph into a one-word-per-line
+    ribbon), the roles the actor held *at the time*, the request itself, and a raw-JSON escape
+    hatch for anything the layout didn't anticipate. Two links out: everything else this person
+    did, and the whole history of this one thing.
+  - `AuditReports.tsx` — the weekly reports, rendered from the same markdown the email sends.
 
 ##### Course admin pages
 
@@ -2561,6 +2653,40 @@ PATCH|DELETE     /api/admin/hr/checklist-templates/[id]  // rename / edit items 
 GET|POST         /api/admin/hr/checklists                // ?staffId= — list / start from a template
 PATCH|DELETE     /api/admin/hr/checklists/[id]           // tick an item / edit / remove
 ```
+
+#### Audit log routes (`/api/admin/audit/*`)
+```typescript
+GET  /api/admin/audit          // the log itself
+// Query: ?q= &actor= &section= &action= &entity= &entity_id= &range= &before=
+//   range: today | week | month | quarter | all   (default month)
+// Returns: { entries, hasMore, nextBefore, facets }
+//
+// Paginated with a keyset (before=<id>), not an offset: the log only grows and
+// is always read newest-first, so an offset would re-scan what it had already
+// returned and could skip a row that landed mid-scroll.
+//
+// `facets` (first page only) counts actors/sections/actions over the range and
+// search but NOT the chip filters — a chip has to keep showing what picking it
+// would give you, the same way lib/useAdminList.ts counts.
+
+POST /api/admin/audit/ask      // { question } → { answer, entries, degraded? }
+// The plain-English half. Tool-calling over the log (lib/auditAI.ts):
+// search_audit_log and count_audit_log run real queries and hand back bounded
+// slices, so the model never sees the whole log and every claim is grounded in
+// rows the reader can then open. Not streamed, unlike /api/chat: the answer and
+// the entries behind it arrive together so the claim and its evidence can't be
+// read apart. With no OPENAI_API_KEY (or on an API failure) it falls back to a
+// plain keyword search, labelled as one, rather than refusing to answer.
+
+GET  /api/admin/audit/reports  // the stored weekly reports, newest first
+```
+
+**AUTHORIZATION: Super Admin only, by omission.** `/api/admin/audit` has no
+`ROUTE_RULES` entry, and anything under `/api/admin` that isn't listed there is
+Super Admin only (fail closed). That is deliberate rather than an oversight: the
+log spans every section, so a rule granting any other role would let them read
+HR's activity, and a rule narrow enough to prevent that would be a second,
+drifting copy of the RBAC table.
 
 #### `GET /api/admin/search`
 ```typescript
@@ -4002,6 +4128,45 @@ statically shadows `[slug]`).
 - `getActiveEventPopup()` — the same row projected for the popup; returning non-null is what
   suppresses the generic site popup
 
+### `lib/audit.ts` / `lib/audit.server.ts` / `lib/auditAI.ts` / `lib/auditEmail.ts`
+
+The audit log, split four ways along the lines that actually matter:
+
+- **`lib/audit.ts`** — the vocabulary, client-safe. `AUDIT_ACTIONS` and
+  `AUDIT_SECTIONS` are closed sets so the filter chips can be built from them and
+  a typo can't invent a section nothing will ever match. Also the diffing
+  (`diffRecords` only considers keys the caller actually sent, so a three-field
+  PATCH produces a three-field diff and `updated_at` never counts as a change),
+  the redaction (`sanitiseValue`), and the presentation helpers the page and the
+  detail panel share.
+- **`lib/audit.server.ts`** — `recordAudit()`, the only writer. Three rules it
+  exists to enforce: it never throws (an audit write failing must not fail the
+  thing the admin was doing), it never stores a secret, and it costs one insert —
+  the actor comes from headers `middleware.ts` already set (`AUDIT_ACTOR_HEADERS`),
+  so logging a change doesn't add an auth round trip to every save. `readForAudit()`
+  is the "read it before you change it" helper that gives entries their before-state
+  and their human label.
+- **`lib/auditAI.ts`** — the tools and prompt shared by the ask box and the weekly
+  report. The model never sees the whole log: `search_audit_log` and
+  `count_audit_log` run real queries and return bounded slices, so answers are
+  grounded in rows and a year of history doesn't need to fit in a context window.
+- **`lib/auditEmail.ts`** — the weekly report email. Same brand as `lib/hrEmail.ts`
+  (orange rule, rounded card) but a different shape inside — a stat strip over a
+  written report rather than labelled rows — so the two are deliberately not forced
+  into one template. Includes a deliberately tiny markdown renderer: the output has
+  to be inline-styled, table-safe HTML, which a general-purpose renderer doesn't emit.
+
+> **Adding a section that writes to the database.** Call `recordAudit()` from the
+> handler, with a `summary` written as a sentence naming the thing
+> (`Added the product "Faith Hoodie" to the store`) — that sentence is what the
+> search matches and the only thing the AI reads. `tests/unit/audit-coverage.spec.ts`
+> fails the build if a mutating route under `/api/admin` neither logs nor carries an
+> `audit-exempt: <why>` comment, because a log with holes in it is worse than no log:
+> it teaches people to trust an answer that is silently missing the change they were
+> looking for.
+
+---
+
 ### `lib/governance.server.ts`
 
 `server-only`. The single place the site talks to either regulator, powering `/governance`.
@@ -4135,7 +4300,7 @@ always passes and isn't repeated per rule; anything under `/admin` or
 | `site_admin` | `/admin/posts`, `/admin/redirects` | `/api/admin/{posts,redirects}/**` |
 | `host` | `/admin/live-chat`, `/admin/live` | `/api/admin/live-chat/**`, `/api/admin/simulated-live/**` |
 | `hr_admin` | `/admin/hr/**` (staff, leave, jobs, applications, documents, reviews, checklists) | `/api/admin/hr/**` |
-| `super_admin` | Everything, plus Banner, Clear Cache, and `/admin/users` | `/api/admin/{banner,revalidate,users}/**` |
+| `super_admin` | Everything, plus Banner, Clear Cache, `/admin/users` and `/admin/audit` | `/api/admin/{banner,revalidate,users,audit}/**` |
 
 **`OPEN_PATHS`** — reachable by any authenticated admin regardless of role:
 `/admin` (the dashboard), `/api/admin/logout`, `/api/admin/me`,
@@ -4166,6 +4331,31 @@ above — `tests/unit/admin-nav.spec.ts` enforces it.
 > `.select(...)` string in `getRoles()`**, plus the matching line in the object it
 > returns. That last one is the trap: it isn't `*`, so a role missing from it
 > silently reads as `false` everywhere and the feature dies quietly.
+
+##### The audit log — the record of what everyone did with all of the above
+
+Every change made through `/api/admin` is written to `audit_log` by
+`recordAudit()` (`lib/audit.server.ts`), along with sign-in and sign-out, which
+happen outside that prefix. `middleware.ts` forwards the actor it has already
+resolved on the request headers (`AUDIT_ACTOR_HEADERS`), so an entry knows who
+made it without a second auth round trip per save.
+
+**What it records:** changes — creates, edits, deletions, uploads, approvals,
+moderation, cache clears, role grants, sign-ins (including failed ones on a real
+address). Each entry carries a plain-English sentence, the field-by-field diff,
+and the roles the actor held at the time.
+
+**What it doesn't:** reads. Nobody is logged for *opening* a page, running a ⌘K
+search or asking the audit assistant a question — the admin doesn't log reads
+anywhere, and logging questions about the log would feed it its own traffic.
+Onboarding-tour progress is exempt for the same reason (it fires several times a
+minute and touches nothing). Free-text HR values — leave reasons, one-to-one
+notes, staff notes — are recorded as *changed* but their contents are redacted,
+the same instinct that keeps HR out of the ⌘K search.
+
+Reading it is Super Admin only, by omission from `ROUTE_RULES` rather than by a
+rule: the log spans every section, so any narrower grant would leak one team's
+activity to another. See [audit_log / audit_reports](#23-audit_log--audit_reports).
 
 > The `host` level is the first one that also governs a **public** page. `/live`
 > is not matched by `middleware.ts`, so the chat routes under `/api/live-chat`
@@ -4466,11 +4656,21 @@ SHOP_TEST_BYPASS=            # leave unset in production — enables /api/store/
 # to open issues on SquareMediaGroup/destinychurch via the GitHub REST API)
 GITHUB_TOKEN=ghp_...
 
-# Cron bearer token — gates the daily jobs declared in vercel.json:
-#   /api/cron/live-chat-purge       (04:00) — deletes chat history older than 7 days
-#   /api/cron/hr-review-reminders   (06:00) — HR review digest to HR_NOTIFICATIONS_EMAIL
+# Cron bearer token — gates the jobs declared in vercel.json:
+#   /api/cron/live-chat-purge        (daily 04:00) — deletes chat history older than 7 days
+#   /api/cron/hr-review-reminders    (daily 06:00) — HR review digest to HR_NOTIFICATIONS_EMAIL
+#   /api/cron/audit-weekly-report    (Sun 20:00)   — AI admin-activity report to every Super
+#                                                    Admin, then the audit-log retention purge
 # and the self-healing Smart Search health check (GET /api/health/smart-search).
 CRON_SECRET=            # the two /api/cron jobs FAIL CLOSED (503) if unset; the health check runs unauthenticated (local/dev)
+
+# Audit log (both optional)
+#   AUDIT_REPORT_EMAIL   — comma-separated override for who gets the weekly report.
+#                          Unset, it goes to every Super Admin in admin_roles.
+#   AUDIT_RETENTION_DAYS — how long entries are kept (default 365). Purged at the
+#                          end of the weekly cron, once the week has been reported.
+AUDIT_REPORT_EMAIL=
+AUDIT_RETENTION_DAYS=365
 
 # Feature flags (also toggleable via the `service_status` DB table, e.g. 'smart_search')
 ENABLE_SMART_SEARCH=true
@@ -4634,6 +4834,7 @@ ENABLE_SMART_SEARCH=true
 - `app/admin/store/hero/page.tsx` — Shop hero slides (add/edit/reorder rotating hero)
 - `app/admin/live/page.tsx` — Simulated Live (schedule a pre-recorded video to play on `/live` as a broadcast)
 - `app/admin/users/page.tsx` — Admin logins and access-level roles (Super Admin only)
+- `app/admin/audit/page.tsx` — Audit log: ask it in plain English, or search/filter and read the field-by-field detail. Second tab holds the weekly AI reports (Super Admin only)
 - `app/admin/posts/page.tsx` — Standalone pages; search, status filter, sort, bulk publish/delete
 - `app/admin/training/page.tsx` (+ `[categoryId]`, `[categoryId]/[subgroupId]`) — Training categories → sub-groups → posts
 
@@ -4658,10 +4859,17 @@ ENABLE_SMART_SEARCH=true
   - Feature flags (`serviceStatus.ts`)
   - Admin shell: `adminNav.ts` (the one navigation registry), `useAdminList.ts`
     (list search/filter/sort), `useAdminSession.ts`, `adminRecents.ts`, `csv.ts`
+  - Audit log: `audit.ts` (vocabulary + diffing + redaction), `audit.server.ts`
+    (`recordAudit()`, the only writer), `auditAI.ts` (tools + prompt),
+    `auditEmail.ts` (the weekly report email)
 
 ### API Routes (`app/api/`)
 - **Admin endpoints:** Banners, redirects, pop-ups, cache revalidation, posts, training, alpha-events, featured-course, HR, store management, simulated live,
-  plus `me` (signed-in identity + roles) and `search` (role-filtered cross-section record search behind the ⌘K palette)
+  plus `me` (signed-in identity + roles), `search` (role-filtered cross-section record search behind the ⌘K palette)
+  and `audit` (the audit log: list, `ask` for the plain-English answer, `reports` for the weekly ones — Super Admin only)
+- **Cron endpoints (`/api/cron/*`, `CRON_SECRET`-gated, scheduled in `vercel.json`):** `live-chat-purge` (daily),
+  `hr-review-reminders` (daily), `audit-weekly-report` (Sunday evening — writes and emails the week's
+  admin-activity report, then runs the audit-log retention purge)
 - **Public endpoints:** `/api/chat` (Smart Search tool-calling chat, Turnstile-gated), `/api/turnstile/verify` (Cloudflare Turnstile token check), YouTube (videos/status/thumbnail/live), Alpha info, training unlock + read timer (`/api/training/posts/[id]/timer`)
 - **Store endpoints:** Stripe checkout + Payment Element, order management
 - **Webhooks:** Stripe only (`/api/webhooks/stripe`) — no GitHub or Vercel deployment webhook route
@@ -4768,6 +4976,7 @@ feed normalisation of its own, because the BFF already does all of it.
   - Shop (products, variants, orders, hero slides) and RLS/security hardening passes
   - NFC tiles (the `/nfc` "digital back of seats" page, incl. event mode) and admin roles
   - Live chat (sessions, messages, prayer requests, blocks) and simulated live
+  - The admin audit log (`audit_log`) and its weekly AI reports (`audit_reports`)
 
 ---
 

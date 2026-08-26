@@ -7,6 +7,7 @@
 
 import { NextResponse } from "next/server";
 import { createServiceClient } from "@/utils/supabase/service";
+import { readForAudit, recordAudit } from "@/lib/audit.server";
 
 const BUCKET = "popup-images";
 
@@ -64,12 +65,32 @@ export async function PUT(request: Request) {
     await supabase.storage.from(BUCKET).remove([existing.popup_image_path]);
   }
 
+  const before = await readForAudit("featured_event", 1);
+
   const { error } = await supabase
     .from("featured_event")
     .update(payload)
     .eq("id", 1);
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+  const wasActive = Boolean(before?.popup_active);
+  const verb = payload.popup_active && !wasActive
+    ? "Switched on"
+    : !payload.popup_active && wasActive
+      ? "Switched off"
+      : "Edited";
+
+  await recordAudit({
+    action: "update",
+    section: "announcements",
+    entity: "event popup",
+    entityId: 1,
+    entityLabel: payload.popup_title || "Event popup",
+    summary: `${verb} the event popup “${payload.popup_title || "(untitled)"}”`,
+    before,
+    after: payload,
+  });
 
   // No revalidatePath: app/layout.tsx reads the popup with noStore(), so this
   // is live on the next request.

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createServiceClient } from "@/utils/supabase/service";
 import { slugify } from "@/lib/jobs";
+import { recordAudit } from "@/lib/audit.server";
 
 export async function GET() {
   const supabase = createServiceClient();
@@ -63,5 +64,18 @@ export async function POST(request: Request) {
     .single();
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+  await recordAudit({
+    action: "create",
+    section: "hr",
+    entity: "job listing",
+    entityId: data.id,
+    entityLabel: data.title,
+    summary: `Created the ${data.kind === "internship" ? "internship" : "job"} listing “${data.title}”${
+      data.is_published ? " and published it to /jobs" : " (not published yet)"
+    }`,
+    after: data,
+  });
+
   return NextResponse.json(data, { status: 201 });
 }

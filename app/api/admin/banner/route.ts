@@ -4,6 +4,7 @@ import {
   COURSE_EVENT_TYPES_SQL as ALPHA_TYPES_SQL,
   isCourseEventType,
 } from "@/lib/courseEvents";
+import { readForAudit, recordAudit } from "@/lib/audit.server";
 
 export async function GET(request: Request) {
   const url = new URL(request.url);
@@ -79,29 +80,50 @@ export async function PUT(request: Request) {
     ? await existingQuery.eq("type", resolvedType).maybeSingle()
     : await existingQuery.not("type", "in", ALPHA_TYPES_SQL).maybeSingle();
 
+  const next = {
+    active,
+    message,
+    type: resolvedType,
+    link: link || null,
+    link_text: link_text || null,
+  };
+
   let error;
+  const before = existing?.id ? await readForAudit("site_banner", existing.id) : null;
   if (existing?.id) {
     ({ error } = await supabase
       .from("site_banner")
-      .update({
-        active,
-        message,
-        type: resolvedType,
-        link: link || null,
-        link_text: link_text || null,
-        updated_at: new Date().toISOString(),
-      })
+      .update({ ...next, updated_at: new Date().toISOString() })
       .eq("id", existing.id));
   } else {
-    ({ error } = await supabase.from("site_banner").insert({
-      active,
-      message,
-      type: resolvedType,
-      link: link || null,
-      link_text: link_text || null,
-    }));
+    ({ error } = await supabase.from("site_banner").insert(next));
   }
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+  // The banner sits across the top of every page on the site, so "who turned
+  // that on" is one of the questions this log gets asked most. Say whether it
+  // went up or came down in the sentence itself rather than leaving it to the
+  // field diff.
+  const wasActive = Boolean(before?.active);
+  const verb = active && !wasActive
+    ? "Switched on"
+    : !active && wasActive
+      ? "Switched off"
+      : active
+        ? "Edited the live"
+        : "Edited the (hidden)";
+
+  await recordAudit({
+    action: "update",
+    section: "announcements",
+    entity: "site banner",
+    entityId: existing?.id ?? null,
+    entityLabel: message || resolvedType,
+    summary: `${verb} ${resolvedType} banner: “${message || "(no message)"}”`,
+    before,
+    after: next,
+  });
+
   return NextResponse.json({ ok: true });
 }

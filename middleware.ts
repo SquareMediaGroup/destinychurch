@@ -1,8 +1,45 @@
 import { createClient } from "@/utils/supabase/middleware";
 import { createServiceClient } from "@/utils/supabase/service";
-import { getRoles, hasAccess } from "@/lib/adminRoles";
+import { ADMIN_ROLES, getRoles, hasAccess, type RoleFlags } from "@/lib/adminRoles";
 import { isLinkedToStaff } from "@/lib/staffPortalAuth";
+import { AUDIT_ACTOR_HEADERS } from "@/lib/audit";
+import type { User } from "@supabase/supabase-js";
 import { type NextRequest, NextResponse } from "next/server";
+
+/**
+ * Forward who this is to the route handler on the request headers.
+ *
+ * Middleware has just paid for `auth.getUser()` and `getRoles()`; without this
+ * every audited write would pay for both again to answer "who did that".
+ * lib/audit.server.ts reads them back out through `headers()`.
+ *
+ * `set` (not append) on a copy of the incoming headers, so a client that sends
+ * its own `x-dc-actor-*` has it overwritten before any handler sees it.
+ */
+function withActorHeaders(
+  request: NextRequest,
+  supabaseResponse: NextResponse,
+  user: User,
+  roles: RoleFlags,
+): NextResponse {
+  const requestHeaders = new Headers(request.headers);
+  requestHeaders.set(AUDIT_ACTOR_HEADERS.id, user.id);
+  requestHeaders.set(AUDIT_ACTOR_HEADERS.email, user.email ?? "");
+  requestHeaders.set(
+    AUDIT_ACTOR_HEADERS.roles,
+    ADMIN_ROLES.filter((role) => roles[role]).join(","),
+  );
+  requestHeaders.set(AUDIT_ACTOR_HEADERS.path, request.nextUrl.pathname);
+  requestHeaders.set(AUDIT_ACTOR_HEADERS.method, request.method);
+
+  const response = NextResponse.next({ request: { headers: requestHeaders } });
+  // Carry over whatever the Supabase client set while refreshing the session —
+  // dropping these would sign the user out on the next request.
+  for (const cookie of supabaseResponse.cookies.getAll()) {
+    response.cookies.set(cookie);
+  }
+  return response;
+}
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -104,7 +141,7 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL("/admin?forbidden=1", request.url));
   }
 
-  return supabaseResponse;
+  return withActorHeaders(request, supabaseResponse, user, roles);
 }
 
 export const config = {

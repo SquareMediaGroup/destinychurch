@@ -9,6 +9,7 @@ import { eventSignupUrl, parseFeedDate } from "@destiny/shared";
 import { createServiceClient } from "@/utils/supabase/service";
 import { getEventIndex } from "@/lib/events.server";
 import { SIGNUP_ANCHOR, isEmbeddable, type NfcTileMode } from "@/lib/nfcTiles";
+import { readForAudit, recordAudit } from "@/lib/audit.server";
 
 const BUCKET = "popup-images";
 
@@ -239,6 +240,17 @@ export async function POST(request: Request) {
     .single();
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+  await recordAudit({
+    action: "create",
+    section: "announcements",
+    entity: "NFC tile",
+    entityId: data.id,
+    entityLabel: data.title,
+    summary: `Added the NFC tile “${data.title}” (${data.mode} tile) to /nfc`,
+    after: data,
+  });
+
   return NextResponse.json(data, { status: 201 });
 }
 
@@ -252,11 +264,7 @@ export async function PUT(request: Request) {
     return NextResponse.json({ error: built.error }, { status: 400 });
 
   const supabase = createServiceClient();
-  const { data: existing } = await supabase
-    .from("nfc_tiles")
-    .select("image_path")
-    .eq("id", id)
-    .maybeSingle();
+  const existing = await readForAudit("nfc_tiles", id);
 
   if (!existing)
     return NextResponse.json({ error: "Tile not found" }, { status: 404 });
@@ -271,8 +279,19 @@ export async function PUT(request: Request) {
   // Only after the row is safely updated: drop the image the row no longer
   // points at, so a failed write can't orphan the live artwork.
   if (existing.image_path && existing.image_path !== built.payload.image_path) {
-    await supabase.storage.from(BUCKET).remove([existing.image_path]);
+    await supabase.storage.from(BUCKET).remove([existing.image_path as string]);
   }
+
+  await recordAudit({
+    action: "update",
+    section: "announcements",
+    entity: "NFC tile",
+    entityId: id,
+    entityLabel: built.payload.title,
+    summary: `Edited the NFC tile “${built.payload.title}” on /nfc`,
+    before: existing,
+    after: { ...built.payload },
+  });
 
   return NextResponse.json({ ok: true });
 }
@@ -282,18 +301,24 @@ export async function DELETE(request: Request) {
   if (!id) return NextResponse.json({ error: "Missing id" }, { status: 400 });
 
   const supabase = createServiceClient();
-  const { data: existing } = await supabase
-    .from("nfc_tiles")
-    .select("image_path")
-    .eq("id", id)
-    .maybeSingle();
+  const existing = await readForAudit("nfc_tiles", id);
 
   const { error } = await supabase.from("nfc_tiles").delete().eq("id", id);
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
   if (existing?.image_path) {
-    await supabase.storage.from(BUCKET).remove([existing.image_path]);
+    await supabase.storage.from(BUCKET).remove([existing.image_path as string]);
   }
+
+  await recordAudit({
+    action: "delete",
+    section: "announcements",
+    entity: "NFC tile",
+    entityId: id,
+    entityLabel: (existing?.title as string) ?? null,
+    summary: `Deleted the NFC tile “${existing?.title ?? id}” from /nfc`,
+    before: existing,
+  });
 
   return NextResponse.json({ ok: true });
 }

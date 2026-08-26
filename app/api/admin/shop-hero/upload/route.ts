@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import sharp from "sharp";
 import { createServiceClient } from "@/utils/supabase/service";
+import { recordAudit } from "@/lib/audit.server";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -60,5 +61,16 @@ export async function POST(request: Request) {
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
   const { data } = supabase.storage.from("shop-hero-images").getPublicUrl(path);
+
+  await recordAudit({
+    action: "upload",
+    section: "store",
+    entity: "shop hero image",
+    entityId: path,
+    entityLabel: file.name,
+    summary: `Uploaded the shop hero image “${file.name}”`,
+    metadata: { path, url: data.publicUrl, bytes: file.size },
+  });
+
   return NextResponse.json({ url: data.publicUrl, path });
 }

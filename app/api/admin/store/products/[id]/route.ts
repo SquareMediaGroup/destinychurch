@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { createServiceClient } from "@/utils/supabase/service";
 import { slugify } from "@/lib/jobs";
-import type { ProductImage } from "@/lib/shop";
+import { formatPrice, type ProductImage } from "@/lib/shop";
+import { readForAudit, recordAudit } from "@/lib/audit.server";
 
 type IncomingVariant = {
   id?: string;
@@ -51,6 +52,11 @@ export async function PUT(
   const { id } = await params;
   const body = await request.json();
   const supabase = createServiceClient();
+  const before = await readForAudit("products", id);
+  // Variants are counted rather than diffed: a save re-sends every one of them,
+  // so a field-by-field diff would drown the real change (a price, a name) in
+  // twenty identical rows. The counts say what actually happened to them.
+  const variantDelta = { added: 0, updated: 0, removed: 0 };
 
   const update: Record<string, unknown> = {};
   for (const key of EDITABLE) {
@@ -110,6 +116,7 @@ export async function PUT(
         .delete()
         .in("id", toDelete);
       if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+      variantDelta.removed = toDelete.length;
     }
 
     // Upsert incoming variants.
@@ -136,9 +143,11 @@ export async function PUT(
           .update(row)
           .eq("id", v.id);
         if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+        variantDelta.updated++;
       } else {
         const { error } = await supabase.from("product_variants").insert(row);
         if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+        variantDelta.added++;
       }
     }
   }
@@ -150,6 +159,39 @@ export async function PUT(
     .single();
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+  const published = data.is_published;
+  const wasPublished = Boolean(before?.is_published);
+  const headline =
+    published && !wasPublished
+      ? `Published the product “${data.name}”`
+      : !published && wasPublished
+        ? `Unpublished the product “${data.name}”`
+        : `Edited the product “${data.name}”`;
+  const variantNote = [
+    variantDelta.added ? `${variantDelta.added} variant(s) added` : "",
+    variantDelta.removed ? `${variantDelta.removed} removed` : "",
+  ]
+    .filter(Boolean)
+    .join(", ");
+
+  await recordAudit({
+    action: "update",
+    section: "store",
+    entity: "product",
+    entityId: id,
+    entityLabel: data.name,
+    summary: `${headline}${variantNote ? ` — ${variantNote}` : ""}`,
+    before,
+    // The freshly-read row minus the variants array, which is summarised in
+    // metadata instead of diffed field by field.
+    after: { ...data, variants: undefined },
+    metadata: {
+      price: formatPrice(data.base_price_pennies ?? 0),
+      variants: variantDelta,
+    },
+  });
+
   return NextResponse.json(data);
 }
 
@@ -161,11 +203,7 @@ export async function DELETE(
   const supabase = createServiceClient();
 
   // Remove product images from storage first (best-effort).
-  const { data: product } = await supabase
-    .from("products")
-    .select("images")
-    .eq("id", id)
-    .maybeSingle();
+  const product = await readForAudit("products", id);
   const images = (product?.images ?? []) as ProductImage[];
   const paths = images.map((img) => img.path).filter(Boolean);
   if (paths.length > 0) {
@@ -174,5 +212,19 @@ export async function DELETE(
 
   const { error } = await supabase.from("products").delete().eq("id", id);
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+  // A deleted product is gone from the store, so the whole row goes into the
+  // log: this entry is the only remaining record that it ever existed.
+  await recordAudit({
+    action: "delete",
+    section: "store",
+    entity: "product",
+    entityId: id,
+    entityLabel: (product?.name as string) ?? null,
+    summary: `Deleted the product “${product?.name ?? id}” from the store`,
+    before: product,
+    metadata: { images_removed: paths.length },
+  });
+
   return NextResponse.json({ success: true });
 }

@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 import { createServiceClient } from "@/utils/supabase/service";
+import { fullName } from "@/lib/hr";
+import { readForAudit, recordAudit } from "@/lib/audit.server";
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -43,5 +45,23 @@ export async function POST(request: Request) {
     .single();
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+  const staff = await readForAudit("hr_staff", body.staff_id, "first_name, last_name");
+  const who = staff
+    ? fullName(staff as { first_name: string; last_name: string })
+    : "a staff member";
+
+  await recordAudit({
+    action: "create",
+    section: "hr",
+    entity: "review",
+    entityId: data.id,
+    entityLabel: who,
+    summary: `Logged a ${data.type.replace(/_/g, " ")} for ${who} on ${data.review_date}`,
+    after: data,
+    // What was said in a one-to-one stays in the HR record.
+    redactFields: ["summary"],
+  });
+
   return NextResponse.json(data, { status: 201 });
 }

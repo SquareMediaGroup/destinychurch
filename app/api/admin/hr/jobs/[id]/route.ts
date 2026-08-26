@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createServiceClient } from "@/utils/supabase/service";
 import { slugify } from "@/lib/jobs";
+import { readForAudit, recordAudit } from "@/lib/audit.server";
 
 export async function GET(
   _request: Request,
@@ -65,6 +66,7 @@ export async function PATCH(
   }
 
   const supabase = createServiceClient();
+  const before = await readForAudit("jobs", id);
   const { data, error } = await supabase
     .from("jobs")
     .update(update)
@@ -73,6 +75,26 @@ export async function PATCH(
     .single();
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+  const wasPublished = Boolean(before?.is_published);
+  const verb =
+    data.is_published && !wasPublished
+      ? "Published"
+      : !data.is_published && wasPublished
+        ? "Unpublished"
+        : "Edited";
+
+  await recordAudit({
+    action: "update",
+    section: "hr",
+    entity: "job listing",
+    entityId: id,
+    entityLabel: data.title,
+    summary: `${verb} the job listing “${data.title}”`,
+    before,
+    after: update,
+  });
+
   return NextResponse.json(data);
 }
 
@@ -82,8 +104,20 @@ export async function DELETE(
 ) {
   const { id } = await params;
   const supabase = createServiceClient();
+  const before = await readForAudit("jobs", id);
   const { error } = await supabase.from("jobs").delete().eq("id", id);
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+  await recordAudit({
+    action: "delete",
+    section: "hr",
+    entity: "job listing",
+    entityId: id,
+    entityLabel: (before?.title as string) ?? null,
+    summary: `Deleted the job listing “${before?.title ?? id}”`,
+    before,
+  });
+
   return NextResponse.json({ success: true });
 }

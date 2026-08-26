@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 import { createServiceClient } from "@/utils/supabase/service";
+import { fullName } from "@/lib/hr";
+import { readForAudit, recordAudit } from "@/lib/audit.server";
 
 export async function PATCH(
   request: Request,
@@ -20,6 +22,7 @@ export async function PATCH(
   }
 
   const supabase = createServiceClient();
+  const before = await readForAudit("hr_reviews", id);
   const { data, error } = await supabase
     .from("hr_reviews")
     .update(update)
@@ -28,6 +31,24 @@ export async function PATCH(
     .single();
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+  const staff = await readForAudit("hr_staff", data.staff_id, "first_name, last_name");
+  const who = staff
+    ? fullName(staff as { first_name: string; last_name: string })
+    : "a staff member";
+
+  await recordAudit({
+    action: "update",
+    section: "hr",
+    entity: "review",
+    entityId: id,
+    entityLabel: who,
+    summary: `Edited the ${data.type.replace(/_/g, " ")} record for ${who} on ${data.review_date}`,
+    before,
+    after: update,
+    redactFields: ["summary"],
+  });
+
   return NextResponse.json(data);
 }
 
@@ -37,8 +58,27 @@ export async function DELETE(
 ) {
   const { id } = await params;
   const supabase = createServiceClient();
+  const before = await readForAudit("hr_reviews", id);
+  const staff = before?.staff_id
+    ? await readForAudit("hr_staff", before.staff_id as string, "first_name, last_name")
+    : null;
   const { error } = await supabase.from("hr_reviews").delete().eq("id", id);
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+  const who = staff
+    ? fullName(staff as { first_name: string; last_name: string })
+    : "a staff member";
+  await recordAudit({
+    action: "delete",
+    section: "hr",
+    entity: "review",
+    entityId: id,
+    entityLabel: who,
+    summary: `Deleted the review record for ${who}${before ? ` on ${before.review_date}` : ""}`,
+    before,
+    redactFields: ["summary"],
+  });
+
   return NextResponse.json({ success: true });
 }

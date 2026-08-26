@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import sharp from "sharp";
 import { createServiceClient } from "@/utils/supabase/service";
+import { readForAudit, recordAudit } from "@/lib/audit.server";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -64,6 +65,18 @@ export async function POST(
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
   const { data } = supabase.storage.from("product-images").getPublicUrl(path);
+
+  const product = await readForAudit("products", id, "name");
+  await recordAudit({
+    action: "upload",
+    section: "store",
+    entity: "product image",
+    entityId: id,
+    entityLabel: (product?.name as string) ?? null,
+    summary: `Uploaded an image for the product “${product?.name ?? id}”`,
+    metadata: { path, url: data.publicUrl, original: file.name, bytes: file.size },
+  });
+
   return NextResponse.json({ url: data.publicUrl, path, alt: "" });
 }
 
@@ -78,5 +91,16 @@ export async function DELETE(request: Request) {
   const supabase = createServiceClient();
   const { error } = await supabase.storage.from("product-images").remove([path]);
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+  await recordAudit({
+    action: "delete",
+    section: "store",
+    entity: "product image",
+    entityId: path,
+    entityLabel: path.split("/").pop() ?? path,
+    summary: `Deleted a product image (${path})`,
+    metadata: { path },
+  });
+
   return NextResponse.json({ success: true });
 }

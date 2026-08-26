@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createServiceClient } from "@/utils/supabase/service";
+import { readForAudit, recordAudit } from "@/lib/audit.server";
 
 // Edits replace every item: delete-all-and-reinsert, the simplest correct
 // approach at the size a checklist template actually is (a handful of rows).
@@ -15,6 +16,7 @@ export async function PATCH(
   if (typeof body.kind === "string") update.kind = body.kind;
 
   const supabase = createServiceClient();
+  const before = await readForAudit("hr_checklist_templates", id);
 
   if (Object.keys(update).length > 0) {
     const { error } = await supabase.from("hr_checklist_templates").update(update).eq("id", id);
@@ -46,6 +48,20 @@ export async function PATCH(
     .single();
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+  await recordAudit({
+    action: "update",
+    section: "hr",
+    entity: "checklist template",
+    entityId: id,
+    entityLabel: data.name,
+    summary: `Edited the ${data.kind} checklist template “${data.name}”${
+      Array.isArray(body.items) ? ` (${body.items.length} item(s))` : ""
+    }`,
+    before,
+    after: { ...update, items: Array.isArray(body.items) ? body.items.length : undefined },
+  });
+
   return NextResponse.json(data);
 }
 
@@ -55,7 +71,19 @@ export async function DELETE(
 ) {
   const { id } = await params;
   const supabase = createServiceClient();
+  const before = await readForAudit("hr_checklist_templates", id);
   const { error } = await supabase.from("hr_checklist_templates").delete().eq("id", id);
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+  await recordAudit({
+    action: "delete",
+    section: "hr",
+    entity: "checklist template",
+    entityId: id,
+    entityLabel: (before?.name as string) ?? null,
+    summary: `Deleted the checklist template “${before?.name ?? id}”`,
+    before,
+  });
+
   return NextResponse.json({ success: true });
 }

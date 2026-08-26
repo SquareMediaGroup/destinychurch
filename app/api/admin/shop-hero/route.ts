@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createServiceClient } from "@/utils/supabase/service";
+import { recordAudit } from "@/lib/audit.server";
 
 // GET — list all hero slides (published or not) in display order, for the admin.
 export async function GET() {
@@ -44,5 +45,16 @@ export async function POST(request: Request) {
     .single();
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+  await recordAudit({
+    action: "create",
+    section: "store",
+    entity: "shop hero slide",
+    entityId: data.id,
+    entityLabel: data.heading || "Untitled slide",
+    summary: `Added the shop hero slide “${data.heading || "Untitled slide"}”`,
+    after: data,
+  });
+
   return NextResponse.json(data);
 }

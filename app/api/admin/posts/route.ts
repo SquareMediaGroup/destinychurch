@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createServiceClient } from "@/utils/supabase/service";
 import { checkSlug } from "@/lib/posts-slug";
+import { recordAudit } from "@/lib/audit.server";
 
 export async function GET() {
   const supabase = createServiceClient();
@@ -38,5 +39,18 @@ export async function POST(request: Request) {
     .single();
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+  await recordAudit({
+    action: "create",
+    section: "posts",
+    entity: "post",
+    entityId: data.id,
+    entityLabel: data.title,
+    summary: `Created the post “${data.title}” at /${data.slug}${
+      data.is_published ? "" : " (draft)"
+    }`,
+    after: data,
+  });
+
   return NextResponse.json(data, { status: 201 });
 }

@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 import { createServiceClient } from "@/utils/supabase/service";
+import { fullName } from "@/lib/hr";
+import { readForAudit, recordAudit } from "@/lib/audit.server";
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -74,5 +76,22 @@ export async function POST(request: Request) {
     .select();
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+  const staff = await readForAudit("hr_staff", body.staff_id, "first_name, last_name");
+  const who = staff
+    ? fullName(staff as { first_name: string; last_name: string })
+    : "a staff member";
+
+  await recordAudit({
+    action: "create",
+    section: "hr",
+    entity: "checklist",
+    entityId: body.staff_id,
+    entityLabel: who,
+    summary: `Started a ${body.kind} checklist for ${who} with ${items.length} item(s)`,
+    changes: null,
+    metadata: { kind: body.kind, items: items.length, from_template: Boolean(body.template_id) },
+  });
+
   return NextResponse.json(data, { status: 201 });
 }

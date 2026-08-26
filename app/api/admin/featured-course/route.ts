@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
 import { createServiceClient } from "@/utils/supabase/service";
-import { isCourseId } from "@/lib/courses";
+import { COURSES, isCourseId } from "@/lib/courses";
+import { readForAudit, recordAudit } from "@/lib/audit.server";
 
 // GET — the currently featured course on /whats-on.
 export async function GET() {
@@ -26,6 +27,7 @@ export async function PUT(request: Request) {
   }
 
   const supabase = createServiceClient();
+  const before = await readForAudit("featured_course", 1);
   const { error } = await supabase.from("featured_course").upsert({
     id: 1,
     course_id: courseId,
@@ -33,6 +35,16 @@ export async function PUT(request: Request) {
   });
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+  await recordAudit({
+    action: "update",
+    section: "courses",
+    entity: "featured course",
+    entityId: 1,
+    entityLabel: COURSES[courseId].name,
+    summary: `Made “${COURSES[courseId].name}” the featured course on What's On`,
+    changes: { course_id: { from: before?.course_id ?? null, to: courseId } },
+  });
 
   revalidatePath("/whats-on");
   return NextResponse.json({ ok: true, course_id: courseId });

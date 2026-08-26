@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createServiceClient } from "@/utils/supabase/service";
+import { recordAudit } from "@/lib/audit.server";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -67,6 +68,16 @@ export async function POST(request: Request) {
   }
 
   const { data } = supabase.storage.from("popup-images").getPublicUrl(path);
+
+  await recordAudit({
+    action: "upload",
+    section: "announcements",
+    entity: "image",
+    entityId: path,
+    entityLabel: file.name,
+    summary: `Uploaded the image “${file.name}” for the ${prefix} panel`,
+    metadata: { path, url: data.publicUrl, prefix, bytes: file.size },
+  });
 
   return NextResponse.json({ url: data.publicUrl, path });
 }

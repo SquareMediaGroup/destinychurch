@@ -10,6 +10,7 @@
 import { NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
 import { createServiceClient } from "@/utils/supabase/service";
+import { readForAudit, recordAudit } from "@/lib/audit.server";
 
 const BUCKET = "popup-images";
 
@@ -61,11 +62,7 @@ export async function PUT(request: Request) {
   const body = await request.json();
   const supabase = createServiceClient();
 
-  const { data: existing } = await supabase
-    .from("featured_event")
-    .select("image_path")
-    .eq("id", 1)
-    .maybeSingle();
+  const existing = await readForAudit("featured_event", 1);
 
   // Only the target + hero columns. Deliberately omits every popup_* column so
   // saving here cannot blank copy written on the event-popup page.
@@ -93,7 +90,7 @@ export async function PUT(request: Request) {
   // Drop the superseded file so replaced artwork doesn't accumulate in the
   // bucket — same behaviour as the site-popup route.
   if (existing?.image_path && existing.image_path !== payload.image_path) {
-    await supabase.storage.from(BUCKET).remove([existing.image_path]);
+    await supabase.storage.from(BUCKET).remove([existing.image_path as string]);
   }
 
   const { error } = await supabase
@@ -106,6 +103,25 @@ export async function PUT(request: Request) {
   // homepage carousel are cached routes — they need explicit invalidation.
   revalidatePath("/whats-on");
   revalidatePath("/");
+
+  const name = payload.event_name ?? "(no event)";
+  const wasActive = Boolean(existing?.active);
+  const verb = payload.active && !wasActive
+    ? "Started promoting"
+    : !payload.active && wasActive
+      ? "Stopped promoting"
+      : "Edited the promotion for";
+
+  await recordAudit({
+    action: "update",
+    section: "announcements",
+    entity: "featured event",
+    entityId: 1,
+    entityLabel: name,
+    summary: `${verb} the featured event “${name}”`,
+    before: existing,
+    after: payload,
+  });
 
   return NextResponse.json({ ok: true });
 }

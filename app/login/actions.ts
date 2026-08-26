@@ -8,6 +8,8 @@ import { REMEMBER_COOKIE_NAME } from "@/utils/supabase/sessionCookie";
 import { checkRateLimit, resetRateLimit } from "@/lib/loginRateLimit";
 import { verifyTurnstileToken } from "@/lib/turnstile";
 import { resolvePostLoginPath } from "@/lib/staffPortalAuth";
+import { ADMIN_ROLES, getRoles } from "@/lib/adminRoles";
+import { recordAudit } from "@/lib/audit.server";
 
 const REMEMBER_MAX_AGE = 60 * 60 * 24 * 400; // matches Supabase's own default cookie lifetime
 
@@ -59,6 +61,20 @@ async function signInCore(
   const { data, error } = await supabase.auth.signInWithPassword({ email, password });
 
   if (error || !data.user) {
+    // Recorded with no actor — nobody signed in. Rate-limited and failed
+    // Turnstile attempts are deliberately *not* logged: they are bot noise and
+    // would bury the entries a person needs to see. A wrong password on a real
+    // address is the one worth keeping.
+    await recordAudit({
+      actor: { id: null, email: null, roles: [] },
+      action: "login",
+      section: "account",
+      entity: "sign-in",
+      entityLabel: email,
+      summary: `Failed sign-in attempt for ${email}`,
+      changes: null,
+      metadata: { ok: false, email, ip },
+    });
     return { success: false, error: "Invalid email or password." };
   }
 
@@ -71,6 +87,26 @@ async function signInCore(
   });
 
   resetRateLimit(ip);
+
+  // Sign-in happens outside the /admin middleware, so the actor is passed
+  // explicitly rather than read from the headers it sets.
+  const roles = await getRoles(createServiceClient(), data.user.id);
+  await recordAudit({
+    actor: {
+      id: data.user.id,
+      email: data.user.email ?? email,
+      roles: ADMIN_ROLES.filter((role) => roles[role]),
+    },
+    action: "login",
+    section: "account",
+    entity: "sign-in",
+    entityId: data.user.id,
+    entityLabel: data.user.email ?? email,
+    summary: `${data.user.email ?? email} signed in`,
+    changes: null,
+    metadata: { ok: true, remembered: remember, ip },
+  });
+
   return { success: true, userId: data.user.id };
 }
 
@@ -117,6 +153,29 @@ export async function hostSignIn(
 export async function adminSignOut(): Promise<void> {
   const cookieStore = await cookies();
   const supabase = createClient(cookieStore);
+
+  // Read who it is before the session goes — afterwards there is nobody to name.
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (user) {
+    const roles = await getRoles(createServiceClient(), user.id);
+    await recordAudit({
+      actor: {
+        id: user.id,
+        email: user.email ?? null,
+        roles: ADMIN_ROLES.filter((role) => roles[role]),
+      },
+      action: "logout",
+      section: "account",
+      entity: "sign-out",
+      entityId: user.id,
+      entityLabel: user.email ?? user.id,
+      summary: `${user.email ?? "An admin"} signed out`,
+      changes: null,
+    });
+  }
+
   await supabase.auth.signOut();
   cookieStore.delete(REMEMBER_COOKIE_NAME);
 }

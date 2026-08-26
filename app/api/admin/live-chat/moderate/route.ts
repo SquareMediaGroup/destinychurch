@@ -20,6 +20,7 @@ import {
   listHeld,
   toHostMessage,
 } from "@/lib/liveChat.server";
+import { recordAudit } from "@/lib/audit.server";
 
 export const dynamic = "force-dynamic";
 
@@ -84,6 +85,18 @@ export async function POST(request: Request) {
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
+
+    await recordAudit({
+      action: "moderate",
+      section: "live",
+      entity: "chat mute",
+      entityId: blockId,
+      entityLabel: "Live chat mute",
+      summary: "Unmuted a guest in the live chat",
+      changes: null,
+      metadata: { block_id: blockId },
+    });
+
     return NextResponse.json({ ok: true });
   }
 
@@ -108,6 +121,21 @@ export async function POST(request: Request) {
     // from anyone who already has it on screen.
     if (action === "approve") await emitMessage(row);
     else await emitHidden(row);
+
+    // The message text goes in, deliberately: "why was that hidden" is
+    // unanswerable without it, and it was posted to a public room.
+    await recordAudit({
+      action: "moderate",
+      section: "live",
+      entity: "chat message",
+      entityId: messageId,
+      entityLabel: row.display_name ?? "Guest",
+      summary: `${action === "approve" ? "Approved" : "Hid"} a live chat message from ${
+        row.display_name ?? "a guest"
+      }`,
+      changes: { body: { from: null, to: row.body ?? null } },
+      metadata: { session_id: row.session_id },
+    });
 
     return NextResponse.json({ message: toHostMessage(row) });
   }
@@ -154,6 +182,23 @@ export async function POST(request: Request) {
   // live room and falling behind it.
   const hidden = await setMessageStatus(messageId, "hidden", host.userId);
   if (hidden) await emitHidden(hidden);
+
+  await recordAudit({
+    action: "moderate",
+    section: "live",
+    entity: "chat mute",
+    entityId: target.author_guest_id,
+    entityLabel: hidden?.display_name ?? "Guest",
+    summary: `Muted ${hidden?.display_name ?? "a guest"} in the live chat (${
+      scope === "global" ? "every service" : "this service"
+    }) and hid their message`,
+    changes: null,
+    metadata: {
+      scope,
+      session_id: session.id,
+      reason: typeof body.reason === "string" ? body.reason.slice(0, 200) : null,
+    },
+  });
 
   return NextResponse.json({ ok: true });
 }

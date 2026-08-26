@@ -13,6 +13,12 @@ import { createServiceClient } from "@/utils/supabase/service";
 //
 // PATCH is a merge, not a replace: completed_steps unions with what's already
 // stored so two tabs finishing different sections can't clobber each other.
+//
+// audit-exempt: ticking a step of your own product tour is not an admin action
+// anyone will ever need to look up, and it fires several times a minute during
+// a walkthrough — logging it would bury the entries that matter. Nothing here
+// touches content, money or access; the only row it can write is the caller's
+// own. See lib/audit.server.ts and tests/unit/audit-coverage.spec.ts.
 
 export const dynamic = "force-dynamic";
 

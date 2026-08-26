@@ -8,6 +8,7 @@
 import { NextResponse } from "next/server";
 import { createServiceClient } from "@/utils/supabase/service";
 import { readHost } from "@/lib/liveChatAuth";
+import { recordAudit } from "@/lib/audit.server";
 
 export const dynamic = "force-dynamic";
 
@@ -78,6 +79,23 @@ export async function POST(request: Request) {
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   if (!data) return NextResponse.json({ error: "No such request." }, { status: 404 });
+
+  // The request someone typed is not copied into the log — who picked it up and
+  // when is what the queue needs to be accountable for.
+  await recordAudit({
+    action: "update",
+    section: "live",
+    entity: "prayer request",
+    entityId: id,
+    entityLabel: data.display_name ?? "Guest",
+    summary:
+      status === "praying"
+        ? `Picked up the prayer request from ${data.display_name ?? "a guest"}`
+        : status === "done"
+          ? `Marked the prayer request from ${data.display_name ?? "a guest"} as prayed for`
+          : `Put the prayer request from ${data.display_name ?? "a guest"} back in the queue`,
+    changes: { status: { from: null, to: status } },
+  });
 
   return NextResponse.json({ request: data });
 }

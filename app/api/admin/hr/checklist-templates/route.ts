@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createServiceClient } from "@/utils/supabase/service";
+import { recordAudit } from "@/lib/audit.server";
 
 export async function GET() {
   const supabase = createServiceClient();
@@ -51,6 +52,17 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: itemsError.message }, { status: 500 });
     }
   }
+
+  await recordAudit({
+    action: "create",
+    section: "hr",
+    entity: "checklist template",
+    entityId: template.id,
+    entityLabel: template.name,
+    summary: `Created the ${template.kind} checklist template “${template.name}” with ${items.length} item(s)`,
+    after: template,
+    metadata: { items: items.length },
+  });
 
   return NextResponse.json(template, { status: 201 });
 }

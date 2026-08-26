@@ -12,6 +12,7 @@ import {
   setSessionState,
   type ChatState,
 } from "@/lib/liveChat.server";
+import { recordAudit } from "@/lib/audit.server";
 
 export const dynamic = "force-dynamic";
 
@@ -64,6 +65,18 @@ export async function POST(request: Request) {
   if (!updated) {
     return NextResponse.json({ error: "Couldn't update the chat." }, { status: 500 });
   }
+
+  await recordAudit({
+    action: "update",
+    section: "live",
+    entity: "live chat room",
+    entityId: sessionId,
+    entityLabel: updated.title ?? sessionId,
+    summary: `${
+      state === "open" ? "Opened" : state === "paused" ? "Paused" : "Closed"
+    } the live chat for “${updated.title ?? sessionId}”`,
+    changes: { state: { from: existing.state ?? null, to: state } },
+  });
 
   return NextResponse.json({ session: updated });
 }

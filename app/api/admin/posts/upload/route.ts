@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import sharp from "sharp";
 import { createServiceClient } from "@/utils/supabase/service";
 import { MAX_UPLOAD_SIZE_BYTES, ALLOWED_IMAGE_TYPES } from "@/lib/ai/media-types";
+import { recordAudit } from "@/lib/audit.server";
 
 const BUCKET_NAME = "post-media";
 const MAX_WIDTH = 1600; // plenty for full-width content; keeps files small
@@ -52,6 +53,17 @@ export async function POST(req: NextRequest) {
     }
 
     const { data: urlData } = supabase.storage.from(BUCKET_NAME).getPublicUrl(path);
+
+    await recordAudit({
+      action: "upload",
+      section: "posts",
+      entity: "post image",
+      entityId: path,
+      entityLabel: file.name,
+      summary: `Uploaded the image “${file.name}” for use in a post`,
+      metadata: { path, url: urlData.publicUrl, bytes: file.size },
+    });
+
     return NextResponse.json({ url: urlData.publicUrl });
   } catch (error) {
     console.error("Post image upload error:", error);

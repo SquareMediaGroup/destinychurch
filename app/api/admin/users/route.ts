@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createServiceClient } from "@/utils/supabase/service";
 import { createLogin } from "@/lib/staffLogins";
 import { ADMIN_ROLES, type AdminRole } from "@/lib/adminRoles";
+import { recordAudit } from "@/lib/audit.server";
 
 function rolesFromBody(body: Record<string, unknown>): Record<AdminRole, boolean> {
   const roles = {} as Record<AdminRole, boolean>;
@@ -45,5 +46,21 @@ export async function POST(request: Request) {
     await supabase.auth.admin.deleteUser(result.id);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
+
+  // The temporary password is in `body` and never reaches the log — the
+  // sanitiser in lib/audit.ts would redact it, and we don't hand it one.
+  const granted = ADMIN_ROLES.filter((role) => data[role]);
+  await recordAudit({
+    action: "create",
+    section: "users",
+    entity: "admin user",
+    entityId: result.id,
+    entityLabel: email,
+    summary: `Created an admin login for ${email} with ${
+      granted.length ? granted.join(", ") : "no access"
+    }`,
+    after: data,
+  });
+
   return NextResponse.json(data, { status: 201 });
 }

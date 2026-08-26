@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createServiceClient } from "@/utils/supabase/service";
+import { readForAudit, recordAudit } from "@/lib/audit.server";
 
 // PATCH — update a slide's fields (content, active flag and/or sort_order).
 export async function PATCH(
@@ -37,6 +38,8 @@ export async function PATCH(
       .remove([existing.image_path]);
   }
 
+  const before = await readForAudit("shop_hero_slides", id);
+
   const { data, error } = await supabase
     .from("shop_hero_slides")
     .update(payload)
@@ -45,6 +48,25 @@ export async function PATCH(
     .single();
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+  // Reordering is a drag of the handle, not an edit — one PATCH per slide.
+  // Saying so keeps a reorder from reading like five content changes.
+  const reorderOnly = Object.keys(payload).length === 1 && "sort_order" in payload;
+  const label = data.heading || "Untitled slide";
+
+  await recordAudit({
+    action: "update",
+    section: "store",
+    entity: "shop hero slide",
+    entityId: id,
+    entityLabel: label,
+    summary: reorderOnly
+      ? `Reordered the shop hero slide “${label}”`
+      : `Edited the shop hero slide “${label}”`,
+    before,
+    after: { ...payload },
+  });
+
   return NextResponse.json(data);
 }
 
@@ -56,16 +78,12 @@ export async function DELETE(
   const { id } = await params;
   const supabase = createServiceClient();
 
-  const { data: existing } = await supabase
-    .from("shop_hero_slides")
-    .select("image_path")
-    .eq("id", id)
-    .maybeSingle();
+  const existing = await readForAudit("shop_hero_slides", id);
 
   if (existing?.image_path) {
     await supabase.storage
       .from("shop-hero-images")
-      .remove([existing.image_path]);
+      .remove([existing.image_path as string]);
   }
 
   const { error } = await supabase
@@ -74,5 +92,16 @@ export async function DELETE(
     .eq("id", id);
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+  await recordAudit({
+    action: "delete",
+    section: "store",
+    entity: "shop hero slide",
+    entityId: id,
+    entityLabel: (existing?.heading as string) || "Untitled slide",
+    summary: `Deleted the shop hero slide “${existing?.heading || "Untitled slide"}”`,
+    before: existing,
+  });
+
   return NextResponse.json({ success: true });
 }

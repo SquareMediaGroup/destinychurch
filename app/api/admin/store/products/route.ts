@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { createServiceClient } from "@/utils/supabase/service";
 import { slugify } from "@/lib/jobs";
+import { formatPrice } from "@/lib/shop";
+import { recordAudit } from "@/lib/audit.server";
 
 export async function GET() {
   const supabase = createServiceClient();
@@ -65,5 +67,18 @@ export async function POST(request: Request) {
     .single();
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+  await recordAudit({
+    action: "create",
+    section: "store",
+    entity: "product",
+    entityId: data.id,
+    entityLabel: data.name,
+    summary: `Added the product “${data.name}” to the store at ${formatPrice(
+      data.base_price_pennies ?? 0,
+    )}${data.is_published ? "" : " (not published yet)"}`,
+    after: data,
+  });
+
   return NextResponse.json(data, { status: 201 });
 }

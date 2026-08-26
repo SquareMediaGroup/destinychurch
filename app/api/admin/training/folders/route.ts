@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createServiceClient } from "@/utils/supabase/service";
+import { recordAudit } from "@/lib/audit.server";
 
 export async function GET(request: Request) {
   const subgroupId = new URL(request.url).searchParams.get("subgroup_id");
@@ -49,5 +50,16 @@ export async function POST(request: Request) {
     .single();
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+  await recordAudit({
+    action: "create",
+    section: "training",
+    entity: "training folder",
+    entityId: data.id,
+    entityLabel: data.name,
+    summary: `Added the training folder “${data.name}”`,
+    after: data,
+  });
+
   return NextResponse.json(data, { status: 201 });
 }

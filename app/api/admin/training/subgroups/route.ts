@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createServiceClient } from "@/utils/supabase/service";
 import { slugify } from "@/lib/jobs";
 import { hashPassword } from "@/lib/trainingAccess";
+import { recordAudit } from "@/lib/audit.server";
 
 // Strip password_hash from any row before it leaves the server; expose only
 // whether a password is set.
@@ -80,5 +81,18 @@ export async function POST(request: Request) {
     .single();
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+  // toPublic() strips the hash for the response; recordAudit's sanitiser
+  // redacts `password_hash` on the way into the log for the same reason.
+  await recordAudit({
+    action: "create",
+    section: "training",
+    entity: "training sub-group",
+    entityId: data.id,
+    entityLabel: data.name,
+    summary: `Added the training sub-group “${data.name}”${password ? " (password protected)" : ""}`,
+    after: data,
+  });
+
   return NextResponse.json(toPublic(data as Row), { status: 201 });
 }

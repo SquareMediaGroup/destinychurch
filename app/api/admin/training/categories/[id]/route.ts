@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createServiceClient } from "@/utils/supabase/service";
 import { slugify } from "@/lib/jobs";
+import { readForAudit, recordAudit } from "@/lib/audit.server";
 
 export async function GET(
   _request: Request,
@@ -58,6 +59,7 @@ export async function PATCH(
   }
 
   const supabase = createServiceClient();
+  const before = await readForAudit("training_categories", id);
   const { data, error } = await supabase
     .from("training_categories")
     .update(update)
@@ -66,6 +68,18 @@ export async function PATCH(
     .single();
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+  await recordAudit({
+    action: "update",
+    section: "training",
+    entity: "training category",
+    entityId: id,
+    entityLabel: data.name,
+    summary: `Edited the training category “${data.name}”`,
+    before,
+    after: update,
+  });
+
   return NextResponse.json(data);
 }
 
@@ -75,9 +89,24 @@ export async function DELETE(
 ) {
   const { id } = await params;
   const supabase = createServiceClient();
+  const before = await readForAudit("training_categories", id);
   // Sub-groups and posts cascade-delete via the FK constraints.
   const { error } = await supabase.from("training_categories").delete().eq("id", id);
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+  // Worth flagging that this took everything under it with it — the cascade is
+  // invisible in the diff, and it is the part someone would want to know about.
+  await recordAudit({
+    action: "delete",
+    section: "training",
+    entity: "training category",
+    entityId: id,
+    entityLabel: (before?.name as string) ?? null,
+    summary: `Deleted the training category “${before?.name ?? id}” and everything inside it`,
+    before,
+    metadata: { cascaded: "sub-groups, folders and posts" },
+  });
+
   return NextResponse.json({ success: true });
 }

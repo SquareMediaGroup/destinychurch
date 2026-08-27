@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { createServiceClient } from "@/utils/supabase/service";
 import { sendLeaveDecisionEmail } from "@/lib/hrEmail";
-import { fullName, LEAVE_TYPE_LABELS, type LeaveRequest, type LeaveType } from "@/lib/hr";
+import { formatDate, fullName, LEAVE_TYPE_LABELS, type LeaveRequest, type LeaveType } from "@/lib/hr";
 import { readForAudit, recordAudit } from "@/lib/audit.server";
 
 // The joined shape below is a single row (hr_leave_requests.staff_id → one
@@ -51,8 +51,8 @@ export async function PATCH(
     entityId: id,
     entityLabel: who,
     summary: isDecision
-      ? `${body.status === "approved" ? "Approved" : "Declined"} ${LEAVE_TYPE_LABELS[row.type as LeaveType] ?? row.type} leave for ${who}, ${row.start_date} to ${row.end_date}`
-      : `Edited the leave request for ${who}, ${row.start_date} to ${row.end_date}`,
+      ? `${body.status === "approved" ? "Approved" : "Declined"} ${(LEAVE_TYPE_LABELS[row.type as LeaveType] ?? row.type).toLowerCase()} leave for ${who}, ${formatDate(row.start_date)} to ${formatDate(row.end_date)}`
+      : `Edited the leave request for ${who}, ${formatDate(row.start_date)} to ${formatDate(row.end_date)}`,
     before,
     after: update,
     redactFields: ["reason"],
@@ -97,7 +97,7 @@ export async function DELETE(
     entity: "leave request",
     entityId: id,
     entityLabel: who,
-    summary: `Deleted the leave request for ${who}${before ? `, ${before.start_date} to ${before.end_date}` : ""}`,
+    summary: `Deleted the leave request for ${who}${before ? `, ${formatDate(before.start_date as string)} to ${formatDate(before.end_date as string)}` : ""}`,
     before,
     redactFields: ["reason"],
   });

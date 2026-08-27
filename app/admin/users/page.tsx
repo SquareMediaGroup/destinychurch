@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { ADMIN_ROLES, type AdminRole } from "@/lib/adminRoles";
+import { ADMIN_ROLES, ROLE_LABELS, type AdminRole } from "@/lib/adminRoles";
 import {
   PageHeader,
   EmptyState,
@@ -19,16 +19,6 @@ import {
 import { useAdminList } from "@/lib/useAdminList";
 import { useDialog } from "@/components/DialogProvider";
 import { clearAdminSessionCache } from "@/lib/useAdminSession";
-
-const ROLE_LABELS: Record<AdminRole, string> = {
-  training_admin: "Training Admin",
-  event_admin: "Event Admin",
-  store_admin: "Store Admin",
-  site_admin: "Site Admin",
-  host: "Host",
-  hr_admin: "HR Admin",
-  super_admin: "Super Admin",
-};
 
 const ROLE_HINTS: Record<AdminRole, string> = {
   training_admin: "Training section only.",

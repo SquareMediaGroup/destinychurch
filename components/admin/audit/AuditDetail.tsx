@@ -11,6 +11,7 @@
 
 import { useState } from "react";
 import { Badge, Modal, cardClass, ghostBtn } from "@/components/admin/AdminUI";
+import { roleLabel } from "@/lib/adminRoles";
 import {
   actionLabel,
   actionTone,
@@ -140,10 +141,22 @@ export function AuditDetail({
               <span className="text-destiny-grey/50">System</span>
             )}
             {entry.actor_roles.length > 0 && (
-              <span className="ml-1.5 text-xs text-destiny-grey/45">
-                {/* Snapshotted at the time, not read live. */}
-                {entry.actor_roles.map((r) => r.replace(/_/g, " ")).join(", ")}
-              </span>
+              <div className="mt-1.5 flex flex-wrap gap-1">
+                {/* Snapshotted at the time, not read live — these are the roles
+                    they held when they did this, not the ones they hold now. */}
+                {entry.actor_roles.map((role) => (
+                  <span
+                    key={role}
+                    className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${
+                      role === "super_admin"
+                        ? "bg-destiny-orange/10 text-destiny-orange"
+                        : "bg-black/5 text-destiny-grey/60"
+                    }`}
+                  >
+                    {roleLabel(role)}
+                  </span>
+                ))}
+              </div>
             )}
           </MetaRow>
 

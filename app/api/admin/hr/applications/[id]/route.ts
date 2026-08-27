@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createServiceClient } from "@/utils/supabase/service";
+import { humanise } from "@/lib/audit";
 import { readForAudit, recordAudit } from "@/lib/audit.server";
 
 const BUCKET = "job-applications";
@@ -63,7 +64,7 @@ export async function PATCH(
     entity: "job application",
     entityId: id,
     entityLabel: who,
-    summary: `Moved ${who}'s application to “${body.status}”`,
+    summary: `Moved ${who}'s application to “${humanise(body.status)}”`,
     changes: { status: { from: before?.status ?? null, to: body.status } },
   });
 

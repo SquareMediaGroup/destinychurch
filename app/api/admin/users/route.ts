@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { createServiceClient } from "@/utils/supabase/service";
 import { createLogin } from "@/lib/staffLogins";
-import { ADMIN_ROLES, type AdminRole } from "@/lib/adminRoles";
+import { ADMIN_ROLES, roleList, type AdminRole } from "@/lib/adminRoles";
 import { recordAudit } from "@/lib/audit.server";
 
 function rolesFromBody(body: Record<string, unknown>): Record<AdminRole, boolean> {
@@ -57,9 +57,10 @@ export async function POST(request: Request) {
     entityId: result.id,
     entityLabel: email,
     summary: `Created an admin login for ${email} with ${
-      granted.length ? granted.join(", ") : "no access"
+      granted.length ? roleList(granted) : "no access"
     }`,
     after: data,
+    metadata: { access: granted.length ? roleList(granted) : "None" },
   });
 
   return NextResponse.json(data, { status: 201 });

@@ -4139,6 +4139,28 @@ The audit log, split four ways along the lines that actually matter:
   PATCH produces a three-field diff and `updated_at` never counts as a change),
   the redaction (`sanitiseValue`), and the presentation helpers the page and the
   detail panel share.
+
+  **Times are church time, everywhere.** `SITE_TIME_ZONE` is `Europe/London`, and
+  `siteDateTime` / `siteDate` / `siteDayKey` / `siteDayBounds` all format and
+  resolve against it. Rows are stored in UTC and Vercel runs in UTC, so anything
+  formatted without naming a zone reads an hour early from late March to late
+  October — which is exactly wrong for a record of *when* things happened. The
+  zone is pinned to the church rather than the reader's device so the AI's
+  answer, the list, the detail panel and the weekly email all say the same time
+  as each other. The detail view names the zone on screen (`GMT+1`) because
+  ambiguity there is the whole problem. `siteDayBounds` exists so a "today"
+  filter covers today *here*: compared against UTC midnight, through BST it would
+  quietly include the last hour of yesterday evening.
+
+  **Nothing reaches a screen as a column name.** `fieldLabel` (columns) and
+  `humanise` (values) map the schema to words — `is_published` → "Published",
+  `base_price_pennies` → "Price", `one_off` → "One-off", `super_admin` →
+  "Super Admin", the role labels coming from the one `ROLE_LABELS` map in
+  `lib/adminRoles.ts` that the users page shares. The two maps are separate on
+  purpose: `body` is the column "Content", but "body" as a *value* is just the
+  word. `formatValue` tidies a value only when it is plainly an identifier
+  (lowercase words joined by underscores), so emails, URLs, slugs and prose are
+  never mangled.
 - **`lib/audit.server.ts`** — `recordAudit()`, the only writer. Three rules it
   exists to enforce: it never throws (an audit write failing must not fail the
   thing the admin was doing), it never stores a secret, and it costs one insert —
@@ -4150,6 +4172,11 @@ The audit log, split four ways along the lines that actually matter:
   report. The model never sees the whole log: `search_audit_log` and
   `count_audit_log` run real queries and return bounded slices, so answers are
   grounded in rows and a year of history doesn't need to fit in a context window.
+  **Timestamps reach the model already formatted** in church time, and the prompt
+  tells it to quote them verbatim. It shipped once being handed raw UTC and asked
+  to "write it naturally", and spent BST answering an hour early; a model can't
+  get a conversion wrong that it is never asked to do. Bare `YYYY-MM-DD` filter
+  arguments are resolved through `siteDayBounds` for the same reason.
 - **`lib/auditEmail.ts`** — the weekly report email. Same brand as `lib/hrEmail.ts`
   (orange rule, rounded card) but a different shape inside — a stat strip over a
   written report rather than labelled rows — so the two are deliberately not forced
@@ -4159,7 +4186,9 @@ The audit log, split four ways along the lines that actually matter:
 > **Adding a section that writes to the database.** Call `recordAudit()` from the
 > handler, with a `summary` written as a sentence naming the thing
 > (`Added the product "Faith Hoodie" to the store`) — that sentence is what the
-> search matches and the only thing the AI reads. `tests/unit/audit-coverage.spec.ts`
+> search matches and the only thing the AI reads. Write it the way you'd say it:
+> run enum values through `humanise()` and dates through a formatter, so a
+> summary never reads `(one_off, 2026-09-14)`. `tests/unit/audit-coverage.spec.ts`
 > fails the build if a mutating route under `/api/admin` neither logs nor carries an
 > `audit-exempt: <why>` comment, because a log with holes in it is worse than no log:
 > it teaches people to trust an answer that is silently missing the change they were

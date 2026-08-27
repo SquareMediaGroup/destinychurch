@@ -27,7 +27,13 @@ import { NextResponse } from "next/server";
 import { createServiceClient } from "@/utils/supabase/service";
 import { getOpenAI, SMART_SEARCH_MODEL } from "@/lib/openaiClient";
 import { sendAuditReportEmail, type AuditReportStat } from "@/lib/auditEmail";
-import { actionLabel, sectionLabel, type AuditEntry } from "@/lib/audit";
+import {
+  actionLabel,
+  sectionLabel,
+  siteDate,
+  siteDateTime,
+  type AuditEntry,
+} from "@/lib/audit";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -52,14 +58,6 @@ function tally(entries: AuditEntry[], key: keyof AuditEntry): Record<string, num
 
 function sorted(counts: Record<string, number>): [string, number][] {
   return Object.entries(counts).sort((a, b) => b[1] - a[1]);
-}
-
-function formatDay(iso: string): string {
-  return new Date(iso).toLocaleDateString("en-GB", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  });
 }
 
 /** Who to send to: the env override, or every Super Admin in admin_roles. */
@@ -106,7 +104,7 @@ async function writeReport(
           role: "system",
           content: `You write the weekly admin-activity report for Destiny Church Tees Valley's website, read by its Super Admins.
 
-You are given counts that were computed from the database — they are correct, use them as given and never recompute or contradict them — plus the individual entries.
+You are given counts that were computed from the database — they are correct, use them as given and never recompute or contradict them — plus the individual entries. Every time shown is already in UK local time and already written out: quote times exactly as given, never convert or recompute one.
 
 Write:
 1. A first line starting "HEADLINE: " — one short sentence naming the week's most notable thing (max 70 characters, no full stop).
@@ -180,7 +178,8 @@ export async function GET(request: Request) {
   }
 
   const entries = (data ?? []) as AuditEntry[];
-  const periodLabel = `${formatDay(periodStart.toISOString())} – ${formatDay(
+  // Church time, not the server's UTC — see SITE_TIME_ZONE in lib/audit.ts.
+  const periodLabel = `${siteDate(periodStart.toISOString())} – ${siteDate(
     periodEnd.toISOString(),
   )}`;
 
@@ -209,13 +208,7 @@ export async function GET(request: Request) {
     .slice(0, MAX_LINES)
     .map(
       (entry) =>
-        `${new Date(entry.created_at).toLocaleString("en-GB", {
-          weekday: "short",
-          day: "numeric",
-          month: "short",
-          hour: "2-digit",
-          minute: "2-digit",
-        })} — ${entry.actor_email ?? "system"} — ${entry.summary}`,
+        `${siteDateTime(entry.created_at)} — ${entry.actor_email ?? "system"} — ${entry.summary}`,
     );
 
   const written = await writeReport(periodLabel, stats, lines);

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createServiceClient } from "@/utils/supabase/service";
-import { fullName } from "@/lib/hr";
+import { formatDate, fullName } from "@/lib/hr";
+import { humanise } from "@/lib/audit";
 import { readForAudit, recordAudit } from "@/lib/audit.server";
 
 export async function GET(request: Request) {
@@ -57,7 +58,7 @@ export async function POST(request: Request) {
     entity: "review",
     entityId: data.id,
     entityLabel: who,
-    summary: `Logged a ${data.type.replace(/_/g, " ")} for ${who} on ${data.review_date}`,
+    summary: `Logged a ${humanise(data.type).toLowerCase()} for ${who} on ${formatDate(data.review_date)}`,
     after: data,
     // What was said in a one-to-one stays in the HR record.
     redactFields: ["summary"],

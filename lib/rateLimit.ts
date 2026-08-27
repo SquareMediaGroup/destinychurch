@@ -53,7 +53,14 @@ export interface RateLimitResult {
   retryAfterMs: number;
 }
 
-export function checkRateLimit(ip: string): RateLimitResult {
+/**
+ * @param max Requests allowed per window before a cooldown starts. Defaults to
+ * `MAX_PER_WINDOW` (15) for every existing caller. Raise it for an endpoint
+ * where 15/minute is the wrong ceiling for what it's actually guarding against
+ * — e.g. /api/track on a Sunday, where the whole congregation shares one
+ * church WiFi NAT IP and the 16th seat-back tap must not read as abuse.
+ */
+export function checkRateLimit(ip: string, max: number = MAX_PER_WINDOW): RateLimitResult {
   const now = Date.now();
   let r = rlStore.get(ip);
   if (!r) {
@@ -68,7 +75,7 @@ export function checkRateLimit(ip: string): RateLimitResult {
   r.timestamps = r.timestamps.filter((t) => now - t < WINDOW_MS);
   r.timestamps.push(now);
 
-  if (r.timestamps.length > MAX_PER_WINDOW) {
+  if (r.timestamps.length > max) {
     r.offenses += 1;
     r.cooldownUntil = now + COOLDOWN_MS[Math.min(r.offenses - 1, COOLDOWN_MS.length - 1)];
     r.timestamps = [];

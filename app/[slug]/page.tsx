@@ -1,13 +1,17 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
+import { after } from "next/server";
+import { headers } from "next/headers";
 import { redirect, notFound } from "next/navigation";
 import { createServiceClient } from "@/utils/supabase/service";
 import { getPublishedPostBySlug } from "@/lib/posts.server";
 import { EventsRail, CoursesRail } from "@/components/posts/PostRails";
 import RichContent from "@/components/content/RichContent";
+import { readCampaignParams, readRequestContext, recordEngagement } from "@/lib/engagement.server";
 
 interface Props {
   params: Promise<{ slug: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 }
 
 export const dynamic = "force-dynamic";
@@ -20,7 +24,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return {};
 }
 
-export default async function SlugPage({ params }: Props) {
+export default async function SlugPage({ params, searchParams }: Props) {
   const { slug } = await params;
 
   // 1. An admin-authored Post published at this slug.
@@ -64,11 +68,36 @@ export default async function SlugPage({ params }: Props) {
   const supabase = createServiceClient();
   const { data: redirectRow } = await supabase
     .from("redirects")
-    .select("target_url")
+    // Widened from target_url alone: id/label carry into the click log so a
+    // renamed or deleted redirect keeps the name it had when it was used.
+    .select("id, slug, label, target_url")
     .eq("slug", slug)
     .eq("active", true)
     .single();
 
-  if (redirectRow) redirect(redirectRow.target_url);
+  if (redirectRow) {
+    // Read the request now, while still inside render — after() callbacks in a
+    // Server Component may not call headers(), so the values are captured here
+    // and closed over. See the comment on readRequestContext().
+    const ctx = readRequestContext(await headers());
+    const campaign = readCampaignParams(await searchParams);
+
+    // Registered before redirect(), which throws. after() runs regardless —
+    // "even if the response didn't complete successfully, including when
+    // notFound or redirect is called" — and on Vercel it's backed by
+    // waitUntil, so this write happens after the 307 is already on its way.
+    after(() =>
+      recordEngagement({
+        source: "redirect",
+        targetKey: redirectRow.slug,
+        targetLabel: redirectRow.label,
+        redirectId: redirectRow.id,
+        ...ctx,
+        ...campaign,
+      }),
+    );
+
+    redirect(redirectRow.target_url);
+  }
   notFound();
 }

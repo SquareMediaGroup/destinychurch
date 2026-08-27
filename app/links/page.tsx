@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import LinksStepGrid from "@/components/links/LinksStepGrid";
+import { LINKS_STEPS } from "@/lib/linksSteps";
 
 export const metadata: Metadata = {
   title: "Next Steps",
@@ -13,59 +15,6 @@ export const metadata: Metadata = {
     url: "https://destinytees.uk/links",
   },
 };
-
-type Step = {
-  index: string;
-  title: string;
-  blurb: string;
-  href: string;
-  icon: string;
-};
-
-const steps: Step[] = [
-  {
-    index: "01",
-    title: "Baptism",
-    blurb: "Go public with your faith.",
-    href: "/baptism",
-    icon: "water_drop",
-  },
-  {
-    index: "02",
-    title: "Joining a Team",
-    blurb: "Use your gifts and serve.",
-    href: "/serve",
-    icon: "diversity_3",
-  },
-  {
-    index: "03",
-    title: "Joining a Connect Group",
-    blurb: "Find your people midweek.",
-    href: "/connect",
-    icon: "groups",
-  },
-  {
-    index: "04",
-    title: "Dedicating your Child",
-    blurb: "Celebrate and bless the little ones.",
-    href: "/child-dedication",
-    icon: "child_care",
-  },
-  {
-    index: "05",
-    title: "Courses",
-    blurb: "Explore life, faith and meaning.",
-    href: "/alpha",
-    icon: "menu_book",
-  },
-  {
-    index: "06",
-    title: "Giving",
-    blurb: "Partner with the vision.",
-    href: "/give",
-    icon: "volunteer_activism",
-  },
-];
 
 export default function LinksPage() {
   return (
@@ -169,54 +118,7 @@ export default function LinksPage() {
         </header>
 
         {/* The grid — 2 across, 3 down */}
-        <nav aria-label="Next steps">
-          <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5">
-            {steps.map((step, i) => (
-              <li
-                key={step.href}
-                className="links-reveal"
-                style={{ animationDelay: `${0.26 + i * 0.07}s` }}
-              >
-                <Link
-                  href={step.href}
-                  className="step-card group relative flex h-full flex-col overflow-hidden rounded-2xl border border-black/10 bg-white p-6 outline-none sm:p-7"
-                >
-                  {/* orange fill on hover */}
-                  <span
-                    aria-hidden
-                    className="step-fill absolute inset-0 bg-destiny-orange"
-                  />
-
-                  <div className="relative flex items-start justify-between">
-                    <span className="step-num font-[family-name:var(--font-anton)] text-2xl text-destiny-orange">
-                      {step.index}
-                    </span>
-                    <span
-                      aria-hidden
-                      className="material-symbols-rounded step-icon text-3xl text-destiny-grey/30"
-                    >
-                      {step.icon}
-                    </span>
-                  </div>
-
-                  <div className="relative mt-10 flex items-end justify-between gap-3">
-                    <div className="min-w-0">
-                      <h2 className="step-title font-[family-name:var(--font-heading)] text-xl font-black leading-tight text-destiny-grey sm:text-2xl">
-                        {step.title}
-                      </h2>
-                      <p className="step-blurb mt-1 text-sm text-destiny-grey/55">
-                        {step.blurb}
-                      </p>
-                    </div>
-                    <span className="material-symbols-rounded step-arrow shrink-0 text-3xl text-destiny-grey/40">
-                      arrow_forward
-                    </span>
-                  </div>
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </nav>
+        <LinksStepGrid steps={LINKS_STEPS} />
 
         {/* CTA */}
         <div

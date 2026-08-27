@@ -7,6 +7,7 @@
 import { useCallback, useRef, useState } from "react";
 import NfcTileModal from "@/components/nfc/NfcTileModal";
 import type { NfcTile, NfcTileMode } from "@/lib/nfcTiles";
+import { trackClick } from "@/lib/track";
 
 /** What the card promises before you tap it. */
 const BADGE: Record<NfcTileMode, string> = {
@@ -41,6 +42,7 @@ export default function NfcTileGrid({ tiles }: { tiles: NfcTile[] }) {
               type="button"
               onClick={(e) => {
                 invokerRef.current = e.currentTarget;
+                trackClick("nfc", tile.id, tile.title);
                 setActiveId(tile.id);
               }}
               className="nfc-card group relative flex h-full w-full flex-col overflow-hidden rounded-2xl border border-black/10 bg-white p-6 text-left outline-none sm:p-7"

@@ -39,14 +39,23 @@ export default function AnalyticsPage() {
   const [tab, setTab] = useState<Tab>("links");
   const [range, setRange] = useState<string>("month");
   const [includeBots, setIncludeBots] = useState(false);
+  // Deep-linked from a redirect row on /admin/redirects — undefined until the
+  // mount effect below has run, so ShortLinksPanel isn't given a stale null
+  // and then remounted a moment later with the real value.
+  const [initialTarget, setInitialTarget] = useState<string | null | undefined>(undefined);
 
-  // Deep link: /admin/analytics?tab=person&range=week — the same idea as
-  // /admin/audit's searchParams sync (app/admin/audit/page.tsx).
+  // Deep link: /admin/analytics?tab=links&range=month&target=alpha — the same
+  // idea as /admin/audit's searchParams sync (app/admin/audit/page.tsx). A
+  // target implies the links tab, since that's the only one a slug means
+  // anything on.
   useEffect(() => {
     const t = searchParams.get("tab");
     const r = searchParams.get("range");
-    if (t === "links" || t === "person" || t === "site") setTab(t);
+    const target = searchParams.get("target");
+    if (target) setTab("links");
+    else if (t === "links" || t === "person" || t === "site") setTab(t);
     if (r) setRange(r);
+    setInitialTarget(target);
     // Read once, on mount: after that the controls own this state.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -101,9 +110,18 @@ export default function AnalyticsPage() {
         )}
       </div>
 
-      {tab === "links" && <ShortLinksPanel range={range} includeBots={includeBots} />}
-      {tab === "person" && <InPersonPanel range={range} includeBots={includeBots} />}
-      {tab === "site" && <SitePanel range={range} />}
+      {/* Wait for the deep-link effect to resolve `target` before mounting a
+          tab, so ShortLinksPanel is never mounted once with the wrong initial
+          target and then remounted a moment later with the real one. */}
+      {initialTarget !== undefined && (
+        <>
+          {tab === "links" && (
+            <ShortLinksPanel range={range} includeBots={includeBots} initialTarget={initialTarget} />
+          )}
+          {tab === "person" && <InPersonPanel range={range} includeBots={includeBots} />}
+          {tab === "site" && <SitePanel range={range} />}
+        </>
+      )}
     </div>
   );
 }

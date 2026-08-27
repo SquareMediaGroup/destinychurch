@@ -73,7 +73,10 @@ const ROW_DEFAULTS: Record<string, Json> = {
     variants: [],
   },
   "/api/admin/posts": { is_published: false, blocks: [], content: "" },
-  "/api/admin/redirects": { active: true, hits: 0 },
+  // No click-count field: /admin/redirects reads that from
+  // /api/admin/analytics (engagement_events), never from the row itself, so
+  // there's nothing here for a phantom row to be missing.
+  "/api/admin/redirects": { active: true },
   "/api/admin/nfc": { is_active: true, sort_order: 0 },
   "/api/admin/training/categories": { sort_order: 0, subgroups: [] },
 };

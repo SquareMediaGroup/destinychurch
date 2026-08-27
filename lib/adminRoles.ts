@@ -102,11 +102,13 @@ const ROUTE_RULES: { pattern: RegExp; roles: AdminRole[] }[] = [
   { pattern: /^\/api\/admin\/store(\/|$)/, roles: ["store_admin"] },
   { pattern: /^\/api\/admin\/shop-hero(\/|$)/, roles: ["store_admin"] },
 
-  // Site admin — posts, redirects
+  // Site admin — posts, redirects, analytics
   { pattern: /^\/admin\/posts(\/|$)/, roles: ["site_admin"] },
   { pattern: /^\/admin\/redirects(\/|$)/, roles: ["site_admin"] },
+  { pattern: /^\/admin\/analytics(\/|$)/, roles: ["site_admin"] },
   { pattern: /^\/api\/admin\/posts(\/|$)/, roles: ["site_admin"] },
   { pattern: /^\/api\/admin\/redirects(\/|$)/, roles: ["site_admin"] },
+  { pattern: /^\/api\/admin\/analytics(\/|$)/, roles: ["site_admin"] },
 
   // Host — the live chat console. Hosts also moderate from /live itself, which
   // is a public page and so sits outside this table; those routes authorise

@@ -14,11 +14,15 @@ import { useEngagementRollup } from "@/lib/useEngagementRollup";
 export function ShortLinksPanel({
   range,
   includeBots,
+  initialTarget = null,
 }: {
   range: string;
   includeBots: boolean;
+  /** Deep-linked from /admin/redirects — a slug to open the panel already
+   * filtered to. Only read once; after that the row clicks below own it. */
+  initialTarget?: string | null;
 }) {
-  const [target, setTarget] = useState<string | null>(null);
+  const [target, setTarget] = useState<string | null>(initialTarget);
   const { data, loading, error } = useEngagementRollup({
     range,
     source: "redirect",

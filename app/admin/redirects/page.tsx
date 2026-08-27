@@ -17,6 +17,8 @@ import {
   ghostBtn,
 } from "@/components/admin/AdminUI";
 import { useAdminList } from "@/lib/useAdminList";
+import { RedirectQrModal } from "@/components/admin/redirects/RedirectQrModal";
+import type { EngagementRollup } from "@/lib/engagement";
 
 interface Redirect {
   id: string;
@@ -38,6 +40,14 @@ export default function RedirectsPage() {
   // The create form used to sit permanently above the list, pushing every
   // existing redirect below the fold. It now opens on demand.
   const [showForm, setShowForm] = useState(false);
+  const [qrTarget, setQrTarget] = useState<Redirect | null>(null);
+  // 30-day click counts, keyed by slug. Fetched separately rather than joined
+  // onto the row: a counter column on `redirects` would drift from the click
+  // log and give two different answers to "how many clicks", so the count
+  // shown here always comes from the same engagement_events data the
+  // Analytics page reads. Both routes require site_admin, so a caller who can
+  // see this page can always reach the other.
+  const [clickCounts, setClickCounts] = useState<Record<string, number> | null>(null);
 
   const [label, setLabel] = useState("");
   const [slug, setSlug] = useState("");
@@ -61,6 +71,20 @@ export default function RedirectsPage() {
   useEffect(() => {
     fetchRedirects();
   }, [fetchRedirects]);
+
+  useEffect(() => {
+    fetch("/api/admin/analytics?source=redirect&range=month")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data: EngagementRollup | null) => {
+        if (!data) return;
+        const counts: Record<string, number> = {};
+        for (const row of data.byTarget) counts[row.key] = row.events;
+        setClickCounts(counts);
+      })
+      // Not fatal — the page works fine without click counts, they just
+      // don't show. Most likely cause is the migration not being applied yet.
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     if (searchParams.get("new") === "1") setShowForm(true);
@@ -319,6 +343,16 @@ export default function RedirectsPage() {
                         )}
                       </div>
                       <p className="truncate text-xs text-destiny-grey/45">{r.target_url}</p>
+                      {clickCounts && (clickCounts[r.slug] ?? 0) > 0 && (
+                        <a
+                          href={`/admin/analytics?tab=links&range=month&target=${encodeURIComponent(r.slug)}`}
+                          className="mt-0.5 inline-flex items-center gap-1 text-xs font-bold text-destiny-grey/40 transition hover:text-destiny-orange"
+                        >
+                          <span className="material-symbols-rounded text-sm">ads_click</span>
+                          {clickCounts[r.slug]} click{clickCounts[r.slug] === 1 ? "" : "s"} in the
+                          last 30 days
+                        </a>
+                      )}
                     </div>
 
                     <div className="flex shrink-0 items-center gap-1">
@@ -346,6 +380,14 @@ export default function RedirectsPage() {
                           {copied === r.slug ? "check" : "content_copy"}
                         </span>
                       </button>
+                      <button
+                        onClick={() => setQrTarget(r)}
+                        title="QR code"
+                        aria-label={`Get a QR code for /${r.slug}`}
+                        className="flex h-8 w-8 items-center justify-center rounded-lg text-destiny-grey/40 transition hover:bg-black/5 hover:text-destiny-grey"
+                      >
+                        <span className="material-symbols-rounded text-base">qr_code_2</span>
+                      </button>
                       <Toggle
                         checked={r.active}
                         onChange={() => handleToggle(r)}
@@ -366,6 +408,14 @@ export default function RedirectsPage() {
             </div>
           )}
         </>
+      )}
+
+      {qrTarget && (
+        <RedirectQrModal
+          slug={qrTarget.slug}
+          label={qrTarget.label}
+          onClose={() => setQrTarget(null)}
+        />
       )}
     </div>
   );

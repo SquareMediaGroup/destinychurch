@@ -1,10 +1,20 @@
 import { createClient } from "@supabase/supabase-js";
 import { COURSE_EVENT_META, isCourseEventType } from "@/lib/courseEvents";
+import { humanise } from "@/lib/audit";
 import { recordAudit } from "@/lib/audit.server";
 
 /** "Alpha" rather than "youth_alpha" in the log sentence. */
 function courseLabel(type: unknown): string {
   return isCourseEventType(type) ? COURSE_EVENT_META[type].label : String(type ?? "course");
+}
+
+/** "14 Sep 2026" — a date column belongs in the log as a date, not as 2026-09-14. */
+function formatCourseDate(value: string | null): string {
+  if (!value) return "no date";
+  const date = new Date(value);
+  return Number.isNaN(date.getTime())
+    ? value
+    : date.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
 }
 
 const supabase = createClient(
@@ -89,8 +99,8 @@ export async function POST(req: Request) {
       section: "courses",
       entity: "course date",
       entityId: data.id,
-      entityLabel: `${courseLabel(data.type)} — ${data.start_date}`,
-      summary: `Added a ${courseLabel(data.type)} date starting ${data.start_date} (${data.frequency}, ${data.format === "online" ? "online" : data.location || "in person"})`,
+      entityLabel: `${courseLabel(data.type)} — ${formatCourseDate(data.start_date)}`,
+      summary: `Added a ${courseLabel(data.type)} date starting ${formatCourseDate(data.start_date)} (${humanise(data.frequency).toLowerCase()}, ${data.format === "online" ? "online" : data.location || "in person"})`,
       after: data,
     });
 

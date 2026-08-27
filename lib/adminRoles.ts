@@ -24,6 +24,37 @@ export const ADMIN_ROLES: AdminRole[] = [
   "super_admin",
 ];
 
+/**
+ * What each access level is called in front of a person.
+ *
+ * Lives here rather than in the page that happened to need it first, because
+ * `store_admin` is a column name and should never reach a screen: the users
+ * page, the audit log's summaries and its detail panel all have to call it the
+ * same thing, and three copies of this map would eventually not.
+ */
+export const ROLE_LABELS: Record<AdminRole, string> = {
+  training_admin: "Training Admin",
+  event_admin: "Event Admin",
+  store_admin: "Store Admin",
+  site_admin: "Site Admin",
+  host: "Host",
+  hr_admin: "HR Admin",
+  super_admin: "Super Admin",
+};
+
+/** One role, named. Falls back to the raw value if a stored role is retired. */
+export function roleLabel(role: string): string {
+  return ROLE_LABELS[role as AdminRole] ?? role.replace(/_/g, " ");
+}
+
+/** "Event Admin, Store Admin and Site Admin" — a list a sentence can contain. */
+export function roleList(roles: readonly string[]): string {
+  const labels = roles.map(roleLabel);
+  if (labels.length === 0) return "";
+  if (labels.length === 1) return labels[0];
+  return `${labels.slice(0, -1).join(", ")} and ${labels[labels.length - 1]}`;
+}
+
 export type RoleFlags = Record<AdminRole, boolean>;
 
 export const NO_ROLES: RoleFlags = {

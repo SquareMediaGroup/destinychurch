@@ -6,6 +6,15 @@ function courseLabel(type: unknown): string {
   return isCourseEventType(type) ? COURSE_EVENT_META[type].label : String(type ?? "course");
 }
 
+/** "14 Sep 2026" — a date column belongs in the log as a date, not as 2026-09-14. */
+function formatCourseDate(value: unknown): string {
+  if (typeof value !== "string" || !value) return "no date";
+  const date = new Date(value);
+  return Number.isNaN(date.getTime())
+    ? value
+    : date.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
+}
+
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!
@@ -35,7 +44,7 @@ export async function PATCH(
     // The list page toggles `active` inline, so say which way it went — that is
     // the difference between a date being live on the site and not.
     const toggledOnly = Object.keys(body).length === 1 && "active" in body;
-    const label = `${courseLabel(data.type)} — ${data.start_date}`;
+    const label = `${courseLabel(data.type)} — ${formatCourseDate(data.start_date)}`;
 
     await recordAudit({
       action: "update",
@@ -44,8 +53,8 @@ export async function PATCH(
       entityId: id,
       entityLabel: label,
       summary: toggledOnly
-        ? `${data.active ? "Showed" : "Hid"} the ${courseLabel(data.type)} date starting ${data.start_date}`
-        : `Edited the ${courseLabel(data.type)} date starting ${data.start_date}`,
+        ? `${data.active ? "Showed" : "Hid"} the ${courseLabel(data.type)} date starting ${formatCourseDate(data.start_date)}`
+        : `Edited the ${courseLabel(data.type)} date starting ${formatCourseDate(data.start_date)}`,
       before,
       after: data,
     });
@@ -79,9 +88,9 @@ export async function DELETE(
       section: "courses",
       entity: "course date",
       entityId: id,
-      entityLabel: before ? `${courseLabel(before.type)} — ${before.start_date}` : null,
+      entityLabel: before ? `${courseLabel(before.type)} — ${formatCourseDate(before.start_date)}` : null,
       summary: before
-        ? `Deleted the ${courseLabel(before.type)} date starting ${before.start_date}`
+        ? `Deleted the ${courseLabel(before.type)} date starting ${formatCourseDate(before.start_date)}`
         : `Deleted a course date (${id})`,
       before,
     });

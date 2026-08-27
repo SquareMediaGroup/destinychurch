@@ -3,7 +3,7 @@ import { cookies } from "next/headers";
 import { createClient } from "@/utils/supabase/server";
 import { createServiceClient } from "@/utils/supabase/service";
 import { deleteLogin } from "@/lib/staffLogins";
-import { ADMIN_ROLES, type AdminRole } from "@/lib/adminRoles";
+import { ADMIN_ROLES, roleList, type AdminRole } from "@/lib/adminRoles";
 import { readForAudit, recordAudit } from "@/lib/audit.server";
 
 function rolesFromBody(body: Record<string, unknown>): Record<AdminRole, boolean> {
@@ -64,8 +64,8 @@ export async function PATCH(
   const gained = ADMIN_ROLES.filter((role) => nextRoles[role] && !before?.[role]);
   const lost = ADMIN_ROLES.filter((role) => !nextRoles[role] && before?.[role]);
   const parts = [
-    gained.length ? `granted ${gained.join(", ")}` : "",
-    lost.length ? `removed ${lost.join(", ")}` : "",
+    gained.length ? `granted ${roleList(gained)}` : "",
+    lost.length ? `removed ${roleList(lost)}` : "",
   ].filter(Boolean);
 
   await recordAudit({
@@ -79,7 +79,10 @@ export async function PATCH(
       : `Saved access for ${data.email} with no change`,
     before,
     after: data,
-    metadata: { granted: gained, removed: lost },
+    metadata: {
+      granted: gained.length ? roleList(gained) : "Nothing",
+      removed: lost.length ? roleList(lost) : "Nothing",
+    },
   });
 
   return NextResponse.json(data);

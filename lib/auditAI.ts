@@ -18,6 +18,9 @@ import { createServiceClient } from "@/utils/supabase/service";
 import {
   AUDIT_ACTION_KEYS,
   AUDIT_SECTION_KEYS,
+  siteDateTime,
+  siteDayBounds,
+  siteDayKey,
   type AuditEntry,
 } from "@/lib/audit";
 
@@ -60,11 +63,12 @@ export const AUDIT_TOOLS: OpenAI.Chat.Completions.ChatCompletionTool[] = [
           since: {
             type: "string",
             description:
-              "ISO date or timestamp — only entries at or after this. Resolve relative dates ('last week') against the current date given in the system prompt.",
+              "Only entries at or after this. Use a plain YYYY-MM-DD date — it is resolved to that day's start in UK local time for you. Resolve relative dates ('last week') against the current date given in the system prompt.",
           },
           until: {
             type: "string",
-            description: "ISO date or timestamp — only entries at or before this.",
+            description:
+              "Only entries at or before this. A plain YYYY-MM-DD date covers the whole of that day in UK local time.",
           },
           limit: {
             type: "number",
@@ -88,8 +92,14 @@ export const AUDIT_TOOLS: OpenAI.Chat.Completions.ChatCompletionTool[] = [
             enum: ["actor_email", "section", "action", "entity"],
             description: "What to group the counts by.",
           },
-          since: { type: "string", description: "ISO date — count from here." },
-          until: { type: "string", description: "ISO date — count up to here." },
+          since: {
+            type: "string",
+            description: "YYYY-MM-DD — count from the start of this day (UK local time).",
+          },
+          until: {
+            type: "string",
+            description: "YYYY-MM-DD — count up to the end of this day (UK local time).",
+          },
           section: {
             type: "string",
             enum: AUDIT_SECTION_KEYS as unknown as string[],
@@ -101,6 +111,25 @@ export const AUDIT_TOOLS: OpenAI.Chat.Completions.ChatCompletionTool[] = [
     },
   },
 ];
+
+/**
+ * Turn a date the model wrote into the instant a query should use.
+ *
+ * A bare `YYYY-MM-DD` is resolved against the church's clock, not UTC: asked
+ * for "today" in August, comparing against UTC midnight would quietly include
+ * the last hour of yesterday evening. Anything else (a full timestamp) is
+ * passed through untouched.
+ */
+function resolveSince(value: unknown): string | null {
+  if (typeof value !== "string" || !value.trim()) return null;
+  return siteDayBounds(value.trim())?.start ?? value.trim();
+}
+
+function resolveUntil(value: unknown): string | null {
+  if (typeof value !== "string" || !value.trim()) return null;
+  // A bare date means the whole of that day, so the bound is its last instant.
+  return siteDayBounds(value.trim())?.end ?? value.trim();
+}
 
 /** Escape the wildcards PostgREST's `ilike` treats as special. */
 function likeTerm(query: string): string {
@@ -118,7 +147,11 @@ function likeTerm(query: string): string {
 function forModel(entry: AuditEntry) {
   return {
     id: entry.id,
-    when: entry.created_at,
+    // Already formatted in the church's time zone. The model used to be handed
+    // the raw UTC timestamp and asked to "write it naturally", which through
+    // British Summer Time meant every time it quoted was an hour early. It
+    // cannot get a conversion wrong that it is never asked to do.
+    when: siteDateTime(entry.created_at),
     who: entry.actor_email ?? "system",
     action: entry.action,
     section: entry.section,
@@ -156,12 +189,10 @@ export async function runAuditTool(
     }
     if (typeof args.section === "string") query = query.eq("section", args.section);
     if (typeof args.action === "string") query = query.eq("action", args.action);
-    if (typeof args.since === "string" && args.since) {
-      query = query.gte("created_at", args.since);
-    }
-    if (typeof args.until === "string" && args.until) {
-      query = query.lte("created_at", args.until);
-    }
+    const since = resolveSince(args.since);
+    if (since) query = query.gte("created_at", since);
+    const until = resolveUntil(args.until);
+    if (until) query = query.lte("created_at", until);
 
     const { data, error } = await query.limit(limit);
     if (error) {
@@ -191,12 +222,10 @@ export async function runAuditTool(
       .from("audit_log")
       .select(column)
       .order("id", { ascending: false });
-    if (typeof args.since === "string" && args.since) {
-      query = query.gte("created_at", args.since);
-    }
-    if (typeof args.until === "string" && args.until) {
-      query = query.lte("created_at", args.until);
-    }
+    const since = resolveSince(args.since);
+    if (since) query = query.gte("created_at", since);
+    const until = resolveUntil(args.until);
+    if (until) query = query.lte("created_at", until);
     if (typeof args.section === "string") query = query.eq("section", args.section);
 
     const { data, error } = await query.limit(COUNT_SCAN);
@@ -240,17 +269,17 @@ export async function runAuditTool(
 export function auditSystemPrompt(now: Date, loggingSince: string | null): string {
   return `You answer questions about the admin audit log for Destiny Church Tees Valley's website.
 
-Today is ${now.toISOString().slice(0, 10)} (${now.toUTCString()}). All times in the log are UTC; write them in a natural British style ("Tuesday 12 August, 2:14pm").
+Today is ${siteDateTime(now.toISOString())} (${siteDayKey(now)}), UK local time. Every time you are given is already in UK local time and already written out — quote it exactly as given. Never convert a time, never recompute one, and never assume UTC.
 
 ${
   loggingSince
-    ? `The log's earliest entry is ${loggingSince}. Nothing before that was recorded.`
+    ? `The log's earliest entry is ${siteDateTime(loggingSince)}. Nothing before that was recorded.`
     : "The log is empty — nothing has been recorded yet."
 }
 
 HOW TO ANSWER
 - Always call a tool first. Never answer from memory or guess: if a tool didn't return it, you don't know it.
-- Name the person by the email in the entry, and say when. "Sarah (sarah@example.org) added it on Tuesday 12 August at 2:14pm."
+- Name the person by the email in the entry, and say when — copying the entry's \`when\` verbatim rather than rephrasing the clock time.
 - One or two short paragraphs, or a short list for a "what happened" question. No headings, no preamble, no restating the question.
 - If a search comes back empty, try once more with fewer or different words (a shorter query, no section filter) before saying you can't find it.
 - If it's still empty, say so plainly and say why it might be: nobody did it, it happened before the log started, or it isn't the kind of thing the log records (it records changes admins make in the dashboard — not what visitors do on the public site).

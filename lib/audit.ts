@@ -15,6 +15,8 @@
 //     counts rather than a free-text box, and so a typo can't invent a section
 //     that nothing will ever match.
 
+import { ROLE_LABELS } from "@/lib/adminRoles";
+
 /* ── Actor headers ─────────────────────────────────────────────────────────── */
 
 /**
@@ -266,20 +268,128 @@ export function snapshotRecord(
 
 /* ── Presentation helpers ──────────────────────────────────────────────────── */
 
-/** Turn a column name into something readable: `target_url` → "Target url". */
-export function fieldLabel(field: string): string {
-  return field
+/**
+ * Column names, said out loud.
+ *
+ * The log is written from database rows, so without this the screen fills up
+ * with the schema — `is_published`, `base_price_pennies`, `cv_path`. None of
+ * those are words, and the people reading this page are the ones least
+ * interested in what we called the column. Anything unlisted falls through to
+ * the generic rule below, which is fine for most columns; this map is for the
+ * ones where it isn't.
+ *
+ * Kept separate from VALUE_LABELS below because the same word means different
+ * things on each side: `body` is the column "Content", but "body" as a *value*
+ * is just the word body and must be left alone.
+ */
+const FIELD_LABELS: Record<string, string> = {
+  // The seven role columns of admin_roles are field names as well as values.
+  ...ROLE_LABELS,
+  id: "ID",
+  url: "URL",
+  cta_link: "Button link",
+  cta_text: "Button text",
+  target_url: "Points to",
+  is_published: "Published",
+  is_featured: "Featured",
+  is_active: "Active",
+  is_done: "Done",
+  sort_order: "Order",
+  base_price_pennies: "Price",
+  price_pennies: "Price",
+  total_pennies: "Total",
+  subtotal_pennies: "Subtotal",
+  min_read_seconds: "Minimum read time",
+  password_hash: "Password",
+  auth_user_id: "Linked login",
+  staff_id: "Staff member",
+  image_url: "Image",
+  image_path: "Image file",
+  embed_url: "Embed",
+  slug: "Web address",
+  body: "Content",
+  cv_path: "CV",
+  ip: "IP address",
+  user_agent: "Browser",
+};
+
+/** Stored values whose tidied-up form still wouldn't be how anyone writes it. */
+const VALUE_LABELS: Record<string, string> = {
+  ...ROLE_LABELS,
+  one_off: "One-off",
+  one_to_one: "One-to-one",
+  youth_alpha: "Youth Alpha",
+  cap_money: "CAP Money",
+  bible_course: "The Bible Course",
+  in_person: "In person",
+  full_time: "Full time",
+  part_time: "Part time",
+  hr: "HR",
+  nfc: "NFC",
+  cv: "CV",
+};
+
+/** The generic rule: `target_url` → "Target url", `startsAt` → "Starts at". */
+function titleise(text: string): string {
+  return text
     .replace(/_/g, " ")
     .replace(/([a-z])([A-Z])/g, "$1 $2")
+    .trim()
     .replace(/^\w/, (c) => c.toUpperCase());
+}
+
+/** Turn a column name into something readable. */
+export function fieldLabel(field: string): string {
+  return FIELD_LABELS[field] ?? titleise(field);
+}
+
+/**
+ * A stored value, said out loud: `youth_alpha` → "Youth Alpha", `one_off` →
+ * "One-off", `super_admin` → "Super Admin".
+ */
+export function humanise(value: string): string {
+  return VALUE_LABELS[value] ?? titleise(value);
+}
+
+/**
+ * Whether a string is a bare identifier rather than content.
+ *
+ * Deliberately narrow — lowercase words joined by underscores and nothing else.
+ * Emails have an `@`, URLs and paths have `/`, slugs use hyphens, and prose has
+ * spaces, so none of them match and none of them get mangled by being tidied up.
+ */
+function looksLikeIdentifier(value: string): boolean {
+  return /^[a-z][a-z0-9]*(_[a-z0-9]+)+$/.test(value);
 }
 
 /** How a value reads in the detail table. */
 export function formatValue(value: unknown): string {
   if (value === null || value === undefined || value === "") return "—";
   if (typeof value === "boolean") return value ? "Yes" : "No";
-  if (typeof value === "string") return value;
+  if (typeof value === "string") {
+    // A known value name always wins; otherwise only tidy up things that are
+    // plainly identifiers rather than content.
+    if (VALUE_LABELS[value]) return VALUE_LABELS[value];
+    return looksLikeIdentifier(value) ? titleise(value) : value;
+  }
   if (typeof value === "number") return String(value);
+  if (Array.isArray(value)) {
+    // Role lists and the like read as a sentence, not as JSON.
+    return value.length === 0 ? "—" : value.map((v) => formatValue(v)).join(", ");
+  }
+  if (value && typeof value === "object") {
+    // A small flat object — `{ added: 2, removed: 1 }` — reads better as
+    // "Added: 2, Removed: 1" than as pretty-printed JSON. Anything deeper or
+    // longer than that genuinely is data, and JSON is the honest way to show it.
+    const entries = Object.entries(value as Record<string, unknown>);
+    const flat =
+      entries.length > 0 &&
+      entries.length <= 6 &&
+      entries.every(([, v]) => v === null || typeof v !== "object");
+    if (flat) {
+      return entries.map(([k, v]) => `${fieldLabel(k)}: ${formatValue(v)}`).join(", ");
+    }
+  }
   try {
     return JSON.stringify(value, null, 2);
   } catch {
@@ -306,11 +416,63 @@ export function relativeTime(iso: string, now: number = Date.now()): string {
   });
 }
 
-/** Full timestamp for the detail view — UK format, to the second. */
+/* ── Time zone ─────────────────────────────────────────────────────────────── */
+
+/**
+ * Every time this log shows is church time, wherever it is rendered.
+ *
+ * The rows are stored in UTC, Vercel's servers run in UTC, and the church is in
+ * Stockton-on-Tees — which is UTC in winter and UTC+1 from late March to late
+ * October. So a timestamp formatted without saying which zone it is in reads an
+ * hour early for two thirds of the year, which is exactly wrong for a record
+ * whose whole job is saying *when* something happened.
+ *
+ * Pinning it to the church's zone rather than the reader's is deliberate: a
+ * Super Admin checking the log from abroad wants to know when it happened here,
+ * and the AI's answer, the list, the detail panel and the weekly email must all
+ * say the same time as each other.
+ */
+export const SITE_TIME_ZONE = "Europe/London";
+
+/**
+ * How far the site's zone is ahead of UTC at a given instant, in milliseconds.
+ *
+ * Derived from `Intl` rather than hard-coded, so the BST/GMT switch happens on
+ * the right Sunday every year without anyone remembering to change anything.
+ */
+function zoneOffsetMs(date: Date): number {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: SITE_TIME_ZONE,
+    hour12: false,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+  }).formatToParts(date);
+
+  const get = (type: string) => Number(parts.find((p) => p.type === type)?.value ?? 0);
+  // `hour` comes back as 24 at midnight under hour12:false in some engines.
+  const hour = get("hour") % 24;
+
+  const asUtc = Date.UTC(
+    get("year"),
+    get("month") - 1,
+    get("day"),
+    hour,
+    get("minute"),
+    get("second"),
+  );
+  return asUtc - date.getTime();
+}
+
+/** Full timestamp for the detail view — church time, to the second, zone named. */
 export function fullTimestamp(iso: string): string {
   const date = new Date(iso);
   if (Number.isNaN(date.getTime())) return iso;
   return date.toLocaleString("en-GB", {
+    timeZone: SITE_TIME_ZONE,
     weekday: "short",
     day: "numeric",
     month: "short",
@@ -318,7 +480,79 @@ export function fullTimestamp(iso: string): string {
     hour: "2-digit",
     minute: "2-digit",
     second: "2-digit",
+    // "GMT+1" rather than nothing: the one place in the admin that has to be
+    // unambiguous about which clock it means.
+    timeZoneName: "short",
   });
+}
+
+/**
+ * "Thu 27 Aug 2026, 10:07am" — church time, already formatted.
+ *
+ * Used everywhere a time leaves the browser: the rows handed to the AI, the
+ * weekly report, the email. Formatting before the model sees it is the whole
+ * fix for the model quoting UTC as though it were local — it can't get the
+ * conversion wrong if it is never asked to do one.
+ */
+export function siteDateTime(iso: string): string {
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return iso;
+  return date
+    .toLocaleString("en-GB", {
+      timeZone: SITE_TIME_ZONE,
+      weekday: "short",
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: true,
+    })
+    .replace(/\s?([ap])m$/i, (_, m: string) => `${m.toLowerCase()}m`);
+}
+
+/** "27 Aug 2026" in church time. */
+export function siteDate(iso: string): string {
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return iso;
+  return date.toLocaleDateString("en-GB", {
+    timeZone: SITE_TIME_ZONE,
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
+}
+
+/** Today's date in church time, as `YYYY-MM-DD`. */
+export function siteDayKey(date: Date = new Date()): string {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: SITE_TIME_ZONE,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(date);
+}
+
+/**
+ * The instants a `YYYY-MM-DD` starts and ends *here*.
+ *
+ * Without this, filtering "today" would compare against UTC midnight, which
+ * through the summer means the last hour of yesterday evening counts as today
+ * — an off-by-an-hour that only shows up in the entries most likely to be
+ * looked up (the recent ones).
+ */
+export function siteDayBounds(day: string): { start: string; end: string } | null {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(day)) return null;
+
+  const guess = new Date(`${day}T00:00:00Z`);
+  if (Number.isNaN(guess.getTime())) return null;
+
+  // Midnight local = midnight UTC minus the offset. The offset is measured at
+  // the guess rather than assumed, and BST switches at 01:00 local, so midnight
+  // is never inside the ambiguous hour.
+  const start = new Date(guess.getTime() - zoneOffsetMs(guess));
+  const end = new Date(start.getTime() + 24 * 60 * 60 * 1000 - 1);
+  return { start: start.toISOString(), end: end.toISOString() };
 }
 
 /** The bit of an email before the @ — how a person is named in a busy list. */

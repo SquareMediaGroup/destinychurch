@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createServiceClient } from "@/utils/supabase/service";
-import { fullName, LEAVE_TYPE_LABELS, type LeaveType } from "@/lib/hr";
+import { formatDate, fullName, LEAVE_TYPE_LABELS, type LeaveType } from "@/lib/hr";
 import { readForAudit, recordAudit } from "@/lib/audit.server";
 
 export async function GET(request: Request) {
@@ -58,7 +58,7 @@ export async function POST(request: Request) {
     entity: "leave request",
     entityId: data.id,
     entityLabel: who,
-    summary: `Logged ${LEAVE_TYPE_LABELS[data.type as LeaveType] ?? data.type} leave for ${who}, ${data.start_date} to ${data.end_date} (${data.days} day(s))`,
+    summary: `Logged ${(LEAVE_TYPE_LABELS[data.type as LeaveType] ?? data.type).toLowerCase()} leave for ${who}, ${formatDate(data.start_date)} to ${formatDate(data.end_date)} (${data.days} day${data.days === 1 ? "" : "s"})`,
     after: data,
     redactFields: ["reason"],
   });

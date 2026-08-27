@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createServiceClient } from "@/utils/supabase/service";
-import { fullName } from "@/lib/hr";
+import { formatDate, fullName } from "@/lib/hr";
+import { humanise } from "@/lib/audit";
 import { readForAudit, recordAudit } from "@/lib/audit.server";
 
 export async function PATCH(
@@ -43,7 +44,7 @@ export async function PATCH(
     entity: "review",
     entityId: id,
     entityLabel: who,
-    summary: `Edited the ${data.type.replace(/_/g, " ")} record for ${who} on ${data.review_date}`,
+    summary: `Edited the ${humanise(data.type).toLowerCase()} record for ${who} on ${formatDate(data.review_date)}`,
     before,
     after: update,
     redactFields: ["summary"],

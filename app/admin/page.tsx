@@ -30,6 +30,7 @@ import { useAdminRecents } from "@/lib/adminRecents";
 import { totalStock, type ProductWithVariants, type Order } from "@/lib/shop";
 import type { Post } from "@/lib/posts";
 import { CommandTrigger } from "@/components/admin/AdminCommandPalette";
+import { MetricCard } from "@/components/admin/AdminUI";
 
 /** A variant at or below this many units is called out before it sells out. */
 const LOW_STOCK_THRESHOLD = 3;
@@ -543,73 +544,6 @@ export default function AdminDashboard() {
         ))}
       </section>
     </div>
-  );
-}
-
-function MetricCard({
-  href,
-  icon,
-  iconColor,
-  iconBg,
-  label,
-  loading,
-  value,
-  valueClass = "text-destiny-grey",
-  chip,
-}: {
-  href: string;
-  icon: string;
-  iconColor: string;
-  iconBg: string;
-  label: string;
-  loading: boolean;
-  value: number | string;
-  valueClass?: string;
-  chip?: { text: string; tone: "up" | "down" | "active" | "muted" };
-}) {
-  const chipTone =
-    chip?.tone === "active" || chip?.tone === "up"
-      ? "bg-destiny-green/10 text-destiny-green"
-      : chip?.tone === "down"
-        ? "bg-destiny-red/10 text-destiny-red"
-        : "bg-black/5 text-destiny-grey/50";
-
-  return (
-    <Link
-      href={href}
-      className="group rounded-2xl border border-black/5 bg-white p-5 shadow-sm transition hover:shadow-md"
-    >
-      <span
-        className={`flex h-11 w-11 items-center justify-center rounded-xl ${iconBg} ${iconColor}`}
-      >
-        <span className="material-symbols-rounded text-2xl">{icon}</span>
-      </span>
-
-      <div className="mt-5 flex items-end justify-between gap-2">
-        <div className="min-w-0">
-          {loading ? (
-            <>
-              <div className="mb-1.5 h-8 w-16 animate-pulse rounded-lg bg-black/5" />
-              <div className="h-3 w-20 animate-pulse rounded bg-black/5" />
-            </>
-          ) : (
-            <>
-              <p className={`text-3xl font-black leading-none ${valueClass}`}>{value}</p>
-              <p className="mt-1.5 truncate text-sm font-medium text-destiny-grey/50">
-                {label}
-              </p>
-            </>
-          )}
-        </div>
-        {!loading && chip && (
-          <span
-            className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] font-bold ${chipTone}`}
-          >
-            {chip.text}
-          </span>
-        )}
-      </div>
-    </Link>
   );
 }
 

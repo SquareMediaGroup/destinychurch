@@ -12,6 +12,7 @@
 
 import { useEffect, useId, useRef } from "react";
 import type { ReactNode } from "react";
+import Link from "next/link";
 
 /* ── Class tokens ──────────────────────────────────────────────────────────── */
 
@@ -499,6 +500,96 @@ export function Toggle({
         }`}
       />
     </button>
+  );
+}
+
+/* ── Metric card ───────────────────────────────────────────────────────────── */
+
+/**
+ * The dashboard's "at a glance" tiles — promoted here from app/admin/page.tsx
+ * so /admin/analytics can reuse the exact same shape rather than growing a
+ * second, drifting copy.
+ *
+ * `href` is optional: on the dashboard every tile links somewhere, but an
+ * analytics tile like "Bots filtered" has nowhere to go. Without a href it
+ * renders as a plain div — same look, no hover affordance, not a tab stop.
+ */
+export function MetricCard({
+  href,
+  icon,
+  iconColor,
+  iconBg,
+  label,
+  loading,
+  value,
+  valueClass = "text-destiny-grey",
+  chip,
+}: {
+  href?: string;
+  icon: string;
+  iconColor: string;
+  iconBg: string;
+  label: string;
+  loading: boolean;
+  value: number | string;
+  valueClass?: string;
+  chip?: { text: string; tone: "up" | "down" | "active" | "muted" };
+}) {
+  const chipTone =
+    chip?.tone === "active" || chip?.tone === "up"
+      ? "bg-destiny-green/10 text-destiny-green"
+      : chip?.tone === "down"
+        ? "bg-destiny-red/10 text-destiny-red"
+        : "bg-black/5 text-destiny-grey/50";
+
+  const body = (
+    <>
+      <span
+        className={`flex h-11 w-11 items-center justify-center rounded-xl ${iconBg} ${iconColor}`}
+      >
+        <span className="material-symbols-rounded text-2xl">{icon}</span>
+      </span>
+
+      <div className="mt-5 flex items-end justify-between gap-2">
+        <div className="min-w-0">
+          {loading ? (
+            <>
+              <div className="mb-1.5 h-8 w-16 animate-pulse rounded-lg bg-black/5" />
+              <div className="h-3 w-20 animate-pulse rounded bg-black/5" />
+            </>
+          ) : (
+            <>
+              <p className={`text-3xl font-black leading-none ${valueClass}`}>{value}</p>
+              <p className="mt-1.5 truncate text-sm font-medium text-destiny-grey/50">
+                {label}
+              </p>
+            </>
+          )}
+        </div>
+        {!loading && chip && (
+          <span
+            className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] font-bold ${chipTone}`}
+          >
+            {chip.text}
+          </span>
+        )}
+      </div>
+    </>
+  );
+
+  if (!href) {
+    return (
+      <div className="rounded-2xl border border-black/5 bg-white p-5 shadow-sm">{body}</div>
+    );
+  }
+
+  return (
+    <Link
+      href={href}
+      className="group rounded-2xl border border-black/5 bg-white p-5 shadow-sm transition hover:shadow-md"
+    >
+      {body}
+    </Link>
   );
 }
 

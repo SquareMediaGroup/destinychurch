@@ -310,7 +310,7 @@ destinychurch/
 │   └── ...
 │
 ├── supabase/                      # Supabase configuration
-│   └── migrations/                # Database schema migrations (48 files) — selected highlights:
+│   └── migrations/                # Database schema migrations (49 files) — selected highlights:
 │       ├── 001_redirects.sql      # URL redirect table
 │       ├── 002_hidden_videos.sql  # Hidden sermon videos (feature since removed)
 │       ├── 003_content.sql        # Site banner & page content
@@ -346,7 +346,8 @@ destinychurch/
 │       ├── 20260824_hr_review_reminders.sql # hr_reviews.reminder_sent_at for the daily digest
 │       ├── 20260825_hr_checklists.sql  # Onboarding/offboarding checklists (hr_checklist_* tables)
 │       ├── 20260826_audit_log.sql       # Admin audit log + weekly AI reports (audit_log, audit_reports)
-│       └── 20260827_engagement_events.sql # Click analytics table + rollup/anonymise RPCs (storage layer)
+│       ├── 20260827_engagement_events.sql # Click analytics table + rollup/anonymise RPCs (storage layer)
+│       └── 20260828_ip_reputation.sql   # VPN/Tor/datacenter/Private-Relay tags on engagement_events
 │
 ├── utils/                         # Utility modules
 │   ├── supabase/                  # Supabase client factories
@@ -1277,6 +1278,7 @@ All tables have RLS enabled. Access rules:
 | live_chat_sessions / live_chat_messages / live_chat_prayer_requests / live_chat_blocks | - | - | Yes | Live chat on /live (deny-all "service only"; delivery is Realtime Broadcast, not table reads) |
 | simulated_live | - | - | Yes | Simulated live broadcast on /live (deny-all "service only"; singleton) |
 | engagement_events | - | - | Yes | Click analytics across shortlinks / nfc / links (deny-all "service only"; read via `security definer` rollup RPCs) |
+| ip_reputation_ranges | - | - | Yes | VPN/Tor/datacenter/Apple-Private-Relay CIDR ranges (deny-all "service only"; read only by the `before insert` trigger on `engagement_events`) |
 
 #### 21. **live_chat_sessions / live_chat_messages / live_chat_prayer_requests / live_chat_blocks**
 
@@ -1606,6 +1608,76 @@ itself is publicly readable; this log of who followed them is not.
 - `app/[slug]/page.tsx` (redirects, via `after()`) and `app/api/track/route.ts` (nfc/links beacon)
 - `app/api/admin/analytics/route.ts` (`engagement_rollup` RPC) + `app/admin/analytics/page.tsx` — Site Admin / Super Admin
 - `app/api/cron/analytics-anonymise/route.ts` — the nightly IP-anonymise job, `0 3 * * *`
+
+**`ip_category` column** (added by `20260828_ip_reputation.sql`, see §24b below) — a second,
+independent signal from `is_bot`: not "is this a machine", but "is this connection routed
+through something that isn't the visitor's own network". Set once, at write time, by a
+`before insert` trigger, so it's correct regardless of which of the two write paths inserts
+the row.
+
+---
+
+#### 24b. **ip_reputation_ranges** (VPN / Tor / datacenter / Apple Private Relay)
+
+**Purpose:** The CIDR range lists behind `engagement_events.ip_category`. Four public sources,
+refreshed weekly:
+
+| Category | Rows (approx.) | Source |
+|---|---|---|
+| `tor` | ~1,400 | torproject.org's official bulk exit list |
+| `vpn` | ~11,000 CIDRs | X4BNet `lists_vpn` — known commercial VPN netblocks |
+| `datacenter` | ~43,000 CIDRs | X4BNet `lists_vpn` — cloud/hosting, "not an eyeball network" |
+| `apple_private_relay` | ~290,000 CIDRs | Apple's own published iCloud Private Relay egress ranges |
+
+```sql
+create table ip_reputation_ranges (
+  cidr       cidr not null,
+  category   text not null check (category in ('tor','vpn','datacenter','apple_private_relay')),
+  source     text not null,
+  batch_id   uuid not null,          -- every refresh writes one batch_id, then
+                                      -- deletes anything from the same source
+                                      -- left over from the previous batch
+  created_at timestamptz not null default now(),
+  primary key (category, source, cidr)
+);
+-- GiST index (via the bundled btree_gist extension) for "which range contains
+-- this IP" containment lookups — a btree can't do that efficiently.
+```
+
+**~345,000 rows sounds large as a download; it's trivial as a Postgres table** — a few MB with
+its index. Deliberately not collapsed to parent supernets, which would throw away Apple's
+published precision for no real storage or query-time saving.
+
+**License note:** X4BNet's `lists_vpn` repository has no `LICENSE` file. Its README invites
+contribution and the list exists for exactly this kind of defensive/detection use, but nothing
+formalises reuse terms. Used here for internal tagging only — the ranges are never
+re-published or served back out.
+
+**The tagging trigger** (`engagement_events_tag_ip_category()`, `before insert` on
+`engagement_events`) picks, in order: **Apple Private Relay wins over a coincidental
+VPN/datacenter match** — it's the benign, extremely common explanation (default-on for
+iCloud+ subscribers), and "Private Relay" is a far more useful label than "VPN" for a click
+that's almost certainly a real congregation member's phone. Otherwise the **most specific
+(smallest) matching CIDR** wins. A lookup failure falls back to `null` rather than failing the
+insert — same "never break the thing the visitor was doing" rule `recordEngagement()` follows.
+
+**Flag, never block.** Same instinct as `is_bot`, applied to a different axis: a VPN or Tor
+connection with an ordinary browser UA is very likely still a real person, just a
+privacy-conscious one, so this never rejects a click or reclassifies `is_bot`. A datacenter IP
+with an ordinary UA is a stronger automation signal than the UA alone, but even that is
+surfaced as a tag on `/admin/analytics`'s "Connection" card, not acted on automatically.
+
+**Refresh** — `app/api/cron/ip-reputation-refresh/route.ts`, weekly (`0 5 * * 1`, Monday
+05:00). Same `CRON_SECRET` fail-closed pattern as every other cron here. Fetches all four
+lists, chunks them (~10,000 rows), and `upsert`s through the existing service-role Supabase
+client — no new dependency, at the cost of ~35 round trips for the largest list rather than
+one bulk load; irrelevant at once-a-week cadence. Each source is fetched and loaded
+independently, so one being temporarily unreachable doesn't stop the other three refreshing.
+`maxDuration = 300`.
+
+**RLS:** deny-all `"service only"`, same as every other table in this feature. Only the
+`security definer`-free trigger function (running as the inserting role, i.e. the service
+role via `recordEngagement()`) and the refresh cron's service client ever touch it.
 
 ---
 
@@ -2397,7 +2469,8 @@ to keep.
   - `ShortLinksPanel.tsx` — clicks on `redirects`. Metric row, a daily bar chart, a ranked
     "top links" table whose rows drill into a single-slug view (also reachable pre-filtered from
     `/admin/redirects`' click count via `?target=`), and breakdowns by country/referrer/device/
-    `src_tag`.
+    `src_tag`/Connection (`ip_category` — Private Relay is labelled and captioned distinctly
+    from VPN/Tor/datacenter, see Database Schema §24b).
   - `InPersonPanel.tsx` — `/nfc` taps and `/links` clicks, side by side, each its own
     metric-row-plus-chart-plus-top-list — the one view of what a service's seat backs and
     Next Steps cards actually got used for.
@@ -3221,6 +3294,18 @@ returned to its own author marked as waiting, so they don't retype it.
 // `ip` on old engagement_events rows and returns how many it touched.
 // visitor_hash and every other column survive — the row keeps counting, it
 // just stops being personal data. See Database Schema §24.
+```
+
+#### `GET /api/cron/ip-reputation-refresh`
+```typescript
+// Weekly, Monday 05:00 (vercel.json). Bearer CRON_SECRET — fails closed with
+// 503 if unset. Fetches the four range lists behind ip_category (Tor, X4BNet
+// VPN, X4BNet datacenter, Apple Private Relay — see Database Schema §24b),
+// chunks each into ~10,000-row upserts through the service-role client, then
+// deletes whatever the previous run for that source left behind (a
+// batch-swap, not a truncate — the table is never briefly empty). Each
+// source is independent: one failing (a GitHub outage, a changed URL) does
+// not stop the other three refreshing. maxDuration = 300.
 ```
 
 > There is no `/api/webhooks/vercel` or GitHub webhook route, and no `youtube-sync`
@@ -4396,13 +4481,17 @@ share. Modelled closely on the audit log, split the same way.
 - **`lib/engagement.ts`** — the vocabulary, client-safe (touches neither the
   database nor `next/headers`). Closed sets so the page's filters can be chips:
   `ENGAGEMENT_SOURCES` (`redirect` / `nfc` / `links`, each with its own noun —
-  "click" vs "tap" — icon and blurb) and `SRC_TAGS` (`qr` / `nfc` / `print` /
+  "click" vs "tap" — icon and blurb), `SRC_TAGS` (`qr` / `nfc` / `print` /
   `social`, the `?s=` values that separate "scanned the flyer" from "clicked the
-  post"). Re-exports `AUDIT_RANGES` as `ENGAGEMENT_RANGES` so the range chips
-  match the audit log's exactly. Also the wire-format types (`EngagementRollup`,
-  `EngagementBucket`, `TrackBeacon`) and the display helpers the page shares —
-  `countryName`, `regionName` (UK regions read "England", not "ENG"),
-  `referrerName` ("facebook.com" → "Facebook"), `compactNumber` (1200 → "1.2k").
+  post"), and `IP_CATEGORIES` (`apple_private_relay` / `vpn` / `tor` /
+  `datacenter` — see Database Schema §24b; `ipCategoryLabel()` names Private
+  Relay distinctly from "VPN" rather than lumping default-on iPhone privacy in
+  with something that reads as suspicious). Re-exports `AUDIT_RANGES` as
+  `ENGAGEMENT_RANGES` so the range chips match the audit log's exactly. Also
+  the wire-format types (`EngagementRollup`, `EngagementBucket`, `TrackBeacon`)
+  and the display helpers the page shares — `countryName`, `regionName` (UK
+  regions read "England", not "ENG"), `referrerName` ("facebook.com" →
+  "Facebook"), `compactNumber` (1200 → "1.2k").
 - **`lib/engagement.server.ts`** — `server-only`. `recordEngagement()`, the only
   writer, with the same first rule as `recordAudit()`: **it never throws** — a
   failed analytics write must never break the redirect the visitor was actually
@@ -4961,6 +5050,8 @@ GITHUB_TOKEN=ghp_...
 #   /api/cron/hr-review-reminders    (daily 06:00) — HR review digest to HR_NOTIFICATIONS_EMAIL
 #   /api/cron/audit-weekly-report    (Sun 20:00)   — AI admin-activity report to every Super
 #                                                    Admin, then the audit-log retention purge
+#   /api/cron/ip-reputation-refresh  (Mon 05:00)   — refreshes the VPN/Tor/datacenter/Private
+#                                                    Relay range lists behind ip_category
 # and the self-healing Smart Search health check (GET /api/health/smart-search).
 CRON_SECRET=            # every /api/cron job FAILS CLOSED (503) if unset; the health check runs unauthenticated (local/dev)
 
@@ -5200,7 +5291,8 @@ ENABLE_SMART_SEARCH=true
 - **Cron endpoints (`/api/cron/*`, `CRON_SECRET`-gated, scheduled in `vercel.json`):** `analytics-anonymise` (daily,
   nulls old `engagement_events` IPs), `live-chat-purge` (daily), `hr-review-reminders` (daily),
   `audit-weekly-report` (Sunday evening — writes and emails the week's admin-activity report, then
-  runs the audit-log retention purge)
+  runs the audit-log retention purge), `ip-reputation-refresh` (weekly — refreshes the VPN/Tor/
+  datacenter/Private-Relay range lists behind `engagement_events.ip_category`)
 - **Public endpoints:** `/api/chat` (Smart Search tool-calling chat, Turnstile-gated), `/api/turnstile/verify` (Cloudflare Turnstile token check), YouTube (videos/status/thumbnail/live), Alpha info, training unlock + read timer (`/api/training/posts/[id]/timer`), `/api/track` (click-analytics beacon for `/nfc` and `/links`)
 - **Store endpoints:** Stripe checkout + Payment Element, order management
 - **Webhooks:** Stripe only (`/api/webhooks/stripe`) — no GitHub or Vercel deployment webhook route

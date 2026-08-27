@@ -10,6 +10,7 @@ import {
   referrerName,
   compactNumber,
   shortDay,
+  ipCategoryLabel,
 } from "../../lib/engagement";
 import { BEACON_SOURCES, isBeaconSource } from "../../lib/track";
 import { LINKS_STEPS, findLinksStep } from "../../lib/linksSteps";
@@ -209,6 +210,28 @@ test("compactNumber keeps small numbers exact and abbreviates big ones", () => {
 
 test("shortDay formats a YYYY-MM-DD bucket for the chart axis", () => {
   expect(shortDay("2026-08-27")).toBe("27 Aug");
+});
+
+/* ── Connection (IP reputation) ──────────────────────────────────────────── */
+
+/**
+ * Private Relay must read as itself, never as "VPN" — it's the default-on
+ * iCloud+ privacy setting, so lumping it in with VPN/Tor/datacenter would
+ * make a large, ordinary slice of the congregation look suspicious.
+ */
+test("ipCategoryLabel names Private Relay distinctly from VPN", () => {
+  expect(ipCategoryLabel("apple_private_relay")).toBe("Private Relay");
+  expect(ipCategoryLabel("vpn")).toBe("VPN");
+  expect(ipCategoryLabel("tor")).toBe("Tor");
+  expect(ipCategoryLabel("datacenter")).toBe("Datacenter");
+});
+
+test("ipCategoryLabel reads a null category as an ordinary connection", () => {
+  expect(ipCategoryLabel(null)).toBe("Ordinary connection");
+});
+
+test("ipCategoryLabel falls back to the raw value for an unknown category", () => {
+  expect(ipCategoryLabel("something-new")).toBe("something-new");
 });
 
 /* ── /links validation ───────────────────────────────────────────────────── */

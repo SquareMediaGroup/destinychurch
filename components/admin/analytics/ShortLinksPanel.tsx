@@ -8,7 +8,13 @@
 import { useState } from "react";
 import { EmptyState, ErrorNote, MetricCard, TableSkeleton } from "@/components/admin/AdminUI";
 import { DayChart, BarRows } from "@/components/admin/analytics/Charts";
-import { compactNumber, countryName, referrerName, srcTagLabel } from "@/lib/engagement";
+import {
+  compactNumber,
+  countryName,
+  ipCategoryLabel,
+  referrerName,
+  srcTagLabel,
+} from "@/lib/engagement";
 import { useEngagementRollup } from "@/lib/useEngagementRollup";
 
 export function ShortLinksPanel({
@@ -186,6 +192,24 @@ export function ShortLinksPanel({
             }))}
             emptyLabel="Nobody has used a tagged link yet."
           />
+        </div>
+        <div className="rounded-3xl border border-black/5 bg-white p-5 shadow-sm">
+          <h3 className="mb-3 text-sm font-bold uppercase tracking-wider text-destiny-grey/50">
+            Connection
+          </h3>
+          <BarRows
+            rows={data.byIpCategory.map((b) => ({
+              key: b.key,
+              label: ipCategoryLabel(b.key),
+              value: b.events,
+            }))}
+            emptyLabel="Nothing unusual — everyone's on an ordinary connection."
+          />
+          {data.byIpCategory.some((b) => b.key === "apple_private_relay") && (
+            <p className="mt-3 text-xs text-destiny-grey/40">
+              Private Relay clicks show the relay&rsquo;s location, not the visitor&rsquo;s.
+            </p>
+          )}
         </div>
       </div>
 

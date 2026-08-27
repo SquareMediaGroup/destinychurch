@@ -16,6 +16,10 @@
     {
       "path": "/api/cron/analytics-anonymise",
       "schedule": "0 3 * * *"
+    },
+    {
+      "path": "/api/cron/ip-reputation-refresh",
+      "schedule": "0 5 * * 1"
     }
   ]
 }

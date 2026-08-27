@@ -83,6 +83,56 @@ export function srcTagLabel(tag: string | null): string {
   return tag in SRC_TAGS ? SRC_TAGS[tag as SrcTag].label : tag;
 }
 
+/* ── Connection (IP reputation) ───────────────────────────────────────────── */
+
+/**
+ * How a click's connection compares to the visitor's own network, from
+ * `engagement_events.ip_category` — see supabase/migrations/20260828_ip_reputation.sql.
+ *
+ * A second, independent signal from `is_bot`: this never means "automated",
+ * it means "routed through something else". VPN, Tor and datacenter share a
+ * neutral "unusual connection" framing — a privacy-conscious real person, not
+ * a red flag. Apple Private Relay gets its own, deliberately reassuring copy:
+ * it's the default-on iCloud+ privacy setting, so a real slice of the
+ * congregation will show up this way on their iPhones, and calling it "VPN"
+ * would make ordinary traffic look suspicious for no reason.
+ */
+export const IP_CATEGORIES = {
+  apple_private_relay: {
+    label: "Private Relay",
+    icon: "privacy_tip",
+    tone: "blue",
+    blurb: "Apple's iCloud+ privacy feature — on by default for many iPhones.",
+  },
+  vpn: {
+    label: "VPN",
+    icon: "vpn_lock",
+    tone: "grey",
+    blurb: "A commercial VPN — very likely still a real visitor.",
+  },
+  tor: {
+    label: "Tor",
+    icon: "vpn_key_off",
+    tone: "grey",
+    blurb: "The Tor network.",
+  },
+  datacenter: {
+    label: "Datacenter",
+    icon: "dns",
+    tone: "grey",
+    blurb: "Cloud/hosting infrastructure rather than a home or mobile connection.",
+  },
+} as const;
+
+export type IpCategory = keyof typeof IP_CATEGORIES;
+
+/** "Private Relay" for a known category, or the raw key if the vocabulary
+ * ever lags a new value the database can return — never a blank cell. */
+export function ipCategoryLabel(key: string | null): string {
+  if (!key) return "Ordinary connection";
+  return key in IP_CATEGORIES ? IP_CATEGORIES[key as IpCategory].label : key;
+}
+
 /* ── Ranges ────────────────────────────────────────────────────────────────── */
 
 // Re-exported rather than redefined so the analytics range chips and the audit
@@ -124,6 +174,7 @@ export interface EngagementRollup {
   byDevice: EngagementBucket[];
   byBrowser: EngagementBucket[];
   bySrcTag: EngagementBucket[];
+  byIpCategory: EngagementBucket[];
 }
 
 /** The body `POST /api/track` accepts from /nfc and /links. */

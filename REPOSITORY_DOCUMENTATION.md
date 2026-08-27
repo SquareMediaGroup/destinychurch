@@ -409,24 +409,38 @@ The database uses Supabase (managed PostgreSQL) with Row-Level Security (RLS) fo
 ### Tables
 
 #### 1. **redirects**
-**Purpose:** URL redirect management (e.g., `/prayer-request` → `/connect-card`)
+**Purpose:** Admin-managed short/vanity URLs (`destinytees.uk/<slug>` → anywhere), separate
+from the three hardcoded, build-time redirects in `next.config.ts` (e.g. `/prayer-request` →
+`/connect-card`).
 
 ```sql
 CREATE TABLE redirects (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   slug text UNIQUE NOT NULL,            -- /short-path
   target_url text NOT NULL,             -- https://example.com or /absolute/path
-  label text,                           -- Display name (unused currently)
+  label text,                           -- Display name — shown as a pill on
+                                         -- /admin/redirects and used as a Fuse.js
+                                         -- search key; not unused
   active boolean DEFAULT true,          -- Toggle visibility
   created_at timestamptz DEFAULT now()
 );
 
--- RLS: Public read access to active redirects; service role has full access
+-- RLS, current: one policy — "Public can read active redirects" (select,
+-- active = true). There is deliberately NO public/anon write policy: an
+-- earlier "service role has full access" policy allowed anon to INSERT and
+-- turn any slug into an open redirect, and was removed in
+-- 20260711_02_fix_public_write_policies.sql. All writes go through
+-- createServiceClient() (RLS-bypassing), never through a table policy.
 ```
 
-**Used By:**
-- `app/api/[slug]` or Next.js `redirects()` config during build
-- Admin dashboard to manage redirects
+**Used by:**
+- `app/[slug]/page.tsx` — resolved at request time (`force-dynamic`), as the
+  fallback once a same-slug `posts` row doesn't match. Not build-time, and not
+  `next.config.ts` — that file only holds three unrelated hardcoded redirects.
+- `app/admin/redirects/page.tsx` + `app/api/admin/redirects/*` — CRUD, plus a
+  30-day click count (from `engagement_events`, see §24) and a downloadable QR
+  code per row (`components/admin/redirects/RedirectQrModal.tsx`) encoding
+  `?s=qr` so printed scans are distinguishable from links clicked online.
 
 ---
 
@@ -1515,14 +1529,13 @@ and a press on a `/links` Next Steps card. It answers the question print has
 never been able to answer — "did the Alpha flyer work?" — because a redirect
 renders no HTML, so Vercel Analytics never sees the hop.
 
-> **Status: groundwork, not yet wired up.** This migration and the four
-> libraries below (`lib/engagement*.ts`, `lib/botDetect.ts`, `lib/track.ts`) are
-> the storage layer and the helpers that will write to and read from it. As of
-> this commit **nothing calls them yet** — there is no `/admin/analytics` page,
-> no `/api/track` route, no `/api/cron/analytics-anonymise` cron in
-> `vercel.json`, and the shortlink resolver (`app/[slug]/page.tsx`) does not yet
-> record. The schema is deliberately landed first so the read/write surfaces can
-> be built against a stable table.
+> **Status: live.** Every consumer named below now exists: `app/[slug]/page.tsx`
+> records a redirect hit via `after()`, `POST /api/track` records `/nfc` and
+> `/links`, `/admin/analytics` (Site Admin + Super Admin) reads it through
+> `GET /api/admin/analytics`, and `/api/cron/analytics-anonymise` runs nightly
+> at 03:00 via `vercel.json`. The table was landed a few commits ahead of the
+> pages that read/write it so the schema was stable before anything was built
+> against it — see the migration's own header comment for the full reasoning.
 
 ```sql
 create table engagement_events (
@@ -1588,11 +1601,11 @@ index for the default bots-excluded view.
 **RLS:** deny-all `"service only"` policy, same as `audit_log`. Note `redirects`
 itself is publicly readable; this log of who followed them is not.
 
-**Will be used by (once wired):**
+**Used by:**
 - `lib/engagement.server.ts` — `recordEngagement()`, the only writer
-- `app/[slug]/page.tsx` (redirects) and `app/api/track/route.ts` (nfc/links beacon)
-- `app/api/admin/analytics/*` + `app/admin/analytics/page.tsx` — Site/Super Admin
-- `app/api/cron/analytics-anonymise` — the nightly IP-anonymise job
+- `app/[slug]/page.tsx` (redirects, via `after()`) and `app/api/track/route.ts` (nfc/links beacon)
+- `app/api/admin/analytics/route.ts` (`engagement_rollup` RPC) + `app/admin/analytics/page.tsx` — Site Admin / Super Admin
+- `app/api/cron/analytics-anonymise/route.ts` — the nightly IP-anonymise job, `0 3 * * *`
 
 ---
 
@@ -1777,9 +1790,17 @@ root layout uses as bottom padding so the dock never covers the footer, and
 `FloatingSmartSearch` uses to lift itself clear.
 
 #### `/app/[slug]/page.tsx` — Dynamic Catchall
-- Looks up `slug` via `getPublishedPostBySlug()` (`lib/posts.server.ts`) against the `posts` table — there is no separate `dynamic_pages` table
-- Renders the post's HTML `body` with `dangerouslySetInnerHTML`
-- Falls back to 404 (`notFound()`) if no published post matches
+- Looks up `slug` via `getPublishedPostBySlug()` (`lib/posts.server.ts`) against the `posts`
+  table — there is no separate `dynamic_pages` table. Renders the post's `body` through
+  `RichContent` (upgrades embedded content blocks into real components; falls back to the
+  equivalent of raw HTML for a post with none), with the promo rails from
+  `components/posts/PostRails.tsx`.
+- If no post matches, falls back to an active `redirects` row for the same slug (see Database
+  Schema §1) and `redirect()`s there. A hit is recorded via `after()` — read `headers()` during
+  render (an `after()` callback in a Server Component can't call it), close over the values, and
+  register the write before `redirect()` throws; see `lib/engagement.server.ts` and Database
+  Schema §24. `force-dynamic`, so this and the redirect lookup are never cached.
+- Falls back to 404 (`notFound()`) if neither a post nor a redirect matches.
 
 ---
 
@@ -1855,7 +1876,7 @@ without an auth check, so they must never be reachable on the live site.
 | `/child-dedication` | `app/child-dedication/page.tsx` | Child dedication request |
 | `/volunteer` | `app/volunteer/page.tsx` | Volunteer sign-up form |
 | `/help` | `app/help/page.tsx` | Help centre / FAQ |
-| `/links` | `app/links/page.tsx` | "Next Steps" link-in-bio style page |
+| `/links` | `app/links/page.tsx` | "Next Steps" link-in-bio style page. The six cards live in `lib/linksSteps.ts` and render via the client `components/links/LinksStepGrid.tsx`, which beacons each click to `POST /api/track` before navigating |
 | `/nfc` | `app/nfc/page.tsx` | "Digital back of seats" — what an NFC tag or QR code on a seat opens during a service. Standalone (no header, footer, site popup or smart search) and `noindex`. Connect Card and Giving are hardcoded fixtures; everything else comes from `nfc_tiles`, including event tiles that resolve against the live ChurchSuite feed and hide themselves once the event has run |
 | `/destiny-recovery` | `app/destiny-recovery/page.tsx` | Recovery course info page |
 | `/dckids` | `app/dckids/page.tsx` | Destiny Kids Camp 2026 campaign page |
@@ -1883,7 +1904,8 @@ Each section requires a specific access-level role (see
 | `/admin` | `app/admin/page.tsx` | Admin dashboard home |
 | `/admin/banner` | `app/admin/banner/page.tsx` | Manage site banners |
 | `/admin/popup` | `app/admin/popup/page.tsx` | Manage pop-ups |
-| `/admin/redirects` | `app/admin/redirects/page.tsx` | Manage URL redirects |
+| `/admin/redirects` | `app/admin/redirects/page.tsx` | Manage URL redirects — click counts and a per-link QR code |
+| `/admin/analytics` | `app/admin/analytics/page.tsx` | Which links, QR codes and tiles people actually use, plus whole-site traffic. Three tabs: Short links, In person (`/nfc` + `/links`), Whole site (Vercel Web Analytics) |
 | `/admin/cache` | `app/admin/cache/page.tsx` | Invalidate ISR cache |
 | `/admin/posts` | `app/admin/posts/page.tsx` | Standalone content pages |
 | `/admin/training` | `app/admin/training/page.tsx` | Training categories → subgroups → posts |
@@ -2371,6 +2393,28 @@ to keep.
     hatch for anything the layout didn't anticipate. Two links out: everything else this person
     did, and the whole history of this one thing.
   - `AuditReports.tsx` — the weekly reports, rendered from the same markdown the email sends.
+- `analytics/*` — **Client.** The three tab bodies behind `/admin/analytics`, plus its charts:
+  - `ShortLinksPanel.tsx` — clicks on `redirects`. Metric row, a daily bar chart, a ranked
+    "top links" table whose rows drill into a single-slug view (also reachable pre-filtered from
+    `/admin/redirects`' click count via `?target=`), and breakdowns by country/referrer/device/
+    `src_tag`.
+  - `InPersonPanel.tsx` — `/nfc` taps and `/links` clicks, side by side, each its own
+    metric-row-plus-chart-plus-top-list — the one view of what a service's seat backs and
+    Next Steps cards actually got used for.
+  - `SitePanel.tsx` — the whole-site Vercel panel. Renders one of three states from
+    `VercelAnalyticsResult`: a setup `EmptyState` (env vars named, a link to Vercel's docs),
+    an `ErrorNote` (with a plan-limit hint when the reason is `"plan"`), or the real charts.
+    Always ends with one line of copy: Vercel's numbers only include visitors who accepted
+    analytics cookies, so they read lower than the click-log tabs, which don't depend on consent.
+  - `Charts.tsx` — `DayChart` (a bar-per-day SVG) and `BarRows` (proportional divs, not SVG —
+    a ranked list is a table with a visual cue, and a div gets text truncation/wrapping/focus
+    rings a plotted `<text>` element doesn't). No charting library: none exists in this project
+    and the codebase avoids a dependency it can write itself (see `lib/cn.ts`).
+- `redirects/RedirectQrModal.tsx` — **Client.** The QR action on `/admin/redirects`. Encodes
+  `destinytees.uk/<slug>?s=qr` (hardcoded, not user-editable — see `lib/engagement.ts`'s closed
+  `SRC_TAGS` set) via `qrcode.react`'s `QRCodeSVG`, with client-side SVG and PNG downloads
+  produced from the rendered `<svg>` (PNG via an in-page `<canvas>`, white background painted in
+  first so it doesn't print as a grey smear).
 
 ##### Course admin pages
 
@@ -2499,7 +2543,9 @@ The tiles on `/nfc` — the "digital back of seats" page an NFC tag or QR code o
 - `NfcTileGrid.tsx` — the card grid. Cards are `<button>`s, not links: everything opens in place,
   because the page exists to be finished before the next song starts. Holds the open-tile state and
   the ref to the invoking card so focus can be restored on close. The `BADGE` lookup is what the
-  card promises before you tap it — "Form", "Sign up", "Details".
+  card promises before you tap it — "Form", "Sign up", "Details". Every tap also fires
+  `trackClick("nfc", tile.id, tile.title)` (`lib/track.ts`) before opening the modal — a
+  fire-and-forget beacon to `POST /api/track`, so taps show up on `/admin/analytics`.
 - `NfcTileModal.tsx` — the popup. Three modes, two layouts: `embed` frames a ChurchSuite form
   (`ChurchSuiteEmbed`) with the "more details" link hung off the bottom, so the popup answers the
   question *and* the full page stays one tap away; `event` is the same layout with no branch of its
@@ -2774,6 +2820,46 @@ POST /api/admin/audit/ask      // { question } → { answer, entries, degraded? 
 GET  /api/admin/audit/reports  // the stored weekly reports, newest first
 ```
 
+#### Analytics routes (`/api/admin/analytics/*`)
+```typescript
+// Site Admin or Super Admin (ROUTE_RULES in lib/adminRoles.ts — landed
+// together with the /admin/analytics nav entry, since the nav test asserts
+// the two never drift apart). GET only, so tests/unit/audit-coverage.spec.ts
+// has nothing to say about it — reads aren't audited in this codebase.
+
+GET  /api/admin/analytics       // engagement_events, via one RPC round trip
+// Query: ?range= (today|week|month|quarter|all, default month) &source=
+// (redirect|nfc|links) &target=<slug|id|href> &bots=1 (include, default off)
+// Calls engagement_rollup(); the whole response IS that function's jsonb
+// return value: { totals, timeseries, bySource, byTarget, byCountry,
+// byReferrer, byDevice, byBrowser, bySrcTag }. 503 with a "run the migration"
+// message if the RPC doesn't exist yet (PostgREST PGRST202).
+
+GET  /api/admin/analytics/site  // the "Whole site" tab's data
+// Query: ?range= (same set as above; "all" falls back to a 24-month window,
+// the longest any Vercel plan offers, and lets the plan itself decide via
+// the "plan" error path). Wraps lib/vercelAnalytics.server.ts#fetchSitePanel.
+// A SEPARATE route from the one above on purpose: a slow or failing call to
+// Vercel's API must never hold up the click-log numbers on the other tabs.
+```
+
+#### `POST /api/track` — public beacon for `/nfc` and `/links`
+```typescript
+// Unauthenticated, reachable by anyone — the pages it serves are public. Not
+// under /api/admin, so middleware.ts doesn't guard it and it's outside
+// audit-coverage.spec.ts's walk (it records visitors, not admins).
+// Body (text/plain, matching sendBeacon's constraints — application/json is
+// not CORS-safelisted for beacons): { source: "nfc"|"links", targetKey }.
+// "redirect" is never accepted here — see lib/track.ts's BeaconSource.
+// targetKey is checked against the real thing it claims to be (a live
+// nfc_tiles id/PINNED_TILES fixture, or an href in lib/linksSteps.ts) before
+// anything is written; the label always comes from that lookup, never the
+// body. Rate-limited via lib/rateLimit.ts's checkRateLimit(ip, 600) — a much
+// higher ceiling than the site-wide default of 15/min, because this endpoint
+// is hit by a whole room on a church WiFi's single NAT IP, not one person.
+// Always answers 204, whatever happened — a beacon has nobody to tell.
+```
+
 **AUTHORIZATION: Super Admin only, by omission.** `/api/admin/audit` has no
 `ROUTE_RULES` entry, and anything under `/api/admin` that isn't listed there is
 Super Admin only (fail closed). That is deliberate rather than an oversight: the
@@ -2813,15 +2899,16 @@ drifting copy of the RBAC table.
 // Also in OPEN_PATHS: it only ever returns the caller's own details.
 ```
 
-#### `POST /api/admin/redirects`
+#### `GET|POST /api/admin/redirects`
 ```typescript
-// Create or update redirect
-// Body: { slug, targetUrl, label, active }
-// Logic:
-// 1. Check auth
-// 2. Insert/update redirects table
-// 3. Trigger full rebuild (redirects are in next.config.ts)
-// 4. Return success or error
+// GET  — select("*") ordered by created_at desc.
+// POST — body is { slug, target_url, label } (snake_case, matching the
+// `redirects` columns — not { targetUrl, active } as previously documented
+// here). slug is trimmed/lowercased; target_url is trimmed. No rebuild is
+// triggered — redirects resolve at request time in app/[slug]/page.tsx, not
+// via next.config.ts. Audited via recordAudit() on create.
+// /api/admin/redirects/[id] (not shown) handles PATCH (toggle active,
+// partial update) and DELETE, each audited the same way.
 ```
 
 #### `GET /api/admin/events`
@@ -3124,6 +3211,16 @@ returned to its own author marked as waiting, so they don't retype it.
 // via lib/hrEmail.ts (reviewer is free text, so there's no per-reviewer address),
 // then stamps reminder_sent_at so the same review isn't re-sent each day it stays
 // in the window. NOT under /api/admin, so middleware.ts doesn't guard it.
+```
+
+#### `GET /api/cron/analytics-anonymise`
+```typescript
+// Daily at 03:00 (vercel.json, ahead of the 04:00 live-chat purge). Bearer
+// CRON_SECRET — fails closed with 503 if unset. Calls
+// engagement_anonymise_ips(ANALYTICS_IP_RETENTION_DAYS ?? 90), which blanks
+// `ip` on old engagement_events rows and returns how many it touched.
+// visitor_hash and every other column survive — the row keeps counting, it
+// just stops being personal data. See Database Schema §24.
 ```
 
 > There is no `/api/webhooks/vercel` or GitHub webhook route, and no `youtube-sync`
@@ -4289,12 +4386,12 @@ The audit log, split four ways along the lines that actually matter:
 
 ---
 
-### `lib/engagement.ts` / `lib/engagement.server.ts` / `lib/botDetect.ts` / `lib/track.ts`
+### `lib/engagement.ts` / `lib/engagement.server.ts` / `lib/botDetect.ts` / `lib/track.ts` / `lib/vercelAnalytics.server.ts` / `lib/linksSteps.ts` / `lib/useEngagementRollup.ts`
 
-The click-analytics storage layer — the writers and shared vocabulary behind the
-`engagement_events` table (see Database Schema §24). **Groundwork: landed ahead
-of the `/admin/analytics` page and the routes that will call it, so nothing
-imports these yet.** Modelled closely on the audit log, split the same way.
+The click-analytics feature behind `/admin/analytics` — the writers and shared
+vocabulary around the `engagement_events` table (see Database Schema §24),
+plus the whole-site traffic panel and the client hook the page's three tabs
+share. Modelled closely on the audit log, split the same way.
 
 - **`lib/engagement.ts`** — the vocabulary, client-safe (touches neither the
   database nor `next/headers`). Closed sets so the page's filters can be chips:
@@ -4338,6 +4435,34 @@ imports these yet.** Modelled closely on the audit log, split the same way.
   decide print spend, so they may only ever be written server-side, never from a
   browser anyone could `curl`. Stores nothing on the device — no cookie, no
   visitor id.
+- **`lib/vercelAnalytics.server.ts`** — `server-only`. `fetchSitePanel(since,
+  until)` wraps the Vercel Web Analytics REST API (public since May 2026) for
+  the page's "Whole site" tab. Deliberately **not Google Analytics**:
+  `@vercel/analytics` is already installed and already consent-gated
+  (`AnalyticsGate.tsx`), so this reads data already being collected rather than
+  standing up a second tracker. Returns a discriminated union —
+  `{ ok: true, data }` or `{ ok: false, reason: "not-configured" | "auth" |
+  "plan" | "error", message }` — because an empty chart could mean "nobody
+  visited" or "the Vercel plan's reporting window doesn't reach back that far",
+  and those need to read differently on screen. The five dimensions (`day`,
+  `route`, `country`, `deviceType`, `referrerHostname`) are fetched with
+  `Promise.allSettled`, so one dimension failing doesn't blank the rest; only
+  the totals call failing takes down the whole panel. Cached via Next's fetch
+  cache at `revalidate: 300`.
+- **`lib/linksSteps.ts`** — client-safe. `LINKS_STEPS`, the six `/links` cards,
+  pulled out of `app/links/page.tsx` so `POST /api/track` has something
+  authoritative to validate a `links` beacon's `targetKey` against — a value
+  not in this array is rejected, not written.
+- **`lib/useEngagementRollup.ts`** — client hook. One fetch/loading/error
+  effect behind every tab that reads `engagement_events`
+  (`ShortLinksPanel`/`InPersonPanel`), rather than three copies of it. The
+  fetch runs inside an async IIFE — including the first `setLoading(true)` —
+  so every `setState` call happens inside a callback rather than synchronously
+  in the effect body; a bare synchronous `setLoading(true)` at the top of the
+  effect trips `eslint-plugin-react-hooks`'s `set-state-in-effect` rule on a
+  component small enough for it to fully analyse (`app/admin/audit/page.tsx`
+  uses the same shape but is large enough that the rule's analysis appears to
+  give up on it — not a pattern worth copying).
 
 ---
 
@@ -4471,7 +4596,7 @@ always passes and isn't repeated per rule; anything under `/admin` or
 | `training_admin` | `/admin/training/**` | `/api/admin/training/**` |
 | `event_admin` | Courses (`alpha`, `recovery`, `bible-course`, `cap-money`, `featured-course`) + Announcements except Banner (`popup`, `featured-event`, `event-popup`, `nfc`) | `/api/admin/{alpha-events,events,featured-course,featured-event,popup,nfc}` |
 | `store_admin` | `/admin/store/**` | `/api/admin/{store,shop-hero}/**` |
-| `site_admin` | `/admin/posts`, `/admin/redirects` | `/api/admin/{posts,redirects}/**` |
+| `site_admin` | `/admin/posts`, `/admin/redirects`, `/admin/analytics` | `/api/admin/{posts,redirects,analytics}/**` |
 | `host` | `/admin/live-chat`, `/admin/live` | `/api/admin/live-chat/**`, `/api/admin/simulated-live/**` |
 | `hr_admin` | `/admin/hr/**` (staff, leave, jobs, applications, documents, reviews, checklists) | `/api/admin/hr/**` |
 | `super_admin` | Everything, plus Banner, Clear Cache, `/admin/users` and `/admin/audit` | `/api/admin/{banner,revalidate,users,audit}/**` |
@@ -4831,12 +4956,13 @@ SHOP_TEST_BYPASS=            # leave unset in production — enables /api/store/
 GITHUB_TOKEN=ghp_...
 
 # Cron bearer token — gates the jobs declared in vercel.json:
+#   /api/cron/analytics-anonymise    (daily 03:00) — anonymises engagement_events IPs
 #   /api/cron/live-chat-purge        (daily 04:00) — deletes chat history older than 7 days
 #   /api/cron/hr-review-reminders    (daily 06:00) — HR review digest to HR_NOTIFICATIONS_EMAIL
 #   /api/cron/audit-weekly-report    (Sun 20:00)   — AI admin-activity report to every Super
 #                                                    Admin, then the audit-log retention purge
 # and the self-healing Smart Search health check (GET /api/health/smart-search).
-CRON_SECRET=            # the two /api/cron jobs FAIL CLOSED (503) if unset; the health check runs unauthenticated (local/dev)
+CRON_SECRET=            # every /api/cron job FAILS CLOSED (503) if unset; the health check runs unauthenticated (local/dev)
 
 # Audit log (both optional)
 #   AUDIT_REPORT_EMAIL   — comma-separated override for who gets the weekly report.
@@ -4846,7 +4972,7 @@ CRON_SECRET=            # the two /api/cron jobs FAIL CLOSED (503) if unset; the
 AUDIT_REPORT_EMAIL=
 AUDIT_RETENTION_DAYS=365
 
-# Click analytics (engagement_events — storage layer, see Database Schema §24)
+# Click analytics — /admin/analytics, engagement_events (see Database Schema §24)
 #   ANALYTICS_HASH_SALT          — salt for visitor_hash. Without it, a sha256 of
 #                                  an IPv4 is brute-forceable, so hashes are NOT
 #                                  pseudonymous; recordEngagement() warns loudly.
@@ -4855,6 +4981,18 @@ AUDIT_RETENTION_DAYS=365
 #                                  survives, so uniques stay correct.
 ANALYTICS_HASH_SALT=
 ANALYTICS_IP_RETENTION_DAYS=90
+
+# Whole-site traffic on /admin/analytics — lib/vercelAnalytics.server.ts. All
+# optional: omitting VERCEL_API_TOKEN or VERCEL_ANALYTICS_PROJECT_ID shows a
+# setup card rather than an empty chart, never silently. Not Google Analytics —
+# @vercel/analytics is already installed and consent-gated (AnalyticsGate.tsx),
+# so this reads data already being collected.
+#   VERCEL_API_TOKEN            — a Vercel account token (Account Settings → Tokens)
+#   VERCEL_ANALYTICS_PROJECT_ID — the Vercel project id
+#   VERCEL_ANALYTICS_TEAM_ID    — only if the project belongs to a team
+VERCEL_API_TOKEN=
+VERCEL_ANALYTICS_PROJECT_ID=
+VERCEL_ANALYTICS_TEAM_ID=
 
 # Feature flags (also toggleable via the `service_status` DB table, e.g. 'smart_search')
 ENABLE_SMART_SEARCH=true
@@ -5019,6 +5157,7 @@ ENABLE_SMART_SEARCH=true
 - `app/admin/live/page.tsx` — Simulated Live (schedule a pre-recorded video to play on `/live` as a broadcast)
 - `app/admin/users/page.tsx` — Admin logins and access-level roles (Super Admin only)
 - `app/admin/audit/page.tsx` — Audit log: ask it in plain English, or search/filter and read the field-by-field detail. Second tab holds the weekly AI reports (Super Admin only)
+- `app/admin/analytics/page.tsx` — Click analytics: Short links, In person (`/nfc` + `/links`), Whole site (Vercel Web Analytics)
 - `app/admin/posts/page.tsx` — Standalone pages; search, status filter, sort, bulk publish/delete
 - `app/admin/training/page.tsx` (+ `[categoryId]`, `[categoryId]/[subgroupId]`) — Training categories → sub-groups → posts
 
@@ -5046,18 +5185,23 @@ ENABLE_SMART_SEARCH=true
   - Audit log: `audit.ts` (vocabulary + diffing + redaction), `audit.server.ts`
     (`recordAudit()`, the only writer), `auditAI.ts` (tools + prompt),
     `auditEmail.ts` (the weekly report email)
-  - Click analytics (storage layer, not yet wired): `engagement.ts` (vocabulary +
-    wire format), `engagement.server.ts` (`recordEngagement()`), `botDetect.ts`
-    (crawler/device/OS/browser detection), `track.ts` (client `sendBeacon`)
+  - Click analytics (`/admin/analytics`): `engagement.ts` (vocabulary + wire
+    format), `engagement.server.ts` (`recordEngagement()`), `botDetect.ts`
+    (crawler/device/OS/browser detection), `track.ts` (client `sendBeacon`),
+    `vercelAnalytics.server.ts` (Vercel Web Analytics API wrapper),
+    `linksSteps.ts` (the `/links` cards, shared with the beacon validator),
+    `useEngagementRollup.ts` (the fetch hook the page's tabs share)
 
 ### API Routes (`app/api/`)
 - **Admin endpoints:** Banners, redirects, pop-ups, cache revalidation, posts, training, alpha-events, featured-course, HR, store management, simulated live,
-  plus `me` (signed-in identity + roles), `search` (role-filtered cross-section record search behind the ⌘K palette)
-  and `audit` (the audit log: list, `ask` for the plain-English answer, `reports` for the weekly ones — Super Admin only)
-- **Cron endpoints (`/api/cron/*`, `CRON_SECRET`-gated, scheduled in `vercel.json`):** `live-chat-purge` (daily),
-  `hr-review-reminders` (daily), `audit-weekly-report` (Sunday evening — writes and emails the week's
-  admin-activity report, then runs the audit-log retention purge)
-- **Public endpoints:** `/api/chat` (Smart Search tool-calling chat, Turnstile-gated), `/api/turnstile/verify` (Cloudflare Turnstile token check), YouTube (videos/status/thumbnail/live), Alpha info, training unlock + read timer (`/api/training/posts/[id]/timer`)
+  plus `me` (signed-in identity + roles), `search` (role-filtered cross-section record search behind the ⌘K palette),
+  `audit` (the audit log: list, `ask` for the plain-English answer, `reports` for the weekly ones — Super Admin only)
+  and `analytics` (`engagement_rollup` for Short links/In person, `analytics/site` for the Vercel panel — Site Admin or Super Admin)
+- **Cron endpoints (`/api/cron/*`, `CRON_SECRET`-gated, scheduled in `vercel.json`):** `analytics-anonymise` (daily,
+  nulls old `engagement_events` IPs), `live-chat-purge` (daily), `hr-review-reminders` (daily),
+  `audit-weekly-report` (Sunday evening — writes and emails the week's admin-activity report, then
+  runs the audit-log retention purge)
+- **Public endpoints:** `/api/chat` (Smart Search tool-calling chat, Turnstile-gated), `/api/turnstile/verify` (Cloudflare Turnstile token check), YouTube (videos/status/thumbnail/live), Alpha info, training unlock + read timer (`/api/training/posts/[id]/timer`), `/api/track` (click-analytics beacon for `/nfc` and `/links`)
 - **Store endpoints:** Stripe checkout + Payment Element, order management
 - **Webhooks:** Stripe only (`/api/webhooks/stripe`) — no GitHub or Vercel deployment webhook route
 - **App BFF (`/api/app/v1/*`):** Backend-for-frontend routes serving the native iOS app. Because the

@@ -177,8 +177,12 @@ begin
         count(distinct visitor_hash) as visitors,
         %2$s                         as label
       from engagement_events
-      where created_at >= $1
-        and created_at <= $2
+      -- $1/$2 are nullable: p_since is null for "all time" and p_until
+      -- defaults to now() but a caller could still pass null explicitly.
+      -- `created_at >= null` is never true in SQL, so an unguarded bound here
+      -- would make "all time" silently return zero rows for every dimension.
+      where ($1 is null or created_at >= $1)
+        and ($2 is null or created_at <= $2)
         and ($3 is null or source = $3)
         and ($4 is null or target_key = $4)
         and ($5 or is_bot = false)
@@ -214,8 +218,12 @@ as $$
   with scoped as (
     select *
     from engagement_events
-    where created_at >= p_since
-      and created_at <= p_until
+    -- p_since is null for "all time" (lib/audit.ts's rangeStart() returns
+    -- null for that range) and p_until could in principle be passed null too
+    -- — `created_at >= null` is never true, so both bounds have to be guarded
+    -- or "all time" would silently come back as "nothing".
+    where (p_since is null or created_at >= p_since)
+      and (p_until is null or created_at <= p_until)
       and (p_source is null or source = p_source)
       and (p_target is null or target_key = p_target)
       and (p_include_bots or is_bot = false)
@@ -225,8 +233,8 @@ as $$
   bots as (
     select count(*) as n
     from engagement_events
-    where created_at >= p_since
-      and created_at <= p_until
+    where (p_since is null or created_at >= p_since)
+      and (p_until is null or created_at <= p_until)
       and (p_source is null or source = p_source)
       and (p_target is null or target_key = p_target)
       and is_bot = true

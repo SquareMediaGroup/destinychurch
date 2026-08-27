@@ -2453,18 +2453,35 @@ to keep.
 - `blocks/*` — **Client.** Editor side of the content-block system: the TipTap node factory, node-view chrome, the Blocks sidebar, the schema-driven settings inspector and its field components. See [Content Blocks](#content-blocks).
 - `ChurchSuiteEventFill.tsx` — **Client.** Collapsible "Fill from ChurchSuite event" picker embedded in the "Add Event" form of every course admin page. Fetches the same picker feed as `/admin/featured-event` (`/api/admin/events`) and, on selection, calls `onFill({ startDate, location, signupUrl, name })` to prefill those three form fields — no new table or API route. Deliberately leaves `format`/`frequency`/meeting fields untouched, since those `alpha_events` columns have no ChurchSuite equivalent.
 - `CourseAdminPage.tsx` — **Client.** The single implementation behind `/admin/alpha`, `/admin/recovery`, `/admin/bible-course` and `/admin/cap-money`. See below.
+- `AdminThemeToggle.tsx` — **Client.** The light/dark/system cycle button. One `useAdminTheme()`
+  call (`lib/adminTheme.ts`); mounted in `AdminHeader.tsx` and the mobile bar in `AdminSidebar.tsx`.
+- `AdminCharts.tsx` — **Client.** The admin's data-visualisation kit, deliberately separate from
+  `AdminUI.tsx` (that file is controls/layout; this is the other half). No charting library — the
+  only genuine time series in the admin (the weekly audit reports' stats, and a day-bucketed count
+  of the audit log) is small enough that hand-rolled inline SVG covers it, matching the codebase's
+  existing taste for hand-rolled visuals (`.search-glow`'s conic-gradient border is hand-rolled too).
+  - `Sparkline` — a minimal SVG line, no axes or tooltip; the shape is the point, the number sits in
+    text beside it.
+  - `TrendChip` — "▲12%"/"▼4%", reusing `MetricCard`'s existing up/down/muted tone language.
+  - `MiniBarRow` — a proportional bar breakdown (by section, by action), longest first.
 - `audit/*` — **Client.** The three pieces of `/admin/audit`, split out because the page is two
   different tools sharing a filter state:
   - `AuditAsk.tsx` — the ask box. The answer never appears alone: the entries the model read come
     back with it and are listed underneath, openable. The AI is a way *into* the record, not a
     replacement for reading it — when an answer looks wrong, the rows that produced it are right
-    there.
+    there. The answer panel itself is `.glass.admin-glass` (see "Dark mode" above) with a height/
+    opacity reveal, rather than the plain grey box it shipped with — the one surface in the admin
+    deliberately given a fixed identity independent of the light/dark toggle.
   - `AuditDetail.tsx` — one entry in full. The field-by-field before/after (long values get their
     own stacked panel rather than a table cell, which turns a paragraph into a one-word-per-line
-    ribbon), the roles the actor held *at the time*, the request itself, and a raw-JSON escape
-    hatch for anything the layout didn't anticipate. Two links out: everything else this person
-    did, and the whole history of this one thing.
-  - `AuditReports.tsx` — the weekly reports, rendered from the same markdown the email sends.
+    ribbon), the roles the actor held *at the time* rendered as badges, the request itself, and a
+    raw-JSON escape hatch for anything the layout didn't anticipate. Two links out: everything else
+    this person did, and the whole history of this one thing.
+  - `AuditReports.tsx` — the weekly reports, rendered from the same markdown the email sends, now
+    with `MiniBarRow`s for each report's section/action breakdown and a `Sparkline` of the
+    per-week change count across the whole run of reports — both come from `report.stats`, already
+    fetched and previously discarded. The accordion's expand/collapse is a real height/opacity
+    transition (`motion`) rather than only a rotating chevron.
 - `analytics/*` — **Client.** The three tab bodies behind `/admin/analytics`, plus its charts:
   - `ShortLinksPanel.tsx` — clicks on `redirects`. Metric row, a daily bar chart, a ranked
     "top links" table whose rows drill into a single-slug view (also reachable pre-filtered from
@@ -3709,6 +3726,18 @@ Two things to keep in mind when editing it:
 `ADMIN_QUICK_ACTIONS` holds things you *do* rather than places you go ("New
 post", "Clear the cache"). Those hrefs use `?new=1`, which the list pages read
 to open their editor straight away.
+
+### `lib/adminTheme.ts`
+
+The admin's light/dark/system theme store — see "Dark mode — `/admin` only"
+under [Styling](#styling-tailwind-v4-no-tailwindconfigts) for the full
+mechanism (`@custom-variant dark`, why the `.dark` class lives on
+`/admin/layout.tsx`'s own wrapper rather than `document.documentElement`, and
+why two overlays deliberately opt out of it entirely). `useAdminTheme()`
+follows the exact `useSyncExternalStore` shape `AdminSidebar.tsx`'s
+remembered-dropdown-state store already established, under the `dc-admin-theme`
+localStorage key — a per-browser preference, like every other admin UI
+preference in this codebase, not a database column.
 
 ### `lib/adminOnboarding.ts` / `lib/onboardingProgress.ts` / `lib/demoMode.ts`
 
@@ -4964,8 +4993,79 @@ Tokens declared in `@theme inline` become utilities automatically, so
 `border-destiny-orange` and so on. Add a colour or font by adding a variable
 here — there is no config file to edit.
 
-Fonts are loaded by `next/font` in `app/layout.tsx` (Roboto for body, Anton for
-display) and exposed as `--font-roboto` / `--font-anton`.
+Fonts are loaded by `next/font` in `app/layout.tsx` (Roboto for body, Anton and
+Playfair Display for display) and exposed as `--font-roboto` / `--font-anton` /
+`--font-playfair`.
+
+#### Colour ramps and semantic tokens
+
+Each brand hue above also has a full 50–900 shade ramp (`--color-destiny-orange-50`
+… `-900`, and the same for red/blue/green/purple/grey), generated by mixing the
+flat base colour toward white (tints, 50–400) and toward black (shades,
+600–900) so lightness stays monotonic regardless of how light or dark a given
+brand hue already is (green's base is much darker than orange's, and both
+still ramp correctly). **The existing flat token is always identical to that
+colour's `-500` step** — nothing that already used `bg-destiny-orange` etc.
+changed colour when the ramps were added.
+
+On top of the ramps sit semantic aliases — `--color-success`/`-bg`/`-fg`,
+`--color-warning`, `--color-danger`, `--color-info` (each `-bg`/`-fg` pair) —
+so "this is a good outcome" is one concept (`bg-success/10 text-success`)
+reused everywhere instead of every call site hand-picking which green to use.
+`Badge`'s tone map and `MetricCard`'s chip tone (`components/admin/AdminUI.tsx`,
+`app/admin/page.tsx`) both read from these rather than a brand colour directly.
+
+#### Dark mode — `/admin` only
+
+Tailwind v4's default `dark:` variant follows `prefers-color-scheme`, which
+would flip the whole *site* dark the moment a visitor's OS is set to dark —
+wrong for a public church site whose brand is deliberately light. `globals.css`
+redefines the variant instead:
+
+```css
+@custom-variant dark (&:where(.dark, .dark *));
+```
+
+so `dark:` utilities do nothing anywhere a `.dark` class doesn't exist. The
+only place that class is ever applied is the `/admin` shell's own wrapper div
+(`app/admin/layout.tsx`), driven by `lib/adminTheme.ts`'s `useAdminTheme()`
+hook — so the public site is structurally unaffected; there is no code path
+that can put `.dark` on anything outside `/admin`.
+
+`useAdminTheme()` stores the choice (`"light" | "dark" | "system"`) under the
+`dc-admin-theme` localStorage key, following the exact `useSyncExternalStore`
+pattern already used by the sidebar's remembered-dropdown-state store
+(`AdminSidebar.tsx`) — a stable server snapshot avoids a hydration mismatch,
+and a same-window custom event keeps every reader in step. It returns a
+`themeClass` string (`"dark"` or `""`) for the caller to render directly,
+**not** an imperative `document.documentElement.classList` mutation: that
+element is shared with the whole page, and toggling it directly would leave
+`.dark` stuck on `<html>` with no natural cleanup on client-side navigation
+away from `/admin`. `AdminThemeToggle.tsx` is the 3-way (light/dark/system)
+control, mounted in `AdminHeader.tsx` and the mobile bar in `AdminSidebar.tsx`.
+
+`components/admin/AdminUI.tsx`'s own header comment documents the `dark:`
+mapping every token in that file follows (`bg-white` → `dark:bg-destiny-grey-800`,
+`text-destiny-grey` → `dark:text-white`, etc.) — since every one of the
+~30 admin pages imports its shared strings (`cardClass`, `primaryBtn`, `Modal`,
+…) rather than writing its own classes, this one file's dark-mode support
+propagates to all of them with no per-page changes.
+
+**Two surfaces deliberately don't react to the toggle at all.** `AuditAsk`'s
+answer panel and the ⌘K command palette (`AdminCommandPalette.tsx`) use the
+public site's `.glass`/`.admin-glass` classes instead — the same fixed,
+near-black frosted treatment the onboarding tour already uses, chosen because
+both are overlays (a one-off AI answer, a page-dimming search modal), not
+persistent chrome, and a fixed identity reads the same recognisable way
+regardless of the admin's own theme. This also sidesteps a real wiring
+problem: `AdminCommandProvider` (and `DialogProvider`, mounted site-wide in
+`components/Providers.tsx`) render their modals as siblings of the whole app
+tree, not descendants of `/admin/layout.tsx`'s `.dark`-carrying wrapper — a
+`dark:` class there would never match its ancestor selector. `DialogProvider`'s
+own dialog *does* need to react to the theme (it's a plain confirm/prompt, not
+a distinct "AI" moment, and is also used by `/portal`, which has no theme
+toggle and must always stay light), so it carries its own `.dark` class
+computed from `useAdminTheme()` directly rather than relying on inheriting one.
 
 #### Cascade layers — read this before adding global CSS
 
@@ -5255,7 +5355,7 @@ ENABLE_SMART_SEARCH=true
 ### Component Directory
 - **~120 components** organized by feature:
   - Global: Header, Footer, Providers, CookieBanner, Analytics, FloatingSmartSearch
-  - Admin: Sidebar, AdminHeader, AdminUI (the shared kit — PageHeader, Badge, Modal, EmptyState, SearchInput, FilterChips, ListToolbar, SortHeader, skeletons, Toggle, BulkBar), AdminCommandPalette (⌘K + global shortcuts), RichTextEditor (shared editor), Sheet (mobile bottom sheet), blocks/ (palette, inspector, outline, tools), posts/training/hr editors
+  - Admin: Sidebar, AdminHeader, AdminUI (the shared kit — PageHeader, Badge, Modal, EmptyState, SearchInput, FilterChips, ListToolbar, SortHeader, skeletons, Toggle, BulkBar; every token dark-mode aware, see "Dark mode" under Styling), AdminThemeToggle (light/dark/system control), AdminCharts (Sparkline, TrendChip, MiniBarRow — hand-rolled data viz, no charting library), AdminCommandPalette (⌘K + global shortcuts; its own fixed dark-glass surface, independent of the admin theme toggle), RichTextEditor (shared editor), Sheet (mobile bottom sheet), blocks/ (palette, inspector, outline, tools), posts/training/hr editors, audit/ (AuditAsk, AuditDetail, AuditReports)
     - `components/admin/hr/HrUI.tsx` is now a re-export shim over `AdminUI`. The kit used to live there, under a feature folder, with its page header named `HrHeader` — which Posts and Training both imported, reading as if those pages were part of HR. `HrHeader` remains as an alias for `PageHeader`; new code should import from `@/components/admin/AdminUI`.
   - Ministry-specific: Kids, Youth, Young Adults, Alpha
   - Governance: registration cards, trustees/directors, financial history, filings, source note
@@ -5272,7 +5372,8 @@ ENABLE_SMART_SEARCH=true
   - Rate limiting (in-memory), auth is handled by `middleware.ts` (no `roles.ts`)
   - Feature flags (`serviceStatus.ts`)
   - Admin shell: `adminNav.ts` (the one navigation registry), `useAdminList.ts`
-    (list search/filter/sort), `useAdminSession.ts`, `adminRecents.ts`, `csv.ts`
+    (list search/filter/sort), `useAdminSession.ts`, `adminRecents.ts`, `csv.ts`,
+    `adminTheme.ts` (light/dark/system theme store)
   - Audit log: `audit.ts` (vocabulary + diffing + redaction), `audit.server.ts`
     (`recordAudit()`, the only writer), `auditAI.ts` (tools + prompt),
     `auditEmail.ts` (the weekly report email)

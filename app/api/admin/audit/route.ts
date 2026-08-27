@@ -13,7 +13,7 @@
 
 import { NextResponse } from "next/server";
 import { createServiceClient } from "@/utils/supabase/service";
-import { rangeStart, type AuditEntry } from "@/lib/audit";
+import { rangeStart, siteDayKey, type AuditEntry } from "@/lib/audit";
 
 export const dynamic = "force-dynamic";
 
@@ -102,7 +102,7 @@ export async function GET(request: Request) {
   if (!before) {
     let facetQuery = supabase
       .from("audit_log")
-      .select("actor_email, section, action")
+      .select("actor_email, section, action, created_at")
       .order("id", { ascending: false });
     if (since) facetQuery = facetQuery.gte("created_at", since);
     if (orTerm) facetQuery = facetQuery.or(orTerm);
@@ -120,10 +120,22 @@ export async function GET(request: Request) {
       return out;
     };
 
+    // Bucketed by church-local day (see SITE_TIME_ZONE, lib/audit.ts) so the
+    // sparkline's days line up with the day someone would actually call
+    // "today" — the same reasoning that made siteDayBounds necessary for the
+    // range filter itself. One more reduce over rows already in memory from
+    // the counts above, not a second query.
+    const byDay: Record<string, number> = {};
+    for (const row of facetRows ?? []) {
+      const day = siteDayKey(new Date((row as { created_at: string }).created_at));
+      byDay[day] = (byDay[day] ?? 0) + 1;
+    }
+
     facets = {
       actors: count("actor_email"),
       sections: count("section"),
       actions: count("action"),
+      byDay,
       scanned: facetRows?.length ?? 0,
       capped: (facetRows?.length ?? 0) >= FACET_SCAN,
     };

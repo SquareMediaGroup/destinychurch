@@ -18,6 +18,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
+import { motion, useReducedMotion } from "motion/react";
 import {
   PageHeader,
   EmptyState,
@@ -27,6 +28,7 @@ import {
   TableSkeleton,
   ghostBtn,
 } from "@/components/admin/AdminUI";
+import { Sparkline } from "@/components/admin/AdminCharts";
 import { AuditAsk } from "@/components/admin/audit/AuditAsk";
 import { AuditDetail } from "@/components/admin/audit/AuditDetail";
 import { AuditReports } from "@/components/admin/audit/AuditReports";
@@ -41,6 +43,7 @@ import {
   relativeTime,
   sectionIcon,
   sectionLabel,
+  siteDayKey,
   type AuditEntry,
 } from "@/lib/audit";
 
@@ -48,8 +51,25 @@ interface Facets {
   actors: Record<string, number>;
   sections: Record<string, number>;
   actions: Record<string, number>;
+  /** `YYYY-MM-DD` (church-local day) → count, over whatever the range covers. */
+  byDay: Record<string, number>;
   capped: boolean;
 }
+
+/** The last N calendar days (today inclusive), oldest first — the sparkline's x-axis. */
+function lastNDays(n: number): string[] {
+  const out: string[] = [];
+  const now = new Date();
+  for (let i = n - 1; i >= 0; i--) {
+    const d = new Date(now);
+    d.setDate(d.getDate() - i);
+    out.push(siteDayKey(d));
+  }
+  return out;
+}
+
+/** How many of the most recent rows to animate in — a busy day shouldn't queue a 500-row waterfall. */
+const STAGGER_ROWS = 20;
 
 const RANGE_KEYS = Object.keys(AUDIT_RANGES) as (keyof typeof AUDIT_RANGES)[];
 
@@ -194,6 +214,17 @@ export default function AuditLogPage() {
 
   const actorOptions = Object.entries(facets?.actors ?? {}).sort((a, b) => b[1] - a[1]);
 
+  // The sparkline's window tracks whichever time range is selected, so it
+  // never implies more history than the filtered rows underneath it actually
+  // cover — a 30-day shape over a "7 days" filter would show mostly zero and
+  // read as broken, not quiet.
+  const sparklineDays =
+    range === "today" ? 2 : range === "week" ? 7 : range === "month" ? 30 : range === "quarter" ? 60 : 60;
+  const dayCounts = facets
+    ? lastNDays(sparklineDays).map((day) => facets.byDay[day] ?? 0)
+    : [];
+  const reduceMotion = useReducedMotion();
+
   return (
     <div className="mx-auto max-w-6xl px-6 py-10">
       <PageHeader
@@ -202,7 +233,7 @@ export default function AuditLogPage() {
         back={{ href: "/admin", label: "Dashboard" }}
         action={
           <div
-            className="flex rounded-xl border border-black/10 bg-white p-1"
+            className="flex rounded-xl border border-black/10 bg-white p-1 dark:border-white/10 dark:bg-destiny-grey-800"
             role="tablist"
             aria-label="Audit view"
           >
@@ -220,7 +251,7 @@ export default function AuditLogPage() {
                 className={`rounded-lg px-3.5 py-1.5 text-sm font-bold transition ${
                   tab === value
                     ? "bg-destiny-orange text-white shadow-sm"
-                    : "text-destiny-grey/55 hover:text-destiny-grey"
+                    : "text-destiny-grey/55 hover:text-destiny-grey dark:text-white/55 dark:hover:text-white"
                 }`}
               >
                 {label}
@@ -257,7 +288,7 @@ export default function AuditLogPage() {
                   value={actor}
                   onChange={(e) => setActor(e.target.value)}
                   aria-label="Filter by person"
-                  className="rounded-xl border border-black/10 bg-white px-3 py-2 text-sm font-bold text-destiny-grey/70 outline-none transition focus:border-destiny-orange/50 focus:ring-2 focus:ring-destiny-orange/15"
+                  className="rounded-xl border border-black/10 bg-white px-3 py-2 text-sm font-bold text-destiny-grey/70 outline-none transition focus:border-destiny-orange/50 focus:ring-2 focus:ring-destiny-orange/15 dark:border-white/10 dark:bg-destiny-grey-800 dark:text-white/70"
                 >
                   <option value="all">Everyone</option>
                   {actorOptions.map(([email, count]) => (
@@ -285,17 +316,17 @@ export default function AuditLogPage() {
             </div>
 
             {entityFilter && (
-              <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-destiny-orange/25 bg-destiny-orange/5 px-4 py-2.5">
+              <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-destiny-orange/25 bg-destiny-orange/5 px-4 py-2.5 dark:border-destiny-orange/35 dark:bg-destiny-orange/10">
                 <span className="material-symbols-rounded text-base text-destiny-orange">
                   filter_alt
                 </span>
-                <p className="text-sm font-bold text-destiny-grey">
+                <p className="text-sm font-bold text-destiny-grey dark:text-white">
                   Showing the history of one {entityFilter.entity}
                 </p>
                 <button
                   type="button"
                   onClick={() => setEntityFilter(null)}
-                  className="ml-auto text-xs font-bold text-destiny-grey/50 transition hover:text-destiny-grey"
+                  className="ml-auto text-xs font-bold text-destiny-grey/50 transition hover:text-destiny-grey dark:text-white/50 dark:hover:text-white"
                 >
                   Clear
                 </button>
@@ -304,6 +335,16 @@ export default function AuditLogPage() {
           </div>
 
           <ErrorNote>{error}</ErrorNote>
+
+          {!loading && facets && dayCounts.some((c) => c > 0) && (
+            <div className="mb-4 flex items-center gap-3 rounded-2xl border border-black/5 bg-white px-4 py-3 shadow-sm dark:border-white/8 dark:bg-destiny-grey-800">
+              <Sparkline values={dayCounts} tone="orange" width={160} height={28} />
+              <p className="text-xs font-bold text-destiny-grey/45 dark:text-white/45">
+                Activity over the last {dayCounts.length} day{dayCounts.length === 1 ? "" : "s"}
+                {facets.capped ? " (capped sample)" : ""}
+              </p>
+            </div>
+          )}
 
           {loading ? (
             <TableSkeleton rows={8} columns={4} />
@@ -329,14 +370,24 @@ export default function AuditLogPage() {
             />
           ) : (
             <>
-              <div className="overflow-hidden rounded-3xl border border-black/5 bg-white shadow-sm">
-                <ul className="divide-y divide-black/5">
-                  {entries.map((entry) => (
-                    <li key={entry.id}>
+              <div className="overflow-hidden rounded-3xl border border-black/5 bg-white shadow-sm dark:border-white/8 dark:bg-destiny-grey-800">
+                <ul className="divide-y divide-black/5 dark:divide-white/8">
+                  {entries.map((entry, i) => (
+                    <motion.li
+                      key={entry.id}
+                      initial={
+                        reduceMotion || i >= STAGGER_ROWS ? false : { opacity: 0, y: 4 }
+                      }
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{
+                        duration: 0.18,
+                        delay: reduceMotion ? 0 : Math.min(i, STAGGER_ROWS) * 0.02,
+                      }}
+                    >
                       <button
                         type="button"
                         onClick={() => setSelected(entry)}
-                        className="flex w-full items-start gap-3 px-5 py-3.5 text-left transition hover:bg-[#f5f7fa]"
+                        className="flex w-full items-start gap-3 px-5 py-3.5 text-left transition hover:bg-[#f5f7fa] dark:hover:bg-white/5"
                       >
                         <span
                           className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${
@@ -345,11 +396,11 @@ export default function AuditLogPage() {
                           aria-hidden
                         />
                         <span className="min-w-0 flex-1">
-                          <span className="block text-sm font-medium text-destiny-grey">
+                          <span className="block text-sm font-medium text-destiny-grey dark:text-white">
                             {entry.summary}
                           </span>
-                          <span className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-destiny-grey/45">
-                            <span className="font-bold text-destiny-grey/60">
+                          <span className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-destiny-grey/45 dark:text-white/45">
+                            <span className="font-bold text-destiny-grey/60 dark:text-white/60">
                               {actorName(entry.actor_email)}
                             </span>
                             <span aria-hidden>·</span>
@@ -376,14 +427,14 @@ export default function AuditLogPage() {
                             )}
                           </span>
                         </span>
-                        <span className="ml-auto hidden shrink-0 items-center gap-1 text-xs font-bold text-destiny-grey/35 sm:flex">
+                        <span className="ml-auto hidden shrink-0 items-center gap-1 text-xs font-bold text-destiny-grey/35 sm:flex dark:text-white/35">
                           <span className="material-symbols-rounded text-base">
                             {actionIcon(entry.action)}
                           </span>
                           {actionLabel(entry.action)}
                         </span>
                       </button>
-                    </li>
+                    </motion.li>
                   ))}
                 </ul>
               </div>
@@ -394,7 +445,7 @@ export default function AuditLogPage() {
                     {loadingMore ? "Loading…" : "Load more"}
                   </button>
                 ) : (
-                  <p className="text-xs font-bold text-destiny-grey/35">
+                  <p className="text-xs font-bold text-destiny-grey/35 dark:text-white/35">
                     That&rsquo;s everything for this period.
                   </p>
                 )}

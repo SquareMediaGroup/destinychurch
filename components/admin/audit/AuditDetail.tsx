@@ -27,10 +27,10 @@ import {
 function MetaRow({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="min-w-0">
-      <p className="mb-1 text-[10px] font-bold uppercase tracking-wider text-destiny-grey/40">
+      <p className="mb-1 text-[10px] font-bold uppercase tracking-wider text-destiny-grey/40 dark:text-white/40">
         {label}
       </p>
-      <div className="break-words text-sm text-destiny-grey">{children}</div>
+      <div className="break-words text-sm text-destiny-grey dark:text-white">{children}</div>
     </div>
   );
 }
@@ -50,14 +50,14 @@ function Change({ field, from, to }: { field: string; from: unknown; to: unknown
 
   if (long) {
     return (
-      <div className="border-t border-black/5 px-4 py-3 first:border-t-0">
-        <p className="mb-2 text-xs font-bold text-destiny-grey">{fieldLabel(field)}</p>
+      <div className="border-t border-black/5 px-4 py-3 first:border-t-0 dark:border-white/8">
+        <p className="mb-2 text-xs font-bold text-destiny-grey dark:text-white">{fieldLabel(field)}</p>
         <div className="grid gap-2 sm:grid-cols-2">
           <div className="rounded-xl bg-destiny-red/5 p-2.5">
             <p className="mb-1 text-[10px] font-bold uppercase tracking-wider text-destiny-red/70">
               Before
             </p>
-            <pre className="max-h-40 overflow-auto whitespace-pre-wrap break-words font-sans text-xs leading-relaxed text-destiny-grey/70">
+            <pre className="max-h-40 overflow-auto whitespace-pre-wrap break-words font-sans text-xs leading-relaxed text-destiny-grey/70 dark:text-white/70">
               {fromText}
             </pre>
           </div>
@@ -65,7 +65,7 @@ function Change({ field, from, to }: { field: string; from: unknown; to: unknown
             <p className="mb-1 text-[10px] font-bold uppercase tracking-wider text-destiny-green/70">
               After
             </p>
-            <pre className="max-h-40 overflow-auto whitespace-pre-wrap break-words font-sans text-xs leading-relaxed text-destiny-grey">
+            <pre className="max-h-40 overflow-auto whitespace-pre-wrap break-words font-sans text-xs leading-relaxed text-destiny-grey dark:text-white">
               {toText}
             </pre>
           </div>
@@ -75,12 +75,12 @@ function Change({ field, from, to }: { field: string; from: unknown; to: unknown
   }
 
   return (
-    <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)_minmax(0,1.2fr)] items-start gap-3 border-t border-black/5 px-4 py-2.5 text-sm first:border-t-0">
-      <p className="font-bold text-destiny-grey">{fieldLabel(field)}</p>
-      <p className="break-words text-destiny-grey/45 line-through decoration-destiny-grey/25">
+    <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)_minmax(0,1.2fr)] items-start gap-3 border-t border-black/5 px-4 py-2.5 text-sm first:border-t-0 dark:border-white/8">
+      <p className="font-bold text-destiny-grey dark:text-white">{fieldLabel(field)}</p>
+      <p className="break-words text-destiny-grey/45 line-through decoration-destiny-grey/25 dark:text-white/45 dark:decoration-white/25">
         {fromText}
       </p>
-      <p className="break-words font-medium text-destiny-grey">{toText}</p>
+      <p className="break-words font-medium text-destiny-grey dark:text-white">{toText}</p>
     </div>
   );
 }
@@ -108,14 +108,14 @@ export function AuditDetail({
         <div>
           <div className="mb-2 flex flex-wrap items-center gap-2">
             <Badge tone={actionTone(entry.action)}>{actionLabel(entry.action)}</Badge>
-            <span className="inline-flex items-center gap-1 text-xs font-bold text-destiny-grey/45">
+            <span className="inline-flex items-center gap-1 text-xs font-bold text-destiny-grey/45 dark:text-white/45">
               <span className="material-symbols-rounded text-sm">
                 {sectionIcon(entry.section)}
               </span>
               {sectionLabel(entry.section)}
             </span>
           </div>
-          <p className="text-base font-bold leading-snug text-destiny-grey">
+          <p className="text-base font-bold leading-snug text-destiny-grey dark:text-white">
             {entry.summary}
           </p>
         </div>
@@ -123,7 +123,7 @@ export function AuditDetail({
         <div className={`${cardClass} grid gap-4 p-4 sm:grid-cols-2`}>
           <MetaRow label="When">
             {fullTimestamp(entry.created_at)}
-            <span className="ml-1.5 text-destiny-grey/45">
+            <span className="ml-1.5 text-destiny-grey/45 dark:text-white/45">
               ({relativeTime(entry.created_at)})
             </span>
           </MetaRow>
@@ -138,7 +138,7 @@ export function AuditDetail({
                 {entry.actor_email}
               </button>
             ) : (
-              <span className="text-destiny-grey/50">System</span>
+              <span className="text-destiny-grey/50 dark:text-white/50">System</span>
             )}
             {entry.actor_roles.length > 0 && (
               <div className="mt-1.5 flex flex-wrap gap-1">
@@ -150,7 +150,7 @@ export function AuditDetail({
                     className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${
                       role === "super_admin"
                         ? "bg-destiny-orange/10 text-destiny-orange"
-                        : "bg-black/5 text-destiny-grey/60"
+                        : "bg-black/5 text-destiny-grey/60 dark:bg-white/10 dark:text-white/60"
                     }`}
                   >
                     {roleLabel(role)}
@@ -168,23 +168,23 @@ export function AuditDetail({
             >
               {entry.entity_label ?? entry.entity}
             </button>
-            <span className="ml-1.5 text-xs text-destiny-grey/45">{entry.entity}</span>
+            <span className="ml-1.5 text-xs text-destiny-grey/45 dark:text-white/45">{entry.entity}</span>
           </MetaRow>
 
           <MetaRow label="Reference">
-            <span className="font-mono text-xs text-destiny-grey/60">
+            <span className="font-mono text-xs text-destiny-grey/60 dark:text-white/60">
               {entry.entity_id ?? "—"}
             </span>
           </MetaRow>
 
           <MetaRow label="Request">
-            <span className="font-mono text-xs text-destiny-grey/60">
+            <span className="font-mono text-xs text-destiny-grey/60 dark:text-white/60">
               {entry.method ?? "—"} {entry.path ?? ""}
             </span>
           </MetaRow>
 
           <MetaRow label="From">
-            <span className="font-mono text-xs text-destiny-grey/60">
+            <span className="font-mono text-xs text-destiny-grey/60 dark:text-white/60">
               {entry.ip ?? "—"}
             </span>
           </MetaRow>
@@ -192,18 +192,18 @@ export function AuditDetail({
           {entry.user_agent && (
             <div className="sm:col-span-2">
               <MetaRow label="Browser">
-                <span className="text-xs text-destiny-grey/50">{entry.user_agent}</span>
+                <span className="text-xs text-destiny-grey/50 dark:text-white/50">{entry.user_agent}</span>
               </MetaRow>
             </div>
           )}
         </div>
 
         <div>
-          <p className="mb-2 text-xs font-bold uppercase tracking-wider text-destiny-grey/45">
+          <p className="mb-2 text-xs font-bold uppercase tracking-wider text-destiny-grey/45 dark:text-white/45">
             What changed
           </p>
           {changes.length === 0 ? (
-            <p className="rounded-2xl border border-dashed border-black/10 px-4 py-5 text-center text-sm text-destiny-grey/45">
+            <p className="rounded-2xl border border-dashed border-black/10 px-4 py-5 text-center text-sm text-destiny-grey/45 dark:border-white/10 dark:text-white/45">
               No field-level changes were recorded for this entry.
             </p>
           ) : (
@@ -217,17 +217,17 @@ export function AuditDetail({
 
         {metadata.length > 0 && (
           <div>
-            <p className="mb-2 text-xs font-bold uppercase tracking-wider text-destiny-grey/45">
+            <p className="mb-2 text-xs font-bold uppercase tracking-wider text-destiny-grey/45 dark:text-white/45">
               Extra detail
             </p>
             <div className={`overflow-hidden ${cardClass}`}>
               {metadata.map(([key, value]) => (
                 <div
                   key={key}
-                  className="grid grid-cols-[minmax(0,1fr)_minmax(0,2fr)] gap-3 border-t border-black/5 px-4 py-2.5 text-sm first:border-t-0"
+                  className="grid grid-cols-[minmax(0,1fr)_minmax(0,2fr)] gap-3 border-t border-black/5 px-4 py-2.5 text-sm first:border-t-0 dark:border-white/8"
                 >
-                  <p className="font-bold text-destiny-grey">{fieldLabel(key)}</p>
-                  <p className="break-words text-destiny-grey/70">{formatValue(value)}</p>
+                  <p className="font-bold text-destiny-grey dark:text-white">{fieldLabel(key)}</p>
+                  <p className="break-words text-destiny-grey/70 dark:text-white/70">{formatValue(value)}</p>
                 </div>
               ))}
             </div>
@@ -240,7 +240,7 @@ export function AuditDetail({
           <button
             type="button"
             onClick={() => setShowRaw((v) => !v)}
-            className="text-xs font-bold text-destiny-grey/45 transition hover:text-destiny-grey"
+            className="text-xs font-bold text-destiny-grey/45 transition hover:text-destiny-grey dark:text-white/45 dark:hover:text-white"
           >
             {showRaw ? "Hide" : "Show"} raw entry
           </button>
@@ -250,7 +250,7 @@ export function AuditDetail({
         </div>
 
         {showRaw && (
-          <pre className="max-h-72 overflow-auto rounded-2xl bg-[#f5f7fa] p-4 text-[11px] leading-relaxed text-destiny-grey/70">
+          <pre className="max-h-72 overflow-auto rounded-2xl bg-[#f5f7fa] p-4 text-[11px] leading-relaxed text-destiny-grey/70 dark:bg-white/5 dark:text-white/70">
             {JSON.stringify(entry, null, 2)}
           </pre>
         )}

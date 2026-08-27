@@ -11,6 +11,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { breadcrumbsFor } from "@/lib/adminNav";
 import { CommandTrigger, useAdminCommand } from "@/components/admin/AdminCommandPalette";
+import { AdminThemeToggle } from "@/components/admin/AdminThemeToggle";
 
 export default function AdminHeader() {
   const pathname = usePathname();
@@ -18,7 +19,7 @@ export default function AdminHeader() {
   const { openShortcuts } = useAdminCommand();
 
   return (
-    <header className="sticky top-0 z-20 hidden h-16 items-center justify-between gap-4 border-b border-black/8 bg-white/90 px-8 backdrop-blur md:flex">
+    <header className="sticky top-0 z-20 hidden h-16 items-center justify-between gap-4 border-b border-black/8 bg-white/90 px-8 backdrop-blur dark:border-white/8 dark:bg-destiny-grey-900/90 md:flex">
       <nav aria-label="Breadcrumb" className="flex min-w-0 items-center gap-2 text-sm">
         {crumbs.map((crumb, i) => {
           const last = i === crumbs.length - 1;
@@ -27,7 +28,7 @@ export default function AdminHeader() {
               {i > 0 && (
                 <span
                   aria-hidden
-                  className="material-symbols-rounded text-base text-destiny-grey/25"
+                  className="material-symbols-rounded text-base text-destiny-grey/25 dark:text-white/25"
                 >
                   chevron_right
                 </span>
@@ -35,14 +36,14 @@ export default function AdminHeader() {
               {crumb.href && !last ? (
                 <Link
                   href={crumb.href}
-                  className="truncate font-bold text-destiny-grey/40 transition hover:text-destiny-grey"
+                  className="truncate font-bold text-destiny-grey/40 transition hover:text-destiny-grey dark:text-white/40 dark:hover:text-white"
                 >
                   {crumb.label}
                 </Link>
               ) : (
                 <span
                   aria-current={last ? "page" : undefined}
-                  className="truncate font-black text-destiny-grey"
+                  className="truncate font-black text-destiny-grey dark:text-white"
                 >
                   {crumb.label}
                 </span>
@@ -54,12 +55,13 @@ export default function AdminHeader() {
 
       <div className="flex shrink-0 items-center gap-2">
         <CommandTrigger />
+        <AdminThemeToggle />
         <button
           type="button"
           onClick={openShortcuts}
           aria-label="Keyboard shortcuts"
           title="Keyboard shortcuts"
-          className="flex h-9 w-9 items-center justify-center rounded-xl border border-black/10 bg-white text-destiny-grey/45 transition hover:text-destiny-grey"
+          className="flex h-9 w-9 items-center justify-center rounded-xl border border-black/10 bg-white text-destiny-grey/45 transition hover:text-destiny-grey dark:border-white/10 dark:bg-destiny-grey-800 dark:text-white/45 dark:hover:text-white"
         >
           <span className="material-symbols-rounded text-lg">keyboard</span>
         </button>

@@ -5,9 +5,14 @@ import AdminSidebar from "@/components/admin/AdminSidebar";
 import AdminHeader from "@/components/admin/AdminHeader";
 import { AdminCommandProvider } from "@/components/admin/AdminCommandPalette";
 import OnboardingProvider from "@/components/admin/onboarding/OnboardingProvider";
+import { useAdminTheme } from "@/lib/adminTheme";
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  // `.dark` is applied only to this layout's own wrapper div below — never to
+  // document.documentElement — so it can never outlive this component or leak
+  // onto the public site via a stray class left on <html>. See lib/adminTheme.ts.
+  const { themeClass } = useAdminTheme();
   // Studio editor and the standalone auth pages take over the
   // full viewport — no sidebar
   const isFullViewport =
@@ -28,7 +33,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   return (
     <AdminCommandProvider>
       <OnboardingProvider>
-        <div className="flex min-h-screen flex-col bg-[#f5f7fa] md:flex-row">
+        <div
+          className={`flex min-h-screen flex-col bg-[#f5f7fa] dark:bg-destiny-grey-900 md:flex-row ${themeClass}`}
+        >
           <AdminSidebar />
           <div className="flex min-w-0 flex-1 flex-col">
             <AdminHeader />

@@ -9,6 +9,10 @@ import {
   useRef,
   useState,
 } from "react";
+import { usePathname } from "next/navigation";
+import { AnimatePresence, motion, useReducedMotion } from "motion/react";
+import { inputClass, ghostBtn, primaryBtn, dangerBtn } from "@/components/admin/AdminUI";
+import { useAdminTheme } from "@/lib/adminTheme";
 
 type ConfirmOptions = {
   title?: string;
@@ -46,14 +50,11 @@ type DialogContextValue = {
 
 const DialogContext = createContext<DialogContextValue | null>(null);
 
-const inputClass =
-  "w-full rounded-xl border border-black/10 bg-white px-3.5 py-2.5 text-sm text-destiny-grey outline-none transition placeholder:text-destiny-grey/30 focus:border-destiny-orange/50 focus:ring-2 focus:ring-destiny-orange/15";
-const ghostBtn =
-  "inline-flex items-center justify-center gap-1.5 rounded-xl border border-black/10 bg-white px-4 py-2.5 text-sm font-bold text-destiny-grey/70 transition hover:bg-[#f5f7fa]";
-const primaryBtn =
-  "inline-flex items-center justify-center gap-1.5 rounded-xl bg-destiny-orange px-4 py-2.5 text-sm font-bold text-white shadow-sm transition hover:brightness-110 disabled:opacity-60";
-const dangerBtn =
-  "inline-flex items-center justify-center gap-1.5 rounded-xl bg-red-600 px-4 py-2.5 text-sm font-bold text-white shadow-sm transition hover:brightness-110 disabled:opacity-60";
+// These used to be private copies of the same four AdminUI.tsx tokens — which
+// meant this file's dangerBtn had drifted to a raw `bg-red-600` while
+// AdminUI.tsx's uses the brand `bg-destiny-red`. Importing them fixes that
+// drift and means this dialog gets dark-mode styling for free the moment
+// AdminUI.tsx's tokens gain it, rather than needing a second, parallel edit.
 
 export function DialogProvider({ children }: { children: React.ReactNode }) {
   const [request, setRequest] = useState<DialogRequest | null>(null);
@@ -79,9 +80,21 @@ export function DialogProvider({ children }: { children: React.ReactNode }) {
   return (
     <DialogContext.Provider value={value}>
       {children}
-      {request && (
-        <DialogModal request={request} onClose={() => setRequest(null)} />
-      )}
+      {/*
+        This is the one place in the codebase that can safely animate a
+        modal's exit: DialogProvider owns its single conditional render site
+        (unlike AdminUI.tsx's Modal, mounted behind 15+ different pages' own
+        conditionals), so wrapping it in AnimatePresence here doesn't require
+        touching any of useDialog()'s callers. Safe with respect to the
+        promise this guards, too — cancel()/accept() below call
+        request.resolve() and onClose() synchronously, before this animation
+        ever starts; only the visual removal is deferred, never the outcome.
+      */}
+      <AnimatePresence>
+        {request && (
+          <DialogModal key="dialog" request={request} onClose={() => setRequest(null)} />
+        )}
+      </AnimatePresence>
     </DialogContext.Provider>
   );
 }
@@ -99,6 +112,19 @@ function DialogModal({
   );
   const inputRef = useRef<HTMLInputElement>(null);
   const confirmRef = useRef<HTMLButtonElement>(null);
+
+  // DialogProvider is mounted once, site-wide (components/Providers.tsx), so
+  // this modal renders as a sibling of the whole app tree rather than a
+  // descendant of /admin/layout.tsx's own `.dark`-carrying wrapper div — the
+  // ancestor selector every other dark: class in the admin relies on
+  // (@custom-variant dark in app/globals.css) would never match here. It
+  // carries its own `.dark` instead, and only ever on /admin: /portal also
+  // calls useDialog() and is a separate surface with no theme toggle of its
+  // own, so it stays light regardless of the stored admin preference.
+  const pathname = usePathname();
+  const { themeClass } = useAdminTheme();
+  const dark = pathname.startsWith("/admin") ? themeClass : "";
+  const reduceMotion = useReducedMotion();
 
   // Cancel resolves the promise with the "declined" value for the dialog kind.
   const cancel = useCallback(() => {
@@ -144,23 +170,31 @@ function DialogModal({
       : primaryBtn;
 
   return (
-    <div
-      className="fixed inset-0 z-[200] flex items-center justify-center overflow-y-auto bg-black/40 p-4 backdrop-blur-sm"
+    <motion.div
+      initial={reduceMotion ? false : { opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={reduceMotion ? undefined : { opacity: 0 }}
+      transition={{ duration: reduceMotion ? 0 : 0.15 }}
+      className={`fixed inset-0 z-[200] flex items-center justify-center overflow-y-auto bg-black/40 p-4 backdrop-blur-sm dark:bg-black/60 ${dark}`}
       onClick={cancel}
     >
-      <div
-        className="w-full max-w-md rounded-3xl border border-black/5 bg-white p-6 shadow-2xl"
+      <motion.div
+        initial={reduceMotion ? false : { opacity: 0, scale: 0.97, y: 8 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={reduceMotion ? undefined : { opacity: 0, scale: 0.98 }}
+        transition={{ duration: reduceMotion ? 0 : 0.18, ease: "easeOut" }}
+        className="w-full max-w-md rounded-3xl border border-black/5 bg-white p-6 shadow-2xl dark:border-white/8 dark:bg-destiny-grey-800"
         role="dialog"
         aria-modal="true"
         onClick={(e) => e.stopPropagation()}
       >
         {request.title && (
-          <h2 className="mb-2 text-lg font-black text-destiny-grey">
+          <h2 className="mb-2 text-lg font-black text-destiny-grey dark:text-white">
             {request.title}
           </h2>
         )}
         {request.message && (
-          <p className="text-sm leading-relaxed text-destiny-grey/70">
+          <p className="text-sm leading-relaxed text-destiny-grey/70 dark:text-white/70">
             {request.message}
           </p>
         )}
@@ -194,8 +228,8 @@ function DialogModal({
             {confirmLabel}
           </button>
         </div>
-      </div>
-    </div>
+      </motion.div>
+    </motion.div>
   );
 }
 

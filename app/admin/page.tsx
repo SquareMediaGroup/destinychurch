@@ -95,6 +95,45 @@ async function getJson<T>(url: string): Promise<T | null> {
   }
 }
 
+/**
+ * "Since your last visit" trend, for the one metric here where more is
+ * unambiguously good: revenue. Every other card on this page either already
+ * carries a more specific chip (drafts, total, low stock — see the `chip`
+ * props below) or has no natural "more is better" reading (more orders to
+ * fulfil isn't good news the way more sales is), so this doesn't try to force
+ * a trend arrow onto numbers where up and down don't mean anything on their
+ * own.
+ *
+ * Deliberately a localStorage diff against this browser's last visit, not a
+ * calendar-aligned week-over-week figure — there's no historical snapshot
+ * table for dashboard metrics, and standing one up purely for a trend arrow
+ * would be a lot of new backend for a visual-polish detail. The chip's title
+ * says so, so it doesn't read as a proper analytics number.
+ */
+const DASHBOARD_SNAPSHOT_KEY = "dc-admin-dashboard-snapshot";
+
+function readLastSoldPennies(): number | null {
+  try {
+    const raw = window.localStorage.getItem(DASHBOARD_SNAPSHOT_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as { soldThisYearPennies?: number };
+    return typeof parsed.soldThisYearPennies === "number" ? parsed.soldThisYearPennies : null;
+  } catch {
+    return null;
+  }
+}
+
+function writeLastSoldPennies(soldThisYearPennies: number) {
+  try {
+    window.localStorage.setItem(
+      DASHBOARD_SNAPSHOT_KEY,
+      JSON.stringify({ soldThisYearPennies }),
+    );
+  } catch {
+    // Private browsing — the trend just won't have a "last visit" to compare to.
+  }
+}
+
 const asArray = <T,>(value: unknown): T[] => (Array.isArray(value) ? (value as T[]) : []);
 
 export default function AdminDashboard() {
@@ -102,6 +141,8 @@ export default function AdminDashboard() {
   const { recents } = useAdminRecents();
   const [snapshot, setSnapshot] = useState<Snapshot>(EMPTY);
   const [loading, setLoading] = useState(true);
+  /** Pennies sold since the last time this browser loaded the dashboard. */
+  const [soldDeltaPennies, setSoldDeltaPennies] = useState<number | null>(null);
   // Middleware bounces here with ?forbidden=1 when someone opens a section
   // their role can't reach. Read straight from the router — it's derived, not
   // state.
@@ -148,6 +189,19 @@ export default function AdminDashboard() {
         .sort((a, b) => a.units - b.units)
         .slice(0, 5);
 
+      const soldThisYearPennies = orderRows
+        .filter((o) => {
+          if (o.status !== "paid" && o.status !== "fulfilled") return false;
+          return new Date(o.paid_at ?? o.created_at).getFullYear() === year;
+        })
+        .reduce((sum, o) => sum + (o.total_pennies ?? 0), 0);
+
+      if (orders && may.store) {
+        const lastSold = readLastSoldPennies();
+        setSoldDeltaPennies(lastSold === null ? null : soldThisYearPennies - lastSold);
+        writeLastSoldPennies(soldThisYearPennies);
+      }
+
       setSnapshot({
         redirects: redirects
           ? {
@@ -178,12 +232,7 @@ export default function AdminDashboard() {
                 drafts: productRows.filter((p) => !p.is_published).length,
                 totalStock: productRows.reduce((sum, p) => sum + totalStock(p), 0),
                 lowStock,
-                soldThisYearPennies: orderRows
-                  .filter((o) => {
-                    if (o.status !== "paid" && o.status !== "fulfilled") return false;
-                    return new Date(o.paid_at ?? o.created_at).getFullYear() === year;
-                  })
-                  .reduce((sum, o) => sum + (o.total_pennies ?? 0), 0),
+                soldThisYearPennies,
                 pendingOrders: orderRows.filter((o) => o.status === "pending").length,
                 paidUnfulfilled: orderRows.filter((o) => o.status === "paid").length,
               }
@@ -283,7 +332,7 @@ export default function AdminDashboard() {
   return (
     <div className="mx-auto max-w-6xl px-6 py-8 md:px-8 md:py-10">
       {forbidden && (
-        <div className="mb-6 flex items-center gap-2 rounded-xl bg-destiny-red/10 px-4 py-3 text-sm font-bold text-destiny-red">
+        <div className="mb-6 flex items-center gap-2 rounded-xl bg-danger/10 px-4 py-3 text-sm font-bold text-danger">
           <span className="material-symbols-rounded text-lg">lock</span>
           You don&apos;t have access to that section.
         </div>
@@ -292,11 +341,13 @@ export default function AdminDashboard() {
       {/* Header */}
       <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
         <div>
-          <p className="mb-1 text-xs font-bold uppercase tracking-widest text-destiny-grey/40">
+          <p className="mb-1 text-xs font-bold uppercase tracking-widest text-destiny-grey/40 dark:text-white/40">
             {today}
           </p>
-          <h1 className="text-3xl font-black text-destiny-grey">Dashboard</h1>
-          <p className="mt-1 text-sm text-destiny-grey/50">
+          <h1 className="font-[family-name:var(--font-admin-heading)] text-3xl font-black tracking-tight text-destiny-grey dark:text-white">
+            Dashboard
+          </h1>
+          <p className="mt-1 text-sm text-destiny-grey/50 dark:text-white/50">
             Everything you can manage, and anything that needs you.
           </p>
         </div>
@@ -306,7 +357,7 @@ export default function AdminDashboard() {
       {/* Needs attention */}
       {!busy && alerts.length > 0 && (
         <section className="mb-10">
-          <h2 className="mb-3 text-xs font-bold uppercase tracking-widest text-destiny-grey/40">
+          <h2 className="mb-3 text-xs font-bold uppercase tracking-widest text-destiny-grey/40 dark:text-white/40">
             Needs attention
           </h2>
           <ul className="flex flex-col gap-2">
@@ -314,7 +365,7 @@ export default function AdminDashboard() {
               <li key={alert.text}>
                 <Link
                   href={alert.href}
-                  className="group flex items-center gap-3 rounded-2xl border border-black/5 bg-white px-4 py-3 shadow-sm transition hover:shadow-md"
+                  className="group flex items-center gap-3 rounded-2xl border border-black/5 bg-white px-4 py-3 shadow-sm transition hover:shadow-md dark:border-white/8 dark:bg-destiny-grey-800"
                 >
                   <span
                     className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${
@@ -327,13 +378,13 @@ export default function AdminDashboard() {
                   >
                     <span className="material-symbols-rounded text-xl">{alert.icon}</span>
                   </span>
-                  <p className="min-w-0 flex-1 text-sm font-bold text-destiny-grey">
+                  <p className="min-w-0 flex-1 text-sm font-bold text-destiny-grey dark:text-white">
                     {alert.text}
                   </p>
                   <span className="shrink-0 text-xs font-bold text-destiny-orange opacity-0 transition group-hover:opacity-100">
                     {alert.cta}
                   </span>
-                  <span className="material-symbols-rounded shrink-0 text-base text-destiny-grey/25 transition group-hover:text-destiny-orange">
+                  <span className="material-symbols-rounded shrink-0 text-base text-destiny-grey/25 transition group-hover:text-destiny-orange dark:text-white/25">
                     arrow_forward
                   </span>
                 </Link>
@@ -345,7 +396,7 @@ export default function AdminDashboard() {
 
       {/* Metrics — only the sections this admin can actually open */}
       <section className="mb-10">
-        <h2 className="mb-3 text-xs font-bold uppercase tracking-widest text-destiny-grey/40">
+        <h2 className="mb-3 text-xs font-bold uppercase tracking-widest text-destiny-grey/40 dark:text-white/40">
           At a glance
         </h2>
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
@@ -401,13 +452,15 @@ export default function AdminDashboard() {
             <MetricCard
               href="/admin/popup"
               icon="ad"
-              iconColor={snapshot.popup?.active ? "text-destiny-orange" : "text-destiny-grey/40"}
-              iconBg={snapshot.popup?.active ? "bg-destiny-orange/10" : "bg-destiny-grey/10"}
+              iconColor={snapshot.popup?.active ? "text-destiny-orange" : "text-destiny-grey/40 dark:text-white/40"}
+              iconBg={snapshot.popup?.active ? "bg-destiny-orange/10" : "bg-black/5 dark:bg-white/10"}
               label="Popup"
               loading={busy}
               value={snapshot.popup?.active ? "Live" : "Off"}
               valueClass={
-                snapshot.popup?.active ? "text-destiny-grey" : "text-destiny-grey/40"
+                snapshot.popup?.active
+                  ? "text-destiny-grey dark:text-white"
+                  : "text-destiny-grey/40 dark:text-white/40"
               }
             />
           ) : null}
@@ -417,7 +470,7 @@ export default function AdminDashboard() {
       {/* Shop */}
       {(snapshot.shop !== null || busy) && (
         <section className="mb-10">
-          <h2 className="mb-3 text-xs font-bold uppercase tracking-widest text-destiny-grey/40">
+          <h2 className="mb-3 text-xs font-bold uppercase tracking-widest text-destiny-grey/40 dark:text-white/40">
             Shop
           </h2>
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
@@ -468,6 +521,17 @@ export default function AdminDashboard() {
               value={
                 snapshot.shop ? gbp.format(snapshot.shop.soldThisYearPennies / 100) : "£0"
               }
+              chip={
+                soldDeltaPennies !== null && soldDeltaPennies !== 0
+                  ? {
+                      text: `${soldDeltaPennies > 0 ? "+" : "−"}${gbp.format(
+                        Math.abs(soldDeltaPennies) / 100,
+                      )}`,
+                      tone: soldDeltaPennies > 0 ? "up" : "down",
+                      title: "Since your last visit to this dashboard, in this browser",
+                    }
+                  : undefined
+              }
             />
           </div>
         </section>
@@ -476,7 +540,7 @@ export default function AdminDashboard() {
       {/* Jump back in */}
       {recentItems.length > 0 && (
         <section className="mb-10">
-          <h2 className="mb-3 text-xs font-bold uppercase tracking-widest text-destiny-grey/40">
+          <h2 className="mb-3 text-xs font-bold uppercase tracking-widest text-destiny-grey/40 dark:text-white/40">
             Jump back in
           </h2>
           <div className="flex flex-wrap gap-2">
@@ -484,7 +548,7 @@ export default function AdminDashboard() {
               <Link
                 key={item.href}
                 href={item.href}
-                className="flex items-center gap-2 rounded-xl border border-black/8 bg-white px-3.5 py-2 text-sm font-bold text-destiny-grey shadow-sm transition hover:shadow-md"
+                className="flex items-center gap-2 rounded-xl border border-black/8 bg-white px-3.5 py-2 text-sm font-bold text-destiny-grey shadow-sm transition hover:shadow-md dark:border-white/10 dark:bg-destiny-grey-800 dark:text-white"
               >
                 <span className="material-symbols-rounded text-lg text-destiny-orange">
                   {item.icon}
@@ -499,7 +563,7 @@ export default function AdminDashboard() {
       {/* Quick actions */}
       {quickActions.length > 0 && (
         <section className="mb-10">
-          <h2 className="mb-3 text-xs font-bold uppercase tracking-widest text-destiny-grey/40">
+          <h2 className="mb-3 text-xs font-bold uppercase tracking-widest text-destiny-grey/40 dark:text-white/40">
             Quick actions
           </h2>
           <div className="flex flex-wrap gap-2">
@@ -509,7 +573,7 @@ export default function AdminDashboard() {
                 href={action.href}
                 target={action.external ? "_blank" : undefined}
                 rel={action.external ? "noreferrer" : undefined}
-                className="flex items-center gap-2 rounded-xl border border-black/8 bg-white px-3.5 py-2 text-sm font-bold text-destiny-grey shadow-sm transition hover:shadow-md"
+                className="flex items-center gap-2 rounded-xl border border-black/8 bg-white px-3.5 py-2 text-sm font-bold text-destiny-grey shadow-sm transition hover:shadow-md dark:border-white/10 dark:bg-destiny-grey-800 dark:text-white"
               >
                 <span className="material-symbols-rounded text-lg text-destiny-orange">
                   {action.icon}
@@ -523,13 +587,13 @@ export default function AdminDashboard() {
 
       {/* Everything, straight from the registry */}
       <section className="space-y-6">
-        <h2 className="text-xs font-bold uppercase tracking-widest text-destiny-grey/40">
+        <h2 className="text-xs font-bold uppercase tracking-widest text-destiny-grey/40 dark:text-white/40">
           Manage
         </h2>
         {groups.map((group) => (
           <div key={group.label ?? "top"}>
             {group.label && (
-              <p className="mb-2 text-[11px] font-bold uppercase tracking-widest text-destiny-grey/30">
+              <p className="mb-2 text-[11px] font-bold uppercase tracking-widest text-destiny-grey/30 dark:text-white/30">
                 {group.label}
               </p>
             )}
@@ -551,18 +615,20 @@ function SectionCard({ item }: { item: AdminNavItem }) {
   return (
     <Link
       href={item.href}
-      className="group flex items-start gap-4 rounded-2xl border border-black/5 bg-white p-5 shadow-sm transition hover:shadow-md"
+      className="group flex items-start gap-4 rounded-2xl border border-black/5 bg-white p-5 shadow-sm transition hover:shadow-md dark:border-white/8 dark:bg-destiny-grey-800"
     >
       <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-destiny-orange/10 text-destiny-orange">
         <span className="material-symbols-rounded text-xl">{item.icon}</span>
       </span>
       <div className="min-w-0">
-        <p className="mb-0.5 text-sm font-black text-destiny-grey transition-colors group-hover:text-destiny-orange">
+        <p className="mb-0.5 text-sm font-black text-destiny-grey transition-colors group-hover:text-destiny-orange dark:text-white">
           {item.label}
         </p>
-        <p className="text-xs leading-relaxed text-destiny-grey/50">{item.description}</p>
+        <p className="text-xs leading-relaxed text-destiny-grey/50 dark:text-white/50">
+          {item.description}
+        </p>
       </div>
-      <span className="material-symbols-rounded ml-auto mt-0.5 shrink-0 text-base text-destiny-grey/20 transition group-hover:text-destiny-orange/50">
+      <span className="material-symbols-rounded ml-auto mt-0.5 shrink-0 text-base text-destiny-grey/20 transition group-hover:text-destiny-orange/50 dark:text-white/20">
         arrow_forward
       </span>
     </Link>

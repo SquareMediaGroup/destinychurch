@@ -20,6 +20,7 @@
 
 import Fuse from "fuse.js";
 import { usePathname, useRouter } from "next/navigation";
+import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import {
   createContext,
   useCallback,
@@ -92,12 +93,16 @@ function hitRow(hit: AdminSearchHit): Row {
   };
 }
 
+// Alpha-tinted, so each reads fine against the palette's fixed dark glass
+// panel below without a separate dark-mode variant — only "grey" needed
+// fixing: the light-surface original (bg-black/5 text-destiny-grey/55) was
+// built for a white card and was nearly invisible here.
 const BADGE_TONES: Record<string, string> = {
-  green: "bg-destiny-green/10 text-destiny-green",
-  orange: "bg-destiny-orange/15 text-destiny-orange",
-  red: "bg-destiny-red/10 text-destiny-red",
-  grey: "bg-black/5 text-destiny-grey/55",
-  blue: "bg-destiny-blue/10 text-destiny-blue",
+  green: "bg-destiny-green/15 text-destiny-green",
+  orange: "bg-destiny-orange/20 text-destiny-orange",
+  red: "bg-destiny-red/15 text-destiny-red",
+  grey: "bg-white/10 text-white/55",
+  blue: "bg-destiny-blue/15 text-destiny-blue",
 };
 
 /* ── Context ───────────────────────────────────────────────────────────────── */
@@ -220,8 +225,15 @@ export function AdminCommandProvider({ children }: { children: React.ReactNode }
   return (
     <CommandContext.Provider value={value}>
       {children}
-      {isOpen && <Palette onClose={close} />}
-      {shortcutsOpen && <ShortcutSheet onClose={() => setShortcutsOpen(false)} />}
+      {/* AdminCommandProvider owns this one conditional render site, so an
+          exit animation can be added here without touching any of its
+          callers — same reasoning as DialogProvider.tsx's own AnimatePresence. */}
+      <AnimatePresence>{isOpen && <Palette key="palette" onClose={close} />}</AnimatePresence>
+      <AnimatePresence>
+        {shortcutsOpen && (
+          <ShortcutSheet key="shortcuts" onClose={() => setShortcutsOpen(false)} />
+        )}
+      </AnimatePresence>
     </CommandContext.Provider>
   );
 }
@@ -239,6 +251,7 @@ function Palette({ onClose }: { onClose: () => void }) {
   const [activeQuery, setActiveQuery] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
+  const reduceMotion = useReducedMotion();
 
   const trimmed = query.trim();
   // Below the fetch threshold there are no record hits by definition, and
@@ -414,24 +427,38 @@ function Palette({ onClose }: { onClose: () => void }) {
 
   let index = -1;
 
+  // The fixed dark "glass" identity — the same treatment as AuditAsk's answer
+  // panel and the onboarding tour (glass admin-glass in app/globals.css) —
+  // rather than a surface that flips with the admin's own light/dark toggle.
+  // It's an overlay dimming the whole page, the same category as those two,
+  // not persistent chrome, so it doesn't need to react to the theme at all —
+  // which conveniently sidesteps a real wiring problem: AdminCommandProvider
+  // mounts above /admin/layout.tsx's own `.dark`-carrying wrapper div, so a
+  // theme-reactive `dark:` class here would never actually match.
   return (
-    <div
+    <motion.div
+      initial={reduceMotion ? false : { opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={reduceMotion ? undefined : { opacity: 0 }}
+      transition={{ duration: reduceMotion ? 0 : 0.15 }}
       className="fixed inset-0 z-[70] flex items-start justify-center bg-black/40 p-4 backdrop-blur-sm sm:p-6"
       onClick={onClose}
     >
-      <div
+      <motion.div
+        initial={reduceMotion ? false : { opacity: 0, scale: 0.97, y: 8 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={reduceMotion ? undefined : { opacity: 0, scale: 0.98 }}
+        transition={{ duration: reduceMotion ? 0 : 0.18, ease: "easeOut" }}
         role="dialog"
         aria-modal="true"
         aria-label="Search the admin"
         onClick={(e) => e.stopPropagation()}
         onKeyDown={onKeyDown}
-        className="mt-[8vh] w-full max-w-xl overflow-hidden rounded-3xl border border-black/5 bg-white shadow-2xl"
+        className="glass admin-glass mt-[8vh] w-full max-w-xl overflow-hidden rounded-3xl"
       >
         {/* Query */}
-        <div className="flex items-center gap-3 border-b border-black/5 px-5 py-4">
-          <span className="material-symbols-rounded text-xl text-destiny-grey/35">
-            search
-          </span>
+        <div className="flex items-center gap-3 border-b border-white/10 px-5 py-4">
+          <span className="material-symbols-rounded text-xl text-white/45">search</span>
           <input
             ref={inputRef}
             value={query}
@@ -441,10 +468,10 @@ function Palette({ onClose }: { onClose: () => void }) {
             role="combobox"
             aria-expanded
             aria-controls="admin-palette-results"
-            className="min-w-0 flex-1 bg-transparent text-base text-destiny-grey outline-none placeholder:text-destiny-grey/35"
+            className="min-w-0 flex-1 bg-transparent text-base text-white outline-none placeholder:text-white/35"
           />
           {searching && (
-            <span className="material-symbols-rounded animate-spin text-lg text-destiny-grey/25">
+            <span className="material-symbols-rounded animate-spin text-lg text-white/40">
               progress_activity
             </span>
           )}
@@ -452,7 +479,7 @@ function Palette({ onClose }: { onClose: () => void }) {
             type="button"
             onClick={onClose}
             aria-label="Close search"
-            className="flex h-7 w-7 items-center justify-center rounded-lg text-destiny-grey/40 transition hover:bg-[#f5f7fa] hover:text-destiny-grey"
+            className="flex h-7 w-7 items-center justify-center rounded-lg text-white/40 transition hover:bg-white/10 hover:text-white"
           >
             <span className="material-symbols-rounded text-lg">close</span>
           </button>
@@ -467,20 +494,20 @@ function Palette({ onClose }: { onClose: () => void }) {
         >
           {flat.length === 0 ? (
             <div className="px-5 py-10 text-center">
-              <span className="material-symbols-rounded text-3xl text-destiny-grey/20">
+              <span className="material-symbols-rounded text-3xl text-white/25">
                 search_off
               </span>
-              <p className="mt-2 text-sm font-bold text-destiny-grey/60">
+              <p className="mt-2 text-sm font-bold text-white/70">
                 Nothing matched “{trimmed}”
               </p>
-              <p className="mt-1 text-xs text-destiny-grey/40">
+              <p className="mt-1 text-xs text-white/40">
                 Try a page name, a post title, an order number or a customer.
               </p>
             </div>
           ) : (
             groups.map((group) => (
               <div key={group.section} className="mb-1">
-                <p className="px-5 py-1.5 text-[10px] font-bold uppercase tracking-widest text-destiny-grey/35">
+                <p className="px-5 py-1.5 text-[10px] font-bold uppercase tracking-widest text-white/35">
                   {group.section}
                 </p>
                 {group.rows.map((row) => {
@@ -497,22 +524,22 @@ function Palette({ onClose }: { onClose: () => void }) {
                       onMouseMove={() => setActive(rowIndex)}
                       onClick={() => go(row)}
                       className={`flex w-full items-center gap-3 px-5 py-2.5 text-left transition ${
-                        isActive ? "bg-destiny-orange/8" : ""
+                        isActive ? "bg-white/10" : ""
                       }`}
                     >
                       <span
                         className={`material-symbols-rounded text-xl ${
-                          isActive ? "text-destiny-orange" : "text-destiny-grey/35"
+                          isActive ? "text-destiny-orange" : "text-white/35"
                         }`}
                       >
                         {row.icon}
                       </span>
                       <span className="min-w-0 flex-1">
-                        <span className="block truncate text-sm font-bold text-destiny-grey">
+                        <span className="block truncate text-sm font-bold text-white">
                           {row.title}
                         </span>
                         {row.subtitle && (
-                          <span className="block truncate text-xs text-destiny-grey/45">
+                          <span className="block truncate text-xs text-white/45">
                             {row.subtitle}
                           </span>
                         )}
@@ -527,7 +554,7 @@ function Palette({ onClose }: { onClose: () => void }) {
                         </span>
                       )}
                       {isActive && (
-                        <span className="material-symbols-rounded shrink-0 text-base text-destiny-orange/60">
+                        <span className="material-symbols-rounded shrink-0 text-base text-destiny-orange/80">
                           keyboard_return
                         </span>
                       )}
@@ -540,23 +567,39 @@ function Palette({ onClose }: { onClose: () => void }) {
         </div>
 
         {/* Footer */}
-        <div className="flex items-center gap-4 border-t border-black/5 bg-[#f5f7fa] px-5 py-2.5 text-[11px] font-medium text-destiny-grey/45">
+        <div className="flex items-center gap-4 border-t border-white/10 px-5 py-2.5 text-[11px] font-medium text-white/45">
           <span className="flex items-center gap-1">
-            <Kbd>↑</Kbd>
-            <Kbd>↓</Kbd> move
+            <PaletteKbd>↑</PaletteKbd>
+            <PaletteKbd>↓</PaletteKbd> move
           </span>
           <span className="flex items-center gap-1">
-            <Kbd>Enter</Kbd> open
+            <PaletteKbd>Enter</PaletteKbd> open
           </span>
           <span className="hidden items-center gap-1 sm:flex">
-            <Kbd>Esc</Kbd> close
+            <PaletteKbd>Esc</PaletteKbd> close
           </span>
           <span className="ml-auto hidden items-center gap-1 sm:flex">
-            <Kbd>?</Kbd> shortcuts
+            <PaletteKbd>?</PaletteKbd> shortcuts
           </span>
         </div>
-      </div>
-    </div>
+      </motion.div>
+    </motion.div>
+  );
+}
+
+/**
+ * A `Kbd` for the palette's own fixed-dark glass surface. AdminUI.tsx's
+ * shared `Kbd` is styled for a light card and only gains a dark variant
+ * inside /admin's own `.dark` ancestor — which this component, mounted above
+ * that wrapper by AdminCommandProvider, is never inside. Rather than a
+ * `dark:` class that would never match, this is styled for the one
+ * background it actually sits on.
+ */
+function PaletteKbd({ children }: { children: React.ReactNode }) {
+  return (
+    <kbd className="rounded border border-white/15 bg-white/10 px-1.5 py-0.5 font-sans text-[10px] font-bold text-white/70">
+      {children}
+    </kbd>
   );
 }
 
@@ -595,6 +638,8 @@ const SHORTCUT_GROUPS: { title: string; rows: { keys: string[]; label: string }[
 ];
 
 function ShortcutSheet({ onClose }: { onClose: () => void }) {
+  const reduceMotion = useReducedMotion();
+
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
     document.addEventListener("keydown", onKey);
@@ -602,24 +647,32 @@ function ShortcutSheet({ onClose }: { onClose: () => void }) {
   }, [onClose]);
 
   return (
-    <div
+    <motion.div
+      initial={reduceMotion ? false : { opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={reduceMotion ? undefined : { opacity: 0 }}
+      transition={{ duration: reduceMotion ? 0 : 0.15 }}
       className="fixed inset-0 z-[70] flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm"
       onClick={onClose}
     >
-      <div
+      <motion.div
+        initial={reduceMotion ? false : { opacity: 0, scale: 0.97, y: 8 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={reduceMotion ? undefined : { opacity: 0, scale: 0.98 }}
+        transition={{ duration: reduceMotion ? 0 : 0.18, ease: "easeOut" }}
         role="dialog"
         aria-modal="true"
         aria-label="Keyboard shortcuts"
         onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-md overflow-hidden rounded-3xl border border-black/5 bg-white shadow-2xl"
+        className="glass admin-glass w-full max-w-md overflow-hidden rounded-3xl"
       >
-        <div className="flex items-center justify-between border-b border-black/5 px-6 py-4">
-          <h2 className="text-lg font-black text-destiny-grey">Keyboard shortcuts</h2>
+        <div className="flex items-center justify-between border-b border-white/10 px-6 py-4">
+          <h2 className="text-lg font-black text-white">Keyboard shortcuts</h2>
           <button
             type="button"
             onClick={onClose}
             aria-label="Close"
-            className="flex h-8 w-8 items-center justify-center rounded-lg text-destiny-grey/50 transition hover:bg-[#f5f7fa] hover:text-destiny-grey"
+            className="flex h-8 w-8 items-center justify-center rounded-lg text-white/50 transition hover:bg-white/10 hover:text-white"
           >
             <span className="material-symbols-rounded text-xl">close</span>
           </button>
@@ -627,16 +680,16 @@ function ShortcutSheet({ onClose }: { onClose: () => void }) {
         <div className="max-h-[70vh] overflow-y-auto px-6 py-5">
           {SHORTCUT_GROUPS.map((group) => (
             <div key={group.title} className="mb-5 last:mb-0">
-              <p className="mb-2 text-[10px] font-bold uppercase tracking-widest text-destiny-grey/35">
+              <p className="mb-2 text-[10px] font-bold uppercase tracking-widest text-white/35">
                 {group.title}
               </p>
               <ul className="flex flex-col gap-1.5">
                 {group.rows.map((row) => (
                   <li key={row.label} className="flex items-center justify-between gap-4">
-                    <span className="text-sm text-destiny-grey/70">{row.label}</span>
+                    <span className="text-sm text-white/70">{row.label}</span>
                     <span className="flex shrink-0 items-center gap-1">
                       {row.keys.map((key) => (
-                        <Kbd key={key}>{key}</Kbd>
+                        <PaletteKbd key={key}>{key}</PaletteKbd>
                       ))}
                     </span>
                   </li>
@@ -644,12 +697,12 @@ function ShortcutSheet({ onClose }: { onClose: () => void }) {
               </ul>
             </div>
           ))}
-          <p className="mt-2 border-t border-black/5 pt-4 text-xs text-destiny-grey/40">
+          <p className="mt-2 border-t border-white/10 pt-4 text-xs text-white/40">
             On Windows use Ctrl where this list says ⌘.
           </p>
         </div>
-      </div>
-    </div>
+      </motion.div>
+    </motion.div>
   );
 }
 

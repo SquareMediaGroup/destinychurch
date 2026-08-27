@@ -14,10 +14,12 @@ import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useState, useSyncExternalStore } from "react";
+import { motion, useReducedMotion } from "motion/react";
 import type { AdminNavGroup, AdminNavItem } from "@/lib/adminNav";
 import { visibleGroups } from "@/lib/adminNav";
 import { useAdminSession } from "@/lib/useAdminSession";
 import { CommandTrigger, CommandTriggerIcon } from "@/components/admin/AdminCommandPalette";
+import { AdminThemeToggle } from "@/components/admin/AdminThemeToggle";
 
 /* ── Remembered dropdown state ─────────────────────────────────────────────
  * Which groups are expanded lives in localStorage, modelled as an external
@@ -80,22 +82,33 @@ function isActive(item: AdminNavItem, pathname: string): boolean {
 }
 
 const linkClass = (active: boolean) =>
-  `flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-bold transition ${
+  `relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-bold transition ${
     active
-      ? "bg-destiny-orange/10 text-destiny-orange"
-      : "text-destiny-grey/60 hover:bg-[#f5f7fa] hover:text-destiny-grey"
+      ? "text-destiny-orange"
+      : "text-destiny-grey/60 hover:bg-[#f5f7fa] hover:text-destiny-grey dark:text-white/60 dark:hover:bg-white/5 dark:hover:text-white"
   }`;
 
 function NavLink({
   item,
   pathname,
   onNavigate,
+  scope,
 }: {
   item: AdminNavItem;
   pathname: string;
   onNavigate?: () => void;
+  /**
+   * Which nav instance this is ("desktop" or "mobile") — the desktop
+   * `<aside>` and the mobile drawer both render the same NavLink component,
+   * and the sliding highlight below tracks its position by `layoutId`, so two
+   * separate instances need two separate ids or the highlight could try to
+   * animate between them instead of just fading in on each independently.
+   */
+  scope: string;
 }) {
   const active = isActive(item, pathname);
+  const reduceMotion = useReducedMotion();
+
   return (
     <Link
       href={item.href}
@@ -103,12 +116,25 @@ function NavLink({
       aria-current={active ? "page" : undefined}
       className={linkClass(active)}
     >
+      {active &&
+        (reduceMotion ? (
+          <span className="absolute inset-0 rounded-xl bg-destiny-orange/10" aria-hidden />
+        ) : (
+          // The active pill slides between nav items on navigation rather than
+          // snapping — the one place in the sidebar that had zero motion at all.
+          <motion.span
+            layoutId={`admin-nav-active-${scope}`}
+            className="absolute inset-0 rounded-xl bg-destiny-orange/10"
+            transition={{ duration: 0.22, ease: "easeOut" }}
+            aria-hidden
+          />
+        ))}
       <span
-        className={`material-symbols-rounded text-xl ${active ? "text-destiny-orange" : ""}`}
+        className={`material-symbols-rounded relative z-10 text-xl ${active ? "text-destiny-orange" : ""}`}
       >
         {item.icon}
       </span>
-      {item.label}
+      <span className="relative z-10">{item.label}</span>
     </Link>
   );
 }
@@ -140,7 +166,7 @@ function NavDropdown({
         className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-bold transition ${
           groupActive
             ? "bg-destiny-orange/10 text-destiny-orange"
-            : "text-destiny-grey/60 hover:bg-[#f5f7fa] hover:text-destiny-grey"
+            : "text-destiny-grey/60 hover:bg-[#f5f7fa] hover:text-destiny-grey dark:text-white/60 dark:hover:bg-white/5 dark:hover:text-white"
         }`}
       >
         <span
@@ -166,7 +192,7 @@ function NavDropdown({
                 className={`rounded-lg px-3 py-2 text-sm font-bold transition ${
                   active
                     ? "text-destiny-orange"
-                    : "text-destiny-grey/50 hover:text-destiny-grey"
+                    : "text-destiny-grey/50 hover:text-destiny-grey dark:text-white/50 dark:hover:text-white"
                 }`}
               >
                 {item.label}
@@ -185,12 +211,14 @@ function NavItems({
   onNavigate,
   openGroups,
   onToggle,
+  scope,
 }: {
   groups: AdminNavGroup[];
   pathname: string;
   onNavigate?: () => void;
   openGroups: Record<string, boolean>;
   onToggle: (label: string) => void;
+  scope: string;
 }) {
   return (
     <>
@@ -202,6 +230,7 @@ function NavItems({
               item={item}
               pathname={pathname}
               onNavigate={onNavigate}
+              scope={scope}
             />
           ))
         ) : group.items.length === 1 ? (
@@ -211,6 +240,7 @@ function NavItems({
             item={group.items[0]}
             pathname={pathname}
             onNavigate={onNavigate}
+            scope={scope}
           />
         ) : (
           <NavDropdown
@@ -256,7 +286,7 @@ export default function AdminSidebar() {
   return (
     <>
       {/* ── Desktop sidebar ───────────────────────────────────────────── */}
-      <aside className="hidden md:flex md:w-56 md:shrink-0 md:flex-col md:border-r md:border-black/8 md:bg-white">
+      <aside className="hidden md:flex md:w-56 md:shrink-0 md:flex-col md:border-r md:border-black/8 md:bg-white dark:md:border-white/8 dark:md:bg-destiny-grey-800">
         <SidebarContents
           groups={groups}
           pathname={pathname}
@@ -267,7 +297,7 @@ export default function AdminSidebar() {
       </aside>
 
       {/* ── Mobile top bar ────────────────────────────────────────────── */}
-      <div className="sticky top-0 z-30 flex items-center justify-between border-b border-black/8 bg-white px-4 py-3 md:hidden">
+      <div className="sticky top-0 z-30 flex items-center justify-between border-b border-black/8 bg-white px-4 py-3 dark:border-white/8 dark:bg-destiny-grey-800 md:hidden">
         <Link href="/admin" className="relative h-7 w-[130px]">
           <Image
             src="/img/brand/Destiny SVG Logos/Destiny Full Logo SVG/Full Logo Colour.svg"
@@ -279,9 +309,10 @@ export default function AdminSidebar() {
         </Link>
         <div className="flex items-center gap-2">
           <CommandTriggerIcon />
+          <AdminThemeToggle />
           <button
             onClick={() => setMobileOpen((o) => !o)}
-            className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#f5f7fa] text-destiny-grey"
+            className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#f5f7fa] text-destiny-grey dark:bg-white/5 dark:text-white"
             aria-label={mobileOpen ? "Close menu" : "Open menu"}
             aria-expanded={mobileOpen}
           >
@@ -294,7 +325,7 @@ export default function AdminSidebar() {
 
       {/* ── Mobile drawer ─────────────────────────────────────────────── */}
       {mobileOpen && (
-        <div className="border-b border-black/8 bg-white md:hidden">
+        <div className="border-b border-black/8 bg-white dark:border-white/8 dark:bg-destiny-grey-800 md:hidden">
           <nav
             aria-label="Admin sections"
             className="flex max-h-[calc(100vh-8rem)] flex-col gap-1 overflow-y-auto p-3"
@@ -305,17 +336,18 @@ export default function AdminSidebar() {
               onNavigate={() => setMobileOpen(false)}
               openGroups={openGroups}
               onToggle={toggleGroup}
+              scope="mobile"
             />
-            <div className="mt-2 flex flex-col gap-1 border-t border-black/5 pt-2">
+            <div className="mt-2 flex flex-col gap-1 border-t border-black/5 pt-2 dark:border-white/8">
               {email && (
-                <p className="truncate px-3 py-1 text-xs font-bold text-destiny-grey/35">
+                <p className="truncate px-3 py-1 text-xs font-bold text-destiny-grey/35 dark:text-white/35">
                   {email}
                 </p>
               )}
               <Link
                 href="/"
                 target="_blank"
-                className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-bold text-destiny-grey/50 transition hover:bg-[#f5f7fa] hover:text-destiny-grey"
+                className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-bold text-destiny-grey/50 transition hover:bg-[#f5f7fa] hover:text-destiny-grey dark:text-white/50 dark:hover:bg-white/5 dark:hover:text-white"
               >
                 <span className="material-symbols-rounded text-xl">open_in_new</span>
                 View site
@@ -323,7 +355,7 @@ export default function AdminSidebar() {
               <form action="/api/admin/logout" method="POST">
                 <button
                   type="submit"
-                  className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-bold text-destiny-grey/50 transition hover:bg-[#f5f7fa] hover:text-destiny-grey"
+                  className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-bold text-destiny-grey/50 transition hover:bg-[#f5f7fa] hover:text-destiny-grey dark:text-white/50 dark:hover:bg-white/5 dark:hover:text-white"
                 >
                   <span className="material-symbols-rounded text-xl">logout</span>
                   Sign out
@@ -381,14 +413,15 @@ function SidebarContents({
           pathname={pathname}
           openGroups={openGroups}
           onToggle={onToggle}
+          scope="desktop"
         />
       </nav>
 
       {/* Bottom — who you are, view site, sign out */}
-      <div className="mt-auto flex flex-col gap-1 border-t border-black/5 px-3 py-4">
+      <div className="mt-auto flex flex-col gap-1 border-t border-black/5 px-3 py-4 dark:border-white/8">
         {email && (
           <p
-            className="truncate px-3 pb-1 text-[11px] font-bold text-destiny-grey/35"
+            className="truncate px-3 pb-1 text-[11px] font-bold text-destiny-grey/35 dark:text-white/35"
             title={email}
           >
             {email}
@@ -397,7 +430,7 @@ function SidebarContents({
         <Link
           href="/"
           target="_blank"
-          className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-bold text-destiny-grey/50 transition hover:bg-[#f5f7fa] hover:text-destiny-grey"
+          className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-bold text-destiny-grey/50 transition hover:bg-[#f5f7fa] hover:text-destiny-grey dark:text-white/50 dark:hover:bg-white/5 dark:hover:text-white"
         >
           <span className="material-symbols-rounded text-xl">open_in_new</span>
           View site
@@ -405,7 +438,7 @@ function SidebarContents({
         <form action="/api/admin/logout" method="POST">
           <button
             type="submit"
-            className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-bold text-destiny-grey/50 transition hover:bg-[#f5f7fa] hover:text-destiny-grey"
+            className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-bold text-destiny-grey/50 transition hover:bg-[#f5f7fa] hover:text-destiny-grey dark:text-white/50 dark:hover:bg-white/5 dark:hover:text-white"
           >
             <span className="material-symbols-rounded text-xl">logout</span>
             Sign out

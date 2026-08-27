@@ -310,7 +310,7 @@ destinychurch/
 │   └── ...
 │
 ├── supabase/                      # Supabase configuration
-│   └── migrations/                # Database schema migrations (46 files) — selected highlights:
+│   └── migrations/                # Database schema migrations (48 files) — selected highlights:
 │       ├── 001_redirects.sql      # URL redirect table
 │       ├── 002_hidden_videos.sql  # Hidden sermon videos (feature since removed)
 │       ├── 003_content.sql        # Site banner & page content
@@ -344,7 +344,9 @@ destinychurch/
 │       ├── 20260821_admin_onboarding.sql # Per-admin onboarding/tour progress (admin_onboarding)
 │       ├── 20260822_hr_admin_role.sql  # `hr_admin` access level on admin_roles
 │       ├── 20260824_hr_review_reminders.sql # hr_reviews.reminder_sent_at for the daily digest
-│       └── 20260825_hr_checklists.sql  # Onboarding/offboarding checklists (hr_checklist_* tables)
+│       ├── 20260825_hr_checklists.sql  # Onboarding/offboarding checklists (hr_checklist_* tables)
+│       ├── 20260826_audit_log.sql       # Admin audit log + weekly AI reports (audit_log, audit_reports)
+│       └── 20260827_engagement_events.sql # Click analytics table + rollup/anonymise RPCs (storage layer)
 │
 ├── utils/                         # Utility modules
 │   ├── supabase/                  # Supabase client factories
@@ -1260,6 +1262,7 @@ All tables have RLS enabled. Access rules:
 | studio_assets / studio_components | - | - | Yes | Orphaned Studio-builder tables (never dropped; unused) |
 | live_chat_sessions / live_chat_messages / live_chat_prayer_requests / live_chat_blocks | - | - | Yes | Live chat on /live (deny-all "service only"; delivery is Realtime Broadcast, not table reads) |
 | simulated_live | - | - | Yes | Simulated live broadcast on /live (deny-all "service only"; singleton) |
+| engagement_events | - | - | Yes | Click analytics across shortlinks / nfc / links (deny-all "service only"; read via `security definer` rollup RPCs) |
 
 #### 21. **live_chat_sessions / live_chat_messages / live_chat_prayer_requests / live_chat_blocks**
 
@@ -1500,6 +1503,96 @@ default 365).
 - `app/api/admin/audit/*` — list, ask, reports (Super Admin only)
 - `app/api/cron/audit-weekly-report` — writes `audit_reports`, runs the purge
 - `app/admin/audit/page.tsx` — the console
+
+---
+
+#### 24. **engagement_events** (click analytics — storage layer)
+
+**Purpose:** One row every time someone follows something the church published,
+across three surfaces that are really the same act arriving by three routes: a
+shortlink redirect (`destinytees.uk/<slug>`), a tap on a `/nfc` seat-back tile,
+and a press on a `/links` Next Steps card. It answers the question print has
+never been able to answer — "did the Alpha flyer work?" — because a redirect
+renders no HTML, so Vercel Analytics never sees the hop.
+
+> **Status: groundwork, not yet wired up.** This migration and the four
+> libraries below (`lib/engagement*.ts`, `lib/botDetect.ts`, `lib/track.ts`) are
+> the storage layer and the helpers that will write to and read from it. As of
+> this commit **nothing calls them yet** — there is no `/admin/analytics` page,
+> no `/api/track` route, no `/api/cron/analytics-anonymise` cron in
+> `vercel.json`, and the shortlink resolver (`app/[slug]/page.tsx`) does not yet
+> record. The schema is deliberately landed first so the read/write surfaces can
+> be built against a stable table.
+
+```sql
+create table engagement_events (
+  id           bigint generated always as identity primary key,
+  created_at   timestamptz not null default now(),
+
+  source       text not null,          -- 'redirect' | 'nfc' | 'links' (text, not
+                                        -- an enum: a 4th surface is an app change)
+  target_key   text not null,          -- the slug / nfc_tiles id / /links href
+  target_label text,                   -- human name captured at click time, so a
+                                        -- rename or delete doesn't rewrite history
+  redirect_id  uuid references redirects(id) on delete set null,  -- NOT cascade
+
+  -- Where from (Vercel x-vercel-ip-* headers, read in the handler)
+  country text, region text, city text,
+  referrer_host text, referrer_url text,
+  utm_source text, utm_medium text, utm_campaign text,
+  src_tag text,                         -- ?s= — qr | nfc | print | social
+
+  -- What on (parsed from the UA in lib/botDetect.ts)
+  device text, os text, browser text, user_agent text,
+
+  is_bot boolean not null default false,-- flagged, never dropped (link-preview crawlers)
+
+  -- Who (pseudonymous)
+  ip               text,                -- nulled in place after 90 days
+  ip_anonymised_at timestamptz,
+  visitor_hash     text                 -- sha256(ip|ua|salt), OUTLIVES the raw IP
+);
+```
+
+**One table for three surfaces, aggregated in Postgres.** Same act, same index
+strategy, one purge job, one query. Reads go through two `security definer`
+functions — `engagement_rollup()` returns the whole `/admin/analytics` page in
+one RPC (totals, daily timeseries bucketed in `Europe/London`, and top-N
+breakdowns by source/target/country/referrer/device/browser/src-tag), and
+`engagement_top()` does one dimension. `engagement_top` checks `p_column`
+against a **fixed allowlist** before interpolating it — the function is
+`security definer`, so an unchecked identifier would be an injection point
+reachable from the admin API. Both are `revoke`d from `public` and granted only
+to `service_role`. Aggregating in SQL (not the JS facet-scan the audit log uses)
+because here the numbers *are* the product — an approximate click count is a
+wrong click count.
+
+**`visitor_hash` deliberately outlives the raw IP.** Uniques are counted from
+the hash, so `engagement_anonymise_ips()` (a nightly job that `UPDATE`s `ip` to
+null after `ANALYTICS_IP_RETENTION_DAYS`, default 90) ages out the only
+personal-data column without retroactively collapsing last quarter's visitor
+numbers — which counting `distinct ip` would have done. The row keeps counting;
+it just stops being personal data. Caveat baked into the design: on a Sunday the
+whole congregation shares the church WiFi's single NAT IP, so this under-counts
+`/nfc` uniques — taps are the honest metric there.
+
+**Bots flagged, never dropped.** A shortlink posted in a WhatsApp group is
+fetched once per member by the preview crawler; deleting those rows would make a
+popular link look broken with nothing to explain why, so they are written with
+`is_bot = true` and the page hides them by default.
+
+**Indexes** are all `(column, created_at desc)` — filter and ordering served by
+one scan, same shape as `audit_log` — plus a partial `where is_bot = false`
+index for the default bots-excluded view.
+
+**RLS:** deny-all `"service only"` policy, same as `audit_log`. Note `redirects`
+itself is publicly readable; this log of who followed them is not.
+
+**Will be used by (once wired):**
+- `lib/engagement.server.ts` — `recordEngagement()`, the only writer
+- `app/[slug]/page.tsx` (redirects) and `app/api/track/route.ts` (nfc/links beacon)
+- `app/api/admin/analytics/*` + `app/admin/analytics/page.tsx` — Site/Super Admin
+- `app/api/cron/analytics-anonymise` — the nightly IP-anonymise job
 
 ---
 
@@ -4196,6 +4289,58 @@ The audit log, split four ways along the lines that actually matter:
 
 ---
 
+### `lib/engagement.ts` / `lib/engagement.server.ts` / `lib/botDetect.ts` / `lib/track.ts`
+
+The click-analytics storage layer — the writers and shared vocabulary behind the
+`engagement_events` table (see Database Schema §24). **Groundwork: landed ahead
+of the `/admin/analytics` page and the routes that will call it, so nothing
+imports these yet.** Modelled closely on the audit log, split the same way.
+
+- **`lib/engagement.ts`** — the vocabulary, client-safe (touches neither the
+  database nor `next/headers`). Closed sets so the page's filters can be chips:
+  `ENGAGEMENT_SOURCES` (`redirect` / `nfc` / `links`, each with its own noun —
+  "click" vs "tap" — icon and blurb) and `SRC_TAGS` (`qr` / `nfc` / `print` /
+  `social`, the `?s=` values that separate "scanned the flyer" from "clicked the
+  post"). Re-exports `AUDIT_RANGES` as `ENGAGEMENT_RANGES` so the range chips
+  match the audit log's exactly. Also the wire-format types (`EngagementRollup`,
+  `EngagementBucket`, `TrackBeacon`) and the display helpers the page shares —
+  `countryName`, `regionName` (UK regions read "England", not "ENG"),
+  `referrerName` ("facebook.com" → "Facebook"), `compactNumber` (1200 → "1.2k").
+- **`lib/engagement.server.ts`** — `server-only`. `recordEngagement()`, the only
+  writer, with the same first rule as `recordAudit()`: **it never throws** — a
+  failed analytics write must never break the redirect the visitor was actually
+  following. `readRequestContext(headers)` reads everything off the request
+  headers (Vercel geo, referrer, UA, IP, `visitor_hash`, prefetch detection) and
+  returns a plain serialisable object, because the caller invokes
+  `recordEngagement()` from inside `after()` where `headers()` throws — so the
+  headers must be read during render and handed in. **Prefetches are dropped**
+  (Next prefetches every `<Link>` in view; counting them would make the most
+  linked-to slug top the chart for no reason). `visitor_hash` is warned about,
+  never silently defaulted, when `ANALYTICS_HASH_SALT` is unset — an unsalted
+  sha256 of an IPv4 is brute-forceable in seconds. `readCampaignParams()` pulls
+  `?s=` and UTM params off a resolved `searchParams`.
+- **`lib/botDetect.ts`** — the single most load-bearing piece: telling a person
+  from a link-preview crawler. Dependency-free (a page of regexes, not a
+  megabyte UA-parser) with the same instinct as `lib/cn.ts`. `isBot()` matches
+  ~50 patterns — messaging-app preview fetchers first (WhatsApp,
+  facebookexternalhit, Slack, Telegram…), then search/AI crawlers, monitors, and
+  CLI agents, with generic catch-alls last; a missing UA counts as a bot.
+  `detectDevice()` / `detectOs()` / `detectBrowser()` read a device off the UA,
+  ordered around the fact that every browser lies (Chrome's UA contains "Safari",
+  iPadOS reports as macOS, in-app Facebook/Instagram browsers claim to be both).
+- **`lib/track.ts`** — client-side. `trackClick(source, targetKey, targetLabel)`
+  for the two surfaces where the click happens in the page rather than as a
+  server redirect (`/nfc`, `/links`). Uses `navigator.sendBeacon` (falling back
+  to `fetch({ keepalive: true })`) so the report survives the navigation that
+  fires it, and sends `text/plain` because `application/json` is not
+  CORS-safelisted for beacons. **`redirect` is deliberately absent from
+  `BeaconSource`** — a security boundary, not an oversight: shortlink numbers
+  decide print spend, so they may only ever be written server-side, never from a
+  browser anyone could `curl`. Stores nothing on the device — no cookie, no
+  visitor id.
+
+---
+
 ### `lib/governance.server.ts`
 
 `server-only`. The single place the site talks to either regulator, powering `/governance`.
@@ -4701,6 +4846,16 @@ CRON_SECRET=            # the two /api/cron jobs FAIL CLOSED (503) if unset; the
 AUDIT_REPORT_EMAIL=
 AUDIT_RETENTION_DAYS=365
 
+# Click analytics (engagement_events — storage layer, see Database Schema §24)
+#   ANALYTICS_HASH_SALT          — salt for visitor_hash. Without it, a sha256 of
+#                                  an IPv4 is brute-forceable, so hashes are NOT
+#                                  pseudonymous; recordEngagement() warns loudly.
+#   ANALYTICS_IP_RETENTION_DAYS  — days before engagement_anonymise_ips() nulls a
+#                                  row's raw IP in place (default 90). visitor_hash
+#                                  survives, so uniques stay correct.
+ANALYTICS_HASH_SALT=
+ANALYTICS_IP_RETENTION_DAYS=90
+
 # Feature flags (also toggleable via the `service_status` DB table, e.g. 'smart_search')
 ENABLE_SMART_SEARCH=true
 ```
@@ -4891,6 +5046,9 @@ ENABLE_SMART_SEARCH=true
   - Audit log: `audit.ts` (vocabulary + diffing + redaction), `audit.server.ts`
     (`recordAudit()`, the only writer), `auditAI.ts` (tools + prompt),
     `auditEmail.ts` (the weekly report email)
+  - Click analytics (storage layer, not yet wired): `engagement.ts` (vocabulary +
+    wire format), `engagement.server.ts` (`recordEngagement()`), `botDetect.ts`
+    (crawler/device/OS/browser detection), `track.ts` (client `sendBeacon`)
 
 ### API Routes (`app/api/`)
 - **Admin endpoints:** Banners, redirects, pop-ups, cache revalidation, posts, training, alpha-events, featured-course, HR, store management, simulated live,
@@ -4995,7 +5153,7 @@ feed normalisation of its own, because the BFF already does all of it.
   push) are still planning-only.
 
 ### Database Migrations
-- **42 migration files** defining schema for:
+- **48 migration files** defining schema for:
   - URL redirects, hidden videos (removed), site content (banners, pop-ups, page_content)
   - Event management (Alpha course, Bible Course, CAP Money, Recovery, featured course, featured event)
   - HR management (staff, leave, documents, reviews)
@@ -5006,6 +5164,8 @@ feed normalisation of its own, because the BFF already does all of it.
   - NFC tiles (the `/nfc` "digital back of seats" page, incl. event mode) and admin roles
   - Live chat (sessions, messages, prayer requests, blocks) and simulated live
   - The admin audit log (`audit_log`) and its weekly AI reports (`audit_reports`)
+  - Click analytics (`engagement_events`) — storage layer for shortlink / nfc /
+    links engagement, with `security definer` rollup and IP-anonymise functions
 
 ---
 
@@ -5033,7 +5193,7 @@ This repository serves as a **reusable platform** for churches nationwide, licen
 
 ---
 
-**Document Version:** 1.0.4  
+**Document Version:** 1.0.5  
 **Created:** June 18, 2026  
 **For:** Destiny Church Tees Valley  
 **By:** Square Media Group (Malachi <malachi@squaremediagroup.org>)

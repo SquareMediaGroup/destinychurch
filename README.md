@@ -192,6 +192,7 @@ The `/admin` area is protected by Supabase Auth. Log in at `/login` to manage:
 - **Redirects** — configure URL redirects
 - **Banner & Popup** — control the site-wide announcement banner and popups
 - **NFC** — manage the tiles shown on the `/nfc` "digital back of seats" page
+- **Audit Log** — a searchable record of every admin change, an AI you can ask in plain English, and a weekly AI activity report (Super Admin)
 - **Cache** — trigger on-demand revalidation
 
 Every admin list is fuzzy-searchable with live status filters (mirrored into the URL), and a global ⌘K palette jumps to any page, quick action, or record. Navigation is driven from a single registry (`lib/adminNav.ts`) shared by the sidebar, breadcrumbs, dashboard grid, and palette.

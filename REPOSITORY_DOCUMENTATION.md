@@ -347,7 +347,10 @@ destinychurch/
 │       ├── 20260825_hr_checklists.sql  # Onboarding/offboarding checklists (hr_checklist_* tables)
 │       ├── 20260826_audit_log.sql       # Admin audit log + weekly AI reports (audit_log, audit_reports)
 │       ├── 20260827_engagement_events.sql # Click analytics table + rollup/anonymise RPCs (storage layer)
-│       └── 20260828_ip_reputation.sql   # VPN/Tor/datacenter/Private-Relay tags on engagement_events
+│       ├── 20260828_ip_reputation.sql   # VPN/Tor/datacenter/Private-Relay tags on engagement_events
+│       └── 20260828_02_ip_reputation_advisor_fixes.sql # Advisor cleanup: revoke anon/authenticated
+│                                          # EXECUTE on the three engagement RPCs (see §24b), add
+│                                          # search_path to the ip_category trigger, relocate btree_gist
 │
 ├── utils/                         # Utility modules
 │   ├── supabase/                  # Supabase client factories
@@ -1678,6 +1681,23 @@ independently, so one being temporarily unreachable doesn't stop the other three
 **RLS:** deny-all `"service only"`, same as every other table in this feature. Only the
 `security definer`-free trigger function (running as the inserting role, i.e. the service
 role via `recordEngagement()`) and the refresh cron's service client ever touch it.
+
+**Advisor follow-up** (`20260828_02_ip_reputation_advisor_fixes.sql`) — `get_advisors` found
+three issues after `20260828_ip_reputation.sql` shipped, all fixed in this second migration:
+1. **The real one.** `revoke all on function ... from public` in the first migration did
+   *not* revoke `anon`/`authenticated`'s EXECUTE on `engagement_rollup`, `engagement_top` and
+   `engagement_anonymise_ips` — Supabase grants EXECUTE on a newly created function directly
+   to those two roles at creation time, not via the `PUBLIC` pseudo-role, so revoking from
+   `PUBLIC` is a no-op against them. This left all three callable by anyone unauthenticated
+   via `/rest/v1/rpc/<name>`, `engagement_anonymise_ips` included — a data-mutating RPC.
+   Fixed with an explicit `revoke execute on function ... from anon, authenticated`.
+2. `engagement_events_tag_ip_category()` was missing `set search_path`, unlike every other
+   function in this feature.
+3. `btree_gist` was installed into `public` instead of this project's `extensions` schema.
+   Relocated in place with `alter extension btree_gist set schema extensions` — not
+   drop-and-recreate, which would have cascade-dropped `ip_reputation_ranges_cidr_idx`.
+
+Both migrations are applied to production; `get_advisors` is clean on all of them.
 
 ---
 

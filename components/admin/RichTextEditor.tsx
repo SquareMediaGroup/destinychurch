@@ -67,7 +67,7 @@ const HtmlEmbed = Node.create({
       const dom = document.createElement("div");
       dom.setAttribute("data-html-embed", "true");
       dom.className =
-        "relative my-4 rounded-xl border-2 border-dashed border-destiny-orange/30 bg-destiny-orange/5 p-4 before:content-['HTML_Embed'] before:absolute before:-top-3 before:left-4 before:bg-white before:px-1 before:text-[10px] before:font-bold before:text-destiny-orange/60";
+        "relative my-4 rounded-xl border-2 border-dashed border-destiny-orange/30 bg-destiny-orange/5 p-4 before:content-['HTML_Embed'] before:absolute before:-top-3 before:left-4 before:bg-white before:px-1 before:text-[10px] before:font-bold before:text-destiny-orange/60 dark:before:bg-destiny-grey-900";
       dom.innerHTML = node.attrs.html;
       return { dom };
     };
@@ -475,13 +475,13 @@ export default function RichTextEditor({
 
   if (!editor) {
     return (
-      <div className="min-h-[260px] rounded-xl border border-black/10 bg-white" />
+      <div className="min-h-[260px] rounded-xl border border-black/10 bg-white dark:border-white/10 dark:bg-destiny-grey-800" />
     );
   }
 
   return (
     <div
-      className={`overflow-hidden border border-black/10 bg-white focus-within:border-destiny-orange/50 focus-within:ring-2 focus-within:ring-destiny-orange/15 ${
+      className={`overflow-hidden border border-black/10 bg-white dark:border-white/10 dark:bg-destiny-grey-800 focus-within:border-destiny-orange/50 focus-within:ring-2 focus-within:ring-destiny-orange/15 ${
         fill
           ? "flex h-full flex-col rounded-2xl"
           : "rounded-xl"

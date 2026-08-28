@@ -171,7 +171,7 @@ export default function ApplicationsPage() {
             }
           />
         ) : (
-        <div className="overflow-x-auto rounded-3xl border border-black/5 bg-white shadow-sm">
+        <div className="overflow-x-auto rounded-3xl border border-black/5 bg-white shadow-sm dark:border-white/8 dark:bg-destiny-grey-800">
           <table className="w-full text-left text-sm">
             <thead className="border-b border-black/5 text-xs font-bold uppercase tracking-wider text-destiny-grey/40">
               <tr>
@@ -185,7 +185,7 @@ export default function ApplicationsPage() {
               {list.visible.map((a) => (
                 <tr
                   key={a.id}
-                  className="cursor-pointer transition hover:bg-[#f5f7fa]"
+                  className="cursor-pointer transition hover:bg-[#f5f7fa] dark:hover:bg-white/10"
                   onClick={() => openDetail(a)}
                 >
                   <td className="px-5 py-3.5">
@@ -247,7 +247,7 @@ function ApplicationDetail({
       onClick={onClose}
     >
       <div
-        className="max-h-[90vh] w-full max-w-lg overflow-auto rounded-3xl bg-white p-6 shadow-xl"
+        className="max-h-[90vh] w-full max-w-lg overflow-auto rounded-3xl bg-white p-6 shadow-xl dark:bg-destiny-grey-800"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-4 flex items-start justify-between gap-4">

@@ -29,7 +29,7 @@ export default function AdminCachePage() {
           </p>
         </div>
 
-        <div className="rounded-2xl border border-black/5 bg-white p-6 shadow-sm">
+        <div className="rounded-2xl border border-black/5 bg-white dark:border-white/8 dark:bg-destiny-grey-800 p-6 shadow-sm">
           <p className="mb-4 text-xs font-bold uppercase tracking-wider text-destiny-grey/40">Pages that will be refreshed</p>
           <ul className="mb-6 flex flex-col gap-2">
             {PAGES.map((p) => (

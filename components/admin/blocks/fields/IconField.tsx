@@ -63,7 +63,7 @@ export function IconField({
       </div>
 
       {open && (
-        <div className="mt-2 grid max-h-64 grid-cols-6 gap-1 overflow-y-auto rounded-xl border border-black/10 bg-white p-2 lg:max-h-52 lg:grid-cols-8">
+        <div className="mt-2 grid max-h-64 grid-cols-6 gap-1 overflow-y-auto rounded-xl border border-black/10 bg-white dark:border-white/10 dark:bg-destiny-grey-800 p-2 lg:max-h-52 lg:grid-cols-8">
           {SUGGESTED_ICONS.map((icon) => (
             <button
               key={icon}

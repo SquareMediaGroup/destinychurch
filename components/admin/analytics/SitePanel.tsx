@@ -117,7 +117,7 @@ export function SitePanel({ range }: { range: string }) {
             />
           </div>
 
-          <div className="rounded-3xl border border-black/5 bg-white p-5 shadow-sm">
+          <div className="rounded-3xl border border-black/5 bg-white dark:border-white/8 dark:bg-destiny-grey-800 p-5 shadow-sm">
             <h3 className="mb-4 text-sm font-bold uppercase tracking-wider text-destiny-grey/50">
               Page views per day
             </h3>
@@ -128,7 +128,7 @@ export function SitePanel({ range }: { range: string }) {
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2">
-            <div className="rounded-3xl border border-black/5 bg-white p-5 shadow-sm">
+            <div className="rounded-3xl border border-black/5 bg-white dark:border-white/8 dark:bg-destiny-grey-800 p-5 shadow-sm">
               <h3 className="mb-3 text-sm font-bold uppercase tracking-wider text-destiny-grey/50">
                 Top routes
               </h3>
@@ -136,7 +136,7 @@ export function SitePanel({ range }: { range: string }) {
                 rows={data.byRoute.map((b) => ({ key: b.key, label: b.key, value: b.pageviews }))}
               />
             </div>
-            <div className="rounded-3xl border border-black/5 bg-white p-5 shadow-sm">
+            <div className="rounded-3xl border border-black/5 bg-white dark:border-white/8 dark:bg-destiny-grey-800 p-5 shadow-sm">
               <h3 className="mb-3 text-sm font-bold uppercase tracking-wider text-destiny-grey/50">
                 Countries
               </h3>
@@ -144,7 +144,7 @@ export function SitePanel({ range }: { range: string }) {
                 rows={data.byCountry.map((b) => ({ key: b.key, label: b.key, value: b.pageviews }))}
               />
             </div>
-            <div className="rounded-3xl border border-black/5 bg-white p-5 shadow-sm">
+            <div className="rounded-3xl border border-black/5 bg-white dark:border-white/8 dark:bg-destiny-grey-800 p-5 shadow-sm">
               <h3 className="mb-3 text-sm font-bold uppercase tracking-wider text-destiny-grey/50">
                 Devices
               </h3>
@@ -152,7 +152,7 @@ export function SitePanel({ range }: { range: string }) {
                 rows={data.byDevice.map((b) => ({ key: b.key, label: b.key, value: b.pageviews }))}
               />
             </div>
-            <div className="rounded-3xl border border-black/5 bg-white p-5 shadow-sm">
+            <div className="rounded-3xl border border-black/5 bg-white dark:border-white/8 dark:bg-destiny-grey-800 p-5 shadow-sm">
               <h3 className="mb-3 text-sm font-bold uppercase tracking-wider text-destiny-grey/50">
                 Referrers
               </h3>

@@ -68,7 +68,7 @@ function SidePanel({
 
   if (!open) {
     return (
-      <div className={`hidden w-11 shrink-0 ${border} border-black/8 bg-white lg:block`}>
+      <div className={`hidden w-11 shrink-0 ${border} border-black/8 bg-white dark:border-white/8 dark:bg-destiny-grey-800 lg:block`}>
         <button
           type="button"
           onClick={onToggle}
@@ -87,7 +87,7 @@ function SidePanel({
 
   return (
     <div
-      className={`hidden shrink-0 ${border} border-black/8 bg-white lg:flex lg:flex-col ${
+      className={`hidden shrink-0 ${border} border-black/8 bg-white dark:border-white/8 dark:bg-destiny-grey-800 lg:flex lg:flex-col ${
         side === "left" ? "w-60" : "w-80"
       }`}
     >
@@ -273,7 +273,7 @@ export function PostEditor({
   // ── Desktop: full-screen document editor ──────────────────────────────
   if (isDesktop) {
     return (
-      <div className="fixed inset-0 z-50 flex flex-col bg-white">
+      <div className="fixed inset-0 z-50 flex flex-col bg-white dark:bg-destiny-grey-900">
         <div className="border-b border-black/10">
           <div className="flex items-center gap-3 px-5 py-3">
             <button
@@ -318,7 +318,7 @@ export function PostEditor({
               value={form.slug}
               onChange={(e) => onSlugChange(e.target.value)}
               placeholder="page-url-slug"
-              className="w-64 shrink-0 rounded-lg border border-black/10 bg-white px-3 py-1.5 text-sm text-destiny-grey outline-none transition focus:border-destiny-orange/50 focus:ring-2 focus:ring-destiny-orange/15"
+              className="w-64 shrink-0 rounded-lg border border-black/10 bg-white dark:border-white/10 dark:bg-destiny-grey-800 px-3 py-1.5 text-sm text-destiny-grey outline-none transition focus:border-destiny-orange/50 focus:ring-2 focus:ring-destiny-orange/15"
             />
             <span className="text-xs font-medium">
               <SlugHint state={slugState} />
@@ -369,7 +369,7 @@ export function PostEditor({
     everything else is one tap away.
   */
   return (
-    <div className="fixed inset-0 z-50 flex flex-col bg-white">
+    <div className="fixed inset-0 z-50 flex flex-col bg-white dark:bg-destiny-grey-900">
       <div className="flex shrink-0 items-center gap-1.5 border-b border-black/10 px-2 py-2 pt-[max(0.5rem,env(safe-area-inset-top))]">
         <button
           type="button"
@@ -448,7 +448,7 @@ export function PostEditor({
                   onChange={(e) => onSlugChange(e.target.value)}
                   placeholder="easter-2026"
                   // 16px: iOS zooms the page on any smaller focused input.
-                  className="w-full rounded-xl border border-black/10 bg-white px-3.5 py-2.5 text-base text-destiny-grey outline-none transition placeholder:text-destiny-grey/30 focus:border-destiny-orange/50 focus:ring-2 focus:ring-destiny-orange/15"
+                  className="w-full rounded-xl border border-black/10 bg-white dark:border-white/10 dark:bg-destiny-grey-800 px-3.5 py-2.5 text-base text-destiny-grey outline-none transition placeholder:text-destiny-grey/30 focus:border-destiny-orange/50 focus:ring-2 focus:ring-destiny-orange/15"
                 />
               </div>
               <p className="mt-1.5 text-xs font-medium">

@@ -173,7 +173,7 @@ export default function ReviewsPage() {
                 return (
                   <li
                     key={r.id}
-                    className="rounded-3xl border border-black/5 bg-white p-5 shadow-sm"
+                    className="rounded-3xl border border-black/5 bg-white dark:border-white/8 dark:bg-destiny-grey-800 p-5 shadow-sm"
                   >
                     <div className="flex flex-wrap items-start justify-between gap-3">
                       <div>

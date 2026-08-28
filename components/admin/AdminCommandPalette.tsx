@@ -727,7 +727,7 @@ export function CommandTrigger({ className = "" }: { className?: string }) {
       type="button"
       onClick={open}
       data-tour="command-trigger"
-      className={`group flex items-center gap-2 rounded-xl border border-black/10 bg-white px-3 py-2 text-sm text-destiny-grey/45 transition hover:border-black/20 hover:text-destiny-grey ${className}`}
+      className={`group flex items-center gap-2 rounded-xl border border-black/10 bg-white dark:border-white/10 dark:bg-destiny-grey-800 px-3 py-2 text-sm text-destiny-grey/45 transition hover:border-black/20 hover:text-destiny-grey ${className}`}
     >
       <span className="material-symbols-rounded text-lg text-destiny-grey/35 transition group-hover:text-destiny-orange">
         search

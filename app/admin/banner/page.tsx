@@ -165,7 +165,7 @@ export default function AdminBannerPage() {
               — both can run at once and will stack at the top of the site.
             </div>
 
-            <div className="rounded-2xl border border-black/5 bg-white p-6 shadow-sm flex flex-col gap-5">
+            <div className="rounded-2xl border border-black/5 bg-white dark:border-white/8 dark:bg-destiny-grey-800 p-6 shadow-sm flex flex-col gap-5">
               {/* Active toggle */}
               <div className="flex items-center justify-between">
                 <div>

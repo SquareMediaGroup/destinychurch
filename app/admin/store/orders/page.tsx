@@ -202,7 +202,7 @@ export default function AdminOrdersPage() {
                 <li key={o.id}>
                   <Link
                     href={`/admin/store/orders/${o.id}`}
-                    className="flex items-center gap-4 rounded-xl border border-black/8 bg-white p-4 transition hover:border-destiny-orange/40 hover:bg-[#fffaf5]"
+                    className="flex items-center gap-4 rounded-xl border border-black/8 bg-white dark:border-white/8 dark:bg-destiny-grey-800 p-4 transition hover:border-destiny-orange/40 hover:bg-[#fffaf5] dark:hover:bg-white/5"
                   >
                     <div className="min-w-0 flex-1">
                       <p className="font-bold text-destiny-grey">

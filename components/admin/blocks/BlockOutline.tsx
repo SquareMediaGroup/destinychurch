@@ -47,7 +47,7 @@ export function BlockOutline({
               selectBlockAt(editor, entry.pos);
               onPick?.();
             }}
-            className="flex min-h-12 w-full items-center gap-2.5 rounded-xl border border-black/8 bg-white px-3 py-2 text-left transition active:bg-destiny-orange/5"
+            className="flex min-h-12 w-full items-center gap-2.5 rounded-xl border border-black/8 bg-white dark:border-white/8 dark:bg-destiny-grey-800 px-3 py-2 text-left transition active:bg-destiny-orange/5"
           >
             <span
               aria-hidden

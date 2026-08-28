@@ -126,7 +126,7 @@ export default function LeavePage() {
         <div className="flex flex-col gap-8">
           {/* Approvals queue */}
           {pending.length > 0 && (
-            <section className="rounded-3xl border border-destiny-orange/30 bg-white shadow-sm">
+            <section className="rounded-3xl border border-destiny-orange/30 bg-white shadow-sm dark:bg-destiny-grey-800">
               <div className="border-b border-black/5 px-5 py-4">
                 <h2 className="font-black text-destiny-grey">
                   Awaiting approval ({pending.length})
@@ -180,7 +180,7 @@ export default function LeavePage() {
                 {balances.map((b) => (
                   <div
                     key={b.staff.id}
-                    className="rounded-2xl border border-black/5 bg-white p-4 shadow-sm"
+                    className="rounded-2xl border border-black/5 bg-white dark:border-white/8 dark:bg-destiny-grey-800 p-4 shadow-sm"
                   >
                     <p className="text-sm font-bold text-destiny-grey">
                       {fullName(b.staff)}
@@ -250,7 +250,7 @@ export default function LeavePage() {
                   }
                 />
               ) : (
-              <div className="overflow-x-auto rounded-3xl border border-black/5 bg-white shadow-sm">
+              <div className="overflow-x-auto rounded-3xl border border-black/5 bg-white shadow-sm dark:border-white/8 dark:bg-destiny-grey-800">
                 <table className="w-full text-left text-sm">
                   <thead className="border-b border-black/5 text-xs font-bold uppercase tracking-wider text-destiny-grey/40">
                     <tr>
@@ -262,7 +262,7 @@ export default function LeavePage() {
                   </thead>
                   <tbody className="divide-y divide-black/5">
                     {list.visible.map((l) => (
-                      <tr key={l.id} className="transition hover:bg-[#f5f7fa]">
+                      <tr key={l.id} className="transition hover:bg-[#f5f7fa] dark:hover:bg-white/10">
                         <td className="px-5 py-3.5 font-bold text-destiny-grey">
                           {l.hr_staff ? fullName(l.hr_staff) : "Unknown"}
                         </td>

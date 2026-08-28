@@ -190,7 +190,7 @@ export default function FeaturedEventPage() {
       <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_380px]">
         {/* Picker */}
         <div>
-          <div className="mb-4 flex items-center gap-3 rounded-xl border border-black/8 bg-white px-4 py-2.5">
+          <div className="mb-4 flex items-center gap-3 rounded-xl border border-black/8 bg-white dark:border-white/8 dark:bg-destiny-grey-800 px-4 py-2.5">
             <span className="material-symbols-rounded text-lg text-destiny-grey/30">
               search
             </span>
@@ -218,10 +218,10 @@ export default function FeaturedEventPage() {
                     key={event.identifier ?? event.id}
                     type="button"
                     onClick={() => setSelected(event.identifier)}
-                    className={`flex w-full items-center gap-4 rounded-2xl border bg-white p-3 text-left transition ${
+                    className={`flex w-full items-center gap-4 rounded-2xl border bg-white p-3 text-left transition dark:bg-destiny-grey-800 ${
                       isSelected
                         ? "border-destiny-orange ring-2 ring-destiny-orange/30"
-                        : "border-black/8 hover:border-black/20"
+                        : "border-black/8 hover:border-black/20 dark:border-white/8 dark:hover:border-white/20"
                     }`}
                   >
                     <div className="relative h-14 w-20 shrink-0 overflow-hidden rounded-lg bg-[#f5f7fa]">
@@ -276,7 +276,7 @@ export default function FeaturedEventPage() {
         </div>
 
         {/* Settings */}
-        <div className="space-y-5 rounded-2xl border border-black/8 bg-white p-5">
+        <div className="space-y-5 rounded-2xl border border-black/8 bg-white dark:border-white/8 dark:bg-destiny-grey-800 p-5">
           <label className="flex items-start gap-3">
             <input
               type="checkbox"

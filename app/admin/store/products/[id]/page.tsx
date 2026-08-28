@@ -419,7 +419,7 @@ export default function ProductEditorPage({
             <Link
               href={`/shop/${slug}`}
               target="_blank"
-              className="inline-flex items-center gap-1.5 rounded-full border border-black/10 px-4 py-2 text-sm font-bold text-destiny-grey transition hover:bg-[#f5f7fa]"
+              className="inline-flex items-center gap-1.5 rounded-full border border-black/10 px-4 py-2 text-sm font-bold text-destiny-grey transition hover:bg-[#f5f7fa] dark:hover:bg-white/10"
             >
               <span className="material-symbols-rounded text-base">open_in_new</span>
               View
@@ -762,7 +762,7 @@ export default function ProductEditorPage({
                 <button
                   type="button"
                   onClick={applyStockToAll}
-                  className="inline-flex items-center gap-1 rounded-full border border-black/10 px-3 py-1.5 text-xs font-bold text-destiny-grey transition hover:bg-[#f5f7fa]"
+                  className="inline-flex items-center gap-1 rounded-full border border-black/10 px-3 py-1.5 text-xs font-bold text-destiny-grey transition hover:bg-[#f5f7fa] dark:hover:bg-white/10"
                 >
                   <span className="material-symbols-rounded text-base">done_all</span>
                   Apply to all
@@ -774,7 +774,7 @@ export default function ProductEditorPage({
               <table className="w-full border-separate border-spacing-1 text-sm">
                 <thead>
                   <tr>
-                    <th className="sticky left-0 z-10 bg-white" />
+                    <th className="sticky left-0 z-10 bg-white dark:bg-destiny-grey-800" />
                     {[...sizes]
                       .sort((a, b) => sizeIndex(a) - sizeIndex(b))
                       .map((s) => (
@@ -790,7 +790,7 @@ export default function ProductEditorPage({
                 <tbody>
                   {colours.map((c) => (
                     <tr key={c.name}>
-                      <th className="sticky left-0 z-10 bg-white pr-3 text-left">
+                      <th className="sticky left-0 z-10 bg-white pr-3 text-left dark:bg-destiny-grey-800">
                         <span className="inline-flex items-center gap-2 whitespace-nowrap font-semibold text-destiny-grey">
                           <span
                             className="h-4 w-4 shrink-0 rounded-full border border-black/10"
@@ -870,7 +870,7 @@ export default function ProductEditorPage({
                 <button
                   type="button"
                   onClick={applyStockToAll}
-                  className="inline-flex items-center gap-1 rounded-full border border-black/10 px-3 py-1.5 text-xs font-bold text-destiny-grey transition hover:bg-[#f5f7fa]"
+                  className="inline-flex items-center gap-1 rounded-full border border-black/10 px-3 py-1.5 text-xs font-bold text-destiny-grey transition hover:bg-[#f5f7fa] dark:hover:bg-white/10"
                 >
                   <span className="material-symbols-rounded text-base">done_all</span>
                   Apply to all
@@ -963,7 +963,7 @@ function Section({
   children: React.ReactNode;
 }) {
   return (
-    <section className="mt-6 rounded-2xl border border-black/8 bg-white p-5">
+    <section className="mt-6 rounded-2xl border border-black/8 bg-white dark:border-white/8 dark:bg-destiny-grey-800 p-5">
       <div className="mb-4 flex items-center justify-between">
         <h2 className="font-[family-name:var(--font-heading)] text-sm font-black uppercase tracking-wide text-destiny-grey">
           {title}

@@ -132,11 +132,11 @@ export default function AdminPopupPage() {
           <form onSubmit={handleSave} className="flex flex-col gap-6">
             {/* Live preview */}
             {popup.active && (popup.title || popup.body || popup.image_url) && (
-              <div className="rounded-2xl border border-black/5 bg-white p-4 shadow-sm">
+              <div className="rounded-2xl border border-black/5 bg-white dark:border-white/8 dark:bg-destiny-grey-800 p-4 shadow-sm">
                 <p className="mb-3 text-[10px] font-bold uppercase tracking-widest text-destiny-grey/40">
                   Preview
                 </p>
-                <div className="overflow-hidden rounded-2xl bg-white shadow-xl ring-1 ring-black/5">
+                <div className="overflow-hidden rounded-2xl bg-white shadow-xl ring-1 ring-black/5 dark:bg-destiny-grey-800 dark:ring-white/10">
                   {popup.image_url && (
                     <div className="relative aspect-[16/9] w-full bg-[#f5f7fa]">
                       <Image
@@ -172,7 +172,7 @@ export default function AdminPopupPage() {
               </div>
             )}
 
-            <div className="rounded-2xl border border-black/5 bg-white p-6 shadow-sm flex flex-col gap-5">
+            <div className="rounded-2xl border border-black/5 bg-white dark:border-white/8 dark:bg-destiny-grey-800 p-6 shadow-sm flex flex-col gap-5">
               {/* Active toggle */}
               <div className="flex items-center justify-between">
                 <div>

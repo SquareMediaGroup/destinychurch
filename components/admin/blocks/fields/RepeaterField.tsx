@@ -67,7 +67,7 @@ export function RepeaterField({
             <div
               key={item.id}
               {...rowProps(index)}
-              className="overflow-hidden rounded-xl border border-black/10 bg-white"
+              className="overflow-hidden rounded-xl border border-black/10 bg-white dark:border-white/10 dark:bg-destiny-grey-800"
             >
               {/*
                 Four 24px icon buttons used to sit in this header, jammed
@@ -216,7 +216,7 @@ function RowAction({
       type="button"
       disabled={disabled}
       onClick={onClick}
-      className={`inline-flex min-h-10 items-center gap-1.5 rounded-xl border border-black/10 bg-white px-3 text-xs font-bold transition disabled:pointer-events-none disabled:opacity-30 ${
+      className={`inline-flex min-h-10 items-center gap-1.5 rounded-xl border border-black/10 bg-white dark:border-white/10 dark:bg-destiny-grey-800 px-3 text-xs font-bold transition disabled:pointer-events-none disabled:opacity-30 ${
         destructive
           ? "text-destiny-red/80 hover:border-destiny-red/30 hover:bg-destiny-red/5"
           : "text-destiny-grey/60 hover:bg-[#f5f7fa] hover:text-destiny-grey"

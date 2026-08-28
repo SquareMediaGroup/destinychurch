@@ -131,7 +131,7 @@ export default function AdminShopHeroPage() {
           </span>
         </div>
       ) : slides.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-black/15 bg-white px-6 py-14 text-center">
+        <div className="rounded-2xl border border-dashed border-black/15 bg-white px-6 py-14 text-center dark:border-white/15 dark:bg-destiny-grey-800">
           <span className="material-symbols-rounded text-4xl text-destiny-grey/25">
             wallpaper
           </span>
@@ -228,7 +228,7 @@ function SlideCard({
   }
 
   return (
-    <div className="rounded-2xl border border-black/5 bg-white p-6 shadow-sm">
+    <div className="rounded-2xl border border-black/5 bg-white dark:border-white/8 dark:bg-destiny-grey-800 p-6 shadow-sm">
       <div className="mb-4 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <span className="text-xs font-bold uppercase tracking-widest text-destiny-grey/40">
@@ -257,7 +257,7 @@ function SlideCard({
             type="button"
             onClick={() => onMove(-1)}
             disabled={index === 0}
-            className="flex h-8 w-8 items-center justify-center rounded-lg text-destiny-grey/50 transition hover:bg-[#f5f7fa] disabled:opacity-30"
+            className="flex h-8 w-8 items-center justify-center rounded-lg text-destiny-grey/50 transition hover:bg-[#f5f7fa] dark:hover:bg-white/10 disabled:opacity-30"
             aria-label="Move up"
           >
             <span className="material-symbols-rounded text-lg">arrow_upward</span>
@@ -266,7 +266,7 @@ function SlideCard({
             type="button"
             onClick={() => onMove(1)}
             disabled={index === total - 1}
-            className="flex h-8 w-8 items-center justify-center rounded-lg text-destiny-grey/50 transition hover:bg-[#f5f7fa] disabled:opacity-30"
+            className="flex h-8 w-8 items-center justify-center rounded-lg text-destiny-grey/50 transition hover:bg-[#f5f7fa] dark:hover:bg-white/10 disabled:opacity-30"
             aria-label="Move down"
           >
             <span className="material-symbols-rounded text-lg">arrow_downward</span>

@@ -79,7 +79,7 @@ export function BlockPalette({
             placeholder="Search blocks"
             // 16px on phones: anything smaller and iOS Safari zooms the whole
             // page in the moment the field is focused.
-            className="w-full rounded-xl border border-black/10 bg-white py-2.5 pl-9 pr-3 text-base text-destiny-grey outline-none transition placeholder:text-destiny-grey/35 focus:border-destiny-orange/50 focus:ring-2 focus:ring-destiny-orange/15 lg:text-sm"
+            className="w-full rounded-xl border border-black/10 bg-white dark:border-white/10 dark:bg-destiny-grey-800 py-2.5 pl-9 pr-3 text-base text-destiny-grey outline-none transition placeholder:text-destiny-grey/35 focus:border-destiny-orange/50 focus:ring-2 focus:ring-destiny-orange/15 lg:text-sm"
           />
         </div>
       </div>
@@ -151,7 +151,7 @@ function PaletteTile({
         type="button"
         disabled={disabled}
         onClick={onInsert}
-        className="flex min-h-[104px] flex-col items-start gap-1.5 rounded-2xl border border-black/8 bg-white p-3 text-left transition active:scale-[0.98] active:bg-destiny-orange/5 disabled:opacity-40"
+        className="flex min-h-[104px] flex-col items-start gap-1.5 rounded-2xl border border-black/8 bg-white dark:border-white/8 dark:bg-destiny-grey-800 p-3 text-left transition active:scale-[0.98] active:bg-destiny-orange/5 disabled:opacity-40"
       >
         <span
           aria-hidden
@@ -173,11 +173,11 @@ function PaletteTile({
       disabled={disabled}
       onClick={onInsert}
       {...dragProps}
-      className="group flex w-full items-start gap-2.5 rounded-xl border border-transparent px-2.5 py-2 text-left transition hover:border-black/8 hover:bg-white hover:shadow-sm disabled:opacity-40 [&:not(:disabled)]:cursor-grab [&:not(:disabled)]:active:cursor-grabbing"
+      className="group flex w-full items-start gap-2.5 rounded-xl border border-transparent px-2.5 py-2 text-left transition hover:border-black/8 hover:bg-white hover:shadow-sm disabled:opacity-40 dark:hover:border-white/8 dark:hover:bg-destiny-grey-800 [&:not(:disabled)]:cursor-grab [&:not(:disabled)]:active:cursor-grabbing"
     >
       <span
         aria-hidden
-        className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white text-destiny-orange shadow-sm transition group-hover:bg-destiny-orange/10"
+        className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white text-destiny-orange shadow-sm transition group-hover:bg-destiny-orange/10 dark:bg-destiny-grey-700"
       >
         <span className="material-symbols-rounded text-[19px]">{def.icon}</span>
       </span>

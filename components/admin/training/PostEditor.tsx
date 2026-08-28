@@ -126,7 +126,7 @@ export function PostEditor({
   // ── Desktop: full-screen document editor ──────────────────────────────
   if (isDesktop) {
     return (
-      <div className="fixed inset-0 z-50 flex flex-col bg-white">
+      <div className="fixed inset-0 z-50 flex flex-col bg-white dark:bg-destiny-grey-900">
         {/* Top bar */}
         <div className="border-b border-black/10">
           <div className="flex items-center gap-3 px-5 py-3">
@@ -168,7 +168,7 @@ export function PostEditor({
           {/* Settings row */}
           <div className="flex items-center gap-3 border-t border-black/5 bg-[#f9fafb] px-5 py-2.5">
             <select
-              className="shrink-0 rounded-lg border border-black/10 bg-white px-3 py-1.5 text-sm text-destiny-grey outline-none transition focus:border-destiny-orange/50 focus:ring-2 focus:ring-destiny-orange/15"
+              className="shrink-0 rounded-lg border border-black/10 bg-white dark:border-white/10 dark:bg-destiny-grey-800 px-3 py-1.5 text-sm text-destiny-grey outline-none transition focus:border-destiny-orange/50 focus:ring-2 focus:ring-destiny-orange/15"
               value={form.folder_id || ""}
               onChange={(e) => set("folder_id", e.target.value)}
             >
@@ -185,7 +185,7 @@ export function PostEditor({
               value={form.min_read_minutes || ""}
               onChange={(e) => set("min_read_minutes", parseInt(e.target.value) || 0)}
               placeholder="Min read time (mins)"
-              className="w-40 shrink-0 rounded-lg border border-black/10 bg-white px-3 py-1.5 text-sm text-destiny-grey outline-none transition focus:border-destiny-orange/50 focus:ring-2 focus:ring-destiny-orange/15"
+              className="w-40 shrink-0 rounded-lg border border-black/10 bg-white dark:border-white/10 dark:bg-destiny-grey-800 px-3 py-1.5 text-sm text-destiny-grey outline-none transition focus:border-destiny-orange/50 focus:ring-2 focus:ring-destiny-orange/15"
               title="Minimum read time in minutes"
             />
             <input

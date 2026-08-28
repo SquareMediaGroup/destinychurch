@@ -88,7 +88,7 @@ export function ChecklistSection({
   const done = items.filter((i) => i.is_done).length;
 
   return (
-    <section className="rounded-3xl border border-black/5 bg-white p-6 shadow-sm">
+    <section className="rounded-3xl border border-black/5 bg-white dark:border-white/8 dark:bg-destiny-grey-800 p-6 shadow-sm">
       <div className="mb-3 flex items-center justify-between">
         <div>
           <h2 className="font-black text-destiny-grey">{CHECKLIST_KIND_LABELS[kind]}</h2>

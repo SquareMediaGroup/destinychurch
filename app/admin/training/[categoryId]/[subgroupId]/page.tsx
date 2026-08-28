@@ -71,7 +71,7 @@ function PostListSection({
           Drop posts here
         </div>
       ) : (
-        <div className="overflow-hidden rounded-3xl border border-black/5 bg-white shadow-sm">
+        <div className="overflow-hidden rounded-3xl border border-black/5 bg-white shadow-sm dark:border-white/8 dark:bg-destiny-grey-800">
           <table className="w-full text-left text-sm">
             <thead className="border-b border-black/5 text-xs font-bold uppercase tracking-wider text-destiny-grey/40">
               <tr>
@@ -94,7 +94,7 @@ function PostListSection({
                     );
                   }}
                   onClick={() => setEditing(p)}
-                  className="group cursor-pointer transition hover:bg-[#f5f7fa]"
+                  className="group cursor-pointer transition hover:bg-[#f5f7fa] dark:hover:bg-white/10"
                 >
                   <td className="px-2 py-3.5 text-center">
                     <span
@@ -198,7 +198,7 @@ function SearchResults({
     id ? (folders.find((f) => f.id === id)?.name ?? "Unknown folder") : "Ungrouped";
 
   return (
-    <div className="overflow-x-auto rounded-3xl border border-black/5 bg-white shadow-sm">
+    <div className="overflow-x-auto rounded-3xl border border-black/5 bg-white shadow-sm dark:border-white/8 dark:bg-destiny-grey-800">
       <table className="w-full text-left text-sm">
         <thead className="border-b border-black/5 text-xs font-bold uppercase tracking-wider text-destiny-grey/40">
           <tr>
@@ -213,7 +213,7 @@ function SearchResults({
             <tr
               key={p.id}
               onClick={() => onEdit(p)}
-              className="group cursor-pointer transition hover:bg-[#f5f7fa]"
+              className="group cursor-pointer transition hover:bg-[#f5f7fa] dark:hover:bg-white/10"
             >
               <td className="px-5 py-3.5">
                 <p className="font-bold text-destiny-grey transition group-hover:text-destiny-orange">
@@ -563,14 +563,14 @@ export default function TrainingPostsPage() {
                       }
                     }}
                     onClick={() => setActiveFolderId(folder.id)}
-                    className="group relative flex cursor-pointer flex-col gap-2 rounded-3xl border border-black/5 bg-white p-5 shadow-sm transition hover:border-destiny-orange/30 hover:shadow-md"
+                    className="group relative flex cursor-pointer flex-col gap-2 rounded-3xl border border-black/5 bg-white dark:border-white/8 dark:bg-destiny-grey-800 p-5 shadow-sm transition hover:border-destiny-orange/30 hover:shadow-md"
                   >
                     <div className="flex items-center justify-between">
                       <span className="material-symbols-rounded text-3xl text-destiny-orange/80 transition group-hover:text-destiny-orange">
                         folder
                       </span>
                       <span
-                        className="material-symbols-rounded cursor-grab text-xl text-black/10 transition hover:text-black/30 active:cursor-grabbing"
+                        className="material-symbols-rounded cursor-grab text-xl text-black/10 transition hover:text-black/30 dark:text-white/15 dark:hover:text-white/40 active:cursor-grabbing"
                         title="Drag to reorder"
                         onClick={(e) => e.stopPropagation()} // Prevent card click when clicking drag handle
                       >

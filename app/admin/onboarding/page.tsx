@@ -45,7 +45,7 @@ export default function OnboardingAdminPage() {
         action={
           previewRole ? (
             <button
-              className="inline-flex items-center gap-1.5 rounded-xl border border-black/10 bg-white px-4 py-2.5 text-sm font-bold text-destiny-grey/70 transition hover:bg-[#f5f7fa]"
+              className="inline-flex items-center gap-1.5 rounded-xl border border-black/10 bg-white dark:border-white/10 dark:bg-destiny-grey-800 px-4 py-2.5 text-sm font-bold text-destiny-grey/70 transition hover:bg-[#f5f7fa] dark:hover:bg-white/10"
               onClick={() => setRolePreview(null)}
             >
               Exit preview
@@ -68,7 +68,7 @@ export default function OnboardingAdminPage() {
           return (
             <div
               key={role}
-              className="flex flex-col rounded-3xl border border-black/5 bg-white p-6 shadow-sm"
+              className="flex flex-col rounded-3xl border border-black/5 bg-white dark:border-white/8 dark:bg-destiny-grey-800 p-6 shadow-sm"
             >
               <div className="mb-3 flex items-center gap-3">
                 <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-destiny-orange/10">
@@ -110,7 +110,7 @@ export default function OnboardingAdminPage() {
                   Run this tour
                 </button>
                 <button
-                  className="inline-flex items-center gap-1.5 rounded-xl border border-black/10 bg-white px-4 py-2.5 text-sm font-bold text-destiny-grey/70 transition hover:bg-[#f5f7fa]"
+                  className="inline-flex items-center gap-1.5 rounded-xl border border-black/10 bg-white dark:border-white/10 dark:bg-destiny-grey-800 px-4 py-2.5 text-sm font-bold text-destiny-grey/70 transition hover:bg-[#f5f7fa] dark:hover:bg-white/10"
                   onClick={() => preview(role)}
                 >
                   <span className="material-symbols-rounded text-lg">visibility</span>

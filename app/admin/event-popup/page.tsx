@@ -152,7 +152,7 @@ export default function EventPopupPage() {
         )}
       </div>
 
-      <div className="space-y-5 rounded-2xl border border-black/8 bg-white p-5">
+      <div className="space-y-5 rounded-2xl border border-black/8 bg-white dark:border-white/8 dark:bg-destiny-grey-800 p-5">
         <label className="flex items-start gap-3">
           <input
             type="checkbox"

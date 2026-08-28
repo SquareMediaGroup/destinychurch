@@ -164,7 +164,7 @@ export default function AdminUsersPage() {
               }
             />
           ) : (
-            <div className="overflow-x-auto rounded-3xl border border-black/5 bg-white shadow-sm">
+            <div className="overflow-x-auto rounded-3xl border border-black/5 bg-white shadow-sm dark:border-white/8 dark:bg-destiny-grey-800">
               <table className="w-full text-left text-sm">
                 <thead className="border-b border-black/5 text-xs font-bold uppercase tracking-wider text-destiny-grey/40">
                   <tr>
@@ -175,7 +175,7 @@ export default function AdminUsersPage() {
                 </thead>
                 <tbody className="divide-y divide-black/5">
                   {list.visible.map((u) => (
-                    <tr key={u.auth_user_id} className="transition hover:bg-[#f5f7fa]">
+                    <tr key={u.auth_user_id} className="transition hover:bg-[#f5f7fa] dark:hover:bg-white/10">
                       <td className="px-5 py-3.5 font-bold text-destiny-grey">{u.email}</td>
                       <td className="px-5 py-3.5">
                         <div className="flex flex-wrap gap-1.5">

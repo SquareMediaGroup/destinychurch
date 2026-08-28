@@ -125,7 +125,7 @@ export default function ChurchSuiteEventFill({
             onChange={(e) => setFilter(e.target.value)}
             placeholder="Filter events…"
             aria-label="Filter ChurchSuite events"
-            className="mb-2 w-full rounded-lg border border-black/10 bg-white px-3 py-2 text-sm outline-none focus:border-destiny-orange"
+            className="mb-2 w-full rounded-lg border border-black/10 bg-white dark:border-white/10 dark:bg-destiny-grey-800 px-3 py-2 text-sm outline-none focus:border-destiny-orange"
           />
 
           {loading ? (
@@ -135,7 +135,7 @@ export default function ChurchSuiteEventFill({
               </span>
             </div>
           ) : visible.length === 0 ? (
-            <p className="rounded-lg bg-white px-3 py-4 text-center text-xs text-destiny-grey/50">
+            <p className="rounded-lg bg-white px-3 py-4 text-center text-xs text-destiny-grey/50 dark:bg-destiny-grey-800">
               {events.length === 0
                 ? "No upcoming events in the ChurchSuite feed."
                 : "No events match that filter."}
@@ -147,7 +147,7 @@ export default function ChurchSuiteEventFill({
                   key={event.identifier ?? event.slug}
                   type="button"
                   onClick={() => handlePick(event)}
-                  className="flex w-full items-center justify-between gap-3 rounded-lg border border-black/8 bg-white px-3 py-2 text-left transition hover:border-destiny-orange/40"
+                  className="flex w-full items-center justify-between gap-3 rounded-lg border border-black/8 bg-white dark:border-white/8 dark:bg-destiny-grey-800 px-3 py-2 text-left transition hover:border-destiny-orange/40"
                 >
                   <span className="min-w-0 flex-1">
                     <span className="flex items-center gap-2">

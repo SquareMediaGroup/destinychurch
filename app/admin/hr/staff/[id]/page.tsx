@@ -168,7 +168,7 @@ export default function StaffProfilePage() {
       )}
 
       {/* Details */}
-      <section className="mb-6 rounded-3xl border border-black/5 bg-white p-6 shadow-sm">
+      <section className="mb-6 rounded-3xl border border-black/5 bg-white dark:border-white/8 dark:bg-destiny-grey-800 p-6 shadow-sm">
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {details.map((d) => (
             <div key={d.label}>
@@ -327,7 +327,7 @@ function Section({
   children: React.ReactNode;
 }) {
   return (
-    <section className="rounded-3xl border border-black/5 bg-white p-6 shadow-sm">
+    <section className="rounded-3xl border border-black/5 bg-white dark:border-white/8 dark:bg-destiny-grey-800 p-6 shadow-sm">
       <div className="mb-3 flex items-center justify-between">
         <div>
           <h2 className="font-black text-destiny-grey">{title}</h2>

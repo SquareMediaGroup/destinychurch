@@ -84,7 +84,7 @@ export default function AdminOrderDetailPage({
       </div>
 
       {/* Customer */}
-      <section className="mt-6 rounded-2xl border border-black/8 bg-white p-5">
+      <section className="mt-6 rounded-2xl border border-black/8 bg-white dark:border-white/8 dark:bg-destiny-grey-800 p-5">
         <h2 className="mb-3 text-xs font-black uppercase tracking-wide text-destiny-grey/50">
           Customer
         </h2>
@@ -105,7 +105,7 @@ export default function AdminOrderDetailPage({
       </section>
 
       {/* Items */}
-      <section className="mt-4 rounded-2xl border border-black/8 bg-white p-5">
+      <section className="mt-4 rounded-2xl border border-black/8 bg-white dark:border-white/8 dark:bg-destiny-grey-800 p-5">
         <h2 className="mb-3 text-xs font-black uppercase tracking-wide text-destiny-grey/50">
           Items · collection at church
         </h2>
@@ -145,7 +145,7 @@ export default function AdminOrderDetailPage({
             className={`inline-flex items-center gap-1.5 rounded-full border px-4 py-2.5 text-sm font-bold transition disabled:opacity-50 ${
               a.status === "fulfilled"
                 ? "border-destiny-green/30 text-destiny-green hover:bg-destiny-green/10"
-                : "border-black/10 text-destiny-grey hover:bg-[#f5f7fa]"
+                : "border-black/10 text-destiny-grey hover:bg-[#f5f7fa] dark:hover:bg-white/10"
             }`}
           >
             <span className="material-symbols-rounded text-base">{a.icon}</span>

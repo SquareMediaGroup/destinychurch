@@ -36,7 +36,7 @@ export function ImageField({
   return (
     <FieldShell label={label} help={help}>
       {value ? (
-        <div className="flex items-start gap-3 rounded-xl border border-black/10 bg-white p-2">
+        <div className="flex items-start gap-3 rounded-xl border border-black/10 bg-white dark:border-white/10 dark:bg-destiny-grey-800 p-2">
           {/* Plain <img>: the upload route returns only a URL, so there are no
               intrinsic dimensions for next/image to work with. */}
           {/* eslint-disable-next-line @next/next/no-img-element */}

@@ -387,7 +387,7 @@ export default function AuditLogPage() {
                       <button
                         type="button"
                         onClick={() => setSelected(entry)}
-                        className="flex w-full items-start gap-3 px-5 py-3.5 text-left transition hover:bg-[#f5f7fa] dark:hover:bg-white/5"
+                        className="flex w-full items-start gap-3 px-5 py-3.5 text-left transition hover:bg-[#f5f7fa] dark:hover:bg-white/10"
                       >
                         <span
                           className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${

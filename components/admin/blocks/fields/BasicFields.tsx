@@ -22,7 +22,7 @@ import type { Tone } from "@/components/blocks/types";
  * the fields are hittable without a separate mobile stylesheet.
  */
 export const fieldInputClass =
-  "w-full rounded-xl border border-black/10 bg-white px-3.5 py-2.5 text-base text-destiny-grey outline-none transition placeholder:text-destiny-grey/30 focus:border-destiny-orange/50 focus:ring-2 focus:ring-destiny-orange/15 lg:text-sm";
+  "w-full rounded-xl border border-black/10 bg-white dark:border-white/10 dark:bg-destiny-grey-800 px-3.5 py-2.5 text-base text-destiny-grey outline-none transition placeholder:text-destiny-grey/30 focus:border-destiny-orange/50 focus:ring-2 focus:ring-destiny-orange/15 lg:text-sm";
 
 export function FieldShell({
   label,

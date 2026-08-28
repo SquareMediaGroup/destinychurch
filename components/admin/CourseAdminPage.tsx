@@ -243,7 +243,7 @@ export default function CourseAdminPage({ page }: { page: CourseAdminPageSlug })
           <p className="mt-1 text-sm text-destiny-grey/50">{config.blurb}</p>
         </div>
 
-        <div className="mb-8 rounded-2xl border border-black/5 bg-white p-6 shadow-sm">
+        <div className="mb-8 rounded-2xl border border-black/5 bg-white dark:border-white/8 dark:bg-destiny-grey-800 p-6 shadow-sm">
           <div className="mb-4">
             <p className="mb-1.5 text-[10px] font-black uppercase tracking-[0.32em] text-destiny-grey/50">
               Site banner
@@ -272,7 +272,7 @@ export default function CourseAdminPage({ page }: { page: CourseAdminPageSlug })
         </div>
 
         {/* Create form */}
-        <div className="mb-8 rounded-2xl border border-black/5 bg-white p-6 shadow-sm">
+        <div className="mb-8 rounded-2xl border border-black/5 bg-white dark:border-white/8 dark:bg-destiny-grey-800 p-6 shadow-sm">
           <h2 className="mb-4 text-sm font-bold uppercase tracking-wider text-destiny-grey/50">
             Add Event
           </h2>
@@ -415,7 +415,7 @@ export default function CourseAdminPage({ page }: { page: CourseAdminPageSlug })
                       onChange={(e) =>
                         setMeetingPlatform(e.target.value as MeetingPlatform)
                       }
-                      className="w-full rounded-xl border border-black/10 bg-white px-4 py-2.5 text-sm text-destiny-grey focus:outline-none"
+                      className="w-full rounded-xl border border-black/10 bg-white dark:border-white/10 dark:bg-destiny-grey-800 px-4 py-2.5 text-sm text-destiny-grey focus:outline-none"
                     >
                       <option value="zoom">Zoom</option>
                       <option value="google_meet">Google Meet</option>
@@ -432,7 +432,7 @@ export default function CourseAdminPage({ page }: { page: CourseAdminPageSlug })
                       placeholder={
                         meetingPlatform === "zoom" ? "123 4567 8901" : "abc-defg-hij"
                       }
-                      className="w-full rounded-xl border border-black/10 bg-white px-4 py-2.5 text-sm text-destiny-grey placeholder:text-destiny-grey/30 focus:outline-none"
+                      className="w-full rounded-xl border border-black/10 bg-white dark:border-white/10 dark:bg-destiny-grey-800 px-4 py-2.5 text-sm text-destiny-grey placeholder:text-destiny-grey/30 focus:outline-none"
                     />
                   </div>
                 </div>
@@ -449,7 +449,7 @@ export default function CourseAdminPage({ page }: { page: CourseAdminPageSlug })
                         ? "https://us02web.zoom.us/j/..."
                         : "https://meet.google.com/abc-defg-hij"
                     }
-                    className="w-full rounded-xl border border-black/10 bg-white px-4 py-2.5 text-sm text-destiny-grey placeholder:text-destiny-grey/30 focus:outline-none"
+                    className="w-full rounded-xl border border-black/10 bg-white dark:border-white/10 dark:bg-destiny-grey-800 px-4 py-2.5 text-sm text-destiny-grey placeholder:text-destiny-grey/30 focus:outline-none"
                   />
                 </div>
                 <div>
@@ -465,7 +465,7 @@ export default function CourseAdminPage({ page }: { page: CourseAdminPageSlug })
                         ? "Zoom meeting passcode"
                         : "Not usually needed for Meet"
                     }
-                    className="w-full rounded-xl border border-black/10 bg-white px-4 py-2.5 text-sm text-destiny-grey placeholder:text-destiny-grey/30 focus:outline-none"
+                    className="w-full rounded-xl border border-black/10 bg-white dark:border-white/10 dark:bg-destiny-grey-800 px-4 py-2.5 text-sm text-destiny-grey placeholder:text-destiny-grey/30 focus:outline-none"
                   />
                 </div>
               </div>
@@ -580,7 +580,7 @@ function TogglePill({
       onClick={onClick}
       className={`inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-bold transition ${
         active
-          ? "bg-white text-destiny-grey shadow-sm"
+          ? "bg-white text-destiny-grey shadow-sm dark:bg-destiny-grey-700 dark:text-white"
           : "text-destiny-grey/50 hover:text-destiny-grey"
       }`}
     >
@@ -608,7 +608,7 @@ function EventSection({
   accentRgb: string;
 }) {
   return (
-    <div className="mb-8 overflow-hidden rounded-2xl border border-black/5 bg-white shadow-sm">
+    <div className="mb-8 overflow-hidden rounded-2xl border border-black/5 bg-white dark:border-white/8 dark:bg-destiny-grey-800 shadow-sm">
       <div className="border-b border-black/5 px-6 py-4">
         <p className="text-sm font-bold text-destiny-grey">
           {title} ({events.length})

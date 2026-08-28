@@ -340,7 +340,7 @@ export default function AdminNfcPage() {
         )}
 
         {/* The two fixtures */}
-        <div className="mb-6 rounded-2xl border border-black/5 bg-white p-5 shadow-sm">
+        <div className="mb-6 rounded-2xl border border-black/5 bg-white dark:border-white/8 dark:bg-destiny-grey-800 p-5 shadow-sm">
           <p className="mb-3 text-[10px] font-bold uppercase tracking-widest text-destiny-grey/40">
             Always shown
           </p>
@@ -380,7 +380,7 @@ export default function AdminNfcPage() {
             {tiles.map((tile, i) => (
               <li
                 key={tile.id}
-                className={`flex items-center gap-4 rounded-2xl border border-black/5 bg-white p-4 shadow-sm ${
+                className={`flex items-center gap-4 rounded-2xl border border-black/5 bg-white dark:border-white/8 dark:bg-destiny-grey-800 p-4 shadow-sm ${
                   tile.active ? "" : "opacity-55"
                 }`}
               >
@@ -418,7 +418,7 @@ export default function AdminNfcPage() {
                     onClick={() => move(i, -1)}
                     disabled={i === 0}
                     aria-label="Move up"
-                    className="flex h-8 w-8 items-center justify-center rounded-lg text-destiny-grey/40 transition hover:bg-gray-100 hover:text-destiny-grey disabled:opacity-30 disabled:hover:bg-transparent"
+                    className="flex h-8 w-8 items-center justify-center rounded-lg text-destiny-grey/40 transition hover:bg-gray-100 hover:text-destiny-grey dark:hover:bg-white/10 dark:hover:text-white disabled:opacity-30 disabled:hover:bg-transparent"
                   >
                     <span className="material-symbols-rounded text-lg">
                       arrow_upward
@@ -429,7 +429,7 @@ export default function AdminNfcPage() {
                     onClick={() => move(i, 1)}
                     disabled={i === tiles.length - 1}
                     aria-label="Move down"
-                    className="flex h-8 w-8 items-center justify-center rounded-lg text-destiny-grey/40 transition hover:bg-gray-100 hover:text-destiny-grey disabled:opacity-30 disabled:hover:bg-transparent"
+                    className="flex h-8 w-8 items-center justify-center rounded-lg text-destiny-grey/40 transition hover:bg-gray-100 hover:text-destiny-grey dark:hover:bg-white/10 dark:hover:text-white disabled:opacity-30 disabled:hover:bg-transparent"
                   >
                     <span className="material-symbols-rounded text-lg">
                       arrow_downward
@@ -456,7 +456,7 @@ export default function AdminNfcPage() {
                       setEditing(tile);
                     }}
                     aria-label="Edit"
-                    className="flex h-8 w-8 items-center justify-center rounded-lg text-destiny-grey/40 transition hover:bg-gray-100 hover:text-destiny-grey"
+                    className="flex h-8 w-8 items-center justify-center rounded-lg text-destiny-grey/40 transition hover:bg-gray-100 hover:text-destiny-grey dark:hover:bg-white/10 dark:hover:text-white"
                   >
                     <span className="material-symbols-rounded text-lg">edit</span>
                   </button>
@@ -478,7 +478,7 @@ export default function AdminNfcPage() {
         {editing && (
           <form
             onSubmit={save}
-            className="mt-8 flex flex-col gap-5 rounded-2xl border border-black/5 bg-white p-6 shadow-sm"
+            className="mt-8 flex flex-col gap-5 rounded-2xl border border-black/5 bg-white dark:border-white/8 dark:bg-destiny-grey-800 p-6 shadow-sm"
           >
             <div className="flex items-center justify-between">
               <h2 className="text-lg font-black text-destiny-grey">
@@ -488,7 +488,7 @@ export default function AdminNfcPage() {
                 type="button"
                 onClick={() => setEditing(null)}
                 aria-label="Cancel"
-                className="flex h-8 w-8 items-center justify-center rounded-full text-destiny-grey/40 transition hover:bg-gray-100 hover:text-destiny-grey"
+                className="flex h-8 w-8 items-center justify-center rounded-full text-destiny-grey/40 transition hover:bg-gray-100 hover:text-destiny-grey dark:hover:bg-white/10 dark:hover:text-white"
               >
                 <span className="material-symbols-rounded text-xl">close</span>
               </button>
@@ -698,7 +698,7 @@ export default function AdminNfcPage() {
                                 className={`flex w-full items-center gap-3 px-4 py-3 text-left transition disabled:cursor-not-allowed disabled:opacity-45 ${
                                   chosen
                                     ? "bg-destiny-orange/5"
-                                    : "hover:bg-gray-50 disabled:hover:bg-transparent"
+                                    : "hover:bg-gray-50 dark:hover:bg-white/10 disabled:hover:bg-transparent"
                                 }`}
                               >
                                 <div className="min-w-0 flex-1">
@@ -909,7 +909,7 @@ export default function AdminNfcPage() {
               <button
                 type="button"
                 onClick={() => setEditing(null)}
-                className="rounded-xl px-4 py-2.5 text-sm font-bold text-destiny-grey/60 transition hover:bg-gray-100"
+                className="rounded-xl px-4 py-2.5 text-sm font-bold text-destiny-grey/60 transition hover:bg-gray-100 dark:hover:bg-white/10"
               >
                 Cancel
               </button>

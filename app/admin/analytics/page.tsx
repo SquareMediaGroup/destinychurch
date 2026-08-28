@@ -68,7 +68,7 @@ export default function AnalyticsPage() {
         back={{ href: "/admin", label: "Dashboard" }}
         action={
           <div
-            className="flex rounded-xl border border-black/10 bg-white p-1"
+            className="flex rounded-xl border border-black/10 bg-white dark:border-white/10 dark:bg-destiny-grey-800 p-1"
             role="tablist"
             aria-label="Analytics view"
           >

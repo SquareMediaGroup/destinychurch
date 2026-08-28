@@ -109,7 +109,7 @@ export function ShortLinksPanel({
         />
       </div>
 
-      <div className="rounded-3xl border border-black/5 bg-white p-5 shadow-sm">
+      <div className="rounded-3xl border border-black/5 bg-white dark:border-white/8 dark:bg-destiny-grey-800 p-5 shadow-sm">
         <h3 className="mb-4 text-sm font-bold uppercase tracking-wider text-destiny-grey/50">
           Clicks per day
         </h3>
@@ -117,7 +117,7 @@ export function ShortLinksPanel({
       </div>
 
       {!target && (
-        <div className="overflow-hidden rounded-3xl border border-black/5 bg-white shadow-sm">
+        <div className="overflow-hidden rounded-3xl border border-black/5 bg-white shadow-sm dark:border-white/8 dark:bg-destiny-grey-800">
           <h3 className="border-b border-black/5 px-5 py-4 text-sm font-bold uppercase tracking-wider text-destiny-grey/50">
             Top links
           </h3>
@@ -152,7 +152,7 @@ export function ShortLinksPanel({
       )}
 
       <div className="grid gap-4 sm:grid-cols-2">
-        <div className="rounded-3xl border border-black/5 bg-white p-5 shadow-sm">
+        <div className="rounded-3xl border border-black/5 bg-white dark:border-white/8 dark:bg-destiny-grey-800 p-5 shadow-sm">
           <h3 className="mb-3 text-sm font-bold uppercase tracking-wider text-destiny-grey/50">
             Country
           </h3>
@@ -160,7 +160,7 @@ export function ShortLinksPanel({
             rows={data.byCountry.map((b) => ({ key: b.key, label: countryName(b.key), value: b.events }))}
           />
         </div>
-        <div className="rounded-3xl border border-black/5 bg-white p-5 shadow-sm">
+        <div className="rounded-3xl border border-black/5 bg-white dark:border-white/8 dark:bg-destiny-grey-800 p-5 shadow-sm">
           <h3 className="mb-3 text-sm font-bold uppercase tracking-wider text-destiny-grey/50">
             Where from
           </h3>
@@ -172,7 +172,7 @@ export function ShortLinksPanel({
             }))}
           />
         </div>
-        <div className="rounded-3xl border border-black/5 bg-white p-5 shadow-sm">
+        <div className="rounded-3xl border border-black/5 bg-white dark:border-white/8 dark:bg-destiny-grey-800 p-5 shadow-sm">
           <h3 className="mb-3 text-sm font-bold uppercase tracking-wider text-destiny-grey/50">
             Device
           </h3>
@@ -180,7 +180,7 @@ export function ShortLinksPanel({
             rows={data.byDevice.map((b) => ({ key: b.key, label: b.key, value: b.events }))}
           />
         </div>
-        <div className="rounded-3xl border border-black/5 bg-white p-5 shadow-sm">
+        <div className="rounded-3xl border border-black/5 bg-white dark:border-white/8 dark:bg-destiny-grey-800 p-5 shadow-sm">
           <h3 className="mb-3 text-sm font-bold uppercase tracking-wider text-destiny-grey/50">
             How they got here
           </h3>
@@ -193,7 +193,7 @@ export function ShortLinksPanel({
             emptyLabel="Nobody has used a tagged link yet."
           />
         </div>
-        <div className="rounded-3xl border border-black/5 bg-white p-5 shadow-sm">
+        <div className="rounded-3xl border border-black/5 bg-white dark:border-white/8 dark:bg-destiny-grey-800 p-5 shadow-sm">
           <h3 className="mb-3 text-sm font-bold uppercase tracking-wider text-destiny-grey/50">
             Connection
           </h3>

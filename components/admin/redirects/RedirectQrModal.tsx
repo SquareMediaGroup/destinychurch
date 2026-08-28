@@ -100,7 +100,7 @@ export function RedirectQrModal({
       <div className="flex flex-col items-center gap-4">
         {label && <p className="text-sm font-bold text-destiny-grey">{label}</p>}
 
-        <div className="rounded-2xl border border-black/10 bg-white p-4">
+        <div className="rounded-2xl border border-black/10 bg-white dark:border-white/10 dark:bg-destiny-grey-800 p-4">
           <QRCodeSVG ref={svgRef} value={url} size={220} level="H" marginSize={4} />
         </div>
 

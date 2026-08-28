@@ -166,7 +166,7 @@ export default function TrainingCategoriesPage() {
               }
             />
           ) : (
-            <div className="overflow-x-auto rounded-3xl border border-black/5 bg-white shadow-sm">
+            <div className="overflow-x-auto rounded-3xl border border-black/5 bg-white shadow-sm dark:border-white/8 dark:bg-destiny-grey-800">
               <table className="w-full text-left text-sm">
                 <thead className="border-b border-black/5 text-xs font-bold uppercase tracking-wider text-destiny-grey/40">
                   <tr>
@@ -183,7 +183,7 @@ export default function TrainingCategoriesPage() {
                       <tr
                         key={c.id}
                         {...(canReorder ? rowProps(idx) : {})}
-                        className="transition hover:bg-[#f5f7fa]"
+                        className="transition hover:bg-[#f5f7fa] dark:hover:bg-white/10"
                       >
                         {canReorder && (
                           <td className="px-2 py-3.5 text-center">

@@ -87,10 +87,10 @@ export default function FeaturedCoursePage() {
                   key={id}
                   type="button"
                   onClick={() => setSelected(id)}
-                  className={`group relative flex items-center gap-4 overflow-hidden rounded-2xl border bg-white p-4 text-left transition ${
+                  className={`group relative flex items-center gap-4 overflow-hidden rounded-2xl border bg-white p-4 text-left transition dark:bg-destiny-grey-800 ${
                     isSelected
                       ? "border-destiny-orange ring-2 ring-destiny-orange/30"
-                      : "border-black/8 hover:border-black/20"
+                      : "border-black/8 hover:border-black/20 dark:border-white/8 dark:hover:border-white/20"
                   }`}
                 >
                   <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-xl bg-[#f5f7fa]">

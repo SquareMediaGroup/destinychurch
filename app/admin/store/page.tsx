@@ -163,7 +163,7 @@ export default function AdminStorePage() {
                   <li key={p.id}>
                     <Link
                       href={`/admin/store/products/${p.id}`}
-                      className="flex items-center gap-4 rounded-xl border border-black/8 bg-white p-3 transition hover:border-destiny-orange/40 hover:bg-[#fffaf5]"
+                      className="flex items-center gap-4 rounded-xl border border-black/8 bg-white dark:border-white/8 dark:bg-destiny-grey-800 p-3 transition hover:border-destiny-orange/40 hover:bg-[#fffaf5] dark:hover:bg-white/5"
                     >
                       <div className="h-14 w-14 shrink-0 overflow-hidden rounded-lg bg-[#f5f7fa]">
                         {p.images[0] ? (

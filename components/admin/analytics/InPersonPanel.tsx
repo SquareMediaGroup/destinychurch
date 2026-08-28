@@ -22,7 +22,7 @@ function SourceSection({
   const { data, loading, error } = useEngagementRollup({ range, source, includeBots });
 
   return (
-    <div className="rounded-3xl border border-black/5 bg-white p-5 shadow-sm">
+    <div className="rounded-3xl border border-black/5 bg-white dark:border-white/8 dark:bg-destiny-grey-800 p-5 shadow-sm">
       <div className="mb-4 flex items-center gap-2">
         <span className="material-symbols-rounded text-xl text-destiny-orange">{meta.icon}</span>
         <h3 className="text-sm font-bold uppercase tracking-wider text-destiny-grey/60">

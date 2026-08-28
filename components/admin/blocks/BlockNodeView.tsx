@@ -76,7 +76,7 @@ export function makeBlockNodeView(def: AnyBlockDefinition) {
           // so it always clears the block's own first element whatever height
           // the chrome happens to be. A fixed negative offset doesn't: -top-8
           // assumed ~28px and the bar is 37px, so it sat 5px over the heading.
-          className="absolute bottom-full left-3 z-10 mb-1 hidden items-center gap-0.5 rounded-lg border border-black/10 bg-white px-1 py-0.5 opacity-0 shadow-sm transition focus-within:opacity-100 group-hover:opacity-100 data-[on=true]:opacity-100 lg:flex"
+          className="absolute bottom-full left-3 z-10 mb-1 hidden items-center gap-0.5 rounded-lg border border-black/10 bg-white dark:border-white/10 dark:bg-destiny-grey-800 px-1 py-0.5 opacity-0 shadow-sm transition focus-within:opacity-100 group-hover:opacity-100 data-[on=true]:opacity-100 lg:flex"
         >
           {/*
             Deliberately a <span>, not a <button>.

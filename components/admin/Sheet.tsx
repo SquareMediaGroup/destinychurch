@@ -152,7 +152,7 @@ export function Sheet({
         role="dialog"
         aria-modal="true"
         aria-label={title}
-        className="flex min-h-0 w-full flex-col overflow-hidden rounded-t-3xl border-t border-black/5 bg-white pb-[env(safe-area-inset-bottom)] shadow-2xl lg:mx-auto lg:max-w-2xl"
+        className="flex min-h-0 w-full flex-col overflow-hidden rounded-t-3xl border-t border-black/5 bg-white dark:border-white/8 dark:bg-destiny-grey-800 pb-[env(safe-area-inset-bottom)] shadow-2xl lg:mx-auto lg:max-w-2xl"
         style={{
           height: DETENT_HEIGHT[detent],
           maxHeight: detent === "auto" ? "84%" : undefined,
@@ -197,7 +197,7 @@ export function Sheet({
         </div>
 
         {footer && (
-          <div className="shrink-0 border-t border-black/8 bg-white px-4 py-3">
+          <div className="shrink-0 border-t border-black/8 bg-white dark:border-white/8 dark:bg-destiny-grey-800 px-4 py-3">
             {footer}
           </div>
         )}

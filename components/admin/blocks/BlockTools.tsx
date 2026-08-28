@@ -87,7 +87,7 @@ export function BlockTools({ editor }: { editor: Editor | null }) {
             className="fixed inset-x-0 z-[105] lg:hidden"
             style={{ bottom: keyboard }}
           >
-            <div className="mx-2 mb-[max(0.5rem,env(safe-area-inset-bottom))] flex items-center gap-1 rounded-2xl border border-black/8 bg-white/95 p-1.5 shadow-[0_8px_30px_rgba(0,0,0,0.18)] backdrop-blur">
+            <div className="mx-2 mb-[max(0.5rem,env(safe-area-inset-bottom))] flex items-center gap-1 rounded-2xl border border-black/8 bg-white/95 p-1.5 shadow-[0_8px_30px_rgba(0,0,0,0.18)] backdrop-blur dark:border-white/8 dark:bg-destiny-grey-800/95">
               <BarButton
                 icon="keyboard_arrow_up"
                 label="Move block up"

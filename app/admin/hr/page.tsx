@@ -99,7 +99,7 @@ export default function HrDashboardPage() {
               <Link
                 key={s.label}
                 href={s.href}
-                className="group flex items-center gap-4 rounded-3xl border border-black/5 bg-white p-5 shadow-sm transition hover:border-destiny-orange/30 hover:shadow-md"
+                className="group flex items-center gap-4 rounded-3xl border border-black/5 bg-white dark:border-white/8 dark:bg-destiny-grey-800 p-5 shadow-sm transition hover:border-destiny-orange/30 hover:shadow-md"
               >
                 <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-destiny-orange/10 text-destiny-orange">
                   <span className="material-symbols-rounded text-[26px]">{s.icon}</span>
@@ -116,7 +116,7 @@ export default function HrDashboardPage() {
 
           <div className="grid gap-6 lg:grid-cols-2">
             {/* Pending leave */}
-            <section className="rounded-3xl border border-black/5 bg-white p-6 shadow-sm">
+            <section className="rounded-3xl border border-black/5 bg-white dark:border-white/8 dark:bg-destiny-grey-800 p-6 shadow-sm">
               <div className="mb-4 flex items-center justify-between">
                 <h2 className="font-black text-destiny-grey">Pending leave</h2>
                 <Link
@@ -148,7 +148,7 @@ export default function HrDashboardPage() {
             </section>
 
             {/* Upcoming reviews */}
-            <section className="rounded-3xl border border-black/5 bg-white p-6 shadow-sm">
+            <section className="rounded-3xl border border-black/5 bg-white dark:border-white/8 dark:bg-destiny-grey-800 p-6 shadow-sm">
               <div className="mb-4 flex items-center justify-between">
                 <h2 className="font-black text-destiny-grey">Upcoming reviews</h2>
                 <Link
@@ -194,7 +194,7 @@ export default function HrDashboardPage() {
                 <Link
                   key={item.href}
                   href={item.href}
-                  className="group flex items-start gap-4 rounded-2xl border border-black/5 bg-white p-5 shadow-sm transition hover:shadow-md"
+                  className="group flex items-start gap-4 rounded-2xl border border-black/5 bg-white dark:border-white/8 dark:bg-destiny-grey-800 p-5 shadow-sm transition hover:shadow-md"
                 >
                   <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-destiny-orange/10 text-destiny-orange">
                     <span className="material-symbols-rounded text-xl">{item.icon}</span>

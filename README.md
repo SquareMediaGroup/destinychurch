@@ -27,7 +27,6 @@ Designed, engineered, and deployed by [Square Media Group](mailto:hello@squareme
 - `/governance` transparency page — charity and company registration, trustees/directors, charitable objects, and five-year financial and filing history, drawn live from the Charity Commission and Companies House registers
 - `/nfc` "digital back of seats" — a standalone page an NFC tag or QR code on a seat opens during a service, with admin-managed tiles
 - AI Smart Search — OpenAI tool-calling chat with product cards, weather, maps/directions, and live web search
-- Cloudflare Turnstile bot protection on sign-in and Smart Search
 - Protected admin dashboard (sermons, pages/posts, redirects, banner, popup, shop, training, HR, Alpha, recovery)
 - Companion native SwiftUI iOS app (Home/Sermons/Events/Give/More tabs) rendering a dedicated, versioned `/api/app/v1` backend-for-frontend
 - Mobile-first, fully responsive, accessibility-focused
@@ -47,7 +46,6 @@ Designed, engineered, and deployed by [Square Media Group](mailto:hello@squareme
 | AI Smart Search | OpenAI (tool-calling chat) |
 | Web Search | Tavily (search + extract) |
 | Governance data | Charity Commission + Companies House public APIs |
-| Bot Protection | Cloudflare Turnstile |
 | Email | Resend |
 | Video | YouTube Data API v3 |
 | Media Processing | Sharp (image resize/WebP) |
@@ -68,7 +66,6 @@ Designed, engineered, and deployed by [Square Media Group](mailto:hello@squareme
 - A Google [YouTube Data API v3](https://developers.google.com/youtube/v3) key
 - A [Stripe](https://stripe.com) account (for the shop)
 - An [OpenAI](https://openai.com) API key and a [Tavily](https://tavily.com) key (for Smart Search)
-- A [Cloudflare Turnstile](https://www.cloudflare.com/products/turnstile/) site/secret key pair
 
 ### Environment Variables
 
@@ -98,11 +95,6 @@ STRIPE_WEBHOOK_SECRET=your_stripe_webhook_secret
 OPENAI_API_KEY=your_openai_api_key
 TAVILY_API_KEY=your_tavily_api_key
 NEXT_PUBLIC_GOOGLE_MAPS_EMBED_API_KEY=your_google_maps_embed_key
-
-# Cloudflare Turnstile
-NEXT_PUBLIC_TURNSTILE_SITE_KEY=your_turnstile_site_key
-TURNSTILE_SECRET_KEY=your_turnstile_secret_key
-TURNSTILE_COOKIE_SECRET=your_turnstile_cookie_secret
 
 # Scheduled jobs / misc
 CRON_SECRET=your_cron_secret

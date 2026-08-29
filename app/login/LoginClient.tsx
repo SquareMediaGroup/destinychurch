@@ -186,7 +186,8 @@ function LoginPanel({
             Keep me signed in
           </label>
 
-          <div ref={turnstileRef} className="flex justify-center" />
+          {/* Invisible Turnstile widget — runs in the background, no UI to reserve space for */}
+          <div ref={turnstileRef} className="absolute h-0 w-0 overflow-hidden" aria-hidden="true" />
 
           {error && (
             <div className="flex items-center gap-3 rounded-2xl bg-red-500/10 px-4 py-3 text-sm text-red-400">

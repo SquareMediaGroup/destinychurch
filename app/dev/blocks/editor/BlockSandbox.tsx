@@ -14,8 +14,8 @@ import RichContent from "@/components/content/RichContent";
  *
  * Mounts the real editor with the real Blocks sidebar and inspector, using the
  * same three-column layout as the post editor — but with no auth, no database
- * and no save. That makes the block editing experience testable without a
- * login, which matters because /login is gated by Cloudflare Turnstile.
+ * and no save. That makes the block editing experience testable without
+ * needing to sign in first.
  *
  * It also surfaces two things the real editor deliberately hides: the stored
  * HTML, and a live public-side render of it via RichContent. Being able to see

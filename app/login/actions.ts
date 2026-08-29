@@ -6,7 +6,6 @@ import { createClient } from "@/utils/supabase/server";
 import { createServiceClient } from "@/utils/supabase/service";
 import { REMEMBER_COOKIE_NAME } from "@/utils/supabase/sessionCookie";
 import { checkRateLimit, resetRateLimit } from "@/lib/loginRateLimit";
-import { verifyTurnstileToken } from "@/lib/turnstile";
 import { resolvePostLoginPath } from "@/lib/staffPortalAuth";
 import { ADMIN_ROLES, getRoles } from "@/lib/adminRoles";
 import { recordAudit } from "@/lib/audit.server";
@@ -19,8 +18,8 @@ const REMEMBER_MAX_AGE = 60 * 60 * 24 * 400; // matches Supabase's own default c
  * Split out because the live chat needs to sign a Host in without leaving the
  * page: `redirect()` throws to unwind the request, which works fine for a
  * full-page form and not at all for a modal that has to stay put and re-render.
- * The rate limit, the Turnstile check and the remember-me cookie are identical
- * either way, so they live here and the two callers differ only in their ending.
+ * The rate limit and the remember-me cookie are identical either way, so they
+ * live here and the two callers differ only in their ending.
  */
 async function signInCore(
   formData: FormData,
@@ -48,12 +47,6 @@ async function signInCore(
     return { success: false, error: "Email and password are required." };
   }
 
-  const turnstileToken = formData.get("cf-turnstile-response")?.toString();
-  const turnstileOk = await verifyTurnstileToken(turnstileToken, ip);
-  if (!turnstileOk) {
-    return { success: false, error: "Please complete the verification challenge." };
-  }
-
   const remember = formData.get("remember") === "on";
 
   const cookieStore = await cookies();
@@ -61,10 +54,10 @@ async function signInCore(
   const { data, error } = await supabase.auth.signInWithPassword({ email, password });
 
   if (error || !data.user) {
-    // Recorded with no actor — nobody signed in. Rate-limited and failed
-    // Turnstile attempts are deliberately *not* logged: they are bot noise and
-    // would bury the entries a person needs to see. A wrong password on a real
-    // address is the one worth keeping.
+    // Recorded with no actor — nobody signed in. Rate-limited attempts are
+    // deliberately *not* logged: they are bot noise and would bury the
+    // entries a person needs to see. A wrong password on a real address is
+    // the one worth keeping.
     await recordAudit({
       actor: { id: null, email: null, roles: [] },
       action: "login",

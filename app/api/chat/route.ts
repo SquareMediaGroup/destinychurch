@@ -4,7 +4,6 @@ import { getOpenAI, SMART_SEARCH_MODEL } from "@/lib/openaiClient";
 import { buildSmartSearchPrompt } from "@/lib/siteKnowledge";
 import { FALLBACK_ANSWERS } from "@/lib/smartSearch";
 import { TOOL_DEFINITIONS, executeTool, createToolContext } from "@/lib/smartSearch/tools";
-import { isVerifiedCookieValid } from "@/lib/turnstile";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 30;
@@ -125,10 +124,6 @@ async function streamTurn(
 }
 
 export async function POST(request: NextRequest) {
-  if (!isVerifiedCookieValid(request.cookies.get("ts_verified")?.value)) {
-    return NextResponse.json({ error: "Verification required" }, { status: 403 });
-  }
-
   if (isRateLimited(clientIp(request))) {
     return NextResponse.json({ error: "Too many requests" }, { status: 429 });
   }

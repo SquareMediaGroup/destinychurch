@@ -13,6 +13,7 @@
 
 import { createPortal } from "react-dom";
 import { useEffect } from "react";
+import { BorderBeam } from "border-beam";
 import { useHydrated } from "@/lib/useHydrated";
 import { minutesFor, type TourSection } from "@/lib/adminOnboarding";
 import { TOURS, TOUR_ORDER } from "@/lib/adminOnboarding";
@@ -46,7 +47,7 @@ export default function WelcomeGate({
 
   return createPortal(
     <div className="fixed inset-0 z-[400] flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm">
-      <div className="search-glow is-loading relative w-full max-w-lg rounded-3xl">
+      <BorderBeam size="md" borderRadius={24} className="relative w-full max-w-lg rounded-3xl">
         <div className="glass admin-glass absolute inset-0 rounded-3xl" />
         <div className="relative p-8">
           <span className="text-[11px] font-bold uppercase tracking-widest text-white/45">
@@ -100,7 +101,7 @@ export default function WelcomeGate({
             </button>
           </div>
         </div>
-      </div>
+      </BorderBeam>
     </div>,
     document.body,
   );

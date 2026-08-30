@@ -283,19 +283,6 @@ body {
   to   { opacity: 1; transform: translateY(0); }
 }
 
-/* Animatable angle for the Smart Search pill's rotating conic border
-   (.search-glow). inherits:true so the pseudo-elements pick up the value the
-   parent animates. */
-@property --grad-angle {
-  syntax: "<angle>";
-  initial-value: 0deg;
-  inherits: true;
-}
-
-@keyframes grad-rotate {
-  to { --grad-angle: 360deg; }
-}
-
 @keyframes border-rotate {
   to { transform: rotate(360deg); }
 }
@@ -371,80 +358,6 @@ body {
   .ai-active-row::before { animation: none; }
 }
 
-/* Pill-shaped rotating gradient border — used by Smart Search input while
-   the API request is in flight. Renders only while .is-loading. */
-.search-glow {
-  position: relative;
-  isolation: isolate;
-  border-radius: 9999px;
-  --grad-angle: 0deg;
-}
-
-.search-glow::before,
-.search-glow::after {
-  content: "";
-  position: absolute;
-  background: conic-gradient(
-    from var(--grad-angle),
-    #f58021,
-    #fd0000,
-    #8106b1,
-    #0857ba,
-    #028002,
-    #f58021
-  );
-  pointer-events: none;
-  border-radius: 9999px;
-  opacity: 0;
-  transition: opacity 0.25s ease;
-}
-
-.search-glow::before {
-  inset: -2px;
-  -webkit-mask:
-    linear-gradient(#000 0 0) content-box,
-    linear-gradient(#000 0 0);
-  -webkit-mask-composite: xor;
-          mask-composite: exclude;
-  z-index: 1;
-}
-
-.search-glow::after {
-  inset: -10px;
-  filter: blur(18px);
-  z-index: -1;
-}
-
-.search-glow.is-loading {
-  animation: grad-rotate 2.4s linear infinite;
-}
-
-.search-glow.is-loading::before {
-  opacity: 1;
-}
-
-.search-glow.is-loading::after {
-  opacity: 0.45;
-}
-
-@media (max-width: 768px) {
-  .search-glow::after {
-    display: none;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .search-glow.is-loading {
-    animation: none;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .search-glow.is-loading::before {
-    animation: none;
-  }
-}
-
 /* ──────────────────────────────────────────────────────────────────────────
    Site-wide glass system
    Single source of truth for glassmorphism. Composes depth (specular edge +
@@ -457,8 +370,8 @@ body {
    Usage: add `glass` (optionally `glass-refract`) to a container that already
    carries its own border-radius (rounded-2xl/full/etc). Modifiers tune blur
    and tint. Override tint per-surface with inline `--glass-tint`/`--glass-alpha`.
-   Do NOT apply to elements that own their own ::before/::after (e.g. the
-   .search-glow pill) — put glass on the wrapping panel instead.
+   Do NOT apply to elements that own their own ::before/::after (e.g. a
+   BorderBeam pill) — put glass on the wrapping panel instead.
 
    Lives in @layer components so Tailwind utilities (@layer utilities, which
    sorts later) win per-property: `absolute` must beat the base
@@ -497,9 +410,9 @@ body {
     border-color 0.2s ease;
 }
 
-/* Gradient rim — masked-border technique (same trick as .search-glow::before).
-   1px ring that's bright at the top and fades around, reading as a lit edge.
-   Sits at the very border so it never overlaps text. */
+/* Gradient rim — masked-border technique. 1px ring that's bright at the top
+   and fades around, reading as a lit edge. Sits at the very border so it
+   never overlaps text. */
 .glass::before {
   content: "";
   position: absolute;
@@ -764,11 +677,10 @@ body {
 /* Floating Smart Search — circle <-> teaser <-> pill morph.
    Three resting widths held in --fs-w and TRANSITIONED, with the same aggressive
    ease-in-out that used to be keyframed. It was keyframes while there were only
-   two states; three made the pairs combinatorial, and the keyframes sat on the
-   same `animation` property as .search-glow's loading spin on the same element,
-   so a morph mid-request stopped the glow rotating. A transition leaves
-   `animation` to the glow entirely, and does not run on first paint, which is
-   what the transient .morph-* classes existed to prevent. */
+   two states; three made the pairs combinatorial. A transition also leaves the
+   loading glow (now BorderBeam, which owns its own wrapper) free to animate
+   independently, and does not run on first paint, which is what the transient
+   .morph-* classes existed to prevent. */
 .floating-search-morph {
   width: var(--fs-w, 3.5rem); /* collapsed (circle) */
   transition: width 0.5s cubic-bezier(0.85, 0, 0.15, 1);

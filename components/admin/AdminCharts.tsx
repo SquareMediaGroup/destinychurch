@@ -8,9 +8,7 @@
 // No charting library. The only genuine time-series in the app is the weekly
 // audit_reports.stats history and a day-bucketed count of the audit log — a
 // few dozen points at most, ever — which a 20-line inline SVG covers just as
-// well as a dependency would, and matches the codebase's existing taste for
-// hand-rolled visuals (the rotating conic-gradient border on Smart Search,
-// .search-glow in app/globals.css, is hand-rolled too).
+// well as a dependency would.
 
 /* ── Sparkline ─────────────────────────────────────────────────────────────── */
 

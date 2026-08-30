@@ -2227,10 +2227,16 @@ its `welcome` mode, and the copy still lives in `lib/welcomeChat.ts`.
   label **permanently** instead, so they lose the motion without losing the discoverability.
 - **Three widths, transitioned not keyframed.** `--fs-w` holds the resting width per state (circle
   `3.5rem` → teaser `13.5rem` → pill `min(100vw-2rem, 28rem)`) with `transition: width`. It was
-  keyframes while there were only two states; three made the pairs combinatorial, and the keyframes
-  sat on the same `animation` property as `.search-glow`'s loading spin **on the same element**, so a
-  morph mid-request stopped the glow rotating. A transition frees `animation` for the glow and
-  doesn't run on first paint, which is what the old transient `.morph-*` classes existed to prevent.
+  keyframes while there were only two states; three made the pairs combinatorial. A transition also
+  leaves the loading glow (`<BorderBeam>` from the `border-beam` package, which owns its own wrapper
+  element) free to animate independently, and doesn't run on first paint, which is what the old
+  transient `.morph-*` classes existed to prevent.
+- **Loading/thinking indicators.** The pill's rotating rainbow border while a request is in flight is
+  `<BorderBeam active={expanded && loading}>` (`border-beam`), wrapping the `.glass` layer in place of
+  the old hand-rolled `.search-glow` conic-gradient CSS. The "thinking" dots in the chat thread and the
+  input-field spinner are both `<ThinkingOrb state="searching" size={20} />` (`thinking-orbs`). The
+  reply CTA button and the product card's "Add to basket" button (`components/smartSearch/ResultCards.tsx`)
+  are wrapped in `<MetalFx preset="chromatic">` (`metal-fx`) for the liquid-metal ring.
 - **`searchEnabled` prop.** The widget is now **always mounted**; the prop only governs the AI half.
   The guided script is hand-written and has no service to be down, so the Smart Search kill-switch
   must not take it with it. With the prop false the input form is absent and the trigger opens the
@@ -2447,8 +2453,8 @@ to keep.
   now" is a real answer and is recorded as one — this is a gate, not a wall.
 - `OnboardingChecklist.tsx` — The persistent "Get Started" launcher
   (bottom-right, remaining-count badge) and its expanding panel — percent bar,
-  tickable sections, "Dismiss checklist". Reuses `.search-glow` (the Smart
-  Search rainbow, `app/globals.css`) as the attention cue while anything is
+  tickable sections, "Dismiss checklist". Reuses `<BorderBeam>` (the Smart
+  Search rainbow, `border-beam` package) as the attention cue while anything is
   left to do.
 - `TourSpotlight.tsx` — The overlay itself: four scrim rectangles frame the
   anchored element rather than a clip-path, so the real element stays fully
@@ -2472,8 +2478,7 @@ to keep.
 - `AdminCharts.tsx` — **Client.** The admin's data-visualisation kit, deliberately separate from
   `AdminUI.tsx` (that file is controls/layout; this is the other half). No charting library — the
   only genuine time series in the admin (the weekly audit reports' stats, and a day-bucketed count
-  of the audit log) is small enough that hand-rolled inline SVG covers it, matching the codebase's
-  existing taste for hand-rolled visuals (`.search-glow`'s conic-gradient border is hand-rolled too).
+  of the audit log) is small enough that hand-rolled inline SVG covers it.
   - `Sparkline` — a minimal SVG line, no axes or tooltip; the shape is the point, the number sits in
     text beside it.
   - `TrendChip` — "▲12%"/"▼4%", reusing `MetricCard`'s existing up/down/muted tone language.

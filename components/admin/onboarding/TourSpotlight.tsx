@@ -8,11 +8,12 @@
 // is that you press the real button yourself.
 //
 // The card borrows the Smart Search rainbow while the tour is moving between
-// pages. That conic border is the one piece of motion this site already uses to
+// pages. That BorderBeam is the one piece of motion this site already uses to
 // mean "working, hold on", so reusing it here costs nothing to learn.
 
 import { useEffect, useLayoutEffect, useState } from "react";
 import { createPortal } from "react-dom";
+import { BorderBeam } from "border-beam";
 import type { TourStep } from "@/lib/adminOnboarding";
 import { useHydrated } from "@/lib/useHydrated";
 
@@ -188,9 +189,10 @@ export default function TourSpotlight({
         aria-modal="false"
         aria-label={step.title}
       >
-        {/* .search-glow owns ::before and ::after, so the glass has to be an
-            inner layer — the same structure as the Smart Search pill. */}
-        <div className={`search-glow relative rounded-3xl ${searching ? "is-loading" : ""}`}>
+        {/* BorderBeam owns the loading glow on the wrapper it renders, so the
+            glass has to be an inner layer — the same structure as the Smart
+            Search pill. */}
+        <BorderBeam size="md" borderRadius={24} active={searching} className="relative rounded-3xl">
           <div className="glass admin-glass absolute inset-0 rounded-3xl" />
           <div className="relative p-5">
             <div className="mb-3 flex items-center justify-between gap-3">
@@ -243,7 +245,7 @@ export default function TourSpotlight({
               )}
             </div>
           </div>
-        </div>
+        </BorderBeam>
       </div>
     </>,
     document.body,

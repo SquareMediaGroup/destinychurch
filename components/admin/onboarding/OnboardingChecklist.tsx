@@ -8,11 +8,12 @@
 // it for good.
 //
 // The rainbow border runs while there's still something to do and stops when
-// there isn't — the same conic gradient the Smart Search pill uses when it's
-// thinking, which is the site's existing way of saying "look here".
+// there isn't — the same BorderBeam the Smart Search pill uses when it's
+// loading, which is the site's existing way of saying "look here".
 
 import { useState } from "react";
 import { createPortal } from "react-dom";
+import { BorderBeam } from "border-beam";
 import { progressFor } from "@/lib/adminOnboarding";
 import { useHydrated } from "@/lib/useHydrated";
 import { useOnboarding } from "@/lib/onboardingProgress";
@@ -32,7 +33,7 @@ export default function OnboardingChecklist() {
   return createPortal(
     <div className="fixed bottom-5 right-5 z-[150] flex flex-col items-end gap-3">
       {open && (
-        <div className="search-glow is-loading relative w-[min(calc(100vw-2.5rem),22rem)] rounded-3xl">
+        <BorderBeam size="md" borderRadius={24} className="relative w-[min(calc(100vw-2.5rem),22rem)] rounded-3xl">
           <div className="glass admin-glass absolute inset-0 rounded-3xl" />
           <div className="relative p-5">
             <div className="flex items-start justify-between gap-3">
@@ -99,10 +100,10 @@ export default function OnboardingChecklist() {
               Dismiss checklist
             </button>
           </div>
-        </div>
+        </BorderBeam>
       )}
 
-      <div className="search-glow is-loading relative rounded-full">
+      <BorderBeam size="md" borderRadius={9999} className="relative rounded-full">
         <div className="glass admin-glass glass-pill absolute inset-0 rounded-full" />
         <button
           type="button"
@@ -120,7 +121,7 @@ export default function OnboardingChecklist() {
             </span>
           )}
         </button>
-      </div>
+      </BorderBeam>
     </div>,
     document.body,
   );

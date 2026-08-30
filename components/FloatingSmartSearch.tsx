@@ -3,6 +3,9 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState, useRef, useEffect, useCallback } from "react";
+import { ThinkingOrb } from "thinking-orbs";
+import { BorderBeam } from "border-beam";
+import { MetalFx } from "metal-fx";
 import { useCookieConsent } from "@/lib/cookieConsent";
 import { cooldownAnswer, parseAnswer } from "@/lib/smartSearch";
 import {
@@ -765,16 +768,18 @@ export default function FloatingSmartSearch({
                                 )}
 
                                 {!msg.options?.length && msg.page && msg.ctaLabel && (
-                                  <Link
-                                    href={msg.page}
-                                    onClick={collapse}
-                                    className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-destiny-orange px-4 py-2 text-xs font-bold text-white transition hover:brightness-110"
-                                  >
-                                    {msg.ctaLabel}
-                                    <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                                      <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
-                                    </svg>
-                                  </Link>
+                                  <MetalFx preset="chromatic" className="mt-2 inline-flex">
+                                    <Link
+                                      href={msg.page}
+                                      onClick={collapse}
+                                      className="inline-flex items-center gap-1.5 rounded-full bg-destiny-orange px-4 py-2 text-xs font-bold text-white transition hover:brightness-110"
+                                    >
+                                      {msg.ctaLabel}
+                                      <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
+                                      </svg>
+                                    </Link>
+                                  </MetalFx>
                                 )}
                               </>
                             )}
@@ -794,11 +799,7 @@ export default function FloatingSmartSearch({
                             {toolStatus ? (
                               <span className="text-xs text-white/60">{toolStatus}</span>
                             ) : (
-                              <div className="flex gap-1">
-                                <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-white/40" style={{ animationDelay: "0ms" }} />
-                                <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-white/40" style={{ animationDelay: "150ms" }} />
-                                <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-white/40" style={{ animationDelay: "300ms" }} />
-                              </div>
+                              <ThinkingOrb state="searching" size={20} />
                             )}
                           </div>
                         </div>
@@ -813,16 +814,19 @@ export default function FloatingSmartSearch({
         )}
 
         {/* Morphing bar: circle -> teaser pill -> full pill */}
-        <div
-          className={`search-glow floating-search-morph relative h-14 rounded-full ${
+        <BorderBeam
+          size="md"
+          borderRadius={9999}
+          active={expanded && loading}
+          className={`floating-search-morph relative h-14 rounded-full ${
             expanded ? "is-expanded" : showTeaser ? "is-teasing" : ""
-          } ${expanded && loading ? "is-loading" : ""}`}
+          }`}
         >
-          {/* Glass material lives on an inner layer: .search-glow owns this
-              element's ::before/::after for the loading glow, so .glass (which
-              also uses both pseudos for rim + cursor bloom) must sit one level
-              down. It fills the pill exactly and contains the interactive
-              children so the bloom tracker's closest('.glass') resolves. */}
+          {/* Glass material lives on an inner layer: BorderBeam owns the loading
+              glow on the wrapper it renders, so .glass (which uses both pseudos
+              for rim + cursor bloom) must sit one level down. It fills the pill
+              exactly and contains the interactive children so the bloom
+              tracker's closest('.glass') resolves. */}
           <div className="glass glass-strong glass-refract absolute inset-0 rounded-full">
           {/* Collapsed: the resting trigger. One button, two faces — the search
               mark opens the AI bar, and every 8s it turns over to a sparkle and
@@ -895,7 +899,7 @@ export default function FloatingSmartSearch({
               {/* Clear / loading indicator */}
               {loading ? (
                 <div className="absolute right-12 top-1/2 z-20 -translate-y-1/2">
-                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-white/20 border-t-destiny-orange" />
+                  <ThinkingOrb state="searching" size={20} />
                 </div>
               ) : input ? (
                 <button
@@ -925,7 +929,7 @@ export default function FloatingSmartSearch({
             </div>
           </form>
           </div>{/* end .glass layer */}
-        </div>
+        </BorderBeam>
       </div>
     </div>
   );

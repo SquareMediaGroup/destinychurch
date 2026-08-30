@@ -8,7 +8,6 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { MetalFx } from "metal-fx";
 import { useToast } from "@/components/ToastProvider";
 import { useCart } from "@/lib/cart-store";
 import { formatPrice, sizeIndex, type CartItem } from "@/lib/shop";
@@ -304,19 +303,17 @@ function ProductResultCard({ product }: { product: ProductResult }) {
 
       {/* Add to basket */}
       <div className="p-3">
-        <MetalFx preset="chromatic" className="block" paused={!inStock}>
-          <button
-            type="button"
-            onClick={handleAdd}
-            disabled={!inStock}
-            className="inline-flex w-full items-center justify-center gap-1.5 rounded-full bg-destiny-orange px-4 py-2 text-xs font-bold text-white transition hover:brightness-110 disabled:cursor-not-allowed disabled:bg-white/15 disabled:text-white/40"
-          >
-            <span className="material-symbols-rounded text-base">
-              {added ? "check" : "shopping_bag"}
-            </span>
-            {inStock ? (added ? "Added to basket" : "Add to basket") : "Sold out"}
-          </button>
-        </MetalFx>
+        <button
+          type="button"
+          onClick={handleAdd}
+          disabled={!inStock}
+          className="inline-flex w-full items-center justify-center gap-1.5 rounded-full bg-destiny-orange px-4 py-2 text-xs font-bold text-white transition hover:brightness-110 disabled:cursor-not-allowed disabled:bg-white/15 disabled:text-white/40"
+        >
+          <span className="material-symbols-rounded text-base">
+            {added ? "check" : "shopping_bag"}
+          </span>
+          {inStock ? (added ? "Added to basket" : "Add to basket") : "Sold out"}
+        </button>
       </div>
     </div>
   );

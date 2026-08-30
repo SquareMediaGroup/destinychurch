@@ -2234,9 +2234,7 @@ its `welcome` mode, and the copy still lives in `lib/welcomeChat.ts`.
 - **Loading/thinking indicators.** The pill's rotating rainbow border while a request is in flight is
   `<BorderBeam active={expanded && loading}>` (`border-beam`), wrapping the `.glass` layer in place of
   the old hand-rolled `.search-glow` conic-gradient CSS. The "thinking" dots in the chat thread and the
-  input-field spinner are both `<ThinkingOrb state="searching" size={20} />` (`thinking-orbs`). The
-  reply CTA button and the product card's "Add to basket" button (`components/smartSearch/ResultCards.tsx`)
-  are wrapped in `<MetalFx preset="chromatic">` (`metal-fx`) for the liquid-metal ring.
+  input-field spinner are both `<ThinkingOrb state="searching" size={20} />` (`thinking-orbs`).
 - **`searchEnabled` prop.** The widget is now **always mounted**; the prop only governs the AI half.
   The guided script is hand-written and has no service to be down, so the Smart Search kill-switch
   must not take it with it. With the prop false the input form is absent and the trigger opens the

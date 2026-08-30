@@ -5,7 +5,6 @@ import { usePathname } from "next/navigation";
 import { useState, useRef, useEffect, useCallback } from "react";
 import { ThinkingOrb } from "thinking-orbs";
 import { BorderBeam } from "border-beam";
-import { MetalFx } from "metal-fx";
 import { useCookieConsent } from "@/lib/cookieConsent";
 import { cooldownAnswer, parseAnswer } from "@/lib/smartSearch";
 import {
@@ -768,18 +767,16 @@ export default function FloatingSmartSearch({
                                 )}
 
                                 {!msg.options?.length && msg.page && msg.ctaLabel && (
-                                  <MetalFx preset="chromatic" className="mt-2 inline-flex">
-                                    <Link
-                                      href={msg.page}
-                                      onClick={collapse}
-                                      className="inline-flex items-center gap-1.5 rounded-full bg-destiny-orange px-4 py-2 text-xs font-bold text-white transition hover:brightness-110"
-                                    >
-                                      {msg.ctaLabel}
-                                      <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                                        <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
-                                      </svg>
-                                    </Link>
-                                  </MetalFx>
+                                  <Link
+                                    href={msg.page}
+                                    onClick={collapse}
+                                    className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-destiny-orange px-4 py-2 text-xs font-bold text-white transition hover:brightness-110"
+                                  >
+                                    {msg.ctaLabel}
+                                    <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                                      <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
+                                    </svg>
+                                  </Link>
                                 )}
                               </>
                             )}

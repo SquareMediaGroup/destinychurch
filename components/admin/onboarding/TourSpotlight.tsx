@@ -192,7 +192,7 @@ export default function TourSpotlight({
         {/* BorderBeam owns the loading glow on the wrapper it renders, so the
             glass has to be an inner layer — the same structure as the Smart
             Search pill. */}
-        <BorderBeam size="md" borderRadius={24} active={searching} className="relative rounded-3xl">
+        <BorderBeam size="md" borderRadius={24} active={searching} strength={1} className="relative rounded-3xl">
           <div className="glass admin-glass absolute inset-0 rounded-3xl" />
           <div className="relative p-5">
             <div className="mb-3 flex items-center justify-between gap-3">

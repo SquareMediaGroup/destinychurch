@@ -818,6 +818,7 @@ export default function FloatingSmartSearch({
           size="md"
           borderRadius={9999}
           active={expanded && loading}
+          strength={1}
           className={`floating-search-morph relative h-14 rounded-full ${
             expanded ? "is-expanded" : showTeaser ? "is-teasing" : ""
           }`}

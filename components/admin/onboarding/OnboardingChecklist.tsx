@@ -33,7 +33,7 @@ export default function OnboardingChecklist() {
   return createPortal(
     <div className="fixed bottom-5 right-5 z-[150] flex flex-col items-end gap-3">
       {open && (
-        <BorderBeam size="md" borderRadius={24} strength={1} className="relative w-[min(calc(100vw-2.5rem),22rem)] rounded-3xl">
+        <BorderBeam size="pulse-inner" borderRadius={24} strength={1} className="relative w-[min(calc(100vw-2.5rem),22rem)] rounded-3xl">
           <div className="glass admin-glass absolute inset-0 rounded-3xl" />
           <div className="relative p-5">
             <div className="flex items-start justify-between gap-3">
@@ -103,7 +103,7 @@ export default function OnboardingChecklist() {
         </BorderBeam>
       )}
 
-      <BorderBeam size="md" borderRadius={9999} strength={1} className="relative rounded-full">
+      <BorderBeam size="pulse-inner" borderRadius={9999} strength={1} className="relative rounded-full">
         <div className="glass admin-glass glass-pill absolute inset-0 rounded-full" />
         <button
           type="button"

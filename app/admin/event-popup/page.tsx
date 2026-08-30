@@ -107,7 +107,7 @@ export default function EventPopupPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-24">
-        <span className="material-symbols-rounded animate-spin text-3xl text-destiny-grey/20">
+        <span className="material-symbols-rounded animate-spin text-3xl text-destiny-grey/20 dark:text-white/20">
           progress_activity
         </span>
       </div>
@@ -117,8 +117,8 @@ export default function EventPopupPage() {
   return (
     <div className="mx-auto max-w-2xl px-6 py-10">
       <div className="mb-8">
-        <h1 className="text-2xl font-black text-destiny-grey">Event popup</h1>
-        <p className="mt-1 text-sm text-destiny-grey/50">
+        <h1 className="text-2xl font-black text-destiny-grey dark:text-white">Event popup</h1>
+        <p className="mt-1 text-sm text-destiny-grey/50 dark:text-white/50">
           A popup advertising the featured event. It shows once per visit on
           every page except What&apos;s On and the event&apos;s own page, and it
           replaces the general{" "}
@@ -129,16 +129,16 @@ export default function EventPopupPage() {
         </p>
       </div>
 
-      <div className="mb-6 rounded-2xl border border-black/8 bg-[#f5f7fa] px-5 py-4">
-        <p className="text-xs font-bold uppercase tracking-wider text-destiny-grey/40">
+      <div className="mb-6 rounded-2xl border border-black/8 bg-[#f5f7fa] px-5 py-4 dark:border-white/8 dark:bg-destiny-grey-800">
+        <p className="text-xs font-bold uppercase tracking-wider text-destiny-grey/40 dark:text-white/40">
           Currently featured
         </p>
         {featuredActive && eventName ? (
-          <p className="mt-1 text-sm font-black text-destiny-grey">
+          <p className="mt-1 text-sm font-black text-destiny-grey dark:text-white">
             {heroHeadline || eventName}
           </p>
         ) : (
-          <p className="mt-1 text-sm text-destiny-grey/60">
+          <p className="mt-1 text-sm text-destiny-grey/60 dark:text-white/60">
             Nothing is being promoted yet. The popup advertises whichever event
             is featured, so{" "}
             <Link
@@ -162,10 +162,10 @@ export default function EventPopupPage() {
             className="mt-0.5 h-4 w-4 accent-[#f58021] disabled:opacity-40"
           />
           <span>
-            <span className="block text-sm font-bold text-destiny-grey">
+            <span className="block text-sm font-bold text-destiny-grey dark:text-white">
               Show the popup
             </span>
-            <span className="block text-xs text-destiny-grey/50">
+            <span className="block text-xs text-destiny-grey/50 dark:text-white/50">
               Shows once per visit. Editing anything here shows it again to
               everyone.
             </span>
@@ -175,7 +175,7 @@ export default function EventPopupPage() {
         <div>
           <label
             htmlFor="popup-title"
-            className="block text-xs font-bold text-destiny-grey/60"
+            className="block text-xs font-bold text-destiny-grey/60 dark:text-white/60"
           >
             Title
           </label>
@@ -185,14 +185,14 @@ export default function EventPopupPage() {
             maxLength={120}
             onChange={(e) => setTitle(e.target.value)}
             placeholder={heroHeadline || eventName || "Featured event headline"}
-            className="mt-1 w-full rounded-lg border border-black/10 px-3 py-2 text-sm outline-none focus:border-destiny-orange"
+            className="mt-1 w-full rounded-lg border border-black/10 px-3 py-2 text-sm text-destiny-grey outline-none focus:border-destiny-orange dark:border-white/10 dark:text-white"
           />
         </div>
 
         <div>
           <label
             htmlFor="popup-body"
-            className="block text-xs font-bold text-destiny-grey/60"
+            className="block text-xs font-bold text-destiny-grey/60 dark:text-white/60"
           >
             Message
           </label>
@@ -208,7 +208,7 @@ export default function EventPopupPage() {
         </div>
 
         <div>
-          <span className="block text-xs font-bold text-destiny-grey/60">
+          <span className="block text-xs font-bold text-destiny-grey/60 dark:text-white/60">
             Image
           </span>
           {imageUrl ? (
@@ -225,13 +225,13 @@ export default function EventPopupPage() {
                   setImageUrl(null);
                   setImagePath(null);
                 }}
-                className="mt-2 text-xs font-bold text-red-600"
+                className="mt-2 text-xs font-bold text-red-600 dark:text-red-400"
               >
                 Remove image
               </button>
             </div>
           ) : (
-            <p className="mt-1.5 text-xs text-destiny-grey/40">
+            <p className="mt-1.5 text-xs text-destiny-grey/40 dark:text-white/40">
               Using the featured event&apos;s image.
             </p>
           )}
@@ -243,7 +243,7 @@ export default function EventPopupPage() {
               const file = e.target.files?.[0];
               if (file) handleUpload(file);
             }}
-            className="mt-2 block w-full text-xs text-destiny-grey/60 file:mr-3 file:rounded-lg file:border-0 file:bg-[#f5f7fa] file:px-3 file:py-1.5 file:text-xs file:font-bold file:text-destiny-grey"
+            className="mt-2 block w-full text-xs text-destiny-grey/60 dark:text-white/60 file:mr-3 file:rounded-lg file:border-0 file:bg-[#f5f7fa] file:px-3 file:py-1.5 file:text-xs file:font-bold file:text-destiny-grey dark:file:bg-white/10 dark:file:text-white"
           />
         </div>
 
@@ -251,7 +251,7 @@ export default function EventPopupPage() {
           <div>
             <label
               htmlFor="popup-cta-text"
-              className="block text-xs font-bold text-destiny-grey/60"
+              className="block text-xs font-bold text-destiny-grey/60 dark:text-white/60"
             >
               Button text
             </label>
@@ -260,13 +260,13 @@ export default function EventPopupPage() {
               value={ctaText}
               onChange={(e) => setCtaText(e.target.value)}
               placeholder="Sign up"
-              className="mt-1 w-full rounded-lg border border-black/10 px-3 py-2 text-sm outline-none focus:border-destiny-orange"
+              className="mt-1 w-full rounded-lg border border-black/10 px-3 py-2 text-sm text-destiny-grey outline-none focus:border-destiny-orange dark:border-white/10 dark:text-white"
             />
           </div>
           <div>
             <label
               htmlFor="popup-cta-link"
-              className="block text-xs font-bold text-destiny-grey/60"
+              className="block text-xs font-bold text-destiny-grey/60 dark:text-white/60"
             >
               Button link
             </label>
@@ -275,13 +275,13 @@ export default function EventPopupPage() {
               value={ctaLink}
               onChange={(e) => setCtaLink(e.target.value)}
               placeholder="Featured event's link"
-              className="mt-1 w-full rounded-lg border border-black/10 px-3 py-2 text-sm outline-none focus:border-destiny-orange"
+              className="mt-1 w-full rounded-lg border border-black/10 px-3 py-2 text-sm text-destiny-grey outline-none focus:border-destiny-orange dark:border-white/10 dark:text-white"
             />
           </div>
         </div>
 
         {error && (
-          <p className="rounded-xl bg-red-50 px-4 py-3 text-sm text-red-600">
+          <p className="rounded-xl bg-red-50 px-4 py-3 text-sm text-red-600 dark:bg-red-500/10 dark:text-red-400">
             {error}
           </p>
         )}

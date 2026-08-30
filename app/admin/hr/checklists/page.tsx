@@ -124,7 +124,7 @@ export default function ChecklistTemplatesPage() {
 
           <div className="overflow-x-auto rounded-3xl border border-black/5 bg-white shadow-sm dark:border-white/8 dark:bg-destiny-grey-800">
             <table className="w-full text-left text-sm">
-              <thead className="border-b border-black/5 text-xs font-bold uppercase tracking-wider text-destiny-grey/40">
+              <thead className="border-b border-black/5 text-xs font-bold uppercase tracking-wider text-destiny-grey/40 dark:text-white/40">
                 <tr>
                   <th className="px-5 py-3.5">Name</th>
                   <th className="px-5 py-3.5">Kind</th>
@@ -135,27 +135,27 @@ export default function ChecklistTemplatesPage() {
               <tbody className="divide-y divide-black/5">
                 {list.visible.map((t) => (
                   <tr key={t.id} className="transition hover:bg-[#f5f7fa] dark:hover:bg-white/10">
-                    <td className="px-5 py-3.5 font-bold text-destiny-grey">{t.name}</td>
+                    <td className="px-5 py-3.5 font-bold text-destiny-grey dark:text-white">{t.name}</td>
                     <td className="px-5 py-3.5">
                       <Badge tone={t.kind === "onboarding" ? "green" : "grey"}>
                         {CHECKLIST_KIND_LABELS[t.kind]}
                       </Badge>
                     </td>
-                    <td className="hidden px-5 py-3.5 text-destiny-grey/70 sm:table-cell">
+                    <td className="hidden px-5 py-3.5 text-destiny-grey/70 dark:text-white/70 sm:table-cell">
                       {t.items?.length ?? 0}
                     </td>
                     <td className="px-5 py-3.5">
                       <div className="flex items-center justify-end gap-3">
                         <button
                           onClick={() => setEditing(t)}
-                          className="text-destiny-grey/40 transition hover:text-destiny-orange"
+                          className="text-destiny-grey/40 dark:text-white/40 transition hover:text-destiny-orange"
                           aria-label={`Edit ${t.name}`}
                         >
                           <span className="material-symbols-rounded text-xl">edit</span>
                         </button>
                         <button
                           onClick={() => remove(t)}
-                          className="text-destiny-grey/40 transition hover:text-destiny-red"
+                          className="text-destiny-grey/40 dark:text-white/40 transition hover:text-destiny-red"
                           aria-label={`Delete ${t.name}`}
                         >
                           <span className="material-symbols-rounded text-xl">delete</span>

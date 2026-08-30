@@ -102,12 +102,12 @@ export default function ChurchSuiteEventFill({
           Fill from ChurchSuite event
         </button>
         {filledFrom && !open && (
-          <span className="inline-flex items-center gap-1.5 truncate text-[11px] text-destiny-grey/50">
+          <span className="inline-flex items-center gap-1.5 truncate text-[11px] text-destiny-grey/50 dark:text-white/50">
             Filled from &quot;{filledFrom}&quot;
             <button
               type="button"
               onClick={() => setFilledFrom(null)}
-              className="text-destiny-grey/30 hover:text-destiny-grey/60"
+              className="text-destiny-grey/30 dark:text-white/30 hover:text-destiny-grey/60 dark:hover:text-white/60"
               aria-label="Dismiss"
             >
               <span className="material-symbols-rounded text-sm leading-none">
@@ -130,12 +130,12 @@ export default function ChurchSuiteEventFill({
 
           {loading ? (
             <div className="flex items-center justify-center py-6">
-              <span className="material-symbols-rounded animate-spin text-xl text-destiny-grey/20">
+              <span className="material-symbols-rounded animate-spin text-xl text-destiny-grey/20 dark:text-white/20">
                 progress_activity
               </span>
             </div>
           ) : visible.length === 0 ? (
-            <p className="rounded-lg bg-white px-3 py-4 text-center text-xs text-destiny-grey/50 dark:bg-destiny-grey-800">
+            <p className="rounded-lg bg-white px-3 py-4 text-center text-xs text-destiny-grey/50 dark:text-white/50 dark:bg-destiny-grey-800">
               {events.length === 0
                 ? "No upcoming events in the ChurchSuite feed."
                 : "No events match that filter."}
@@ -151,21 +151,21 @@ export default function ChurchSuiteEventFill({
                 >
                   <span className="min-w-0 flex-1">
                     <span className="flex items-center gap-2">
-                      <span className="truncate text-sm font-bold text-destiny-grey">
+                      <span className="truncate text-sm font-bold text-destiny-grey dark:text-white">
                         {event.name}
                       </span>
                       {event.sessionCount > 1 && (
-                        <span className="shrink-0 rounded-full bg-destiny-grey/8 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-destiny-grey/60">
+                        <span className="shrink-0 rounded-full bg-destiny-grey/8 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-destiny-grey/60 dark:text-white/60">
                           {event.sessionCount} sessions
                         </span>
                       )}
                     </span>
-                    <span className="block truncate text-xs text-destiny-grey/50">
+                    <span className="block truncate text-xs text-destiny-grey/50 dark:text-white/50">
                       {formatDate(event.start)}
                       {event.location ? ` · ${event.location}` : ""}
                     </span>
                   </span>
-                  <span className="material-symbols-rounded shrink-0 text-base text-destiny-grey/20">
+                  <span className="material-symbols-rounded shrink-0 text-base text-destiny-grey/20 dark:text-white/20">
                     chevron_right
                   </span>
                 </button>

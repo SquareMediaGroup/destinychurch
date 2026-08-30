@@ -178,31 +178,31 @@ export default function ReviewsPage() {
                     <div className="flex flex-wrap items-start justify-between gap-3">
                       <div>
                         <div className="flex items-center gap-2">
-                          <p className="font-bold text-destiny-grey">
+                          <p className="font-bold text-destiny-grey dark:text-white">
                             {r.hr_staff ? fullName(r.hr_staff) : "Unknown"}
                           </p>
                           <Badge tone="blue">{REVIEW_TYPE_LABELS[r.type]}</Badge>
                         </div>
-                        <p className="mt-0.5 text-xs text-destiny-grey/45">
+                        <p className="mt-0.5 text-xs text-destiny-grey/45 dark:text-white/45">
                           {formatDate(r.review_date)}
                           {r.reviewer ? ` · with ${r.reviewer}` : ""}
                         </p>
                       </div>
                       <button
                         onClick={() => remove(r.id)}
-                        className="text-destiny-grey/40 transition hover:text-destiny-red"
+                        className="text-destiny-grey/40 dark:text-white/40 transition hover:text-destiny-red"
                         aria-label="Delete review"
                       >
                         <span className="material-symbols-rounded text-xl">delete</span>
                       </button>
                     </div>
                     {r.summary && (
-                      <p className="mt-3 whitespace-pre-wrap text-sm text-destiny-grey/70">
+                      <p className="mt-3 whitespace-pre-wrap text-sm text-destiny-grey/70 dark:text-white/70">
                         {r.summary}
                       </p>
                     )}
                     {r.next_review_date && (
-                      <p className="mt-3 text-xs font-bold text-destiny-grey/50">
+                      <p className="mt-3 text-xs font-bold text-destiny-grey/50 dark:text-white/50">
                         Next review:{" "}
                         <span className={due ? "text-destiny-orange" : ""}>
                           {formatDate(r.next_review_date)}

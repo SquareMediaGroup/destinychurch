@@ -111,7 +111,7 @@ function ToolbarButton({
       className={`flex h-9 min-w-9 shrink-0 items-center justify-center rounded-lg px-2 text-sm font-bold transition lg:h-8 lg:min-w-8 ${
         active
           ? "bg-destiny-orange/15 text-destiny-orange"
-          : "text-destiny-grey/60 hover:bg-black/5"
+          : "text-destiny-grey/60 dark:text-white/60 hover:bg-black/5 dark:hover:bg-white/10"
       }`}
     >
       <span className="material-symbols-rounded text-[20px]">{icon}</span>
@@ -128,7 +128,7 @@ function Toolbar({
   enableImages?: boolean;
   advanced?: boolean;
 }) {
-  const div = "mx-1 h-5 w-px shrink-0 bg-black/10";
+  const div = "mx-1 h-5 w-px shrink-0 bg-black/10 dark:bg-white/10";
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const { prompt } = useDialog();
@@ -192,7 +192,7 @@ function Toolbar({
       sideways instead, so the first controls are always in the same place and
       the rest are a swipe away.
     */
-    <div className="flex flex-nowrap items-center gap-0.5 overflow-x-auto overscroll-x-contain border-b border-black/10 bg-[#f9fafb] px-2 py-1.5 [scrollbar-width:none] lg:flex-wrap lg:overflow-x-visible">
+    <div className="flex flex-nowrap items-center gap-0.5 overflow-x-auto overscroll-x-contain border-b border-black/10 bg-[#f9fafb] px-2 py-1.5 dark:border-white/10 dark:bg-destiny-grey-900/60 [scrollbar-width:none] lg:flex-wrap lg:overflow-x-visible">
       <ToolbarButton
         label="Bold"
         icon="format_bold"
@@ -423,7 +423,7 @@ export default function RichTextEditor({
     content: value || "",
     editorProps: {
       attributes: {
-        class: `rte-content overflow-auto px-4 py-3 text-sm text-destiny-grey/80 focus:outline-none ${
+        class: `rte-content overflow-auto px-4 py-3 text-sm text-destiny-grey/80 dark:text-white/80 focus:outline-none ${
           fill ? "min-h-full flex-1" : "min-h-[220px] max-h-[420px]"
         }${
           // Room at the end of the document for the mobile block toolbar, which

@@ -22,18 +22,18 @@ export default function AdminCachePage() {
     <div className="mx-auto max-w-6xl px-6 py-10">
       <div className="max-w-2xl">
         <div className="mb-6">
-          <h1 className="text-2xl font-black text-destiny-grey">Clear Cache</h1>
-          <p className="mt-1 text-sm text-destiny-grey/50">
+          <h1 className="text-2xl font-black text-destiny-grey dark:text-white">Clear Cache</h1>
+          <p className="mt-1 text-sm text-destiny-grey/50 dark:text-white/50">
             Forces the site to re-fetch fresh data from ChurchSuite and rebuild cached pages.
             Use this after adding or updating events if they aren't showing up.
           </p>
         </div>
 
         <div className="rounded-2xl border border-black/5 bg-white dark:border-white/8 dark:bg-destiny-grey-800 p-6 shadow-sm">
-          <p className="mb-4 text-xs font-bold uppercase tracking-wider text-destiny-grey/40">Pages that will be refreshed</p>
+          <p className="mb-4 text-xs font-bold uppercase tracking-wider text-destiny-grey/40 dark:text-white/40">Pages that will be refreshed</p>
           <ul className="mb-6 flex flex-col gap-2">
             {PAGES.map((p) => (
-              <li key={p} className="flex items-center gap-3 text-sm text-destiny-grey/70">
+              <li key={p} className="flex items-center gap-3 text-sm text-destiny-grey/70 dark:text-white/70">
                 <span className="material-symbols-rounded text-base text-destiny-orange/60">arrow_right</span>
                 <code className="font-mono">{p}</code>
               </li>

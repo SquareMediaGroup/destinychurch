@@ -102,8 +102,8 @@ export default function AdminShopHeroPage() {
     <div className="mx-auto max-w-4xl px-6 py-10">
       <div className="mb-6 flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-black text-destiny-grey">Shop Hero</h1>
-          <p className="mt-1 text-sm text-destiny-grey/50">
+          <h1 className="text-2xl font-black text-destiny-grey dark:text-white">Shop Hero</h1>
+          <p className="mt-1 text-sm text-destiny-grey/50 dark:text-white/50">
             Slides shown at the top of the shop. Two or more active slides rotate
             automatically. With none active, the shop shows its default heading.
           </p>
@@ -126,19 +126,19 @@ export default function AdminShopHeroPage() {
 
       {loading ? (
         <div className="flex items-center justify-center py-16">
-          <span className="material-symbols-rounded animate-spin text-3xl text-destiny-grey/20">
+          <span className="material-symbols-rounded animate-spin text-3xl text-destiny-grey/20 dark:text-white/20">
             progress_activity
           </span>
         </div>
       ) : slides.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-black/15 bg-white px-6 py-14 text-center dark:border-white/15 dark:bg-destiny-grey-800">
-          <span className="material-symbols-rounded text-4xl text-destiny-grey/25">
+          <span className="material-symbols-rounded text-4xl text-destiny-grey/25 dark:text-white/25">
             wallpaper
           </span>
-          <p className="mt-3 text-sm font-bold text-destiny-grey">
+          <p className="mt-3 text-sm font-bold text-destiny-grey dark:text-white">
             No slides yet
           </p>
-          <p className="mt-1 text-xs text-destiny-grey/50">
+          <p className="mt-1 text-xs text-destiny-grey/50 dark:text-white/50">
             Add a slide to replace the default shop heading with a hero.
           </p>
         </div>
@@ -231,7 +231,7 @@ function SlideCard({
     <div className="rounded-2xl border border-black/5 bg-white dark:border-white/8 dark:bg-destiny-grey-800 p-6 shadow-sm">
       <div className="mb-4 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <span className="text-xs font-bold uppercase tracking-widest text-destiny-grey/40">
+          <span className="text-xs font-bold uppercase tracking-widest text-destiny-grey/40 dark:text-white/40">
             Slide {index + 1}
           </span>
           <button
@@ -248,7 +248,7 @@ function SlideCard({
               }`}
             />
           </button>
-          <span className="text-xs text-destiny-grey/50">
+          <span className="text-xs text-destiny-grey/50 dark:text-white/50">
             {slide.active ? "Active" : "Hidden"}
           </span>
         </div>
@@ -257,7 +257,7 @@ function SlideCard({
             type="button"
             onClick={() => onMove(-1)}
             disabled={index === 0}
-            className="flex h-8 w-8 items-center justify-center rounded-lg text-destiny-grey/50 transition hover:bg-[#f5f7fa] dark:hover:bg-white/10 disabled:opacity-30"
+            className="flex h-8 w-8 items-center justify-center rounded-lg text-destiny-grey/50 dark:text-white/50 transition hover:bg-[#f5f7fa] dark:hover:bg-white/10 disabled:opacity-30"
             aria-label="Move up"
           >
             <span className="material-symbols-rounded text-lg">arrow_upward</span>
@@ -266,7 +266,7 @@ function SlideCard({
             type="button"
             onClick={() => onMove(1)}
             disabled={index === total - 1}
-            className="flex h-8 w-8 items-center justify-center rounded-lg text-destiny-grey/50 transition hover:bg-[#f5f7fa] dark:hover:bg-white/10 disabled:opacity-30"
+            className="flex h-8 w-8 items-center justify-center rounded-lg text-destiny-grey/50 dark:text-white/50 transition hover:bg-[#f5f7fa] dark:hover:bg-white/10 disabled:opacity-30"
             aria-label="Move down"
           >
             <span className="material-symbols-rounded text-lg">arrow_downward</span>
@@ -284,7 +284,7 @@ function SlideCard({
 
       {/* Image */}
       <div className="mb-5">
-        <label className="mb-1.5 block text-xs font-bold text-destiny-grey/60">
+        <label className="mb-1.5 block text-xs font-bold text-destiny-grey/60 dark:text-white/60">
           Background image <span className="font-normal">(up to 10 MB)</span>
         </label>
         {slide.image_url ? (
@@ -323,13 +323,13 @@ function SlideCard({
               disabled={uploading}
               className="hidden"
             />
-            <span className="material-symbols-rounded text-3xl text-destiny-grey/40">
+            <span className="material-symbols-rounded text-3xl text-destiny-grey/40 dark:text-white/40">
               {uploading ? "progress_activity" : "add_photo_alternate"}
             </span>
-            <p className="text-sm font-bold text-destiny-grey">
+            <p className="text-sm font-bold text-destiny-grey dark:text-white">
               {uploading ? "Uploading…" : "Click to upload"}
             </p>
-            <p className="text-xs text-destiny-grey/50">
+            <p className="text-xs text-destiny-grey/50 dark:text-white/50">
               A wide landscape image works best
             </p>
           </label>
@@ -338,7 +338,7 @@ function SlideCard({
 
       {/* Heading */}
       <div className="mb-4">
-        <label className="mb-1.5 block text-xs font-bold text-destiny-grey/60">
+        <label className="mb-1.5 block text-xs font-bold text-destiny-grey/60 dark:text-white/60">
           Heading
         </label>
         <input
@@ -346,13 +346,13 @@ function SlideCard({
           value={slide.heading ?? ""}
           onChange={(e) => onChange({ heading: e.target.value })}
           placeholder="New drop is here"
-          className="w-full rounded-xl border border-black/10 px-4 py-2.5 text-sm text-destiny-grey placeholder:text-destiny-grey/30 focus:border-destiny-orange/50 focus:outline-none focus:ring-2 focus:ring-destiny-orange/20"
+          className="w-full rounded-xl border border-black/10 px-4 py-2.5 text-sm text-destiny-grey dark:text-white placeholder:text-destiny-grey/30 dark:placeholder:text-white/30 focus:border-destiny-orange/50 focus:outline-none focus:ring-2 focus:ring-destiny-orange/20"
         />
       </div>
 
       {/* Subheading */}
       <div className="mb-4">
-        <label className="mb-1.5 block text-xs font-bold text-destiny-grey/60">
+        <label className="mb-1.5 block text-xs font-bold text-destiny-grey/60 dark:text-white/60">
           Subheading <span className="font-normal">(optional)</span>
         </label>
         <textarea
@@ -360,14 +360,14 @@ function SlideCard({
           onChange={(e) => onChange({ subheading: e.target.value })}
           rows={2}
           placeholder="Wear the vision — limited run, collect at church."
-          className="w-full resize-none rounded-xl border border-black/10 px-4 py-2.5 text-sm text-destiny-grey placeholder:text-destiny-grey/30 focus:border-destiny-orange/50 focus:outline-none focus:ring-2 focus:ring-destiny-orange/20"
+          className="w-full resize-none rounded-xl border border-black/10 px-4 py-2.5 text-sm text-destiny-grey dark:text-white placeholder:text-destiny-grey/30 dark:placeholder:text-white/30 focus:border-destiny-orange/50 focus:outline-none focus:ring-2 focus:ring-destiny-orange/20"
         />
       </div>
 
       {/* CTA */}
       <div className="grid gap-4 sm:grid-cols-2">
         <div>
-          <label className="mb-1.5 block text-xs font-bold text-destiny-grey/60">
+          <label className="mb-1.5 block text-xs font-bold text-destiny-grey/60 dark:text-white/60">
             Button text <span className="font-normal">(optional)</span>
           </label>
           <input
@@ -375,11 +375,11 @@ function SlideCard({
             value={slide.cta_text ?? ""}
             onChange={(e) => onChange({ cta_text: e.target.value })}
             placeholder="Shop the drop"
-            className="w-full rounded-xl border border-black/10 px-4 py-2.5 text-sm text-destiny-grey placeholder:text-destiny-grey/30 focus:border-destiny-orange/50 focus:outline-none focus:ring-2 focus:ring-destiny-orange/20"
+            className="w-full rounded-xl border border-black/10 px-4 py-2.5 text-sm text-destiny-grey dark:text-white placeholder:text-destiny-grey/30 dark:placeholder:text-white/30 focus:border-destiny-orange/50 focus:outline-none focus:ring-2 focus:ring-destiny-orange/20"
           />
         </div>
         <div>
-          <label className="mb-1.5 block text-xs font-bold text-destiny-grey/60">
+          <label className="mb-1.5 block text-xs font-bold text-destiny-grey/60 dark:text-white/60">
             Button link <span className="font-normal">(optional)</span>
           </label>
           <input
@@ -387,7 +387,7 @@ function SlideCard({
             value={slide.cta_link ?? ""}
             onChange={(e) => onChange({ cta_link: e.target.value })}
             placeholder="/shop/some-product"
-            className="w-full rounded-xl border border-black/10 px-4 py-2.5 text-sm text-destiny-grey placeholder:text-destiny-grey/30 focus:border-destiny-orange/50 focus:outline-none focus:ring-2 focus:ring-destiny-orange/20"
+            className="w-full rounded-xl border border-black/10 px-4 py-2.5 text-sm text-destiny-grey dark:text-white placeholder:text-destiny-grey/30 dark:placeholder:text-white/30 focus:border-destiny-orange/50 focus:outline-none focus:ring-2 focus:ring-destiny-orange/20"
           />
         </div>
       </div>

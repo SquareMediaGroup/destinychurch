@@ -93,8 +93,8 @@ function titleFromEvent(name: string): string {
 }
 
 const inputClass =
-  "w-full rounded-xl border border-black/10 px-4 py-2.5 text-sm text-destiny-grey placeholder:text-destiny-grey/30 focus:border-destiny-orange/50 focus:outline-none focus:ring-2 focus:ring-destiny-orange/20";
-const labelClass = "mb-1.5 block text-xs font-bold text-destiny-grey/60";
+  "w-full rounded-xl border border-black/10 px-4 py-2.5 text-sm text-destiny-grey dark:text-white placeholder:text-destiny-grey/30 dark:placeholder:text-white/30 focus:border-destiny-orange/50 focus:outline-none focus:ring-2 focus:ring-destiny-orange/20";
+const labelClass = "mb-1.5 block text-xs font-bold text-destiny-grey/60 dark:text-white/60";
 
 /** A starting set of Material Symbols that suit the kinds of tile this page has. */
 const ICON_CHOICES = [
@@ -314,8 +314,8 @@ export default function AdminNfcPage() {
       <div className="max-w-3xl">
         <div className="mb-6 flex items-start justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-black text-destiny-grey">NFC Page</h1>
-            <p className="mt-1 text-sm text-destiny-grey/50">
+            <h1 className="text-2xl font-black text-destiny-grey dark:text-white">NFC Page</h1>
+            <p className="mt-1 text-sm text-destiny-grey/50 dark:text-white/50">
               The tiles people see at destinytees.uk/nfc when they tap the seat in
               front of them.
             </p>
@@ -341,7 +341,7 @@ export default function AdminNfcPage() {
 
         {/* The two fixtures */}
         <div className="mb-6 rounded-2xl border border-black/5 bg-white dark:border-white/8 dark:bg-destiny-grey-800 p-5 shadow-sm">
-          <p className="mb-3 text-[10px] font-bold uppercase tracking-widest text-destiny-grey/40">
+          <p className="mb-3 text-[10px] font-bold uppercase tracking-widest text-destiny-grey/40 dark:text-white/40">
             Always shown
           </p>
           <ul className="flex flex-col gap-2">
@@ -350,12 +350,12 @@ export default function AdminNfcPage() {
                 <span className="material-symbols-rounded text-xl text-destiny-orange">
                   {t.icon}
                 </span>
-                <span className="font-bold text-destiny-grey">{t.title}</span>
-                <span className="text-destiny-grey/45">{t.subtitle}</span>
+                <span className="font-bold text-destiny-grey dark:text-white">{t.title}</span>
+                <span className="text-destiny-grey/45 dark:text-white/45">{t.subtitle}</span>
               </li>
             ))}
           </ul>
-          <p className="mt-3 text-xs text-destiny-grey/45">
+          <p className="mt-3 text-xs text-destiny-grey/45 dark:text-white/45">
             These two are built into the page so they can never go missing. Ask a
             developer if the forms behind them need changing.
           </p>
@@ -363,14 +363,14 @@ export default function AdminNfcPage() {
 
         {loading ? (
           <div className="flex items-center justify-center py-16">
-            <span className="material-symbols-rounded animate-spin text-3xl text-destiny-grey/20">
+            <span className="material-symbols-rounded animate-spin text-3xl text-destiny-grey/20 dark:text-white/20">
               progress_activity
             </span>
           </div>
         ) : tiles.length === 0 ? (
-          <div className="rounded-2xl border-2 border-dashed border-black/10 px-6 py-12 text-center">
-            <p className="text-sm font-bold text-destiny-grey">No extra tiles yet</p>
-            <p className="mt-1 text-xs text-destiny-grey/50">
+          <div className="rounded-2xl border-2 border-dashed border-black/10 px-6 py-12 text-center dark:border-white/10">
+            <p className="text-sm font-bold text-destiny-grey dark:text-white">No extra tiles yet</p>
+            <p className="mt-1 text-xs text-destiny-grey/50 dark:text-white/50">
               Add one for Alpha, a course, or any ChurchSuite form you want on the
               page.
             </p>
@@ -389,15 +389,15 @@ export default function AdminNfcPage() {
                 </span>
 
                 <div className="min-w-0 flex-1">
-                  <p className="flex items-center gap-2 text-sm font-bold text-destiny-grey">
+                  <p className="flex items-center gap-2 text-sm font-bold text-destiny-grey dark:text-white">
                     <span className="truncate">{tile.title}</span>
                     {hasEnded(tile) && (
-                      <span className="shrink-0 rounded-full bg-black/5 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-destiny-grey/50">
+                      <span className="shrink-0 rounded-full bg-black/5 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-destiny-grey/50 dark:text-white/50">
                         Ended
                       </span>
                     )}
                   </p>
-                  <p className="truncate text-xs text-destiny-grey/50">
+                  <p className="truncate text-xs text-destiny-grey/50 dark:text-white/50">
                     {tile.mode === "event"
                       ? hasEnded(tile)
                         ? `Not showing on /nfc — "${tile.event_name}" has finished. Pick a new event or delete this tile.`
@@ -418,7 +418,7 @@ export default function AdminNfcPage() {
                     onClick={() => move(i, -1)}
                     disabled={i === 0}
                     aria-label="Move up"
-                    className="flex h-8 w-8 items-center justify-center rounded-lg text-destiny-grey/40 transition hover:bg-gray-100 hover:text-destiny-grey dark:hover:bg-white/10 dark:hover:text-white disabled:opacity-30 disabled:hover:bg-transparent"
+                    className="flex h-8 w-8 items-center justify-center rounded-lg text-destiny-grey/40 dark:text-white/40 transition hover:bg-gray-100 hover:text-destiny-grey dark:hover:bg-white/10 dark:hover:text-white disabled:opacity-30 disabled:hover:bg-transparent"
                   >
                     <span className="material-symbols-rounded text-lg">
                       arrow_upward
@@ -429,7 +429,7 @@ export default function AdminNfcPage() {
                     onClick={() => move(i, 1)}
                     disabled={i === tiles.length - 1}
                     aria-label="Move down"
-                    className="flex h-8 w-8 items-center justify-center rounded-lg text-destiny-grey/40 transition hover:bg-gray-100 hover:text-destiny-grey dark:hover:bg-white/10 dark:hover:text-white disabled:opacity-30 disabled:hover:bg-transparent"
+                    className="flex h-8 w-8 items-center justify-center rounded-lg text-destiny-grey/40 dark:text-white/40 transition hover:bg-gray-100 hover:text-destiny-grey dark:hover:bg-white/10 dark:hover:text-white disabled:opacity-30 disabled:hover:bg-transparent"
                   >
                     <span className="material-symbols-rounded text-lg">
                       arrow_downward
@@ -456,7 +456,7 @@ export default function AdminNfcPage() {
                       setEditing(tile);
                     }}
                     aria-label="Edit"
-                    className="flex h-8 w-8 items-center justify-center rounded-lg text-destiny-grey/40 transition hover:bg-gray-100 hover:text-destiny-grey dark:hover:bg-white/10 dark:hover:text-white"
+                    className="flex h-8 w-8 items-center justify-center rounded-lg text-destiny-grey/40 dark:text-white/40 transition hover:bg-gray-100 hover:text-destiny-grey dark:hover:bg-white/10 dark:hover:text-white"
                   >
                     <span className="material-symbols-rounded text-lg">edit</span>
                   </button>
@@ -464,7 +464,7 @@ export default function AdminNfcPage() {
                     type="button"
                     onClick={() => remove(tile)}
                     aria-label="Delete"
-                    className="flex h-8 w-8 items-center justify-center rounded-lg text-destiny-grey/40 transition hover:bg-red-50 hover:text-red-600"
+                    className="flex h-8 w-8 items-center justify-center rounded-lg text-destiny-grey/40 dark:text-white/40 transition hover:bg-red-50 hover:text-red-600"
                   >
                     <span className="material-symbols-rounded text-lg">delete</span>
                   </button>
@@ -481,14 +481,14 @@ export default function AdminNfcPage() {
             className="mt-8 flex flex-col gap-5 rounded-2xl border border-black/5 bg-white dark:border-white/8 dark:bg-destiny-grey-800 p-6 shadow-sm"
           >
             <div className="flex items-center justify-between">
-              <h2 className="text-lg font-black text-destiny-grey">
+              <h2 className="text-lg font-black text-destiny-grey dark:text-white">
                 {editing.id ? "Edit tile" : "New tile"}
               </h2>
               <button
                 type="button"
                 onClick={() => setEditing(null)}
                 aria-label="Cancel"
-                className="flex h-8 w-8 items-center justify-center rounded-full text-destiny-grey/40 transition hover:bg-gray-100 hover:text-destiny-grey dark:hover:bg-white/10 dark:hover:text-white"
+                className="flex h-8 w-8 items-center justify-center rounded-full text-destiny-grey/40 dark:text-white/40 transition hover:bg-gray-100 hover:text-destiny-grey dark:hover:bg-white/10 dark:hover:text-white"
               >
                 <span className="material-symbols-rounded text-xl">close</span>
               </button>
@@ -542,10 +542,10 @@ export default function AdminNfcPage() {
                         : "border-black/10 hover:border-destiny-orange/40"
                     }`}
                   >
-                    <p className="text-sm font-bold text-destiny-grey">
+                    <p className="text-sm font-bold text-destiny-grey dark:text-white">
                       {opt.label}
                     </p>
-                    <p className="mt-0.5 text-xs text-destiny-grey/50">{opt.hint}</p>
+                    <p className="mt-0.5 text-xs text-destiny-grey/50 dark:text-white/50">{opt.hint}</p>
                   </button>
                 ))}
               </div>
@@ -585,7 +585,7 @@ export default function AdminNfcPage() {
                   className={inputClass}
                 />
                 {editing.mode === "event" && (
-                  <p className="mt-1.5 text-xs text-destiny-grey/45">
+                  <p className="mt-1.5 text-xs text-destiny-grey/45 dark:text-white/45">
                     Left blank, the tile shows when the event is — and keeps up if
                     ChurchSuite moves it.
                   </p>
@@ -606,7 +606,7 @@ export default function AdminNfcPage() {
                     className={`flex h-11 w-11 items-center justify-center rounded-xl border-2 transition ${
                       editing.icon === icon
                         ? "border-destiny-orange bg-destiny-orange/5 text-destiny-orange"
-                        : "border-black/10 text-destiny-grey/50 hover:border-destiny-orange/40"
+                        : "border-black/10 text-destiny-grey/50 dark:text-white/50 hover:border-destiny-orange/40"
                     }`}
                   >
                     <span className="material-symbols-rounded text-xl">{icon}</span>
@@ -625,11 +625,11 @@ export default function AdminNfcPage() {
                       event_available
                     </span>
                     <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-bold text-destiny-grey">
+                      <p className="truncate text-sm font-bold text-destiny-grey dark:text-white">
                         {editing.event_name || "Selected event"}
                       </p>
                       {editing.event_ends_at && (
-                        <p className="truncate text-xs text-destiny-grey/50">
+                        <p className="truncate text-xs text-destiny-grey/50 dark:text-white/50">
                           {hasEnded(editing)
                             ? "This event has finished — pick another one."
                             : `Runs until ${formatStart(editing.event_ends_at)}`}
@@ -647,17 +647,17 @@ export default function AdminNfcPage() {
                   className={inputClass}
                 />
 
-                <div className="mt-3 max-h-80 overflow-y-auto rounded-xl border border-black/10">
+                <div className="mt-3 max-h-80 overflow-y-auto rounded-xl border border-black/10 dark:border-white/10">
                   {eventsLoading || events === null ? (
-                    <p className="px-4 py-8 text-center text-sm text-destiny-grey/45">
+                    <p className="px-4 py-8 text-center text-sm text-destiny-grey/45 dark:text-white/45">
                       Loading the ChurchSuite calendar…
                     </p>
                   ) : events.length === 0 ? (
-                    <p className="px-4 py-8 text-center text-sm text-destiny-grey/45">
+                    <p className="px-4 py-8 text-center text-sm text-destiny-grey/45 dark:text-white/45">
                       No upcoming events in ChurchSuite.
                     </p>
                   ) : (
-                    <ul className="divide-y divide-black/5">
+                    <ul className="divide-y divide-black/5 dark:divide-white/8">
                       {events
                         .filter((ev) =>
                           ev.name.toLowerCase().includes(eventFilter.toLowerCase())
@@ -702,10 +702,10 @@ export default function AdminNfcPage() {
                                 }`}
                               >
                                 <div className="min-w-0 flex-1">
-                                  <p className="truncate text-sm font-bold text-destiny-grey">
+                                  <p className="truncate text-sm font-bold text-destiny-grey dark:text-white">
                                     {ev.name}
                                   </p>
-                                  <p className="truncate text-xs text-destiny-grey/50">
+                                  <p className="truncate text-xs text-destiny-grey/50 dark:text-white/50">
                                     {formatStart(ev.start)}
                                     {ev.sessionCount > 1
                                       ? ` · ${ev.sessionCount} sessions`
@@ -714,7 +714,7 @@ export default function AdminNfcPage() {
                                   </p>
                                 </div>
                                 {reason ? (
-                                  <span className="shrink-0 text-xs font-bold text-destiny-grey/40">
+                                  <span className="shrink-0 text-xs font-bold text-destiny-grey/40 dark:text-white/40">
                                     {reason}
                                   </span>
                                 ) : chosen ? (
@@ -730,7 +730,7 @@ export default function AdminNfcPage() {
                   )}
                 </div>
 
-                <p className="mt-1.5 text-xs text-destiny-grey/45">
+                <p className="mt-1.5 text-xs text-destiny-grey/45 dark:text-white/45">
                   Tapping the tile opens the event&rsquo;s ChurchSuite signup form
                   in the page. Events without signups, or that book through another
                   site, can&rsquo;t be used here — add a details tile linking to
@@ -753,7 +753,7 @@ export default function AdminNfcPage() {
                     placeholder="https://destinytees.churchsuite.com/forms/xxxxxxxx"
                     className={inputClass}
                   />
-                  <p className="mt-1.5 text-xs text-destiny-grey/45">
+                  <p className="mt-1.5 text-xs text-destiny-grey/45 dark:text-white/45">
                     Must be a churchsuite.com link — nothing else can be shown
                     inside the page.
                   </p>
@@ -770,8 +770,8 @@ export default function AdminNfcPage() {
                         }
                         className={`rounded-xl border-2 px-4 py-2 text-sm font-bold transition ${
                           editing.embed_size === size
-                            ? "border-destiny-orange bg-destiny-orange/5 text-destiny-grey"
-                            : "border-black/10 text-destiny-grey/50 hover:border-destiny-orange/40"
+                            ? "border-destiny-orange bg-destiny-orange/5 text-destiny-grey dark:text-white"
+                            : "border-black/10 text-destiny-grey/50 dark:text-white/50 hover:border-destiny-orange/40"
                         }`}
                       >
                         {size === "md" ? "Standard form" : "Tall (full event page)"}
@@ -828,13 +828,13 @@ export default function AdminNfcPage() {
                         disabled={uploading}
                         className="hidden"
                       />
-                      <span className="material-symbols-rounded text-3xl text-destiny-grey/40">
+                      <span className="material-symbols-rounded text-3xl text-destiny-grey/40 dark:text-white/40">
                         {uploading ? "progress_activity" : "add_photo_alternate"}
                       </span>
-                      <p className="text-sm font-bold text-destiny-grey">
+                      <p className="text-sm font-bold text-destiny-grey dark:text-white">
                         {uploading ? "Uploading…" : "Click to upload"}
                       </p>
-                      <p className="text-xs text-destiny-grey/50">
+                      <p className="text-xs text-destiny-grey/50 dark:text-white/50">
                         PNG, JPG, WEBP, GIF or SVG · max 50 MB
                       </p>
                     </label>
@@ -893,7 +893,7 @@ export default function AdminNfcPage() {
                 />
               </div>
             </div>
-            <p className="-mt-2 text-xs text-destiny-grey/45">
+            <p className="-mt-2 text-xs text-destiny-grey/45 dark:text-white/45">
               {editing.mode === "info"
                 ? "Where the button in the popup takes people. Use /alpha for a page on this site."
                 : editing.mode === "event"
@@ -909,7 +909,7 @@ export default function AdminNfcPage() {
               <button
                 type="button"
                 onClick={() => setEditing(null)}
-                className="rounded-xl px-4 py-2.5 text-sm font-bold text-destiny-grey/60 transition hover:bg-gray-100 dark:hover:bg-white/10"
+                className="rounded-xl px-4 py-2.5 text-sm font-bold text-destiny-grey/60 dark:text-white/60 transition hover:bg-gray-100 dark:hover:bg-white/10"
               >
                 Cancel
               </button>

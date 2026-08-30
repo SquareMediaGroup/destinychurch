@@ -176,16 +176,16 @@ export function Sheet({
           </div>
           <div className="flex items-center gap-2 border-b border-black/8 px-4 pb-2.5">
             <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-black text-destiny-grey">{title}</p>
+              <p className="truncate text-sm font-black text-destiny-grey dark:text-white">{title}</p>
               {subtitle && (
-                <p className="truncate text-xs text-destiny-grey/45">{subtitle}</p>
+                <p className="truncate text-xs text-destiny-grey/45 dark:text-white/45">{subtitle}</p>
               )}
             </div>
             <button
               type="button"
               onClick={onClose}
               aria-label="Close"
-              className="-mr-2 flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-destiny-grey/50 transition hover:bg-[#f5f7fa] hover:text-destiny-grey"
+              className="-mr-2 flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-destiny-grey/50 dark:text-white/50 transition hover:bg-[#f5f7fa] hover:text-destiny-grey dark:hover:text-white"
             >
               <span className="material-symbols-rounded text-xl">close</span>
             </button>

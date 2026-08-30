@@ -231,28 +231,28 @@ export default function CourseAdminPage({ page }: { page: CourseAdminPageSlug })
   }
 
   const inputClass =
-    "w-full rounded-xl border border-black/10 px-4 py-2.5 text-sm text-destiny-grey placeholder:text-destiny-grey/30 focus:outline-none focus:ring-2";
+    "w-full rounded-xl border border-black/10 px-4 py-2.5 text-sm text-destiny-grey dark:text-white placeholder:text-destiny-grey/30 dark:placeholder:text-white/30 focus:outline-none focus:ring-2";
 
   return (
     <div className="mx-auto max-w-6xl px-6 py-10">
       <div className="max-w-4xl">
         <div className="mb-6">
-          <h1 className="text-2xl font-black text-destiny-grey">
+          <h1 className="text-2xl font-black text-destiny-grey dark:text-white">
             {config.heading}
           </h1>
-          <p className="mt-1 text-sm text-destiny-grey/50">{config.blurb}</p>
+          <p className="mt-1 text-sm text-destiny-grey/50 dark:text-white/50">{config.blurb}</p>
         </div>
 
         <div className="mb-8 rounded-2xl border border-black/5 bg-white dark:border-white/8 dark:bg-destiny-grey-800 p-6 shadow-sm">
           <div className="mb-4">
-            <p className="mb-1.5 text-[10px] font-black uppercase tracking-[0.32em] text-destiny-grey/50">
+            <p className="mb-1.5 text-[10px] font-black uppercase tracking-[0.32em] text-destiny-grey/50 dark:text-white/50">
               Site banner
             </p>
-            <h2 className="text-lg font-black text-destiny-grey">
+            <h2 className="text-lg font-black text-destiny-grey dark:text-white">
               {config.promoteHeading}
             </h2>
           </div>
-          <p className="mb-5 text-xs leading-relaxed text-destiny-grey/60">
+          <p className="mb-5 text-xs leading-relaxed text-destiny-grey/60 dark:text-white/60">
             {config.promoteHelp}
           </p>
           <div className={multi ? "grid gap-3 sm:grid-cols-2" : undefined}>
@@ -273,7 +273,7 @@ export default function CourseAdminPage({ page }: { page: CourseAdminPageSlug })
 
         {/* Create form */}
         <div className="mb-8 rounded-2xl border border-black/5 bg-white dark:border-white/8 dark:bg-destiny-grey-800 p-6 shadow-sm">
-          <h2 className="mb-4 text-sm font-bold uppercase tracking-wider text-destiny-grey/50">
+          <h2 className="mb-4 text-sm font-bold uppercase tracking-wider text-destiny-grey/50 dark:text-white/50">
             Add Event
           </h2>
           <form onSubmit={handleCreate} className="flex flex-col gap-4">
@@ -289,7 +289,7 @@ export default function CourseAdminPage({ page }: { page: CourseAdminPageSlug })
               {/* Only a page that owns more than one course needs to ask. */}
               {multi && (
                 <div>
-                  <label className="mb-1.5 block text-xs font-bold text-destiny-grey/60">
+                  <label className="mb-1.5 block text-xs font-bold text-destiny-grey/60 dark:text-white/60">
                     Type <span className="text-red-400">*</span>
                   </label>
                   <select
@@ -306,7 +306,7 @@ export default function CourseAdminPage({ page }: { page: CourseAdminPageSlug })
                 </div>
               )}
               <div>
-                <label className="mb-1.5 block text-xs font-bold text-destiny-grey/60">
+                <label className="mb-1.5 block text-xs font-bold text-destiny-grey/60 dark:text-white/60">
                   Start Date <span className="text-red-400">*</span>
                 </label>
                 <input
@@ -318,7 +318,7 @@ export default function CourseAdminPage({ page }: { page: CourseAdminPageSlug })
                 />
               </div>
               <div>
-                <label className="mb-1.5 block text-xs font-bold text-destiny-grey/60">
+                <label className="mb-1.5 block text-xs font-bold text-destiny-grey/60 dark:text-white/60">
                   Frequency <span className="text-red-400">*</span>
                 </label>
                 <div className="flex items-center gap-2">
@@ -334,8 +334,8 @@ export default function CourseAdminPage({ page }: { page: CourseAdminPageSlug })
                     ))}
                   </select>
                   {frequency === "custom" && (
-                    <div className="flex items-center gap-1.5 rounded-xl border border-black/10 px-3 py-2 text-sm text-destiny-grey">
-                      <span className="text-xs text-destiny-grey/50">every</span>
+                    <div className="flex items-center gap-1.5 rounded-xl border border-black/10 px-3 py-2 text-sm text-destiny-grey dark:text-white">
+                      <span className="text-xs text-destiny-grey/50 dark:text-white/50">every</span>
                       <input
                         type="number"
                         min={1}
@@ -343,7 +343,7 @@ export default function CourseAdminPage({ page }: { page: CourseAdminPageSlug })
                         onChange={(e) => setCustomIntervalDays(e.target.value)}
                         className="w-14 bg-transparent text-center font-bold focus:outline-none"
                       />
-                      <span className="text-xs text-destiny-grey/50">days</span>
+                      <span className="text-xs text-destiny-grey/50 dark:text-white/50">days</span>
                     </div>
                   )}
                 </div>
@@ -351,7 +351,7 @@ export default function CourseAdminPage({ page }: { page: CourseAdminPageSlug })
             </div>
 
             <div>
-              <label className="mb-1.5 block text-xs font-bold text-destiny-grey/60">
+              <label className="mb-1.5 block text-xs font-bold text-destiny-grey/60 dark:text-white/60">
                 Signup URL (ChurchSuite) <span className="text-red-400">*</span>
               </label>
               <input
@@ -365,7 +365,7 @@ export default function CourseAdminPage({ page }: { page: CourseAdminPageSlug })
             </div>
 
             <div>
-              <label className="mb-1.5 block text-xs font-bold text-destiny-grey/60">
+              <label className="mb-1.5 block text-xs font-bold text-destiny-grey/60 dark:text-white/60">
                 Format <span className="text-red-400">*</span>
               </label>
               <div className="inline-flex rounded-xl border border-black/10 bg-black/[0.02] p-1">
@@ -386,7 +386,7 @@ export default function CourseAdminPage({ page }: { page: CourseAdminPageSlug })
 
             {format === "in_person" ? (
               <div>
-                <label className="mb-1.5 block text-xs font-bold text-destiny-grey/60">
+                <label className="mb-1.5 block text-xs font-bold text-destiny-grey/60 dark:text-white/60">
                   Location <span className="font-normal">(optional)</span>
                 </label>
                 <input
@@ -407,7 +407,7 @@ export default function CourseAdminPage({ page }: { page: CourseAdminPageSlug })
               >
                 <div className="mb-4 grid gap-4 sm:grid-cols-2">
                   <div>
-                    <label className="mb-1.5 block text-xs font-bold text-destiny-grey/60">
+                    <label className="mb-1.5 block text-xs font-bold text-destiny-grey/60 dark:text-white/60">
                       Platform <span className="text-red-400">*</span>
                     </label>
                     <select
@@ -415,14 +415,14 @@ export default function CourseAdminPage({ page }: { page: CourseAdminPageSlug })
                       onChange={(e) =>
                         setMeetingPlatform(e.target.value as MeetingPlatform)
                       }
-                      className="w-full rounded-xl border border-black/10 bg-white dark:border-white/10 dark:bg-destiny-grey-800 px-4 py-2.5 text-sm text-destiny-grey focus:outline-none"
+                      className="w-full rounded-xl border border-black/10 bg-white dark:border-white/10 dark:bg-destiny-grey-800 px-4 py-2.5 text-sm text-destiny-grey dark:text-white focus:outline-none"
                     >
                       <option value="zoom">Zoom</option>
                       <option value="google_meet">Google Meet</option>
                     </select>
                   </div>
                   <div>
-                    <label className="mb-1.5 block text-xs font-bold text-destiny-grey/60">
+                    <label className="mb-1.5 block text-xs font-bold text-destiny-grey/60 dark:text-white/60">
                       Meeting ID
                     </label>
                     <input
@@ -432,12 +432,12 @@ export default function CourseAdminPage({ page }: { page: CourseAdminPageSlug })
                       placeholder={
                         meetingPlatform === "zoom" ? "123 4567 8901" : "abc-defg-hij"
                       }
-                      className="w-full rounded-xl border border-black/10 bg-white dark:border-white/10 dark:bg-destiny-grey-800 px-4 py-2.5 text-sm text-destiny-grey placeholder:text-destiny-grey/30 focus:outline-none"
+                      className="w-full rounded-xl border border-black/10 bg-white dark:border-white/10 dark:bg-destiny-grey-800 px-4 py-2.5 text-sm text-destiny-grey dark:text-white placeholder:text-destiny-grey/30 dark:placeholder:text-white/30 focus:outline-none"
                     />
                   </div>
                 </div>
                 <div className="mb-4">
-                  <label className="mb-1.5 block text-xs font-bold text-destiny-grey/60">
+                  <label className="mb-1.5 block text-xs font-bold text-destiny-grey/60 dark:text-white/60">
                     Direct join link
                   </label>
                   <input
@@ -449,11 +449,11 @@ export default function CourseAdminPage({ page }: { page: CourseAdminPageSlug })
                         ? "https://us02web.zoom.us/j/..."
                         : "https://meet.google.com/abc-defg-hij"
                     }
-                    className="w-full rounded-xl border border-black/10 bg-white dark:border-white/10 dark:bg-destiny-grey-800 px-4 py-2.5 text-sm text-destiny-grey placeholder:text-destiny-grey/30 focus:outline-none"
+                    className="w-full rounded-xl border border-black/10 bg-white dark:border-white/10 dark:bg-destiny-grey-800 px-4 py-2.5 text-sm text-destiny-grey dark:text-white placeholder:text-destiny-grey/30 dark:placeholder:text-white/30 focus:outline-none"
                   />
                 </div>
                 <div>
-                  <label className="mb-1.5 block text-xs font-bold text-destiny-grey/60">
+                  <label className="mb-1.5 block text-xs font-bold text-destiny-grey/60 dark:text-white/60">
                     Passcode <span className="font-normal">(optional)</span>
                   </label>
                   <input
@@ -465,7 +465,7 @@ export default function CourseAdminPage({ page }: { page: CourseAdminPageSlug })
                         ? "Zoom meeting passcode"
                         : "Not usually needed for Meet"
                     }
-                    className="w-full rounded-xl border border-black/10 bg-white dark:border-white/10 dark:bg-destiny-grey-800 px-4 py-2.5 text-sm text-destiny-grey placeholder:text-destiny-grey/30 focus:outline-none"
+                    className="w-full rounded-xl border border-black/10 bg-white dark:border-white/10 dark:bg-destiny-grey-800 px-4 py-2.5 text-sm text-destiny-grey dark:text-white placeholder:text-destiny-grey/30 dark:placeholder:text-white/30 focus:outline-none"
                   />
                 </div>
               </div>
@@ -540,8 +540,8 @@ function BannerCard({
     >
       <div className="flex items-start justify-between gap-2">
         <div>
-          <p className="text-sm font-bold text-destiny-grey">{label}</p>
-          <p className="text-[10px] text-destiny-grey/50">{hint}</p>
+          <p className="text-sm font-bold text-destiny-grey dark:text-white">{label}</p>
+          <p className="text-[10px] text-destiny-grey/50 dark:text-white/50">{hint}</p>
         </div>
         <button
           type="button"
@@ -581,7 +581,7 @@ function TogglePill({
       className={`inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-bold transition ${
         active
           ? "bg-white text-destiny-grey shadow-sm dark:bg-destiny-grey-700 dark:text-white"
-          : "text-destiny-grey/50 hover:text-destiny-grey"
+          : "text-destiny-grey/50 dark:text-white/50 hover:text-destiny-grey dark:hover:text-white"
       }`}
     >
       <span className="material-symbols-rounded text-base">{icon}</span>
@@ -610,24 +610,24 @@ function EventSection({
   return (
     <div className="mb-8 overflow-hidden rounded-2xl border border-black/5 bg-white dark:border-white/8 dark:bg-destiny-grey-800 shadow-sm">
       <div className="border-b border-black/5 px-6 py-4">
-        <p className="text-sm font-bold text-destiny-grey">
+        <p className="text-sm font-bold text-destiny-grey dark:text-white">
           {title} ({events.length})
         </p>
       </div>
 
       {loading ? (
         <div className="flex items-center justify-center py-16">
-          <span className="material-symbols-rounded animate-spin text-3xl text-destiny-grey/20">
+          <span className="material-symbols-rounded animate-spin text-3xl text-destiny-grey/20 dark:text-white/20">
             progress_activity
           </span>
         </div>
       ) : events.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-16 text-center">
-          <span className="material-symbols-rounded mb-3 text-4xl text-destiny-grey/20">
+          <span className="material-symbols-rounded mb-3 text-4xl text-destiny-grey/20 dark:text-white/20">
             event
           </span>
-          <p className="text-sm font-bold text-destiny-grey/40">No events yet</p>
-          <p className="text-xs text-destiny-grey/30">
+          <p className="text-sm font-bold text-destiny-grey/40 dark:text-white/40">No events yet</p>
+          <p className="text-xs text-destiny-grey/30 dark:text-white/30">
             Create your first event above
           </p>
         </div>
@@ -667,10 +667,10 @@ function EventSection({
               >
                 <div className="min-w-0 flex-1">
                   <div className="mb-0.5 flex flex-wrap items-center gap-2">
-                    <span className="text-sm font-bold text-destiny-grey">
+                    <span className="text-sm font-bold text-destiny-grey dark:text-white">
                       {formatted}
                     </span>
-                    <span className="rounded-full bg-black/5 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-destiny-grey/60">
+                    <span className="rounded-full bg-black/5 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-destiny-grey/60 dark:text-white/60">
                       {freqLabel}
                     </span>
                     {showsNext && (
@@ -702,7 +702,7 @@ function EventSection({
                       )
                     )}
                   </div>
-                  <p className="truncate text-xs text-destiny-grey/40">
+                  <p className="truncate text-xs text-destiny-grey/40 dark:text-white/40">
                     {isOnline
                       ? event.meeting_url ||
                         (event.meeting_id
@@ -730,7 +730,7 @@ function EventSection({
                   <button
                     onClick={() => onDelete(event.id)}
                     title="Delete"
-                    className="flex h-8 w-8 items-center justify-center rounded-lg text-destiny-grey/30 transition hover:bg-red-50 hover:text-red-500"
+                    className="flex h-8 w-8 items-center justify-center rounded-lg text-destiny-grey/30 dark:text-white/30 transition hover:bg-red-50 hover:text-red-500"
                   >
                     <span className="material-symbols-rounded text-base">
                       delete

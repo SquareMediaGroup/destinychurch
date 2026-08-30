@@ -77,7 +77,7 @@ export function IconPicker({
               className={`flex h-9 items-center justify-center rounded-lg transition ${
                 active
                   ? "bg-destiny-orange text-white"
-                  : "text-destiny-grey/60 hover:bg-black/5"
+                  : "text-destiny-grey/60 dark:text-white/60 hover:bg-black/5"
               }`}
             >
               <span className="material-symbols-rounded text-[20px]">{name}</span>
@@ -85,7 +85,7 @@ export function IconPicker({
           );
         })}
       </div>
-      <p className="mt-1.5 text-xs text-destiny-grey/45">
+      <p className="mt-1.5 text-xs text-destiny-grey/45 dark:text-white/45">
         Shown next to the category on the public page. Tap an icon to select, tap
         again to clear.
       </p>

@@ -27,7 +27,7 @@ export function DayChart({
   className?: string;
 }) {
   if (points.length === 0) {
-    return <p className="py-8 text-center text-sm text-destiny-grey/40">No data for this range.</p>;
+    return <p className="py-8 text-center text-sm text-destiny-grey/40 dark:text-white/40">No data for this range.</p>;
   }
 
   const max = Math.max(1, ...points.map((p) => p.events));
@@ -67,7 +67,7 @@ export function DayChart({
           y2="39.8"
           stroke="currentColor"
           strokeWidth="0.3"
-          className="text-destiny-grey/15"
+          className="text-destiny-grey/15 dark:text-white/15"
           vectorEffect="non-scaling-stroke"
         />
       </svg>
@@ -119,7 +119,7 @@ export function BarRows({
   barClassName?: string;
 }) {
   if (rows.length === 0) {
-    return <p className="py-6 text-center text-sm text-destiny-grey/40">{emptyLabel}</p>;
+    return <p className="py-6 text-center text-sm text-destiny-grey/40 dark:text-white/40">{emptyLabel}</p>;
   }
 
   const max = Math.max(1, ...rows.map((r) => r.value));
@@ -134,12 +134,12 @@ export function BarRows({
             style={{ width: `${Math.max((row.value / max) * 100, 3)}%` }}
           />
           <div className="relative flex items-center justify-between gap-3 rounded-md px-2.5 py-1.5">
-            <span className="min-w-0 truncate text-sm font-bold text-destiny-grey">
+            <span className="min-w-0 truncate text-sm font-bold text-destiny-grey dark:text-white">
               {row.label}
             </span>
-            <span className="shrink-0 text-xs font-bold tabular-nums text-destiny-grey/60">
+            <span className="shrink-0 text-xs font-bold tabular-nums text-destiny-grey/60 dark:text-white/60">
               {row.value.toLocaleString("en-GB")}
-              {row.hint && <span className="ml-1.5 text-destiny-grey/35">{row.hint}</span>}
+              {row.hint && <span className="ml-1.5 text-destiny-grey/35 dark:text-white/35">{row.hint}</span>}
             </span>
           </div>
         </li>

@@ -409,7 +409,7 @@ export default function ProductEditorPage({
       <div className="mb-6 flex items-center justify-between gap-4">
         <Link
           href="/admin/store"
-          className="inline-flex items-center gap-1 text-sm font-semibold text-destiny-grey/60 hover:text-destiny-grey"
+          className="inline-flex items-center gap-1 text-sm font-semibold text-destiny-grey/60 dark:text-white/60 hover:text-destiny-grey dark:hover:text-white"
         >
           <span className="material-symbols-rounded text-base">arrow_back</span>
           Store
@@ -419,7 +419,7 @@ export default function ProductEditorPage({
             <Link
               href={`/shop/${slug}`}
               target="_blank"
-              className="inline-flex items-center gap-1.5 rounded-full border border-black/10 px-4 py-2 text-sm font-bold text-destiny-grey transition hover:bg-[#f5f7fa] dark:hover:bg-white/10"
+              className="inline-flex items-center gap-1.5 rounded-full border border-black/10 px-4 py-2 text-sm font-bold text-destiny-grey dark:text-white transition hover:bg-[#f5f7fa] dark:hover:bg-white/10"
             >
               <span className="material-symbols-rounded text-base">open_in_new</span>
               View
@@ -514,7 +514,7 @@ export default function ProductEditorPage({
             type="button"
             onClick={() => fileRef.current?.click()}
             disabled={uploading}
-            className="flex h-28 w-28 flex-col items-center justify-center gap-1 rounded-xl border-2 border-dashed border-black/15 text-destiny-grey/50 transition hover:border-destiny-orange hover:text-destiny-orange disabled:opacity-50"
+            className="flex h-28 w-28 flex-col items-center justify-center gap-1 rounded-xl border-2 border-dashed border-black/15 text-destiny-grey/50 dark:text-white/50 transition hover:border-destiny-orange hover:text-destiny-orange disabled:opacity-50"
           >
             <span className="material-symbols-rounded text-2xl">add_photo_alternate</span>
             <span className="text-xs font-semibold">{uploading ? "Uploading…" : "Add"}</span>
@@ -528,7 +528,7 @@ export default function ProductEditorPage({
             onChange={(e) => handleUpload(e.target.files)}
           />
         </div>
-        <p className="mt-2 text-xs text-destiny-grey/45">
+        <p className="mt-2 text-xs text-destiny-grey/45 dark:text-white/45">
           First photo is the main image. JPG/PNG/WebP · converted to WebP · max 10MB.
         </p>
       </Section>
@@ -556,14 +556,14 @@ export default function ProductEditorPage({
                 className={`rounded-full px-4 py-2 text-sm font-bold transition ${
                   productType === t
                     ? "bg-destiny-orange text-white shadow-sm"
-                    : "text-destiny-grey/60 hover:text-destiny-grey"
+                    : "text-destiny-grey/60 dark:text-white/60 hover:text-destiny-grey dark:hover:text-white"
                 }`}
               >
                 {PRODUCT_TYPE_LABELS[t]}
               </button>
             ))}
           </div>
-          <p className="mt-2 text-xs text-destiny-grey/45">
+          <p className="mt-2 text-xs text-destiny-grey/45 dark:text-white/45">
             {productType === "clothing"
               ? "Colour + size matrix."
               : productType === "books"
@@ -585,14 +585,14 @@ export default function ProductEditorPage({
                   className={`rounded-full px-4 py-2 text-sm font-bold transition ${
                     fit === f
                       ? "bg-destiny-orange text-white shadow-sm"
-                      : "text-destiny-grey/60 hover:text-destiny-grey"
+                      : "text-destiny-grey/60 dark:text-white/60 hover:text-destiny-grey dark:hover:text-white"
                   }`}
                 >
                   {FIT_LABELS[f]}
                 </button>
               ))}
             </div>
-            <p className="mt-2 text-xs text-destiny-grey/45">
+            <p className="mt-2 text-xs text-destiny-grey/45 dark:text-white/45">
               {fit === "kids"
                 ? "Kids uses age-based sizes."
                 : "Adult sizing (XS–3XL)."}
@@ -609,7 +609,7 @@ export default function ProductEditorPage({
               {colours.map((c) => (
                 <span
                   key={c.name}
-                  className="inline-flex items-center gap-2 rounded-full border border-black/12 py-1.5 pl-1.5 pr-2.5 text-sm font-semibold text-destiny-grey"
+                  className="inline-flex items-center gap-2 rounded-full border border-black/12 py-1.5 pl-1.5 pr-2.5 text-sm font-semibold text-destiny-grey dark:text-white"
                 >
                   <span
                     className="h-5 w-5 rounded-full border border-black/10"
@@ -619,7 +619,7 @@ export default function ProductEditorPage({
                   <button
                     type="button"
                     onClick={() => removeColour(c.name)}
-                    className="text-destiny-grey/40 transition hover:text-red-600"
+                    className="text-destiny-grey/40 dark:text-white/40 transition hover:text-red-600"
                     aria-label={`Remove ${c.name}`}
                   >
                     <span className="material-symbols-rounded text-base">close</span>
@@ -662,7 +662,7 @@ export default function ProductEditorPage({
 
           {/* Presets */}
           <div className="mt-3 flex flex-wrap items-center gap-1.5">
-            <span className="text-xs font-semibold text-destiny-grey/40">Quick add:</span>
+            <span className="text-xs font-semibold text-destiny-grey/40 dark:text-white/40">Quick add:</span>
             {COLOUR_PRESETS.filter(
               (p) => !colours.some((c) => c.name.toLowerCase() === p.name.toLowerCase()),
             ).map((p) => (
@@ -670,7 +670,7 @@ export default function ProductEditorPage({
                 key={p.name}
                 type="button"
                 onClick={() => addColour(p)}
-                className="inline-flex items-center gap-1.5 rounded-full border border-black/10 py-1 pl-1 pr-2.5 text-xs font-semibold text-destiny-grey/70 transition hover:border-destiny-orange hover:text-destiny-grey"
+                className="inline-flex items-center gap-1.5 rounded-full border border-black/10 py-1 pl-1 pr-2.5 text-xs font-semibold text-destiny-grey/70 dark:text-white/70 transition hover:border-destiny-orange hover:text-destiny-grey dark:hover:text-white"
               >
                 <span
                   className="h-4 w-4 rounded-full border border-black/10"
@@ -698,7 +698,7 @@ export default function ProductEditorPage({
                   className={`min-w-[3rem] rounded-full border px-4 py-2 text-sm font-bold transition ${
                     selected
                       ? "border-destiny-orange bg-destiny-orange text-white"
-                      : "border-black/15 text-destiny-grey hover:border-destiny-orange"
+                      : "border-black/15 text-destiny-grey dark:text-white hover:border-destiny-orange"
                   }`}
                 >
                   {s}
@@ -736,7 +736,7 @@ export default function ProductEditorPage({
             </div>
           )}
 
-          <p className="mt-2 text-xs text-destiny-grey/45">
+          <p className="mt-2 text-xs text-destiny-grey/45 dark:text-white/45">
             {productType === "clothing"
               ? "Pick the sizes you stock — they apply to every colour. Fine-tune each combination below."
               : productType === "books"
@@ -762,7 +762,7 @@ export default function ProductEditorPage({
                 <button
                   type="button"
                   onClick={applyStockToAll}
-                  className="inline-flex items-center gap-1 rounded-full border border-black/10 px-3 py-1.5 text-xs font-bold text-destiny-grey transition hover:bg-[#f5f7fa] dark:hover:bg-white/10"
+                  className="inline-flex items-center gap-1 rounded-full border border-black/10 px-3 py-1.5 text-xs font-bold text-destiny-grey dark:text-white transition hover:bg-[#f5f7fa] dark:hover:bg-white/10"
                 >
                   <span className="material-symbols-rounded text-base">done_all</span>
                   Apply to all
@@ -780,7 +780,7 @@ export default function ProductEditorPage({
                       .map((s) => (
                         <th
                           key={s}
-                          className="px-2 py-1 text-xs font-bold uppercase tracking-wide text-destiny-grey/50"
+                          className="px-2 py-1 text-xs font-bold uppercase tracking-wide text-destiny-grey/50 dark:text-white/50"
                         >
                           {s}
                         </th>
@@ -791,7 +791,7 @@ export default function ProductEditorPage({
                   {colours.map((c) => (
                     <tr key={c.name}>
                       <th className="sticky left-0 z-10 bg-white pr-3 text-left dark:bg-destiny-grey-800">
-                        <span className="inline-flex items-center gap-2 whitespace-nowrap font-semibold text-destiny-grey">
+                        <span className="inline-flex items-center gap-2 whitespace-nowrap font-semibold text-destiny-grey dark:text-white">
                           <span
                             className="h-4 w-4 shrink-0 rounded-full border border-black/10"
                             style={{ backgroundColor: c.hex }}
@@ -810,7 +810,7 @@ export default function ProductEditorPage({
                                   type="button"
                                   onClick={() => setCell(c.name, s, { on: true })}
                                   title="Not available — click to add"
-                                  className="flex h-10 w-full min-w-[3.5rem] items-center justify-center rounded-lg border border-dashed border-black/15 text-destiny-grey/30 transition hover:border-destiny-orange hover:text-destiny-orange"
+                                  className="flex h-10 w-full min-w-[3.5rem] items-center justify-center rounded-lg border border-dashed border-black/15 text-destiny-grey/30 dark:text-white/30 transition hover:border-destiny-orange hover:text-destiny-orange"
                                 >
                                   <span className="material-symbols-rounded text-base">add</span>
                                 </button>
@@ -849,7 +849,7 @@ export default function ProductEditorPage({
                 </tbody>
               </table>
             </div>
-            <p className="mt-2 text-xs text-destiny-grey/45">
+            <p className="mt-2 text-xs text-destiny-grey/45 dark:text-white/45">
               Red means sold out (still listed). Hover a cell and click × to remove a
               colour/size combination entirely.
             </p>
@@ -870,7 +870,7 @@ export default function ProductEditorPage({
                 <button
                   type="button"
                   onClick={applyStockToAll}
-                  className="inline-flex items-center gap-1 rounded-full border border-black/10 px-3 py-1.5 text-xs font-bold text-destiny-grey transition hover:bg-[#f5f7fa] dark:hover:bg-white/10"
+                  className="inline-flex items-center gap-1 rounded-full border border-black/10 px-3 py-1.5 text-xs font-bold text-destiny-grey dark:text-white transition hover:bg-[#f5f7fa] dark:hover:bg-white/10"
                 >
                   <span className="material-symbols-rounded text-base">done_all</span>
                   Apply to all
@@ -884,12 +884,12 @@ export default function ProductEditorPage({
                   const cell = cells[cellKey("", s)] ?? { stock: 0, on: true };
                   return (
                     <div key={s} className="flex items-center gap-3">
-                      <span className="flex-1 text-sm font-semibold text-destiny-grey">{s}</span>
+                      <span className="flex-1 text-sm font-semibold text-destiny-grey dark:text-white">{s}</span>
                       {cell.on === false ? (
                         <button
                           type="button"
                           onClick={() => setCell("", s, { on: true })}
-                          className="rounded-lg border border-dashed border-black/15 px-4 py-2 text-xs font-bold text-destiny-grey/40 transition hover:border-destiny-orange hover:text-destiny-orange"
+                          className="rounded-lg border border-dashed border-black/15 px-4 py-2 text-xs font-bold text-destiny-grey/40 dark:text-white/40 transition hover:border-destiny-orange hover:text-destiny-orange"
                         >
                           Not available — click to add
                         </button>
@@ -914,7 +914,7 @@ export default function ProductEditorPage({
                         type="button"
                         onClick={() => toggleSize(s)}
                         title={`Remove ${s}`}
-                        className="text-destiny-grey/40 transition hover:text-red-600"
+                        className="text-destiny-grey/40 dark:text-white/40 transition hover:text-red-600"
                       >
                         <span className="material-symbols-rounded text-base">close</span>
                       </button>
@@ -922,10 +922,10 @@ export default function ProductEditorPage({
                   );
                 })}
             </div>
-            <p className="mt-2 text-xs text-destiny-grey/45">Red means sold out (still listed).</p>
+            <p className="mt-2 text-xs text-destiny-grey/45 dark:text-white/45">Red means sold out (still listed).</p>
           </div>
         ) : (
-          <div className="rounded-xl border border-dashed border-black/15 bg-[#f9fafb] px-4 py-6 text-center text-sm text-destiny-grey/50">
+          <div className="rounded-xl border border-dashed border-black/15 bg-[#f9fafb] px-4 py-6 text-center text-sm text-destiny-grey/50 dark:text-white/50">
             {productType === "clothing" && colours.length === 0
               ? `Add a colour, or pick ${optionLabel.toLowerCase()} to build your stock list.`
               : `Pick or add ${optionLabel.toLowerCase()} to build your stock list.`}
@@ -965,7 +965,7 @@ function Section({
   return (
     <section className="mt-6 rounded-2xl border border-black/8 bg-white dark:border-white/8 dark:bg-destiny-grey-800 p-5">
       <div className="mb-4 flex items-center justify-between">
-        <h2 className="font-[family-name:var(--font-heading)] text-sm font-black uppercase tracking-wide text-destiny-grey">
+        <h2 className="font-[family-name:var(--font-heading)] text-sm font-black uppercase tracking-wide text-destiny-grey dark:text-white">
           {title}
         </h2>
         {action}
@@ -977,7 +977,7 @@ function Section({
 
 function FieldLabel({ children }: { children: React.ReactNode }) {
   return (
-    <label className="mb-1.5 block text-xs font-bold uppercase tracking-[0.15em] text-destiny-grey/50">
+    <label className="mb-1.5 block text-xs font-bold uppercase tracking-[0.15em] text-destiny-grey/50 dark:text-white/50">
       {children}
     </label>
   );
@@ -1005,7 +1005,7 @@ function LabeledInput({
         placeholder={placeholder}
         className="w-full rounded-xl border border-black/15 px-4 py-3 text-sm outline-none transition focus:border-destiny-orange focus:ring-2 focus:ring-destiny-orange/20"
       />
-      {hint && <p className="mt-1 text-xs text-destiny-grey/45">{hint}</p>}
+      {hint && <p className="mt-1 text-xs text-destiny-grey/45 dark:text-white/45">{hint}</p>}
     </div>
   );
 }
@@ -1036,7 +1036,7 @@ function Toggle({
           }`}
         />
       </span>
-      <span className="text-sm font-bold text-destiny-grey">{label}</span>
+      <span className="text-sm font-bold text-destiny-grey dark:text-white">{label}</span>
     </button>
   );
 }

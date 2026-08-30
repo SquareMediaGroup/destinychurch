@@ -173,7 +173,7 @@ export default function ApplicationsPage() {
         ) : (
         <div className="overflow-x-auto rounded-3xl border border-black/5 bg-white shadow-sm dark:border-white/8 dark:bg-destiny-grey-800">
           <table className="w-full text-left text-sm">
-            <thead className="border-b border-black/5 text-xs font-bold uppercase tracking-wider text-destiny-grey/40">
+            <thead className="border-b border-black/5 text-xs font-bold uppercase tracking-wider text-destiny-grey/40 dark:text-white/40">
               <tr>
                 <th className="px-5 py-3.5">Candidate</th>
                 <th className="hidden px-5 py-3.5 sm:table-cell">Role</th>
@@ -189,15 +189,15 @@ export default function ApplicationsPage() {
                   onClick={() => openDetail(a)}
                 >
                   <td className="px-5 py-3.5">
-                    <p className="font-bold text-destiny-grey">
+                    <p className="font-bold text-destiny-grey dark:text-white">
                       {a.first_name} {a.last_name}
                     </p>
-                    <p className="text-xs text-destiny-grey/45">{a.email}</p>
+                    <p className="text-xs text-destiny-grey/45 dark:text-white/45">{a.email}</p>
                   </td>
-                  <td className="hidden px-5 py-3.5 text-destiny-grey/70 sm:table-cell">
+                  <td className="hidden px-5 py-3.5 text-destiny-grey/70 dark:text-white/70 sm:table-cell">
                     {a.job_title}
                   </td>
-                  <td className="hidden px-5 py-3.5 text-destiny-grey/70 md:table-cell">
+                  <td className="hidden px-5 py-3.5 text-destiny-grey/70 dark:text-white/70 md:table-cell">
                     {new Date(a.created_at).toLocaleDateString("en-GB", {
                       day: "numeric",
                       month: "short",
@@ -252,16 +252,16 @@ function ApplicationDetail({
       >
         <div className="mb-4 flex items-start justify-between gap-4">
           <div>
-            <h2 className="text-xl font-black text-destiny-grey">
+            <h2 className="text-xl font-black text-destiny-grey dark:text-white">
               {app.first_name} {app.last_name}
             </h2>
-            <p className="text-sm text-destiny-grey/55">
+            <p className="text-sm text-destiny-grey/55 dark:text-white/55">
               Applied for {app.job_title}
             </p>
           </div>
           <button
             onClick={onClose}
-            className="text-destiny-grey/40 transition hover:text-destiny-grey"
+            className="text-destiny-grey/40 dark:text-white/40 transition hover:text-destiny-grey dark:hover:text-white"
             aria-label="Close"
           >
             <span className="material-symbols-rounded text-2xl">close</span>
@@ -279,13 +279,13 @@ function ApplicationDetail({
           </Field>
           {app.phone && (
             <Field label="Phone">
-              <a href={`tel:${app.phone}`} className="text-destiny-grey">
+              <a href={`tel:${app.phone}`} className="text-destiny-grey dark:text-white">
                 {app.phone}
               </a>
             </Field>
           )}
           <Field label="Applied">
-            <span className="text-destiny-grey">
+            <span className="text-destiny-grey dark:text-white">
               {new Date(app.created_at).toLocaleString("en-GB")}
             </span>
           </Field>
@@ -302,7 +302,7 @@ function ApplicationDetail({
                   {app.cv_name}
                 </a>
               ) : (
-                <span className="text-destiny-grey/60">{app.cv_name}</span>
+                <span className="text-destiny-grey/60 dark:text-white/60">{app.cv_name}</span>
               )}
             </Field>
           )}
@@ -310,17 +310,17 @@ function ApplicationDetail({
 
         {app.cover_letter && (
           <div className="mb-5">
-            <p className="mb-1.5 text-xs font-bold uppercase tracking-wider text-destiny-grey/45">
+            <p className="mb-1.5 text-xs font-bold uppercase tracking-wider text-destiny-grey/45 dark:text-white/45">
               Cover note
             </p>
-            <p className="whitespace-pre-wrap rounded-2xl border border-black/5 p-4 text-sm leading-relaxed text-destiny-grey/80">
+            <p className="whitespace-pre-wrap rounded-2xl border border-black/5 p-4 text-sm leading-relaxed text-destiny-grey/80 dark:text-white/80">
               {app.cover_letter}
             </p>
           </div>
         )}
 
         <div className="mb-5">
-          <p className="mb-2 text-xs font-bold uppercase tracking-wider text-destiny-grey/45">
+          <p className="mb-2 text-xs font-bold uppercase tracking-wider text-destiny-grey/45 dark:text-white/45">
             Status
           </p>
           <div className="flex flex-wrap gap-2">
@@ -331,7 +331,7 @@ function ApplicationDetail({
                 className={`rounded-full px-3 py-1.5 text-xs font-bold transition ${
                   app.status === s
                     ? "bg-destiny-orange text-white"
-                    : "bg-[#f5f7fa] text-destiny-grey/60 hover:bg-black/5"
+                    : "bg-[#f5f7fa] text-destiny-grey/60 dark:text-white/60 hover:bg-black/5"
                 }`}
               >
                 {APPLICATION_STATUS_LABELS[s]}
@@ -364,7 +364,7 @@ function ApplicationDetail({
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="flex items-baseline justify-between gap-4">
-      <dt className="text-xs font-bold uppercase tracking-wider text-destiny-grey/40">
+      <dt className="text-xs font-bold uppercase tracking-wider text-destiny-grey/40 dark:text-white/40">
         {label}
       </dt>
       <dd className="text-right">{children}</dd>

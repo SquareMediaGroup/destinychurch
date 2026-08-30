@@ -118,7 +118,7 @@ export function SitePanel({ range }: { range: string }) {
           </div>
 
           <div className="rounded-3xl border border-black/5 bg-white dark:border-white/8 dark:bg-destiny-grey-800 p-5 shadow-sm">
-            <h3 className="mb-4 text-sm font-bold uppercase tracking-wider text-destiny-grey/50">
+            <h3 className="mb-4 text-sm font-bold uppercase tracking-wider text-destiny-grey/50 dark:text-white/50">
               Page views per day
             </h3>
             <DayChart
@@ -129,7 +129,7 @@ export function SitePanel({ range }: { range: string }) {
 
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="rounded-3xl border border-black/5 bg-white dark:border-white/8 dark:bg-destiny-grey-800 p-5 shadow-sm">
-              <h3 className="mb-3 text-sm font-bold uppercase tracking-wider text-destiny-grey/50">
+              <h3 className="mb-3 text-sm font-bold uppercase tracking-wider text-destiny-grey/50 dark:text-white/50">
                 Top routes
               </h3>
               <BarRows
@@ -137,7 +137,7 @@ export function SitePanel({ range }: { range: string }) {
               />
             </div>
             <div className="rounded-3xl border border-black/5 bg-white dark:border-white/8 dark:bg-destiny-grey-800 p-5 shadow-sm">
-              <h3 className="mb-3 text-sm font-bold uppercase tracking-wider text-destiny-grey/50">
+              <h3 className="mb-3 text-sm font-bold uppercase tracking-wider text-destiny-grey/50 dark:text-white/50">
                 Countries
               </h3>
               <BarRows
@@ -145,7 +145,7 @@ export function SitePanel({ range }: { range: string }) {
               />
             </div>
             <div className="rounded-3xl border border-black/5 bg-white dark:border-white/8 dark:bg-destiny-grey-800 p-5 shadow-sm">
-              <h3 className="mb-3 text-sm font-bold uppercase tracking-wider text-destiny-grey/50">
+              <h3 className="mb-3 text-sm font-bold uppercase tracking-wider text-destiny-grey/50 dark:text-white/50">
                 Devices
               </h3>
               <BarRows
@@ -153,7 +153,7 @@ export function SitePanel({ range }: { range: string }) {
               />
             </div>
             <div className="rounded-3xl border border-black/5 bg-white dark:border-white/8 dark:bg-destiny-grey-800 p-5 shadow-sm">
-              <h3 className="mb-3 text-sm font-bold uppercase tracking-wider text-destiny-grey/50">
+              <h3 className="mb-3 text-sm font-bold uppercase tracking-wider text-destiny-grey/50 dark:text-white/50">
                 Referrers
               </h3>
               <BarRows
@@ -167,7 +167,7 @@ export function SitePanel({ range }: { range: string }) {
           </div>
 
           {data.partial.length > 0 && (
-            <p className="text-center text-xs text-destiny-grey/40">
+            <p className="text-center text-xs text-destiny-grey/40 dark:text-white/40">
               Couldn&rsquo;t load {data.partial.map((d) => DIMENSION_LABEL[d] ?? d).join(", ")}{" "}
               for this range.
             </p>
@@ -175,7 +175,7 @@ export function SitePanel({ range }: { range: string }) {
         </>
       )}
 
-      <p className="text-center text-xs text-destiny-grey/35">
+      <p className="text-center text-xs text-destiny-grey/35 dark:text-white/35">
         Counts only visitors who accepted analytics cookies — usually lower than the click
         numbers on the other tabs, which don&rsquo;t depend on cookie consent.
       </p>

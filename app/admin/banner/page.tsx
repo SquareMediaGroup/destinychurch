@@ -103,8 +103,8 @@ export default function AdminBannerPage() {
     <div className="mx-auto max-w-6xl px-6 py-10">
       <div className="max-w-2xl">
         <div className="mb-6">
-          <h1 className="text-2xl font-black text-destiny-grey">Site Banner</h1>
-          <p className="mt-1 text-sm text-destiny-grey/50">
+          <h1 className="text-2xl font-black text-destiny-grey dark:text-white">Site Banner</h1>
+          <p className="mt-1 text-sm text-destiny-grey/50 dark:text-white/50">
             Display a sitewide announcement bar — or block the entire site for
             maintenance.
           </p>
@@ -112,7 +112,7 @@ export default function AdminBannerPage() {
 
         {loading ? (
           <div className="flex items-center justify-center py-16">
-            <span className="material-symbols-rounded animate-spin text-3xl text-destiny-grey/20">
+            <span className="material-symbols-rounded animate-spin text-3xl text-destiny-grey/20 dark:text-white/20">
               progress_activity
             </span>
           </div>
@@ -153,7 +153,7 @@ export default function AdminBannerPage() {
               )
             )}
 
-            <div className="rounded-xl border border-dashed border-[#e51b1b]/30 bg-[#e51b1b]/[0.04] p-4 text-xs leading-relaxed text-destiny-grey/70">
+            <div className="rounded-xl border border-dashed border-[#e51b1b]/30 bg-[#e51b1b]/[0.04] p-4 text-xs leading-relaxed text-destiny-grey/70 dark:text-white/70">
               Looking for the Alpha banners? Alpha and Youth Alpha each have
               their own toggle on the{" "}
               <Link
@@ -169,8 +169,8 @@ export default function AdminBannerPage() {
               {/* Active toggle */}
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-bold text-destiny-grey">Show banner</p>
-                  <p className="text-xs text-destiny-grey/50">
+                  <p className="text-sm font-bold text-destiny-grey dark:text-white">Show banner</p>
+                  <p className="text-xs text-destiny-grey/50 dark:text-white/50">
                     Toggle the banner on or off sitewide
                   </p>
                 </div>
@@ -195,7 +195,7 @@ export default function AdminBannerPage() {
 
               {/* Banner type */}
               <div>
-                <p className="mb-2 text-xs font-bold text-destiny-grey/60">
+                <p className="mb-2 text-xs font-bold text-destiny-grey/60 dark:text-white/60">
                   Banner Type
                 </p>
                 <div className="flex flex-col gap-2">
@@ -227,10 +227,10 @@ export default function AdminBannerPage() {
                           </span>
                         </span>
                         <div>
-                          <p className="text-sm font-bold text-destiny-grey">
+                          <p className="text-sm font-bold text-destiny-grey dark:text-white">
                             {t.label}
                           </p>
-                          <p className="text-xs leading-relaxed text-destiny-grey/50">
+                          <p className="text-xs leading-relaxed text-destiny-grey/50 dark:text-white/50">
                             {t.description}
                           </p>
                         </div>
@@ -244,7 +244,7 @@ export default function AdminBannerPage() {
 
               {/* Message */}
               <div>
-                <label className="mb-1.5 block text-xs font-bold text-destiny-grey/60">
+                <label className="mb-1.5 block text-xs font-bold text-destiny-grey/60 dark:text-white/60">
                   Message <span className="text-red-400">*</span>
                 </label>
                 <input
@@ -258,14 +258,14 @@ export default function AdminBannerPage() {
                       ? "We're carrying out scheduled maintenance. Back shortly."
                       : "Service times are changing this Sunday…"
                   }
-                  className="w-full rounded-xl border border-black/10 px-4 py-2.5 text-sm text-destiny-grey placeholder:text-destiny-grey/30 focus:border-destiny-orange/50 focus:outline-none focus:ring-2 focus:ring-destiny-orange/20"
+                  className="w-full rounded-xl border border-black/10 px-4 py-2.5 text-sm text-destiny-grey dark:text-white placeholder:text-destiny-grey/30 dark:placeholder:text-white/30 focus:border-destiny-orange/50 focus:outline-none focus:ring-2 focus:ring-destiny-orange/20"
                 />
               </div>
 
               {/* Link */}
               <div className="grid gap-4 sm:grid-cols-2">
                 <div>
-                  <label className="mb-1.5 block text-xs font-bold text-destiny-grey/60">
+                  <label className="mb-1.5 block text-xs font-bold text-destiny-grey/60 dark:text-white/60">
                     Link URL <span className="font-normal">(optional)</span>
                   </label>
                   <input
@@ -275,11 +275,11 @@ export default function AdminBannerPage() {
                       setBanner((b) => ({ ...b, link: e.target.value }))
                     }
                     placeholder="/whats-on"
-                    className="w-full rounded-xl border border-black/10 px-4 py-2.5 text-sm text-destiny-grey placeholder:text-destiny-grey/30 focus:border-destiny-orange/50 focus:outline-none focus:ring-2 focus:ring-destiny-orange/20"
+                    className="w-full rounded-xl border border-black/10 px-4 py-2.5 text-sm text-destiny-grey dark:text-white placeholder:text-destiny-grey/30 dark:placeholder:text-white/30 focus:border-destiny-orange/50 focus:outline-none focus:ring-2 focus:ring-destiny-orange/20"
                   />
                 </div>
                 <div>
-                  <label className="mb-1.5 block text-xs font-bold text-destiny-grey/60">
+                  <label className="mb-1.5 block text-xs font-bold text-destiny-grey/60 dark:text-white/60">
                     Link Text{" "}
                     <span className="font-normal">(optional)</span>
                   </label>
@@ -293,7 +293,7 @@ export default function AdminBannerPage() {
                       }))
                     }
                     placeholder="Find out more"
-                    className="w-full rounded-xl border border-black/10 px-4 py-2.5 text-sm text-destiny-grey placeholder:text-destiny-grey/30 focus:border-destiny-orange/50 focus:outline-none focus:ring-2 focus:ring-destiny-orange/20"
+                    className="w-full rounded-xl border border-black/10 px-4 py-2.5 text-sm text-destiny-grey dark:text-white placeholder:text-destiny-grey/30 dark:placeholder:text-white/30 focus:border-destiny-orange/50 focus:outline-none focus:ring-2 focus:ring-destiny-orange/20"
                   />
                 </div>
               </div>

@@ -46,20 +46,20 @@ export function ImageField({
             className="h-16 w-16 shrink-0 rounded-lg object-cover"
           />
           <div className="min-w-0 flex-1">
-            <p className="truncate text-xs text-destiny-grey/50">{value}</p>
+            <p className="truncate text-xs text-destiny-grey/50 dark:text-white/50">{value}</p>
             <div className="mt-2 flex gap-2">
               <button
                 type="button"
                 disabled={uploading}
                 onClick={() => inputRef.current?.click()}
-                className="min-h-10 rounded-lg border border-black/10 px-3 text-xs font-bold text-destiny-grey/60 transition hover:bg-[#f5f7fa] lg:min-h-0 lg:px-2.5 lg:py-1"
+                className="min-h-10 rounded-lg border border-black/10 px-3 text-xs font-bold text-destiny-grey/60 dark:text-white/60 transition hover:bg-[#f5f7fa] lg:min-h-0 lg:px-2.5 lg:py-1"
               >
                 {uploading ? "Uploading…" : "Replace"}
               </button>
               <button
                 type="button"
                 onClick={() => onChange("")}
-                className="min-h-10 rounded-lg px-3 text-xs font-bold text-destiny-grey/45 transition hover:bg-black/5 hover:text-destiny-red lg:min-h-0 lg:px-2.5 lg:py-1"
+                className="min-h-10 rounded-lg px-3 text-xs font-bold text-destiny-grey/45 dark:text-white/45 transition hover:bg-black/5 hover:text-destiny-red lg:min-h-0 lg:px-2.5 lg:py-1"
               >
                 Remove
               </button>
@@ -86,10 +86,10 @@ export function ImageField({
               : "border-black/12 hover:border-destiny-orange/40 hover:bg-[#f5f7fa]"
           }`}
         >
-          <span className="material-symbols-rounded text-2xl text-destiny-grey/35">
+          <span className="material-symbols-rounded text-2xl text-destiny-grey/35 dark:text-white/35">
             {uploading ? "hourglass_top" : "add_photo_alternate"}
           </span>
-          <p className="mt-1 text-xs font-bold text-destiny-grey/60">
+          <p className="mt-1 text-xs font-bold text-destiny-grey/60 dark:text-white/60">
             {uploading ? (
               "Uploading…"
             ) : (
@@ -101,7 +101,7 @@ export function ImageField({
               </>
             )}
           </p>
-          <p className="mt-0.5 text-[11px] text-destiny-grey/40">
+          <p className="mt-0.5 text-[11px] text-destiny-grey/40 dark:text-white/40">
             JPG, PNG, WebP or GIF, up to 5MB
           </p>
         </div>

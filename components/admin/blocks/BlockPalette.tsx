@@ -58,8 +58,8 @@ export function BlockPalette({
       <div className={`shrink-0 px-4 ${sheet ? "pb-2 pt-3" : "border-b border-black/8 py-3"}`}>
         {!sheet && (
           <>
-            <p className="text-sm font-black text-destiny-grey">Blocks</p>
-            <p className="mt-0.5 text-xs text-destiny-grey/45">
+            <p className="text-sm font-black text-destiny-grey dark:text-white">Blocks</p>
+            <p className="mt-0.5 text-xs text-destiny-grey/45 dark:text-white/45">
               Click to add, or drag into the page.
             </p>
           </>
@@ -67,7 +67,7 @@ export function BlockPalette({
         <div className={`relative ${sheet ? "" : "mt-2.5"}`}>
           <span
             aria-hidden
-            className="material-symbols-rounded pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[18px] text-destiny-grey/35"
+            className="material-symbols-rounded pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[18px] text-destiny-grey/35 dark:text-white/35"
           >
             search
           </span>
@@ -79,7 +79,7 @@ export function BlockPalette({
             placeholder="Search blocks"
             // 16px on phones: anything smaller and iOS Safari zooms the whole
             // page in the moment the field is focused.
-            className="w-full rounded-xl border border-black/10 bg-white dark:border-white/10 dark:bg-destiny-grey-800 py-2.5 pl-9 pr-3 text-base text-destiny-grey outline-none transition placeholder:text-destiny-grey/35 focus:border-destiny-orange/50 focus:ring-2 focus:ring-destiny-orange/15 lg:text-sm"
+            className="w-full rounded-xl border border-black/10 bg-white dark:border-white/10 dark:bg-destiny-grey-800 py-2.5 pl-9 pr-3 text-base text-destiny-grey dark:text-white outline-none transition placeholder:text-destiny-grey/35 dark:placeholder:text-white/35 focus:border-destiny-orange/50 focus:ring-2 focus:ring-destiny-orange/15 lg:text-sm"
           />
         </div>
       </div>
@@ -91,7 +91,7 @@ export function BlockPalette({
       >
         {grouped.map((category) => (
           <div key={category.id}>
-            <p className="mb-2 px-1 text-[11px] font-bold uppercase tracking-wider text-destiny-grey/35">
+            <p className="mb-2 px-1 text-[11px] font-bold uppercase tracking-wider text-destiny-grey/35 dark:text-white/35">
               {category.label}
             </p>
             <div className={sheet ? "grid grid-cols-2 gap-2" : "flex flex-col gap-1"}>
@@ -113,7 +113,7 @@ export function BlockPalette({
         ))}
 
         {grouped.length === 0 && (
-          <p className="px-1 py-6 text-center text-sm text-destiny-grey/45">
+          <p className="px-1 py-6 text-center text-sm text-destiny-grey/45 dark:text-white/45">
             No blocks match “{query.trim()}”.
           </p>
         )}
@@ -159,8 +159,8 @@ function PaletteTile({
         >
           <span className="material-symbols-rounded text-[22px]">{def.icon}</span>
         </span>
-        <span className="block text-sm font-bold text-destiny-grey">{def.label}</span>
-        <span className="block text-xs leading-snug text-destiny-grey/45">
+        <span className="block text-sm font-bold text-destiny-grey dark:text-white">{def.label}</span>
+        <span className="block text-xs leading-snug text-destiny-grey/45 dark:text-white/45">
           {def.description}
         </span>
       </button>
@@ -182,8 +182,8 @@ function PaletteTile({
         <span className="material-symbols-rounded text-[19px]">{def.icon}</span>
       </span>
       <span className="min-w-0 flex-1">
-        <span className="block text-sm font-bold text-destiny-grey">{def.label}</span>
-        <span className="mt-0.5 block text-xs leading-snug text-destiny-grey/45">
+        <span className="block text-sm font-bold text-destiny-grey dark:text-white">{def.label}</span>
+        <span className="mt-0.5 block text-xs leading-snug text-destiny-grey/45 dark:text-white/45">
           {def.description}
         </span>
       </span>

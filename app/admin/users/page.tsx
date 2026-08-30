@@ -166,7 +166,7 @@ export default function AdminUsersPage() {
           ) : (
             <div className="overflow-x-auto rounded-3xl border border-black/5 bg-white shadow-sm dark:border-white/8 dark:bg-destiny-grey-800">
               <table className="w-full text-left text-sm">
-                <thead className="border-b border-black/5 text-xs font-bold uppercase tracking-wider text-destiny-grey/40">
+                <thead className="border-b border-black/5 text-xs font-bold uppercase tracking-wider text-destiny-grey/40 dark:text-white/40">
                   <tr>
                     <th className="px-5 py-3.5">Email</th>
                     <th className="px-5 py-3.5">Access</th>
@@ -176,11 +176,11 @@ export default function AdminUsersPage() {
                 <tbody className="divide-y divide-black/5">
                   {list.visible.map((u) => (
                     <tr key={u.auth_user_id} className="transition hover:bg-[#f5f7fa] dark:hover:bg-white/10">
-                      <td className="px-5 py-3.5 font-bold text-destiny-grey">{u.email}</td>
+                      <td className="px-5 py-3.5 font-bold text-destiny-grey dark:text-white">{u.email}</td>
                       <td className="px-5 py-3.5">
                         <div className="flex flex-wrap gap-1.5">
                           {ADMIN_ROLES.filter((r) => u[r]).length === 0 ? (
-                            <span className="text-destiny-grey/30">No access</span>
+                            <span className="text-destiny-grey/30 dark:text-white/30">No access</span>
                           ) : (
                             ADMIN_ROLES.filter((r) => u[r]).map((r) => (
                               <span
@@ -188,7 +188,7 @@ export default function AdminUsersPage() {
                                 className={`rounded-full px-2.5 py-1 text-[11px] font-bold ${
                                   r === "super_admin"
                                     ? "bg-destiny-orange/10 text-destiny-orange"
-                                    : "bg-black/5 text-destiny-grey/70"
+                                    : "bg-black/5 text-destiny-grey/70 dark:text-white/70"
                                 }`}
                               >
                                 {ROLE_LABELS[r]}
@@ -201,14 +201,14 @@ export default function AdminUsersPage() {
                         <div className="flex justify-end gap-3">
                           <button
                             onClick={() => setEditing(u)}
-                            className="text-destiny-grey/40 transition hover:text-destiny-orange"
+                            className="text-destiny-grey/40 dark:text-white/40 transition hover:text-destiny-orange"
                             aria-label={`Edit access for ${u.email}`}
                           >
                             <span className="material-symbols-rounded text-xl">edit</span>
                           </button>
                           <button
                             onClick={() => handleDelete(u)}
-                            className="text-destiny-grey/40 transition hover:text-destiny-red"
+                            className="text-destiny-grey/40 dark:text-white/40 transition hover:text-destiny-red"
                             aria-label={`Remove ${u.email}`}
                           >
                             <span className="material-symbols-rounded text-xl">delete</span>
@@ -328,7 +328,7 @@ function UserModal({
                 onChange={(e) => setPassword(e.target.value)}
                 className={inputClass}
               />
-              <p className="mt-1.5 text-xs text-destiny-grey/45">
+              <p className="mt-1.5 text-xs text-destiny-grey/45 dark:text-white/45">
                 At least 8 characters. They can change it from the sign-in page.
               </p>
             </div>
@@ -354,8 +354,8 @@ function UserModal({
                   className="mt-0.5 accent-destiny-orange"
                 />
                 <div>
-                  <p className="text-sm font-bold text-destiny-grey">{ROLE_LABELS[role]}</p>
-                  <p className="text-xs text-destiny-grey/50">{ROLE_HINTS[role]}</p>
+                  <p className="text-sm font-bold text-destiny-grey dark:text-white">{ROLE_LABELS[role]}</p>
+                  <p className="text-xs text-destiny-grey/50 dark:text-white/50">{ROLE_HINTS[role]}</p>
                 </div>
               </label>
             ))}

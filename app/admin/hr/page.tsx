@@ -105,8 +105,8 @@ export default function HrDashboardPage() {
                   <span className="material-symbols-rounded text-[26px]">{s.icon}</span>
                 </div>
                 <div>
-                  <p className="text-2xl font-black text-destiny-grey">{s.value}</p>
-                  <p className="text-xs font-bold uppercase tracking-wider text-destiny-grey/45">
+                  <p className="text-2xl font-black text-destiny-grey dark:text-white">{s.value}</p>
+                  <p className="text-xs font-bold uppercase tracking-wider text-destiny-grey/45 dark:text-white/45">
                     {s.label}
                   </p>
                 </div>
@@ -118,7 +118,7 @@ export default function HrDashboardPage() {
             {/* Pending leave */}
             <section className="rounded-3xl border border-black/5 bg-white dark:border-white/8 dark:bg-destiny-grey-800 p-6 shadow-sm">
               <div className="mb-4 flex items-center justify-between">
-                <h2 className="font-black text-destiny-grey">Pending leave</h2>
+                <h2 className="font-black text-destiny-grey dark:text-white">Pending leave</h2>
                 <Link
                   href="/admin/hr/leave"
                   className="text-xs font-bold text-destiny-orange hover:brightness-110"
@@ -127,16 +127,16 @@ export default function HrDashboardPage() {
                 </Link>
               </div>
               {pendingLeave.length === 0 ? (
-                <p className="text-sm text-destiny-grey/45">No requests waiting.</p>
+                <p className="text-sm text-destiny-grey/45 dark:text-white/45">No requests waiting.</p>
               ) : (
                 <ul className="flex flex-col divide-y divide-black/5">
                   {pendingLeave.slice(0, 5).map((l) => (
                     <li key={l.id} className="flex items-center justify-between py-2.5">
                       <div>
-                        <p className="text-sm font-bold text-destiny-grey">
+                        <p className="text-sm font-bold text-destiny-grey dark:text-white">
                           {l.hr_staff ? fullName(l.hr_staff) : "Unknown"}
                         </p>
-                        <p className="text-xs text-destiny-grey/45">
+                        <p className="text-xs text-destiny-grey/45 dark:text-white/45">
                           {formatDate(l.start_date)} – {formatDate(l.end_date)}
                         </p>
                       </div>
@@ -150,7 +150,7 @@ export default function HrDashboardPage() {
             {/* Upcoming reviews */}
             <section className="rounded-3xl border border-black/5 bg-white dark:border-white/8 dark:bg-destiny-grey-800 p-6 shadow-sm">
               <div className="mb-4 flex items-center justify-between">
-                <h2 className="font-black text-destiny-grey">Upcoming reviews</h2>
+                <h2 className="font-black text-destiny-grey dark:text-white">Upcoming reviews</h2>
                 <Link
                   href="/admin/hr/reviews"
                   className="text-xs font-bold text-destiny-orange hover:brightness-110"
@@ -159,20 +159,20 @@ export default function HrDashboardPage() {
                 </Link>
               </div>
               {upcomingReviews.length === 0 ? (
-                <p className="text-sm text-destiny-grey/45">Nothing scheduled.</p>
+                <p className="text-sm text-destiny-grey/45 dark:text-white/45">Nothing scheduled.</p>
               ) : (
                 <ul className="flex flex-col divide-y divide-black/5">
                   {upcomingReviews.slice(0, 5).map((r) => (
                     <li key={r.id} className="flex items-center justify-between py-2.5">
                       <div>
-                        <p className="text-sm font-bold text-destiny-grey">
+                        <p className="text-sm font-bold text-destiny-grey dark:text-white">
                           {r.hr_staff ? fullName(r.hr_staff) : "Unknown"}
                         </p>
-                        <p className="text-xs text-destiny-grey/45">
+                        <p className="text-xs text-destiny-grey/45 dark:text-white/45">
                           Due {formatDate(r.next_review_date)}
                         </p>
                       </div>
-                      <span className="material-symbols-rounded text-destiny-grey/30">
+                      <span className="material-symbols-rounded text-destiny-grey/30 dark:text-white/30">
                         chevron_right
                       </span>
                     </li>
@@ -186,7 +186,7 @@ export default function HrDashboardPage() {
               Documents and Reviews (not surfaced anywhere else on this page)
               are one click away. */}
           <section className="mt-8">
-            <h2 className="mb-3 text-xs font-bold uppercase tracking-widest text-destiny-grey/40">
+            <h2 className="mb-3 text-xs font-bold uppercase tracking-widest text-destiny-grey/40 dark:text-white/40">
               Sections
             </h2>
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -200,10 +200,10 @@ export default function HrDashboardPage() {
                     <span className="material-symbols-rounded text-xl">{item.icon}</span>
                   </span>
                   <div className="min-w-0">
-                    <p className="mb-0.5 text-sm font-black text-destiny-grey transition-colors group-hover:text-destiny-orange">
+                    <p className="mb-0.5 text-sm font-black text-destiny-grey dark:text-white transition-colors group-hover:text-destiny-orange">
                       {item.label}
                     </p>
-                    <p className="text-xs leading-relaxed text-destiny-grey/50">
+                    <p className="text-xs leading-relaxed text-destiny-grey/50 dark:text-white/50">
                       {item.description}
                     </p>
                   </div>

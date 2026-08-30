@@ -190,7 +190,7 @@ export default function DocumentsPage() {
           ) : (
             <div className="overflow-x-auto rounded-3xl border border-black/5 bg-white shadow-sm dark:border-white/8 dark:bg-destiny-grey-800">
               <table className="w-full text-left text-sm">
-                <thead className="border-b border-black/5 text-xs font-bold uppercase tracking-wider text-destiny-grey/40">
+                <thead className="border-b border-black/5 text-xs font-bold uppercase tracking-wider text-destiny-grey/40 dark:text-white/40">
                   <tr>
                     <th className="px-5 py-3.5">Title</th>
                     <th className="hidden px-5 py-3.5 sm:table-cell">Category</th>
@@ -203,32 +203,32 @@ export default function DocumentsPage() {
                   {list.visible.map((d) => (
                     <tr key={d.id} className="transition hover:bg-[#f5f7fa] dark:hover:bg-white/10">
                       <td className="px-5 py-3.5">
-                        <p className="font-bold text-destiny-grey">{d.title}</p>
-                        <p className="text-xs text-destiny-grey/45">
+                        <p className="font-bold text-destiny-grey dark:text-white">{d.title}</p>
+                        <p className="text-xs text-destiny-grey/45 dark:text-white/45">
                           {d.file_name} · {formatBytes(d.size_bytes)}
                         </p>
                       </td>
                       <td className="hidden px-5 py-3.5 sm:table-cell">
                         <Badge tone="blue">{DOCUMENT_CATEGORY_LABELS[d.category]}</Badge>
                       </td>
-                      <td className="hidden px-5 py-3.5 text-destiny-grey/70 md:table-cell">
+                      <td className="hidden px-5 py-3.5 text-destiny-grey/70 dark:text-white/70 md:table-cell">
                         {d.hr_staff ? fullName(d.hr_staff) : "Org-wide"}
                       </td>
-                      <td className="hidden px-5 py-3.5 text-destiny-grey/55 lg:table-cell">
+                      <td className="hidden px-5 py-3.5 text-destiny-grey/55 dark:text-white/55 lg:table-cell">
                         {formatDate(d.created_at)}
                       </td>
                       <td className="px-5 py-3.5">
                         <div className="flex justify-end gap-1">
                           <button
                             onClick={() => open(d.id)}
-                            className="text-destiny-grey/40 transition hover:text-destiny-orange"
+                            className="text-destiny-grey/40 dark:text-white/40 transition hover:text-destiny-orange"
                             aria-label={`Download ${d.title}`}
                           >
                             <span className="material-symbols-rounded text-xl">download</span>
                           </button>
                           <button
                             onClick={() => remove(d.id)}
-                            className="text-destiny-grey/40 transition hover:text-destiny-red"
+                            className="text-destiny-grey/40 dark:text-white/40 transition hover:text-destiny-red"
                             aria-label={`Delete ${d.title}`}
                           >
                             <span className="material-symbols-rounded text-xl">delete</span>

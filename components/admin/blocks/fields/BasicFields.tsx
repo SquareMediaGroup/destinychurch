@@ -22,7 +22,7 @@ import type { Tone } from "@/components/blocks/types";
  * the fields are hittable without a separate mobile stylesheet.
  */
 export const fieldInputClass =
-  "w-full rounded-xl border border-black/10 bg-white dark:border-white/10 dark:bg-destiny-grey-800 px-3.5 py-2.5 text-base text-destiny-grey outline-none transition placeholder:text-destiny-grey/30 focus:border-destiny-orange/50 focus:ring-2 focus:ring-destiny-orange/15 lg:text-sm";
+  "w-full rounded-xl border border-black/10 bg-white dark:border-white/10 dark:bg-destiny-grey-800 px-3.5 py-2.5 text-base text-destiny-grey dark:text-white outline-none transition placeholder:text-destiny-grey/30 dark:placeholder:text-white/30 focus:border-destiny-orange/50 focus:ring-2 focus:ring-destiny-orange/15 lg:text-sm";
 
 export function FieldShell({
   label,
@@ -42,7 +42,7 @@ export function FieldShell({
       </label>
       {children}
       {help && (
-        <p className="mt-1.5 text-xs leading-relaxed text-destiny-grey/45">{help}</p>
+        <p className="mt-1.5 text-xs leading-relaxed text-destiny-grey/45 dark:text-white/45">{help}</p>
       )}
     </div>
   );
@@ -232,9 +232,9 @@ export function ToggleField({
       className="flex w-full items-start justify-between gap-3 rounded-xl bg-[#f5f7fa] px-3.5 py-3 text-left transition active:bg-black/[0.06]"
     >
       <span className="min-w-0">
-        <span className="block text-sm font-bold text-destiny-grey">{label}</span>
+        <span className="block text-sm font-bold text-destiny-grey dark:text-white">{label}</span>
         {help && (
-          <span className="mt-0.5 block text-xs leading-relaxed text-destiny-grey/45">
+          <span className="mt-0.5 block text-xs leading-relaxed text-destiny-grey/45 dark:text-white/45">
             {help}
           </span>
         )}
@@ -285,8 +285,8 @@ export function ToneField({
               title={TONE_LABELS[tone]}
               className={`flex min-h-11 items-center gap-2 rounded-xl border px-3 text-xs font-bold transition lg:min-h-8 lg:px-2.5 ${
                 active
-                  ? "border-destiny-orange bg-destiny-orange/10 text-destiny-grey"
-                  : "border-black/10 text-destiny-grey/60 hover:border-black/20"
+                  ? "border-destiny-orange bg-destiny-orange/10 text-destiny-grey dark:text-white"
+                  : "border-black/10 text-destiny-grey/60 dark:text-white/60 hover:border-black/20"
               }`}
             >
               <span

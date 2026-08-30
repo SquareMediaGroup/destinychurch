@@ -61,8 +61,8 @@ export default function FeaturedCoursePage() {
   return (
     <div className="mx-auto max-w-4xl px-6 py-10">
       <div className="mb-6">
-        <h1 className="text-2xl font-black text-destiny-grey">Featured course</h1>
-        <p className="mt-1 text-sm text-destiny-grey/50">
+        <h1 className="text-2xl font-black text-destiny-grey dark:text-white">Featured course</h1>
+        <p className="mt-1 text-sm text-destiny-grey/50 dark:text-white/50">
           Choose which course headlines the What&apos;s On page. The featured
           course shows as the wide banner; the other three stay in the grid
           below, so all four are always visible.
@@ -71,7 +71,7 @@ export default function FeaturedCoursePage() {
 
       {loading ? (
         <div className="flex items-center justify-center py-16">
-          <span className="material-symbols-rounded animate-spin text-3xl text-destiny-grey/20">
+          <span className="material-symbols-rounded animate-spin text-3xl text-destiny-grey/20 dark:text-white/20">
             progress_activity
           </span>
         </div>
@@ -104,7 +104,7 @@ export default function FeaturedCoursePage() {
                   </div>
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
-                      <p className="truncate text-sm font-black text-destiny-grey">
+                      <p className="truncate text-sm font-black text-destiny-grey dark:text-white">
                         {course.name}
                       </p>
                       {isCurrent && (
@@ -113,7 +113,7 @@ export default function FeaturedCoursePage() {
                         </span>
                       )}
                     </div>
-                    <p className="mt-0.5 truncate text-xs text-destiny-grey/50">
+                    <p className="mt-0.5 truncate text-xs text-destiny-grey/50 dark:text-white/50">
                       {course.card.cta.href}
                     </p>
                   </div>
@@ -157,7 +157,7 @@ export default function FeaturedCoursePage() {
               </span>
             )}
             {dirty && !saving && !saved && (
-              <span className="text-xs text-destiny-grey/40">
+              <span className="text-xs text-destiny-grey/40 dark:text-white/40">
                 Unsaved changes
               </span>
             )}

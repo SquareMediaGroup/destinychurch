@@ -25,7 +25,7 @@ function SourceSection({
     <div className="rounded-3xl border border-black/5 bg-white dark:border-white/8 dark:bg-destiny-grey-800 p-5 shadow-sm">
       <div className="mb-4 flex items-center gap-2">
         <span className="material-symbols-rounded text-xl text-destiny-orange">{meta.icon}</span>
-        <h3 className="text-sm font-bold uppercase tracking-wider text-destiny-grey/60">
+        <h3 className="text-sm font-bold uppercase tracking-wider text-destiny-grey/60 dark:text-white/60">
           {meta.label}
         </h3>
       </div>
@@ -69,10 +69,10 @@ function SourceSection({
                 key={row.key}
                 className="flex items-center justify-between gap-3 px-4 py-2.5 text-sm"
               >
-                <span className="min-w-0 truncate font-bold text-destiny-grey">
+                <span className="min-w-0 truncate font-bold text-destiny-grey dark:text-white">
                   {row.label ?? row.key}
                 </span>
-                <span className="shrink-0 font-bold tabular-nums text-destiny-grey/60">
+                <span className="shrink-0 font-bold tabular-nums text-destiny-grey/60 dark:text-white/60">
                   {row.events.toLocaleString("en-GB")}
                 </span>
               </li>

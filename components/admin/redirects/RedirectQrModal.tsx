@@ -98,13 +98,13 @@ export function RedirectQrModal({
   return (
     <Modal title={`QR code for /${slug}`} onClose={onClose}>
       <div className="flex flex-col items-center gap-4">
-        {label && <p className="text-sm font-bold text-destiny-grey">{label}</p>}
+        {label && <p className="text-sm font-bold text-destiny-grey dark:text-white">{label}</p>}
 
         <div className="rounded-2xl border border-black/10 bg-white dark:border-white/10 dark:bg-destiny-grey-800 p-4">
           <QRCodeSVG ref={svgRef} value={url} size={220} level="H" marginSize={4} />
         </div>
 
-        <p className="max-w-xs text-center font-mono text-xs text-destiny-grey/50">{url}</p>
+        <p className="max-w-xs text-center font-mono text-xs text-destiny-grey/50 dark:text-white/50">{url}</p>
 
         <div className="flex gap-3">
           <button type="button" className={ghostBtn} onClick={downloadSvg}>
@@ -122,7 +122,7 @@ export function RedirectQrModal({
           </button>
         </div>
 
-        <p className="text-center text-xs text-destiny-grey/40">
+        <p className="text-center text-xs text-destiny-grey/40 dark:text-white/40">
           Scans of this code show up on the Analytics page, tagged separately from links
           clicked online.
         </p>

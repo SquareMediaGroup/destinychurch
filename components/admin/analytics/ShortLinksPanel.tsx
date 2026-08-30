@@ -61,13 +61,13 @@ export function ShortLinksPanel({
           <span className="material-symbols-rounded text-base text-destiny-orange">
             filter_alt
           </span>
-          <p className="text-sm font-bold text-destiny-grey">
+          <p className="text-sm font-bold text-destiny-grey dark:text-white">
             Showing only <span className="font-mono">/{target}</span>
           </p>
           <button
             type="button"
             onClick={() => setTarget(null)}
-            className="ml-auto text-xs font-bold text-destiny-grey/50 transition hover:text-destiny-grey"
+            className="ml-auto text-xs font-bold text-destiny-grey/50 dark:text-white/50 transition hover:text-destiny-grey dark:hover:text-white"
           >
             Clear
           </button>
@@ -101,7 +101,7 @@ export function ShortLinksPanel({
         />
         <MetricCard
           icon="smart_toy"
-          iconColor="text-destiny-grey/50"
+          iconColor="text-destiny-grey/50 dark:text-white/50"
           iconBg="bg-black/5"
           label="Link previews filtered"
           loading={false}
@@ -110,7 +110,7 @@ export function ShortLinksPanel({
       </div>
 
       <div className="rounded-3xl border border-black/5 bg-white dark:border-white/8 dark:bg-destiny-grey-800 p-5 shadow-sm">
-        <h3 className="mb-4 text-sm font-bold uppercase tracking-wider text-destiny-grey/50">
+        <h3 className="mb-4 text-sm font-bold uppercase tracking-wider text-destiny-grey/50 dark:text-white/50">
           Clicks per day
         </h3>
         <DayChart points={data.timeseries.map((p) => ({ day: p.day, events: p.events }))} />
@@ -118,11 +118,11 @@ export function ShortLinksPanel({
 
       {!target && (
         <div className="overflow-hidden rounded-3xl border border-black/5 bg-white shadow-sm dark:border-white/8 dark:bg-destiny-grey-800">
-          <h3 className="border-b border-black/5 px-5 py-4 text-sm font-bold uppercase tracking-wider text-destiny-grey/50">
+          <h3 className="border-b border-black/5 px-5 py-4 text-sm font-bold uppercase tracking-wider text-destiny-grey/50 dark:text-white/50">
             Top links
           </h3>
           {data.byTarget.length === 0 ? (
-            <p className="px-5 py-6 text-sm text-destiny-grey/40">No clicks in this range.</p>
+            <p className="px-5 py-6 text-sm text-destiny-grey/40 dark:text-white/40">No clicks in this range.</p>
           ) : (
             <ul className="divide-y divide-black/5">
               {data.byTarget.map((row) => (
@@ -133,14 +133,14 @@ export function ShortLinksPanel({
                     className="flex w-full items-center justify-between gap-3 px-5 py-3.5 text-left transition hover:bg-[#f5f7fa]"
                   >
                     <span className="min-w-0">
-                      <span className="block truncate text-sm font-bold text-destiny-grey">
+                      <span className="block truncate text-sm font-bold text-destiny-grey dark:text-white">
                         {row.label ?? row.key}
                       </span>
-                      <span className="block truncate font-mono text-xs text-destiny-grey/45">
+                      <span className="block truncate font-mono text-xs text-destiny-grey/45 dark:text-white/45">
                         /{row.key}
                       </span>
                     </span>
-                    <span className="shrink-0 text-sm font-bold tabular-nums text-destiny-grey/70">
+                    <span className="shrink-0 text-sm font-bold tabular-nums text-destiny-grey/70 dark:text-white/70">
                       {row.events.toLocaleString("en-GB")}
                     </span>
                   </button>
@@ -153,7 +153,7 @@ export function ShortLinksPanel({
 
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="rounded-3xl border border-black/5 bg-white dark:border-white/8 dark:bg-destiny-grey-800 p-5 shadow-sm">
-          <h3 className="mb-3 text-sm font-bold uppercase tracking-wider text-destiny-grey/50">
+          <h3 className="mb-3 text-sm font-bold uppercase tracking-wider text-destiny-grey/50 dark:text-white/50">
             Country
           </h3>
           <BarRows
@@ -161,7 +161,7 @@ export function ShortLinksPanel({
           />
         </div>
         <div className="rounded-3xl border border-black/5 bg-white dark:border-white/8 dark:bg-destiny-grey-800 p-5 shadow-sm">
-          <h3 className="mb-3 text-sm font-bold uppercase tracking-wider text-destiny-grey/50">
+          <h3 className="mb-3 text-sm font-bold uppercase tracking-wider text-destiny-grey/50 dark:text-white/50">
             Where from
           </h3>
           <BarRows
@@ -173,7 +173,7 @@ export function ShortLinksPanel({
           />
         </div>
         <div className="rounded-3xl border border-black/5 bg-white dark:border-white/8 dark:bg-destiny-grey-800 p-5 shadow-sm">
-          <h3 className="mb-3 text-sm font-bold uppercase tracking-wider text-destiny-grey/50">
+          <h3 className="mb-3 text-sm font-bold uppercase tracking-wider text-destiny-grey/50 dark:text-white/50">
             Device
           </h3>
           <BarRows
@@ -181,7 +181,7 @@ export function ShortLinksPanel({
           />
         </div>
         <div className="rounded-3xl border border-black/5 bg-white dark:border-white/8 dark:bg-destiny-grey-800 p-5 shadow-sm">
-          <h3 className="mb-3 text-sm font-bold uppercase tracking-wider text-destiny-grey/50">
+          <h3 className="mb-3 text-sm font-bold uppercase tracking-wider text-destiny-grey/50 dark:text-white/50">
             How they got here
           </h3>
           <BarRows
@@ -194,7 +194,7 @@ export function ShortLinksPanel({
           />
         </div>
         <div className="rounded-3xl border border-black/5 bg-white dark:border-white/8 dark:bg-destiny-grey-800 p-5 shadow-sm">
-          <h3 className="mb-3 text-sm font-bold uppercase tracking-wider text-destiny-grey/50">
+          <h3 className="mb-3 text-sm font-bold uppercase tracking-wider text-destiny-grey/50 dark:text-white/50">
             Connection
           </h3>
           <BarRows
@@ -206,7 +206,7 @@ export function ShortLinksPanel({
             emptyLabel="Nothing unusual — everyone's on an ordinary connection."
           />
           {data.byIpCategory.some((b) => b.key === "apple_private_relay") && (
-            <p className="mt-3 text-xs text-destiny-grey/40">
+            <p className="mt-3 text-xs text-destiny-grey/40 dark:text-white/40">
               Private Relay clicks show the relay&rsquo;s location, not the visitor&rsquo;s.
             </p>
           )}
@@ -214,7 +214,7 @@ export function ShortLinksPanel({
       </div>
 
       {topTarget && (
-        <p className="text-center text-xs text-destiny-grey/35">
+        <p className="text-center text-xs text-destiny-grey/35 dark:text-white/35">
           Busiest link this period: /{topTarget.key}
         </p>
       )}

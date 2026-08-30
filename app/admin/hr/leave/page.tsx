@@ -128,7 +128,7 @@ export default function LeavePage() {
           {pending.length > 0 && (
             <section className="rounded-3xl border border-destiny-orange/30 bg-white shadow-sm dark:bg-destiny-grey-800">
               <div className="border-b border-black/5 px-5 py-4">
-                <h2 className="font-black text-destiny-grey">
+                <h2 className="font-black text-destiny-grey dark:text-white">
                   Awaiting approval ({pending.length})
                 </h2>
               </div>
@@ -139,13 +139,13 @@ export default function LeavePage() {
                     className="flex flex-wrap items-center justify-between gap-3 px-5 py-3.5"
                   >
                     <div>
-                      <p className="text-sm font-bold text-destiny-grey">
+                      <p className="text-sm font-bold text-destiny-grey dark:text-white">
                         {l.hr_staff ? fullName(l.hr_staff) : "Unknown"}
-                        <span className="ml-2 text-xs font-normal text-destiny-grey/45">
+                        <span className="ml-2 text-xs font-normal text-destiny-grey/45 dark:text-white/45">
                           {LEAVE_TYPE_LABELS[l.type]} · {Number(l.days)} day(s)
                         </span>
                       </p>
-                      <p className="text-xs text-destiny-grey/45">
+                      <p className="text-xs text-destiny-grey/45 dark:text-white/45">
                         {formatDate(l.start_date)} – {formatDate(l.end_date)}
                         {l.reason ? ` · ${l.reason}` : ""}
                       </p>
@@ -173,7 +173,7 @@ export default function LeavePage() {
           {/* Balances */}
           {balances.length > 0 && (
             <section>
-              <h2 className="mb-3 text-sm font-bold uppercase tracking-wider text-destiny-grey/45">
+              <h2 className="mb-3 text-sm font-bold uppercase tracking-wider text-destiny-grey/45 dark:text-white/45">
                 Holiday balances
               </h2>
               <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -182,14 +182,14 @@ export default function LeavePage() {
                     key={b.staff.id}
                     className="rounded-2xl border border-black/5 bg-white dark:border-white/8 dark:bg-destiny-grey-800 p-4 shadow-sm"
                   >
-                    <p className="text-sm font-bold text-destiny-grey">
+                    <p className="text-sm font-bold text-destiny-grey dark:text-white">
                       {fullName(b.staff)}
                     </p>
                     <div className="mt-2 flex items-baseline gap-1">
                       <span className="text-2xl font-black text-destiny-orange">
                         {b.remaining}
                       </span>
-                      <span className="text-xs text-destiny-grey/45">
+                      <span className="text-xs text-destiny-grey/45 dark:text-white/45">
                         / {b.staff.annual_leave_entitlement} days left
                       </span>
                     </div>
@@ -201,7 +201,7 @@ export default function LeavePage() {
 
           {/* All requests */}
           <section>
-            <h2 className="mb-3 text-sm font-bold uppercase tracking-wider text-destiny-grey/45">
+            <h2 className="mb-3 text-sm font-bold uppercase tracking-wider text-destiny-grey/45 dark:text-white/45">
               All requests
             </h2>
             {leave.length === 0 ? (
@@ -252,7 +252,7 @@ export default function LeavePage() {
               ) : (
               <div className="overflow-x-auto rounded-3xl border border-black/5 bg-white shadow-sm dark:border-white/8 dark:bg-destiny-grey-800">
                 <table className="w-full text-left text-sm">
-                  <thead className="border-b border-black/5 text-xs font-bold uppercase tracking-wider text-destiny-grey/40">
+                  <thead className="border-b border-black/5 text-xs font-bold uppercase tracking-wider text-destiny-grey/40 dark:text-white/40">
                     <tr>
                       <th className="px-5 py-3.5">Staff</th>
                       <th className="hidden px-5 py-3.5 sm:table-cell">Type</th>
@@ -263,13 +263,13 @@ export default function LeavePage() {
                   <tbody className="divide-y divide-black/5">
                     {list.visible.map((l) => (
                       <tr key={l.id} className="transition hover:bg-[#f5f7fa] dark:hover:bg-white/10">
-                        <td className="px-5 py-3.5 font-bold text-destiny-grey">
+                        <td className="px-5 py-3.5 font-bold text-destiny-grey dark:text-white">
                           {l.hr_staff ? fullName(l.hr_staff) : "Unknown"}
                         </td>
-                        <td className="hidden px-5 py-3.5 text-destiny-grey/70 sm:table-cell">
+                        <td className="hidden px-5 py-3.5 text-destiny-grey/70 dark:text-white/70 sm:table-cell">
                           {LEAVE_TYPE_LABELS[l.type]}
                         </td>
-                        <td className="px-5 py-3.5 text-destiny-grey/70">
+                        <td className="px-5 py-3.5 text-destiny-grey/70 dark:text-white/70">
                           {formatDate(l.start_date)} – {formatDate(l.end_date)}
                         </td>
                         <td className="px-5 py-3.5">

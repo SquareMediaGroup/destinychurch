@@ -67,13 +67,13 @@ function PostListSection({
       }}
     >
       {items.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-black/10 bg-[#f5f7fa] p-8 text-center text-sm font-medium text-destiny-grey/40">
+        <div className="rounded-2xl border border-dashed border-black/10 bg-[#f5f7fa] p-8 text-center text-sm font-medium text-destiny-grey/40 dark:text-white/40">
           Drop posts here
         </div>
       ) : (
         <div className="overflow-hidden rounded-3xl border border-black/5 bg-white shadow-sm dark:border-white/8 dark:bg-destiny-grey-800">
           <table className="w-full text-left text-sm">
-            <thead className="border-b border-black/5 text-xs font-bold uppercase tracking-wider text-destiny-grey/40">
+            <thead className="border-b border-black/5 text-xs font-bold uppercase tracking-wider text-destiny-grey/40 dark:text-white/40">
               <tr>
                 <th className="w-10 px-2 py-3.5"></th>
                 <th className="px-5 py-3.5">Post</th>
@@ -99,16 +99,16 @@ function PostListSection({
                   <td className="px-2 py-3.5 text-center">
                     <span
                       onClick={(e) => e.stopPropagation()}
-                      className="material-symbols-rounded cursor-grab text-xl text-destiny-grey/25 active:cursor-grabbing"
+                      className="material-symbols-rounded cursor-grab text-xl text-destiny-grey/25 dark:text-white/25 active:cursor-grabbing"
                       title="Drag to move or reorder"
                     >
                       drag_indicator
                     </span>
                   </td>
                   <td className="px-5 py-3.5">
-                    <p className="font-bold text-destiny-grey transition group-hover:text-destiny-orange">{p.title}</p>
+                    <p className="font-bold text-destiny-grey dark:text-white transition group-hover:text-destiny-orange">{p.title}</p>
                     {p.summary && (
-                      <p className="mt-0.5 text-xs text-destiny-grey/45">{p.summary}</p>
+                      <p className="mt-0.5 text-xs text-destiny-grey/45 dark:text-white/45">{p.summary}</p>
                     )}
                   </td>
                   <td className="px-5 py-3.5">
@@ -132,7 +132,7 @@ function PostListSection({
                           target="_blank"
                           rel="noreferrer"
                           onClick={(e) => e.stopPropagation()}
-                          className="text-destiny-grey/40 transition hover:text-destiny-orange"
+                          className="text-destiny-grey/40 dark:text-white/40 transition hover:text-destiny-orange"
                           aria-label="View live"
                         >
                           <span className="material-symbols-rounded text-xl">
@@ -145,7 +145,7 @@ function PostListSection({
                           e.stopPropagation();
                           setEditing(p);
                         }}
-                        className="text-destiny-grey/40 transition hover:text-destiny-orange group-hover:text-destiny-orange"
+                        className="text-destiny-grey/40 dark:text-white/40 transition hover:text-destiny-orange group-hover:text-destiny-orange"
                         aria-label="Edit"
                       >
                         <span className="material-symbols-rounded text-xl">edit</span>
@@ -155,7 +155,7 @@ function PostListSection({
                           e.stopPropagation();
                           remove(p);
                         }}
-                        className="text-destiny-grey/40 transition hover:text-destiny-red"
+                        className="text-destiny-grey/40 dark:text-white/40 transition hover:text-destiny-red"
                         aria-label="Delete"
                       >
                         <span className="material-symbols-rounded text-xl">delete</span>
@@ -200,7 +200,7 @@ function SearchResults({
   return (
     <div className="overflow-x-auto rounded-3xl border border-black/5 bg-white shadow-sm dark:border-white/8 dark:bg-destiny-grey-800">
       <table className="w-full text-left text-sm">
-        <thead className="border-b border-black/5 text-xs font-bold uppercase tracking-wider text-destiny-grey/40">
+        <thead className="border-b border-black/5 text-xs font-bold uppercase tracking-wider text-destiny-grey/40 dark:text-white/40">
           <tr>
             <th className="px-5 py-3.5">Post</th>
             <th className="hidden px-5 py-3.5 sm:table-cell">Folder</th>
@@ -216,15 +216,15 @@ function SearchResults({
               className="group cursor-pointer transition hover:bg-[#f5f7fa] dark:hover:bg-white/10"
             >
               <td className="px-5 py-3.5">
-                <p className="font-bold text-destiny-grey transition group-hover:text-destiny-orange">
+                <p className="font-bold text-destiny-grey dark:text-white transition group-hover:text-destiny-orange">
                   {p.title}
                 </p>
                 {p.summary && (
-                  <p className="mt-0.5 text-xs text-destiny-grey/45">{p.summary}</p>
+                  <p className="mt-0.5 text-xs text-destiny-grey/45 dark:text-white/45">{p.summary}</p>
                 )}
               </td>
               <td className="hidden px-5 py-3.5 sm:table-cell">
-                <span className="inline-flex items-center gap-1.5 text-xs font-bold text-destiny-grey/50">
+                <span className="inline-flex items-center gap-1.5 text-xs font-bold text-destiny-grey/50 dark:text-white/50">
                   <span className="material-symbols-rounded text-base text-destiny-orange/60">
                     {p.folder_id ? "folder" : "folder_open"}
                   </span>
@@ -252,7 +252,7 @@ function SearchResults({
                       target="_blank"
                       rel="noreferrer"
                       onClick={(e) => e.stopPropagation()}
-                      className="text-destiny-grey/40 transition hover:text-destiny-orange"
+                      className="text-destiny-grey/40 dark:text-white/40 transition hover:text-destiny-orange"
                       aria-label={`View ${p.title} live`}
                     >
                       <span className="material-symbols-rounded text-xl">open_in_new</span>
@@ -263,7 +263,7 @@ function SearchResults({
                       e.stopPropagation();
                       onEdit(p);
                     }}
-                    className="text-destiny-grey/40 transition hover:text-destiny-orange group-hover:text-destiny-orange"
+                    className="text-destiny-grey/40 dark:text-white/40 transition hover:text-destiny-orange group-hover:text-destiny-orange"
                     aria-label={`Edit ${p.title}`}
                   >
                     <span className="material-symbols-rounded text-xl">edit</span>
@@ -273,7 +273,7 @@ function SearchResults({
                       e.stopPropagation();
                       remove(p);
                     }}
-                    className="text-destiny-grey/40 transition hover:text-destiny-red"
+                    className="text-destiny-grey/40 dark:text-white/40 transition hover:text-destiny-red"
                     aria-label={`Delete ${p.title}`}
                   >
                     <span className="material-symbols-rounded text-xl">delete</span>
@@ -464,7 +464,7 @@ export default function TrainingPostsPage() {
         action={
           <div className="flex gap-2">
             <button
-              className="flex items-center gap-1.5 rounded-full bg-black/5 px-4 py-2 text-sm font-bold text-destiny-grey transition hover:bg-black/10"
+              className="flex items-center gap-1.5 rounded-full bg-black/5 px-4 py-2 text-sm font-bold text-destiny-grey dark:text-white transition hover:bg-black/10"
               onClick={() => setEditingFolder("new")}
             >
               <span className="material-symbols-rounded text-lg">folder</span>
@@ -487,7 +487,7 @@ export default function TrainingPostsPage() {
             onChange={setSearch}
             placeholder="Search posts in this sub-group"
           />
-          <p className="text-xs font-bold tabular-nums text-destiny-grey/40">
+          <p className="text-xs font-bold tabular-nums text-destiny-grey/40 dark:text-white/40">
             {searching ? `${matches.length} of ${posts.length}` : posts.length} post
             {posts.length === 1 && !searching ? "" : "s"}
           </p>
@@ -578,8 +578,8 @@ export default function TrainingPostsPage() {
                       </span>
                     </div>
                     <div>
-                      <h3 className="font-bold text-destiny-grey">{folder.name}</h3>
-                      <p className="text-xs font-medium text-destiny-grey/40">
+                      <h3 className="font-bold text-destiny-grey dark:text-white">{folder.name}</h3>
+                      <p className="text-xs font-medium text-destiny-grey/40 dark:text-white/40">
                         {count} post{count === 1 ? "" : "s"}
                       </p>
                     </div>
@@ -592,7 +592,7 @@ export default function TrainingPostsPage() {
           {getPostsInFolder(null).length > 0 && (
             <div>
               {folders.length > 0 && (
-                <h3 className="mb-3 text-xl font-bold text-destiny-grey">Ungrouped Posts</h3>
+                <h3 className="mb-3 text-xl font-bold text-destiny-grey dark:text-white">Ungrouped Posts</h3>
               )}
               <PostListSection
                 folder={null}
@@ -615,25 +615,25 @@ export default function TrainingPostsPage() {
             <div className="flex items-center gap-3">
               <button
                 onClick={() => setActiveFolderId(null)}
-                className="flex h-8 w-8 items-center justify-center rounded-full bg-black/5 text-destiny-grey transition hover:bg-black/10"
+                className="flex h-8 w-8 items-center justify-center rounded-full bg-black/5 text-destiny-grey dark:text-white transition hover:bg-black/10"
               >
                 <span className="material-symbols-rounded text-xl">arrow_back</span>
               </button>
-              <h2 className="text-lg font-bold text-destiny-grey">
+              <h2 className="text-lg font-bold text-destiny-grey dark:text-white">
                 {activeFolder?.name}
               </h2>
             </div>
             <div className="flex items-center gap-2">
               <button
                 onClick={() => setEditingFolder(activeFolder!)}
-                className="flex h-8 w-8 items-center justify-center rounded-full text-destiny-grey/40 transition hover:bg-black/5 hover:text-destiny-orange"
+                className="flex h-8 w-8 items-center justify-center rounded-full text-destiny-grey/40 dark:text-white/40 transition hover:bg-black/5 hover:text-destiny-orange"
                 title="Edit folder"
               >
                 <span className="material-symbols-rounded text-xl">edit</span>
               </button>
               <button
                 onClick={() => removeFolder(activeFolder!)}
-                className="flex h-8 w-8 items-center justify-center rounded-full text-destiny-grey/40 transition hover:bg-black/5 hover:text-destiny-red"
+                className="flex h-8 w-8 items-center justify-center rounded-full text-destiny-grey/40 dark:text-white/40 transition hover:bg-black/5 hover:text-destiny-red"
                 title="Delete folder"
               >
                 <span className="material-symbols-rounded text-xl">delete</span>

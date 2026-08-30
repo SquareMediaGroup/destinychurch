@@ -203,7 +203,7 @@ export default function RedirectsPage() {
 
       {showForm && (
         <div className="mb-8 rounded-3xl border border-black/5 bg-white dark:border-white/8 dark:bg-destiny-grey-800 p-6 shadow-sm">
-          <h2 className="mb-4 text-sm font-bold uppercase tracking-wider text-destiny-grey/50">
+          <h2 className="mb-4 text-sm font-bold uppercase tracking-wider text-destiny-grey/50 dark:text-white/50">
             New redirect
           </h2>
           <form onSubmit={handleCreate} className="flex flex-col gap-4">
@@ -225,8 +225,8 @@ export default function RedirectsPage() {
                 <label className={labelClass} htmlFor="redirect-slug">
                   Slug (required)
                 </label>
-                <div className="flex overflow-hidden rounded-xl border border-black/10 focus-within:border-destiny-orange/50 focus-within:ring-2 focus-within:ring-destiny-orange/15">
-                  <span className="flex items-center whitespace-nowrap border-r border-black/10 bg-black/5 px-3 text-xs text-destiny-grey/40">
+                <div className="flex overflow-hidden rounded-xl border border-black/10 focus-within:border-destiny-orange/50 focus-within:ring-2 focus-within:ring-destiny-orange/15 dark:border-white/10">
+                  <span className="flex items-center whitespace-nowrap border-r border-black/10 bg-black/5 px-3 text-xs text-destiny-grey/40 dark:border-white/10 dark:bg-white/5 dark:text-white/40">
                     destinytees.uk/
                   </span>
                   <input
@@ -243,7 +243,7 @@ export default function RedirectsPage() {
                     }
                     required
                     placeholder="alpha-signup"
-                    className="min-w-0 flex-1 px-3 py-2.5 text-sm text-destiny-grey placeholder:text-destiny-grey/30 focus:outline-none"
+                    className="min-w-0 flex-1 px-3 py-2.5 text-sm text-destiny-grey dark:text-white placeholder:text-destiny-grey/30 dark:placeholder:text-white/30 focus:outline-none"
                   />
                 </div>
               </div>
@@ -335,18 +335,18 @@ export default function RedirectsPage() {
                   >
                     <div className="min-w-0 flex-1">
                       <div className="mb-0.5 flex flex-wrap items-center gap-2">
-                        <span className="text-sm font-bold text-destiny-grey">/{r.slug}</span>
+                        <span className="text-sm font-bold text-destiny-grey dark:text-white">/{r.slug}</span>
                         {r.label && (
                           <span className="rounded-full bg-destiny-orange/10 px-2 py-0.5 text-[10px] font-bold text-destiny-orange">
                             {r.label}
                           </span>
                         )}
                       </div>
-                      <p className="truncate text-xs text-destiny-grey/45">{r.target_url}</p>
+                      <p className="truncate text-xs text-destiny-grey/45 dark:text-white/45">{r.target_url}</p>
                       {clickCounts && (clickCounts[r.slug] ?? 0) > 0 && (
                         <a
                           href={`/admin/analytics?tab=links&range=month&target=${encodeURIComponent(r.slug)}`}
-                          className="mt-0.5 inline-flex items-center gap-1 text-xs font-bold text-destiny-grey/40 transition hover:text-destiny-orange"
+                          className="mt-0.5 inline-flex items-center gap-1 text-xs font-bold text-destiny-grey/40 dark:text-white/40 transition hover:text-destiny-orange"
                         >
                           <span className="material-symbols-rounded text-sm">ads_click</span>
                           {clickCounts[r.slug]} click{clickCounts[r.slug] === 1 ? "" : "s"} in the
@@ -362,7 +362,7 @@ export default function RedirectsPage() {
                         rel="noreferrer"
                         title="Open this link"
                         aria-label={`Open /${r.slug}`}
-                        className="flex h-8 w-8 items-center justify-center rounded-lg text-destiny-grey/40 transition hover:bg-black/5 hover:text-destiny-orange"
+                        className="flex h-8 w-8 items-center justify-center rounded-lg text-destiny-grey/40 dark:text-white/40 transition hover:bg-black/5 hover:text-destiny-orange"
                       >
                         <span className="material-symbols-rounded text-base">open_in_new</span>
                       </a>
@@ -370,7 +370,7 @@ export default function RedirectsPage() {
                         onClick={() => handleCopy(r.slug)}
                         title="Copy URL"
                         aria-label={`Copy the URL for /${r.slug}`}
-                        className="flex h-8 w-8 items-center justify-center rounded-lg text-destiny-grey/40 transition hover:bg-black/5 hover:text-destiny-grey"
+                        className="flex h-8 w-8 items-center justify-center rounded-lg text-destiny-grey/40 dark:text-white/40 transition hover:bg-black/5 hover:text-destiny-grey dark:hover:text-white"
                       >
                         <span
                           className={`material-symbols-rounded text-base ${
@@ -384,7 +384,7 @@ export default function RedirectsPage() {
                         onClick={() => setQrTarget(r)}
                         title="QR code"
                         aria-label={`Get a QR code for /${r.slug}`}
-                        className="flex h-8 w-8 items-center justify-center rounded-lg text-destiny-grey/40 transition hover:bg-black/5 hover:text-destiny-grey"
+                        className="flex h-8 w-8 items-center justify-center rounded-lg text-destiny-grey/40 dark:text-white/40 transition hover:bg-black/5 hover:text-destiny-grey dark:hover:text-white"
                       >
                         <span className="material-symbols-rounded text-base">qr_code_2</span>
                       </button>
@@ -397,7 +397,7 @@ export default function RedirectsPage() {
                         onClick={() => handleDelete(r)}
                         title="Delete"
                         aria-label={`Delete /${r.slug}`}
-                        className="flex h-8 w-8 items-center justify-center rounded-lg text-destiny-grey/30 transition hover:bg-destiny-red/10 hover:text-destiny-red"
+                        className="flex h-8 w-8 items-center justify-center rounded-lg text-destiny-grey/30 dark:text-white/30 transition hover:bg-destiny-red/10 hover:text-destiny-red"
                       >
                         <span className="material-symbols-rounded text-base">delete</span>
                       </button>

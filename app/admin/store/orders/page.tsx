@@ -25,7 +25,7 @@ const TONE_CLASS: Record<string, string> = {
   blue: "bg-destiny-blue/10 text-destiny-blue",
   green: "bg-destiny-green/10 text-destiny-green",
   red: "bg-destiny-red/10 text-destiny-red",
-  grey: "bg-destiny-grey/10 text-destiny-grey/60",
+  grey: "bg-destiny-grey/10 text-destiny-grey/60 dark:text-white/60",
 };
 const STATUS_TONE: Record<string, string> = {
   pending: "orange",
@@ -176,9 +176,9 @@ export default function AdminOrdersPage() {
           />
 
           {shownTotal > 0 && (
-            <p className="mb-4 text-xs font-bold text-destiny-grey/45">
+            <p className="mb-4 text-xs font-bold text-destiny-grey/45 dark:text-white/45">
               Paid and fulfilled in this view:{" "}
-              <span className="text-destiny-grey">{formatPrice(shownTotal)}</span>
+              <span className="text-destiny-grey dark:text-white">{formatPrice(shownTotal)}</span>
             </p>
           )}
 
@@ -205,13 +205,13 @@ export default function AdminOrdersPage() {
                     className="flex items-center gap-4 rounded-xl border border-black/8 bg-white dark:border-white/8 dark:bg-destiny-grey-800 p-4 transition hover:border-destiny-orange/40 hover:bg-[#fffaf5] dark:hover:bg-white/5"
                   >
                     <div className="min-w-0 flex-1">
-                      <p className="font-bold text-destiny-grey">
+                      <p className="font-bold text-destiny-grey dark:text-white">
                         {o.order_number}
-                        <span className="ml-2 font-normal text-destiny-grey/50">
+                        <span className="ml-2 font-normal text-destiny-grey/50 dark:text-white/50">
                           {o.customer_name}
                         </span>
                       </p>
-                      <p className="truncate text-sm text-destiny-grey/55">
+                      <p className="truncate text-sm text-destiny-grey/55 dark:text-white/55">
                         {dateFmt.format(new Date(o.created_at))} ·{" "}
                         {formatPrice(o.total_pennies)} · {o.customer_email}
                       </p>
@@ -223,7 +223,7 @@ export default function AdminOrdersPage() {
                     >
                       {ORDER_STATUS_LABELS[o.status]}
                     </span>
-                    <span className="material-symbols-rounded shrink-0 text-destiny-grey/30">
+                    <span className="material-symbols-rounded shrink-0 text-destiny-grey/30 dark:text-white/30">
                       chevron_right
                     </span>
                   </Link>

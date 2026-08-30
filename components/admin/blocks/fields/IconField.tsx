@@ -40,7 +40,7 @@ export function IconField({
             as its own text, which is self-explaining feedback. */}
         <span
           aria-hidden
-          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-black/10 bg-[#f5f7fa] text-destiny-grey/70 lg:h-10 lg:w-10"
+          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-black/10 bg-[#f5f7fa] text-destiny-grey/70 dark:text-white/70 lg:h-10 lg:w-10"
         >
           <span className="material-symbols-rounded text-[20px]">
             {value || "add"}
@@ -56,7 +56,7 @@ export function IconField({
           type="button"
           onClick={() => setOpen((previous) => !previous)}
           aria-expanded={open}
-          className="min-h-11 shrink-0 rounded-xl border border-black/10 px-3 text-xs font-bold text-destiny-grey/60 transition hover:bg-[#f5f7fa] lg:min-h-10 lg:px-2.5"
+          className="min-h-11 shrink-0 rounded-xl border border-black/10 px-3 text-xs font-bold text-destiny-grey/60 dark:text-white/60 transition hover:bg-[#f5f7fa] lg:min-h-10 lg:px-2.5"
         >
           {open ? "Close" : "Browse"}
         </button>
@@ -74,7 +74,7 @@ export function IconField({
                 setOpen(false);
               }}
               className={`flex h-11 items-center justify-center rounded-lg transition hover:bg-destiny-orange/10 lg:h-9 ${
-                value === icon ? "bg-destiny-orange/15 text-destiny-orange" : "text-destiny-grey/60"
+                value === icon ? "bg-destiny-orange/15 text-destiny-orange" : "text-destiny-grey/60 dark:text-white/60"
               }`}
             >
               <span aria-hidden className="material-symbols-rounded text-[19px]">{icon}</span>

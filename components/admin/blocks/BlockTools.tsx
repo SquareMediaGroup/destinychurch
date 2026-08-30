@@ -112,7 +112,7 @@ export function BlockTools({ editor }: { editor: Editor | null }) {
                 >
                   {def.icon}
                 </span>
-                <span className="min-w-0 flex-1 truncate text-sm font-bold text-destiny-grey">
+                <span className="min-w-0 flex-1 truncate text-sm font-bold text-destiny-grey dark:text-white">
                   {summary}
                 </span>
               </button>
@@ -217,7 +217,7 @@ function ToolButton({
       onClick={onClick}
       // min-h-10 on touch: the old 26px pill was under half the 44px a thumb
       // needs, and it was the entry point to the entire blocks feature.
-      className="inline-flex min-h-10 items-center gap-1 rounded-xl border border-black/10 px-3 text-xs font-bold text-destiny-grey/60 transition hover:bg-[#f5f7fa] hover:text-destiny-grey lg:min-h-8 lg:rounded-lg lg:px-2.5"
+      className="inline-flex min-h-10 items-center gap-1 rounded-xl border border-black/10 px-3 text-xs font-bold text-destiny-grey/60 dark:text-white/60 transition hover:bg-[#f5f7fa] hover:text-destiny-grey dark:hover:text-white lg:min-h-8 lg:rounded-lg lg:px-2.5"
     >
       <span aria-hidden className="material-symbols-rounded text-[15px]">{icon}</span>
       {label}
@@ -245,7 +245,7 @@ function BarButton({
       // whole toolbar — survives the tap.
       onMouseDown={(event) => event.preventDefault()}
       onClick={onClick}
-      className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-destiny-grey/60 transition active:bg-black/5 disabled:opacity-25"
+      className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-destiny-grey/60 dark:text-white/60 transition active:bg-black/5 disabled:opacity-25"
     >
       <span aria-hidden className="material-symbols-rounded text-[22px]">{icon}</span>
     </button>
@@ -268,7 +268,7 @@ function ActionRow({
       type="button"
       onClick={onClick}
       className={`flex min-h-14 w-full items-center gap-3 rounded-xl px-3 text-left text-sm font-bold transition active:bg-black/5 ${
-        destructive ? "text-destiny-red" : "text-destiny-grey"
+        destructive ? "text-destiny-red" : "text-destiny-grey dark:text-white"
       }`}
     >
       <span aria-hidden className="material-symbols-rounded text-[22px]">{icon}</span>

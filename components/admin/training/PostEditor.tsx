@@ -134,7 +134,7 @@ export function PostEditor({
               type="button"
               onClick={onClose}
               aria-label="Close"
-              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-destiny-grey/50 transition hover:bg-[#f5f7fa] hover:text-destiny-grey"
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-destiny-grey/50 dark:text-white/50 transition hover:bg-[#f5f7fa] hover:text-destiny-grey dark:hover:text-white"
             >
               <span className="material-symbols-rounded text-xl">close</span>
             </button>
@@ -142,10 +142,10 @@ export function PostEditor({
               value={form.title}
               onChange={(e) => set("title", e.target.value)}
               placeholder="Post title"
-              className="flex-1 bg-transparent text-lg font-black text-destiny-grey outline-none placeholder:font-bold placeholder:text-destiny-grey/30"
+              className="flex-1 bg-transparent text-lg font-black text-destiny-grey dark:text-white outline-none placeholder:font-bold placeholder:text-destiny-grey/30 dark:placeholder:text-white/30"
             />
             <div className="flex shrink-0 items-center gap-2">
-              <span className="text-xs font-bold uppercase tracking-wider text-destiny-grey/45">
+              <span className="text-xs font-bold uppercase tracking-wider text-destiny-grey/45 dark:text-white/45">
                 Published
               </span>
               <PublishToggle
@@ -168,7 +168,7 @@ export function PostEditor({
           {/* Settings row */}
           <div className="flex items-center gap-3 border-t border-black/5 bg-[#f9fafb] px-5 py-2.5">
             <select
-              className="shrink-0 rounded-lg border border-black/10 bg-white dark:border-white/10 dark:bg-destiny-grey-800 px-3 py-1.5 text-sm text-destiny-grey outline-none transition focus:border-destiny-orange/50 focus:ring-2 focus:ring-destiny-orange/15"
+              className="shrink-0 rounded-lg border border-black/10 bg-white dark:border-white/10 dark:bg-destiny-grey-800 px-3 py-1.5 text-sm text-destiny-grey dark:text-white outline-none transition focus:border-destiny-orange/50 focus:ring-2 focus:ring-destiny-orange/15"
               value={form.folder_id || ""}
               onChange={(e) => set("folder_id", e.target.value)}
             >
@@ -185,14 +185,14 @@ export function PostEditor({
               value={form.min_read_minutes || ""}
               onChange={(e) => set("min_read_minutes", parseInt(e.target.value) || 0)}
               placeholder="Min read time (mins)"
-              className="w-40 shrink-0 rounded-lg border border-black/10 bg-white dark:border-white/10 dark:bg-destiny-grey-800 px-3 py-1.5 text-sm text-destiny-grey outline-none transition focus:border-destiny-orange/50 focus:ring-2 focus:ring-destiny-orange/15"
+              className="w-40 shrink-0 rounded-lg border border-black/10 bg-white dark:border-white/10 dark:bg-destiny-grey-800 px-3 py-1.5 text-sm text-destiny-grey dark:text-white outline-none transition focus:border-destiny-orange/50 focus:ring-2 focus:ring-destiny-orange/15"
               title="Minimum read time in minutes"
             />
             <input
               value={form.summary}
               onChange={(e) => set("summary", e.target.value)}
               placeholder="One-line summary shown in the posts list…"
-              className="flex-1 bg-transparent text-sm text-destiny-grey outline-none placeholder:text-destiny-grey/35"
+              className="flex-1 bg-transparent text-sm text-destiny-grey dark:text-white outline-none placeholder:text-destiny-grey/35 dark:placeholder:text-white/35"
             />
           </div>
         </div>
@@ -294,8 +294,8 @@ export function PostEditor({
 
         <div className="flex items-center justify-between rounded-xl bg-[#f5f7fa] px-4 py-3">
           <div>
-            <p className="text-sm font-bold text-destiny-grey">Published</p>
-            <p className="text-xs text-destiny-grey/45">
+            <p className="text-sm font-bold text-destiny-grey dark:text-white">Published</p>
+            <p className="text-xs text-destiny-grey/45 dark:text-white/45">
               Visible to people who have unlocked this group.
             </p>
           </div>

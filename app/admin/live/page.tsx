@@ -20,8 +20,8 @@ export default function AdminSimulatedLivePage() {
     <div className="mx-auto max-w-6xl px-6 py-10">
       <div className="max-w-2xl">
         <div className="mb-6">
-          <h1 className="text-2xl font-black text-destiny-grey">Simulated Live</h1>
-          <p className="mt-1 text-sm text-destiny-grey/50">
+          <h1 className="text-2xl font-black text-destiny-grey dark:text-white">Simulated Live</h1>
+          <p className="mt-1 text-sm text-destiny-grey/50 dark:text-white/50">
             Play a pre-recorded video on{" "}
             <Link href="/live" className="font-bold text-destiny-orange hover:underline">
               /live
@@ -30,7 +30,7 @@ export default function AdminSimulatedLivePage() {
             moment, and anyone joining part-way through joins part-way through —
             they can&apos;t rewind to the beginning.
           </p>
-          <p className="mt-2 text-sm text-destiny-grey/50">
+          <p className="mt-2 text-sm text-destiny-grey/50 dark:text-white/50">
             You can also run all of this from{" "}
             <Link href="/live" className="font-bold text-destiny-orange hover:underline">
               /live

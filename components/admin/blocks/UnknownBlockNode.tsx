@@ -86,17 +86,17 @@ function UnknownBlockView({ node, deleteNode }: ReactNodeViewProps) {
       className="dc-block-shell my-8 rounded-xl border-2 border-dashed border-destiny-grey/25 bg-[#f5f7fa] p-5"
     >
       <div contentEditable={false} className="flex items-start gap-3">
-        <span className="material-symbols-rounded shrink-0 text-[20px] text-destiny-grey/40">
+        <span className="material-symbols-rounded shrink-0 text-[20px] text-destiny-grey/40 dark:text-white/40">
           help
         </span>
         <div className="min-w-0 flex-1">
-          <p className="text-sm font-bold text-destiny-grey">
+          <p className="text-sm font-bold text-destiny-grey dark:text-white">
             Unavailable block
-            <span className="ml-1.5 font-medium text-destiny-grey/45">
+            <span className="ml-1.5 font-medium text-destiny-grey/45 dark:text-white/45">
               ({node.attrs.blockName || "unknown"})
             </span>
           </p>
-          <p className="mt-1 text-xs leading-relaxed text-destiny-grey/55">
+          <p className="mt-1 text-xs leading-relaxed text-destiny-grey/55 dark:text-white/55">
             This block isn&apos;t available in the current version of the site.
             Its content has been kept and will reappear on its own — leave it
             alone unless you&apos;re sure you want it gone.
@@ -105,7 +105,7 @@ function UnknownBlockView({ node, deleteNode }: ReactNodeViewProps) {
         <button
           type="button"
           onClick={deleteNode}
-          className="shrink-0 rounded-lg px-2 py-1 text-xs font-bold text-destiny-grey/45 transition hover:bg-black/5 hover:text-destiny-red"
+          className="shrink-0 rounded-lg px-2 py-1 text-xs font-bold text-destiny-grey/45 dark:text-white/45 transition hover:bg-black/5 hover:text-destiny-red"
         >
           Remove
         </button>

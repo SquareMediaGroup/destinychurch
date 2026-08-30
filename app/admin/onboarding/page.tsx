@@ -45,7 +45,7 @@ export default function OnboardingAdminPage() {
         action={
           previewRole ? (
             <button
-              className="inline-flex items-center gap-1.5 rounded-xl border border-black/10 bg-white dark:border-white/10 dark:bg-destiny-grey-800 px-4 py-2.5 text-sm font-bold text-destiny-grey/70 transition hover:bg-[#f5f7fa] dark:hover:bg-white/10"
+              className="inline-flex items-center gap-1.5 rounded-xl border border-black/10 bg-white dark:border-white/10 dark:bg-destiny-grey-800 px-4 py-2.5 text-sm font-bold text-destiny-grey/70 dark:text-white/70 transition hover:bg-[#f5f7fa] dark:hover:bg-white/10"
               onClick={() => setRolePreview(null)}
             >
               Exit preview
@@ -77,25 +77,25 @@ export default function OnboardingAdminPage() {
                   </span>
                 </span>
                 <div>
-                  <h2 className="text-base font-black text-destiny-grey">{tour.label}</h2>
-                  <p className="text-xs text-destiny-grey/50">{tour.blurb}</p>
+                  <h2 className="text-base font-black text-destiny-grey dark:text-white">{tour.label}</h2>
+                  <p className="text-xs text-destiny-grey/50 dark:text-white/50">{tour.blurb}</p>
                 </div>
               </div>
 
-              <p className="mb-1 text-xs font-bold uppercase tracking-widest text-destiny-grey/40">
+              <p className="mb-1 text-xs font-bold uppercase tracking-widest text-destiny-grey/40 dark:text-white/40">
                 Can reach
               </p>
-              <p className="mb-4 text-sm text-destiny-grey/60">
+              <p className="mb-4 text-sm text-destiny-grey/60 dark:text-white/60">
                 {reach.map((item) => item.label).join(", ") || "Only the dashboard"}
               </p>
 
-              <p className="mb-1 text-xs font-bold uppercase tracking-widest text-destiny-grey/40">
+              <p className="mb-1 text-xs font-bold uppercase tracking-widest text-destiny-grey/40 dark:text-white/40">
                 Their checklist · about {minutesFor(sections)} min
               </p>
               <ol className="mb-5 space-y-1">
                 {sections.map((section, i) => (
-                  <li key={section.id} className="flex gap-2 text-sm text-destiny-grey/70">
-                    <span className="tabular-nums text-destiny-grey/35">{i + 1}.</span>
+                  <li key={section.id} className="flex gap-2 text-sm text-destiny-grey/70 dark:text-white/70">
+                    <span className="tabular-nums text-destiny-grey/35 dark:text-white/35">{i + 1}.</span>
                     {section.label}
                   </li>
                 ))}
@@ -110,7 +110,7 @@ export default function OnboardingAdminPage() {
                   Run this tour
                 </button>
                 <button
-                  className="inline-flex items-center gap-1.5 rounded-xl border border-black/10 bg-white dark:border-white/10 dark:bg-destiny-grey-800 px-4 py-2.5 text-sm font-bold text-destiny-grey/70 transition hover:bg-[#f5f7fa] dark:hover:bg-white/10"
+                  className="inline-flex items-center gap-1.5 rounded-xl border border-black/10 bg-white dark:border-white/10 dark:bg-destiny-grey-800 px-4 py-2.5 text-sm font-bold text-destiny-grey/70 dark:text-white/70 transition hover:bg-[#f5f7fa] dark:hover:bg-white/10"
                   onClick={() => preview(role)}
                 >
                   <span className="material-symbols-rounded text-lg">visibility</span>

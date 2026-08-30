@@ -116,15 +116,15 @@ export default function AdminPopupPage() {
     <div className="mx-auto max-w-6xl px-6 py-10">
       <div className="max-w-2xl">
         <div className="mb-6">
-          <h1 className="text-2xl font-black text-destiny-grey">Site Popup</h1>
-          <p className="mt-1 text-sm text-destiny-grey/50">
+          <h1 className="text-2xl font-black text-destiny-grey dark:text-white">Site Popup</h1>
+          <p className="mt-1 text-sm text-destiny-grey/50 dark:text-white/50">
             Show a one-time popup with an image, message and call-to-action.
           </p>
         </div>
 
         {loading ? (
           <div className="flex items-center justify-center py-16">
-            <span className="material-symbols-rounded animate-spin text-3xl text-destiny-grey/20">
+            <span className="material-symbols-rounded animate-spin text-3xl text-destiny-grey/20 dark:text-white/20">
               progress_activity
             </span>
           </div>
@@ -133,7 +133,7 @@ export default function AdminPopupPage() {
             {/* Live preview */}
             {popup.active && (popup.title || popup.body || popup.image_url) && (
               <div className="rounded-2xl border border-black/5 bg-white dark:border-white/8 dark:bg-destiny-grey-800 p-4 shadow-sm">
-                <p className="mb-3 text-[10px] font-bold uppercase tracking-widest text-destiny-grey/40">
+                <p className="mb-3 text-[10px] font-bold uppercase tracking-widest text-destiny-grey/40 dark:text-white/40">
                   Preview
                 </p>
                 <div className="overflow-hidden rounded-2xl bg-white shadow-xl ring-1 ring-black/5 dark:bg-destiny-grey-800 dark:ring-white/10">
@@ -150,12 +150,12 @@ export default function AdminPopupPage() {
                   )}
                   <div className="flex flex-col gap-3 p-6">
                     {popup.title && (
-                      <h2 className="text-xl font-black text-destiny-grey">
+                      <h2 className="text-xl font-black text-destiny-grey dark:text-white">
                         {popup.title}
                       </h2>
                     )}
                     {popup.body && (
-                      <p className="whitespace-pre-line text-sm leading-relaxed text-destiny-grey/70">
+                      <p className="whitespace-pre-line text-sm leading-relaxed text-destiny-grey/70 dark:text-white/70">
                         {popup.body}
                       </p>
                     )}
@@ -176,10 +176,10 @@ export default function AdminPopupPage() {
               {/* Active toggle */}
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-bold text-destiny-grey">
+                  <p className="text-sm font-bold text-destiny-grey dark:text-white">
                     Show popup
                   </p>
-                  <p className="text-xs text-destiny-grey/50">
+                  <p className="text-xs text-destiny-grey/50 dark:text-white/50">
                     Display this popup to all visitors
                   </p>
                 </div>
@@ -205,10 +205,10 @@ export default function AdminPopupPage() {
               {/* Show once toggle */}
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-bold text-destiny-grey">
+                  <p className="text-sm font-bold text-destiny-grey dark:text-white">
                     Show once per session
                   </p>
-                  <p className="text-xs text-destiny-grey/50">
+                  <p className="text-xs text-destiny-grey/50 dark:text-white/50">
                     If on, the popup only shows once per browser session
                   </p>
                 </div>
@@ -233,7 +233,7 @@ export default function AdminPopupPage() {
 
               {/* Image */}
               <div>
-                <label className="mb-1.5 block text-xs font-bold text-destiny-grey/60">
+                <label className="mb-1.5 block text-xs font-bold text-destiny-grey/60 dark:text-white/60">
                   Image <span className="font-normal">(up to 50 MB)</span>
                 </label>
                 {popup.image_url ? (
@@ -274,13 +274,13 @@ export default function AdminPopupPage() {
                       disabled={uploading}
                       className="hidden"
                     />
-                    <span className="material-symbols-rounded text-3xl text-destiny-grey/40">
+                    <span className="material-symbols-rounded text-3xl text-destiny-grey/40 dark:text-white/40">
                       {uploading ? "progress_activity" : "add_photo_alternate"}
                     </span>
-                    <p className="text-sm font-bold text-destiny-grey">
+                    <p className="text-sm font-bold text-destiny-grey dark:text-white">
                       {uploading ? "Uploading…" : "Click to upload"}
                     </p>
-                    <p className="text-xs text-destiny-grey/50">
+                    <p className="text-xs text-destiny-grey/50 dark:text-white/50">
                       PNG, JPG, WEBP, GIF or SVG · max 50 MB
                     </p>
                   </label>
@@ -291,7 +291,7 @@ export default function AdminPopupPage() {
 
               {/* Title */}
               <div>
-                <label className="mb-1.5 block text-xs font-bold text-destiny-grey/60">
+                <label className="mb-1.5 block text-xs font-bold text-destiny-grey/60 dark:text-white/60">
                   Title <span className="font-normal">(optional)</span>
                 </label>
                 <input
@@ -301,13 +301,13 @@ export default function AdminPopupPage() {
                     setPopup((p) => ({ ...p, title: e.target.value }))
                   }
                   placeholder="Welcome to Destiny Church"
-                  className="w-full rounded-xl border border-black/10 px-4 py-2.5 text-sm text-destiny-grey placeholder:text-destiny-grey/30 focus:border-destiny-orange/50 focus:outline-none focus:ring-2 focus:ring-destiny-orange/20"
+                  className="w-full rounded-xl border border-black/10 px-4 py-2.5 text-sm text-destiny-grey dark:text-white placeholder:text-destiny-grey/30 dark:placeholder:text-white/30 focus:border-destiny-orange/50 focus:outline-none focus:ring-2 focus:ring-destiny-orange/20"
                 />
               </div>
 
               {/* Body */}
               <div>
-                <label className="mb-1.5 block text-xs font-bold text-destiny-grey/60">
+                <label className="mb-1.5 block text-xs font-bold text-destiny-grey/60 dark:text-white/60">
                   Message <span className="font-normal">(optional)</span>
                 </label>
                 <textarea
@@ -317,14 +317,14 @@ export default function AdminPopupPage() {
                   }
                   rows={4}
                   placeholder="Tell visitors what's on, why it matters, and what to do next."
-                  className="w-full resize-none rounded-xl border border-black/10 px-4 py-2.5 text-sm text-destiny-grey placeholder:text-destiny-grey/30 focus:border-destiny-orange/50 focus:outline-none focus:ring-2 focus:ring-destiny-orange/20"
+                  className="w-full resize-none rounded-xl border border-black/10 px-4 py-2.5 text-sm text-destiny-grey dark:text-white placeholder:text-destiny-grey/30 dark:placeholder:text-white/30 focus:border-destiny-orange/50 focus:outline-none focus:ring-2 focus:ring-destiny-orange/20"
                 />
               </div>
 
               {/* CTA */}
               <div className="grid gap-4 sm:grid-cols-2">
                 <div>
-                  <label className="mb-1.5 block text-xs font-bold text-destiny-grey/60">
+                  <label className="mb-1.5 block text-xs font-bold text-destiny-grey/60 dark:text-white/60">
                     CTA Text <span className="font-normal">(optional)</span>
                   </label>
                   <input
@@ -334,11 +334,11 @@ export default function AdminPopupPage() {
                       setPopup((p) => ({ ...p, cta_text: e.target.value }))
                     }
                     placeholder="Find out more"
-                    className="w-full rounded-xl border border-black/10 px-4 py-2.5 text-sm text-destiny-grey placeholder:text-destiny-grey/30 focus:border-destiny-orange/50 focus:outline-none focus:ring-2 focus:ring-destiny-orange/20"
+                    className="w-full rounded-xl border border-black/10 px-4 py-2.5 text-sm text-destiny-grey dark:text-white placeholder:text-destiny-grey/30 dark:placeholder:text-white/30 focus:border-destiny-orange/50 focus:outline-none focus:ring-2 focus:ring-destiny-orange/20"
                   />
                 </div>
                 <div>
-                  <label className="mb-1.5 block text-xs font-bold text-destiny-grey/60">
+                  <label className="mb-1.5 block text-xs font-bold text-destiny-grey/60 dark:text-white/60">
                     CTA Link <span className="font-normal">(optional)</span>
                   </label>
                   <input
@@ -348,7 +348,7 @@ export default function AdminPopupPage() {
                       setPopup((p) => ({ ...p, cta_link: e.target.value }))
                     }
                     placeholder="/visit"
-                    className="w-full rounded-xl border border-black/10 px-4 py-2.5 text-sm text-destiny-grey placeholder:text-destiny-grey/30 focus:border-destiny-orange/50 focus:outline-none focus:ring-2 focus:ring-destiny-orange/20"
+                    className="w-full rounded-xl border border-black/10 px-4 py-2.5 text-sm text-destiny-grey dark:text-white placeholder:text-destiny-grey/30 dark:placeholder:text-white/30 focus:border-destiny-orange/50 focus:outline-none focus:ring-2 focus:ring-destiny-orange/20"
                   />
                 </div>
               </div>

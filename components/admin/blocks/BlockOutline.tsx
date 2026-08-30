@@ -58,16 +58,16 @@ export function BlockOutline({
               </span>
             </span>
             <span className="min-w-0 flex-1">
-              <span className="block truncate text-sm font-bold text-destiny-grey">
+              <span className="block truncate text-sm font-bold text-destiny-grey dark:text-white">
                 {entry.summary}
               </span>
-              <span className="block truncate text-xs text-destiny-grey/45">
+              <span className="block truncate text-xs text-destiny-grey/45 dark:text-white/45">
                 {def?.label ?? entry.blockName}
               </span>
             </span>
             <span
               aria-hidden
-              className="material-symbols-rounded shrink-0 text-[18px] text-destiny-grey/30"
+              className="material-symbols-rounded shrink-0 text-[18px] text-destiny-grey/30 dark:text-white/30"
             >
               chevron_right
             </span>

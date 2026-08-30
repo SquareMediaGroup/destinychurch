@@ -91,8 +91,8 @@ export function CategoryModal({
 
         <div className="flex items-center justify-between rounded-xl bg-[#f5f7fa] px-4 py-3">
           <div>
-            <p className="text-sm font-bold text-destiny-grey">Published</p>
-            <p className="text-xs text-destiny-grey/45">
+            <p className="text-sm font-bold text-destiny-grey dark:text-white">Published</p>
+            <p className="text-xs text-destiny-grey/45 dark:text-white/45">
               Visible on the public /training page.
             </p>
           </div>

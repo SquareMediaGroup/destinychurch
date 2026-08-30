@@ -174,14 +174,14 @@ export default function AdminStorePage() {
                             className="h-full w-full object-cover"
                           />
                         ) : (
-                          <span className="material-symbols-rounded flex h-full w-full items-center justify-center text-xl text-destiny-grey/25">
+                          <span className="material-symbols-rounded flex h-full w-full items-center justify-center text-xl text-destiny-grey/25 dark:text-white/25">
                             checkroom
                           </span>
                         )}
                       </div>
                       <div className="min-w-0 flex-1">
-                        <p className="truncate font-bold text-destiny-grey">{p.name}</p>
-                        <p className="text-sm text-destiny-grey/55">
+                        <p className="truncate font-bold text-destiny-grey dark:text-white">{p.name}</p>
+                        <p className="text-sm text-destiny-grey/55 dark:text-white/55">
                           {formatPrice(fromPrice(p))} · {p.variants.length} variant
                           {p.variants.length === 1 ? "" : "s"} ·{" "}
                           <span
@@ -206,10 +206,10 @@ export default function AdminStorePage() {
                       <Badge tone={p.is_published ? "green" : "grey"}>
                         {p.is_published ? "Published" : "Draft"}
                       </Badge>
-                      <span className="hidden shrink-0 text-xs font-bold text-destiny-grey/35 sm:block">
+                      <span className="hidden shrink-0 text-xs font-bold text-destiny-grey/35 dark:text-white/35 sm:block">
                         {PRODUCT_TYPE_LABELS[p.product_type as ProductType] ?? ""}
                       </span>
-                      <span className="material-symbols-rounded shrink-0 text-destiny-grey/30">
+                      <span className="material-symbols-rounded shrink-0 text-destiny-grey/30 dark:text-white/30">
                         chevron_right
                       </span>
                     </Link>

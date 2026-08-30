@@ -144,7 +144,7 @@ export default function StaffPage() {
           ) : (
             <div className="overflow-x-auto rounded-3xl border border-black/5 bg-white shadow-sm dark:border-white/8 dark:bg-destiny-grey-800">
               <table className="w-full text-left text-sm">
-                <thead className="border-b border-black/5 text-xs font-bold uppercase tracking-wider text-destiny-grey/40">
+                <thead className="border-b border-black/5 text-xs font-bold uppercase tracking-wider text-destiny-grey/40 dark:text-white/40">
                   <tr>
                     <th className="px-5 py-3.5">Name</th>
                     <th className="hidden px-5 py-3.5 sm:table-cell">Role</th>
@@ -159,21 +159,21 @@ export default function StaffPage() {
                       <td className="px-5 py-3.5">
                         <Link
                           href={`/admin/hr/staff/${s.id}`}
-                          className="font-bold text-destiny-grey hover:text-destiny-orange"
+                          className="font-bold text-destiny-grey dark:text-white hover:text-destiny-orange"
                         >
                           {fullName(s)}
                         </Link>
                         {s.email && (
-                          <p className="text-xs text-destiny-grey/45">{s.email}</p>
+                          <p className="text-xs text-destiny-grey/45 dark:text-white/45">{s.email}</p>
                         )}
                       </td>
-                      <td className="hidden px-5 py-3.5 text-destiny-grey/70 sm:table-cell">
+                      <td className="hidden px-5 py-3.5 text-destiny-grey/70 dark:text-white/70 sm:table-cell">
                         {s.job_title || "—"}
                         {s.department && (
-                          <span className="text-destiny-grey/40"> · {s.department}</span>
+                          <span className="text-destiny-grey/40 dark:text-white/40"> · {s.department}</span>
                         )}
                       </td>
-                      <td className="hidden px-5 py-3.5 text-destiny-grey/70 md:table-cell">
+                      <td className="hidden px-5 py-3.5 text-destiny-grey/70 dark:text-white/70 md:table-cell">
                         {EMPLOYMENT_LABELS[s.employment_type]}
                       </td>
                       <td className="px-5 py-3.5">
@@ -182,7 +182,7 @@ export default function StaffPage() {
                       <td className="px-5 py-3.5 text-right">
                         <button
                           onClick={() => setEditing(s)}
-                          className="text-destiny-grey/40 transition hover:text-destiny-orange"
+                          className="text-destiny-grey/40 dark:text-white/40 transition hover:text-destiny-orange"
                           aria-label={`Edit ${fullName(s)}`}
                         >
                           <span className="material-symbols-rounded text-xl">edit</span>

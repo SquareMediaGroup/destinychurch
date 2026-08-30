@@ -128,13 +128,13 @@ export function BlockInspector({
     if (sheet) {
       return (
         <div className="px-4 py-4">
-          <p className="mb-2 text-xs font-bold uppercase tracking-wider text-destiny-grey/40">
+          <p className="mb-2 text-xs font-bold uppercase tracking-wider text-destiny-grey/40 dark:text-white/40">
             Blocks in this page
           </p>
           <BlockOutline
             editor={editor}
             emptyState={
-              <p className="rounded-xl bg-[#f5f7fa] px-4 py-6 text-center text-sm leading-relaxed text-destiny-grey/50">
+              <p className="rounded-xl bg-[#f5f7fa] px-4 py-6 text-center text-sm leading-relaxed text-destiny-grey/50 dark:text-white/50">
                 This page has no blocks yet. Add one from Blocks, then its
                 settings appear here.
               </p>
@@ -146,13 +146,13 @@ export function BlockInspector({
 
     return (
       <div className="flex h-full flex-col items-center justify-center px-6 py-10 text-center">
-        <span className="material-symbols-rounded text-3xl text-destiny-grey/20">
+        <span className="material-symbols-rounded text-3xl text-destiny-grey/20 dark:text-white/20">
           tune
         </span>
-        <p className="mt-2 text-sm font-bold text-destiny-grey/50">
+        <p className="mt-2 text-sm font-bold text-destiny-grey/50 dark:text-white/50">
           No block selected
         </p>
-        <p className="mt-1 text-xs leading-relaxed text-destiny-grey/40">
+        <p className="mt-1 text-xs leading-relaxed text-destiny-grey/40 dark:text-white/40">
           Click a block in the page to change its settings, or add one from the
           Blocks panel.
         </p>
@@ -167,7 +167,7 @@ export function BlockInspector({
           <span className="material-symbols-rounded text-[19px] text-destiny-orange">
             {def.icon}
           </span>
-          <span className="min-w-0 flex-1 truncate text-sm font-black text-destiny-grey">
+          <span className="min-w-0 flex-1 truncate text-sm font-black text-destiny-grey dark:text-white">
             {def.label}
           </span>
           {onClose && (
@@ -175,7 +175,7 @@ export function BlockInspector({
               type="button"
               onClick={onClose}
               aria-label="Close settings"
-              className="flex h-7 w-7 items-center justify-center rounded-lg text-destiny-grey/45 transition hover:bg-[#f5f7fa]"
+              className="flex h-7 w-7 items-center justify-center rounded-lg text-destiny-grey/45 dark:text-white/45 transition hover:bg-[#f5f7fa]"
             >
               <span className="material-symbols-rounded text-lg">close</span>
             </button>

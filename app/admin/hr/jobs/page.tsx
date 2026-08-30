@@ -186,7 +186,7 @@ export default function JobsPage() {
           ) : (
             <div className="overflow-x-auto rounded-3xl border border-black/5 bg-white shadow-sm dark:border-white/8 dark:bg-destiny-grey-800">
               <table className="w-full text-left text-sm">
-                <thead className="border-b border-black/5 text-xs font-bold uppercase tracking-wider text-destiny-grey/40">
+                <thead className="border-b border-black/5 text-xs font-bold uppercase tracking-wider text-destiny-grey/40 dark:text-white/40">
                   <tr>
                     <th className="px-5 py-3.5">Role</th>
                     <th className="hidden px-5 py-3.5 sm:table-cell">Type</th>
@@ -201,16 +201,16 @@ export default function JobsPage() {
                     return (
                       <tr key={j.id} className="transition hover:bg-[#f5f7fa] dark:hover:bg-white/10">
                         <td className="px-5 py-3.5">
-                          <p className="font-bold text-destiny-grey">{j.title}</p>
-                          <p className="text-xs text-destiny-grey/45">
+                          <p className="font-bold text-destiny-grey dark:text-white">{j.title}</p>
+                          <p className="text-xs text-destiny-grey/45 dark:text-white/45">
                             {KIND_LABELS[j.kind]}
                             {j.department && <span> · {j.department}</span>}
                           </p>
                         </td>
-                        <td className="hidden px-5 py-3.5 text-destiny-grey/70 sm:table-cell">
+                        <td className="hidden px-5 py-3.5 text-destiny-grey/70 dark:text-white/70 sm:table-cell">
                           {EMPLOYMENT_LABELS[j.employment_type]}
                         </td>
-                        <td className="hidden px-5 py-3.5 text-destiny-grey/70 md:table-cell">
+                        <td className="hidden px-5 py-3.5 text-destiny-grey/70 dark:text-white/70 md:table-cell">
                           {j.closing_date ? (
                             <span className={closed ? "text-destiny-red" : ""}>
                               {dateFmt.format(new Date(j.closing_date))}
@@ -237,7 +237,7 @@ export default function JobsPage() {
                                 href={`/jobs/${j.slug}`}
                                 target="_blank"
                                 rel="noreferrer"
-                                className="text-destiny-grey/40 transition hover:text-destiny-orange"
+                                className="text-destiny-grey/40 dark:text-white/40 transition hover:text-destiny-orange"
                                 aria-label={`View ${j.title} live`}
                               >
                                 <span className="material-symbols-rounded text-xl">
@@ -247,14 +247,14 @@ export default function JobsPage() {
                             )}
                             <button
                               onClick={() => setEditing(j)}
-                              className="text-destiny-grey/40 transition hover:text-destiny-orange"
+                              className="text-destiny-grey/40 dark:text-white/40 transition hover:text-destiny-orange"
                               aria-label={`Edit ${j.title}`}
                             >
                               <span className="material-symbols-rounded text-xl">edit</span>
                             </button>
                             <button
                               onClick={() => remove(j)}
-                              className="text-destiny-grey/40 transition hover:text-destiny-red"
+                              className="text-destiny-grey/40 dark:text-white/40 transition hover:text-destiny-red"
                               aria-label={`Delete ${j.title}`}
                             >
                               <span className="material-symbols-rounded text-xl">delete</span>

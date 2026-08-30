@@ -57,13 +57,13 @@ export default function AdminOrderDetailPage({
   }
 
   if (loading) return <PageLoading label="Loading order" />;
-  if (!order) return <p className="px-8 py-10 text-sm text-destiny-grey/50">Order not found.</p>;
+  if (!order) return <p className="px-8 py-10 text-sm text-destiny-grey/50 dark:text-white/50">Order not found.</p>;
 
   return (
     <div className="mx-auto max-w-2xl px-5 py-8 sm:px-8">
       <Link
         href="/admin/store/orders"
-        className="mb-6 inline-flex items-center gap-1 text-sm font-semibold text-destiny-grey/60 hover:text-destiny-grey"
+        className="mb-6 inline-flex items-center gap-1 text-sm font-semibold text-destiny-grey/60 dark:text-white/60 hover:text-destiny-grey dark:hover:text-white"
       >
         <span className="material-symbols-rounded text-base">arrow_back</span>
         Orders
@@ -71,10 +71,10 @@ export default function AdminOrderDetailPage({
 
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="font-[family-name:var(--font-heading)] text-2xl font-black text-destiny-grey">
+          <h1 className="font-[family-name:var(--font-heading)] text-2xl font-black text-destiny-grey dark:text-white">
             {order.order_number}
           </h1>
-          <p className="mt-1 text-sm text-destiny-grey/55">
+          <p className="mt-1 text-sm text-destiny-grey/55 dark:text-white/55">
             {new Date(order.created_at).toLocaleString("en-GB")}
           </p>
         </div>
@@ -85,20 +85,20 @@ export default function AdminOrderDetailPage({
 
       {/* Customer */}
       <section className="mt-6 rounded-2xl border border-black/8 bg-white dark:border-white/8 dark:bg-destiny-grey-800 p-5">
-        <h2 className="mb-3 text-xs font-black uppercase tracking-wide text-destiny-grey/50">
+        <h2 className="mb-3 text-xs font-black uppercase tracking-wide text-destiny-grey/50 dark:text-white/50">
           Customer
         </h2>
-        <p className="font-bold text-destiny-grey">{order.customer_name}</p>
-        <p className="text-sm text-destiny-grey/70">
+        <p className="font-bold text-destiny-grey dark:text-white">{order.customer_name}</p>
+        <p className="text-sm text-destiny-grey/70 dark:text-white/70">
           <a href={`mailto:${order.customer_email}`} className="hover:text-destiny-orange">
             {order.customer_email}
           </a>
         </p>
         {order.customer_phone && (
-          <p className="text-sm text-destiny-grey/70">{order.customer_phone}</p>
+          <p className="text-sm text-destiny-grey/70 dark:text-white/70">{order.customer_phone}</p>
         )}
         {order.notes && (
-          <p className="mt-3 rounded-lg bg-[#f5f7fa] px-3 py-2 text-sm text-destiny-grey/70">
+          <p className="mt-3 rounded-lg bg-[#f5f7fa] px-3 py-2 text-sm text-destiny-grey/70 dark:text-white/70">
             <span className="font-bold">Note:</span> {order.notes}
           </p>
         )}
@@ -106,7 +106,7 @@ export default function AdminOrderDetailPage({
 
       {/* Items */}
       <section className="mt-4 rounded-2xl border border-black/8 bg-white dark:border-white/8 dark:bg-destiny-grey-800 p-5">
-        <h2 className="mb-3 text-xs font-black uppercase tracking-wide text-destiny-grey/50">
+        <h2 className="mb-3 text-xs font-black uppercase tracking-wide text-destiny-grey/50 dark:text-white/50">
           Items · collection at church
         </h2>
         <ul className="divide-y divide-black/8">
@@ -114,12 +114,12 @@ export default function AdminOrderDetailPage({
             const variant = [item.color, item.size].filter(Boolean).join(" / ");
             return (
               <li key={item.id} className="flex justify-between gap-3 py-3 text-sm">
-                <span className="text-destiny-grey">
+                <span className="text-destiny-grey dark:text-white">
                   <span className="font-bold">{item.product_name}</span>
-                  {variant && <span className="text-destiny-grey/50"> ({variant})</span>}
-                  <span className="text-destiny-grey/50"> × {item.quantity}</span>
+                  {variant && <span className="text-destiny-grey/50 dark:text-white/50"> ({variant})</span>}
+                  <span className="text-destiny-grey/50 dark:text-white/50"> × {item.quantity}</span>
                 </span>
-                <span className="font-semibold text-destiny-grey">
+                <span className="font-semibold text-destiny-grey dark:text-white">
                   {formatPrice(item.unit_price_pennies * item.quantity)}
                 </span>
               </li>
@@ -127,8 +127,8 @@ export default function AdminOrderDetailPage({
           })}
         </ul>
         <div className="mt-3 flex justify-between border-t border-black/10 pt-3">
-          <span className="font-black text-destiny-grey">Total</span>
-          <span className="font-black text-destiny-grey">
+          <span className="font-black text-destiny-grey dark:text-white">Total</span>
+          <span className="font-black text-destiny-grey dark:text-white">
             {formatPrice(order.total_pennies)}
           </span>
         </div>
@@ -145,7 +145,7 @@ export default function AdminOrderDetailPage({
             className={`inline-flex items-center gap-1.5 rounded-full border px-4 py-2.5 text-sm font-bold transition disabled:opacity-50 ${
               a.status === "fulfilled"
                 ? "border-destiny-green/30 text-destiny-green hover:bg-destiny-green/10"
-                : "border-black/10 text-destiny-grey hover:bg-[#f5f7fa] dark:hover:bg-white/10"
+                : "border-black/10 text-destiny-grey dark:text-white hover:bg-[#f5f7fa] dark:hover:bg-white/10"
             }`}
           >
             <span className="material-symbols-rounded text-base">{a.icon}</span>

@@ -95,7 +95,7 @@ function hitRow(hit: AdminSearchHit): Row {
 
 // Alpha-tinted, so each reads fine against the palette's fixed dark glass
 // panel below without a separate dark-mode variant — only "grey" needed
-// fixing: the light-surface original (bg-black/5 text-destiny-grey/55) was
+// fixing: the light-surface original (bg-black/5 text-destiny-grey/55 dark:text-white/55) was
 // built for a white card and was nearly invisible here.
 const BADGE_TONES: Record<string, string> = {
   green: "bg-destiny-green/15 text-destiny-green",
@@ -727,9 +727,9 @@ export function CommandTrigger({ className = "" }: { className?: string }) {
       type="button"
       onClick={open}
       data-tour="command-trigger"
-      className={`group flex items-center gap-2 rounded-xl border border-black/10 bg-white dark:border-white/10 dark:bg-destiny-grey-800 px-3 py-2 text-sm text-destiny-grey/45 transition hover:border-black/20 hover:text-destiny-grey ${className}`}
+      className={`group flex items-center gap-2 rounded-xl border border-black/10 bg-white dark:border-white/10 dark:bg-destiny-grey-800 px-3 py-2 text-sm text-destiny-grey/45 dark:text-white/45 transition hover:border-black/20 hover:text-destiny-grey dark:hover:text-white ${className}`}
     >
-      <span className="material-symbols-rounded text-lg text-destiny-grey/35 transition group-hover:text-destiny-orange">
+      <span className="material-symbols-rounded text-lg text-destiny-grey/35 dark:text-white/35 transition group-hover:text-destiny-orange">
         search
       </span>
       <span className="font-medium">Search</span>
@@ -750,7 +750,7 @@ export function CommandTriggerIcon({ className = "" }: { className?: string }) {
       onClick={open}
       aria-label="Search the admin"
       data-tour="command-trigger"
-      className={`flex h-9 w-9 items-center justify-center rounded-xl bg-[#f5f7fa] text-destiny-grey transition hover:bg-black/8 ${className}`}
+      className={`flex h-9 w-9 items-center justify-center rounded-xl bg-[#f5f7fa] text-destiny-grey dark:text-white transition hover:bg-black/8 ${className}`}
     >
       <span className="material-symbols-rounded text-xl">search</span>
     </button>

@@ -217,8 +217,8 @@ export default function AdminLiveChatPage() {
   return (
     <div className="mx-auto max-w-6xl px-6 py-10">
       <div className="mb-6">
-        <h1 className="text-2xl font-black text-destiny-grey">Live Chat</h1>
-        <p className="mt-1 text-sm text-destiny-grey/50">
+        <h1 className="text-2xl font-black text-destiny-grey dark:text-white">Live Chat</h1>
+        <p className="mt-1 text-sm text-destiny-grey/50 dark:text-white/50">
           Moderate the chat on{" "}
           <Link href="/live" className="font-bold text-destiny-orange hover:underline">
             /live
@@ -272,7 +272,7 @@ export default function AdminLiveChatPage() {
 
       {loading ? (
         <div className="flex items-center justify-center py-16">
-          <span className="material-symbols-rounded animate-spin text-3xl text-destiny-grey/20">
+          <span className="material-symbols-rounded animate-spin text-3xl text-destiny-grey/20 dark:text-white/20">
             progress_activity
           </span>
         </div>
@@ -323,11 +323,11 @@ function ConsoleTab({
     return (
       <Card>
         <div className="py-8 text-center">
-          <span className="material-symbols-rounded mb-3 block text-4xl text-destiny-grey/20">
+          <span className="material-symbols-rounded mb-3 block text-4xl text-destiny-grey/20 dark:text-white/20">
             videocam_off
           </span>
-          <p className="font-black text-destiny-grey">No chat running</p>
-          <p className="mx-auto mt-2 max-w-sm text-sm text-destiny-grey/55">
+          <p className="font-black text-destiny-grey dark:text-white">No chat running</p>
+          <p className="mx-auto mt-2 max-w-sm text-sm text-destiny-grey/55 dark:text-white/55">
             A room opens by itself when the stream goes live. Nothing to moderate
             until then.
           </p>
@@ -339,7 +339,7 @@ function ConsoleTab({
   const stateLabel = {
     open: { text: "Open", tone: "text-destiny-green", dot: "bg-destiny-green" },
     paused: { text: "Paused", tone: "text-destiny-orange", dot: "bg-destiny-orange" },
-    closed: { text: "Closed", tone: "text-destiny-grey/50", dot: "bg-destiny-grey/30" },
+    closed: { text: "Closed", tone: "text-destiny-grey/50 dark:text-white/50", dot: "bg-destiny-grey/30" },
   }[current.state];
 
   return (
@@ -351,10 +351,10 @@ function ConsoleTab({
               <span className={`h-2 w-2 rounded-full ${stateLabel.dot}`} />
               <span className={stateLabel.tone}>{stateLabel.text}</span>
             </p>
-            <p className="mt-2 truncate text-lg font-black text-destiny-grey">
+            <p className="mt-2 truncate text-lg font-black text-destiny-grey dark:text-white">
               {current.title || "Sunday Service"}
             </p>
-            <p className="mt-0.5 text-xs text-destiny-grey/45">
+            <p className="mt-0.5 text-xs text-destiny-grey/45 dark:text-white/45">
               Opened {formatWhen(current.opened_at)}
             </p>
           </div>
@@ -364,7 +364,7 @@ function ConsoleTab({
               type="button"
               disabled={busy}
               onClick={() => onSetState(current.state === "paused" ? "open" : "paused")}
-              className="inline-flex items-center gap-2 rounded-xl border border-black/10 bg-white dark:border-white/10 dark:bg-destiny-grey-800 px-4 py-2.5 text-sm font-bold text-destiny-grey/70 transition hover:bg-[#f5f7fa] dark:hover:bg-white/10 disabled:opacity-60"
+              className="inline-flex items-center gap-2 rounded-xl border border-black/10 bg-white dark:border-white/10 dark:bg-destiny-grey-800 px-4 py-2.5 text-sm font-bold text-destiny-grey/70 dark:text-white/70 transition hover:bg-[#f5f7fa] dark:hover:bg-white/10 disabled:opacity-60"
             >
               <span className="material-symbols-rounded text-base">
                 {current.state === "paused" ? "play_arrow" : "pause"}
@@ -391,7 +391,7 @@ function ConsoleTab({
           count={held.length}
         />
         {held.length === 0 ? (
-          <p className="py-6 text-center text-sm text-destiny-grey/40">
+          <p className="py-6 text-center text-sm text-destiny-grey/40 dark:text-white/40">
             Nothing waiting.
           </p>
         ) : (
@@ -402,13 +402,13 @@ function ConsoleTab({
                 className="flex flex-wrap items-start gap-3 rounded-2xl bg-destiny-orange/[0.06] p-4"
               >
                 <div className="min-w-0 flex-1">
-                  <p className="text-sm font-black text-destiny-grey">
+                  <p className="text-sm font-black text-destiny-grey dark:text-white">
                     {m.displayName}
-                    <span className="ml-2 text-xs font-medium text-destiny-grey/40">
+                    <span className="ml-2 text-xs font-medium text-destiny-grey/40 dark:text-white/40">
                       {formatWhen(m.createdAt)}
                     </span>
                   </p>
-                  <p className="mt-1 break-words text-sm text-destiny-grey/80">{m.body}</p>
+                  <p className="mt-1 break-words text-sm text-destiny-grey/80 dark:text-white/80">{m.body}</p>
                   {m.heldReason && (
                     <p className="mt-1 text-xs font-bold text-destiny-orange">
                       {m.heldReason}
@@ -428,7 +428,7 @@ function ConsoleTab({
                     type="button"
                     disabled={busy}
                     onClick={() => onModerate(m.id, "hide")}
-                    className="rounded-xl border border-black/10 bg-white dark:border-white/10 dark:bg-destiny-grey-800 px-3 py-2 text-xs font-bold text-destiny-grey/70 transition hover:bg-[#f5f7fa] dark:hover:bg-white/10 disabled:opacity-60"
+                    className="rounded-xl border border-black/10 bg-white dark:border-white/10 dark:bg-destiny-grey-800 px-3 py-2 text-xs font-bold text-destiny-grey/70 dark:text-white/70 transition hover:bg-[#f5f7fa] dark:hover:bg-white/10 disabled:opacity-60"
                   >
                     Bin it
                   </button>
@@ -446,7 +446,7 @@ function ConsoleTab({
           count={blocks.length}
         />
         {blocks.length === 0 ? (
-          <p className="py-6 text-center text-sm text-destiny-grey/40">Nobody is muted.</p>
+          <p className="py-6 text-center text-sm text-destiny-grey/40 dark:text-white/40">Nobody is muted.</p>
         ) : (
           <ul className="flex flex-col gap-2">
             {blocks.map((b) => (
@@ -455,10 +455,10 @@ function ConsoleTab({
                 className="flex flex-wrap items-center gap-3 rounded-2xl bg-[#f5f7fa] px-4 py-3"
               >
                 <div className="min-w-0 flex-1">
-                  <p className="truncate font-mono text-xs text-destiny-grey/70">
+                  <p className="truncate font-mono text-xs text-destiny-grey/70 dark:text-white/70">
                     {b.guest_id.slice(0, 8)}…
                   </p>
-                  <p className="mt-0.5 text-xs text-destiny-grey/45">
+                  <p className="mt-0.5 text-xs text-destiny-grey/45 dark:text-white/45">
                     {b.scope === "global" ? "Every service" : "This service"} ·{" "}
                     {formatWhen(b.created_at)}
                     {b.reason ? ` · ${b.reason}` : ""}
@@ -468,7 +468,7 @@ function ConsoleTab({
                   type="button"
                   disabled={busy}
                   onClick={() => onUnmute(b.id)}
-                  className="rounded-xl border border-black/10 bg-white dark:border-white/10 dark:bg-destiny-grey-800 px-3 py-2 text-xs font-bold text-destiny-grey/70 transition hover:bg-white dark:hover:bg-destiny-grey-700 disabled:opacity-60"
+                  className="rounded-xl border border-black/10 bg-white dark:border-white/10 dark:bg-destiny-grey-800 px-3 py-2 text-xs font-bold text-destiny-grey/70 dark:text-white/70 transition hover:bg-white dark:hover:bg-destiny-grey-700 disabled:opacity-60"
                 >
                   Unmute
                 </button>
@@ -500,7 +500,7 @@ function PrayerTab({
         count={requests.filter((r) => r.status !== "done").length}
       />
       {requests.length === 0 ? (
-        <p className="py-8 text-center text-sm text-destiny-grey/40">
+        <p className="py-8 text-center text-sm text-destiny-grey/40 dark:text-white/40">
           No requests yet.
         </p>
       ) : (
@@ -514,13 +514,13 @@ function PrayerTab({
             >
               <div className="flex flex-wrap items-start gap-3">
                 <div className="min-w-0 flex-1">
-                  <p className="text-sm font-black text-destiny-grey">
+                  <p className="text-sm font-black text-destiny-grey dark:text-white">
                     {r.display_name}
-                    <span className="ml-2 text-xs font-medium text-destiny-grey/40">
+                    <span className="ml-2 text-xs font-medium text-destiny-grey/40 dark:text-white/40">
                       {formatWhen(r.created_at)}
                     </span>
                   </p>
-                  <p className="mt-1.5 whitespace-pre-wrap break-words text-sm leading-relaxed text-destiny-grey/80">
+                  <p className="mt-1.5 whitespace-pre-wrap break-words text-sm leading-relaxed text-destiny-grey/80 dark:text-white/80">
                     {r.body}
                   </p>
                 </div>
@@ -549,7 +549,7 @@ function PrayerTab({
                         type="button"
                         disabled={busy}
                         onClick={() => onSetStatus(r.id, "new")}
-                        className="rounded-xl border border-black/10 bg-white dark:border-white/10 dark:bg-destiny-grey-800 px-3 py-2 text-xs font-bold text-destiny-grey/60 transition disabled:opacity-60"
+                        className="rounded-xl border border-black/10 bg-white dark:border-white/10 dark:bg-destiny-grey-800 px-3 py-2 text-xs font-bold text-destiny-grey/60 dark:text-white/60 transition disabled:opacity-60"
                       >
                         Put back
                       </button>
@@ -581,7 +581,7 @@ function ThreadsTab({ threads }: { threads: Thread[] }) {
         count={threads.length}
       />
       {threads.length === 0 ? (
-        <p className="py-8 text-center text-sm text-destiny-grey/40">
+        <p className="py-8 text-center text-sm text-destiny-grey/40 dark:text-white/40">
           No direct conversations in this service.
         </p>
       ) : (
@@ -597,10 +597,10 @@ function ThreadsTab({ threads }: { threads: Thread[] }) {
                 </span>
               </div>
               <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-black text-destiny-grey">
+                <p className="truncate text-sm font-black text-destiny-grey dark:text-white">
                   {t.displayName}
                 </p>
-                <p className="text-xs text-destiny-grey/45">
+                <p className="text-xs text-destiny-grey/45 dark:text-white/45">
                   Last message {formatWhen(t.lastAt)}
                 </p>
               </div>
@@ -623,7 +623,7 @@ function HistoryTab({ sessions }: { sessions: Session[] }) {
         count={sessions.length}
       />
       {sessions.length === 0 ? (
-        <p className="py-8 text-center text-sm text-destiny-grey/40">
+        <p className="py-8 text-center text-sm text-destiny-grey/40 dark:text-white/40">
           No services yet.
         </p>
       ) : (
@@ -634,10 +634,10 @@ function HistoryTab({ sessions }: { sessions: Session[] }) {
               className="flex flex-wrap items-center gap-3 rounded-2xl bg-[#f5f7fa] px-4 py-3"
             >
               <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-black text-destiny-grey">
+                <p className="truncate text-sm font-black text-destiny-grey dark:text-white">
                   {s.title || "Sunday Service"}
                 </p>
-                <p className="text-xs text-destiny-grey/45">
+                <p className="text-xs text-destiny-grey/45 dark:text-white/45">
                   {formatWhen(s.opened_at ?? s.created_at ?? null)} · {s.state}
                 </p>
               </div>
@@ -680,7 +680,7 @@ function SectionHeading({
 }) {
   return (
     <div className="mb-4">
-      <p className="flex items-center gap-2 font-black text-destiny-grey">
+      <p className="flex items-center gap-2 font-black text-destiny-grey dark:text-white">
         {title}
         {count > 0 && (
           <span className="rounded-full bg-destiny-orange/15 px-2 py-0.5 text-xs text-destiny-orange">
@@ -688,7 +688,7 @@ function SectionHeading({
           </span>
         )}
       </p>
-      <p className="mt-0.5 text-sm text-destiny-grey/50">{hint}</p>
+      <p className="mt-0.5 text-sm text-destiny-grey/50 dark:text-white/50">{hint}</p>
     </div>
   );
 }

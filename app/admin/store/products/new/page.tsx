@@ -39,21 +39,21 @@ export default function NewProductPage() {
     <div className="mx-auto max-w-lg px-5 py-10 sm:px-8">
       <Link
         href="/admin/store"
-        className="mb-6 inline-flex items-center gap-1 text-sm font-semibold text-destiny-grey/60 hover:text-destiny-grey"
+        className="mb-6 inline-flex items-center gap-1 text-sm font-semibold text-destiny-grey/60 dark:text-white/60 hover:text-destiny-grey dark:hover:text-white"
       >
         <span className="material-symbols-rounded text-base">arrow_back</span>
         Store
       </Link>
-      <h1 className="font-[family-name:var(--font-heading)] text-2xl font-black text-destiny-grey">
+      <h1 className="font-[family-name:var(--font-heading)] text-2xl font-black text-destiny-grey dark:text-white">
         New product
       </h1>
-      <p className="mt-1 text-sm text-destiny-grey/55">
+      <p className="mt-1 text-sm text-destiny-grey/55 dark:text-white/55">
         Give it a name to start — you can add photos, variants and pricing next.
       </p>
 
       <form onSubmit={create} className="mt-6 space-y-4">
         <div>
-          <label className="mb-1.5 block text-xs font-bold uppercase tracking-[0.15em] text-destiny-grey/50">
+          <label className="mb-1.5 block text-xs font-bold uppercase tracking-[0.15em] text-destiny-grey/50 dark:text-white/50">
             Product name
           </label>
           <input

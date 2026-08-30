@@ -172,19 +172,19 @@ export default function StaffProfilePage() {
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {details.map((d) => (
             <div key={d.label}>
-              <p className="text-xs font-bold uppercase tracking-wider text-destiny-grey/40">
+              <p className="text-xs font-bold uppercase tracking-wider text-destiny-grey/40 dark:text-white/40">
                 {d.label}
               </p>
-              <p className="mt-0.5 text-sm text-destiny-grey">{d.value}</p>
+              <p className="mt-0.5 text-sm text-destiny-grey dark:text-white">{d.value}</p>
             </div>
           ))}
         </div>
         {staff.notes && (
           <div className="mt-4 border-t border-black/5 pt-4">
-            <p className="text-xs font-bold uppercase tracking-wider text-destiny-grey/40">
+            <p className="text-xs font-bold uppercase tracking-wider text-destiny-grey/40 dark:text-white/40">
               Notes
             </p>
-            <p className="mt-1 whitespace-pre-wrap text-sm text-destiny-grey/70">
+            <p className="mt-1 whitespace-pre-wrap text-sm text-destiny-grey/70 dark:text-white/70">
               {staff.notes}
             </p>
           </div>
@@ -206,10 +206,10 @@ export default function StaffProfilePage() {
               {leave.map((l) => (
                 <li key={l.id} className="flex items-center justify-between py-2.5">
                   <div>
-                    <p className="text-sm font-bold text-destiny-grey">
+                    <p className="text-sm font-bold text-destiny-grey dark:text-white">
                       {LEAVE_TYPE_LABELS[l.type]} · {Number(l.days)} day(s)
                     </p>
-                    <p className="text-xs text-destiny-grey/45">
+                    <p className="text-xs text-destiny-grey/45 dark:text-white/45">
                       {formatDate(l.start_date)} – {formatDate(l.end_date)}
                     </p>
                   </div>
@@ -231,24 +231,24 @@ export default function StaffProfilePage() {
               {docs.map((d) => (
                 <li key={d.id} className="flex items-center justify-between py-2.5">
                   <div className="min-w-0">
-                    <p className="truncate text-sm font-bold text-destiny-grey">
+                    <p className="truncate text-sm font-bold text-destiny-grey dark:text-white">
                       {d.title}
                     </p>
-                    <p className="text-xs text-destiny-grey/45">
+                    <p className="text-xs text-destiny-grey/45 dark:text-white/45">
                       {DOCUMENT_CATEGORY_LABELS[d.category]} · {formatBytes(d.size_bytes)}
                     </p>
                   </div>
                   <div className="flex shrink-0 gap-1">
                     <button
                       onClick={() => openDoc(d.id)}
-                      className="text-destiny-grey/40 transition hover:text-destiny-orange"
+                      className="text-destiny-grey/40 dark:text-white/40 transition hover:text-destiny-orange"
                       aria-label="Download"
                     >
                       <span className="material-symbols-rounded text-xl">download</span>
                     </button>
                     <button
                       onClick={() => deleteDoc(d.id)}
-                      className="text-destiny-grey/40 transition hover:text-destiny-red"
+                      className="text-destiny-grey/40 dark:text-white/40 transition hover:text-destiny-red"
                       aria-label="Delete"
                     >
                       <span className="material-symbols-rounded text-xl">delete</span>
@@ -269,20 +269,20 @@ export default function StaffProfilePage() {
               {reviews.map((r) => (
                 <li key={r.id} className="py-2.5">
                   <div className="flex items-center gap-2">
-                    <p className="text-sm font-bold text-destiny-grey">
+                    <p className="text-sm font-bold text-destiny-grey dark:text-white">
                       {REVIEW_TYPE_LABELS[r.type]}
                     </p>
-                    <span className="text-xs text-destiny-grey/45">
+                    <span className="text-xs text-destiny-grey/45 dark:text-white/45">
                       {formatDate(r.review_date)}
                     </span>
                   </div>
                   {r.summary && (
-                    <p className="mt-1 whitespace-pre-wrap text-sm text-destiny-grey/65">
+                    <p className="mt-1 whitespace-pre-wrap text-sm text-destiny-grey/65 dark:text-white/65">
                       {r.summary}
                     </p>
                   )}
                   {r.next_review_date && (
-                    <p className="mt-1 text-xs font-bold text-destiny-grey/45">
+                    <p className="mt-1 text-xs font-bold text-destiny-grey/45 dark:text-white/45">
                       Next: {formatDate(r.next_review_date)}
                     </p>
                   )}
@@ -330,8 +330,8 @@ function Section({
     <section className="rounded-3xl border border-black/5 bg-white dark:border-white/8 dark:bg-destiny-grey-800 p-6 shadow-sm">
       <div className="mb-3 flex items-center justify-between">
         <div>
-          <h2 className="font-black text-destiny-grey">{title}</h2>
-          {meta && <p className="text-xs text-destiny-grey/45">{meta}</p>}
+          <h2 className="font-black text-destiny-grey dark:text-white">{title}</h2>
+          {meta && <p className="text-xs text-destiny-grey/45 dark:text-white/45">{meta}</p>}
         </div>
         <button
           onClick={onAdd}
@@ -347,5 +347,5 @@ function Section({
 }
 
 function Empty({ children }: { children: React.ReactNode }) {
-  return <p className="py-4 text-sm text-destiny-grey/40">{children}</p>;
+  return <p className="py-4 text-sm text-destiny-grey/40 dark:text-white/40">{children}</p>;
 }

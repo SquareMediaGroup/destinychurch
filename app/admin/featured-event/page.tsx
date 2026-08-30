@@ -168,7 +168,7 @@ export default function FeaturedEventPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-24">
-        <span className="material-symbols-rounded animate-spin text-3xl text-destiny-grey/20">
+        <span className="material-symbols-rounded animate-spin text-3xl text-destiny-grey/20 dark:text-white/20">
           progress_activity
         </span>
       </div>
@@ -178,8 +178,8 @@ export default function FeaturedEventPage() {
   return (
     <div className="mx-auto max-w-6xl px-6 py-10">
       <div className="mb-8">
-        <h1 className="text-2xl font-black text-destiny-grey">Featured event</h1>
-        <p className="mt-1 max-w-2xl text-sm text-destiny-grey/50">
+        <h1 className="text-2xl font-black text-destiny-grey dark:text-white">Featured event</h1>
+        <p className="mt-1 max-w-2xl text-sm text-destiny-grey/50 dark:text-white/50">
           Promote one event across the site: a wide banner above the What&apos;s
           On grid and the first card on the homepage. Events come from
           ChurchSuite, so add or edit the event there first. Leave any field
@@ -191,7 +191,7 @@ export default function FeaturedEventPage() {
         {/* Picker */}
         <div>
           <div className="mb-4 flex items-center gap-3 rounded-xl border border-black/8 bg-white dark:border-white/8 dark:bg-destiny-grey-800 px-4 py-2.5">
-            <span className="material-symbols-rounded text-lg text-destiny-grey/30">
+            <span className="material-symbols-rounded text-lg text-destiny-grey/30 dark:text-white/30">
               search
             </span>
             <input
@@ -204,7 +204,7 @@ export default function FeaturedEventPage() {
           </div>
 
           {visible.length === 0 ? (
-            <p className="rounded-xl bg-[#f5f7fa] px-4 py-6 text-center text-sm text-destiny-grey/50">
+            <p className="rounded-xl bg-[#f5f7fa] px-4 py-6 text-center text-sm text-destiny-grey/50 dark:text-white/50">
               {events.length === 0
                 ? "No upcoming events in the ChurchSuite feed."
                 : "No events match that filter."}
@@ -238,22 +238,22 @@ export default function FeaturedEventPage() {
                     </div>
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2">
-                        <p className="truncate text-sm font-black text-destiny-grey">
+                        <p className="truncate text-sm font-black text-destiny-grey dark:text-white">
                           {event.name}
                         </p>
                         {event.sessionCount > 1 && (
-                          <span className="shrink-0 rounded-full bg-destiny-grey/8 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-destiny-grey/60">
+                          <span className="shrink-0 rounded-full bg-destiny-grey/8 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-destiny-grey/60 dark:text-white/60">
                             {event.sessionCount} sessions
                           </span>
                         )}
                       </div>
-                      <p className="mt-0.5 truncate text-xs text-destiny-grey/50">
+                      <p className="mt-0.5 truncate text-xs text-destiny-grey/50 dark:text-white/50">
                         {formatStart(event.start)}
                         {event.location ? ` · ${event.location}` : ""}
                       </p>
                       {/* Surfaced because the slug is derived from the name:
                           renaming in ChurchSuite changes the event's URL. */}
-                      <p className="mt-0.5 truncate font-mono text-[10px] text-destiny-grey/30">
+                      <p className="mt-0.5 truncate font-mono text-[10px] text-destiny-grey/30 dark:text-white/30">
                         /whats-on/{event.slug}
                       </p>
                     </div>
@@ -285,10 +285,10 @@ export default function FeaturedEventPage() {
               className="mt-0.5 h-4 w-4 accent-[#f58021]"
             />
             <span>
-              <span className="block text-sm font-bold text-destiny-grey">
+              <span className="block text-sm font-bold text-destiny-grey dark:text-white">
                 Promote this event
               </span>
-              <span className="block text-xs text-destiny-grey/50">
+              <span className="block text-xs text-destiny-grey/50 dark:text-white/50">
                 Stops automatically once the event has finished.
               </span>
             </span>
@@ -298,7 +298,7 @@ export default function FeaturedEventPage() {
             <div>
               <label
                 htmlFor="promote-from"
-                className="block text-xs font-bold text-destiny-grey/60"
+                className="block text-xs font-bold text-destiny-grey/60 dark:text-white/60"
               >
                 Promote from
               </label>
@@ -307,13 +307,13 @@ export default function FeaturedEventPage() {
                 type="datetime-local"
                 value={promoteFrom}
                 onChange={(e) => setPromoteFrom(e.target.value)}
-                className="mt-1 w-full rounded-lg border border-black/10 px-2.5 py-2 text-sm outline-none focus:border-destiny-orange"
+                className="mt-1 w-full rounded-lg border border-black/10 px-2.5 py-2 text-sm text-destiny-grey outline-none focus:border-destiny-orange dark:border-white/10 dark:text-white [color-scheme:light] dark:[color-scheme:dark]"
               />
             </div>
             <div>
               <label
                 htmlFor="promote-until"
-                className="block text-xs font-bold text-destiny-grey/60"
+                className="block text-xs font-bold text-destiny-grey/60 dark:text-white/60"
               >
                 Promote until
               </label>
@@ -322,11 +322,11 @@ export default function FeaturedEventPage() {
                 type="datetime-local"
                 value={promoteUntil}
                 onChange={(e) => setPromoteUntil(e.target.value)}
-                className="mt-1 w-full rounded-lg border border-black/10 px-2.5 py-2 text-sm outline-none focus:border-destiny-orange"
+                className="mt-1 w-full rounded-lg border border-black/10 px-2.5 py-2 text-sm text-destiny-grey outline-none focus:border-destiny-orange dark:border-white/10 dark:text-white [color-scheme:light] dark:[color-scheme:dark]"
               />
             </div>
           </div>
-          <p className="-mt-2 text-xs text-destiny-grey/40">
+          <p className="-mt-2 text-xs text-destiny-grey/40 dark:text-white/40">
             Both optional. Leave blank to promote as soon as it&apos;s switched
             on, until the event ends.
           </p>
@@ -334,7 +334,7 @@ export default function FeaturedEventPage() {
           <div>
             <label
               htmlFor="headline"
-              className="block text-xs font-bold text-destiny-grey/60"
+              className="block text-xs font-bold text-destiny-grey/60 dark:text-white/60"
             >
               Headline
             </label>
@@ -344,14 +344,14 @@ export default function FeaturedEventPage() {
               maxLength={120}
               onChange={(e) => setHeadline(e.target.value)}
               placeholder={chosen?.name ?? "Event name from ChurchSuite"}
-              className="mt-1 w-full rounded-lg border border-black/10 px-3 py-2 text-sm outline-none focus:border-destiny-orange"
+              className="mt-1 w-full rounded-lg border border-black/10 px-3 py-2 text-sm text-destiny-grey outline-none focus:border-destiny-orange dark:border-white/10 dark:text-white"
             />
           </div>
 
           <div>
             <label
               htmlFor="blurb"
-              className="block text-xs font-bold text-destiny-grey/60"
+              className="block text-xs font-bold text-destiny-grey/60 dark:text-white/60"
             >
               Blurb
             </label>
@@ -362,12 +362,12 @@ export default function FeaturedEventPage() {
               rows={4}
               onChange={(e) => setBlurb(e.target.value)}
               placeholder="Event description from ChurchSuite"
-              className="mt-1 w-full resize-y rounded-lg border border-black/10 px-3 py-2 text-sm outline-none focus:border-destiny-orange"
+              className="mt-1 w-full resize-y rounded-lg border border-black/10 px-3 py-2 text-sm text-destiny-grey outline-none focus:border-destiny-orange dark:border-white/10 dark:text-white"
             />
           </div>
 
           <div>
-            <span className="block text-xs font-bold text-destiny-grey/60">
+            <span className="block text-xs font-bold text-destiny-grey/60 dark:text-white/60">
               Banner image
             </span>
             {imageUrl ? (
@@ -384,13 +384,13 @@ export default function FeaturedEventPage() {
                     setImageUrl(null);
                     setImagePath(null);
                   }}
-                  className="mt-2 text-xs font-bold text-red-600"
+                  className="mt-2 text-xs font-bold text-red-600 dark:text-red-400"
                 >
                   Remove image
                 </button>
               </div>
             ) : (
-              <p className="mt-1.5 text-xs text-destiny-grey/40">
+              <p className="mt-1.5 text-xs text-destiny-grey/40 dark:text-white/40">
                 Using the ChurchSuite artwork.
               </p>
             )}
@@ -402,14 +402,14 @@ export default function FeaturedEventPage() {
                 const file = e.target.files?.[0];
                 if (file) handleUpload(file);
               }}
-              className="mt-2 block w-full text-xs text-destiny-grey/60 file:mr-3 file:rounded-lg file:border-0 file:bg-[#f5f7fa] file:px-3 file:py-1.5 file:text-xs file:font-bold file:text-destiny-grey"
+              className="mt-2 block w-full text-xs text-destiny-grey/60 dark:text-white/60 file:mr-3 file:rounded-lg file:border-0 file:bg-[#f5f7fa] file:px-3 file:py-1.5 file:text-xs file:font-bold file:text-destiny-grey dark:file:bg-white/10 dark:file:text-white"
             />
           </div>
 
           <div>
             <label
               htmlFor="cta-text"
-              className="block text-xs font-bold text-destiny-grey/60"
+              className="block text-xs font-bold text-destiny-grey/60 dark:text-white/60"
             >
               Button text
             </label>
@@ -418,14 +418,14 @@ export default function FeaturedEventPage() {
               value={ctaText}
               onChange={(e) => setCtaText(e.target.value)}
               placeholder="Sign up"
-              className="mt-1 w-full rounded-lg border border-black/10 px-3 py-2 text-sm outline-none focus:border-destiny-orange"
+              className="mt-1 w-full rounded-lg border border-black/10 px-3 py-2 text-sm text-destiny-grey outline-none focus:border-destiny-orange dark:border-white/10 dark:text-white"
             />
           </div>
 
           <div>
             <label
               htmlFor="cta-link"
-              className="block text-xs font-bold text-destiny-grey/60"
+              className="block text-xs font-bold text-destiny-grey/60 dark:text-white/60"
             >
               Button link
             </label>
@@ -434,12 +434,12 @@ export default function FeaturedEventPage() {
               value={ctaLink}
               onChange={(e) => setCtaLink(e.target.value)}
               placeholder={chosen ? `/whats-on/${chosen.slug}` : "/whats-on"}
-              className="mt-1 w-full rounded-lg border border-black/10 px-3 py-2 text-sm outline-none focus:border-destiny-orange"
+              className="mt-1 w-full rounded-lg border border-black/10 px-3 py-2 text-sm text-destiny-grey outline-none focus:border-destiny-orange dark:border-white/10 dark:text-white"
             />
           </div>
 
           {error && (
-            <p className="rounded-xl bg-red-50 px-4 py-3 text-sm text-red-600">
+            <p className="rounded-xl bg-red-50 px-4 py-3 text-sm text-red-600 dark:bg-red-500/10 dark:text-red-400">
               {error}
             </p>
           )}
@@ -453,12 +453,12 @@ export default function FeaturedEventPage() {
             {saving ? "Saving…" : saved ? "Saved" : "Save"}
           </button>
           {active && !chosen && (
-            <p className="text-xs text-destiny-grey/50">
+            <p className="text-xs text-destiny-grey/50 dark:text-white/50">
               Choose an event on the left before promoting.
             </p>
           )}
 
-          <p className="border-t border-black/8 pt-4 text-xs text-destiny-grey/50">
+          <p className="border-t border-black/8 pt-4 text-xs text-destiny-grey/50 dark:text-white/50">
             Want a popup as well?{" "}
             <Link
               href="/admin/event-popup"

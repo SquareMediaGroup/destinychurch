@@ -237,7 +237,7 @@ export default function AdminPostsPage() {
                 Publish
               </button>
               <button
-                className="rounded-lg bg-black/5 px-3 py-1.5 text-xs font-bold text-destiny-grey/70 transition hover:bg-black/10 disabled:opacity-50"
+                className="rounded-lg bg-black/5 px-3 py-1.5 text-xs font-bold text-destiny-grey/70 dark:text-white/70 transition hover:bg-black/10 disabled:opacity-50"
                 disabled={working}
                 onClick={() => bulkPublish(false)}
               >
@@ -270,7 +270,7 @@ export default function AdminPostsPage() {
           ) : (
             <div className="overflow-x-auto rounded-3xl border border-black/5 bg-white shadow-sm dark:border-white/8 dark:bg-destiny-grey-800">
               <table className="w-full text-left text-sm">
-                <thead className="border-b border-black/5 text-xs font-bold uppercase tracking-wider text-destiny-grey/40">
+                <thead className="border-b border-black/5 text-xs font-bold uppercase tracking-wider text-destiny-grey/40 dark:text-white/40">
                   <tr>
                     <th className="w-10 pl-5 pr-0 py-3.5">
                       <input
@@ -324,12 +324,12 @@ export default function AdminPostsPage() {
                         />
                       </td>
                       <td className="px-5 py-3.5">
-                        <p className="font-bold text-destiny-grey transition group-hover:text-destiny-orange">
+                        <p className="font-bold text-destiny-grey dark:text-white transition group-hover:text-destiny-orange">
                           {p.title}
                         </p>
                       </td>
                       <td className="px-5 py-3.5">
-                        <span className="font-mono text-xs text-destiny-grey/50">
+                        <span className="font-mono text-xs text-destiny-grey/50 dark:text-white/50">
                           /{p.slug}
                         </span>
                       </td>
@@ -354,7 +354,7 @@ export default function AdminPostsPage() {
                               target="_blank"
                               rel="noreferrer"
                               onClick={(e) => e.stopPropagation()}
-                              className="text-destiny-grey/40 transition hover:text-destiny-orange"
+                              className="text-destiny-grey/40 dark:text-white/40 transition hover:text-destiny-orange"
                               aria-label={`View ${p.title} live`}
                             >
                               <span className="material-symbols-rounded text-xl">
@@ -367,7 +367,7 @@ export default function AdminPostsPage() {
                               e.stopPropagation();
                               setEditing(p);
                             }}
-                            className="text-destiny-grey/40 transition hover:text-destiny-orange group-hover:text-destiny-orange"
+                            className="text-destiny-grey/40 dark:text-white/40 transition hover:text-destiny-orange group-hover:text-destiny-orange"
                             aria-label={`Edit ${p.title}`}
                           >
                             <span className="material-symbols-rounded text-xl">edit</span>
@@ -377,7 +377,7 @@ export default function AdminPostsPage() {
                               e.stopPropagation();
                               remove(p);
                             }}
-                            className="text-destiny-grey/40 transition hover:text-destiny-red"
+                            className="text-destiny-grey/40 dark:text-white/40 transition hover:text-destiny-red"
                             aria-label={`Delete ${p.title}`}
                           >
                             <span className="material-symbols-rounded text-xl">delete</span>

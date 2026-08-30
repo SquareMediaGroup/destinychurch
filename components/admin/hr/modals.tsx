@@ -263,10 +263,10 @@ export function StaffModal({
               className="mt-0.5 h-4 w-4 rounded accent-destiny-orange"
             />
             <span>
-              <span className="block text-sm font-bold text-destiny-grey">
+              <span className="block text-sm font-bold text-destiny-grey dark:text-white">
                 Grant backend access
               </span>
-              <span className="block text-xs text-destiny-grey/50">
+              <span className="block text-xs text-destiny-grey/50 dark:text-white/50">
                 Create a login so this person can sign in.
               </span>
             </span>
@@ -345,8 +345,8 @@ export function LeaveModal({
     <Modal title="Request leave" onClose={onClose}>
       <form onSubmit={submit} className="flex flex-col gap-4">
         {fixedStaff ? (
-          <p className="text-sm text-destiny-grey/60">
-            For <span className="font-bold text-destiny-grey">{fullName(fixedStaff)}</span>
+          <p className="text-sm text-destiny-grey/60 dark:text-white/60">
+            For <span className="font-bold text-destiny-grey dark:text-white">{fullName(fixedStaff)}</span>
           </p>
         ) : (
           <StaffPicker
@@ -392,7 +392,7 @@ export function LeaveModal({
           </div>
         </div>
         {form.start_date && form.end_date && (
-          <p className="text-xs text-destiny-grey/50">
+          <p className="text-xs text-destiny-grey/50 dark:text-white/50">
             {dayCount(form.start_date, form.end_date)} day(s)
           </p>
         )}
@@ -504,10 +504,10 @@ export function DocumentModal({
             type="file"
             required
             accept=".pdf,.doc,.docx,image/jpeg,image/png,image/webp"
-            className="block w-full text-sm text-destiny-grey/70 file:mr-3 file:rounded-lg file:border-0 file:bg-destiny-orange/10 file:px-3 file:py-2 file:text-sm file:font-bold file:text-destiny-orange"
+            className="block w-full text-sm text-destiny-grey/70 dark:text-white/70 file:mr-3 file:rounded-lg file:border-0 file:bg-destiny-orange/10 file:px-3 file:py-2 file:text-sm file:font-bold file:text-destiny-orange"
             onChange={(e) => setFile(e.target.files?.[0] ?? null)}
           />
-          <p className="mt-1 text-xs text-destiny-grey/40">
+          <p className="mt-1 text-xs text-destiny-grey/40 dark:text-white/40">
             PDF, Word or image, up to 20MB. Stored privately.
           </p>
         </div>
@@ -561,8 +561,8 @@ export function ReviewModal({
     <Modal title="Log review" onClose={onClose}>
       <form onSubmit={submit} className="flex flex-col gap-4">
         {fixedStaff ? (
-          <p className="text-sm text-destiny-grey/60">
-            For <span className="font-bold text-destiny-grey">{fullName(fixedStaff)}</span>
+          <p className="text-sm text-destiny-grey/60 dark:text-white/60">
+            For <span className="font-bold text-destiny-grey dark:text-white">{fullName(fixedStaff)}</span>
           </p>
         ) : (
           <StaffPicker

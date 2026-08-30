@@ -61,7 +61,7 @@ export function makeBlockNodeView(def: AnyBlockDefinition) {
         <div
           contentEditable={false}
           data-on={selected}
-          className="absolute bottom-full left-2 z-10 mb-1 flex max-w-[calc(100%-1rem)] items-center gap-1 rounded-md bg-black/5 px-1.5 py-0.5 text-destiny-grey/45 transition data-[on=true]:bg-destiny-orange/15 data-[on=true]:text-destiny-orange lg:hidden"
+          className="absolute bottom-full left-2 z-10 mb-1 flex max-w-[calc(100%-1rem)] items-center gap-1 rounded-md bg-black/5 px-1.5 py-0.5 text-destiny-grey/45 dark:text-white/45 transition data-[on=true]:bg-destiny-orange/15 data-[on=true]:text-destiny-orange lg:hidden"
         >
           <span aria-hidden className="material-symbols-rounded text-[13px]">{def.icon}</span>
           <span className="truncate text-[10px] font-bold uppercase tracking-wider">
@@ -93,12 +93,12 @@ export function makeBlockNodeView(def: AnyBlockDefinition) {
             tabIndex={-1}
             aria-label="Drag to reorder"
             title="Drag to reorder"
-            className="flex h-6 w-6 cursor-grab items-center justify-center rounded text-destiny-grey/40 hover:bg-black/5 active:cursor-grabbing"
+            className="flex h-6 w-6 cursor-grab items-center justify-center rounded text-destiny-grey/40 dark:text-white/40 hover:bg-black/5 active:cursor-grabbing"
           >
             <span className="material-symbols-rounded text-[18px]">drag_indicator</span>
           </span>
 
-          <span className="px-1 text-[11px] font-bold uppercase tracking-wider text-destiny-grey/45">
+          <span className="px-1 text-[11px] font-bold uppercase tracking-wider text-destiny-grey/45 dark:text-white/45">
             {summary}
           </span>
 
@@ -158,7 +158,7 @@ function ChromeButton({
         event.stopPropagation();
         onClick();
       }}
-      className="flex h-6 w-6 items-center justify-center rounded text-destiny-grey/45 transition hover:bg-black/5 hover:text-destiny-grey"
+      className="flex h-6 w-6 items-center justify-center rounded text-destiny-grey/45 dark:text-white/45 transition hover:bg-black/5 hover:text-destiny-grey dark:hover:text-white"
     >
       <span className="material-symbols-rounded text-[16px]">{icon}</span>
     </button>

@@ -81,7 +81,7 @@ export default function AnalyticsPage() {
                 className={`rounded-lg px-3.5 py-1.5 text-sm font-bold transition ${
                   tab === value
                     ? "bg-destiny-orange text-white shadow-sm"
-                    : "text-destiny-grey/55 hover:text-destiny-grey"
+                    : "text-destiny-grey/55 dark:text-white/55 hover:text-destiny-grey dark:hover:text-white"
                 }`}
               >
                 {label}
@@ -99,7 +99,7 @@ export default function AnalyticsPage() {
           onChange={setRange}
         />
         {tab !== "site" && (
-          <label className="ml-auto flex items-center gap-2.5 text-xs font-bold text-destiny-grey/50">
+          <label className="ml-auto flex items-center gap-2.5 text-xs font-bold text-destiny-grey/50 dark:text-white/50">
             Include link previews and crawlers
             <Toggle
               checked={includeBots}

@@ -121,12 +121,12 @@ export function SubgroupModal({
                 : "Set a password to protect this group"
             }
           />
-          <p className="mt-1.5 text-xs text-destiny-grey/45">
+          <p className="mt-1.5 text-xs text-destiny-grey/45 dark:text-white/45">
             Visitors must enter this to read the group&apos;s posts. Stored
             securely (hashed) — it can&apos;t be read back.
           </p>
           {hasPassword && (
-            <label className="mt-2 flex items-center gap-2 text-xs font-bold text-destiny-grey/60">
+            <label className="mt-2 flex items-center gap-2 text-xs font-bold text-destiny-grey/60 dark:text-white/60">
               <input
                 type="checkbox"
                 checked={removePassword}
@@ -139,8 +139,8 @@ export function SubgroupModal({
 
         <div className="flex items-center justify-between rounded-xl bg-[#f5f7fa] px-4 py-3">
           <div>
-            <p className="text-sm font-bold text-destiny-grey">Published</p>
-            <p className="text-xs text-destiny-grey/45">
+            <p className="text-sm font-bold text-destiny-grey dark:text-white">Published</p>
+            <p className="text-xs text-destiny-grey/45 dark:text-white/45">
               Visible on the public /training page.
             </p>
           </div>

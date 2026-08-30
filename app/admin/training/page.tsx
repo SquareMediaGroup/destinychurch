@@ -145,7 +145,7 @@ export default function TrainingCategoriesPage() {
           />
 
           {!canReorder && (
-            <p className="mb-3 flex items-center gap-1.5 text-xs text-destiny-grey/45">
+            <p className="mb-3 flex items-center gap-1.5 text-xs text-destiny-grey/45 dark:text-white/45">
               <span className="material-symbols-rounded text-base">info</span>
               Clear the search to drag categories into a new order.
             </p>
@@ -168,7 +168,7 @@ export default function TrainingCategoriesPage() {
           ) : (
             <div className="overflow-x-auto rounded-3xl border border-black/5 bg-white shadow-sm dark:border-white/8 dark:bg-destiny-grey-800">
               <table className="w-full text-left text-sm">
-                <thead className="border-b border-black/5 text-xs font-bold uppercase tracking-wider text-destiny-grey/40">
+                <thead className="border-b border-black/5 text-xs font-bold uppercase tracking-wider text-destiny-grey/40 dark:text-white/40">
                   <tr>
                     {canReorder && <th className="w-10 px-2 py-3.5"></th>}
                     <th className="px-5 py-3.5">Category</th>
@@ -188,7 +188,7 @@ export default function TrainingCategoriesPage() {
                         {canReorder && (
                           <td className="px-2 py-3.5 text-center">
                             <span
-                              className="material-symbols-rounded cursor-grab text-xl text-destiny-grey/25 active:cursor-grabbing"
+                              className="material-symbols-rounded cursor-grab text-xl text-destiny-grey/25 dark:text-white/25 active:cursor-grabbing"
                               title="Drag to reorder"
                             >
                               drag_indicator
@@ -198,7 +198,7 @@ export default function TrainingCategoriesPage() {
                         <td className="px-5 py-3.5">
                           <Link
                             href={`/admin/training/${c.id}`}
-                            className="flex items-center gap-2.5 font-bold text-destiny-grey transition hover:text-destiny-orange"
+                            className="flex items-center gap-2.5 font-bold text-destiny-grey dark:text-white transition hover:text-destiny-orange"
                           >
                             {c.icon && (
                               <span className="material-symbols-rounded text-xl text-destiny-orange">
@@ -208,7 +208,7 @@ export default function TrainingCategoriesPage() {
                             {c.name}
                           </Link>
                           {c.description && (
-                            <p className="mt-0.5 text-xs text-destiny-grey/45">
+                            <p className="mt-0.5 text-xs text-destiny-grey/45 dark:text-white/45">
                               {c.description}
                             </p>
                           )}
@@ -222,7 +222,7 @@ export default function TrainingCategoriesPage() {
                           <div className="flex items-center justify-end gap-3">
                             <Link
                               href={`/admin/training/${c.id}`}
-                              className="text-destiny-grey/40 transition hover:text-destiny-orange"
+                              className="text-destiny-grey/40 dark:text-white/40 transition hover:text-destiny-orange"
                               aria-label={`Manage sub-groups in ${c.name}`}
                               title="Manage sub-groups"
                             >
@@ -232,14 +232,14 @@ export default function TrainingCategoriesPage() {
                             </Link>
                             <button
                               onClick={() => setEditing(c)}
-                              className="text-destiny-grey/40 transition hover:text-destiny-orange"
+                              className="text-destiny-grey/40 dark:text-white/40 transition hover:text-destiny-orange"
                               aria-label={`Edit ${c.name}`}
                             >
                               <span className="material-symbols-rounded text-xl">edit</span>
                             </button>
                             <button
                               onClick={() => remove(c)}
-                              className="text-destiny-grey/40 transition hover:text-destiny-red"
+                              className="text-destiny-grey/40 dark:text-white/40 transition hover:text-destiny-red"
                               aria-label={`Delete ${c.name}`}
                             >
                               <span className="material-symbols-rounded text-xl">delete</span>

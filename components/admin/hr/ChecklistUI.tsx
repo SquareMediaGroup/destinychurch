@@ -91,9 +91,9 @@ export function ChecklistSection({
     <section className="rounded-3xl border border-black/5 bg-white dark:border-white/8 dark:bg-destiny-grey-800 p-6 shadow-sm">
       <div className="mb-3 flex items-center justify-between">
         <div>
-          <h2 className="font-black text-destiny-grey">{CHECKLIST_KIND_LABELS[kind]}</h2>
+          <h2 className="font-black text-destiny-grey dark:text-white">{CHECKLIST_KIND_LABELS[kind]}</h2>
           {items.length > 0 && (
-            <p className="text-xs text-destiny-grey/45">
+            <p className="text-xs text-destiny-grey/45 dark:text-white/45">
               {done} / {items.length} done
             </p>
           )}
@@ -113,7 +113,7 @@ export function ChecklistSection({
 
       {items.length === 0 ? (
         <div className="flex flex-col gap-2">
-          <p className="py-2 text-sm text-destiny-grey/40">Not started.</p>
+          <p className="py-2 text-sm text-destiny-grey/40 dark:text-white/40">Not started.</p>
           {templates.length > 0 && (
             <div className="flex flex-wrap gap-2">
               {templates.map((t) => (
@@ -148,14 +148,14 @@ export function ChecklistSection({
               />
               <span
                 className={`flex-1 text-sm ${
-                  item.is_done ? "text-destiny-grey/40 line-through" : "text-destiny-grey"
+                  item.is_done ? "text-destiny-grey/40 dark:text-white/40 line-through" : "text-destiny-grey dark:text-white"
                 }`}
               >
                 {item.label}
               </span>
               <button
                 onClick={() => remove(item.id)}
-                className="text-destiny-grey/30 transition hover:text-destiny-red"
+                className="text-destiny-grey/30 dark:text-white/30 transition hover:text-destiny-red"
                 aria-label={`Remove ${item.label}`}
               >
                 <span className="material-symbols-rounded text-base">close</span>
@@ -280,7 +280,7 @@ export function ChecklistTemplateModal({
                 <button
                   type="button"
                   onClick={() => removeItem(i)}
-                  className="text-destiny-grey/40 transition hover:text-destiny-red"
+                  className="text-destiny-grey/40 dark:text-white/40 transition hover:text-destiny-red"
                   aria-label="Remove item"
                 >
                   <span className="material-symbols-rounded text-lg">close</span>

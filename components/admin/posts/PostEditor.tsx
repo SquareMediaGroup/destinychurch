@@ -74,7 +74,7 @@ function SidePanel({
           onClick={onToggle}
           title={`Show ${label}`}
           aria-label={`Show ${label}`}
-          className="flex h-full w-full flex-col items-center gap-2 pt-3 text-destiny-grey/45 transition hover:bg-[#f5f7fa] hover:text-destiny-grey"
+          className="flex h-full w-full flex-col items-center gap-2 pt-3 text-destiny-grey/45 dark:text-white/45 transition hover:bg-[#f5f7fa] hover:text-destiny-grey dark:hover:text-white"
         >
           <span className="material-symbols-rounded text-[19px]">{icon}</span>
           <span className="text-[11px] font-bold uppercase tracking-wider [writing-mode:vertical-rl]">
@@ -95,7 +95,7 @@ function SidePanel({
       <button
         type="button"
         onClick={onToggle}
-        className="flex items-center justify-center gap-1 border-t border-black/8 py-2 text-[11px] font-bold uppercase tracking-wider text-destiny-grey/35 transition hover:bg-[#f5f7fa] hover:text-destiny-grey"
+        className="flex items-center justify-center gap-1 border-t border-black/8 py-2 text-[11px] font-bold uppercase tracking-wider text-destiny-grey/35 dark:text-white/35 transition hover:bg-[#f5f7fa] hover:text-destiny-grey dark:hover:text-white"
       >
         <span className="material-symbols-rounded text-[15px]">
           {side === "left" ? "chevron_left" : "chevron_right"}
@@ -147,7 +147,7 @@ function useSlugCheck(slug: string, excludeId?: string): SlugState {
 
 function SlugHint({ state }: { state: SlugState }) {
   if (state.status === "checking") {
-    return <span className="text-destiny-grey/40">Checking availability…</span>;
+    return <span className="text-destiny-grey/40 dark:text-white/40">Checking availability…</span>;
   }
   if (state.status === "available") {
     return (
@@ -280,7 +280,7 @@ export function PostEditor({
               type="button"
               onClick={onClose}
               aria-label="Close"
-              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-destiny-grey/50 transition hover:bg-[#f5f7fa] hover:text-destiny-grey"
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-destiny-grey/50 dark:text-white/50 transition hover:bg-[#f5f7fa] hover:text-destiny-grey dark:hover:text-white"
             >
               <span className="material-symbols-rounded text-xl">close</span>
             </button>
@@ -288,10 +288,10 @@ export function PostEditor({
               value={form.title}
               onChange={(e) => onTitleChange(e.target.value)}
               placeholder="Page title"
-              className="flex-1 bg-transparent text-lg font-black text-destiny-grey outline-none placeholder:font-bold placeholder:text-destiny-grey/30"
+              className="flex-1 bg-transparent text-lg font-black text-destiny-grey dark:text-white outline-none placeholder:font-bold placeholder:text-destiny-grey/30 dark:placeholder:text-white/30"
             />
             <div className="flex shrink-0 items-center gap-2">
-              <span className="text-xs font-bold uppercase tracking-wider text-destiny-grey/45">
+              <span className="text-xs font-bold uppercase tracking-wider text-destiny-grey/45 dark:text-white/45">
                 Published
               </span>
               <PublishToggle
@@ -313,12 +313,12 @@ export function PostEditor({
           </div>
           {/* Settings row: slug + live availability */}
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-black/5 bg-[#f9fafb] px-5 py-2.5">
-            <span className="text-sm font-bold text-destiny-grey/45">/</span>
+            <span className="text-sm font-bold text-destiny-grey/45 dark:text-white/45">/</span>
             <input
               value={form.slug}
               onChange={(e) => onSlugChange(e.target.value)}
               placeholder="page-url-slug"
-              className="w-64 shrink-0 rounded-lg border border-black/10 bg-white dark:border-white/10 dark:bg-destiny-grey-800 px-3 py-1.5 text-sm text-destiny-grey outline-none transition focus:border-destiny-orange/50 focus:ring-2 focus:ring-destiny-orange/15"
+              className="w-64 shrink-0 rounded-lg border border-black/10 bg-white dark:border-white/10 dark:bg-destiny-grey-800 px-3 py-1.5 text-sm text-destiny-grey dark:text-white outline-none transition focus:border-destiny-orange/50 focus:ring-2 focus:ring-destiny-orange/15"
             />
             <span className="text-xs font-medium">
               <SlugHint state={slugState} />
@@ -375,7 +375,7 @@ export function PostEditor({
           type="button"
           onClick={onClose}
           aria-label="Close"
-          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-destiny-grey/50 transition active:bg-[#f5f7fa]"
+          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-destiny-grey/50 dark:text-white/50 transition active:bg-[#f5f7fa]"
         >
           <span className="material-symbols-rounded text-xl">close</span>
         </button>
@@ -384,7 +384,7 @@ export function PostEditor({
           onChange={(e) => onTitleChange(e.target.value)}
           aria-label="Title"
           placeholder="Page title"
-          className="min-w-0 flex-1 bg-transparent text-base font-black text-destiny-grey outline-none placeholder:font-bold placeholder:text-destiny-grey/30"
+          className="min-w-0 flex-1 bg-transparent text-base font-black text-destiny-grey dark:text-white outline-none placeholder:font-bold placeholder:text-destiny-grey/30 dark:placeholder:text-white/30"
         />
         <button
           type="button"
@@ -400,11 +400,11 @@ export function PostEditor({
         <button
           type="button"
           onClick={() => setPageSettingsOpen(true)}
-          className="flex min-h-10 min-w-0 flex-1 items-center gap-1.5 rounded-xl px-2 text-left text-xs font-medium text-destiny-grey/55 transition active:bg-black/5"
+          className="flex min-h-10 min-w-0 flex-1 items-center gap-1.5 rounded-xl px-2 text-left text-xs font-medium text-destiny-grey/55 dark:text-white/55 transition active:bg-black/5"
         >
           <span
             aria-hidden
-            className="material-symbols-rounded shrink-0 text-[17px] text-destiny-grey/40"
+            className="material-symbols-rounded shrink-0 text-[17px] text-destiny-grey/40 dark:text-white/40"
           >
             settings
           </span>
@@ -413,7 +413,7 @@ export function PostEditor({
             className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${
               form.is_published
                 ? "bg-destiny-green/10 text-destiny-green"
-                : "bg-black/5 text-destiny-grey/45"
+                : "bg-black/5 text-destiny-grey/45 dark:text-white/45"
             }`}
           >
             {form.is_published ? "Live" : "Draft"}
@@ -436,19 +436,19 @@ export function PostEditor({
             <div>
               <label
                 htmlFor="post-slug"
-                className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-destiny-grey/45"
+                className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-destiny-grey/45 dark:text-white/45"
               >
                 URL slug
               </label>
               <div className="flex items-center gap-1.5">
-                <span className="text-sm font-bold text-destiny-grey/40">/</span>
+                <span className="text-sm font-bold text-destiny-grey/40 dark:text-white/40">/</span>
                 <input
                   id="post-slug"
                   value={form.slug}
                   onChange={(e) => onSlugChange(e.target.value)}
                   placeholder="easter-2026"
                   // 16px: iOS zooms the page on any smaller focused input.
-                  className="w-full rounded-xl border border-black/10 bg-white dark:border-white/10 dark:bg-destiny-grey-800 px-3.5 py-2.5 text-base text-destiny-grey outline-none transition placeholder:text-destiny-grey/30 focus:border-destiny-orange/50 focus:ring-2 focus:ring-destiny-orange/15"
+                  className="w-full rounded-xl border border-black/10 bg-white dark:border-white/10 dark:bg-destiny-grey-800 px-3.5 py-2.5 text-base text-destiny-grey dark:text-white outline-none transition placeholder:text-destiny-grey/30 dark:placeholder:text-white/30 focus:border-destiny-orange/50 focus:ring-2 focus:ring-destiny-orange/15"
                 />
               </div>
               <p className="mt-1.5 text-xs font-medium">
@@ -458,8 +458,8 @@ export function PostEditor({
 
             <div className="flex items-center justify-between gap-3 rounded-xl bg-[#f5f7fa] px-4 py-3">
               <div className="min-w-0">
-                <p className="text-sm font-bold text-destiny-grey">Published</p>
-                <p className="text-xs text-destiny-grey/45">
+                <p className="text-sm font-bold text-destiny-grey dark:text-white">Published</p>
+                <p className="text-xs text-destiny-grey/45 dark:text-white/45">
                   When on, the page is live at its URL.
                 </p>
               </div>

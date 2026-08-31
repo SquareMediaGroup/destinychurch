@@ -159,7 +159,14 @@ export default function CourseAdminPage({ page }: { page: CourseAdminPageSlug })
           link_text: meta.bannerLinkText,
         }),
       });
-      if (res.ok) setBannerActive((prev) => ({ ...prev, [t]: next }));
+      if (res.ok) {
+        setBannerActive((prev) => ({ ...prev, [t]: next }));
+      } else {
+        const d = await res.json().catch(() => null);
+        setError(d?.error ?? "Could not update the banner.");
+      }
+    } catch {
+      setError("Could not update the banner.");
     } finally {
       setBannerSaving((prev) => ({ ...prev, [t]: false }));
     }
@@ -206,14 +213,24 @@ export default function CourseAdminPage({ page }: { page: CourseAdminPageSlug })
   }
 
   async function handleToggle(event: CourseEvent) {
-    await fetch(`/api/admin/alpha-events/${event.id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ active: !event.active }),
-    });
-    setEvents((prev) =>
-      prev.map((x) => (x.id === event.id ? { ...x, active: !x.active } : x)),
-    );
+    setError("");
+    try {
+      const res = await fetch(`/api/admin/alpha-events/${event.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ active: !event.active }),
+      });
+      if (!res.ok) {
+        const d = await res.json().catch(() => null);
+        setError(d?.error ?? "Could not update the event.");
+        return;
+      }
+      setEvents((prev) =>
+        prev.map((x) => (x.id === event.id ? { ...x, active: !x.active } : x)),
+      );
+    } catch {
+      setError("Could not update the event.");
+    }
   }
 
   async function handleDelete(id: string) {
@@ -226,8 +243,18 @@ export default function CourseAdminPage({ page }: { page: CourseAdminPageSlug })
       }))
     )
       return;
-    await fetch(`/api/admin/alpha-events/${id}`, { method: "DELETE" });
-    setEvents((prev) => prev.filter((x) => x.id !== id));
+    setError("");
+    try {
+      const res = await fetch(`/api/admin/alpha-events/${id}`, { method: "DELETE" });
+      if (!res.ok) {
+        const d = await res.json().catch(() => null);
+        setError(d?.error ?? "Could not delete the event.");
+        return;
+      }
+      setEvents((prev) => prev.filter((x) => x.id !== id));
+    } catch {
+      setError("Could not delete the event.");
+    }
   }
 
   const inputClass =

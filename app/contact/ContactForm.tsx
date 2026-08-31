@@ -20,10 +20,24 @@ export default function ContactForm() {
     if (result.success) {
       setStatus("success");
       formRef.current?.reset();
+      // The subject <select> is controlled, so the native form reset above
+      // doesn't clear it on its own — without this it (and the safeguarding
+      // banner it drives) would still show under the "Message sent!" panel.
+      setSubject("");
     } else {
       setStatus("error");
       setErrorMsg(result.error ?? "Something went wrong.");
     }
+  }
+
+  if (status === "success") {
+    return (
+      <div className="rounded-2xl bg-green-50 px-4 py-4 text-center">
+        <span className="material-symbols-rounded mb-1 block text-3xl text-green-600">check_circle</span>
+        <p className="font-bold text-green-700">Message sent!</p>
+        <p className="text-sm text-green-600">Thanks for getting in touch — we&apos;ll be in touch soon.</p>
+      </div>
+    );
   }
 
   return (
@@ -108,21 +122,13 @@ export default function ContactForm() {
         <p className="rounded-2xl bg-red-50 px-4 py-3 text-sm text-red-600">{errorMsg}</p>
       )}
 
-      {status === "success" ? (
-        <div className="rounded-2xl bg-green-50 px-4 py-4 text-center">
-          <span className="material-symbols-rounded mb-1 block text-3xl text-green-600">check_circle</span>
-          <p className="font-bold text-green-700">Message sent!</p>
-          <p className="text-sm text-green-600">Thanks for getting in touch — we&apos;ll be in touch soon.</p>
-        </div>
-      ) : (
-        <button
-          type="submit"
-          disabled={status === "loading"}
-          className="w-full rounded-full bg-destiny-orange py-3 text-sm font-bold text-white shadow-lg shadow-destiny-orange/25 transition hover:brightness-110 disabled:opacity-60"
-        >
-          {status === "loading" ? "Sending…" : "Send Message"}
-        </button>
-      )}
+      <button
+        type="submit"
+        disabled={status === "loading"}
+        className="w-full rounded-full bg-destiny-orange py-3 text-sm font-bold text-white shadow-lg shadow-destiny-orange/25 transition hover:brightness-110 disabled:opacity-60"
+      >
+        {status === "loading" ? "Sending…" : "Send Message"}
+      </button>
     </form>
   );
 }

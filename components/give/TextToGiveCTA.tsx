@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { QRCodeSVG } from "qrcode.react";
 import { useToast } from "@/components/ToastProvider";
+import Button from "@/components/ui/Button";
 
 interface Props {
   keyword: string;
@@ -30,9 +31,15 @@ export default function TextToGiveCTA({ keyword, number }: Props) {
     return () => window.removeEventListener("resize", checkDesktop);
   }, []);
 
-  const openModal = (qrMode = false) => {
+  const closeTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const openModal = (qrMode = false, defaultAmount = "") => {
+    if (closeTimeout.current) {
+      clearTimeout(closeTimeout.current);
+      closeTimeout.current = null;
+    }
     setOpen(true);
-    setAmount("");
+    setAmount(defaultAmount);
     setIsMonthly(false);
     setShowQR(qrMode);
     requestAnimationFrame(() => requestAnimationFrame(() => setVisible(true)));
@@ -41,15 +48,23 @@ export default function TextToGiveCTA({ keyword, number }: Props) {
 
   const closeModal = () => {
     setVisible(false);
-    setTimeout(() => {
+    closeTimeout.current = setTimeout(() => {
       setOpen(false);
       document.body.style.overflow = "";
+      closeTimeout.current = null;
     }, 350);
   };
 
+  // The "sms:" link the QR code should hand off to a phone's own messaging
+  // app — mirrors the message sendTextMessage() sends directly on mobile.
+  const smsHref = (finalAmount: string) =>
+    `sms:${number}?body=${encodeURIComponent(
+      `${keyword} give ${finalAmount}${isMonthly ? "/mo" : ""}`,
+    )}`;
+
   const handleCTAClick = (defaultAmount?: string) => {
     if (isDesktop) {
-      openModal(true);
+      openModal(true, defaultAmount ?? "");
     } else {
       sendTextMessage(defaultAmount);
     }
@@ -62,8 +77,7 @@ export default function TextToGiveCTA({ keyword, number }: Props) {
       return;
     }
 
-    const message = `${keyword} give ${finalAmount}${isMonthly ? "/mo" : ""}`;
-    window.location.href = `sms:${number}?body=${encodeURIComponent(message)}`;
+    window.location.href = smsHref(finalAmount);
     closeModal();
   };
 
@@ -77,9 +91,12 @@ export default function TextToGiveCTA({ keyword, number }: Props) {
     <>
       <div className="flex flex-col gap-3 sm:flex-row">
         {/* Primary CTA: £10 */}
-        <button
+        <Button
+          variant="primary"
+          shape="card"
+          size="cta"
           onClick={() => handleCTAClick("10")}
-          className="group flex items-center gap-4 rounded-2xl bg-destiny-orange px-7 py-4 text-left shadow-xl shadow-destiny-orange/30 transition hover:brightness-110"
+          className="group text-left"
         >
           <span className="material-symbols-rounded text-2xl text-white">sms</span>
           <span>
@@ -87,10 +104,13 @@ export default function TextToGiveCTA({ keyword, number }: Props) {
             <span className="block text-xs text-white/60">Send instantly</span>
           </span>
           <span className="material-symbols-rounded ml-auto text-lg text-white/60 transition group-hover:translate-x-1">arrow_forward</span>
-        </button>
+        </Button>
 
         {/* Secondary CTA: Custom Amount */}
-        <button
+        <Button
+          variant="secondary"
+          shape="card"
+          size="cta"
           onClick={() => {
             if (isDesktop) {
               openModal(true);
@@ -98,7 +118,7 @@ export default function TextToGiveCTA({ keyword, number }: Props) {
               openModal(false);
             }
           }}
-          className="group flex items-center gap-4 rounded-2xl bg-destiny-grey px-7 py-4 text-left shadow-xl shadow-destiny-grey/30 transition hover:brightness-110"
+          className="group text-left"
         >
           <span className="material-symbols-rounded text-2xl text-white">edit</span>
           <span>
@@ -106,7 +126,7 @@ export default function TextToGiveCTA({ keyword, number }: Props) {
             <span className="block text-xs text-white/60">Choose your amount</span>
           </span>
           <span className="material-symbols-rounded ml-auto text-lg text-white/60 transition group-hover:translate-x-1">arrow_forward</span>
-        </button>
+        </Button>
       </div>
 
       {mounted && open && createPortal(
@@ -143,11 +163,11 @@ export default function TextToGiveCTA({ keyword, number }: Props) {
               {showQR ? (
                 <div className="flex flex-col items-center gap-6">
                   <p className="text-center text-sm text-destiny-grey/60">
-                    Scan this QR code with your phone to open the giving page
+                    Scan this QR code with your phone to send the gift text
                   </p>
                   <div className="rounded-2xl border-8 border-white bg-white p-4">
                     <QRCodeSVG
-                      value={typeof window !== "undefined" ? window.location.href : ""}
+                      value={smsHref(amount || "10")}
                       size={256}
                       level="H"
                       includeMargin={false}
@@ -190,18 +210,24 @@ export default function TextToGiveCTA({ keyword, number }: Props) {
               </div>
 
               <div className="flex gap-3">
-                <button
+                <Button
+                  variant="outline"
+                  shape="soft"
+                  size="sm"
                   onClick={closeModal}
-                  className="flex-1 rounded-xl border border-black/10 px-4 py-2.5 text-sm font-bold text-destiny-grey transition hover:bg-gray-100"
+                  className="flex-1"
                 >
                   Cancel
-                </button>
-                <button
+                </Button>
+                <Button
+                  variant="primary"
+                  shape="soft"
+                  size="sm"
                   onClick={() => sendTextMessage()}
-                  className="flex-1 rounded-xl bg-destiny-orange px-4 py-2.5 text-sm font-bold text-white transition hover:brightness-110"
+                  className="flex-1"
                 >
                   Send Text
-                </button>
+                </Button>
               </div>
               </>
               )}

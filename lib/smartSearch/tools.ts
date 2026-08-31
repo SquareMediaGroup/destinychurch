@@ -234,7 +234,8 @@ async function runFindProducts(args: {
       return { available: false, reason: "No matching products found." };
     }
     return { available: true, products };
-  } catch {
+  } catch (err) {
+    console.error("[smartSearch] runFindProducts failed:", err);
     return { available: false, reason: "The shop lookup isn't working right now." };
   }
 }

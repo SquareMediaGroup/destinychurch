@@ -5,7 +5,7 @@ import "server-only";
 import { z } from "zod";
 import { customAlphabet } from "nanoid";
 import { Resend } from "resend";
-import { getSupabaseAdmin } from "@/lib/supabase";
+import { createServiceClient } from "@/utils/supabase/service";
 import { formatPrice, type OrderItem, type OrderWithItems } from "@/lib/shop";
 
 const orderId = customAlphabet("ACDEFGHJKLMNPQRSTUVWXYZ23456789", 8);
@@ -53,7 +53,7 @@ export async function buildPendingOrder(input: CheckoutInput): Promise<BuildResu
     );
   }
 
-  const supabase = getSupabaseAdmin();
+  const supabase = createServiceClient();
 
   const { data: variants, error: variantErr } = await supabase
     .from("product_variants")
@@ -159,7 +159,7 @@ export async function buildPendingOrder(input: CheckoutInput): Promise<BuildResu
 
 /** Delete a pending order (used to roll back if Stripe setup fails). */
 export async function deleteOrder(orderDbId: string): Promise<void> {
-  await getSupabaseAdmin().from("orders").delete().eq("id", orderDbId);
+  await createServiceClient().from("orders").delete().eq("id", orderDbId);
 }
 
 /**
@@ -168,7 +168,7 @@ export async function deleteOrder(orderDbId: string): Promise<void> {
  * redeliver webhook events). Returns false if the order was already finalised.
  */
 export async function finalizeOrderPaid(orderDbId: string): Promise<boolean> {
-  const supabase = getSupabaseAdmin();
+  const supabase = createServiceClient();
 
   const { data: order } = await supabase
     .from("orders")
@@ -187,16 +187,15 @@ export async function finalizeOrderPaid(orderDbId: string): Promise<boolean> {
   const items = ((order as OrderWithItems).items ?? []) as OrderItem[];
   for (const item of items) {
     if (!item.variant_id) continue;
-    const { data: variant } = await supabase
-      .from("product_variants")
-      .select("stock")
-      .eq("id", item.variant_id)
-      .maybeSingle();
-    if (variant) {
-      await supabase
-        .from("product_variants")
-        .update({ stock: Math.max(0, variant.stock - item.quantity) })
-        .eq("id", item.variant_id);
+    // Atomic decrement (see decrement_variant_stock migration) — a
+    // read-then-write here would let two concurrent finalizations both read
+    // the same starting stock and clobber each other's decrement.
+    const { error } = await supabase.rpc("decrement_variant_stock", {
+      p_variant_id: item.variant_id,
+      p_quantity: item.quantity,
+    });
+    if (error) {
+      console.error(`Stock decrement failed for variant ${item.variant_id}:`, error);
     }
   }
 
@@ -227,7 +226,7 @@ export async function finalizeOrderPaid(orderDbId: string): Promise<boolean> {
 
 /** Mark a pending order cancelled (payment failed). */
 export async function cancelPendingByPaymentIntent(intentId: string): Promise<void> {
-  const supabase = getSupabaseAdmin();
+  const supabase = createServiceClient();
   const { data: order } = await supabase
     .from("orders")
     .select("id, status")
@@ -240,7 +239,7 @@ export async function cancelPendingByPaymentIntent(intentId: string): Promise<vo
 
 /** Look up an order's DB id from its Stripe PaymentIntent id. */
 export async function orderIdByPaymentIntent(intentId: string): Promise<string | null> {
-  const { data } = await getSupabaseAdmin()
+  const { data } = await createServiceClient()
     .from("orders")
     .select("id")
     .eq("stripe_payment_intent_id", intentId)

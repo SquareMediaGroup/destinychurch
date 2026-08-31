@@ -13,12 +13,14 @@ interface Entry {
 const store = new Map<string, Entry>();
 
 // Periodically purge expired entries to avoid unbounded memory growth.
-setInterval(() => {
-  const now = Date.now();
-  for (const [key, entry] of store) {
-    if (now >= entry.resetAt) store.delete(key);
-  }
-}, WINDOW_MS);
+if (typeof setInterval !== "undefined") {
+  setInterval(() => {
+    const now = Date.now();
+    for (const [key, entry] of store) {
+      if (now >= entry.resetAt) store.delete(key);
+    }
+  }, WINDOW_MS);
+}
 
 export function checkRateLimit(ip: string): { allowed: boolean; retryAfterSeconds: number } {
   const now = Date.now();

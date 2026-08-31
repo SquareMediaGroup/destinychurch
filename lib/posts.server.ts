@@ -1,11 +1,11 @@
 // Server-only data fetchers for the public Posts pages (the /[slug] catch-all).
 import "server-only";
-import { getSupabaseAdmin } from "@/lib/supabase";
+import { createServiceClient } from "@/utils/supabase/service";
 import type { Post } from "@/lib/posts";
 
 /** A single published post by slug, or null. Used by the /[slug] catch-all. */
 export async function getPublishedPostBySlug(slug: string): Promise<Post | null> {
-  const supabase = getSupabaseAdmin();
+  const supabase = createServiceClient();
   const { data, error } = await supabase
     .from("posts")
     .select("*")

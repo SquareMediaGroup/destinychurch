@@ -124,8 +124,15 @@ export default function CheckoutPage() {
     }
   }
 
+  // Cart is a localStorage-backed store, so it's empty during SSR and the
+  // first client render — wait for it to hydrate before rendering anything
+  // that depends on `items`, or the order summary will mismatch/flash.
+  if (!mounted) {
+    return null;
+  }
+
   // Empty basket (and not already in a payment) → nudge back to the shop.
-  if (mounted && items.length === 0 && !clientSecret) {
+  if (items.length === 0 && !clientSecret) {
     return (
       <div className="mx-auto max-w-2xl px-5 py-24 text-center">
         <h1 className="font-[family-name:var(--font-heading)] text-3xl font-black text-destiny-grey">

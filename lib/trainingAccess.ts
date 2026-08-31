@@ -42,12 +42,15 @@ export function verifyPassword(plain: string, stored: string | null): boolean {
 const COOKIE_MAX_AGE = 60 * 60 * 24 * 30; // 30 days
 
 function secret(): string {
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  // Prefer the new secret key (sb_secret_…); fall back to the legacy
+  // service_role JWT during the transition — same pattern as every other
+  // secret-derivation helper in the codebase (utils/supabase/service.ts).
+  const key = process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!key) {
     // Never fall back to a hardcoded value — a public constant would let
     // anyone forge unlock cookies. Without the key the app can't serve
     // password-protected groups anyway.
-    throw new Error("SUPABASE_SERVICE_ROLE_KEY must be set to sign unlock cookies");
+    throw new Error("SUPABASE_SECRET_KEY or SUPABASE_SERVICE_ROLE_KEY must be set to sign unlock cookies");
   }
   return key;
 }

@@ -15,8 +15,8 @@ import { cn } from "@/lib/cn";
 // repeated cases. Extra classes merge in via className.
 
 type Variant = "primary" | "secondary" | "outline" | "onDark" | "glass";
-type Shape = "pill" | "soft";
-type Size = "xs" | "sm" | "md" | "lg" | "xl";
+type Shape = "pill" | "soft" | "card";
+type Size = "xs" | "sm" | "md" | "lg" | "xl" | "cta";
 
 const BASE =
   "inline-flex items-center justify-center gap-2 font-bold transition disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2";
@@ -24,6 +24,9 @@ const BASE =
 const SHAPES: Record<Shape, string> = {
   pill: "rounded-full",
   soft: "rounded-xl",
+  // The larger icon+label CTAs (Give Online, Text to Give) — rounder corners
+  // and a heavier shadow than the pill buttons.
+  card: "rounded-2xl",
 };
 
 // Each size is a padding cluster that already exists in the codebase, so
@@ -38,6 +41,7 @@ const SIZES: Record<Size, string> = {
   md: "px-6 py-3 text-sm",
   lg: "px-7 py-3 text-sm",
   xl: "px-7 py-3.5 text-sm", // hero CTAs
+  cta: "px-7 py-4 text-sm", // shape="card" icon+label CTAs
 };
 
 // `soft` is the admin chrome, which sits on white cards and uses a tighter
@@ -46,23 +50,28 @@ const VARIANTS: Record<Variant, Record<Shape, string>> = {
   primary: {
     pill: "bg-destiny-orange text-white shadow-lg shadow-destiny-orange/25 hover:brightness-110 focus-visible:ring-destiny-orange",
     soft: "bg-destiny-orange text-white shadow-sm shadow-destiny-orange/20 hover:brightness-110 focus-visible:ring-destiny-orange",
+    card: "bg-destiny-orange text-white shadow-xl shadow-destiny-orange/30 hover:brightness-110 focus-visible:ring-destiny-orange",
   },
   secondary: {
     pill: "bg-destiny-grey text-white hover:brightness-110 focus-visible:ring-destiny-grey",
     soft: "bg-destiny-grey text-white hover:brightness-110 focus-visible:ring-destiny-grey",
+    card: "bg-destiny-grey text-white shadow-xl shadow-destiny-grey/30 hover:brightness-110 focus-visible:ring-destiny-grey",
   },
   outline: {
     pill: "border border-black/10 text-destiny-grey hover:border-black/25 hover:bg-black/[0.03] focus-visible:ring-destiny-orange",
     soft: "border border-black/10 text-destiny-grey hover:border-black/25 hover:bg-black/[0.03] focus-visible:ring-destiny-orange",
+    card: "border border-black/10 text-destiny-grey hover:border-black/25 hover:bg-black/[0.03] focus-visible:ring-destiny-orange",
   },
   // For hero sections and other dark photography backgrounds.
   onDark: {
     pill: "border-2 border-white/30 text-white hover:border-white/60 hover:bg-white/10 focus-visible:ring-white",
     soft: "border-2 border-white/30 text-white hover:border-white/60 hover:bg-white/10 focus-visible:ring-white",
+    card: "border-2 border-white/30 text-white hover:border-white/60 hover:bg-white/10 focus-visible:ring-white",
   },
   glass: {
     pill: "bg-white/10 text-white backdrop-blur-sm hover:bg-white/20 focus-visible:ring-white",
     soft: "bg-white/10 text-white backdrop-blur-sm hover:bg-white/20 focus-visible:ring-white",
+    card: "bg-white/10 text-white backdrop-blur-sm hover:bg-white/20 focus-visible:ring-white",
   },
 };
 

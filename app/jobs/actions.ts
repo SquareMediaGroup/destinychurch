@@ -1,9 +1,10 @@
 "use server";
 
 import { headers } from "next/headers";
-import { getSupabaseAdmin } from "@/lib/supabase";
+import { createServiceClient } from "@/utils/supabase/service";
 import { Resend } from "resend";
 import { checkRateLimit, clientIp } from "@/lib/rateLimit";
+import { escapeHtmlMultiline, isValidEmail } from "@/lib/formEmail";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 const BUCKET = "job-applications";
@@ -22,12 +23,7 @@ function buildApplicationEmailHtml(fields: {
   coverLetter: string;
   cvName?: string;
 }) {
-  const esc = (s: string) =>
-    s
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;")
-      .replace(/\n/g, "<br />");
+  const esc = escapeHtmlMultiline;
 
   const rows: [string, string][] = [
     ["Name", fields.name],
@@ -110,8 +106,7 @@ export async function submitApplication(formData: FormData) {
     return { success: false, error: "Please fill in all required fields." };
   }
 
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  if (!emailRegex.test(email)) {
+  if (!isValidEmail(email)) {
     return { success: false, error: "Please enter a valid email address." };
   }
 
@@ -122,7 +117,7 @@ export async function submitApplication(formData: FormData) {
     return { success: false, error: "Too many submissions. Please wait a few minutes and try again." };
   }
 
-  const supabase = getSupabaseAdmin();
+  const supabase = createServiceClient();
 
   // Optional CV upload to the private bucket.
   let cvPath: string | null = null;

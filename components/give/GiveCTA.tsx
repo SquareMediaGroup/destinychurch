@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import ChurchSuiteEmbed from "@/components/ChurchSuiteEmbed";
+import Button from "@/components/ui/Button";
 
 interface Props {
   variant?: "dark" | "light";
@@ -12,10 +13,15 @@ export default function GiveCTA({ variant = "dark" }: Props) {
   const [open, setOpen] = useState(false);
   const [visible, setVisible] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const closeTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => { setMounted(true); }, []);
 
   const openModal = () => {
+    if (closeTimeout.current) {
+      clearTimeout(closeTimeout.current);
+      closeTimeout.current = null;
+    }
     setOpen(true);
     requestAnimationFrame(() => requestAnimationFrame(() => setVisible(true)));
     document.body.style.overflow = "hidden";
@@ -23,9 +29,10 @@ export default function GiveCTA({ variant = "dark" }: Props) {
 
   const closeModal = () => {
     setVisible(false);
-    setTimeout(() => {
+    closeTimeout.current = setTimeout(() => {
       setOpen(false);
       document.body.style.overflow = "";
+      closeTimeout.current = null;
     }, 350);
   };
 
@@ -39,9 +46,12 @@ export default function GiveCTA({ variant = "dark" }: Props) {
 
   return (
     <>
-      <button
+      <Button
+        variant="primary"
+        shape="card"
+        size="cta"
         onClick={openModal}
-        className="group flex items-center gap-4 rounded-2xl bg-destiny-orange px-7 py-4 text-left shadow-xl shadow-destiny-orange/30 transition hover:brightness-110"
+        className="group text-left"
       >
         <span className="material-symbols-rounded text-2xl text-white">volunteer_activism</span>
         <span>
@@ -49,7 +59,7 @@ export default function GiveCTA({ variant = "dark" }: Props) {
           <span className={`block text-xs ${subtitleClass}`}>Secure giving via ChurchSuite</span>
         </span>
         <span className="material-symbols-rounded ml-4 text-lg text-white/60 transition group-hover:translate-x-1">arrow_forward</span>
-      </button>
+      </Button>
 
       {mounted && open && createPortal(
         <div

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { headers } from "next/headers";
-import { getSupabaseAdmin } from "@/lib/supabase";
+import { createServiceClient } from "@/utils/supabase/service";
 import { getStripe } from "@/lib/stripe";
 import { checkRateLimit, clientIp } from "@/lib/rateLimit";
 import { buildPendingOrder, checkoutSchema, deleteOrder } from "@/lib/checkout.server";
@@ -38,7 +38,7 @@ export async function POST(request: Request) {
       metadata: { order_id: built.orderDbId, order_number: built.orderNumber },
     });
 
-    await getSupabaseAdmin()
+    await createServiceClient()
       .from("orders")
       .update({ stripe_payment_intent_id: intent.id })
       .eq("id", built.orderDbId);

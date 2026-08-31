@@ -16,12 +16,16 @@ export function useReorder<T extends { id: string; sort_order: number }>(
 ) {
   const from = useRef<number | null>(null);
   const order = useRef<T[]>(items);
+  // Snapshot of the order before the current drag started, kept so a failed
+  // persist can revert the optimistic update instead of leaving it applied.
+  const preDragOrder = useRef<T[] | null>(null);
   // Track external changes (load/reload) but never clobber an in-flight drag.
   if (from.current === null) order.current = items;
 
   function handleDragStart(index: number, e: React.DragEvent) {
     from.current = index;
     order.current = [...items];
+    preDragOrder.current = [...items];
     e.dataTransfer.effectAllowed = "move";
     // Required for Firefox to initiate the drag.
     e.dataTransfer.setData("text/plain", String(index));
@@ -54,9 +58,11 @@ export function useReorder<T extends { id: string; sort_order: number }>(
     order.current = reordered;
     setItems(reordered);
 
+    const fallback = preDragOrder.current;
+    preDragOrder.current = null;
     if (changed.length === 0) return;
     try {
-      await Promise.all(
+      const responses = await Promise.all(
         changed.map((row) =>
           fetch(endpoint(row.id), {
             method: "PATCH",
@@ -65,7 +71,14 @@ export function useReorder<T extends { id: string; sort_order: number }>(
           }),
         ),
       );
+      if (responses.some((res) => !res.ok)) {
+        throw new Error("One or more rows failed to save");
+      }
     } catch {
+      if (fallback) {
+        order.current = fallback;
+        setItems(fallback);
+      }
       onError?.("Could not save the new order.");
     }
   }

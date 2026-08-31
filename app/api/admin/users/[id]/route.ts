@@ -37,7 +37,10 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> },
 ) {
   const { id } = await params;
-  const body = await request.json();
+  const body = await request.json().catch(() => null);
+  if (!body || typeof body !== "object") {
+    return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
+  }
   const supabase = createServiceClient();
   const nextRoles = rolesFromBody(body);
 
@@ -57,7 +60,12 @@ export async function PATCH(
     .select()
     .single();
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  // The app-level check above is a fast path; the DB trigger is the source
+  // of truth that closes the race between two concurrent requests.
+  if (error) {
+    const status = error.message.includes("last remaining Super Admin") ? 400 : 500;
+    return NextResponse.json({ error: error.message }, { status });
+  }
 
   // Spell the change out as gained/lost rather than leaving seven booleans in
   // the diff: "who gave them Super Admin" is the question this answers.
@@ -115,7 +123,10 @@ export async function DELETE(
 
   await deleteLogin(supabase, id);
   const { error } = await supabase.from("admin_roles").delete().eq("auth_user_id", id);
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) {
+    const status = error.message.includes("last remaining Super Admin") ? 400 : 500;
+    return NextResponse.json({ error: error.message }, { status });
+  }
 
   // Note the audit row outlives the auth.users row it points at — see the
   // comment on the missing foreign key in the migration.

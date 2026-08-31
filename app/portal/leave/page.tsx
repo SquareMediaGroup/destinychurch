@@ -37,9 +37,16 @@ export default function PortalLeavePage() {
   const [showForm, setShowForm] = useState(false);
 
   const load = useCallback(async () => {
-    const res = await fetch(`${PORTAL_API}/leave`);
-    setLeave(res.ok ? await res.json() : []);
-    setLoading(false);
+    try {
+      const res = await fetch(`${PORTAL_API}/leave`);
+      setLeave(res.ok ? await res.json() : []);
+      if (!res.ok) setError("Could not load your leave requests.");
+    } catch {
+      setLeave([]);
+      setError("Could not load your leave requests.");
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   useEffect(() => {
@@ -56,13 +63,17 @@ export default function PortalLeavePage() {
       }))
     )
       return;
-    const res = await fetch(`${PORTAL_API}/leave/${id}`, { method: "DELETE" });
-    if (!res.ok) {
-      const d = await res.json().catch(() => ({}));
-      setError(d.error || "Could not withdraw.");
-      return;
+    try {
+      const res = await fetch(`${PORTAL_API}/leave/${id}`, { method: "DELETE" });
+      if (!res.ok) {
+        const d = await res.json().catch(() => ({}));
+        setError(d.error || "Could not withdraw.");
+        return;
+      }
+      load();
+    } catch {
+      setError("Could not withdraw.");
     }
-    load();
   }
 
   return (

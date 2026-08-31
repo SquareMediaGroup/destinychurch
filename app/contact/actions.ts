@@ -1,9 +1,10 @@
 "use server";
 
 import { headers } from "next/headers";
-import { getSupabaseAdmin } from "@/lib/supabase";
+import { createServiceClient } from "@/utils/supabase/service";
 import { Resend } from "resend";
 import { checkRateLimit, clientIp } from "@/lib/rateLimit";
+import { escapeHtml, escapeHtmlMultiline, isValidEmail } from "@/lib/formEmail";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
@@ -67,10 +68,10 @@ function getTheme(subject: string): SubjectTheme {
 }
 
 function buildContactEmailHtml(name: string, email: string, subject: string, message: string) {
-  const escapedName = name.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-  const escapedEmail = email.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-  const escapedSubject = subject.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-  const escapedMessage = message.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\n/g, "<br />");
+  const escapedName = escapeHtml(name);
+  const escapedEmail = escapeHtml(email);
+  const escapedSubject = escapeHtml(subject);
+  const escapedMessage = escapeHtmlMultiline(message);
 
   const t = getTheme(subject);
 
@@ -231,8 +232,7 @@ export async function submitContactForm(formData: FormData) {
     return { success: false, error: "Your message is too long. Please shorten it and try again." };
   }
 
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  if (!emailRegex.test(email)) {
+  if (!isValidEmail(email)) {
     return { success: false, error: "Please enter a valid email address." };
   }
 
@@ -244,7 +244,7 @@ export async function submitContactForm(formData: FormData) {
   }
 
   try {
-    const supabase = getSupabaseAdmin();
+    const supabase = createServiceClient();
     const { error } = await supabase.from("contact_messages").insert({
       name,
       email,

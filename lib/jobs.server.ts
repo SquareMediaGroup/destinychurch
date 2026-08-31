@@ -1,11 +1,11 @@
 // Server-only data fetchers for the public /jobs pages.
 import "server-only";
-import { getSupabaseAdmin } from "@/lib/supabase";
+import { createServiceClient } from "@/utils/supabase/service";
 import type { Job } from "@/lib/jobs";
 
 /** All published roles, ordered for display. Used by the public /jobs page. */
 export async function getPublishedJobs(): Promise<Job[]> {
-  const supabase = getSupabaseAdmin();
+  const supabase = createServiceClient();
   const { data, error } = await supabase
     .from("jobs")
     .select("*")
@@ -22,7 +22,7 @@ export async function getPublishedJobs(): Promise<Job[]> {
 
 /** A single published role by slug, or null. Used by /jobs/[slug]. */
 export async function getJobBySlug(slug: string): Promise<Job | null> {
-  const supabase = getSupabaseAdmin();
+  const supabase = createServiceClient();
   const { data, error } = await supabase
     .from("jobs")
     .select("*")

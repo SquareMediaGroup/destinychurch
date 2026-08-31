@@ -1,6 +1,6 @@
 // Server-only data fetchers for the public /shop pages.
 import "server-only";
-import { getSupabaseAdmin } from "@/lib/supabase";
+import { createServiceClient } from "@/utils/supabase/service";
 import type {
   Product,
   ProductVariant,
@@ -20,7 +20,7 @@ function sortVariants(variants: ProductVariant[]): ProductVariant[] {
 
 /** All published products with their variants, ordered for the storefront grid. */
 export async function getPublishedProducts(): Promise<ProductWithVariants[]> {
-  const supabase = getSupabaseAdmin();
+  const supabase = createServiceClient();
   const { data, error } = await supabase
     .from("products")
     .select("*, variants:product_variants(*)")
@@ -42,7 +42,7 @@ export async function getPublishedProducts(): Promise<ProductWithVariants[]> {
 export async function getProductBySlug(
   slug: string,
 ): Promise<ProductWithVariants | null> {
-  const supabase = getSupabaseAdmin();
+  const supabase = createServiceClient();
   const { data, error } = await supabase
     .from("products")
     .select("*, variants:product_variants(*)")
@@ -61,7 +61,7 @@ export async function getProductBySlug(
 
 /** Every product (published or draft) with variants — used by the admin list. */
 export async function getAllProductsAdmin(): Promise<ProductWithVariants[]> {
-  const supabase = getSupabaseAdmin();
+  const supabase = createServiceClient();
   const { data, error } = await supabase
     .from("products")
     .select("*, variants:product_variants(*)")
@@ -80,7 +80,7 @@ export async function getAllProductsAdmin(): Promise<ProductWithVariants[]> {
 
 /** Active hero slides for the storefront, in display order. */
 export async function getActiveShopHeroSlides(): Promise<ShopHeroSlide[]> {
-  const supabase = getSupabaseAdmin();
+  const supabase = createServiceClient();
   const { data, error } = await supabase
     .from("shop_hero_slides")
     .select("*")

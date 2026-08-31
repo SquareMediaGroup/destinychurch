@@ -37,9 +37,10 @@ export type EventCardProps = {
 };
 
 /**
- * Anton is applied inline rather than by utility because globals.css carries an
+ * Applied inline rather than by utility because globals.css carries an
  * *unlayered* `h1,h2,h3 { font-family: var(--font-heading) }`, which outranks
- * every Tailwind font utility. Same workaround PromoRail.tsx documents.
+ * every Tailwind font utility. Same workaround PromoRail.tsx documents, but
+ * this card's title uses the body font (Roboto), not Anton.
  */
 const TITLE_FONT = { fontFamily: "var(--font-roboto)" } as const;
 

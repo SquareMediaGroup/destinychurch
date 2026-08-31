@@ -1,9 +1,10 @@
 "use server";
 
 import { headers } from "next/headers";
-import { getSupabaseAdmin } from "@/lib/supabase";
+import { createServiceClient } from "@/utils/supabase/service";
 import { Resend } from "resend";
 import { checkRateLimit, clientIp } from "@/lib/rateLimit";
+import { escapeHtmlMultiline, isValidEmail } from "@/lib/formEmail";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
@@ -23,8 +24,7 @@ function buildHireEmailHtml(fields: {
   message: string;
   churchMember?: string;
 }) {
-  const esc = (s: string) =>
-    s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\n/g, "<br />");
+  const esc = escapeHtmlMultiline;
 
   const rows: [string, string][] = [
     ["Name", fields.name],
@@ -126,8 +126,7 @@ export async function submitHireEnquiry(formData: FormData) {
     return { success: false, error: "Please fill in all required fields." };
   }
 
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  if (!emailRegex.test(email)) {
+  if (!isValidEmail(email)) {
     return { success: false, error: "Please enter a valid email address." };
   }
 
@@ -148,8 +147,8 @@ export async function submitHireEnquiry(formData: FormData) {
   }
 
   try {
-    const supabase = getSupabaseAdmin();
-    await supabase.from("hire_enquiries").insert({
+    const supabase = createServiceClient();
+    const { error } = await supabase.from("hire_enquiries").insert({
       name, email, phone, organisation, event_type: eventType,
       event_type_other: eventTypeOther || null,
       space, date, start_time: startTime, end_time: endTime,
@@ -157,13 +156,15 @@ export async function submitHireEnquiry(formData: FormData) {
       church_member: churchMember || null,
       created_at: new Date().toISOString(),
     });
+    if (error) throw error;
 
-    await resend.emails.send({
+    const { error: emailError } = await resend.emails.send({
       from: "Destiny Church <noreply@support.squaremediagroup.org>",
       to: "techteam@destinytees.uk",
       subject: `Venue Hire Enquiry: ${space} — ${date} (${name})`,
       html: buildHireEmailHtml({ name, email, phone, organisation, eventType, eventTypeOther: eventTypeOther || undefined, space, date, startTime, endTime, attendance, requirements, message, churchMember: churchMember || undefined }),
     });
+    if (emailError) throw new Error(emailError.message);
 
     return { success: true };
   } catch (err) {

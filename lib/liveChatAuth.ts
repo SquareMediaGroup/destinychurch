@@ -17,6 +17,7 @@
 
 import "server-only";
 import { cookies } from "next/headers";
+import type { User } from "@supabase/supabase-js";
 import { createClient } from "@/utils/supabase/server";
 import { createServiceClient } from "@/utils/supabase/service";
 import { getRoles } from "@/lib/adminRoles";
@@ -42,22 +43,11 @@ export async function readGuest(): Promise<GuestIdentity | null> {
 }
 
 /**
- * The signed-in Host, or null.
- *
- * Two checks, both required: a valid Supabase session, and the `host` access
- * level (or super_admin, which passes everything by convention —
- * lib/adminRoles.ts:79). Roles come from the service client because admin_roles
- * is deny-all.
+ * Applies the `host` access check to an already-resolved Supabase user (or
+ * super_admin, which passes everything by convention — lib/adminRoles.ts:79).
+ * Roles come from the service client because admin_roles is deny-all.
  */
-export async function readHost(): Promise<HostIdentity | null> {
-  const jar = await cookies();
-  const supabase = createClient(jar);
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return null;
-
+async function resolveHost(user: User): Promise<HostIdentity | null> {
   const roles = await getRoles(createServiceClient(), user.id);
   if (!roles.host && !roles.super_admin) return null;
 
@@ -77,6 +67,24 @@ export async function readHost(): Promise<HostIdentity | null> {
 }
 
 /**
+ * The signed-in Host, or null.
+ *
+ * Two checks, both required: a valid Supabase session, and the `host` access
+ * level.
+ */
+export async function readHost(): Promise<HostIdentity | null> {
+  const jar = await cookies();
+  const supabase = createClient(jar);
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return null;
+
+  return resolveHost(user);
+}
+
+/**
  * readHost(), but for handlers that cannot proceed without one. Returns a
  * discriminated result rather than throwing so the caller returns the 401/403
  * itself and the control flow stays visible in the route.
@@ -92,7 +100,7 @@ export async function requireHost(): Promise<
   } = await supabase.auth.getUser();
   if (!user) return { ok: false, status: 401 };
 
-  const host = await readHost();
+  const host = await resolveHost(user);
   if (!host) return { ok: false, status: 403 };
 
   return { ok: true, host };

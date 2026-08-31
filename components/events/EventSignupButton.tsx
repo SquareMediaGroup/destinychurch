@@ -15,6 +15,7 @@
 
 import { useState } from "react";
 import AlphaSignupModal from "@/components/AlphaSignupModal";
+import Button from "@/components/ui/Button";
 
 /** ChurchSuite serves our own subdomain, which allows framing; nothing else. */
 function isEmbeddable(url: string): boolean {
@@ -60,22 +61,19 @@ export default function EventSignupButton({
 }) {
   const [open, setOpen] = useState(false);
 
-  const className =
-    "inline-flex items-center justify-center rounded-full bg-destiny-orange px-7 py-3 text-sm font-bold text-white shadow-sm shadow-destiny-orange/20 transition hover:brightness-110";
-
   if (!isEmbeddable(url)) {
     return (
-      <a href={url} target="_blank" rel="noopener noreferrer" className={className}>
+      <Button href={url} variant="primary" shape="pill" size="lg">
         {label}
-      </a>
+      </Button>
     );
   }
 
   return (
     <>
-      <button type="button" onClick={() => setOpen(true)} className={className}>
+      <Button type="button" variant="primary" shape="pill" size="lg" onClick={() => setOpen(true)}>
         {label}
-      </button>
+      </Button>
       <AlphaSignupModal
         open={open}
         onClose={() => setOpen(false)}

@@ -39,7 +39,11 @@ export async function POST(request: Request) {
       if (orderDbId) {
         await finalizeOrderPaid(orderDbId);
       } else {
-        console.warn(`⚠️  No order found for PaymentIntent ${intent.id}`);
+        // The order row's stripe_payment_intent_id write (in the checkout
+        // route) may not have landed yet — return a non-2xx so Stripe
+        // retries this event instead of us silently losing the order.
+        console.warn(`⚠️  No order found for PaymentIntent ${intent.id}, will retry`);
+        return NextResponse.json({ error: "Order not found yet" }, { status: 409 });
       }
     } else if (event.type === "payment_intent.payment_failed") {
       await cancelPendingByPaymentIntent((event.data.object as Stripe.PaymentIntent).id);

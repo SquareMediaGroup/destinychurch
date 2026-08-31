@@ -2,7 +2,7 @@
 // Crucially, password_hash is NEVER selected into a shape returned to a page —
 // callers only ever see `has_password`.
 import "server-only";
-import { getSupabaseAdmin } from "@/lib/supabase";
+import { createServiceClient } from "@/utils/supabase/service";
 import type {
   TrainingCategory,
   TrainingSubgroup,
@@ -27,7 +27,7 @@ function toPublicSubgroup(row: SubgroupRow): TrainingSubgroup {
 
 /** Published categories with their published sub-groups, ordered for display. */
 export async function getTrainingTree(): Promise<TrainingCategoryWithSubgroups[]> {
-  const supabase = getSupabaseAdmin();
+  const supabase = createServiceClient();
 
   const { data: categories, error: catErr } = await supabase
     .from("training_categories")
@@ -70,7 +70,7 @@ export async function getTrainingTree(): Promise<TrainingCategoryWithSubgroups[]
 export async function getCategoryBySlug(
   slug: string,
 ): Promise<TrainingCategory | null> {
-  const supabase = getSupabaseAdmin();
+  const supabase = createServiceClient();
   const { data, error } = await supabase
     .from("training_categories")
     .select("*")
@@ -89,7 +89,7 @@ export async function getCategoryBySlug(
 export async function getSubgroupsForCategory(
   categoryId: string,
 ): Promise<TrainingSubgroup[]> {
-  const supabase = getSupabaseAdmin();
+  const supabase = createServiceClient();
   const { data, error } = await supabase
     .from("training_subgroups")
     .select(SUBGROUP_PUBLIC_COLUMNS)
@@ -113,7 +113,7 @@ export async function getSubgroupBySlugs(
   const category = await getCategoryBySlug(categorySlug);
   if (!category) return null;
 
-  const supabase = getSupabaseAdmin();
+  const supabase = createServiceClient();
   const { data, error } = await supabase
     .from("training_subgroups")
     .select(SUBGROUP_PUBLIC_COLUMNS)
@@ -133,7 +133,7 @@ export async function getSubgroupBySlugs(
 export async function getPublishedPosts(
   subgroupId: string,
 ): Promise<TrainingPost[]> {
-  const supabase = getSupabaseAdmin();
+  const supabase = createServiceClient();
   const { data, error } = await supabase
     .from("training_posts")
     .select("*")
@@ -162,7 +162,7 @@ export async function getPostBySlugs(
   const found = await getSubgroupBySlugs(categorySlug, subgroupSlug);
   if (!found) return null;
 
-  const supabase = getSupabaseAdmin();
+  const supabase = createServiceClient();
   const { data, error } = await supabase
     .from("training_posts")
     .select("*")
@@ -183,7 +183,7 @@ export async function getSubgroupStats(
   subgroupIds: string[],
 ): Promise<Map<string, { postCount: number; totalReadMinutes: number }>> {
   if (subgroupIds.length === 0) return new Map();
-  const supabase = getSupabaseAdmin();
+  const supabase = createServiceClient();
   const { data, error } = await supabase
     .from("training_posts")
     .select("subgroup_id, body")
@@ -210,7 +210,7 @@ export async function getSubgroupStats(
 export async function getFolders(
   subgroupId: string,
 ): Promise<import("@/lib/training").TrainingFolder[]> {
-  const supabase = getSupabaseAdmin();
+  const supabase = createServiceClient();
   const { data, error } = await supabase
     .from("training_folders")
     .select("*")

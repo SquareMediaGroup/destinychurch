@@ -11,7 +11,10 @@ function SuccessInner() {
   const redirectStatus = params.get("redirect_status");
   const clear = useCart((s) => s.clear);
 
-  const succeeded = redirectStatus === "succeeded" || redirectStatus === null;
+  // Stripe (and our test-bypass route) always append redirect_status on
+  // redirect — a missing param means this URL wasn't reached via a real
+  // payment redirect (e.g. bookmarked/shared), so don't treat it as success.
+  const succeeded = redirectStatus === "succeeded";
 
   // Clear the basket once payment has gone through.
   useEffect(() => {

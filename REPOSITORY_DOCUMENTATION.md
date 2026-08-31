@@ -2805,6 +2805,12 @@ Similar structure to contact form:
 - Insert to `hire_enquiries` table
 - Send email notification
 
+`app/contact/actions.ts`, `app/hire/actions.ts` and `app/jobs/actions.ts` all
+share `lib/formEmail.ts` (`escapeHtml`, `escapeHtmlMultiline`,
+`isValidEmail`) for the HTML-escaping and email-format validation their
+notification emails need — add new form actions against that helper rather
+than redefining it, so a fix doesn't have to be repeated in three places.
+
 #### `app/connect-card/actions.ts`
 - Submit prayer request
 - Submit connection card (first-time visitor form)
@@ -3891,7 +3897,7 @@ mid-service behaviour.
 
 ### Shop (`lib/shop*.ts`, `lib/stripe.ts`, `lib/cart-store.ts`)
 - `lib/shop.ts` — client-safe types (`Product`, `ProductVariant`, `Order`, `CartItem`), `formatPrice(pennies)`, `variantPrice`, `fromPrice`, `totalStock`. Prices are integer pennies (GBP).
-- `lib/shop.server.ts` (`server-only`) — public read fetchers: `getPublishedProducts()`, `getProductBySlug()`, `getAllProductsAdmin()` (via `getSupabaseAdmin()`).
+- `lib/shop.server.ts` (`server-only`) — public read fetchers: `getPublishedProducts()`, `getProductBySlug()`, `getAllProductsAdmin()` (via `createServiceClient()`).
 - `lib/stripe.ts` (`server-only`) — `getStripe()` singleton from `STRIPE_SECRET_KEY`.
 - `lib/cart-store.ts` — `useCart` zustand store persisted to `localStorage` (`destiny-cart`), plus `cartCount` / `cartSubtotal` helpers.
 

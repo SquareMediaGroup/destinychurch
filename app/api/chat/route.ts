@@ -4,6 +4,7 @@ import { getOpenAI, SMART_SEARCH_MODEL } from "@/lib/openaiClient";
 import { buildSmartSearchPrompt } from "@/lib/siteKnowledge";
 import { FALLBACK_ANSWERS } from "@/lib/smartSearch";
 import { TOOL_DEFINITIONS, executeTool, createToolContext } from "@/lib/smartSearch/tools";
+import { checkRateLimit, clientIp } from "@/lib/rateLimit";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 30;
@@ -50,28 +51,6 @@ function fallbackResponse(): Response {
     },
   });
   return new Response(body, { headers: NDJSON_HEADERS });
-}
-
-// Simple rate limiting (shared in-memory store)
-const rlStore = new Map<string, { count: number; reset: number }>();
-
-function clientIp(req: NextRequest): string {
-  return (
-    req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
-    req.headers.get("x-real-ip") ??
-    "unknown"
-  );
-}
-
-function isRateLimited(ip: string): boolean {
-  const now = Date.now();
-  let r = rlStore.get(ip);
-  if (!r || now > r.reset) {
-    r = { count: 0, reset: now + 60_000 };
-    rlStore.set(ip, r);
-  }
-  r.count++;
-  return r.count > 20;
 }
 
 export interface ChatMessage {
@@ -124,7 +103,8 @@ async function streamTurn(
 }
 
 export async function POST(request: NextRequest) {
-  if (isRateLimited(clientIp(request))) {
+  const { limited } = checkRateLimit(`chat:${clientIp(request)}`);
+  if (limited) {
     return NextResponse.json({ error: "Too many requests" }, { status: 429 });
   }
 

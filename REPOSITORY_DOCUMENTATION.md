@@ -2235,6 +2235,14 @@ its `welcome` mode, and the copy still lives in `lib/welcomeChat.ts`.
   `<BorderBeam active={expanded && loading}>` (`border-beam`), wrapping the `.glass` layer in place of
   the old hand-rolled `.search-glow` conic-gradient CSS. The "thinking" dots in the chat thread and the
   input-field spinner are both `<ThinkingOrb state="searching" size={20} />` (`thinking-orbs`).
+- **Both are `React.lazy` + `Suspense`, not static imports.** They're decorative only, so the code
+  shouldn't ship in the main bundle for every visitor who never opens Smart Search. `BorderBeam`'s
+  Suspense fallback renders the exact same `pillGlass` content (the button/input/form — everything
+  interactive) in a plain `<div>`, so the pill is never hidden or non-functional while the chunk
+  fetches; only the animated border is deferred. `ThinkingOrb`'s fallback is a small CSS spin-ring
+  (`OrbFallback`) at the same size, so there's no layout shift. Confirmed via network tab: `border-beam`
+  loads as its own chunk (not inlined into the page bundle), and `thinking-orbs` doesn't fetch at all
+  until a chat request actually sets `loading` true.
 - **`searchEnabled` prop.** The widget is now **always mounted**; the prop only governs the AI half.
   The guided script is hand-written and has no service to be down, so the Smart Search kill-switch
   must not take it with it. With the prop false the input form is absent and the trigger opens the
@@ -2451,9 +2459,12 @@ to keep.
   now" is a real answer and is recorded as one — this is a gate, not a wall.
 - `OnboardingChecklist.tsx` — The persistent "Get Started" launcher
   (bottom-right, remaining-count badge) and its expanding panel — percent bar,
-  tickable sections, "Dismiss checklist". Reuses `<BorderBeam>` (the Smart
-  Search rainbow, `border-beam` package) as the attention cue while anything is
-  left to do.
+  tickable sections, "Dismiss checklist". Reuses `<BorderBeam size="pulse-inner">`
+  (`border-beam`) as the attention cue while anything is left to do. The
+  collapsed launcher pill is mounted for the whole `/admin` session (not just
+  while the panel is open), so its beam is explicitly `active={left > 0}` —
+  it stops running once the checklist is actually done, rather than pulsing
+  forever in the background.
 - `TourSpotlight.tsx` — The overlay itself: four scrim rectangles frame the
   anchored element rather than a clip-path, so the real element stays fully
   clickable — the sandbox steps depend on that. An orange ring lights the

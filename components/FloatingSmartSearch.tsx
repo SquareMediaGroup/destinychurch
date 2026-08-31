@@ -2,9 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState, useRef, useEffect, useCallback } from "react";
-import { ThinkingOrb } from "thinking-orbs";
-import { BorderBeam } from "border-beam";
+import { useState, useRef, useEffect, useCallback, lazy, Suspense } from "react";
 import { useCookieConsent } from "@/lib/cookieConsent";
 import { cooldownAnswer, parseAnswer } from "@/lib/smartSearch";
 import {
@@ -25,6 +23,25 @@ import type {
   DirectionsToolResult,
   SearchWebResult,
 } from "@/lib/smartSearch/tools";
+
+// thinking-orbs and border-beam are decorative-only, so they're code-split out
+// of the main bundle rather than shipped to every visitor up front. Each
+// Suspense fallback below renders the real interactive content (or a plain
+// CSS equivalent) so nothing is ever hidden behind the chunk fetch — only the
+// animation itself is deferred.
+const ThinkingOrb = lazy(() =>
+  import("thinking-orbs").then((mod) => ({ default: mod.ThinkingOrb })),
+);
+const BorderBeam = lazy(() =>
+  import("border-beam").then((mod) => ({ default: mod.BorderBeam })),
+);
+
+/** Plain CSS stand-in for <ThinkingOrb>, shown until its chunk loads. */
+function OrbFallback() {
+  return (
+    <div className="h-5 w-5 animate-spin rounded-full border-2 border-white/20 border-t-destiny-orange" />
+  );
+}
 
 /** How long each resting face is held before turning over to the other one.
  *  The search circle and the "New here?" pill get the same slice. */
@@ -532,6 +549,119 @@ export default function FloatingSmartSearch({
     ? []
     : (getChatNode(welcomeNodeId)?.choices ?? []);
 
+  // Rendered both inside <BorderBeam> and in its Suspense fallback (see below)
+  // so the interactive pill is always present — only the rotating glow around
+  // it waits on the border-beam chunk.
+  const pillClassName = `floating-search-morph relative h-14 rounded-full ${
+    expanded ? "is-expanded" : showTeaser ? "is-teasing" : ""
+  }`;
+  const pillGlass = (
+    <div className="glass glass-strong glass-refract absolute inset-0 rounded-full">
+      {/* Collapsed: the resting trigger. One button, two faces — the search
+          mark opens the AI bar, and every 8s it turns over to a sparkle and
+          the pill grows a "New here? Start here" label that opens the
+          scripted conversation instead. Both live on the same control so there is
+          one floating widget on the page, not two. */}
+      <button
+        type="button"
+        onClick={() => (showTeaser || !searchEnabled ? openWelcome() : openBar(true))}
+        aria-label={showTeaser || !searchEnabled ? "New here? Start here" : "Open Smart Search"}
+        aria-hidden={expanded}
+        tabIndex={expanded ? -1 : 0}
+        className={`floating-search-trigger absolute inset-0 flex items-center text-white transition-opacity ${
+          showTeaser ? "justify-start gap-2.5 pl-4 pr-4" : "justify-center"
+        } ${expanded ? "pointer-events-none opacity-0" : "opacity-100"}`}
+      >
+        <span className={`fs-flip h-5 w-5 shrink-0 ${showTeaser ? "is-flipped" : ""}`}>
+          <span className="fs-flip-face">
+            <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+            </svg>
+          </span>
+          <span className="fs-flip-face fs-flip-back">
+            <SparkleIcon className="h-5 w-5 text-destiny-orange" />
+          </span>
+        </span>
+
+        {/* Width is the pill's job; this only fades, so nothing slides. It
+            must collapse to zero width when resting, though: `truncate`
+            alone still shrinks to a ~36px sliver inside the 56px circle,
+            which shoves the search mark off centre. */}
+        <span
+          aria-hidden={!showTeaser}
+          className={`fs-teaser-label min-w-0 truncate text-xs font-bold ${
+            showTeaser ? "opacity-100" : "pointer-events-none w-0 opacity-0"
+          }`}
+        >
+          New here? <span className="font-semibold text-white/60">Start here</span>
+        </span>
+      </button>
+
+      {/* Expanded: input form. Absent entirely when the AI half is off — the
+          guided script needs no text box, and an input that can't submit is
+          worse than none. */}
+      <form
+        onSubmit={handleSubmit}
+        aria-hidden={!expanded}
+        hidden={!searchEnabled}
+        className={`floating-search-form absolute inset-0 flex items-center transition-opacity ${
+          expanded ? "opacity-100" : "pointer-events-none opacity-0"
+        }`}
+      >
+        <div className="relative h-full w-full">
+          <input
+            ref={inputRef}
+            type="text"
+            value={input}
+            onChange={(e) => {
+              setInput(e.target.value);
+              if (e.target.value && showFirstUse) dismissFirstUse();
+            }}
+            onFocus={() => setFocused(true)}
+            onBlur={() => setFocused(false)}
+            placeholder={hasMessages ? "Ask a follow-up…" : PLACEHOLDER_PROMPTS[placeholderIndex]}
+            disabled={loading}
+            maxLength={300}
+            tabIndex={expanded ? 0 : -1}
+            className="relative z-10 h-full w-full rounded-full bg-transparent py-3.5 pl-5 pr-20 text-sm text-white placeholder:text-white/50 focus:outline-none disabled:opacity-60"
+          />
+          {/* Clear / loading indicator */}
+          {loading ? (
+            <div className="absolute right-12 top-1/2 z-20 -translate-y-1/2">
+              <Suspense fallback={<OrbFallback />}>
+                <ThinkingOrb state="searching" size={20} />
+              </Suspense>
+            </div>
+          ) : input ? (
+            <button
+              type="button"
+              onClick={() => {
+                setInput("");
+                inputRef.current?.focus();
+              }}
+              className="absolute right-12 top-1/2 z-20 -translate-y-1/2 text-xs font-medium text-white/40 transition hover:text-white/70"
+              aria-label="Clear input"
+            >
+              Clear
+            </button>
+          ) : null}
+          {/* Collapse button */}
+          <button
+            type="button"
+            onClick={collapse}
+            tabIndex={expanded ? 0 : -1}
+            className="absolute right-3 top-1/2 z-20 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full text-white/50 transition hover:bg-white/10 hover:text-white"
+            aria-label="Close Smart Search"
+          >
+            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+      </form>
+    </div>
+  );
+
   return (
     <div
       className="pointer-events-none fixed inset-x-0 bottom-0 z-50 flex justify-center px-4 pb-[max(1rem,env(safe-area-inset-bottom))] transition-[bottom] duration-300 ease-out"
@@ -796,7 +926,9 @@ export default function FloatingSmartSearch({
                             {toolStatus ? (
                               <span className="text-xs text-white/60">{toolStatus}</span>
                             ) : (
-                              <ThinkingOrb state="searching" size={20} />
+                              <Suspense fallback={<OrbFallback />}>
+                                <ThinkingOrb state="searching" size={20} />
+                              </Suspense>
                             )}
                           </div>
                         </div>
@@ -810,124 +942,23 @@ export default function FloatingSmartSearch({
           </div>
         )}
 
-        {/* Morphing bar: circle -> teaser pill -> full pill */}
-        <BorderBeam
-          size="md"
-          borderRadius={9999}
-          active={expanded && loading}
-          strength={1}
-          className={`floating-search-morph relative h-14 rounded-full ${
-            expanded ? "is-expanded" : showTeaser ? "is-teasing" : ""
-          }`}
-        >
-          {/* Glass material lives on an inner layer: BorderBeam owns the loading
-              glow on the wrapper it renders, so .glass (which uses both pseudos
-              for rim + cursor bloom) must sit one level down. It fills the pill
-              exactly and contains the interactive children so the bloom
-              tracker's closest('.glass') resolves. */}
-          <div className="glass glass-strong glass-refract absolute inset-0 rounded-full">
-          {/* Collapsed: the resting trigger. One button, two faces — the search
-              mark opens the AI bar, and every 8s it turns over to a sparkle and
-              the pill grows a "New here? Start here" label that opens the
-              scripted conversation instead. Both live on the same control so there is
-              one floating widget on the page, not two. */}
-          <button
-            type="button"
-            onClick={() => (showTeaser || !searchEnabled ? openWelcome() : openBar(true))}
-            aria-label={showTeaser || !searchEnabled ? "New here? Start here" : "Open Smart Search"}
-            aria-hidden={expanded}
-            tabIndex={expanded ? -1 : 0}
-            className={`floating-search-trigger absolute inset-0 flex items-center text-white transition-opacity ${
-              showTeaser ? "justify-start gap-2.5 pl-4 pr-4" : "justify-center"
-            } ${expanded ? "pointer-events-none opacity-0" : "opacity-100"}`}
+        {/* Morphing bar: circle -> teaser pill -> full pill. BorderBeam owns the
+            loading glow on the wrapper it renders, so .glass (which uses both
+            pseudos for rim + cursor bloom) must sit one level down inside it.
+            The Suspense fallback renders the identical pill in a plain div —
+            fully interactive — so nothing waits on the border-beam chunk
+            except the glow itself. */}
+        <Suspense fallback={<div className={pillClassName}>{pillGlass}</div>}>
+          <BorderBeam
+            size="md"
+            borderRadius={9999}
+            active={expanded && loading}
+            strength={1}
+            className={pillClassName}
           >
-            <span className={`fs-flip h-5 w-5 shrink-0 ${showTeaser ? "is-flipped" : ""}`}>
-              <span className="fs-flip-face">
-                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
-                </svg>
-              </span>
-              <span className="fs-flip-face fs-flip-back">
-                <SparkleIcon className="h-5 w-5 text-destiny-orange" />
-              </span>
-            </span>
-
-            {/* Width is the pill's job; this only fades, so nothing slides. It
-                must collapse to zero width when resting, though: `truncate`
-                alone still shrinks to a ~36px sliver inside the 56px circle,
-                which shoves the search mark off centre. */}
-            <span
-              aria-hidden={!showTeaser}
-              className={`fs-teaser-label min-w-0 truncate text-xs font-bold ${
-                showTeaser ? "opacity-100" : "pointer-events-none w-0 opacity-0"
-              }`}
-            >
-              New here? <span className="font-semibold text-white/60">Start here</span>
-            </span>
-          </button>
-
-          {/* Expanded: input form. Absent entirely when the AI half is off — the
-              guided script needs no text box, and an input that can't submit is
-              worse than none. */}
-          <form
-            onSubmit={handleSubmit}
-            aria-hidden={!expanded}
-            hidden={!searchEnabled}
-            className={`floating-search-form absolute inset-0 flex items-center transition-opacity ${
-              expanded ? "opacity-100" : "pointer-events-none opacity-0"
-            }`}
-          >
-            <div className="relative h-full w-full">
-              <input
-                ref={inputRef}
-                type="text"
-                value={input}
-                onChange={(e) => {
-                  setInput(e.target.value);
-                  if (e.target.value && showFirstUse) dismissFirstUse();
-                }}
-                onFocus={() => setFocused(true)}
-                onBlur={() => setFocused(false)}
-                placeholder={hasMessages ? "Ask a follow-up…" : PLACEHOLDER_PROMPTS[placeholderIndex]}
-                disabled={loading}
-                maxLength={300}
-                tabIndex={expanded ? 0 : -1}
-                className="relative z-10 h-full w-full rounded-full bg-transparent py-3.5 pl-5 pr-20 text-sm text-white placeholder:text-white/50 focus:outline-none disabled:opacity-60"
-              />
-              {/* Clear / loading indicator */}
-              {loading ? (
-                <div className="absolute right-12 top-1/2 z-20 -translate-y-1/2">
-                  <ThinkingOrb state="searching" size={20} />
-                </div>
-              ) : input ? (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setInput("");
-                    inputRef.current?.focus();
-                  }}
-                  className="absolute right-12 top-1/2 z-20 -translate-y-1/2 text-xs font-medium text-white/40 transition hover:text-white/70"
-                  aria-label="Clear input"
-                >
-                  Clear
-                </button>
-              ) : null}
-              {/* Collapse button */}
-              <button
-                type="button"
-                onClick={collapse}
-                tabIndex={expanded ? 0 : -1}
-                className="absolute right-3 top-1/2 z-20 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full text-white/50 transition hover:bg-white/10 hover:text-white"
-                aria-label="Close Smart Search"
-              >
-                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-          </form>
-          </div>{/* end .glass layer */}
-        </BorderBeam>
+            {pillGlass}
+          </BorderBeam>
+        </Suspense>
       </div>
     </div>
   );

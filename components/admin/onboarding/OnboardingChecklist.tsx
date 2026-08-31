@@ -103,7 +103,7 @@ export default function OnboardingChecklist() {
         </BorderBeam>
       )}
 
-      <BorderBeam size="pulse-inner" borderRadius={9999} strength={1} className="relative rounded-full">
+      <BorderBeam size="pulse-inner" borderRadius={9999} strength={1} active={left > 0} className="relative rounded-full">
         <div className="glass admin-glass glass-pill absolute inset-0 rounded-full" />
         <button
           type="button"

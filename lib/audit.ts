@@ -75,6 +75,7 @@ export const AUDIT_SECTIONS = {
   store: { label: "Store", icon: "storefront" },
   site: { label: "Site", icon: "settings" },
   hr: { label: "HR", icon: "badge" },
+  media: { label: "Media", icon: "photo_library" },
   users: { label: "Users & access", icon: "group" },
   account: { label: "Account", icon: "key" },
 } as const;

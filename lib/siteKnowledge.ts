@@ -29,6 +29,7 @@ export const PAGE_INTENTS: { href: string; cta: string; intent: string }[] = [
   { href: "/child-dedication",cta: "Request a Dedication",    intent: "child dedication, baby dedication" },
   { href: "/hire",            cta: "Enquire About Hiring",    intent: "venue hire, hiring the building, hall, rooms, auditorium" },
   { href: "/shop",            cta: "Browse Merch",            intent: "shop, store, merch, apparel, t-shirts, clothing, buy" },
+  { href: "/media",           cta: "View Photos",             intent: "photos, photo gallery, pictures, albums, photos from Sunday or an event, upload a photo, share a photo" },
   { href: "/safeguarding",    cta: "Safeguarding",            intent: "safeguarding, child protection, concerns" },
   { href: "/governance",      cta: "Governance & Registration", intent: "charity number, company number, registered charity, trustees, directors, accounts, income, finances, annual return, filings, how the church is governed" },
   { href: "/help",            cta: "Help Centre",             intent: "help, FAQ, questions, how do I" },
@@ -156,6 +157,12 @@ SHOP / MERCH:
 - Ordering: browse and order online through the shop
 - Delivery: available, or collect in person at church
 - Stripe payment processing — secure online checkout with multiple payment options
+
+PHOTOS / MEDIA GALLERY:
+- Photo boards from services and events at /media (destinytees.uk/media)
+- Anyone can browse public boards, and can add their own photos — just a name, no account needed
+- Every uploaded photo is reviewed by the Media Team before it appears, so nothing is shown unmoderated
+- A board can also be private, shared by a direct link only (e.g. a wedding) — those aren't listed on /media itself, so only mention this ability if asked, never claim a private board exists or link to one
 
 DESTINY KIDS (Ages 0–11):
 - Every Sunday 10:45am – 12:30pm (no registration, free)

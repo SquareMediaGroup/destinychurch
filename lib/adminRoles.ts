@@ -12,6 +12,7 @@ export type AdminRole =
   | "site_admin"
   | "host"
   | "hr_admin"
+  | "media_admin"
   | "super_admin";
 
 export const ADMIN_ROLES: AdminRole[] = [
@@ -21,6 +22,7 @@ export const ADMIN_ROLES: AdminRole[] = [
   "site_admin",
   "host",
   "hr_admin",
+  "media_admin",
   "super_admin",
 ];
 
@@ -39,6 +41,7 @@ export const ROLE_LABELS: Record<AdminRole, string> = {
   site_admin: "Site Admin",
   host: "Host",
   hr_admin: "HR Admin",
+  media_admin: "Media Admin",
   super_admin: "Super Admin",
 };
 
@@ -64,6 +67,7 @@ export const NO_ROLES: RoleFlags = {
   site_admin: false,
   host: false,
   hr_admin: false,
+  media_admin: false,
   super_admin: false,
 };
 
@@ -125,6 +129,10 @@ const ROUTE_RULES: { pattern: RegExp; roles: AdminRole[] }[] = [
   // HR — staff directory, leave, jobs, applications, documents, reviews
   { pattern: /^\/admin\/hr(\/|$)/, roles: ["hr_admin"] },
   { pattern: /^\/api\/admin\/hr(\/|$)/, roles: ["hr_admin"] },
+
+  // Media Team — the /media gallery: boards, moderation queue
+  { pattern: /^\/admin\/media(\/|$)/, roles: ["media_admin"] },
+  { pattern: /^\/api\/admin\/media(\/|$)/, roles: ["media_admin"] },
 ];
 
 // Paths any authenticated admin can reach regardless of role.
@@ -167,7 +175,7 @@ export async function getRoles(
   const { data } = await supabase
     .from("admin_roles")
     .select(
-      "training_admin, event_admin, store_admin, site_admin, host, hr_admin, super_admin",
+      "training_admin, event_admin, store_admin, site_admin, host, hr_admin, media_admin, super_admin",
     )
     .eq("auth_user_id", authUserId)
     .maybeSingle();
@@ -180,6 +188,7 @@ export async function getRoles(
     site_admin: Boolean(data.site_admin),
     host: Boolean(data.host),
     hr_admin: Boolean(data.hr_admin),
+    media_admin: Boolean(data.media_admin),
     super_admin: Boolean(data.super_admin),
   };
 }

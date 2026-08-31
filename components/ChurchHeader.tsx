@@ -179,6 +179,7 @@ export default function ChurchHeader() {
       ...(!youtubeQuotaExceeded ? [{ href: "/sermons", label: "Sermons" }] : []),
       ...(alphaActive ? [{ href: "/alpha", label: "Alpha" }] : []),
       { href: "/serve", label: "Serve" },
+      { href: "/media", label: "Photos" },
       { href: "/shop", label: "Shop" },
       { label: "About", href: "/about", dropdown: aboutDropdown },
       { href: "/give", label: "Give" },

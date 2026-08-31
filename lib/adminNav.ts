@@ -385,6 +385,20 @@ export const ADMIN_GROUPS: AdminNavGroup[] = [
       },
     ],
   },
+  {
+    label: "Media",
+    icon: "photo_library",
+    items: [
+      {
+        href: "/admin/media",
+        label: "Media Gallery",
+        icon: "photo_library",
+        role: "media_admin",
+        description: "Photo boards and the upload moderation queue.",
+        keywords: ["photos", "gallery", "pictures", "moderation", "approve", "boards", "camera"],
+      },
+    ],
+  },
 ];
 
 /** Every item, flattened, in sidebar order. */

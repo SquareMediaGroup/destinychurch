@@ -344,9 +344,11 @@ destinychurch/
 │       ├── 20260826_audit_log.sql       # Admin audit log + weekly AI reports (audit_log, audit_reports)
 │       ├── 20260827_engagement_events.sql # Click analytics table + rollup/anonymise RPCs (storage layer)
 │       ├── 20260828_ip_reputation.sql   # VPN/Tor/datacenter/Private-Relay tags on engagement_events
-│       └── 20260828_02_ip_reputation_advisor_fixes.sql # Advisor cleanup: revoke anon/authenticated
-│                                          # EXECUTE on the three engagement RPCs (see §24b), add
-│                                          # search_path to the ip_category trigger, relocate btree_gist
+│       ├── 20260828_02_ip_reputation_advisor_fixes.sql # Advisor cleanup: revoke anon/authenticated
+│       │                                  # EXECUTE on the three engagement RPCs (see §24b), add
+│       │                                  # search_path to the ip_category trigger, relocate btree_gist
+│       ├── 20260831_01_media_admin_role.sql # `media_admin` access level on admin_roles
+│       └── 20260831_02_media_gallery.sql # /media photo gallery (media_boards, media_photos, media-photos bucket)
 │
 ├── utils/                         # Utility modules
 │   ├── supabase/                  # Supabase client factories
@@ -814,7 +816,7 @@ simply never grow a row since `toursFor()` returns nothing for them. See
 ---
 
 #### 10c. **admin_roles**
-**Purpose:** Access levels for `/admin` — six independent booleans per admin login, checked by `middleware.ts` on every `/admin/*` and `/api/admin/*` request
+**Purpose:** Access levels for `/admin` — eight independent booleans per admin login, checked by `middleware.ts` on every `/admin/*` and `/api/admin/*` request
 
 ```sql
 CREATE TABLE admin_roles (
@@ -825,6 +827,8 @@ CREATE TABLE admin_roles (
   store_admin boolean NOT NULL DEFAULT false,
   site_admin boolean NOT NULL DEFAULT false,
   host boolean NOT NULL DEFAULT false,      -- live chat: /admin/live-chat + moderating on /live
+  hr_admin boolean NOT NULL DEFAULT false,  -- /admin/hr
+  media_admin boolean NOT NULL DEFAULT false, -- /admin/media: photo boards + moderation queue
   super_admin boolean NOT NULL DEFAULT false,
   created_at timestamptz NOT NULL DEFAULT now(),
   updated_at timestamptz NOT NULL DEFAULT now()
@@ -1695,6 +1699,69 @@ Both migrations are applied to production; `get_advisors` is clean on all of the
 
 ---
 
+#### 25. **media_boards / media_photos** (`/media` photo gallery)
+
+**Purpose:** Photo "boards" (e.g. "Sunday Service") that visitors browse and — anonymously,
+name only — upload to. Every upload sits in a `pending` moderation queue until a `media_admin`
+approves it; nothing reaches the public board until then. A board is `is_public = true` (listed
+on `/media`) or unlisted, reachable only via its `share_token` at `/media/s/[token]` (e.g. for a
+wedding). Migration: `supabase/migrations/20260831_02_media_gallery.sql`; the `media_admin` role
+column is a separate migration, `20260831_01_media_admin_role.sql`.
+
+```sql
+CREATE TABLE media_boards (
+  id             uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  title          text NOT NULL,
+  slug           text NOT NULL UNIQUE,
+  description    text,
+  cover_photo_id uuid REFERENCES media_photos(id) ON DELETE SET NULL,
+  is_public      boolean NOT NULL DEFAULT true,
+  share_token    text NOT NULL UNIQUE DEFAULT encode(gen_random_bytes(16), 'hex'),
+  allow_uploads  boolean NOT NULL DEFAULT true,
+  created_at     timestamptz NOT NULL DEFAULT now(),
+  updated_at     timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE TABLE media_photos (
+  id               uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  board_id         uuid NOT NULL REFERENCES media_boards(id) ON DELETE CASCADE,
+  file_path        text NOT NULL,        -- path inside the public `media-photos` storage bucket
+  file_name        text NOT NULL,
+  mime_type        text, size_bytes bigint, width integer, height integer,
+  uploader_name    text NOT NULL,        -- plain text, no auth — anonymous upload
+  status           text NOT NULL DEFAULT 'pending'
+                     CHECK (status IN ('pending','approved','rejected')),
+  reviewed_by      text, reviewed_at timestamptz, reject_reason text,
+  uploader_ip_hash text,                 -- sha256(ip + MEDIA_IP_SALT), rate-limiting only
+  created_at       timestamptz NOT NULL DEFAULT now()
+);
+
+-- RLS: deny-all "service only" on both tables, same as every other table here.
+-- The public upload route (app/api/media/upload) writes via createServiceClient()
+-- rather than a relaxed anon-key policy, keeping the same invariant as admin routes.
+```
+
+**Storage:** one public bucket, `media-photos` (10MB/file, jpeg/png/webp only). Kept public and
+singular rather than split public/private or gated behind signed URLs — pending vs. approved and
+public vs. unlisted are both enforced at the API layer (only `status='approved'` rows are ever
+returned; a private board is reachable only if you already have its `share_token`), and every
+object path is a random UUID nobody can guess without the DB row first.
+
+**Abuse mitigation on the anonymous upload route** (`app/api/media/upload/route.ts`, outside
+`middleware.ts`'s matcher entirely — no auth wall at all): MIME/size allowlist, a honeypot form
+field, and a DB-backed per-IP-hash rate limit (20 uploads/hour, no new table or infra).
+
+**Used By:**
+- `lib/media.server.ts` — the one place board/photo reads happen (`getPublicBoards`,
+  `getBoardBySlug`, `getBoardByToken`, `getApprovedPhotos`), mirroring `lib/governance.server.ts`
+- `/media`, `/media/b/[slug]` (public boards), `/media/s/[token]` (unlisted boards)
+- `app/api/media/**` (public read + anonymous upload) and `app/api/admin/media/**` (board CRUD,
+  moderation queue — gated to `media_admin` by `middleware.ts`)
+- `/admin/media/boards` (create/edit boards, copy or regenerate a private share link),
+  `/admin/media/queue` (approve/reject/delete pending uploads)
+
+---
+
 **Key Point:** No table uses authenticated user RLS. All member-facing features use API proxy routes that enforce authentication in application code, then access the database with the service role key. This gives finer control and better error messages.
 
 ---
@@ -1958,6 +2025,9 @@ without an auth check, so they must never be reachable on the live site.
 | `/jobs` | `app/jobs/page.tsx` | Job listings |
 | `/jobs/[slug]` | `app/jobs/[slug]/page.tsx` | Job detail page |
 | `/training` | `app/training/page.tsx` | `/training` resource library — category → subgroup (optional password) → post |
+| `/media` | `app/media/page.tsx` | Photo gallery — grid of public boards |
+| `/media/b/[slug]` | `app/media/b/[slug]/page.tsx` | A public board — approved photos + an anonymous "add a photo" upload |
+| `/media/s/[token]` | `app/media/s/[token]/page.tsx` | An unlisted board, reachable only via its share link (`noindex`); same view as `/media/b/[slug]`, resolved by `share_token` instead of slug |
 | `/baptism` | `app/baptism/page.tsx` | Baptism sign-up |
 | `/child-dedication` | `app/child-dedication/page.tsx` | Child dedication request |
 | `/volunteer` | `app/volunteer/page.tsx` | Volunteer sign-up form |
@@ -2006,6 +2076,9 @@ Each section requires a specific access-level role (see
 | `/admin/hr` | `app/admin/hr/page.tsx` | HR dashboard (staff, leave, jobs, documents, reviews, checklists) (HR Admin) |
 | `/admin/hr/checklists` | `app/admin/hr/checklists/page.tsx` | Onboarding/offboarding checklist templates (HR Admin) |
 | `/admin/hr/staff/[id]` | `app/admin/hr/staff/[id]/page.tsx` | Staff record — profile, leave, reviews, documents, live checklists (HR Admin) |
+| `/admin/media` | `app/admin/media/page.tsx` | Media dashboard — board/pending/approved counts (Media Admin) |
+| `/admin/media/boards` | `app/admin/media/boards/page.tsx` | Create/edit boards — public/private toggle, copy or regenerate a private share link (Media Admin) |
+| `/admin/media/queue` | `app/admin/media/queue/page.tsx` | Moderation queue — approve/reject/delete photos (Media Admin) |
 | `/portal` | `app/portal/page.tsx` | Staff self-service — own profile, leave requests + balance, documents. Separate auth boundary from `/admin`; see [Authorization Layers](#authorization-layers) |
 | `/portal/leave` | `app/portal/leave/page.tsx` | Staff self-service — request and withdraw own leave |
 | `/portal/documents` | `app/portal/documents/page.tsx` | Staff self-service — download own + org-wide documents |
@@ -2361,6 +2434,23 @@ section is better than an empty heading on a transparency page.
   annual-return submission dates
 - `GovernanceSourceNote.tsx` — attribution, refresh cadence, and an explicit notice naming any
   regulator whose data is being served from the stored snapshot rather than live
+
+#### Media (`components/media/*`)
+
+The `/media` photo gallery — a public board list, board detail (shared by both the public-slug
+and unlisted-token routes), and the anonymous upload flow.
+
+- `MediaHero.tsx` — page hero for `/media`
+- `BoardGrid.tsx` / `BoardCard.tsx` — the public board grid (cover photo, title, approved-photo count)
+- `BoardDetail.tsx` — client component rendering one board (title, `PhotoLightbox`, an "Add a photo"
+  button when `allow_uploads`); used by both `/media/b/[slug]` and `/media/s/[token]`, which differ
+  only in how they resolve the board (`getBoardBySlug` vs `getBoardByToken`)
+- `PhotoLightbox.tsx` — approved-photos grid with a click-to-enlarge overlay (Escape/arrow-key nav)
+- `UploadModal.tsx` — the name + file form that posts to `/api/media/upload`, plus a hidden honeypot
+  field. **The one place `border-beam`/`thinking-orbs` are reused outside `FloatingSmartSearch.tsx`**
+  — both lazy-loaded via the same `lazy()` + `Suspense` + plain-CSS-fallback pattern, and both tied
+  strictly to the real `isUploading` state (not decorative at rest), so the effect stays "tasteful,
+  not overused" as the rest of `/media` has no glow anywhere else.
 
 #### Events (`components/events/*`)
 
@@ -2899,6 +2989,21 @@ GET|POST         /api/admin/hr/checklists                // ?staffId= — list /
 PATCH|DELETE     /api/admin/hr/checklists/[id]           // tick an item / edit / remove
 ```
 
+#### Media routes (`/api/admin/media/*`)
+```typescript
+// Media Admin only (media_admin/super_admin, via /api/admin/media/** route rule).
+// Boards:
+GET|POST         /api/admin/media/boards        // list (with pending/approved/rejected counts) / create
+PATCH|DELETE     /api/admin/media/boards/[id]   // edit (incl. is_public, allow_uploads,
+                                                 //   regenerate_token: true to rotate a leaked link)
+                                                 //   / delete (also removes its storage objects)
+// Moderation queue:
+GET   /api/admin/media/photos                   // ?status=pending|approved|rejected|all &board_id=
+POST  /api/admin/media/photos/[id]/approve
+POST  /api/admin/media/photos/[id]/reject       // body: { reason? }
+DELETE /api/admin/media/photos/[id]             // hard delete (storage object + row)
+```
+
 #### Audit log routes (`/api/admin/audit/*`)
 ```typescript
 GET  /api/admin/audit          // the log itself
@@ -3325,6 +3430,26 @@ returned to its own author marked as waiting, so they don't retype it.
 // batch-swap, not a truncate — the table is never briefly empty). Each
 // source is independent: one failing (a GitHub outage, a changed URL) does
 // not stop the other three refreshing. maxDuration = 300.
+```
+
+#### Public Media API (`/api/media/*`)
+
+```typescript
+// Outside middleware.ts's matcher entirely — no auth wall, no role check, nothing.
+// Every handler validates for itself; see lib/media.server.ts for the shared reads.
+
+GET  /api/media/boards                    // public (is_public=true) boards, newest first
+GET  /api/media/boards/[ref]              // by slug — 404 if missing OR private (never leaks a private board)
+GET  /api/media/boards/by-token/[token]   // by share_token — works for public or private; same 404 whether
+                                           //   the token is wrong or the board is gone
+GET  /api/media/boards/[ref]/photos       // approved photos only; ref is a board id or a public slug
+POST /api/media/upload                    // anonymous upload → status='pending'
+// multipart/form-data: file, board_token, uploader_name, website (honeypot — filling it
+// returns the normal success response but nothing is saved)
+// Validates: honeypot empty, board exists + allow_uploads, MIME in jpeg/png/webp, <=10MB,
+// name non-empty <=100 chars, <=20 uploads/hour per sha256(ip + MEDIA_IP_SALT) — see
+// Database Schema §25. No recordAudit() call: there's no actor to attribute it to outside
+// the admin middleware, and tests/unit/audit-coverage.spec.ts only walks app/api/admin/**.
 ```
 
 > There is no `/api/webhooks/vercel` or GitHub webhook route, and no `youtube-sync`
@@ -4172,6 +4297,7 @@ export const PAGE_INTENTS = [
   { href: "/live", cta: "Watch Live", intent: "livestream, live service, Sundays at 11am" },
   { href: "/shop", cta: "Browse Merch", intent: "shop, apparel, merch, buy" },
   { href: "/help", cta: "Help Centre", intent: "help, FAQ, questions" },
+  { href: "/media", cta: "View Photos", intent: "photos, photo gallery, pictures, albums..." },
   // ... 17 more pages (kids, youth, Alpha, serve, connect, missions, etc.)
 ];
 
@@ -4580,6 +4706,19 @@ login — a casing change upstream degrades one field rather than the whole sect
 
 Caching is weekly (`revalidate: 604800` on every fetch, matching the page), which keeps both keys far
 inside their rate limits (Companies House allows 600 requests per 5 minutes).
+
+### `lib/media.server.ts`
+
+`server-only`. Mirrors `lib/governance.server.ts`'s role for the `/media` photo gallery — the one
+place board/photo reads happen, shared by the page components and the public `/api/media/*`
+routes so "only approved photos, only public boards" lives in one spot.
+
+- `getPublicBoards()` — public boards, newest first, each with its approved-photo count and cover
+  photo URL (via the `media-photos` storage bucket's public URL).
+- `getBoardBySlug(slug)` — a public board by slug; returns `null` for a private one, so a private
+  board's slug can never be reached this way (only its `share_token` can — see below).
+- `getBoardByToken(token)` — any board (public or private) by its unguessable `share_token`.
+- `getApprovedPhotos(boardId)` — `status='approved'` photos for a board, newest first.
 
 ### `lib/jobs.ts` & `lib/hr.ts`
 

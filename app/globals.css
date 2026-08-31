@@ -674,69 +674,20 @@ body {
   }
 }
 
-/* Floating Smart Search — circle <-> teaser <-> pill morph.
-   Three resting widths held in --fs-w and TRANSITIONED, with the same aggressive
-   ease-in-out that used to be keyframed. It was keyframes while there were only
-   two states; three made the pairs combinatorial. A transition also leaves the
-   loading glow (now BorderBeam, which owns its own wrapper) free to animate
-   independently, and does not run on first paint, which is what the transient
-   .morph-* classes existed to prevent. */
+/* Floating Smart Search — circle <-> full pill morph. Held in --fs-w and
+   TRANSITIONED, so the loading glow (BorderBeam, which owns its own wrapper)
+   is free to animate independently, and doesn't run on first paint, which is
+   what the transient .morph-* classes existed to prevent. */
 .floating-search-morph {
   width: var(--fs-w, 3.5rem); /* collapsed (circle) */
   transition: width 0.5s cubic-bezier(0.85, 0, 0.15, 1);
-}
-.floating-search-morph.is-teasing {
-  --fs-w: 13.5rem; /* teaser pill — "New here? Start here" */
 }
 .floating-search-morph.is-expanded {
   --fs-w: min(calc(100vw - 2rem), 28rem); /* full pill */
 }
 
-/* The resting icon turns over to advertise the guided path and turns back. Two
-   faces cross-fade through a half-turn, so the search and sparkle marks are
-   never both legible at once.
-
-   Deliberately 2D (scaleX + opacity), not a preserve-3d card with
-   backface-visibility: the flip sits inside .glass, whose backdrop-filter
-   flattens the 3D rendering context. Safari then paints both faces mirrored on
-   top of one another, which is what "broken icon" looked like. Nothing here
-   depends on 3D, so it renders the same everywhere. */
-.fs-flip {
-  position: relative;
-}
-.fs-flip-face {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition:
-    opacity 0.28s ease,
-    transform 0.55s cubic-bezier(0.85, 0, 0.15, 1);
-}
-/* Resting: search mark shown, sparkle waiting side-on. */
-.fs-flip-back {
-  opacity: 0;
-  transform: scaleX(0);
-}
-/* Turned over: the two swap. */
-.fs-flip.is-flipped > .fs-flip-face {
-  opacity: 0;
-  transform: scaleX(0);
-}
-.fs-flip.is-flipped > .fs-flip-back {
-  opacity: 1;
-  transform: scaleX(1);
-}
-
 .floating-search-trigger {
   transition: opacity 0.2s ease;
-}
-
-/* The teaser label fades in behind the flip rather than sliding, so the only
-   thing moving horizontally is the pill itself. */
-.fs-teaser-label {
-  transition: opacity 0.25s ease 0.12s;
 }
 
 .floating-search-form {
@@ -766,8 +717,6 @@ body {
   .floating-search-trigger,
   .floating-search-form,
   .floating-search-morph,
-  .fs-flip-face,
-  .fs-teaser-label,
   .floating-search-morph.is-expanded .floating-search-form {
     transition: none;
   }

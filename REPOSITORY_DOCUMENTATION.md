@@ -232,7 +232,7 @@ destinychurch/
 │   ├── AnalyticsGate.tsx          # Conditional analytics loading
 │   ├── SiteBanner.tsx             # Announcement banner (from DB)
 │   ├── SitePopup.tsx              # Modal pop-up (from DB)
-│   ├── FloatingSmartSearch.tsx    # The one floating widget: AI chat + scripted "New here?"
+│   ├── FloatingSmartSearch.tsx    # The floating AI Smart Search widget
 │   ├── smartSearch/               # Smart Search result cards (products, weather, maps, web)
 │   ├── LiveBanner.tsx             # "WE ARE LIVE" banner bar
 │   ├── GlassBloomTracker.tsx      # Glass-effect performance tracking
@@ -281,7 +281,6 @@ destinychurch/
 │   ├── courses.ts                 # Alpha/Recovery/Bible Course/CAP course definitions
 │   ├── courseEvents.ts            # alpha_events type registry — banner surfaces + admin pages
 │   ├── cn.ts                      # className joiner (no Tailwind conflict resolution)
-│   ├── welcomeChat.ts             # Scripted "New here?" conversation tree (pure, unit-tested)
 │   ├── openaiClient.ts            # OpenAI client + SMART_SEARCH_MODEL constant
 │   ├── siteKnowledge.ts           # AI search knowledge base
 │   ├── serviceStatus.ts           # Smart Search health / kill-switch state (service_status table)
@@ -1768,7 +1767,7 @@ export default async function RootLayout({ children }) {
           </div>
           <AnalyticsGate />        {/* Conditionally load Vercel Analytics */}
           <SitePopup popup={popup} />
-          <FloatingSmartSearch searchEnabled={smartSearchEnabled} />  {/* AI chat + guided script */}
+          <FloatingSmartSearch searchEnabled={smartSearchEnabled} />  {/* AI Smart Search widget */}
         </Providers>
         
         <SpeedInsights />             {/* Vercel performance monitoring */}
@@ -2190,10 +2189,12 @@ Once consent is in, `ChurchSuiteEmbed` and `MediaEmbed` cover the iframe with `u
   - Centered on screen
 - **Suppressed on `/nfc` and `/admin/*`:** the layout is a server component and can't know the path, so both pop-ups check `usePathname()` themselves. `/nfc` is a grid of pop-ups people opened on purpose mid-service, and `/admin/*` should never interrupt staff with announcements. `EventPopup.tsx` applies the same two exclusions (plus `/whats-on` and the event's own page).
 
-#### `WelcomeWidget.tsx` — **removed; merged into `FloatingSmartSearch`**
-The "New here?" script is no longer a separate widget. Two floating controls in two corners was two
-things to notice; there is now one. See `FloatingSmartSearch.tsx` above — the script lives there as
-its `welcome` mode, and the copy still lives in `lib/welcomeChat.ts`.
+#### `WelcomeWidget.tsx` — **removed**
+The "New here?" script (formerly merged into `FloatingSmartSearch` as its `welcome` mode) has been
+removed entirely — the resting-circle teaser flip, the scripted conversation tree, and
+`lib/welcomeChat.ts` are all gone. Smart Search now does one thing: the AI conversational search.
+Visitors who don't know what to ask reach the same destinations (visiting, giving, Alpha, etc.)
+through the site's normal nav and the "New Here?" page/link, which were never part of this widget.
 
 #### `shop/ShopHero.tsx`
 - **What:** Dynamic, auto-rotating hero at the top of `/shop`
@@ -2206,31 +2207,13 @@ its `welcome` mode, and the copy still lives in `lib/welcomeChat.ts`.
   - Falls back to the static "The Destiny Store" masthead when no slides are active (handled in `app/shop/page.tsx`)
 
 #### `FloatingSmartSearch.tsx`
-- **What:** the site's single floating widget. Two ways in from one control: the AI conversational
-  search, and a hand-written **"New here?" script** for visitors who don't yet know what to ask.
-- **Two modes.** `mode: "search" | "welcome"`. Search is the AI thread (`/api/chat`); welcome walks
-  the tree in `lib/welcomeChat.ts` with no network call at all. Threads are held in separate state
-  (`messages` vs `welcomeTurns`) so a scripted reply can never render into a streaming one. Typing a
-  question while the script is open switches to search and drops the script — one thread at a time.
-- **The teaser.** The resting control alternates between two faces on an even **10s / 10s** split
-  (`TEASE_PHASE_MS`): the familiar circle with the search mark, then the sparkle with the pill grown
-  to **13.5rem** reading "New here? Start here". Clicking it in that state opens the script; clicking
-  the search mark opens the AI bar as before. This is the only advertisement the guided path gets,
-  since nothing auto-opens.
-- **The icon turn is 2D on purpose.** `.fs-flip` cross-fades its two `.fs-flip-face` children with
-  `opacity` + `scaleX`, not a `preserve-3d` card with `backface-visibility: hidden`. The flip lives
-  inside `.glass`, whose `backdrop-filter` flattens the 3D rendering context; Safari then painted
-  both faces mirrored on top of each other and the icon looked broken. Nothing about the effect needs
-  real 3D, so the 2D version renders identically everywhere.
-- **Reduced motion:** no cycling at all — something that changes width every few seconds is exactly
-  the unsolicited movement `prefers-reduced-motion` asks us not to make. Those visitors get the
-  label **permanently** instead, so they lose the motion without losing the discoverability.
-- **Three widths, transitioned not keyframed.** `--fs-w` holds the resting width per state (circle
-  `3.5rem` → teaser `13.5rem` → pill `min(100vw-2rem, 28rem)`) with `transition: width`. It was
-  keyframes while there were only two states; three made the pairs combinatorial. A transition also
-  leaves the loading glow (`<BorderBeam>` from the `border-beam` package, which owns its own wrapper
-  element) free to animate independently, and doesn't run on first paint, which is what the old
-  transient `.morph-*` classes existed to prevent.
+- **What:** the site's single floating widget — the AI conversational search. Collapsed it's a plain
+  circle with a search mark; tapping it expands to the full pill and input.
+- **Two widths, transitioned not keyframed.** `--fs-w` holds the resting width per state (circle
+  `3.5rem` → pill `min(100vw-2rem, 28rem)`) with `transition: width`. The transition also leaves the
+  loading glow (`<BorderBeam>` from the `border-beam` package, which owns its own wrapper element)
+  free to animate independently, and doesn't run on first paint, which is what the transient
+  `.morph-*` classes existed to prevent.
 - **Loading/thinking indicators.** The pill's rotating rainbow border while a request is in flight is
   `<BorderBeam active={expanded && loading}>` (`border-beam`), wrapping the `.glass` layer in place of
   the old hand-rolled `.search-glow` conic-gradient CSS. The "thinking" dots in the chat thread and the
@@ -2243,11 +2226,10 @@ its `welcome` mode, and the copy still lives in `lib/welcomeChat.ts`.
   (`OrbFallback`) at the same size, so there's no layout shift. Confirmed via network tab: `border-beam`
   loads as its own chunk (not inlined into the page bundle), and `thinking-orbs` doesn't fetch at all
   until a chat request actually sets `loading` true.
-- **`searchEnabled` prop.** The widget is now **always mounted**; the prop only governs the AI half.
-  The guided script is hand-written and has no service to be down, so the Smart Search kill-switch
-  must not take it with it. With the prop false the input form is absent and the trigger opens the
-  script directly.
-- **Feature:** the AI half runs if the `smart_search` service is enabled
+- **`searchEnabled` prop.** Mirrors the `smart_search` service kill-switch. With the prop false the
+  component returns `null` — there's no fallback experience without the AI, so the widget just isn't
+  rendered.
+- **Feature:** the widget runs if the `smart_search` service is enabled
 - **Behavior:**
   - Click button → pill expands, chat thread opens
   - User types query → full history sent to `/api/chat` (OpenAI, `gpt-4.1-mini`). The endpoint is protected by a per-IP rate limit (20 requests/minute) and strict message-shape validation rather than a bot-challenge gate.
@@ -3871,23 +3853,6 @@ must never be treated as a security boundary.
 - `lib/useIsDesktop.ts` — the ≥1024px breakpoint, read **synchronously** via `useSyncExternalStore`. The admin editors branch their whole layout on this, and the obvious `useState(false)` + effect version mounted the mobile tree first and then swapped to a different one, silently destroying and recreating the TipTap instance (and its undo history) on every open. `getServerSnapshot` returns `false` so SSR and the first client paint agree.
 - `lib/useKeyboardInset.ts` — how many pixels the on-screen keyboard covers at the bottom of the window, from `visualViewport`. `position: fixed` resolves against the *layout* viewport, which iOS Safari does not shrink for the keyboard, so bottom-anchored sheets and toolbars would otherwise sit underneath it. Thresholded at 120px and rounded: URL-bar collapse and pinch-zoom also move the visual viewport, and an unrounded value hands `useSyncExternalStore` a new snapshot on every scroll frame.
 - `lib/useIsClient.ts` — false on the server and the hydrating render, true after. Guards `createPortal(…, document.body)`. `useSyncExternalStore` rather than `useState` + effect because the latter is a synchronous setState inside an effect, which the React lint rules reject as a cascading render.
-
----
-
-### `lib/welcomeChat.ts`
-
-The scripted conversation behind `FloatingSmartSearch`'s `welcome` mode (see Components). **Church copy and routes are
-edited here** — the component only renders whatever this file says.
-
-A `ChatNode` is `{ id, message, choices }`. A `ChatChoice` either advances the thread (`next`) or
-opens a page (`href`), **never both**, so there is never a hidden branch behind a link. Routes are
-validated against `ALLOWED_PAGES` from `lib/siteKnowledge.ts` — the same allowlist Smart Search uses
-to reject hallucinated links — with `routeOf()` stripping any `#section` first.
-
-None of that is enforced by types, because a typo'd `next` renders a dead button rather than failing
-to compile. It is enforced by `tests/unit/welcome-chat.spec.ts`, which checks ids are unique, every
-`next` resolves, every `href` is a real page, every node is reachable from the root, and every node
-can eventually reach a page (no dead ends).
 
 ---
 

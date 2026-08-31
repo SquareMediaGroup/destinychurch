@@ -24,6 +24,7 @@ import BannerSpacer from "@/components/BannerSpacer";
 import { createServiceClient } from "@/utils/supabase/service";
 import { unstable_noStore as noStore } from "next/cache";
 import { SpeedInsights } from "@vercel/speed-insights/next";
+import { SmartSearchVisibilityProvider } from "@/lib/smartSearchVisibility";
 
 const roboto = Roboto({
   variable: "--font-roboto",
@@ -408,6 +409,7 @@ export default async function RootLayout({
             <feBlend in="rg" in2="onlyB" mode="screen" />
           </filter>
         </svg>
+        <SmartSearchVisibilityProvider>
         <Providers banner={banner} live={liveStatus}>
           <LiveBanner />
           <SiteBanner />
@@ -439,6 +441,7 @@ export default async function RootLayout({
               service to be down, so the kill-switch must not take it with it. */}
           <FloatingSmartSearch searchEnabled={smartSearchEnabled} />
         </Providers>
+        </SmartSearchVisibilityProvider>
         <SpeedInsights />
       </body>
     </html>

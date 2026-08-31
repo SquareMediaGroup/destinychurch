@@ -4,19 +4,9 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState, useRef, useEffect, useCallback, lazy, Suspense } from "react";
 import { useCookieConsent } from "@/lib/cookieConsent";
-import { cooldownAnswer, parseAnswer } from "@/lib/smartSearch";
-import {
-  ProductResultCards,
-  WeatherResultCard,
-  DirectionsResultCard,
-  WebResultsCard,
-} from "@/components/smartSearch/ResultCards";
-import type {
-  ProductResult,
-  WeatherToolResult,
-  DirectionsToolResult,
-  SearchWebResult,
-} from "@/lib/smartSearch/tools";
+import { useSmartSearchChat } from "@/lib/useSmartSearchChat";
+import { useFloatingSmartSearchHidden } from "@/lib/smartSearchVisibility";
+import { SmartSearchThread, SparkleIcon } from "@/components/smartSearch/SmartSearchThread";
 
 // thinking-orbs and border-beam are decorative-only, so they're code-split out
 // of the main bundle rather than shipped to every visitor up front. Each
@@ -35,32 +25,6 @@ function OrbFallback() {
   return (
     <div className="h-5 w-5 animate-spin rounded-full border-2 border-white/20 border-t-destiny-orange" />
   );
-}
-
-// Hide the trailing OPTION:/PAGE:/CTA: lines while text is still streaming in, so
-// the visitor only ever sees clean prose. The full reply is parsed once complete.
-function visibleProse(raw: string): string {
-  return raw
-    .replace(/^\s*(?:[-*•]\s*|\d+[.)]\s*)?OPTION:.*$/gim, "")
-    .replace(/^\s*PAGE:.*$/gim, "")
-    .replace(/^\s*CTA:.*$/gim, "")
-    .replace(/^\s*[-=]{3,}\s*$/gm, "")
-    .trimEnd();
-}
-
-interface ToolCards {
-  products?: ProductResult[];
-  weather?: WeatherToolResult;
-  directions?: DirectionsToolResult;
-  web?: SearchWebResult;
-}
-
-interface ChatMessage extends ToolCards {
-  role: "user" | "assistant";
-  content: string;
-  options?: string[];    // assistant: tappable clarifying chips
-  page?: string | null;  // assistant: CTA target
-  ctaLabel?: string | null;
 }
 
 const PLACEHOLDER_PROMPTS = [
@@ -95,22 +59,6 @@ const SITE_PAGES = [
   { title: "Connect",      href: "/connect"        },
 ];
 
-function SparkleIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} fill="currentColor" viewBox="0 0 24 24">
-      <path d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" />
-    </svg>
-  );
-}
-
-const TOOL_STATUS_LABELS: Record<string, string> = {
-  find_products: "Searching the shop…",
-  get_weather: "Checking the forecast…",
-  get_directions: "Looking up directions…",
-  search_web: "Searching the web…",
-  extract_page: "Reading the page…",
-};
-
 export default function FloatingSmartSearch({
   searchEnabled = true,
 }: {
@@ -120,11 +68,10 @@ export default function FloatingSmartSearch({
 }) {
   const pathname = usePathname();
   const { decided } = useCookieConsent();
+  const hiddenByPage = useFloatingSmartSearchHidden();
+  const { messages, loading, toolStatus, sendMessage: sendChatMessage, reset } = useSmartSearchChat();
   const [expanded, setExpanded] = useState(false);
   const [input, setInput] = useState("");
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [toolStatus, setToolStatus] = useState<string | null>(null);
   const [focused, setFocused] = useState(false);
   const [placeholderIndex, setPlaceholderIndex] = useState(0);
   const [showFirstUse, setShowFirstUse] = useState(false);
@@ -153,9 +100,8 @@ export default function FloatingSmartSearch({
     setExpanded(false);
     setFocused(false);
     setInput("");
-    setMessages([]);
-    setLoading(false);
-  }, []);
+    reset();
+  }, [reset]);
 
   // First-use banner + initial placeholder, read once on mount.
   useEffect(() => {
@@ -242,153 +188,12 @@ export default function FloatingSmartSearch({
 
   // Send a message (typed reply or tapped chip) and append the AI's response.
   const sendMessage = useCallback(
-    async (text: string) => {
-      const trimmed = text.trim();
-      if (!trimmed || loading || trimmed.length > 300) return;
+    (text: string) => {
       if (showFirstUse) dismissFirstUse();
-
-      setLoading(true);
-
-      const history: ChatMessage[] = [...messages, { role: "user", content: trimmed }];
-      setMessages(history);
       setInput("");
-      setToolStatus(null);
-
-      try {
-        const res = await fetch("/api/chat", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            messages: history.map((m) => ({ role: m.role, content: m.content })),
-          }),
-        });
-
-        if (res.status === 429) {
-          setMessages((prev) => [...prev, { role: "assistant", content: cooldownAnswer().answer }]);
-          return;
-        }
-
-        if (!res.body) {
-          // No stream (shouldn't happen) — fall back to reading the whole body.
-          const text = await res.text();
-          const parsed = parseAnswer(text);
-          setMessages((prev) => [
-            ...prev,
-            { role: "assistant", content: parsed.answer, options: parsed.options, page: parsed.page, ctaLabel: parsed.ctaLabel },
-          ]);
-          return;
-        }
-
-        // The route streams newline-delimited JSON events: `text` tokens build the
-        // prose bubble (still parsed for OPTION/PAGE/CTA), `tool_result` events
-        // attach a card. We append the assistant message once there's something to
-        // show (visible prose or a card), then keep rewriting it until `done`.
-        const reader = res.body.getReader();
-        const decoder = new TextDecoder();
-        let buffer = "";
-        let raw = "";
-        const cards: ToolCards = {};
-        let appended = false;
-
-        const hasCards = () =>
-          Boolean(cards.products || cards.weather || cards.directions || cards.web);
-
-        // Build the live (streaming) assistant message from prose + cards so far.
-        const liveMessage = (): ChatMessage => ({
-          role: "assistant",
-          content: visibleProse(raw),
-          ...cards,
-        });
-
-        const sync = () => {
-          const hasContent = visibleProse(raw).length > 0 || hasCards();
-          if (!appended && !hasContent) return; // nothing to show yet
-          const msg = liveMessage();
-          if (!appended) {
-            appended = true;
-            setLoading(false);
-            setMessages((prev) => [...prev, msg]);
-          } else {
-            setMessages((prev) => prev.map((m, i) => (i === prev.length - 1 ? msg : m)));
-          }
-        };
-
-        const handleEvent = (evt: { type: string; value?: string; name?: string; data?: unknown }) => {
-          if (evt.type === "text" && typeof evt.value === "string") {
-            raw += evt.value;
-            sync();
-          } else if (evt.type === "tool_call" && evt.name) {
-            setToolStatus(TOOL_STATUS_LABELS[evt.name] ?? "Looking that up…");
-          } else if (evt.type === "tool_result") {
-            setToolStatus(null);
-            switch (evt.name) {
-              case "find_products":
-                cards.products = (evt.data as { products?: ProductResult[] }).products;
-                break;
-              case "get_weather":
-                cards.weather = evt.data as WeatherToolResult;
-                break;
-              case "get_directions":
-                cards.directions = evt.data as DirectionsToolResult;
-                break;
-              case "search_web":
-                cards.web = evt.data as SearchWebResult;
-                break;
-            }
-            sync();
-          }
-        };
-
-        for (;;) {
-          const { done, value } = await reader.read();
-          if (done) break;
-          buffer += decoder.decode(value, { stream: true });
-          let nl: number;
-          while ((nl = buffer.indexOf("\n")) !== -1) {
-            const line = buffer.slice(0, nl).trim();
-            buffer = buffer.slice(nl + 1);
-            if (!line) continue;
-            try {
-              handleEvent(JSON.parse(line));
-            } catch {
-              // ignore malformed lines
-            }
-          }
-        }
-
-        // Finalise: parse the completed prose for clarifying chips / CTA, and keep
-        // the collected cards. Fall back to the parsed answer only when there's no
-        // prose and no cards (so a tool-only reply doesn't show a "no results" line).
-        const parsed = parseAnswer(raw);
-        const proseFinal = visibleProse(raw);
-        const finalMsg: ChatMessage = {
-          role: "assistant",
-          content: proseFinal || (hasCards() ? "" : parsed.answer),
-          options: parsed.options,
-          page: parsed.page,
-          ctaLabel: parsed.ctaLabel,
-          ...cards,
-        };
-        if (!appended) {
-          setLoading(false);
-          setMessages((prev) => [...prev, finalMsg]);
-        } else {
-          setMessages((prev) => prev.map((m, i) => (i === prev.length - 1 ? finalMsg : m)));
-        }
-      } catch {
-        setMessages((prev) => [
-          ...prev,
-          {
-            role: "assistant",
-            content: "I can't reach the assistant right now — please try again in a moment.",
-          },
-        ]);
-      } finally {
-        setLoading(false);
-        setToolStatus(null);
-      }
+      sendChatMessage(text);
     },
-    [loading, messages, showFirstUse, dismissFirstUse]
+    [showFirstUse, dismissFirstUse, sendChatMessage]
   );
 
   function handleSubmit(e: React.FormEvent) {
@@ -410,6 +215,11 @@ export default function FloatingSmartSearch({
 
   // Nothing to fall back to without the AI half — no guided script anymore.
   if (!searchEnabled) return null;
+
+  // Some pages (e.g. the 404 page) embed their own Smart Search box and hide
+  // this floating pill for as long as they're mounted, so there's only ever
+  // one Smart Search entry point on screen at once.
+  if (hiddenByPage) return null;
 
   // Page-name quick matches — only offered before a conversation has started.
   const pageMatches = !hasMessages && input.trim().length >= 1
@@ -575,99 +385,15 @@ export default function FloatingSmartSearch({
                       <span className="text-[10px] text-white/25">AI can sometimes make mistakes.</span>
                     </div>
 
-                    <div className="space-y-3 px-4 py-3">
-                      {messages.map((msg, i) => (
-                        <div
-                          key={i}
-                          className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
-                        >
-                          {msg.role === "assistant" && (
-                            <div className="mr-2 mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-destiny-orange/15">
-                              <SparkleIcon className="h-3 w-3 text-destiny-orange" />
-                            </div>
-                          )}
-                          <div className="max-w-[85%] min-w-0">
-                            {msg.content && (
-                              <div
-                                className={`rounded-2xl px-4 py-2.5 text-sm leading-relaxed ${
-                                  msg.role === "user"
-                                    ? "rounded-tr-sm bg-destiny-orange text-white"
-                                    : "rounded-tl-sm bg-white/10 text-white/85"
-                                }`}
-                              >
-                                {msg.content}
-                              </div>
-                            )}
-
-                            {/* Tool result cards (products, weather, directions, web) */}
-                            {msg.role === "assistant" && (
-                              <>
-                                {msg.products && msg.products.length > 0 && (
-                                  <ProductResultCards products={msg.products} />
-                                )}
-                                {msg.weather && <WeatherResultCard data={msg.weather} />}
-                                {msg.directions && <DirectionsResultCard data={msg.directions} />}
-                                {msg.web && <WebResultsCard data={msg.web} />}
-                              </>
-                            )}
-
-                            {/* Options + CTA on the latest assistant message only */}
-                            {msg.role === "assistant" && i === messages.length - 1 && (
-                              <>
-                                {msg.options && msg.options.length > 0 && (
-                                  <div className="mt-2 flex flex-wrap gap-2">
-                                    {msg.options.map((option) => (
-                                      <button
-                                        key={option}
-                                        type="button"
-                                        onClick={() => sendMessage(option)}
-                                        disabled={loading}
-                                        className="rounded-full border border-white/15 bg-white/5 px-3.5 py-2 text-xs font-medium text-white/80 transition hover:border-destiny-orange hover:bg-destiny-orange/15 hover:text-white disabled:opacity-40"
-                                      >
-                                        {option}
-                                      </button>
-                                    ))}
-                                  </div>
-                                )}
-
-                                {!msg.options?.length && msg.page && msg.ctaLabel && (
-                                  <Link
-                                    href={msg.page}
-                                    onClick={collapse}
-                                    className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-destiny-orange px-4 py-2 text-xs font-bold text-white transition hover:brightness-110"
-                                  >
-                                    {msg.ctaLabel}
-                                    <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                                      <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
-                                    </svg>
-                                  </Link>
-                                )}
-                              </>
-                            )}
-                          </div>
-                        </div>
-                      ))}
-
-                      {/* Typing indicator. Also shown when a tool is mid-flight
-                          after the first card has landed (e.g. reading a page
-                          found by a search), where `loading` is already false. */}
-                      {(loading || toolStatus) && (
-                        <div className="flex justify-start">
-                          <div className="mr-2 mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-destiny-orange/15">
-                            <SparkleIcon className="h-3 w-3 text-destiny-orange" />
-                          </div>
-                          <div className="rounded-2xl rounded-tl-sm bg-white/10 px-4 py-3">
-                            {toolStatus ? (
-                              <span className="text-xs text-white/60">{toolStatus}</span>
-                            ) : (
-                              <Suspense fallback={<OrbFallback />}>
-                                <ThinkingOrb state="searching" size={20} />
-                              </Suspense>
-                            )}
-                          </div>
-                        </div>
-                      )}
-                      <div ref={bottomRef} />
+                    <div className="px-4 py-3">
+                      <SmartSearchThread
+                        messages={messages}
+                        loading={loading}
+                        toolStatus={toolStatus}
+                        onOptionClick={sendMessage}
+                        onCtaClick={collapse}
+                        bottomRef={bottomRef}
+                      />
                     </div>
                   </div>
                 )}

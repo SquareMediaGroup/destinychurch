@@ -56,6 +56,9 @@ export default function MediaImportPage() {
   const [newIsPublic, setNewIsPublic] = useState(true);
 
   const [importing, setImporting] = useState(false);
+  const [importProgress, setImportProgress] = useState<{ done: number; total: number } | null>(
+    null,
+  );
   const [error, setError] = useState("");
   const [result, setResult] = useState<{ imported: number; skipped: number } | null>(null);
 
@@ -132,47 +135,63 @@ export default function MediaImportPage() {
     });
   }
 
+  // One request per asset rather than one request for the whole selection —
+  // the server already accepts a batch, but importing one at a time is what
+  // lets the progress bar reflect real completed/total rather than a fake
+  // spinner for however long the batch takes.
   async function handleImport() {
     if (!selectedBoard || selected.size === 0) return;
+    if (targetMode === "new" && (!newTitle.trim() || !newSlug.trim())) {
+      setError("Title and web address are required for a new board.");
+      return;
+    }
+    if (targetMode === "existing" && !existingBoardId) {
+      setError("Choose a board to import into.");
+      return;
+    }
+
     setImporting(true);
     setError("");
     setResult(null);
+    const tokens = [...selected];
+    setImportProgress({ done: 0, total: tokens.length });
 
-    const body: Record<string, unknown> = {
-      playbookBoardToken: selectedBoard.token,
-      assetTokens: [...selected],
-    };
-    if (targetMode === "new") {
-      if (!newTitle.trim() || !newSlug.trim()) {
-        setError("Title and web address are required for a new board.");
-        setImporting(false);
-        return;
+    let boardId: string | null = targetMode === "existing" ? existingBoardId : null;
+    let imported = 0;
+    let skipped = 0;
+
+    for (let i = 0; i < tokens.length; i++) {
+      const body: Record<string, unknown> = {
+        playbookBoardToken: selectedBoard.token,
+        assetTokens: [tokens[i]],
+      };
+      if (boardId) {
+        body.existingBoardId = boardId;
+      } else {
+        body.newBoard = { title: newTitle, slug: newSlug, is_public: newIsPublic };
       }
-      body.newBoard = { title: newTitle, slug: newSlug, is_public: newIsPublic };
-    } else {
-      if (!existingBoardId) {
-        setError("Choose a board to import into.");
-        setImporting(false);
-        return;
+
+      const res = await fetch("/api/admin/media/import", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error ?? "Import failed");
+        break;
       }
-      body.existingBoardId = existingBoardId;
+      boardId = data.boardId ?? boardId;
+      imported += data.imported;
+      skipped += data.skipped;
+      setImportProgress({ done: i + 1, total: tokens.length });
     }
 
-    const res = await fetch("/api/admin/media/import", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-    });
-    const data = await res.json();
-    if (!res.ok) {
-      setError(data.error ?? "Import failed");
-      setImporting(false);
-      return;
-    }
-    setResult(data);
+    setResult({ imported, skipped });
     setSelected(new Set());
     if (selectedBoard) loadAssets(selectedBoard.token, 1);
     setImporting(false);
+    setImportProgress(null);
   }
 
   return (
@@ -385,8 +404,27 @@ export default function MediaImportPage() {
                   </select>
                 )}
 
+                {importProgress && (
+                  <div className="mt-5">
+                    <div className="mb-1.5 flex justify-between text-xs font-medium text-destiny-grey/50 dark:text-white/50">
+                      <span>
+                        Importing {importProgress.done} of {importProgress.total}…
+                      </span>
+                      <span>{Math.round((importProgress.done / importProgress.total) * 100)}%</span>
+                    </div>
+                    <div className="h-1.5 w-full overflow-hidden rounded-full bg-black/5 dark:bg-white/10">
+                      <div
+                        className="h-full rounded-full bg-destiny-orange transition-[width] duration-200"
+                        style={{
+                          width: `${(importProgress.done / importProgress.total) * 100}%`,
+                        }}
+                      />
+                    </div>
+                  </div>
+                )}
+
                 <div className="mt-5 flex justify-end gap-3">
-                  <button className={ghostBtn} onClick={() => router.push("/admin/media/boards")}>
+                  <button className={ghostBtn} onClick={() => router.push("/admin/media/boards")} disabled={importing}>
                     Cancel
                   </button>
                   <button

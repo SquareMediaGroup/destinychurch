@@ -154,5 +154,5 @@ export async function POST(request: Request) {
     metadata: { playbookBoardToken, requested: assetTokens.length, imported, failed, skipped: skip.size },
   });
 
-  return NextResponse.json({ imported, failed, skipped: skip.size });
+  return NextResponse.json({ imported, failed, skipped: skip.size, boardId });
 }

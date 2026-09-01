@@ -1801,18 +1801,47 @@ called from anywhere), and both the photo-delete and board-delete routes check `
 before calling `deleteAsset()` — an imported photo's row is removed from Supabase, but its
 Playbook asset is left completely untouched.
 
-**Abuse mitigation on the anonymous upload route** (`app/api/media/upload/route.ts`, outside
-`middleware.ts`'s matcher entirely — no auth wall at all): a MIME/size allowlist (images ≤10MB;
-video ≤90MB, kept under Vercel Functions' 100MB request-body cap with headroom for multipart
-overhead), a honeypot form field, a DB-backed per-IP-hash rate limit (20 uploads/hour, no new
-table or infra), and — for images only — re-encoding through `sharp` before the file ever
-reaches Playbook, which strips EXIF/XMP/ICC metadata (phone photos routinely carry GPS
+**Two different upload paths, split by media type, because of Vercel's 100MB request-body
+cap.** Images go through `app/api/media/upload/route.ts` (outside `middleware.ts`'s matcher
+entirely — no auth wall at all) as a normal server-proxied `multipart/form-data` POST: a MIME/size
+allowlist (`jpeg`/`png`/`webp`, ≤10MB), a honeypot form field, a DB-backed per-IP-hash rate limit
+(20 uploads/hour, no new table or infra), then re-encoding through `sharp` before the file ever
+reaches Playbook — this strips EXIF/XMP/ICC metadata (phone photos routinely carry GPS
 coordinates), auto-rotates first via `.rotate()` so stripping that same orientation tag doesn't
 leave portrait photos sideways, and doubles as a content check (a spoofed `image/*` MIME type on
-a non-image file throws here instead of being stored). Video passes through as raw bytes — sharp
-is image-only, so there's no equivalent metadata-strip step for video; a phone video's own
-metadata (e.g. QuickTime GPS atoms) is a known, accepted gap rather than something this route
-re-encodes away.
+a non-image file throws here instead of being stored).
+
+Video skips this server entirely for the bytes themselves, because a clip large enough to matter
+would exceed Vercel Functions' 100MB request-body cap regardless of anything this app does — that
+cap applies to any traffic that passes through a Function at all, not something a bigger `maxDuration`
+or a streaming body can work around. Instead it's a **browser-direct upload**, split across three
+calls (`lib/directUpload.ts` on the client; `app/api/media/upload/{prepare,complete}/route.ts` on
+the server; `prepareUpload()`/`completeUpload()` in `lib/playbook.server.ts`, both extracted from
+what the image route's `uploadAsset()` still calls internally after the split):
+
+1. `POST /api/media/upload/prepare` — same validation as the image route (honeypot, board/
+   `allow_uploads` check, `uploader_name`, per-IP rate limit) plus a MIME/size allowlist of its own
+   (`mp4`/`quicktime`/`webm`, ≤2GB — generous since nothing here is bound by the image route's
+   10MB-over-a-Function constraint, but still capped since this is still an anonymous,
+   unauthenticated endpoint). Calls Playbook's `upload_prepare` and hands the browser back
+   whatever it returned — a signed GCS resumable-session URL, or a set of pre-signed Backblaze
+   part URLs — without touching the file's bytes at all.
+2. The browser PUTs the file straight to that destination (`lib/directUpload.ts`'s
+   `putFileToStorage()`), talking directly to Google/Backblaze's storage rather than any Vercel
+   Function. Uses `XMLHttpRequest` rather than `fetch` specifically for `xhr.upload.onprogress` —
+   `fetch` has no upload-progress event — which is what drives `UploadModal`'s "Uploading… NN%"
+   label. Handles all three storage-provider shapes Playbook can return (GCS resumable, Backblaze
+   single-part, Backblaze multipart), mirroring the same branching `uploadAsset()` does server-side
+   for images.
+3. `POST /api/media/upload/complete` — re-validates the board and rate limit (time may have passed,
+   or the visitor's hourly cap may have been hit by another upload while this one was in flight),
+   calls Playbook's `upload_complete` with the `signed_gcs_id`/`multipart_upload_id` from step 1,
+   and inserts the `media_photos` row exactly like the image route does — `status = 'pending'`,
+   no `width`/`height` (video dimensions aren't extracted).
+
+Video passes through as raw bytes with no equivalent metadata-strip step — `sharp` is image-only,
+so a phone video's own metadata (e.g. QuickTime GPS atoms) is a known, accepted gap rather than
+something either route re-encodes away.
 
 **Password gate** (`lib/mediaAccess.ts`) — same scrypt-hash + HMAC-signed-cookie approach as
 `lib/trainingAccess.ts` (kept as a separate file since the cookie is scoped per-board-id across
@@ -3549,14 +3578,26 @@ GET  /api/media/boards/[ref]              // by slug — 404 if missing OR priva
 GET  /api/media/boards/by-token/[token]   // by share_token — works for public or private; same 404 whether
                                            //   the token is wrong or the board is gone
 GET  /api/media/boards/[ref]/photos       // approved photos only; ref is a board id or a public slug
-POST /api/media/upload                    // anonymous upload → status='pending'
+POST /api/media/upload                    // anonymous IMAGE upload → status='pending'
 // multipart/form-data: file, board_token, uploader_name, website (honeypot — filling it
 // returns the normal success response but nothing is saved)
-// Validates: honeypot empty, board exists + allow_uploads, MIME in jpeg/png/webp (<=10MB) or
-// mp4/quicktime/webm (<=90MB), name non-empty <=100 chars, <=20 uploads/hour per
-// sha256(ip + MEDIA_IP_SALT) — see Database Schema §25. No recordAudit() call: there's no
-// actor to attribute it to outside the admin middleware, and tests/unit/audit-coverage.spec.ts
-// only walks app/api/admin/**.
+// Validates: honeypot empty, board exists + allow_uploads, MIME in jpeg/png/webp (<=10MB),
+// name non-empty <=100 chars, <=20 uploads/hour per sha256(ip + MEDIA_IP_SALT) — see
+// Database Schema §25. No recordAudit() call: there's no actor to attribute it to outside
+// the admin middleware, and tests/unit/audit-coverage.spec.ts only walks app/api/admin/**.
+
+POST /api/media/upload/prepare            // step 1 of the anonymous VIDEO upload
+// { board_token, uploader_name, website, file_name, media_type, size } (JSON, no file bytes)
+// Same validation as above (honeypot, board/allow_uploads, name, rate limit) plus its own
+// MIME/size allowlist (mp4/quicktime/webm, <=2GB). Calls Playbook's upload_prepare and returns
+// the signed upload destination(s) verbatim — the browser PUTs the file straight there next
+// (lib/directUpload.ts), never through this or any other Vercel Function. This split exists
+// solely because a large clip would exceed Vercel Functions' 100MB request-body cap.
+
+POST /api/media/upload/complete           // step 2 — called once the browser's direct PUT finishes
+// { board_token, uploader_name, file_name, media_type, size, signed_gcs_id,
+//   multipart_upload_id } — re-validates board/allow_uploads/rate-limit, calls Playbook's
+// upload_complete, inserts the media_photos row (status='pending', no width/height).
 
 POST /api/media/unlock                    // { boardId, password } -> sets the mb_<boardId> unlock
 // cookie on success. In-memory per-IP throttle (10 attempts/minute), same shape as
@@ -4875,11 +4916,18 @@ API surface is designed around.
   (Playbook's own similar-photos clustering — has no displayable image or permalink of its own;
   `is_imported`-flagging callers must check this and refuse to import it) and its current
   `permalink`, if any.
-- `uploadAsset({ buffer, title, mediaType, boardToken })` — the two-step upload flow
-  (`upload_prepare` → PUT bytes → `upload_complete`), branching on whichever of GCS-resumable,
-  Backblaze single-part, or Backblaze multipart `upload_prepare` says the org's storage provider
-  requires. Works for video exactly the same as images — Playbook's upload endpoints don't care
-  what `mediaType` is.
+- `uploadAsset({ buffer, title, mediaType, boardToken })` — the server-proxied upload flow used by
+  the image route (`app/api/media/upload`): calls `prepareUpload()`, PUTs `buffer` to whatever
+  destination it returns (branching on whichever of GCS-resumable, Backblaze single-part, or
+  Backblaze multipart `upload_prepare` says the org's storage provider requires), then
+  `completeUpload()`. Images only in practice — video's bytes never reach this server at all (see
+  below), so nothing calls this with a video buffer, though nothing in Playbook's API would stop it.
+- `prepareUpload({ title, mediaType, size, boardToken })` / `completeUpload({ signedGcsId,
+  multipartUploadId, title, mediaType, size, boardToken })` — the two halves of `upload_prepare` →
+  `upload_complete`, extracted out of `uploadAsset()` as standalone exports so
+  `app/api/media/upload/{prepare,complete}/route.ts` can call them directly without going through
+  the PUT step in between — that step happens in the browser instead for video (see
+  `lib/directUpload.ts`), since only the browser can talk straight to Google/Backblaze's storage.
 - `getTemporaryDisplayUrl(assetToken)` — a signed URL, valid ~24h. Used only for the admin
   moderation queue's thumbnails, fetched fresh per request — never stored.
 - `ensurePermalink(assetToken)` — a permanent, unsigned CDN URL. Checks the asset for an existing
@@ -4903,6 +4951,35 @@ Auth is `PLAYBOOK_TOKEN` (Bearer, needs the `write` scope for uploads) and `PLAY
 `"destinytees"` workspace exists on the same token with only 10 permalinks total, which is why
 the slug is a fixed default rather than resolved by picking "the first organisation" at request
 time).
+
+### `lib/mediaUpload.server.ts`
+
+`server-only`. Validation shared by all three public upload routes (`app/api/media/upload` and
+its `/prepare` and `/complete` siblings) so the honeypot/board/rate-limit checks live in one place
+rather than being copy-pasted three times.
+
+- `resolveUploadBoard(boardToken)` — looks up `media_boards` by `share_token`, checks
+  `allow_uploads`, and lazily provisions `playbook_board_token` via `getOrCreateBoard()` if a board
+  somehow doesn't have one yet. Returns `{ board }`, `{ error }`, or `null` (not found) — every
+  caller handles all three the same way.
+- `isRateLimited(ipHash)` — counts `media_photos` rows for that IP hash in the last hour against
+  `MAX_UPLOADS_PER_HOUR` (20).
+- `clientIp(request)` / `hashIp(ip)` — `x-forwarded-for`/`x-real-ip` extraction and
+  `sha256(ip + MEDIA_IP_SALT)`, so a raw IP is never what gets compared or stored.
+- `sanitizeUploaderName(raw)` / `isHoneypotTripped(raw)` — the same name-cleaning and
+  honeypot-check logic every route needs.
+
+### `lib/directUpload.ts`
+
+Client-side (no `server-only`). The browser half of the video direct-upload flow —
+`putFileToStorage(file, prepared, onProgress?)` sends a `File`'s bytes straight to whatever
+`POST /api/media/upload/prepare` said to use, mirroring the same three storage-provider shapes
+`uploadAsset()` handles server-side for images: GCS resumable (an empty POST with
+`x-goog-resumable: start` opens a session, its `Location` header is where the bytes actually go),
+Backblaze multipart (the file is sliced into `partSize`-sized chunks, one PUT per pre-signed part
+URL), and Backblaze single-part (one PUT to `uploadUrl`). Uses `XMLHttpRequest` rather than `fetch`
+specifically for `xhr.upload.onprogress` — `fetch` has no upload-progress event — which is what
+drives `UploadModal`'s "Uploading… NN%" button label during a large video's transfer.
 
 ### `lib/jobs.ts` & `lib/hr.ts`
 

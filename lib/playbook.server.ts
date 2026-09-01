@@ -124,7 +124,7 @@ export async function getAsset(assetToken: string): Promise<PlaybookAsset> {
 
 /* ── Upload (two-step: prepare, PUT bytes, complete) ─────────────────────────── */
 
-interface UploadPrepareResponse {
+export interface UploadPrepareResponse {
   storage_provider: "gcs" | "backblaze";
   upload_url?: string;
   signed_gcs_id: string;
@@ -206,10 +206,75 @@ async function putBytes(url: string, buffer: Buffer, headers: Record<string, str
 }
 
 /**
+ * Step 1 of the two-step upload flow, exposed on its own for the browser's
+ * direct-to-storage video path (see app/api/media/upload/prepare/route.ts) —
+ * `uploadAsset` below still uses it internally for the server-proxied image
+ * path, where the caller already has the bytes in hand and doesn't need the
+ * prepare/PUT split exposed.
+ */
+export async function prepareUpload({
+  title,
+  mediaType,
+  size,
+  boardToken,
+}: {
+  title: string;
+  mediaType: string;
+  size: number;
+  boardToken: string;
+}): Promise<UploadPrepareResponse> {
+  const res = (await pbFetch("/assets/upload_prepare", {
+    method: "POST",
+    body: JSON.stringify({
+      asset: { title, media_type: mediaType, size, collection_token: boardToken },
+    }),
+  })) as { data: UploadPrepareResponse };
+  return res.data;
+}
+
+/** Step 3: materialize the asset record once the bytes have been PUT to storage. */
+export async function completeUpload({
+  signedGcsId,
+  multipartUploadId,
+  title,
+  mediaType,
+  size,
+  boardToken,
+}: {
+  signedGcsId: string;
+  multipartUploadId?: string;
+  title: string;
+  mediaType: string;
+  size: number;
+  boardToken: string;
+}): Promise<PlaybookAsset> {
+  const res = (await pbFetch("/assets/upload_complete", {
+    method: "POST",
+    body: JSON.stringify({
+      asset: {
+        signed_gcs_id: signedGcsId,
+        ...(multipartUploadId ? { multipart_upload_id: multipartUploadId } : {}),
+        title,
+        media_type: mediaType,
+        size,
+        collection_token: boardToken,
+      },
+    }),
+  })) as { data: PlaybookAsset };
+  return res.data;
+}
+
+/**
  * Upload one file's bytes and return the resulting asset. Handles all three
  * shapes `upload_prepare` can hand back — GCS resumable, Backblaze single-part,
  * Backblaze multipart — since which one applies depends on the org's storage
  * provider and file size, not on anything this caller controls.
+ *
+ * Used for the server-proxied image path only (small enough to fit comfortably
+ * under Vercel's request-body cap). Video goes through the browser-direct
+ * path instead — see prepareUpload/completeUpload above and
+ * app/api/media/upload/{prepare,complete}/route.ts — specifically so a large
+ * clip's bytes never have to pass through our own server at all.
  */
 export async function uploadAsset({
   buffer,
@@ -222,13 +287,7 @@ export async function uploadAsset({
   mediaType: string;
   boardToken: string;
 }): Promise<PlaybookAsset> {
-  const prepare = (await pbFetch("/assets/upload_prepare", {
-    method: "POST",
-    body: JSON.stringify({
-      asset: { title, media_type: mediaType, size: buffer.length, collection_token: boardToken },
-    }),
-  })) as { data: UploadPrepareResponse };
-  const p = prepare.data;
+  const p = await prepareUpload({ title, mediaType, size: buffer.length, boardToken });
 
   if (p.storage_provider === "gcs") {
     // Resumable protocol: an empty POST opens a session (Location header),
@@ -272,21 +331,14 @@ export async function uploadAsset({
     });
   }
 
-  const complete = (await pbFetch("/assets/upload_complete", {
-    method: "POST",
-    body: JSON.stringify({
-      asset: {
-        signed_gcs_id: p.signed_gcs_id,
-        ...(p.multipart_upload_id ? { multipart_upload_id: p.multipart_upload_id } : {}),
-        title,
-        media_type: mediaType,
-        size: buffer.length,
-        collection_token: boardToken,
-      },
-    }),
-  })) as { data: PlaybookAsset };
-
-  return complete.data;
+  return completeUpload({
+    signedGcsId: p.signed_gcs_id,
+    multipartUploadId: p.multipart_upload_id,
+    title,
+    mediaType,
+    size: buffer.length,
+    boardToken,
+  });
 }
 
 /** A short-lived (~24h) URL — fine for the admin queue, never for storage. */

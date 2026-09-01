@@ -1,13 +1,29 @@
-import { createHash } from "node:crypto";
 import { NextResponse } from "next/server";
 import sharp from "sharp";
 import { createServiceClient } from "@/utils/supabase/service";
-import { deleteAsset, getOrCreateBoard, uploadAsset } from "@/lib/playbook.server";
+import { deleteAsset, uploadAsset } from "@/lib/playbook.server";
+import {
+  clientIp,
+  hashIp,
+  isHoneypotTripped,
+  isRateLimited,
+  resolveUploadBoard,
+  sanitizeUploaderName,
+} from "@/lib/mediaUpload.server";
 
 // Anonymous public upload — outside middleware's matcher entirely (see
 // middleware.ts's config.matcher), so there is no auth wall here at all.
 // Everything a signed-in admin route gets for free (a known actor, RLS,
 // role gating) has to be done by hand in this one handler instead.
+//
+// Images only. Video goes through app/api/media/upload/{prepare,complete}
+// instead — a browser-direct upload to Playbook's storage, so a large clip's
+// bytes never have to pass through this (or any) Vercel Function at all,
+// unlike this route, which receives the whole file in the request body and
+// so is bound by Vercel's 100MB body cap regardless of anything this app
+// does. Images stay small enough (10MB) that the simpler server-proxied
+// path — needed anyway so sharp can strip EXIF/GPS metadata server-side —
+// is the right one for them.
 //
 // No recordAudit() call: audit entries are attributed to an admin actor via
 // the x-dc-actor-* headers middleware sets, and this route never runs behind
@@ -17,30 +33,16 @@ import { deleteAsset, getOrCreateBoard, uploadAsset } from "@/lib/playbook.serve
 // "audit-exempt" comment that rule doesn't actually apply to.
 
 export const runtime = "nodejs";
-// Raised from 30s for video: a large clip's PUT-to-Playbook round trip (on
-// top of receiving the request body itself) needs real headroom.
-export const maxDuration = 120;
+export const maxDuration = 30;
 
 const MAX_IMAGE_BYTES = 10 * 1024 * 1024; // 10MB
-// 90MB, not 100MB: Vercel Functions cap request bodies at 100MB, and that
-// ceiling has to cover the multipart form overhead around the file too, not
-// just the file itself.
-const MAX_VIDEO_BYTES = 90 * 1024 * 1024;
 const ALLOWED_IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
-const ALLOWED_VIDEO_TYPES = new Set(["video/mp4", "video/quicktime", "video/webm"]);
-const MAX_UPLOADS_PER_HOUR = 20;
-
-function hashIp(ip: string): string {
-  return createHash("sha256").update(ip + (process.env.MEDIA_IP_SALT ?? "")).digest("hex");
-}
 
 export async function POST(request: Request) {
   const form = await request.formData();
 
-  // Honeypot: real visitors never fill this in. A bot that does gets told it
-  // worked, so it has no signal to adapt to, but nothing is actually saved.
   const honeypot = form.get("website");
-  if (typeof honeypot === "string" && honeypot.trim().length > 0) {
+  if (isHoneypotTripped(honeypot)) {
     return NextResponse.json({
       status: "pending",
       message: "Thanks! It'll appear once approved.",
@@ -49,7 +51,7 @@ export async function POST(request: Request) {
 
   const file = form.get("file");
   const boardToken = form.get("board_token");
-  const uploaderNameRaw = form.get("uploader_name");
+  const uploaderName = sanitizeUploaderName(form.get("uploader_name"));
 
   if (!file || !(file instanceof File)) {
     return NextResponse.json({ error: "No file provided" }, { status: 400 });
@@ -57,123 +59,58 @@ export async function POST(request: Request) {
   if (typeof boardToken !== "string" || !boardToken) {
     return NextResponse.json({ error: "Missing board" }, { status: 400 });
   }
-  if (typeof uploaderNameRaw !== "string" || uploaderNameRaw.trim().length === 0) {
+  if (!uploaderName) {
     return NextResponse.json({ error: "Your name is required" }, { status: 400 });
   }
-
-  const uploaderName = uploaderNameRaw
-    .replace(new RegExp("[\x00-\x1f\x7f]", "g"), "")
-    .trim()
-    .slice(0, 100);
-
-  const isVideo = ALLOWED_VIDEO_TYPES.has(file.type);
-  const isImage = ALLOWED_IMAGE_TYPES.has(file.type);
-  if (!isVideo && !isImage) {
+  if (!ALLOWED_IMAGE_TYPES.has(file.type)) {
     return NextResponse.json({ error: "Unsupported file type" }, { status: 400 });
   }
-  const maxBytes = isVideo ? MAX_VIDEO_BYTES : MAX_IMAGE_BYTES;
-  if (file.size > maxBytes) {
-    return NextResponse.json(
-      { error: `File exceeds ${Math.round(maxBytes / (1024 * 1024))}MB limit` },
-      { status: 413 },
-    );
+  if (file.size > MAX_IMAGE_BYTES) {
+    return NextResponse.json({ error: "File exceeds 10MB limit" }, { status: 413 });
   }
 
-  const supabase = createServiceClient();
+  const resolved = await resolveUploadBoard(boardToken);
+  if (!resolved) return NextResponse.json({ error: "Board not found" }, { status: 404 });
+  if ("error" in resolved) return NextResponse.json({ error: resolved.error }, { status: 403 });
+  const { board } = resolved;
 
-  const { data: board } = await supabase
-    .from("media_boards")
-    .select("id, title, allow_uploads, playbook_board_token")
-    .eq("share_token", boardToken)
-    .maybeSingle();
-
-  if (!board) return NextResponse.json({ error: "Board not found" }, { status: 404 });
-  if (!board.allow_uploads) {
-    return NextResponse.json({ error: "This board isn't accepting uploads" }, { status: 403 });
-  }
-
-  // Lazily provisioned rather than at board-creation time only, so a board
-  // created before this column existed still gets a Playbook board on its
-  // first upload instead of erroring forever.
-  let playbookBoardToken = board.playbook_board_token;
-  if (!playbookBoardToken) {
-    playbookBoardToken = await getOrCreateBoard(board.title);
-    await supabase
-      .from("media_boards")
-      .update({ playbook_board_token: playbookBoardToken })
-      .eq("id", board.id);
-  }
-
-  const ip =
-    request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
-    request.headers.get("x-real-ip") ??
-    "unknown";
-  const ipHash = hashIp(ip);
-
-  const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
-  const { count } = await supabase
-    .from("media_photos")
-    .select("id", { count: "exact", head: true })
-    .eq("uploader_ip_hash", ipHash)
-    .gte("created_at", oneHourAgo);
-
-  if ((count ?? 0) >= MAX_UPLOADS_PER_HOUR) {
+  const ipHash = hashIp(clientIp(request));
+  if (await isRateLimited(ipHash)) {
     return NextResponse.json(
       { error: "Too many uploads — please try again later" },
       { status: 429 },
     );
   }
 
+  // Re-encode through sharp rather than storing the upload as-is. Two reasons:
+  // it strips EXIF/XMP/ICC metadata (phone photos routinely carry GPS coordinates —
+  // a public upload leaking exactly where the uploader lives is a real privacy risk,
+  // not a theoretical one), and it doubles as a content check: a file with a spoofed
+  // image/* MIME type that isn't actually a decodable image throws here instead of
+  // being stored. `.rotate()` with no args applies the EXIF orientation as a real
+  // pixel transform first — otherwise stripping that same tag would leave portrait
+  // phone photos rotated sideways.
   let processed: Buffer;
-  let width: number | null = null;
-  let height: number | null = null;
-
-  if (isImage) {
-    // Re-encode through sharp rather than storing the upload as-is. Two reasons:
-    // it strips EXIF/XMP/ICC metadata (phone photos routinely carry GPS coordinates —
-    // a public upload leaking exactly where the uploader lives is a real privacy risk,
-    // not a theoretical one), and it doubles as a content check: a file with a spoofed
-    // image/* MIME type that isn't actually a decodable image throws here instead of
-    // being stored. `.rotate()` with no args applies the EXIF orientation as a real
-    // pixel transform first — otherwise stripping that same tag would leave portrait
-    // phone photos rotated sideways.
-    try {
-      const pixels = sharp(Buffer.from(await file.arrayBuffer())).rotate();
-      const encoded =
-        file.type === "image/png"
-          ? pixels.png()
-          : file.type === "image/webp"
-            ? pixels.webp({ quality: 90 })
-            : pixels.jpeg({ quality: 90 });
-      const { data, info } = await encoded.toBuffer({ resolveWithObject: true });
-      processed = data;
-      width = info.width;
-      height = info.height;
-    } catch {
-      return NextResponse.json({ error: "That file isn't a valid image" }, { status: 400 });
-    }
-  } else {
-    // Videos pass through as-is: sharp is image-only, so there's no equivalent
-    // re-encode/metadata-strip/dimension-read step here. A phone video's own
-    // metadata (e.g. QuickTime GPS atoms) is a known, accepted gap — stripping
-    // it would mean transcoding every upload, which is a much heavier
-    // operation than this route is set up to do. Width/height are left null;
-    // Playbook's own asset record has them if they're ever needed later.
-    processed = Buffer.from(await file.arrayBuffer());
+  let width: number;
+  let height: number;
+  try {
+    const pixels = sharp(Buffer.from(await file.arrayBuffer())).rotate();
+    const encoded =
+      file.type === "image/png"
+        ? pixels.png()
+        : file.type === "image/webp"
+          ? pixels.webp({ quality: 90 })
+          : pixels.jpeg({ quality: 90 });
+    const { data, info } = await encoded.toBuffer({ resolveWithObject: true });
+    processed = data;
+    width = info.width;
+    height = info.height;
+  } catch {
+    return NextResponse.json({ error: "That file isn't a valid image" }, { status: 400 });
   }
 
-  const extFallback = isVideo
-    ? file.type === "video/mp4"
-      ? "mp4"
-      : file.type === "video/webm"
-        ? "webm"
-        : "mov"
-    : file.type === "image/png"
-      ? "png"
-      : file.type === "image/webp"
-        ? "webp"
-        : "jpg";
-  const fileName = file.name.slice(0, 255) || `${isVideo ? "video" : "photo"}.${extFallback}`;
+  const extFallback = file.type === "image/png" ? "png" : file.type === "image/webp" ? "webp" : "jpg";
+  const fileName = file.name.slice(0, 255) || `photo.${extFallback}`;
 
   let asset;
   try {
@@ -181,14 +118,14 @@ export async function POST(request: Request) {
       buffer: processed,
       title: fileName,
       mediaType: file.type,
-      boardToken: playbookBoardToken,
+      boardToken: board.playbookBoardToken,
     });
   } catch (err) {
     console.error("⚠️ Playbook upload failed:", err);
     return NextResponse.json({ error: "Upload failed — please try again" }, { status: 502 });
   }
 
-  const { error: insertError } = await supabase.from("media_photos").insert({
+  const { error: insertError } = await createServiceClient().from("media_photos").insert({
     board_id: board.id,
     file_name: fileName,
     mime_type: file.type,

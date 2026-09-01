@@ -2,6 +2,7 @@
 
 import { lazy, Suspense, useState } from "react";
 import Button from "@/components/ui/Button";
+import { putFileToStorage } from "@/lib/directUpload";
 
 // thinking-orbs and border-beam are decorative-only, so they're code-split out
 // of the main bundle rather than shipped to every visitor who loads /media.
@@ -23,7 +24,11 @@ function OrbFallback() {
 }
 
 const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
-const MAX_VIDEO_BYTES = 90 * 1024 * 1024;
+// Video doesn't go through our own server (see lib/directUpload.ts), so it
+// isn't bound by Vercel's request-body cap the way images are — this is
+// just a sane upper bound for an anonymous, unauthenticated endpoint. Must
+// match app/api/media/upload/prepare/route.ts's own limit.
+const MAX_VIDEO_BYTES = 2 * 1024 * 1024 * 1024; // 2GB
 const ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp"];
 const ALLOWED_VIDEO_TYPES = ["video/mp4", "video/quicktime", "video/webm"];
 const ALLOWED = [...ALLOWED_IMAGE_TYPES, ...ALLOWED_VIDEO_TYPES];
@@ -39,6 +44,7 @@ export default function UploadModal({
   const [file, setFile] = useState<File | null>(null);
   const [website, setWebsite] = useState(""); // honeypot — real visitors never see or fill this
   const [isUploading, setIsUploading] = useState(false);
+  const [progress, setProgress] = useState<number | null>(null);
   const [error, setError] = useState("");
   const [done, setDone] = useState(false);
 
@@ -57,13 +63,70 @@ export default function UploadModal({
     const isVideo = ALLOWED_VIDEO_TYPES.includes(selected.type);
     const maxBytes = isVideo ? MAX_VIDEO_BYTES : MAX_IMAGE_BYTES;
     if (selected.size > maxBytes) {
-      setError(
-        `That file is over ${Math.round(maxBytes / (1024 * 1024))}MB — try a smaller one.`,
-      );
+      const limit =
+        maxBytes >= 1024 * 1024 * 1024
+          ? `${Math.round(maxBytes / (1024 * 1024 * 1024))}GB`
+          : `${Math.round(maxBytes / (1024 * 1024))}MB`;
+      setError(`That file is over ${limit} — try a smaller one.`);
       setFile(null);
       return;
     }
     setFile(selected);
+  }
+
+  async function submitImage(selected: File) {
+    const form = new FormData();
+    form.set("file", selected);
+    form.set("board_token", boardToken);
+    form.set("uploader_name", name);
+    form.set("website", website);
+
+    const res = await fetch("/api/media/upload", { method: "POST", body: form });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error ?? "Something went wrong — please try again.");
+  }
+
+  /**
+   * Video skips this component's own server entirely for the bytes
+   * themselves — prepare asks Playbook where to send them, the browser PUTs
+   * straight there, complete tells our server it's done. See
+   * lib/directUpload.ts for why (Vercel's request-body cap doesn't apply to
+   * traffic that never passes through a Vercel Function).
+   */
+  async function submitVideo(selected: File) {
+    const prepareRes = await fetch("/api/media/upload/prepare", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        board_token: boardToken,
+        uploader_name: name,
+        website,
+        file_name: selected.name,
+        media_type: selected.type,
+        size: selected.size,
+      }),
+    });
+    const prepared = await prepareRes.json().catch(() => ({}));
+    if (!prepareRes.ok) throw new Error(prepared.error ?? "Something went wrong — please try again.");
+    if (prepared.honeypot) return; // fake success, nothing to upload
+
+    await putFileToStorage(selected, prepared, (fraction) => setProgress(Math.round(fraction * 100)));
+
+    const completeRes = await fetch("/api/media/upload/complete", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        board_token: boardToken,
+        uploader_name: name,
+        file_name: selected.name,
+        media_type: selected.type,
+        size: selected.size,
+        signed_gcs_id: prepared.signedGcsId,
+        multipart_upload_id: prepared.multipartUploadId,
+      }),
+    });
+    const completed = await completeRes.json().catch(() => ({}));
+    if (!completeRes.ok) throw new Error(completed.error ?? "Something went wrong — please try again.");
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -73,27 +136,22 @@ export default function UploadModal({
       return;
     }
     setIsUploading(true);
+    setProgress(null);
     setError("");
 
-    const form = new FormData();
-    form.set("file", file);
-    form.set("board_token", boardToken);
-    form.set("uploader_name", name);
-    form.set("website", website);
-
     try {
-      const res = await fetch("/api/media/upload", { method: "POST", body: form });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        setError(data.error ?? "Something went wrong — please try again.");
-        return;
+      if (ALLOWED_VIDEO_TYPES.includes(file.type)) {
+        await submitVideo(file);
+      } else {
+        await submitImage(file);
       }
       setDone(true);
       setTimeout(onClose, 2500);
-    } catch {
-      setError("Something went wrong — please try again.");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Something went wrong — please try again.");
     } finally {
       setIsUploading(false);
+      setProgress(null);
     }
   }
 
@@ -187,7 +245,7 @@ export default function UploadModal({
                         <Suspense fallback={<OrbFallback />}>
                           <ThinkingOrb state="searching" size={20} />
                         </Suspense>
-                        Uploading…
+                        {progress !== null ? `Uploading… ${progress}%` : "Uploading…"}
                       </>
                     ) : (
                       "Upload"

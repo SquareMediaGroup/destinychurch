@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useDialog } from "@/components/DialogProvider";
 import {
@@ -26,11 +27,12 @@ interface Board {
   is_public: boolean;
   allow_uploads: boolean;
   share_token: string;
+  has_password: boolean;
   counts: { pending: number; approved: number; rejected: number };
 }
 
 export default function MediaBoardsPage() {
-  const { confirm } = useDialog();
+  const { confirm, prompt } = useDialog();
   const searchParams = useSearchParams();
   const [boards, setBoards] = useState<Board[]>([]);
   const [loading, setLoading] = useState(true);
@@ -43,6 +45,7 @@ export default function MediaBoardsPage() {
   const [slug, setSlug] = useState("");
   const [description, setDescription] = useState("");
   const [isPublic, setIsPublic] = useState(true);
+  const [password, setPassword] = useState("");
 
   const fetchBoards = useCallback(async () => {
     try {
@@ -93,6 +96,7 @@ export default function MediaBoardsPage() {
         description: description || null,
         is_public: isPublic,
         allow_uploads: true,
+        password: password || undefined,
       }),
     });
     if (res.ok) {
@@ -100,6 +104,7 @@ export default function MediaBoardsPage() {
       setSlug("");
       setDescription("");
       setIsPublic(true);
+      setPassword("");
       setShowForm(false);
       await fetchBoards();
     } else {
@@ -153,6 +158,23 @@ export default function MediaBoardsPage() {
     if (res.ok) fetchBoards();
   }
 
+  async function handleSetPassword(b: Board) {
+    const value = await prompt({
+      title: b.has_password ? "Change password" : "Set a password",
+      message: b.has_password
+        ? `Enter a new password for "${b.title}", or clear the field to remove it.`
+        : `Visitors will need this password to view "${b.title}".`,
+    });
+    if (value === null) return; // cancelled
+    const res = await fetch(`/api/admin/media/boards/${b.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(value === "" ? { clear_password: true } : { password: value }),
+    });
+    if (res.ok) fetchBoards();
+    else setError("Could not update that board's password.");
+  }
+
   async function handleDelete(b: Board) {
     if (
       !(await confirm({
@@ -185,12 +207,18 @@ export default function MediaBoardsPage() {
         subtitle="Create boards, choose which are public, and share private ones by link."
         back={{ href: "/admin/media", label: "Media" }}
         action={
-          <button className={primaryBtn} onClick={() => setShowForm((s) => !s)}>
-            <span className="material-symbols-rounded text-lg">
-              {showForm ? "close" : "add"}
-            </span>
-            {showForm ? "Cancel" : "New board"}
-          </button>
+          <div className="flex gap-2">
+            <Link href="/admin/media/import" className={ghostBtn}>
+              <span className="material-symbols-rounded text-lg">auto_awesome</span>
+              Import from Playbook
+            </Link>
+            <button className={primaryBtn} onClick={() => setShowForm((s) => !s)}>
+              <span className="material-symbols-rounded text-lg">
+                {showForm ? "close" : "add"}
+              </span>
+              {showForm ? "Cancel" : "New board"}
+            </button>
+          </div>
         }
       />
 
@@ -260,6 +288,20 @@ export default function MediaBoardsPage() {
               </span>
             </label>
 
+            <div>
+              <label className={labelClass} htmlFor="board-password">
+                Password (optional)
+              </label>
+              <input
+                id="board-password"
+                type="text"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Leave blank for no password"
+                className={inputClass}
+              />
+            </div>
+
             <div className="flex justify-end gap-3">
               <button type="button" className={ghostBtn} onClick={() => setShowForm(false)}>
                 Cancel
@@ -307,6 +349,7 @@ export default function MediaBoardsPage() {
                       <Badge tone={b.is_public ? "green" : "grey"}>
                         {b.is_public ? "Public" : "Private"}
                       </Badge>
+                      {b.has_password && <Badge tone="orange">Password</Badge>}
                       {b.counts.pending > 0 && (
                         <a
                           href={`/admin/media/queue?board_id=${b.id}`}
@@ -342,6 +385,19 @@ export default function MediaBoardsPage() {
                         <span className="material-symbols-rounded text-base">refresh</span>
                       </button>
                     )}
+                    <button
+                      onClick={() => handleSetPassword(b)}
+                      title={b.has_password ? "Change or remove password" : "Set a password"}
+                      className={`flex h-8 w-8 items-center justify-center rounded-lg transition hover:bg-black/5 dark:hover:bg-white/10 ${
+                        b.has_password
+                          ? "text-destiny-orange"
+                          : "text-destiny-grey/40 dark:text-white/40"
+                      }`}
+                    >
+                      <span className="material-symbols-rounded text-base">
+                        {b.has_password ? "lock" : "lock_open"}
+                      </span>
+                    </button>
                     <Toggle
                       checked={b.is_public}
                       onChange={() => handleTogglePublic(b)}

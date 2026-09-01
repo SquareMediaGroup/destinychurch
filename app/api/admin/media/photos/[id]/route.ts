@@ -12,7 +12,11 @@ export async function DELETE(
   const before = await readForAudit("media_photos", id);
   if (!before) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  if (before.playbook_asset_token) {
+  // Only ever hard-delete from Playbook an asset /media itself created
+  // (an upload). An imported photo's asset pre-dates /media — it's the
+  // church's own existing Playbook content — so removing it from this
+  // gallery must only remove our reference, never the asset itself.
+  if (before.playbook_asset_token && !before.is_imported) {
     await deleteAsset(String(before.playbook_asset_token)).catch(() => {});
   }
 

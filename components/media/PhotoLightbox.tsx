@@ -24,7 +24,7 @@ export default function PhotoLightbox({ photos }: { photos: MediaPhoto[] }) {
   if (photos.length === 0) {
     return (
       <p className="py-16 text-center text-sm text-destiny-grey/50">
-        No photos on this board yet — be the first to add one.
+        Nothing on this board yet — be the first to add something.
       </p>
     );
   }
@@ -39,16 +39,33 @@ export default function PhotoLightbox({ photos }: { photos: MediaPhoto[] }) {
             key={photo.id}
             type="button"
             onClick={() => setOpenIndex(i)}
-            className="aspect-square overflow-hidden rounded-xl bg-destiny-grey/10"
+            className="relative aspect-square overflow-hidden rounded-xl bg-destiny-grey/10"
           >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={photo.url}
-              alt=""
-              loading="lazy"
-              decoding="async"
-              className="h-full w-full object-cover transition hover:scale-105"
-            />
+            {photo.isVideo ? (
+              <video
+                src={photo.url}
+                muted
+                playsInline
+                preload="metadata"
+                className="h-full w-full object-cover transition hover:scale-105"
+              />
+            ) : (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={photo.url}
+                alt=""
+                loading="lazy"
+                decoding="async"
+                className="h-full w-full object-cover transition hover:scale-105"
+              />
+            )}
+            {photo.isVideo && (
+              <span className="absolute inset-0 flex items-center justify-center bg-black/20">
+                <span className="material-symbols-rounded text-3xl text-white drop-shadow">
+                  play_circle
+                </span>
+              </span>
+            )}
           </button>
         ))}
       </div>
@@ -66,13 +83,24 @@ export default function PhotoLightbox({ photos }: { photos: MediaPhoto[] }) {
           >
             <span className="material-symbols-rounded">close</span>
           </button>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={open.url}
-            alt=""
-            className="max-h-[85vh] max-w-full rounded-lg object-contain"
-            onClick={(e) => e.stopPropagation()}
-          />
+          {open.isVideo ? (
+            <video
+              src={open.url}
+              controls
+              autoPlay
+              playsInline
+              className="max-h-[85vh] max-w-full rounded-lg"
+              onClick={(e) => e.stopPropagation()}
+            />
+          ) : (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={open.url}
+              alt=""
+              className="max-h-[85vh] max-w-full rounded-lg object-contain"
+              onClick={(e) => e.stopPropagation()}
+            />
+          )}
         </div>
       )}
     </>

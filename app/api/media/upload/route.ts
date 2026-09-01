@@ -17,10 +17,17 @@ import { deleteAsset, getOrCreateBoard, uploadAsset } from "@/lib/playbook.serve
 // "audit-exempt" comment that rule doesn't actually apply to.
 
 export const runtime = "nodejs";
-export const maxDuration = 30;
+// Raised from 30s for video: a large clip's PUT-to-Playbook round trip (on
+// top of receiving the request body itself) needs real headroom.
+export const maxDuration = 120;
 
-const MAX_BYTES = 10 * 1024 * 1024; // 10MB, matches the bucket's file_size_limit
-const ALLOWED = new Set(["image/jpeg", "image/png", "image/webp"]);
+const MAX_IMAGE_BYTES = 10 * 1024 * 1024; // 10MB
+// 90MB, not 100MB: Vercel Functions cap request bodies at 100MB, and that
+// ceiling has to cover the multipart form overhead around the file too, not
+// just the file itself.
+const MAX_VIDEO_BYTES = 90 * 1024 * 1024;
+const ALLOWED_IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
+const ALLOWED_VIDEO_TYPES = new Set(["video/mp4", "video/quicktime", "video/webm"]);
 const MAX_UPLOADS_PER_HOUR = 20;
 
 function hashIp(ip: string): string {
@@ -36,7 +43,7 @@ export async function POST(request: Request) {
   if (typeof honeypot === "string" && honeypot.trim().length > 0) {
     return NextResponse.json({
       status: "pending",
-      message: "Thanks! Your photo will appear once approved.",
+      message: "Thanks! It'll appear once approved.",
     });
   }
 
@@ -59,11 +66,17 @@ export async function POST(request: Request) {
     .trim()
     .slice(0, 100);
 
-  if (file.size > MAX_BYTES) {
-    return NextResponse.json({ error: "File exceeds 10MB limit" }, { status: 413 });
-  }
-  if (!ALLOWED.has(file.type)) {
+  const isVideo = ALLOWED_VIDEO_TYPES.has(file.type);
+  const isImage = ALLOWED_IMAGE_TYPES.has(file.type);
+  if (!isVideo && !isImage) {
     return NextResponse.json({ error: "Unsupported file type" }, { status: 400 });
+  }
+  const maxBytes = isVideo ? MAX_VIDEO_BYTES : MAX_IMAGE_BYTES;
+  if (file.size > maxBytes) {
+    return NextResponse.json(
+      { error: `File exceeds ${Math.round(maxBytes / (1024 * 1024))}MB limit` },
+      { status: 413 },
+    );
   }
 
   const supabase = createServiceClient();
@@ -111,30 +124,56 @@ export async function POST(request: Request) {
     );
   }
 
-  // Re-encode through sharp rather than storing the upload as-is. Two reasons:
-  // it strips EXIF/XMP/ICC metadata (phone photos routinely carry GPS coordinates —
-  // a public upload leaking exactly where the uploader lives is a real privacy risk,
-  // not a theoretical one), and it doubles as a content check: a file with a spoofed
-  // image/* MIME type that isn't actually a decodable image throws here instead of
-  // being stored. `.rotate()` with no args applies the EXIF orientation as a real
-  // pixel transform first — otherwise stripping that same tag would leave portrait
-  // phone photos rotated sideways.
   let processed: Buffer;
-  let info: sharp.OutputInfo;
-  try {
-    const pixels = sharp(Buffer.from(await file.arrayBuffer())).rotate();
-    const encoded =
-      file.type === "image/png"
-        ? pixels.png()
-        : file.type === "image/webp"
-          ? pixels.webp({ quality: 90 })
-          : pixels.jpeg({ quality: 90 });
-    ({ data: processed, info } = await encoded.toBuffer({ resolveWithObject: true }));
-  } catch {
-    return NextResponse.json({ error: "That file isn't a valid image" }, { status: 400 });
+  let width: number | null = null;
+  let height: number | null = null;
+
+  if (isImage) {
+    // Re-encode through sharp rather than storing the upload as-is. Two reasons:
+    // it strips EXIF/XMP/ICC metadata (phone photos routinely carry GPS coordinates —
+    // a public upload leaking exactly where the uploader lives is a real privacy risk,
+    // not a theoretical one), and it doubles as a content check: a file with a spoofed
+    // image/* MIME type that isn't actually a decodable image throws here instead of
+    // being stored. `.rotate()` with no args applies the EXIF orientation as a real
+    // pixel transform first — otherwise stripping that same tag would leave portrait
+    // phone photos rotated sideways.
+    try {
+      const pixels = sharp(Buffer.from(await file.arrayBuffer())).rotate();
+      const encoded =
+        file.type === "image/png"
+          ? pixels.png()
+          : file.type === "image/webp"
+            ? pixels.webp({ quality: 90 })
+            : pixels.jpeg({ quality: 90 });
+      const { data, info } = await encoded.toBuffer({ resolveWithObject: true });
+      processed = data;
+      width = info.width;
+      height = info.height;
+    } catch {
+      return NextResponse.json({ error: "That file isn't a valid image" }, { status: 400 });
+    }
+  } else {
+    // Videos pass through as-is: sharp is image-only, so there's no equivalent
+    // re-encode/metadata-strip/dimension-read step here. A phone video's own
+    // metadata (e.g. QuickTime GPS atoms) is a known, accepted gap — stripping
+    // it would mean transcoding every upload, which is a much heavier
+    // operation than this route is set up to do. Width/height are left null;
+    // Playbook's own asset record has them if they're ever needed later.
+    processed = Buffer.from(await file.arrayBuffer());
   }
 
-  const fileName = file.name.slice(0, 255) || `photo.${file.type === "image/png" ? "png" : file.type === "image/webp" ? "webp" : "jpg"}`;
+  const extFallback = isVideo
+    ? file.type === "video/mp4"
+      ? "mp4"
+      : file.type === "video/webm"
+        ? "webm"
+        : "mov"
+    : file.type === "image/png"
+      ? "png"
+      : file.type === "image/webp"
+        ? "webp"
+        : "jpg";
+  const fileName = file.name.slice(0, 255) || `${isVideo ? "video" : "photo"}.${extFallback}`;
 
   let asset;
   try {
@@ -154,8 +193,8 @@ export async function POST(request: Request) {
     file_name: fileName,
     mime_type: file.type,
     size_bytes: processed.length,
-    width: info.width,
-    height: info.height,
+    width,
+    height,
     uploader_name: uploaderName,
     uploader_ip_hash: ipHash,
     status: "pending",

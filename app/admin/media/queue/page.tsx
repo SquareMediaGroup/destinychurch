@@ -17,6 +17,7 @@ interface Photo {
   file_name: string;
   uploader_name: string;
   status: "pending" | "approved" | "rejected";
+  mime_type: string | null;
   reject_reason: string | null;
   created_at: string;
   media_boards: { title: string; slug: string } | null;
@@ -137,15 +138,26 @@ export default function MediaQueuePage() {
               key={photo.id}
               className="overflow-hidden rounded-2xl border border-black/5 bg-white shadow-sm dark:border-white/8 dark:bg-destiny-grey-800"
             >
-              <div className="aspect-square bg-black/5 dark:bg-white/5">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={photo.url}
-                  alt=""
-                  loading="lazy"
-                  decoding="async"
-                  className="h-full w-full object-cover"
-                />
+              <div className="relative aspect-square bg-black/5 dark:bg-white/5">
+                {photo.mime_type?.startsWith("video/") ? (
+                  <video src={photo.url} muted playsInline preload="metadata" className="h-full w-full object-cover" />
+                ) : (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={photo.url}
+                    alt=""
+                    loading="lazy"
+                    decoding="async"
+                    className="h-full w-full object-cover"
+                  />
+                )}
+                {photo.mime_type?.startsWith("video/") && (
+                  <span className="absolute inset-0 flex items-center justify-center bg-black/20">
+                    <span className="material-symbols-rounded text-2xl text-white drop-shadow">
+                      play_circle
+                    </span>
+                  </span>
+                )}
               </div>
               <div className="p-3">
                 <p className="truncate text-xs font-bold text-destiny-grey dark:text-white">

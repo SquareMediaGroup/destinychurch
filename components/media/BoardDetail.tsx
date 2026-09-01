@@ -24,7 +24,7 @@ export default function BoardDetail({
             <div className="flex flex-wrap items-end justify-between gap-4">
               <div>
                 <p className="mb-2 text-xs font-bold uppercase tracking-widest text-destiny-orange">
-                  Photos
+                  Media
                 </p>
                 <h1 className="text-3xl font-black text-destiny-grey md:text-4xl">
                   {board.title}
@@ -38,7 +38,7 @@ export default function BoardDetail({
               {board.allowUploads && (
                 <Button variant="primary" onClick={() => setUploadOpen(true)}>
                   <span className="material-symbols-rounded text-lg">add_a_photo</span>
-                  Add a photo
+                  Add a photo or video
                 </Button>
               )}
             </div>

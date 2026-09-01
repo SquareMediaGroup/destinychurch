@@ -3,7 +3,7 @@ import { headers } from "next/headers";
 import { createServiceClient } from "@/utils/supabase/service";
 import { readForAudit, recordAudit } from "@/lib/audit.server";
 import { AUDIT_ACTOR_HEADERS } from "@/lib/audit";
-import { createPermalink } from "@/lib/playbook.server";
+import { ensurePermalink } from "@/lib/playbook.server";
 
 export async function POST(
   _request: Request,
@@ -21,7 +21,7 @@ export async function POST(
   // photos (e.g. re-approving after an edit) keep their existing permalink.
   let permalinkUrl = before.playbook_permalink_url as string | null;
   if (!permalinkUrl && before.playbook_asset_token) {
-    permalinkUrl = await createPermalink(before.playbook_asset_token as string);
+    permalinkUrl = await ensurePermalink(before.playbook_asset_token as string);
   }
 
   const { data, error } = await supabase

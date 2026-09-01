@@ -22,8 +22,11 @@ function OrbFallback() {
   );
 }
 
-const MAX_BYTES = 10 * 1024 * 1024;
-const ALLOWED = ["image/jpeg", "image/png", "image/webp"];
+const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
+const MAX_VIDEO_BYTES = 90 * 1024 * 1024;
+const ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp"];
+const ALLOWED_VIDEO_TYPES = ["video/mp4", "video/quicktime", "video/webm"];
+const ALLOWED = [...ALLOWED_IMAGE_TYPES, ...ALLOWED_VIDEO_TYPES];
 
 export default function UploadModal({
   boardToken,
@@ -42,13 +45,21 @@ export default function UploadModal({
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const selected = e.target.files?.[0] ?? null;
     setError("");
-    if (selected && !ALLOWED.includes(selected.type)) {
-      setError("Please choose a JPEG, PNG or WebP image.");
+    if (!selected) {
       setFile(null);
       return;
     }
-    if (selected && selected.size > MAX_BYTES) {
-      setError("That photo is over 10MB — try a smaller one.");
+    if (!ALLOWED.includes(selected.type)) {
+      setError("Please choose a JPEG, PNG, WebP photo or an MP4, MOV or WebM video.");
+      setFile(null);
+      return;
+    }
+    const isVideo = ALLOWED_VIDEO_TYPES.includes(selected.type);
+    const maxBytes = isVideo ? MAX_VIDEO_BYTES : MAX_IMAGE_BYTES;
+    if (selected.size > maxBytes) {
+      setError(
+        `That file is over ${Math.round(maxBytes / (1024 * 1024))}MB — try a smaller one.`,
+      );
       setFile(null);
       return;
     }
@@ -58,7 +69,7 @@ export default function UploadModal({
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!file) {
-      setError("Choose a photo to upload.");
+      setError("Choose a photo or video to upload.");
       return;
     }
     setIsUploading(true);
@@ -107,13 +118,13 @@ export default function UploadModal({
                 </span>
                 <p className="font-black text-destiny-grey">Thanks!</p>
                 <p className="mt-1 text-sm text-destiny-grey/60">
-                  Your photo will appear once it&apos;s been approved.
+                  It&apos;ll appear once it&apos;s been approved.
                 </p>
               </div>
             ) : (
               <>
                 <div className="mb-5 flex items-center justify-between">
-                  <h2 className="text-lg font-black text-destiny-grey">Add a photo</h2>
+                  <h2 className="text-lg font-black text-destiny-grey">Add a photo or video</h2>
                   <button
                     type="button"
                     onClick={onClose}
@@ -148,11 +159,11 @@ export default function UploadModal({
 
                   <div>
                     <label className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-destiny-grey/45">
-                      Photo
+                      Photo or video
                     </label>
                     <input
                       type="file"
-                      accept="image/jpeg,image/png,image/webp"
+                      accept={ALLOWED.join(",")}
                       onChange={handleFileChange}
                       required
                       className="w-full text-sm text-destiny-grey/70 file:mr-3 file:rounded-lg file:border-0 file:bg-destiny-orange/10 file:px-3 file:py-2 file:text-xs file:font-bold file:text-destiny-orange"
@@ -179,7 +190,7 @@ export default function UploadModal({
                         Uploading…
                       </>
                     ) : (
-                      "Upload photo"
+                      "Upload"
                     )}
                   </Button>
                 </form>

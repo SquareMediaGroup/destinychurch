@@ -76,6 +76,52 @@ export async function getOrCreateBoard(title: string): Promise<string> {
   return created.data.token;
 }
 
+interface PlaybookBoardListRow extends PlaybookBoard {
+  asset_count: number | null;
+}
+
+/** Every board in the org, for the "import from an existing Playbook board" picker. */
+export async function listBoards(query?: string): Promise<PlaybookBoardSummary[]> {
+  const q = query ? `&query=${encodeURIComponent(query)}` : "";
+  const res = (await pbFetch(`/boards?per_page=100${q}`)) as { data: PlaybookBoardListRow[] };
+  return res.data.map((b) => ({ token: b.token, title: b.title, assetCount: b.asset_count }));
+}
+
+/**
+ * A board's assets — `nested_assets=true`, so a board organised into
+ * sub-boards (e.g. one per service date) still shows something. Without it,
+ * a board whose `asset_count` covers its whole subtree but has nothing
+ * sitting directly in it returns an empty list, which is exactly the shape
+ * of the church's real "Sunday Services" board (660 photos, all in
+ * sub-boards, zero at the top level) — confirmed against the live API.
+ */
+export async function listBoardAssets(
+  boardToken: string,
+  { page = 1, perPage = 60 }: { page?: number; perPage?: number } = {},
+): Promise<{ assets: PlaybookAssetSummary[]; hasMore: boolean }> {
+  const res = (await pbFetch(
+    `/boards/${boardToken}/assets?page=${page}&per_page=${perPage}&nested_assets=true`,
+  )) as { data: PlaybookAsset[]; pagy: { current_page: number; total_pages: number } };
+  return {
+    assets: res.data.map(toAssetSummary),
+    hasMore: res.pagy.current_page < res.pagy.total_pages,
+  };
+}
+
+/** Natural-language search across every asset in the org. */
+export async function searchAssets(query: string): Promise<PlaybookAssetSummary[]> {
+  const res = (await pbFetch(`/ai_search?query=${encodeURIComponent(query)}`)) as {
+    data: PlaybookAsset[];
+  };
+  return res.data.map(toAssetSummary);
+}
+
+/** Full details for one asset — used when materializing an imported photo's row. */
+export async function getAsset(assetToken: string): Promise<PlaybookAsset> {
+  const res = (await pbFetch(`/assets/${assetToken}`)) as { data: PlaybookAsset };
+  return res.data;
+}
+
 /* ── Upload (two-step: prepare, PUT bytes, complete) ─────────────────────────── */
 
 interface UploadPrepareResponse {
@@ -89,7 +135,7 @@ interface UploadPrepareResponse {
   parts?: { part_number: number; url: string }[];
 }
 
-interface PlaybookAsset {
+export interface PlaybookAsset {
   id: number;
   token: string;
   title: string;
@@ -97,6 +143,58 @@ interface PlaybookAsset {
   is_skeleton: boolean;
   permalink: string | null;
   display_url: string | null;
+  size?: number;
+  primary_width?: number | null;
+  primary_height?: number | null;
+  thumbnails?: { url: string; width: number; height: number }[];
+  uploaded_by?: { name: string | null } | null;
+  created_at?: string;
+  is_group?: boolean;
+  first_displayable_child?: { token: string; display_url?: string | null } | null;
+}
+
+export interface PlaybookBoardSummary {
+  token: string;
+  title: string;
+  assetCount: number | null;
+}
+
+export interface PlaybookAssetSummary {
+  token: string;
+  title: string;
+  mediaType: string | null;
+  thumbnailUrl: string | null;
+  width: number | null;
+  height: number | null;
+  uploadedByName: string | null;
+  // A group (Playbook's own "similar photos" clustering) has no displayable
+  // image of its own — media_type/size/display_url are all null on the group
+  // token itself, and add_permalinks on one succeeds but returns permalink:
+  // null (confirmed against the live API), which would otherwise surface as
+  // a silent, budget-wasting import failure. The picker disables these
+  // rather than letting an admin select one expecting it to import.
+  isGroup: boolean;
+}
+
+function toAssetSummary(a: PlaybookAsset): PlaybookAssetSummary {
+  return {
+    token: a.token,
+    title: a.title,
+    mediaType: a.media_type,
+    // Smallest thumbnail that's still a reasonable preview size — these lists
+    // can run to hundreds of rows, and a full display_url per row is wasted
+    // bandwidth for a picker grid. A group has none of its own, so fall back
+    // to its first child's preview — otherwise it renders as a blank tile.
+    thumbnailUrl:
+      a.thumbnails?.[a.thumbnails.length - 1]?.url ??
+      a.display_url ??
+      a.first_displayable_child?.display_url ??
+      null,
+    width: a.primary_width ?? null,
+    height: a.primary_height ?? null,
+    uploadedByName: a.uploaded_by?.name ?? null,
+    isGroup: Boolean(a.is_group),
+  };
 }
 
 async function putBytes(url: string, buffer: Buffer, headers: Record<string, string>) {
@@ -197,8 +295,14 @@ export async function getTemporaryDisplayUrl(assetToken: string): Promise<string
   return res.data.display_url;
 }
 
-/** A permanent, unsigned CDN URL. Spends one of the org's plan-capped permalinks. */
-export async function createPermalink(assetToken: string): Promise<string> {
+/**
+ * Requests a permalink for an asset that doesn't have one yet. Spends one of
+ * the org's plan-capped permalinks — callers that might already have the
+ * asset's record in hand (and so can check `asset.permalink` themselves for
+ * free) should do that first; everyone else should call `ensurePermalink`
+ * below instead of this directly.
+ */
+export async function requestPermalink(assetToken: string): Promise<string> {
   const res = (await pbFetch("/assets/add_permalinks", {
     method: "POST",
     body: JSON.stringify({ asset_tokens: [assetToken] }),
@@ -208,10 +312,20 @@ export async function createPermalink(assetToken: string): Promise<string> {
   return permalink;
 }
 
-export async function deleteAsset(assetToken: string): Promise<void> {
-  await pbFetch(`/assets/${assetToken}`, { method: "DELETE" });
+/**
+ * A permanent, unsigned CDN URL for an asset — reuses an existing permalink
+ * rather than requesting a new one, because `add_permalinks` on an asset
+ * that already has one doesn't just no-op: it returns `406 "All assets
+ * already have permalinks"` (confirmed against the live API for assets
+ * carried over from the org's own prior Playbook usage — e.g. an imported
+ * photo that was already shared externally before /media existed). A
+ * raw create-only call would make that a hard failure on every such asset.
+ */
+export async function ensurePermalink(assetToken: string): Promise<string> {
+  const asset = await getAsset(assetToken);
+  return asset.permalink ?? requestPermalink(assetToken);
 }
 
-export async function deleteBoard(boardToken: string): Promise<void> {
-  await pbFetch(`/boards/${boardToken}`, { method: "DELETE" });
+export async function deleteAsset(assetToken: string): Promise<void> {
+  await pbFetch(`/assets/${assetToken}`, { method: "DELETE" });
 }

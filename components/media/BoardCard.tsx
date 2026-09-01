@@ -7,7 +7,15 @@ export default function BoardCard({ board }: { board: MediaBoardSummary }) {
       href={`/media/b/${board.slug}`}
       className="group relative block aspect-square overflow-hidden rounded-2xl bg-destiny-grey"
     >
-      {board.coverPhotoUrl ? (
+      {board.coverPhotoUrl && board.coverIsVideo ? (
+        <video
+          src={board.coverPhotoUrl}
+          muted
+          playsInline
+          preload="metadata"
+          className="h-full w-full object-cover transition duration-300 group-hover:scale-105"
+        />
+      ) : board.coverPhotoUrl ? (
         // Plain <img>: the storage URL has no intrinsic dimensions, which
         // next/image requires. loading/decoding keep it off the critical path.
         // eslint-disable-next-line @next/next/no-img-element

@@ -2,6 +2,8 @@ import type OpenAI from "openai";
 import Fuse from "fuse.js";
 import { getPublishedProducts } from "@/lib/shop.server";
 import { FIT_LABELS, fromPrice, type ProductWithVariants } from "@/lib/shop";
+import { searchAssets } from "@/lib/playbook.server";
+import { findPublicPhotosByPlaybookTokens } from "@/lib/media.server";
 
 // ── Smart Search tools ─────────────────────────────────────────────────────
 // Tool-calling tools the /api/chat route exposes to the model. Each network
@@ -57,6 +59,24 @@ export const TOOL_DEFINITIONS: OpenAI.Chat.Completions.ChatCompletionTool[] = [
             type: "string",
             enum: ["clothing", "books", "other"],
             description: "Kind of product, if the visitor made it clear.",
+          },
+        },
+        required: ["query"],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "find_photos",
+      description:
+        "Search /media's photo gallery for photos matching a description — e.g. 'photos of the worship team', 'youth camp pictures', 'the Easter service'. Use when a visitor asks to see photos, pictures, or images of something at Destiny.",
+      parameters: {
+        type: "object",
+        properties: {
+          query: {
+            type: "string",
+            description: "What the visitor wants to see, as a natural description, e.g. 'kids on stage at Christmas'.",
           },
         },
         required: ["query"],
@@ -237,6 +257,43 @@ async function runFindProducts(args: {
   } catch (err) {
     console.error("[smartSearch] runFindProducts failed:", err);
     return { available: false, reason: "The shop lookup isn't working right now." };
+  }
+}
+
+// ── find_photos (Playbook AI search, filtered to /media's public photos) ───
+
+export interface PhotoResult {
+  id: string;
+  url: string;
+  boardTitle: string;
+  boardSlug: string;
+}
+
+export interface FindPhotosResult {
+  available: boolean;
+  reason?: string;
+  photos?: PhotoResult[];
+}
+
+const MAX_PHOTO_RESULTS = 6;
+
+async function runFindPhotos(args: { query: string }): Promise<FindPhotosResult> {
+  try {
+    // Playbook's ai_search runs across the WHOLE org — every board, including
+    // ones that have nothing to do with /media and photos still sitting in
+    // the moderation queue. findPublicPhotosByPlaybookTokens() is the actual
+    // gate: only a token that is also an approved photo on a public board
+    // ever makes it into what the assistant can show a visitor.
+    const hits = await searchAssets(args.query);
+    if (hits.length === 0) return { available: false, reason: "No matching photos found." };
+
+    const matches = await findPublicPhotosByPlaybookTokens(hits.map((h) => h.token));
+    if (matches.length === 0) return { available: false, reason: "No matching photos found." };
+
+    return { available: true, photos: matches.slice(0, MAX_PHOTO_RESULTS) };
+  } catch (err) {
+    console.error("[smartSearch] runFindPhotos failed:", err);
+    return { available: false, reason: "The photo gallery search isn't working right now." };
   }
 }
 
@@ -445,6 +502,7 @@ async function runExtractPage(args: { url: string }, ctx: ToolContext): Promise<
 
 export type ToolResult =
   | { name: "find_products"; data: FindProductsResult }
+  | { name: "find_photos"; data: FindPhotosResult }
   | { name: "get_weather"; data: WeatherToolResult }
   | { name: "get_directions"; data: DirectionsToolResult }
   | { name: "search_web"; data: SearchWebResult }
@@ -469,6 +527,8 @@ export async function executeTool(name: string, rawArgs: string, ctx: ToolContex
           product_type: args.product_type as string | undefined,
         }),
       };
+    case "find_photos":
+      return { name, data: await runFindPhotos({ query: (args.query as string) ?? "" }) };
     case "get_weather":
       return { name, data: await runGetWeather({ location: args.location as string | undefined, date: args.date as string }) };
     case "get_directions":

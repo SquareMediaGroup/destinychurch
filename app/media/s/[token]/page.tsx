@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getApprovedPhotos, getBoardByToken } from "@/lib/media.server";
+import { isBoardUnlocked } from "@/lib/mediaAccess";
 import BoardDetail from "@/components/media/BoardDetail";
+import BoardPasswordGate from "@/components/media/BoardPasswordGate";
 
 // Unlisted boards must never be indexed — the share link is the only access
 // control they have, and a search-engine listing would defeat that.
@@ -19,6 +21,10 @@ export default async function SharedMediaBoardPage({
   // Same 404 whether the token is wrong or the board is gone — never leak
   // which, so a guess can't learn anything from the response.
   if (!board) notFound();
+
+  if (board.hasPassword && !(await isBoardUnlocked(board.id))) {
+    return <BoardPasswordGate boardId={board.id} boardTitle={board.title} />;
+  }
 
   const photos = await getApprovedPhotos(board.id);
 

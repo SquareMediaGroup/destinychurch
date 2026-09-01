@@ -481,6 +481,19 @@ export const ADMIN_QUICK_ACTIONS: AdminQuickAction[] = [
   },
 ];
 
+/**
+ * Whether a nav item is the one the given pathname is on.
+ *
+ * The prefix match has to stop at a segment boundary, or /admin/store would
+ * light up for /admin/store-something and Products would light up for Orders.
+ * Lives here rather than in the sidebar because the mobile tab bar needs the
+ * same rule and two copies would drift.
+ */
+export function isActive(item: AdminNavItem, pathname: string): boolean {
+  if (item.exact) return pathname === item.href;
+  return pathname === item.href || pathname.startsWith(`${item.href}/`);
+}
+
 export function canSee(roles: RoleFlags, role: AdminRole | null): boolean {
   if (roles.super_admin) return true;
   if (role === null) return true;
@@ -498,6 +511,81 @@ export function visibleGroups(
       (item) => (includeUnlisted || !item.unlisted) && canSee(roles, item.role),
     ),
   })).filter((group) => group.items.length > 0);
+}
+
+/* ── Mobile tab bar ────────────────────────────────────────────────────────
+ * Phones get a bottom tab bar instead of the sidebar's hamburger drawer, and
+ * a tab is a *group* rather than a page: a super admin can see ~35 pages,
+ * which is a scroller nobody can aim at, but only ~11 groups. Tapping a group
+ * tab opens a sheet listing its pages.
+ *
+ * This is a projection of ADMIN_GROUPS, not a second copy of the navigation —
+ * add a section to the registry and it appears in the tab bar too, correctly
+ * role-gated, with no second list to remember.
+ */
+
+export interface AdminTab {
+  /** Stable identity: the href for a leaf tab, the group label for a group. */
+  key: string;
+  label: string;
+  icon: string;
+  /** Set only on leaf tabs — a group tab opens a sheet instead of navigating. */
+  href?: string;
+  /** The one item for a leaf, every visible item for a group. */
+  items: AdminNavItem[];
+}
+
+/**
+ * The tabs a given set of roles should see, in sidebar order.
+ *
+ * Mirrors how the sidebar renders the same groups: the ungrouped items at the
+ * top are each their own tab, and a group left with a single visible item
+ * collapses to a leaf tab rather than a sheet holding one row.
+ */
+export function tabsFor(roles: RoleFlags): AdminTab[] {
+  return visibleGroups(roles).flatMap((group): AdminTab[] => {
+    const leaf = (item: AdminNavItem): AdminTab => ({
+      key: item.href,
+      label: item.label,
+      icon: item.icon,
+      href: item.href,
+      items: [item],
+    });
+
+    if (group.label === null) return group.items.map(leaf);
+    if (group.items.length === 1) return [leaf(group.items[0])];
+
+    return [
+      {
+        key: group.label,
+        label: group.label,
+        icon: group.icon ?? "folder",
+        items: group.items,
+      },
+    ];
+  });
+}
+
+/**
+ * Which tab a pathname belongs to, or null when nothing matches (an unlisted
+ * page, say). Longest matching href wins so /admin/store/orders/123 lands on
+ * Store rather than on Dashboard.
+ */
+export function activeTabKey(tabs: AdminTab[], pathname: string): string | null {
+  let bestKey: string | null = null;
+  let bestLength = -1;
+
+  for (const tab of tabs) {
+    for (const item of tab.items) {
+      if (!isActive(item, pathname)) continue;
+      if (item.href.length > bestLength) {
+        bestLength = item.href.length;
+        bestKey = tab.key;
+      }
+    }
+  }
+
+  return bestKey;
 }
 
 /** Flat, role-filtered list — what the palette searches over. */

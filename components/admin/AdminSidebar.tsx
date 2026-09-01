@@ -3,23 +3,27 @@
 // The admin sidebar. Everything it shows comes from lib/adminNav — it used to
 // carry its own copy of the navigation, which drifted from the dashboard's.
 //
-// Two behaviour fixes over the previous version:
-//   • the mobile drawer scrolls and closes on Escape (it could previously grow
-//     taller than the viewport with no way to reach Sign out)
-//   • dropdown groups remember whether you left them open, per browser, so the
-//     Store group isn't collapsed again every time you land on a Store page
-//     from somewhere else
+// Dropdown groups remember whether you left them open, per browser, so the
+// Store group isn't collapsed again every time you land on a Store page from
+// somewhere else.
+//
+// Below md this renders only a slim top bar: the logo, where you are, search,
+// the theme toggle and an account button. Navigation itself lives in
+// AdminTabBar, which replaced the hamburger drawer this file used to carry.
+// The account sheet is what keeps "View site" and Sign out reachable on a
+// phone now that the drawer's footer is gone.
 
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { useCallback, useEffect, useState, useSyncExternalStore } from "react";
+import { useCallback, useState, useSyncExternalStore } from "react";
 import { motion, useReducedMotion } from "motion/react";
 import type { AdminNavGroup, AdminNavItem } from "@/lib/adminNav";
-import { visibleGroups } from "@/lib/adminNav";
+import { breadcrumbsFor, isActive, visibleGroups } from "@/lib/adminNav";
 import { useAdminSession } from "@/lib/useAdminSession";
 import { CommandTrigger, CommandTriggerIcon } from "@/components/admin/AdminCommandPalette";
 import { AdminThemeToggle } from "@/components/admin/AdminThemeToggle";
+import { Sheet } from "@/components/admin/Sheet";
 
 /* ── Remembered dropdown state ─────────────────────────────────────────────
  * Which groups are expanded lives in localStorage, modelled as an external
@@ -74,13 +78,6 @@ function writeOpenGroups(next: OpenGroups) {
   window.dispatchEvent(new Event(OPEN_GROUPS_EVENT));
 }
 
-function isActive(item: AdminNavItem, pathname: string): boolean {
-  if (item.exact) return pathname === item.href;
-  // Prefix match must stop at a segment boundary, or /admin/store would light
-  // up for /admin/store-something and Products would light up for Orders.
-  return pathname === item.href || pathname.startsWith(`${item.href}/`);
-}
-
 const linkClass = (active: boolean) =>
   `relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-bold transition ${
     active
@@ -92,19 +89,10 @@ function NavLink({
   item,
   pathname,
   onNavigate,
-  scope,
 }: {
   item: AdminNavItem;
   pathname: string;
   onNavigate?: () => void;
-  /**
-   * Which nav instance this is ("desktop" or "mobile") — the desktop
-   * `<aside>` and the mobile drawer both render the same NavLink component,
-   * and the sliding highlight below tracks its position by `layoutId`, so two
-   * separate instances need two separate ids or the highlight could try to
-   * animate between them instead of just fading in on each independently.
-   */
-  scope: string;
 }) {
   const active = isActive(item, pathname);
   const reduceMotion = useReducedMotion();
@@ -123,7 +111,7 @@ function NavLink({
           // The active pill slides between nav items on navigation rather than
           // snapping — the one place in the sidebar that had zero motion at all.
           <motion.span
-            layoutId={`admin-nav-active-${scope}`}
+            layoutId="admin-nav-active"
             className="absolute inset-0 rounded-xl bg-destiny-orange/10"
             transition={{ duration: 0.22, ease: "easeOut" }}
             aria-hidden
@@ -211,14 +199,12 @@ function NavItems({
   onNavigate,
   openGroups,
   onToggle,
-  scope,
 }: {
   groups: AdminNavGroup[];
   pathname: string;
   onNavigate?: () => void;
   openGroups: Record<string, boolean>;
   onToggle: (label: string) => void;
-  scope: string;
 }) {
   return (
     <>
@@ -230,7 +216,6 @@ function NavItems({
               item={item}
               pathname={pathname}
               onNavigate={onNavigate}
-              scope={scope}
             />
           ))
         ) : group.items.length === 1 ? (
@@ -240,7 +225,6 @@ function NavItems({
             item={group.items[0]}
             pathname={pathname}
             onNavigate={onNavigate}
-            scope={scope}
           />
         ) : (
           <NavDropdown
@@ -259,7 +243,7 @@ function NavItems({
 
 export default function AdminSidebar() {
   const pathname = usePathname();
-  const [mobileOpen, setMobileOpen] = useState(false);
+  const [accountOpen, setAccountOpen] = useState(false);
   const { roles, email } = useAdminSession();
   const openGroups = useSyncExternalStore(
     subscribeToOpenGroups,
@@ -272,16 +256,12 @@ export default function AdminSidebar() {
     writeOpenGroups({ ...current, [label]: !current[label] });
   }, []);
 
-  // Escape closes the drawer. Every link inside it already closes it via
-  // onNavigate, so there's no need to watch the pathname as well.
-  useEffect(() => {
-    if (!mobileOpen) return;
-    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setMobileOpen(false);
-    document.addEventListener("keydown", onKey);
-    return () => document.removeEventListener("keydown", onKey);
-  }, [mobileOpen]);
-
   const groups = visibleGroups(roles);
+  // The mobile bar has no breadcrumbs to hide behind a menu the way the desktop
+  // header does, and below md there was previously nothing on screen saying
+  // where you were at all. The last crumb is the page; the ones before it are
+  // the way back out.
+  const crumbs = breadcrumbsFor(pathname);
 
   return (
     <>
@@ -297,74 +277,100 @@ export default function AdminSidebar() {
       </aside>
 
       {/* ── Mobile top bar ────────────────────────────────────────────── */}
-      <div className="sticky top-0 z-30 flex items-center justify-between border-b border-black/8 bg-white px-4 py-3 dark:border-white/8 dark:bg-destiny-grey-800 md:hidden">
-        <Link href="/admin" className="relative h-7 w-[130px]">
-          <Image
-            src="/img/brand/Destiny SVG Logos/Destiny Full Logo SVG/Full Logo Colour.svg"
-            alt="Destiny Church Admin"
-            fill
-            sizes="130px"
-            className="object-contain object-left"
-          />
-        </Link>
-        <div className="flex items-center gap-2">
-          <CommandTriggerIcon />
-          <AdminThemeToggle />
-          <button
-            onClick={() => setMobileOpen((o) => !o)}
-            className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#f5f7fa] text-destiny-grey dark:bg-white/5 dark:text-white"
-            aria-label={mobileOpen ? "Close menu" : "Open menu"}
-            aria-expanded={mobileOpen}
-          >
-            <span className="material-symbols-rounded text-xl">
-              {mobileOpen ? "close" : "menu"}
-            </span>
-          </button>
+      {/* Navigation itself is AdminTabBar, pinned to the bottom of the screen —
+          this bar is identity, place and the two things that have nowhere else
+          to live on a phone. */}
+      <div className="sticky top-0 z-30 flex flex-col gap-1.5 border-b border-black/8 bg-white px-4 py-3 dark:border-white/8 dark:bg-destiny-grey-800 md:hidden">
+        <div className="flex items-center justify-between">
+          <Link href="/admin" className="relative h-7 w-[130px]">
+            <Image
+              src="/img/brand/Destiny SVG Logos/Destiny Full Logo SVG/Full Logo Colour.svg"
+              alt="Destiny Church Admin"
+              fill
+              sizes="130px"
+              className="object-contain object-left"
+            />
+          </Link>
+          <div className="flex items-center gap-2">
+            <CommandTriggerIcon />
+            <AdminThemeToggle />
+            <button
+              onClick={() => setAccountOpen(true)}
+              className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#f5f7fa] text-destiny-grey dark:bg-white/5 dark:text-white"
+              aria-label="Account"
+              aria-haspopup="dialog"
+            >
+              <span className="material-symbols-rounded text-xl">account_circle</span>
+            </button>
+          </div>
         </div>
+
+        {crumbs.length > 0 && (
+          <nav aria-label="Breadcrumb" className="flex min-w-0 items-center gap-1 text-xs">
+            {crumbs.map((crumb, i) => {
+              const last = i === crumbs.length - 1;
+              return (
+                <span key={`${crumb.label}-${i}`} className="flex min-w-0 items-center gap-1">
+                  {i > 0 && (
+                    <span
+                      aria-hidden
+                      className="material-symbols-rounded text-sm text-destiny-grey/25 dark:text-white/25"
+                    >
+                      chevron_right
+                    </span>
+                  )}
+                  {crumb.href && !last ? (
+                    <Link
+                      href={crumb.href}
+                      className="truncate font-bold text-destiny-grey/40 dark:text-white/40"
+                    >
+                      {crumb.label}
+                    </Link>
+                  ) : (
+                    <span className="truncate font-bold text-destiny-grey dark:text-white">
+                      {crumb.label}
+                    </span>
+                  )}
+                </span>
+              );
+            })}
+          </nav>
+        )}
       </div>
 
-      {/* ── Mobile drawer ─────────────────────────────────────────────── */}
-      {mobileOpen && (
-        <div className="border-b border-black/8 bg-white dark:border-white/8 dark:bg-destiny-grey-800 md:hidden">
-          <nav
-            aria-label="Admin sections"
-            className="flex max-h-[calc(100vh-8rem)] flex-col gap-1 overflow-y-auto p-3"
-          >
-            <NavItems
-              groups={groups}
-              pathname={pathname}
-              onNavigate={() => setMobileOpen(false)}
-              openGroups={openGroups}
-              onToggle={toggleGroup}
-              scope="mobile"
-            />
-            <div className="mt-2 flex flex-col gap-1 border-t border-black/5 pt-2 dark:border-white/8">
-              {email && (
-                <p className="truncate px-3 py-1 text-xs font-bold text-destiny-grey/35 dark:text-white/35">
-                  {email}
-                </p>
-              )}
-              <Link
-                href="/"
-                target="_blank"
-                className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-bold text-destiny-grey/50 transition hover:bg-[#f5f7fa] hover:text-destiny-grey dark:text-white/50 dark:hover:bg-white/5 dark:hover:text-white"
+      {/* ── Mobile account sheet ──────────────────────────────────────────
+          Who you are, and the two actions that used to sit at the foot of the
+          hamburger drawer. Sign out has to keep a home on mobile. */}
+      {accountOpen && (
+        <Sheet
+          title="Account"
+          subtitle={email ?? undefined}
+          detent="auto"
+          onClose={() => setAccountOpen(false)}
+        >
+          <div className="flex flex-col p-2">
+            <Link
+              href="/"
+              target="_blank"
+              onClick={() => setAccountOpen(false)}
+              className="flex items-center gap-3 rounded-2xl px-3 py-3 text-sm font-bold text-destiny-grey transition hover:bg-[#f5f7fa] dark:text-white dark:hover:bg-white/5"
+            >
+              <span className="material-symbols-rounded text-xl">open_in_new</span>
+              View site
+            </Link>
+            <form action="/api/admin/logout" method="POST">
+              <button
+                type="submit"
+                className="flex w-full items-center gap-3 rounded-2xl px-3 py-3 text-sm font-bold text-destiny-grey transition hover:bg-[#f5f7fa] dark:text-white dark:hover:bg-white/5"
               >
-                <span className="material-symbols-rounded text-xl">open_in_new</span>
-                View site
-              </Link>
-              <form action="/api/admin/logout" method="POST">
-                <button
-                  type="submit"
-                  className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-bold text-destiny-grey/50 transition hover:bg-[#f5f7fa] hover:text-destiny-grey dark:text-white/50 dark:hover:bg-white/5 dark:hover:text-white"
-                >
-                  <span className="material-symbols-rounded text-xl">logout</span>
-                  Sign out
-                </button>
-              </form>
-            </div>
-          </nav>
-        </div>
+                <span className="material-symbols-rounded text-xl">logout</span>
+                Sign out
+              </button>
+            </form>
+          </div>
+        </Sheet>
       )}
+
     </>
   );
 }
@@ -413,7 +419,6 @@ function SidebarContents({
           pathname={pathname}
           openGroups={openGroups}
           onToggle={onToggle}
-          scope="desktop"
         />
       </nav>
 

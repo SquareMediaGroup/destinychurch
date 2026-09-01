@@ -3,6 +3,13 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   // Shared workspace package ships raw TypeScript; Next must transpile it.
   transpilePackages: ["@destiny/shared"],
+  experimental: {
+    // Enables React's <ViewTransition>, used by app/admin/template.tsx to
+    // cross-fade between admin pages and morph the mobile tab bar's active pill.
+    // The flag is app-wide, but nothing outside /admin renders a ViewTransition,
+    // so the public site navigates exactly as it did.
+    viewTransition: true,
+  },
   outputFileTracingIncludes: {
     "*": ["node_modules/ffmpeg-static/ffmpeg"],
   },

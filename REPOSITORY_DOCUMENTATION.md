@@ -238,7 +238,8 @@ destinychurch/
 │   ├── GlassBloomTracker.tsx      # Glass-effect performance tracking
 │   ├── FooterGate.tsx / PerformanceGate.tsx / BannerSpacer.tsx  # Layout/perf gating helpers
 │   ├── admin/                     # Admin-specific components
-│   │   ├── AdminSidebar.tsx       # Admin nav menu
+│   │   ├── AdminSidebar.tsx       # Admin nav menu (desktop sidebar + mobile top bar)
+│   │   ├── AdminTabBar.tsx        # Mobile bottom tab bar (glass, scrolling, group sheets)
 │   │   ├── AdminHeader.tsx        # Admin shell header (breadcrumb + "View live site")
 │   │   ├── RichTextEditor.tsx     # Shared TipTap editor — posts, training posts, HR jobs, shop products
 │   │   ├── training/              # Course management UI (uses RichTextEditor)
@@ -2222,8 +2223,46 @@ Each section requires a specific access-level role (see
 
 Everywhere you can go inside `/admin` is declared once, in
 [`lib/adminNav.ts`](#libadminnavts). The sidebar, the header breadcrumbs, the
-dashboard's "Manage" grid and the ⌘K palette all render from that one list, so
-adding a section means editing one file.
+dashboard's "Manage" grid, the mobile tab bar and the ⌘K palette all render from
+that one list, so adding a section means editing one file.
+
+**On a phone the sidebar becomes a tab bar.** Below `md` the desktop `<aside>`
+is replaced by `components/admin/AdminTabBar.tsx`, pinned to the bottom of the
+viewport — the shape phones actually use, and one tap per section instead of the
+hamburger drawer's two or three. A tab is a *group*, not a page: a super admin
+can see around thirty-five pages but only eleven groups, so `tabsFor(roles)`
+projects `ADMIN_GROUPS` down to one tab per top-level entry. Ungrouped items
+(Dashboard, Posts, Training, Simulated Live, Live Chat) are their own tabs, a
+group left with one visible item collapses to a plain link, and a group with
+several opens a bottom `Sheet` listing its pages with their descriptions.
+
+The row scrolls when it has to and centres itself when it doesn't — a store
+admin's two tabs sit in the middle, a super admin's eleven overflow and swipe.
+That is `justify-content: safe center` on `.admin-tabbar-scroll` in
+`app/globals.css`, not a Tailwind utility: plain `center` would centre the
+overflow as well, putting the first tabs off the left edge where scrolling can
+never reach them. The bar auto-scrolls the active tab into view on every route
+change, so arriving from a breadcrumb or the ⌘K palette still shows you where
+you are.
+
+The mobile top bar in `AdminSidebar.tsx` keeps the logo, ⌘K, the theme toggle
+and an account button — the last opens a `Sheet` with your email, "View site"
+and Sign out, which used to live at the foot of the drawer and would otherwise
+have nowhere to go. It also renders `breadcrumbsFor(pathname)`; below `md`
+`AdminHeader` is hidden, so before this there was nothing on a phone saying
+which page you were on.
+
+**Route transitions.** `app/admin/template.tsx` wraps admin pages in React's
+`<ViewTransition name="admin-page">` (enabled by `experimental.viewTransition`
+in `next.config.ts`; the component comes from the React build the App Router
+runs on, not from the `react` 19.2 in `package.json`). Pages cross-fade instead
+of snapping, and the tab bar's active pill — the one element named
+`admin-tab-pill` in the document at a time — morphs from the old tab's box to
+the new one in the same frame, which is what makes switching tabs read as glass
+moving rather than two highlights blinking. The keyframes and the
+reduced-motion opt-out are at the foot of `app/globals.css`; the flag is
+app-wide but nothing outside `/admin` renders a `ViewTransition`, so the public
+site navigates exactly as it did.
 
 **Finding things.** Every list page has the same toolbar — fuzzy search on the
 left, status filter chips with live counts beside it, a "showing x of y" count
@@ -2671,8 +2710,9 @@ to keep.
   presentation only — middleware still knows they're a super admin.
 
 #### Admin Components (`components/admin/*`)
-- `AdminSidebar.tsx` — Admin navigation menu
-- `AdminHeader.tsx` — Sticky desktop header for the admin shell; shows an "Admin / {section}" breadcrumb (title derived from the pathname) and a "View live site" button
+- `AdminSidebar.tsx` — Admin navigation. At `md`+ the full sidebar; below `md` only a slim top bar (logo, breadcrumbs, ⌘K, theme toggle, account sheet), with navigation itself handed to `AdminTabBar`
+- `AdminTabBar.tsx` — The mobile bottom tab bar: a scrolling row of Liquid Glass group tabs derived from `tabsFor()`, with a `Sheet` for multi-page groups and a view-transitioned active pill. See "Admin navigation, search and keyboard shortcuts"
+- `AdminHeader.tsx` — Sticky desktop header for the admin shell (`md`+ only); shows the full breadcrumb trail from `breadcrumbsFor(pathname)` — every level above the current page a link — plus ⌘K, the theme toggle, shortcut help and a "View live site" button
 - `RichTextEditor.tsx` — Shared TipTap rich-text editor (HTML output); used by posts, training posts, HR job descriptions, and (since `a22301b`) shop product descriptions. Optional `blocks` / `onEditor` props admit [content blocks](#content-blocks) — schema and drop handling only; the blocks UI is a separate surface owned by the parent, deliberately **not** part of this toolbar.
   The toolbar does exactly one job: reformat the current text selection. The old "Embed YouTube video", "Embed ChurchSuite form" and "Embed HTML" buttons are now the Video, ChurchSuite form and Custom embed blocks — they inserted new objects rather than formatting a selection, so they belonged in the sidebar. `enableYouTube` and `enableHtmlEmbed` now only register the legacy `youtube` / `htmlEmbed` nodes so pages authored with those buttons keep parsing; `enableChurchSuite` is gone entirely (it only ever drove a button, since ChurchSuite embeds were stored as `htmlEmbed`).
 - `blocks/*` — **Client.** Editor side of the content-block system: the TipTap node factory, node-view chrome, the Blocks sidebar, the schema-driven settings inspector and its field components. See [Content Blocks](#content-blocks).
@@ -3989,6 +4029,20 @@ The ⌘K palette would have made it a fourth copy.
 Exports `visibleGroups`/`visibleItems`/`visibleQuickActions` (role-filtered),
 `itemForPath` (longest-prefix match, so `/admin/store/products/123` resolves to
 Products rather than Store), `titleForPath` and `breadcrumbsFor`.
+
+`isActive(item, pathname)` is the shared "is this the page we're on" rule —
+prefix matching that stops at a segment boundary, so `/admin/store` doesn't
+light up for `/admin/store-something`. It lives here rather than in the sidebar
+because the tab bar needs the identical rule and two copies would drift.
+
+`tabsFor(roles)` and `activeTabKey(tabs, pathname)` back the mobile tab bar.
+`tabsFor` is a *projection* of `visibleGroups`, not a second navigation: one
+tab per ungrouped item, one tab per labelled group, and a group holding a single
+visible item collapsed to a leaf tab (matching how the sidebar renders the same
+case). Add a section to `ADMIN_GROUPS` and it appears in the tab bar too,
+correctly role-gated, with no second list to remember. `activeTabKey` resolves a
+pathname to the tab owning the deepest matching entry, so
+`/admin/store/orders/123` lands on Store rather than Dashboard.
 
 Two things to keep in mind when editing it:
 
@@ -5414,6 +5468,14 @@ mapping every token in that file follows (`bg-white` → `dark:bg-destiny-grey-8
 …) rather than writing its own classes, this one file's dark-mode support
 propagates to all of them with no per-page changes.
 
+The mobile tab bar is glass too, but the *other* way round: `.admin-tabbar`
+(`app/globals.css`) is a theme-aware tint — frosted white over the light admin,
+frosted grey over the dark one — because unlike the surfaces below it is
+persistent chrome that sits on screen the whole time, not an overlay announcing
+itself. It deliberately omits `glass-refract`: the displacement filter is
+already dropped below 768px on GPU cost, and that bar only ever renders below
+768px.
+
 **Two surfaces deliberately don't react to the toggle at all.** `AuditAsk`'s
 answer panel and the ⌘K command palette (`AdminCommandPalette.tsx`) use the
 public site's `.glass`/`.admin-glass` classes instead — the same fixed,
@@ -5713,7 +5775,8 @@ ENABLE_SMART_SEARCH=true
 ### Component Directory
 - **~120 components** organized by feature:
   - Global: Header, Footer, Providers, CookieBanner, Analytics, FloatingSmartSearch
-  - Admin: Sidebar, AdminHeader, AdminUI (the shared kit — PageHeader, Badge, Modal, EmptyState, SearchInput, FilterChips, ListToolbar, SortHeader, skeletons, Toggle, BulkBar; every token dark-mode aware, see "Dark mode" under Styling), AdminThemeToggle (light/dark/system control), AdminCharts (Sparkline, TrendChip, MiniBarRow — hand-rolled data viz, no charting library), AdminCommandPalette (⌘K + global shortcuts; its own fixed dark-glass surface, independent of the admin theme toggle), RichTextEditor (shared editor), Sheet (mobile bottom sheet), blocks/ (palette, inspector, outline, tools), posts/training/hr editors, audit/ (AuditAsk, AuditDetail, AuditReports)
+  - Admin: Sidebar, AdminHeader, AdminUI (the shared kit — PageHeader, Badge, Modal, EmptyState, SearchInput, FilterChips, ListToolbar, SortHeader, skeletons, Toggle, BulkBar; every token dark-mode aware, see "Dark mode" under Styling), AdminThemeToggle (light/dark/system control), AdminCharts (Sparkline, TrendChip, MiniBarRow — hand-rolled data viz, no charting library), AdminCommandPalette (⌘K + global shortcuts; its own fixed dark-glass surface, independent of the admin theme toggle), AdminTabBar (mobile bottom tab bar — glass, role-derived, view-transitioned),
+    RichTextEditor (shared editor), Sheet (mobile bottom sheet), blocks/ (palette, inspector, outline, tools), posts/training/hr editors, audit/ (AuditAsk, AuditDetail, AuditReports)
     - `components/admin/hr/HrUI.tsx` is now a re-export shim over `AdminUI`. The kit used to live there, under a feature folder, with its page header named `HrHeader` — which Posts and Training both imported, reading as if those pages were part of HR. `HrHeader` remains as an alias for `PageHeader`; new code should import from `@/components/admin/AdminUI`.
   - Ministry-specific: Kids, Youth, Young Adults, Alpha
   - Governance: registration cards, trustees/directors, financial history, filings, source note

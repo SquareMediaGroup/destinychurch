@@ -3,8 +3,10 @@ import {
   ADMIN_GROUPS,
   ADMIN_NAV_ITEMS,
   ADMIN_QUICK_ACTIONS,
+  activeTabKey,
   breadcrumbsFor,
   itemForPath,
+  tabsFor,
   titleForPath,
   visibleGroups,
   visibleItems,
@@ -196,5 +198,81 @@ test("no group is declared without items", () => {
     expect(group.items.length, `${group.label}`).toBeGreaterThan(0);
     // Anything grouped under a label needs an icon for the sidebar dropdown.
     if (group.label !== null) expect(group.icon, `${group.label}`).toBeTruthy();
+  }
+});
+
+/* ── Mobile tab bar ──────────────────────────────────────────────────────── */
+
+/**
+ * tabsFor is a projection of the same groups the sidebar renders, so the tab
+ * bar can't offer a section the sidebar doesn't — or send a thumb somewhere the
+ * middleware will bounce.
+ */
+
+test("every tab a super admin sees comes from the registry, once", () => {
+  const tabs = tabsFor(roles("super_admin"));
+  const keys = tabs.map((t) => t.key);
+  expect(new Set(keys).size).toBe(keys.length);
+
+  const hrefs = new Set(ADMIN_NAV_ITEMS.map((i) => i.href));
+  for (const tab of tabs) {
+    expect(tab.label, `${tab.key} needs a label`).toBeTruthy();
+    expect(tab.icon, `${tab.key} needs an icon`).toBeTruthy();
+    expect(tab.items.length, `${tab.key} needs at least one page`).toBeGreaterThan(0);
+    if (tab.href) expect(hrefs, `${tab.href}`).toContain(tab.href);
+    for (const item of tab.items) expect(hrefs).toContain(item.href);
+  }
+});
+
+test("the tabs cover exactly the pages the sidebar shows", () => {
+  for (const role of ["super_admin", "store_admin", "hr_admin", "host"] as const) {
+    const granted = roles(role);
+    const viaTabs = tabsFor(granted).flatMap((t) => t.items.map((i) => i.href));
+    const viaSidebar = visibleItems(granted).map((i) => i.href);
+    expect(viaTabs.sort(), role).toEqual(viaSidebar.sort());
+  }
+});
+
+test("a single-role user gets a short bar", () => {
+  const tabs = tabsFor(roles("store_admin"));
+  // Dashboard plus their own section — nothing else, and few enough to fit.
+  expect(tabs.map((t) => t.key)).toEqual(["/admin", "Store"]);
+});
+
+test("a group with one visible item collapses to a link, not a sheet", () => {
+  // A host can see Simulated Live and Live Chat (both ungrouped) and nothing
+  // inside a labelled group, so every tab they get is a leaf with an href.
+  for (const tab of tabsFor(roles("host"))) {
+    expect(tab.href, `${tab.key} should be a direct link`).toBeTruthy();
+    expect(tab.items).toHaveLength(1);
+  }
+
+  // And in general: any tab holding exactly one page is a link to it.
+  for (const tab of tabsFor(roles("super_admin"))) {
+    if (tab.items.length === 1) expect(tab.href).toBe(tab.items[0].href);
+    else expect(tab.href).toBeUndefined();
+  }
+});
+
+test("the active tab is the deepest match, and stops at a segment boundary", () => {
+  const tabs = tabsFor(roles("super_admin"));
+
+  expect(activeTabKey(tabs, "/admin")).toBe("/admin");
+  // A nested route lights up its section rather than falling back to Dashboard.
+  expect(activeTabKey(tabs, "/admin/store/orders/123")).toBe("Store");
+  expect(activeTabKey(tabs, "/admin/hr/staff/42")).toBe("HR");
+  // Prefix matching must not spill over into a differently-named sibling.
+  expect(activeTabKey(tabs, "/admin/store-something")).toBeNull();
+  expect(activeTabKey(tabs, "/admin/nothing-here")).toBeNull();
+});
+
+test("a tab never points somewhere its owner can't go", () => {
+  for (const role of ADMIN_ROLES) {
+    if (role === "super_admin") continue;
+    for (const tab of tabsFor(roles(role))) {
+      for (const item of tab.items) {
+        expect(hasAccess(roles(role), item.href), `${role} → ${item.href}`).toBe(true);
+      }
+    }
   }
 });

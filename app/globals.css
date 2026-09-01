@@ -564,13 +564,60 @@ body {
 
    .admin-glass is a tint on top of .glass, not a fork of it — the rim, the
    cursor bloom, the reduced-motion and glassfx=off escape hatches all still
-   apply. Use it as `class="glass admin-glass"`. */
+   apply. Use it as `class="glass admin-glass"`.
+
+   .admin-tabbar (below) is the one glass surface in /admin that does NOT take
+   that fixed dark tint. It is persistent chrome rather than an overlay — the
+   mobile tab bar sits on screen the whole time — so it follows the admin's own
+   light/dark toggle instead of announcing itself against it. */
 @layer components {
   .admin-glass {
     --glass-tint: 24, 29, 34;
     --glass-alpha: 0.82;
     --glass-blur: 20px;
     color: #ffffff;
+  }
+
+  /* The mobile admin tab bar (components/admin/AdminTabBar.tsx). Frosted white
+     over the light admin, frosted grey over the dark one — `.dark` is scoped to
+     the admin layout's own wrapper div (lib/adminTheme.ts), so this tracks the
+     toggle and can't leak onto the public site.
+
+     Deliberately no `glass-refract`: the displacement filter is already dropped
+     below 768px on GPU cost (see the glass system above) and this surface only
+     ever renders below 768px. */
+  .admin-tabbar {
+    --glass-tint: 255, 255, 255;
+    --glass-alpha: 0.72;
+    --glass-blur: 22px;
+    color: var(--color-destiny-grey);
+  }
+
+  .dark .admin-tabbar {
+    --glass-tint: 24, 29, 34;
+    --glass-alpha: 0.78;
+    color: #ffffff;
+  }
+
+  /* The scrolling row inside the bar. A visible scrollbar under a glass
+     surface reads as a rendering bug, and the row is swiped rather than
+     dragged. Separate from .admin-tabbar because the glass lives on the
+     wrapper — .glass's rim and bloom are inset-0 pseudo-elements, which would
+     scroll away with the content if the scroller carried them. */
+  .admin-tabbar-scroll {
+    scrollbar-width: none;
+    /* A short row (a store admin's two or three tabs) sits centred; a long one
+       (a super admin's eleven) overflows and scrolls. Plain `center` would
+       centre the overflow too, pushing the first tabs off the left edge where
+       no amount of scrolling can reach them — `safe` falls back to start
+       alignment exactly when that would happen. Not a Tailwind utility, and a
+       browser that doesn't know `safe` drops the declaration and lands on
+       flex-start, which is the harmless half of the trade. */
+    justify-content: safe center;
+  }
+
+  .admin-tabbar-scroll::-webkit-scrollbar {
+    display: none;
   }
 
   /* The four panels that frame the spotlit element.
@@ -1439,3 +1486,70 @@ html[data-motion="reduced"] *::after {
   scroll-behavior: auto !important;
 }
 
+
+/* ── Admin page transitions ────────────────────────────────────────────────
+   How app/admin/template.tsx's <ViewTransition name="admin-page"> animates, and
+   how the mobile tab bar's active pill (AdminTabBar.tsx) travels with it.
+
+   Only /admin renders a ViewTransition, so nothing here can reach the public
+   site, and a browser without the View Transition API just navigates as before.
+   ────────────────────────────────────────────────────────────────────────── */
+
+@keyframes admin-page-out {
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes admin-page-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* The outgoing page leaves faster than the incoming one arrives, so the two
+   overlap rather than crossing through a blank frame. */
+::view-transition-old(admin-page) {
+  animation: admin-page-out 130ms ease-in both;
+}
+
+::view-transition-new(admin-page) {
+  animation: admin-page-in 220ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* The pill morphs from the old tab's box to the new one. Suppressing the
+   default cross-fade on its old/new snapshots is what makes it read as one
+   object moving rather than two pills dissolving into each other — the group
+   (which carries the position and size) is the only thing left animating. */
+::view-transition-group(admin-tab-pill) {
+  animation-duration: 320ms;
+  animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+::view-transition-old(admin-tab-pill),
+::view-transition-new(admin-tab-pill) {
+  animation: none;
+  mix-blend-mode: normal;
+  height: 100%;
+}
+
+/* Same opt-out as everywhere else in the app: the OS setting, and the admin's
+   own data-motion switch. Navigation still works, it just cuts. */
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none !important;
+  }
+}
+
+html[data-motion="reduced"]::view-transition-group(*),
+html[data-motion="reduced"]::view-transition-old(*),
+html[data-motion="reduced"]::view-transition-new(*) {
+  animation: none !important;
+}

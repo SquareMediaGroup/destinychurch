@@ -6,6 +6,10 @@
 import "server-only";
 import { createServiceClient } from "@/utils/supabase/service";
 
+// Approved photos are served from their stored Playbook permalink — a
+// permanent, unsigned CDN URL created once at approval time (see
+// app/api/admin/media/photos/[id]/approve/route.ts) — never re-fetched here.
+
 export interface MediaBoardSummary {
   id: string;
   title: string;
@@ -33,11 +37,6 @@ export interface MediaPhoto {
   createdAt: string;
 }
 
-function photoUrl(filePath: string): string {
-  return createServiceClient().storage.from("media-photos").getPublicUrl(filePath).data
-    .publicUrl;
-}
-
 /** Public boards, newest first, with their approved-photo count and cover. */
 export async function getPublicBoards(): Promise<MediaBoardSummary[]> {
   const supabase = createServiceClient();
@@ -52,25 +51,25 @@ export async function getPublicBoards(): Promise<MediaBoardSummary[]> {
   const boardIds = boards.map((b) => b.id);
   const { data: photos } = await supabase
     .from("media_photos")
-    .select("id, board_id, file_path")
+    .select("id, board_id, playbook_permalink_url")
     .in("board_id", boardIds)
     .eq("status", "approved");
 
   const countByBoard = new Map<string, number>();
-  const pathById = new Map<string, string>();
+  const urlById = new Map<string, string | null>();
   for (const photo of photos ?? []) {
     countByBoard.set(photo.board_id, (countByBoard.get(photo.board_id) ?? 0) + 1);
-    pathById.set(photo.id, photo.file_path);
+    urlById.set(photo.id, photo.playbook_permalink_url);
   }
 
   return boards.map((board) => {
-    const coverPath = board.cover_photo_id ? pathById.get(board.cover_photo_id) : undefined;
+    const coverUrl = board.cover_photo_id ? urlById.get(board.cover_photo_id) : undefined;
     return {
       id: board.id,
       title: board.title,
       slug: board.slug,
       description: board.description,
-      coverPhotoUrl: coverPath ? photoUrl(coverPath) : null,
+      coverPhotoUrl: coverUrl ?? null,
       photoCount: countByBoard.get(board.id) ?? 0,
     };
   });
@@ -123,17 +122,19 @@ function toBoard(data: {
 export async function getApprovedPhotos(boardId: string): Promise<MediaPhoto[]> {
   const { data } = await createServiceClient()
     .from("media_photos")
-    .select("id, file_path, file_name, uploader_name, created_at")
+    .select("id, playbook_permalink_url, file_name, uploader_name, created_at")
     .eq("board_id", boardId)
     .eq("status", "approved")
     .order("created_at", { ascending: false })
     .limit(500);
 
-  return (data ?? []).map((photo) => ({
-    id: photo.id,
-    url: photoUrl(photo.file_path),
-    fileName: photo.file_name,
-    uploaderName: photo.uploader_name,
-    createdAt: photo.created_at,
-  }));
+  return (data ?? [])
+    .filter((photo) => photo.playbook_permalink_url)
+    .map((photo) => ({
+      id: photo.id,
+      url: photo.playbook_permalink_url as string,
+      fileName: photo.file_name,
+      uploaderName: photo.uploader_name,
+      createdAt: photo.created_at,
+    }));
 }

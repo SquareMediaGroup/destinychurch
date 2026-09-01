@@ -348,7 +348,8 @@ destinychurch/
 │       │                                  # EXECUTE on the three engagement RPCs (see §24b), add
 │       │                                  # search_path to the ip_category trigger, relocate btree_gist
 │       ├── 20260831_01_media_admin_role.sql # `media_admin` access level on admin_roles
-│       └── 20260831_02_media_gallery.sql # /media photo gallery (media_boards, media_photos, media-photos bucket)
+│       ├── 20260831_02_media_gallery.sql # /media photo gallery (media_boards, media_photos, media-photos bucket)
+│       └── 20260901_media_playbook.sql   # Switches /media's photo storage to Playbook (see lib/playbook.server.ts)
 │
 ├── utils/                         # Utility modules
 │   ├── supabase/                  # Supabase client factories
@@ -1705,35 +1706,39 @@ Both migrations are applied to production; `get_advisors` is clean on all of the
 name only — upload to. Every upload sits in a `pending` moderation queue until a `media_admin`
 approves it; nothing reaches the public board until then. A board is `is_public = true` (listed
 on `/media`) or unlisted, reachable only via its `share_token` at `/media/s/[token]` (e.g. for a
-wedding). Migration: `supabase/migrations/20260831_02_media_gallery.sql`; the `media_admin` role
-column is a separate migration, `20260831_01_media_admin_role.sql`.
+wedding). Migrations: `20260831_02_media_gallery.sql` (original schema), `20260831_01_media_admin_role.sql`
+(the `media_admin` role column), `20260901_media_playbook.sql` (switches storage to Playbook —
+see below).
 
 ```sql
 CREATE TABLE media_boards (
-  id             uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  title          text NOT NULL,
-  slug           text NOT NULL UNIQUE,
-  description    text,
-  cover_photo_id uuid REFERENCES media_photos(id) ON DELETE SET NULL,
-  is_public      boolean NOT NULL DEFAULT true,
-  share_token    text NOT NULL UNIQUE DEFAULT encode(gen_random_bytes(16), 'hex'),
-  allow_uploads  boolean NOT NULL DEFAULT true,
-  created_at     timestamptz NOT NULL DEFAULT now(),
-  updated_at     timestamptz NOT NULL DEFAULT now()
+  id                   uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  title                text NOT NULL,
+  slug                 text NOT NULL UNIQUE,
+  description          text,
+  cover_photo_id       uuid REFERENCES media_photos(id) ON DELETE SET NULL,
+  is_public            boolean NOT NULL DEFAULT true,
+  share_token          text NOT NULL UNIQUE DEFAULT encode(gen_random_bytes(16), 'hex'),
+  allow_uploads        boolean NOT NULL DEFAULT true,
+  playbook_board_token text,             -- the matching Playbook board; see lib/playbook.server.ts
+  created_at           timestamptz NOT NULL DEFAULT now(),
+  updated_at           timestamptz NOT NULL DEFAULT now()
 );
 
 CREATE TABLE media_photos (
-  id               uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  board_id         uuid NOT NULL REFERENCES media_boards(id) ON DELETE CASCADE,
-  file_path        text NOT NULL,        -- path inside the public `media-photos` storage bucket
-  file_name        text NOT NULL,
-  mime_type        text, size_bytes bigint, width integer, height integer,
-  uploader_name    text NOT NULL,        -- plain text, no auth — anonymous upload
-  status           text NOT NULL DEFAULT 'pending'
-                     CHECK (status IN ('pending','approved','rejected')),
-  reviewed_by      text, reviewed_at timestamptz, reject_reason text,
-  uploader_ip_hash text,                 -- sha256(ip + MEDIA_IP_SALT), rate-limiting only
-  created_at       timestamptz NOT NULL DEFAULT now()
+  id                     uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  board_id               uuid NOT NULL REFERENCES media_boards(id) ON DELETE CASCADE,
+  file_path              text,                  -- legacy/unused: pre-Playbook Supabase Storage path
+  file_name              text NOT NULL,
+  mime_type              text, size_bytes bigint, width integer, height integer,
+  uploader_name          text NOT NULL,         -- plain text, no auth — anonymous upload
+  status                 text NOT NULL DEFAULT 'pending'
+                           CHECK (status IN ('pending','approved','rejected')),
+  reviewed_by            text, reviewed_at timestamptz, reject_reason text,
+  uploader_ip_hash       text,                  -- sha256(ip + MEDIA_IP_SALT), rate-limiting only
+  playbook_asset_token   text,                  -- the Playbook asset; needed for delete + permalink
+  playbook_permalink_url text,                  -- permanent CDN URL, set only on approval
+  created_at             timestamptz NOT NULL DEFAULT now()
 );
 
 -- RLS: deny-all "service only" on both tables, same as every other table here.
@@ -1741,15 +1746,36 @@ CREATE TABLE media_photos (
 -- rather than a relaxed anon-key policy, keeping the same invariant as admin routes.
 ```
 
-**Storage:** one public bucket, `media-photos` (10MB/file, jpeg/png/webp only). Kept public and
-singular rather than split public/private or gated behind signed URLs — pending vs. approved and
-public vs. unlisted are both enforced at the API layer (only `status='approved'` rows are ever
-returned; a private board is reachable only if you already have its `share_token`), and every
-object path is a random UUID nobody can guess without the DB row first.
+**Storage: Playbook, not Supabase Storage** (`lib/playbook.server.ts`) — the one feature on this
+codebase that stores its files outside Supabase. Every other bucket (popup-images, post-media,
+hr-documents, shop-hero-images, product-images) is untouched; this was a deliberate,
+feature-scoped swap, not a platform-wide migration. `file_path` is kept as a nullable, unused
+legacy column rather than dropped, and the `media-photos` Supabase Storage bucket the original
+migration created is left in place too — empty and unused, but harmless, and not worth a
+migration of its own to remove.
+
+Each `media_boards` row has a matching Playbook board (provisioned eagerly on creation, or
+lazily on first upload if missing — `getOrCreateBoard()` matches by exact title before creating,
+so it's safe to call more than once). Uploads go through Playbook's two-step flow
+(`upload_prepare` → PUT bytes → `upload_complete`), branching on whichever of GCS-resumable,
+Backblaze single-part, or Backblaze multipart the org's `storage_provider` returns — which one
+applies isn't something the caller controls. Two URL lifetimes matter and are never conflated:
+`display_url` (signed, ~24h — used for the admin moderation queue's thumbnails, fetched fresh
+per request) and `permalink` (permanent, unsigned, plan-capped — created via `add_permalinks`
+**only on approval**, since a pending or rejected photo never needed a permanent URL and
+shouldn't spend the org's capped permalink budget on one). Deleting a photo or board calls
+Playbook's delete endpoints too (best-effort, non-fatal — an orphaned Playbook asset is a much
+smaller problem than a failed admin action). Auth: `PLAYBOOK_TOKEN` env var (Bearer, write
+scope); org: `PLAYBOOK_ORG_SLUG`, defaulting to `"dctv"`.
 
 **Abuse mitigation on the anonymous upload route** (`app/api/media/upload/route.ts`, outside
 `middleware.ts`'s matcher entirely — no auth wall at all): MIME/size allowlist, a honeypot form
-field, and a DB-backed per-IP-hash rate limit (20 uploads/hour, no new table or infra).
+field, a DB-backed per-IP-hash rate limit (20 uploads/hour, no new table or infra), and
+re-encoding every upload through `sharp` before it ever reaches Playbook — which strips
+EXIF/XMP/ICC metadata (phone photos routinely carry GPS coordinates), auto-rotates first via
+`.rotate()` so stripping that same orientation tag doesn't leave portrait photos sideways, and
+doubles as a content check (a spoofed `image/*` MIME type on a non-image file throws here
+instead of being stored).
 
 **Used By:**
 - `lib/media.server.ts` — the one place board/photo reads happen (`getPublicBoards`,
@@ -4714,11 +4740,44 @@ place board/photo reads happen, shared by the page components and the public `/a
 routes so "only approved photos, only public boards" lives in one spot.
 
 - `getPublicBoards()` — public boards, newest first, each with its approved-photo count and cover
-  photo URL (via the `media-photos` storage bucket's public URL).
+  photo URL. Reads the cover's stored `playbook_permalink_url` directly — no Playbook API call.
 - `getBoardBySlug(slug)` — a public board by slug; returns `null` for a private one, so a private
   board's slug can never be reached this way (only its `share_token` can — see below).
 - `getBoardByToken(token)` — any board (public or private) by its unguessable `share_token`.
-- `getApprovedPhotos(boardId)` — `status='approved'` photos for a board, newest first.
+- `getApprovedPhotos(boardId)` — `status='approved'` photos for a board, newest first. Every
+  approved photo already has a stored `playbook_permalink_url` (set once at approval time), so
+  this never calls Playbook either — see `lib/playbook.server.ts` below.
+
+### `lib/playbook.server.ts`
+
+`server-only`. Every call this codebase makes to Playbook (dev.playbook.com), the DAM that
+stores `/media`'s photos — see Database Schema §25 for why and how the swap from Supabase
+Storage was scoped to this one feature.
+
+- `getOrCreateBoard(title)` — finds a Playbook board by exact title, or creates one. No
+  find-or-create endpoint exists upstream, so this lists (`?query=`) and checks for an exact
+  match first; safe to call more than once for the same title.
+- `uploadAsset({ buffer, title, mediaType, boardToken })` — the two-step upload flow
+  (`upload_prepare` → PUT bytes → `upload_complete`), branching on whichever of GCS-resumable,
+  Backblaze single-part, or Backblaze multipart `upload_prepare` says the org's storage provider
+  requires. Returns the created asset (`token`, `permalink: null`, `display_url: null` — both
+  populate asynchronously once Playbook's background worker generates previews).
+- `getTemporaryDisplayUrl(assetToken)` — a signed URL, valid ~24h. Used only for the admin
+  moderation queue's thumbnails, fetched fresh per request — never stored.
+- `createPermalink(assetToken)` — a permanent, unsigned CDN URL. Spends one of the org's
+  plan-capped permalinks (Free 10, Pro 1,000, Team/Business 5,000), so callers only invoke this
+  on approval, never on upload.
+- `deleteAsset(assetToken)` / `deleteBoard(boardToken)` — Playbook soft-deletes (a deleted asset
+  is still `GET`-able with `is_deleted: true`, presumably recoverable from their trash for a
+  period) rather than hard-deleting; both are called best-effort (`.catch(() => {})`) from the
+  admin delete routes, since an orphaned Playbook asset is a far smaller problem than a failed
+  admin action.
+
+Auth is `PLAYBOOK_TOKEN` (Bearer, needs the `write` scope for uploads) and `PLAYBOOK_ORG_SLUG`
+(defaults to `"dctv"` — the account's Pro-plan workspace; a second, unrelated free-plan
+`"destinytees"` workspace exists on the same token with only 10 permalinks total, which is why
+the slug is a fixed default rather than resolved by picking "the first organisation" at request
+time).
 
 ### `lib/jobs.ts` & `lib/hr.ts`
 

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createServiceClient } from "@/utils/supabase/service";
 import { readForAudit, recordAudit } from "@/lib/audit.server";
+import { deleteAsset } from "@/lib/playbook.server";
 
 export async function DELETE(
   _request: Request,
@@ -11,7 +12,9 @@ export async function DELETE(
   const before = await readForAudit("media_photos", id);
   if (!before) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  await supabase.storage.from("media-photos").remove([String(before.file_path)]);
+  if (before.playbook_asset_token) {
+    await deleteAsset(String(before.playbook_asset_token)).catch(() => {});
+  }
 
   const { error } = await supabase.from("media_photos").delete().eq("id", id);
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });

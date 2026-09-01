@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createServiceClient } from "@/utils/supabase/service";
+import { getTemporaryDisplayUrl } from "@/lib/playbook.server";
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -21,10 +22,20 @@ export async function GET(request: Request) {
   const { data, error } = await query;
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
-  const photosWithUrls = (data ?? []).map((photo) => ({
-    ...photo,
-    url: supabase.storage.from("media-photos").getPublicUrl(photo.file_path).data.publicUrl,
-  }));
+  // Approved photos already have a permanent permalink stored; anything else
+  // (pending, rejected) gets a fresh ~24h signed URL fetched on demand — the
+  // admin queue is reviewed within minutes, so a permalink (plan-capped, and
+  // only meaningful once a photo is actually public) would be wasted here.
+  const photosWithUrls = await Promise.all(
+    (data ?? []).map(async (photo) => ({
+      ...photo,
+      url:
+        photo.playbook_permalink_url ??
+        (photo.playbook_asset_token
+          ? await getTemporaryDisplayUrl(photo.playbook_asset_token).catch(() => null)
+          : null),
+    })),
+  );
 
   return NextResponse.json(photosWithUrls);
 }

@@ -1,7 +1,8 @@
-import { createHash, randomUUID } from "node:crypto";
+import { createHash } from "node:crypto";
 import { NextResponse } from "next/server";
 import sharp from "sharp";
 import { createServiceClient } from "@/utils/supabase/service";
+import { deleteAsset, getOrCreateBoard, uploadAsset } from "@/lib/playbook.server";
 
 // Anonymous public upload — outside middleware's matcher entirely (see
 // middleware.ts's config.matcher), so there is no auth wall here at all.
@@ -69,13 +70,25 @@ export async function POST(request: Request) {
 
   const { data: board } = await supabase
     .from("media_boards")
-    .select("id, allow_uploads")
+    .select("id, title, allow_uploads, playbook_board_token")
     .eq("share_token", boardToken)
     .maybeSingle();
 
   if (!board) return NextResponse.json({ error: "Board not found" }, { status: 404 });
   if (!board.allow_uploads) {
     return NextResponse.json({ error: "This board isn't accepting uploads" }, { status: 403 });
+  }
+
+  // Lazily provisioned rather than at board-creation time only, so a board
+  // created before this column existed still gets a Playbook board on its
+  // first upload instead of erroring forever.
+  let playbookBoardToken = board.playbook_board_token;
+  if (!playbookBoardToken) {
+    playbookBoardToken = await getOrCreateBoard(board.title);
+    await supabase
+      .from("media_boards")
+      .update({ playbook_board_token: playbookBoardToken })
+      .eq("id", board.id);
   }
 
   const ip =
@@ -97,9 +110,6 @@ export async function POST(request: Request) {
       { status: 429 },
     );
   }
-
-  const ext = file.type === "image/png" ? "png" : file.type === "image/webp" ? "webp" : "jpg";
-  const path = `${board.id}/${randomUUID()}.${ext}`;
 
   // Re-encode through sharp rather than storing the upload as-is. Two reasons:
   // it strips EXIF/XMP/ICC metadata (phone photos routinely carry GPS coordinates —
@@ -124,18 +134,24 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "That file isn't a valid image" }, { status: 400 });
   }
 
-  const { error: uploadError } = await supabase.storage
-    .from("media-photos")
-    .upload(path, processed, { contentType: file.type, upsert: false });
+  const fileName = file.name.slice(0, 255) || `photo.${file.type === "image/png" ? "png" : file.type === "image/webp" ? "webp" : "jpg"}`;
 
-  if (uploadError) {
-    return NextResponse.json({ error: uploadError.message }, { status: 500 });
+  let asset;
+  try {
+    asset = await uploadAsset({
+      buffer: processed,
+      title: fileName,
+      mediaType: file.type,
+      boardToken: playbookBoardToken,
+    });
+  } catch (err) {
+    console.error("⚠️ Playbook upload failed:", err);
+    return NextResponse.json({ error: "Upload failed — please try again" }, { status: 502 });
   }
 
   const { error: insertError } = await supabase.from("media_photos").insert({
     board_id: board.id,
-    file_path: path,
-    file_name: file.name.slice(0, 255),
+    file_name: fileName,
     mime_type: file.type,
     size_bytes: processed.length,
     width: info.width,
@@ -143,10 +159,11 @@ export async function POST(request: Request) {
     uploader_name: uploaderName,
     uploader_ip_hash: ipHash,
     status: "pending",
+    playbook_asset_token: asset.token,
   });
 
   if (insertError) {
-    await supabase.storage.from("media-photos").remove([path]);
+    await deleteAsset(asset.token).catch(() => {});
     return NextResponse.json({ error: insertError.message }, { status: 500 });
   }
 

@@ -2,6 +2,7 @@ import { randomBytes } from "node:crypto";
 import { NextResponse } from "next/server";
 import { createServiceClient } from "@/utils/supabase/service";
 import { readForAudit, recordAudit } from "@/lib/audit.server";
+import { deleteAsset, deleteBoard } from "@/lib/playbook.server";
 
 export async function PATCH(
   request: Request,
@@ -55,11 +56,19 @@ export async function DELETE(
 
   const { data: photos } = await supabase
     .from("media_photos")
-    .select("file_path")
+    .select("playbook_asset_token")
     .eq("board_id", id);
 
-  if (photos && photos.length > 0) {
-    await supabase.storage.from("media-photos").remove(photos.map((p) => p.file_path));
+  // Assets are deleted individually rather than relying on the board delete
+  // below to cascade — Playbook's API doesn't document whether it does, and
+  // an explicit delete per asset guarantees full cleanup either way.
+  await Promise.all(
+    (photos ?? [])
+      .filter((p) => p.playbook_asset_token)
+      .map((p) => deleteAsset(p.playbook_asset_token as string).catch(() => {})),
+  );
+  if (before?.playbook_board_token) {
+    await deleteBoard(before.playbook_board_token as string).catch(() => {});
   }
 
   const { error } = await supabase.from("media_boards").delete().eq("id", id);

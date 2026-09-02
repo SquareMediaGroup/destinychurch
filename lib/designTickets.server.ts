@@ -411,7 +411,7 @@ export async function requesterView(service: ServiceClient, ticket: TicketRow) {
     service
       .from("design_ticket_deliverables")
       .select(
-        "id, ticket_id, revision, storage_kind, file_name, mime_type, size_bytes, link_url, link_provider, created_at",
+        "id, ticket_id, revision, storage_kind, file_name, mime_type, size_bytes, link_url, link_provider, confirmed_at, created_at",
       )
       .eq("ticket_id", id)
       .order("revision", { ascending: false })

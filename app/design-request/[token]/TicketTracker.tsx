@@ -44,6 +44,7 @@ export default function TicketTracker({
   const [showChangeBox, setShowChangeBox] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [confirmingId, setConfirmingId] = useState<string | null>(null);
 
   const canRequestChanges =
     canTransition(view.status, "changes_requested", "requester") &&
@@ -55,6 +56,36 @@ export default function TicketTracker({
   const revisions = Array.from(new Set(view.deliverables.map((d) => d.revision))).sort(
     (a, b) => b - a,
   );
+
+  // Download and confirm are one click: this is the requester's own sign-off
+  // that they have the file, so it's tied to the moment they actually pull it
+  // down rather than a separate "yes I'm sure" step later. Opens the download
+  // in a new tab so confirming doesn't navigate them away from this page.
+  async function downloadAndConfirm(fileId: string, href: string) {
+    setConfirmingId(fileId);
+    setError("");
+    try {
+      const res = await fetch(`/api/design-request/${token}/deliverables/${fileId}/confirm`, {
+        method: "POST",
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error ?? "Couldn't confirm that file.");
+        return;
+      }
+      setView((v) => ({
+        ...v,
+        deliverables: v.deliverables.map((d) =>
+          d.id === fileId ? { ...d, confirmed_at: data.confirmed_at } : d,
+        ),
+      }));
+      window.open(href, "_blank", "noreferrer");
+    } catch {
+      setError("Couldn't reach the server. Try again.");
+    } finally {
+      setConfirmingId(null);
+    }
+  }
 
   async function move(to: DesignTicketStatus, body?: string) {
     setBusy(true);
@@ -144,6 +175,7 @@ export default function TicketTracker({
                         file.storage_kind === "link"
                           ? (file.link_url ?? "#")
                           : `/api/design-request/${token}/deliverables/${file.id}/download`;
+                      const canConfirm = file.storage_kind !== "link";
                       return (
                         <div key={file.id}>
                           {embed ? (
@@ -153,26 +185,69 @@ export default function TicketTracker({
                               className="mb-2 aspect-video w-full rounded-2xl border-0"
                             />
                           ) : null}
-                          <a
-                            href={href}
-                            target={file.storage_kind === "link" ? "_blank" : undefined}
-                            rel={file.storage_kind === "link" ? "noreferrer" : undefined}
-                            className="flex items-center gap-3 rounded-2xl bg-[#f5f7fa] px-4 py-3 transition hover:bg-black/8"
-                          >
-                            <span className="material-symbols-rounded text-xl text-destiny-orange">
-                              {file.storage_kind === "link" ? "open_in_new" : "download"}
-                            </span>
-                            <span className="min-w-0 flex-1">
-                              <span className="block truncate text-sm font-bold text-destiny-grey">
-                                {file.file_name}
+                          {canConfirm && file.confirmed_at ? (
+                            <div className="flex items-center gap-3 rounded-2xl bg-[#f5f7fa] px-4 py-3">
+                              <span className="material-symbols-rounded text-xl text-green-600">
+                                check_circle
                               </span>
-                              {file.storage_kind !== "link" && file.size_bytes ? (
-                                <span className="block text-xs text-destiny-grey/50">
-                                  {fileSize(file.size_bytes)}
+                              <span className="min-w-0 flex-1">
+                                <span className="block truncate text-sm font-bold text-destiny-grey">
+                                  {file.file_name}
                                 </span>
-                              ) : null}
-                            </span>
-                          </a>
+                                <span className="block text-xs text-destiny-grey/50">
+                                  Confirmed — will be removed automatically in about 48 hours
+                                </span>
+                              </span>
+                              <a
+                                href={href}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="material-symbols-rounded text-xl text-destiny-grey/40 transition hover:text-destiny-orange"
+                                title="Download again"
+                              >
+                                download
+                              </a>
+                            </div>
+                          ) : canConfirm ? (
+                            <button
+                              type="button"
+                              disabled={confirmingId === file.id}
+                              onClick={() => downloadAndConfirm(file.id, href)}
+                              className="flex w-full items-center gap-3 rounded-2xl bg-[#f5f7fa] px-4 py-3 text-left transition hover:bg-black/8 disabled:opacity-60"
+                            >
+                              <span className="material-symbols-rounded text-xl text-destiny-orange">
+                                download
+                              </span>
+                              <span className="min-w-0 flex-1">
+                                <span className="block truncate text-sm font-bold text-destiny-grey">
+                                  {file.file_name}
+                                </span>
+                                <span className="block text-xs text-destiny-grey/50">
+                                  {confirmingId === file.id
+                                    ? "Downloading…"
+                                    : file.size_bytes
+                                      ? `${fileSize(file.size_bytes)} · Download confirms you have it`
+                                      : "Download confirms you have it"}
+                                </span>
+                              </span>
+                            </button>
+                          ) : (
+                            <a
+                              href={href}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="flex items-center gap-3 rounded-2xl bg-[#f5f7fa] px-4 py-3 transition hover:bg-black/8"
+                            >
+                              <span className="material-symbols-rounded text-xl text-destiny-orange">
+                                open_in_new
+                              </span>
+                              <span className="min-w-0 flex-1">
+                                <span className="block truncate text-sm font-bold text-destiny-grey">
+                                  {file.file_name}
+                                </span>
+                              </span>
+                            </a>
+                          )}
                         </div>
                       );
                     })}

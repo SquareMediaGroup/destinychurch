@@ -246,6 +246,7 @@ export interface DesignDeliverable {
   link_url: string | null;
   link_provider: "drive" | "playbook" | "other" | null;
   uploaded_by_email: string | null;
+  confirmed_at: string | null;
   created_at: string;
 }
 

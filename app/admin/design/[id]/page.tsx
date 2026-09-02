@@ -288,6 +288,12 @@ export default function DesignTicketPage({ params }: { params: Promise<{ id: str
                                 : "Playbook link"
                               : fileSize(file.size_bytes)}
                             {file.uploaded_by_email ? ` · ${file.uploaded_by_email}` : ""}
+                            {file.confirmed_at ? (
+                              <span className="text-green-600 dark:text-green-500">
+                                {" "}
+                                · Confirmed by requester — auto-deletes ~48h after {when(file.confirmed_at)}
+                              </span>
+                            ) : null}
                           </span>
                         </span>
                         <a

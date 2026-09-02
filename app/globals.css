@@ -526,14 +526,22 @@ body {
 }
 
 /* Real refraction. Only Chromium currently honours an SVG filter reference in
-   backdrop-filter; the @supports test is false in Safari/Firefox, so they fall
-   through to the blur + sheen above. Order matters: the lens (url) displaces
-   the CRISP backdrop first — heavy blur before displacement would erase the
-   bend and the colour fringing — then a light 2px blur smooths the result.
-   The surface tint + sheen keep foreground text legible. -webkit- is
-   intentionally NOT given the url() (Safari can't render it and would drop
-   the whole filter). */
-@supports (backdrop-filter: url("#glass-refract")) {
+   backdrop-filter. We can't feature-test that directly: url() is spec-valid
+   syntax for backdrop-filter, so `@supports (backdrop-filter: url(...))`
+   reports true in Safari too — it's just checking the value parses, not that
+   the engine can render a local SVG filter through it. That false positive
+   used to reach desktop Safari (only masked on mobile, below, by the
+   viewport-width fallback meant for perf, not correctness), leaving desktop
+   Safari's header pill trying and failing to render the filter instead of
+   falling through to the blur + sheen above.
+   Gate on `paint()` (CSS Houdini Paint API) instead — genuinely Chromium-only,
+   unsupported in Safari and Firefox — so this reliably tests engine, not
+   syntax. Order matters: the lens (url) displaces the CRISP backdrop first —
+   heavy blur before displacement would erase the bend and the colour
+   fringing — then a light 2px blur smooths the result. The surface tint +
+   sheen keep foreground text legible. -webkit- is intentionally NOT given the
+   url() (Safari can't render it and would drop the whole filter). */
+@supports (background: paint(x)) {
   .glass-refract {
     backdrop-filter: url(#glass-refract) blur(5px) saturate(1.4)
       brightness(1.05);
@@ -543,7 +551,7 @@ body {
 /* Refraction is GPU-costly when tiled across many small surfaces; drop the
    displacement on phones and lean on the cheaper blur + sheen. */
 @media (max-width: 768px) {
-  @supports (backdrop-filter: url("#glass-refract")) {
+  @supports (background: paint(x)) {
     .glass-refract {
       backdrop-filter: blur(var(--glass-blur)) saturate(1.4) brightness(1.05);
     }

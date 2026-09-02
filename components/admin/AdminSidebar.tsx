@@ -288,7 +288,14 @@ export default function AdminSidebar() {
               alt="Destiny Church Admin"
               fill
               sizes="130px"
-              className="object-contain object-left"
+              className="object-contain object-left dark:hidden"
+            />
+            <Image
+              src="/img/brand/Destiny SVG Logos/Destiny Full Logo SVG/Full Logo White.svg"
+              alt="Destiny Church Admin"
+              fill
+              sizes="130px"
+              className="hidden object-contain object-left dark:block"
             />
           </Link>
           <div className="flex items-center gap-2">
@@ -398,7 +405,14 @@ function SidebarContents({
             alt="Destiny Church Admin"
             fill
             sizes="140px"
-            className="object-contain object-left"
+            className="object-contain object-left dark:hidden"
+          />
+          <Image
+            src="/img/brand/Destiny SVG Logos/Destiny Full Logo SVG/Full Logo White.svg"
+            alt="Destiny Church Admin"
+            fill
+            sizes="140px"
+            className="hidden object-contain object-left dark:block"
           />
         </Link>
       </div>

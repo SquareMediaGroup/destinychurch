@@ -17,6 +17,7 @@ import { designTeamEmails } from "@/lib/designTickets.server";
 import {
   DESIGN_CATEGORY_LABELS,
   ticketRef,
+  uniqueEmails,
   type DesignTicketCategory,
 } from "@/lib/designTickets";
 
@@ -26,9 +27,10 @@ const DESIGN_FALLBACK_INBOX =
   process.env.DESIGN_NOTIFICATIONS_EMAIL || "techteam@destinytees.uk";
 
 /**
- * Who to tell about a new request or a change request: everyone with the design
- * role, or the shared inbox if that's nobody. Resolved per send rather than
- * cached, so revoking the role takes someone off the list immediately.
+ * Who to tell about a new request or a change request: the design team and the
+ * super admins, or the shared inbox if that somehow resolves to nobody. Resolved
+ * per send rather than cached, so revoking a role takes someone off the list
+ * immediately.
  */
 async function designRecipients(): Promise<string[]> {
   try {
@@ -95,7 +97,7 @@ export async function sendRequestReceivedEmail(ticket: TicketEmailFields) {
   });
 }
 
-/** To everyone holding the design role. */
+/** To the design team and the super admins. */
 export async function sendNewRequestAlert(ticket: TicketEmailFields) {
   const fast = ticket.priority === "fast_track";
   await sendEmailCard({
@@ -163,7 +165,7 @@ export async function sendDeliveredEmail(
 
 /**
  * To the design team, plus the assignee if they aren't already on it — a
- * designer who has since had the role revoked still wants to hear that the
+ * designer who has since had their role revoked still wants to hear that the
  * thing they were working on has come back.
  */
 export async function sendChangesRequestedAlert(
@@ -172,9 +174,7 @@ export async function sendChangesRequestedAlert(
   assigneeEmail: string | null,
 ) {
   const team = await designRecipients();
-  const recipients = Array.from(
-    new Set([...team, ...(assigneeEmail ? [assigneeEmail] : [])].map((e) => e.toLowerCase())),
-  );
+  const recipients = uniqueEmails([...team, assigneeEmail]);
 
   await sendEmailCard({
     to: recipients,

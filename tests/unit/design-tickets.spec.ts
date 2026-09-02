@@ -12,6 +12,7 @@ import {
   nextStatuses,
   ticketRef,
   transitionLabel,
+  uniqueEmails,
   type DesignTicketStatus,
 } from "../../lib/designTickets";
 
@@ -156,4 +157,60 @@ test("file sizes read as sizes", () => {
   expect(fileSize(2048)).toBe("2 KB");
   expect(fileSize(5 * 1024 * 1024)).toBe("5.0 MB");
   expect(fileSize(3 * 1024 * 1024 * 1024)).toBe("3.00 GB");
+});
+
+/* ── Notification recipients ───────────────────────────────────────────────── */
+
+/**
+ * Team notifications are addressed by role — design_admin or super_admin — and
+ * one person can hold both. Without the case-insensitive dedupe they'd get two
+ * copies of every request, and the assignee on a change request would get a
+ * third.
+ */
+
+test("someone holding both roles is one recipient, not two", () => {
+  expect(uniqueEmails(["jo@destinytees.uk", "jo@destinytees.uk"])).toEqual([
+    "jo@destinytees.uk",
+  ]);
+});
+
+test("the same inbox typed with different capitals is still one recipient", () => {
+  // Addresses are typed by hand on /admin/users, so this is the realistic case.
+  expect(uniqueEmails(["Jo@destinytees.uk", "jo@destinytees.uk"])).toEqual([
+    "Jo@destinytees.uk",
+  ]);
+});
+
+test("the first spelling seen is the one kept", () => {
+  expect(uniqueEmails(["JO@destinytees.uk", "jo@destinytees.uk"])[0]).toBe(
+    "JO@destinytees.uk",
+  );
+});
+
+test("blank, whitespace and missing addresses are dropped, not mailed", () => {
+  // admin_roles.email is nullable, and a row with no address must not become
+  // an empty recipient that makes Resend reject the whole send.
+  expect(uniqueEmails(["a@x.uk", "", "   ", null, undefined, "b@x.uk"])).toEqual([
+    "a@x.uk",
+    "b@x.uk",
+  ]);
+});
+
+test("addresses are trimmed", () => {
+  expect(uniqueEmails(["  jo@destinytees.uk  "])).toEqual(["jo@destinytees.uk"]);
+  // ...and a trimmed duplicate still collapses.
+  expect(uniqueEmails(["jo@destinytees.uk", " jo@destinytees.uk "])).toHaveLength(1);
+});
+
+test("order is preserved so the list reads predictably", () => {
+  expect(uniqueEmails(["c@x.uk", "a@x.uk", "b@x.uk"])).toEqual([
+    "c@x.uk",
+    "a@x.uk",
+    "b@x.uk",
+  ]);
+});
+
+test("nobody in, nobody out — the caller's cue to use the fallback inbox", () => {
+  expect(uniqueEmails([])).toEqual([]);
+  expect(uniqueEmails([null, "", undefined])).toEqual([]);
 });

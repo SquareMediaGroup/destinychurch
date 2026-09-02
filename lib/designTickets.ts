@@ -294,6 +294,29 @@ export interface RequesterTicketView {
   events: RequesterEvent[];
 }
 
+/**
+ * Clean a list of addresses read off admin_roles: trim, drop blanks, and
+ * deduplicate case-insensitively while keeping the first spelling seen.
+ *
+ * The case-insensitive part is the point. Someone holding both the design role
+ * and super admin is one person, and addresses get typed by hand on
+ * /admin/users, so "Jo@destinytees.uk" and "jo@destinytees.uk" are the same
+ * inbox receiving the same notification twice.
+ */
+export function uniqueEmails(raw: (string | null | undefined)[]): string[] {
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const value of raw) {
+    const email = (value ?? "").trim();
+    if (!email) continue;
+    const key = email.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push(email);
+  }
+  return out;
+}
+
 /** Bytes as something a person reads. */
 export function fileSize(bytes: number | null): string {
   if (!bytes || bytes <= 0) return "";

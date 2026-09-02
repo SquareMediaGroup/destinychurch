@@ -7,7 +7,9 @@ import { BLOCKS } from "@/components/blocks/registry";
 import type { AnyBlockDefinition } from "@/components/blocks/types";
 import { Sheet } from "@/components/admin/Sheet";
 import { useIsClient } from "@/lib/useIsClient";
+import { useIsDesktop } from "@/lib/useIsDesktop";
 import { useKeyboardInset } from "@/lib/useKeyboardInset";
+import { BlockDrawer } from "./BlockDrawer";
 import { BlockPalette } from "./BlockPalette";
 import { BlockInspector } from "./BlockInspector";
 import {
@@ -19,12 +21,18 @@ import {
 import { useSelectedBlock } from "./useSelectedBlock";
 
 /**
- * The blocks affordance for every editor that has no room for sidebars — and
- * the whole of the blocks UI on a phone.
+ * The blocks affordance for every editor that isn't the full-screen post
+ * editor — and the whole of the blocks UI on a phone.
  *
- * The post editor is a full-screen surface and gets persistent Blocks and
- * Settings panels on desktop. The job, training and product editors are modals,
- * so they get the same two surfaces as bottom sheets instead.
+ * The post editor gets persistent Blocks and Settings panels built into its
+ * own layout. The job, training and product editors are a scrolling page or a
+ * modal rather than a fixed document surface, so instead of reshaping each of
+ * them into a permanent side-by-side split, Blocks opens as an overlay: a
+ * right-hand drawer on desktop (same drag-and-drop palette the post editor's
+ * sidebar uses) and a bottom sheet on phones, where there's no room for a
+ * drawer and dragging isn't the interaction anyway. Settings stays a sheet on
+ * both — it's a short, single-block form, not something worth keeping pinned
+ * open.
  *
  * Either way these buttons sit OUTSIDE the rich-text toolbar. That toolbar
  * formats the current text selection; blocks are page structure. Mixing them
@@ -60,6 +68,7 @@ export function BlockTools({ editor }: { editor: Editor | null }) {
   }
 
   const summary = def && selected ? summarise(def, selected.propsJson) : "";
+  const isDesktop = useIsDesktop();
 
   return (
     <>
@@ -135,7 +144,16 @@ export function BlockTools({ editor }: { editor: Editor | null }) {
           document.body,
         )}
 
-      {sheet === "blocks" && (
+      {sheet === "blocks" && isDesktop && (
+        // A mouse can drag, so desktop gets the sidebar palette (drag-and-drop
+        // included) in a right-hand drawer instead of the phone's bottom
+        // sheet — same component the post editor's persistent Blocks sidebar
+        // uses. It stays open after an insert, since dragging in several
+        // blocks in a row is the point.
+        <BlockDrawer editor={editor} onClose={() => setSheet(null)} />
+      )}
+
+      {sheet === "blocks" && !isDesktop && (
         <Sheet
           title="Add a block"
           subtitle="Tap a block to drop it into the page."

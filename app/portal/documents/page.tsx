@@ -21,6 +21,10 @@ export default function PortalDocumentsPage() {
   const [error, setError] = useState("");
 
   useEffect(() => {
+    document.title = "Documents | Destiny Church";
+  }, []);
+
+  useEffect(() => {
     fetch(`${PORTAL_API}/documents`)
       .then((r) => (r.ok ? r.json() : []))
       .then((d) => setDocs(Array.isArray(d) ? d : []))

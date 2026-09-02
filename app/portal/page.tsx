@@ -27,6 +27,10 @@ export default function PortalProfilePage() {
   const [error, setError] = useState("");
 
   useEffect(() => {
+    document.title = "My Portal | Destiny Church";
+  }, []);
+
+  useEffect(() => {
     Promise.all([
       fetch(`${PORTAL_API}/me`).then((r) => (r.ok ? r.json() : Promise.reject(r))),
       fetch(`${PORTAL_API}/leave`).then((r) => (r.ok ? r.json() : [])),

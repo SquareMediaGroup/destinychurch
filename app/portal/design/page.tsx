@@ -41,6 +41,10 @@ export default function PortalDesignPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    document.title = "Design | Destiny Church";
+  }, []);
+
+  useEffect(() => {
     fetch("/api/portal/design")
       .then((res) => (res.ok ? res.json() : []))
       .then(setTickets)

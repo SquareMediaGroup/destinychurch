@@ -50,6 +50,10 @@ export default function PortalLeavePage() {
   }, []);
 
   useEffect(() => {
+    document.title = "Leave | Destiny Church";
+  }, []);
+
+  useEffect(() => {
     load();
   }, [load]);
 

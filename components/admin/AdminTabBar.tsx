@@ -69,9 +69,9 @@ export default function AdminTabBar() {
     <>
       <div
         data-tour="tabbar"
-        className="fixed inset-x-0 bottom-0 z-40 md:hidden"
+        className="fixed inset-x-3 bottom-[calc(env(safe-area-inset-bottom)+12px)] z-40 md:hidden"
       >
-        <div className="glass admin-tabbar rounded-t-2xl pb-[env(safe-area-inset-bottom)]">
+        <div className="glass admin-tabbar rounded-full">
           <nav aria-label="Admin sections">
             {/* admin-tabbar-scroll carries `justify-content: safe center`, which
                 centres a short row and left-aligns a long one — see globals.css

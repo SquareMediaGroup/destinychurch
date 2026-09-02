@@ -27,9 +27,10 @@ const DESIGN_FALLBACK_INBOX =
   process.env.DESIGN_NOTIFICATIONS_EMAIL || "techteam@destinytees.uk";
 
 /**
- * Who to tell about a new request or a change request: everyone with the design
- * role, or the shared inbox if that's nobody. Resolved per send rather than
- * cached, so revoking the role takes someone off the list immediately.
+ * Who to tell about a new request or a change request: admins holding both
+ * design_admin and super_admin, or the shared inbox if nobody qualifies.
+ * Resolved per send rather than cached, so revoking either role takes someone
+ * off the list immediately.
  */
 async function designRecipients(): Promise<string[]> {
   try {
@@ -96,7 +97,7 @@ export async function sendRequestReceivedEmail(ticket: TicketEmailFields) {
   });
 }
 
-/** To everyone holding the design role. */
+/** To admins holding both design_admin and super_admin. */
 export async function sendNewRequestAlert(ticket: TicketEmailFields) {
   const fast = ticket.priority === "fast_track";
   await sendEmailCard({
@@ -164,7 +165,7 @@ export async function sendDeliveredEmail(
 
 /**
  * To the design team, plus the assignee if they aren't already on it — a
- * designer who has since had the role revoked still wants to hear that the
+ * designer who has since had either role revoked still wants to hear that the
  * thing they were working on has come back.
  */
 export async function sendChangesRequestedAlert(

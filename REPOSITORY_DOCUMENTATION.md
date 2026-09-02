@@ -4940,18 +4940,19 @@ share token is ever emailed), the new-request alert, claimed, delivered, changes
 requested, closed and cancelled.
 
 **Team notifications are addressed by role, not by config.** `designRecipients()`
-reads every `admin_roles` row with `design_admin = true` on each send, so granting
-someone the role on `/admin/users` is all it takes to put them in the loop — a
-second, manual step to also add their address is exactly the step that doesn't get
-done, and the failure is silent. Super admins are excluded despite being able to
-open the queue: holding the keys to everything shouldn't mean receiving every
-module's mail, and a super admin who wants design notifications gives themselves
-the design role. `DESIGN_NOTIFICATIONS_EMAIL` survives only as a fallback for when
-nobody holds the role, so revoking the last one degrades to "someone still gets
-it" rather than "requests quietly stop being announced".
+reads every `admin_roles` row holding **both** `design_admin` and `super_admin`
+on each send — the two together, deliberately, not either alone. A design admin
+who isn't also trusted with everything else doesn't get the mail; a super admin
+who hasn't specifically been given the design role doesn't either. Granting both
+on `/admin/users` is all it takes to put someone in the loop — a second, manual
+step to also add their address is exactly the step that doesn't get done, and the
+failure is silent. `DESIGN_NOTIFICATIONS_EMAIL` survives only as a fallback for
+when nobody qualifies, so an empty result degrades to "someone still gets it"
+rather than "requests quietly stop being announced".
 
-A change request also reaches the assignee even if they've since lost the role —
-they still want to hear that the thing they were working on has come back — which
+A change request also reaches the assignee even if they've since lost either
+role — they still want to hear that the thing they were working on has come back
+— which
 is why recipients go through `uniqueEmails()` (`lib/designTickets.ts`). It
 deduplicates case-insensitively and drops blanks: the assignee is usually already
 on the team list, `admin_roles.email` is nullable, and an empty recipient makes
@@ -5464,7 +5465,7 @@ RESEND_API_KEY=re_...
 PAGE_AUDIT_FROM=Destiny AI <noreply@support.squaremediagroup.org>  # from-address for system alert emails
 SMART_SEARCH_ALERT_RECIPIENT=malachi@squaremediagroup.org          # Smart Search down/recovered alerts
 HR_NOTIFICATIONS_EMAIL=techteam@destinytees.uk                     # optional; inbox for HR leave/decision + review-reminder emails (lib/hrEmail.ts). Falls back to techteam@destinytees.uk
-DESIGN_NOTIFICATIONS_EMAIL=techteam@destinytees.uk                 # optional FALLBACK only; design notifications go to whoever holds design_admin. Used when nobody does, so requests cannot arrive unannounced
+DESIGN_NOTIFICATIONS_EMAIL=techteam@destinytees.uk                 # optional FALLBACK only; design notifications go to admins holding BOTH design_admin AND super_admin. Used when nobody qualifies, so requests cannot arrive unannounced
 DESIGN_IP_SALT=<random string>                                     # optional but recommended; salts the sha256 of a requester's IP. Without it the hash is brute-forceable — the IPv4 space is small
 
 # Playbook (dev.playbook.com) — the DAM holding design ticket deliverables.

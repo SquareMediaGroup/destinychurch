@@ -180,26 +180,27 @@ export async function designBoardToken(
 /* ── Who the design team is ────────────────────────────────────────────────── */
 
 /**
- * Every admin holding the design role, for the notification emails.
+ * Who gets design notifications: admins holding BOTH design_admin AND
+ * super_admin — not either role alone. A design_admin who isn't also trusted
+ * with everything else doesn't get the mail; a super_admin who hasn't been
+ * given the design role specifically doesn't either. The two together is a
+ * deliberate double sign-off, not a shortcut for "has some relevant role".
  *
- * Read live rather than kept in an env var so that granting someone the role on
- * /admin/users is all it takes to put them in the loop. Keeping a separate list
- * of addresses in step with the roles is exactly the step that doesn't get done,
- * and the failure is silent.
+ * Read live rather than kept in an env var so that granting both roles on
+ * /admin/users is all it takes to put someone in the loop. Keeping a separate
+ * list of addresses in step with the roles is exactly the step that doesn't
+ * get done, and the failure is silent.
  *
- * Super admins are deliberately excluded despite being able to open the queue:
- * holding the keys to everything shouldn't mean receiving every module's mail.
- * A super admin who wants design notifications gives themselves the design role.
- *
- * The caller falls back to the shared inbox when this is empty, so removing the
- * role from the last person degrades to "someone still gets it" rather than
- * "requests quietly stop being announced".
+ * The caller falls back to the shared inbox when this is empty, so nobody
+ * qualifying degrades to "someone still gets it" rather than "requests
+ * quietly stop being announced".
  */
 export async function designTeamEmails(service: ServiceClient): Promise<string[]> {
   const { data } = await service
     .from("admin_roles")
     .select("email")
-    .eq("design_admin", true);
+    .eq("design_admin", true)
+    .eq("super_admin", true);
 
   return uniqueEmails((data ?? []).map((row) => row.email));
 }

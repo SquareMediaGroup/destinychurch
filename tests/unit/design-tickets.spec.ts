@@ -162,20 +162,21 @@ test("file sizes read as sizes", () => {
 /* ── Notification recipients ───────────────────────────────────────────────── */
 
 /**
- * Team notifications are addressed by role — design_admin or super_admin — and
- * one person can hold both. Without the case-insensitive dedupe they'd get two
- * copies of every request, and the assignee on a change request would get a
- * third.
+ * A change request goes to the design team *and* to the assignee, who is very
+ * often already on that list. Without the dedupe they'd get two copies of the
+ * same mail; without the case-insensitive part, two copies whenever the
+ * addresses were typed with different capitals.
  */
 
-test("someone holding both roles is one recipient, not two", () => {
+test("the assignee already on the team list is one recipient, not two", () => {
   expect(uniqueEmails(["jo@destinytees.uk", "jo@destinytees.uk"])).toEqual([
     "jo@destinytees.uk",
   ]);
 });
 
 test("the same inbox typed with different capitals is still one recipient", () => {
-  // Addresses are typed by hand on /admin/users, so this is the realistic case.
+  // admin_roles.email is typed by hand on /admin/users, while assignee_email is
+  // stamped from the auth header — so the two spellings genuinely differ.
   expect(uniqueEmails(["Jo@destinytees.uk", "jo@destinytees.uk"])).toEqual([
     "Jo@destinytees.uk",
   ]);

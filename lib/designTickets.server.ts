@@ -180,27 +180,26 @@ export async function designBoardToken(
 /* ── Who the design team is ────────────────────────────────────────────────── */
 
 /**
- * Everyone who should hear about a design request: holders of the design role,
- * plus super admins — who can open the queue anyway, and are the people expected
- * to notice when nobody has picked something up.
+ * Every admin holding the design role, for the notification emails.
  *
  * Read live rather than kept in an env var so that granting someone the role on
  * /admin/users is all it takes to put them in the loop. Keeping a separate list
  * of addresses in step with the roles is exactly the step that doesn't get done,
  * and the failure is silent.
  *
- * Deduplicated case-insensitively: someone holding both roles is one recipient,
- * not two copies of the same mail.
+ * Super admins are deliberately excluded despite being able to open the queue:
+ * holding the keys to everything shouldn't mean receiving every module's mail.
+ * A super admin who wants design notifications gives themselves the design role.
  *
- * The caller falls back to the shared inbox when this is empty, so an admin_roles
- * table with no addresses degrades to "someone still gets it" rather than
+ * The caller falls back to the shared inbox when this is empty, so removing the
+ * role from the last person degrades to "someone still gets it" rather than
  * "requests quietly stop being announced".
  */
 export async function designTeamEmails(service: ServiceClient): Promise<string[]> {
   const { data } = await service
     .from("admin_roles")
     .select("email")
-    .or("design_admin.eq.true,super_admin.eq.true");
+    .eq("design_admin", true);
 
   return uniqueEmails((data ?? []).map((row) => row.email));
 }

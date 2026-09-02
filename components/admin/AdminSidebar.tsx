@@ -282,7 +282,10 @@ export default function AdminSidebar() {
           to live on a phone. */}
       <div className="sticky top-0 z-30 flex flex-col gap-1.5 border-b border-black/8 bg-white px-4 py-3 dark:border-white/8 dark:bg-destiny-grey-800 md:hidden">
         <div className="flex items-center justify-between">
-          <Link href="/admin" className="relative h-7 w-[130px]">
+          {/* -ml-[15px]: the logo SVG has ~15px of transparent padding baked in
+              before the mark starts, so object-left alone still left the
+              wordmark sitting visibly right of the breadcrumb text below it. */}
+          <Link href="/admin" className="relative -ml-[15px] h-7 w-[130px]">
             <Image
               src="/img/brand/Destiny SVG Logos/Destiny Full Logo SVG/Full Logo Colour.svg"
               alt="Destiny Church Admin"

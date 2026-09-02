@@ -58,8 +58,7 @@ export default function ProductCard({ product }: { product: ProductWithVariants 
         </h3>
         <div className="mt-2 flex items-end justify-between gap-2">
           <p className="shop-price text-sm font-bold text-destiny-orange">
-            {multiPrice ? "from " : ""}
-            {formatPrice(price)}
+            {price === 0 ? "Free" : `${multiPrice ? "from " : ""}${formatPrice(price)}`}
           </p>
           <span className="material-symbols-rounded shop-arrow text-2xl text-destiny-grey/40">
             arrow_forward

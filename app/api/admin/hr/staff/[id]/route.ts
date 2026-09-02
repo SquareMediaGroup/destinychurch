@@ -4,6 +4,9 @@ import {
   createLogin,
   deleteLogin,
   updateLogin,
+  isAdminIdentity,
+  assertAdminAvailable,
+  adminIdentitiesByAuthUserId,
 } from "@/lib/staffLogins";
 import { fullName } from "@/lib/hr";
 import { readForAudit, recordAudit } from "@/lib/audit.server";
@@ -21,7 +24,15 @@ export async function GET(
     .single();
 
   if (error) return NextResponse.json({ error: error.message }, { status: 404 });
-  return NextResponse.json(data);
+
+  const adminMap = await adminIdentitiesByAuthUserId(supabase);
+  const admin = data.auth_user_id ? adminMap.get(data.auth_user_id) : undefined;
+
+  return NextResponse.json({
+    ...data,
+    linked_admin_email: admin?.email ?? null,
+    linked_admin_roles: admin?.roles ?? [],
+  });
 }
 
 const EDITABLE = [
@@ -62,15 +73,26 @@ export async function PATCH(
     if (key in body) update[key] = body[key];
   }
 
-  // Backend-access changes — only when the modal sent a grant_access flag.
-  if ("grant_access" in body) {
+  // Backend-access changes — only when the modal sent a login_mode. Access is
+  // mandatory (no "revoke" path); this only ever creates/resets a login or
+  // swaps which login is linked.
+  let loginNote = "";
+  let oldAuthUserIdToDelete: string | null = null;
+  if ("login_mode" in body) {
     const password: string | undefined = body.password?.trim() || undefined;
+    const currentIsAdmin = existing.auth_user_id
+      ? await isAdminIdentity(supabase, existing.auth_user_id)
+      : false;
 
-    if (body.grant_access) {
-      if (existing.auth_user_id) {
+    if (body.login_mode === "new") {
+      if (existing.auth_user_id && !currentIsAdmin) {
+        // Staff-only login already exists — reset its password, no swap.
         const err = await updateLogin(supabase, existing.auth_user_id, { password });
         if (err) return NextResponse.json({ error: err.message }, { status: err.status });
+        loginNote = " and reset their login password";
       } else {
+        // No login yet, or the current login is a shared admin identity —
+        // create a fresh, staff-only login and swap to it.
         const email = (body.email ?? existing.email)?.trim();
         const result = await createLogin(supabase, {
           email: email ?? "",
@@ -80,11 +102,25 @@ export async function PATCH(
           return NextResponse.json({ error: result.message }, { status: result.status });
         }
         update.auth_user_id = result.id;
+        loginNote = " and gave them their own new login";
+        if (existing.auth_user_id && !currentIsAdmin) oldAuthUserIdToDelete = existing.auth_user_id;
       }
-    } else if (existing.auth_user_id) {
-      // Access revoked — remove the login entirely.
-      await deleteLogin(supabase, existing.auth_user_id);
-      update.auth_user_id = null;
+    } else if (body.login_mode === "link") {
+      if (!body.linked_admin_auth_user_id) {
+        return NextResponse.json({ error: "Choose an admin to link." }, { status: 400 });
+      }
+      const err = await assertAdminAvailable(supabase, body.linked_admin_auth_user_id, {
+        excludeStaffId: id,
+      });
+      if (err) return NextResponse.json({ error: err.message }, { status: err.status });
+
+      if (body.linked_admin_auth_user_id !== existing.auth_user_id) {
+        update.auth_user_id = body.linked_admin_auth_user_id;
+        loginNote = " and linked them to their existing admin login";
+        if (existing.auth_user_id && !currentIsAdmin) oldAuthUserIdToDelete = existing.auth_user_id;
+      }
+    } else {
+      return NextResponse.json({ error: "Choose how this person will sign in." }, { status: 400 });
     }
   }
 
@@ -108,7 +144,7 @@ export async function PATCH(
       entity: "staff member",
       entityId: id,
       entityLabel: fullName(data),
-      summary: `Reset the backend login password for ${fullName(data)}`,
+      summary: `Edited the staff record for ${fullName(data)}${loginNote}`,
       changes: null,
     });
 
@@ -124,14 +160,17 @@ export async function PATCH(
     .select()
     .single();
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) {
+    const message =
+      error.code === "23505"
+        ? "This admin is already linked to another staff record."
+        : error.message;
+    return NextResponse.json({ error: message }, { status: error.code === "23505" ? 409 : 500 });
+  }
 
-  const accessNote =
-    "grant_access" in body
-      ? body.grant_access
-        ? " and gave them a backend login"
-        : " and removed their backend login"
-      : "";
+  // Clean up the old login only after the swap succeeded, and only if it was
+  // staff-only — a shared admin identity is unlinked, never deleted.
+  if (oldAuthUserIdToDelete) await deleteLogin(supabase, oldAuthUserIdToDelete);
 
   await recordAudit({
     action: "update",
@@ -139,7 +178,7 @@ export async function PATCH(
     entity: "staff member",
     entityId: id,
     entityLabel: fullName(data),
-    summary: `Edited the staff record for ${fullName(data)}${accessNote}`,
+    summary: `Edited the staff record for ${fullName(data)}${loginNote}`,
     before,
     after: update,
     redactFields: ["notes", "phone"],
@@ -155,11 +194,14 @@ export async function DELETE(
   const { id } = await params;
   const supabase = createServiceClient();
 
-  // Remove the linked login first so we don't leave an account that can still
-  // sign in after its staff record is gone.
+  // Remove the linked login first so we don't leave a staff-only account
+  // that can still sign in after its staff record is gone — but never touch
+  // a login that's shared with an existing admin: that account (and their
+  // admin_roles row, which cascades off it) must survive this delete.
   const existing = await readForAudit("hr_staff", id);
   if (existing?.auth_user_id) {
-    await deleteLogin(supabase, existing.auth_user_id as string);
+    const sharedWithAdmin = await isAdminIdentity(supabase, existing.auth_user_id as string);
+    if (!sharedWithAdmin) await deleteLogin(supabase, existing.auth_user_id as string);
   }
 
   const { error } = await supabase.from("hr_staff").delete().eq("id", id);

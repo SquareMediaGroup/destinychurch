@@ -26,11 +26,15 @@ export interface Staff {
   end_date: string | null;
   annual_leave_entitlement: number;
   notes: string | null;
-  auth_user_id: string | null;
+  auth_user_id: string;
   created_at: string;
   updated_at: string;
   // Enrichment-only (derived from the linked auth user, not stored on hr_staff):
   has_login?: boolean;
+  // Set when auth_user_id also has an admin_roles row — the login is shared
+  // with an existing backend admin rather than being staff-only.
+  linked_admin_email?: string | null;
+  linked_admin_roles?: string[];
 }
 
 interface StaffRef {

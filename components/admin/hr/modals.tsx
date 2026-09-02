@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   API,
   fullName,
@@ -106,8 +106,26 @@ export function StaffModal({
     notes: staff?.notes ?? "",
   });
   const [saving, setSaving] = useState(false);
-  const [grantAccess, setGrantAccess] = useState(staff?.has_login ?? false);
+  const currentlyLinkedToAdmin = Boolean(staff?.linked_admin_email);
+  const [loginMode, setLoginMode] = useState<"new" | "link">(
+    currentlyLinkedToAdmin ? "link" : "new",
+  );
+  const [linkedAdminId, setLinkedAdminId] = useState(
+    currentlyLinkedToAdmin ? (staff?.auth_user_id ?? "") : "",
+  );
   const [password, setPassword] = useState("");
+  const [loginTouched, setLoginTouched] = useState(false);
+  const [availableAdmins, setAvailableAdmins] = useState<
+    { id: string; email: string | null; roles: string[] }[]
+  >([]);
+
+  useEffect(() => {
+    const params = staff ? `?excludeStaffId=${staff.id}` : "";
+    fetch(`${API}/staff/available-admins${params}`)
+      .then((r) => (r.ok ? r.json() : []))
+      .then(setAvailableAdmins)
+      .catch(() => setAvailableAdmins([]));
+  }, [staff]);
 
   function set<K extends keyof typeof form>(key: K, value: (typeof form)[K]) {
     setForm((f) => ({ ...f, [key]: value }));
@@ -122,8 +140,9 @@ export function StaffModal({
         ...form,
         start_date: form.start_date || null,
         annual_leave_entitlement: Number(form.annual_leave_entitlement) || 0,
-        grant_access: grantAccess,
+        login_mode: !staff || loginTouched ? loginMode : undefined,
         password: password || undefined,
+        linked_admin_auth_user_id: loginMode === "link" ? linkedAdminId : undefined,
       },
       onSaved,
       onError,
@@ -253,26 +272,50 @@ export function StaffModal({
           />
         </div>
 
-        {/* Backend access — optional login + which systems they can reach */}
+        {/* Backend access — mandatory login, either new or linked to an existing admin */}
         <div className="rounded-xl border border-black/10 bg-[#f5f7fa]/70 p-4">
-          <label className="flex cursor-pointer items-start gap-3">
-            <input
-              type="checkbox"
-              checked={grantAccess}
-              onChange={(e) => setGrantAccess(e.target.checked)}
-              className="mt-0.5 h-4 w-4 rounded accent-destiny-orange"
-            />
-            <span>
-              <span className="block text-sm font-bold text-destiny-grey dark:text-white">
-                Grant backend access
-              </span>
-              <span className="block text-xs text-destiny-grey/50 dark:text-white/50">
-                Create a login so this person can sign in.
-              </span>
-            </span>
-          </label>
+          <span className="block text-sm font-bold text-destiny-grey dark:text-white">
+            Sign-in
+          </span>
+          {staff && (
+            <p className="mt-0.5 text-xs text-destiny-grey/50 dark:text-white/50">
+              Currently:{" "}
+              {currentlyLinkedToAdmin
+                ? `linked to ${staff.linked_admin_email} (${staff.linked_admin_roles?.join(", ") || "no roles"})`
+                : "their own login"}
+            </p>
+          )}
 
-          {grantAccess && (
+          <div className="mt-3 flex gap-4">
+            <label className="flex cursor-pointer items-center gap-2 text-sm font-bold text-destiny-grey dark:text-white">
+              <input
+                type="radio"
+                name="login_mode"
+                checked={loginMode === "new"}
+                onChange={() => {
+                  setLoginMode("new");
+                  setLoginTouched(true);
+                }}
+                className="h-4 w-4 accent-destiny-orange"
+              />
+              {staff && !currentlyLinkedToAdmin ? "Own login" : "Create a new login"}
+            </label>
+            <label className="flex cursor-pointer items-center gap-2 text-sm font-bold text-destiny-grey dark:text-white">
+              <input
+                type="radio"
+                name="login_mode"
+                checked={loginMode === "link"}
+                onChange={() => {
+                  setLoginMode("link");
+                  setLoginTouched(true);
+                }}
+                className="h-4 w-4 accent-destiny-orange"
+              />
+              Link an existing admin
+            </label>
+          </div>
+
+          {loginMode === "new" && (
             <div className="mt-4 flex flex-col gap-4">
               <div>
                 <label className={labelClass}>Password</label>
@@ -281,17 +324,48 @@ export function StaffModal({
                   autoComplete="new-password"
                   className={inputClass}
                   value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  onChange={(e) => {
+                    setPassword(e.target.value);
+                    setLoginTouched(true);
+                  }}
                   placeholder={
-                    staff?.has_login ? "Leave blank to keep current" : "Set a password (min 8 characters)"
+                    staff?.has_login && !currentlyLinkedToAdmin
+                      ? "Leave blank to keep current"
+                      : "Set a password (min 8 characters)"
                   }
                 />
-                {!staff?.has_login && !form.email && (
+                {(!staff || currentlyLinkedToAdmin) && !form.email && (
                   <p className="mt-1.5 text-xs text-destiny-red">
                     An email address (above) is required to create a login.
                   </p>
                 )}
               </div>
+            </div>
+          )}
+
+          {loginMode === "link" && (
+            <div className="mt-4">
+              <label className={labelClass}>Admin</label>
+              <select
+                className={inputClass}
+                value={linkedAdminId}
+                onChange={(e) => {
+                  setLinkedAdminId(e.target.value);
+                  setLoginTouched(true);
+                }}
+              >
+                <option value="">Select…</option>
+                {availableAdmins.map((a) => (
+                  <option key={a.id} value={a.id}>
+                    {a.email} — {a.roles.join(", ") || "no roles"}
+                  </option>
+                ))}
+              </select>
+              {availableAdmins.length === 0 && (
+                <p className="mt-1.5 text-xs text-destiny-grey/50 dark:text-white/50">
+                  No unlinked admins available — add one under Users first.
+                </p>
+              )}
             </div>
           )}
         </div>

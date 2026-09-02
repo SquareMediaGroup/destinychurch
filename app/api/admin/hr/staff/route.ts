@@ -1,6 +1,11 @@
 import { NextResponse } from "next/server";
 import { createServiceClient } from "@/utils/supabase/service";
-import { createLogin, authUsersById } from "@/lib/staffLogins";
+import {
+  createLogin,
+  authUsersById,
+  assertAdminAvailable,
+  adminIdentitiesByAuthUserId,
+} from "@/lib/staffLogins";
 import { fullName } from "@/lib/hr";
 import { recordAudit } from "@/lib/audit.server";
 
@@ -13,14 +18,21 @@ export async function GET() {
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
-  // Enrich each row with whether the linked auth user has a login, so the
-  // directory and edit modal can show backend access status.
-  const authMap = await authUsersById(supabase);
+  // Enrich each row with whether the linked auth user has a login, and
+  // whether that login is shared with an existing admin, so the directory
+  // and edit modal can show backend access status correctly.
+  const [authMap, adminMap] = await Promise.all([
+    authUsersById(supabase),
+    adminIdentitiesByAuthUserId(supabase),
+  ]);
   const enriched = (data ?? []).map((row) => {
     const login = row.auth_user_id ? authMap.get(row.auth_user_id) : undefined;
+    const admin = row.auth_user_id ? adminMap.get(row.auth_user_id) : undefined;
     return {
       ...row,
       has_login: Boolean(login),
+      linked_admin_email: admin?.email ?? null,
+      linked_admin_roles: admin?.roles ?? [],
     };
   });
 
@@ -42,9 +54,22 @@ export async function POST(request: Request) {
   const email = body.email?.trim() || null;
   const supabase = createServiceClient();
 
-  // Optionally create a backend login for this staff member.
-  let auth_user_id: string | null = null;
-  if (body.grant_access) {
+  // Every staff record needs exactly one linked login, either a brand-new
+  // one or an existing admin's — there's no "no login" option.
+  let auth_user_id: string;
+  let linkedExisting = false;
+  if (body.login_mode === "link") {
+    if (!body.linked_admin_auth_user_id) {
+      return NextResponse.json(
+        { error: "Choose an admin to link." },
+        { status: 400 },
+      );
+    }
+    const err = await assertAdminAvailable(supabase, body.linked_admin_auth_user_id);
+    if (err) return NextResponse.json({ error: err.message }, { status: err.status });
+    auth_user_id = body.linked_admin_auth_user_id;
+    linkedExisting = true;
+  } else if (body.login_mode === "new") {
     if (!email) {
       return NextResponse.json(
         { error: "An email is required to create a login." },
@@ -59,6 +84,11 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: result.message }, { status: result.status });
     }
     auth_user_id = result.id;
+  } else {
+    return NextResponse.json(
+      { error: "Choose how this person will sign in." },
+      { status: 400 },
+    );
   }
 
   const { data, error } = await supabase
@@ -82,9 +112,14 @@ export async function POST(request: Request) {
     .single();
 
   if (error) {
-    // Don't leave an orphaned login if the directory insert fails.
-    if (auth_user_id) await supabase.auth.admin.deleteUser(auth_user_id);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    // Don't leave an orphaned login if the directory insert fails — but
+    // never delete a linked admin's own auth user.
+    if (!linkedExisting) await supabase.auth.admin.deleteUser(auth_user_id);
+    const message =
+      error.code === "23505"
+        ? "This admin is already linked to another staff record."
+        : error.message;
+    return NextResponse.json({ error: message }, { status: error.code === "23505" ? 409 : 500 });
   }
 
   // HR values are held back from the log the way HR is held back from ⌘K
@@ -96,11 +131,13 @@ export async function POST(request: Request) {
     entityId: data.id,
     entityLabel: fullName(data),
     summary: `Added ${fullName(data)} to the staff directory${
-      auth_user_id ? " and created a login for them" : ""
+      linkedExisting
+        ? " and linked them to their existing admin login"
+        : " and created a login for them"
     }`,
     after: data,
     redactFields: ["notes", "phone"],
-    metadata: { login_created: Boolean(auth_user_id) },
+    metadata: { login_mode: linkedExisting ? "link" : "new" },
   });
 
   return NextResponse.json(data, { status: 201 });

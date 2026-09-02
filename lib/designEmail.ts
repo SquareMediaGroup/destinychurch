@@ -11,14 +11,35 @@
 //    Thursday and reads to the requester as lost work. Emails carry the
 //    tracking-page link instead, and that page mints a fresh URL per click.
 import "server-only";
+import { createServiceClient } from "@/utils/supabase/service";
 import { sendEmailCard } from "@/lib/emailCard";
+import { designTeamEmails } from "@/lib/designTickets.server";
 import {
   DESIGN_CATEGORY_LABELS,
   ticketRef,
   type DesignTicketCategory,
 } from "@/lib/designTickets";
 
-const DESIGN_INBOX = process.env.DESIGN_NOTIFICATIONS_EMAIL || "techteam@destinytees.uk";
+// Only a fallback now. The real recipients are whoever holds the design role;
+// this catches the case where nobody does, so a request can't arrive unannounced.
+const DESIGN_FALLBACK_INBOX =
+  process.env.DESIGN_NOTIFICATIONS_EMAIL || "techteam@destinytees.uk";
+
+/**
+ * Who to tell about a new request or a change request: everyone with the design
+ * role, or the shared inbox if that's nobody. Resolved per send rather than
+ * cached, so revoking the role takes someone off the list immediately.
+ */
+async function designRecipients(): Promise<string[]> {
+  try {
+    const team = await designTeamEmails(createServiceClient());
+    if (team.length > 0) return team;
+  } catch (err) {
+    // A lookup failure must not swallow the notification entirely.
+    console.error("📧 Couldn't read the design team, using the fallback inbox:", err);
+  }
+  return [DESIGN_FALLBACK_INBOX];
+}
 
 const SITE = process.env.NEXT_PUBLIC_SITE_URL || "https://destinytees.uk";
 
@@ -74,11 +95,11 @@ export async function sendRequestReceivedEmail(ticket: TicketEmailFields) {
   });
 }
 
-/** To the design inbox. */
+/** To everyone holding the design role. */
 export async function sendNewRequestAlert(ticket: TicketEmailFields) {
   const fast = ticket.priority === "fast_track";
   await sendEmailCard({
-    to: DESIGN_INBOX,
+    to: await designRecipients(),
     subject: `${fast ? "[Fast-track] " : ""}${ticketRef(ticket.ref)} — ${ticket.title}`,
     badge: fast ? "Fast-tracked request" : "New design request",
     heading: ticket.title,
@@ -140,30 +161,34 @@ export async function sendDeliveredEmail(
   });
 }
 
-/** To the design inbox, and the assignee if there is one. */
+/**
+ * To the design team, plus the assignee if they aren't already on it — a
+ * designer who has since had the role revoked still wants to hear that the
+ * thing they were working on has come back.
+ */
 export async function sendChangesRequestedAlert(
   ticket: Pick<TicketEmailFields, "id" | "ref" | "title" | "requester_name">,
   note: string,
   assigneeEmail: string | null,
 ) {
+  const team = await designRecipients();
   const recipients = Array.from(
-    new Set([DESIGN_INBOX, ...(assigneeEmail ? [assigneeEmail] : [])]),
+    new Set([...team, ...(assigneeEmail ? [assigneeEmail] : [])].map((e) => e.toLowerCase())),
   );
-  for (const to of recipients) {
-    await sendEmailCard({
-      to,
-      subject: `${ticketRef(ticket.ref)} — changes requested`,
-      badge: "Changes requested",
-      heading: ticket.title,
-      intro: `${ticket.requester_name} has asked for changes.`,
-      rows: [
-        ["Reference", ticketRef(ticket.ref)],
-        ["What they said", note],
-      ],
-      ctaHref: adminUrl(ticket.id),
-      ctaLabel: "Open the ticket",
-    });
-  }
+
+  await sendEmailCard({
+    to: recipients,
+    subject: `${ticketRef(ticket.ref)} — changes requested`,
+    badge: "Changes requested",
+    heading: ticket.title,
+    intro: `${ticket.requester_name} has asked for changes.`,
+    rows: [
+      ["Reference", ticketRef(ticket.ref)],
+      ["What they said", note],
+    ],
+    ctaHref: adminUrl(ticket.id),
+    ctaLabel: "Open the ticket",
+  });
 }
 
 /* ── Endings ───────────────────────────────────────────────────────────────── */

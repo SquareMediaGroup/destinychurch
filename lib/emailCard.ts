@@ -26,7 +26,8 @@ export function esc(s: string): string {
 }
 
 export interface EmailCardOptions {
-  to: string;
+  /** One address, or several — Resend takes either. */
+  to: string | string[];
   subject: string;
   badge: string;
   heading: string;
@@ -98,10 +99,27 @@ export function emailCardHtml({ badge, heading, intro, rows, ctaHref, ctaLabel }
 }
 
 export async function sendEmailCard(opts: EmailCardOptions) {
-  await resend.emails.send({
+  const result = await resend.emails.send({
     from: EMAIL_FROM,
     to: opts.to,
     subject: opts.subject,
     html: emailCardHtml(opts),
   });
+
+  // Resend reports a rejected send in the response rather than by throwing, so
+  // without this a bad address or a suspended key looks exactly like success.
+  // Callers send fire-and-forget on purpose — a mail failure must never fail the
+  // action that triggered it — which is precisely why the log has to exist:
+  // otherwise nothing anywhere says the notification didn't arrive.
+  // Matches lib/smartSearchAlertEmail.ts.
+  if (result.error) {
+    const to = Array.isArray(opts.to) ? opts.to.join(", ") : opts.to;
+    console.error(
+      `📧 Resend rejected "${opts.subject}" to ${to}: ${result.error.name} — ${result.error.message}`,
+    );
+    return;
+  }
+
+  const to = Array.isArray(opts.to) ? opts.to.join(", ") : opts.to;
+  console.log(`📧 Sent "${opts.subject}" to ${to}`);
 }

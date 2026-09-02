@@ -4936,8 +4936,21 @@ heading, intro, label/value rows, optional CTA — extracted verbatim from
 `lib/hrEmail.ts` when the design queue became the fifth trigger on top of it.
 
 `designEmail.ts` holds the design senders: request received (the only place a
-share token is ever emailed), the design-inbox alert, claimed, delivered, changes
-requested, closed and cancelled. Two rules hold throughout: every send is
+share token is ever emailed), the new-request alert, claimed, delivered, changes
+requested, closed and cancelled.
+
+**Team notifications are addressed by role, not by config.** `designRecipients()`
+reads every `admin_roles` row with `design_admin = true` on each send, so granting
+someone the role on `/admin/users` is all it takes to put them in the loop —
+a second, manual step to also add their address is exactly the step that doesn't
+get done, and the failure is silent. Super admins are excluded despite being able
+to open the queue: holding the keys to everything shouldn't mean receiving every
+module's mail, and a super admin who wants design notifications gives themselves
+the design role. `DESIGN_NOTIFICATIONS_EMAIL` survives only as a fallback for when
+nobody holds the role, so revoking the last one degrades to "someone still gets
+it" rather than "requests quietly stop being announced". A change request also
+reaches the assignee even if they've since lost the role — they still want to
+hear that the thing they were working on has come back. Two rules hold throughout: every send is
 fire-and-forget in a `try/catch` at the call site, so a Resend outage can never
 turn into a failed claim or a rejected delivery; and **a deliverable's URL is
 never in an email** — signed URLs expire, so a link mailed on Tuesday is broken by
@@ -5446,7 +5459,7 @@ RESEND_API_KEY=re_...
 PAGE_AUDIT_FROM=Destiny AI <noreply@support.squaremediagroup.org>  # from-address for system alert emails
 SMART_SEARCH_ALERT_RECIPIENT=malachi@squaremediagroup.org          # Smart Search down/recovered alerts
 HR_NOTIFICATIONS_EMAIL=techteam@destinytees.uk                     # optional; inbox for HR leave/decision + review-reminder emails (lib/hrEmail.ts). Falls back to techteam@destinytees.uk
-DESIGN_NOTIFICATIONS_EMAIL=techteam@destinytees.uk                 # optional; inbox for new design requests + change requests (lib/designEmail.ts). Falls back to techteam@destinytees.uk
+DESIGN_NOTIFICATIONS_EMAIL=techteam@destinytees.uk                 # optional FALLBACK only; design notifications go to whoever holds the design_admin role. Used when nobody does, so requests can't arrive unannounced
 DESIGN_IP_SALT=<random string>                                     # optional but recommended; salts the sha256 of a requester's IP. Without it the hash is brute-forceable — the IPv4 space is small
 
 # Playbook (dev.playbook.com) — the DAM holding design ticket deliverables.

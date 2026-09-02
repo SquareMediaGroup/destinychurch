@@ -176,6 +176,35 @@ export async function designBoardToken(
   return token;
 }
 
+/* ── Who the design team is ────────────────────────────────────────────────── */
+
+/**
+ * Every admin holding the design role, for the notification emails.
+ *
+ * Read live rather than kept in an env var so that granting someone the role on
+ * /admin/users is all it takes to put them in the loop — a second, manual step
+ * to also add their address is exactly the step that doesn't get done, and the
+ * failure is silent.
+ *
+ * Super admins are deliberately excluded despite being able to open the queue:
+ * holding the keys to everything shouldn't mean receiving every module's mail.
+ * A super admin who wants design notifications gives themselves the design role.
+ *
+ * The caller falls back to the shared inbox when this is empty, so removing the
+ * role from the last person degrades to "someone still gets it" rather than
+ * "requests quietly stop being announced".
+ */
+export async function designTeamEmails(service: ServiceClient): Promise<string[]> {
+  const { data } = await service
+    .from("admin_roles")
+    .select("email")
+    .eq("design_admin", true);
+
+  return (data ?? [])
+    .map((row) => (row.email ?? "").trim())
+    .filter((email) => email.length > 0);
+}
+
 /* ── Moving a ticket ───────────────────────────────────────────────────────── */
 
 export interface TransitionActor {

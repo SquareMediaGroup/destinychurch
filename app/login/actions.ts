@@ -1,12 +1,11 @@
 "use server";
 
 import { cookies, headers } from "next/headers";
-import { redirect } from "next/navigation";
 import { createClient } from "@/utils/supabase/server";
 import { createServiceClient } from "@/utils/supabase/service";
 import { REMEMBER_COOKIE_NAME } from "@/utils/supabase/sessionCookie";
 import { checkRateLimit, resetRateLimit } from "@/lib/loginRateLimit";
-import { resolvePostLoginPath } from "@/lib/staffPortalAuth";
+import { getSystemAccess, type SystemAccess } from "@/lib/staffPortalAuth";
 import { ADMIN_ROLES, getRoles } from "@/lib/adminRoles";
 import { recordAudit } from "@/lib/audit.server";
 
@@ -106,22 +105,21 @@ async function signInCore(
 export async function adminSignIn(
   _prev: unknown,
   formData: FormData,
-): Promise<{ success: boolean; error?: string }> {
+): Promise<{ success: boolean; error?: string; email?: string; access?: SystemAccess }> {
   const result = await signInCore(formData);
   if (!result.success || !result.userId) return result;
 
-  // Admin roles take priority over a staff link — someone who is both signs
-  // in to the more powerful surface and can still reach /portal by URL.
-  const destination = await resolvePostLoginPath(createServiceClient(), result.userId);
-  if (!destination) {
+  const access = await getSystemAccess(createServiceClient(), result.userId);
+  if (!access.hasAdmin && !access.hasPortal) {
     return {
       success: false,
       error: "Your account isn't set up for the dashboard or the staff portal yet. Contact an administrator.",
     };
   }
 
-  // redirect() throws, so nothing after this runs on the happy path.
-  redirect(destination);
+  // Hand access back to the client to render the "choose a system" screen —
+  // a card is greyed out for whichever system this account can't open.
+  return { success: true, email: formData.get("email")?.toString().trim(), access };
 }
 
 /**

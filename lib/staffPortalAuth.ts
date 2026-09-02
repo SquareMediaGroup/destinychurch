@@ -61,18 +61,23 @@ export async function readPortalUser(): Promise<PortalIdentity | null> {
   return { userId: user.id, staff: staff as Staff };
 }
 
+export interface SystemAccess {
+  hasAdmin: boolean;
+  hasPortal: boolean;
+}
+
 /**
- * Where a just-authenticated user should land: /admin if they hold any
- * admin role (super_admin included), else /portal if they're linked staff,
- * else null — an authenticated account with neither, which the caller should
- * treat as "not set up" rather than redirect-loop.
+ * Which of the two backend systems this account can open: /admin (any admin
+ * role, super_admin included) and/or /portal (linked hr_staff row). Drives
+ * the "choose a system" screen at /login — a card is greyed out when its
+ * flag is false.
  */
-export async function resolvePostLoginPath(
+export async function getSystemAccess(
   service: ServiceClient,
   authUserId: string,
-): Promise<"/admin" | "/portal" | null> {
+): Promise<SystemAccess> {
   const roles = await getRoles(service, authUserId);
-  if (Object.values(roles).some(Boolean)) return "/admin";
-  if (await isLinkedToStaff(service, authUserId)) return "/portal";
-  return null;
+  const hasAdmin = Object.values(roles).some(Boolean);
+  const hasPortal = await isLinkedToStaff(service, authUserId);
+  return { hasAdmin, hasPortal };
 }

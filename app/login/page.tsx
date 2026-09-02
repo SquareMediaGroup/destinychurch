@@ -1,8 +1,7 @@
 import { cookies } from "next/headers";
-import { redirect } from "next/navigation";
 import { createClient } from "@/utils/supabase/server";
 import { createServiceClient } from "@/utils/supabase/service";
-import { resolvePostLoginPath } from "@/lib/staffPortalAuth";
+import { getSystemAccess } from "@/lib/staffPortalAuth";
 import LoginClient from "./LoginClient";
 
 export const metadata = {
@@ -20,9 +19,12 @@ export default async function LoginPage() {
   } = await supabase.auth.getUser();
 
   if (user) {
-    // Already signed in — go straight to wherever this account belongs.
-    const destination = await resolvePostLoginPath(createServiceClient(), user.id);
-    if (destination) redirect(destination);
+    // Already signed in — show the chooser straight away rather than the
+    // sign-in form, greyed to whatever this account can actually open.
+    const access = await getSystemAccess(createServiceClient(), user.id);
+    if (access.hasAdmin || access.hasPortal) {
+      return <LoginClient initialEmail={user.email ?? undefined} initialAccess={access} />;
+    }
     // Authenticated, but neither an admin role nor a staff link — a genuine
     // orphan account (or one an admin hasn't finished setting up yet).
     // Don't redirect (would loop); show an explanatory state instead of

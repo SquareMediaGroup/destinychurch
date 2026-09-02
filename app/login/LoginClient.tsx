@@ -1,19 +1,55 @@
 "use client";
 
-import { useActionState } from "react";
+import { useEffect, useState, useTransition, useActionState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { adminSignIn } from "./actions";
+import { adminSignIn, adminSignOut } from "./actions";
+import type { SystemAccess } from "@/lib/staffPortalAuth";
 
 const initialState = {
   success: false,
   error: undefined as string | undefined,
+  email: undefined as string | undefined,
+  access: undefined as SystemAccess | undefined,
 };
 
-export default function LoginClient({ unassigned = false }: { unassigned?: boolean }) {
+type SystemCard = {
+  href: string;
+  icon: string;
+  title: string;
+  description: string;
+  hasAccess: (access: SystemAccess) => boolean;
+};
+
+const SYSTEMS: SystemCard[] = [
+  {
+    href: "/admin",
+    icon: "admin_panel_settings",
+    title: "Admin",
+    description: "Manage the site, courses, store, training and more.",
+    hasAccess: (a) => a.hasAdmin,
+  },
+  {
+    href: "/portal",
+    icon: "person",
+    title: "Portal",
+    description: "Your staff self-service — profile, leave and documents.",
+    hasAccess: (a) => a.hasPortal,
+  },
+];
+
+export default function LoginClient({
+  unassigned = false,
+  initialEmail,
+  initialAccess,
+}: {
+  unassigned?: boolean;
+  initialEmail?: string;
+  initialAccess?: SystemAccess;
+}) {
   if (unassigned) return <UnassignedPanel />;
 
-  return <SignInScreen />;
+  return <SignInScreen initialEmail={initialEmail} initialAccess={initialAccess} />;
 }
 
 function UnassignedPanel() {
@@ -46,8 +82,35 @@ function UnassignedPanel() {
   );
 }
 
-function SignInScreen() {
+function SignInScreen({
+  initialEmail,
+  initialAccess,
+}: {
+  initialEmail?: string;
+  initialAccess?: SystemAccess;
+}) {
   const [state, formAction, pending] = useActionState(adminSignIn, initialState);
+  const [phase, setPhase] = useState<"login" | "choose">(initialAccess ? "choose" : "login");
+  const [email, setEmail] = useState<string | undefined>(initialEmail);
+  const [access, setAccess] = useState<SystemAccess | undefined>(initialAccess);
+  const [signingOut, startSignOut] = useTransition();
+
+  useEffect(() => {
+    if (state.success && state.access) {
+      setEmail(state.email);
+      setAccess(state.access);
+      setPhase("choose");
+    }
+  }, [state.success, state.email, state.access]);
+
+  function handleSignOut() {
+    startSignOut(async () => {
+      await adminSignOut();
+      setEmail(undefined);
+      setAccess(undefined);
+      setPhase("login");
+    });
+  }
 
   return (
     <div className="relative flex min-h-screen w-full overflow-hidden bg-destiny-grey">
@@ -75,8 +138,112 @@ function SignInScreen() {
             </div>
           </div>
 
-          <LoginPanel formAction={formAction} pending={pending} error={state.error} />
+          {phase === "login" ? (
+            <LoginPanel formAction={formAction} pending={pending} error={state.error} />
+          ) : (
+            <ChoosePanel
+              email={email}
+              access={access}
+              onSignOut={handleSignOut}
+              signingOut={signingOut}
+            />
+          )}
         </div>
+      </div>
+    </div>
+  );
+}
+
+function ChoosePanel({
+  email,
+  access,
+  onSignOut,
+  signingOut,
+}: {
+  email?: string;
+  access?: SystemAccess;
+  onSignOut: () => void;
+  signingOut: boolean;
+}) {
+  return (
+    <div className="animate-[fadeInUp_0.4s_ease-out_both]">
+      {/* Heading */}
+      <div className="mb-8 text-center">
+        <span className="mb-3 inline-block rounded-full bg-destiny-orange/15 px-4 py-1.5 text-xs font-bold uppercase tracking-widest text-destiny-orange">
+          Choose a system
+        </span>
+        <h1 className="text-3xl font-black text-white md:text-4xl">Where to next?</h1>
+        {email && (
+          <p className="mt-2 text-sm text-white/40">
+            Signed in as <span className="text-white/70">{email}</span>
+          </p>
+        )}
+      </div>
+
+      {/* Cards */}
+      <div className="flex flex-col gap-4">
+        {SYSTEMS.map((sys, i) => {
+          const hasAccess = access ? sys.hasAccess(access) : false;
+          const delay = { animationDelay: `${100 + i * 90}ms` };
+
+          if (!hasAccess) {
+            return (
+              <div
+                key={sys.href}
+                style={delay}
+                aria-disabled="true"
+                className="glass flex cursor-not-allowed items-center gap-4 rounded-3xl border border-white/10 p-5 opacity-50 animate-[fadeInUp_0.45s_ease-out_both]"
+              >
+                <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-white/10 text-white/40">
+                  <span className="material-symbols-rounded text-[28px]">lock</span>
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2">
+                    <h2 className="text-base font-bold text-white/70">{sys.title}</h2>
+                    <span className="rounded-full bg-white/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white/50">
+                      No access
+                    </span>
+                  </div>
+                  <p className="mt-1 text-sm leading-snug text-white/35">
+                    You don&apos;t have permission for this system.
+                  </p>
+                </div>
+              </div>
+            );
+          }
+
+          return (
+            <Link
+              key={sys.href}
+              href={sys.href}
+              style={delay}
+              className="glass group flex items-center gap-4 rounded-3xl border border-white/10 p-5 transition animate-[fadeInUp_0.45s_ease-out_both] hover:border-destiny-orange/40 hover:bg-white/10"
+            >
+              <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-destiny-orange/15 text-destiny-orange transition group-hover:bg-destiny-orange group-hover:text-white">
+                <span className="material-symbols-rounded text-[28px]">{sys.icon}</span>
+              </div>
+              <div className="min-w-0 flex-1">
+                <h2 className="text-base font-bold text-white">{sys.title}</h2>
+                <p className="mt-1 text-sm leading-snug text-white/45">{sys.description}</p>
+              </div>
+              <span className="material-symbols-rounded text-white/25 transition group-hover:translate-x-1 group-hover:text-destiny-orange">
+                chevron_right
+              </span>
+            </Link>
+          );
+        })}
+      </div>
+
+      {/* Sign out */}
+      <div className="mt-8 text-center">
+        <button
+          type="button"
+          onClick={onSignOut}
+          disabled={signingOut}
+          className="text-xs font-bold uppercase tracking-wider text-white/40 transition hover:text-white/70 disabled:opacity-50"
+        >
+          {signingOut ? "Signing out…" : "Sign out"}
+        </button>
       </div>
     </div>
   );

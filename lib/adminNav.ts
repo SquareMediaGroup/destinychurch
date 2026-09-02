@@ -385,6 +385,31 @@ export const ADMIN_GROUPS: AdminNavGroup[] = [
       },
     ],
   },
+  {
+    // The design request queue. Requests arrive from the public
+    // /design-request page; designers claim them here and deliver the files.
+    label: "Design",
+    icon: "draw",
+    items: [
+      {
+        href: "/admin/design",
+        label: "Design tickets",
+        icon: "draw",
+        role: "design_admin",
+        description: "Claim design requests, deliver files and handle revisions.",
+        keywords: [
+          "graphics",
+          "artwork",
+          "request",
+          "ticket",
+          "poster",
+          "flyer",
+          "brief",
+          "queue",
+        ],
+      },
+    ],
+  },
 ];
 
 /** Every item, flattened, in sidebar order. */
@@ -408,6 +433,14 @@ export interface AdminQuickAction {
 }
 
 export const ADMIN_QUICK_ACTIONS: AdminQuickAction[] = [
+  {
+    id: "new-design-ticket",
+    label: "New design ticket",
+    icon: "draw",
+    role: "design_admin",
+    href: "/admin/design?new=1",
+    keywords: ["create", "add", "request", "artwork", "graphics", "brief"],
+  },
   {
     id: "new-post",
     label: "New post",

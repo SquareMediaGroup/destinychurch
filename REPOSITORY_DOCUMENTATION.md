@@ -164,6 +164,7 @@ destinychurch/
 │   ├── terms/                     # Terms of use
 │   ├── training/                  # /training resource library (category → subgroup → post)
 │   ├── contact/                   # Contact form
+│   ├── design-request/            # Public design request form + [token]/ requester tracker
 │   ├── visit/                     # Plan a visit
 │   ├── new-here/                  # First-time visitor guide
 │   ├── hire/                      # Venue hire enquiries
@@ -195,7 +196,8 @@ destinychurch/
 │   │   ├── layout.tsx             # Portal shell (separate auth boundary from /admin)
 │   │   ├── page.tsx               # Profile + leave balance overview
 │   │   ├── leave/page.tsx         # Request/withdraw own leave
-│   │   └── documents/page.tsx     # Download own + org-wide documents
+│   │   ├── documents/page.tsx     # Download own + org-wide documents
+│   │   └── design/page.tsx        # Own design requests (matched by staff link and by email)
 │   ├── jobs/                      # Job listing & application
 │   │   ├── page.tsx               # Job list
 │   │   ├── [slug]/page.tsx        # Job detail
@@ -212,7 +214,8 @@ destinychurch/
 │   │   │   │                      #   hr/ includes checklists/ + checklist-templates/
 │   │   │   ├── simulated-live/    # Simulated live config + YouTube link lookup (Host)
 │   │   │   └── ...
-│   │   ├── portal/                # Staff self-service API — me/, leave/, documents/ (linked hr_staff)
+│   │   ├── portal/                # Staff self-service API — me/, leave/, documents/, design/ (linked hr_staff)
+│   │   ├── design-request/        # Public, share-token-scoped: [token]/ + deliverable downloads
 │   │   ├── cron/                  # Vercel Cron — live-chat-purge/, hr-review-reminders/ (Bearer CRON_SECRET)
 │   │   ├── chat/                  # POST /api/chat — Smart Search tool-calling chat
 │   │   ├── youtube/                # videos/, thumbnail/[id]/, status/, live/
@@ -275,6 +278,12 @@ destinychurch/
 │   ├── hr.ts                      # HR staff operations, types, leave/review label maps
 │   ├── hrEmail.ts                 # HR notification emails (leave request/decision, review digest) via Resend
 │   ├── staffPortalAuth.ts         # /portal + /api/portal auth boundary (linked hr_staff row, not admin_roles)
+│   ├── designTickets.ts           # Design queue vocabulary + the canTransition state machine (client-safe)
+│   ├── designTickets.server.ts    # applyTransition (the only writer of status), requester identity, requesterView
+│   ├── designEmail.ts             # Design ticket notifications via Resend
+│   ├── emailCard.ts               # The shared transactional email card (HR + design)
+│   ├── playbook.server.ts         # Playbook DAM client — boards, two-step upload, signed display URLs
+│   ├── directUpload.ts            # Browser-side PUT straight to Playbook storage (clears Vercel's 100MB cap)
 │   ├── shop.ts / shop.server.ts   # Shop types, price helpers, published-product fetchers
 │   ├── stripe.ts                  # Stripe client singleton
 │   ├── cart-store.ts              # Zustand basket store (localStorage-persisted)
@@ -1698,6 +1707,113 @@ Both migrations are applied to production; `get_advisors` is clean on all of the
 
 ---
 
+#### 25. **design_tickets / design_ticket_deliverables / design_ticket_events**
+
+The design request queue (`/design-request` → `/admin/design`). Someone asks the design
+team for a poster, a designer claims it, works it, uploads the finished file, and the
+requester downloads it or asks for changes.
+
+```sql
+-- A uuid pk so tickets aren't enumerable, plus a separate sequence for the
+-- human reference: "DT-0007" is what gets said out loud and put in a subject line.
+create sequence design_ticket_ref_seq start 1;
+
+create table design_tickets (
+  id                     uuid primary key default gen_random_uuid(),
+  ref                    integer not null unique default nextval('design_ticket_ref_seq'),
+  title                  text not null,
+  brief                  text not null,
+  category               text not null default 'other'
+                           check (category in ('social','print','apparel','signage','web','video','other')),
+  needed_by              date,
+  specs                  text,
+  -- Never anonymous: the public form always collects both.
+  requester_name         text not null,
+  requester_email        text not null,
+  requester_phone        text,
+  -- Set from the session, never from the form.
+  requester_auth_user_id uuid,
+  requester_staff_id     uuid references hr_staff (id) on delete set null,
+  requester_verified     boolean not null default false,
+  priority               text not null default 'normal'
+                           check (priority in ('normal','fast_track')),
+  status                 text not null default 'open'
+                           check (status in ('open','claimed','in_progress','delivered',
+                                             'changes_requested','closed','cancelled')),
+  revision               integer not null default 1,
+  assignee_email         text,
+  assignee_name          text,
+  assignee_auth_user_id  uuid,
+  assigned_at            timestamptz,
+  share_token            text not null unique default encode(gen_random_bytes(16), 'hex'),
+  playbook_board_token   text,
+  delivered_at           timestamptz,
+  closed_at              timestamptz,
+  resolution_note        text,
+  requester_ip_hash      text,          -- sha256(ip + salt), throttling only
+  last_activity_at       timestamptz not null default now(),
+  created_at             timestamptz not null default now(),
+  updated_at             timestamptz not null default now()
+);
+
+-- Metadata only. The bytes live in Playbook; this stores the asset token.
+create table design_ticket_deliverables (
+  id                   uuid primary key default gen_random_uuid(),
+  ticket_id            uuid not null references design_tickets (id) on delete cascade,
+  revision             integer not null default 1,
+  playbook_asset_token text not null,
+  file_name            text not null,
+  mime_type            text,
+  size_bytes           bigint,
+  uploaded_by_email    text,
+  created_at           timestamptz not null default now(),
+  unique (ticket_id, playbook_asset_token)
+);
+
+-- Status history and messages in ONE append-only table, not two.
+create table design_ticket_events (
+  id          uuid primary key default gen_random_uuid(),
+  ticket_id   uuid not null references design_tickets (id) on delete cascade,
+  kind        text not null check (kind in ('status','note','change_request')),
+  actor_type  text not null default 'system'
+                check (actor_type in ('requester','designer','system')),
+  actor_name  text,
+  actor_email text,
+  from_status text,
+  to_status   text,
+  body        text,
+  is_internal boolean not null default false,
+  created_at  timestamptz not null default now()
+);
+```
+
+**RLS:** all three are deny-all (`using (false) with check (false)`), reached only through
+service-role routes. `design_set_updated_at()` pins `search_path = ''`, matching
+`hr_set_updated_at` and `shop_set_updated_at`.
+
+**Why one events table rather than a comments table and a status-history table.** It lets
+the admin panel and the requester's page render from a single ordered query, and it makes
+"changes requested" one row that is simultaneously the note and the transition — rather than
+a comment that has to be correlated with a status change by timestamp. `is_internal`
+defaults to `false` so forgetting the flag over-shares nothing the requester couldn't
+already see on their own ticket.
+
+**Why `revision` is on the ticket and stamped onto deliverables.** A change request bumps
+`design_tickets.revision`; the next upload is stamped with the new number and gets its own
+Playbook asset. Nothing is ever overwritten, so "what did I approve in round 1" stays
+answerable — which is the entire point of having a revisions workflow.
+
+**Why the assignee is an email, not a foreign key.** A designer is an `admin_roles` row, and
+`admin_roles` has no target worth pointing at from here. Same reasoning as the old
+`media_photos.reviewed_by`.
+
+**Used by:** `app/design-request/*` (public form and tokenised tracker), `app/admin/design/*`
+(queue and detail), `app/portal/design` (staff), `app/api/admin/design/**`,
+`app/api/design-request/**`, `app/api/portal/design`, `lib/designTickets.ts`,
+`lib/designTickets.server.ts`, `lib/designEmail.ts`.
+
+---
+
 **Key Point:** No table uses authenticated user RLS. All member-facing features use API proxy routes that enforce authentication in application code, then access the database with the service role key. This gives finer control and better error messages.
 
 ---
@@ -1934,6 +2050,8 @@ without an auth check, so they must never be reachable on the live site.
 | `/sermons/[id]` | `app/sermons/[id]/page.tsx` | Individual sermon — YouTube embed, skip-to-sermon, next steps |
 | `/live` | `app/live/page.tsx` | Livestream page — standard hero + section rhythm, with a client island that swaps between the custom glass player and an off-air card. On air for a real YouTube broadcast, or for a **simulated** one (a pre-recorded video played from a fixed start time; see `lib/simulatedLive.ts`). Signed-in Hosts also get the **broadcast controls** inline at the top of the page (`LiveHostBar`), so starting, editing or removing a service never means leaving `/live` |
 | `/contact` | `app/contact/page.tsx` | Contact form, address, hours |
+| `/design-request` | `app/design-request/page.tsx` | Ask the design team for something. Name and email are always required, so a request is never anonymous; someone signed in when they submit is fast-tracked. A `@destinytees.uk` address typed while signed out gets a "sign in and we'll fast-track it" nudge, not a block |
+| `/design-request/[token]` | `app/design-request/[token]/page.tsx` | The requester's own tracker, reached by share token rather than a login — status, the brief as submitted, every revision's files, and buttons to ask for changes or close it. `robots: noindex` |
 | `/give` | `app/give/page.tsx` | Giving info — bank details, online giving |
 | `/shop` | `app/shop/page.tsx` | Store front — published products grid with category filter chips (`ShopProductGrid`), editorial `/links` style |
 | `/shop/[slug]` | `app/shop/[slug]/page.tsx` | Product detail — gallery, size/colour variant picker, add to basket |
@@ -2012,6 +2130,9 @@ Each section requires a specific access-level role (see
 | `/portal` | `app/portal/page.tsx` | Staff self-service — own profile, leave requests + balance, documents. Separate auth boundary from `/admin`; see [Authorization Layers](#authorization-layers) |
 | `/portal/leave` | `app/portal/leave/page.tsx` | Staff self-service — request and withdraw own leave |
 | `/portal/documents` | `app/portal/documents/page.tsx` | Staff self-service — download own + org-wide documents |
+| `/portal/design` | `app/portal/design/page.tsx` | Staff self-service — own design requests. Matched by staff link *and* by email, so requests filed from the public form while signed out still appear |
+| `/admin/design` | `app/admin/design/page.tsx` | Design ticket queue — search, status/priority/mine filters, inline Claim. Defaults to "Needs someone" rather than everything (Design Admin) |
+| `/admin/design/[id]` | `app/admin/design/[id]/page.tsx` | Ticket detail — brief, requester, the thread, the deliverable uploader, and only the transition buttons `canTransition` allows from here (Design Admin) |
 | `/admin/store` | `app/admin/store/page.tsx` | Store — product list |
 | `/admin/store/products/new` | `app/admin/store/products/new/page.tsx` | Create a product (name → editor) |
 | `/admin/store/products/[id]` | `app/admin/store/products/[id]/page.tsx` | Product editor — details, photos, size/colour variants, stock |
@@ -2914,6 +3035,49 @@ row) to `/portal`; admin roles take priority, so someone who is both lands on
 
 ### Admin API Routes
 
+#### Design tickets — `/api/admin/design/tickets/**`
+```typescript
+// GET    /                          → the whole queue + a deliverable_count per row
+// POST   /                          → a designer filing a ticket on someone's behalf
+// GET    /[id]                      → one ticket with its thread and its files
+// PATCH  /[id]                      → editable fields. NOT status — see below
+// DELETE /[id]                      → the ticket, and its Playbook assets
+// POST   /[id]/status               → every designer-side move
+// POST   /[id]/notes                → a thread note, internal or visible
+// POST   /[id]/deliverables/prepare  → a signed upload destination (audit-exempt)
+// POST   /[id]/deliverables/complete → materialise the asset + record the row
+// DELETE /[id]/deliverables/[did]    → the row and the Playbook asset
+// GET    /[id]/deliverables/[did]/download → 302 to a fresh signed URL
+//
+// AUTHORIZATION: design_admin, via ROUTE_RULES. Handlers don't re-check —
+// middleware already did, and every one uses the service client.
+//
+// STATUS IS NOT IN THE PATCH ALLOW-LIST. It moves only through
+// applyTransition() in lib/designTickets.server.ts, called from /status here
+// and from the requester's PATCH in /api/design-request/[token]. That is the
+// single writer, so the workflow can't be sidestepped by a field update.
+//
+// applyTransition also enforces what the UI can only suggest:
+//   - in_progress → delivered needs >=1 deliverable AT THE CURRENT REVISION.
+//     A disabled button is a courtesy; "delivered" with nothing to download is
+//     the one state that makes the requester's email a lie.
+//   - the UPDATE is conditioned on the status we read (.eq("status", from)), so
+//     two designers with the queue open in two tabs is a clean 409 for the
+//     second, not a silent overwrite.
+//
+// UPLOADS never pass through Vercel. prepare returns a signed destination, the
+// browser PUTs the bytes straight to Playbook's storage (lib/directUpload.ts),
+// and complete turns it into an asset. That's why a 300MB print-ready PDF is
+// fine here and would be a 413 through any route that took the bytes itself.
+// If the row insert fails after the asset exists, complete deletes the asset —
+// otherwise a failed write leaves a file nobody can find and nobody will delete.
+//
+// DOWNLOADS mint getTemporaryDisplayUrl() per click and 302 to it, no-store.
+// No URL is persisted or emailed: a Playbook display URL expires in ~24h, so a
+// cached one is a download button that works until it silently doesn't.
+// No permalink is ever requested — see lib/playbook.server.ts.
+```
+
 #### `GET|PATCH /api/admin/onboarding`
 ```typescript
 // The signed-in admin's own onboarding progress.
@@ -3195,6 +3359,29 @@ author from the row, which is why no guest id is ever broadcast to the room.
 ---
 
 ### Public API Routes
+
+#### Design requests — `/api/design-request/[token]/**`
+```typescript
+// GET   /                                  → the requester's view of their ticket
+// PATCH /                                  → changes_requested | closed | cancelled
+// GET   /deliverables/[did]/download       → 302 to a fresh signed URL
+//
+// AUTHORIZATION: the share token, not a session — most requesters aren't staff
+// and shouldn't need an account to collect a poster. Every route re-derives the
+// ticket from the token and matches child rows against it, so a valid token for
+// ticket A cannot reach ticket B's files. A bad, malformed or deleted token all
+// return the same 404, so probing tells you nothing.
+//
+// The response is hand-built by requesterView() — deliberately not a select("*")
+// passthrough. Internal notes, the assignee's email and the requester IP hash
+// are dropped there, and adding a column to the table exposes nothing until
+// someone edits that function.
+//
+// PATCH is rate-limited per IP and passes actor "requester" to canTransition,
+// so posting {"to": "delivered"} on your own ticket is rejected. A change
+// request must carry a note, and is capped at MAX_CHANGE_REQUESTS (5) — past
+// that it isn't a design problem any more. Cancelling stays available.
+```
 
 #### `POST /api/chat`
 ```typescript
@@ -4674,6 +4861,89 @@ card template (generalised from the job-application email in `app/jobs/actions.t
 Sends to `HR_NOTIFICATIONS_EMAIL` (falling back to the recruitment inbox). Called
 from `/api/portal/leave`, the admin leave routes, and `/api/cron/hr-review-reminders`.
 
+### `lib/designTickets.ts` / `lib/designTickets.server.ts`
+
+The design request queue. `designTickets.ts` is **client-safe** — both admin
+pages are `"use client"` and the requester's tracker renders the same labels —
+so it holds only the vocabulary and the rules: status/category/priority types,
+`DESIGN_STATUS_LABELS` / `_TONE` / `_BLURB` (the last being what the *requester*
+is told a status means, as opposed to the shorthand people who live in the queue
+read), `ticketRef()` → `"DT-0007"`, and `canTransition(from, to, actor)`.
+
+`canTransition` is the whole workflow, and it is checked twice: once by the UI to
+decide which buttons exist, once by `applyTransition` to decide whether to honour
+a POST. Only the second is a guarantee. `tests/unit/design-tickets.spec.ts` pins
+the matrix — in particular that a requester can never reach `delivered`, which
+would send a "your files are ready" email for a ticket with no files.
+
+`designTickets.server.ts` is `server-only` and holds three things:
+
+- **`applyTransition()`** — the single writer of `design_tickets.status`. It
+  re-reads the row rather than trusting a status the caller passed, checks
+  `canTransition`, applies the side effects (assignee on claim, `revision + 1` on
+  a change request, `delivered_at`/`closed_at`), writes the event row, and
+  conditions the UPDATE on the status it read so a second designer clicking in
+  another tab gets a clean 409 instead of silently winning. It also enforces the
+  two rules the UI can only suggest: no delivering without a file at the current
+  revision, and no change request without a note or past `MAX_CHANGE_REQUESTS`.
+- **`resolveRequesterIdentity()`** — priority, verification and the staff link,
+  derived from the session cookie and an `hr_staff` lookup, **never** from the
+  submitted form. Fast-track means a linked `hr_staff` row (this codebase's own
+  definition of "staff", read rather than folded into `admin_roles`), or failing
+  that any admin role — which covers a designer with a login and no HR record,
+  whose requests would otherwise queue behind the public. A signed-out staff
+  address is soft-linked by email so `/portal` stays complete, but is *not*
+  fast-tracked and *not* blocked: a domain proves nothing, so refusing it would
+  buy no safety while turning away a real request. When a signed-in user has a
+  linked staff row, their stored email is overwritten with the staff record's —
+  otherwise someone could aim their own tracking link at another inbox.
+- **`requesterView()`** — the hand-built response for both requester surfaces.
+  Deliberately not a `select("*")` passthrough: the defence against leaking the
+  next column added to the table is that this function must be edited for a field
+  to become visible.
+
+### `lib/playbook.server.ts` / `lib/directUpload.ts`
+
+The Playbook (dev.playbook.com) DAM client, holding design deliverables. Both
+files were deleted with the `/media` gallery in `e7d7687` and restored here,
+trimmed: the board-picker reads (`listBoards`, `listBoardAssets`, `searchAssets`)
+have no counterpart in this feature, and **`requestPermalink` / `ensurePermalink`
+were left out on purpose.**
+
+That omission is load-bearing. Playbook offers two URL lifetimes, and only one
+suits this feature: `display_url` is signed and expires in ~24h, while
+`permalink` is permanent but **plan-capped (Pro = 1,000 for this org)**. A design
+deliverable is only ever fetched by someone following a fresh link from their own
+ticket, so it never needs a permanent URL, and spending a finite permalink on one
+would be waste. `tests/unit/design-access.spec.ts` fails the build if any route
+in the module reaches for one, and asserts this file exports no way to.
+
+`directUpload.ts` is the browser half: it PUTs bytes straight to Playbook's
+storage (GCS resumable, Backblaze single-part, or Backblaze multipart — whichever
+`prepare` came back with) so a large source file never passes through a Vercel
+function and never meets the 100MB request-body cap.
+
+One shared board, `getOrCreateBoard("Design Tickets")`, cached per-ticket in
+`playbook_board_token`. Nothing in this feature lists a board — assets are always
+found through our own `design_ticket_deliverables` rows — so board-per-ticket
+would only fill a DAM the team also uses by hand. Context goes in the asset title
+instead: `DT-0007 r2 — poster-final.pdf`.
+
+### `lib/emailCard.ts` / `lib/designEmail.ts`
+
+`server-only`. `emailCard.ts` is the one transactional card — orange rule, badge,
+heading, intro, label/value rows, optional CTA — extracted verbatim from
+`lib/hrEmail.ts` when the design queue became the fifth trigger on top of it.
+
+`designEmail.ts` holds the design senders: request received (the only place a
+share token is ever emailed), the design-inbox alert, claimed, delivered, changes
+requested, closed and cancelled. Two rules hold throughout: every send is
+fire-and-forget in a `try/catch` at the call site, so a Resend outage can never
+turn into a failed claim or a rejected delivery; and **a deliverable's URL is
+never in an email** — signed URLs expire, so a link mailed on Tuesday is broken by
+Thursday and reads as lost work. Emails link to the tracking page, which mints a
+fresh URL per click.
+
 ---
 
 ## Authentication & Authorization
@@ -4725,9 +4995,9 @@ remembered, so existing sessions aren't unexpectedly downgraded.
 
 ### Authorization Layers
 
-Access levels live in `lib/adminRoles.ts` + the `admin_roles` table — seven
+Access levels live in `lib/adminRoles.ts` + the `admin_roles` table — eight
 independent per-user booleans (`training_admin`, `event_admin`, `store_admin`,
-`site_admin`, `host`, `hr_admin`, `super_admin`; see [admin_roles](#10b-admin_roles)). Auth *and*
+`site_admin`, `host`, `hr_admin`, `design_admin`, `super_admin`; see [admin_roles](#10b-admin_roles)). Auth *and*
 role enforcement both happen centrally in `middleware.ts`, not in
 `app/admin/layout.tsx` (which is a client component purely responsible for the
 sidebar/header shell; it does not check auth or roles itself).
@@ -4744,6 +5014,7 @@ always passes and isn't repeated per rule; anything under `/admin` or
 | `site_admin` | `/admin/posts`, `/admin/redirects`, `/admin/analytics` | `/api/admin/{posts,redirects,analytics}/**` |
 | `host` | `/admin/live-chat`, `/admin/live` | `/api/admin/live-chat/**`, `/api/admin/simulated-live/**` |
 | `hr_admin` | `/admin/hr/**` (staff, leave, jobs, applications, documents, reviews, checklists) | `/api/admin/hr/**` |
+| `design_admin` | `/admin/design/**` (the design ticket queue) | `/api/admin/design/**` |
 | `super_admin` | Everything, plus Banner, Clear Cache, `/admin/users` and `/admin/audit` | `/api/admin/{banner,revalidate,users,audit}/**` |
 
 **`OPEN_PATHS`** — reachable by any authenticated admin regardless of role:
@@ -4766,6 +5037,32 @@ assigned — a tickbox per role per user. `GET /api/admin/me` (and the older
 that's a UI convenience only, not an authorization boundary. What a user is
 *shown* comes from `lib/adminNav.ts`, which must stay in step with the table
 above — `tests/unit/admin-nav.spec.ts` enforces it.
+
+**One thing `getRoles` will not tell you it got wrong.** It spells its column
+list out by hand rather than `select *`, so adding an access level is a
+deliberate act — but the cost is that forgetting that one line makes the new role
+read as `false` for everyone, everywhere, with no error and nothing in the UI to
+explain why the section never appears. `tests/unit/design-access.spec.ts` asserts
+every `ADMIN_ROLES` entry appears inside that `.select(` string; it is the only
+guard there is.
+
+**A third authorization mode: share tokens.** Alongside admin RBAC and portal
+staff-linkage (`lib/staffPortalAuth.ts`), the design queue authorises a requester
+by a 128-bit `share_token` in the URL — `/design-request/<token>` and
+`/api/design-request/<token>/**`. There is no session involved, because most
+requesters aren't staff and shouldn't need an account to collect a poster. What
+makes that safe is scope, not secrecy:
+
+- The token resolves to exactly one ticket. Every nested route re-derives the
+  ticket from the token and matches child rows against it, so a valid token for
+  ticket A cannot download a deliverable belonging to ticket B.
+- `requesterView()` in `lib/designTickets.server.ts` hand-builds the response.
+  It is deliberately not a `select("*")` passthrough — the defence against
+  leaking the next column someone adds is that the function has to be edited for
+  a field to become visible. Internal notes, the assignee's email and the
+  requester IP hash are all dropped there.
+- The two moves a requester can make are enforced by `canTransition(..., "requester")`
+  server-side, so posting `{"to": "delivered"}` to their own ticket is rejected.
 
 > **Adding an access level.** Add it to the `AdminRole` union, `ADMIN_ROLES` and
 > `NO_ROLES` in `lib/adminRoles.ts`, give it `ROUTE_RULES` entries (without them
@@ -5149,6 +5446,13 @@ RESEND_API_KEY=re_...
 PAGE_AUDIT_FROM=Destiny AI <noreply@support.squaremediagroup.org>  # from-address for system alert emails
 SMART_SEARCH_ALERT_RECIPIENT=malachi@squaremediagroup.org          # Smart Search down/recovered alerts
 HR_NOTIFICATIONS_EMAIL=techteam@destinytees.uk                     # optional; inbox for HR leave/decision + review-reminder emails (lib/hrEmail.ts). Falls back to techteam@destinytees.uk
+DESIGN_NOTIFICATIONS_EMAIL=techteam@destinytees.uk                 # optional; inbox for new design requests + change requests (lib/designEmail.ts). Falls back to techteam@destinytees.uk
+DESIGN_IP_SALT=<random string>                                     # optional but recommended; salts the sha256 of a requester's IP. Without it the hash is brute-forceable — the IPv4 space is small
+
+# Playbook (dev.playbook.com) — the DAM holding design ticket deliverables.
+# Required for /admin/design uploads and downloads; nothing else uses it.
+PLAYBOOK_TOKEN=<bearer token, write scope>
+PLAYBOOK_ORG_SLUG=dctv                                             # optional; defaults to dctv (the Pro workspace). The account also has an unrelated free-plan "destinytees" workspace, which is why this isn't guessed at request time
 
 # OpenAI (for Smart Search chat — gpt-4.1-mini, tool-calling)
 OPENAI_API_KEY=sk-...
@@ -5518,7 +5822,7 @@ feed normalisation of its own, because the BFF already does all of it.
   push) are still planning-only.
 
 ### Database Migrations
-- **48 migration files** defining schema for:
+- **50 migration files** defining schema for:
   - URL redirects, hidden videos (removed), site content (banners, pop-ups, page_content)
   - Event management (Alpha course, Bible Course, CAP Money, Recovery, featured course, featured event)
   - HR management (staff, leave, documents, reviews)
@@ -5531,6 +5835,8 @@ feed normalisation of its own, because the BFF already does all of it.
   - The admin audit log (`audit_log`) and its weekly AI reports (`audit_reports`)
   - Click analytics (`engagement_events`) — storage layer for shortlink / nfc /
     links engagement, with `security definer` rollup and IP-anonymise functions
+  - Design tickets (`design_tickets`, `design_ticket_deliverables`,
+    `design_ticket_events`) and the `design_admin` access level
 
 ---
 
@@ -5540,7 +5846,7 @@ Destiny Church Tees Valley is a **professional, full-stack Next.js application**
 
 1. **Public-facing website** — Sermons, ministries, contact, events, livestream
 2. **Member engagement** — Prayer requests, volunteering, training, small groups
-3. **Admin dashboard** — Content management, HR tools, store management
+3. **Admin dashboard** — Content management, HR tools, store management, design request queue
 4. **Ecommerce** — Online store with Stripe payments, product variants, order management
 5. **Intelligent features** — Smart Search tool-calling chat assistant, live banner management
 

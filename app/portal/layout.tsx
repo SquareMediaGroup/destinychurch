@@ -12,6 +12,7 @@ const NAV = [
   { href: "/portal", label: "Profile", icon: "person" },
   { href: "/portal/leave", label: "Leave", icon: "event_busy" },
   { href: "/portal/documents", label: "Documents", icon: "folder_open" },
+  { href: "/portal/design", label: "Design", icon: "draw" },
 ];
 
 export default function PortalLayout({ children }: { children: React.ReactNode }) {

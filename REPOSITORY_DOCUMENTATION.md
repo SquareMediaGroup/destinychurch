@@ -1,7 +1,7 @@
 # Destiny Church Tees Valley — Complete Repository Documentation
 
-**Version:** 1.0.12  
-**Last Updated:** August 31, 2026  
+**Version:** 1.0.13  
+**Last Updated:** September 2, 2026  
 **Repository:** Square Media Group — destinychurch  
 
 This document provides a comprehensive explanation of every major component, line of code purpose, architecture decisions, and how the system works from end-to-end.
@@ -3607,7 +3607,8 @@ Things that will bite you:
 | `components/admin/blocks/BlockInspector.tsx` | Schema-driven settings panel |
 | `components/admin/blocks/BlockOutline.tsx` | Jump list of every block in the document |
 | `components/admin/blocks/blockCommands.ts` | Move / duplicate / delete / add-paragraph, by position |
-| `components/admin/blocks/BlockTools.tsx` | Sheets + the mobile selected-block toolbar |
+| `components/admin/blocks/BlockTools.tsx` | Sheets + the mobile selected-block toolbar; routes the inserter to the desktop drawer or the phone sheet by `useIsDesktop()` |
+| `components/admin/blocks/BlockDrawer.tsx` | Desktop right-hand drawer wrapping the drag-and-drop `BlockPalette` (`layout="sidebar"`) for the scrolling product/job/training editors — stays open across inserts; mobile keeps the bottom sheet |
 | `components/admin/Sheet.tsx` | The admin bottom sheet (grabber, detents, drag-to-dismiss) |
 | `app/dev/blocks` | Development-only gallery; 404s in production |
 
@@ -3631,7 +3632,11 @@ touch editor converged on:
   (`BlockOutline`) instead of saying "click a block" — the canvas is behind the
   sheet, so that was advice a thumb could not follow.
 - **The inserter is a searchable two-column grid** in the sheet, and its copy
-  does not mention dragging, which touch cannot do.
+  does not mention dragging, which touch cannot do. On desktop, the scrolling
+  product/job/training editors instead open the inserter as a right-hand
+  drawer (`BlockDrawer`) that reuses the drag-and-drop `BlockPalette` sidebar
+  and stays open across inserts, so several blocks can be dragged in a row —
+  the full-page post editor already keeps that palette as a permanent sidebar.
 - **Every inspector input is 16px on touch** (`fieldInputClass`). Below that,
   iOS Safari zooms the page on focus and does not zoom back out, which put the
   block being edited off-screen on the first tap of the first field.

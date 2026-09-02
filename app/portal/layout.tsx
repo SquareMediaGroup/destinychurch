@@ -60,7 +60,7 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
           ))}
         </nav>
       </header>
-      <main>{children}</main>
+      <main className="mx-auto max-w-5xl px-5 py-8">{children}</main>
     </div>
   );
 }

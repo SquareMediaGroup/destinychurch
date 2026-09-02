@@ -15,10 +15,12 @@ export default function FloatingSmartSearch({
   const hiddenByPage = useFloatingSmartSearchHidden();
 
   // /nfc is the chrome-free in-service page: the tiles are the whole interface.
+  // /portal is the staff self-service area: its own minimal shell, no site nav.
   if (
     pathname.startsWith("/admin") ||
     pathname.startsWith("/training") ||
-    pathname.startsWith("/nfc")
+    pathname.startsWith("/nfc") ||
+    pathname.startsWith("/portal")
   )
     return null;
 

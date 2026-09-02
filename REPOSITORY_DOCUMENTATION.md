@@ -348,11 +348,7 @@ destinychurch/
 │       ├── 20260828_02_ip_reputation_advisor_fixes.sql # Advisor cleanup: revoke anon/authenticated
 │       │                                  # EXECUTE on the three engagement RPCs (see §24b), add
 │       │                                  # search_path to the ip_category trigger, relocate btree_gist
-│       ├── 20260831_01_media_admin_role.sql # `media_admin` access level on admin_roles
-│       ├── 20260831_02_media_gallery.sql # /media photo gallery (media_boards, media_photos, media-photos bucket)
-│       ├── 20260901_media_playbook.sql   # Switches /media's photo storage to Playbook (see lib/playbook.server.ts)
-│       ├── 20260901_02_media_board_password.sql # Optional per-board password gate (lib/mediaAccess.ts)
-│       └── 20260901_03_media_imported_flag.sql  # media_photos.is_imported — deletion-safety flag for imports
+│       └── 20260902_remove_media_boards.sql # Drops the media_boards/media_photos tables (Media Boards feature removed)
 │
 ├── utils/                         # Utility modules
 │   ├── supabase/                  # Supabase client factories
@@ -832,7 +828,6 @@ CREATE TABLE admin_roles (
   site_admin boolean NOT NULL DEFAULT false,
   host boolean NOT NULL DEFAULT false,      -- live chat: /admin/live-chat + moderating on /live
   hr_admin boolean NOT NULL DEFAULT false,  -- /admin/hr
-  media_admin boolean NOT NULL DEFAULT false, -- /admin/media: photo boards + moderation queue
   super_admin boolean NOT NULL DEFAULT false,
   created_at timestamptz NOT NULL DEFAULT now(),
   updated_at timestamptz NOT NULL DEFAULT now()
@@ -1703,189 +1698,6 @@ Both migrations are applied to production; `get_advisors` is clean on all of the
 
 ---
 
-#### 25. **media_boards / media_photos** (`/media` photo gallery)
-
-**Purpose:** Photo/video "boards" (e.g. "Sunday Service") that visitors browse and — anonymously,
-name only — upload to. Every upload sits in a `pending` moderation queue until a `media_admin`
-approves it; nothing reaches the public board until then. A board is `is_public = true` (listed
-on `/media`) or unlisted, reachable only via its `share_token` at `/media/s/[token]` (e.g. for a
-wedding), and may also carry an optional `password_hash` — independent of `is_public` — gating
-the board's content behind a password even if it's listed. Migrations: `20260831_02_media_gallery.sql`
-(original schema), `20260831_01_media_admin_role.sql` (the `media_admin` role column),
-`20260901_media_playbook.sql` (switches storage to Playbook — see below),
-`20260901_02_media_board_password.sql` (`password_hash`), `20260901_03_media_imported_flag.sql`
-(`is_imported` — see the Import section below).
-
-```sql
-CREATE TABLE media_boards (
-  id                   uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  title                text NOT NULL,
-  slug                 text NOT NULL UNIQUE,
-  description          text,
-  cover_photo_id       uuid REFERENCES media_photos(id) ON DELETE SET NULL,
-  is_public            boolean NOT NULL DEFAULT true,
-  share_token          text NOT NULL UNIQUE DEFAULT encode(gen_random_bytes(16), 'hex'),
-  allow_uploads        boolean NOT NULL DEFAULT true,
-  playbook_board_token text,             -- the matching Playbook board; see lib/playbook.server.ts
-  password_hash        text,            -- scrypt "salt:hash"; NULL = no password. lib/mediaAccess.ts
-  created_at           timestamptz NOT NULL DEFAULT now(),
-  updated_at           timestamptz NOT NULL DEFAULT now()
-);
-
-CREATE TABLE media_photos (
-  id                     uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  board_id               uuid NOT NULL REFERENCES media_boards(id) ON DELETE CASCADE,
-  file_path              text,                  -- legacy/unused: pre-Playbook Supabase Storage path
-  file_name              text NOT NULL,
-  mime_type              text, size_bytes bigint, width integer, height integer,
-  uploader_name          text NOT NULL,         -- plain text, no auth — anonymous upload
-  status                 text NOT NULL DEFAULT 'pending'
-                           CHECK (status IN ('pending','approved','rejected')),
-  reviewed_by            text, reviewed_at timestamptz, reject_reason text,
-  uploader_ip_hash       text,                  -- sha256(ip + MEDIA_IP_SALT), rate-limiting only
-  playbook_asset_token   text,                  -- the Playbook asset; needed for delete + permalink
-  playbook_permalink_url text,                  -- permanent CDN URL, set only on approval
-  is_imported            boolean NOT NULL DEFAULT false, -- see "Import from Playbook" below
-  created_at             timestamptz NOT NULL DEFAULT now()
-);
-
--- RLS: deny-all "service only" on both tables, same as every other table here.
--- The public upload route (app/api/media/upload) writes via createServiceClient()
--- rather than a relaxed anon-key policy, keeping the same invariant as admin routes.
-```
-
-`mime_type` also decides how a row renders: anything starting `video/` (mp4, quicktime/mov, webm)
-gets a `<video>` element throughout the app (gallery grid, lightbox, admin queue, board cover);
-everything else gets a plain `<img>`. Width/height are only ever populated for images — sharp
-can't read video dimensions, and this route doesn't run ffprobe or similar to get them another
-way, so a video's `width`/`height` stay `NULL`.
-
-**Storage: Playbook, not Supabase Storage** (`lib/playbook.server.ts`) — the one feature on this
-codebase that stores its files outside Supabase. Every other bucket (popup-images, post-media,
-hr-documents, shop-hero-images, product-images) is untouched; this was a deliberate,
-feature-scoped swap, not a platform-wide migration. `file_path` is kept as a nullable, unused
-legacy column rather than dropped, and the `media-photos` Supabase Storage bucket the original
-migration created is left in place too — empty and unused, but harmless, and not worth a
-migration of its own to remove.
-
-Each `media_boards` row has a matching Playbook board (provisioned eagerly on creation, or
-lazily on first upload if missing — `getOrCreateBoard()` matches by exact title before creating,
-so it's safe to call more than once). Uploads go through Playbook's two-step flow
-(`upload_prepare` → PUT bytes → `upload_complete`), branching on whichever of GCS-resumable,
-Backblaze single-part, or Backblaze multipart the org's `storage_provider` returns — which one
-applies isn't something the caller controls. Two URL lifetimes matter and are never conflated:
-`display_url` (signed, ~24h — used for the admin moderation queue's thumbnails, fetched fresh
-per request) and `permalink` (permanent, unsigned, plan-capped — created via `add_permalinks`
-**only on approval**, since a pending or rejected photo never needed a permanent URL and
-shouldn't spend the org's capped permalink budget on one). `ensurePermalink()` checks the asset
-for an existing permalink first and reuses it rather than requesting a new one — `add_permalinks`
-on an asset that already has one returns `406 "All assets already have permalinks"` rather than
-no-op-ing, which matters for "Import from Playbook" below since an imported asset commonly
-already has one from the org's prior, non-/media use of Playbook. (One further wrinkle observed
-against the live API: a *reused* permalink can itself 404 — the asset record still reports it,
-but the underlying object is gone from Playbook's public bucket. This is an external Playbook
-data-integrity issue, not something this codebase can detect or fix; it only affects reused
-permalinks on assets that predate /media, never a fresh upload.) Auth: `PLAYBOOK_TOKEN` env var
-(Bearer, write scope); org: `PLAYBOOK_ORG_SLUG`, defaulting to `"dctv"` — the account also holds
-an unrelated free-plan `"destinytees"` workspace with only 10 permalinks total, which is why the
-slug is a fixed default rather than "whichever org the token returns first".
-
-**Deleting a photo or board only ever deletes a Playbook asset /media itself created
-(`is_imported = false`).** This is a deliberate safety boundary, not an oversight: "Import from
-Playbook" (below) always points a `media_boards` row at a Playbook board that already existed —
-picked from Playbook's own board list, never created by this app — commonly one holding hundreds
-of the church's own pre-existing photos. Early in this feature's development the board-delete
-route called Playbook's board-delete endpoint unconditionally, which would have deleted that
-entire pre-existing board (and everything in it) the moment an admin deleted the corresponding
-`/media` board. The fix: `deleteBoard()` was removed from `lib/playbook.server.ts` entirely (never
-called from anywhere), and both the photo-delete and board-delete routes check `is_imported`
-before calling `deleteAsset()` — an imported photo's row is removed from Supabase, but its
-Playbook asset is left completely untouched.
-
-**Two different upload paths, split by media type, because of Vercel's 100MB request-body
-cap.** Images go through `app/api/media/upload/route.ts` (outside `middleware.ts`'s matcher
-entirely — no auth wall at all) as a normal server-proxied `multipart/form-data` POST: a MIME/size
-allowlist (`jpeg`/`png`/`webp`, ≤10MB), a honeypot form field, a DB-backed per-IP-hash rate limit
-(20 uploads/hour, no new table or infra), then re-encoding through `sharp` before the file ever
-reaches Playbook — this strips EXIF/XMP/ICC metadata (phone photos routinely carry GPS
-coordinates), auto-rotates first via `.rotate()` so stripping that same orientation tag doesn't
-leave portrait photos sideways, and doubles as a content check (a spoofed `image/*` MIME type on
-a non-image file throws here instead of being stored).
-
-Video skips this server entirely for the bytes themselves, because a clip large enough to matter
-would exceed Vercel Functions' 100MB request-body cap regardless of anything this app does — that
-cap applies to any traffic that passes through a Function at all, not something a bigger `maxDuration`
-or a streaming body can work around. Instead it's a **browser-direct upload**, split across three
-calls (`lib/directUpload.ts` on the client; `app/api/media/upload/{prepare,complete}/route.ts` on
-the server; `prepareUpload()`/`completeUpload()` in `lib/playbook.server.ts`, both extracted from
-what the image route's `uploadAsset()` still calls internally after the split):
-
-1. `POST /api/media/upload/prepare` — same validation as the image route (honeypot, board/
-   `allow_uploads` check, `uploader_name`, per-IP rate limit) plus a MIME/size allowlist of its own
-   (`mp4`/`quicktime`/`webm`, ≤2GB — generous since nothing here is bound by the image route's
-   10MB-over-a-Function constraint, but still capped since this is still an anonymous,
-   unauthenticated endpoint). Calls Playbook's `upload_prepare` and hands the browser back
-   whatever it returned — a signed GCS resumable-session URL, or a set of pre-signed Backblaze
-   part URLs — without touching the file's bytes at all.
-2. The browser PUTs the file straight to that destination (`lib/directUpload.ts`'s
-   `putFileToStorage()`), talking directly to Google/Backblaze's storage rather than any Vercel
-   Function. Uses `XMLHttpRequest` rather than `fetch` specifically for `xhr.upload.onprogress` —
-   `fetch` has no upload-progress event — which is what drives `UploadModal`'s "Uploading… NN%"
-   label. Handles all three storage-provider shapes Playbook can return (GCS resumable, Backblaze
-   single-part, Backblaze multipart), mirroring the same branching `uploadAsset()` does server-side
-   for images.
-3. `POST /api/media/upload/complete` — re-validates the board and rate limit (time may have passed,
-   or the visitor's hourly cap may have been hit by another upload while this one was in flight),
-   calls Playbook's `upload_complete` with the `signed_gcs_id`/`multipart_upload_id` from step 1,
-   and inserts the `media_photos` row exactly like the image route does — `status = 'pending'`,
-   no `width`/`height` (video dimensions aren't extracted).
-
-Video passes through as raw bytes with no equivalent metadata-strip step — `sharp` is image-only,
-so a phone video's own metadata (e.g. QuickTime GPS atoms) is a known, accepted gap rather than
-something either route re-encodes away.
-
-**Password gate** (`lib/mediaAccess.ts`) — same scrypt-hash + HMAC-signed-cookie approach as
-`lib/trainingAccess.ts` (kept as a separate file since the cookie is scoped per-board-id across
-several route shapes — `/media/b/[slug]`, `/media/s/[token]`, the API routes — rather than one
-static path prefix). `POST /api/media/unlock` verifies a submitted password and sets a cookie
-named `mb_<boardId>`; the two board-detail pages check `isBoardUnlocked()` server-side and render
-`BoardPasswordGate` in place of the gallery when locked, cookie-reading forces the route dynamic
-(no ISR) for any board while it has a password. Independent of `is_public` — a board can be both
-listed on `/media` and password-protected, or unlisted *and* password-protected.
-
-**Import from Playbook** (`app/api/admin/media/import/route.ts`, `/admin/media/import`) — brings
-hand-picked assets from an existing Playbook board into a `/media` board as already-approved
-photos, skipping the moderation queue (these were never anonymous public uploads). The admin
-picks a Playbook board (searchable list via `lib/playbook.server.ts`'s `listBoards()`), then
-either browses its assets (`listBoardAssets()`, `nested_assets=true` — many real boards, like the
-church's "Sunday Services" board, organise everything into sub-boards with nothing sitting
-directly at the top level) or searches them by natural language via Playbook's AI search
-(`searchAssets()`, `GET /ai_search`). A Playbook "group" (its own similar-photos clustering) has
-no displayable image or permalink of its own — `add_permalinks` "succeeds" on one but returns
-`permalink: null` — so the picker disables group tiles rather than letting an admin select one
-expecting it to import. Selected assets are inserted as `status = 'approved'`, `is_imported =
-true` rows; already-imported tokens (checked via `playbook_asset_token`) are skipped rather than
-duplicated.
-
-**Used By:**
-- `lib/media.server.ts` — the one place board/photo reads happen (`getPublicBoards`,
-  `getBoardBySlug`, `getBoardByToken`, `getApprovedPhotos`, `findPublicPhotosByPlaybookTokens`),
-  mirroring `lib/governance.server.ts`
-- `/media`, `/media/b/[slug]` (public boards), `/media/s/[token]` (unlisted boards) — both
-  detail pages render `BoardPasswordGate` in place of the gallery when the board is locked
-- `app/api/media/**` (public read + anonymous upload + `/unlock`) and `app/api/admin/media/**`
-  (board CRUD, moderation queue, `/import`, `/playbook/*` — all gated to `media_admin` by
-  `middleware.ts`)
-- `/admin/media/boards` (create/edit boards, copy/regenerate a share link, set/change/clear a
-  password), `/admin/media/queue` (approve/reject/delete pending uploads), `/admin/media/import`
-  (bring in hand-picked Playbook assets)
-- `lib/smartSearch/tools.ts`'s `find_photos` tool — lets the site's Smart Search assistant answer
-  "show me photos of X" using Playbook's AI search, filtered through
-  `findPublicPhotosByPlaybookTokens()` so a visitor can never see a pending upload, a private
-  board's photos, or an unrelated Playbook asset — only what's already approved and public
-
----
-
 **Key Point:** No table uses authenticated user RLS. All member-facing features use API proxy routes that enforce authentication in application code, then access the database with the service role key. This gives finer control and better error messages.
 
 ---
@@ -2149,9 +1961,6 @@ without an auth check, so they must never be reachable on the live site.
 | `/jobs` | `app/jobs/page.tsx` | Job listings |
 | `/jobs/[slug]` | `app/jobs/[slug]/page.tsx` | Job detail page |
 | `/training` | `app/training/page.tsx` | `/training` resource library — category → subgroup (optional password) → post |
-| `/media` | `app/media/page.tsx` | Photo gallery — grid of public boards |
-| `/media/b/[slug]` | `app/media/b/[slug]/page.tsx` | A public board — approved photos + an anonymous "add a photo" upload |
-| `/media/s/[token]` | `app/media/s/[token]/page.tsx` | An unlisted board, reachable only via its share link (`noindex`); same view as `/media/b/[slug]`, resolved by `share_token` instead of slug |
 | `/baptism` | `app/baptism/page.tsx` | Baptism sign-up |
 | `/child-dedication` | `app/child-dedication/page.tsx` | Child dedication request |
 | `/volunteer` | `app/volunteer/page.tsx` | Volunteer sign-up form |
@@ -2200,10 +2009,6 @@ Each section requires a specific access-level role (see
 | `/admin/hr` | `app/admin/hr/page.tsx` | HR dashboard (staff, leave, jobs, documents, reviews, checklists) (HR Admin) |
 | `/admin/hr/checklists` | `app/admin/hr/checklists/page.tsx` | Onboarding/offboarding checklist templates (HR Admin) |
 | `/admin/hr/staff/[id]` | `app/admin/hr/staff/[id]/page.tsx` | Staff record — profile, leave, reviews, documents, live checklists (HR Admin) |
-| `/admin/media` | `app/admin/media/page.tsx` | Media dashboard — board/pending/approved counts (Media Admin) |
-| `/admin/media/boards` | `app/admin/media/boards/page.tsx` | Create/edit boards — public/private toggle, copy or regenerate a private share link (Media Admin) |
-| `/admin/media/queue` | `app/admin/media/queue/page.tsx` | Moderation queue — approve/reject/delete photos (Media Admin) |
-| `/admin/media/import` | `app/admin/media/import/page.tsx` | Import hand-picked assets from an existing Playbook board — browse (nested sub-boards) or Playbook-AI-search, then land in a new or existing `/media` board, already approved (Media Admin) |
 | `/portal` | `app/portal/page.tsx` | Staff self-service — own profile, leave requests + balance, documents. Separate auth boundary from `/admin`; see [Authorization Layers](#authorization-layers) |
 | `/portal/leave` | `app/portal/leave/page.tsx` | Staff self-service — request and withdraw own leave |
 | `/portal/documents` | `app/portal/documents/page.tsx` | Staff self-service — download own + org-wide documents |
@@ -2597,23 +2402,6 @@ section is better than an empty heading on a transparency page.
   annual-return submission dates
 - `GovernanceSourceNote.tsx` — attribution, refresh cadence, and an explicit notice naming any
   regulator whose data is being served from the stored snapshot rather than live
-
-#### Media (`components/media/*`)
-
-The `/media` photo gallery — a public board list, board detail (shared by both the public-slug
-and unlisted-token routes), and the anonymous upload flow.
-
-- `MediaHero.tsx` — page hero for `/media`
-- `BoardGrid.tsx` / `BoardCard.tsx` — the public board grid (cover photo, title, approved-photo count)
-- `BoardDetail.tsx` — client component rendering one board (title, `PhotoLightbox`, an "Add a photo"
-  button when `allow_uploads`); used by both `/media/b/[slug]` and `/media/s/[token]`, which differ
-  only in how they resolve the board (`getBoardBySlug` vs `getBoardByToken`)
-- `PhotoLightbox.tsx` — approved-photos grid with a click-to-enlarge overlay (Escape/arrow-key nav)
-- `UploadModal.tsx` — the name + file form that posts to `/api/media/upload`, plus a hidden honeypot
-  field. **The one place `border-beam`/`thinking-orbs` are reused outside `FloatingSmartSearch.tsx`**
-  — both lazy-loaded via the same `lazy()` + `Suspense` + plain-CSS-fallback pattern, and both tied
-  strictly to the real `isUploading` state (not decorative at rest), so the effect stays "tasteful,
-  not overused" as the rest of `/media` has no glow anywhere else.
 
 #### Events (`components/events/*`)
 
@@ -3153,32 +2941,6 @@ GET|POST         /api/admin/hr/checklists                // ?staffId= — list /
 PATCH|DELETE     /api/admin/hr/checklists/[id]           // tick an item / edit / remove
 ```
 
-#### Media routes (`/api/admin/media/*`)
-```typescript
-// Media Admin only (media_admin/super_admin, via /api/admin/media/** route rule).
-// Boards:
-GET|POST         /api/admin/media/boards        // list (with pending/approved/rejected counts,
-                                                 //   has_password) / create (incl. optional password)
-PATCH|DELETE     /api/admin/media/boards/[id]   // edit (incl. is_public, allow_uploads,
-                                                 //   regenerate_token: true to rotate a leaked link,
-                                                 //   password / clear_password: true)
-                                                 //   / delete (only deletes Playbook assets this app
-                                                 //   uploaded — is_imported=false — never the linked
-                                                 //   Playbook board itself; see Database Schema §25)
-// Moderation queue:
-GET   /api/admin/media/photos                   // ?status=pending|approved|rejected|all &board_id=
-POST  /api/admin/media/photos/[id]/approve
-POST  /api/admin/media/photos/[id]/reject       // body: { reason? }
-DELETE /api/admin/media/photos/[id]             // hard delete (Playbook asset too, unless is_imported)
-// Import from Playbook:
-GET  /api/admin/media/playbook/boards                    // ?query= — list/search Playbook's own boards
-GET  /api/admin/media/playbook/boards/[token]/assets      // ?page= — nested_assets=true, flags alreadyImported
-GET  /api/admin/media/playbook/search                     // ?q= — Playbook AI search, flags alreadyImported
-POST /api/admin/media/import                              // { playbookBoardToken, assetTokens[],
-                                                           //   newBoard: {title,slug,is_public} | existingBoardId }
-                                                           //   -> approved rows, is_imported=true
-```
-
 #### Audit log routes (`/api/admin/audit/*`)
 ```typescript
 GET  /api/admin/audit          // the log itself
@@ -3605,43 +3367,6 @@ returned to its own author marked as waiting, so they don't retype it.
 // batch-swap, not a truncate — the table is never briefly empty). Each
 // source is independent: one failing (a GitHub outage, a changed URL) does
 // not stop the other three refreshing. maxDuration = 300.
-```
-
-#### Public Media API (`/api/media/*`)
-
-```typescript
-// Outside middleware.ts's matcher entirely — no auth wall, no role check, nothing.
-// Every handler validates for itself; see lib/media.server.ts for the shared reads.
-
-GET  /api/media/boards                    // public (is_public=true) boards, newest first
-GET  /api/media/boards/[ref]              // by slug — 404 if missing OR private (never leaks a private board)
-GET  /api/media/boards/by-token/[token]   // by share_token — works for public or private; same 404 whether
-                                           //   the token is wrong or the board is gone
-GET  /api/media/boards/[ref]/photos       // approved photos only; ref is a board id or a public slug
-POST /api/media/upload                    // anonymous IMAGE upload → status='pending'
-// multipart/form-data: file, board_token, uploader_name, website (honeypot — filling it
-// returns the normal success response but nothing is saved)
-// Validates: honeypot empty, board exists + allow_uploads, MIME in jpeg/png/webp (<=10MB),
-// name non-empty <=100 chars, <=20 uploads/hour per sha256(ip + MEDIA_IP_SALT) — see
-// Database Schema §25. No recordAudit() call: there's no actor to attribute it to outside
-// the admin middleware, and tests/unit/audit-coverage.spec.ts only walks app/api/admin/**.
-
-POST /api/media/upload/prepare            // step 1 of the anonymous VIDEO upload
-// { board_token, uploader_name, website, file_name, media_type, size } (JSON, no file bytes)
-// Same validation as above (honeypot, board/allow_uploads, name, rate limit) plus its own
-// MIME/size allowlist (mp4/quicktime/webm, <=2GB). Calls Playbook's upload_prepare and returns
-// the signed upload destination(s) verbatim — the browser PUTs the file straight there next
-// (lib/directUpload.ts), never through this or any other Vercel Function. This split exists
-// solely because a large clip would exceed Vercel Functions' 100MB request-body cap.
-
-POST /api/media/upload/complete           // step 2 — called once the browser's direct PUT finishes
-// { board_token, uploader_name, file_name, media_type, size, signed_gcs_id,
-//   multipart_upload_id } — re-validates board/allow_uploads/rate-limit, calls Playbook's
-// upload_complete, inserts the media_photos row (status='pending', no width/height).
-
-POST /api/media/unlock                    // { boardId, password } -> sets the mb_<boardId> unlock
-// cookie on success. In-memory per-IP throttle (10 attempts/minute), same shape as
-// app/api/training/unlock/route.ts. See lib/mediaAccess.ts.
 ```
 
 > There is no `/api/webhooks/vercel` or GitHub webhook route, and no `youtube-sync`
@@ -4503,7 +4228,6 @@ export const PAGE_INTENTS = [
   { href: "/live", cta: "Watch Live", intent: "livestream, live service, Sundays at 11am" },
   { href: "/shop", cta: "Browse Merch", intent: "shop, apparel, merch, buy" },
   { href: "/help", cta: "Help Centre", intent: "help, FAQ, questions" },
-  { href: "/media", cta: "View Photos", intent: "photos, photo gallery, pictures, albums..." },
   // ... 17 more pages (kids, youth, Alpha, serve, connect, missions, etc.)
 ];
 
@@ -4647,7 +4371,6 @@ export async function executeTool(name: string, rawArgs: string, ctx: ToolContex
 ```
 
 - `find_products`, `get_weather`, `get_directions` — unchanged from prior behavior (see Components → `FloatingSmartSearch.tsx`).
-- `find_photos` — searches `/media`'s photo gallery via Playbook's AI search (`lib/playbook.server.ts`'s `searchAssets()`) for a visitor asking to see photos of something. Results are filtered through `findPublicPhotosByPlaybookTokens()` (`lib/media.server.ts`) before ever reaching the model or the visitor — Playbook's search has no concept of this app's moderation queue or private boards, so this filter is what keeps a pending upload or a private board's photo from leaking through an innocent-looking chat question. Capped at `MAX_PHOTO_RESULTS` (6); rendered by `PhotoResultCards` (each thumbnail links to its own board, since a search can span more than one).
 - `search_web` — Tavily `/search` with `search_depth: "advanced"` (curated chunks, not raw page tops) and the API key sent as an `Authorization: Bearer` header (not in the body). Snippets truncated to `SNIPPET_CHARS` (1200 chars). Every result URL is recorded into `ctx.seenUrls`.
 - `extract_page` — Tavily `/extract`, `extract_depth: "advanced"`. **Only** opens a URL already present in `ctx.seenUrls` for that request — this is the sole guard against the model being prompted (by a visitor or by web content) into fetching an arbitrary URL. Content truncated to `EXTRACT_CHARS` (8000 chars).
 - Deliberately does **not** request Tavily's own `include_answer` summary: it was observed conflating Destiny Church Tees Valley with an unrelated Scottish charity of a similar name and reporting a wrong income figure. The model instead reads raw snippets/page content and is told (via `lib/siteKnowledge.ts`) to cross-check the charity/company number before quoting any figure.
@@ -4913,127 +4636,6 @@ login — a casing change upstream degrades one field rather than the whole sect
 
 Caching is weekly (`revalidate: 604800` on every fetch, matching the page), which keeps both keys far
 inside their rate limits (Companies House allows 600 requests per 5 minutes).
-
-### `lib/media.server.ts`
-
-`server-only`. Mirrors `lib/governance.server.ts`'s role for the `/media` photo gallery — the one
-place board/photo reads happen, shared by the page components and the public `/api/media/*`
-routes so "only approved photos, only public boards" lives in one spot.
-
-- `getPublicBoards()` — public boards, newest first, each with its approved-photo count, cover
-  URL, and `coverIsVideo` (checked by MIME type, so the board-grid card knows to render a
-  `<video>` instead of an `<img>`). Reads the cover's stored `playbook_permalink_url` directly —
-  no Playbook API call.
-- `getBoardBySlug(slug)` — a public board by slug; returns `null` for a private one, so a private
-  board's slug can never be reached this way (only its `share_token` can — see below). Includes
-  `hasPassword` (a boolean derived from `password_hash`, never the hash itself).
-- `getBoardByToken(token)` — any board (public or private) by its unguessable `share_token`.
-- `getApprovedPhotos(boardId)` — `status='approved'` rows for a board, newest first, each flagged
-  `isVideo` by MIME type. Every approved row already has a stored `playbook_permalink_url` (set
-  once at approval time), so this never calls Playbook either — see `lib/playbook.server.ts`.
-- `findPublicPhotosByPlaybookTokens(tokens)` — given Playbook asset tokens (from an org-wide AI
-  search — see `find_photos` below), returns only the ones that are ALSO an approved photo on a
-  public board, and never a video (the chat card that consumes this renders a plain `<img>` grid).
-  This is the safety boundary that keeps Playbook's AI search — which has no concept of this
-  app's moderation queue or private boards — from leaking pending uploads, private-board content,
-  or unrelated organisation assets to a public visitor asking the Smart Search assistant a
-  question.
-
-### `lib/mediaAccess.ts`
-
-`server-only`. Password hashing (scrypt, `"salt:hash"`) and an HMAC-signed unlock cookie for
-`/media` board passwords — the same approach as `lib/trainingAccess.ts`, kept as a separate file
-because the cookie here (`mb_<boardId>`) has to work across several route shapes
-(`/media/b/[slug]`, `/media/s/[token]`, the API routes) rather than one static path prefix.
-`isBoardUnlocked(boardId)` reads the cookie server-side; `hashPassword`/`verifyPassword` are used
-by the admin board routes and `POST /api/media/unlock` respectively.
-
-### `lib/playbook.server.ts`
-
-`server-only`. Every call this codebase makes to Playbook (dev.playbook.com), the DAM that
-stores `/media`'s photos and videos — see Database Schema §25 for why and how the swap from
-Supabase Storage was scoped to this one feature, and for the deletion-safety rule this file's
-API surface is designed around.
-
-- `getOrCreateBoard(title)` — finds a Playbook board by exact title, or creates one. No
-  find-or-create endpoint exists upstream, so this lists (`?query=`) and checks for an exact
-  match first; safe to call more than once for the same title.
-- `listBoards(query?)` — every board in the org (optionally filtered), for the "Import from
-  Playbook" board picker.
-- `listBoardAssets(boardToken, { page, perPage })` — a board's assets, with `nested_assets=true`
-  — confirmed necessary against the live API: the church's real "Sunday Services" board reports
-  660 assets but has zero sitting directly in it (all live in per-date sub-boards), so an
-  unnested call returns an empty list for exactly the boards an admin most wants to import from.
-- `searchAssets(query)` — `GET /ai_search`, natural-language search across every asset in the
-  org. Powers both the import picker's search box and the `find_photos` Smart Search tool.
-- `getAsset(assetToken)` — full details for one asset, including whether it's a `is_group`
-  (Playbook's own similar-photos clustering — has no displayable image or permalink of its own;
-  `is_imported`-flagging callers must check this and refuse to import it) and its current
-  `permalink`, if any.
-- `uploadAsset({ buffer, title, mediaType, boardToken })` — the server-proxied upload flow used by
-  the image route (`app/api/media/upload`): calls `prepareUpload()`, PUTs `buffer` to whatever
-  destination it returns (branching on whichever of GCS-resumable, Backblaze single-part, or
-  Backblaze multipart `upload_prepare` says the org's storage provider requires), then
-  `completeUpload()`. Images only in practice — video's bytes never reach this server at all (see
-  below), so nothing calls this with a video buffer, though nothing in Playbook's API would stop it.
-- `prepareUpload({ title, mediaType, size, boardToken })` / `completeUpload({ signedGcsId,
-  multipartUploadId, title, mediaType, size, boardToken })` — the two halves of `upload_prepare` →
-  `upload_complete`, extracted out of `uploadAsset()` as standalone exports so
-  `app/api/media/upload/{prepare,complete}/route.ts` can call them directly without going through
-  the PUT step in between — that step happens in the browser instead for video (see
-  `lib/directUpload.ts`), since only the browser can talk straight to Google/Backblaze's storage.
-- `getTemporaryDisplayUrl(assetToken)` — a signed URL, valid ~24h. Used only for the admin
-  moderation queue's thumbnails, fetched fresh per request — never stored.
-- `ensurePermalink(assetToken)` — a permanent, unsigned CDN URL. Checks the asset for an existing
-  permalink first and reuses it rather than requesting a new one, because `add_permalinks` on an
-  asset that already has one returns `406`, not a no-op — the exact situation an imported asset
-  (previously shared some other way) is likely to be in. `requestPermalink()` is the raw
-  create-only call underneath, exported separately for a caller (the import route) that already
-  has the asset record in hand and can check `asset.permalink` itself for free rather than paying
-  for a second `getAsset` round trip.
-- `deleteAsset(assetToken)` — Playbook soft-deletes (a deleted asset is still `GET`-able with
-  `is_deleted: true`, presumably recoverable from their trash for a period) rather than
-  hard-deleting; called best-effort (`.catch(() => {})`) from the admin delete routes, and **only
-  ever for an asset `/media` itself created** — never for an imported one. There is deliberately
-  no `deleteBoard()` function: an earlier version had one, called unconditionally from the
-  board-delete route, which would have deleted a real, pre-existing Playbook board (and
-  everything in it) the moment an admin deleted the `/media` board pointing at it. Removed
-  entirely rather than left behind for a future caller to misuse.
-
-Auth is `PLAYBOOK_TOKEN` (Bearer, needs the `write` scope for uploads) and `PLAYBOOK_ORG_SLUG`
-(defaults to `"dctv"` — the account's Pro-plan workspace; a second, unrelated free-plan
-`"destinytees"` workspace exists on the same token with only 10 permalinks total, which is why
-the slug is a fixed default rather than resolved by picking "the first organisation" at request
-time).
-
-### `lib/mediaUpload.server.ts`
-
-`server-only`. Validation shared by all three public upload routes (`app/api/media/upload` and
-its `/prepare` and `/complete` siblings) so the honeypot/board/rate-limit checks live in one place
-rather than being copy-pasted three times.
-
-- `resolveUploadBoard(boardToken)` — looks up `media_boards` by `share_token`, checks
-  `allow_uploads`, and lazily provisions `playbook_board_token` via `getOrCreateBoard()` if a board
-  somehow doesn't have one yet. Returns `{ board }`, `{ error }`, or `null` (not found) — every
-  caller handles all three the same way.
-- `isRateLimited(ipHash)` — counts `media_photos` rows for that IP hash in the last hour against
-  `MAX_UPLOADS_PER_HOUR` (20).
-- `clientIp(request)` / `hashIp(ip)` — `x-forwarded-for`/`x-real-ip` extraction and
-  `sha256(ip + MEDIA_IP_SALT)`, so a raw IP is never what gets compared or stored.
-- `sanitizeUploaderName(raw)` / `isHoneypotTripped(raw)` — the same name-cleaning and
-  honeypot-check logic every route needs.
-
-### `lib/directUpload.ts`
-
-Client-side (no `server-only`). The browser half of the video direct-upload flow —
-`putFileToStorage(file, prepared, onProgress?)` sends a `File`'s bytes straight to whatever
-`POST /api/media/upload/prepare` said to use, mirroring the same three storage-provider shapes
-`uploadAsset()` handles server-side for images: GCS resumable (an empty POST with
-`x-goog-resumable: start` opens a session, its `Location` header is where the bytes actually go),
-Backblaze multipart (the file is sliced into `partSize`-sized chunks, one PUT per pre-signed part
-URL), and Backblaze single-part (one PUT to `uploadUrl`). Uses `XMLHttpRequest` rather than `fetch`
-specifically for `xhr.upload.onprogress` — `fetch` has no upload-progress event — which is what
-drives `UploadModal`'s "Uploading… NN%" button label during a large video's transfer.
 
 ### `lib/jobs.ts` & `lib/hr.ts`
 

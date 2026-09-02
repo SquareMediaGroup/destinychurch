@@ -18,7 +18,6 @@ import type {
   WeatherToolResult,
   DirectionsToolResult,
   SearchWebResult,
-  PhotoResult,
 } from "@/lib/smartSearch/tools";
 
 function UnavailableNote({ reason }: { reason?: string }) {
@@ -124,38 +123,6 @@ export function WebResultsCard({ data }: { data: SearchWebResult }) {
           <p className="truncate text-sm font-bold text-white/85">{r.title}</p>
           <p className="mt-0.5 line-clamp-2 text-xs text-white/45">{r.snippet}</p>
         </a>
-      ))}
-    </div>
-  );
-}
-
-// ── Photos ───────────────────────────────────────────────────────────────────
-
-export function PhotoResultCards({ photos }: { photos: PhotoResult[] }) {
-  if (photos.length === 0) return null;
-  // A search can turn up matches from more than one public board, so each
-  // thumbnail links to its own board rather than assuming a single shared link.
-  return (
-    <div className="mt-2 grid grid-cols-3 gap-1.5">
-      {photos.map((p) => (
-        <Link
-          key={p.id}
-          href={`/media/b/${p.boardSlug}`}
-          title={p.boardTitle}
-          className="group relative aspect-square overflow-hidden rounded-lg"
-        >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={p.url}
-            alt=""
-            loading="lazy"
-            decoding="async"
-            className="h-full w-full object-cover transition group-hover:scale-105"
-          />
-          <span className="absolute inset-x-0 bottom-0 truncate bg-black/60 px-1.5 py-0.5 text-[10px] font-bold text-white opacity-0 transition group-hover:opacity-100">
-            {p.boardTitle}
-          </span>
-        </Link>
       ))}
     </div>
   );

@@ -27,7 +27,6 @@ const ROLE_HINTS: Record<AdminRole, string> = {
   site_admin: "Posts and redirects.",
   host: "Moderates the live chat, and can sign in on /live itself.",
   hr_admin: "Staff directory, leave, jobs, applications, documents and reviews.",
-  media_admin: "Photo gallery: boards and upload moderation.",
   super_admin: "Full access, including the sitewide banner, cache and users.",
 };
 

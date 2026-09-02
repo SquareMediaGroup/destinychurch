@@ -135,7 +135,6 @@ destinychurch/
 │   │                               # page below is a flat top-level folder directly under app/
 │   ├── about/                     # About page
 │   ├── accessibility/             # Reduced-motion / glass-FX preferences (client component)
-│   ├── admin-login/                # Stale-bookmark redirect → /login
 │   ├── administration/            # Stale-bookmark redirect → /admin
 │   ├── auth/                      # callback/ + confirm/ — Supabase OAuth & email-OTP handlers
 │   ├── baptism/                   # Baptism sign-up
@@ -2093,7 +2092,7 @@ without an auth check, so they must never be reachable on the live site.
 | `/safeguarding` | `app/safeguarding/page.tsx` | Safeguarding policy |
 | `/data-gdpr` | `app/data-gdpr/page.tsx` | Data & GDPR policy |
 | `/governance` | `app/governance/page.tsx` | Transparency page: charity + company registration details, trustees/directors, charitable objects, five-year financial history and filings. Data comes live from the Charity Commission and Companies House APIs via `lib/governance.server.ts`, cached weekly (`revalidate = 604800`), falling back to a stored snapshot per-regulator when a key is missing or an API is down |
-| `/admin-login`, `/administration` | `app/admin-login/page.tsx`, `app/administration/page.tsx` | Stale-bookmark redirects to `/login` and `/admin` |
+| `/administration` | `app/administration/page.tsx` | Stale-bookmark redirect to `/admin` |
 | `/auth/callback`, `/auth/confirm` | `app/auth/callback/route.ts`, `app/auth/confirm/route.ts` | Supabase OAuth callback and email-OTP verification route handlers |
 | `/[slug]` | `app/[slug]/page.tsx` | Dynamic catchall — looks up a published row in the `posts` table. At ≥1600px viewport the layout becomes a three-track grid with a promo card in each margin (see `posts/PostRails.tsx`); the 768px article column is unchanged at every width |
 
@@ -2105,7 +2104,7 @@ Each section requires a specific access-level role (see
 
 | Route | File | Purpose |
 |-------|------|---------|
-| `/login` | `app/login/page.tsx` | Staff sign-in |
+| `/login` | `app/login/page.tsx` | Staff sign-in. On success (or on revisiting while already signed in), shows a "choose a system" screen — Admin (`/admin`) and Portal (`/portal`) cards, greyed out for whichever the account can't open (`getSystemAccess` in `lib/staffPortalAuth.ts`) |
 | `/admin/forgot-password` | `app/admin/forgot-password/page.tsx` | Password reset request |
 | `/admin/reset-password` | `app/admin/reset-password/page.tsx` | Password reset form |
 | `/admin` | `app/admin/page.tsx` | Admin dashboard home |

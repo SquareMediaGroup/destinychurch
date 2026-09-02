@@ -31,7 +31,6 @@ const SYSTEM_SLUGS = [
 const ROUTE_SLUGS = [
   "about",
   "administration",
-  "admin-login",
   "alpha",
   "annual-report-2025",
   "baptism",

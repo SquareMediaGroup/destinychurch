@@ -239,9 +239,12 @@ export interface DesignDeliverable {
   id: string;
   ticket_id: string;
   revision: number;
+  storage_kind: "playbook" | "supabase" | "link";
   file_name: string;
   mime_type: string | null;
   size_bytes: number | null;
+  link_url: string | null;
+  link_provider: "drive" | "playbook" | "other" | null;
   uploaded_by_email: string | null;
   created_at: string;
 }
@@ -318,6 +321,18 @@ export function uniqueEmails(raw: (string | null | undefined)[]): string[] {
 }
 
 /** Bytes as something a person reads. */
+/**
+ * A Drive share link ("/file/d/ID/view") embeds fine as an iframe once
+ * swapped for its "/preview" form. Anything else (Playbook, a Drive folder
+ * link, a malformed URL) has no equivalent — those just get an "Open" link
+ * instead of an inline player.
+ */
+export function driveEmbedUrl(url: string): string | null {
+  const match = url.match(/\/file\/d\/([^/]+)/);
+  if (!match) return null;
+  return `https://drive.google.com/file/d/${match[1]}/preview`;
+}
+
 export function fileSize(bytes: number | null): string {
   if (!bytes || bytes <= 0) return "";
   if (bytes < 1024) return `${bytes} B`;

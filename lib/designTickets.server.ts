@@ -18,7 +18,7 @@ import { cookies } from "next/headers";
 import { createClient } from "@/utils/supabase/server";
 import { createServiceClient } from "@/utils/supabase/service";
 import { getRoles } from "@/lib/adminRoles";
-import { getOrCreateBoard } from "@/lib/playbook.server";
+import { deleteAsset } from "@/lib/playbook.server";
 import {
   MAX_CHANGE_REQUESTS,
   canTransition,
@@ -30,9 +30,6 @@ import {
 } from "@/lib/designTickets";
 
 type ServiceClient = ReturnType<typeof createServiceClient>;
-
-/** The one Playbook board every deliverable lands in. */
-export const DESIGN_BOARD_TITLE = "Design Tickets";
 
 /** The domain that gets the "sign in and we'll fast-track it" nudge. */
 export const STAFF_EMAIL_DOMAIN = "@destinytees.uk";
@@ -153,28 +150,37 @@ export async function resolveRequesterIdentity(
   return { ...base, signedInButUnmatched: true };
 }
 
-/* ── Boards ────────────────────────────────────────────────────────────────── */
+/* ── Deliverable storage ──────────────────────────────────────────────────── */
+
+/** Where image/PDF deliverables live now that Playbook uploads are retired. */
+export const DESIGN_DELIVERABLES_BUCKET = "design-deliverables";
 
 /**
- * The board this ticket's files go in, resolved lazily and cached on the row.
- *
- * One shared board rather than one per ticket: nothing here ever lists a board
- * — assets are always found through our own design_ticket_deliverables rows —
- * so per-ticket boards would only fill the DAM with near-empty collections.
- * Context goes in the asset title instead ("DT-0007 r2 — poster.pdf"). Storing
- * the token per ticket keeps the other choice open as a backfill.
+ * Frees whatever a deliverable actually owns before its row is deleted.
+ * Playbook rows are legacy — new uploads never create one — but old tickets
+ * still have them, so all three storage kinds have to be handled here.
  */
-export async function designBoardToken(
+export async function deleteDeliverableStorage(
   service: ServiceClient,
-  ticket: { id: string; playbook_board_token: string | null },
-): Promise<string> {
-  if (ticket.playbook_board_token) return ticket.playbook_board_token;
-  const token = await getOrCreateBoard(DESIGN_BOARD_TITLE);
-  await service
-    .from("design_tickets")
-    .update({ playbook_board_token: token })
-    .eq("id", ticket.id);
-  return token;
+  file: {
+    storage_kind: string;
+    playbook_asset_token: string | null;
+    file_path: string | null;
+  },
+): Promise<void> {
+  if (file.storage_kind === "supabase" && file.file_path) {
+    await service.storage.from(DESIGN_DELIVERABLES_BUCKET).remove([file.file_path]);
+  } else if (file.storage_kind === "playbook" && file.playbook_asset_token) {
+    try {
+      await deleteAsset(file.playbook_asset_token);
+    } catch (err) {
+      // A DAM hiccup shouldn't strand the ticket. Log the orphan by name so it
+      // can be cleared by hand rather than becoming invisible.
+      console.error(`🗑️ Playbook asset ${file.playbook_asset_token} not deleted:`, err);
+    }
+  }
+  // storage_kind === "link" owns nothing of ours — the file lives on Drive/
+  // Playbook under someone else's account, so there's nothing to free here.
 }
 
 /* ── Who the design team is ────────────────────────────────────────────────── */
@@ -404,7 +410,9 @@ export async function requesterView(service: ServiceClient, ticket: TicketRow) {
   const [{ data: deliverables }, { data: events }] = await Promise.all([
     service
       .from("design_ticket_deliverables")
-      .select("id, ticket_id, revision, file_name, mime_type, size_bytes, created_at")
+      .select(
+        "id, ticket_id, revision, storage_kind, file_name, mime_type, size_bytes, link_url, link_provider, created_at",
+      )
       .eq("ticket_id", id)
       .order("revision", { ascending: false })
       .order("created_at", { ascending: false }),

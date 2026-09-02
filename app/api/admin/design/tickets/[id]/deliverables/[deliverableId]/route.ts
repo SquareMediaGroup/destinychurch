@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { createServiceClient } from "@/utils/supabase/service";
 import { recordAudit } from "@/lib/audit.server";
-import { deleteAsset } from "@/lib/playbook.server";
+import { deleteDeliverableStorage } from "@/lib/designTickets.server";
 import { ticketRef } from "@/lib/designTickets";
 
 export async function DELETE(
@@ -35,13 +35,9 @@ export async function DELETE(
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
-  // Row first, then the DAM: if this throws we've lost a file but kept no
-  // dangling reference, which is the recoverable direction of the two.
-  try {
-    await deleteAsset(file.playbook_asset_token);
-  } catch (err) {
-    console.error(`🗑️ Playbook asset ${file.playbook_asset_token} not deleted:`, err);
-  }
+  // Row first, then the underlying storage: if this throws we've lost a file
+  // but kept no dangling reference, which is the recoverable direction of the two.
+  await deleteDeliverableStorage(supabase, file);
 
   await recordAudit({
     action: "delete",

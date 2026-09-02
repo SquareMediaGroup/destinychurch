@@ -1,4 +1,10 @@
-// Playbook (dev.playbook.com) — the DAM that stores design ticket deliverables.
+// Playbook (dev.playbook.com) — the DAM that used to store every design
+// ticket deliverable. New uploads no longer go here: Playbook's upload
+// endpoint doesn't send CORS headers, which silently blocks the direct
+// browser upload this flow depended on. Images/PDFs now go to Supabase
+// Storage and video is a pasted Drive/Playbook link (see
+// design_ticket_deliverables.storage_kind). This file survives only to serve
+// and delete deliverables uploaded before that switch.
 //
 // Auth: PLAYBOOK_TOKEN (Bearer token, write scope). Org: PLAYBOOK_ORG_SLUG,
 // defaulting to "dctv" (Destiny Church Tees Valley's Pro-plan workspace; the
@@ -6,9 +12,8 @@
 // the slug is not left to be guessed at request time).
 //
 // This file previously backed the /media photo gallery and was deleted along
-// with it (e7d7687). It is restored here, trimmed to what the design ticket
-// queue actually uses: board resolution, the two-step upload, a short-lived
-// display URL, and delete.
+// with it (e7d7687), then restored for the design ticket queue's two-step
+// upload. That upload path is now legacy-only — see above.
 //
 // Deliberately NOT restored: listBoards, listBoardAssets, searchAssets — those
 // existed for the "import from an existing Playbook board" picker, which has no
@@ -188,9 +193,11 @@ export async function completeUpload({
  * Backblaze multipart — since which one applies depends on the org's storage
  * provider and file size, not on anything this caller controls.
  *
- * Kept for server-side callers that already hold the bytes. The design ticket
- * uploader does not use it: it goes through prepareUpload/completeUpload and
- * lib/directUpload.ts so a 300MB print-ready PDF never touches our server.
+ * Kept for server-side callers that already hold the bytes. Design ticket
+ * deliverables no longer use Playbook at all for new uploads — Playbook's
+ * upload endpoint doesn't send CORS headers, which silently blocks direct
+ * browser uploads — so this and the rest of the two-step flow below now only
+ * back legacy rows uploaded before that switch.
  */
 export async function uploadAsset({
   buffer,

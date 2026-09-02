@@ -7,6 +7,7 @@ import {
   DESIGN_CATEGORY_LABELS,
   MAX_CHANGE_REQUESTS,
   canTransition,
+  driveEmbedUrl,
   fileSize,
   ticketRef,
   type DesignTicketStatus,
@@ -131,30 +132,50 @@ export default function TicketTracker({
                     {rev === view.revision ? "Latest" : `Round ${rev}`}
                   </p>
                 ) : null}
-                <div className="space-y-2">
+                <div className="space-y-3">
                   {view.deliverables
                     .filter((d) => d.revision === rev)
-                    .map((file) => (
-                      <a
-                        key={file.id}
-                        href={`/api/design-request/${token}/deliverables/${file.id}/download`}
-                        className="flex items-center gap-3 rounded-2xl bg-[#f5f7fa] px-4 py-3 transition hover:bg-black/8"
-                      >
-                        <span className="material-symbols-rounded text-xl text-destiny-orange">
-                          download
-                        </span>
-                        <span className="min-w-0 flex-1">
-                          <span className="block truncate text-sm font-bold text-destiny-grey">
-                            {file.file_name}
-                          </span>
-                          {file.size_bytes ? (
-                            <span className="block text-xs text-destiny-grey/50">
-                              {fileSize(file.size_bytes)}
-                            </span>
+                    .map((file) => {
+                      const embed =
+                        file.storage_kind === "link" && file.link_url
+                          ? driveEmbedUrl(file.link_url)
+                          : null;
+                      const href =
+                        file.storage_kind === "link"
+                          ? (file.link_url ?? "#")
+                          : `/api/design-request/${token}/deliverables/${file.id}/download`;
+                      return (
+                        <div key={file.id}>
+                          {embed ? (
+                            <iframe
+                              src={embed}
+                              allow="autoplay"
+                              className="mb-2 aspect-video w-full rounded-2xl border-0"
+                            />
                           ) : null}
-                        </span>
-                      </a>
-                    ))}
+                          <a
+                            href={href}
+                            target={file.storage_kind === "link" ? "_blank" : undefined}
+                            rel={file.storage_kind === "link" ? "noreferrer" : undefined}
+                            className="flex items-center gap-3 rounded-2xl bg-[#f5f7fa] px-4 py-3 transition hover:bg-black/8"
+                          >
+                            <span className="material-symbols-rounded text-xl text-destiny-orange">
+                              {file.storage_kind === "link" ? "open_in_new" : "download"}
+                            </span>
+                            <span className="min-w-0 flex-1">
+                              <span className="block truncate text-sm font-bold text-destiny-grey">
+                                {file.file_name}
+                              </span>
+                              {file.storage_kind !== "link" && file.size_bytes ? (
+                                <span className="block text-xs text-destiny-grey/50">
+                                  {fileSize(file.size_bytes)}
+                                </span>
+                              ) : null}
+                            </span>
+                          </a>
+                        </div>
+                      );
+                    })}
                 </div>
               </div>
             ))}

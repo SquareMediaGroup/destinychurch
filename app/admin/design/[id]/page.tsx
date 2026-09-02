@@ -23,6 +23,7 @@ import {
   DESIGN_PRIORITY_LABELS,
   DESIGN_STATUS_LABELS,
   DESIGN_STATUS_TONE,
+  driveEmbedUrl,
   fileSize,
   nextStatuses,
   ticketRef,
@@ -258,41 +259,62 @@ export default function DesignTicketPage({ params }: { params: Promise<{ id: str
             </div>
 
             {currentFiles.length > 0 ? (
-              <ul className="mb-4 space-y-2">
-                {currentFiles.map((file) => (
-                  <li
-                    key={file.id}
-                    className="flex items-center gap-3 rounded-2xl bg-black/[0.03] px-4 py-3 dark:bg-white/5"
-                  >
-                    <span className="material-symbols-rounded text-lg text-destiny-orange">
-                      draft
-                    </span>
-                    <span className="min-w-0 flex-1">
-                      <span className="block truncate text-sm font-bold text-destiny-grey dark:text-white">
-                        {file.file_name}
-                      </span>
-                      <span className="block text-xs text-destiny-grey/50 dark:text-white/50">
-                        {fileSize(file.size_bytes)}
-                        {file.uploaded_by_email ? ` · ${file.uploaded_by_email}` : ""}
-                      </span>
-                    </span>
-                    <a
-                      href={`${API}/${id}/deliverables/${file.id}/download`}
-                      className="material-symbols-rounded text-lg text-destiny-grey/50 transition hover:text-destiny-orange dark:text-white/50"
-                      title="Download"
-                    >
-                      download
-                    </a>
-                    <button
-                      type="button"
-                      onClick={() => removeFile(file)}
-                      className="material-symbols-rounded text-lg text-destiny-grey/50 transition hover:text-danger dark:text-white/50"
-                      title="Delete"
-                    >
-                      delete
-                    </button>
-                  </li>
-                ))}
+              <ul className="mb-4 space-y-3">
+                {currentFiles.map((file) => {
+                  const embed = file.storage_kind === "link" && file.link_url
+                    ? driveEmbedUrl(file.link_url)
+                    : null;
+                  return (
+                    <li key={file.id} className="rounded-2xl bg-black/[0.03] p-3 dark:bg-white/5">
+                      {embed ? (
+                        <iframe
+                          src={embed}
+                          allow="autoplay"
+                          className="mb-3 aspect-video w-full rounded-xl border-0"
+                        />
+                      ) : null}
+                      <div className="flex items-center gap-3">
+                        <span className="material-symbols-rounded text-lg text-destiny-orange">
+                          {file.storage_kind === "link" ? "smart_display" : "draft"}
+                        </span>
+                        <span className="min-w-0 flex-1">
+                          <span className="block truncate text-sm font-bold text-destiny-grey dark:text-white">
+                            {file.file_name}
+                          </span>
+                          <span className="block text-xs text-destiny-grey/50 dark:text-white/50">
+                            {file.storage_kind === "link"
+                              ? file.link_provider === "drive"
+                                ? "Google Drive link"
+                                : "Playbook link"
+                              : fileSize(file.size_bytes)}
+                            {file.uploaded_by_email ? ` · ${file.uploaded_by_email}` : ""}
+                          </span>
+                        </span>
+                        <a
+                          href={
+                            file.storage_kind === "link"
+                              ? (file.link_url ?? "#")
+                              : `${API}/${id}/deliverables/${file.id}/download`
+                          }
+                          target={file.storage_kind === "link" ? "_blank" : undefined}
+                          rel={file.storage_kind === "link" ? "noreferrer" : undefined}
+                          className="material-symbols-rounded text-lg text-destiny-grey/50 transition hover:text-destiny-orange dark:text-white/50"
+                          title={file.storage_kind === "link" ? "Open" : "Download"}
+                        >
+                          {file.storage_kind === "link" ? "open_in_new" : "download"}
+                        </a>
+                        <button
+                          type="button"
+                          onClick={() => removeFile(file)}
+                          className="material-symbols-rounded text-lg text-destiny-grey/50 transition hover:text-danger dark:text-white/50"
+                          title="Delete"
+                        >
+                          delete
+                        </button>
+                      </div>
+                    </li>
+                  );
+                })}
               </ul>
             ) : null}
 
@@ -313,11 +335,17 @@ export default function DesignTicketPage({ params }: { params: Promise<{ id: str
                         r{file.revision} · {file.file_name}
                       </span>
                       <a
-                        href={`${API}/${id}/deliverables/${file.id}/download`}
+                        href={
+                          file.storage_kind === "link"
+                            ? (file.link_url ?? "#")
+                            : `${API}/${id}/deliverables/${file.id}/download`
+                        }
+                        target={file.storage_kind === "link" ? "_blank" : undefined}
+                        rel={file.storage_kind === "link" ? "noreferrer" : undefined}
                         className="material-symbols-rounded text-base text-destiny-grey/40 transition hover:text-destiny-orange dark:text-white/40"
-                        title="Download"
+                        title={file.storage_kind === "link" ? "Open" : "Download"}
                       >
-                        download
+                        {file.storage_kind === "link" ? "open_in_new" : "download"}
                       </a>
                     </li>
                   ))}
@@ -501,7 +529,7 @@ export default function DesignTicketPage({ params }: { params: Promise<{ id: str
               Danger zone
             </h2>
             <p className="mb-4 text-xs leading-relaxed text-destiny-grey/50 dark:text-white/50">
-              Deleting removes the ticket, its history and its files from Playbook. Cancelling is
+              Deleting removes the ticket, its history and its uploaded files. Cancelling is
               almost always the better option.
             </p>
             <button

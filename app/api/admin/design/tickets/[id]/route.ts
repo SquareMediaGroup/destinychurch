@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { createServiceClient } from "@/utils/supabase/service";
 import { readForAudit, recordAudit } from "@/lib/audit.server";
-import { deleteAsset } from "@/lib/playbook.server";
+import { deleteDeliverableStorage } from "@/lib/designTickets.server";
 import { ticketRef } from "@/lib/designTickets";
 
 /** One ticket, with its thread and its files — everything the detail page draws. */
@@ -105,22 +105,16 @@ export async function DELETE(
   const supabase = createServiceClient();
   const before = await readForAudit("design_tickets", id);
 
-  // The rows cascade, but Playbook doesn't know about our foreign keys — clear
-  // the assets first or deleting a ticket silently leaves its files in the DAM
-  // with nothing left pointing at them.
+  // The rows cascade, but neither Supabase Storage nor Playbook know about our
+  // foreign keys — clear the underlying files first or deleting a ticket
+  // silently leaves them behind with nothing left pointing at them.
   const { data: files } = await supabase
     .from("design_ticket_deliverables")
-    .select("playbook_asset_token")
+    .select("storage_kind, playbook_asset_token, file_path")
     .eq("ticket_id", id);
 
   for (const file of files ?? []) {
-    try {
-      await deleteAsset(file.playbook_asset_token);
-    } catch (err) {
-      // A DAM hiccup shouldn't strand the ticket. Log the orphan by name so it
-      // can be cleared by hand rather than becoming invisible.
-      console.error(`🗑️ Playbook asset ${file.playbook_asset_token} not deleted:`, err);
-    }
+    await deleteDeliverableStorage(supabase, file);
   }
 
   const { error } = await supabase.from("design_tickets").delete().eq("id", id);

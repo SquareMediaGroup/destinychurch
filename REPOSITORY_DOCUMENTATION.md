@@ -1,7 +1,7 @@
 # Destiny Church Tees Valley — Complete Repository Documentation
 
-**Version:** 1.0.13  
-**Last Updated:** September 2, 2026  
+**Version:** 1.0.14  
+**Last Updated:** September 3, 2026  
 **Repository:** Square Media Group — destinychurch  
 
 This document provides a comprehensive explanation of every major component, line of code purpose, architecture decisions, and how the system works from end-to-end.
@@ -214,8 +214,8 @@ destinychurch/
 │   │   │   ├── simulated-live/    # Simulated live config + YouTube link lookup (Host)
 │   │   │   └── ...
 │   │   ├── portal/                # Staff self-service API — me/, leave/, documents/, design/ (linked hr_staff)
-│   │   ├── design-request/        # Public, share-token-scoped: [token]/ + deliverable downloads
-│   │   ├── cron/                  # Vercel Cron — live-chat-purge/, hr-review-reminders/ (Bearer CRON_SECRET)
+│   │   ├── design-request/        # Public, share-token-scoped: [token]/ + deliverable downloads/confirm
+│   │   ├── cron/                  # Vercel Cron — live-chat-purge/, hr-review-reminders/, design-deliverables-purge/, … (Bearer CRON_SECRET)
 │   │   ├── chat/                  # POST /api/chat — Smart Search tool-calling chat
 │   │   ├── youtube/                # videos/, thumbnail/[id]/, status/, live/
 │   │   ├── alpha-ask/, alpha-events/ # Public Alpha info endpoints
@@ -282,7 +282,6 @@ destinychurch/
 │   ├── designEmail.ts             # Design ticket notifications via Resend
 │   ├── emailCard.ts               # The shared transactional email card (HR + design)
 │   ├── playbook.server.ts         # Playbook DAM client — boards, two-step upload, signed display URLs
-│   ├── directUpload.ts            # Browser-side PUT straight to Playbook storage (clears Vercel's 100MB cap)
 │   ├── shop.ts / shop.server.ts   # Shop types, price helpers, published-product fetchers
 │   ├── stripe.ts                  # Stripe client singleton
 │   ├── cart-store.ts              # Zustand basket store (localStorage-persisted)
@@ -299,7 +298,7 @@ destinychurch/
 │   ├── podcast.ts                 # Podcast metadata
 │   ├── accessRequestEmail.ts      # Email templates
 │   ├── passwordResetEmail.ts      # Email templates
-│   ├── staffLogins.ts             # Staff login records
+│   ├── staffLogins.ts             # Create/link/delete a staff record's mandatory backend login (new login or an existing admin's)
 │   ├── collections.ts             # Content collections
 │   ├── sermonPlayerContext.tsx    # Sermon player state
 │   ├── sermonSearchContext.tsx    # Sermon search state
@@ -775,6 +774,11 @@ CREATE TABLE hr_staff (
   end_date date,
   annual_leave_entitlement numeric DEFAULT 0,
   notes text,
+  -- The staff record's backend login. Mandatory from creation onward:
+  -- unique (no two staff share a login) and NOT NULL (there is no "no login"
+  -- or "revoke access" state any more). References auth.users on delete set
+  -- null so deleting the auth user never deletes the HR record.
+  auth_user_id uuid NOT NULL UNIQUE REFERENCES auth.users (id) ON DELETE SET NULL,
   created_at timestamptz DEFAULT now(),
   updated_at timestamptz DEFAULT now()
 );
@@ -783,9 +787,23 @@ CREATE TABLE hr_staff (
 -- RLS: Service role only (accessed via proxy requiring auth)
 ```
 
+**Backend access is mandatory.** Every staff record is linked to exactly one
+Supabase Auth login — the old optional `grant_access` toggle and the "no login"
+state are gone (`auth_user_id` is `unique` + `not null`, per migrations
+`20260902182649`/`20260902182651`). The staff form (`lib/staffLogins.ts`,
+`/api/admin/hr/staff/available-admins`) can either **create a brand-new
+staff-only login** or **link an existing admin's login**, so an admin added as
+staff reuses their identity rather than getting a duplicate one. Deleting a staff
+record that shares an admin identity leaves that admin's auth user and
+`admin_roles` row intact — only a staff-only login is torn down with the record.
+The linked login is what powers `/portal`: a person is "staff" for the portal by
+having a linked `hr_staff` row, not by an `admin_roles` flag.
+
 **Used By:**
 - HR admin to manage staff directory
 - `/admin/hr` dashboard
+- `/portal` + `/api/portal/*` — staff self-service, gated by the linked login
+  (`lib/staffPortalAuth.ts`)
 
 ---
 
@@ -1755,19 +1773,48 @@ create table design_tickets (
   updated_at             timestamptz not null default now()
 );
 
--- Metadata only. The bytes live in Playbook; this stores the asset token.
+-- Metadata only — the bytes live elsewhere, keyed by storage_kind:
+--   'supabase' → a file in the private design-deliverables bucket (file_path)
+--   'link'     → a Drive/Playbook share URL the designer pasted (link_url); we
+--                own no bytes at all
+--   'playbook' → a legacy Playbook asset (playbook_asset_token); the original
+--                delivery mechanism, kept working for existing rows only
 create table design_ticket_deliverables (
   id                   uuid primary key default gen_random_uuid(),
   ticket_id            uuid not null references design_tickets (id) on delete cascade,
   revision             integer not null default 1,
-  playbook_asset_token text not null,
+  storage_kind         text not null default 'playbook'
+                         check (storage_kind in ('playbook','supabase','link')),
+  playbook_asset_token text,               -- 'playbook' rows only
+  file_path            text,               -- 'supabase' rows: object key in the bucket
+  link_url             text,               -- 'link' rows: the pasted share URL
+  link_provider        text check (link_provider is null
+                         or link_provider in ('drive','playbook','other')),
   file_name            text not null,
   mime_type            text,
   size_bytes           bigint,
   uploaded_by_email    text,
+  -- Requester-confirmed deletion: set once by the requester's own confirm
+  -- action, read by the purge cron. Never set by an admin.
+  confirmed_at         timestamptz,
+  confirmed_by_email   text,
   created_at           timestamptz not null default now(),
-  unique (ticket_id, playbook_asset_token)
+  -- Exactly one storage backing is populated per row.
+  constraint design_ticket_deliverables_storage_shape check (
+    (storage_kind = 'playbook' and playbook_asset_token is not null and file_path is null and link_url is null) or
+    (storage_kind = 'supabase' and file_path is not null and playbook_asset_token is null and link_url is null) or
+    (storage_kind = 'link'     and link_url is not null and playbook_asset_token is null and file_path is null)
+  )
 );
+
+-- Private Supabase Storage bucket for image/PDF deliverables (50MB cap,
+-- image/* + application/pdf only). Private: reached only through server-minted
+-- signed URLs, no storage.objects policies (the service role bypasses RLS),
+-- matching hr-documents and every other private bucket here.
+--   bucket: design-deliverables
+--
+-- Partial index on confirmed_at (where confirmed_at is not null) so the daily
+-- purge cron sweeps only confirmed rows.
 
 -- Status history and messages in ONE append-only table, not two.
 create table design_ticket_events (
@@ -1799,8 +1846,17 @@ already see on their own ticket.
 
 **Why `revision` is on the ticket and stamped onto deliverables.** A change request bumps
 `design_tickets.revision`; the next upload is stamped with the new number and gets its own
-Playbook asset. Nothing is ever overwritten, so "what did I approve in round 1" stays
-answerable — which is the entire point of having a revisions workflow.
+row (a distinct file or link). Nothing is ever overwritten, so "what did I approve in round
+1" stays answerable — which is the entire point of having a revisions workflow.
+
+**Why requester-confirmed deletion.** A deliverable the requester has downloaded and
+confirmed ("I have this, you can delete it") doesn't need to sit in storage forever. The
+confirm action stamps `confirmed_at`; the daily purge cron
+(`/api/cron/design-deliverables-purge`) deletes the underlying file and the row once it has
+sat for at least 48 hours — a floor, not an exact deadline, since the cron runs once a day
+(real-world 48–72h). The floor gives the requester room to notice a corrupt download or
+grab it again on another device. `'link'` deliverables are excluded: they own no bytes of
+ours, so there is nothing to schedule.
 
 **Why the assignee is an email, not a foreign key.** A designer is an `admin_roles` row, and
 `admin_roles` has no target worth pointing at from here. Same reasoning as the old
@@ -2310,6 +2366,7 @@ focus to whatever opened it, and locks body scroll — restoring the *previous*
   - `analytics` — Vercel Analytics
 - **State:** `CookieConsentProvider` (a React context, hook `useCookieConsent`) holds the choice and persists it to `localStorage` under `destiny-cookie-consent`. `decided` is `true` once any choice is stored.
 - **Banner behavior:**
+  - Returns `null` under `/portal` (the staff self-service shell is chrome-free, like `/admin`)
   - Renders only after mount and only while no choice is stored (hydration-guarded so SSR/client markup match)
   - Two buttons: **"Accept all cookies"** (`allowAll` → media + analytics on) and **"Necessary cookies only"** (`denyOptional` → both off). Both link out to the Privacy Policy and Terms of Use
   - A finer `savePreferences({ media, analytics })` also exists for per-category control
@@ -2390,6 +2447,11 @@ through the site's normal nav and the "New Here?" page/link, which were never pa
 - **`searchEnabled` prop.** Mirrors the `smart_search` service kill-switch. With the prop false the
   component returns `null` — there's no fallback experience without the AI, so the widget just isn't
   rendered.
+- **Path suppression.** The widget hides itself on the chrome-free / auth-gated areas via a
+  `usePathname()` check: `/admin`, `/training`, `/nfc`, and `/portal` all return `null`. `/portal` is
+  the staff self-service shell (its own minimal chrome), so the floating widget — like the site header,
+  footer, and the cookie banner (`CookieBanner.tsx`, which also returns `null` under `/portal`) — is
+  suppressed there.
 - **Feature:** the widget runs if the `smart_search` service is enabled
 - **Behavior:**
   - Click button → pill expands, chat thread opens
@@ -3040,13 +3102,13 @@ row) to `/portal`; admin roles take priority, so someone who is both lands on
 // POST   /                          → a designer filing a ticket on someone's behalf
 // GET    /[id]                      → one ticket with its thread and its files
 // PATCH  /[id]                      → editable fields. NOT status — see below
-// DELETE /[id]                      → the ticket, and its Playbook assets
+// DELETE /[id]                      → the ticket, and any stored deliverable files
 // POST   /[id]/status               → every designer-side move
 // POST   /[id]/notes                → a thread note, internal or visible
-// POST   /[id]/deliverables/prepare  → a signed upload destination (audit-exempt)
-// POST   /[id]/deliverables/complete → materialise the asset + record the row
-// DELETE /[id]/deliverables/[did]    → the row and the Playbook asset
-// GET    /[id]/deliverables/[did]/download → 302 to a fresh signed URL
+// POST   /[id]/deliverables/upload   → image/PDF straight into Supabase Storage (<=50MB)
+// POST   /[id]/deliverables/link     → record a Drive/Playbook video share link
+// DELETE /[id]/deliverables/[did]    → the row and its backing file (if any)
+// GET    /[id]/deliverables/[did]/download → 302 to a fresh signed URL (or the link)
 //
 // AUTHORIZATION: design_admin, via ROUTE_RULES. Handlers don't re-check —
 // middleware already did, and every one uses the service client.
@@ -3064,17 +3126,22 @@ row) to `/portal`; admin roles take priority, so someone who is both lands on
 //     two designers with the queue open in two tabs is a clean 409 for the
 //     second, not a silent overwrite.
 //
-// UPLOADS never pass through Vercel. prepare returns a signed destination, the
-// browser PUTs the bytes straight to Playbook's storage (lib/directUpload.ts),
-// and complete turns it into an asset. That's why a 300MB print-ready PDF is
-// fine here and would be a 413 through any route that took the bytes itself.
-// If the row insert fails after the asset exists, complete deletes the asset —
-// otherwise a failed write leaves a file nobody can find and nobody will delete.
+// UPLOADS split by kind (Playbook's upload endpoint sends no CORS headers, which
+// silently blocked every direct browser upload, so the old prepare/complete +
+// direct-PUT dance was retired):
+//   - image/PDF (<=50MB): /deliverables/upload takes the bytes in ONE request and
+//     writes them into the private design-deliverables Supabase Storage bucket.
+//     The 50MB cap is why a single request is fine here.
+//   - video (any size): NOT uploaded. /deliverables/link records a Drive or
+//     Playbook share URL the designer pasted; the bytes never touch our server.
+//   - legacy Playbook assets: still readable, but nothing writes new ones.
 //
-// DOWNLOADS mint getTemporaryDisplayUrl() per click and 302 to it, no-store.
-// No URL is persisted or emailed: a Playbook display URL expires in ~24h, so a
-// cached one is a download button that works until it silently doesn't.
-// No permalink is ever requested — see lib/playbook.server.ts.
+// DOWNLOADS mint a fresh URL per click and 302 to it, no-store — never persisted
+// or emailed, because it expires (a Supabase signed URL in ~60s, a Playbook
+// display URL in ~24h), so a cached one is a button that works until it silently
+// doesn't. A 'supabase' row gets a signed URL from the bucket, a 'playbook' row
+// getTemporaryDisplayUrl(), and a 'link' row redirects straight to the pasted URL.
+// No Playbook permalink is ever requested — see lib/playbook.server.ts.
 ```
 
 #### `GET|PATCH /api/admin/onboarding`
@@ -3363,7 +3430,13 @@ author from the row, which is why no guest id is ever broadcast to the room.
 ```typescript
 // GET   /                                  → the requester's view of their ticket
 // PATCH /                                  → changes_requested | closed | cancelled
-// GET   /deliverables/[did]/download       → 302 to a fresh signed URL
+// GET   /deliverables/[did]/download       → 302 to a fresh signed URL (or the link)
+// POST  /deliverables/[did]/confirm        → the requester's "I have this, you can
+//                                            delete it" — stamps confirmed_at for the
+//                                            purge cron. Idempotent (re-confirming
+//                                            keeps the original timestamp, so it can't
+//                                            push the deletion window back). 'link'
+//                                            deliverables can't be confirmed (400).
 //
 // AUTHORIZATION: the share token, not a session — most requesters aren't staff
 // and shouldn't need an account to collect a poster. Every route re-derives the
@@ -3553,6 +3626,20 @@ returned to its own author marked as waiting, so they don't retype it.
 // batch-swap, not a truncate — the table is never briefly empty). Each
 // source is independent: one failing (a GitHub outage, a changed URL) does
 // not stop the other three refreshing. maxDuration = 300.
+```
+
+#### `GET /api/cron/design-deliverables-purge`
+```typescript
+// Daily at 04:00 (vercel.json). Bearer CRON_SECRET — fails closed with 503 if
+// unset (an open "delete confirmed deliverables" endpoint is worse than not
+// running). NOT under /api/admin, so middleware.ts doesn't guard it.
+//
+// Sweeps design_ticket_deliverables where confirmed_at is at least 48h old,
+// deletes the backing file (deleteDeliverableStorage handles the Supabase bucket
+// object or a legacy Playbook asset; a 'link' row owns no bytes and is never
+// swept because it can't be confirmed), then deletes the row. Because it runs
+// once a day, the real-world floor is 48-72h, not exactly 48. Per-row try/catch:
+// one file that won't delete is logged and skipped, not a whole failed run.
 ```
 
 > There is no `/api/webhooks/vercel` or GitHub webhook route, and no `youtube-sync`
@@ -4875,7 +4962,7 @@ a POST. Only the second is a guarantee. `tests/unit/design-tickets.spec.ts` pins
 the matrix — in particular that a requester can never reach `delivered`, which
 would send a "your files are ready" email for a ticket with no files.
 
-`designTickets.server.ts` is `server-only` and holds three things:
+`designTickets.server.ts` is `server-only` and holds:
 
 - **`applyTransition()`** — the single writer of `design_tickets.status`. It
   re-reads the row rather than trusting a status the caller passed, checks
@@ -4900,14 +4987,29 @@ would send a "your files are ready" email for a ticket with no files.
   Deliberately not a `select("*")` passthrough: the defence against leaking the
   next column added to the table is that this function must be edited for a field
   to become visible.
+- **`DESIGN_DELIVERABLES_BUCKET`** (`"design-deliverables"`) and
+  **`deleteDeliverableStorage()`** — the storage constant shared by the upload
+  and download routes, and the one helper that knows how to free a deliverable's
+  bytes by `storage_kind`: remove the object from the Supabase bucket for a
+  `'supabase'` row, delete the asset for a legacy `'playbook'` row, and no-op a
+  `'link'` row (nothing of ours to delete). Used by the delete route and the
+  purge cron so the cleanup logic lives in exactly one place.
 
-### `lib/playbook.server.ts` / `lib/directUpload.ts`
+### `lib/playbook.server.ts`
 
-The Playbook (dev.playbook.com) DAM client, holding design deliverables. Both
-files were deleted with the `/media` gallery in `e7d7687` and restored here,
-trimmed: the board-picker reads (`listBoards`, `listBoardAssets`, `searchAssets`)
-have no counterpart in this feature, and **`requestPermalink` / `ensurePermalink`
-were left out on purpose.**
+The Playbook (dev.playbook.com) DAM client. It used to be the delivery mechanism
+for design deliverables, but Playbook's upload endpoint sends no CORS headers,
+which silently blocked every direct browser upload — so uploads moved to Supabase
+Storage (image/PDF) or a pasted share link (video), and this module now only
+mints signed **download** URLs for the legacy Playbook-backed rows that predate
+the switch (`getTemporaryDisplayUrl`). `lib/directUpload.ts`, the browser-side
+resumable-upload half, was deleted with the change: nothing PUTs straight to
+Playbook any more.
+
+The file was itself deleted with the `/media` gallery in `e7d7687` and restored
+here, trimmed: the board-picker reads (`listBoards`, `listBoardAssets`,
+`searchAssets`) have no counterpart in this feature, and **`requestPermalink` /
+`ensurePermalink` were left out on purpose.**
 
 That omission is load-bearing. Playbook offers two URL lifetimes, and only one
 suits this feature: `display_url` is signed and expires in ~24h, while
@@ -4917,16 +5019,9 @@ ticket, so it never needs a permanent URL, and spending a finite permalink on on
 would be waste. `tests/unit/design-access.spec.ts` fails the build if any route
 in the module reaches for one, and asserts this file exports no way to.
 
-`directUpload.ts` is the browser half: it PUTs bytes straight to Playbook's
-storage (GCS resumable, Backblaze single-part, or Backblaze multipart — whichever
-`prepare` came back with) so a large source file never passes through a Vercel
-function and never meets the 100MB request-body cap.
-
-One shared board, `getOrCreateBoard("Design Tickets")`, cached per-ticket in
-`playbook_board_token`. Nothing in this feature lists a board — assets are always
-found through our own `design_ticket_deliverables` rows — so board-per-ticket
-would only fill a DAM the team also uses by hand. Context goes in the asset title
-instead: `DT-0007 r2 — poster-final.pdf`.
+The legacy `getOrCreateBoard("Design Tickets")` board still exists for the rows
+minted before the switch, cached per-ticket in `playbook_board_token`. No new
+Playbook assets are created, so this is history rather than an active write path.
 
 ### `lib/emailCard.ts` / `lib/designEmail.ts`
 
@@ -5467,8 +5562,10 @@ HR_NOTIFICATIONS_EMAIL=techteam@destinytees.uk                     # optional; i
 DESIGN_NOTIFICATIONS_EMAIL=techteam@destinytees.uk                 # optional FALLBACK only; design notifications go to admins holding BOTH design_admin AND super_admin. Used when nobody qualifies, so requests cannot arrive unannounced
 DESIGN_IP_SALT=<random string>                                     # optional but recommended; salts the sha256 of a requester's IP. Without it the hash is brute-forceable — the IPv4 space is small
 
-# Playbook (dev.playbook.com) — the DAM holding design ticket deliverables.
-# Required for /admin/design uploads and downloads; nothing else uses it.
+# Playbook (dev.playbook.com) — the DAM that USED to hold design ticket
+# deliverables. New image/PDF deliverables now go to Supabase Storage and video
+# is a pasted Drive/Playbook link, so this is only needed to serve legacy
+# Playbook-backed deliverable downloads. Nothing else uses it.
 PLAYBOOK_TOKEN=<bearer token, write scope>
 PLAYBOOK_ORG_SLUG=dctv                                             # optional; defaults to dctv (the Pro workspace). The account also has an unrelated free-plan "destinytees" workspace, which is why this isn't guessed at request time
 
@@ -5501,6 +5598,8 @@ GITHUB_TOKEN=ghp_...
 #                                                    Admin, then the audit-log retention purge
 #   /api/cron/ip-reputation-refresh  (Mon 05:00)   — refreshes the VPN/Tor/datacenter/Private
 #                                                    Relay range lists behind ip_category
+#   /api/cron/design-deliverables-purge (daily 04:00) — deletes design deliverables the
+#                                                    requester confirmed >=48h ago
 # and the self-healing Smart Search health check (GET /api/health/smart-search).
 CRON_SECRET=            # every /api/cron job FAILS CLOSED (503) if unset; the health check runs unauthenticated (local/dev)
 
@@ -5743,7 +5842,8 @@ ENABLE_SMART_SEARCH=true
   nulls old `engagement_events` IPs), `live-chat-purge` (daily), `hr-review-reminders` (daily),
   `audit-weekly-report` (Sunday evening — writes and emails the week's admin-activity report, then
   runs the audit-log retention purge), `ip-reputation-refresh` (weekly — refreshes the VPN/Tor/
-  datacenter/Private-Relay range lists behind `engagement_events.ip_category`)
+  datacenter/Private-Relay range lists behind `engagement_events.ip_category`), `design-deliverables-purge`
+  (daily — deletes design deliverables the requester confirmed at least 48h ago)
 - **Public endpoints:** `/api/chat` (Smart Search tool-calling chat, per-IP rate-limited), YouTube (videos/status/thumbnail/live), Alpha info, training unlock + read timer (`/api/training/posts/[id]/timer`), `/api/track` (click-analytics beacon for `/nfc` and `/links`)
 - **Store endpoints:** Stripe checkout + Payment Element, order management
 - **Webhooks:** Stripe only (`/api/webhooks/stripe`) — no GitHub or Vercel deployment webhook route

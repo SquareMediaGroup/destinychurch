@@ -52,10 +52,12 @@ final class WhisperEngine {
         params.token_timestamps = true
         params.single_segment = false
         params.no_context = false
-        params.language = language.withCString { strdup($0) }
+        let languagePointer: UnsafeMutablePointer<CChar>? = language.withCString { strdup($0) }
+        params.language = UnsafePointer(languagePointer)
 
         if let initialPrompt, !initialPrompt.isEmpty {
-            params.initial_prompt = initialPrompt.withCString { strdup($0) }
+            let promptPointer: UnsafeMutablePointer<CChar>? = initialPrompt.withCString { strdup($0) }
+            params.initial_prompt = UnsafePointer(promptPointer)
         }
 
         defer {

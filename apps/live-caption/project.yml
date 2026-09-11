@@ -47,6 +47,8 @@ settings:
       - "$(inherited)"
       - "$(PROJECT_DIR)/Vendor/whisper.cpp/build/src"
       - "$(PROJECT_DIR)/Vendor/whisper.cpp/build/ggml/src"
+      - "$(PROJECT_DIR)/Vendor/whisper.cpp/build/ggml/src/ggml-metal"
+      - "$(PROJECT_DIR)/Vendor/whisper.cpp/build/ggml/src/ggml-blas"
       - "$(PROJECT_DIR)/Vendor/NDI/lib/macOS"
   configs:
     Debug:
@@ -62,21 +64,34 @@ targets:
       - path: LiveCaption
         excludes:
           - "**/.DS_Store"
+    dependencies:
+      - framework: Vendor/NDI/lib/macOS/libndi.dylib
+        embed: true
+        codeSign: true
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: uk.destinytees.livecaption
         PRODUCT_NAME: Live Caption
+        PRODUCT_MODULE_NAME: LiveCaption
         INFOPLIST_FILE: LiveCaption/Resources/Info.plist
         CODE_SIGN_ENTITLEMENTS: LiveCaption/Resources/LiveCaption.entitlements
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         SWIFT_OBJC_BRIDGING_HEADER: LiveCaption/Bridging/LiveCaption-Bridging-Header.h
         OTHER_LDFLAGS:
+          - "-lc++"
           - "-lwhisper"
           - "-lggml"
           - "-lggml-base"
           - "-lggml-cpu"
           - "-lggml-metal"
+          - "-lggml-blas"
           - "-lndi"
+          - "-framework"
+          - "Metal"
+          - "-framework"
+          - "MetalKit"
+          - "-framework"
+          - "Accelerate"
         ENABLE_PREVIEWS: YES
 
   LiveCaptionTests:
@@ -90,6 +105,8 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: uk.destinytees.livecaption.tests
         GENERATE_INFOPLIST_FILE: YES
+        TEST_HOST: "$(BUILT_PRODUCTS_DIR)/Live Caption.app/Contents/MacOS/Live Caption"
+        BUNDLE_LOADER: "$(TEST_HOST)"
 
 schemes:
   LiveCaption:

@@ -61,7 +61,8 @@ final class NDIAudioSource: AudioSource {
         }
 
         var ndiSource = NDIlib_source_t()
-        sourceName.withCString { ndiSource.p_ndi_name = strdup($0) }
+        let sourceNamePointer: UnsafeMutablePointer<CChar>? = sourceName.withCString { strdup($0) }
+        ndiSource.p_ndi_name = UnsafePointer(sourceNamePointer)
 
         var createSettings = NDIlib_recv_create_v3_t()
         createSettings.source_to_connect_to = ndiSource

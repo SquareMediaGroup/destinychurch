@@ -3,67 +3,86 @@ import SwiftUI
 @main
 struct LiveCaptionApp: App {
     @State private var appState = AppState()
+    @State private var windowManager = CaptionWindowManager()
 
     var body: some Scene {
-        WindowGroup {
-            Phase1DebugView(appState: appState)
+        WindowGroup("Live Caption") {
+            ControlPanelView(appState: appState, windowManager: windowManager)
         }
-    }
-}
-
-/// Deliberately minimal Phase 1 UI: pick a source, start/stop, watch the
-/// console for partial/finalized transcript lines. This is *not* the real
-/// caption display or the Liquid Glass chrome described in the plan — those
-/// land in Phase 2+, once Xcode 26 is installed on this machine (the real
-/// `glassEffect()`/`GlassEffectContainer` APIs require the macOS 26 SDK,
-/// which wasn't available when this was scaffolded). Kept as a plain,
-/// unstyled view on purpose so Phase 1's only job — proving the audio ->
-/// whisper.cpp pipeline works and hits the RTF/latency bar — isn't tangled
-/// up with UI work that has its own separate prerequisite.
-struct Phase1DebugView: View {
-    let appState: AppState
-    @State private var sources: [DiscoveredAudioSource] = []
-    @State private var selectedSource: DiscoveredAudioSource?
-    @State private var modelPath = ""
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("Live Caption — Phase 1 debug harness").font(.headline)
-
-            Picker("Source", selection: $selectedSource) {
-                Text("Select a source").tag(Optional<DiscoveredAudioSource>.none)
-                ForEach(sources) { source in
-                    Text(source.displayName).tag(Optional(source))
+        .commands {
+            // The stock About panel can't show the license text these
+            // libraries require, so it's replaced with a real window.
+            CommandGroup(replacing: .appInfo) {
+                Button("About Live Caption") {
+                    openAboutWindow()
                 }
             }
-
-            TextField("Path to ggml model (.bin)", text: $modelPath)
-                .textFieldStyle(.roundedBorder)
-
-            HStack {
-                Button(appState.isRunning ? "Stop" : "Start") {
-                    if appState.isRunning {
-                        appState.stop()
-                    } else if let selectedSource {
-                        appState.start(source: selectedSource, modelPath: modelPath)
-                    }
+            CommandGroup(after: .toolbar) {
+                Button(windowManager.isShowing ? "Hide Caption Display" : "Show Caption Display") {
+                    toggleCaptionDisplay()
                 }
-                .disabled(!appState.isRunning && (selectedSource == nil || modelPath.isEmpty))
+                .keyboardShortcut("d", modifiers: [.command, .shift])
+            }
+        }
 
-                Button("Refresh sources", action: refreshSources)
+        Settings {
+            SettingsView(preferences: appState.preferences)
+        }
+
+        // A menu bar item so the pipeline can be started, stopped, and
+        // watched without the control window being frontmost — during a
+        // service the operator is usually in ProPresenter, not here.
+        MenuBarExtra("Live Caption", systemImage: appState.isRunning ? "waveform.circle.fill" : "waveform.circle") {
+            Text(appState.statusMessage)
+
+            Divider()
+
+            Button(appState.isRunning ? "Stop Captioning" : "Start Captioning") {
+                if appState.isRunning {
+                    appState.stop()
+                } else if let source = appState.availableSources.first {
+                    appState.start(source: source)
+                }
+            }
+            .disabled(!appState.isRunning && appState.availableSources.isEmpty)
+
+            Button(windowManager.isShowing ? "Hide Caption Display" : "Show Caption Display") {
+                toggleCaptionDisplay()
             }
 
-            Text(appState.statusMessage).foregroundStyle(.secondary)
-            Text("Transcript is printed to the console — this view is intentionally not the real caption display.")
-                .font(.caption)
-                .foregroundStyle(.secondary)
+            Divider()
+
+            Button("Quit Live Caption") {
+                appState.stop()
+                windowManager.hide()
+                NSApplication.shared.terminate(nil)
+            }
         }
-        .padding(24)
-        .frame(minWidth: 420, minHeight: 260)
-        .onAppear(perform: refreshSources)
     }
 
-    private func refreshSources() {
-        sources = AudioDeviceDiscovery.coreAudioInputDevices() + NDIAudioSource.discoverSources()
+    private func toggleCaptionDisplay() {
+        if windowManager.isShowing {
+            windowManager.hide()
+            return
+        }
+        let targets = CaptionDisplayTarget.available()
+        // Prefer a secondary display — captioning onto the operator's own
+        // screen is almost never what's wanted.
+        guard let target = targets.count > 1 ? targets[1] : targets.first else { return }
+        windowManager.show(
+            store: appState.captionStore,
+            preferences: appState.preferences,
+            on: target
+        )
+    }
+
+    private func openAboutWindow() {
+        let controller = NSHostingController(rootView: AboutView())
+        let window = NSWindow(contentViewController: controller)
+        window.title = "About Live Caption"
+        window.styleMask = [.titled, .closable]
+        window.center()
+        window.makeKeyAndOrderFront(nil)
+        NSApplication.shared.activate(ignoringOtherApps: true)
     }
 }

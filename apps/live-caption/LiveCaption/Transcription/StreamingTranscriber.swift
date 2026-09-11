@@ -15,6 +15,7 @@ final class StreamingTranscriber: AudioSourceDelegate, @unchecked Sendable {
     private let engine: WhisperEngine
     private let vocabularyPrompt: () -> String
     private let onEvent: (TranscriptEvent) -> Void
+    private let onFailure: (AudioSourceError) -> Void
 
     /// Length of each inference window.
     private let windowLength: TimeInterval = 10.0
@@ -43,10 +44,16 @@ final class StreamingTranscriber: AudioSourceDelegate, @unchecked Sendable {
 
     private let processingQueue = DispatchQueue(label: "uk.destinytees.livecaption.transcriber", qos: .userInitiated)
 
-    init(engine: WhisperEngine, vocabularyPrompt: @escaping () -> String, onEvent: @escaping (TranscriptEvent) -> Void) {
+    init(
+        engine: WhisperEngine,
+        vocabularyPrompt: @escaping () -> String,
+        onEvent: @escaping (TranscriptEvent) -> Void,
+        onFailure: @escaping (AudioSourceError) -> Void = { _ in }
+    ) {
         self.engine = engine
         self.vocabularyPrompt = vocabularyPrompt
         self.onEvent = onEvent
+        self.onFailure = onFailure
     }
 
     // MARK: - AudioSourceDelegate
@@ -58,8 +65,9 @@ final class StreamingTranscriber: AudioSourceDelegate, @unchecked Sendable {
     }
 
     func audioSource(_ source: any AudioSource, didFailWith error: AudioSourceError) {
-        // Surfaced to the UI layer via AppState (Phase 2) — the transcriber
-        // itself just stops accumulating; it doesn't own error presentation.
+        // The transcriber just stops accumulating; it doesn't own error
+        // presentation. `AppState` decides what the operator sees.
+        onFailure(error)
     }
 
     // MARK: - Buffering & window scheduling

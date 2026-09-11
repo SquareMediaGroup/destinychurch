@@ -27,22 +27,30 @@ DEST_PATH="$DEST_DIR/$FILENAME"
 # checksum you haven't independently verified. After your first download of a
 # given model, confirm its hash against the value published on
 # https://huggingface.co/ggerganov/whisper.cpp (or via `shasum -a 256`
-# compared with a second trusted source) and record it in this map yourself:
+# compared with a second trusted source) and record it in the case below.
 #
-#   declare -A CHECKSUMS=(
-#     ["ggml-large-v3-turbo.bin"]="<verified-sha256>"
-#     ["ggml-medium.bin"]="<verified-sha256>"
-#   )
-declare -A CHECKSUMS=()
+# A case statement rather than an associative array on purpose: macOS ships
+# bash 3.2, which has no `declare -A`, and `/usr/bin/env bash` finds that one
+# unless a newer bash happens to be installed.
+expected_checksum_for() {
+  case "$1" in
+    # "ggml-large-v3-turbo.bin") echo "<verified-sha256>" ;;
+    # "ggml-medium.bin")         echo "<verified-sha256>" ;;
+    *) echo "" ;;
+  esac
+}
 
 if [[ -f "$DEST_PATH" ]]; then
   echo "Already downloaded: $DEST_PATH"
 else
   echo "Downloading $FILENAME ..."
-  curl -L --fail -o "$DEST_PATH" "$URL"
+  # Download to a temporary path first: an interrupted curl would otherwise
+  # leave a truncated .bin that looks like a valid cached model on the next run.
+  curl -L --fail --progress-bar -o "$DEST_PATH.partial" "$URL"
+  mv "$DEST_PATH.partial" "$DEST_PATH"
 fi
 
-EXPECTED="${CHECKSUMS[$FILENAME]:-}"
+EXPECTED="$(expected_checksum_for "$FILENAME")"
 if [[ -n "$EXPECTED" ]]; then
   ACTUAL="$(shasum -a 256 "$DEST_PATH" | awk '{print $1}')"
   if [[ "$ACTUAL" != "$EXPECTED" ]]; then

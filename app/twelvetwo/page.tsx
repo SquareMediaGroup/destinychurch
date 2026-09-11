@@ -416,14 +416,16 @@ export default function DestinyTwelveTwoPage() {
 
       {/* Pillars */}
       <section className="relative overflow-hidden py-20">
-        <Image
-          src="/img/DC122/TextureNavy.webp"
-          alt=""
-          fill
-          aria-hidden="true"
-          className="object-cover"
-          sizes="100vw"
-        />
+        <div className="absolute inset-0 scale-125" aria-hidden="true">
+          <Image
+            src="/img/DC122/TextureNavy.webp"
+            alt=""
+            fill
+            className="object-cover"
+            style={{ filter: "blur(100px)" }}
+            sizes="100vw"
+          />
+        </div>
         <div
           className="absolute inset-0"
           style={{ backgroundColor: "rgba(5,42,89,0.35)" }}

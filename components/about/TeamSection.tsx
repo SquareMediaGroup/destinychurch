@@ -13,7 +13,7 @@ const departmentHeads = [
   { name: "Adebowale Awojide", role: "Prayer Team", photo: "/img/brand/Team/Debo.webp", email: "debo@destinytees.uk" },
   { name: "George Krezner", role: "Administration", photo: "/img/brand/Team/GK.webp", email: "george@destinytees.uk" },
   { name: "Younes Moradi", role: "Site & Stewarding", photo: null, email: "younes@destinytees.uk" },
-  { name: "Louise Sheekey", role: "Recovery Pastor", photo: null, email: null },
+  { name: "Louise Sheekey", role: "Recovery Pastor", photo: null, email: "louise@destinytees.uk" },
 ];
 
 function TeamCard({ name, role, photo, cardBg, email }: { name: string; role: string; photo: string | null; cardBg: string; email?: string | null }) {

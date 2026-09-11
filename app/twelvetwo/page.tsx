@@ -387,7 +387,15 @@ export default function DestinyTwelveTwoPage() {
                 </div>
                 <div>
                   <p className="font-bold text-destiny-grey">Louise Sheekey</p>
-                  <p className="text-sm text-destiny-grey/50">Recovery Pastor</p>
+                  <p className="text-sm text-destiny-grey/50">
+                    Recovery Pastor ·{" "}
+                    <a
+                      href="mailto:louise@destinytees.uk"
+                      className="underline underline-offset-2 hover:text-destiny-grey"
+                    >
+                      louise@destinytees.uk
+                    </a>
+                  </p>
                 </div>
               </div>
             </AnimateIn>

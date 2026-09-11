@@ -7,9 +7,10 @@ import AlphaSignupModal from "@/components/AlphaSignupModal";
 import WorshipWithUsSection from "@/components/home/WorshipWithUsSection";
 import { getNextAlphaSession } from "@/lib/alphaSession";
 
-const ACCENT = "#006756";
-const ACCENT_DARK = "#00513f";
-const ACCENT_TINT = "#e6f1ee";
+const NAVY = "#052A59";
+const NAVY_DARK = "#031d3d";
+const ORANGE = "#C55800";
+const CREAM = "#FFF1E4";
 const BIBLE_BUY_URL =
   "https://www.amazon.co.uk/s?k=life+recovery+bible+second+edition";
 
@@ -53,19 +54,16 @@ const features = [
 
 const pillars = [
   {
-    icon: "favorite",
-    title: "Christ-centred",
-    body: "Jesus is at the heart of every step. Healing flows from a deepening relationship with Him, not willpower alone.",
+    title: "Recover",
+    body: "Find freedom from addiction, hurt and habits in a safe, Christ-centred space built for honest recovery.",
   },
   {
-    icon: "groups",
-    title: "Community-powered",
-    body: "A safe, supportive space to walk alongside fellow believers — no one navigates life's complexities on their own.",
+    title: "Renew",
+    body: "Renew your mind through Scripture — replacing old patterns with biblical truth, one step at a time.",
   },
   {
-    icon: "auto_awesome",
-    title: "Lasting change",
-    body: "Twelve biblical steps that move you from struggle toward freedom, purpose and a renewed life in Christ.",
+    title: "Restore",
+    body: "Restore relationships, purpose and hope as you grow into the life God has for you.",
   },
 ];
 
@@ -120,11 +118,11 @@ export default function DestinyTwelveTwoPage() {
       <div className="px-4 pt-8 pb-8 lg:px-8">
         <section
           className="relative overflow-hidden rounded-3xl"
-          style={{ backgroundColor: ACCENT_DARK }}
+          style={{ backgroundColor: NAVY_DARK }}
         >
           <Image
-            src="/img/DCRecovery/Hero.webp"
-            alt="Destiny 12:2"
+            src="/img/DC122/Hero.webp"
+            alt="A small group in conversation"
             fill
             priority
             className="object-cover"
@@ -134,23 +132,29 @@ export default function DestinyTwelveTwoPage() {
             className="absolute inset-0"
             style={{
               background:
-                "linear-gradient(135deg, rgba(0,81,63,0.78) 0%, rgba(0,103,86,0.55) 50%, rgba(0,0,0,0.55) 100%)",
+                "linear-gradient(135deg, rgba(5,42,89,0.82) 0%, rgba(5,42,89,0.55) 50%, rgba(0,0,0,0.55) 100%)",
             }}
             aria-hidden="true"
           />
           <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-black/40" aria-hidden="true" />
           <div className="relative flex flex-col items-center justify-center py-[12rem] px-6 md:px-12 text-center">
             <AnimateIn>
-              <p className="mb-5 text-4xl font-extrabold tracking-tight text-white md:text-5xl">
-                Destiny 12:2
-              </p>
+              <div className="mb-6 flex justify-center">
+                <Image
+                  src="/img/DC122/Logo.webp"
+                  alt="Destiny 12:2"
+                  width={400}
+                  height={88}
+                  className="w-full max-w-xs object-contain md:max-w-sm"
+                />
+              </div>
               <h1 className="mb-8 max-w-3xl text-5xl font-black leading-[0.95] text-white md:text-6xl lg:text-7xl">
-                Christian recovery support that{" "}
+                Renew your mind,{" "}
                 <em
                   className="italic font-normal tracking-tight"
                   style={{ fontFamily: "var(--font-playfair), Georgia, serif" }}
                 >
-                  meets you where you are
+                  transform your life.
                 </em>
               </h1>
               <p className="mx-auto mb-6 max-w-2xl text-lg leading-relaxed text-white/85 md:text-xl">
@@ -165,8 +169,8 @@ export default function DestinyTwelveTwoPage() {
                     onClick={openSignup}
                     className="mt-4 inline-flex items-center gap-3 rounded-full px-7 py-3 text-sm font-bold text-white shadow-lg transition hover:brightness-110"
                     style={{
-                      backgroundColor: ACCENT,
-                      boxShadow: "0 12px 30px -10px rgba(0,103,86,0.6)",
+                      backgroundColor: ORANGE,
+                      boxShadow: "0 12px 30px -10px rgba(197,88,0,0.6)",
                     }}
                   >
                     <span className="material-symbols-rounded text-lg">
@@ -222,7 +226,7 @@ export default function DestinyTwelveTwoPage() {
                 <div
                   className="relative overflow-hidden rounded-3xl bg-white ring-1 ring-black/5"
                   style={{
-                    boxShadow: "0 30px 60px -30px rgba(0,103,86,0.35)",
+                    boxShadow: "0 30px 60px -30px rgba(5,42,89,0.35)",
                   }}
                 >
                   <span
@@ -237,7 +241,7 @@ export default function DestinyTwelveTwoPage() {
                     <div className="border-b border-dashed border-destiny-grey/15 px-8 py-7 md:border-b-0 md:border-r md:px-10">
                       <div
                         className="mb-3 flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.28em]"
-                        style={{ color: ACCENT }}
+                        style={{ color: NAVY }}
                       >
                         <span className="material-symbols-rounded text-sm leading-none">
                           event
@@ -266,7 +270,7 @@ export default function DestinyTwelveTwoPage() {
                       <div className="px-8 py-7 md:px-10">
                         <div
                           className="mb-3 flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.28em]"
-                          style={{ color: ACCENT }}
+                          style={{ color: NAVY }}
                         >
                           <span className="material-symbols-rounded text-sm leading-none">
                             videocam
@@ -285,7 +289,7 @@ export default function DestinyTwelveTwoPage() {
                             target="_blank"
                             rel="noopener noreferrer"
                             className="mt-3 inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-[11px] font-bold uppercase tracking-wide text-white transition hover:brightness-110"
-                            style={{ backgroundColor: ACCENT }}
+                            style={{ backgroundColor: ORANGE }}
                           >
                             <span className="material-symbols-rounded text-[14px] leading-none">
                               open_in_new
@@ -298,7 +302,7 @@ export default function DestinyTwelveTwoPage() {
                       <div className="px-8 py-7 md:px-10">
                         <div
                           className="mb-3 flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.28em]"
-                          style={{ color: ACCENT }}
+                          style={{ color: NAVY }}
                         >
                           <span className="material-symbols-rounded text-sm leading-none">
                             place
@@ -349,7 +353,7 @@ export default function DestinyTwelveTwoPage() {
             <AnimateIn className="w-full md:w-1/2">
               <p
                 className="mb-3 text-xs font-bold uppercase tracking-widest"
-                style={{ color: ACCENT }}
+                style={{ color: NAVY }}
               >
                 What is Destiny 12:2?
               </p>
@@ -378,7 +382,7 @@ export default function DestinyTwelveTwoPage() {
             <AnimateIn delay={100} className="w-full md:w-1/2">
               <div className="relative aspect-[4/3] w-full">
                 <Image
-                  src="/img/DCRecovery/Illustration.webp"
+                  src="/img/DC122/IllustrationLine.webp"
                   alt="A small group sitting together in conversation"
                   fill
                   className="object-contain"
@@ -391,38 +395,41 @@ export default function DestinyTwelveTwoPage() {
       </section>
 
       {/* Pillars */}
-      <section
-        className="py-16"
-        style={{ backgroundColor: ACCENT_TINT }}
-      >
-        <div className="mx-auto max-w-7xl px-4 lg:px-8">
+      <section className="relative overflow-hidden py-20">
+        <Image
+          src="/img/DC122/TextureNavy.webp"
+          alt=""
+          fill
+          aria-hidden="true"
+          className="object-cover"
+          sizes="100vw"
+        />
+        <div
+          className="absolute inset-0"
+          style={{ backgroundColor: "rgba(5,42,89,0.35)" }}
+          aria-hidden="true"
+        />
+        <div className="relative mx-auto max-w-5xl px-4 lg:px-8">
           <AnimateIn>
-            <h2 className="mb-12 text-center text-3xl font-black text-destiny-grey md:text-4xl">
-              How we walk together
+            <h2 className="mb-14 text-center text-3xl font-black text-white md:text-4xl">
+              A journey in three steps
             </h2>
           </AnimateIn>
-          <div className="grid gap-6 md:grid-cols-3">
+          <div className="grid gap-10 text-center sm:grid-cols-3">
             {pillars.map((p, i) => (
               <AnimateIn key={p.title} delay={i * 80}>
-                <div className="flex h-full flex-col items-start rounded-3xl bg-white p-8 shadow-sm">
-                  <div
-                    className="mb-5 flex h-14 w-14 items-center justify-center rounded-2xl"
-                    style={{ backgroundColor: "rgba(0,103,86,0.1)" }}
-                  >
-                    <span
-                      className="material-symbols-rounded text-3xl"
-                      style={{ color: ACCENT }}
-                    >
-                      {p.icon}
-                    </span>
-                  </div>
-                  <h3 className="mb-2 text-xl font-black text-destiny-grey">
-                    {p.title}
-                  </h3>
-                  <p className="text-sm leading-relaxed text-destiny-grey/60">
-                    {p.body}
-                  </p>
-                </div>
+                <p
+                  className="mb-3 text-3xl font-extrabold uppercase tracking-wide md:text-4xl"
+                  style={{
+                    fontFamily: "var(--font-poppins), sans-serif",
+                    color: CREAM,
+                  }}
+                >
+                  {p.title}
+                </p>
+                <p className="text-sm leading-relaxed text-white/70">
+                  {p.body}
+                </p>
               </AnimateIn>
             ))}
           </div>
@@ -436,7 +443,7 @@ export default function DestinyTwelveTwoPage() {
             <AnimateIn className="w-full md:w-2/5">
               <div className="relative mx-auto aspect-[2/3] w-full max-w-xs">
                 <Image
-                  src="/img/DCRecovery/LifeRecoveryBible.webp"
+                  src="/img/DC122/LifeRecoveryBible.webp"
                   alt="The Life Recovery Bible — Second Edition"
                   fill
                   className="rounded-xl object-cover shadow-2xl"
@@ -447,7 +454,7 @@ export default function DestinyTwelveTwoPage() {
             <AnimateIn delay={100} className="w-full md:w-3/5">
               <p
                 className="mb-3 text-xs font-bold uppercase tracking-widest"
-                style={{ color: ACCENT }}
+                style={{ color: NAVY }}
               >
                 A companion for the journey
               </p>
@@ -474,11 +481,11 @@ export default function DestinyTwelveTwoPage() {
                   <div
                     key={f.title}
                     className="flex items-start gap-3 rounded-2xl border border-black/5 p-4"
-                    style={{ backgroundColor: ACCENT_TINT }}
+                    style={{ backgroundColor: CREAM }}
                   >
                     <span
                       className="material-symbols-rounded mt-0.5 text-2xl"
-                      style={{ color: ACCENT }}
+                      style={{ color: NAVY }}
                     >
                       {f.icon}
                     </span>
@@ -500,8 +507,8 @@ export default function DestinyTwelveTwoPage() {
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-2 rounded-full px-7 py-3 text-sm font-bold text-white shadow-lg transition hover:brightness-110"
                 style={{
-                  backgroundColor: ACCENT,
-                  boxShadow: "0 12px 30px -10px rgba(0,103,86,0.5)",
+                  backgroundColor: ORANGE,
+                  boxShadow: "0 12px 30px -10px rgba(197,88,0,0.5)",
                 }}
               >
                 <span className="material-symbols-rounded text-lg">
@@ -520,7 +527,7 @@ export default function DestinyTwelveTwoPage() {
       {/* Sign-up CTA */}
       <section
         className="py-20"
-        style={{ backgroundColor: ACCENT_TINT }}
+        style={{ backgroundColor: CREAM }}
       >
         <div className="mx-auto max-w-2xl px-4 text-center lg:px-8">
           <AnimateIn>
@@ -538,8 +545,8 @@ export default function DestinyTwelveTwoPage() {
                   onClick={openSignup}
                   className="rounded-full px-8 py-3 text-sm font-bold text-white shadow-lg transition hover:brightness-110"
                   style={{
-                    backgroundColor: ACCENT,
-                    boxShadow: "0 12px 30px -10px rgba(0,103,86,0.5)",
+                    backgroundColor: ORANGE,
+                    boxShadow: "0 12px 30px -10px rgba(197,88,0,0.5)",
                   }}
                 >
                   Register for Destiny 12:2

@@ -166,29 +166,29 @@ export const COURSES: Record<CourseId, CourseDef> = {
     id: "recovery",
     name: "Destiny 12:2",
     card: {
-      image: "/img/DCRecovery/Hero.webp",
+      image: "/img/DC122/Hero.webp",
       imageClass: "object-cover",
       overlay: {
         eyebrow: "A 12-step Christ-centred journey.",
         heading: "Find Healing",
         gradient:
-          "linear-gradient(to top, rgba(0,81,63,0.85) 0%, rgba(0,103,86,0.4) 50%, transparent 100%)",
+          "linear-gradient(to top, rgba(5,42,89,0.85) 0%, rgba(5,42,89,0.4) 50%, transparent 100%)",
       },
       title: "Destiny 12:2",
-      titleColor: "#006756",
+      titleColor: "#052A59",
       description:
         "Christian recovery support that meets you where you are. A 12-step programme providing a Christ-centred pathway to overcoming struggles and healing from emotional wounds.",
-      cta: { label: "Learn More", href: "/twelvetwo", color: "#006756" },
+      cta: { label: "Learn More", href: "/twelvetwo", color: "#052A59" },
     },
     featured: {
-      image: "/img/DCRecovery/Hero.webp",
+      image: "/img/DC122/Hero.webp",
       gradient:
-        "linear-gradient(to right, rgba(0,81,63,0.9) 0%, rgba(0,103,86,0.55) 45%, rgba(0,103,86,0.2) 100%)",
+        "linear-gradient(to right, rgba(5,42,89,0.9) 0%, rgba(5,42,89,0.55) 45%, rgba(5,42,89,0.2) 100%)",
       eyebrow: "A 12-step Christ-centred journey.",
       titleLines: ["Find", "Healing"],
       description:
         "Christian recovery support that meets you where you are — a 12-step, Christ-centred pathway to overcoming struggles and healing from emotional wounds.",
-      primary: { label: "Learn More", href: "/twelvetwo", color: "#006756" },
+      primary: { label: "Learn More", href: "/twelvetwo", color: "#052A59" },
       secondary: { label: "Contact Pastoral Team", href: "/contact" },
     },
   },

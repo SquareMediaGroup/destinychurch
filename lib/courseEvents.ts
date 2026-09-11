@@ -64,7 +64,7 @@ export const COURSE_EVENT_META: Record<CourseEventType, CourseEventMeta> = {
   recovery: {
     label: "Destiny 12:2",
     href: "/twelvetwo",
-    color: "#006756",
+    color: "#052A59",
     hint: "12-step Christian recovery course",
     eventsLabel: "Recovery Events",
     bannerMessage: "Destiny 12:2",
@@ -130,7 +130,7 @@ export const COURSE_ADMIN_PAGES = {
     heading: "Destiny 12:2",
     blurb:
       "Manage Recovery course event dates, signup links, and the site banner.",
-    accent: "#006756",
+    accent: "#052A59",
     promoteHeading: "Promote Destiny 12:2",
     promoteHelp:
       "Toggle on to show the Destiny 12:2 banner at the top of the site.",

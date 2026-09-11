@@ -198,6 +198,7 @@ body {
   align-items: center;
   justify-content: center;
   font-variation-settings: "FILL" 0, "wght" 500, "GRAD" 0, "opsz" 24;
+  user-select: none;
 }
 
 :root[data-text-size="large"] {

@@ -141,15 +141,9 @@ export default function DestinyTwelveTwoPage() {
           <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-black/40" aria-hidden="true" />
           <div className="relative flex flex-col items-center justify-center py-[12rem] px-6 md:px-12 text-center">
             <AnimateIn>
-              <div className="mb-5 flex justify-center">
-                <Image
-                  src="/img/DCRecovery/DC_Recovery_Full_Logo_White.png"
-                  alt="Destiny 12:2"
-                  width={280}
-                  height={80}
-                  className="w-full max-w-sm object-contain"
-                />
-              </div>
+              <p className="mb-5 text-4xl font-extrabold tracking-tight text-white md:text-5xl">
+                Destiny 12:2
+              </p>
               <h1 className="mb-8 max-w-3xl text-5xl font-black leading-[0.95] text-white md:text-6xl lg:text-7xl">
                 Christian recovery support that{" "}
                 <em
@@ -350,36 +344,49 @@ export default function DestinyTwelveTwoPage() {
 
       {/* About */}
       <section id="about" className="bg-white py-20">
-        <div className="mx-auto max-w-5xl px-4 lg:px-8">
-          <AnimateIn>
-            <p
-              className="mb-3 text-xs font-bold uppercase tracking-widest"
-              style={{ color: ACCENT }}
-            >
-              What is Destiny 12:2?
-            </p>
-            <h2 className="mb-6 text-3xl font-black text-destiny-grey md:text-4xl">
-              Faith, fellowship and freedom — together
-            </h2>
-            <div className="space-y-4 text-base leading-relaxed text-destiny-grey/70 md:text-lg">
-              <p>
-                Destiny 12:2 is a Christ-centred 12-step programme that walks
-                with you through life&apos;s hardest places — addiction, hurts,
-                habits and hang-ups. Every step is rooted in Scripture, pointing
-                back to the healing only Jesus can give.
+        <div className="mx-auto max-w-7xl px-4 lg:px-8">
+          <div className="flex flex-col-reverse items-center gap-12 md:flex-row md:gap-16">
+            <AnimateIn className="w-full md:w-1/2">
+              <p
+                className="mb-3 text-xs font-bold uppercase tracking-widest"
+                style={{ color: ACCENT }}
+              >
+                What is Destiny 12:2?
               </p>
-              <p>
-                This programme thrives on the power of community. We provide a
-                safe and supportive space for anyone eager to navigate life&apos;s
-                complexities alongside fellow believers — no judgement, no pretence,
-                just honest conversation and genuine care.
-              </p>
-              <p>
-                Join our supportive Christian community and experience the power
-                of faith and fellowship as you work towards lasting change.
-              </p>
-            </div>
-          </AnimateIn>
+              <h2 className="mb-6 text-3xl font-black text-destiny-grey md:text-4xl">
+                Faith, fellowship and freedom — together
+              </h2>
+              <div className="space-y-4 text-base leading-relaxed text-destiny-grey/70 md:text-lg">
+                <p>
+                  Destiny 12:2 is a Christ-centred 12-step programme that walks
+                  with you through life&apos;s hardest places — addiction, hurts,
+                  habits and hang-ups. Every step is rooted in Scripture, pointing
+                  back to the healing only Jesus can give.
+                </p>
+                <p>
+                  This programme thrives on the power of community. We provide a
+                  safe and supportive space for anyone eager to navigate life&apos;s
+                  complexities alongside fellow believers — no judgement, no pretence,
+                  just honest conversation and genuine care.
+                </p>
+                <p>
+                  Join our supportive Christian community and experience the power
+                  of faith and fellowship as you work towards lasting change.
+                </p>
+              </div>
+            </AnimateIn>
+            <AnimateIn delay={100} className="w-full md:w-1/2">
+              <div className="relative aspect-[4/3] w-full">
+                <Image
+                  src="/img/DCRecovery/Illustration.webp"
+                  alt="A small group sitting together in conversation"
+                  fill
+                  className="object-contain"
+                  sizes="(min-width: 768px) 480px, 90vw"
+                />
+              </div>
+            </AnimateIn>
+          </div>
         </div>
       </section>
 

@@ -255,6 +255,92 @@ export async function getAllVideos(maxResults = 200): Promise<YTVideo[]> {
   }
 }
 
+export type UploadedVideosPage = {
+  videos: YTVideo[];
+  nextPageToken: string | null;
+};
+
+/**
+ * One page of the channel's uploads, live-broadcast sermons only.
+ *
+ * Every YouTube channel has an implicit "uploads" playlist whose id is its
+ * channel id with the `UC` prefix swapped for `UU` — no `channels.list` call
+ * needed to look it up. Paging it via `playlistItems.list` costs 1 quota unit
+ * per 50 videos, against `search.list`'s ~100 units per call, which is what
+ * exhausted the daily quota and took /sermons down last time (see
+ * REPOSITORY_DOCUMENTATION.md). `liveStreamingDetails` on the batched
+ * `videos.list` call distinguishes an actual Sunday broadcast from any other
+ * upload (trailers, shorts, highlight reels) sharing the same channel.
+ */
+export async function getUploadedVideos(pageToken?: string): Promise<UploadedVideosPage> {
+  try {
+    if (!CHANNEL_ID) return { videos: [], nextPageToken: null };
+    const uploadsPlaylistId = `UU${CHANNEL_ID.slice(2)}`;
+
+    const url = new URL("https://www.googleapis.com/youtube/v3/playlistItems");
+    url.searchParams.set("part", "snippet");
+    url.searchParams.set("playlistId", uploadsPlaylistId);
+    url.searchParams.set("maxResults", "50");
+    url.searchParams.set("key", API_KEY ?? "");
+    if (pageToken) url.searchParams.set("pageToken", pageToken);
+
+    const res = await fetch(url.toString(), { next: { revalidate: 3600 } });
+    if (!res.ok) return { videos: [], nextPageToken: null };
+    const data = await res.json();
+    type Item = { snippet?: { resourceId?: { videoId?: string } } };
+    const ids = ((data.items ?? []) as Item[])
+      .map((item) => item.snippet?.resourceId?.videoId ?? "")
+      .filter(Boolean);
+
+    if (!ids.length) return { videos: [], nextPageToken: null };
+
+    const detailMap = await fetchVideoDetailsWithLiveInfo(ids);
+    const videos = ids
+      .map((id): YTVideo | null => {
+        const v = detailMap.get(id);
+        if (!v?.liveStreamingDetails) return null; // skip non-broadcast uploads
+        const snippet = v.snippet ?? {};
+        if (!snippet.title) return null;
+        return {
+          id,
+          title: snippet.title,
+          description: snippet.description ?? "",
+          thumbnail: thumbUrl(id),
+          publishedAt: snippet.publishedAt ?? "",
+          viewCount: v.statistics?.viewCount,
+          duration: v.contentDetails?.duration,
+        };
+      })
+      .filter((v): v is YTVideo => v !== null);
+
+    return { videos, nextPageToken: data.nextPageToken ?? null };
+  } catch {
+    return { videos: [], nextPageToken: null };
+  }
+}
+
+type DetailItemWithLive = DetailItem & { liveStreamingDetails?: { actualStartTime?: string } };
+
+async function fetchVideoDetailsWithLiveInfo(ids: string[]): Promise<Map<string, DetailItemWithLive>> {
+  const detailMap = new Map<string, DetailItemWithLive>();
+  const chunks: string[][] = [];
+  for (let i = 0; i < ids.length; i += 50) chunks.push(ids.slice(i, i + 50));
+
+  await Promise.all(
+    chunks.map(async (chunk) => {
+      const url = new URL("https://www.googleapis.com/youtube/v3/videos");
+      url.searchParams.set("part", "snippet,statistics,contentDetails,liveStreamingDetails");
+      url.searchParams.set("id", chunk.join(","));
+      url.searchParams.set("key", API_KEY ?? "");
+      const res = await fetch(url.toString(), { next: { revalidate: 3600 } });
+      if (!res.ok) return;
+      const data = await res.json();
+      for (const v of (data.items ?? []) as DetailItemWithLive[]) detailMap.set(v.id, v);
+    })
+  );
+  return detailMap;
+}
+
 export async function getPlaylistVideos(playlistId: string, maxResults = 20): Promise<YTVideo[]> {
   try {
     const url = new URL("https://www.googleapis.com/youtube/v3/playlistItems");

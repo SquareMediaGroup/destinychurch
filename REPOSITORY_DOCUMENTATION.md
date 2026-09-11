@@ -2015,39 +2015,43 @@ Each page route (`app/*/page.tsx`) renders page-specific content. Examples:
 
 #### `/app/sermons/page.tsx` — Sermons
 
-Video for the latest message, audio for everything else. Structure, top to
-bottom: photo hero with podcast-platform chips → **featured message** →
-**All episodes** archive → "Every sermon, on the big screen" YouTube band →
-`WorshipWithUsSection`. It uses the same light bands, container widths and card
-shell as every other content page — it was hard-coded dark until August 2026,
-which made it look like a different site, and there is no dark mode here to
-opt into.
+Video-first. Structure, top to bottom: photo hero with podcast-platform chips
+→ **featured message** → **video archive grid** (`components/sermons/SermonGrid.tsx`)
+→ "Every sermon, on the big screen" YouTube band → `WorshipWithUsSection`. It
+uses the same light bands, container widths and card shell as every other
+content page — it was hard-coded dark until August 2026, which made it look
+like a different site, and there is no dark mode here to opt into.
 
 **The featured card** (`components/sermons/FeaturedSermon.tsx`) opens on
 **Watch** — a privacy-enhanced `youtube-nocookie` embed behind
 `VideoConsentGate` — with a **Listen** tab for the same message's podcast
-audio. Only the active pane is mounted; unmounting the iframe is what stops
-video playback on switch. Starting audio anywhere on the page flips the card to
-Listen.
+audio, when the latest video pairs to an episode via `lib/sermonPairing.ts`
+(video from `lib/youtube.ts`, audio from the Buzzsprout RSS feed in
+`lib/podcast.ts` — matched on publish-date proximity plus title-word overlap,
+falling back to the newest episode rather than disabling the toggle). Only the
+active pane is mounted; unmounting the iframe is what stops video playback on
+switch.
 
-**Pairing the two feeds.** Video comes from the YouTube Data API
-(`lib/youtube.ts`), audio from the Buzzsprout RSS feed (`lib/podcast.ts`), and
-nothing joins them — `supabase/schema.sql`'s `sermons` table would, but the app
-does not read it. `lib/sermonPairing.ts` matches the latest video to an episode
-on publish-date proximity plus title-word overlap (boilerplate like "Sunday
-Service" and speaker suffixes are stripped first). No confident match falls back
-to the newest episode rather than disabling the toggle, so Listen is never a
-dead control. Whichever episode is featured is filtered out of the archive so it
-cannot appear twice.
-
-**Archive** (`components/sermons/podcast/EpisodeList.tsx`) — audio only,
-client-side search over title/speaker/summary, 12 per "Load more".
-`PodcastPlayerProvider` owns the single `<audio>` element, the docked bar and
-the mobile now-playing sheet. Those stay dark on purpose (a media surface, like
-Spotify's) but are tinted with the brand `#363f48` rather than an off-palette
-near-black. The dock publishes its height as `--podcast-dock-height`, which the
-root layout uses as bottom padding so the dock never covers the footer, and
-`FloatingSmartSearch` uses to lift itself clear.
+**Archive** (`components/sermons/SermonGrid.tsx` + `SermonCard.tsx`) — the
+full back-catalogue as a searchable, infinite-scrolling video grid. This
+replaced a podcast-episode list in September 2026 as part of reviving the pre-
+June-2026 full sermon grid, which had been pulled after `search.list` burned
+through the YouTube Data API's 10,000-unit daily quota (`ddeff9f`, `f0ca1e6`).
+The fix: `lib/youtube.ts`'s `getUploadedVideos()` pages the channel's
+**uploads playlist** (id = `"UU" + CHANNEL_ID.slice(2)`, no extra API call to
+look up) via `playlistItems.list` — 1 unit per 50 videos, vs. `search.list`'s
+~100 — then batches `videos.list` (adding `liveStreamingDetails` to `part=`)
+to filter out anything that isn't an actual broadcast (shorts, trailers).
+Results are cached via `next: { revalidate: 3600 }`, shared across all
+visitors through Next's fetch cache — a full-archive rebuild costs a few
+dozen quota units, not hundreds. `SermonGrid` renders the first page
+server-fetched by the page component, then loads further pages from
+`app/api/sermons/more/route.ts` (same `getUploadedVideos(pageToken)`, ~1-2
+units per "Load more") via an `IntersectionObserver` sentinel; search filters
+client-side over videos already loaded and pauses further auto-loading while
+active, so searching a filtered result never fetches unrelated pages. The
+legacy `getAllVideos()` (`search.list`-based) is still in `lib/youtube.ts` but
+nothing calls it — do not wire anything new to it.
 
 #### `/app/[slug]/page.tsx` — Dynamic Catchall
 - Looks up `slug` via `getPublishedPostBySlug()` (`lib/posts.server.ts`) against the `posts`
@@ -2101,7 +2105,7 @@ without an auth check, so they must never be reachable on the live site.
 | `/` | `app/page.tsx` | Home page — hero, featured sermon, CTAs |
 | `/about` | `app/about/page.tsx` | About church, team, vision, mission |
 | `/beliefs` | `app/beliefs/page.tsx` | Statement of faith, doctrine |
-| `/sermons` | `app/sermons/page.tsx` | Latest message as video (with an audio switch) + searchable podcast archive |
+| `/sermons` | `app/sermons/page.tsx` | Latest message as video (with an audio switch) + searchable, infinite-scroll video archive grid |
 | `/sermons/[id]` | `app/sermons/[id]/page.tsx` | Individual sermon — YouTube embed, skip-to-sermon, next steps |
 | `/live` | `app/live/page.tsx` | Livestream page — standard hero + section rhythm, with a client island that swaps between the custom glass player and an off-air card. On air for a real YouTube broadcast, or for a **simulated** one (a pre-recorded video played from a fixed start time; see `lib/simulatedLive.ts`). Signed-in Hosts also get the **broadcast controls** inline at the top of the page (`LiveHostBar`), so starting, editing or removing a service never means leaving `/live` |
 | `/contact` | `app/contact/page.tsx` | Contact form, address, hours |
@@ -3518,6 +3522,14 @@ author from the row, which is why no guest id is ever broadcast to the room.
 // Proxies a YouTube video thumbnail image (avoids hot-linking i.ytimg.com directly).
 ```
 
+#### `GET /api/sermons/more`
+```typescript
+// ?pageToken=<token> → getUploadedVideos(pageToken) (lib/youtube.ts) — the next
+// page of the /sermons archive grid (playlistItems.list + videos.list, live
+// broadcasts only). Backs SermonGrid.tsx's infinite scroll; each call costs
+// ~1-2 YouTube Data API quota units.
+```
+
 #### `GET /api/youtube/live`
 ```typescript
 // Livestream status, polled client-side every 30s by LiveContext.
@@ -4259,6 +4271,14 @@ from client components, and a non-`NEXT_PUBLIC_` variable is `undefined` in the
 browser bundle, which would hydrate a different `href` than the server rendered.
 Live detection alone may override them server-side via `YOUTUBE_CHANNEL_HANDLE` /
 `YOUTUBE_CHANNEL_VANITY`.
+
+**`getUploadedVideos(pageToken?)`** — the /sermons archive grid's data source.
+Pages the channel's uploads playlist (`"UU" + CHANNEL_ID.slice(2)`) via
+`playlistItems.list` (1 unit/50 videos) rather than `search.list` (~100
+units/call), then filters to items with `liveStreamingDetails` so only actual
+broadcasts show up. See the `/sermons` write-up above for the full quota
+story. `getAllVideos()` below still exists and is still `search.list`-based —
+nothing currently calls it, and nothing new should.
 
 ```typescript
 // Wrapper around YouTube Data API v3
@@ -5742,7 +5762,7 @@ ENABLE_SMART_SEARCH=true
 
 ### Public Pages
 - `app/page.tsx` — Home (hero, latest sermon, CTAs)
-- `app/sermons/page.tsx` — Sermons (video-first featured message, audio archive)
+- `app/sermons/page.tsx` — Sermons (video-first featured message, video archive grid)
 - `app/sermons/[id]/page.tsx` — Sermon detail (video, next steps)
 - `app/live/page.tsx` — Livestream (hero + sections, with a client island for the glass player / off-air card)
 - `app/about/page.tsx` — About church

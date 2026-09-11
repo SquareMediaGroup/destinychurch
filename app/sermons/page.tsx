@@ -1,24 +1,24 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import { getPodcastShow } from "@/lib/podcast";
-import { CHANNEL_URL, getLatestVideo } from "@/lib/youtube";
+import { CHANNEL_URL, getLatestVideo, getUploadedVideos } from "@/lib/youtube";
 import { pairAudioForVideo } from "@/lib/sermonPairing";
 import { PodcastPlayerProvider } from "@/components/sermons/podcast/PodcastPlayerProvider";
 import FeaturedSermon from "@/components/sermons/FeaturedSermon";
-import EpisodeList from "@/components/sermons/podcast/EpisodeList";
+import SermonGrid from "@/components/sermons/SermonGrid";
 import WatchOnYouTubeBand from "@/components/sermons/WatchOnYouTubeBand";
 import WorshipWithUsSection from "@/components/home/WorshipWithUsSection";
 import AnimateIn from "@/components/AnimateIn";
 
 export const metadata: Metadata = {
-  title: "Sermons & Podcast",
+  title: "Sermons",
   description:
-    "Listen to the DCTV Podcast — every message from Destiny Church Tees Valley. Stream the latest sermons here or watch on YouTube.",
+    "Watch every message from Destiny Church Tees Valley — search the full sermon archive, or listen on Spotify and Apple Podcasts.",
   alternates: { canonical: "/sermons" },
   openGraph: {
-    title: "Sermons & Podcast | Destiny Church Tees Valley",
+    title: "Sermons | Destiny Church Tees Valley",
     description:
-      "Listen to the DCTV Podcast — every message from Destiny Church Tees Valley.",
+      "Watch every message from Destiny Church Tees Valley — search the full sermon archive, or listen on Spotify and Apple Podcasts.",
     url: "https://destinytees.uk/sermons",
   },
 };
@@ -35,18 +35,17 @@ const platforms = [
 ];
 
 export default async function SermonsPage() {
-  const [show, latestVideo] = await Promise.all([
+  const [show, latestVideo, archive] = await Promise.all([
     getPodcastShow().catch(() => null),
     getLatestVideo().catch(() => null),
+    getUploadedVideos().catch(() => ({ videos: [], nextPageToken: null })),
   ]);
 
   const episodes = show?.episodes ?? [];
 
   // Two feeds that know nothing about each other — pair the latest video with
-  // its audio so the featured card can offer both, and keep whichever episode
-  // that turns out to be from appearing again in the archive below.
+  // its audio so the featured card can offer both.
   const { episode: featuredEpisode } = pairAudioForVideo(latestVideo, episodes);
-  const rest = episodes.filter((ep) => ep.id !== featuredEpisode?.id);
   const hasFeature = Boolean(latestVideo || featuredEpisode);
 
   return (
@@ -120,14 +119,12 @@ export default async function SermonsPage() {
           </div>
         </section>
 
-        {/* ── Episode archive ──────────────────────────────────── */}
-        {rest.length > 0 && (
-          <section className="bg-[#f5f7fa] py-16">
-            <div className="mx-auto max-w-7xl px-4 lg:px-8">
-              <EpisodeList episodes={rest} />
-            </div>
-          </section>
-        )}
+        {/* ── Video archive ─────────────────────────────────────── */}
+        <section className="bg-[#f5f7fa] py-16">
+          <div className="mx-auto max-w-7xl px-4 lg:px-8">
+            <SermonGrid initial={archive} />
+          </div>
+        </section>
 
         {/* ── YouTube redirect band ────────────────────────────── */}
         <section className="bg-white py-16">

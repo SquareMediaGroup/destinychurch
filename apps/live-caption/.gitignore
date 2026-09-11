@@ -1,0 +1,24 @@
+# The Xcode project is generated from project.yml — never commit it.
+*.xcodeproj/
+*.xcworkspace/
+xcuserdata/
+
+# Build output.
+DerivedData/
+build/
+*.dSYM.zip
+.swiftpm/
+
+# whisper.cpp is a submodule (tracked as a gitlink), but its own build
+# output and any models placed alongside it are not.
+Vendor/whisper.cpp/build/
+Vendor/Models/
+*.bin
+
+# NDI SDK — license-gated, cannot be committed. See Vendor/NDI/README.md.
+Vendor/NDI/include/
+Vendor/NDI/lib/
+Vendor/NDI/Libraries/
+
+Signing.local.xcconfig
+.DS_Store

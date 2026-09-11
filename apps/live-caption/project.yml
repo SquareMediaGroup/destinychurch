@@ -1,0 +1,107 @@
+# Live Caption — XcodeGen project definition.
+#
+# The .xcodeproj is generated, not committed — same convention as ../../mobile.
+# `xcodegen generate` (or `make project`) rebuilds it deterministically; sources
+# are globbed, so adding a Swift file requires no edit here at all.
+#
+# Liquid Glass (glassEffect()/GlassEffectContainer) requires building against
+# the macOS 26 SDK, i.e. Xcode 26. This machine did not have Xcode installed at
+# all when this project was scaffolded (Command Line Tools only) — see
+# apps/live-caption/README.md before attempting to build.
+
+name: LiveCaption
+
+options:
+  bundleIdPrefix: uk.destinytees
+  createIntermediateGroups: true
+  # Deliberately low deployment target; Liquid Glass APIs are used behind
+  # availability checks with a Material/NSVisualEffectView fallback below it.
+  deploymentTarget:
+    macOS: "14.0"
+  groupSortPosition: top
+  generateEmptyDirectories: true
+
+settings:
+  base:
+    SWIFT_VERSION: "6.0"
+    SWIFT_STRICT_CONCURRENCY: complete
+    SWIFT_UPCOMING_FEATURE_EXISTENTIAL_ANY: YES
+    ENABLE_USER_SCRIPT_SANDBOXING: YES
+    ENABLE_HARDENED_RUNTIME: YES
+    DEAD_CODE_STRIPPING: YES
+    CLANG_ENABLE_MODULES: YES
+    GCC_WARN_ABOUT_RETURN_TYPE: YES_ERROR
+    MARKETING_VERSION: "1.0"
+    CURRENT_PROJECT_VERSION: "1"
+    # Populated once whisper.cpp is vendored/built (Vendor/whisper.cpp) and the
+    # NDI SDK is installed locally (Vendor/NDI) — see README.md. Both paths are
+    # gitignored; a fresh clone must run `make whisper-build` and
+    # `make ndi-setup` before `xcodegen generate` will produce a linkable
+    # project.
+    HEADER_SEARCH_PATHS:
+      - "$(inherited)"
+      - "$(PROJECT_DIR)/Vendor/whisper.cpp/include"
+      - "$(PROJECT_DIR)/Vendor/whisper.cpp/ggml/include"
+      - "$(PROJECT_DIR)/Vendor/NDI/include"
+    LIBRARY_SEARCH_PATHS:
+      - "$(inherited)"
+      - "$(PROJECT_DIR)/Vendor/whisper.cpp/build/src"
+      - "$(PROJECT_DIR)/Vendor/whisper.cpp/build/ggml/src"
+      - "$(PROJECT_DIR)/Vendor/NDI/lib/macOS"
+  configs:
+    Debug:
+      SWIFT_ACTIVE_COMPILATION_CONDITIONS: DEBUG
+    Release:
+      SWIFT_COMPILATION_MODE: wholemodule
+
+targets:
+  LiveCaption:
+    type: application
+    platform: macOS
+    sources:
+      - path: LiveCaption
+        excludes:
+          - "**/.DS_Store"
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: uk.destinytees.livecaption
+        PRODUCT_NAME: Live Caption
+        INFOPLIST_FILE: LiveCaption/Resources/Info.plist
+        CODE_SIGN_ENTITLEMENTS: LiveCaption/Resources/LiveCaption.entitlements
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        SWIFT_OBJC_BRIDGING_HEADER: LiveCaption/Bridging/LiveCaption-Bridging-Header.h
+        OTHER_LDFLAGS:
+          - "-lwhisper"
+          - "-lggml"
+          - "-lggml-base"
+          - "-lggml-cpu"
+          - "-lggml-metal"
+          - "-lndi"
+        ENABLE_PREVIEWS: YES
+
+  LiveCaptionTests:
+    type: bundle.unit-test
+    platform: macOS
+    sources:
+      - path: LiveCaptionTests
+    dependencies:
+      - target: LiveCaption
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: uk.destinytees.livecaption.tests
+        GENERATE_INFOPLIST_FILE: YES
+
+schemes:
+  LiveCaption:
+    build:
+      targets:
+        LiveCaption: all
+        LiveCaptionTests: [test]
+    run:
+      config: Debug
+    test:
+      config: Debug
+      targets:
+        - LiveCaptionTests
+    archive:
+      config: Release

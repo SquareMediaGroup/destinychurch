@@ -37,7 +37,7 @@ const pages: { path: string; title: RegExp; heading: RegExp }[] = [
   { path: '/shop', title: /Shop/, heading: /.+/ },
   { path: '/alpha', title: /.+/, heading: /.+/ },
   { path: '/bible-course', title: /.+/, heading: /.+/ },
-  { path: '/destiny-recovery', title: /.+/, heading: /.+/ },
+  { path: '/twelvetwo', title: /.+/, heading: /.+/ },
   { path: '/cap-money', title: /.+/, heading: /.+/ },
 ];
 

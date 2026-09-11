@@ -198,10 +198,10 @@ export const ADMIN_GROUPS: AdminNavGroup[] = [
       },
       {
         href: "/admin/recovery",
-        label: "Recovery",
+        label: "Destiny 12:2",
         icon: "healing",
         role: "event_admin",
-        description: "Recovery group dates and sign-up information.",
+        description: "Destiny 12:2 group dates and sign-up information.",
         keywords: ["addiction", "support", "group"],
       },
     ],

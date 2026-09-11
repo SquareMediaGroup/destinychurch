@@ -138,7 +138,6 @@ app/
 ├── contact/          # Contact form
 ├── dckids/           # DC Kids ministry
 ├── design-request/   # Public design request form + [token]/ requester tracker
-├── destiny-recovery/ # Recovery ministry
 ├── give/             # Giving & donations
 ├── governance/       # Charity/company registration & transparency (live regulator data)
 ├── hire/             # Venue hire enquiries
@@ -156,6 +155,7 @@ app/
 ├── serve/            # Volunteer opportunities
 ├── shop/             # Merchandise shop (Stripe checkout)
 ├── training/         # Staff training courses
+├── twelvetwo/        # Destiny 12:2 recovery ministry
 ├── visit/            # Plan a visit
 ├── whats-on/         # Events & what's on
 ├── young-adults/     # Young adults ministry

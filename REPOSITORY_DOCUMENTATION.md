@@ -145,7 +145,7 @@ destinychurch/
 │   ├── connect/                   # Connect groups page
 │   ├── data-gdpr/                 # Data & GDPR policy
 │   ├── dckids/                    # Destiny Kids Camp 2026 campaign page
-│   ├── destiny-recovery/          # Recovery course info page
+│   ├── twelvetwo/                 # Destiny 12:2 recovery course info page
 │   ├── give/                      # Giving/donations page
 │   ├── help/                      # Help centre / FAQ
 │   ├── kids/                      # Kids ministry
@@ -571,7 +571,7 @@ CREATE TABLE alpha_events (
 
 **Used By:**
 - `app/layout.tsx` fetches to populate site-wide banner
-- `/alpha`, `/destiny-recovery`, `/bible-course` and `/cap-money` pages display their next upcoming event
+- `/alpha`, `/twelvetwo`, `/bible-course` and `/cap-money` pages display their next upcoming event
 - Admin (`/admin/alpha`, `/admin/recovery`, `/admin/bible-course`, `/admin/cap-money`) to manage event dates and URLs
 
 > The `bible_course` and `cap` types are shared infrastructure for The Bible Course (Bible
@@ -2140,7 +2140,7 @@ without an auth check, so they must never be reachable on the live site.
 | `/help` | `app/help/page.tsx` | Help centre / FAQ |
 | `/links` | `app/links/page.tsx` | "Next Steps" link-in-bio style page. The six cards live in `lib/linksSteps.ts` and render via the client `components/links/LinksStepGrid.tsx`, which beacons each click to `POST /api/track` before navigating |
 | `/nfc` | `app/nfc/page.tsx` | "Digital back of seats" — what an NFC tag or QR code on a seat opens during a service. Standalone (no header, footer, site popup or smart search) and `noindex`. Connect Card and Giving are hardcoded fixtures; everything else comes from `nfc_tiles`, including event tiles that resolve against the live ChurchSuite feed and hide themselves once the event has run |
-| `/destiny-recovery` | `app/destiny-recovery/page.tsx` | Recovery course info page |
+| `/twelvetwo` | `app/twelvetwo/page.tsx` | Destiny 12:2 recovery course info page |
 | `/dckids` | `app/dckids/page.tsx` | Destiny Kids Camp 2026 campaign page |
 | `/accessibility` | `app/accessibility/page.tsx` | Reduced-motion / glass-FX preferences (client component) |
 | `/privacy` | `app/privacy/page.tsx` | Privacy policy |
@@ -2772,7 +2772,7 @@ Notes worth knowing before changing it:
   accent is per-course data and cannot be a compile-time class name. `hexToRgb` reproduces
   the `ACCENT_RGB` constants the pages used to hardcode.
 - **Headings are stored verbatim, not derived** — the article does not follow a rule
-  ("Promote Destiny Recovery", "Promote The Bible Course", "Promote the CAP Money Course").
+  ("Promote Destiny 12:2", "Promote The Bible Course", "Promote the CAP Money Course").
 - **The routes stayed put.** Keeping the four URLs as wrappers rather than moving to a
   `[type]` route means no redirects, no `ROUTE_RULES` change and no sidebar change.
 - `tests/admin-courses.spec.ts` covers the rendered pages but is skipped unless
@@ -5774,7 +5774,7 @@ ENABLE_SMART_SEARCH=true
 - `app/governance/page.tsx` — Charity/company registration, trustees, finances & filings (live from both regulators)
 - `app/help/page.tsx` — Help centre & FAQ
 - `app/training/page.tsx` — /training resource library
-- `app/volunteer/page.tsx`, `app/links/page.tsx`, `app/destiny-recovery/page.tsx`, `app/dckids/page.tsx` — Volunteer sign-up, next-steps links, recovery info, kids camp campaign
+- `app/volunteer/page.tsx`, `app/links/page.tsx`, `app/twelvetwo/page.tsx`, `app/dckids/page.tsx` — Volunteer sign-up, next-steps links, recovery info, kids camp campaign
 - `app/accessibility/page.tsx`, `app/privacy/page.tsx`, `app/terms/page.tsx`, `app/data-gdpr/page.tsx` — Preferences & legal pages
 - `app/[slug]/page.tsx` — Dynamic catchall (posts table)
 

@@ -12,7 +12,7 @@ const connectLinks = [
   { label: "Connect Groups", href: "/connect" },
   { label: "Baptism", href: "/baptism" },
   { label: "Child Dedication", href: "/child-dedication" },
-  { label: "Destiny Recovery", href: "/destiny-recovery" },
+  { label: "Destiny 12:2", href: "/twelvetwo" },
 ];
 
 const legalLinks = [

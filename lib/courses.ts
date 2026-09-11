@@ -164,7 +164,7 @@ export const COURSES: Record<CourseId, CourseDef> = {
 
   recovery: {
     id: "recovery",
-    name: "Destiny Recovery",
+    name: "Destiny 12:2",
     card: {
       image: "/img/DCRecovery/Hero.webp",
       imageClass: "object-cover",
@@ -174,11 +174,11 @@ export const COURSES: Record<CourseId, CourseDef> = {
         gradient:
           "linear-gradient(to top, rgba(0,81,63,0.85) 0%, rgba(0,103,86,0.4) 50%, transparent 100%)",
       },
-      title: "Destiny Recovery",
+      title: "Destiny 12:2",
       titleColor: "#006756",
       description:
         "Christian recovery support that meets you where you are. A 12-step programme providing a Christ-centred pathway to overcoming struggles and healing from emotional wounds.",
-      cta: { label: "Learn More", href: "/destiny-recovery", color: "#006756" },
+      cta: { label: "Learn More", href: "/twelvetwo", color: "#006756" },
     },
     featured: {
       image: "/img/DCRecovery/Hero.webp",
@@ -188,7 +188,7 @@ export const COURSES: Record<CourseId, CourseDef> = {
       titleLines: ["Find", "Healing"],
       description:
         "Christian recovery support that meets you where you are — a 12-step, Christ-centred pathway to overcoming struggles and healing from emotional wounds.",
-      primary: { label: "Learn More", href: "/destiny-recovery", color: "#006756" },
+      primary: { label: "Learn More", href: "/twelvetwo", color: "#006756" },
       secondary: { label: "Contact Pastoral Team", href: "/contact" },
     },
   },

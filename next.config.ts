@@ -56,6 +56,12 @@ const nextConfig: NextConfig = {
         destination: "/governance",
         permanent: true,
       },
+      {
+        // Destiny Recovery was rebranded to Destiny 12:2.
+        source: "/destiny-recovery",
+        destination: "/twelvetwo",
+        permanent: true,
+      },
     ];
   },
   async headers() {

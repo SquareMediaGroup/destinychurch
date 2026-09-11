@@ -307,7 +307,7 @@ const EVENT: Tour = {
           anchor: "page-header",
           placement: "bottom",
           title: "Course dates live here",
-          body: "Alpha, Recovery, the Bible Course and CAP Money each have their own page and all work the same way: add a date, and it appears on the public course page automatically.",
+          body: "Alpha, Destiny 12:2, the Bible Course and CAP Money each have their own page and all work the same way: add a date, and it appears on the public course page automatically.",
         },
         {
           id: "courses-featured",

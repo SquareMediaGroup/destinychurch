@@ -62,12 +62,12 @@ export const COURSE_EVENT_META: Record<CourseEventType, CourseEventMeta> = {
     bannerLinkText: "Sign up",
   },
   recovery: {
-    label: "Destiny Recovery",
-    href: "/destiny-recovery",
+    label: "Destiny 12:2",
+    href: "/twelvetwo",
     color: "#006756",
     hint: "12-step Christian recovery course",
     eventsLabel: "Recovery Events",
-    bannerMessage: "Destiny Recovery",
+    bannerMessage: "Destiny 12:2",
     bannerLinkText: "Find out more",
   },
   bible_course: {
@@ -103,7 +103,7 @@ export const COURSE_EVENT_META: Record<CourseEventType, CourseEventMeta> = {
 // shows a type selector when there is more than one.
 //
 // Headings are stored verbatim rather than derived, because the article does
-// not follow a rule ("Promote Destiny Recovery", "Promote The Bible Course",
+// not follow a rule ("Promote Destiny 12:2", "Promote The Bible Course",
 // "Promote the CAP Money Course").
 export interface CourseAdminPageMeta {
   heading: string;
@@ -127,13 +127,13 @@ export const COURSE_ADMIN_PAGES = {
     types: ["alpha", "youth_alpha"],
   },
   recovery: {
-    heading: "Destiny Recovery",
+    heading: "Destiny 12:2",
     blurb:
       "Manage Recovery course event dates, signup links, and the site banner.",
     accent: "#006756",
-    promoteHeading: "Promote Destiny Recovery",
+    promoteHeading: "Promote Destiny 12:2",
     promoteHelp:
-      "Toggle on to show the Destiny Recovery banner at the top of the site.",
+      "Toggle on to show the Destiny 12:2 banner at the top of the site.",
     types: ["recovery"],
   },
   "bible-course": {

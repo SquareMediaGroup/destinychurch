@@ -69,7 +69,7 @@ const pillars = [
   },
 ];
 
-export default function DestinyRecoveryPage() {
+export default function DestinyTwelveTwoPage() {
   const [signupOpen, setSignupOpen] = useState(false);
   const [events, setEvents] = useState<RecoveryEvent[]>([]);
   const [loading, setLoading] = useState(true);
@@ -124,7 +124,7 @@ export default function DestinyRecoveryPage() {
         >
           <Image
             src="/img/DCRecovery/Hero.webp"
-            alt="Destiny Recovery"
+            alt="Destiny 12:2"
             fill
             priority
             className="object-cover"
@@ -144,7 +144,7 @@ export default function DestinyRecoveryPage() {
               <div className="mb-5 flex justify-center">
                 <Image
                   src="/img/DCRecovery/DC_Recovery_Full_Logo_White.png"
-                  alt="Destiny Recovery"
+                  alt="Destiny 12:2"
                   width={280}
                   height={80}
                   className="w-full max-w-sm object-contain"
@@ -356,14 +356,14 @@ export default function DestinyRecoveryPage() {
               className="mb-3 text-xs font-bold uppercase tracking-widest"
               style={{ color: ACCENT }}
             >
-              What is Destiny Recovery?
+              What is Destiny 12:2?
             </p>
             <h2 className="mb-6 text-3xl font-black text-destiny-grey md:text-4xl">
               Faith, fellowship and freedom — together
             </h2>
             <div className="space-y-4 text-base leading-relaxed text-destiny-grey/70 md:text-lg">
               <p>
-                Destiny Recovery is a Christ-centred 12-step programme that walks
+                Destiny 12:2 is a Christ-centred 12-step programme that walks
                 with you through life&apos;s hardest places — addiction, hurts,
                 habits and hang-ups. Every step is rooted in Scripture, pointing
                 back to the healing only Jesus can give.
@@ -535,7 +535,7 @@ export default function DestinyRecoveryPage() {
                     boxShadow: "0 12px 30px -10px rgba(0,103,86,0.5)",
                   }}
                 >
-                  Register for Recovery
+                  Register for Destiny 12:2
                 </button>
               ) : (
                 <div className="text-sm text-destiny-grey/50">
@@ -556,7 +556,7 @@ export default function DestinyRecoveryPage() {
           open={signupOpen}
           onClose={closeSignup}
           signupUrl={primaryEvent.signup_url}
-          title="Register for Destiny Recovery"
+          title="Register for Destiny 12:2"
           subtitle={
             startDateFormatted
               ? `${sessionLeadIn} ${startDateFormatted}`

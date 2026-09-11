@@ -378,6 +378,18 @@ export default function DestinyTwelveTwoPage() {
                   of faith and fellowship as you work towards lasting change.
                 </p>
               </div>
+              <div className="mt-8 flex items-center gap-3">
+                <div
+                  className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full text-sm font-black text-white"
+                  style={{ backgroundColor: NAVY }}
+                >
+                  LS
+                </div>
+                <div>
+                  <p className="font-bold text-destiny-grey">Louise Sheekey</p>
+                  <p className="text-sm text-destiny-grey/50">Recovery Pastor</p>
+                </div>
+              </div>
             </AnimateIn>
             <AnimateIn delay={100} className="w-full md:w-1/2">
               <div className="relative aspect-[4/3] w-full">

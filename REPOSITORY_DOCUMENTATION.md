@@ -358,7 +358,9 @@ destinychurch/
 │       ├── 20260828_02_ip_reputation_advisor_fixes.sql # Advisor cleanup: revoke anon/authenticated
 │       │                                  # EXECUTE on the three engagement RPCs (see §24b), add
 │       │                                  # search_path to the ip_category trigger, relocate btree_gist
-│       └── 20260902_remove_media_boards.sql # Drops the media_boards/media_photos tables (Media Boards feature removed)
+│       ├── 20260902_remove_media_boards.sql # Drops the media_boards/media_photos tables (Media Boards feature removed)
+│       ├── 20260912_01_sermon_admin_role.sql # `sermon_admin` access level on admin_roles (/admin/sermons)
+│       └── 20260912_02_speaker_overrides.sql # speaker_overrides table — AI/human speaker corrections for the sermon archive
 │
 ├── utils/                         # Utility modules
 │   ├── supabase/                  # Supabase client factories
@@ -370,6 +372,14 @@ destinychurch/
 ├── docs/                          # Additional documentation, incl. mobile-app-scope.md (+ .pdf export)
 │   └── content/                   # Source copy for policy/partner text — the live pages render
 │                                   # an edited subset, so these are the fuller source. See its README.
+├── apps/                          # Standalone companion apps that live in this repo but ship
+│   └── live-caption/              # separately from the website. Currently:
+│                                   # Live Caption — a macOS app (SwiftUI, Swift 6, XcodeGen) that
+│                                   # captions live audio in real time with a local whisper.cpp model
+│                                   # (Metal) for Destiny's AVL setup, displaying on a connected screen
+│                                   # and/or publishing an NDI source. Audio never leaves the machine.
+│                                   # whisper.cpp is a git submodule under Vendor/; the NDI SDK is
+│                                   # license-gated and not committed. Build via `make` (see its README).
 ├── mobile/                        # Native SwiftUI iOS app (Swift 6, strict concurrency). Five tabs —
 │                                   # Home/Sermons/Events/Give/More. XcodeGen project (project.yml is
 │                                   # the source of truth; the .xcodeproj is generated, not committed).
@@ -845,7 +855,7 @@ simply never grow a row since `toursFor()` returns nothing for them. See
 ---
 
 #### 10c. **admin_roles**
-**Purpose:** Access levels for `/admin` — ten independent booleans per admin login, checked by `middleware.ts` on every `/admin/*` and `/api/admin/*` request
+**Purpose:** Access levels for `/admin` — nine independent booleans per admin login, checked by `middleware.ts` on every `/admin/*` and `/api/admin/*` request
 
 ```sql
 CREATE TABLE admin_roles (
@@ -1871,6 +1881,30 @@ ours, so there is nothing to schedule.
 (queue and detail), `app/portal/design` (staff), `app/api/admin/design/**`,
 `app/api/design-request/**`, `app/api/portal/design`, `lib/designTickets.ts`,
 `lib/designTickets.server.ts`, `lib/designEmail.ts`.
+
+---
+
+#### 26. **speaker_overrides** (sermon speaker corrections)
+**Purpose:** An AI/human-corrected speaker per YouTube video id, overriding the regex parse in `lib/sermonTitle.ts`. The sermons feature is otherwise deliberately "no DB" (it reads straight from the YouTube Data API); this table is the one small, deliberate exception — same pattern as `admin_roles`. Migration: `supabase/migrations/20260912_02_speaker_overrides.sql`.
+
+```sql
+CREATE TABLE speaker_overrides (
+  video_id text PRIMARY KEY,
+  speaker text,                                   -- NULL = *confirmed* "no individual speaker"
+  reviewed_by text NOT NULL DEFAULT 'ai',
+  reviewed_at timestamptz NOT NULL DEFAULT now()
+);
+
+-- RLS: Service role only (deny-all "service only" policy, same as every other table)
+```
+
+**Why it exists.** `lib/sermonTitle.ts` parses a speaker out of the YouTube title by regex, which is right for today's well-formatted titles but produces noise on years of inconsistent older ones (`"22.03.20"`, `"FULL SERVICE"`, `"DESTINY CHURCH LIVE!"`). An AI review (`lib/speakerReview.server.ts`, triggered from `/admin/sermons`) reads each video's title + description and stores a correction here when it disagrees — without ever touching YouTube itself.
+
+**The null distinction is load-bearing.** A row with `speaker = NULL` is a *confirmed* "no individual speaker" (e.g. a child-dedication service, a worship-only clip). That is different from **no row at all**, which means nobody has reviewed this video yet. So an override only ever replaces a value, never silently blanks a perfectly good regex-parsed speaker that just hasn't been looked at.
+
+**Read it through the wrapper.** Every video-serving path reads through `lib/speakerOverrides.server.ts` rather than `lib/youtube.ts` directly, so a correction takes effect everywhere at once; `lib/youtube.ts` itself stays a pure YouTube API client with no Supabase dependency.
+
+**Used By:** `lib/speakerOverrides.server.ts` (read wrappers), `lib/speakerReview.server.ts` (writes), `app/api/admin/sermons/review-speakers`, `components/admin/SpeakerReviewPanel.tsx`.
 
 ---
 
@@ -3171,6 +3205,21 @@ row) to `/portal`; admin roles take priority, so someone who is both lands on
 // back out of the public RSS feed) — see the /sermons write-up above.
 ```
 
+#### `POST /api/admin/sermons/review-speakers`
+```typescript
+// Body: { force?: boolean } → reviewSermonSpeakers() (lib/speakerReview.server.ts)
+// → { reviewed, changed[], skipped, errors } and an audit-log entry.
+//
+// AUTHORIZATION: sermon_admin, via ROUTE_RULES.
+//
+// Runs an AI pass over the sermon archive's speaker attribution, writing
+// corrections to the speaker_overrides table. By default skips videos already
+// reviewed (an override row exists) so a re-run only costs new sermons; force
+// re-reviews everything. Node runtime, maxDuration = 300 — a full first pass is
+// a few dozen batched OpenAI calls. Driven from the Speaker Review panel on
+// /admin/sermons (components/admin/SpeakerReviewPanel.tsx).
+```
+
 #### Design tickets — `/api/admin/design/tickets/**`
 ```typescript
 // GET    /                          → the whole queue + a deliverable_count per row
@@ -4428,6 +4477,25 @@ answer is kept rather than yanking a running stream off the page.
 
 ---
 
+### `lib/speakerOverrides.server.ts` — speaker-corrected YouTube reads
+
+Thin wrappers around `lib/youtube.ts` (`getFullSermonArchive`, `getUploadedVideos`, `getVideo`, `getLatestVideo`, `getAllVideos`) that overlay the `speaker_overrides` table onto each returned video. Every video-serving path in the app reads through **this** module, not `lib/youtube.ts` directly, so a stored speaker correction takes effect everywhere at once and `lib/youtube.ts` stays a pure YouTube client with no Supabase dependency. Only overridden ids are replaced — a video with no override row keeps its regex-parsed speaker untouched. See the [`speaker_overrides`](#26-speaker_overrides-sermon-speaker-corrections) table for the null-vs-no-row distinction.
+
+### `lib/speakerReview.server.ts` — AI speaker review
+
+Reviews the sermon archive's speaker attribution with the LLM (`SMART_SEARCH_MODEL`) and persists corrections to `speaker_overrides`. Triggered from `/admin/sermons` via `POST /api/admin/sermons/review-speakers`.
+
+```typescript
+export async function reviewSermonSpeakers(opts?: { force?: boolean }): Promise<SpeakerReviewResult>
+```
+
+- Fetches the full archive, then by default **skips** videos that already have an override row, so a re-run only costs newly published sermons. `force: true` reviews everything again.
+- Batches the remaining videos (20 per LLM call) and runs a few batches concurrently (`CONCURRENCY = 3`) to stay wide of OpenAI rate limits without one giant sequential queue. Each call gets the title, the regex-parsed guess, and a 300-char description excerpt, and returns strict JSON.
+- The system prompt keeps a good guess, corrects obvious garbage (a date, `"FULL SERVICE"`), returns `null` for genuinely speaker-less videos, and prefers the existing guess over inventing a name when unsure.
+- Returns `{ reviewed, changed[], skipped, errors }`; `changed` only lists videos whose speaker actually moved (compared via `normalizeSpeakerName`). The route records the run in the audit log. Node runtime, `maxDuration = 300` — a full first pass is a few dozen LLM calls.
+
+---
+
 ### `lib/liveStatus.server.ts` — the composed "are we live?"
 
 **The one function the site should ask.** Two different things can put `/live` on
@@ -5210,9 +5278,9 @@ remembered, so existing sessions aren't unexpectedly downgraded.
 
 ### Authorization Layers
 
-Access levels live in `lib/adminRoles.ts` + the `admin_roles` table — eight
+Access levels live in `lib/adminRoles.ts` + the `admin_roles` table — nine
 independent per-user booleans (`training_admin`, `event_admin`, `store_admin`,
-`site_admin`, `host`, `hr_admin`, `design_admin`, `super_admin`; see [admin_roles](#10b-admin_roles)). Auth *and*
+`site_admin`, `host`, `hr_admin`, `design_admin`, `sermon_admin`, `super_admin`; see [admin_roles](#10b-admin_roles)). Auth *and*
 role enforcement both happen centrally in `middleware.ts`, not in
 `app/admin/layout.tsx` (which is a client component purely responsible for the
 sidebar/header shell; it does not check auth or roles itself).
@@ -6045,8 +6113,23 @@ feed normalisation of its own, because the BFF already does all of it.
   (the native SwiftUI tab shell over the `/api/app/v1` BFF) is now built; later phases (chat, payments,
   push) are still planning-only.
 
+### Live Caption (macOS app) — `apps/live-caption/`
+A standalone **macOS app** (not part of the website deploy) that captions live audio in real time for Destiny's AVL setup (ATEM, ProPresenter, Dante, NDI). It captures from a Core Audio device or an NDI network source, transcribes locally with a Metal-accelerated [whisper.cpp](https://github.com/ggml-org/whisper.cpp) model, and shows the caption on a connected display and/or publishes it as a live NDI source. **Audio never leaves the machine** — transcription is entirely local.
+- **Project & build.** SwiftUI, Swift 6, built against the macOS 26 SDK (for the real Liquid Glass `glassEffect()` caption plate). Like the iOS app the Xcode project is **generated, not committed**: `project.yml` is the XcodeGen source of truth and the `Makefile` wraps the build (`make whisper-build` → `make ndi-setup` → `make build` / `make run` / `make test`). `make build` fails with a clear error if either vendor step is missing.
+- **Vendored dependencies.** whisper.cpp is a git submodule at `Vendor/whisper.cpp` (pinned to a release tag, MIT). The **NDI SDK is proprietary and license-gated** — its headers/libraries are *not* committed (see `Vendor/NDI/README.md`); only the compiled app's embedded `libndi.dylib` is redistributed, which the NDI license permits. Whisper model files are multi-GB and fetched via `Scripts/fetch-whisper-model.sh`, not committed.
+- **Structure** (`LiveCaption/`):
+  - `Audio/` — an `AudioSource` abstraction with Core Audio and NDI inputs, plus the 16 kHz mono `AudioResampler` both converge on.
+  - `Transcription/` — the `WhisperEngine` wrapper, a sliding-window `StreamingTranscriber`, the `VocabularyPrompt` (decoding bias toward names/places; the 66 books of the Bible by default), and the `ModelCatalog`.
+  - `Captioning/` — `CaptionStabilizer` (holds words back until they've survived the configurable *stability delay* unchanged, so re-transcription churn doesn't show on screen) and the `CaptionStore` every display reads from.
+  - `Output/` — `NDIOutputPublisher` and its `CaptionFrameRenderer`, which emit BGRA frames with a **transparent background** (white glyphs, black outline) so a switcher can key captions straight over program video.
+  - `UI/` — the control panel, caption display, full-screen `CaptionWindowManager`, and settings; a menu-bar control so the operator can start/stop/toggle without leaving ProPresenter.
+  - `App/` — `LiveCaptionApp` entry point and `AppState`; `Settings/Preferences.swift`; `About/`.
+  - `LiveCaptionTests/` — unit tests for the resampler, stabiliser, frame renderer, NDI publisher, and vocabulary prompt.
+  - `Scripts/BenchmarkRTF/` — a standalone real-time-factor/latency harness; the documented exit criterion is a model sustaining RTF ≤ 0.5–0.6 on the target **Apple M2 Max** with no latency growth across a full service. `large-v3-turbo` is the starting model, `medium` the fallback.
+- `apps/.gitkeep` keeps the `apps/` directory (for future standalone companion apps) tracked. See `apps/live-caption/README.md` for the full setup and operating guide.
+
 ### Database Migrations
-- **50 migration files** defining schema for:
+- **52 migration files** defining schema for:
   - URL redirects, hidden videos (removed), site content (banners, pop-ups, page_content)
   - Event management (Alpha course, Bible Course, CAP Money, Recovery, featured course, featured event)
   - HR management (staff, leave, documents, reviews)
@@ -6061,6 +6144,8 @@ feed normalisation of its own, because the BFF already does all of it.
     links engagement, with `security definer` rollup and IP-anonymise functions
   - Design tickets (`design_tickets`, `design_ticket_deliverables`,
     `design_ticket_events`) and the `design_admin` access level
+  - The `sermon_admin` access level (`/admin/sermons`) and `speaker_overrides`
+    (AI/human speaker corrections for the sermon archive)
 
 ---
 

@@ -31,6 +31,7 @@ Designed, engineered, and deployed by [Square Media Group](mailto:hello@squareme
 - Click analytics — a privacy-respecting `/admin/analytics` dashboard for short-link, QR-code, and NFC-tile engagement (with VPN/Tor/datacenter/Private-Relay tagging) alongside whole-site traffic
 - Protected admin dashboard (sermons, pages/posts, redirects, banner, popup, shop, training, HR, Alpha, recovery, analytics, audit log)
 - Companion native SwiftUI iOS app (Home/Sermons/Events/Give/More tabs) rendering a dedicated, versioned `/api/app/v1` backend-for-frontend
+- Live Caption — a companion macOS app (`apps/live-caption`) that captions live audio in real time with a local, Metal-accelerated whisper.cpp model and publishes it to a display or an NDI source for the church's AVL setup (audio never leaves the machine)
 - Mobile-first, fully responsive, accessibility-focused
 
 ---
@@ -41,6 +42,8 @@ Designed, engineered, and deployed by [Square Media Group](mailto:hello@squareme
 |---|---|
 | Framework | Next.js 16 (App Router), React 19 |
 | Mobile | Native iOS — SwiftUI, Swift 6 (XcodeGen project) |
+| Desktop | Native macOS — SwiftUI, Swift 6 (Live Caption app) |
+| On-device speech | whisper.cpp (Metal), NDI (live captions) |
 | Language | TypeScript |
 | Styling | Tailwind CSS v4 |
 | Backend / Auth | Supabase (PostgreSQL + Row-Level Security) |
@@ -168,6 +171,8 @@ lib/                  # Server actions, data access, Stripe, Smart Search, HR, t
 supabase/
 └── migrations/       # Database schema migrations
 mobile/               # Native SwiftUI iOS app (Home/Sermons/Events/Give/More tabs)
+apps/
+└── live-caption/     # Native SwiftUI macOS app — real-time captions (whisper.cpp + NDI)
 packages/shared/      # @destiny/shared — types & logic shared by the web app & app BFF
 app/api/app/v1/       # App BFF — versioned, mobile-facing endpoints (config/home/events/…)
 ```

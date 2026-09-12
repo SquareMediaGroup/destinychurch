@@ -1,5 +1,6 @@
 import type { PodcastEpisode } from "@/lib/podcast";
 import type { YTVideo } from "@/lib/youtube";
+import { normalizeSpeakerName } from "@/lib/sermonTitle";
 
 /**
  * Pairing the latest YouTube sermon with its podcast audio.
@@ -78,6 +79,10 @@ const MAX_DAYS = 10;
 const MIN_OVERLAP = 0.4;
 const CLOSE_DAYS = 2;
 
+/** Bonus added when both feeds agree on the speaker — enough to outrank a
+ *  mediocre title-overlap match, not enough to override a wildly wrong date. */
+const SPEAKER_MATCH_BONUS = 1.5;
+
 export function pairAudioForVideo(
   video: YTVideo | null,
   episodes: PodcastEpisode[]
@@ -85,7 +90,14 @@ export function pairAudioForVideo(
   if (episodes.length === 0) return { episode: null, confident: false };
   if (!video) return { episode: episodes[0], confident: false };
 
+  // Deterministic match: the admin upload flow can embed the YouTube video id
+  // directly on the Buzzsprout episode (lib/buzzsprout.server.ts). When one
+  // matches, skip the heuristic entirely.
+  const hinted = episodes.find((ep) => ep.youtubeIdHint === video.id);
+  if (hinted) return { episode: hinted, confident: true };
+
   const videoWords = tokenise(video.title);
+  const videoSpeaker = normalizeSpeakerName(video.speaker);
 
   let best: PodcastEpisode | null = null;
   let bestScore = -1;
@@ -94,11 +106,15 @@ export function pairAudioForVideo(
     const gap = daysApart(video.publishedAt, ep.publishedAt);
     if (gap > MAX_DAYS) continue;
 
-    const similarity = overlap(videoWords, tokenise(ep.title));
-    if (similarity < MIN_OVERLAP && gap > CLOSE_DAYS) continue;
+    const speakerMatch =
+      videoSpeaker !== null && videoSpeaker === normalizeSpeakerName(ep.speaker);
 
-    // Prefer wording; break ties on recency to the video.
-    const score = similarity * 2 + (MAX_DAYS - gap) / MAX_DAYS;
+    const similarity = overlap(videoWords, tokenise(ep.title));
+    if (similarity < MIN_OVERLAP && gap > CLOSE_DAYS && !speakerMatch) continue;
+
+    // Prefer wording, then a matching speaker; break ties on recency to the video.
+    const score =
+      similarity * 2 + (speakerMatch ? SPEAKER_MATCH_BONUS : 0) + (MAX_DAYS - gap) / MAX_DAYS;
     if (score > bestScore) {
       bestScore = score;
       best = ep;

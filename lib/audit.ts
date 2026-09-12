@@ -76,6 +76,7 @@ export const AUDIT_SECTIONS = {
   site: { label: "Site", icon: "settings" },
   hr: { label: "HR", icon: "badge" },
   design: { label: "Design", icon: "draw" },
+  sermons: { label: "Sermons", icon: "mic" },
   media: { label: "Media", icon: "photo_library" },
   users: { label: "Users & access", icon: "group" },
   account: { label: "Account", icon: "key" },

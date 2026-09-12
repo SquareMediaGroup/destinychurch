@@ -266,9 +266,12 @@ destinychurch/
 │   ├── supabase-browser.ts        # Supabase client (browser)
 │   ├── podcast.ts                 # Buzzsprout RSS feed (sermon audio)
 │   ├── sermonPairing.ts           # Matches the latest video to its podcast episode
+│   ├── sermonTitle.ts             # Parses "Title | Speaker | Destiny Church LIVE" YouTube titles
+│   ├── sermonSearch.ts            # Shared Fuse.js sermon search — the /sermons box + find_sermons
+│   ├── buzzsprout.server.ts       # Publishes sermon audio to Buzzsprout (admin upload flow)
 │   ├── youtube.ts                 # YouTube API client
 │   ├── smartSearch.ts             # AI search logic (parseAnswer, fallbacks)
-│   ├── smartSearch/tools.ts       # Smart Search tool-calling tools (products, weather, maps, web)
+│   ├── smartSearch/tools.ts       # Smart Search tool-calling tools (products, sermons, weather, maps, web)
 │   ├── embedLoading.ts            # Stage timings for the embed loading overlay
 │   ├── pageContent.ts             # Dynamic page editing
 │   ├── posts.ts                   # Dynamic posts/pages
@@ -842,7 +845,7 @@ simply never grow a row since `toursFor()` returns nothing for them. See
 ---
 
 #### 10c. **admin_roles**
-**Purpose:** Access levels for `/admin` — eight independent booleans per admin login, checked by `middleware.ts` on every `/admin/*` and `/api/admin/*` request
+**Purpose:** Access levels for `/admin` — ten independent booleans per admin login, checked by `middleware.ts` on every `/admin/*` and `/api/admin/*` request
 
 ```sql
 CREATE TABLE admin_roles (
@@ -854,6 +857,8 @@ CREATE TABLE admin_roles (
   site_admin boolean NOT NULL DEFAULT false,
   host boolean NOT NULL DEFAULT false,      -- live chat: /admin/live-chat + moderating on /live
   hr_admin boolean NOT NULL DEFAULT false,  -- /admin/hr
+  design_admin boolean NOT NULL DEFAULT false,  -- /admin/design — the design ticket queue
+  sermon_admin boolean NOT NULL DEFAULT false,  -- /admin/sermons — publishing audio to Buzzsprout
   super_admin boolean NOT NULL DEFAULT false,
   created_at timestamptz NOT NULL DEFAULT now(),
   updated_at timestamptz NOT NULL DEFAULT now()
@@ -2027,31 +2032,80 @@ like a different site, and there is no dark mode here to opt into.
 `VideoConsentGate` — with a **Listen** tab for the same message's podcast
 audio, when the latest video pairs to an episode via `lib/sermonPairing.ts`
 (video from `lib/youtube.ts`, audio from the Buzzsprout RSS feed in
-`lib/podcast.ts` — matched on publish-date proximity plus title-word overlap,
-falling back to the newest episode rather than disabling the toggle). Only the
-active pane is mounted; unmounting the iframe is what stops video playback on
-switch.
+`lib/podcast.ts`). Pairing tries, in order: an exact match via a YouTube video
+id embedded on the Buzzsprout episode (see the admin upload flow below), then
+a heuristic scoring publish-date proximity, title-word overlap and a matching
+speaker name — falling back to the newest episode rather than disabling the
+toggle. Only the active pane is mounted; unmounting the iframe is what stops
+video playback on switch. The speaker's name (see below) is promoted to its
+own kicker line above the title, sourced from whichever pane is active.
+
+**Speaker parsing** (`lib/sermonTitle.ts`, added September 2026) — the
+channel's videos are titled `"Sermon Title | Speaker Name | Destiny Church
+LIVE"` in convention, but real titles vary: `"|"` and `"||"` are used
+interchangeably, most speaker segments carry no honorific, multiple guest
+speakers are joined by `"&"`/`","` and kept as one string, and a few titles
+skip the pipe entirely in favour of `" - Ps Someone"` (gated on an honorific
+so a title that legitimately contains `" - "` isn't misparsed).
+`parseYouTubeTitle()` handles the YouTube side; `lib/podcast.ts`'s `splitTitle`
+handles Buzzsprout's own (slightly different) convention and shares only the
+`" - "` fallback via `splitOnDash()`, since a Buzzsprout episode title is often
+the exact same raw text as its YouTube counterpart. `normalizeSpeakerName()`
+(honorifics stripped, case/whitespace collapsed) is what lets "Ps John Smith"
+and "Pastor John Smith" collapse to one filter chip or one pairing match. See
+`tests/unit/sermon-title.spec.ts`, whose fixtures are titles pulled directly
+from the channel's real RSS feed rather than invented.
+
+**"Latest sermon"** — `getLatestVideo()` delegates to `getUploadedVideos()`
+(below) and returns its first result, so the featured card can never disagree
+with the top of its own archive grid. It previously ran an independent
+`search.list?eventType=completed` query that could, in principle, answer
+differently than the playlist-backed grid.
 
 **Archive** (`components/sermons/SermonGrid.tsx` + `SermonCard.tsx`) — the
-full back-catalogue as a searchable, infinite-scrolling video grid. This
-replaced a podcast-episode list in September 2026 as part of reviving the pre-
-June-2026 full sermon grid, which had been pulled after `search.list` burned
-through the YouTube Data API's 10,000-unit daily quota (`ddeff9f`, `f0ca1e6`).
-The fix: `lib/youtube.ts`'s `getUploadedVideos()` pages the channel's
-**uploads playlist** (id = `"UU" + CHANNEL_ID.slice(2)`, no extra API call to
-look up) via `playlistItems.list` — 1 unit per 50 videos, vs. `search.list`'s
-~100 — then batches `videos.list` (adding `liveStreamingDetails` to `part=`)
-to filter out anything that isn't an actual broadcast (shorts, trailers).
-Results are cached via `next: { revalidate: 3600 }`, shared across all
-visitors through Next's fetch cache — a full-archive rebuild costs a few
-dozen quota units, not hundreds. `SermonGrid` renders the first page
-server-fetched by the page component, then loads further pages from
-`app/api/sermons/more/route.ts` (same `getUploadedVideos(pageToken)`, ~1-2
-units per "Load more") via an `IntersectionObserver` sentinel; search filters
-client-side over videos already loaded and pauses further auto-loading while
-active, so searching a filtered result never fetches unrelated pages. The
-legacy `getAllVideos()` (`search.list`-based) is still in `lib/youtube.ts` but
-nothing calls it — do not wire anything new to it.
+full back-catalogue as a searchable, filterable video grid. `lib/youtube.ts`'s
+`getUploadedVideos()` pages the channel's **uploads playlist** (id =
+`"UU" + CHANNEL_ID.slice(2)`, no extra API call to look up) via
+`playlistItems.list` — 1 unit per 50 videos, vs. `search.list`'s ~100 — then
+batches `videos.list` (adding `liveStreamingDetails` to `part=`) to filter out
+anything that isn't an actual broadcast (shorts, trailers). `getFullSermonArchive()`
+(added September 2026) pages this to exhaustion so the grid can filter/sort
+across the *entire* archive rather than one page at a time — the whole thing
+is fetched once server-side, cached via each page's own `next: { revalidate:
+3600 }`, and handed to `SermonGrid` as a single in-memory array. The grid
+itself is a pure client component: it derives speaker checkboxes and month
+chips from that array, ranks free-text search via `lib/sermonSearch.ts`'s
+`searchSermons()` (Fuse.js — the same shared function the sitewide Smart
+Search chat's `find_sermons` tool uses, see below), and reveals more results
+24 at a time with no further network calls. This replaced the September-2026
+infinite-scroll design (`app/api/sermons/more/route.ts`, now deleted) once
+filtering by speaker required knowing every video up front. The legacy
+`getAllVideos()` (`search.list`-based) is still in `lib/youtube.ts`, used only
+by `/api/youtube/videos` and the mobile app's sermons endpoint — do not wire
+anything new to it.
+
+**Publishing audio** (`/admin/sermons`, `sermon_admin` role, added September
+2026) — an admin form that posts sermon audio straight to Buzzsprout via
+`lib/buzzsprout.server.ts`'s `createBuzzsproutEpisode()` (`BUZZSPROUT_API_TOKEN`
++ `BUZZSPROUT_PODCAST_ID` env vars). The video still goes to YouTube the normal
+way (YouTube Studio) — this only ever creates the audio episode, so no new
+Supabase table or storage bucket is involved. When the admin also pastes the
+matching YouTube video id, it's embedded as an HTML comment
+(`<!--yt:VIDEO_ID-->`) in the episode's description — the only Buzzsprout field
+confirmed to survive to the public RSS feed `lib/podcast.ts` reads, since
+`tags` has no documented guarantee of reaching public RSS output.
+`extractYouTubeIdHint()` reads it back out and `stripHtml()` strips it before
+it's ever shown as show notes; `pairAudioForVideo()` treats a match as
+deterministic, skipping the heuristic entirely.
+
+**AI-recommended sermons** — `find_sermons`, a tool on the sitewide Smart
+Search chat (`lib/smartSearch/tools.ts`, same pattern as its `find_products`
+tool), fuzzy-searches the full archive and answers with sermon cards in the
+conversation from anywhere on the site. `SermonGrid`'s own search box uses the
+same `lib/sermonSearch.ts` ranking function directly (no network route — the
+full archive is already in the browser), deliberately without an LLM call:
+higher-traffic public surface, no conversational context to extract filters
+from beyond the query text itself.
 
 #### `/app/[slug]/page.tsx` — Dynamic Catchall
 - Looks up `slug` via `getPublishedPostBySlug()` (`lib/posts.server.ts`) against the `posts`
@@ -2105,7 +2159,7 @@ without an auth check, so they must never be reachable on the live site.
 | `/` | `app/page.tsx` | Home page — hero, featured sermon, CTAs |
 | `/about` | `app/about/page.tsx` | About church, team, vision, mission |
 | `/beliefs` | `app/beliefs/page.tsx` | Statement of faith, doctrine |
-| `/sermons` | `app/sermons/page.tsx` | Latest message as video (with an audio switch) + searchable, infinite-scroll video archive grid |
+| `/sermons` | `app/sermons/page.tsx` | Latest message as video (with an audio switch), speaker/month filters and free-text search over the full archive |
 | `/sermons/[id]` | `app/sermons/[id]/page.tsx` | Individual sermon — YouTube embed, skip-to-sermon, next steps |
 | `/live` | `app/live/page.tsx` | Livestream page — standard hero + section rhythm, with a client island that swaps between the custom glass player and an off-air card. On air for a real YouTube broadcast, or for a **simulated** one (a pre-recorded video played from a fixed start time; see `lib/simulatedLive.ts`). Signed-in Hosts also get the **broadcast controls** inline at the top of the page (`LiveHostBar`), so starting, editing or removing a service never means leaving `/live` |
 | `/contact` | `app/contact/page.tsx` | Contact form, address, hours |
@@ -2190,6 +2244,7 @@ Each section requires a specific access-level role (see
 | `/portal/leave` | `app/portal/leave/page.tsx` | Staff self-service — request and withdraw own leave |
 | `/portal/documents` | `app/portal/documents/page.tsx` | Staff self-service — download own + org-wide documents |
 | `/portal/design` | `app/portal/design/page.tsx` | Staff self-service — own design requests. Matched by staff link *and* by email, so requests filed from the public form while signed out still appear |
+| `/admin/sermons` | `app/admin/sermons/page.tsx` | Publish sermon audio to Buzzsprout (video keeps going to YouTube separately) — title/speaker/notes/optional YouTube video id, plus a read-only recent-episodes list showing pairing status (Sermon Admin) |
 | `/admin/design` | `app/admin/design/page.tsx` | Design ticket queue — search, status/priority/mine filters, inline Claim. Defaults to "Needs someone" rather than everything (Design Admin) |
 | `/admin/design/[id]` | `app/admin/design/[id]/page.tsx` | Ticket detail — brief, requester, the thread, the deliverable uploader, and only the transition buttons `canTransition` allows from here (Design Admin) |
 | `/admin/store` | `app/admin/store/page.tsx` | Store — product list |
@@ -3100,6 +3155,22 @@ row) to `/portal`; admin roles take priority, so someone who is both lands on
 
 ### Admin API Routes
 
+#### `POST /api/admin/sermons/upload`
+```typescript
+// FormData: title, speaker, notes, youtubeVideoId (all optional except title
+// and the audio file itself) → createBuzzsproutEpisode() (lib/buzzsprout.server.ts)
+// → 201 with the created episode.
+//
+// AUTHORIZATION: sermon_admin, via ROUTE_RULES.
+//
+// Publishes straight to Buzzsprout — no Supabase Storage write, nothing
+// persisted in this app's own database (the "no DB" sermons architecture is
+// unchanged). Audio MIME allowlist (mpeg/mp3/wav/x-m4a/mp4), 300MB cap.
+// A youtubeVideoId, when given, is embedded on the Buzzsprout episode as an
+// HTML-comment pairing hint (lib/podcast.ts's extractYouTubeIdHint reads it
+// back out of the public RSS feed) — see the /sermons write-up above.
+```
+
 #### Design tickets — `/api/admin/design/tickets/**`
 ```typescript
 // GET    /                          → the whole queue + a deliverable_count per row
@@ -3522,13 +3593,9 @@ author from the row, which is why no guest id is ever broadcast to the room.
 // Proxies a YouTube video thumbnail image (avoids hot-linking i.ytimg.com directly).
 ```
 
-#### `GET /api/sermons/more`
-```typescript
-// ?pageToken=<token> → getUploadedVideos(pageToken) (lib/youtube.ts) — the next
-// page of the /sermons archive grid (playlistItems.list + videos.list, live
-// broadcasts only). Backs SermonGrid.tsx's infinite scroll; each call costs
-// ~1-2 YouTube Data API quota units.
-```
+`GET /api/sermons/more` was removed in September 2026 — `SermonGrid.tsx` now
+receives the full archive (`getFullSermonArchive()`) from the server component
+and filters/reveals it entirely client-side, no further network calls.
 
 #### `GET /api/youtube/live`
 ```typescript
@@ -4278,7 +4345,22 @@ Pages the channel's uploads playlist (`"UU" + CHANNEL_ID.slice(2)`) via
 units/call), then filters to items with `liveStreamingDetails` so only actual
 broadcasts show up. See the `/sermons` write-up above for the full quota
 story. `getAllVideos()` below still exists and is still `search.list`-based —
-nothing currently calls it, and nothing new should.
+`/api/youtube/videos` and the mobile app's sermons endpoint still use it;
+nothing else should.
+
+**`getLatestVideo()`** (redefined September 2026) delegates to
+`getUploadedVideos()` and returns its first result, rather than its own
+independent `search.list?eventType=completed` query — the two could disagree,
+which meant the featured card on `/sermons` could show a different video than
+the top of its own archive grid.
+
+**`getFullSermonArchive()`** (added September 2026) pages `getUploadedVideos()`
+to exhaustion (capped at 1000 videos defensively) so the archive's speaker/
+month filters and the sitewide Smart Search chat's `find_sermons` tool can
+search or facet across every sermon rather than one loaded page. Every
+`YTVideo` also now carries `speaker: string | null`, parsed from the title by
+`lib/sermonTitle.ts`'s `parseYouTubeTitle()` in a single shared `toYTVideo()`
+constructor used by every function on this page that builds one.
 
 ```typescript
 // Wrapper around YouTube Data API v3
@@ -5573,6 +5655,10 @@ YOUTUBE_CHANNEL_ID=UCxx...
 YOUTUBE_CHANNEL_HANDLE=DestinyOnlineChurch       # optional; overrides the CHANNEL_HANDLE constant (the @ name) for live detection
 YOUTUBE_CHANNEL_VANITY=destinychurchteesvalley   # optional; overrides the CHANNEL_VANITY constant (the custom URL)
 LIVE_DISABLED=                              # set to 1 to force the /live page and banner off air
+
+# Buzzsprout (sermon podcast audio)
+BUZZSPROUT_API_TOKEN=<token from the Buzzsprout account's My Account page>   # /admin/sermons upload flow only — reading the feed needs no key
+BUZZSPROUT_PODCAST_ID=268765                                                  # the podcast id in both the RSS feed URL and the write API's base URL
 
 # Email
 RESEND_API_KEY=re_...

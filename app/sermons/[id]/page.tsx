@@ -170,7 +170,14 @@ export default async function SermonPage({ params }: PageProps) {
 
           {/* Title row — server-rendered, no CLS */}
           <div className="mt-4 flex items-start justify-between gap-4">
-            <h1 className="text-2xl font-black leading-snug text-destiny-grey">{video.title}</h1>
+            <div className="min-w-0">
+              {video.speaker && (
+                <p className="mb-1 text-xs font-bold uppercase tracking-wide text-destiny-orange">
+                  {video.speaker}
+                </p>
+              )}
+              <h1 className="text-2xl font-black leading-snug text-destiny-grey">{video.title}</h1>
+            </div>
             <SkipToSermonButton />
           </div>
 

@@ -2,6 +2,8 @@ import type OpenAI from "openai";
 import Fuse from "fuse.js";
 import { getPublishedProducts } from "@/lib/shop.server";
 import { FIT_LABELS, fromPrice, type ProductWithVariants } from "@/lib/shop";
+import { getFullSermonArchive, type YTVideo } from "@/lib/youtube";
+import { searchSermons } from "@/lib/sermonSearch";
 
 // ── Smart Search tools ─────────────────────────────────────────────────────
 // Tool-calling tools the /api/chat route exposes to the model. Each network
@@ -57,6 +59,32 @@ export const TOOL_DEFINITIONS: OpenAI.Chat.Completions.ChatCompletionTool[] = [
             type: "string",
             enum: ["clothing", "books", "other"],
             description: "Kind of product, if the visitor made it clear.",
+          },
+        },
+        required: ["query"],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "find_sermons",
+      description:
+        "Search Destiny's sermon archive to recommend specific messages by topic, speaker, or scripture. Use when a visitor asks about a sermon, wants something to watch or listen to, asks what Destiny has preached about a topic, or names a specific pastor.",
+      parameters: {
+        type: "object",
+        properties: {
+          query: {
+            type: "string",
+            description: "The topic, scripture or theme the visitor is after, e.g. 'forgiveness' or 'faith in hard times'.",
+          },
+          speaker: {
+            type: "string",
+            description: "A specific preacher's name, if the visitor named one.",
+          },
+          after_date: {
+            type: "string",
+            description: "YYYY-MM-DD — only sermons published on or after this date, if the visitor gave a time bound like 'this year' or 'last month'.",
           },
         },
         required: ["query"],
@@ -237,6 +265,66 @@ async function runFindProducts(args: {
   } catch (err) {
     console.error("[smartSearch] runFindProducts failed:", err);
     return { available: false, reason: "The shop lookup isn't working right now." };
+  }
+}
+
+// ── find_sermons ────────────────────────────────────────────────────────────
+
+/** A single sermon surfaced by find_sermons, shaped for the Smart Search card. */
+export interface SermonResult {
+  id: string;
+  title: string;
+  speaker: string | null;
+  thumbnail: string;
+  publishedAt: string;
+  durationSeconds: number | null;
+  url: string;
+}
+
+export interface FindSermonsResult {
+  available: boolean;
+  reason?: string;
+  sermons?: SermonResult[];
+}
+
+const MAX_SERMON_RESULTS = 3;
+
+function toSermonResult(v: YTVideo): SermonResult {
+  const durationMatch = v.duration?.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
+  const durationSeconds = durationMatch
+    ? Number(durationMatch[1] ?? 0) * 3600 + Number(durationMatch[2] ?? 0) * 60 + Number(durationMatch[3] ?? 0)
+    : null;
+  return {
+    id: v.id,
+    title: v.title,
+    speaker: v.speaker,
+    thumbnail: v.thumbnail,
+    publishedAt: v.publishedAt,
+    durationSeconds,
+    url: `/sermons/${v.id}`,
+  };
+}
+
+async function runFindSermons(args: {
+  query: string;
+  speaker?: string;
+  after_date?: string;
+}): Promise<FindSermonsResult> {
+  try {
+    const archive = await getFullSermonArchive();
+    const matches = searchSermons(archive, args.query ?? "", {
+      speaker: args.speaker,
+      afterDate: args.after_date,
+    });
+
+    const sermons = matches.slice(0, MAX_SERMON_RESULTS).map(toSermonResult);
+    if (sermons.length === 0) {
+      return { available: false, reason: "No matching sermons found." };
+    }
+    return { available: true, sermons };
+  } catch (err) {
+    console.error("[smartSearch] runFindSermons failed:", err);
+    return { available: false, reason: "The sermon archive isn't available right now." };
   }
 }
 
@@ -445,6 +533,7 @@ async function runExtractPage(args: { url: string }, ctx: ToolContext): Promise<
 
 export type ToolResult =
   | { name: "find_products"; data: FindProductsResult }
+  | { name: "find_sermons"; data: FindSermonsResult }
   | { name: "get_weather"; data: WeatherToolResult }
   | { name: "get_directions"; data: DirectionsToolResult }
   | { name: "search_web"; data: SearchWebResult }
@@ -467,6 +556,15 @@ export async function executeTool(name: string, rawArgs: string, ctx: ToolContex
           query: (args.query as string) ?? "",
           fit: args.fit as string | undefined,
           product_type: args.product_type as string | undefined,
+        }),
+      };
+    case "find_sermons":
+      return {
+        name,
+        data: await runFindSermons({
+          query: (args.query as string) ?? "",
+          speaker: args.speaker as string | undefined,
+          after_date: args.after_date as string | undefined,
         }),
       };
     case "get_weather":

@@ -106,6 +106,7 @@ export function serializeEventSeries(series: EventSeries): AppEventSeries {
 export type AppSermon = {
   id: string;
   title: string;
+  speaker: string | null;
   description: string;
   thumbnailUrl: string;
   publishedAt: string;
@@ -137,6 +138,7 @@ export function serializeSermon(video: YTVideo): AppSermon {
   return {
     id: video.id,
     title: video.title,
+    speaker: video.speaker,
     description: video.description,
     // `thumbUrl()` returns a site-relative proxy path; the app gets no
     // URL-joining logic, so it is absolutised here.

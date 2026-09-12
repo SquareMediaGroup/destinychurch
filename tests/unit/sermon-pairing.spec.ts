@@ -18,6 +18,7 @@ function episode(over: Partial<PodcastEpisode> & { id: string }): PodcastEpisode
     image: "https://example.com/art.jpg",
     publishedAt: "2026-08-02T10:00:00.000Z",
     durationSeconds: 2400,
+    youtubeIdHint: null,
     ...over,
   };
 }
@@ -26,6 +27,7 @@ function video(over: Partial<YTVideo> = {}): YTVideo {
   return {
     id: "vid123",
     title: "Walking In Faith",
+    speaker: null,
     description: "",
     thumbnail: "/api/youtube/thumbnail/vid123",
     publishedAt: "2026-08-02T11:00:00.000Z",
@@ -147,6 +149,46 @@ test("returns nothing when the feed is empty", () => {
     episode: null,
     confident: false,
   });
+});
+
+test("an embedded YouTube id hint wins outright, skipping the heuristic entirely", () => {
+  const episodes = [
+    episode({
+      id: "b-hinted",
+      title: "Completely Unrelated Title",
+      publishedAt: "2026-01-01T09:00:00.000Z", // far outside MAX_DAYS
+      youtubeIdHint: "vid123",
+    }),
+    episode({
+      id: "b-close-match",
+      title: "Walking In Faith",
+      publishedAt: "2026-08-02T12:00:00.000Z",
+    }),
+  ];
+
+  const pair = pairAudioForVideo(video(), episodes);
+
+  expect(pair.episode?.id).toBe("b-hinted");
+  expect(pair.confident).toBe(true);
+});
+
+test("a matching speaker rescues a weak title match within the date window", () => {
+  const episodes = [
+    episode({
+      id: "b-same-speaker",
+      title: "A Totally Different Message Name",
+      speaker: "Pastor John Smith",
+      publishedAt: "2026-08-06T09:00:00.000Z",
+    }),
+  ];
+
+  const pair = pairAudioForVideo(
+    video({ title: "Sunday Service | Ps John Smith | Destiny Church LIVE", speaker: "Ps John Smith" }),
+    episodes
+  );
+
+  expect(pair.episode?.id).toBe("b-same-speaker");
+  expect(pair.confident).toBe(true);
 });
 
 test("survives an unparseable publish date", () => {

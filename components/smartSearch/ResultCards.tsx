@@ -15,6 +15,7 @@ import { formatPrice, sizeIndex, type CartItem } from "@/lib/shop";
 import type {
   ProductResult,
   ProductResultVariant,
+  SermonResult,
   WeatherToolResult,
   DirectionsToolResult,
   SearchWebResult,
@@ -123,6 +124,50 @@ export function WebResultsCard({ data }: { data: SearchWebResult }) {
           <p className="truncate text-sm font-bold text-white/85">{r.title}</p>
           <p className="mt-0.5 line-clamp-2 text-xs text-white/45">{r.snippet}</p>
         </a>
+      ))}
+    </div>
+  );
+}
+
+// ── Sermons ──────────────────────────────────────────────────────────────────
+
+function formatSermonDate(iso: string): string {
+  try {
+    return new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
+  } catch {
+    return "";
+  }
+}
+
+function SermonResultCard({ sermon }: { sermon: SermonResult }) {
+  const date = formatSermonDate(sermon.publishedAt);
+  return (
+    <Link
+      href={sermon.url}
+      className="flex gap-3 rounded-2xl border border-white/10 bg-white/5 p-3 transition hover:bg-white/8"
+    >
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={sermon.thumbnail}
+        alt=""
+        className="h-16 w-24 shrink-0 rounded-xl object-cover"
+      />
+      <div className="min-w-0">
+        <p className="line-clamp-2 text-sm font-bold text-white">{sermon.title}</p>
+        <p className="mt-0.5 truncate text-xs text-white/45">
+          {[sermon.speaker, date].filter(Boolean).join(" · ")}
+        </p>
+      </div>
+    </Link>
+  );
+}
+
+export function SermonResultCards({ sermons }: { sermons: SermonResult[] }) {
+  if (sermons.length === 0) return null;
+  return (
+    <div className="mt-2 space-y-2">
+      {sermons.map((s) => (
+        <SermonResultCard key={s.id} sermon={s} />
       ))}
     </div>
   );

@@ -2,6 +2,7 @@ import { useCallback, useState } from "react";
 import { cooldownAnswer, parseAnswer } from "@/lib/smartSearch";
 import type {
   ProductResult,
+  SermonResult,
   WeatherToolResult,
   DirectionsToolResult,
   SearchWebResult,
@@ -20,6 +21,7 @@ function visibleProse(raw: string): string {
 
 export interface ToolCards {
   products?: ProductResult[];
+  sermons?: SermonResult[];
   weather?: WeatherToolResult;
   directions?: DirectionsToolResult;
   web?: SearchWebResult;
@@ -35,6 +37,7 @@ export interface ChatMessage extends ToolCards {
 
 export const TOOL_STATUS_LABELS: Record<string, string> = {
   find_products: "Searching the shop…",
+  find_sermons: "Searching the sermon archive…",
   get_weather: "Checking the forecast…",
   get_directions: "Looking up directions…",
   search_web: "Searching the web…",
@@ -106,7 +109,7 @@ export function useSmartSearchChat() {
         let appended = false;
 
         const hasCards = () =>
-          Boolean(cards.products || cards.weather || cards.directions || cards.web);
+          Boolean(cards.products || cards.sermons || cards.weather || cards.directions || cards.web);
 
         const liveMessage = (): ChatMessage => ({
           role: "assistant",
@@ -138,6 +141,9 @@ export function useSmartSearchChat() {
             switch (evt.name) {
               case "find_products":
                 cards.products = (evt.data as { products?: ProductResult[] }).products;
+                break;
+              case "find_sermons":
+                cards.sermons = (evt.data as { sermons?: SermonResult[] }).sermons;
                 break;
               case "get_weather":
                 cards.weather = evt.data as WeatherToolResult;

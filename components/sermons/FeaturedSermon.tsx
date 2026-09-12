@@ -53,6 +53,7 @@ export default function FeaturedSermon({
 
   const title = episode?.title ?? video?.title ?? "";
   const artwork = episode?.image;
+  const speaker = video?.speaker ?? episode?.speaker;
 
   return (
     <div>
@@ -62,6 +63,12 @@ export default function FeaturedSermon({
           <p className="text-xs font-bold uppercase tracking-widest text-destiny-orange">
             Latest message
           </p>
+          {speaker && (
+            <p className="mt-1 flex items-center gap-1 text-sm font-bold text-destiny-grey/70">
+              <span className="material-symbols-rounded text-base text-destiny-orange">person</span>
+              {speaker}
+            </p>
+          )}
           <h2 className="mt-3 text-3xl font-black leading-tight text-destiny-grey md:text-4xl">
             {title}
           </h2>
@@ -165,7 +172,6 @@ function Meta({
   mode: "watch" | "listen";
 }) {
   const bits: string[] = [];
-  if (episode?.speaker) bits.push(episode.speaker);
 
   const iso = mode === "watch" ? video?.publishedAt : episode?.publishedAt;
   const date = iso ? formatEpisodeDate(iso) : "";

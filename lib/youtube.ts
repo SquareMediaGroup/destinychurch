@@ -1,12 +1,35 @@
+import { parseYouTubeTitle } from "@/lib/sermonTitle";
+
 export type YTVideo = {
   id: string;
   title: string;
+  /** Preacher's name(s), parsed from the title. Null when nothing was found. */
+  speaker: string | null;
   description: string;
   thumbnail: string;
   publishedAt: string;
   viewCount?: string;
   duration?: string;
 };
+
+/** Builds a YTVideo from a raw snippet, parsing the title into title+speaker once, here. */
+function toYTVideo(
+  id: string,
+  snippet: { title?: string; description?: string; publishedAt?: string },
+  extra?: { viewCount?: string; duration?: string }
+): YTVideo {
+  const { title, speaker } = parseYouTubeTitle(snippet.title ?? "");
+  return {
+    id,
+    title,
+    speaker,
+    description: snippet.description ?? "",
+    thumbnail: thumbUrl(id),
+    publishedAt: snippet.publishedAt ?? "",
+    viewCount: extra?.viewCount,
+    duration: extra?.duration,
+  };
+}
 
 export function thumbUrl(id: string): string {
   return `/api/youtube/thumbnail/${id}`;
@@ -118,13 +141,7 @@ export async function getLatestVideoFromRSS(): Promise<YTVideo | null> {
     const publishedAt = entry.match(/<published>([^<]+)<\/published>/)?.[1] ?? "";
     const description = entry.match(/<media:description>([\s\S]*?)<\/media:description>/)?.[1]?.trim() ?? "";
 
-    return {
-      id,
-      title: decodeEntities(title),
-      description,
-      thumbnail: thumbUrl(id),
-      publishedAt,
-    };
+    return toYTVideo(id, { title, description, publishedAt });
   } catch {
     return null;
   }
@@ -149,32 +166,17 @@ export async function getRecentVideoIdsFromRSS(channelId: string): Promise<strin
   }
 }
 
+/**
+ * The single most recent sermon. Delegates to `getUploadedVideos()` — the
+ * same playlist-backed source that powers the /sermons archive grid — so the
+ * featured "Latest message" card can never disagree with the top of its own
+ * grid. Previously this ran an independent `search.list?eventType=completed`
+ * query (~100 quota units) that could, in principle, return a different
+ * answer than the playlist path below it on the page.
+ */
 export async function getLatestVideo(): Promise<YTVideo | null> {
-  try {
-    const searchUrl = new URL("https://www.googleapis.com/youtube/v3/search");
-    searchUrl.searchParams.set("part", "snippet");
-    searchUrl.searchParams.set("channelId", CHANNEL_ID ?? "");
-    searchUrl.searchParams.set("eventType", "completed");
-    searchUrl.searchParams.set("order", "date");
-    searchUrl.searchParams.set("type", "video");
-    searchUrl.searchParams.set("maxResults", "1");
-    searchUrl.searchParams.set("key", API_KEY ?? "");
-
-    const res = await fetch(searchUrl.toString(), { next: { revalidate: 300 } });
-    if (!res.ok) return null;
-    const data = await res.json();
-    const items = data.items ?? [];
-    if (!items.length) return null;
-
-    const item = items[0];
-    const id: string = item.id?.videoId ?? "";
-    if (!id) return null;
-
-    // Fetch extra details (statistics + contentDetails) for this video
-    return await getVideo(id);
-  } catch {
-    return null;
-  }
+  const page = await getUploadedVideos();
+  return page.videos[0] ?? null;
 }
 
 type SearchItem = { id?: { videoId?: string } };
@@ -238,16 +240,10 @@ export async function getAllVideos(maxResults = 200): Promise<YTVideo[]> {
     return limited
       .map((id) => {
         const v = detailMap.get(id);
-        const snippet = v?.snippet ?? {};
-        return {
-          id,
-          title: snippet.title ?? "",
-          description: snippet.description ?? "",
-          thumbnail: thumbUrl(id),
-          publishedAt: snippet.publishedAt ?? "",
+        return toYTVideo(id, v?.snippet ?? {}, {
           viewCount: v?.statistics?.viewCount,
           duration: v?.contentDetails?.duration,
-        };
+        });
       })
       .filter((v) => v.title); // drop any with no title
   } catch {
@@ -299,17 +295,11 @@ export async function getUploadedVideos(pageToken?: string): Promise<UploadedVid
       .map((id): YTVideo | null => {
         const v = detailMap.get(id);
         if (!v?.liveStreamingDetails) return null; // skip non-broadcast uploads
-        const snippet = v.snippet ?? {};
-        if (!snippet.title) return null;
-        return {
-          id,
-          title: snippet.title,
-          description: snippet.description ?? "",
-          thumbnail: thumbUrl(id),
-          publishedAt: snippet.publishedAt ?? "",
+        if (!v.snippet?.title) return null;
+        return toYTVideo(id, v.snippet, {
           viewCount: v.statistics?.viewCount,
           duration: v.contentDetails?.duration,
-        };
+        });
       })
       .filter((v): v is YTVideo => v !== null);
 
@@ -317,6 +307,27 @@ export async function getUploadedVideos(pageToken?: string): Promise<UploadedVid
   } catch {
     return { videos: [], nextPageToken: null };
   }
+}
+
+/**
+ * Every broadcast sermon on the channel, newest first — pages `getUploadedVideos()`
+ * to exhaustion. Powers the archive's speaker/date/month filters, which need to
+ * know about every sermon up front rather than whatever page has loaded so far.
+ * Capped defensively in case a token loop upstream never terminates; a real
+ * channel is nowhere near this size.
+ */
+export async function getFullSermonArchive(): Promise<YTVideo[]> {
+  const all: YTVideo[] = [];
+  let pageToken: string | undefined;
+  const MAX_VIDEOS = 1000;
+
+  do {
+    const page = await getUploadedVideos(pageToken);
+    all.push(...page.videos);
+    pageToken = page.nextPageToken ?? undefined;
+  } while (pageToken && all.length < MAX_VIDEOS);
+
+  return all;
 }
 
 type DetailItemWithLive = DetailItem & { liveStreamingDetails?: { actualStartTime?: string } };
@@ -358,14 +369,7 @@ export async function getPlaylistVideos(playlistId: string, maxResults = 20): Pr
       .filter((item) => item.snippet?.resourceId?.videoId)
       .map((item) => {
         const s = item.snippet!;
-        const id = s.resourceId!.videoId!;
-        return {
-          id,
-          title: s.title ?? "",
-          description: s.description ?? "",
-          thumbnail: thumbUrl(id),
-          publishedAt: s.publishedAt ?? "",
-        };
+        return toYTVideo(s.resourceId!.videoId!, s);
       });
   } catch {
     return [];
@@ -815,17 +819,10 @@ export async function getVideo(id: string): Promise<YTVideo | null> {
     if (!items.length) return null;
 
     const v = items[0];
-    const snippet = v.snippet ?? {};
-
-    return {
-      id,
-      title: snippet.title ?? "",
-      description: snippet.description ?? "",
-      thumbnail: thumbUrl(id),
-      publishedAt: snippet.publishedAt ?? "",
+    return toYTVideo(id, v.snippet ?? {}, {
       viewCount: v.statistics?.viewCount,
       duration: v.contentDetails?.duration,
-    };
+    });
   } catch {
     return null;
   }

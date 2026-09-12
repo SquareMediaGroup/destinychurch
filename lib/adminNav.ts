@@ -410,6 +410,20 @@ export const ADMIN_GROUPS: AdminNavGroup[] = [
       },
     ],
   },
+  {
+    label: "Sermons",
+    icon: "mic",
+    items: [
+      {
+        href: "/admin/sermons",
+        label: "Sermons",
+        icon: "mic",
+        role: "sermon_admin",
+        description: "Publish sermon audio to the podcast feed.",
+        keywords: ["buzzsprout", "audio", "podcast", "upload", "preacher", "speaker"],
+      },
+    ],
+  },
 ];
 
 /** Every item, flattened, in sidebar order. */

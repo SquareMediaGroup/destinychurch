@@ -13,6 +13,7 @@ export type AdminRole =
   | "host"
   | "hr_admin"
   | "design_admin"
+  | "sermon_admin"
   | "super_admin";
 
 export const ADMIN_ROLES: AdminRole[] = [
@@ -23,6 +24,7 @@ export const ADMIN_ROLES: AdminRole[] = [
   "host",
   "hr_admin",
   "design_admin",
+  "sermon_admin",
   "super_admin",
 ];
 
@@ -42,6 +44,7 @@ export const ROLE_LABELS: Record<AdminRole, string> = {
   host: "Host",
   hr_admin: "HR Admin",
   design_admin: "Design Admin",
+  sermon_admin: "Sermon Admin",
   super_admin: "Super Admin",
 };
 
@@ -68,6 +71,7 @@ export const NO_ROLES: RoleFlags = {
   host: false,
   hr_admin: false,
   design_admin: false,
+  sermon_admin: false,
   super_admin: false,
 };
 
@@ -134,6 +138,10 @@ const ROUTE_RULES: { pattern: RegExp; roles: AdminRole[] }[] = [
   { pattern: /^\/admin\/design(\/|$)/, roles: ["design_admin"] },
   { pattern: /^\/api\/admin\/design(\/|$)/, roles: ["design_admin"] },
 
+  // Sermons — publishing audio to Buzzsprout.
+  { pattern: /^\/admin\/sermons(\/|$)/, roles: ["sermon_admin"] },
+  { pattern: /^\/api\/admin\/sermons(\/|$)/, roles: ["sermon_admin"] },
+
 ];
 
 // Paths any authenticated admin can reach regardless of role.
@@ -176,7 +184,7 @@ export async function getRoles(
   const { data } = await supabase
     .from("admin_roles")
     .select(
-      "training_admin, event_admin, store_admin, site_admin, host, hr_admin, design_admin, super_admin",
+      "training_admin, event_admin, store_admin, site_admin, host, hr_admin, design_admin, sermon_admin, super_admin",
     )
     .eq("auth_user_id", authUserId)
     .maybeSingle();
@@ -190,6 +198,7 @@ export async function getRoles(
     host: Boolean(data.host),
     hr_admin: Boolean(data.hr_admin),
     design_admin: Boolean(data.design_admin),
+    sermon_admin: Boolean(data.sermon_admin),
     super_admin: Boolean(data.super_admin),
   };
 }

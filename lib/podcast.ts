@@ -1,7 +1,12 @@
 // Buzzsprout podcast feed for Destiny Church Tees Valley (DCTV Podcast).
 // We parse the RSS server-side (no XML dependency) and expose typed episodes.
 
-const FEED_URL = "https://feeds.buzzsprout.com/268765.rss";
+import { splitOnDash } from "@/lib/sermonTitle";
+
+// Same id the admin upload flow writes to (lib/buzzsprout.server.ts) — kept
+// as one env var so the two never drift apart.
+const PODCAST_ID = process.env.BUZZSPROUT_PODCAST_ID || "268765";
+const FEED_URL = `https://feeds.buzzsprout.com/${PODCAST_ID}.rss`;
 
 export type PodcastEpisode = {
   /** Stable id derived from the <guid> (e.g. "Buzzsprout-19296689"). */
@@ -20,6 +25,13 @@ export type PodcastEpisode = {
   publishedAt: string;
   /** Duration in whole seconds. */
   durationSeconds: number;
+  /**
+   * YouTube video id embedded by the admin upload flow (lib/buzzsprout.server.ts)
+   * as an HTML comment in the description, e.g. `<!--yt:abc123DEF45-->`. Lets
+   * lib/sermonPairing.ts match this episode to its video exactly instead of
+   * guessing from title/date. Null for episodes published before that existed.
+   */
+  youtubeIdHint: string | null;
 };
 
 export type PodcastShow = {
@@ -50,12 +62,23 @@ function unwrapCdata(input: string): string {
 function stripHtml(input: string): string {
   return decodeEntities(
     unwrapCdata(input)
+      // The admin upload flow embeds a `<!--yt:VIDEO_ID-->` pairing hint in the
+      // description (see extractYouTubeIdHint) — strip it before it's ever
+      // shown as show notes.
+      .replace(/<!--[\s\S]*?-->/g, "")
       .replace(/<br\s*\/?>/gi, " ")
       .replace(/<\/p>/gi, " ")
       .replace(/<[^>]+>/g, "")
   )
     .replace(/\s+/g, " ")
     .trim();
+}
+
+const YOUTUBE_HINT_RE = /<!--yt:([\w-]{11})-->/;
+
+/** Pull the embedded YouTube video id hint out of a raw (pre-strip) description. */
+function extractYouTubeIdHint(raw: string): string | null {
+  return raw.match(YOUTUBE_HINT_RE)?.[1] ?? null;
 }
 
 function tag(block: string, name: string): string | null {
@@ -96,7 +119,10 @@ function splitTitle(raw: string): { title: string; speaker: string | null } {
     };
   }
 
-  return { title: clean, speaker: null };
+  // No pipe at all — episode titles are often the same raw text as their
+  // YouTube counterpart, which sometimes uses " - Speaker Name" instead of a
+  // pipe. Shared with lib/sermonTitle.ts's YouTube-side parser.
+  return splitOnDash(clean) ?? { title: clean, speaker: null };
 }
 
 let cache: { at: number; show: PodcastShow } | null = null;
@@ -132,18 +158,21 @@ export async function getPodcastShow(): Promise<PodcastShow> {
     const { title, speaker } = splitTitle(tag(item, "title") ?? "");
     const durationRaw = stripHtml(tag(item, "itunes:duration") ?? "0");
     const durationSeconds = parseDuration(durationRaw);
+    const rawDescription = tag(item, "description") ?? "";
+    const youtubeIdHint = extractYouTubeIdHint(rawDescription);
 
     show.episodes.push({
       id: guid.replace(/[^a-zA-Z0-9-]/g, ""),
       title,
       speaker,
       summary: truncate(
-        stripHtml(tag(item, "itunes:summary") ?? tag(item, "description") ?? ""),
+        stripHtml(tag(item, "itunes:summary") ?? rawDescription),
         400
       ),
       audioUrl,
       image: attr(item, "itunes:image", "href") ?? showImage,
       publishedAt: toIso(stripHtml(tag(item, "pubDate") ?? "")),
+      youtubeIdHint,
       durationSeconds,
     });
   }

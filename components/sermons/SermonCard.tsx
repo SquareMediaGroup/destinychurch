@@ -38,6 +38,11 @@ export default function SermonCard({ video }: { video: YTVideo }) {
       </div>
 
       <div className="p-4">
+        {video.speaker && (
+          <p className="mb-1 text-xs font-bold uppercase tracking-wide text-destiny-orange">
+            {video.speaker}
+          </p>
+        )}
         <p className="line-clamp-2 text-[15px] font-bold leading-snug text-destiny-grey">
           {video.title}
         </p>

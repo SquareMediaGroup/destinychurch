@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import { getPodcastShow } from "@/lib/podcast";
-import { CHANNEL_URL, getLatestVideo, getUploadedVideos } from "@/lib/youtube";
+import { CHANNEL_URL, getLatestVideo, getFullSermonArchive } from "@/lib/youtube";
 import { pairAudioForVideo } from "@/lib/sermonPairing";
 import { PodcastPlayerProvider } from "@/components/sermons/podcast/PodcastPlayerProvider";
 import FeaturedSermon from "@/components/sermons/FeaturedSermon";
@@ -38,7 +38,7 @@ export default async function SermonsPage() {
   const [show, latestVideo, archive] = await Promise.all([
     getPodcastShow().catch(() => null),
     getLatestVideo().catch(() => null),
-    getUploadedVideos().catch(() => ({ videos: [], nextPageToken: null })),
+    getFullSermonArchive().catch(() => []),
   ]);
 
   const episodes = show?.episodes ?? [];
@@ -122,7 +122,7 @@ export default async function SermonsPage() {
         {/* ── Video archive ─────────────────────────────────────── */}
         <section className="bg-[#f5f7fa] py-16">
           <div className="mx-auto max-w-7xl px-4 lg:px-8">
-            <SermonGrid initial={archive} />
+            <SermonGrid videos={archive} />
           </div>
         </section>
 

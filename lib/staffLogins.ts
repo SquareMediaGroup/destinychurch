@@ -8,7 +8,7 @@ import { roleLabel, ADMIN_ROLES, type AdminRole } from "@/lib/adminRoles";
 // string parser can type it — a template-string select can't be parsed at
 // the type level. Keep in step with ADMIN_ROLES.
 const ADMIN_ROLE_COLUMNS =
-  "training_admin, event_admin, store_admin, site_admin, host, hr_admin, design_admin, super_admin";
+  "training_admin, event_admin, store_admin, site_admin, host, hr_admin, design_admin, sermon_admin, super_admin";
 
 type ServiceClient = ReturnType<typeof createServiceClient>;
 

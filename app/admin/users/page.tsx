@@ -28,6 +28,7 @@ const ROLE_HINTS: Record<AdminRole, string> = {
   host: "Moderates the live chat, and can sign in on /live itself.",
   hr_admin: "Staff directory, leave, jobs, applications, documents and reviews.",
   design_admin: "Design ticket queue: claim, deliver and close requests.",
+  sermon_admin: "Publishes sermon audio to Buzzsprout.",
   super_admin: "Full access, including the sitewide banner, cache and users.",
 };
 

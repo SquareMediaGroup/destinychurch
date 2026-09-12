@@ -21,6 +21,7 @@ import { COURSE_EVENT_TYPES, isCourseEventType } from "@/lib/courseEvents";
 import { getLiveStatus } from "@/lib/liveStatus.server";
 import { CHANNEL_URL } from "@/lib/youtube";
 import BannerSpacer from "@/components/BannerSpacer";
+import { PodcastPlayerProvider } from "@/components/sermons/podcast/PodcastPlayerProvider";
 import { createServiceClient } from "@/utils/supabase/service";
 import { unstable_noStore as noStore } from "next/cache";
 import { SpeedInsights } from "@vercel/speed-insights/next";
@@ -422,20 +423,25 @@ export default async function RootLayout({
           <SiteBanner />
           <CookieBanner />
           <Suspense><PerformanceGate /></Suspense>
-          {/* The padding is 0 until the sermons audio dock mounts and publishes
-              its height (see PodcastPlayerProvider) — it keeps the fixed dock
-              from covering the end of the footer. */}
-          <div
-            className="flex min-h-screen flex-col bg-[var(--background)] text-[var(--foreground)]"
-            style={{ paddingBottom: "var(--podcast-dock-height, 0px)" }}
-          >
-            <BannerSpacer />
-            <Suspense>
-              <ChurchHeader />
-            </Suspense>
-            <main className="flex-1">{children}</main>
-            <FooterGate><ChurchFooter /></FooterGate>
-          </div>
+          {/* PodcastPlayerProvider mounted here (not per-page) so audio started
+              on /sermons keeps playing across any navigation — its dock is a
+              fixed-position overlay that renders nothing until something is
+              actually playing, so this has no effect on pages that never touch
+              it. The padding is 0 until it mounts and publishes its height,
+              which keeps the fixed dock from covering the end of the footer. */}
+          <PodcastPlayerProvider>
+            <div
+              className="flex min-h-screen flex-col bg-[var(--background)] text-[var(--foreground)]"
+              style={{ paddingBottom: "var(--podcast-dock-height, 0px)" }}
+            >
+              <BannerSpacer />
+              <Suspense>
+                <ChurchHeader />
+              </Suspense>
+              <main className="flex-1">{children}</main>
+              <FooterGate><ChurchFooter /></FooterGate>
+            </div>
+          </PodcastPlayerProvider>
           <AnalyticsGate />
           <GlassBloomTracker />
           {/* An active event popup suppresses the generic one — passing null

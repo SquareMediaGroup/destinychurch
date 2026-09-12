@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { pairAudioForVideo } from "../../lib/sermonPairing";
+import { pairAudioForVideo, pairArchiveWithEpisodes } from "../../lib/sermonPairing";
 import type { PodcastEpisode } from "../../lib/podcast";
 import type { YTVideo } from "../../lib/youtube";
 
@@ -198,4 +198,32 @@ test("survives an unparseable publish date", () => {
 
   expect(pair.episode?.id).toBe("b-bad");
   expect(pair.confident).toBe(false);
+});
+
+/* ── pairArchiveWithEpisodes ──────────────────────────────────────────────── */
+
+test("pairArchiveWithEpisodes only keeps confident matches, unlike the single-video fallback", () => {
+  const episodes = [
+    episode({
+      id: "b-match",
+      title: "Walking In Faith",
+      publishedAt: "2026-08-02T10:00:00.000Z",
+    }),
+  ];
+  const videos = [
+    video({ id: "vid-match", title: "Walking In Faith", publishedAt: "2026-08-02T11:00:00.000Z" }),
+    // Nothing close in title or date — pairAudioForVideo would still fall back
+    // to the newest episode with confident:false, which the archive map must drop.
+    video({ id: "vid-no-match", title: "A Completely Different Message", publishedAt: "2020-01-01T00:00:00.000Z" }),
+  ];
+
+  const map = pairArchiveWithEpisodes(videos, episodes);
+
+  expect(map.get("vid-match")?.id).toBe("b-match");
+  expect(map.has("vid-no-match")).toBe(false);
+  expect(map.size).toBe(1);
+});
+
+test("pairArchiveWithEpisodes returns an empty map when there are no episodes", () => {
+  expect(pairArchiveWithEpisodes([video()], []).size).toBe(0);
 });

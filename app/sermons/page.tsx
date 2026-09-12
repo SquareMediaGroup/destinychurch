@@ -1,10 +1,9 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import { getPodcastShow } from "@/lib/podcast";
-import { CHANNEL_URL } from "@/lib/youtube";
+import { CHANNEL_URL, getGuestSpeakerVideoIds } from "@/lib/youtube";
 import { getLatestVideo, getFullSermonArchive } from "@/lib/speakerOverrides.server";
-import { pairAudioForVideo } from "@/lib/sermonPairing";
-import { PodcastPlayerProvider } from "@/components/sermons/podcast/PodcastPlayerProvider";
+import { pairAudioForVideo, pairArchiveWithEpisodes } from "@/lib/sermonPairing";
 import FeaturedSermon from "@/components/sermons/FeaturedSermon";
 import SermonGrid from "@/components/sermons/SermonGrid";
 import WatchOnYouTubeBand from "@/components/sermons/WatchOnYouTubeBand";
@@ -36,10 +35,11 @@ const platforms = [
 ];
 
 export default async function SermonsPage() {
-  const [show, latestVideo, archive] = await Promise.all([
+  const [show, latestVideo, archive, guestSpeakerIds] = await Promise.all([
     getPodcastShow().catch(() => null),
     getLatestVideo().catch(() => null),
     getFullSermonArchive().catch(() => []),
+    getGuestSpeakerVideoIds().catch(() => new Set<string>()),
   ]);
 
   const episodes = show?.episodes ?? [];
@@ -49,9 +49,12 @@ export default async function SermonsPage() {
   const { episode: featuredEpisode } = pairAudioForVideo(latestVideo, episodes);
   const hasFeature = Boolean(latestVideo || featuredEpisode);
 
+  // Same pairing, run for every video in the archive, so any card can offer
+  // Listen too — kept to confident matches only (see pairArchiveWithEpisodes).
+  const episodesByVideoId = pairArchiveWithEpisodes(archive, episodes);
+
   return (
-    <PodcastPlayerProvider>
-      <>
+    <>
         {/* ── Hero ─────────────────────────────────────────────── */}
         <div className="px-4 pt-8 pb-0 lg:px-8">
           <section className="relative overflow-hidden rounded-3xl">
@@ -123,7 +126,11 @@ export default async function SermonsPage() {
         {/* ── Video archive ─────────────────────────────────────── */}
         <section className="bg-[#f5f7fa] py-16">
           <div className="mx-auto max-w-7xl px-4 lg:px-8">
-            <SermonGrid videos={archive} />
+            <SermonGrid
+              videos={archive}
+              episodesByVideoId={Object.fromEntries(episodesByVideoId)}
+              guestSpeakerIds={[...guestSpeakerIds]}
+            />
           </div>
         </section>
 
@@ -136,7 +143,6 @@ export default async function SermonsPage() {
 
         <WorshipWithUsSection />
       </>
-    </PodcastPlayerProvider>
   );
 }
 

@@ -89,6 +89,9 @@ export const CHANNEL_VANITY = "destinychurchteesvalley";
 /** Canonical public link — the custom URL. */
 export const CHANNEL_URL = `https://www.youtube.com/${CHANNEL_VANITY}`;
 
+/** Curated collection of sermons preached by a guest rather than church staff. */
+export const GUEST_SPEAKERS_PLAYLIST_ID = "PLSS2B_vcLPmzImvWY_2XtwTqxeg7EiL-J";
+
 export function decodeEntities(text: string | undefined): string {
   if (!text) return "";
   return text
@@ -328,6 +331,47 @@ export async function getFullSermonArchive(): Promise<YTVideo[]> {
   } while (pageToken && all.length < MAX_VIDEOS);
 
   return all;
+}
+
+/**
+ * Every video id in a playlist — used for `GUEST_SPEAKERS_PLAYLIST_ID` membership
+ * checks, where only the id matters. `part=contentDetails` skips the snippet
+ * fields `getPlaylistVideos()` fetches, since nothing here needs a title or
+ * thumbnail — just "is this video in the list".
+ */
+export async function getPlaylistVideoIds(playlistId: string): Promise<Set<string>> {
+  const ids = new Set<string>();
+  let pageToken: string | undefined;
+  const MAX_ITEMS = 1000;
+
+  try {
+    do {
+      const url = new URL("https://www.googleapis.com/youtube/v3/playlistItems");
+      url.searchParams.set("part", "contentDetails");
+      url.searchParams.set("playlistId", playlistId);
+      url.searchParams.set("maxResults", "50");
+      url.searchParams.set("key", API_KEY ?? "");
+      if (pageToken) url.searchParams.set("pageToken", pageToken);
+
+      const res = await fetch(url.toString(), { next: { revalidate: 3600 } });
+      if (!res.ok) break;
+      const data = await res.json();
+      type Item = { contentDetails?: { videoId?: string } };
+      for (const item of (data.items ?? []) as Item[]) {
+        if (item.contentDetails?.videoId) ids.add(item.contentDetails.videoId);
+      }
+      pageToken = data.nextPageToken;
+    } while (pageToken && ids.size < MAX_ITEMS);
+  } catch {
+    // Fails open to an empty set — the guest-speakers filter just shows nothing
+    // rather than breaking the rest of the sermons page.
+  }
+
+  return ids;
+}
+
+export function getGuestSpeakerVideoIds(): Promise<Set<string>> {
+  return getPlaylistVideoIds(GUEST_SPEAKERS_PLAYLIST_ID);
 }
 
 type DetailItemWithLive = DetailItem & { liveStreamingDetails?: { actualStartTime?: string } };

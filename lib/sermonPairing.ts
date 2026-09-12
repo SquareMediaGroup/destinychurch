@@ -125,3 +125,22 @@ export function pairAudioForVideo(
     ? { episode: best, confident: true }
     : { episode: episodes[0], confident: false };
 }
+
+/**
+ * Pairs every video in the archive with its audio, for the grid's Listen
+ * buttons — unlike `pairAudioForVideo`'s single-video use on the featured
+ * card, there's no "always guess something" fallback here: only `confident`
+ * matches are kept, or every one of a few hundred cards would get tagged with
+ * a guessed pairing whether or not real audio actually exists for it.
+ */
+export function pairArchiveWithEpisodes(
+  videos: YTVideo[],
+  episodes: PodcastEpisode[]
+): Map<string, PodcastEpisode> {
+  const map = new Map<string, PodcastEpisode>();
+  for (const video of videos) {
+    const pair = pairAudioForVideo(video, episodes);
+    if (pair.episode && pair.confident) map.set(video.id, pair.episode);
+  }
+  return map;
+}

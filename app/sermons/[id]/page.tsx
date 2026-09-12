@@ -3,7 +3,10 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { formatDate } from "@/lib/youtube";
 import { getVideo } from "@/lib/speakerOverrides.server";
+import { getPodcastShow } from "@/lib/podcast";
+import { pairAudioForVideo } from "@/lib/sermonPairing";
 import SermonPlayer from "@/components/sermons/SermonPlayer";
+import SermonWatchListen from "@/components/sermons/SermonWatchListen";
 import { SermonJumpProvider } from "@/components/sermons/SermonJumpContext";
 import SkipToSermonButton from "@/components/sermons/SkipToSermonButton";
 import SermonDescription from "@/components/sermons/SermonDescription";
@@ -123,6 +126,10 @@ export default async function SermonPage({ params }: PageProps) {
   const sermonStart = parseSermonStart(video.description);
   const displayDescription = stripSermonTimestamp(video.description);
 
+  const show = await getPodcastShow().catch(() => null);
+  const { episode: pairedEpisode, confident } = pairAudioForVideo(video, show?.episodes ?? []);
+  const audioEpisode = confident ? pairedEpisode : null;
+
   const videoSchema = {
     "@context": "https://schema.org",
     "@type": "VideoObject",
@@ -165,9 +172,13 @@ export default async function SermonPage({ params }: PageProps) {
 
         {/* Player — aspect-ratio wrapper reserves space on SSR, eliminating CLS */}
         <SermonJumpProvider sermonStart={sermonStart}>
-          <div className="relative w-full" style={{ aspectRatio: "16/9" }}>
-            <SermonPlayer videoId={video.id} thumbnail={video.thumbnail} />
-          </div>
+          {audioEpisode ? (
+            <SermonWatchListen video={video} episode={audioEpisode} />
+          ) : (
+            <div className="relative w-full" style={{ aspectRatio: "16/9" }}>
+              <SermonPlayer videoId={video.id} thumbnail={video.thumbnail} />
+            </div>
+          )}
 
           {/* Title row — server-rendered, no CLS */}
           <div className="mt-4 flex items-start justify-between gap-4">

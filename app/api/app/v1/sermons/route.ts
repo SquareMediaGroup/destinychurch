@@ -1,6 +1,7 @@
 import { appJson, DEGRADED_NOTICE, simulatedState } from "@/lib/appApi";
 import { serializeSermon } from "@/lib/appSerializers";
-import { CHANNEL_URL, getAllVideos, isYouTubeQuotaExceeded } from "@/lib/youtube";
+import { CHANNEL_URL, isYouTubeQuotaExceeded } from "@/lib/youtube";
+import { getAllVideos } from "@/lib/speakerOverrides.server";
 
 // App BFF — the sermon video feed.
 //

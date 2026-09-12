@@ -2,7 +2,7 @@ import { appJson, DEGRADED_NOTICE, simulatedState } from "@/lib/appApi";
 import { serializeSermon } from "@/lib/appSerializers";
 import { formatServiceDay, nextSundayService } from "@/lib/serviceTimes";
 import { getLiveStatus } from "@/lib/liveStatus.server";
-import { getLatestVideo } from "@/lib/youtube";
+import { getLatestVideo } from "@/lib/speakerOverrides.server";
 
 // App BFF — live stream status.
 //

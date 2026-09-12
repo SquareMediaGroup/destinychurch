@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { getLatestVideo } from "@/lib/youtube";
+import { getLatestVideo } from "@/lib/speakerOverrides.server";
 import AnimateIn from "@/components/AnimateIn";
 import LiveStage from "@/components/live/LiveStage";
 import LiveChatPanel from "@/components/live/chat/LiveChatPanel";

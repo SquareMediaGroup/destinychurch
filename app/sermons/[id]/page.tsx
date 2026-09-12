@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getVideo, formatDate } from "@/lib/youtube";
+import { formatDate } from "@/lib/youtube";
+import { getVideo } from "@/lib/speakerOverrides.server";
 import SermonPlayer from "@/components/sermons/SermonPlayer";
 import { SermonJumpProvider } from "@/components/sermons/SermonJumpContext";
 import SkipToSermonButton from "@/components/sermons/SkipToSermonButton";

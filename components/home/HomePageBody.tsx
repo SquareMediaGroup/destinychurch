@@ -10,7 +10,8 @@ import WhatsOnSection from "@/components/home/WhatsOnSection";
 import EveryoneHasAPlaceSection from "@/components/home/EveryoneHasAPlaceSection";
 import WorshipWithUsSection from "@/components/home/WorshipWithUsSection";
 import GetInvolvedSection from "@/components/home/GetInvolvedSection";
-import { isYouTubeQuotaExceeded, getLatestVideoFromRSS, getLatestVideo } from "@/lib/youtube";
+import { isYouTubeQuotaExceeded, getLatestVideoFromRSS } from "@/lib/youtube";
+import { getLatestVideo } from "@/lib/speakerOverrides.server";
 import type { EventCardVariant } from "@/lib/events";
 
 export default async function HomePageBody({

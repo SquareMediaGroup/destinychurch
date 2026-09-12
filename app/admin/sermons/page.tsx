@@ -1,7 +1,8 @@
 import { getPodcastShow } from "@/lib/podcast";
-import { getUploadedVideos } from "@/lib/youtube";
+import { getUploadedVideos } from "@/lib/speakerOverrides.server";
 import { PageHeader, Badge, cardClass } from "@/components/admin/AdminUI";
 import SermonsAdminClient from "./SermonsAdminClient";
+import SpeakerReviewPanel from "@/components/admin/SpeakerReviewPanel";
 
 export const dynamic = "force-dynamic";
 
@@ -26,6 +27,10 @@ export default async function SermonsAdminPage() {
 
       <div className={`${cardClass} p-6`}>
         <SermonsAdminClient />
+      </div>
+
+      <div className="mt-8">
+        <SpeakerReviewPanel />
       </div>
 
       <div className="mt-8">

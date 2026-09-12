@@ -8,7 +8,12 @@
 // Harris". Multiple guest speakers are joined by "&" or "," in one segment —
 // kept as one raw string rather than split into individual people.
 
-const FILLER_RE = /^(?:destiny\s*church(?:\s*tees\s*valley)?\s*live|dc\s*live)$/i;
+// Trailing punctuation ("DESTINY CHURCH LIVE!") is real — an AI speaker
+// review (lib/speakerReview.server.ts) caught titles like "I See Increase |
+// Jonathan Harris | DESTINY CHURCH LIVE!" where the unmatched "!" left the
+// filler segment in place, so it got treated as the speaker instead of
+// "Jonathan Harris".
+const FILLER_RE = /^(?:destiny\s*church(?:\s*tees\s*valley)?\s*live|dc\s*live)[!.]*$/i;
 const HONORIFIC_RE = /\b(ps|pastor|rev|pr|bishop|dr|apostle|minister)\.?\b/gi;
 const SPEAKER_HINT_RE = /\b(ps|pastor|rev|pr|bishop|dr|apostle|minister)\b/i;
 

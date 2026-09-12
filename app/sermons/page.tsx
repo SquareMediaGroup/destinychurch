@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import { getPodcastShow } from "@/lib/podcast";
-import { CHANNEL_URL, getLatestVideo, getFullSermonArchive } from "@/lib/youtube";
+import { CHANNEL_URL } from "@/lib/youtube";
+import { getLatestVideo, getFullSermonArchive } from "@/lib/speakerOverrides.server";
 import { pairAudioForVideo } from "@/lib/sermonPairing";
 import { PodcastPlayerProvider } from "@/components/sermons/podcast/PodcastPlayerProvider";
 import FeaturedSermon from "@/components/sermons/FeaturedSermon";

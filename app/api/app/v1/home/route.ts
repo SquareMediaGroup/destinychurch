@@ -13,7 +13,7 @@ import { getFeaturedEvent } from "@/lib/events.server";
 import { getPodcastShow } from "@/lib/podcast";
 import { formatServiceDay, nextSundayService } from "@/lib/serviceTimes";
 import { getLiveStatus } from "@/lib/liveStatus.server";
-import { getLatestVideo } from "@/lib/youtube";
+import { getLatestVideo } from "@/lib/speakerOverrides.server";
 
 // App BFF — the Home screen, in one request.
 //

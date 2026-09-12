@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getAllVideos } from "@/lib/youtube";
+import { getAllVideos } from "@/lib/speakerOverrides.server";
 
 // The sermon library, as consumed by the website's client-side filtering.
 //

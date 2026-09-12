@@ -2,7 +2,8 @@ import type OpenAI from "openai";
 import Fuse from "fuse.js";
 import { getPublishedProducts } from "@/lib/shop.server";
 import { FIT_LABELS, fromPrice, type ProductWithVariants } from "@/lib/shop";
-import { getFullSermonArchive, type YTVideo } from "@/lib/youtube";
+import type { YTVideo } from "@/lib/youtube";
+import { getFullSermonArchive } from "@/lib/speakerOverrides.server";
 import { searchSermons } from "@/lib/sermonSearch";
 
 // ── Smart Search tools ─────────────────────────────────────────────────────

@@ -16,6 +16,16 @@ test("strips the trailing 'Destiny Church LIVE' filler and keeps the speaker", (
   });
 });
 
+test("the filler is still stripped with trailing punctuation ('DESTINY CHURCH LIVE!')", () => {
+  // Found by the AI speaker review (lib/speakerReview.server.ts) — the
+  // unmatched "!" used to leave the filler segment in place, so it got
+  // treated as the speaker instead of "Jonathan Harris".
+  expect(parseYouTubeTitle("I See Increase | Jonathan Harris | DESTINY CHURCH LIVE!")).toEqual({
+    title: "I See Increase",
+    speaker: "Jonathan Harris",
+  });
+});
+
 test("a 3-segment title with a single speaker", () => {
   expect(
     parseYouTubeTitle("JONAH 4 - When Your Emotions Are Out of Control | Nkereuwem Ekanem")

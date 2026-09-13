@@ -119,7 +119,15 @@ export async function PUT(
       variantDelta.removed = toDelete.length;
     }
 
-    // Upsert incoming variants.
+    // Upsert incoming variants. Batched into at most two statements: a product
+    // with five sizes across four colours is twenty variants, and a round trip
+    // each made saving it twenty times slower than it needed to be. Batching
+    // also makes the write all-or-nothing — the per-row loop could fail halfway
+    // and leave the grid half-saved.
+    type VariantRow = Record<string, unknown>;
+    const toUpdate: (VariantRow & { id: string })[] = [];
+    const toInsert: VariantRow[] = [];
+
     for (let i = 0; i < incoming.length; i++) {
       const v = incoming[i];
       const row = {
@@ -138,17 +146,26 @@ export async function PUT(
       };
 
       if (v.id && existingIds.has(v.id)) {
-        const { error } = await supabase
-          .from("product_variants")
-          .update(row)
-          .eq("id", v.id);
-        if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-        variantDelta.updated++;
+        // Carries the id so the upsert below lands on the existing row. Every
+        // id here was just read back from the table, so none of them can insert.
+        toUpdate.push({ ...row, id: v.id });
       } else {
-        const { error } = await supabase.from("product_variants").insert(row);
-        if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-        variantDelta.added++;
+        toInsert.push(row);
       }
+    }
+
+    if (toUpdate.length > 0) {
+      const { error } = await supabase
+        .from("product_variants")
+        .upsert(toUpdate, { onConflict: "id" });
+      if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+      variantDelta.updated = toUpdate.length;
+    }
+
+    if (toInsert.length > 0) {
+      const { error } = await supabase.from("product_variants").insert(toInsert);
+      if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+      variantDelta.added = toInsert.length;
     }
   }
 

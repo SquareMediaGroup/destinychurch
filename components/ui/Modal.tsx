@@ -70,10 +70,11 @@ export default function Modal({
   const titleId = `modal-title-${reactId}`;
   const descId = `modal-desc-${reactId}`;
 
-  // Focus in on open, back to the opener on close, and hold the page still in
-  // between.
+  // Hold the page still while the modal is up. Counted, so a Sheet opened on
+  // top of this modal releasing its own lock doesn't unlock the page underneath.
   useScrollLock(open);
 
+  // Focus in on open, back to the opener on close.
   useEffect(() => {
     if (!open) return;
 

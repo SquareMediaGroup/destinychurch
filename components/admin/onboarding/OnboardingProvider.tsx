@@ -213,9 +213,18 @@ export default function OnboardingProvider({ children }: { children: React.React
   /* ── Steps that advance when you press the thing ─────────────────────────── */
   useEffect(() => {
     if (!anchorEl || !step?.advanceOnClick) return;
-    const onClick = () => window.setTimeout(advance, 260);
+    // Tracked so a click that lands just before the tour is dismissed doesn't
+    // advance it 260ms later, after it has already gone.
+    let timer = 0;
+    const onClick = () => {
+      window.clearTimeout(timer);
+      timer = window.setTimeout(advance, 260);
+    };
     anchorEl.addEventListener("click", onClick);
-    return () => anchorEl.removeEventListener("click", onClick);
+    return () => {
+      window.clearTimeout(timer);
+      anchorEl.removeEventListener("click", onClick);
+    };
   }, [anchorEl, step, advance]);
 
   const buildRun = useCallback(

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import ChurchSuiteEmbed from "@/components/ChurchSuiteEmbed";
+import { useHydrated } from "@/lib/useHydrated";
 
 interface Props {
   open: boolean;
@@ -26,38 +27,74 @@ export default function AlphaSignupModal({
   subtitle,
   size = "md",
 }: Props) {
-  const [visible, setVisible] = useState(false);
-  const [mounted, setMounted] = useState(false);
+  const mounted = useHydrated();
+  const showing = mounted && open;
 
+  // Scroll lock and the Escape key belong to an *open* modal. Both used to be
+  // wired up for the life of the component, so a closed modal still held a
+  // global keydown listener that called onClose on every Escape — and pages
+  // render several of these at once.
   useEffect(() => {
-    setMounted(true);
-  }, []);
+    if (!showing) return;
 
-  useEffect(() => {
-    if (open) {
-      requestAnimationFrame(() =>
-        requestAnimationFrame(() => setVisible(true))
-      );
-      document.body.style.overflow = "hidden";
-    } else {
-      setVisible(false);
-      setTimeout(() => {
-        document.body.style.overflow = "";
-      }, 350);
-    }
-  }, [open]);
-
-  useEffect(() => {
+    document.body.style.overflow = "hidden";
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
     };
     window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [onClose]);
 
-  if (!mounted || !open) return null;
+    return () => {
+      document.body.style.overflow = "";
+      window.removeEventListener("keydown", onKey);
+    };
+  }, [showing, onClose]);
+
+  if (!showing) return null;
 
   return createPortal(
+    <SignupPanel
+      onClose={onClose}
+      signupUrl={signupUrl}
+      title={title}
+      subtitle={subtitle}
+      size={size}
+    />,
+    document.body
+  );
+}
+
+/**
+ * The animated panel, mounted only while the modal is open.
+ *
+ * Keeping it separate is what makes the entrance animation work without any
+ * "reset the state on close" bookkeeping: a fresh mount always starts at
+ * visible=false, and the only thing that ever writes to it is the rAF below.
+ * (The exit transition never ran anyway — the parent unmounts this subtree the
+ * moment `open` goes false.)
+ */
+function SignupPanel({
+  onClose,
+  signupUrl,
+  title,
+  subtitle,
+  size,
+}: Omit<Props, "open"> & { size: "md" | "lg" }) {
+  const [visible, setVisible] = useState(false);
+
+  useEffect(() => {
+    // Two frames: one for the browser to paint the scale(0.92) start state,
+    // one to flip to the end state so the transition actually runs.
+    let inner = 0;
+    const outer = requestAnimationFrame(() => {
+      inner = requestAnimationFrame(() => setVisible(true));
+    });
+    return () => {
+      cancelAnimationFrame(outer);
+      if (inner) cancelAnimationFrame(inner);
+    };
+  }, []);
+
+  return (
     <div
       className="fixed inset-0 z-[200] flex items-center justify-center p-4"
       style={{
@@ -104,7 +141,6 @@ export default function AlphaSignupModal({
           <ChurchSuiteEmbed src={signupUrl} title={title} height={620} />
         )}
       </div>
-    </div>,
-    document.body
+    </div>
   );
 }

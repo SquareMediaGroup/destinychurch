@@ -5,24 +5,14 @@ import { useEffect, useState, useRef, useCallback } from "react";
 import { useCookieConsent } from "@/lib/cookieConsent";
 import { useSermonPlayerState } from "@/lib/sermonPlayerContext";
 import { loadYTApi } from "@/lib/youtubeIframe";
+import { useHydrated } from "@/lib/useHydrated";
+import { useMediaQuery } from "@/lib/useMediaQuery";
 import { useSermonJump } from "./SermonJumpContext";
 import VideoConsentGate from "./VideoConsentGate";
 
 interface SermonPlayerProps {
   videoId: string;
   thumbnail?: string;
-}
-
-function useIsMobile() {
-  const [mobile, setMobile] = useState(false);
-  useEffect(() => {
-    const mq = window.matchMedia("(max-width: 768px)");
-    setMobile(mq.matches);
-    const handler = (e: MediaQueryListEvent) => setMobile(e.matches);
-    mq.addEventListener("change", handler);
-    return () => mq.removeEventListener("change", handler);
-  }, []);
-  return mobile;
 }
 
 function IconClose() {
@@ -43,7 +33,7 @@ function IconScrollUp() {
 
 export default function SermonPlayer({ videoId, thumbnail }: SermonPlayerProps) {
   const { consent } = useCookieConsent();
-  const [mounted, setMounted] = useState(false);
+  const mounted = useHydrated();
 
   const { jumpFnRef, hideJump, sermonStart } = useSermonJump();
 
@@ -56,15 +46,13 @@ export default function SermonPlayer({ videoId, thumbnail }: SermonPlayerProps) 
 
   const [docked, setDocked] = useState(false);
   const [dismissed, setDismissed] = useState(false);
-  const isMobile = useIsMobile();
+  const isMobile = useMediaQuery("(max-width: 768px)");
 
   const { setPlaying: setGlobalPlaying } = useSermonPlayerState();
 
   const [pos, setPos] = useState({ x: 24, y: 24 });
   const dragging = useRef(false);
   const dragStart = useRef({ mx: 0, my: 0, px: 0, py: 0 });
-
-  useEffect(() => { setMounted(true); }, []);
 
   useEffect(() => {
     if (!mounted) return;

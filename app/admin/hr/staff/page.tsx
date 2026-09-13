@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useState, useCallback } from "react";
 import Link from "next/link";
 import {
   API,
@@ -21,6 +21,7 @@ import {
   primaryBtn,
 } from "@/components/admin/AdminUI";
 import { useAdminList } from "@/lib/useAdminList";
+import { fetchAdminArray, useAdminLoader } from "@/lib/useAdminLoader";
 import { StaffModal } from "@/components/admin/hr/modals";
 
 const STATUS_TONE: Record<StaffStatus, string> = {
@@ -31,23 +32,13 @@ const STATUS_TONE: Record<StaffStatus, string> = {
 
 export default function StaffPage() {
   const [staff, setStaff] = useState<Staff[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
   const [editing, setEditing] = useState<Staff | "new" | null>(null);
 
   const load = useCallback(async () => {
-    try {
-      const res = await fetch(`${API}/staff`);
-      const data = await res.json();
-      setStaff(Array.isArray(data) ? data : []);
-    } finally {
-      setLoading(false);
-    }
+    setStaff(await fetchAdminArray<Staff>(`${API}/staff`));
   }, []);
 
-  useEffect(() => {
-    load();
-  }, [load]);
+  const { loading, error, setError, reload } = useAdminLoader(load);
 
   const list = useAdminList<Staff>({
     items: staff,
@@ -204,7 +195,7 @@ export default function StaffPage() {
           onSaved={() => {
             setEditing(null);
             setError("");
-            load();
+            reload();
           }}
           onError={setError}
         />

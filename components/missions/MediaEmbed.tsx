@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import EmbedLoadingOverlay from "@/components/ui/EmbedLoadingOverlay";
 import { useCookieConsent } from "@/lib/cookieConsent";
+import { useHydrated } from "@/lib/useHydrated";
 
 interface Props {
   src: string;
@@ -14,10 +15,8 @@ interface Props {
 
 export default function MediaEmbed({ src, title, thumbnail }: Props) {
   const { consent, allowAll, savePreferences } = useCookieConsent();
-  const [mounted, setMounted] = useState(false);
+  const mounted = useHydrated();
   const [loaded, setLoaded] = useState(false);
-
-  useEffect(() => { setMounted(true); }, []);
 
   const canPlay = mounted && consent?.media === true;
 

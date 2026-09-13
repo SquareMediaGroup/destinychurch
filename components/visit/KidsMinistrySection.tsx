@@ -1,7 +1,6 @@
 "use client";
 
 import AnimateIn from "@/components/AnimateIn";
-import Image from "next/image";
 
 const ageGroups = [
   {

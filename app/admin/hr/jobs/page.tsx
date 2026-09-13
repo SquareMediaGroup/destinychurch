@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import Link from "next/link";
 import {
   API,
@@ -21,6 +21,7 @@ import {
   ghostBtn,
 } from "@/components/admin/AdminUI";
 import { useAdminList } from "@/lib/useAdminList";
+import { fetchAdminArray, useAdminLoader } from "@/lib/useAdminLoader";
 import { JobModal } from "@/components/admin/hr/JobModal";
 import { useDialog } from "@/components/DialogProvider";
 
@@ -33,23 +34,13 @@ const dateFmt = new Intl.DateTimeFormat("en-GB", {
 export default function JobsPage() {
   const { confirm } = useDialog();
   const [jobs, setJobs] = useState<Job[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
   const [editing, setEditing] = useState<Job | "new" | null>(null);
 
   const load = useCallback(async () => {
-    try {
-      const res = await fetch(`${API}/jobs`);
-      const data = await res.json();
-      setJobs(Array.isArray(data) ? data : []);
-    } finally {
-      setLoading(false);
-    }
+    setJobs(await fetchAdminArray<Job>(`${API}/jobs`));
   }, []);
 
-  useEffect(() => {
-    load();
-  }, [load]);
+  const { loading, error, setError, reload } = useAdminLoader(load);
 
   const list = useAdminList<Job>({
     items: jobs,
@@ -91,7 +82,7 @@ export default function JobsPage() {
       setError(data.error || "Could not update.");
       return;
     }
-    load();
+    reload();
   }
 
   async function remove(job: Job) {
@@ -111,7 +102,7 @@ export default function JobsPage() {
       setError(data.error || "Could not delete.");
       return;
     }
-    load();
+    reload();
   }
 
   return (
@@ -278,7 +269,7 @@ export default function JobsPage() {
           onSaved={() => {
             setEditing(null);
             setError("");
-            load();
+            reload();
           }}
           onError={setError}
         />

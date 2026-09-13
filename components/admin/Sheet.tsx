@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
-import { useIsClient } from "@/lib/useIsClient";
+import { useHydrated } from "@/lib/useHydrated";
 import { useKeyboardInset } from "@/lib/useKeyboardInset";
 
 /**
@@ -72,7 +72,7 @@ export function Sheet({
 
   // Portals need the DOM, and this component is server-rendered as part of its
   // parent tree, so the first render has to produce nothing.
-  const isClient = useIsClient();
+  const isClient = useHydrated();
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {

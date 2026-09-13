@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import ChurchSuiteEmbed from "@/components/ChurchSuiteEmbed";
+import { useHydrated } from "@/lib/useHydrated";
 
 type ModalType = "connect" | "prayer" | null;
 
@@ -24,9 +25,7 @@ interface Props {
 export default function ConnectCardCTAs({ variant = "dark" }: Props) {
   const [open, setOpen] = useState<ModalType>(null);
   const [visible, setVisible] = useState(false);
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => { setMounted(true); }, []);
+  const mounted = useHydrated();
 
   const openModal = (type: NonNullable<ModalType>) => {
     setOpen(type);

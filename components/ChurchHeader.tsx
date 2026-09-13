@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { usePathname } from "next/navigation";
 import { useBannerBars } from "@/lib/useBannerBars";
+import { useHydrated } from "@/lib/useHydrated";
 import CartButton from "@/components/shop/CartButton";
 
 const aboutDropdown = [
@@ -83,7 +84,8 @@ export default function ChurchHeader() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [mobileSubmenu, setMobileSubmenu] = useState<string | null>(null);
   const [, setScrolled] = useState(false);
-  const [mounted, setMounted] = useState(false);
+  // Drives the header's slide-in on first paint.
+  const mounted = useHydrated();
   const [progress, setProgress] = useState(0);
   const [alphaActive, setAlphaActive] = useState(false);
   const [youtubeQuotaExceeded, setYoutubeQuotaExceeded] = useState(false);
@@ -120,7 +122,6 @@ export default function ChurchHeader() {
   }, []);
 
   useEffect(() => {
-    setMounted(true);
     handleScroll();
     window.addEventListener("scroll", handleScroll, { passive: true });
     return () => {

@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import ChurchSuiteEmbed from "@/components/ChurchSuiteEmbed";
 import Button from "@/components/ui/Button";
+import { useHydrated } from "@/lib/useHydrated";
 
 interface Props {
   variant?: "dark" | "light";
@@ -12,10 +13,8 @@ interface Props {
 export default function GiveCTA({ variant = "dark" }: Props) {
   const [open, setOpen] = useState(false);
   const [visible, setVisible] = useState(false);
-  const [mounted, setMounted] = useState(false);
+  const mounted = useHydrated();
   const closeTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  useEffect(() => { setMounted(true); }, []);
 
   const openModal = () => {
     if (closeTimeout.current) {

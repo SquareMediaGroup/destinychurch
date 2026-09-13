@@ -1,7 +1,7 @@
 "use client";
 
 import AnimateIn from "@/components/AnimateIn";
-import Image from "next/image";
+import Link from "next/link";
 
 const expectations = [
   {
@@ -76,13 +76,13 @@ export default function WhatToExpectSection() {
             <p className="mx-auto mb-6 mt-2 max-w-xl text-sm leading-relaxed text-destiny-grey/60">
               We&apos;d love to hear from you. Get in touch and we&apos;ll do our best to help.
             </p>
-            <a
+            <Link
               href="/contact"
               className="inline-flex items-center gap-2 rounded-full bg-destiny-orange px-6 py-3 text-sm font-bold text-white shadow-lg shadow-destiny-orange/25 transition hover:brightness-110"
             >
               <span className="material-symbols-rounded text-base">mail</span>
               Contact Us
-            </a>
+            </Link>
           </div>
         </AnimateIn>
       </div>

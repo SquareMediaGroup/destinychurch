@@ -16,7 +16,9 @@
 // preferences are wanted later, that's a new concern layered on top of this
 // hook's public surface, not a reason to build it now.
 
-import { useCallback, useEffect, useState, useSyncExternalStore } from "react";
+import { useCallback, useSyncExternalStore } from "react";
+
+import { useMediaQuery } from "@/lib/useMediaQuery";
 
 export type AdminTheme = "light" | "dark" | "system";
 
@@ -65,12 +67,7 @@ function writeTheme(next: AdminTheme) {
   window.dispatchEvent(new Event(THEME_EVENT));
 }
 
-function systemPrefersDark(): boolean {
-  return (
-    typeof window !== "undefined" &&
-    window.matchMedia?.("(prefers-color-scheme: dark)").matches === true
-  );
-}
+const DARK_SCHEME_QUERY = "(prefers-color-scheme: dark)";
 
 export interface AdminThemeState {
   /** What's stored: the explicit choice, or "system". */
@@ -98,19 +95,12 @@ export interface AdminThemeState {
 export function useAdminTheme(): AdminThemeState {
   const theme = useSyncExternalStore(subscribeToTheme, readTheme, readThemeServer);
 
-  // Tracked as state (not read inline) because "system" has to react to a
-  // live OS-level scheme change while the tab stays open, which a plain
-  // function call during render can't do on its own.
-  const [systemDark, setSystemDark] = useState(false);
-
-  useEffect(() => {
-    setSystemDark(systemPrefersDark());
-    if (theme !== "system") return;
-    const mql = window.matchMedia("(prefers-color-scheme: dark)");
-    const onChange = () => setSystemDark(mql.matches);
-    mql.addEventListener("change", onChange);
-    return () => mql.removeEventListener("change", onChange);
-  }, [theme]);
+  // Subscribed rather than read inline because "system" has to react to a live
+  // OS-level scheme change while the tab stays open, which a plain function
+  // call during render can't do on its own. useMediaQuery reads it during the
+  // first client render, so the resolved theme is right in the commit React
+  // hydrates in instead of one cascading render later.
+  const systemDark = useMediaQuery(DARK_SCHEME_QUERY);
 
   const resolvedTheme: "light" | "dark" =
     theme === "system" ? (systemDark ? "dark" : "light") : theme;

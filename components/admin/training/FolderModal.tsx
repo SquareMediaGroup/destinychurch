@@ -52,8 +52,8 @@ export function FolderModal({
         throw new Error(data.error || "Could not save the folder.");
       }
       onSaved();
-    } catch (err: any) {
-      onError(err.message);
+    } catch (err) {
+      onError(err instanceof Error ? err.message : "Could not save the folder.");
       setSaving(false);
     }
   }

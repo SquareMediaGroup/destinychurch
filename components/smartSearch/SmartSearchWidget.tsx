@@ -10,6 +10,7 @@ import Link from "next/link";
 import { useState, useRef, useEffect, useCallback, lazy, Suspense } from "react";
 import { useCookieConsent } from "@/lib/cookieConsent";
 import { useSmartSearchChat } from "@/lib/useSmartSearchChat";
+import { useHydrated } from "@/lib/useHydrated";
 import { SmartSearchThread, SparkleIcon } from "@/components/smartSearch/SmartSearchThread";
 
 // thinking-orbs and border-beam are decorative-only, so they're code-split out
@@ -79,8 +80,23 @@ export default function SmartSearchWidget({
   const [expanded, setExpanded] = useState(false);
   const [input, setInput] = useState("");
   const [focused, setFocused] = useState(false);
-  const [placeholderIndex, setPlaceholderIndex] = useState(0);
-  const [showFirstUse, setShowFirstUse] = useState(false);
+  // Rotation steps forward on a timer; the starting prompt is randomised so the
+  // pill doesn't always greet you with the same one. Both are folded together
+  // below rather than written back into state from a mount effect.
+  const [rotation, setRotation] = useState(0);
+  const [randomStart] = useState(() =>
+    Math.floor(Math.random() * PLACEHOLDER_PROMPTS.length),
+  );
+
+  const [showFirstUse, setShowFirstUse] = useState(() => {
+    // Only ever read behind `expanded`, which starts false — so the hydrating
+    // markup is the same either way and this can be read up front.
+    try {
+      return !localStorage.getItem(SMART_SEARCH_SEEN_KEY);
+    } catch {
+      return false;
+    }
+  });
   const inputRef = useRef<HTMLInputElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -88,11 +104,25 @@ export default function SmartSearchWidget({
 
   const hasMessages = messages.length > 0;
 
+  // The random start only applies once React has hydrated: the server has no
+  // way to pick the same number, and the placeholder is rendered markup, so
+  // using it any earlier would be a hydration mismatch.
+  const hydrated = useHydrated();
+  const placeholderIndex = hydrated
+    ? (randomStart + rotation) % PLACEHOLDER_PROMPTS.length
+    : 0;
+
   // The bar should not minimise while the user is mid-search: focused, typing, or
   // with a conversation open. The scroll handler reads this via a ref.
   const interacting = focused || input.trim().length > 0 || hasMessages || loading;
   const interactingRef = useRef(interacting);
-  interactingRef.current = interacting;
+  // Written in an effect, not during render: a ref is not part of the render
+  // output, and mutating one mid-render is what React's rules rule out. The
+  // scroll listener only reads it from a later event, so a commit-time write is
+  // soon enough.
+  useEffect(() => {
+    interactingRef.current = interacting;
+  }, [interacting]);
 
   // Open the pill. Pass focus=true for explicit user intent (tapping the icon)
   // so the input is focused; scroll-driven opens pass false to avoid stealing
@@ -108,16 +138,6 @@ export default function SmartSearchWidget({
     setInput("");
     reset();
   }, [reset]);
-
-  // First-use banner + initial placeholder, read once on mount.
-  useEffect(() => {
-    setPlaceholderIndex(Math.floor(Math.random() * PLACEHOLDER_PROMPTS.length));
-    try {
-      setShowFirstUse(!localStorage.getItem(SMART_SEARCH_SEEN_KEY));
-    } catch {
-      setShowFirstUse(false);
-    }
-  }, []);
 
   // Focus the input only when the bar was opened by explicit user intent.
   useEffect(() => {
@@ -146,9 +166,7 @@ export default function SmartSearchWidget({
   // Rotate the placeholder prompt while expanded, empty, and not yet chatting.
   useEffect(() => {
     if (!expanded || input || hasMessages) return;
-    const id = setInterval(() => {
-      setPlaceholderIndex((i) => (i + 1) % PLACEHOLDER_PROMPTS.length);
-    }, 2800);
+    const id = setInterval(() => setRotation((r) => r + 1), 2800);
     return () => clearInterval(id);
   }, [expanded, input, hasMessages]);
 

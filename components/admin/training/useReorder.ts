@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, type Dispatch, type SetStateAction } from "react";
+import { useRef } from "react";
 
 // Native HTML5 drag-to-reorder for a list of rows. Rows reorder live as you
 // drag; the new order is persisted (sort_order = index) when the drag ends.
@@ -10,7 +10,10 @@ import { useRef, type Dispatch, type SetStateAction } from "react";
 // dragenter, so persistence at dragend never races React's async state flush.
 export function useReorder<T extends { id: string; sort_order: number }>(
   items: T[],
-  setItems: Dispatch<SetStateAction<T[]>>,
+  // Takes the next list, not a SetStateAction: every call below passes a plain
+  // array, and demanding a full state setter is what forced callers that write
+  // into a slice of a larger list to cast their handler through `any`.
+  setItems: (next: T[]) => void,
   endpoint: (id: string) => string,
   onError?: (msg: string) => void,
 ) {

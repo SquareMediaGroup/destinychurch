@@ -4,7 +4,7 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import Link from "next/link";
 import { useCookieConsent } from "@/lib/cookieConsent";
-import { useIsClient } from "@/lib/useIsClient";
+import { useHydrated } from "@/lib/useHydrated";
 import { loadYTApi } from "@/lib/youtubeIframe";
 
 interface LivePlayerProps {
@@ -31,7 +31,7 @@ const DRIFT_CHECK_MS = 10_000;
 
 export default function LivePlayer({ videoId, onEnded, getTargetTime }: LivePlayerProps) {
   const { consent, allowAll, savePreferences } = useCookieConsent();
-  const mounted = useIsClient();
+  const mounted = useHydrated();
 
   const playerRef = useRef<YT.Player | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);

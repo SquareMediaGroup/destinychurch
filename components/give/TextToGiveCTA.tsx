@@ -5,6 +5,8 @@ import { createPortal } from "react-dom";
 import { QRCodeSVG } from "qrcode.react";
 import { useToast } from "@/components/ToastProvider";
 import Button from "@/components/ui/Button";
+import { useHydrated } from "@/lib/useHydrated";
+import { useMediaQuery } from "@/lib/useMediaQuery";
 
 interface Props {
   keyword: string;
@@ -15,21 +17,14 @@ export default function TextToGiveCTA({ keyword, number }: Props) {
   const toast = useToast();
   const [open, setOpen] = useState(false);
   const [visible, setVisible] = useState(false);
-  const [mounted, setMounted] = useState(false);
+  const mounted = useHydrated();
   const [amount, setAmount] = useState("");
   const [isMonthly, setIsMonthly] = useState(false);
-  const [isDesktop, setIsDesktop] = useState(true);
+  // Only read inside click handlers, so the false server snapshot never reaches
+  // the markup. A resize listener plus useState(true) used to send the first tap
+  // on a phone to the QR modal instead of the messaging app.
+  const isDesktop = useMediaQuery("(min-width: 768px)");
   const [showQR, setShowQR] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-    const checkDesktop = () => {
-      setIsDesktop(window.innerWidth >= 768);
-    };
-    checkDesktop();
-    window.addEventListener("resize", checkDesktop);
-    return () => window.removeEventListener("resize", checkDesktop);
-  }, []);
 
   const closeTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 

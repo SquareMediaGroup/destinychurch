@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useState, useCallback } from "react";
 import { useParams } from "next/navigation";
 import {
   API,
@@ -23,6 +23,7 @@ import {
   type ChecklistItem,
 } from "@/lib/hr";
 import { PageHeader, Badge, ghostBtn, PageLoading } from "@/components/admin/AdminUI";
+import { fetchAdminArray, useAdminLoader } from "@/lib/useAdminLoader";
 import {
   StaffModal,
   LeaveModal,
@@ -54,46 +55,41 @@ export default function StaffProfilePage() {
   const [reviews, setReviews] = useState<Review[]>([]);
   const [onboarding, setOnboarding] = useState<ChecklistItem[]>([]);
   const [offboarding, setOffboarding] = useState<ChecklistItem[]>([]);
-  const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
-  const [error, setError] = useState("");
-  const [modal, setModal] = useState<Modal>(null);
+  // Deep link (…/staff/{id}?edit=1) opens the edit modal straight away so
+  // backend-access changes are one click away. Read up front rather than in an
+  // effect; the page renders <PageLoading> until the fetch lands, so the modal
+  // is absent from both the server markup and the hydrating render either way.
+  const [modal, setModal] = useState<Modal>(() =>
+    typeof window !== "undefined" &&
+    new URLSearchParams(window.location.search).has("edit")
+      ? "edit"
+      : null,
+  );
 
   const load = useCallback(async () => {
     const sRes = await fetch(`${API}/staff/${id}`);
     if (!sRes.ok) {
+      // A missing staff member is a real answer, not a failure to load.
       setNotFound(true);
-      setLoading(false);
       return;
     }
     const [s, l, d, r, checklists] = await Promise.all([
-      sRes.json(),
-      fetch(`${API}/leave?staff_id=${id}`).then((x) => x.json()),
-      fetch(`${API}/documents?staff_id=${id}`).then((x) => x.json()),
-      fetch(`${API}/reviews?staff_id=${id}`).then((x) => x.json()),
-      fetch(`${API}/checklists?staff_id=${id}`).then((x) => x.json()),
+      sRes.json() as Promise<Staff>,
+      fetchAdminArray<LeaveRequest>(`${API}/leave?staff_id=${id}`),
+      fetchAdminArray<HrDocument>(`${API}/documents?staff_id=${id}`),
+      fetchAdminArray<Review>(`${API}/reviews?staff_id=${id}`),
+      fetchAdminArray<ChecklistItem>(`${API}/checklists?staff_id=${id}`),
     ]);
     setStaff(s);
-    setLeave(Array.isArray(l) ? l : []);
-    setDocs(Array.isArray(d) ? d : []);
-    setReviews(Array.isArray(r) ? r : []);
-    const items: ChecklistItem[] = Array.isArray(checklists) ? checklists : [];
-    setOnboarding(items.filter((i) => i.kind === "onboarding"));
-    setOffboarding(items.filter((i) => i.kind === "offboarding"));
-    setLoading(false);
+    setLeave(l);
+    setDocs(d);
+    setReviews(r);
+    setOnboarding(checklists.filter((i) => i.kind === "onboarding"));
+    setOffboarding(checklists.filter((i) => i.kind === "offboarding"));
   }, [id]);
 
-  useEffect(() => {
-    load();
-  }, [load]);
-
-  // Deep link (…/staff/{id}?edit=1) opens the edit modal straight away so
-  // backend-access changes are one click away.
-  useEffect(() => {
-    if (new URLSearchParams(window.location.search).has("edit")) {
-      setModal("edit");
-    }
-  }, []);
+  const { loading, error, setError, reload } = useAdminLoader(load);
 
   async function openDoc(docId: string) {
     const res = await fetch(`${API}/documents/${docId}`);
@@ -113,13 +109,13 @@ export default function StaffProfilePage() {
     )
       return;
     await fetch(`${API}/documents/${docId}`, { method: "DELETE" });
-    load();
+    reload();
   }
 
   function afterSave() {
     setModal(null);
     setError("");
-    load();
+    reload();
   }
 
   if (loading) return <PageLoading label="Loading staff member" />;

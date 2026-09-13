@@ -94,7 +94,6 @@ export default function AlphaPage() {
   };
 
   const primaryEvent = events.find(e => e.type === "alpha") || events[0] || null;
-  const secondaryEvent = events.find(e => e.type === "youth_alpha");
 
   const sessionInfo = primaryEvent
     ? getNextAlphaSession(

@@ -3,13 +3,12 @@
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import ChurchSuiteEmbed from "@/components/ChurchSuiteEmbed";
+import { useHydrated } from "@/lib/useHydrated";
 
 export default function YouSaidYesButton() {
   const [open, setOpen] = useState(false);
   const [visible, setVisible] = useState(false);
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => { setMounted(true); }, []);
+  const mounted = useHydrated();
 
   const openModal = () => {
     setOpen(true);

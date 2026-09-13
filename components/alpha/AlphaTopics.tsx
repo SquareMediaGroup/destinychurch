@@ -69,13 +69,13 @@ export default function AlphaTopics() {
         <div className="flex flex-col items-start gap-12 md:flex-row md:gap-20">
           <AnimateIn className="w-full md:w-1/2">
             <p className="mb-3 text-xs font-bold uppercase tracking-widest text-destiny-orange">
-              What's covered
+              What&apos;s covered
             </p>
             <h2 className="mb-8 text-3xl font-black text-destiny-grey md:text-4xl">
               The Topics
             </h2>
             <p className="mb-6 text-sm text-destiny-grey/60">
-              Click on any topic to learn what you'll explore in that session. No pressure — just open conversations about the questions that matter most.
+              Click on any topic to learn what you&apos;ll explore in that session. No pressure — just open conversations about the questions that matter most.
             </p>
             <div className="space-y-2">
               {topics.map((topic, i) => (

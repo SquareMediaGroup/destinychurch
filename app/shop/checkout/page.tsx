@@ -2,12 +2,13 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { loadStripe, type Stripe, type Appearance } from "@stripe/stripe-js";
 import { Elements } from "@stripe/react-stripe-js";
 import { useCart, cartSubtotal } from "@/lib/cart-store";
 import { formatPrice } from "@/lib/shop";
 import CheckoutForm from "@/components/shop/CheckoutForm";
+import { useHydrated } from "@/lib/useHydrated";
 
 // Load Stripe once. Missing key → null (we surface a friendly message).
 const pubKey = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY;
@@ -33,7 +34,7 @@ const TEST_BYPASS = process.env.NEXT_PUBLIC_SHOP_TEST_BYPASS === "1";
 export default function CheckoutPage() {
   const router = useRouter();
   const { items, clear } = useCart();
-  const [mounted, setMounted] = useState(false);
+  const mounted = useHydrated();
   const [customer, setCustomer] = useState<Customer>({
     name: "",
     email: "",
@@ -45,7 +46,6 @@ export default function CheckoutPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => setMounted(true), []);
 
   const subtotal = useMemo(() => cartSubtotal(items), [items]);
 

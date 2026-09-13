@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import EmbedLoadingOverlay from "@/components/ui/EmbedLoadingOverlay";
 import { useCookieConsent } from "@/lib/cookieConsent";
+import { useHydrated } from "@/lib/useHydrated";
 
 interface Props {
   src: string;
@@ -29,12 +30,8 @@ export default function ChurchSuiteEmbed({
   className,
 }: Props) {
   const [loaded, setLoaded] = useState(false);
-  const [mounted, setMounted] = useState(false);
+  const mounted = useHydrated();
   const { consent, allowAll, savePreferences } = useCookieConsent();
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   const sizeStyle = fill
     ? { height: "100%" }

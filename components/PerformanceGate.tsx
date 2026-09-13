@@ -26,10 +26,10 @@ import { useEffect, useRef, useCallback } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useAccessibility } from "@/contexts/AccessibilityContext";
 import { useToast } from "@/components/ToastProvider";
+import { A11Y_STORAGE_KEY, DEFAULT_PREFS, readStoredPrefs } from "@/lib/accessibilityPrefs";
 
 // ─── Storage keys ──────────────────────────────────────────────────────────
 const PERF_GATE_KEY = "destiny-perf-gate";
-const A11Y_KEY = "destiny-a11y";
 
 // ─── Heuristics ────────────────────────────────────────────────────────────
 interface DeviceVerdict {
@@ -87,35 +87,16 @@ function toastMessage(
   return "Animations have been reduced to keep things smooth on your device.";
 }
 
-// ─── Stored preference helpers ─────────────────────────────────────────────
-function readStoredA11y(): { glass: boolean; motion: boolean } {
-  try {
-    const raw = localStorage.getItem(A11Y_KEY);
-    if (!raw) return { glass: true, motion: false };
-    const p = JSON.parse(raw) as Record<string, unknown>;
-    return {
-      glass: typeof p.glassFX === "boolean" ? p.glassFX : true,
-      motion: typeof p.reducedMotion === "boolean" ? p.reducedMotion : false,
-    };
-  } catch {
-    return { glass: true, motion: false };
-  }
-}
-
 // ─── Component ─────────────────────────────────────────────────────────────
 export default function PerformanceGate() {
+  // The setters are module-level constants in AccessibilityContext, so they are
+  // stable for the life of the app — no ref indirection needed to avoid stale
+  // closures in the toast actions below.
   const { setGlassFX, setReducedMotion } = useAccessibility();
   const toast = useToast();
   const searchParams = useSearchParams();
   const router = useRouter();
   const ran = useRef(false);
-
-  // Stable ref so the callbacks passed to toast actions can always reach the
-  // latest setters without stale closure issues.
-  const setGlassFXRef = useRef(setGlassFX);
-  const setReducedMotionRef = useRef(setReducedMotion);
-  setGlassFXRef.current = setGlassFX;
-  setReducedMotionRef.current = setReducedMotion;
 
   const fireToast = useCallback(
     (opts: {
@@ -138,8 +119,8 @@ export default function PerformanceGate() {
             label: "Undo",
             variant: "ghost",
             onClick: () => {
-              setGlassFXRef.current(prevGlass);
-              setReducedMotionRef.current(prevMotion);
+              setGlassFX(prevGlass);
+              setReducedMotion(prevMotion);
               // Let next visit re-evaluate from scratch.
               try {
                 localStorage.removeItem(PERF_GATE_KEY);
@@ -156,7 +137,7 @@ export default function PerformanceGate() {
         ],
       });
     },
-    [toast, router]
+    [toast, router, setGlassFX, setReducedMotion]
   );
 
   useEffect(() => {
@@ -167,9 +148,9 @@ export default function PerformanceGate() {
 
     // ── /lite path ─────────────────────────────────────────────────────────
     if (isLite) {
-      const prev = readStoredA11y();
-      setGlassFXRef.current(false);
-      setReducedMotionRef.current(true);
+      const prev = readStoredPrefs() ?? DEFAULT_PREFS;
+      setGlassFX(false);
+      setReducedMotion(true);
 
       // Remove ?lite=1 from the address bar (no history entry).
       const params = new URLSearchParams(searchParams.toString());
@@ -181,8 +162,8 @@ export default function PerformanceGate() {
         disableGlass: true,
         disableMotion: true,
         isLite: true,
-        prevGlass: prev.glass,
-        prevMotion: prev.motion,
+        prevGlass: prev.glassFX,
+        prevMotion: prev.reducedMotion,
       });
       return;
     }
@@ -191,7 +172,7 @@ export default function PerformanceGate() {
     try {
       // User already has explicit prefs, or gate already ran → bail silently.
       if (
-        localStorage.getItem(A11Y_KEY) ||
+        localStorage.getItem(A11Y_STORAGE_KEY) ||
         localStorage.getItem(PERF_GATE_KEY)
       )
         return;
@@ -210,8 +191,8 @@ export default function PerformanceGate() {
     }
 
     // Apply settings.
-    if (verdict.disableGlass) setGlassFXRef.current(false);
-    if (verdict.disableMotion) setReducedMotionRef.current(true);
+    if (verdict.disableGlass) setGlassFX(false);
+    if (verdict.disableMotion) setReducedMotion(true);
 
     try {
       localStorage.setItem(PERF_GATE_KEY, "degraded");

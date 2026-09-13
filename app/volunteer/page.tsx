@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import AnimateIn from "@/components/AnimateIn";
 import MinistriesGrid from "@/components/serve/MinistriesGrid";
 import WorshipWithUsSection from "@/components/home/WorshipWithUsSection";
@@ -112,13 +113,13 @@ export default function VolunteerPage() {
             <p className="mb-8 text-base leading-relaxed text-destiny-grey/60">
               Let us know which team you&apos;re interested in and we&apos;ll get back to you with more information.
             </p>
-            <a
+            <Link
               href="/connect-card"
               className="inline-flex items-center gap-2 rounded-full bg-destiny-orange px-8 py-3 text-sm font-bold text-white shadow-lg shadow-destiny-orange/25 transition hover:brightness-110"
             >
               <span className="material-symbols-rounded text-lg">edit_note</span>
               Fill Out Connect Card
-            </a>
+            </Link>
           </AnimateIn>
         </div>
       </section>

@@ -10,7 +10,7 @@ Designed, engineered, and deployed by [Square Media Group](mailto:hello@squareme
 
 ## Features
 
-- Sermon streaming and archive with series/speaker filtering and live-stream banner
+- Sermon streaming and full-archive browsing — speaker, month, and guest-speaker filters with fuzzy search, a Watch/Listen switch on any paired sermon (podcast audio that keeps playing as you navigate the site), and a live-stream banner
 - Live chat on `/live` — public chat with a host backstage channel, moderation, and prayer requests (Supabase Realtime)
 - Simulated live — play a pre-recorded video on `/live` as a self-synchronising broadcast, with on-page host broadcast controls
 - Events and "What's On" listings — unified event cards, on-site event pages, a swappable featured event/course, ICS calendar downloads, and on-site ChurchSuite signup
@@ -148,7 +148,6 @@ app/
 ├── kids/             # Kids ministry
 ├── links/            # Link hub
 ├── live/             # Live stream
-├── media/            # Photo gallery — public/unlisted boards, moderated anonymous uploads
 ├── missions/         # Missions & outreach
 ├── new-here/         # First-time visitor guide
 ├── nfc/              # "Digital back of seats" — NFC/QR tap-to-open service page
@@ -193,7 +192,6 @@ The `/admin` area is protected by Supabase Auth. Log in at `/login` to manage:
 - **Simulated Live** — configure the pre-recorded broadcast shown on `/live` (video and start time)
 - **Redirects** — configure URL redirects
 - **Banner & Popup** — control the site-wide announcement banner and popups
-- **Media Gallery** — create public/unlisted photo boards and moderate the anonymous upload queue (Media Team access level)
 - **NFC** — manage the tiles shown on the `/nfc` "digital back of seats" page
 - **Analytics** — which short links, QR codes, and NFC tiles people actually use, plus whole-site traffic, in one place (Site Admin)
 - **Audit Log** — a searchable record of every admin change, an AI you can ask in plain English, and a weekly AI activity report (Super Admin)

@@ -265,7 +265,7 @@ destinychurch/
 │   ├── supabase.ts                # Supabase admin client (server-only)
 │   ├── supabase-browser.ts        # Supabase client (browser)
 │   ├── podcast.ts                 # Buzzsprout RSS feed (sermon audio)
-│   ├── sermonPairing.ts           # Matches the latest video to its podcast episode
+│   ├── sermonPairing.ts           # Pairs videos with podcast episodes — the featured card + every confident archive match
 │   ├── sermonTitle.ts             # Parses "Title | Speaker | Destiny Church LIVE" YouTube titles
 │   ├── sermonSearch.ts            # Shared Fuse.js sermon search — the /sermons box + find_sermons
 │   ├── buzzsprout.server.ts       # Publishes sermon audio to Buzzsprout (admin upload flow)
@@ -2072,7 +2072,11 @@ a heuristic scoring publish-date proximity, title-word overlap and a matching
 speaker name — falling back to the newest episode rather than disabling the
 toggle. Only the active pane is mounted; unmounting the iframe is what stops
 video playback on switch. The speaker's name (see below) is promoted to its
-own kicker line above the title, sourced from whichever pane is active.
+own kicker line above the title, sourced from whichever pane is active. The
+Watch/Listen toggle itself (`components/sermons/podcast/ModeSwitch.tsx`) and
+the audio pane (`.../podcast/ListenPane.tsx`) were extracted out of
+`FeaturedSermon.tsx` in September 2026 so the sermon detail page can reuse
+the exact same switch — nothing is duplicated between the two surfaces.
 
 **Speaker parsing** (`lib/sermonTitle.ts`, added September 2026) — the
 channel's videos are titled `"Sermon Title | Speaker Name | Destiny Church
@@ -2117,6 +2121,30 @@ filtering by speaker required knowing every video up front. The legacy
 `getAllVideos()` (`search.list`-based) is still in `lib/youtube.ts`, used only
 by `/api/youtube/videos` and the mobile app's sermons endpoint — do not wire
 anything new to it.
+
+The same `FilterPanel` is rendered twice: as a **persistent sidebar** at
+desktop widths and as the original **dropdown** on mobile, where a standing
+sidebar doesn't fit. Alongside the speaker and month facets there's a
+**"Guest speakers only"** filter (and a per-card badge). Guest status is *not*
+inferred from parsed speaker names — it's backed by the channel's curated
+"Guest Speakers" YouTube playlist: `lib/youtube.ts`'s `getGuestSpeakerVideoIds()`
+(over the shared `getPlaylistVideoIds()`) returns the set of video ids in
+`GUEST_SPEAKERS_PLAYLIST_ID`, fetched once server-side and matched against the
+archive (45 of 288 sermons are guest-preached as of that build). The fetch
+fails open to an empty set, so a YouTube outage just hides the badge rather
+than breaking the page.
+
+**Listen to any sermon** — every archive card whose video has a *confident*
+audio pairing gets a **Listen** button, not just the featured card.
+`lib/sermonPairing.ts`'s `pairArchiveWithEpisodes()` builds the id→episode map
+for the grid; unlike `pairAudioForVideo()`'s single-video "always guess
+something" fallback on the featured card, it keeps only confident matches, or
+every one of a few hundred cards would be tagged with a guessed pairing.
+`components/sermons/PodcastPlayerProvider.tsx` was moved out of the `/sermons`
+route tree and into the **root layout** (`app/layout.tsx`, which already had a
+player-height CSS variable wired up waiting for it) so audio survives
+client-side navigation anywhere on the site — starting a message on a grid
+card keeps it playing, uninterrupted, into that sermon's detail page.
 
 **Publishing audio** (`/admin/sermons`, `sermon_admin` role, added September
 2026) — an admin form that posts sermon audio straight to Buzzsprout via
@@ -2194,7 +2222,7 @@ without an auth check, so they must never be reachable on the live site.
 | `/about` | `app/about/page.tsx` | About church, team, vision, mission |
 | `/beliefs` | `app/beliefs/page.tsx` | Statement of faith, doctrine |
 | `/sermons` | `app/sermons/page.tsx` | Latest message as video (with an audio switch), speaker/month filters and free-text search over the full archive |
-| `/sermons/[id]` | `app/sermons/[id]/page.tsx` | Individual sermon — YouTube embed, skip-to-sermon, next steps |
+| `/sermons/[id]` | `app/sermons/[id]/page.tsx` | Individual sermon — a **Watch/Listen** switch (`components/sermons/SermonWatchListen.tsx`, the same `ModeSwitch`/`ListenPane` the featured card uses) when a confident audio pairing exists, otherwise the plain YouTube embed; plus skip-to-sermon and next steps. Title/meta rows stay server-rendered (no CLS); only the player area switches |
 | `/live` | `app/live/page.tsx` | Livestream page — standard hero + section rhythm, with a client island that swaps between the custom glass player and an off-air card. On air for a real YouTube broadcast, or for a **simulated** one (a pre-recorded video played from a fixed start time; see `lib/simulatedLive.ts`). Signed-in Hosts also get the **broadcast controls** inline at the top of the page (`LiveHostBar`), so starting, editing or removing a service never means leaving `/live` |
 | `/contact` | `app/contact/page.tsx` | Contact form, address, hours |
 | `/design-request` | `app/design-request/page.tsx` | Ask the design team for something. Name and email are always required, so a request is never anonymous; someone signed in when they submit is fast-tracked. A `@destinytees.uk` address typed while signed out gets a "sign in and we'll fast-track it" nudge, not a block |
@@ -4410,6 +4438,14 @@ search or facet across every sermon rather than one loaded page. Every
 `YTVideo` also now carries `speaker: string | null`, parsed from the title by
 `lib/sermonTitle.ts`'s `parseYouTubeTitle()` in a single shared `toYTVideo()`
 constructor used by every function on this page that builds one.
+
+**`getPlaylistVideoIds(playlistId)` / `getGuestSpeakerVideoIds()`** (added
+September 2026) — returns the `Set` of video ids in a playlist, fetching only
+`part=contentDetails` (skips the snippet fields `getPlaylistVideos()` pulls,
+since only membership matters). `getGuestSpeakerVideoIds()` wraps it for
+`GUEST_SPEAKERS_PLAYLIST_ID`, backing the archive grid's "Guest speakers only"
+filter. Fails open to an empty set so a YouTube outage hides the filter rather
+than breaking the page.
 
 ```typescript
 // Wrapper around YouTube Data API v3

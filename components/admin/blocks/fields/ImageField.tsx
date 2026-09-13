@@ -3,6 +3,7 @@
 import { useRef, useState } from "react";
 import { useToast } from "@/components/ToastProvider";
 import { UPLOAD_ACCEPT, uploadPostImage } from "@/lib/adminUpload";
+import { MAX_UPLOAD_SIZE_MB } from "@/lib/ai/media-types";
 import { FieldShell, fieldInputClass } from "./BasicFields";
 
 export function ImageField({
@@ -102,7 +103,7 @@ export function ImageField({
             )}
           </p>
           <p className="mt-0.5 text-[11px] text-destiny-grey/40 dark:text-white/40">
-            JPG, PNG, WebP or GIF, up to 5MB
+            JPG, PNG, WebP or GIF, up to {MAX_UPLOAD_SIZE_MB}MB
           </p>
         </div>
       )}

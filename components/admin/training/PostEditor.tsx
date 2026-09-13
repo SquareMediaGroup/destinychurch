@@ -14,6 +14,7 @@ import type { Editor } from "@tiptap/react";
 import { BLOCK_LIST } from "@/components/blocks/registry";
 import { BlockTools } from "@/components/admin/blocks/BlockTools";
 import { useIsDesktop } from "@/lib/useIsDesktop";
+import { useScrollLock } from "@/lib/useScrollLock";
 
 // Desktop gets a full-screen, document-style editor; mobile keeps the popup.
 // Shared with the post editor. See lib/useIsDesktop for why this must be read
@@ -82,15 +83,13 @@ export function PostEditor({
 
   // Full-screen layout manages its own Escape-to-close + scroll lock (the
   // mobile branch delegates this to <Modal>).
+  useScrollLock(isDesktop);
+
   useEffect(() => {
     if (!isDesktop) return;
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
     document.addEventListener("keydown", onKey);
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.removeEventListener("keydown", onKey);
-      document.body.style.overflow = "";
-    };
+    return () => document.removeEventListener("keydown", onKey);
   }, [isDesktop, onClose]);
 
   async function submit(e?: React.FormEvent) {

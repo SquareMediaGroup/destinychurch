@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import AnimateIn from "@/components/AnimateIn";
-import AlphaSignupModal from "@/components/AlphaSignupModal";
+import ChurchSuiteModal from "@/components/ui/ChurchSuiteModal";
 import WorshipWithUsSection from "@/components/home/WorshipWithUsSection";
 import { getNextAlphaSession } from "@/lib/alphaSession";
 
@@ -649,10 +649,10 @@ export default function CapMoneyPage() {
       <WorshipWithUsSection />
 
       {primaryEvent && (
-        <AlphaSignupModal
+        <ChurchSuiteModal
           open={signupOpen}
           onClose={() => setSignupOpen(false)}
-          signupUrl={primaryEvent.signup_url}
+          src={primaryEvent.signup_url}
           title="Sign up for the CAP Money Course"
           subtitle={
             startDateFormatted

@@ -1,12 +1,13 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { QRCodeSVG } from "qrcode.react";
 import { useToast } from "@/components/ToastProvider";
 import Button from "@/components/ui/Button";
 import { useHydrated } from "@/lib/useHydrated";
 import { useMediaQuery } from "@/lib/useMediaQuery";
+import { useScrollLock } from "@/lib/useScrollLock";
 
 interface Props {
   keyword: string;
@@ -28,6 +29,8 @@ export default function TextToGiveCTA({ keyword, number }: Props) {
 
   const closeTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  useScrollLock(mounted && open);
+
   const openModal = (qrMode = false, defaultAmount = "") => {
     if (closeTimeout.current) {
       clearTimeout(closeTimeout.current);
@@ -38,17 +41,21 @@ export default function TextToGiveCTA({ keyword, number }: Props) {
     setIsMonthly(false);
     setShowQR(qrMode);
     requestAnimationFrame(() => requestAnimationFrame(() => setVisible(true)));
-    document.body.style.overflow = "hidden";
   };
 
-  const closeModal = () => {
+  const closeModal = useCallback(() => {
     setVisible(false);
     closeTimeout.current = setTimeout(() => {
       setOpen(false);
-      document.body.style.overflow = "";
       closeTimeout.current = null;
     }, 350);
-  };
+  }, []);
+
+  // The pending close must not outlive the component, or fire against a modal
+  // that has since been reopened.
+  useEffect(() => () => {
+    if (closeTimeout.current) clearTimeout(closeTimeout.current);
+  }, []);
 
   // The "sms:" link the QR code should hand off to a phone's own messaging
   // app — mirrors the message sendTextMessage() sends directly on mobile.
@@ -76,11 +83,14 @@ export default function TextToGiveCTA({ keyword, number }: Props) {
     closeModal();
   };
 
+  // Bound only while open. A closed modal used to run the whole close sequence,
+  // scroll unlock included, on any Escape anywhere on the page.
   useEffect(() => {
+    if (!open) return;
     const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") closeModal(); };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, []);
+  }, [open, closeModal]);
 
   return (
     <>

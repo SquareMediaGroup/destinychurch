@@ -14,7 +14,7 @@
 // a blank box). Those keep the old new-tab link.
 
 import { useState } from "react";
-import AlphaSignupModal from "@/components/AlphaSignupModal";
+import ChurchSuiteModal from "@/components/ui/ChurchSuiteModal";
 import Button from "@/components/ui/Button";
 
 /** ChurchSuite serves our own subdomain, which allows framing; nothing else. */
@@ -74,10 +74,10 @@ export default function EventSignupButton({
       <Button type="button" variant="primary" shape="pill" size="lg" onClick={() => setOpen(true)}>
         {label}
       </Button>
-      <AlphaSignupModal
+      <ChurchSuiteModal
         open={open}
         onClose={() => setOpen(false)}
-        signupUrl={
+        src={
           jumpToSignup && !url.includes("#") ? `${url}${SIGNUP_ANCHOR}` : url
         }
         title={eventName}

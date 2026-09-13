@@ -12,9 +12,9 @@
 // about to ask someone.
 
 import { createPortal } from "react-dom";
-import { useEffect } from "react";
 import { BorderBeam } from "border-beam";
 import { useHydrated } from "@/lib/useHydrated";
+import { useScrollLock } from "@/lib/useScrollLock";
 import { minutesFor, type TourSection } from "@/lib/adminOnboarding";
 import { TOURS, TOUR_ORDER } from "@/lib/adminOnboarding";
 import type { RoleFlags } from "@/lib/adminRoles";
@@ -32,13 +32,7 @@ export default function WelcomeGate({
 }) {
   const mounted = useHydrated();
 
-  useEffect(() => {
-    const previous = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.body.style.overflow = previous;
-    };
-  }, []);
+  useScrollLock(true);
 
   if (!mounted) return null;
 

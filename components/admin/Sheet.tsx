@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { useHydrated } from "@/lib/useHydrated";
+import { useScrollLock } from "@/lib/useScrollLock";
 import { useKeyboardInset } from "@/lib/useKeyboardInset";
 
 /**
@@ -74,6 +75,8 @@ export function Sheet({
   // parent tree, so the first render has to produce nothing.
   const isClient = useHydrated();
 
+  useScrollLock(true);
+
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
       if (event.key !== "Escape") return;
@@ -84,12 +87,7 @@ export function Sheet({
       onClose();
     };
     document.addEventListener("keydown", onKey, true);
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.removeEventListener("keydown", onKey, true);
-      document.body.style.overflow = previousOverflow;
-    };
+    return () => document.removeEventListener("keydown", onKey, true);
   }, [onClose]);
 
   function onPointerDown(event: React.PointerEvent) {

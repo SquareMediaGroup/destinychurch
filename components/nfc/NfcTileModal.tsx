@@ -2,7 +2,7 @@
 
 // The popup behind every tile on /nfc.
 //
-// Structurally this is AlphaSignupModal — portal to body, backdrop blur, scale-in
+// Structurally this is ChurchSuiteModal — portal to body, backdrop blur, scale-in
 // on a double-rAF so the transition has a frame to start from — with two additions:
 //
 //   Three modes, two layouts. `embed` frames a ChurchSuite form (Connect Card,
@@ -12,11 +12,11 @@
 //   server-side, so it needs no branch of its own here. `info` shows artwork +
 //   copy + a CTA, for Alpha and the custom promos an admin adds.
 //
-//   Real dialog semantics. The four existing copies of this modal (ConnectCardCTAs,
-//   GiveCTA, YouSaidYesButton, AlphaSignupModal) have no role, no focus management
-//   and no trap. /nfc is the one page used cold by people who have never been here,
-//   so it gets the full treatment: labelled dialog, focus in on open, focus back to
-//   the invoking card on close, Tab held inside.
+//   Real dialog semantics. This is where they were first written, for /nfc — the
+//   one page used cold by people who have never been here: labelled dialog, focus
+//   in on open, focus back to the invoking card on close, Tab held inside. The
+//   four hand-rolled copies of this modal that had none of it are now a single
+//   ChurchSuiteModal, which carries the same treatment.
 //
 // The enter animation is CSS (.nfc-modal-* in globals.css) rather than the
 // visible-state-plus-double-rAF the other four use: closing here unmounts
@@ -28,6 +28,7 @@ import { createPortal } from "react-dom";
 import Image from "next/image";
 import Link from "next/link";
 import ChurchSuiteEmbed from "@/components/ChurchSuiteEmbed";
+import { useScrollLock } from "@/lib/useScrollLock";
 import type { NfcTile } from "@/lib/nfcTiles";
 
 const FOCUSABLE =
@@ -46,13 +47,11 @@ export default function NfcTileModal({
 
   const open = Boolean(tile);
 
+  useScrollLock(open);
+
   useEffect(() => {
     if (!open) return;
-    document.body.style.overflow = "hidden";
     closeRef.current?.focus();
-    return () => {
-      document.body.style.overflow = "";
-    };
   }, [open]);
 
   const handleKey = useCallback(

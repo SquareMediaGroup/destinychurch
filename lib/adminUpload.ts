@@ -9,19 +9,28 @@
  * resizes to max 1600px wide and re-encodes to WebP at quality 82 in the
  * `post-media` bucket.
  */
+import {
+  ALLOWED_IMAGE_ACCEPT,
+  MAX_UPLOAD_SIZE_BYTES,
+  MAX_UPLOAD_SIZE_MB,
+} from "@/lib/ai/media-types";
+
 export type UploadResult = { url: string } | { error: string };
 
-/** Mirrors the API route's own allow-list. */
-export const UPLOAD_ACCEPT = "image/jpeg,image/png,image/webp,image/gif";
-
-/** Mirrors MAX_UPLOAD_SIZE_BYTES in lib/ai/media-types.ts (5MB). */
-export const UPLOAD_MAX_BYTES = 5 * 1024 * 1024;
+// Re-exported from the route's own constants rather than restated. The hand-kept
+// copies had already drifted: the accept attribute was missing image/jpg, so
+// picking such a file was blocked by the file dialog even though the server
+// would have taken it.
+export const UPLOAD_ACCEPT = ALLOWED_IMAGE_ACCEPT;
+export const UPLOAD_MAX_BYTES = MAX_UPLOAD_SIZE_BYTES;
 
 export async function uploadPostImage(file: File): Promise<UploadResult> {
-  // Checked here as well as server-side so a 6MB photo fails instantly rather
-  // than after a slow upload.
+  // Checked here as well as server-side so an oversized photo fails instantly
+  // rather than after a slow upload.
   if (file.size > UPLOAD_MAX_BYTES) {
-    return { error: "That image is larger than 5MB. Please choose a smaller one." };
+    return {
+      error: `That image is larger than ${MAX_UPLOAD_SIZE_MB}MB. Please choose a smaller one.`,
+    };
   }
 
   const formData = new FormData();

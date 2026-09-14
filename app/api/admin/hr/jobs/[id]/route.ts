@@ -39,63 +39,72 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> },
 ) {
   const { id } = await params;
-  const body = await request.json();
 
-  const update: Record<string, unknown> = {};
-  for (const key of EDITABLE) {
-    if (key in body) update[key] = body[key];
-  }
+  try {
+    const body = await request.json();
 
-  // Allow an explicit slug change, keeping it unique against other rows.
-  if (typeof body.slug === "string" && body.slug.trim()) {
-    const supabase = createServiceClient();
-    const root = slugify(body.slug) || "role";
-    let slug = root;
-    let n = 2;
-    for (let i = 0; i < 50; i++) {
-      const { data } = await supabase
-        .from("jobs")
-        .select("id")
-        .eq("slug", slug)
-        .neq("id", id)
-        .maybeSingle();
-      if (!data) break;
-      slug = `${root}-${n++}`;
+    const update: Record<string, unknown> = {};
+    for (const key of EDITABLE) {
+      if (key in body) update[key] = body[key];
     }
-    update.slug = slug;
+    if ("closing_date" in body) update.closing_date = body.closing_date || null;
+
+    // Allow an explicit slug change, keeping it unique against other rows.
+    if (typeof body.slug === "string" && body.slug.trim()) {
+      const supabase = createServiceClient();
+      const root = slugify(body.slug) || "role";
+      let slug = root;
+      let n = 2;
+      for (let i = 0; i < 50; i++) {
+        const { data } = await supabase
+          .from("jobs")
+          .select("id")
+          .eq("slug", slug)
+          .neq("id", id)
+          .maybeSingle();
+        if (!data) break;
+        slug = `${root}-${n++}`;
+      }
+      update.slug = slug;
+    }
+
+    const supabase = createServiceClient();
+    const before = await readForAudit("jobs", id);
+    const { data, error } = await supabase
+      .from("jobs")
+      .update(update)
+      .eq("id", id)
+      .select()
+      .single();
+
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+    const wasPublished = Boolean(before?.is_published);
+    const verb =
+      data.is_published && !wasPublished
+        ? "Published"
+        : !data.is_published && wasPublished
+          ? "Unpublished"
+          : "Edited";
+
+    await recordAudit({
+      action: "update",
+      section: "hr",
+      entity: "job listing",
+      entityId: id,
+      entityLabel: data.title,
+      summary: `${verb} the job listing “${data.title}”`,
+      before,
+      after: update,
+    });
+
+    return NextResponse.json(data);
+  } catch (err) {
+    return NextResponse.json(
+      { error: err instanceof Error ? err.message : "Unexpected server error" },
+      { status: 500 },
+    );
   }
-
-  const supabase = createServiceClient();
-  const before = await readForAudit("jobs", id);
-  const { data, error } = await supabase
-    .from("jobs")
-    .update(update)
-    .eq("id", id)
-    .select()
-    .single();
-
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-
-  const wasPublished = Boolean(before?.is_published);
-  const verb =
-    data.is_published && !wasPublished
-      ? "Published"
-      : !data.is_published && wasPublished
-        ? "Unpublished"
-        : "Edited";
-
-  await recordAudit({
-    action: "update",
-    section: "hr",
-    entity: "job listing",
-    entityId: id,
-    entityLabel: data.title,
-    summary: `${verb} the job listing “${data.title}”`,
-    before,
-    after: update,
-  });
-
-  return NextResponse.json(data);
 }
 
 export async function DELETE(

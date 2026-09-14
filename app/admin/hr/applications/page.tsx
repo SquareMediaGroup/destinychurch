@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import {
   API,
   APPLICATION_STATUS_LABELS,
@@ -18,6 +18,7 @@ import {
   TableSkeleton,
 } from "@/components/admin/AdminUI";
 import { useAdminList } from "@/lib/useAdminList";
+import { fetchAdminArray, useAdminLoader } from "@/lib/useAdminLoader";
 import { useDialog } from "@/components/DialogProvider";
 
 type WithCv = JobApplication & { cv_url?: string | null };
@@ -33,23 +34,13 @@ const STATUSES: ApplicationStatus[] = [
 export default function ApplicationsPage() {
   const { confirm } = useDialog();
   const [apps, setApps] = useState<JobApplication[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
   const [open, setOpen] = useState<WithCv | null>(null);
 
   const load = useCallback(async () => {
-    try {
-      const res = await fetch(`${API}/applications`);
-      const data = await res.json();
-      setApps(Array.isArray(data) ? data : []);
-    } finally {
-      setLoading(false);
-    }
+    setApps(await fetchAdminArray<JobApplication>(`${API}/applications`));
   }, []);
 
-  useEffect(() => {
-    load();
-  }, [load]);
+  const { loading, error, setError } = useAdminLoader(load);
 
   const list = useAdminList<JobApplication>({
     items: apps,

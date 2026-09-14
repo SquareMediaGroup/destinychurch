@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useState, useCallback } from "react";
 import {
   API,
   fullName,
@@ -24,6 +24,7 @@ import {
   primaryBtn,
 } from "@/components/admin/AdminUI";
 import { useAdminList } from "@/lib/useAdminList";
+import { fetchAdminArray, useAdminLoader } from "@/lib/useAdminLoader";
 import { LeaveModal } from "@/components/admin/hr/modals";
 
 const STATUS_TONE: Record<LeaveStatus, string> = {
@@ -35,23 +36,18 @@ const STATUS_TONE: Record<LeaveStatus, string> = {
 export default function LeavePage() {
   const [staff, setStaff] = useState<Staff[]>([]);
   const [leave, setLeave] = useState<LeaveRequest[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
   const [adding, setAdding] = useState(false);
 
   const load = useCallback(async () => {
     const [s, l] = await Promise.all([
-      fetch(`${API}/staff`).then((r) => r.json()),
-      fetch(`${API}/leave`).then((r) => r.json()),
+      fetchAdminArray<Staff>(`${API}/staff`),
+      fetchAdminArray<LeaveRequest>(`${API}/leave`),
     ]);
-    setStaff(Array.isArray(s) ? s : []);
-    setLeave(Array.isArray(l) ? l : []);
-    setLoading(false);
+    setStaff(s);
+    setLeave(l);
   }, []);
 
-  useEffect(() => {
-    load();
-  }, [load]);
+  const { loading, error, setError, reload } = useAdminLoader(load);
 
   async function decide(id: string, status: "approved" | "rejected") {
     const res = await fetch(`${API}/leave/${id}`, {
@@ -64,7 +60,7 @@ export default function LeavePage() {
       setError(d.error || "Could not update request.");
       return;
     }
-    load();
+    reload();
   }
 
   const list = useAdminList<LeaveRequest>({
@@ -296,7 +292,7 @@ export default function LeavePage() {
           onSaved={() => {
             setAdding(false);
             setError("");
-            load();
+            reload();
           }}
           onError={setError}
         />

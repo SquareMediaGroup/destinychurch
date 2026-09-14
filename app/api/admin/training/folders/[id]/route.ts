@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { createServiceClient } from "@/utils/supabase/service";
 import { readForAudit, recordAudit } from "@/lib/audit.server";
 
-const EDITABLE = ["name", "sort_order", "subgroup_id"];
+const EDITABLE = ["name", "sort_order", "subgroup_id"] as const;
 
 export async function PATCH(
   request: Request,
@@ -11,7 +11,7 @@ export async function PATCH(
   const { id } = await params;
   const body = await request.json();
 
-  const updates: Record<string, any> = {};
+  const updates: Record<string, unknown> = {};
   for (const key of EDITABLE) {
     if (key in body) updates[key] = body[key];
   }

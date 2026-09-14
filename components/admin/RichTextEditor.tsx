@@ -13,6 +13,7 @@ import { Node, type CommandProps } from "@tiptap/core";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useDialog } from "@/components/DialogProvider";
 import { useToast } from "@/components/ToastProvider";
+import { UPLOAD_ACCEPT, uploadPostImage } from "@/lib/adminUpload";
 import type { AnyBlockDefinition } from "@/components/blocks/types";
 import { createBlockNode } from "./blocks/createBlockNode";
 import { UnknownBlock } from "./blocks/UnknownBlockNode";
@@ -140,18 +141,16 @@ function Toolbar({
     if (!file) return;
     setUploading(true);
     try {
-      const formData = new FormData();
-      formData.append("file", file);
-      const res = await fetch("/api/admin/posts/upload", {
-        method: "POST",
-        body: formData,
-      });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok || !data.url) {
-        toast.error(data.error || "Image upload failed.");
+      // Shared with the block inspector's image field. This toolbar is where
+      // that helper was extracted from, but it kept its own copy of the POST —
+      // and so never picked up the client-side size check, meaning an oversized
+      // photo uploaded in full before the server turned it away.
+      const result = await uploadPostImage(file);
+      if ("error" in result) {
+        toast.error(result.error);
         return;
       }
-      editor.chain().focus().setImage({ src: data.url }).run();
+      editor.chain().focus().setImage({ src: result.url }).run();
     } finally {
       setUploading(false);
     }
@@ -293,7 +292,7 @@ function Toolbar({
           <input
             ref={fileInputRef}
             type="file"
-            accept="image/jpeg,image/png,image/webp,image/gif"
+            accept={UPLOAD_ACCEPT}
             className="hidden"
             onChange={onPickImage}
           />

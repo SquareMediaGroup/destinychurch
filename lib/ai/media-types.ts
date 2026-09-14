@@ -50,8 +50,10 @@ export interface VideoUrlResponse {
   videoId?: string; // YouTube/Vimeo ID
 }
 
-// Constraints
+// Constraints. This module has no imports of its own, so the browser can share
+// these with the upload route rather than keeping its own copy in step by hand.
 export const MAX_UPLOAD_SIZE_BYTES = 5 * 1024 * 1024; // 5MB
+export const MAX_UPLOAD_SIZE_MB = MAX_UPLOAD_SIZE_BYTES / 1024 / 1024;
 export const ALLOWED_IMAGE_TYPES = [
   "image/jpeg",
   "image/jpg",
@@ -59,6 +61,9 @@ export const ALLOWED_IMAGE_TYPES = [
   "image/webp",
   "image/gif",
 ];
+
+/** The same allow-list, shaped for an <input type="file"> accept attribute. */
+export const ALLOWED_IMAGE_ACCEPT = ALLOWED_IMAGE_TYPES.join(",");
 
 // Image variant configurations
 export const IMAGE_VARIANTS = {

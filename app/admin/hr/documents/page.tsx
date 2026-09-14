@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useState, useCallback } from "react";
 import {
   API,
   fullName,
@@ -22,6 +22,7 @@ import {
   primaryBtn,
 } from "@/components/admin/AdminUI";
 import { useAdminList } from "@/lib/useAdminList";
+import { fetchAdminArray, useAdminLoader } from "@/lib/useAdminLoader";
 import { DocumentModal } from "@/components/admin/hr/modals";
 import { useDialog } from "@/components/DialogProvider";
 
@@ -36,23 +37,18 @@ export default function DocumentsPage() {
   const { confirm } = useDialog();
   const [staff, setStaff] = useState<Staff[]>([]);
   const [docs, setDocs] = useState<HrDocument[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
   const [adding, setAdding] = useState(false);
 
   const load = useCallback(async () => {
     const [s, d] = await Promise.all([
-      fetch(`${API}/staff`).then((r) => r.json()),
-      fetch(`${API}/documents`).then((r) => r.json()),
+      fetchAdminArray<Staff>(`${API}/staff`),
+      fetchAdminArray<HrDocument>(`${API}/documents`),
     ]);
-    setStaff(Array.isArray(s) ? s : []);
-    setDocs(Array.isArray(d) ? d : []);
-    setLoading(false);
+    setStaff(s);
+    setDocs(d);
   }, []);
 
-  useEffect(() => {
-    load();
-  }, [load]);
+  const { loading, error, setError, reload } = useAdminLoader(load);
 
   const categories = Object.keys(DOCUMENT_CATEGORY_LABELS) as DocumentCategory[];
 
@@ -111,7 +107,7 @@ export default function DocumentsPage() {
       setError("Could not delete document.");
       return;
     }
-    load();
+    reload();
   }
 
   return (
@@ -251,7 +247,7 @@ export default function DocumentsPage() {
           onSaved={() => {
             setAdding(false);
             setError("");
-            load();
+            reload();
           }}
           onError={setError}
         />

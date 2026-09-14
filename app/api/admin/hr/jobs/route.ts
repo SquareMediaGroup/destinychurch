@@ -33,49 +33,56 @@ async function uniqueSlug(
 }
 
 export async function POST(request: Request) {
-  const body = await request.json();
-  const title = body.title?.trim();
+  try {
+    const body = await request.json();
+    const title = body.title?.trim();
 
-  if (!title) {
-    return NextResponse.json({ error: "A job title is required" }, { status: 400 });
+    if (!title) {
+      return NextResponse.json({ error: "A job title is required" }, { status: 400 });
+    }
+
+    const supabase = createServiceClient();
+    const slug = await uniqueSlug(supabase, body.slug?.trim() || title);
+
+    const { data, error } = await supabase
+      .from("jobs")
+      .insert({
+        title,
+        slug,
+        kind: body.kind || "job",
+        department: body.department?.trim() || null,
+        employment_type: body.employment_type || "full_time",
+        location: body.location?.trim() || null,
+        hours: body.hours?.trim() || null,
+        salary: body.salary?.trim() || null,
+        summary: body.summary?.trim() || null,
+        description: body.description?.trim() || null,
+        closing_date: body.closing_date || null,
+        is_published: body.is_published ?? false,
+        sort_order: body.sort_order ?? 0,
+      })
+      .select()
+      .single();
+
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+    await recordAudit({
+      action: "create",
+      section: "hr",
+      entity: "job listing",
+      entityId: data.id,
+      entityLabel: data.title,
+      summary: `Created the ${data.kind === "internship" ? "internship" : "job"} listing “${data.title}”${
+        data.is_published ? " and published it to /jobs" : " (not published yet)"
+      }`,
+      after: data,
+    });
+
+    return NextResponse.json(data, { status: 201 });
+  } catch (err) {
+    return NextResponse.json(
+      { error: err instanceof Error ? err.message : "Unexpected server error" },
+      { status: 500 },
+    );
   }
-
-  const supabase = createServiceClient();
-  const slug = await uniqueSlug(supabase, body.slug?.trim() || title);
-
-  const { data, error } = await supabase
-    .from("jobs")
-    .insert({
-      title,
-      slug,
-      kind: body.kind || "job",
-      department: body.department?.trim() || null,
-      employment_type: body.employment_type || "full_time",
-      location: body.location?.trim() || null,
-      hours: body.hours?.trim() || null,
-      salary: body.salary?.trim() || null,
-      summary: body.summary?.trim() || null,
-      description: body.description?.trim() || null,
-      closing_date: body.closing_date || null,
-      is_published: body.is_published ?? false,
-      sort_order: body.sort_order ?? 0,
-    })
-    .select()
-    .single();
-
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-
-  await recordAudit({
-    action: "create",
-    section: "hr",
-    entity: "job listing",
-    entityId: data.id,
-    entityLabel: data.title,
-    summary: `Created the ${data.kind === "internship" ? "internship" : "job"} listing “${data.title}”${
-      data.is_published ? " and published it to /jobs" : " (not published yet)"
-    }`,
-    after: data,
-  });
-
-  return NextResponse.json(data, { status: 201 });
 }

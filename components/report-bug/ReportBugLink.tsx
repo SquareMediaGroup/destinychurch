@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { submitBugReport } from "./actions";
+import { useScrollLock } from "@/lib/useScrollLock";
 
 export default function ReportBugLink() {
   const [open, setOpen] = useState(false);
@@ -9,19 +10,16 @@ export default function ReportBugLink() {
   const [errorMsg, setErrorMsg] = useState("");
   const formRef = useRef<HTMLFormElement>(null);
 
-  // Close on Escape and lock body scroll while the modal is open.
+  useScrollLock(open);
+
+  // Close on Escape while the modal is open.
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") setOpen(false);
     };
     document.addEventListener("keydown", onKey);
-    const prevOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.removeEventListener("keydown", onKey);
-      document.body.style.overflow = prevOverflow;
-    };
+    return () => document.removeEventListener("keydown", onKey);
   }, [open]);
 
   function openModal() {

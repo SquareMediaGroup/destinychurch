@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import { API, CHECKLIST_KIND_LABELS, type ChecklistTemplate } from "@/lib/hr";
 import {
   PageHeader,
@@ -13,29 +13,20 @@ import {
   primaryBtn,
 } from "@/components/admin/AdminUI";
 import { useAdminList } from "@/lib/useAdminList";
+import { fetchAdminArray, useAdminLoader } from "@/lib/useAdminLoader";
 import { ChecklistTemplateModal } from "@/components/admin/hr/ChecklistUI";
 import { useDialog } from "@/components/DialogProvider";
 
 export default function ChecklistTemplatesPage() {
   const { confirm } = useDialog();
   const [templates, setTemplates] = useState<ChecklistTemplate[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
   const [editing, setEditing] = useState<ChecklistTemplate | "new" | null>(null);
 
   const load = useCallback(async () => {
-    try {
-      const res = await fetch(`${API}/checklist-templates`);
-      const data = await res.json();
-      setTemplates(Array.isArray(data) ? data : []);
-    } finally {
-      setLoading(false);
-    }
+    setTemplates(await fetchAdminArray<ChecklistTemplate>(`${API}/checklist-templates`));
   }, []);
 
-  useEffect(() => {
-    load();
-  }, [load]);
+  const { loading, error, setError, reload } = useAdminLoader(load);
 
   const list = useAdminList<ChecklistTemplate>({
     items: templates,
@@ -70,7 +61,7 @@ export default function ChecklistTemplatesPage() {
       setError(data.error || "Could not delete.");
       return;
     }
-    load();
+    reload();
   }
 
   return (
@@ -177,7 +168,7 @@ export default function ChecklistTemplatesPage() {
           onSaved={() => {
             setEditing(null);
             setError("");
-            load();
+            reload();
           }}
           onError={setError}
         />

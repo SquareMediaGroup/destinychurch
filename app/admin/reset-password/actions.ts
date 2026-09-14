@@ -1,13 +1,12 @@
 "use server";
 
 import { createClient } from "@/utils/supabase/server";
-import { cookies, headers } from "next/headers";
+import { cookies } from "next/headers";
 
 export async function resetPassword(
   _prev: unknown,
   formData: FormData
 ): Promise<{ success: boolean; error?: string }> {
-  const headersList = await headers();
   const password = formData.get("password")?.toString() ?? "";
   const confirmPassword = formData.get("confirmPassword")?.toString() ?? "";
 
@@ -27,7 +26,7 @@ export async function resetPassword(
   const supabase = createClient(cookieStore);
 
   try {
-    const { data, error } = await supabase.auth.updateUser({ password });
+    const { error } = await supabase.auth.updateUser({ password });
 
     if (error) {
       console.error("Password reset error:", error);

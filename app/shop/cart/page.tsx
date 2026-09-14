@@ -2,14 +2,13 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { useEffect, useState } from "react";
 import { useCart, cartSubtotal } from "@/lib/cart-store";
 import { formatPrice } from "@/lib/shop";
+import { useHydrated } from "@/lib/useHydrated";
 
 export default function CartPage() {
   const { items, setQty, remove } = useCart();
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => setMounted(true), []);
+  const mounted = useHydrated();
 
   const subtotal = cartSubtotal(items);
 

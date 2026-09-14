@@ -1,6 +1,5 @@
 "use client";
 
-import { useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useBanner } from "@/contexts/BannerContext";
@@ -8,6 +7,7 @@ import type { BannerData } from "@/contexts/BannerContext";
 import { useLiveStatus } from "@/contexts/LiveContext";
 import { getNextAlphaSession } from "@/lib/alphaSession";
 import { COURSE_EVENT_META, isCourseEventType } from "@/lib/courseEvents";
+import { useScrollLock } from "@/lib/useScrollLock";
 
 export default function SiteBanner() {
   const banner = useBanner();
@@ -15,19 +15,11 @@ export default function SiteBanner() {
   const pathname = usePathname();
 
   const isAdmin = pathname.startsWith("/admin");
-  const isSitewideActive =
-    banner.active && banner.message && banner.type === "sitewide" && !isAdmin;
+  const isSitewideActive = Boolean(
+    banner.active && banner.message && banner.type === "sitewide" && !isAdmin,
+  );
 
-  useEffect(() => {
-    if (isSitewideActive) {
-      document.body.style.overflow = "hidden";
-    } else {
-      document.body.style.overflow = "";
-    }
-    return () => {
-      document.body.style.overflow = "";
-    };
-  }, [isSitewideActive]);
+  useScrollLock(isSitewideActive);
 
   // Sitewide (maintenance) banner — full-screen block on all non-admin pages
   if (banner.active && banner.type === "sitewide" && banner.message) {

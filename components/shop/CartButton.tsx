@@ -1,15 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
 import { useCart, cartCount } from "@/lib/cart-store";
+import { useHydrated } from "@/lib/useHydrated";
 
 // Header basket link with a live item-count badge. The count only renders after
 // mount to avoid a hydration mismatch (the cart lives in localStorage).
 export default function CartButton({ className = "" }: { className?: string }) {
   const items = useCart((s) => s.items);
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => setMounted(true), []);
+  const mounted = useHydrated();
 
   const count = mounted ? cartCount(items) : 0;
 

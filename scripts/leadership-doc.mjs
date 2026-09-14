@@ -4,7 +4,7 @@ import {
   Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, ImageRun,
   Header, Footer, AlignmentType, LevelFormat, TabStopType, TabStopPosition,
   TableOfContents, HeadingLevel, BorderStyle, WidthType, ShadingType,
-  VerticalAlign, PageNumber, PageBreak,
+  PageNumber, PageBreak,
 } from "docx";
 import sharp from "sharp";
 import fs from "node:fs";
@@ -56,7 +56,6 @@ async function image(file, captionText, displayWidth = DISPLAY_W) {
 
 const h1 = (text) => new Paragraph({ heading: HeadingLevel.HEADING_1, children: [new TextRun(text)] });
 const h2 = (text) => new Paragraph({ heading: HeadingLevel.HEADING_2, children: [new TextRun(text)] });
-const h3 = (text) => new Paragraph({ heading: HeadingLevel.HEADING_3, children: [new TextRun(text)] });
 
 const p = (text, opts = {}) =>
   new Paragraph({ spacing: { after: 140 }, children: [new TextRun({ text, ...opts })] });
@@ -69,9 +68,6 @@ const lead = (label, text) =>
       new TextRun({ text }),
     ],
   });
-
-const bullet = (text) =>
-  new Paragraph({ numbering: { reference: "bullets", level: 0 }, spacing: { after: 60 }, children: [new TextRun(text)] });
 
 const bulletRich = (boldPart, rest) =>
   new Paragraph({

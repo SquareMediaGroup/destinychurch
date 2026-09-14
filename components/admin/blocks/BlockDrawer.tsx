@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 import { createPortal } from "react-dom";
 import type { Editor } from "@tiptap/react";
-import { useIsClient } from "@/lib/useIsClient";
+import { useHydrated } from "@/lib/useHydrated";
 import { BlockPalette } from "./BlockPalette";
 
 /**
@@ -25,7 +25,7 @@ export function BlockDrawer({
   editor: Editor | null;
   onClose: () => void;
 }) {
-  const isClient = useIsClient();
+  const isClient = useHydrated();
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {

@@ -247,18 +247,39 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const banner = await getActiveBanner();
-  const [popup, eventPopup] = await Promise.all([
-    getActivePopup(),
-    getActiveEventPopup(),
-  ]);
-  const smartSearchEnabled = await isSmartSearchEnabled();
-  const liveStatus = await getLiveStatus();
+  // One round trip, not four. None of these five depends on another, but they
+  // used to be awaited in sequence — and this is the root layout, so every page
+  // on the site paid for the serialisation before it could start rendering.
+  const [banner, popup, eventPopup, smartSearchEnabled, liveStatus] =
+    await Promise.all([
+      getActiveBanner(),
+      getActivePopup(),
+      getActiveEventPopup(),
+      isSmartSearchEnabled(),
+      getLiveStatus(),
+    ]);
 
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
-        <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,500,0,0" />
+        {/* This stylesheet is render-blocking and cross-origin, so warm the
+            connection first — it saves a DNS + TLS round trip on every page. */}
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
+        {/* display=block, not the usual swap: every icon on the site is a
+            ligature, so a fallback face would paint the literal text
+            ("shopping_bag", "arrow_forward") before swapping to the glyph.
+            That is also why google-font-display is silenced — its "block is not
+            recommended" advice is aimed at body text, and block is what Google
+            themselves document for Material Symbols.
+            no-page-custom-font checks for a Pages Router `pages/_document.js`;
+            this is the App Router root layout, so the link is already on every
+            page, which is exactly what the rule wants. */}
+        {/* eslint-disable-next-line @next/next/google-font-display, @next/next/no-page-custom-font */}
+        <link
+          rel="stylesheet"
+          href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,500,0,0&display=block"
+        />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(orgSchema) }}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useTransition, useActionState } from "react";
+import { useState, useTransition, useActionState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { adminSignIn, adminSignOut } from "./actions";
@@ -90,25 +90,33 @@ function SignInScreen({
   initialAccess?: SystemAccess;
 }) {
   const [state, formAction, pending] = useActionState(adminSignIn, initialState);
-  const [phase, setPhase] = useState<"login" | "choose">(initialAccess ? "choose" : "login");
-  const [email, setEmail] = useState<string | undefined>(initialEmail);
-  const [access, setAccess] = useState<SystemAccess | undefined>(initialAccess);
   const [signingOut, startSignOut] = useTransition();
 
-  useEffect(() => {
+  // One piece of state, not three that have to be kept in step: who is signed
+  // in. Everything the screen branches on falls out of it.
+  const [session, setSession] = useState<
+    { email?: string; access: SystemAccess } | undefined
+  >(initialAccess ? { email: initialEmail, access: initialAccess } : undefined);
+
+  // A fresh sign-in result is folded in during render rather than copied across
+  // in an effect — React's own alternative to an effect that mirrors one piece
+  // of state into another, and without the extra render an effect would cost.
+  // Comparing against the last result object is what makes it run once per
+  // result, so signing out is not immediately undone by a stale success.
+  const [lastResult, setLastResult] = useState(state);
+  if (state !== lastResult) {
+    setLastResult(state);
     if (state.success && state.access) {
-      setEmail(state.email);
-      setAccess(state.access);
-      setPhase("choose");
+      setSession({ email: state.email, access: state.access });
     }
-  }, [state.success, state.email, state.access]);
+  }
+
+  const phase = session ? "choose" : "login";
 
   function handleSignOut() {
     startSignOut(async () => {
       await adminSignOut();
-      setEmail(undefined);
-      setAccess(undefined);
-      setPhase("login");
+      setSession(undefined);
     });
   }
 
@@ -142,8 +150,8 @@ function SignInScreen({
             <LoginPanel formAction={formAction} pending={pending} error={state.error} />
           ) : (
             <ChoosePanel
-              email={email}
-              access={access}
+              email={session?.email}
+              access={session?.access}
               onSignOut={handleSignOut}
               signingOut={signingOut}
             />

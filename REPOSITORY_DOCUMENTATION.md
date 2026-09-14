@@ -302,7 +302,6 @@ destinychurch/
 │   ├── accessRequestEmail.ts      # Email templates
 │   ├── passwordResetEmail.ts      # Email templates
 │   ├── staffLogins.ts             # Create/link/delete a staff record's mandatory backend login (new login or an existing admin's)
-│   ├── collections.ts             # Content collections
 │   ├── sermonPlayerContext.tsx    # Sermon player state
 │   ├── sermonSearchContext.tsx    # Sermon search state
 │   ├── cookieConsent.tsx          # Cookie preferences
@@ -2040,7 +2039,7 @@ Rendered on every page (server component with Suspense).
 
 - **Logo** — Clickable link to home
 - **Navigation menu** — Top-level links plus hover **dropdowns** ("About", "What's on") that fade in as white rounded cards with a staggered per-item reveal
-- **Mobile menu** — Animated hamburger (bars morph into an X) opens a **full-screen brand-colour overlay** with drill-down submenus and a top-down reveal (see `ChurchHeader.tsx` below); no left-hand drawer
+- **Mobile menu** — Animated hamburger (bars morph into an X) opens a **full-screen brand-colour overlay** with drill-down submenus and a top-down reveal (see `ChurchHeader.tsx` below); no left-hand drawer. Top-level items and a submenu ("What's on"/"About") sit side by side in a double-width row that slides horizontally (`translateX`) between the two, rather than an instant swap — both panels stay mounted so the transition is a real slide in both directions, and the submenu panel keeps rendering the last-active submenu's items while sliding back out so it never flashes empty.
 - **Scroll morph** — The header pill reshapes as you scroll (progress ramps over `MORPH_DISTANCE`)
 - **Auth indicator** — Login/logout buttons
 
@@ -2464,9 +2463,11 @@ focus to whatever opened it, and locks body scroll — restoring the *previous*
 - **Behavior:**
   - Desktop: horizontal menu bar; "About" and "What's on" open hover **dropdowns** (`Dropdown`) rendered as white rounded cards that fade in with a staggered per-item reveal (a brief close delay keeps them from flickering shut between the trigger and the card)
   - Mobile: an animated hamburger (bars morph into an X) toggles a **full-screen brand-colour overlay** (`fixed inset-0`, `bg-destiny-orange/60 backdrop-blur`, a sibling of `<header>`) with **drill-down submenus** (`mobileSubmenu` state) and a top-down reveal; scrolling auto-closes it
+  - The top-level list and the active submenu's list are laid out side by side in a `width: 200%` flex row that translates `-50%`/`0` (`transition: transform 0.38s cubic-bezier(0.4, 0, 0.2, 1)`) to switch between them — a real slide left/right rather than an unmount/mount swap. Both panels stay mounted; a `lastSubmenu` value (updated during render, not in an effect, guarded against re-render loops) keeps the submenu panel showing its last items while it slides back off-screen so it never goes blank mid-transition. The per-item stagger fade/translateY on entry is unchanged.
   - A scroll-driven **morph** reshapes the header pill (`progress` ramps 0→1 over `MORPH_DISTANCE`)
   - Active route highlighting
   - Search is not in the header — it lives in `FloatingSmartSearch`
+- Clears its conversation (`reset()`) whenever the menu closes, so reopening it starts fresh
 
 #### `ChurchFooter.tsx`
 - **What:** Sitewide footer (server component — awaits `isYouTubeQuotaExceeded()` to drop the Sermons link when the YouTube quota is blown)
@@ -2639,7 +2640,7 @@ always-present chat box under an offline player is an empty room someone
 eventually wanders into alone, and a moderated space nobody is moderating.
 
 - **`LiveChatPanel.tsx`** — the shell. Holds session state, both subscriptions, and every action. Renders `null` when off air, so the offline card keeps the full width of the section.
-- **`useLiveChat.ts`** — the one place the codebase opens a websocket. Subscribes to a private Broadcast topic with `setAuth()` + `{ config: { private: true } }`, plus Presence for the viewer count. **Must use the memoised `getSupabaseBrowserClient()`** — `utils/supabase/client.ts` builds a new client per call, and a new client means a new socket per mount. Receive-only by design: sending goes over HTTP to `/api/live-chat/messages`, gets moderated, and comes back down the channel.
+- **`useLiveChat.ts`** — the one place the codebase opens a websocket. Subscribes to a private Broadcast topic with `setAuth()` + `{ config: { private: true } }`, plus Presence for the viewer count. **Must use the memoised `getSupabaseBrowserClient()`** — it is the only browser client in the codebase precisely because a per-call factory means a new client, and a new client means a new socket per mount. Receive-only by design: sending goes over HTTP to `/api/live-chat/messages`, gets moderated, and comes back down the channel.
 - **`ChatMessageList.tsx`** — the transcript. Follows the bottom only while you're already at the bottom, with a "jump to latest" button otherwise, so reading back doesn't get yanked. Host rows carry inline approve/delete/mute controls.
 - **`ChatComposer.tsx`** — message box with the guest name field inline above it, rather than a modal demanding a name before the chat is readable. Enter sends, Shift+Enter breaks the line.
 - **`HostLoginModal.tsx`** — Host sign-in without leaving the service. Same rate limit and Supabase checks as `/login` (it's the same server-action core), but returns instead of redirecting — a Host opens this mid-service and being thrown to `/admin` is the one thing that must not happen.
@@ -2732,7 +2733,7 @@ Before this existed the card was duplicated three times (`whats-on/EventsGrid`, 
   the copy re-shows it. Suppressed on `/whats-on` and the event's own page via `usePathname`, because
   the root layout is a server component and cannot know the path.
 - `EventSignupButton.tsx` — the event page's primary CTA. Opens the ChurchSuite event **in a modal**
-  (`AlphaSignupModal` at `size="lg"`) instead of a new tab, so the whole multi-step signup — ticket
+  (`ChurchSuiteModal` at `size="lg"`) instead of a new tab, so the whole multi-step signup — ticket
   picker, details form, confirmation — completes without leaving the site. ChurchSuite's own event
   pages frame fine and submit over AJAX. Third-party ticket URLs (Eventbrite and friends) send
   `X-Frame-Options: DENY`, so any non-`churchsuite.com` host keeps the old new-tab link.
@@ -2743,13 +2744,34 @@ Before this existed the card was duplicated three times (`whats-on/EventsGrid`, 
   serve a signup-only view; all return the identical full page. Events with signups closed have no
   such element and open at the top, which is the right fallback.
 
-#### `AlphaSignupModal.tsx` / `ChurchSuiteEmbed.tsx`
+#### `ui/ChurchSuiteModal.tsx` / `ChurchSuiteEmbed.tsx`
 
-The one ChurchSuite-in-a-modal treatment, used by the course pages and now by every event.
-`size="lg"` gives a `h-[88vh] max-w-3xl` panel whose embed **fills** it (`ChurchSuiteEmbed fill`)
-rather than taking a fixed height: an event page is arbitrarily long, and a fixed height would mean
-either dead space or two nested scrollbars. The default `md` size keeps the fixed 620px box the
-course forms were built against.
+The one ChurchSuite-in-a-modal treatment, used by the course pages, every event, giving, the connect
+card and the You Said Yes form. `size="lg"` gives a `h-[88vh] max-w-3xl` panel whose embed **fills**
+it (`ChurchSuiteEmbed fill`) rather than taking a fixed height: an event page is arbitrarily long,
+and a fixed height would mean either dead space or two nested scrollbars. The default `md` size keeps
+the fixed 620px box the course forms were built against. `embedTitle` names the iframe separately
+when the panel heading is too terse to stand alone out of context.
+
+This replaces four hand-rolled copies (`AlphaSignupModal`, `ConnectCardCTAs`, `GiveCTA`,
+`YouSaidYesButton`) that were identical down to the cubic-bezier on the panel transition, and that
+shared three faults now fixed here once:
+
+- The Escape listener was bound for the life of the component rather than while the modal was open,
+  so a *closed* modal still ran its close handler on every Escape — and that handler cleared
+  `document.body.style.overflow`, unlocking scrolling behind anything else that was holding it.
+- The close timeout and the two rAFs were never cancelled, so reopening inside 350ms let the old
+  timer tear the new modal down.
+- Closing wrote `overflow = ""` instead of restoring the previous value. Scroll locking is now
+  `lib/useScrollLock.ts` for every modal on the site.
+
+The animated panel is a separate inner component mounted only while the modal is open. That is what
+makes the entrance work with no "reset on close" bookkeeping: a fresh mount always starts at
+`visible: false`, and the rAF is the only thing that ever writes it. The exit transition never ran in
+any of the originals either — the portal is gone the moment `open` goes false.
+
+Dialog semantics (`role="dialog"`, `aria-modal`, `aria-labelledby`, focus in on open, focus back to
+the opener on close, Tab trap) come from `NfcTileModal` and now apply to every caller.
 
 #### `PopupShell.tsx`
 
@@ -2996,10 +3018,10 @@ The tiles on `/nfc` — the "digital back of seats" page an NFC tag or QR code o
   question *and* the full page stays one tap away; `event` is the same layout with no branch of its
   own, because `getNfcTiles()` resolves an event tile's signup URL into `embedUrl` server-side;
   `info` shows artwork + copy + an orange CTA, the `PopupShell` layout.
-  Unlike the four older copies of this modal (`AlphaSignupModal`, `ConnectCardCTAs`, `GiveCTA`,
-  `YouSaidYesButton`) it has real dialog semantics — `role="dialog"`, `aria-labelledby`, focus in on
-  open, focus restored on close, and a Tab trap — because `/nfc` is the one page used cold by people
-  who have never been to the site. Its entrance is a CSS keyframe (`.nfc-modal-*` in `globals.css`)
+  This is where the dialog semantics were first written — `role="dialog"`, `aria-labelledby`, focus
+  in on open, focus restored on close, and a Tab trap — because `/nfc` is the one page used cold by
+  people who have never been to the site. The four hand-rolled modals that had none of them are now
+  a single `ui/ChurchSuiteModal.tsx`, which carries the same treatment. Its entrance is a CSS keyframe (`.nfc-modal-*` in `globals.css`)
   rather than the visible-state-plus-double-rAF the others use: closing unmounts immediately, so the
   entrance was the only transition that ever ran.
 
@@ -4344,11 +4366,31 @@ must never be treated as a security boundary.
   (doubled quotes, CRLF rows) and a UTF-8 BOM, without which Excel on Windows
   mangles the £ in every price column.
 
-### Admin helpers (`lib/adminUpload.ts`, `lib/useIsDesktop.ts`, `lib/useKeyboardInset.ts`, `lib/useIsClient.ts`)
-- `lib/adminUpload.ts` — `uploadPostImage(file)` posts to `/api/admin/posts/upload` (auto-rotate from EXIF, resize to max 1600px, re-encode to WebP q82, `post-media` bucket). Extracted from `RichTextEditor`'s inline toolbar handler so the block inspector's image field shares one implementation. Exports `UPLOAD_ACCEPT` and `UPLOAD_MAX_BYTES`, which mirror the route's own limits so an oversized file fails before the upload rather than after.
-- `lib/useIsDesktop.ts` — the ≥1024px breakpoint, read **synchronously** via `useSyncExternalStore`. The admin editors branch their whole layout on this, and the obvious `useState(false)` + effect version mounted the mobile tree first and then swapped to a different one, silently destroying and recreating the TipTap instance (and its undo history) on every open. `getServerSnapshot` returns `false` so SSR and the first client paint agree.
+### Admin helpers (`lib/adminUpload.ts`, `lib/useAdminLoader.ts`, `lib/useKeyboardInset.ts`)
+- `lib/adminUpload.ts` — `uploadPostImage(file)` posts to `/api/admin/posts/upload` (auto-rotate from EXIF, resize to max 1600px, re-encode to WebP q82, `post-media` bucket). The one implementation, shared by `RichTextEditor`'s toolbar and the block inspector's image field. `UPLOAD_ACCEPT` and `UPLOAD_MAX_BYTES` are **re-exported from** `lib/ai/media-types.ts`, the route's own constants, not restated: the hand-kept copies had already drifted — the accept attribute omitted `image/jpg`, which the server allowed, so the file dialog blocked a file the API would have taken.
+- `lib/useAdminLoader.ts` — the loading/error lifecycle for an admin page that fetches on mount and re-fetches after mutations. The fetcher only fetches and sets its own state; clearing the spinner and surfacing the failure are the hook's job, on every path. Every HR page had grown its own copy and they disagreed on failure: half used `try/finally`, which cleared the spinner but left the page silently empty; the other half awaited a bare `Promise.all`, so one non-OK response (an expired admin session returning HTML, say) made `res.json()` throw, `setLoading(false)` never ran, and the page spun forever. `fetchAdminJson` / `fetchAdminArray` check `res.ok` first so the hook gets an error worth logging. Cancels in flight on unmount.
 - `lib/useKeyboardInset.ts` — how many pixels the on-screen keyboard covers at the bottom of the window, from `visualViewport`. `position: fixed` resolves against the *layout* viewport, which iOS Safari does not shrink for the keyboard, so bottom-anchored sheets and toolbars would otherwise sit underneath it. Thresholded at 120px and rounded: URL-bar collapse and pinch-zoom also move the visual viewport, and an unrounded value hands `useSyncExternalStore` a new snapshot on every scroll frame.
-- `lib/useIsClient.ts` — false on the server and the hydrating render, true after. Guards `createPortal(…, document.body)`. `useSyncExternalStore` rather than `useState` + effect because the latter is a synchronous setState inside an effect, which the React lint rules reject as a cascading render.
+
+---
+
+### Render-timing hooks (`lib/useHydrated.ts`, `lib/useMediaQuery.ts`, `lib/useIsDesktop.ts`, `lib/useScrollLock.ts`)
+
+All of these exist because the obvious `useState` + effect version is a synchronous setState inside an effect — a cascading render, and one the React lint rules reject.
+
+- `lib/useHydrated.ts` — false on the server and the hydrating render, true after. Guards `createPortal(…, document.body)`. `useSyncExternalStore` with a `false` server snapshot and a `true` client snapshot, so React swaps them at hydration with nothing to subscribe to. This absorbed `useIsClient.ts`, which was the same hook written twice, and the fourteen hand-rolled `const [mounted, setMounted] = useState(false)` pairs scattered across the site.
+- `lib/useMediaQuery.ts` — any CSS media query, read synchronously and kept subscribed. Matters most where a component *branches its tree* on the result: reading it in an effect mounts the false branch first and then swaps to a completely different tree, unmounting everything inside it.
+- `lib/useIsDesktop.ts` — the ≥1024px breakpoint, over `useMediaQuery`. The admin editors branch their whole layout on this, and the effect version mounted the mobile tree first and then swapped, silently destroying and recreating the TipTap instance (and its undo history) on every open.
+- `lib/useScrollLock.ts` — holds `document.body` still while active. Body scroll is a single global that a dozen components want to own at once, and the hand-rolled copies fell into two traps: most set `overflow = ""` on the way out instead of restoring what was there, and none of them counted. `Sheet` nests inside `Modal` and both locked — on a shared unmount, child cleanups run first, so `Sheet` restored `""` and `Modal` then restored the `"hidden"` it had captured *from* `Sheet`, leaving the page permanently unscrollable. Counting the locks fixes both: the first saves the real previous value, only the last restores it.
+
+---
+
+### `lib/accessibilityPrefs.ts`
+
+The single owner of the Glass FX / reduced-motion preferences. They are read in three places that each used to parse the stored JSON themselves — the blocking script in `app/layout.tsx` (which must stay inline so the dataset attributes land before first paint), `AccessibilityContext`, and `PerformanceGate`.
+
+It is an external store rather than component state because the value exists before React does: the inline script has already applied it to `<html>` by the time hydration starts. `useSyncExternalStore` lets the provider read it during the first client render while still handing SSR the defaults, so the hydrating markup matches the server's.
+
+`readStoredPrefs()` returns **null** when the visitor has never stored a choice, and that distinction is the point: `PerformanceGate` treats "nothing stored" as permission to apply its own device heuristics. The old provider wrote the defaults to `localStorage` on every mount, so `destiny-a11y` came to mean "a page was loaded" rather than "the visitor chose a setting". Preferences are now persisted only when a setter actually runs.
 
 ---
 

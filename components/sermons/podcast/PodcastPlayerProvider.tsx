@@ -11,6 +11,7 @@ import {
 import Image from "next/image";
 import type { PodcastEpisode } from "@/lib/podcast";
 import { formatClock } from "@/lib/podcast";
+import { useScrollLock } from "@/lib/useScrollLock";
 
 interface PlayerState {
   current: PodcastEpisode | null;
@@ -216,14 +217,7 @@ export function PodcastPlayerProvider({
   };
 
   // Lock background scroll while the full-screen player is open.
-  useEffect(() => {
-    if (!expanded) return;
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.body.style.overflow = prev;
-    };
-  }, [expanded]);
+  useScrollLock(expanded);
 
   // Publish the docked bar's height as a CSS var so other fixed-bottom UI
   // (e.g. Smart Search) can lift above it instead of overlapping its controls.

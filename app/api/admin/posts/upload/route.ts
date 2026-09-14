@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import sharp from "sharp";
 import { createServiceClient } from "@/utils/supabase/service";
-import { MAX_UPLOAD_SIZE_BYTES, ALLOWED_IMAGE_TYPES } from "@/lib/ai/media-types";
+import {
+  MAX_UPLOAD_SIZE_BYTES,
+  MAX_UPLOAD_SIZE_MB,
+  ALLOWED_IMAGE_TYPES,
+} from "@/lib/ai/media-types";
 import { recordAudit } from "@/lib/audit.server";
 
 const BUCKET_NAME = "post-media";
@@ -19,7 +23,7 @@ export async function POST(req: NextRequest) {
     }
     if (file.size > MAX_UPLOAD_SIZE_BYTES) {
       return NextResponse.json(
-        { error: `File too large. Maximum size is ${MAX_UPLOAD_SIZE_BYTES / 1024 / 1024}MB` },
+        { error: `File too large. Maximum size is ${MAX_UPLOAD_SIZE_MB}MB` },
         { status: 400 },
       );
     }

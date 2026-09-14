@@ -24,6 +24,7 @@
 import { useCallback, useEffect, useRef, useId } from "react";
 import { createPortal } from "react-dom";
 import { cn } from "@/lib/cn";
+import { useScrollLock } from "@/lib/useScrollLock";
 
 const FOCUSABLE =
   'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), iframe, [tabindex]:not([tabindex="-1"])';
@@ -69,14 +70,15 @@ export default function Modal({
   const titleId = `modal-title-${reactId}`;
   const descId = `modal-desc-${reactId}`;
 
-  // Focus in on open, back to the opener on close, and hold the page still in
-  // between.
+  // Hold the page still while the modal is up. Counted, so a Sheet opened on
+  // top of this modal releasing its own lock doesn't unlock the page underneath.
+  useScrollLock(open);
+
+  // Focus in on open, back to the opener on close.
   useEffect(() => {
     if (!open) return;
 
     openerRef.current = document.activeElement as HTMLElement | null;
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
 
     // Prefer the close button; fall back to the first focusable thing in the
     // panel for modals rendered without one.
@@ -87,7 +89,6 @@ export default function Modal({
     target?.focus();
 
     return () => {
-      document.body.style.overflow = previousOverflow;
       openerRef.current?.focus?.();
     };
   }, [open]);

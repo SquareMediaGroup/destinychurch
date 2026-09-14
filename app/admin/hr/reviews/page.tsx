@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useState, useCallback } from "react";
 import {
   API,
   fullName,
@@ -21,6 +21,7 @@ import {
   primaryBtn,
 } from "@/components/admin/AdminUI";
 import { useAdminList } from "@/lib/useAdminList";
+import { fetchAdminArray, useAdminLoader } from "@/lib/useAdminLoader";
 import { ReviewModal } from "@/components/admin/hr/modals";
 import { useDialog } from "@/components/DialogProvider";
 
@@ -28,23 +29,18 @@ export default function ReviewsPage() {
   const { confirm } = useDialog();
   const [staff, setStaff] = useState<Staff[]>([]);
   const [reviews, setReviews] = useState<Review[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
   const [adding, setAdding] = useState(false);
 
   const load = useCallback(async () => {
     const [s, r] = await Promise.all([
-      fetch(`${API}/staff`).then((res) => res.json()),
-      fetch(`${API}/reviews`).then((res) => res.json()),
+      fetchAdminArray<Staff>(`${API}/staff`),
+      fetchAdminArray<Review>(`${API}/reviews`),
     ]);
-    setStaff(Array.isArray(s) ? s : []);
-    setReviews(Array.isArray(r) ? r : []);
-    setLoading(false);
+    setStaff(s);
+    setReviews(r);
   }, []);
 
-  useEffect(() => {
-    load();
-  }, [load]);
+  const { loading, error, setError, reload } = useAdminLoader(load);
 
   const today = new Date().toISOString().slice(0, 10);
 
@@ -90,7 +86,7 @@ export default function ReviewsPage() {
       setError("Could not delete review.");
       return;
     }
-    load();
+    reload();
   }
 
   return (
@@ -224,7 +220,7 @@ export default function ReviewsPage() {
           onSaved={() => {
             setAdding(false);
             setError("");
-            load();
+            reload();
           }}
           onError={setError}
         />

@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Image from "next/image";
 import AnimateIn from "@/components/AnimateIn";
-import AlphaSignupModal from "@/components/AlphaSignupModal";
+import ChurchSuiteModal from "@/components/ui/ChurchSuiteModal";
 import WorshipWithUsSection from "@/components/home/WorshipWithUsSection";
 import { getNextAlphaSession } from "@/lib/alphaSession";
 
@@ -515,10 +515,10 @@ export default function BibleCoursePage() {
       <WorshipWithUsSection />
 
       {primaryEvent && (
-        <AlphaSignupModal
+        <ChurchSuiteModal
           open={signupOpen}
           onClose={closeSignup}
-          signupUrl={primaryEvent.signup_url}
+          src={primaryEvent.signup_url}
           title="Register for The Bible Course"
           subtitle={
             startDateFormatted

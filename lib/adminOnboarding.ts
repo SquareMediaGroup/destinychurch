@@ -18,7 +18,7 @@
 // ROUTE_RULES in lib/adminRoles.ts — tests/unit/admin-onboarding.spec.ts fails
 // the build if a tour ever points a role at a page it cannot open.
 
-import type { AdminRole, RoleFlags } from "@/lib/adminRoles";
+import type { RoleFlags } from "@/lib/adminRoles";
 
 /**
  * Roles with a tour. Deliberately not "every AdminRole except super_admin" —

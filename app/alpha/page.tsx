@@ -9,7 +9,7 @@ import { getNextAlphaSession } from "@/lib/alphaSession";
 const ALPHA_HERO_VIDEO =
   "https://player.vimeo.com/progressive_redirect/playback/1158973369/rendition/1080p/file.mp4%20%281080p%29.mp4?loc=external&signature=62a42712f74bca4e0082af9c72980c99f54ccf6cebabdfa6ca58dfeae7e7caee";
 import WorshipWithUsSection from "@/components/home/WorshipWithUsSection";
-import AlphaSignupModal from "@/components/AlphaSignupModal";
+import ChurchSuiteModal from "@/components/ui/ChurchSuiteModal";
 import AlphaTopics from "@/components/alpha/AlphaTopics";
 
 interface AlphaEvent {
@@ -94,7 +94,6 @@ export default function AlphaPage() {
   };
 
   const primaryEvent = events.find(e => e.type === "alpha") || events[0] || null;
-  const secondaryEvent = events.find(e => e.type === "youth_alpha");
 
   const sessionInfo = primaryEvent
     ? getNextAlphaSession(
@@ -524,10 +523,10 @@ export default function AlphaPage() {
 
       {/* Signup modal */}
       {primaryEvent && (
-        <AlphaSignupModal
+        <ChurchSuiteModal
           open={signupOpen}
           onClose={closeSignup}
-          signupUrl={primaryEvent.signup_url}
+          src={primaryEvent.signup_url}
           title="Register for Alpha"
           subtitle={startDateFormatted ? `${sessionLeadIn} ${startDateFormatted}` : undefined}
         />

@@ -1,20 +1,15 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useCookieConsent } from "@/lib/cookieConsent";
+import { useHydrated } from "@/lib/useHydrated";
 
 export default function CookieBanner() {
   const { consent, allowAll, denyOptional } = useCookieConsent();
-  const [mounted, setMounted] = useState(false);
+  // Hydration guard so SSR and client markup stay aligned before consent loads from storage.
+  const mounted = useHydrated();
   const pathname = usePathname();
-
-  useEffect(() => {
-    // Hydration guard so SSR and client markup stay aligned before consent loads from storage.
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setMounted(true);
-  }, []);
 
   // /portal is the staff self-service area: its own minimal shell, no site chrome.
   if (pathname.startsWith("/portal")) return null;

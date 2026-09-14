@@ -7,9 +7,9 @@
 // (app/api/chat/route.ts). Two consequences worth knowing:
 //
 //   The client must be the memoised one. lib/supabase-browser.ts caches a single
-//   instance; utils/supabase/client.ts builds a new one per call, and a new
-//   client means a new websocket. Mounting the panel with the wrong import opens
-//   a socket per render.
+//   instance, and that is the only browser client in the codebase precisely
+//   because a per-call factory means a new client, and a new client means a new
+//   websocket — a socket per render of this panel.
 //
 //   Subscribing is receive-only. The RLS policies on realtime.messages
 //   (supabase/migrations/20260817_live_chat.sql) grant SELECT on these topics and

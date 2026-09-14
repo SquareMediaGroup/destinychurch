@@ -6,7 +6,7 @@ import type { Editor } from "@tiptap/react";
 import { BLOCKS } from "@/components/blocks/registry";
 import type { AnyBlockDefinition } from "@/components/blocks/types";
 import { Sheet } from "@/components/admin/Sheet";
-import { useIsClient } from "@/lib/useIsClient";
+import { useHydrated } from "@/lib/useHydrated";
 import { useIsDesktop } from "@/lib/useIsDesktop";
 import { useKeyboardInset } from "@/lib/useKeyboardInset";
 import { BlockDrawer } from "./BlockDrawer";
@@ -58,7 +58,7 @@ export function BlockTools({ editor }: { editor: Editor | null }) {
   const selected = useSelectedBlock(editor);
   const def = selected ? BLOCKS[selected.blockName] : undefined;
   const keyboard = useKeyboardInset();
-  const isClient = useIsClient();
+  const isClient = useHydrated();
 
   /** Run a command on the selected block, then dismiss any open action sheet. */
   function act(run: (editor: Editor, pos: number) => void) {

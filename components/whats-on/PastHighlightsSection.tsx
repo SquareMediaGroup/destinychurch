@@ -10,6 +10,15 @@ type Video = {
   thumbnail: string;
 };
 
+/** The slice of the YouTube playlistItems response this section actually reads. */
+type PlaylistItem = {
+  snippet?: {
+    title?: string;
+    resourceId?: { videoId?: string };
+    thumbnails?: Partial<Record<"maxres" | "high" | "medium", { url?: string }>>;
+  };
+};
+
 async function getPlaylistVideos(): Promise<Video[]> {
   const apiKey = process.env.YOUTUBE_API_KEY;
   if (!apiKey) return [];
@@ -20,19 +29,24 @@ async function getPlaylistVideos(): Promise<Video[]> {
       { next: { revalidate: 3600 } }
     );
     if (!res.ok) return [];
-    const data = await res.json();
+    const data = (await res.json()) as { items?: PlaylistItem[] };
 
-    return (data.items ?? [])
-      .filter((item: any) => item.snippet?.resourceId?.videoId)
-      .map((item: any) => ({
-        videoId: item.snippet.resourceId.videoId,
-        title: item.snippet.title,
-        thumbnail:
-          item.snippet.thumbnails?.maxres?.url ||
-          item.snippet.thumbnails?.high?.url ||
-          item.snippet.thumbnails?.medium?.url ||
-          `https://i.ytimg.com/vi/${item.snippet.resourceId.videoId}/hqdefault.webp`,
-      }));
+    return (data.items ?? []).flatMap<Video>((item) => {
+      const videoId = item.snippet?.resourceId?.videoId;
+      if (!videoId) return [];
+      const thumbnails = item.snippet?.thumbnails;
+      return [
+        {
+          videoId,
+          title: item.snippet?.title ?? "",
+          thumbnail:
+            thumbnails?.maxres?.url ||
+            thumbnails?.high?.url ||
+            thumbnails?.medium?.url ||
+            `https://i.ytimg.com/vi/${videoId}/hqdefault.webp`,
+        },
+      ];
+    });
   } catch {
     return [];
   }

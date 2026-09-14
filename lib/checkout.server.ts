@@ -185,19 +185,24 @@ export async function finalizeOrderPaid(orderDbId: string): Promise<boolean> {
     .eq("id", order.id);
 
   const items = ((order as OrderWithItems).items ?? []) as OrderItem[];
-  for (const item of items) {
-    if (!item.variant_id) continue;
-    // Atomic decrement (see decrement_variant_stock migration) — a
-    // read-then-write here would let two concurrent finalizations both read
-    // the same starting stock and clobber each other's decrement.
-    const { error } = await supabase.rpc("decrement_variant_stock", {
-      p_variant_id: item.variant_id,
-      p_quantity: item.quantity,
-    });
-    if (error) {
-      console.error(`Stock decrement failed for variant ${item.variant_id}:`, error);
-    }
-  }
+  // Each decrement is an independent atomic RPC (see the
+  // decrement_variant_stock migration) — a read-then-write here would let two
+  // concurrent finalizations both read the same starting stock and clobber each
+  // other. Being atomic is also why they can go out together rather than one
+  // round trip per line: a big order was serialising the whole webhook.
+  await Promise.all(
+    items
+      .filter((item) => item.variant_id)
+      .map(async (item) => {
+        const { error } = await supabase.rpc("decrement_variant_stock", {
+          p_variant_id: item.variant_id,
+          p_quantity: item.quantity,
+        });
+        if (error) {
+          console.error(`Stock decrement failed for variant ${item.variant_id}:`, error);
+        }
+      }),
+  );
 
   console.log(
     `✅ Order ${order.order_number} paid (${formatPrice(order.total_pennies)})`,

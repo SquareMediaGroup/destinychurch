@@ -15,6 +15,9 @@ interface AnimateInProps {
 // "visible" — in viewport: animation plays
 type AnimateState = "initial" | "pending" | "visible";
 
+/** How much of the element must be showing before the entrance animation plays. */
+const VISIBLE_RATIO = 0.1;
+
 export default function AnimateIn({
   children,
   className = "",
@@ -28,27 +31,34 @@ export default function AnimateIn({
     const el = ref.current;
     if (!el) return;
 
-    const rect = el.getBoundingClientRect();
-    const alreadyInView = rect.top < window.innerHeight && rect.bottom > 0;
-
-    if (alreadyInView) {
-      // Already visible on mount — leave in "initial" state, no animation needed
-      return;
-    }
-
-    // Below the fold — hide it and wait for scroll
-    setState("pending");
+    // The observer's own first callback tells us whether the element started in
+    // view, so there is no getBoundingClientRect() here. With ~300 of these on a
+    // page that measurement was ~300 forced synchronous layouts during mount.
+    //
+    // Two thresholds, one observer: ratio > 0 ("any overlap") is the mount test,
+    // and 0.1 is what actually triggers the animation.
+    let seenFirstEntry = false;
 
     const observer = new IntersectionObserver(
       ([entry]) => {
-        if (entry.isIntersecting) {
+        if (!seenFirstEntry) {
+          seenFirstEntry = true;
+          if (entry.isIntersecting) {
+            // Already visible on mount — stay "initial", no animation needed.
+            observer.disconnect();
+            return;
+          }
+        }
+
+        if (entry.intersectionRatio >= VISIBLE_RATIO) {
           setState("visible");
           if (once) observer.disconnect();
-        } else if (!once) {
+        } else {
+          // Below the fold, or scrolled back out when once=false.
           setState("pending");
         }
       },
-      { threshold: 0.1 }
+      { threshold: [0, VISIBLE_RATIO] }
     );
 
     observer.observe(el);

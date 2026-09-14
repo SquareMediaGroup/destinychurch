@@ -37,7 +37,7 @@ function PostListSection({
 }: {
   folder: TrainingFolder | null;
   items: TrainingPost[];
-  setItems: React.Dispatch<React.SetStateAction<TrainingPost[]>>;
+  setItems: (next: TrainingPost[]) => void;
   onDropPost: (postId: string, folderId: string | null) => void;
   togglePublish: (p: TrainingPost) => void;
   setEditing: (p: TrainingPost) => void;
@@ -597,7 +597,7 @@ export default function TrainingPostsPage() {
               <PostListSection
                 folder={null}
                 items={getPostsInFolder(null)}
-                setItems={(newItems) => setPostsInFolder(null, newItems as any)}
+                setItems={(newItems) => setPostsInFolder(null, newItems)}
                 onDropPost={onDropPost}
                 togglePublish={togglePublish}
                 setEditing={setEditingPost}
@@ -643,7 +643,7 @@ export default function TrainingPostsPage() {
           <PostListSection
             folder={activeFolder || null}
             items={getPostsInFolder(activeFolderId)}
-            setItems={(newItems) => setPostsInFolder(activeFolderId, newItems as any)}
+            setItems={(newItems) => setPostsInFolder(activeFolderId, newItems)}
             onDropPost={onDropPost}
             togglePublish={togglePublish}
             setEditing={setEditingPost}

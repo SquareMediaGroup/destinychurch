@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useIsClient } from "@/lib/useIsClient";
+import { useHydrated } from "@/lib/useHydrated";
 import {
   formatCountdown,
   formatServiceDay,
@@ -27,7 +27,7 @@ export default function NextServiceCountdown({
   className?: string;
   startsAt?: string;
 }) {
-  const isClient = useIsClient();
+  const isClient = useHydrated();
   const [now, setNow] = useState(() => new Date());
 
   useEffect(() => {

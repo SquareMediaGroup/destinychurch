@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import AnimateIn from "@/components/AnimateIn";
+import { useScrollLock } from "@/lib/useScrollLock";
 
 export default function NewHereHero() {
   const blob1Ref = useRef<HTMLDivElement>(null);
@@ -41,28 +42,43 @@ export default function NewHereHero() {
     };
   }, []);
 
-  // Open modal
+  // Held so reopening inside the 350ms fade doesn't let the old timer tear the
+  // new modal down, and so unmounting mid-fade doesn't leave it to fire.
+  const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useScrollLock(expanded);
+
   const open = () => {
+    if (closeTimer.current) {
+      clearTimeout(closeTimer.current);
+      closeTimer.current = null;
+    }
     setExpanded(true);
     requestAnimationFrame(() => requestAnimationFrame(() => setVisible(true)));
-    document.body.style.overflow = "hidden";
   };
 
-  // Close modal
-  const close = () => {
+  // Unlike the form modals, this one really does animate out: `expanded` stays
+  // true for the length of the fade so the transition has something to run on.
+  const close = useCallback(() => {
     setVisible(false);
-    setTimeout(() => {
+    closeTimer.current = setTimeout(() => {
       setExpanded(false);
-      document.body.style.overflow = "";
+      closeTimer.current = null;
     }, 350);
-  };
+  }, []);
 
-  // Close on Escape
+  useEffect(() => () => {
+    if (closeTimer.current) clearTimeout(closeTimer.current);
+  }, []);
+
+  // Only while open — a closed modal listening for Escape used to run the whole
+  // close sequence, scroll unlock included, on any Escape anywhere on the page.
   useEffect(() => {
+    if (!expanded) return;
     const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") close(); };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, []);
+  }, [expanded, close]);
 
   return (
     <>

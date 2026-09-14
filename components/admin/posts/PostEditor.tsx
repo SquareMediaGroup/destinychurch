@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useIsDesktop } from "@/lib/useIsDesktop";
+import { useScrollLock } from "@/lib/useScrollLock";
 import { API, type Post } from "@/lib/posts";
 import { slugify } from "@/lib/jobs";
 import { primaryBtn, ghostBtn } from "@/components/admin/AdminUI";
@@ -213,14 +214,12 @@ export function PostEditor({
 
   // Full-screen layout manages its own Escape-to-close + scroll lock. Both
   // breakpoints are full-screen now, so this is unconditional.
+  useScrollLock(true);
+
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
     document.addEventListener("keydown", onKey);
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.removeEventListener("keydown", onKey);
-      document.body.style.overflow = "";
-    };
+    return () => document.removeEventListener("keydown", onKey);
   }, [onClose]);
 
   async function submit(e?: React.FormEvent) {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import Link from "next/link";
 import {
   API,
@@ -11,7 +11,8 @@ import {
   type Review,
 } from "@/lib/hr";
 import type { Job, JobApplication } from "@/lib/jobs";
-import { PageHeader, Badge, CardSkeleton } from "@/components/admin/AdminUI";
+import { PageHeader, Badge, CardSkeleton, ErrorNote } from "@/components/admin/AdminUI";
+import { fetchAdminArray, useAdminLoader } from "@/lib/useAdminLoader";
 import { ADMIN_GROUPS } from "@/lib/adminNav";
 
 /** The HR group from the nav registry, minus the HR landing page itself. */
@@ -26,25 +27,22 @@ export default function HrDashboardPage() {
   const [reviews, setReviews] = useState<Review[]>([]);
   const [jobs, setJobs] = useState<Job[]>([]);
   const [applications, setApplications] = useState<JobApplication[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    Promise.all([
-      fetch(`${API}/staff`).then((r) => r.json()),
-      fetch(`${API}/leave`).then((r) => r.json()),
-      fetch(`${API}/reviews`).then((r) => r.json()),
-      fetch(`${API}/jobs`).then((r) => r.json()),
-      fetch(`${API}/applications`).then((r) => r.json()),
-    ])
-      .then(([s, l, r, j, a]) => {
-        setStaff(Array.isArray(s) ? s : []);
-        setLeave(Array.isArray(l) ? l : []);
-        setReviews(Array.isArray(r) ? r : []);
-        setJobs(Array.isArray(j) ? j : []);
-        setApplications(Array.isArray(a) ? a : []);
-      })
-      .finally(() => setLoading(false));
+  const load = useCallback(async () => {
+    const [s, l, r, j, a] = await Promise.all([
+      fetchAdminArray<Staff>(`${API}/staff`),
+      fetchAdminArray<LeaveRequest>(`${API}/leave`),
+      fetchAdminArray<Review>(`${API}/reviews`),
+      fetchAdminArray<Job>(`${API}/jobs`),
+      fetchAdminArray<JobApplication>(`${API}/applications`),
+    ]);
+    setStaff(s);
+    setLeave(l);
+    setReviews(r);
+    setJobs(j);
+    setApplications(a);
   }, []);
+
+  const { loading, error } = useAdminLoader(load);
 
   const activeStaff = staff.filter((s) => s.status !== "left").length;
   const pendingLeave = leave.filter((l) => l.status === "pending");
@@ -89,6 +87,8 @@ export default function HrDashboardPage() {
         subtitle="People, leave, documents and reviews at a glance."
         back={{ href: "/admin", label: "Dashboard" }}
       />
+
+      <ErrorNote>{error}</ErrorNote>
 
       {loading ? (
         <CardSkeleton count={4} />

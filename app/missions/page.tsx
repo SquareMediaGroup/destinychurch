@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Image from "next/image";
 import Link from "next/link";
 import AnimateIn from "@/components/AnimateIn";
 import MediaEmbed from "@/components/missions/MediaEmbed";

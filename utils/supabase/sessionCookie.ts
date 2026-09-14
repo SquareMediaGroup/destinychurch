@@ -7,6 +7,8 @@ import type { CookieOptions } from "@supabase/ssr";
 export const REMEMBER_COOKIE_NAME = "sb-remember";
 
 export function stripMaxAge(options: CookieOptions): CookieOptions {
-  const { maxAge, expires, ...rest } = options;
+  const rest = { ...options };
+  delete rest.maxAge;
+  delete rest.expires;
   return rest;
 }

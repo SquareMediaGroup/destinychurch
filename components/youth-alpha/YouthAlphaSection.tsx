@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import AnimateIn from "@/components/AnimateIn";
-import AlphaSignupModal from "@/components/AlphaSignupModal";
+import ChurchSuiteModal from "@/components/ui/ChurchSuiteModal";
 import Button from "@/components/ui/Button";
 
 interface AlphaEvent {
@@ -135,10 +135,10 @@ export default function YouthAlphaSection() {
 
       {/* Signup modal */}
       {event && (
-        <AlphaSignupModal
+        <ChurchSuiteModal
           open={signupOpen}
           onClose={closeSignup}
-          signupUrl={event.signup_url}
+          src={event.signup_url}
           title="Sign Up for Youth Alpha"
           subtitle={
             startDateFormatted ? `Starting ${startDateFormatted}` : undefined

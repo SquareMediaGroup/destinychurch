@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import type { ShopHeroSlide } from "@/lib/shop";
+import { useMediaQuery } from "@/lib/useMediaQuery";
 
 const ROTATE_MS = 6000;
 
@@ -13,17 +14,13 @@ const ROTATE_MS = 6000;
 // prefers-reduced-motion. The shop page only renders this when slides exist —
 // otherwise it keeps the static "The Destiny Store" masthead.
 export default function ShopHero({ slides }: { slides: ShopHeroSlide[] }) {
-  const [index, setIndex] = useState(0);
+  const [rawIndex, setIndex] = useState(0);
   const [paused, setPaused] = useState(false);
-  const [reducedMotion, setReducedMotion] = useState(false);
+  const reducedMotion = useMediaQuery("(prefers-reduced-motion: reduce)");
 
-  useEffect(() => {
-    const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
-    const update = () => setReducedMotion(mq.matches);
-    update();
-    mq.addEventListener("change", update);
-    return () => mq.removeEventListener("change", update);
-  }, []);
+  // Clamped here rather than corrected by an effect: if an admin removes the
+  // slide we are sitting on, an effect would paint one blank frame first.
+  const index = rawIndex < slides.length ? rawIndex : 0;
 
   const canRotate = slides.length > 1 && !reducedMotion && !paused;
 
@@ -36,17 +33,18 @@ export default function ShopHero({ slides }: { slides: ShopHeroSlide[] }) {
     return () => clearInterval(t);
   }, [canRotate, slides.length]);
 
-  // Keep the index in range if the slide count changes.
-  useEffect(() => {
-    if (index > slides.length - 1) setIndex(0);
-  }, [slides.length, index]);
-
-  const hoverHandlers = useRef({
-    onMouseEnter: () => setPaused(true),
-    onMouseLeave: () => setPaused(false),
-    onFocusCapture: () => setPaused(true),
-    onBlurCapture: () => setPaused(false),
-  }).current;
+  // A stable object so spreading it onto <section> doesn't hand React four new
+  // handler identities every render. useMemo, not useRef().current — reading a
+  // ref during render is what React's rules of hooks rule out.
+  const hoverHandlers = useMemo(
+    () => ({
+      onMouseEnter: () => setPaused(true),
+      onMouseLeave: () => setPaused(false),
+      onFocusCapture: () => setPaused(true),
+      onBlurCapture: () => setPaused(false),
+    }),
+    [],
+  );
 
   return (
     <section

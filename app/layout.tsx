@@ -457,7 +457,7 @@ export default async function RootLayout({
             >
               <BannerSpacer />
               <Suspense>
-                <ChurchHeader />
+                <ChurchHeader searchEnabled={smartSearchEnabled} />
               </Suspense>
               <main className="flex-1">{children}</main>
               <FooterGate><ChurchFooter /></FooterGate>

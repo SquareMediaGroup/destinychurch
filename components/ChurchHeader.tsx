@@ -7,6 +7,7 @@ import { usePathname } from "next/navigation";
 import { useBannerBars } from "@/lib/useBannerBars";
 import { useHydrated } from "@/lib/useHydrated";
 import CartButton from "@/components/shop/CartButton";
+import MobileMenuSearch from "@/components/smartSearch/MobileMenuSearch";
 
 const aboutDropdown = [
   { href: "/about", label: "Our Mission" },
@@ -78,11 +79,25 @@ function Dropdown({
 
 const MORPH_DISTANCE = 180;
 
-export default function ChurchHeader() {
+export default function ChurchHeader({
+  searchEnabled = true,
+}: {
+  /** Whether the Smart Search AI service is up. Threaded down to the mobile
+   *  menu's inline search — false hides it entirely. */
+  searchEnabled?: boolean;
+}) {
   const pathname = usePathname();
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [mobileSubmenu, setMobileSubmenu] = useState<string | null>(null);
+  // Keeps rendering the last-active submenu's items while sliding back to the
+  // top level, so the submenu panel doesn't flash empty mid-transition.
+  const [lastSubmenu, setLastSubmenu] = useState<string | null>(null);
+  const [prevSubmenu, setPrevSubmenu] = useState<string | null>(mobileSubmenu);
+  if (mobileSubmenu !== prevSubmenu) {
+    setPrevSubmenu(mobileSubmenu);
+    if (mobileSubmenu) setLastSubmenu(mobileSubmenu);
+  }
   const [, setScrolled] = useState(false);
   // Drives the header's slide-in on first paint.
   const mounted = useHydrated();
@@ -107,6 +122,7 @@ export default function ChurchHeader() {
     setMobileOpen(false);
     setMobileSubmenu(null);
   };
+
 
   const handleScroll = useCallback(() => {
     if (rafId.current != null) return;
@@ -380,40 +396,30 @@ export default function ChurchHeader() {
           }}
         />
         <div
-          className="relative flex h-full flex-col items-center justify-center overflow-y-auto px-8 pb-16 pt-32"
+          className="relative flex h-full flex-col items-center justify-center overflow-hidden px-8 pb-16 pt-32"
           style={{
             opacity: mobileOpen ? 1 : 0,
             pointerEvents: mobileOpen ? "auto" : "none",
             transition: "opacity 0.15s ease",
           }}
         >
-        {mobileSubmenu ? (
-          <div className="flex w-full flex-col items-center gap-1">
-            <button
-              type="button"
-              onClick={() => setMobileSubmenu(null)}
-              className="mb-5 rounded-full bg-black/10 px-5 py-2 text-sm font-bold text-white"
-            >
-              ← Back
-            </button>
-            {(mobileSubmenu === "What's on" ? whatsOnDropdown : aboutDropdown).map((item, i) => (
-              <Link
-                key={item.label}
-                href={item.href}
-                onClick={closeMobileMenu}
-                className="py-2.5 text-center text-2xl font-extrabold text-white"
-                style={{
-                  opacity: mobileOpen ? 1 : 0,
-                  transform: mobileOpen ? "translateY(0)" : "translateY(-8px)",
-                  transition: `opacity 0.25s ease ${i * 0.04 + 0.05}s, transform 0.25s ease ${i * 0.04 + 0.05}s`,
-                }}
-              >
-                {item.label}
-              </Link>
-            ))}
-          </div>
-        ) : (
-          <div className="flex w-full flex-col items-center gap-1">
+        {/* Sliding row: top-level panel + submenu panel side by side, both
+            always mounted, translated horizontally between the two states so
+            navigating into/out of a submenu is a real slide rather than an
+            instant swap. The outer wrapper clips to the visible panel width;
+            the inner row is twice as wide (one panel each) and translates by
+            half its own width — i.e. exactly one panel — to switch views. */}
+        <div className="relative w-full max-h-full overflow-y-auto overflow-x-hidden">
+        <div
+          className="flex"
+          style={{
+            width: "200%",
+            transform: mobileSubmenu ? "translateX(-50%)" : "translateX(0)",
+            transition: "transform 0.38s cubic-bezier(0.4, 0, 0.2, 1)",
+          }}
+        >
+          {/* Top-level panel */}
+          <div className="flex w-1/2 shrink-0 flex-col items-center gap-1">
             {navItems.map((item, i) =>
               item.dropdown ? (
                 <button
@@ -455,8 +461,47 @@ export default function ChurchHeader() {
                 New Here?
               </Link>
             </div>
+
+            <MobileMenuSearch
+              open={mobileOpen}
+              searchEnabled={searchEnabled}
+              onNavigate={closeMobileMenu}
+            />
           </div>
-        )}
+
+          {/* Submenu panel */}
+          <div className="flex w-1/2 shrink-0 flex-col items-center gap-1 px-4">
+            <button
+              type="button"
+              onClick={() => setMobileSubmenu(null)}
+              className="mb-5 rounded-full bg-black/10 px-5 py-2 text-sm font-bold text-white"
+              style={{
+                opacity: mobileSubmenu ? 1 : 0,
+                transition: "opacity 0.2s ease",
+              }}
+              tabIndex={mobileSubmenu ? 0 : -1}
+            >
+              ← Back
+            </button>
+            {(lastSubmenu === "What's on" ? whatsOnDropdown : aboutDropdown).map((item, i) => (
+              <Link
+                key={item.label}
+                href={item.href}
+                onClick={closeMobileMenu}
+                className="py-2.5 text-center text-2xl font-extrabold text-white"
+                style={{
+                  opacity: mobileSubmenu ? 1 : 0,
+                  transform: mobileSubmenu ? "translateY(0)" : "translateY(-8px)",
+                  transition: `opacity 0.25s ease ${mobileSubmenu ? i * 0.04 + 0.05 : 0}s, transform 0.25s ease ${mobileSubmenu ? i * 0.04 + 0.05 : 0}s`,
+                }}
+                tabIndex={mobileSubmenu ? 0 : -1}
+              >
+                {item.label}
+              </Link>
+            ))}
+          </div>
+        </div>
+        </div>
         </div>
       </div>
     </>

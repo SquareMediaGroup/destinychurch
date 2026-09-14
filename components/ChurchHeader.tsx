@@ -7,7 +7,6 @@ import { usePathname } from "next/navigation";
 import { useBannerBars } from "@/lib/useBannerBars";
 import { useHydrated } from "@/lib/useHydrated";
 import CartButton from "@/components/shop/CartButton";
-import MobileMenuSearch from "@/components/smartSearch/MobileMenuSearch";
 
 const aboutDropdown = [
   { href: "/about", label: "Our Mission" },
@@ -79,13 +78,7 @@ function Dropdown({
 
 const MORPH_DISTANCE = 180;
 
-export default function ChurchHeader({
-  searchEnabled = true,
-}: {
-  /** Whether the Smart Search AI service is up. Threaded down to the mobile
-   *  menu's inline search — false hides it entirely. */
-  searchEnabled?: boolean;
-}) {
+export default function ChurchHeader() {
   const pathname = usePathname();
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -461,12 +454,6 @@ export default function ChurchHeader({
                 New Here?
               </Link>
             </div>
-
-            <MobileMenuSearch
-              open={mobileOpen}
-              searchEnabled={searchEnabled}
-              onNavigate={closeMobileMenu}
-            />
           </div>
 
           {/* Submenu panel */}

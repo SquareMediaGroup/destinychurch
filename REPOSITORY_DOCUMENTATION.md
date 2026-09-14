@@ -235,7 +235,7 @@ destinychurch/
 │   ├── SiteBanner.tsx             # Announcement banner (from DB)
 │   ├── SitePopup.tsx              # Modal pop-up (from DB)
 │   ├── FloatingSmartSearch.tsx    # The floating AI Smart Search widget
-│   ├── smartSearch/               # Smart Search result cards (products, weather, maps, web), SmartSearchWidget/SmartSearchThread, and MobileMenuSearch (inline mobile-menu search)
+│   ├── smartSearch/               # Smart Search result cards (products, weather, maps, web)
 │   ├── LiveBanner.tsx             # "WE ARE LIVE" banner bar
 │   ├── GlassBloomTracker.tsx      # Glass-effect performance tracking
 │   ├── FooterGate.tsx / PerformanceGate.tsx / BannerSpacer.tsx  # Layout/perf gating helpers
@@ -1973,7 +1973,7 @@ export default async function RootLayout({ children }) {
         <Providers banner={banner}>
           <CookieBanner />
           <div className="flex flex-col">
-            <ChurchHeader searchEnabled={smartSearchEnabled} />
+            <ChurchHeader />
             <main>{children}</main>
             <ChurchFooter />
           </div>
@@ -2040,11 +2040,10 @@ Rendered on every page (server component with Suspense).
 - **Logo** — Clickable link to home
 - **Navigation menu** — Top-level links plus hover **dropdowns** ("About", "What's on") that fade in as white rounded cards with a staggered per-item reveal
 - **Mobile menu** — Animated hamburger (bars morph into an X) opens a **full-screen brand-colour overlay** with drill-down submenus and a top-down reveal (see `ChurchHeader.tsx` below); no left-hand drawer. Top-level items and a submenu ("What's on"/"About") sit side by side in a double-width row that slides horizontally (`translateX`) between the two, rather than an instant swap — both panels stay mounted so the transition is a real slide in both directions, and the submenu panel keeps rendering the last-active submenu's items while sliding back out so it never flashes empty.
-- **Mobile menu search** — `components/smartSearch/MobileMenuSearch.tsx` docks a Smart Search input inline in the mobile menu (below the nav links, above/near "New Here?"), rather than only being reachable via the floating pill. It reuses the same `useSmartSearchChat()` hook and `SmartSearchThread` renderer as `FloatingSmartSearch`/`SmartSearchWidget`, but with its own compact styling that matches the menu's orange overlay instead of the site-wide glass pill. While the mobile menu is open it hides the floating pill via `useHideFloatingSmartSearch()` (`lib/smartSearchVisibility.tsx`) — the same mechanism `NotFoundSearch` uses on the 404 page — so there's only ever one Smart Search entry point on screen.
 - **Scroll morph** — The header pill reshapes as you scroll (progress ramps over `MORPH_DISTANCE`)
 - **Auth indicator** — Login/logout buttons
 
-Site-wide search otherwise lives in the floating `FloatingSmartSearch` mark (Smart Search); see that component below. The mobile menu's inline search above is the one exception — it's a separate, menu-styled surface over the same underlying logic.
+Site search is **not** in the header — it lives in the floating `FloatingSmartSearch` mark (Smart Search); see that component below.
 
 ---
 
@@ -2460,22 +2459,14 @@ focus to whatever opened it, and locks body scroll — restoring the *previous*
 
 #### `ChurchHeader.tsx`
 - **What:** Site navigation header
-- **Props:** `searchEnabled?: boolean` (threaded down from `app/layout.tsx`'s `isSmartSearchEnabled()`, same kill-switch value passed to `FloatingSmartSearch`, and forwarded into the mobile menu's inline search below) — otherwise a client component holding its own open/submenu/scroll state and reading `useBannerBars()` + `usePathname()`
+- **Props:** None (client component; holds its own open/submenu/scroll state and reads `useBannerBars()` + `usePathname()`)
 - **Behavior:**
   - Desktop: horizontal menu bar; "About" and "What's on" open hover **dropdowns** (`Dropdown`) rendered as white rounded cards that fade in with a staggered per-item reveal (a brief close delay keeps them from flickering shut between the trigger and the card)
   - Mobile: an animated hamburger (bars morph into an X) toggles a **full-screen brand-colour overlay** (`fixed inset-0`, `bg-destiny-orange/60 backdrop-blur`, a sibling of `<header>`) with **drill-down submenus** (`mobileSubmenu` state) and a top-down reveal; scrolling auto-closes it
   - The top-level list and the active submenu's list are laid out side by side in a `width: 200%` flex row that translates `-50%`/`0` (`transition: transform 0.38s cubic-bezier(0.4, 0, 0.2, 1)`) to switch between them — a real slide left/right rather than an unmount/mount swap. Both panels stay mounted; a `lastSubmenu` value (updated during render, not in an effect, guarded against re-render loops) keeps the submenu panel showing its last items while it slides back off-screen so it never goes blank mid-transition. The per-item stagger fade/translateY on entry is unchanged.
-  - The mobile menu's top-level panel also mounts `<MobileMenuSearch>` below the nav links (see `smartSearch/MobileMenuSearch.tsx` below) — the menu's own inline Smart Search entry point
   - A scroll-driven **morph** reshapes the header pill (`progress` ramps 0→1 over `MORPH_DISTANCE`)
   - Active route highlighting
-  - Site-wide search otherwise lives in `FloatingSmartSearch` — the mobile menu's inline search is the one exception (see below)
-
-#### `smartSearch/MobileMenuSearch.tsx`
-- **What:** Smart Search docked inline inside the mobile nav menu, rather than only reachable via the floating pill
-- **Props:** `open: boolean` (mobile menu open state, drives hiding the floating pill), `searchEnabled?: boolean`, `onNavigate: () => void` (called on a result/CTA tap so the mobile menu can close — wired to `ChurchHeader`'s `closeMobileMenu`)
-- **Reuses, not duplicates:** the same `useSmartSearchChat()` hook (`lib/useSmartSearchChat.ts`) and `SmartSearchThread` conversation renderer that `SmartSearchWidget`/`FloatingSmartSearch` use — same `/api/chat` backend, same messages/cards/options/CTA. Only the surrounding chrome is its own: a plain rounded input matching the mobile menu's orange overlay (no glass pill, no morphing circle, no placeholder-prompt rotation), with the thread rendered inline underneath once there's a conversation
-- **Gated** the same way as the floating pill: `useCookieConsent().decided` and `searchEnabled`
-- **Hides the floating pill while the menu is open**, via `useHideFloatingSmartSearch()` from `lib/smartSearchVisibility.tsx` — the same context `NotFoundSearch` uses on the 404 page — so there's only ever one Smart Search entry point on screen
+  - Search is not in the header — it lives in `FloatingSmartSearch`
 - Clears its conversation (`reset()`) whenever the menu closes, so reopening it starts fresh
 
 #### `ChurchFooter.tsx`

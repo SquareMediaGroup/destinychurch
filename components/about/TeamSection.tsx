@@ -19,7 +19,10 @@ function TeamCard({ name, role, photo, cardBg, email }: { name: string; role: st
   const initials = name.split(" ").map((n) => n[0]).join("");
   return (
     <div className="group flex flex-col items-center text-center">
-      <div className="relative mb-3 w-full overflow-hidden rounded-2xl" style={{ background: `linear-gradient(to top, rgba(0,0,0,0.5), transparent), ${cardBg}` }}>
+      <div
+        className="relative mb-3 w-full overflow-hidden rounded-2xl bg-[#f5f3ef] transition-colors duration-300 group-hover:bg-[var(--card-hover-bg)]"
+        style={{ backgroundImage: "linear-gradient(to top, rgba(0,0,0,0.5), transparent)", "--card-hover-bg": cardBg } as React.CSSProperties}
+      >
         {photo ? (
           <Image src={photo} alt={name} width={220} height={280} className="w-full object-contain" />
         ) : (

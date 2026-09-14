@@ -14,7 +14,9 @@ export default function SiteBanner() {
   const { live } = useLiveStatus();
   const pathname = usePathname();
 
-  const isAdmin = pathname.startsWith("/admin");
+  // /admin has its own chrome; /portal is the staff self-service area with
+  // its own minimal shell — neither shows site-wide promotional banners.
+  const isAdmin = pathname.startsWith("/admin") || pathname.startsWith("/portal");
   const isSitewideActive = Boolean(
     banner.active && banner.message && banner.type === "sitewide" && !isAdmin,
   );

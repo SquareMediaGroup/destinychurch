@@ -11,6 +11,7 @@ export default function LiveBanner() {
   if (!live) return null;
   if (pathname === "/live") return null;
   if (pathname.startsWith("/admin")) return null;
+  if (pathname.startsWith("/portal")) return null;
 
   return (
     <div

@@ -17,7 +17,7 @@ export function useBannerBars(): number {
   const live = useLiveStatus();
   const pathname = usePathname();
 
-  if (pathname.startsWith("/admin")) return 0;
+  if (pathname.startsWith("/admin") || pathname.startsWith("/portal")) return 0;
   if (banner.active && banner.type === "sitewide") return 0;
 
   // The live banner takes priority — other banners don't stack under it.

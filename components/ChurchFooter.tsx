@@ -46,7 +46,7 @@ export default async function ChurchFooter() {
         <div className="grid gap-0 md:grid-cols-[1.3fr_1fr_1fr_1fr] md:gap-10">
           {/* Brand column */}
           <div className="space-y-5 pb-6 md:pb-0">
-            <Link href="/" aria-label="Destiny Church" className="-ml-[30px] -mt-[7px] block">
+            <Link href="/" aria-label="Destiny Church" className="-mt-[7px] block md:-ml-[30px]">
               <div className="relative h-11 w-[200px]">
                 <Image
                   src="/img/brand/destiny-logo-color-white.svg"

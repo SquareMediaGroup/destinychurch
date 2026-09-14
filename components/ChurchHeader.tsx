@@ -201,7 +201,13 @@ export default function ChurchHeader() {
   const bannerBars = useBannerBars();
 
   // /nfc is the in-service NFC landing page: standalone, no site nav.
-  if (pathname.startsWith("/admin") || pathname.startsWith("/nfc")) return null;
+  // /portal is the staff self-service area: its own minimal shell, no site nav.
+  if (
+    pathname.startsWith("/admin") ||
+    pathname.startsWith("/nfc") ||
+    pathname.startsWith("/portal")
+  )
+    return null;
 
   const isAdmin = pathname.startsWith("/admin");
   const isHome = pathname === "/";

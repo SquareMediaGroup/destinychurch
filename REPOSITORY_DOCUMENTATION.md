@@ -2035,7 +2035,9 @@ Both dialog helpers reuse the visual conventions from `components/admin/hr/HrUI.
 
 ### Layer 3: Header & Navigation (`components/ChurchHeader.tsx`)
 
-Rendered on every page (server component with Suspense).
+Rendered on the public site (client component). It self-suppresses (returns
+`null`) on the chrome-free shells — `/admin`, `/nfc`, and `/portal` — so those
+areas render without site nav.
 
 - **Logo** — Clickable link to home
 - **Navigation menu** — Top-level links plus hover **dropdowns** ("About", "What's on") that fade in as white rounded cards with a staggered per-item reveal
@@ -2467,6 +2469,7 @@ focus to whatever opened it, and locks body scroll — restoring the *previous*
   - A scroll-driven **morph** reshapes the header pill (`progress` ramps 0→1 over `MORPH_DISTANCE`)
   - Active route highlighting
   - Search is not in the header — it lives in `FloatingSmartSearch`
+  - Self-suppresses: returns `null` on `/admin`, `/nfc`, and `/portal` (each is a chrome-free shell with its own minimal layout)
 - Clears its conversation (`reset()`) whenever the menu closes, so reopening it starts fresh
 
 #### `ChurchFooter.tsx`
@@ -2518,6 +2521,7 @@ Once consent is in, `ChurchSuiteEmbed` and `MediaEmbed` cover the iframe with `u
   - Multiple banner types (sitewide, alpha events, recovery)
   - Optional CTA link
   - Can be dismissed by user (session storage)
+- **Path suppression:** hidden on `/admin` and `/portal` (both are chrome-free staff shells with their own minimal layout); the `isAdmin` check in the component covers both prefixes
 
 #### `SitePopup.tsx`
 - **What:** Modal pop-up overlay
@@ -2597,7 +2601,7 @@ through the site's normal nav and the "New Here?" page/link, which were never pa
 #### `LiveBanner.tsx`
 - **What:** "WE ARE LIVE" banner bar, styled like `SiteBanner.tsx`'s bars
 - **Data:** `LiveContext` (server-seeded in root layout via `getLiveStatus()`, then polled client-side every 30s)
-- **Behavior:** Renders at the top banner slot whenever the channel is live; hidden on `/live` and `/admin/*`. CTA links to `/live`. The live bar **takes priority over the DB banners** — while it shows, the sitewide/alpha/recovery banners are hidden rather than stacked beneath it (`lib/useBannerBars.ts` returns `1` when live off `/live`), so there is only ever one bar to notice during a service.
+- **Behavior:** Renders at the top banner slot whenever the channel is live; hidden on `/live`, `/admin/*`, and `/portal/*`. CTA links to `/live`. The live bar **takes priority over the DB banners** — while it shows, the sitewide/alpha/recovery banners are hidden rather than stacked beneath it (`lib/useBannerBars.ts` returns `1` when live off `/live`), so there is only ever one bar to notice during a service.
 
 #### `contexts/LiveContext.tsx`
 - **What:** The single client-side source of live state, consumed by the banner and every part of `/live`

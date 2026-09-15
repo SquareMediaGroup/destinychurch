@@ -32,6 +32,18 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+*.env
+# ...and any archive/backup of them. `.env*` does NOT match `Env.zip`,
+# `env-backup.tar.gz`, `.env.local copy`, etc. Be broad here on purpose.
+[Ee]nv.zip
+[Ee]nv*.zip
+*env*.zip
+*env*.tar
+*env*.tar.gz
+*env*.7z
+*env*.bak
+*.env.*
+*secrets*.zip
 
 # local-only secrets / instructions
 CLAUDE.local.md
@@ -52,3 +64,9 @@ node_modules/
 /playwright/.cache/
 /playwright/.auth/
 .claude/worktrees/
+
+# tooling scratch / local caches
+.firecrawl/
+mobile/.expo/
+mobile/expo-env.d.ts
+.footer-repro.html

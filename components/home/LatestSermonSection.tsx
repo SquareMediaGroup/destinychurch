@@ -19,10 +19,11 @@ export default function LatestSermonSection({
 
   const date = formatDate(video.publishedAt);
 
-  // Upload titles often read "Message Title || Ps Speaker"; lift the speaker out.
-  const [rawTitle, ...speakerParts] = video.title.split("||");
-  const title = rawTitle.trim();
-  const speaker = speakerParts.join("||").trim();
+  // Title and speaker are already separated upstream by parseYouTubeTitle()
+  // (lib/sermonTitle.ts), which handles the channel's "|", "||" and " - Ps X"
+  // conventions — video.title never still carries the speaker segment.
+  const title = video.title;
+  const speaker = video.speaker;
 
   const watchHref = quotaExceeded
     ? `https://www.youtube.com/watch?v=${video.id}`

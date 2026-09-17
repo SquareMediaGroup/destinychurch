@@ -64,14 +64,11 @@ export default async function ChurchFooter() {
               you through our doors!
             </p>
             <MapsLink
-              className="group block text-sm text-white/70 transition hover:text-white focus-visible:text-white"
-              aria-label="Open Destiny Centre, Norton Road, Stockton-on-Tees, TS20 2QQ in maps"
+              className="block text-sm text-white/70 transition hover:text-white focus-visible:text-white"
+              aria-label="Open 395 Norton Road, Stockton-on-Tees, TS20 2QQ in maps"
             >
               <address className="not-italic">
-                <span className="block font-bold text-white/90 transition group-hover:text-white group-focus-visible:text-white">
-                  Destiny Centre
-                </span>
-                <span className="block">Norton Road</span>
+                <span className="block">395 Norton Road</span>
                 <span className="block">Stockton-on-Tees</span>
                 <span className="block">TS20 2QQ</span>
               </address>

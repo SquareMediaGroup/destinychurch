@@ -17,7 +17,7 @@
 
 /** The address as it should be handed to a map app (and as the footer prints it). */
 export const DESTINY_CENTRE_ADDRESS =
-  "Destiny Centre, Norton Road, Stockton-on-Tees, TS20 2QQ";
+  "395 Norton Road, Stockton-on-Tees, TS20 2QQ";
 
 /** Google Maps search URL — the cross-platform default. */
 export function googleMapsUrl(query: string = DESTINY_CENTRE_ADDRESS): string {

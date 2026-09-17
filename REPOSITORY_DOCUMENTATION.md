@@ -2477,7 +2477,7 @@ focus to whatever opened it, and locks body scroll — restoring the *previous*
 - **What:** Sitewide footer (server component — awaits `isYouTubeQuotaExceeded()` to drop the Sermons link when the YouTube quota is blown)
 - **Displays:** Brand blurb + address, three link columns (Church / Connect / Legal), copyright, Report a Bug, phone
 - **Layout:** 4-column grid from `md:` up; on mobile the three link columns render as accordions via `FooterLinkGroup`
-- **Address:** The "Destiny Centre / Norton Road / Stockton-on-Tees / TS20 2QQ" block is one `MapsLink` wrapping an `<address>` — the whole block is a single tap target that opens the device's map app
+- **Address:** The "395 Norton Road / Stockton-on-Tees / TS20 2QQ" block is one `MapsLink` wrapping an `<address>` — the whole block is a single tap target that opens the device's map app. The street number matters: it's what makes the map app land on the building rather than guessing at the venue name
 
 #### `MapsLink.tsx` + `lib/maps.ts`
 - **What:** Client component that wraps an address in a link to the device's map app
@@ -4457,10 +4457,13 @@ time:
 - `deviceMapsUrl(query?)` — Apple URL on Apple devices, Google everywhere else
   (including the server, where `navigator` is undefined).
 
-`DESTINY_CENTRE_ADDRESS` is the single source of truth for the address string —
-both `components/MapsLink.tsx` and the `get_directions` Smart Search tool in
-`lib/smartSearch/tools.ts` import it, so the footer and the AI answer can't
-drift apart.
+`DESTINY_CENTRE_ADDRESS` (`"395 Norton Road, Stockton-on-Tees, TS20 2QQ"`) is the
+single source of truth for the address string — both `components/MapsLink.tsx`
+and the `get_directions` Smart Search tool in `lib/smartSearch/tools.ts` import
+it, so the footer and the AI answer can't drift apart. It leads with the street
+number rather than the venue name, matching `streetAddress` in the schema.org
+`PostalAddress` in `app/layout.tsx`, so map apps geocode to the building instead
+of searching for "Destiny Centre".
 
 Queries are free-text addresses rather than coordinates, deliberately: the
 address is what the UI prints, and letting the map app geocode it keeps the two

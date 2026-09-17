@@ -3,6 +3,7 @@ import Image from "next/image";
 import { isYouTubeQuotaExceeded } from "@/lib/youtube";
 import ReportBugLink from "@/components/report-bug/ReportBugLink";
 import FooterLinkGroup from "@/components/FooterLinkGroup";
+import MapsLink from "@/components/MapsLink";
 
 const connectLinks = [
   { label: "New Here?", href: "/new-here" },
@@ -62,12 +63,19 @@ export default async function ChurchFooter() {
               can find a place to belong and thrive. We&apos;d love to welcome
               you through our doors!
             </p>
-            <div className="text-sm text-white/70">
-              <p className="font-bold text-white/90">Destiny Centre</p>
-              <p>Norton Road</p>
-              <p>Stockton-on-Tees</p>
-              <p>TS20 2QQ</p>
-            </div>
+            <MapsLink
+              className="group block text-sm text-white/70 transition hover:text-white focus-visible:text-white"
+              aria-label="Open Destiny Centre, Norton Road, Stockton-on-Tees, TS20 2QQ in maps"
+            >
+              <address className="not-italic">
+                <span className="block font-bold text-white/90 transition group-hover:text-white group-focus-visible:text-white">
+                  Destiny Centre
+                </span>
+                <span className="block">Norton Road</span>
+                <span className="block">Stockton-on-Tees</span>
+                <span className="block">TS20 2QQ</span>
+              </address>
+            </MapsLink>
           </div>
 
           {/* Link columns — accordions on mobile, plain columns from md: up */}

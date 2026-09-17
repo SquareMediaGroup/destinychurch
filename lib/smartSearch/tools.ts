@@ -5,6 +5,7 @@ import { FIT_LABELS, fromPrice, type ProductWithVariants } from "@/lib/shop";
 import type { YTVideo } from "@/lib/youtube";
 import { getFullSermonArchive } from "@/lib/speakerOverrides.server";
 import { searchSermons } from "@/lib/sermonSearch";
+import { DESTINY_CENTRE_ADDRESS, googleMapsUrl } from "@/lib/maps";
 
 // ── Smart Search tools ─────────────────────────────────────────────────────
 // Tool-calling tools the /api/chat route exposes to the model. Each network
@@ -15,8 +16,6 @@ import { searchSermons } from "@/lib/sermonSearch";
 // Restored from the removed Destiny AI feature (commit 7aa899d) — weather uses
 // Open-Meteo (no key), directions a Google Maps embed, web search Tavily — plus
 // a new `find_products` tool that surfaces real shop products.
-
-const DESTINY_CENTRE_ADDRESS = "Destiny Centre, Norton Road, Stockton-on-Tees, TS20 2QQ";
 
 /** Per-page content budget for search results fed back to the model. */
 const SNIPPET_CHARS = 1200;
@@ -437,7 +436,7 @@ export interface DirectionsToolResult {
 }
 
 function runGetDirections(): DirectionsToolResult {
-  const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(DESTINY_CENTRE_ADDRESS)}`;
+  const mapsUrl = googleMapsUrl(DESTINY_CENTRE_ADDRESS);
   const embedKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_EMBED_API_KEY;
   return {
     available: Boolean(embedKey),

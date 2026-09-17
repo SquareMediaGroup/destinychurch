@@ -229,6 +229,7 @@ destinychurch/
 │   ├── ChurchHeader.tsx           # Site header with nav
 │   ├── ChurchFooter.tsx           # Site footer
 │   ├── FooterLinkGroup.tsx        # Footer link column (accordion on mobile)
+│   ├── MapsLink.tsx               # Address link that opens the device's map app
 │   ├── Providers.tsx              # Client context providers
 │   ├── CookieBanner.tsx           # GDPR cookie consent
 │   ├── AnalyticsGate.tsx          # Conditional analytics loading
@@ -2189,7 +2190,7 @@ from beyond the query text itself.
 
 Displayed on every page:
 
-- **Contact info** — Address, phone, email
+- **Contact info** — Address (tappable — opens the device's map app via `MapsLink`), phone, email
 - **Social links** — YouTube, Facebook, Instagram
 - **Quick links** — Common pages
 - **Copyright** — Auto-updates year
@@ -2476,6 +2477,14 @@ focus to whatever opened it, and locks body scroll — restoring the *previous*
 - **What:** Sitewide footer (server component — awaits `isYouTubeQuotaExceeded()` to drop the Sermons link when the YouTube quota is blown)
 - **Displays:** Brand blurb + address, three link columns (Church / Connect / Legal), copyright, Report a Bug, phone
 - **Layout:** 4-column grid from `md:` up; on mobile the three link columns render as accordions via `FooterLinkGroup`
+- **Address:** The "Destiny Centre / Norton Road / Stockton-on-Tees / TS20 2QQ" block is one `MapsLink` wrapping an `<address>` — the whole block is a single tap target that opens the device's map app
+
+#### `MapsLink.tsx` + `lib/maps.ts`
+- **What:** Client component that wraps an address in a link to the device's map app
+- **Why two URLs:** There's no single "open in maps" URL. `https://www.google.com/maps/search/?api=1&query=…` is the cross-platform default (Android and desktop hand it to Google Maps or the browser); `https://maps.apple.com/?q=…` is what iOS/iPadOS/macOS want, where Google Maps often isn't installed
+- **Hydration:** The server always renders the Google URL; `useHydrated()` (the `useSyncExternalStore` snapshot in `lib/useHydrated.ts`) flips the href to Apple Maps after hydration on Apple devices. Sniffing the user agent during render instead would produce a server/client markup mismatch
+- **`lib/maps.ts`:** Holds `DESTINY_CENTRE_ADDRESS` (the single source of truth for the address string — `lib/smartSearch/tools.ts` `get_directions` imports it too), plus `googleMapsUrl()`, `appleMapsUrl()`, `isApplePlatform()` and `deviceMapsUrl()`
+- **Gotcha:** iPadOS reports a "Macintosh" user agent, so the Apple check also tests `navigator.maxTouchPoints > 1`
 
 #### `FooterLinkGroup.tsx`
 - **What:** One footer link column — a client component so it can hold open/closed state
@@ -4428,6 +4437,34 @@ hardcoded BST/GMT switchover dates to go stale.
 Used by `components/live/NextServiceCountdown.tsx`. Covered by
 `tests/unit/service-times.spec.ts`, which pins both DST boundaries and the
 mid-service behaviour.
+
+---
+
+### `lib/maps.ts`
+
+Map deep-links for the Destiny Centre. There is no single "open in maps" URL
+that works everywhere, so this builds two and the caller picks one at render
+time:
+
+- `googleMapsUrl(query?)` — `https://www.google.com/maps/search/?api=1&query=…`.
+  The cross-platform default: a plain https link, so it works on desktop, and
+  Android/iOS hand it to the Google Maps app when installed.
+- `appleMapsUrl(query?)` — `https://maps.apple.com/?q=…`. The right answer on
+  Apple platforms, where Google Maps often isn't installed. Degrades to a web
+  map elsewhere, so it's never a dead end.
+- `isApplePlatform()` — browser-only user-agent check. Also tests
+  `navigator.maxTouchPoints > 1`, because iPadOS reports itself as "Macintosh".
+- `deviceMapsUrl(query?)` — Apple URL on Apple devices, Google everywhere else
+  (including the server, where `navigator` is undefined).
+
+`DESTINY_CENTRE_ADDRESS` is the single source of truth for the address string —
+both `components/MapsLink.tsx` and the `get_directions` Smart Search tool in
+`lib/smartSearch/tools.ts` import it, so the footer and the AI answer can't
+drift apart.
+
+Queries are free-text addresses rather than coordinates, deliberately: the
+address is what the UI prints, and letting the map app geocode it keeps the two
+in sync.
 
 ---
 

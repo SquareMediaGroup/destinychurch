@@ -2,7 +2,10 @@
 
 ## Git
 
-- Always push to `main` branch. Never push to feature branches.
+- **Never push directly to `main`.** `main` only moves through a merged pull request.
+- Work on a feature branch and push that branch.
+- Open a pull request against `main` and let it be reviewed before merging.
+- Keep commits scoped to one logical change, with a descriptive message explaining the why, not just the what.
 
 ## Documentation
 

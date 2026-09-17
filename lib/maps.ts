@@ -11,21 +11,35 @@
  *   often isn't installed and the system map app is Apple Maps. It also degrades
  *   to a web map on non-Apple devices, so it's never a dead end.
  *
- * Both take a free-text address rather than coordinates: the address is what
- * the footer shows, and letting the map app geocode it keeps the two in sync.
+ * Both take free text rather than coordinates, and there are two strings for it
+ * because what reads well and what geocodes well aren't the same:
+ *
+ * - `DESTINY_CENTRE_ADDRESS` is what the UI prints. It leads with the venue
+ *   name, which is how people say where the church is.
+ * - `DESTINY_CENTRE_MAP_QUERY` is what map apps are handed. It's the postal
+ *   address with the street number and no venue name, so the app geocodes to
+ *   the building instead of searching for "Destiny Centre" and landing on
+ *   whatever it thinks that is.
+ *
+ * Keep the two pointing at the same place — they're the same building, written
+ * for two different readers.
  */
 
-/** The address as it should be handed to a map app (and as the footer prints it). */
+/** The address as the UI prints it — venue name first. */
 export const DESTINY_CENTRE_ADDRESS =
+  "Destiny Centre, Norton Road, Stockton-on-Tees, TS20 2QQ";
+
+/** The address as map apps should be given it — street number, no venue name. */
+export const DESTINY_CENTRE_MAP_QUERY =
   "395 Norton Road, Stockton-on-Tees, TS20 2QQ";
 
 /** Google Maps search URL — the cross-platform default. */
-export function googleMapsUrl(query: string = DESTINY_CENTRE_ADDRESS): string {
+export function googleMapsUrl(query: string = DESTINY_CENTRE_MAP_QUERY): string {
   return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
 }
 
 /** Apple Maps search URL — opens Apple Maps on iOS/iPadOS/macOS. */
-export function appleMapsUrl(query: string = DESTINY_CENTRE_ADDRESS): string {
+export function appleMapsUrl(query: string = DESTINY_CENTRE_MAP_QUERY): string {
   return `https://maps.apple.com/?q=${encodeURIComponent(query)}`;
 }
 
@@ -49,6 +63,6 @@ export function isApplePlatform(): boolean {
 }
 
 /** The right map URL for the device currently rendering. Google on the server. */
-export function deviceMapsUrl(query: string = DESTINY_CENTRE_ADDRESS): string {
+export function deviceMapsUrl(query: string = DESTINY_CENTRE_MAP_QUERY): string {
   return isApplePlatform() ? appleMapsUrl(query) : googleMapsUrl(query);
 }

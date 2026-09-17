@@ -5,7 +5,7 @@ import { FIT_LABELS, fromPrice, type ProductWithVariants } from "@/lib/shop";
 import type { YTVideo } from "@/lib/youtube";
 import { getFullSermonArchive } from "@/lib/speakerOverrides.server";
 import { searchSermons } from "@/lib/sermonSearch";
-import { DESTINY_CENTRE_ADDRESS, googleMapsUrl } from "@/lib/maps";
+import { DESTINY_CENTRE_ADDRESS, DESTINY_CENTRE_MAP_QUERY, googleMapsUrl } from "@/lib/maps";
 
 // ── Smart Search tools ─────────────────────────────────────────────────────
 // Tool-calling tools the /api/chat route exposes to the model. Each network
@@ -430,19 +430,22 @@ async function runGetWeather(args: { location?: string; date: string }): Promise
 
 export interface DirectionsToolResult {
   available: boolean;
+  /** Printed on the result card — venue name first. */
   address: string;
   embedUrl?: string;
   mapsUrl: string;
 }
 
 function runGetDirections(): DirectionsToolResult {
-  const mapsUrl = googleMapsUrl(DESTINY_CENTRE_ADDRESS);
+  // The card shows the venue name; the map URLs get the postal address, so
+  // Google geocodes to the building rather than searching for "Destiny Centre".
+  const mapsUrl = googleMapsUrl(DESTINY_CENTRE_MAP_QUERY);
   const embedKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_EMBED_API_KEY;
   return {
     available: Boolean(embedKey),
     address: DESTINY_CENTRE_ADDRESS,
     embedUrl: embedKey
-      ? `https://www.google.com/maps/embed/v1/place?key=${embedKey}&q=${encodeURIComponent(DESTINY_CENTRE_ADDRESS)}`
+      ? `https://www.google.com/maps/embed/v1/place?key=${embedKey}&q=${encodeURIComponent(DESTINY_CENTRE_MAP_QUERY)}`
       : undefined,
     mapsUrl,
   };

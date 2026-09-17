@@ -2477,14 +2477,16 @@ focus to whatever opened it, and locks body scroll — restoring the *previous*
 - **What:** Sitewide footer (server component — awaits `isYouTubeQuotaExceeded()` to drop the Sermons link when the YouTube quota is blown)
 - **Displays:** Brand blurb + address, three link columns (Church / Connect / Legal), copyright, Report a Bug, phone
 - **Layout:** 4-column grid from `md:` up; on mobile the three link columns render as accordions via `FooterLinkGroup`
-- **Address:** The "395 Norton Road / Stockton-on-Tees / TS20 2QQ" block is one `MapsLink` wrapping an `<address>` — the whole block is a single tap target that opens the device's map app. The street number matters: it's what makes the map app land on the building rather than guessing at the venue name
+- **Address:** The "Destiny Centre / Norton Road / Stockton-on-Tees / TS20 2QQ" block is one `MapsLink` wrapping an `<address>` — the whole block is a single tap target that opens the device's map app. What it *sends* the map app is "395 Norton Road, Stockton-on-Tees, TS20 2QQ", not the text on screen (see `lib/maps.ts`)
 
 #### `MapsLink.tsx` + `lib/maps.ts`
 - **What:** Client component that wraps an address in a link to the device's map app
 - **Why two URLs:** There's no single "open in maps" URL. `https://www.google.com/maps/search/?api=1&query=…` is the cross-platform default (Android and desktop hand it to Google Maps or the browser); `https://maps.apple.com/?q=…` is what iOS/iPadOS/macOS want, where Google Maps often isn't installed
 - **Hydration:** The server always renders the Google URL; `useHydrated()` (the `useSyncExternalStore` snapshot in `lib/useHydrated.ts`) flips the href to Apple Maps after hydration on Apple devices. Sniffing the user agent during render instead would produce a server/client markup mismatch
-- **`lib/maps.ts`:** Holds `DESTINY_CENTRE_ADDRESS` (the single source of truth for the address string — `lib/smartSearch/tools.ts` `get_directions` imports it too), plus `googleMapsUrl()`, `appleMapsUrl()`, `isApplePlatform()` and `deviceMapsUrl()`
+- **`lib/maps.ts`:** Holds the two address strings and `googleMapsUrl()`, `appleMapsUrl()`, `isApplePlatform()`, `deviceMapsUrl()`
+- **Two strings, not one:** the UI prints the venue name, the map app gets the postal address — see `lib/maps.ts` below
 - **Gotcha:** iPadOS reports a "Macintosh" user agent, so the Apple check also tests `navigator.maxTouchPoints > 1`
+- **Gotcha:** because the visible text and the map query differ, callers should pass `aria-label` built from the children rather than letting it default to the query — WCAG 2.5.3 wants the accessible name to contain the visible text
 
 #### `FooterLinkGroup.tsx`
 - **What:** One footer link column — a client component so it can hold open/closed state
@@ -4457,17 +4459,25 @@ time:
 - `deviceMapsUrl(query?)` — Apple URL on Apple devices, Google everywhere else
   (including the server, where `navigator` is undefined).
 
-`DESTINY_CENTRE_ADDRESS` (`"395 Norton Road, Stockton-on-Tees, TS20 2QQ"`) is the
-single source of truth for the address string — both `components/MapsLink.tsx`
-and the `get_directions` Smart Search tool in `lib/smartSearch/tools.ts` import
-it, so the footer and the AI answer can't drift apart. It leads with the street
-number rather than the venue name, matching `streetAddress` in the schema.org
-`PostalAddress` in `app/layout.tsx`, so map apps geocode to the building instead
-of searching for "Destiny Centre".
+**There are two address strings, and the split is the point:**
 
-Queries are free-text addresses rather than coordinates, deliberately: the
-address is what the UI prints, and letting the map app geocode it keeps the two
-in sync.
+- `DESTINY_CENTRE_ADDRESS` — `"Destiny Centre, Norton Road, Stockton-on-Tees,
+  TS20 2QQ"`. What the UI prints. Leads with the venue name, because that's how
+  people say where the church is.
+- `DESTINY_CENTRE_MAP_QUERY` — `"395 Norton Road, Stockton-on-Tees, TS20 2QQ"`.
+  What map apps are handed, and the default for every URL builder here. Street
+  number, no venue name, matching `streetAddress` in the schema.org
+  `PostalAddress` in `app/layout.tsx` — so the app geocodes to the building
+  instead of searching for "Destiny Centre" and landing on whatever it decides
+  that is.
+
+Both are consumed by `components/MapsLink.tsx` (footer) and the
+`get_directions` Smart Search tool in `lib/smartSearch/tools.ts`, which prints
+`address` on its result card while its `mapsUrl` and Google embed `q` both use
+the map query.
+
+If you edit one string, edit the other — they're the same building written for
+two different readers, and nothing enforces that.
 
 ---
 

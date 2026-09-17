@@ -1,14 +1,22 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { DESTINY_CENTRE_ADDRESS, deviceMapsUrl, googleMapsUrl } from "@/lib/maps";
+import { DESTINY_CENTRE_MAP_QUERY, deviceMapsUrl, googleMapsUrl } from "@/lib/maps";
 import { useHydrated } from "@/lib/useHydrated";
 
 interface MapsLinkProps {
-  /** Free-text address handed to the map app. Defaults to the Destiny Centre. */
+  /**
+   * Free-text address handed to the map app — the postal address, not the venue
+   * name. Defaults to the Destiny Centre's.
+   */
   query?: string;
   className?: string;
-  /** Overrides the generated "Open … in maps" label when the wrapped text needs it. */
+  /**
+   * The link's accessible name. Pass this whenever the wrapped text differs from
+   * `query` — which is the normal case, since the UI prints the venue name and
+   * `query` is the postal address. WCAG 2.5.3 wants the accessible name to
+   * contain the visible text, so this should be built from the children.
+   */
   "aria-label"?: string;
   children: ReactNode;
 }
@@ -26,7 +34,7 @@ interface MapsLinkProps {
  * the page the visitor was reading.
  */
 export default function MapsLink({
-  query = DESTINY_CENTRE_ADDRESS,
+  query = DESTINY_CENTRE_MAP_QUERY,
   className,
   "aria-label": ariaLabel,
   children,

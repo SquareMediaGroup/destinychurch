@@ -163,7 +163,7 @@ destinychurch/
 │   ├── terms/                     # Terms of use
 │   ├── training/                  # /training resource library (category → subgroup → post)
 │   ├── contact/                   # Contact form
-│   ├── design-request/            # Public design request form + [token]/ requester tracker
+│   ├── design-request/            # [token]/ requester tracker (public, share-token-scoped); the request form itself lives at /portal/design/request
 │   ├── visit/                     # Plan a visit
 │   ├── new-here/                  # First-time visitor guide
 │   ├── hire/                      # Venue hire enquiries
@@ -1744,7 +1744,7 @@ Both migrations are applied to production; `get_advisors` is clean on all of the
 
 #### 25. **design_tickets / design_ticket_deliverables / design_ticket_events**
 
-The design request queue (`/design-request` → `/admin/design`). Someone asks the design
+The design request queue (`/portal/design/request` → `/admin/design`). Someone asks the design
 team for a poster, a designer claims it, works it, uploads the finished file, and the
 requester downloads it or asks for changes.
 
@@ -1880,10 +1880,10 @@ ours, so there is nothing to schedule.
 `admin_roles` has no target worth pointing at from here. Same reasoning as the old
 `media_photos.reviewed_by`.
 
-**Used by:** `app/design-request/*` (public form and tokenised tracker), `app/admin/design/*`
-(queue and detail), `app/portal/design` (staff), `app/api/admin/design/**`,
-`app/api/design-request/**`, `app/api/portal/design`, `lib/designTickets.ts`,
-`lib/designTickets.server.ts`, `lib/designEmail.ts`.
+**Used by:** `app/design-request/[token]` (public tokenised tracker), `app/portal/design/request`
+(staff-only form), `app/admin/design/*` (queue and detail), `app/portal/design` (staff),
+`app/api/admin/design/**`, `app/api/design-request/**`, `app/api/portal/design`,
+`lib/designTickets.ts`, `lib/designTickets.server.ts`, `lib/designEmail.ts`.
 
 ---
 
@@ -2230,7 +2230,7 @@ without an auth check, so they must never be reachable on the live site.
 | `/sermons/[id]` | `app/sermons/[id]/page.tsx` | Individual sermon — a **Watch/Listen** switch (`components/sermons/SermonWatchListen.tsx`, the same `ModeSwitch`/`ListenPane` the featured card uses) when a confident audio pairing exists, otherwise the plain YouTube embed; plus skip-to-sermon and next steps. Title/meta rows stay server-rendered (no CLS); only the player area switches |
 | `/live` | `app/live/page.tsx` | Livestream page — standard hero + section rhythm, with a client island that swaps between the custom glass player and an off-air card. On air for a real YouTube broadcast, or for a **simulated** one (a pre-recorded video played from a fixed start time; see `lib/simulatedLive.ts`). Signed-in Hosts also get the **broadcast controls** inline at the top of the page (`LiveHostBar`), so starting, editing or removing a service never means leaving `/live` |
 | `/contact` | `app/contact/page.tsx` | Contact form, address, hours |
-| `/design-request` | `app/design-request/page.tsx` | Ask the design team for something. Name and email are always required, so a request is never anonymous; someone signed in when they submit is fast-tracked. A `@destinytees.uk` address typed while signed out gets a "sign in and we'll fast-track it" nudge, not a block |
+| `/portal/design/request` | `app/portal/design/request/page.tsx` | Ask the design team for something. Staff-only — gated by the `/portal` middleware, which requires a linked `hr_staff` row. Name and email default from the staff record; every request is fast-tracked |
 | `/design-request/[token]` | `app/design-request/[token]/page.tsx` | The requester's own tracker, reached by share token rather than a login — status, the brief as submitted, every revision's files, and buttons to ask for changes or close it. `robots: noindex` |
 | `/give` | `app/give/page.tsx` | Giving info — bank details, online giving |
 | `/shop` | `app/shop/page.tsx` | Store front — published products grid with category filter chips (`ShopProductGrid`), editorial `/links` style |
@@ -2319,7 +2319,7 @@ Each section requires a specific access-level role (see
 | `/portal` | `app/portal/page.tsx` | Staff self-service — own profile, account settings (profile picture, email, password), leave requests + balance, documents. Separate auth boundary from `/admin`; see [Authorization Layers](#authorization-layers) |
 | `/portal/leave` | `app/portal/leave/page.tsx` | Staff self-service — request and withdraw own leave |
 | `/portal/documents` | `app/portal/documents/page.tsx` | Staff self-service — download own + org-wide documents |
-| `/portal/design` | `app/portal/design/page.tsx` | Staff self-service — own design requests. Matched by staff link *and* by email, so requests filed from the public form while signed out still appear |
+| `/portal/design` | `app/portal/design/page.tsx` | Staff self-service — own design requests, plus a link to `/portal/design/request` to file a new one. Matched by staff link *and* by email, so requests filed before this page existed still appear |
 | `/admin/sermons` | `app/admin/sermons/page.tsx` | Publish sermon audio to Buzzsprout (video keeps going to YouTube separately) — title/speaker/notes/optional YouTube video id, plus a read-only recent-episodes list showing pairing status (Sermon Admin) |
 | `/admin/design` | `app/admin/design/page.tsx` | Design ticket queue — search, status/priority/mine filters, inline Claim. Defaults to "Needs someone" rather than everything (Design Admin) |
 | `/admin/design/[id]` | `app/admin/design/[id]/page.tsx` | Ticket detail — brief, requester, the thread, the deliverable uploader, and only the transition buttons `canTransition` allows from here (Design Admin) |

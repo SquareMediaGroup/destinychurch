@@ -103,7 +103,7 @@ export default function TrainingCategoriesPage() {
         back={{ href: "/admin", label: "Dashboard" }}
         action={
           <button className={primaryBtn} onClick={() => setEditing("new")}>
-            <span className="material-symbols-rounded text-lg">add</span>
+            <span className="material-symbols-rounded text-lg" aria-hidden="true">add</span>
             New category
           </button>
         }
@@ -120,7 +120,7 @@ export default function TrainingCategoriesPage() {
           hint="Create your first training category, like Production or Hospitality."
           action={
             <button className={primaryBtn} onClick={() => setEditing("new")}>
-              <span className="material-symbols-rounded text-lg">add</span>
+              <span className="material-symbols-rounded text-lg" aria-hidden="true">add</span>
               New category
             </button>
           }
@@ -146,7 +146,7 @@ export default function TrainingCategoriesPage() {
 
           {!canReorder && (
             <p className="mb-3 flex items-center gap-1.5 text-xs text-destiny-grey/45 dark:text-white/45">
-              <span className="material-symbols-rounded text-base">info</span>
+              <span className="material-symbols-rounded text-base" aria-hidden="true">info</span>
               Clear the search to drag categories into a new order.
             </p>
           )}
@@ -201,7 +201,7 @@ export default function TrainingCategoriesPage() {
                             className="flex items-center gap-2.5 font-bold text-destiny-grey dark:text-white transition hover:text-destiny-orange"
                           >
                             {c.icon && (
-                              <span className="material-symbols-rounded text-xl text-destiny-orange">
+                              <span className="material-symbols-rounded text-xl text-destiny-orange" aria-hidden="true">
                                 {c.icon}
                               </span>
                             )}
@@ -226,7 +226,7 @@ export default function TrainingCategoriesPage() {
                               aria-label={`Manage sub-groups in ${c.name}`}
                               title="Manage sub-groups"
                             >
-                              <span className="material-symbols-rounded text-xl">
+                              <span className="material-symbols-rounded text-xl" aria-hidden="true">
                                 folder_open
                               </span>
                             </Link>
@@ -235,14 +235,14 @@ export default function TrainingCategoriesPage() {
                               className="text-destiny-grey/40 dark:text-white/40 transition hover:text-destiny-orange"
                               aria-label={`Edit ${c.name}`}
                             >
-                              <span className="material-symbols-rounded text-xl">edit</span>
+                              <span className="material-symbols-rounded text-xl" aria-hidden="true">edit</span>
                             </button>
                             <button
                               onClick={() => remove(c)}
                               className="text-destiny-grey/40 dark:text-white/40 transition hover:text-destiny-red"
                               aria-label={`Delete ${c.name}`}
                             >
-                              <span className="material-symbols-rounded text-xl">delete</span>
+                              <span className="material-symbols-rounded text-xl" aria-hidden="true">delete</span>
                             </button>
                           </div>
                         </td>

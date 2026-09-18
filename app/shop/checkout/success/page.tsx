@@ -24,7 +24,7 @@ function SuccessInner() {
   if (!succeeded) {
     return (
       <div className="mx-auto max-w-lg px-5 py-24 text-center">
-        <span className="material-symbols-rounded text-6xl text-destiny-red">error</span>
+        <span className="material-symbols-rounded text-6xl text-destiny-red" aria-hidden="true">error</span>
         <h1 className="mt-4 font-[family-name:var(--font-heading)] text-3xl font-black text-destiny-grey">
           Payment not completed
         </h1>
@@ -44,7 +44,7 @@ function SuccessInner() {
   return (
     <div className="mx-auto max-w-lg px-5 py-24 text-center">
       <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-destiny-green/10">
-        <span className="material-symbols-rounded text-4xl text-destiny-green">
+        <span className="material-symbols-rounded text-4xl text-destiny-green" aria-hidden="true">
           check_circle
         </span>
       </div>
@@ -62,7 +62,7 @@ function SuccessInner() {
       )}
       <div className="mt-8 rounded-2xl border border-black/10 bg-[#f9fafb] p-6 text-left">
         <p className="flex items-start gap-2 text-sm text-muted">
-          <span className="material-symbols-rounded text-lg text-destiny-orange">mail</span>
+          <span className="material-symbols-rounded text-lg text-destiny-orange" aria-hidden="true">mail</span>
           We&apos;ve emailed you a confirmation. Keep an eye on your inbox — we&apos;ll
           let you know as soon as your order is ready to collect at church.
         </p>
@@ -72,7 +72,7 @@ function SuccessInner() {
         className="mt-8 inline-flex items-center gap-2 rounded-full bg-destiny-orange px-7 py-3.5 text-sm font-bold text-white transition hover:bg-destiny-orange-dark"
       >
         Continue shopping
-        <span className="material-symbols-rounded text-lg">arrow_forward</span>
+        <span className="material-symbols-rounded text-lg" aria-hidden="true">arrow_forward</span>
       </Link>
     </div>
   );

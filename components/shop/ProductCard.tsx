@@ -35,7 +35,7 @@ export default function ProductCard({ product }: { product: ProductWithVariants 
           />
         ) : (
           <div className="flex h-full items-center justify-center">
-            <span className="material-symbols-rounded text-4xl text-destiny-grey/20">
+            <span className="material-symbols-rounded text-4xl text-destiny-grey/20" aria-hidden="true">
               checkroom
             </span>
           </div>
@@ -60,7 +60,7 @@ export default function ProductCard({ product }: { product: ProductWithVariants 
           <p className="shop-price text-sm font-bold text-destiny-orange">
             {price === 0 ? "Free" : `${multiPrice ? "from " : ""}${formatPrice(price)}`}
           </p>
-          <span className="material-symbols-rounded shop-arrow text-2xl text-destiny-grey/40">
+          <span className="material-symbols-rounded shop-arrow text-2xl text-destiny-grey/40" aria-hidden="true">
             arrow_forward
           </span>
         </div>

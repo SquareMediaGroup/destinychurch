@@ -330,7 +330,7 @@ export function PodcastPlayerProvider({
                 className="hidden h-9 w-9 items-center justify-center rounded-full text-on-dark-muted transition hover:bg-white/10 hover:text-white sm:flex"
                 aria-label="Rewind 15 seconds"
               >
-                <span className="material-symbols-rounded text-[22px]">
+                <span className="material-symbols-rounded text-[22px]" aria-hidden="true">
                   replay
                 </span>
               </button>
@@ -348,7 +348,7 @@ export function PodcastPlayerProvider({
                 className="hidden h-9 w-9 items-center justify-center rounded-full text-on-dark-muted transition hover:bg-white/10 hover:text-white sm:flex"
                 aria-label="Forward 30 seconds"
               >
-                <span className="material-symbols-rounded text-[22px]">
+                <span className="material-symbols-rounded text-[22px]" aria-hidden="true">
                   forward_media
                 </span>
               </button>
@@ -364,7 +364,7 @@ export function PodcastPlayerProvider({
                 className="hidden h-9 w-9 items-center justify-center rounded-full text-on-dark-muted transition hover:bg-white/10 hover:text-white sm:flex"
                 aria-label="Share episode"
               >
-                <span className="material-symbols-rounded text-[20px]">
+                <span className="material-symbols-rounded text-[20px]" aria-hidden="true">
                   {copied ? "check" : "ios_share"}
                 </span>
               </button>
@@ -391,7 +391,7 @@ export function PodcastPlayerProvider({
                 aria-label="Collapse player"
                 className="flex h-10 w-10 items-center justify-center rounded-full text-white/80 transition hover:bg-white/10 hover:text-white"
               >
-                <span className="material-symbols-rounded text-3xl">
+                <span className="material-symbols-rounded text-3xl" aria-hidden="true">
                   keyboard_arrow_down
                 </span>
               </button>
@@ -431,7 +431,7 @@ export function PodcastPlayerProvider({
                   aria-label="Share episode"
                   className="mt-1 flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-on-dark-muted transition hover:bg-white/10 hover:text-white"
                 >
-                  <span className="material-symbols-rounded text-[22px]">
+                  <span className="material-symbols-rounded text-[22px]" aria-hidden="true">
                     {copied ? "check" : "ios_share"}
                   </span>
                 </button>
@@ -492,7 +492,7 @@ export function PodcastPlayerProvider({
                     aria-label="Rewind 15 seconds"
                     className="text-white/85 transition hover:text-white"
                   >
-                    <span className="material-symbols-rounded text-[34px]">replay</span>
+                    <span className="material-symbols-rounded text-[34px]" aria-hidden="true">replay</span>
                   </button>
                   <button
                     onClick={() => current && toggle(current)}
@@ -511,7 +511,7 @@ export function PodcastPlayerProvider({
                     aria-label="Forward 30 seconds"
                     className="text-white/85 transition hover:text-white"
                   >
-                    <span className="material-symbols-rounded text-[34px]">
+                    <span className="material-symbols-rounded text-[34px]" aria-hidden="true">
                       forward_media
                     </span>
                   </button>
@@ -523,7 +523,7 @@ export function PodcastPlayerProvider({
                     aria-label="Cast or AirPlay"
                     className="flex h-11 w-[52px] items-center justify-center rounded-full text-on-dark-muted transition hover:bg-white/10 hover:text-white"
                   >
-                    <span className="material-symbols-rounded text-[26px]">cast</span>
+                    <span className="material-symbols-rounded text-[26px]" aria-hidden="true">cast</span>
                   </button>
                 ) : (
                   <span className="h-11 w-[52px]" aria-hidden />

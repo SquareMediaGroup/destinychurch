@@ -86,11 +86,11 @@ export default function AdminStorePage() {
         action={
           <div className="flex items-center gap-2">
             <Link href="/admin/store/orders" className={ghostBtn}>
-              <span className="material-symbols-rounded text-lg">receipt_long</span>
+              <span className="material-symbols-rounded text-lg" aria-hidden="true">receipt_long</span>
               Orders
             </Link>
             <Link href="/admin/store/products/new" className={primaryBtn}>
-              <span className="material-symbols-rounded text-lg">add</span>
+              <span className="material-symbols-rounded text-lg" aria-hidden="true">add</span>
               New product
             </Link>
           </div>
@@ -106,7 +106,7 @@ export default function AdminStorePage() {
           hint="Add your first product to open the store."
           action={
             <Link href="/admin/store/products/new" className={primaryBtn}>
-              <span className="material-symbols-rounded text-lg">add</span>
+              <span className="material-symbols-rounded text-lg" aria-hidden="true">add</span>
               New product
             </Link>
           }
@@ -174,7 +174,7 @@ export default function AdminStorePage() {
                             className="h-full w-full object-cover"
                           />
                         ) : (
-                          <span className="material-symbols-rounded flex h-full w-full items-center justify-center text-xl text-destiny-grey/25 dark:text-white/25">
+                          <span className="material-symbols-rounded flex h-full w-full items-center justify-center text-xl text-destiny-grey/25 dark:text-white/25" aria-hidden="true">
                             checkroom
                           </span>
                         )}
@@ -209,7 +209,7 @@ export default function AdminStorePage() {
                       <span className="hidden shrink-0 text-xs font-bold text-destiny-grey/35 dark:text-white/35 sm:block">
                         {PRODUCT_TYPE_LABELS[p.product_type as ProductType] ?? ""}
                       </span>
-                      <span className="material-symbols-rounded shrink-0 text-destiny-grey/30 dark:text-white/30">
+                      <span className="material-symbols-rounded shrink-0 text-destiny-grey/30 dark:text-white/30" aria-hidden="true">
                         chevron_right
                       </span>
                     </Link>

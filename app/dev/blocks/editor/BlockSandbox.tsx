@@ -47,7 +47,7 @@ export default function BlockSandbox() {
     */
     <div className="fixed inset-0 z-[100] flex flex-col overflow-hidden bg-[#f5f7fa]">
       <header className="flex shrink-0 items-center gap-3 border-b border-black/8 bg-white px-4 py-2.5">
-        <span className="material-symbols-rounded text-[19px] text-destiny-orange">
+        <span className="material-symbols-rounded text-[19px] text-destiny-orange" aria-hidden="true">
           science
         </span>
         <div className="min-w-0 flex-1">

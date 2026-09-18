@@ -263,7 +263,7 @@ export default function LiveChatPanel() {
   if (loading) {
     return (
       <div className="flex h-[560px] w-full items-center justify-center rounded-3xl border border-black/[0.07] bg-white lg:w-[380px] lg:shrink-0">
-        <span className="material-symbols-rounded animate-spin text-2xl text-destiny-grey/30">
+        <span className="material-symbols-rounded animate-spin text-2xl text-destiny-grey/30" aria-hidden="true">
           progress_activity
         </span>
       </div>
@@ -294,7 +294,7 @@ export default function LiveChatPanel() {
             onClick={() => setPrayerOpen(true)}
             className="inline-flex items-center gap-1.5 rounded-full border border-black/10 px-3 py-1.5 text-xs font-bold text-destiny-grey transition hover:border-destiny-orange hover:text-destiny-orange"
           >
-            <span className="material-symbols-rounded text-base">favorite</span>
+            <span className="material-symbols-rounded text-base" aria-hidden="true">favorite</span>
             Prayer
           </button>
 
@@ -382,7 +382,7 @@ function HostControls({
         aria-label={state === "paused" ? "Resume the chat" : "Pause the chat"}
         className="flex h-8 w-8 items-center justify-center rounded-full text-subtle transition hover:bg-black/5 hover:text-destiny-orange"
       >
-        <span className="material-symbols-rounded text-lg">
+        <span className="material-symbols-rounded text-lg" aria-hidden="true">
           {state === "paused" ? "play_arrow" : "pause"}
         </span>
       </button>
@@ -393,7 +393,7 @@ function HostControls({
         aria-label="Close the chat"
         className="flex h-8 w-8 items-center justify-center rounded-full text-subtle transition hover:bg-black/5 hover:text-destiny-red"
       >
-        <span className="material-symbols-rounded text-lg">block</span>
+        <span className="material-symbols-rounded text-lg" aria-hidden="true">block</span>
       </button>
     </div>
   );

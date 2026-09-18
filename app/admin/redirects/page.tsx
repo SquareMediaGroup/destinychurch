@@ -191,7 +191,7 @@ export default function RedirectsPage() {
         back={{ href: "/admin", label: "Dashboard" }}
         action={
           <button className={primaryBtn} onClick={() => setShowForm((s) => !s)}>
-            <span className="material-symbols-rounded text-lg">
+            <span className="material-symbols-rounded text-lg" aria-hidden="true">
               {showForm ? "close" : "add"}
             </span>
             {showForm ? "Cancel" : "New redirect"}
@@ -285,7 +285,7 @@ export default function RedirectsPage() {
           hint="Create a short link like destinytees.uk/alpha that you can repoint whenever the sign-up form moves."
           action={
             <button className={primaryBtn} onClick={() => setShowForm(true)}>
-              <span className="material-symbols-rounded text-lg">add</span>
+              <span className="material-symbols-rounded text-lg" aria-hidden="true">add</span>
               New redirect
             </button>
           }
@@ -348,7 +348,7 @@ export default function RedirectsPage() {
                           href={`/admin/analytics?tab=links&range=month&target=${encodeURIComponent(r.slug)}`}
                           className="mt-0.5 inline-flex items-center gap-1 text-xs font-bold text-destiny-grey/40 dark:text-white/40 transition hover:text-destiny-orange"
                         >
-                          <span className="material-symbols-rounded text-sm">ads_click</span>
+                          <span className="material-symbols-rounded text-sm" aria-hidden="true">ads_click</span>
                           {clickCounts[r.slug]} click{clickCounts[r.slug] === 1 ? "" : "s"} in the
                           last 30 days
                         </a>
@@ -364,7 +364,7 @@ export default function RedirectsPage() {
                         aria-label={`Open /${r.slug}`}
                         className="flex h-8 w-8 items-center justify-center rounded-lg text-destiny-grey/40 dark:text-white/40 transition hover:bg-black/5 hover:text-destiny-orange"
                       >
-                        <span className="material-symbols-rounded text-base">open_in_new</span>
+                        <span className="material-symbols-rounded text-base" aria-hidden="true">open_in_new</span>
                       </a>
                       <button
                         onClick={() => handleCopy(r.slug)}
@@ -386,7 +386,7 @@ export default function RedirectsPage() {
                         aria-label={`Get a QR code for /${r.slug}`}
                         className="flex h-8 w-8 items-center justify-center rounded-lg text-destiny-grey/40 dark:text-white/40 transition hover:bg-black/5 hover:text-destiny-grey dark:hover:text-white"
                       >
-                        <span className="material-symbols-rounded text-base">qr_code_2</span>
+                        <span className="material-symbols-rounded text-base" aria-hidden="true">qr_code_2</span>
                       </button>
                       <Toggle
                         checked={r.active}
@@ -399,7 +399,7 @@ export default function RedirectsPage() {
                         aria-label={`Delete /${r.slug}`}
                         className="flex h-8 w-8 items-center justify-center rounded-lg text-destiny-grey/30 dark:text-white/30 transition hover:bg-destiny-red/10 hover:text-destiny-red"
                       >
-                        <span className="material-symbols-rounded text-base">delete</span>
+                        <span className="material-symbols-rounded text-base" aria-hidden="true">delete</span>
                       </button>
                     </div>
                   </div>

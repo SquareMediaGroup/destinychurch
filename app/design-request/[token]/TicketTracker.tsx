@@ -136,7 +136,7 @@ export default function TicketTracker({
 
         {view.designer_name && view.status !== "open" ? (
           <p className="mt-4 flex items-center gap-2 text-sm text-muted">
-            <span className="material-symbols-rounded text-lg text-destiny-orange">person</span>
+            <span className="material-symbols-rounded text-lg text-destiny-orange" aria-hidden="true">person</span>
             <span>
               <span className="font-bold text-destiny-grey">{view.designer_name}</span> is looking
               after this
@@ -187,7 +187,7 @@ export default function TicketTracker({
                           ) : null}
                           {canConfirm && file.confirmed_at ? (
                             <div className="flex items-center gap-3 rounded-2xl bg-[#f5f7fa] px-4 py-3">
-                              <span className="material-symbols-rounded text-xl text-green-600">
+                              <span className="material-symbols-rounded text-xl text-green-600" aria-hidden="true">
                                 check_circle
                               </span>
                               <span className="min-w-0 flex-1">
@@ -215,7 +215,7 @@ export default function TicketTracker({
                               onClick={() => downloadAndConfirm(file.id, href)}
                               className="flex w-full items-center gap-3 rounded-2xl bg-[#f5f7fa] px-4 py-3 text-left transition hover:bg-black/8 disabled:opacity-60"
                             >
-                              <span className="material-symbols-rounded text-xl text-destiny-orange">
+                              <span className="material-symbols-rounded text-xl text-destiny-orange" aria-hidden="true">
                                 download
                               </span>
                               <span className="min-w-0 flex-1">
@@ -238,7 +238,7 @@ export default function TicketTracker({
                               rel="noreferrer"
                               className="flex items-center gap-3 rounded-2xl bg-[#f5f7fa] px-4 py-3 transition hover:bg-black/8"
                             >
-                              <span className="material-symbols-rounded text-xl text-destiny-orange">
+                              <span className="material-symbols-rounded text-xl text-destiny-orange" aria-hidden="true">
                                 open_in_new
                               </span>
                               <span className="min-w-0 flex-1">

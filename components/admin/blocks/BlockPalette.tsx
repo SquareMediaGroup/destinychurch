@@ -157,7 +157,7 @@ function PaletteTile({
           aria-hidden
           className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-destiny-orange/10 text-destiny-orange"
         >
-          <span className="material-symbols-rounded text-[22px]">{def.icon}</span>
+          <span className="material-symbols-rounded text-[22px]" aria-hidden="true">{def.icon}</span>
         </span>
         <span className="block text-sm font-bold text-destiny-grey dark:text-white">{def.label}</span>
         <span className="block text-xs leading-snug text-destiny-grey/45 dark:text-white/45">
@@ -179,7 +179,7 @@ function PaletteTile({
         aria-hidden
         className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white text-destiny-orange shadow-sm transition group-hover:bg-destiny-orange/10 dark:bg-destiny-grey-700"
       >
-        <span className="material-symbols-rounded text-[19px]">{def.icon}</span>
+        <span className="material-symbols-rounded text-[19px]" aria-hidden="true">{def.icon}</span>
       </span>
       <span className="min-w-0 flex-1">
         <span className="block text-sm font-bold text-destiny-grey dark:text-white">{def.label}</span>

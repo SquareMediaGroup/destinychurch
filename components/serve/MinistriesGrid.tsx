@@ -339,7 +339,7 @@ export default function MinistriesGrid() {
               className="group flex h-full w-full flex-col items-center rounded-3xl bg-white p-8 text-center shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-md"
             >
               <div className="mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-destiny-orange/10 transition group-hover:bg-destiny-orange/20">
-                <span className="material-symbols-rounded text-4xl text-destiny-orange">{m.icon}</span>
+                <span className="material-symbols-rounded text-4xl text-destiny-orange" aria-hidden="true">{m.icon}</span>
               </div>
               <h3 className="mb-2 text-xl font-black text-destiny-grey">{m.name}</h3>
               <p className="text-sm leading-relaxed text-muted">{m.description}</p>
@@ -378,14 +378,14 @@ function PhotoSlideshow({ photos, color }: { photos: string[]; color: string }) 
             className="absolute left-3 top-1/2 -translate-y-1/2 flex h-8 w-8 items-center justify-center rounded-full bg-black/40 text-white backdrop-blur-sm transition hover:bg-black/60"
             aria-label="Previous photo"
           >
-            <span className="material-symbols-rounded text-[1.1rem]">chevron_left</span>
+            <span className="material-symbols-rounded text-[1.1rem]" aria-hidden="true">chevron_left</span>
           </button>
           <button
             onClick={next}
             className="absolute right-3 top-1/2 -translate-y-1/2 flex h-8 w-8 items-center justify-center rounded-full bg-black/40 text-white backdrop-blur-sm transition hover:bg-black/60"
             aria-label="Next photo"
           >
-            <span className="material-symbols-rounded text-[1.1rem]">chevron_right</span>
+            <span className="material-symbols-rounded text-[1.1rem]" aria-hidden="true">chevron_right</span>
           </button>
           <div className="absolute bottom-3 left-1/2 flex -translate-x-1/2 gap-1.5">
             {photos.map((_, i) => (
@@ -444,7 +444,7 @@ function MinistryModal({
               className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-black/5 text-subtle transition hover:bg-black/10"
               aria-label="Close"
             >
-              <span className="material-symbols-rounded text-[1.2rem]">close</span>
+              <span className="material-symbols-rounded text-[1.2rem]" aria-hidden="true">close</span>
             </button>
           </div>
 

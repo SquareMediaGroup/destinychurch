@@ -75,7 +75,7 @@ export function AuditAsk({
   return (
     <div className={`${cardClass} mb-6 p-5`}>
       <div className="mb-3 flex items-center gap-2">
-        <span className="material-symbols-rounded text-lg text-destiny-orange">
+        <span className="material-symbols-rounded text-lg text-destiny-orange" aria-hidden="true">
           auto_awesome
         </span>
         <h2 className="text-sm font-black uppercase tracking-wider text-destiny-grey/60 dark:text-white/60">
@@ -100,7 +100,7 @@ export function AuditAsk({
         <button type="submit" disabled={asking || !question.trim()} className={primaryBtn}>
           {asking ? (
             <>
-              <span className="material-symbols-rounded animate-spin text-lg">
+              <span className="material-symbols-rounded animate-spin text-lg" aria-hidden="true">
                 progress_activity
               </span>
               Looking

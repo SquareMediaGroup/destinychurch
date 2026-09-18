@@ -67,7 +67,7 @@ export default async function TrainingSubgroupPage({
               href={`/training/${category.slug}`}
               className="inline-flex items-center gap-1.5 text-xs font-bold text-on-dark-muted transition hover:text-white"
             >
-              <span className="material-symbols-rounded text-base">arrow_back</span>
+              <span className="material-symbols-rounded text-base" aria-hidden="true">arrow_back</span>
               {category.name}
             </Link>
             <h1 className="mt-4 text-4xl font-black text-white md:text-5xl">

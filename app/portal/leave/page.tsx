@@ -88,7 +88,7 @@ export default function PortalLeavePage() {
         action={
           !showForm && (
             <button className={primaryBtn} onClick={() => setShowForm(true)}>
-              <span className="material-symbols-rounded text-lg">add</span>
+              <span className="material-symbols-rounded text-lg" aria-hidden="true">add</span>
               Request leave
             </button>
           )

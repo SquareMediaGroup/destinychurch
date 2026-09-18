@@ -125,7 +125,7 @@ export default async function HirePage() {
               <AnimateIn key={item.label} delay={i * 60} className="h-full">
                 <div className="glass glass-sm flex h-full items-start gap-4 rounded-2xl p-5">
                   <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-destiny-orange/15">
-                    <span className="material-symbols-rounded text-xl text-destiny-orange">{item.icon}</span>
+                    <span className="material-symbols-rounded text-xl text-destiny-orange" aria-hidden="true">{item.icon}</span>
                   </div>
                   <div>
                     <p className="mb-0.5 text-sm font-bold text-white">{item.label}</p>
@@ -148,7 +148,7 @@ export default async function HirePage() {
         <div className="mx-auto max-w-7xl px-4 lg:px-8">
           <AnimateIn>
             <div className="flex flex-col gap-3 rounded-2xl border border-destiny-orange/20 bg-destiny-orange/5 px-6 py-5 sm:flex-row sm:items-center sm:gap-5">
-              <span className="material-symbols-rounded shrink-0 text-2xl text-destiny-orange">calendar_month</span>
+              <span className="material-symbols-rounded shrink-0 text-2xl text-destiny-orange" aria-hidden="true">calendar_month</span>
               <div>
                 <p className="text-sm font-black text-destiny-grey">Availability &amp; Time Restrictions</p>
                 <p className="mt-0.5 text-sm text-muted">
@@ -179,7 +179,7 @@ export default async function HirePage() {
               <div className="space-y-5">
                 <div className="flex items-start gap-4">
                   <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-destiny-orange/10">
-                    <span className="material-symbols-rounded text-xl text-destiny-orange">location_on</span>
+                    <span className="material-symbols-rounded text-xl text-destiny-orange" aria-hidden="true">location_on</span>
                   </div>
                   <div>
                     <p className="mb-0.5 text-sm font-bold text-destiny-grey">Address</p>
@@ -190,7 +190,7 @@ export default async function HirePage() {
                 </div>
                 <div className="flex items-start gap-4">
                   <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-destiny-orange/10">
-                    <span className="material-symbols-rounded text-xl text-destiny-orange">phone</span>
+                    <span className="material-symbols-rounded text-xl text-destiny-orange" aria-hidden="true">phone</span>
                   </div>
                   <div>
                     <p className="mb-0.5 text-sm font-bold text-destiny-grey">Phone</p>
@@ -199,7 +199,7 @@ export default async function HirePage() {
                 </div>
                 <div className="flex items-start gap-4">
                   <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-destiny-orange/10">
-                    <span className="material-symbols-rounded text-xl text-destiny-orange">mail</span>
+                    <span className="material-symbols-rounded text-xl text-destiny-orange" aria-hidden="true">mail</span>
                   </div>
                   <div>
                     <p className="mb-0.5 text-sm font-bold text-destiny-grey">Email</p>
@@ -208,7 +208,7 @@ export default async function HirePage() {
                 </div>
                 <div className="flex items-start gap-4">
                   <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-destiny-orange/10">
-                    <span className="material-symbols-rounded text-xl text-destiny-orange">local_parking</span>
+                    <span className="material-symbols-rounded text-xl text-destiny-orange" aria-hidden="true">local_parking</span>
                   </div>
                   <div>
                     <p className="mb-0.5 text-sm font-bold text-destiny-grey">Parking</p>
@@ -217,7 +217,7 @@ export default async function HirePage() {
                 </div>
                 <div className="flex items-start gap-4">
                   <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-destiny-orange/10">
-                    <span className="material-symbols-rounded text-xl text-destiny-orange">settings_input_hdmi</span>
+                    <span className="material-symbols-rounded text-xl text-destiny-orange" aria-hidden="true">settings_input_hdmi</span>
                   </div>
                   <div>
                     <p className="mb-0.5 text-sm font-bold text-destiny-grey">Production Staff</p>

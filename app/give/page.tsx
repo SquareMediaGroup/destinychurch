@@ -103,7 +103,7 @@ export default async function GivePage() {
             <AnimateIn delay={0}>
               <a href="#give-online" className="group flex flex-col items-center rounded-3xl bg-white p-8 text-center shadow-sm transition hover:shadow-md hover:-translate-y-1 duration-300">
                 <div className="mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-destiny-orange/10 transition group-hover:bg-destiny-orange/20">
-                  <span className="material-symbols-rounded text-4xl text-destiny-orange">language</span>
+                  <span className="material-symbols-rounded text-4xl text-destiny-orange" aria-hidden="true">language</span>
                 </div>
                 <h3 className="mb-2 text-xl font-black text-destiny-grey">Give Online</h3>
                 <p className="text-sm leading-relaxed text-muted">
@@ -116,7 +116,7 @@ export default async function GivePage() {
             <AnimateIn delay={80}>
               <a href="#give-bank" className="group flex flex-col items-center rounded-3xl bg-white p-8 text-center shadow-sm transition hover:shadow-md hover:-translate-y-1 duration-300">
                 <div className="mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-destiny-orange/10 transition group-hover:bg-destiny-orange/20">
-                  <span className="material-symbols-rounded text-4xl text-destiny-orange">account_balance</span>
+                  <span className="material-symbols-rounded text-4xl text-destiny-orange" aria-hidden="true">account_balance</span>
                 </div>
                 <h3 className="mb-2 text-xl font-black text-destiny-grey">Standing Order</h3>
                 <p className="text-sm leading-relaxed text-muted">
@@ -129,7 +129,7 @@ export default async function GivePage() {
             <AnimateIn delay={160}>
               <a href="#give-text" className="group flex flex-col items-center rounded-3xl bg-white p-8 text-center shadow-sm transition hover:shadow-md hover:-translate-y-1 duration-300">
                 <div className="mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-destiny-orange/10 transition group-hover:bg-destiny-orange/20">
-                  <span className="material-symbols-rounded text-4xl text-destiny-orange">sms</span>
+                  <span className="material-symbols-rounded text-4xl text-destiny-orange" aria-hidden="true">sms</span>
                 </div>
                 <h3 className="mb-2 text-xl font-black text-destiny-grey">Text to Give</h3>
                 <p className="text-sm leading-relaxed text-muted">
@@ -146,7 +146,7 @@ export default async function GivePage() {
         <div className="mx-auto max-w-4xl px-4 lg:px-8">
           <AnimateIn>
             <div className="mb-3 flex items-center gap-3">
-              <span className="material-symbols-rounded text-2xl text-destiny-orange">language</span>
+              <span className="material-symbols-rounded text-2xl text-destiny-orange" aria-hidden="true">language</span>
               <h2 className="text-2xl font-black text-destiny-grey">Give Online</h2>
             </div>
             <p className="mb-8 text-sm text-muted">
@@ -169,7 +169,7 @@ export default async function GivePage() {
         <div className="mx-auto max-w-4xl px-4 lg:px-8">
           <AnimateIn>
             <div className="mb-3 flex items-center gap-3">
-              <span className="material-symbols-rounded text-2xl text-destiny-orange">account_balance</span>
+              <span className="material-symbols-rounded text-2xl text-destiny-orange" aria-hidden="true">account_balance</span>
               <h2 className="text-2xl font-black text-destiny-grey">Standing Order / Bank Transfer</h2>
             </div>
             <p className="mb-8 text-sm text-muted">
@@ -199,7 +199,7 @@ export default async function GivePage() {
         <div className="mx-auto max-w-4xl px-4 lg:px-8">
           <AnimateIn>
             <div className="mb-3 flex items-center gap-3">
-              <span className="material-symbols-rounded text-2xl text-destiny-orange">sms</span>
+              <span className="material-symbols-rounded text-2xl text-destiny-orange" aria-hidden="true">sms</span>
               <h2 className="text-2xl font-black text-destiny-grey">Text to Give</h2>
             </div>
             <p className="mb-8 text-sm text-muted">
@@ -211,19 +211,19 @@ export default async function GivePage() {
               <div className="grid gap-6 md:grid-cols-3">
                 <div className="text-center">
                   <p className="mb-2 text-xs font-bold uppercase tracking-widest text-destiny-orange">Step 1</p>
-                  <span className="material-symbols-rounded mb-3 block text-4xl text-destiny-grey/40">edit</span>
+                  <span className="material-symbols-rounded mb-3 block text-4xl text-destiny-grey/40" aria-hidden="true">edit</span>
                   <p className="text-sm font-bold text-destiny-grey">Text the keyword</p>
                   <p className="mt-1 text-2xl font-black text-destiny-orange">{content.text_keyword ?? "DCTEES"}</p>
                 </div>
                 <div className="text-center">
                   <p className="mb-2 text-xs font-bold uppercase tracking-widest text-destiny-orange">Step 2</p>
-                  <span className="material-symbols-rounded mb-3 block text-4xl text-destiny-grey/40">payments</span>
+                  <span className="material-symbols-rounded mb-3 block text-4xl text-destiny-grey/40" aria-hidden="true">payments</span>
                   <p className="text-sm font-bold text-destiny-grey">Followed by the amount</p>
                   <p className="mt-1 text-2xl font-black text-destiny-orange">e.g. give 10 <span className="text-base text-subtle">or</span> give 10/mo</p>
                 </div>
                 <div className="text-center">
                   <p className="mb-2 text-xs font-bold uppercase tracking-widest text-destiny-orange">Step 3</p>
-                  <span className="material-symbols-rounded mb-3 block text-4xl text-destiny-grey/40">send</span>
+                  <span className="material-symbols-rounded mb-3 block text-4xl text-destiny-grey/40" aria-hidden="true">send</span>
                   <p className="text-sm font-bold text-destiny-grey">Send to</p>
                   <p className="mt-1 text-2xl font-black text-destiny-orange">{content.text_number ?? "07380 307 800"}</p>
                 </div>
@@ -248,7 +248,7 @@ export default async function GivePage() {
         <div className="mx-auto max-w-4xl px-4 lg:px-8">
           <AnimateIn>
             <div className="mb-3 flex items-center gap-3">
-              <span className="material-symbols-rounded text-2xl text-destiny-orange">volunteer_activism</span>
+              <span className="material-symbols-rounded text-2xl text-destiny-orange" aria-hidden="true">volunteer_activism</span>
               <h2 className="text-2xl font-black text-destiny-grey">Gift Aid</h2>
             </div>
             <p className="mb-8 text-sm leading-relaxed text-muted">
@@ -267,7 +267,7 @@ export default async function GivePage() {
                   "Making a declaration in-person at church",
                 ].map((item) => (
                   <li key={item} className="flex items-center gap-3 text-sm text-muted">
-                    <span className="material-symbols-rounded shrink-0 text-base text-destiny-orange">check_circle</span>
+                    <span className="material-symbols-rounded shrink-0 text-base text-destiny-orange" aria-hidden="true">check_circle</span>
                     {item}
                   </li>
                 ))}
@@ -284,7 +284,7 @@ export default async function GivePage() {
                 className="inline-flex items-center gap-2 rounded-full bg-destiny-orange px-6 py-2.5 text-sm font-bold text-white transition hover:brightness-110"
               >
                 Find out more here
-                <span className="material-symbols-rounded text-base">open_in_new</span>
+                <span className="material-symbols-rounded text-base" aria-hidden="true">open_in_new</span>
               </Link>
             </div>
           </AnimateIn>

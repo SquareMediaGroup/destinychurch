@@ -27,7 +27,7 @@ export default function CartPage() {
 
         {!mounted ? null : items.length === 0 ? (
           <div className="rounded-3xl border border-black/10 bg-[#f9fafb] p-14 text-center">
-            <span className="material-symbols-rounded text-5xl text-destiny-grey/25">
+            <span className="material-symbols-rounded text-5xl text-destiny-grey/25" aria-hidden="true">
               shopping_bag
             </span>
             <h2 className="mt-4 font-[family-name:var(--font-heading)] text-2xl font-black text-destiny-grey">
@@ -41,7 +41,7 @@ export default function CartPage() {
               className="mt-6 inline-flex items-center justify-center gap-2 rounded-full bg-destiny-orange px-7 py-3.5 text-sm font-bold text-white transition hover:bg-destiny-orange-dark"
             >
               Browse the store
-              <span className="material-symbols-rounded text-lg">arrow_forward</span>
+              <span className="material-symbols-rounded text-lg" aria-hidden="true">arrow_forward</span>
             </Link>
           </div>
         ) : (
@@ -65,7 +65,7 @@ export default function CartPage() {
                           className="object-cover"
                         />
                       ) : (
-                        <span className="material-symbols-rounded absolute inset-0 m-auto h-fit w-fit text-2xl text-destiny-grey/20">
+                        <span className="material-symbols-rounded absolute inset-0 m-auto h-fit w-fit text-2xl text-destiny-grey/20" aria-hidden="true">
                           checkroom
                         </span>
                       )}
@@ -90,7 +90,7 @@ export default function CartPage() {
                           className="rounded-lg p-1.5 text-subtle transition hover:bg-red-50 hover:text-red-600"
                           aria-label="Remove item"
                         >
-                          <span className="material-symbols-rounded text-lg">close</span>
+                          <span className="material-symbols-rounded text-lg" aria-hidden="true">close</span>
                         </button>
                       </div>
 
@@ -102,7 +102,7 @@ export default function CartPage() {
                             className="flex h-9 w-9 items-center justify-center text-muted hover:text-destiny-grey"
                             aria-label="Decrease quantity"
                           >
-                            <span className="material-symbols-rounded text-base">remove</span>
+                            <span className="material-symbols-rounded text-base" aria-hidden="true">remove</span>
                           </button>
                           <span className="w-7 text-center text-sm font-bold">{item.quantity}</span>
                           <button
@@ -111,7 +111,7 @@ export default function CartPage() {
                             className="flex h-9 w-9 items-center justify-center text-muted hover:text-destiny-grey"
                             aria-label="Increase quantity"
                           >
-                            <span className="material-symbols-rounded text-base">add</span>
+                            <span className="material-symbols-rounded text-base" aria-hidden="true">add</span>
                           </button>
                         </div>
                         <p className="font-bold text-destiny-grey">
@@ -148,7 +148,7 @@ export default function CartPage() {
                 className="mt-6 flex items-center justify-center gap-2 rounded-full bg-destiny-orange px-7 py-3.5 text-sm font-bold text-white transition hover:bg-destiny-orange-dark"
               >
                 Checkout
-                <span className="material-symbols-rounded text-lg">lock</span>
+                <span className="material-symbols-rounded text-lg" aria-hidden="true">lock</span>
               </Link>
               <Link
                 href="/shop"

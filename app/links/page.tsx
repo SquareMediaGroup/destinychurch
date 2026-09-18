@@ -145,7 +145,7 @@ export default function LinksPage() {
                 className="inline-flex items-center justify-center gap-2 rounded-full bg-destiny-orange px-7 py-3.5 text-sm font-bold text-white transition-transform hover:scale-[1.03] hover:bg-destiny-orange-dark"
               >
                 Start with New Here
-                <span className="material-symbols-rounded text-lg">arrow_forward</span>
+                <span className="material-symbols-rounded text-lg" aria-hidden="true">arrow_forward</span>
               </Link>
               <Link
                 href="/contact"

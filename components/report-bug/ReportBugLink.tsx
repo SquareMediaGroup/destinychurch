@@ -90,13 +90,13 @@ export default function ReportBugLink() {
                 aria-label="Close"
                 className="shrink-0 rounded-full p-1 text-subtle transition hover:bg-black/5 hover:text-destiny-grey"
               >
-                <span className="material-symbols-rounded block text-2xl">close</span>
+                <span className="material-symbols-rounded block text-2xl" aria-hidden="true">close</span>
               </button>
             </div>
 
             {status === "success" ? (
               <div className="rounded-2xl bg-green-50 px-4 py-6 text-center">
-                <span className="material-symbols-rounded mb-1 block text-3xl text-green-600">
+                <span className="material-symbols-rounded mb-1 block text-3xl text-green-600" aria-hidden="true">
                   check_circle
                 </span>
                 <p className="font-bold text-green-700">Bug report sent!</p>

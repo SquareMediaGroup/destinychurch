@@ -17,7 +17,7 @@ export default function ProductGallery({
   if (images.length === 0) {
     return (
       <div className="flex aspect-square items-center justify-center rounded-3xl border border-black/10 bg-[#f5f7fa]">
-        <span className="material-symbols-rounded text-6xl text-destiny-grey/20">
+        <span className="material-symbols-rounded text-6xl text-destiny-grey/20" aria-hidden="true">
           checkroom
         </span>
       </div>

@@ -122,7 +122,7 @@ function RoleCard({ job }: { job: Job }) {
       <div className="mt-6 flex items-center justify-between">
         <span className="inline-flex items-center gap-1.5 text-sm font-bold text-destiny-orange">
           View role
-          <span className="material-symbols-rounded text-base transition-transform group-hover:translate-x-1">
+          <span className="material-symbols-rounded text-base transition-transform group-hover:translate-x-1" aria-hidden="true">
             arrow_forward
           </span>
         </span>
@@ -233,7 +233,7 @@ export default async function JobsPage() {
               <AnimateIn key={step.title} delay={i * 90}>
                 <div className="flex h-full flex-col rounded-3xl bg-white p-7 shadow-sm">
                   <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-2xl bg-destiny-orange/10">
-                    <span className="material-symbols-rounded text-2xl text-destiny-orange">
+                    <span className="material-symbols-rounded text-2xl text-destiny-orange" aria-hidden="true">
                       {step.icon}
                     </span>
                   </div>
@@ -263,7 +263,7 @@ export default async function JobsPage() {
           {!hasAny ? (
             <AnimateIn>
               <div className="mx-auto max-w-xl rounded-3xl border border-dashed border-black/10 bg-[#f5f7fa] px-6 py-16 text-center">
-                <span className="material-symbols-rounded mb-3 text-4xl text-destiny-grey/25">
+                <span className="material-symbols-rounded mb-3 text-4xl text-destiny-grey/25" aria-hidden="true">
                   work_off
                 </span>
                 <p className="font-black text-destiny-grey">No open roles right now</p>
@@ -332,7 +332,7 @@ export default async function JobsPage() {
               <AnimateIn key={perk.label} delay={i * 50}>
                 <div className="flex h-full flex-col items-center gap-3 rounded-3xl bg-white p-6 text-center shadow-sm">
                   <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-destiny-orange/10">
-                    <span className="material-symbols-rounded text-2xl text-destiny-orange">
+                    <span className="material-symbols-rounded text-2xl text-destiny-orange" aria-hidden="true">
                       {perk.icon}
                     </span>
                   </div>
@@ -372,7 +372,7 @@ export default async function JobsPage() {
                   <ul className="mt-6 space-y-3">
                     {VALUES.map((v) => (
                       <li key={v} className="flex items-start gap-2.5">
-                        <span className="material-symbols-rounded mt-0.5 text-base text-destiny-orange">
+                        <span className="material-symbols-rounded mt-0.5 text-base text-destiny-orange" aria-hidden="true">
                           check_circle
                         </span>
                         <span className="text-sm leading-relaxed text-white/80">

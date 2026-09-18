@@ -188,7 +188,7 @@ export default function AdminPostsPage() {
         back={{ href: "/admin", label: "Dashboard" }}
         action={
           <button className={primaryBtn} onClick={() => setEditing("new")}>
-            <span className="material-symbols-rounded text-lg">add</span>
+            <span className="material-symbols-rounded text-lg" aria-hidden="true">add</span>
             New post
           </button>
         }
@@ -205,7 +205,7 @@ export default function AdminPostsPage() {
           hint="Create a post to publish a standalone page at its own URL."
           action={
             <button className={primaryBtn} onClick={() => setEditing("new")}>
-              <span className="material-symbols-rounded text-lg">add</span>
+              <span className="material-symbols-rounded text-lg" aria-hidden="true">add</span>
               New post
             </button>
           }
@@ -357,7 +357,7 @@ export default function AdminPostsPage() {
                               className="text-destiny-grey/40 dark:text-white/40 transition hover:text-destiny-orange"
                               aria-label={`View ${p.title} live`}
                             >
-                              <span className="material-symbols-rounded text-xl">
+                              <span className="material-symbols-rounded text-xl" aria-hidden="true">
                                 open_in_new
                               </span>
                             </a>
@@ -370,7 +370,7 @@ export default function AdminPostsPage() {
                             className="text-destiny-grey/40 dark:text-white/40 transition hover:text-destiny-orange group-hover:text-destiny-orange"
                             aria-label={`Edit ${p.title}`}
                           >
-                            <span className="material-symbols-rounded text-xl">edit</span>
+                            <span className="material-symbols-rounded text-xl" aria-hidden="true">edit</span>
                           </button>
                           <button
                             onClick={(e) => {
@@ -380,7 +380,7 @@ export default function AdminPostsPage() {
                             className="text-destiny-grey/40 dark:text-white/40 transition hover:text-destiny-red"
                             aria-label={`Delete ${p.title}`}
                           >
-                            <span className="material-symbols-rounded text-xl">delete</span>
+                            <span className="material-symbols-rounded text-xl" aria-hidden="true">delete</span>
                           </button>
                         </div>
                       </td>

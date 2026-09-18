@@ -173,7 +173,7 @@ export default async function LivePage() {
                   className="group flex w-full flex-col rounded-3xl bg-white p-7 transition hover:shadow-[0_1px_2px_rgba(16,24,40,.04),0_12px_28px_-10px_rgba(16,24,40,.16)]"
                 >
                   <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-2xl bg-destiny-orange/10">
-                    <span className="material-symbols-rounded text-2xl text-destiny-orange">
+                    <span className="material-symbols-rounded text-2xl text-destiny-orange" aria-hidden="true">
                       {item.icon}
                     </span>
                   </div>
@@ -183,7 +183,7 @@ export default async function LivePage() {
                   </p>
                   <span className="inline-flex items-center gap-1.5 text-sm font-bold text-destiny-orange">
                     {item.cta}
-                    <span className="material-symbols-rounded text-base transition group-hover:translate-x-0.5">
+                    <span className="material-symbols-rounded text-base transition group-hover:translate-x-0.5" aria-hidden="true">
                       arrow_forward
                     </span>
                   </span>
@@ -211,7 +211,7 @@ export default async function LivePage() {
               <AnimateIn key={fact.title} delay={i * 80} className="flex">
                 <div className="flex w-full items-start gap-4 rounded-3xl bg-[#f5f7fa] p-6">
                   <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-destiny-orange/10">
-                    <span className="material-symbols-rounded text-2xl text-destiny-orange">
+                    <span className="material-symbols-rounded text-2xl text-destiny-orange" aria-hidden="true">
                       {fact.icon}
                     </span>
                   </div>

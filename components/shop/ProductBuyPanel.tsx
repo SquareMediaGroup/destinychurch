@@ -177,7 +177,7 @@ export default function ProductBuyPanel({ product }: { product: ProductWithVaria
             className="flex h-11 w-11 items-center justify-center text-muted transition hover:text-destiny-grey"
             aria-label="Decrease quantity"
           >
-            <span className="material-symbols-rounded text-lg">remove</span>
+            <span className="material-symbols-rounded text-lg" aria-hidden="true">remove</span>
           </button>
           <span className="w-8 text-center text-sm font-bold text-destiny-grey">{qty}</span>
           <button
@@ -188,7 +188,7 @@ export default function ProductBuyPanel({ product }: { product: ProductWithVaria
             className="flex h-11 w-11 items-center justify-center text-muted transition hover:text-destiny-grey"
             aria-label="Increase quantity"
           >
-            <span className="material-symbols-rounded text-lg">add</span>
+            <span className="material-symbols-rounded text-lg" aria-hidden="true">add</span>
           </button>
         </div>
 
@@ -198,13 +198,13 @@ export default function ProductBuyPanel({ product }: { product: ProductWithVaria
           disabled={!inStock}
           className="inline-flex flex-1 items-center justify-center gap-2 rounded-full bg-destiny-orange px-7 py-3.5 text-sm font-bold text-white shadow-lg shadow-destiny-orange/25 transition hover:bg-destiny-orange-dark disabled:cursor-not-allowed disabled:bg-destiny-grey/30 disabled:shadow-none"
         >
-          <span className="material-symbols-rounded text-lg">shopping_bag</span>
+          <span className="material-symbols-rounded text-lg" aria-hidden="true">shopping_bag</span>
           {inStock ? "Add to basket" : "Sold out"}
         </button>
       </div>
 
       <p className="mt-4 flex items-center gap-1.5 text-xs text-subtle">
-        <span className="material-symbols-rounded text-sm">storefront</span>
+        <span className="material-symbols-rounded text-sm" aria-hidden="true">storefront</span>
         Collect at church — we&apos;ll email you when it&apos;s ready.
       </p>
       <Link
@@ -212,7 +212,7 @@ export default function ProductBuyPanel({ product }: { product: ProductWithVaria
         className="mt-2 inline-flex items-center gap-1 text-sm font-semibold text-destiny-orange underline-offset-4 hover:underline"
       >
         View basket
-        <span className="material-symbols-rounded text-base">arrow_forward</span>
+        <span className="material-symbols-rounded text-base" aria-hidden="true">arrow_forward</span>
       </Link>
     </div>
   );

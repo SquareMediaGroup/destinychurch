@@ -35,7 +35,7 @@ export default function VideoConsentGate({
         />
       )}
       <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 bg-black/60 px-6 text-center">
-        <span className="material-symbols-rounded text-5xl text-white/40">
+        <span className="material-symbols-rounded text-5xl text-white/40" aria-hidden="true">
           cookie
         </span>
         <div>

@@ -47,7 +47,7 @@ export default function ChurchSuiteEmbed({
         className={`relative flex flex-col items-center justify-center gap-4 overflow-hidden bg-[#f5f7fa] px-6 text-center ${className ?? ""}`}
         style={sizeStyle}
       >
-        <span className="material-symbols-rounded text-4xl text-destiny-grey/30">cookie</span>
+        <span className="material-symbols-rounded text-4xl text-destiny-grey/30" aria-hidden="true">cookie</span>
         <div>
           <p className="text-base font-black text-destiny-grey">Cookies required to load this form</p>
           <p className="mt-1 max-w-xs text-sm text-subtle">

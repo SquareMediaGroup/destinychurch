@@ -175,7 +175,7 @@ export default function CapMoneyPage() {
                       boxShadow: "0 12px 30px -10px rgba(78,125,20,0.7)",
                     }}
                   >
-                    <span className="material-symbols-rounded text-lg">
+                    <span className="material-symbols-rounded text-lg" aria-hidden="true">
                       person_add
                     </span>
                     Sign up
@@ -189,7 +189,7 @@ export default function CapMoneyPage() {
                       boxShadow: "0 12px 30px -10px rgba(78,125,20,0.7)",
                     }}
                   >
-                    <span className="material-symbols-rounded text-lg">
+                    <span className="material-symbols-rounded text-lg" aria-hidden="true">
                       person_add
                     </span>
                     Register your interest
@@ -201,7 +201,7 @@ export default function CapMoneyPage() {
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-2 rounded-full bg-white/10 px-6 py-3 text-sm font-bold text-white backdrop-blur-sm transition hover:bg-white/20"
                 >
-                  <span className="material-symbols-rounded text-base">
+                  <span className="material-symbols-rounded text-base" aria-hidden="true">
                     open_in_new
                   </span>
                   About CAP
@@ -259,7 +259,7 @@ export default function CapMoneyPage() {
                         className="mb-3 flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.28em]"
                         style={{ color: ACCENT }}
                       >
-                        <span className="material-symbols-rounded text-sm leading-none">
+                        <span className="material-symbols-rounded text-sm leading-none" aria-hidden="true">
                           event
                         </span>
                         {cadenceLabel}
@@ -288,7 +288,7 @@ export default function CapMoneyPage() {
                           className="mb-3 flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.28em]"
                           style={{ color: ACCENT }}
                         >
-                          <span className="material-symbols-rounded text-sm leading-none">
+                          <span className="material-symbols-rounded text-sm leading-none" aria-hidden="true">
                             videocam
                           </span>
                           Online
@@ -307,7 +307,7 @@ export default function CapMoneyPage() {
                             className="mt-3 inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-[11px] font-bold uppercase tracking-wide text-white transition hover:brightness-110"
                             style={{ backgroundColor: ACCENT }}
                           >
-                            <span className="material-symbols-rounded text-[14px] leading-none">
+                            <span className="material-symbols-rounded text-[14px] leading-none" aria-hidden="true">
                               open_in_new
                             </span>
                             Join meeting
@@ -320,7 +320,7 @@ export default function CapMoneyPage() {
                           className="mb-3 flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.28em]"
                           style={{ color: ACCENT }}
                         >
-                          <span className="material-symbols-rounded text-sm leading-none">
+                          <span className="material-symbols-rounded text-sm leading-none" aria-hidden="true">
                             place
                           </span>
                           Where

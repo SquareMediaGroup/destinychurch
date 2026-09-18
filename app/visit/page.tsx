@@ -122,7 +122,7 @@ export default function VisitPage() {
             <AnimateIn delay={0} className="flex">
               <div className="flex w-full items-center gap-4 rounded-3xl bg-[#f5f7fa] p-6">
                 <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-destiny-orange/10">
-                  <span className="material-symbols-rounded text-2xl text-destiny-orange">calendar_month</span>
+                  <span className="material-symbols-rounded text-2xl text-destiny-orange" aria-hidden="true">calendar_month</span>
                 </div>
                 <div>
                   <p className="mb-1 font-black text-destiny-grey">Every Sunday</p>
@@ -135,7 +135,7 @@ export default function VisitPage() {
             <AnimateIn delay={80} className="flex">
               <div className="flex w-full items-center gap-4 rounded-3xl bg-[#f5f7fa] p-6">
                 <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-destiny-orange/10">
-                  <span className="material-symbols-rounded text-2xl text-destiny-orange">location_on</span>
+                  <span className="material-symbols-rounded text-2xl text-destiny-orange" aria-hidden="true">location_on</span>
                 </div>
                 <div>
                   <p className="mb-1 font-black text-destiny-grey">Destiny Centre</p>
@@ -148,7 +148,7 @@ export default function VisitPage() {
             <AnimateIn delay={160} className="flex">
               <div className="flex w-full items-center gap-4 rounded-3xl bg-[#f5f7fa] p-6">
                 <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-destiny-orange/10">
-                  <span className="material-symbols-rounded text-2xl text-destiny-orange">local_parking</span>
+                  <span className="material-symbols-rounded text-2xl text-destiny-orange" aria-hidden="true">local_parking</span>
                 </div>
                 <div>
                   <p className="mb-1 font-black text-destiny-grey">Free Parking</p>
@@ -176,7 +176,7 @@ export default function VisitPage() {
                   <AnimateIn key={item.title} delay={i * 60}>
                     <div className="flex items-start gap-4">
                       <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-destiny-orange/10">
-                        <span className="material-symbols-rounded text-xl text-destiny-orange">{item.icon}</span>
+                        <span className="material-symbols-rounded text-xl text-destiny-orange" aria-hidden="true">{item.icon}</span>
                       </div>
                       <div>
                         <p className="mb-1 font-black text-destiny-grey">{item.title}</p>
@@ -214,7 +214,7 @@ export default function VisitPage() {
             {/* TODO: Replace src with YouTube embed URL when available */}
             <div className="overflow-hidden rounded-3xl bg-[#f5f7fa] aspect-video flex items-center justify-center">
               <div className="text-center">
-                <span className="material-symbols-rounded mb-3 block text-5xl text-destiny-grey/30">play_circle</span>
+                <span className="material-symbols-rounded mb-3 block text-5xl text-destiny-grey/30" aria-hidden="true">play_circle</span>
                 <p className="text-sm font-bold text-subtle">Video coming soon</p>
               </div>
             </div>
@@ -234,7 +234,7 @@ export default function VisitPage() {
             <AnimateIn delay={0}>
               <div className="flex h-full flex-col rounded-3xl bg-[#f5f7fa] p-7">
                 <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl" style={{ background: "#F5802118" }}>
-                  <span className="material-symbols-rounded text-2xl text-[#F58021]">child_care</span>
+                  <span className="material-symbols-rounded text-2xl text-[#F58021]" aria-hidden="true">child_care</span>
                 </div>
                 <h3 className="mb-1 font-black text-destiny-grey">Destiny Kids</h3>
                 <p className="mb-2 text-xs font-bold text-destiny-orange">Ages 0–11 · From 10:45am</p>
@@ -249,7 +249,7 @@ export default function VisitPage() {
             <AnimateIn delay={80}>
               <div className="flex h-full flex-col rounded-3xl bg-[#f5f7fa] p-7">
                 <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl" style={{ background: "#8106B118" }}>
-                  <span className="material-symbols-rounded text-2xl text-[#8106B1]">bolt</span>
+                  <span className="material-symbols-rounded text-2xl text-[#8106B1]" aria-hidden="true">bolt</span>
                 </div>
                 <h3 className="mb-1 font-black text-destiny-grey">Destiny Youth</h3>
                 <p className="mb-2 text-xs font-bold text-destiny-orange">Ages 11–18 · Wednesday 7pm</p>
@@ -264,7 +264,7 @@ export default function VisitPage() {
             <AnimateIn delay={160}>
               <div className="flex h-full flex-col rounded-3xl bg-[#f5f7fa] p-7">
                 <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl" style={{ background: "#02800218" }}>
-                  <span className="material-symbols-rounded text-2xl text-[#028002]">group</span>
+                  <span className="material-symbols-rounded text-2xl text-[#028002]" aria-hidden="true">group</span>
                 </div>
                 <h3 className="mb-1 font-black text-destiny-grey">Young Adults</h3>
                 <p className="mb-2 text-xs font-bold text-destiny-orange">Ages 18–30+</p>
@@ -289,21 +289,21 @@ export default function VisitPage() {
               <h2 className="mb-5 text-3xl font-black text-destiny-grey md:text-4xl">Find us</h2>
               <div className="mb-6 space-y-4 text-sm text-muted">
                 <div className="flex items-start gap-3">
-                  <span className="material-symbols-rounded mt-0.5 shrink-0 text-xl text-destiny-orange">location_on</span>
+                  <span className="material-symbols-rounded mt-0.5 shrink-0 text-xl text-destiny-orange" aria-hidden="true">location_on</span>
                   <div>
                     <p className="font-bold text-destiny-grey">Destiny Centre</p>
                     <p>395 Norton Rd, Stockton-on-Tees, TS20 2QQ</p>
                   </div>
                 </div>
                 <div className="flex items-start gap-3">
-                  <span className="material-symbols-rounded mt-0.5 shrink-0 text-xl text-destiny-orange">local_parking</span>
+                  <span className="material-symbols-rounded mt-0.5 shrink-0 text-xl text-destiny-orange" aria-hidden="true">local_parking</span>
                   <div>
                     <p className="font-bold text-destiny-grey">Parking</p>
                     <p>Free on-site parking is available. Our Welcome Team will be glad to help when you arrive.</p>
                   </div>
                 </div>
                 <div className="flex items-start gap-3">
-                  <span className="material-symbols-rounded mt-0.5 shrink-0 text-xl text-destiny-orange">directions_bus</span>
+                  <span className="material-symbols-rounded mt-0.5 shrink-0 text-xl text-destiny-orange" aria-hidden="true">directions_bus</span>
                   <div>
                     <p className="font-bold text-destiny-grey">By Bus</p>
                     <p className="mb-1.5">Several bus routes stop nearby on Norton Road.</p>
@@ -314,19 +314,19 @@ export default function VisitPage() {
                       className="inline-flex items-center gap-1 text-xs font-bold text-destiny-orange transition hover:underline"
                     >
                       Plan your journey
-                      <span className="material-symbols-rounded text-sm">open_in_new</span>
+                      <span className="material-symbols-rounded text-sm" aria-hidden="true">open_in_new</span>
                     </a>
                   </div>
                 </div>
                 <div className="flex items-start gap-3">
-                  <span className="material-symbols-rounded mt-0.5 shrink-0 text-xl text-destiny-orange">accessible</span>
+                  <span className="material-symbols-rounded mt-0.5 shrink-0 text-xl text-destiny-orange" aria-hidden="true">accessible</span>
                   <div>
                     <p className="font-bold text-destiny-grey">Accessibility</p>
                     <p>Step-free access, accessible toilets and BSL interpretation available. Contact us in advance for specific requirements.</p>
                   </div>
                 </div>
                 <div className="flex items-start gap-3">
-                  <span className="material-symbols-rounded mt-0.5 shrink-0 text-xl text-destiny-orange">call</span>
+                  <span className="material-symbols-rounded mt-0.5 shrink-0 text-xl text-destiny-orange" aria-hidden="true">call</span>
                   <div>
                     <p className="font-bold text-destiny-grey">Phone</p>
                     <a href="tel:+441642559797" className="transition hover:text-destiny-orange">01642 559797</a>

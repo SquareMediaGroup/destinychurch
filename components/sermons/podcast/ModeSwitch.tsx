@@ -42,7 +42,7 @@ export default function ModeSwitch({
                 : "text-muted hover:text-destiny-grey"
             }`}
           >
-            <span className="material-symbols-rounded text-lg">{opt.icon}</span>
+            <span className="material-symbols-rounded text-lg" aria-hidden="true">{opt.icon}</span>
             {opt.label}
           </button>
         );

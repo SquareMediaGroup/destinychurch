@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
+import { useAccessibility } from "@/contexts/AccessibilityContext";
 
 const photos = [
   "/img/photos/WorshipMoment1.webp",
@@ -17,6 +18,13 @@ const photos = [
 const MARQUEE_TEXT = "TRANSFORMING LIVES • TRANSFORMING LIVES • TRANSFORMING LIVES • TRANSFORMING LIVES • ";
 
 export default function VisitSlideshow() {
+  // Everything that moves in here is decorative, and all of it moved
+  // permanently: two 120-second marquees on an infinite loop plus a 6-second
+  // auto-advance, with no way to stop any of it. That is WCAG 2.2.2 territory.
+  // The site already offers the control — /accessibility "Reduce animations",
+  // which also mirrors the OS setting when the visitor has not chosen — so the
+  // fix is to actually honour it here.
+  const { reducedMotion } = useAccessibility();
   const [current, setCurrent] = useState(0);
   const [prev, setPrev] = useState<number | null>(null);
   const [tick, setTick] = useState(0);
@@ -34,11 +42,12 @@ export default function VisitSlideshow() {
     setTick((t) => t + 1);
   };
 
-  // Auto-advance
+  // Auto-advance. Still draggable when stopped, so the photos stay reachable.
   useEffect(() => {
+    if (reducedMotion) return;
     const timer = setInterval(() => goTo(1), 6000);
     return () => clearInterval(timer);
-  }, []);
+  }, [reducedMotion]);
 
   // Preload next image
   useEffect(() => {
@@ -66,7 +75,11 @@ export default function VisitSlideshow() {
   return (
     <div
       ref={containerRef}
-      className="relative h-[728px] w-full overflow-hidden cursor-grab active:cursor-grabbing select-none"
+      /* Was a flat h-[728px] at every breakpoint: taller than the viewport on
+         a phone and taller than a landscape window. Steps now, and caps at the
+         viewport height so it can never be the thing you have to scroll past
+         twice. */
+      className="relative h-[60vh] max-h-[728px] min-h-[380px] w-full cursor-grab select-none overflow-hidden active:cursor-grabbing sm:h-[70vh]"
       style={{ isolation: "isolate" }}
       onPointerDown={handlePointerDown}
       onPointerUp={handlePointerUp}
@@ -110,18 +123,27 @@ export default function VisitSlideshow() {
       {/* Dark overlay */}
       <div className="absolute inset-0 bg-black/30 pointer-events-none" />
 
-      {/* Scrolling text */}
-      <div className="absolute inset-0 flex flex-col justify-center pointer-events-none gap-3">
+      {/* Scrolling text. aria-hidden on the whole block: it is a decorative
+          typographic band, and the phrase repeats four times per row across two
+          rows — announcing that is noise, not content. */}
+      <div
+        aria-hidden="true"
+        className="absolute inset-0 flex flex-col justify-center pointer-events-none gap-3"
+      >
         {/* Row 1 — scrolls left */}
         <div className="overflow-hidden">
           <div
             className="flex w-max"
-            style={{ animation: "visit-marquee 120s linear infinite", willChange: "transform" }}
+            style={
+              reducedMotion
+                ? undefined
+                : { animation: "visit-marquee 120s linear infinite", willChange: "transform" }
+            }
           >
             <span className="text-[12vw] font-black uppercase leading-none tracking-tight text-white/90 pr-[6vw]">
               {MARQUEE_TEXT}
             </span>
-            <span className="text-[12vw] font-black uppercase leading-none tracking-tight text-white/90 pr-[6vw]" aria-hidden="true">
+            <span className="text-[12vw] font-black uppercase leading-none tracking-tight text-white/90 pr-[6vw]">
               {MARQUEE_TEXT}
             </span>
           </div>
@@ -131,12 +153,19 @@ export default function VisitSlideshow() {
         <div className="overflow-hidden">
           <div
             className="flex w-max"
-            style={{ animation: "visit-marquee 120s linear infinite reverse", willChange: "transform" }}
+            style={
+              reducedMotion
+                ? undefined
+                : {
+                    animation: "visit-marquee 120s linear infinite reverse",
+                    willChange: "transform",
+                  }
+            }
           >
             <span className="text-[12vw] font-black uppercase leading-none tracking-tight text-white/90 pr-[6vw]">
               {MARQUEE_TEXT}
             </span>
-            <span className="text-[12vw] font-black uppercase leading-none tracking-tight text-white/90 pr-[6vw]" aria-hidden="true">
+            <span className="text-[12vw] font-black uppercase leading-none tracking-tight text-white/90 pr-[6vw]">
               {MARQUEE_TEXT}
             </span>
           </div>

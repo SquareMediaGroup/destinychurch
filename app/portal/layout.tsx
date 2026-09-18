@@ -31,7 +31,7 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
                   href={item.href}
                   className="inline-flex items-center gap-1.5 rounded-xl px-3 py-2 text-sm font-bold text-destiny-grey/60 transition hover:bg-[#f5f7fa] hover:text-destiny-grey"
                 >
-                  <span className="material-symbols-rounded text-lg">{item.icon}</span>
+                  <span className="material-symbols-rounded text-lg" aria-hidden="true">{item.icon}</span>
                   {item.label}
                 </Link>
               ))}
@@ -42,7 +42,7 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
               type="submit"
               className="inline-flex items-center gap-1.5 rounded-xl px-3 py-2 text-sm font-bold text-destiny-grey/50 transition hover:bg-[#f5f7fa] hover:text-destiny-grey"
             >
-              <span className="material-symbols-rounded text-lg">logout</span>
+              <span className="material-symbols-rounded text-lg" aria-hidden="true">logout</span>
               <span className="hidden sm:inline">Sign out</span>
             </button>
           </form>
@@ -54,7 +54,7 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
               href={item.href}
               className="inline-flex shrink-0 items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-bold text-destiny-grey/60 transition hover:bg-[#f5f7fa] hover:text-destiny-grey"
             >
-              <span className="material-symbols-rounded text-base">{item.icon}</span>
+              <span className="material-symbols-rounded text-base" aria-hidden="true">{item.icon}</span>
               {item.label}
             </Link>
           ))}

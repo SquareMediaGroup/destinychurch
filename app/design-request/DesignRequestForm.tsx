@@ -60,7 +60,7 @@ export default function DesignRequestForm({
   if (status === "success") {
     return (
       <div className="rounded-3xl border border-black/5 bg-white p-8 text-center shadow-sm">
-        <span className="material-symbols-rounded mb-2 block text-4xl text-green-600">
+        <span className="material-symbols-rounded mb-2 block text-4xl text-green-600" aria-hidden="true">
           check_circle
         </span>
         <p className="text-xl font-black text-destiny-grey">Request received</p>
@@ -99,7 +99,7 @@ export default function DesignRequestForm({
     <form ref={formRef} onSubmit={handleSubmit} className="space-y-5">
       {signedIn && !unmatched ? (
         <p className="flex items-center gap-2 rounded-2xl bg-destiny-orange/10 px-4 py-3 text-sm font-bold text-destiny-orange">
-          <span className="material-symbols-rounded text-lg">bolt</span>
+          <span className="material-symbols-rounded text-lg" aria-hidden="true">bolt</span>
           You&apos;re signed in — this request will be fast-tracked.
         </p>
       ) : null}

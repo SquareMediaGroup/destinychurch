@@ -60,7 +60,7 @@ export default async function ProductPage({
           <Link href="/shop" className="font-semibold transition hover:text-destiny-orange">
             Shop
           </Link>
-          <span className="material-symbols-rounded text-base">chevron_right</span>
+          <span className="material-symbols-rounded text-base" aria-hidden="true">chevron_right</span>
           <span className="truncate text-muted">{product.name}</span>
         </nav>
 

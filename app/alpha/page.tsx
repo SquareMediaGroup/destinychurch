@@ -11,6 +11,7 @@ const ALPHA_HERO_VIDEO =
 import WorshipWithUsSection from "@/components/home/WorshipWithUsSection";
 import ChurchSuiteModal from "@/components/ui/ChurchSuiteModal";
 import AlphaTopics from "@/components/alpha/AlphaTopics";
+import BackgroundVideo from "@/components/ui/BackgroundVideo";
 
 interface AlphaEvent {
   id: string;
@@ -117,16 +118,7 @@ export default function AlphaPage() {
       <div className="px-4 pt-8 pb-8 lg:px-8">
         <section className="relative overflow-hidden rounded-3xl bg-[#3a0606]">
           {/* Background video */}
-          <video
-            src={ALPHA_HERO_VIDEO}
-            autoPlay
-            muted
-            loop
-            playsInline
-            preload="auto"
-            aria-hidden="true"
-            className="absolute inset-0 h-full w-full object-cover"
-          />
+          <BackgroundVideo src={ALPHA_HERO_VIDEO} />
           {/* Black overlay 40% */}
           <div
             className="absolute inset-0"
@@ -153,7 +145,7 @@ export default function AlphaPage() {
                       onClick={openSignup}
                       className="mt-4 inline-flex items-center gap-3 rounded-full bg-destiny-orange px-6 py-3 text-sm font-bold text-white shadow-lg shadow-destiny-orange/30 transition hover:brightness-110"
                     >
-                      <span className="material-symbols-rounded text-lg">person_add</span>
+                      <span className="material-symbols-rounded text-lg" aria-hidden="true">person_add</span>
                       Sign Up Now
                     </button>
                     <button
@@ -231,7 +223,7 @@ export default function AlphaPage() {
                     {/* Date */}
                     <div className="border-b border-dashed border-destiny-grey/15 px-8 py-7 md:border-b-0 md:border-r md:px-10">
                       <div className="mb-3 flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.28em] text-destiny-orange">
-                        <span className="material-symbols-rounded text-sm leading-none">event</span>
+                        <span className="material-symbols-rounded text-sm leading-none" aria-hidden="true">event</span>
                         {cadenceLabel}
                       </div>
                       <div className="text-[11px] uppercase tracking-[0.2em] text-subtle">
@@ -254,7 +246,7 @@ export default function AlphaPage() {
                     {isOnline ? (
                       <div className="px-8 py-7 md:px-10">
                         <div className="mb-3 flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.28em] text-destiny-orange">
-                          <span className="material-symbols-rounded text-sm leading-none">videocam</span>
+                          <span className="material-symbols-rounded text-sm leading-none" aria-hidden="true">videocam</span>
                           Online
                         </div>
                         <div className="text-[11px] uppercase tracking-[0.2em] text-subtle">
@@ -279,7 +271,7 @@ export default function AlphaPage() {
                                 rel="noopener noreferrer"
                                 className="inline-flex items-center gap-1.5 rounded-full bg-destiny-grey px-3.5 py-1.5 text-[11px] font-bold uppercase tracking-wide text-white transition hover:bg-destiny-orange"
                               >
-                                <span className="material-symbols-rounded text-[14px] leading-none">
+                                <span className="material-symbols-rounded text-[14px] leading-none" aria-hidden="true">
                                   open_in_new
                                 </span>
                                 Join meeting
@@ -299,7 +291,7 @@ export default function AlphaPage() {
                     ) : (
                       <div className="px-8 py-7 md:px-10">
                         <div className="mb-3 flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.28em] text-destiny-orange">
-                          <span className="material-symbols-rounded text-sm leading-none">place</span>
+                          <span className="material-symbols-rounded text-sm leading-none" aria-hidden="true">place</span>
                           Where
                         </div>
                         {event.location ? (
@@ -386,7 +378,7 @@ export default function AlphaPage() {
               <AnimateIn key={step.title} delay={i * 80}>
                 <div className="flex flex-col items-start rounded-3xl bg-white p-8 shadow-sm">
                   <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-destiny-orange/10">
-                    <span className="material-symbols-rounded text-3xl text-destiny-orange">{step.icon}</span>
+                    <span className="material-symbols-rounded text-3xl text-destiny-orange" aria-hidden="true">{step.icon}</span>
                   </div>
                   <h3 className="mb-2 text-xl font-black text-destiny-grey">{step.title}</h3>
                   <p className="text-sm leading-relaxed text-muted">{step.body}</p>

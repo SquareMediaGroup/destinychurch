@@ -108,7 +108,7 @@ export default function HostLoginModal({
 
         {state.error && (
           <div className="flex items-center gap-2.5 rounded-2xl bg-destiny-red/5 px-4 py-3 text-sm text-destiny-red">
-            <span className="material-symbols-rounded text-base">error</span>
+            <span className="material-symbols-rounded text-base" aria-hidden="true">error</span>
             {state.error}
           </div>
         )}

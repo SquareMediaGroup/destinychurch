@@ -111,7 +111,7 @@ export default function NfcTileModal({
           className="inline-flex items-center gap-2 text-sm font-bold text-destiny-orange transition hover:gap-3"
         >
           {tile.ctaText}
-          <span className="material-symbols-rounded text-base">arrow_forward</span>
+          <span className="material-symbols-rounded text-base" aria-hidden="true">arrow_forward</span>
         </a>
       ) : (
         <Link
@@ -120,7 +120,7 @@ export default function NfcTileModal({
           className="inline-flex items-center gap-2 text-sm font-bold text-destiny-orange transition hover:gap-3"
         >
           {tile.ctaText}
-          <span className="material-symbols-rounded text-base">arrow_forward</span>
+          <span className="material-symbols-rounded text-base" aria-hidden="true">arrow_forward</span>
         </Link>
       )
     ) : null;
@@ -160,7 +160,7 @@ export default function NfcTileModal({
             aria-label="Close"
             className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-subtle transition hover:bg-gray-100 hover:text-destiny-grey"
           >
-            <span className="material-symbols-rounded text-xl">close</span>
+            <span className="material-symbols-rounded text-xl" aria-hidden="true">close</span>
           </button>
         </div>
 
@@ -218,7 +218,7 @@ export default function NfcTileModal({
                       className="inline-flex items-center gap-2 rounded-2xl bg-destiny-orange px-7 py-4 text-sm font-bold text-white shadow-xl shadow-destiny-orange/30 transition hover:brightness-110"
                     >
                       {tile.ctaText}
-                      <span className="material-symbols-rounded text-lg">
+                      <span className="material-symbols-rounded text-lg" aria-hidden="true">
                         arrow_forward
                       </span>
                     </a>
@@ -229,7 +229,7 @@ export default function NfcTileModal({
                       className="inline-flex items-center gap-2 rounded-2xl bg-destiny-orange px-7 py-4 text-sm font-bold text-white shadow-xl shadow-destiny-orange/30 transition hover:brightness-110"
                     >
                       {tile.ctaText}
-                      <span className="material-symbols-rounded text-lg">
+                      <span className="material-symbols-rounded text-lg" aria-hidden="true">
                         arrow_forward
                       </span>
                     </Link>

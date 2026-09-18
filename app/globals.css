@@ -970,18 +970,70 @@ body {
   to   { max-height: 0; opacity: 0; }
 }
 
+/*
+  Keyboard parity.
+
+  The reveal was keyed on :hover alone, so a keyboard user tabbing onto a card
+  got no overlay and no description — the same content gap as touch, below.
+*/
+.ehap-card:focus-visible .ehap-card-image {
+  animation: ehap-zoom-in 0.55s cubic-bezier(0.85, 0, 0.15, 1) both;
+}
+
+.ehap-card:focus-visible .ehap-card-overlay {
+  animation: ehap-overlay-in 0.45s cubic-bezier(0.85, 0, 0.15, 1) both;
+}
+
+.ehap-card:focus-visible .ehap-card-desc {
+  animation: ehap-desc-in 0.5s cubic-bezier(0.85, 0, 0.15, 1) both;
+}
+
+/*
+  Touch devices: show the description outright.
+
+  This was the single biggest content bug in the design. Each card's body copy
+  lived behind `:hover` with `max-height: 0`, and a phone has no hover — so on
+  the device most visitors use, the copy explaining Kids, Youth, Young Adults
+  and Connect Groups simply did not exist. It was in the DOM (so a screen
+  reader read it) but clipped to nothing visually, which is also a mismatch
+  between what is announced and what is seen.
+
+  `hover: none` is the accurate test — narrower than "small screen", since a
+  small window on a laptop still hovers fine and should keep the reveal.
+*/
+@media (hover: none) {
+  .ehap-card .ehap-card-overlay {
+    opacity: 1;
+  }
+
+  .ehap-card .ehap-card-desc {
+    /* No animation and no max-height clamp: the copy is simply present. The
+       10rem ceiling exists to animate against and would truncate a longer
+       description that is now shown unconditionally. */
+    max-height: none;
+    opacity: 1;
+    animation: none;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .ehap-card:hover .ehap-card-image,
   .ehap-card:not(:hover) .ehap-card-image,
   .ehap-card:hover .ehap-card-overlay,
   .ehap-card:not(:hover) .ehap-card-overlay,
   .ehap-card:hover .ehap-card-desc,
-  .ehap-card:not(:hover) .ehap-card-desc {
+  .ehap-card:not(:hover) .ehap-card-desc,
+  .ehap-card:focus-visible .ehap-card-image,
+  .ehap-card:focus-visible .ehap-card-overlay,
+  .ehap-card:focus-visible .ehap-card-desc {
     animation: none;
   }
-  .ehap-card:hover .ehap-card-image    { transform: scale(1.07); }
-  .ehap-card:hover .ehap-card-overlay  { opacity: 1; }
-  .ehap-card:hover .ehap-card-desc     { max-height: 10rem; opacity: 1; }
+  .ehap-card:hover .ehap-card-image,
+  .ehap-card:focus-visible .ehap-card-image { transform: scale(1.07); }
+  .ehap-card:hover .ehap-card-overlay,
+  .ehap-card:focus-visible .ehap-card-overlay { opacity: 1; }
+  .ehap-card:hover .ehap-card-desc,
+  .ehap-card:focus-visible .ehap-card-desc { max-height: 10rem; opacity: 1; }
 }
 
 /* The loading layer over a third-party iframe — see
@@ -1117,6 +1169,34 @@ body {
 /* Elements entering the viewport — plays the animation */
 .animate-in.is-visible {
   animation: fadeInUp 0.6s ease both;
+}
+
+/*
+  Reduced-motion fail-safe for AnimateIn (270 call sites across the public
+  site).
+
+  `.animate-pending { opacity: 0 }` is applied by AnimateIn's own JS, not by
+  this stylesheet, and the ONLY thing that ever removes it is the
+  `.animate-in.is-visible` animation firing. The site-wide reduced-motion kill
+  switch further down this file (`html[data-motion="reduced"] *`) zeroes every
+  animation's *duration*, but a zero-duration animation still runs — it just
+  finishes instantly, landing on the animation's own end state. For
+  `fadeInUp`, that end state is `opacity: 1`, so in practice this already
+  worked in the case that matters most.
+
+  This second rule exists for the case that doesn't: if the inline
+  data-motion script in app/layout.tsx never runs (JS disabled, blocked, or an
+  error before it executes), an element that IntersectionObserver has not yet
+  reported as visible sits at `.animate-pending`'s opacity: 0 with nothing left
+  to trigger the transition — content that is in the DOM, below the fold, and
+  permanently invisible once scrolled to. `@media (prefers-reduced-motion:
+  reduce)` doesn't depend on that script at all, so it is a safety net
+  underneath it rather than a duplicate of it.
+*/
+@media (prefers-reduced-motion: reduce) {
+  .animate-pending {
+    opacity: 1;
+  }
 }
 
 @media (min-width: 768px) {

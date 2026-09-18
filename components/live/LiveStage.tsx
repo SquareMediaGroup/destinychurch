@@ -107,7 +107,7 @@ function LiveNow({
             rel="noopener noreferrer"
             className="inline-flex shrink-0 items-center gap-2 self-start rounded-full border-2 border-black/10 px-5 py-2.5 text-sm font-bold text-destiny-grey transition hover:border-destiny-orange hover:text-destiny-orange sm:self-auto"
           >
-            <span className="material-symbols-rounded text-lg">open_in_new</span>
+            <span className="material-symbols-rounded text-lg" aria-hidden="true">open_in_new</span>
             Open on YouTube
           </a>
         )}
@@ -204,7 +204,7 @@ function Offline({
 
         <div className="mt-6 flex items-start gap-3 rounded-2xl bg-white p-4">
           <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-destiny-orange/10">
-            <span className="material-symbols-rounded text-xl text-destiny-orange">
+            <span className="material-symbols-rounded text-xl text-destiny-orange" aria-hidden="true">
               schedule
             </span>
           </div>
@@ -219,7 +219,7 @@ function Offline({
             href="/sermons"
             className="inline-flex items-center gap-2 rounded-full bg-destiny-orange px-6 py-3 text-sm font-bold text-white shadow-lg shadow-destiny-orange/25 transition hover:brightness-110"
           >
-            <span className="material-symbols-rounded text-base">play_arrow</span>
+            <span className="material-symbols-rounded text-base" aria-hidden="true">play_arrow</span>
             Watch past messages
           </Link>
           <Link
@@ -280,7 +280,7 @@ function Offline({
           style={{ aspectRatio: "16/9" }}
         >
           <div className="text-center">
-            <span className="material-symbols-rounded mb-3 block text-5xl text-destiny-grey/25">
+            <span className="material-symbols-rounded mb-3 block text-5xl text-destiny-grey/25" aria-hidden="true">
               play_circle
             </span>
             <p className="text-sm font-bold text-subtle">

@@ -347,7 +347,7 @@ export default function HelpPage() {
                     <span className="step-title min-w-0 font-[family-name:var(--font-heading)] text-sm font-black leading-tight text-destiny-grey sm:text-base">
                       {link.label}
                     </span>
-                    <span className="material-symbols-rounded step-arrow shrink-0 text-xl text-destiny-grey/40">
+                    <span className="material-symbols-rounded step-arrow shrink-0 text-xl text-destiny-grey/40" aria-hidden="true">
                       arrow_forward
                     </span>
                   </div>
@@ -406,13 +406,13 @@ export default function HelpPage() {
                   className="inline-flex items-center justify-center gap-2 rounded-full bg-destiny-orange px-7 py-3.5 text-sm font-bold text-white transition-transform hover:scale-[1.03] hover:bg-destiny-orange-dark"
                 >
                   Send a Message
-                  <span className="material-symbols-rounded text-lg">arrow_forward</span>
+                  <span className="material-symbols-rounded text-lg" aria-hidden="true">arrow_forward</span>
                 </Link>
                 <a
                   href="tel:+441642559797"
                   className="inline-flex items-center justify-center gap-1.5 text-sm font-semibold text-on-dark-muted underline-offset-4 transition-colors hover:text-white hover:underline"
                 >
-                  <span className="material-symbols-rounded text-lg">call</span>
+                  <span className="material-symbols-rounded text-lg" aria-hidden="true">call</span>
                   Or call 01642 559 797
                 </a>
               </div>

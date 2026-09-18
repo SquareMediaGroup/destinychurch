@@ -40,7 +40,7 @@ export default function ApplyForm({
     return (
       <div className="rounded-3xl border border-destiny-green/20 bg-destiny-green/5 p-8 text-center">
         <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-destiny-green/15">
-          <span className="material-symbols-rounded text-3xl text-destiny-green">
+          <span className="material-symbols-rounded text-3xl text-destiny-green" aria-hidden="true">
             check
           </span>
         </div>

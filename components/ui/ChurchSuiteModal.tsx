@@ -202,7 +202,7 @@ function ModalPanel({
             className="flex h-8 w-8 items-center justify-center rounded-full text-subtle transition hover:bg-gray-100 hover:text-destiny-grey"
             aria-label="Close"
           >
-            <span className="material-symbols-rounded text-xl">close</span>
+            <span className="material-symbols-rounded text-xl" aria-hidden="true">close</span>
           </button>
         </div>
         {size === "lg" ? (

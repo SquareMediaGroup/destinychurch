@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { QRCodeSVG } from "qrcode.react";
 import { useToast } from "@/components/ToastProvider";
@@ -8,6 +8,7 @@ import Button from "@/components/ui/Button";
 import { useHydrated } from "@/lib/useHydrated";
 import { useMediaQuery } from "@/lib/useMediaQuery";
 import { useScrollLock } from "@/lib/useScrollLock";
+import { useFocusTrap } from "@/lib/useFocusTrap";
 
 interface Props {
   keyword: string;
@@ -28,6 +29,8 @@ export default function TextToGiveCTA({ keyword, number }: Props) {
   const [showQR, setShowQR] = useState(false);
 
   const closeTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
+  const titleId = useId();
 
   useScrollLock(mounted && open);
 
@@ -50,6 +53,11 @@ export default function TextToGiveCTA({ keyword, number }: Props) {
       closeTimeout.current = null;
     }, 350);
   }, []);
+
+  // `visible` rather than `open`: the panel is still in the DOM during its
+  // 350ms exit animation, and trapping focus through that window means Tab
+  // still cycles inside a dialog that is visually gone.
+  useFocusTrap(panelRef, mounted && visible, closeModal);
 
   // The pending close must not outlive the component, or fire against a modal
   // that has since been reopened.
@@ -83,15 +91,6 @@ export default function TextToGiveCTA({ keyword, number }: Props) {
     closeModal();
   };
 
-  // Bound only while open. A closed modal used to run the whole close sequence,
-  // scroll unlock included, on any Escape anywhere on the page.
-  useEffect(() => {
-    if (!open) return;
-    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") closeModal(); };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [open, closeModal]);
-
   return (
     <>
       <div className="flex flex-col gap-3 sm:flex-row">
@@ -103,12 +102,12 @@ export default function TextToGiveCTA({ keyword, number }: Props) {
           onClick={() => handleCTAClick("10")}
           className="group text-left"
         >
-          <span className="material-symbols-rounded text-2xl text-white">sms</span>
+          <span className="material-symbols-rounded text-2xl text-white" aria-hidden="true">sms</span>
           <span>
             <span className="block text-sm font-black text-white">Text to Give £10</span>
             <span className="block text-xs text-on-dark-muted">Send instantly</span>
           </span>
-          <span className="material-symbols-rounded ml-auto text-lg text-white/60 transition group-hover:translate-x-1">arrow_forward</span>
+          <span className="material-symbols-rounded ml-auto text-lg text-white/60 transition group-hover:translate-x-1" aria-hidden="true">arrow_forward</span>
         </Button>
 
         {/* Secondary CTA: Custom Amount */}
@@ -125,12 +124,12 @@ export default function TextToGiveCTA({ keyword, number }: Props) {
           }}
           className="group text-left"
         >
-          <span className="material-symbols-rounded text-2xl text-white">edit</span>
+          <span className="material-symbols-rounded text-2xl text-white" aria-hidden="true">edit</span>
           <span>
             <span className="block text-sm font-black text-white">Custom Amount</span>
             <span className="block text-xs text-on-dark-muted">Choose your amount</span>
           </span>
-          <span className="material-symbols-rounded ml-auto text-lg text-white/60 transition group-hover:translate-x-1">arrow_forward</span>
+          <span className="material-symbols-rounded ml-auto text-lg text-white/60 transition group-hover:translate-x-1" aria-hidden="true">arrow_forward</span>
         </Button>
       </div>
 
@@ -145,6 +144,10 @@ export default function TextToGiveCTA({ keyword, number }: Props) {
           onClick={closeModal}
         >
           <div
+            ref={panelRef}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby={titleId}
             className="relative w-full max-w-md overflow-hidden rounded-3xl bg-white shadow-2xl"
             style={{
               transform: visible ? "scale(1)" : "scale(0.92)",
@@ -154,13 +157,13 @@ export default function TextToGiveCTA({ keyword, number }: Props) {
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between border-b border-black/5 px-6 py-4">
-              <p className="font-black text-destiny-grey">{showQR ? "Scan to Give" : "Custom Amount"}</p>
+              <p id={titleId} className="font-black text-destiny-grey">{showQR ? "Scan to Give" : "Custom Amount"}</p>
               <button
                 onClick={closeModal}
                 className="flex h-8 w-8 items-center justify-center rounded-full text-subtle transition hover:bg-gray-100 hover:text-destiny-grey"
                 aria-label="Close"
               >
-                <span className="material-symbols-rounded text-xl">close</span>
+                <span className="material-symbols-rounded text-xl" aria-hidden="true">close</span>
               </button>
             </div>
 

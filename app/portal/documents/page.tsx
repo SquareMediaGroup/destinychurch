@@ -67,7 +67,7 @@ export default function PortalDocumentsPage() {
                     {formatDate(d.created_at)}
                   </p>
                 </div>
-                <span className="material-symbols-rounded shrink-0 text-destiny-grey/30">
+                <span className="material-symbols-rounded shrink-0 text-destiny-grey/30" aria-hidden="true">
                   download
                 </span>
               </button>

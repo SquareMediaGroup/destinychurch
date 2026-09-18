@@ -54,7 +54,7 @@ function Meta({
 }) {
   return (
     <div className="flex items-start gap-3">
-      <span className="material-symbols-rounded mt-0.5 text-xl text-destiny-orange">
+      <span className="material-symbols-rounded mt-0.5 text-xl text-destiny-orange" aria-hidden="true">
         {icon}
       </span>
       <div>
@@ -118,7 +118,7 @@ export default async function JobDetailPage({
               href="/jobs"
               className="inline-flex items-center gap-1.5 text-xs font-bold text-on-dark-muted transition hover:text-white"
             >
-              <span className="material-symbols-rounded text-base">arrow_back</span>
+              <span className="material-symbols-rounded text-base" aria-hidden="true">arrow_back</span>
               All roles
             </Link>
             <div className="mt-5 flex flex-wrap items-center gap-2">

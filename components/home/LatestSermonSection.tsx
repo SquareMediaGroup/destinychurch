@@ -96,7 +96,7 @@ export default function LatestSermonSection({
                   {...external}
                   className="inline-flex items-center gap-2 rounded-full bg-destiny-orange px-6 py-3 text-sm font-bold text-white shadow-lg shadow-destiny-orange/25 transition hover:brightness-110"
                 >
-                  <span className="material-symbols-rounded text-base">play_arrow</span>
+                  <span className="material-symbols-rounded text-base" aria-hidden="true">play_arrow</span>
                   Watch Now
                 </Link>
                 <Link

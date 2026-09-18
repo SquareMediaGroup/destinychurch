@@ -63,14 +63,14 @@ export default function AdminHeader() {
           title="Keyboard shortcuts"
           className="flex h-9 w-9 items-center justify-center rounded-xl border border-black/10 bg-white text-destiny-grey/45 transition hover:text-destiny-grey dark:border-white/10 dark:bg-destiny-grey-800 dark:text-white/45 dark:hover:text-white"
         >
-          <span className="material-symbols-rounded text-lg">keyboard</span>
+          <span className="material-symbols-rounded text-lg" aria-hidden="true">keyboard</span>
         </button>
         <Link
           href="/"
           target="_blank"
           className="flex items-center gap-2 rounded-xl bg-destiny-grey px-3.5 py-2 text-sm font-bold text-white transition hover:bg-destiny-grey/90"
         >
-          <span className="material-symbols-rounded text-lg">open_in_new</span>
+          <span className="material-symbols-rounded text-lg" aria-hidden="true">open_in_new</span>
           View live site
         </Link>
       </div>

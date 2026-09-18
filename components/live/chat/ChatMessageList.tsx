@@ -187,7 +187,7 @@ function ModButton({
       aria-label={label}
       className="flex h-6 w-6 items-center justify-center rounded-full text-subtle transition hover:bg-black/5 hover:text-destiny-grey focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-destiny-orange/40"
     >
-      <span className="material-symbols-rounded text-base">{icon}</span>
+      <span className="material-symbols-rounded text-base" aria-hidden="true">{icon}</span>
     </button>
   );
 }

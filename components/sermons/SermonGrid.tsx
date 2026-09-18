@@ -175,7 +175,7 @@ export default function SermonGrid({
           <div className="flex w-full gap-2 sm:w-auto">
             {/* Search */}
             <div className="relative min-w-0 flex-1 sm:w-72 sm:flex-none">
-              <span className="material-symbols-rounded pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-xl text-destiny-grey/40">
+              <span className="material-symbols-rounded pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-xl text-destiny-grey/40" aria-hidden="true">
                 search
               </span>
               <input
@@ -197,7 +197,7 @@ export default function SermonGrid({
               aria-expanded={filtersOpen}
               className="relative inline-flex shrink-0 items-center gap-1.5 rounded-full border border-black/10 bg-white px-4 py-2.5 text-sm font-bold text-destiny-grey transition hover:border-destiny-orange hover:text-destiny-orange lg:hidden"
             >
-              <span className="material-symbols-rounded text-lg">tune</span>
+              <span className="material-symbols-rounded text-lg" aria-hidden="true">tune</span>
               Filters
               {activeFilterCount > 0 && (
                 <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-destiny-orange px-1 text-[11px] font-bold text-white">
@@ -241,7 +241,7 @@ export default function SermonGrid({
               className="inline-flex items-center justify-center gap-2 rounded-full border-2 border-destiny-grey/15 px-7 py-3 text-sm font-bold text-destiny-grey transition hover:border-destiny-grey/40 hover:bg-black/[0.03]"
             >
               Show more
-              <span className="material-symbols-rounded text-lg">expand_more</span>
+              <span className="material-symbols-rounded text-lg" aria-hidden="true">expand_more</span>
             </button>
           </div>
         )}
@@ -317,7 +317,7 @@ function FilterPanel({
               : "border-black/10 text-muted hover:border-destiny-orange hover:text-destiny-orange"
           }`}
         >
-          <span className="material-symbols-rounded text-lg">groups</span>
+          <span className="material-symbols-rounded text-lg" aria-hidden="true">groups</span>
           Guest speakers only
         </button>
         <div className="flex max-h-48 flex-wrap gap-2 overflow-y-auto lg:max-h-64 lg:flex-col lg:flex-nowrap lg:gap-1">

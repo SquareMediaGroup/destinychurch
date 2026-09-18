@@ -54,7 +54,7 @@ export default function FinancialHistory({
             <AnimateIn delay={100}>
               <div className="rounded-3xl bg-white p-8">
                 <div className="mb-4 flex items-center gap-3">
-                  <span className="material-symbols-rounded text-2xl text-destiny-orange">
+                  <span className="material-symbols-rounded text-2xl text-destiny-orange" aria-hidden="true">
                     trending_up
                   </span>
                   <h3 className="text-xl font-black text-destiny-grey">
@@ -75,7 +75,7 @@ export default function FinancialHistory({
             <AnimateIn delay={150}>
               <div className="rounded-3xl bg-white p-8">
                 <div className="mb-4 flex items-center gap-3">
-                  <span className="material-symbols-rounded text-2xl text-destiny-orange">
+                  <span className="material-symbols-rounded text-2xl text-destiny-orange" aria-hidden="true">
                     payments
                   </span>
                   <h3 className="text-xl font-black text-destiny-grey">

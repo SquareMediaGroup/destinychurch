@@ -33,7 +33,7 @@ export default function MediaEmbed({ src, title, thumbnail }: Props) {
           />
         )}
         <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 bg-black/60 px-6 text-center">
-          <span className="material-symbols-rounded text-5xl text-white/40">cookie</span>
+          <span className="material-symbols-rounded text-5xl text-white/40" aria-hidden="true">cookie</span>
           <div>
             <p className="text-base font-black text-white">Cookies required to play video</p>
             <p className="mt-1 max-w-xs text-sm text-on-dark-subtle">Accept cookies to watch this video.</p>

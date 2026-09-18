@@ -141,7 +141,7 @@ export default function AdminOrdersPage() {
               onClick={exportCsv}
               title="Download the orders currently shown as a spreadsheet"
             >
-              <span className="material-symbols-rounded text-lg">download</span>
+              <span className="material-symbols-rounded text-lg" aria-hidden="true">download</span>
               Export CSV
             </button>
           ) : undefined
@@ -223,7 +223,7 @@ export default function AdminOrdersPage() {
                     >
                       {ORDER_STATUS_LABELS[o.status]}
                     </span>
-                    <span className="material-symbols-rounded shrink-0 text-destiny-grey/30 dark:text-white/30">
+                    <span className="material-symbols-rounded shrink-0 text-destiny-grey/30 dark:text-white/30" aria-hidden="true">
                       chevron_right
                     </span>
                   </Link>

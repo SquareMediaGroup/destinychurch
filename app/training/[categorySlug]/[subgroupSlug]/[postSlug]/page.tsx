@@ -68,7 +68,7 @@ export default async function TrainingPostPage({
             href={`/training/${category.slug}/${subgroup.slug}`}
             className="inline-flex items-center gap-1.5 text-xs font-bold text-subtle transition hover:text-destiny-orange"
           >
-            <span className="material-symbols-rounded text-base">arrow_back</span>
+            <span className="material-symbols-rounded text-base" aria-hidden="true">arrow_back</span>
             {subgroup.name}
           </Link>
           <p className="mt-5 text-xs font-bold uppercase tracking-widest text-destiny-orange">
@@ -103,7 +103,7 @@ export default async function TrainingPostPage({
                 className="group flex flex-col rounded-2xl border border-black/5 bg-white p-4 shadow-sm transition hover:border-destiny-orange/30 hover:shadow-md"
               >
                 <span className="flex items-center gap-1 text-[11px] font-bold uppercase tracking-wider text-subtle">
-                  <span className="material-symbols-rounded text-sm">arrow_back</span>
+                  <span className="material-symbols-rounded text-sm" aria-hidden="true">arrow_back</span>
                   Previous
                 </span>
                 <span className="mt-1 line-clamp-1 text-sm font-bold text-destiny-grey transition group-hover:text-destiny-orange">
@@ -121,7 +121,7 @@ export default async function TrainingPostPage({
               >
                 <span className="flex items-center gap-1 text-[11px] font-bold uppercase tracking-wider text-subtle">
                   Next
-                  <span className="material-symbols-rounded text-sm">arrow_forward</span>
+                  <span className="material-symbols-rounded text-sm" aria-hidden="true">arrow_forward</span>
                 </span>
                 <span className="mt-1 line-clamp-1 text-sm font-bold text-destiny-grey transition group-hover:text-destiny-orange">
                   {next.title}
@@ -134,7 +134,7 @@ export default async function TrainingPostPage({
               >
                 <span className="flex items-center gap-1 text-[11px] font-bold uppercase tracking-wider text-subtle">
                   Finish
-                  <span className="material-symbols-rounded text-sm">done_all</span>
+                  <span className="material-symbols-rounded text-sm" aria-hidden="true">done_all</span>
                 </span>
                 <span className="mt-1 line-clamp-1 text-sm font-bold text-destiny-grey transition group-hover:text-destiny-orange">
                   Back to {subgroup.name}

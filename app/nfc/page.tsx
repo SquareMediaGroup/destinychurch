@@ -146,7 +146,7 @@ export default async function NfcPage() {
             className="inline-flex items-center gap-1.5 text-sm font-semibold text-muted underline-offset-4 transition-colors hover:text-destiny-orange hover:underline"
           >
             Visit the full website
-            <span className="material-symbols-rounded text-base">arrow_forward</span>
+            <span className="material-symbols-rounded text-base" aria-hidden="true">arrow_forward</span>
           </Link>
         </footer>
       </div>

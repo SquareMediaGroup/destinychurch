@@ -185,7 +185,7 @@ export function Sheet({
               aria-label="Close"
               className="-mr-2 flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-destiny-grey/50 dark:text-white/50 transition hover:bg-[#f5f7fa] hover:text-destiny-grey dark:hover:text-white"
             >
-              <span className="material-symbols-rounded text-xl">close</span>
+              <span className="material-symbols-rounded text-xl" aria-hidden="true">close</span>
             </button>
           </div>
         </div>

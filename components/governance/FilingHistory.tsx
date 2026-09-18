@@ -38,7 +38,7 @@ export default function FilingHistory({
             <AnimateIn delay={100}>
               <div className="h-full rounded-3xl bg-[#f5f7fa] p-6 sm:p-8">
                 <div className="mb-6 flex items-center gap-3">
-                  <span className="material-symbols-rounded text-2xl text-destiny-orange">
+                  <span className="material-symbols-rounded text-2xl text-destiny-orange" aria-hidden="true">
                     description
                   </span>
                   <h3 className="text-2xl font-black text-destiny-grey">
@@ -85,7 +85,7 @@ export default function FilingHistory({
             <AnimateIn delay={200}>
               <div className="h-full rounded-3xl bg-[#f5f7fa] p-6 sm:p-8">
                 <div className="mb-6 flex items-center gap-3">
-                  <span className="material-symbols-rounded text-2xl text-destiny-orange">
+                  <span className="material-symbols-rounded text-2xl text-destiny-orange" aria-hidden="true">
                     event_available
                   </span>
                   <h3 className="text-2xl font-black text-destiny-grey">

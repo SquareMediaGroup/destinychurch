@@ -241,7 +241,7 @@ export default function SimulatedLiveControls({
   if (loading) {
     return (
       <div className="flex items-center justify-center py-16">
-        <span className="material-symbols-rounded animate-spin text-3xl text-destiny-grey/20">
+        <span className="material-symbols-rounded animate-spin text-3xl text-destiny-grey/20" aria-hidden="true">
           progress_activity
         </span>
       </div>
@@ -306,7 +306,7 @@ export default function SimulatedLiveControls({
               </div>
             ) : (
               <div className="flex h-14 w-24 shrink-0 items-center justify-center rounded-lg bg-black/5 dark:bg-white/5">
-                <span className="material-symbols-rounded text-xl text-destiny-grey/30 dark:text-white/30">
+                <span className="material-symbols-rounded text-xl text-destiny-grey/30 dark:text-white/30" aria-hidden="true">
                   movie
                 </span>
               </div>

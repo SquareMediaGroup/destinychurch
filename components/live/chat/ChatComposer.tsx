@@ -88,7 +88,7 @@ export default function ChatComposer({
     <form onSubmit={submit} className="border-t border-black/5 px-4 py-3">
       {paused && (
         <p className="mb-2.5 flex items-center gap-2 rounded-xl bg-destiny-orange/10 px-3 py-2 text-xs font-bold text-destiny-orange">
-          <span className="material-symbols-rounded text-base">pause_circle</span>
+          <span className="material-symbols-rounded text-base" aria-hidden="true">pause_circle</span>
           A host has paused the chat
         </p>
       )}
@@ -146,7 +146,7 @@ export default function ChatComposer({
           aria-label="Send message"
           className="flex h-[42px] w-[42px] shrink-0 items-center justify-center rounded-xl bg-destiny-orange text-white transition hover:brightness-110 disabled:opacity-40"
         >
-          <span className="material-symbols-rounded text-xl">
+          <span className="material-symbols-rounded text-xl" aria-hidden="true">
             {busy ? "progress_activity" : "send"}
           </span>
         </button>
@@ -154,7 +154,7 @@ export default function ChatComposer({
 
       {error && (
         <p className="mt-2 flex items-start gap-1.5 text-xs font-bold text-destiny-red">
-          <span className="material-symbols-rounded text-sm">error</span>
+          <span className="material-symbols-rounded text-sm" aria-hidden="true">error</span>
           {error}
         </p>
       )}

@@ -72,7 +72,7 @@ export default function PrayerRequestModal({
       {sent ? (
         <div className="py-4 text-center">
           <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-destiny-orange/10">
-            <span className="material-symbols-rounded text-2xl text-destiny-orange">
+            <span className="material-symbols-rounded text-2xl text-destiny-orange" aria-hidden="true">
               favorite
             </span>
           </div>
@@ -133,7 +133,7 @@ export default function PrayerRequestModal({
 
           {error && (
             <p className="flex items-start gap-1.5 text-xs font-bold text-destiny-red">
-              <span className="material-symbols-rounded text-sm">error</span>
+              <span className="material-symbols-rounded text-sm" aria-hidden="true">error</span>
               {error}
             </p>
           )}

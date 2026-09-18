@@ -105,14 +105,14 @@ export default function CheckoutForm({
           "Processing…"
         ) : (
           <>
-            <span className="material-symbols-rounded text-lg">lock</span>
+            <span className="material-symbols-rounded text-lg" aria-hidden="true">lock</span>
             Pay {formatPrice(totalPennies)}
           </>
         )}
       </button>
 
       <p className="flex items-center justify-center gap-1.5 text-xs text-subtle">
-        <span className="material-symbols-rounded text-sm">verified_user</span>
+        <span className="material-symbols-rounded text-sm" aria-hidden="true">verified_user</span>
         Secured by Stripe — your card details never touch our servers.
       </p>
     </form>

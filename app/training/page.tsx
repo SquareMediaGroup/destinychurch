@@ -64,7 +64,7 @@ export default async function TrainingPage() {
                     className="group flex h-full flex-col rounded-3xl border border-black/5 bg-white p-6 shadow-sm transition hover:border-destiny-orange/30 hover:shadow-md"
                   >
                     <span className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-destiny-orange/10 text-destiny-orange">
-                      <span className="material-symbols-rounded text-[26px]">
+                      <span className="material-symbols-rounded text-[26px]" aria-hidden="true">
                         {category.icon || "school"}
                       </span>
                     </span>
@@ -79,7 +79,7 @@ export default async function TrainingPage() {
                     <div className="mt-4 flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-subtle">
                       {category.subgroups.length}{" "}
                       {category.subgroups.length === 1 ? "group" : "groups"}
-                      <span className="material-symbols-rounded ml-auto text-base text-destiny-orange transition group-hover:translate-x-0.5">
+                      <span className="material-symbols-rounded ml-auto text-base text-destiny-orange transition group-hover:translate-x-0.5" aria-hidden="true">
                         arrow_forward
                       </span>
                     </div>

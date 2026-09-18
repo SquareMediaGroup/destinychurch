@@ -61,7 +61,7 @@ export default async function TrainingCategoryPage({
               href="/training"
               className="inline-flex items-center gap-1.5 text-xs font-bold text-on-dark-muted transition hover:text-white"
             >
-              <span className="material-symbols-rounded text-base">arrow_back</span>
+              <span className="material-symbols-rounded text-base" aria-hidden="true">arrow_back</span>
               All training
             </Link>
             <h1 className="mt-4 text-4xl font-black text-white md:text-5xl">
@@ -113,7 +113,7 @@ export default async function TrainingCategoryPage({
                       <div className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-subtle">
                         {sub.has_password ? (
                           <>
-                            <span className="material-symbols-rounded text-sm">
+                            <span className="material-symbols-rounded text-sm" aria-hidden="true">
                               lock
                             </span>
                             Password protected
@@ -121,7 +121,7 @@ export default async function TrainingCategoryPage({
                         ) : (
                           <span className="text-destiny-orange">Open access</span>
                         )}
-                        <span className="material-symbols-rounded ml-auto text-base text-destiny-orange transition group-hover:translate-x-0.5">
+                        <span className="material-symbols-rounded ml-auto text-base text-destiny-orange transition group-hover:translate-x-0.5" aria-hidden="true">
                           arrow_forward
                         </span>
                       </div>

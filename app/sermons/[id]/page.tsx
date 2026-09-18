@@ -164,7 +164,7 @@ export default async function SermonPage({ params }: PageProps) {
             href="/sermons"
             className="inline-flex items-center gap-1.5 text-sm font-semibold text-muted transition hover:text-destiny-orange"
           >
-            <span className="material-symbols-rounded text-base">arrow_back</span>
+            <span className="material-symbols-rounded text-base" aria-hidden="true">arrow_back</span>
             Back to Sermons
           </Link>
           <ShareButton title={video.title} url={`https://destinytees.uk/sermons/${id}`} />
@@ -223,7 +223,7 @@ export default async function SermonPage({ params }: PageProps) {
               <div
                 className={`mb-3 flex h-11 w-11 items-center justify-center rounded-xl ${card.tile}`}
               >
-                <span className="material-symbols-rounded text-2xl">
+                <span className="material-symbols-rounded text-2xl" aria-hidden="true">
                   {card.icon}
                 </span>
               </div>

@@ -150,7 +150,7 @@ export default function MissionsPage() {
                   className="mt-2 inline-flex items-center gap-2 rounded-full bg-destiny-orange px-6 py-3 text-sm font-bold text-white shadow-lg shadow-destiny-orange/20 transition hover:brightness-110"
                 >
                   {partner.cta.label}
-                  <span className="material-symbols-rounded text-base">open_in_new</span>
+                  <span className="material-symbols-rounded text-base" aria-hidden="true">open_in_new</span>
                 </Link>
               </AnimateIn>
 

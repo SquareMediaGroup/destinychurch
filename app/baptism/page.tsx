@@ -104,7 +104,7 @@ export default function BaptismPage() {
               <AnimateIn key={perk.title} delay={i * 80}>
                 <div className="flex flex-col items-start rounded-3xl bg-white p-7 shadow-sm">
                   <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-destiny-orange/10">
-                    <span className="material-symbols-rounded text-2xl text-destiny-orange">{perk.icon}</span>
+                    <span className="material-symbols-rounded text-2xl text-destiny-orange" aria-hidden="true">{perk.icon}</span>
                   </div>
                   <h3 className="mb-2 text-lg font-black text-destiny-grey">{perk.title}</h3>
                   <p className="text-sm leading-relaxed text-muted">{perk.body}</p>

@@ -72,7 +72,7 @@ export default function HireForm() {
   if (status === "success") {
     return (
       <div className="rounded-3xl bg-green-50 px-6 py-10 text-center">
-        <span className="material-symbols-rounded mb-3 block text-5xl text-green-500">check_circle</span>
+        <span className="material-symbols-rounded mb-3 block text-5xl text-green-500" aria-hidden="true">check_circle</span>
         <p className="text-lg font-black text-green-700">Enquiry sent!</p>
         <p className="mt-1 text-sm text-green-600">
           Thanks — we&apos;ll be in touch within 2 working days to confirm availability and pricing.
@@ -195,7 +195,7 @@ export default function HireForm() {
       {/* Inline date/time restriction warning */}
       {dateError && (
         <div className="flex items-start gap-3 rounded-2xl bg-red-50 px-4 py-3">
-          <span className="material-symbols-rounded mt-0.5 shrink-0 text-base text-red-500">block</span>
+          <span className="material-symbols-rounded mt-0.5 shrink-0 text-base text-red-500" aria-hidden="true">block</span>
           <p className="text-sm text-red-600">{dateError}</p>
         </div>
       )}

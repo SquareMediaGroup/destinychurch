@@ -105,7 +105,7 @@ export default function CompleteButton({
             : "bg-destiny-orange text-white shadow-lg shadow-destiny-orange/30 hover:brightness-110"
         }`}
       >
-        <span className="material-symbols-rounded text-xl">
+        <span className="material-symbols-rounded text-xl" aria-hidden="true">
           {done ? "check_circle" : disabled ? "hourglass_top" : "radio_button_unchecked"}
         </span>
         {done 

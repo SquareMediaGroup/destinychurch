@@ -56,7 +56,7 @@ export default function ShopProductGrid({ products }: { products: ProductWithVar
 
       {filtered.length === 0 ? (
         <div className="shop-reveal rounded-3xl border border-black/10 bg-white/60 p-14 text-center">
-          <span className="material-symbols-rounded text-5xl text-destiny-grey/25">
+          <span className="material-symbols-rounded text-5xl text-destiny-grey/25" aria-hidden="true">
             storefront
           </span>
           <h2 className="mt-4 font-[family-name:var(--font-heading)] text-2xl font-black text-destiny-grey">

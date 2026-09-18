@@ -61,7 +61,7 @@ function UnassignedPanel() {
       />
       <div className="absolute inset-0 bg-gradient-to-br from-black/85 via-black/65 to-destiny-grey/90" />
       <div className="glass relative z-10 w-full max-w-md rounded-3xl p-8 text-center">
-        <span className="material-symbols-rounded mb-4 text-4xl text-white/40">
+        <span className="material-symbols-rounded mb-4 text-4xl text-white/40" aria-hidden="true">
           person_off
         </span>
         <h1 className="text-xl font-black text-white">Account not set up</h1>
@@ -203,7 +203,7 @@ function ChoosePanel({
                 className="glass flex cursor-not-allowed items-center gap-4 rounded-3xl border border-white/10 p-5 opacity-50 animate-[fadeInUp_0.45s_ease-out_both]"
               >
                 <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-white/10 text-on-dark-subtle">
-                  <span className="material-symbols-rounded text-[28px]">lock</span>
+                  <span className="material-symbols-rounded text-[28px]" aria-hidden="true">lock</span>
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
@@ -228,13 +228,13 @@ function ChoosePanel({
               className="glass group flex items-center gap-4 rounded-3xl border border-white/10 p-5 transition animate-[fadeInUp_0.45s_ease-out_both] hover:border-destiny-orange/40 hover:bg-white/10"
             >
               <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-destiny-orange/15 text-destiny-orange transition group-hover:bg-destiny-orange group-hover:text-white">
-                <span className="material-symbols-rounded text-[28px]">{sys.icon}</span>
+                <span className="material-symbols-rounded text-[28px]" aria-hidden="true">{sys.icon}</span>
               </div>
               <div className="min-w-0 flex-1">
                 <h2 className="text-base font-bold text-white">{sys.title}</h2>
                 <p className="mt-1 text-sm leading-snug text-on-dark-subtle">{sys.description}</p>
               </div>
-              <span className="material-symbols-rounded text-white/25 transition group-hover:translate-x-1 group-hover:text-destiny-orange">
+              <span className="material-symbols-rounded text-white/25 transition group-hover:translate-x-1 group-hover:text-destiny-orange" aria-hidden="true">
                 chevron_right
               </span>
             </Link>
@@ -332,7 +332,7 @@ function LoginPanel({
 
           {error && (
             <div className="flex items-center gap-3 rounded-2xl bg-red-500/10 px-4 py-3 text-sm text-red-400">
-              <span className="material-symbols-rounded text-base">error</span>
+              <span className="material-symbols-rounded text-base" aria-hidden="true">error</span>
               {error}
             </div>
           )}

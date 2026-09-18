@@ -48,7 +48,7 @@ export default function LinksStepGrid({ steps }: { steps: Step[] }) {
                     {step.blurb}
                   </p>
                 </div>
-                <span className="material-symbols-rounded step-arrow shrink-0 text-3xl text-destiny-grey/40">
+                <span className="material-symbols-rounded step-arrow shrink-0 text-3xl text-destiny-grey/40" aria-hidden="true">
                   arrow_forward
                 </span>
               </div>

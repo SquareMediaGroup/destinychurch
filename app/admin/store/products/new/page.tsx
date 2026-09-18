@@ -41,7 +41,7 @@ export default function NewProductPage() {
         href="/admin/store"
         className="mb-6 inline-flex items-center gap-1 text-sm font-semibold text-destiny-grey/60 dark:text-white/60 hover:text-destiny-grey dark:hover:text-white"
       >
-        <span className="material-symbols-rounded text-base">arrow_back</span>
+        <span className="material-symbols-rounded text-base" aria-hidden="true">arrow_back</span>
         Store
       </Link>
       <h1 className="font-[family-name:var(--font-heading)] text-2xl font-black text-destiny-grey dark:text-white">
@@ -77,7 +77,7 @@ export default function NewProductPage() {
           className="inline-flex items-center gap-2 rounded-full bg-destiny-orange px-6 py-3 text-sm font-bold text-white transition hover:brightness-110 disabled:bg-destiny-grey/30"
         >
           {saving ? "Creating…" : "Create & continue"}
-          <span className="material-symbols-rounded text-lg">arrow_forward</span>
+          <span className="material-symbols-rounded text-lg" aria-hidden="true">arrow_forward</span>
         </button>
       </form>
     </div>

@@ -66,7 +66,7 @@ export default function FeaturedSermon({
           </p>
           {speaker && (
             <p className="mt-1 flex items-center gap-1 text-sm font-bold text-muted">
-              <span className="material-symbols-rounded text-base text-destiny-orange">person</span>
+              <span className="material-symbols-rounded text-base text-destiny-orange" aria-hidden="true">person</span>
               {speaker}
             </p>
           )}

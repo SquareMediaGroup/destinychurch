@@ -106,7 +106,7 @@ export default async function ShopPage() {
         {/* Grid */}
         {products.length === 0 ? (
           <div className="shop-reveal rounded-3xl border border-black/10 bg-white/60 p-14 text-center">
-            <span className="material-symbols-rounded text-5xl text-destiny-grey/25">
+            <span className="material-symbols-rounded text-5xl text-destiny-grey/25" aria-hidden="true">
               storefront
             </span>
             <h2 className="mt-4 font-[family-name:var(--font-heading)] text-2xl font-black text-destiny-grey">
@@ -140,7 +140,7 @@ export default async function ShopPage() {
               className="inline-flex shrink-0 items-center justify-center gap-2 rounded-full bg-destiny-orange px-7 py-3.5 text-sm font-bold text-white transition-transform hover:scale-[1.03] hover:bg-destiny-orange-dark"
             >
               Plan your visit
-              <span className="material-symbols-rounded text-lg">arrow_forward</span>
+              <span className="material-symbols-rounded text-lg" aria-hidden="true">arrow_forward</span>
             </Link>
           </div>
         </div>

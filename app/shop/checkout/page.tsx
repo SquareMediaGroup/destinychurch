@@ -215,7 +215,7 @@ export default function CheckoutPage() {
                   className="flex w-full items-center justify-center gap-2 rounded-full bg-destiny-orange px-7 py-4 text-sm font-bold text-white transition hover:bg-destiny-orange-dark disabled:bg-destiny-grey/30"
                 >
                   {loading ? "Starting…" : "Continue to payment"}
-                  <span className="material-symbols-rounded text-lg">arrow_forward</span>
+                  <span className="material-symbols-rounded text-lg" aria-hidden="true">arrow_forward</span>
                 </button>
 
                 {TEST_BYPASS && (
@@ -225,7 +225,7 @@ export default function CheckoutPage() {
                     disabled={loading}
                     className="flex w-full items-center justify-center gap-2 rounded-full border border-dashed border-destiny-grey/30 px-7 py-3 text-sm font-bold text-muted transition hover:border-destiny-grey/50 hover:text-destiny-grey disabled:opacity-50"
                   >
-                    <span className="material-symbols-rounded text-lg">science</span>
+                    <span className="material-symbols-rounded text-lg" aria-hidden="true">science</span>
                     Complete test order (skip payment)
                   </button>
                 )}
@@ -282,7 +282,7 @@ export default function CheckoutPage() {
               <span className="font-black text-destiny-grey">{formatPrice(subtotal)}</span>
             </div>
             <p className="mt-3 flex items-center gap-1.5 text-xs text-subtle">
-              <span className="material-symbols-rounded text-sm">storefront</span>
+              <span className="material-symbols-rounded text-sm" aria-hidden="true">storefront</span>
               Collection at church
             </p>
           </aside>

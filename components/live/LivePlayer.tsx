@@ -259,7 +259,7 @@ export default function LivePlayer({ videoId, onEnded, getTargetTime }: LivePlay
     return (
       <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 overflow-hidden rounded-2xl bg-[#111]">
         <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 bg-black/60 px-6 text-center">
-          <span className="material-symbols-rounded text-5xl text-white/40">cookie</span>
+          <span className="material-symbols-rounded text-5xl text-white/40" aria-hidden="true">cookie</span>
           <div>
             <p className="text-base font-black text-white">Cookies required to play video</p>
             <p className="mt-1 max-w-xs text-sm text-on-dark-subtle">
@@ -306,7 +306,7 @@ export default function LivePlayer({ videoId, onEnded, getTargetTime }: LivePlay
           onClick={toggleMute}
           className="glass glass-pill absolute left-1/2 top-1/2 z-20 -translate-x-1/2 -translate-y-1/2 flex items-center gap-2 px-5 py-2.5 text-sm font-bold text-white"
         >
-          <span className="material-symbols-rounded text-lg">volume_off</span>
+          <span className="material-symbols-rounded text-lg" aria-hidden="true">volume_off</span>
           Tap to unmute
         </button>
       )}
@@ -326,7 +326,7 @@ export default function LivePlayer({ videoId, onEnded, getTargetTime }: LivePlay
             aria-label={playing ? "Pause" : "Play"}
             className="flex h-9 w-9 items-center justify-center rounded-full text-white transition hover:bg-white/10"
           >
-            <span className="material-symbols-rounded text-2xl">
+            <span className="material-symbols-rounded text-2xl" aria-hidden="true">
               {playing ? "pause" : "play_arrow"}
             </span>
           </button>
@@ -336,7 +336,7 @@ export default function LivePlayer({ videoId, onEnded, getTargetTime }: LivePlay
             aria-label={muted ? "Unmute" : "Mute"}
             className="flex h-9 w-9 items-center justify-center rounded-full text-white transition hover:bg-white/10"
           >
-            <span className="material-symbols-rounded text-xl">
+            <span className="material-symbols-rounded text-xl" aria-hidden="true">
               {muted || volume === 0 ? "volume_off" : "volume_up"}
             </span>
           </button>
@@ -369,7 +369,7 @@ export default function LivePlayer({ videoId, onEnded, getTargetTime }: LivePlay
             aria-label={isFullscreen ? "Exit fullscreen" : "Fullscreen"}
             className="flex h-9 w-9 items-center justify-center rounded-full text-white transition hover:bg-white/10"
           >
-            <span className="material-symbols-rounded text-xl">
+            <span className="material-symbols-rounded text-xl" aria-hidden="true">
               {isFullscreen ? "fullscreen_exit" : "fullscreen"}
             </span>
           </button>

@@ -100,7 +100,7 @@ export default function ConnectCardPage() {
               <AnimateIn key={step.title} delay={i * 80}>
                 <div className="flex flex-col items-start rounded-3xl bg-white p-7 shadow-sm">
                   <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-destiny-orange/10">
-                    <span className="material-symbols-rounded text-2xl text-destiny-orange">{step.icon}</span>
+                    <span className="material-symbols-rounded text-2xl text-destiny-orange" aria-hidden="true">{step.icon}</span>
                   </div>
                   <p className="mb-1 text-xs font-bold text-destiny-orange">Step {i + 1}</p>
                   <h3 className="mb-2 text-lg font-black text-destiny-grey">{step.title}</h3>
@@ -158,13 +158,13 @@ export default function ConnectCardPage() {
                   className="group flex items-center gap-4 rounded-2xl bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
                 >
                   <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-destiny-orange/10">
-                    <span className="material-symbols-rounded text-xl text-destiny-orange">{item.icon}</span>
+                    <span className="material-symbols-rounded text-xl text-destiny-orange" aria-hidden="true">{item.icon}</span>
                   </div>
                   <div>
                     <p className="font-black text-destiny-grey">{item.label}</p>
                     <p className="text-xs text-subtle">{item.sub}</p>
                   </div>
-                  <span className="material-symbols-rounded ml-auto text-destiny-grey/30 transition group-hover:translate-x-0.5 group-hover:text-destiny-orange">chevron_right</span>
+                  <span className="material-symbols-rounded ml-auto text-destiny-grey/30 transition group-hover:translate-x-0.5 group-hover:text-destiny-orange" aria-hidden="true">chevron_right</span>
                 </Link>
               </AnimateIn>
             ))}

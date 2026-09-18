@@ -65,7 +65,7 @@ export default function AdminOrderDetailPage({
         href="/admin/store/orders"
         className="mb-6 inline-flex items-center gap-1 text-sm font-semibold text-destiny-grey/60 dark:text-white/60 hover:text-destiny-grey dark:hover:text-white"
       >
-        <span className="material-symbols-rounded text-base">arrow_back</span>
+        <span className="material-symbols-rounded text-base" aria-hidden="true">arrow_back</span>
         Orders
       </Link>
 
@@ -148,7 +148,7 @@ export default function AdminOrderDetailPage({
                 : "border-black/10 text-destiny-grey dark:text-white hover:bg-[#f5f7fa] dark:hover:bg-white/10"
             }`}
           >
-            <span className="material-symbols-rounded text-base">{a.icon}</span>
+            <span className="material-symbols-rounded text-base" aria-hidden="true">{a.icon}</span>
             {a.label}
           </button>
         ))}

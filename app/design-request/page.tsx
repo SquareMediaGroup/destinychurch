@@ -86,7 +86,7 @@ export default async function DesignRequestPage() {
                 {WHAT_WE_DO.map((item) => (
                   <div key={item.label} className="flex items-start gap-4">
                     <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-destiny-orange/10">
-                      <span className="material-symbols-rounded text-xl text-destiny-orange">
+                      <span className="material-symbols-rounded text-xl text-destiny-orange" aria-hidden="true">
                         {item.icon}
                       </span>
                     </div>

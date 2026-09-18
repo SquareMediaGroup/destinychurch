@@ -44,7 +44,7 @@ export default function ContactPage() {
               <div className="space-y-6">
                 <div className="flex items-start gap-4">
                   <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-destiny-orange/10">
-                    <span className="material-symbols-rounded text-xl text-destiny-orange">location_on</span>
+                    <span className="material-symbols-rounded text-xl text-destiny-orange" aria-hidden="true">location_on</span>
                   </div>
                   <div>
                     <p className="mb-1 text-sm font-bold text-destiny-grey">Address</p>
@@ -59,7 +59,7 @@ export default function ContactPage() {
 
                 <div className="flex items-start gap-4">
                   <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-destiny-orange/10">
-                    <span className="material-symbols-rounded text-xl text-destiny-orange">mail</span>
+                    <span className="material-symbols-rounded text-xl text-destiny-orange" aria-hidden="true">mail</span>
                   </div>
                   <div>
                     <p className="mb-1 text-sm font-bold text-destiny-grey">Email</p>
@@ -71,7 +71,7 @@ export default function ContactPage() {
 
                 <div className="flex items-start gap-4">
                   <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-destiny-orange/10">
-                    <span className="material-symbols-rounded text-xl text-destiny-orange">phone</span>
+                    <span className="material-symbols-rounded text-xl text-destiny-orange" aria-hidden="true">phone</span>
                   </div>
                   <div>
                     <p className="mb-1 text-sm font-bold text-destiny-grey">Phone</p>
@@ -83,7 +83,7 @@ export default function ContactPage() {
 
                 <div className="flex items-start gap-4">
                   <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-destiny-orange/10">
-                    <span className="material-symbols-rounded text-xl text-destiny-orange">schedule</span>
+                    <span className="material-symbols-rounded text-xl text-destiny-orange" aria-hidden="true">schedule</span>
                   </div>
                   <div>
                     <p className="mb-1 text-sm font-bold text-destiny-grey">Sunday Service</p>
@@ -100,12 +100,12 @@ export default function ContactPage() {
                 href="/connect-card"
                 className="mb-6 flex items-center gap-3 rounded-2xl border border-destiny-orange/20 bg-destiny-orange/5 px-4 py-3 transition hover:bg-destiny-orange/10"
               >
-                <span className="material-symbols-rounded text-xl text-destiny-orange">waving_hand</span>
+                <span className="material-symbols-rounded text-xl text-destiny-orange" aria-hidden="true">waving_hand</span>
                 <div className="flex-1">
                   <p className="text-sm font-bold text-destiny-grey">New here?</p>
                   <p className="text-xs text-muted">Fill in a connect card instead — it&apos;s the best way to say hello.</p>
                 </div>
-                <span className="material-symbols-rounded text-sm text-destiny-orange">arrow_forward</span>
+                <span className="material-symbols-rounded text-sm text-destiny-orange" aria-hidden="true">arrow_forward</span>
               </Link>
               <ContactForm />
             </AnimateIn>

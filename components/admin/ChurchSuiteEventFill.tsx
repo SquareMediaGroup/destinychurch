@@ -96,7 +96,7 @@ export default function ChurchSuiteEventFill({
           onClick={() => setOpen((v) => !v)}
           className="inline-flex items-center gap-1.5 text-xs font-bold text-destiny-orange"
         >
-          <span className="material-symbols-rounded text-base leading-none">
+          <span className="material-symbols-rounded text-base leading-none" aria-hidden="true">
             bolt
           </span>
           Fill from ChurchSuite event
@@ -110,7 +110,7 @@ export default function ChurchSuiteEventFill({
               className="text-destiny-grey/30 dark:text-white/30 hover:text-destiny-grey/60 dark:hover:text-white/60"
               aria-label="Dismiss"
             >
-              <span className="material-symbols-rounded text-sm leading-none">
+              <span className="material-symbols-rounded text-sm leading-none" aria-hidden="true">
                 close
               </span>
             </button>
@@ -130,7 +130,7 @@ export default function ChurchSuiteEventFill({
 
           {loading ? (
             <div className="flex items-center justify-center py-6">
-              <span className="material-symbols-rounded animate-spin text-xl text-destiny-grey/20 dark:text-white/20">
+              <span className="material-symbols-rounded animate-spin text-xl text-destiny-grey/20 dark:text-white/20" aria-hidden="true">
                 progress_activity
               </span>
             </div>
@@ -165,7 +165,7 @@ export default function ChurchSuiteEventFill({
                       {event.location ? ` · ${event.location}` : ""}
                     </span>
                   </span>
-                  <span className="material-symbols-rounded shrink-0 text-base text-destiny-grey/20 dark:text-white/20">
+                  <span className="material-symbols-rounded shrink-0 text-base text-destiny-grey/20 dark:text-white/20" aria-hidden="true">
                     chevron_right
                   </span>
                 </button>

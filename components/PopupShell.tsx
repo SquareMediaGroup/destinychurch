@@ -45,7 +45,7 @@ export default function PopupShell({
           aria-label="Close"
           className="absolute right-3 top-3 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-black/50 text-white backdrop-blur transition hover:bg-black/70"
         >
-          <span className="material-symbols-rounded text-lg">close</span>
+          <span className="material-symbols-rounded text-lg" aria-hidden="true">close</span>
         </button>
 
         {imageUrl && (
@@ -80,7 +80,7 @@ export default function PopupShell({
                 className="mt-3 inline-flex w-fit items-center gap-2 rounded-xl bg-destiny-orange px-5 py-3 text-sm font-bold text-white shadow-sm shadow-destiny-orange/20 transition hover:brightness-110"
               >
                 {ctaText}
-                <span className="material-symbols-rounded text-base">
+                <span className="material-symbols-rounded text-base" aria-hidden="true">
                   arrow_forward
                 </span>
               </a>
@@ -91,7 +91,7 @@ export default function PopupShell({
                 className="mt-3 inline-flex w-fit items-center gap-2 rounded-xl bg-destiny-orange px-5 py-3 text-sm font-bold text-white shadow-sm shadow-destiny-orange/20 transition hover:brightness-110"
               >
                 {ctaText}
-                <span className="material-symbols-rounded text-base">
+                <span className="material-symbols-rounded text-base" aria-hidden="true">
                   arrow_forward
                 </span>
               </Link>

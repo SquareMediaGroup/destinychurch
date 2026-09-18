@@ -168,7 +168,7 @@ export default function FeaturedEventPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-24">
-        <span className="material-symbols-rounded animate-spin text-3xl text-destiny-grey/20 dark:text-white/20">
+        <span className="material-symbols-rounded animate-spin text-3xl text-destiny-grey/20 dark:text-white/20" aria-hidden="true">
           progress_activity
         </span>
       </div>
@@ -191,7 +191,7 @@ export default function FeaturedEventPage() {
         {/* Picker */}
         <div>
           <div className="mb-4 flex items-center gap-3 rounded-xl border border-black/8 bg-white dark:border-white/8 dark:bg-destiny-grey-800 px-4 py-2.5">
-            <span className="material-symbols-rounded text-lg text-destiny-grey/30 dark:text-white/30">
+            <span className="material-symbols-rounded text-lg text-destiny-grey/30 dark:text-white/30" aria-hidden="true">
               search
             </span>
             <input
@@ -264,7 +264,7 @@ export default function FeaturedEventPage() {
                           : "border-black/15 text-transparent"
                       }`}
                     >
-                      <span className="material-symbols-rounded text-base leading-none">
+                      <span className="material-symbols-rounded text-base leading-none" aria-hidden="true">
                         check
                       </span>
                     </span>

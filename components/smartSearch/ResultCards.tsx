@@ -58,7 +58,7 @@ export function WeatherResultCard({ data }: { data: WeatherToolResult }) {
 
   return (
     <div className="mt-2 flex items-center gap-4 rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
-      <span className="material-symbols-rounded text-4xl text-destiny-orange">
+      <span className="material-symbols-rounded text-4xl text-destiny-orange" aria-hidden="true">
         {weatherIcon(data.condition ?? "")}
       </span>
       <div className="min-w-0">
@@ -260,7 +260,7 @@ function ProductResultCard({ product }: { product: ProductResult }) {
           />
         ) : (
           <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-xl bg-white/8 text-white/30">
-            <span className="material-symbols-rounded text-2xl">apparel</span>
+            <span className="material-symbols-rounded text-2xl" aria-hidden="true">apparel</span>
           </div>
         )}
         <div className="min-w-0 flex-1">
@@ -358,7 +358,7 @@ function ProductResultCard({ product }: { product: ProductResult }) {
           onClick={handleAdd}
           disabled={!inStock}
         >
-          <span className="material-symbols-rounded text-base">
+          <span className="material-symbols-rounded text-base" aria-hidden="true">
             {added ? "check" : "shopping_bag"}
           </span>
           {inStock ? (added ? "Added to basket" : "Add to basket") : "Sold out"}

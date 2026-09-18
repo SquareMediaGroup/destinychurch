@@ -85,7 +85,7 @@ export function RepeaterField({
                   title="Drag to reorder"
                   className="hidden h-7 w-6 shrink-0 cursor-grab items-center justify-center rounded text-destiny-grey/30 dark:text-white/30 hover:bg-black/5 active:cursor-grabbing lg:flex"
                 >
-                  <span className="material-symbols-rounded text-[17px]">
+                  <span className="material-symbols-rounded text-[17px]" aria-hidden="true">
                     drag_indicator
                   </span>
                 </span>
@@ -192,7 +192,7 @@ function RowButton({
       onClick={onClick}
       className="flex h-11 w-9 shrink-0 items-center justify-center rounded text-destiny-grey/35 dark:text-white/35 transition hover:bg-black/5 hover:text-destiny-grey dark:hover:text-white disabled:pointer-events-none disabled:opacity-25 lg:h-7 lg:w-6"
     >
-      <span className="material-symbols-rounded text-[20px] lg:text-[16px]">{icon}</span>
+      <span className="material-symbols-rounded text-[20px] lg:text-[16px]" aria-hidden="true">{icon}</span>
     </button>
   );
 }

@@ -92,7 +92,7 @@ export default function VolunteerPage() {
               <AnimateIn key={step.title} delay={i * 80}>
                 <div className="flex flex-col items-start rounded-3xl bg-white p-8 shadow-sm">
                   <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-destiny-orange/10">
-                    <span className="material-symbols-rounded text-3xl text-destiny-orange">{step.icon}</span>
+                    <span className="material-symbols-rounded text-3xl text-destiny-orange" aria-hidden="true">{step.icon}</span>
                   </div>
                   <h3 className="mb-2 text-xl font-black text-destiny-grey">{step.title}</h3>
                   <p className="text-sm leading-relaxed text-muted">{step.body}</p>
@@ -117,7 +117,7 @@ export default function VolunteerPage() {
               href="/connect-card"
               className="inline-flex items-center gap-2 rounded-full bg-destiny-orange px-8 py-3 text-sm font-bold text-white shadow-lg shadow-destiny-orange/25 transition hover:brightness-110"
             >
-              <span className="material-symbols-rounded text-lg">edit_note</span>
+              <span className="material-symbols-rounded text-lg" aria-hidden="true">edit_note</span>
               Fill Out Connect Card
             </Link>
           </AnimateIn>

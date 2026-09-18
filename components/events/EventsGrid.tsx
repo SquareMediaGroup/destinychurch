@@ -14,7 +14,6 @@
 
 import { useMemo, useState } from "react";
 import type { EventSeries } from "@destiny/shared";
-import type { EventCardVariant } from "@/lib/events";
 import AnimateIn from "@/components/AnimateIn";
 import EventCard from "./EventCard";
 
@@ -30,11 +29,9 @@ const CARD_SIZES = "(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw";
 
 function CardGrid({
   events,
-  variant,
   priorityFrom,
 }: {
   events: EventSeries[];
-  variant: EventCardVariant;
   priorityFrom: number;
 }) {
   return (
@@ -43,7 +40,6 @@ function CardGrid({
         <EventCard
           key={event.slug}
           event={event}
-          variant={variant}
           priority={priorityFrom + index < 3}
           sizes={CARD_SIZES}
         />
@@ -54,10 +50,8 @@ function CardGrid({
 
 export default function EventsGrid({
   groups,
-  variant = "a",
 }: {
   groups: EventMonthGroup[];
-  variant?: EventCardVariant;
 }) {
   const [search, setSearch] = useState("");
   const [mode, setMode] = useState<GroupMode>("all");
@@ -148,7 +142,6 @@ export default function EventsGrid({
                   <AnimateIn>
                     <CardGrid
                       events={group.events}
-                      variant={variant}
                       priorityFrom={groupIndex === 0 ? 0 : 99}
                     />
                   </AnimateIn>
@@ -157,7 +150,7 @@ export default function EventsGrid({
             </div>
           ) : (
             <AnimateIn>
-              <CardGrid events={flat} variant={variant} priorityFrom={0} />
+              <CardGrid events={flat} priorityFrom={0} />
             </AnimateIn>
           )
         ) : (

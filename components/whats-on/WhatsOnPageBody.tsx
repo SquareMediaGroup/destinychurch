@@ -1,6 +1,5 @@
-// The body of /whats-on, extracted so the page and the variant preview route
-// (/whats-on/new) render identical markup with a different card treatment
-// rather than duplicating the composition.
+// The body of /whats-on, extracted so app/whats-on/page.tsx stays a thin
+// route file.
 
 import WhatsOnHero from "@/components/whats-on/WhatsOnHero";
 import EventsGrid from "@/components/events/EventsGrid";
@@ -13,13 +12,8 @@ import WorshipWithUsSection from "@/components/home/WorshipWithUsSection";
 import { getFeaturedCourseId } from "@/lib/courses.server";
 import { getEventIndex, getFeaturedEvent } from "@/lib/events.server";
 import { groupSeriesByMonth } from "@destiny/shared";
-import type { EventCardVariant } from "@/lib/events";
 
-export default async function WhatsOnPageBody({
-  cardVariant = "a",
-}: {
-  cardVariant?: EventCardVariant;
-}) {
+export default async function WhatsOnPageBody() {
   const [index, featuredCourseId] = await Promise.all([
     getEventIndex(),
     getFeaturedCourseId(),
@@ -37,7 +31,7 @@ export default async function WhatsOnPageBody({
           the sitemap all deep-link to #events, which must still land on the
           grid rather than on the banner. */}
       <FeaturedEventHero featured={featuredEvent} />
-      <EventsGrid groups={groups} variant={cardVariant} />
+      <EventsGrid groups={groups} />
       <ConnectGroupsBanner />
       <CoursesSection featuredId={featuredCourseId} />
       <TogetherMissionSection />

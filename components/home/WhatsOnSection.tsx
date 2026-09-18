@@ -3,7 +3,6 @@ import AnimateIn from "@/components/AnimateIn";
 import EventsCarousel from "@/components/home/EventsCarousel";
 import EventCard from "@/components/events/EventCard";
 import { getEventIndex, getFeaturedEvent } from "@/lib/events.server";
-import type { EventCardVariant } from "@/lib/events";
 
 /**
  * Carousel cards are narrower than grid cards; the width lives here now.
@@ -54,11 +53,7 @@ function EventCardPlaceholder({ index }: { index: number }) {
   );
 }
 
-export default async function WhatsOnSection({
-  cardVariant = "a",
-}: {
-  cardVariant?: EventCardVariant;
-}) {
+export default async function WhatsOnSection() {
   const index = await getEventIndex();
   const featured = await getFeaturedEvent(index);
 
@@ -101,7 +96,6 @@ export default async function WhatsOnSection({
                   <EventCard
                     key={event.slug}
                     event={event}
-                    variant={cardVariant}
                     featured={event.slug === featuredSlug}
                     priority={i === 0}
                     className={CARD_WIDTH}

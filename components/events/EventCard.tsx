@@ -1,13 +1,12 @@
-// The one event card. Used by the /whats-on grid, the homepage carousel, and
-// the variant preview routes — replacing three drifted copies that each had to
-// be updated by hand.
+// The one event card. Used by the /whats-on grid and the homepage carousel —
+// replacing three drifted copies that each had to be updated by hand.
 //
-// Three treatments are in trial (see lib/events.ts):
-//   a       restrained — neutral surface, type-led, orange only on the kicker
-//           and CTA. The default, and what ships on the live pages.
-//   a-pill  as `a`, plus a category chip over the artwork.
-//   c       full-bleed poster — artwork fills the card, copy on a glass panel.
-// Once one is chosen the other two bodies get deleted.
+// This was the "a" treatment out of three tried in a variant trial (see the
+// removed lib/events.ts EventCardVariant): restrained, neutral surface,
+// type-led, orange only on the kicker and CTA. It shipped on the live pages
+// from the start; the other two ("a-pill", a category chip over the artwork,
+// and "c", a full-bleed poster) only ever existed on the /home and
+// /whats-on/new preview routes, which are gone along with them.
 //
 // Deliberately server-safe: no "use client", no hooks, and — importantly — no
 // clock reads. Filtering to upcoming events and grouping by month happen on the
@@ -22,12 +21,10 @@ import {
   isMultiday,
   type EventSeries,
 } from "@destiny/shared";
-import type { EventCardVariant } from "@/lib/events";
 import EventCardArtwork from "./EventCardArtwork";
 
 export type EventCardProps = {
   event: EventSeries;
-  variant?: EventCardVariant;
   href?: string;
   /** Adds the "Featured" marker used when the card is pinned first. */
   featured?: boolean;
@@ -57,20 +54,13 @@ function locationName(event: EventSeries): string | null {
  * The pills overlaid on the artwork.
  *
  * `Multiday` and `N Sessions` are the two the old cards carried; `Featured`
- * marks the admin-promoted event. Category joins them only on the variants with
- * no footer to put it in, so it never appears twice on one card.
+ * marks the admin-promoted event.
  */
-function eventTags(
-  event: EventSeries,
-  featured: boolean,
-  includeCategory: boolean,
-): string[] {
+function eventTags(event: EventSeries, featured: boolean): string[] {
   const tags: string[] = [];
   if (featured) tags.push("Featured");
   if (isMultiday(event.primary)) tags.push("Multiday");
   if (event.sessionCount > 1) tags.push(`${event.sessionCount} Sessions`);
-  const category = event.primary.category?.name;
-  if (includeCategory && category) tags.push(category);
   return tags;
 }
 
@@ -115,7 +105,6 @@ function ctaLabel(event: EventSeries): string {
 
 export default function EventCard({
   event,
-  variant = "a",
   href,
   featured = false,
   priority,
@@ -128,58 +117,15 @@ export default function EventCard({
   const category = event.primary.category?.name;
   // Roughly half the feed has no artwork, which changes how overlays read.
   const hasArtwork = Boolean(eventImage(event.primary));
-  // `a` keeps its category in the footer, so only the footer-less variants
-  // fold it into the tag row.
-  const tags = eventTags(event, featured, variant !== "a");
+  const tags = eventTags(event, featured);
 
-  if (variant === "c") {
-    return (
-      <Link
-        href={target}
-        className={`group relative block aspect-[3/4] overflow-hidden rounded-[24px] shadow-[0_2px_6px_rgba(16,24,40,.08),0_18px_40px_-16px_rgba(16,24,40,.35)] transition-transform duration-300 hover:-translate-y-1 focus-visible:-translate-y-1 ${className}`}
-      >
-        <EventCardArtwork event={event} variant="c" priority={priority} sizes={sizes} />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/35 to-transparent" />
-
-        <EventTags tags={tags} inset="left-4 top-4 right-4" />
-
-        <div className="glass glass-md absolute inset-x-3 bottom-3 rounded-2xl p-4">
-          <p className="text-[11px] font-bold uppercase tracking-[0.1em] text-white/85">
-            {kicker}
-          </p>
-          <h3
-            style={TITLE_FONT}
-            className="mt-2 text-[22px] font-semibold leading-[1.15] tracking-[-0.02em] text-white"
-          >
-            {event.name}
-          </h3>
-          {location && (
-            <p className="mt-2 flex items-center gap-1.5 text-sm text-white/75">
-              <LocationPin />
-              <span className="min-w-0 truncate">{location}</span>
-            </p>
-          )}
-          <span className="mt-4 inline-flex rounded-full bg-white px-4 py-2 text-[13px] font-bold text-destiny-grey transition-transform duration-300 group-hover:scale-[1.03]">
-            {ctaLabel(event)}
-          </span>
-        </div>
-      </Link>
-    );
-  }
-
-  // Variants `a` and `a-pill` share everything but the chip.
   return (
     <Link
       href={target}
       className={`group flex flex-col overflow-hidden rounded-[20px] border border-black/[0.07] bg-white shadow-[0_1px_2px_rgba(16,24,40,.04),0_8px_24px_-8px_rgba(16,24,40,.10)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_2px_4px_rgba(16,24,40,.05),0_16px_36px_-12px_rgba(16,24,40,.16)] focus-visible:-translate-y-1 ${className}`}
     >
       <div className="relative shrink-0">
-        <EventCardArtwork
-          event={event}
-          variant={variant}
-          priority={priority}
-          sizes={sizes}
-        />
+        <EventCardArtwork event={event} priority={priority} sizes={sizes} />
         {tags.length > 0 && (
           <>
             {/* The scrim only earns its place over real artwork, where a pale

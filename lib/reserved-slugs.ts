@@ -46,9 +46,6 @@ const ROUTE_SLUGS = [
   "governance",
   "help",
   "hire",
-  // Temporary: app/home/ is the event-card variant preview. Remove this entry
-  // when that route is deleted.
-  "home",
   "jobs",
   "kids",
   "links",

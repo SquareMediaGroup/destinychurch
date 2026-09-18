@@ -14,9 +14,15 @@ import { cn } from "@/lib/cn";
 // Anything genuinely one-off should still be a plain <button>; this is for the
 // repeated cases. Extra classes merge in via className.
 
-type Variant = "primary" | "secondary" | "outline" | "onDark" | "glass";
+type Variant =
+  | "primary"
+  | "secondary"
+  | "outline"
+  | "accentOutline"
+  | "onDark"
+  | "glass";
 type Shape = "pill" | "soft" | "card";
-type Size = "xs" | "sm" | "md" | "lg" | "xl" | "cta";
+type Size = "xs" | "sm" | "md" | "lg" | "xl" | "cta" | "icon";
 
 const BASE =
   "inline-flex items-center justify-center gap-2 font-bold transition disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2";
@@ -42,6 +48,9 @@ const SIZES: Record<Size, string> = {
   lg: "px-7 py-3 text-sm",
   xl: "px-7 py-3.5 text-sm", // hero CTAs
   cta: "px-7 py-4 text-sm", // shape="card" icon+label CTAs
+  // Icon-only. Square, and 44px so it clears the minimum touch target — the
+  // hand-rolled carousel arrows this replaces were 32px.
+  icon: "h-11 w-11 p-0 text-xl",
 };
 
 // `soft` is the admin chrome, which sits on white cards and uses a tighter
@@ -61,6 +70,15 @@ const VARIANTS: Record<Variant, Record<Shape, string>> = {
     pill: "border border-black/10 text-destiny-grey hover:border-black/25 hover:bg-black/[0.03] focus-visible:ring-destiny-orange",
     soft: "border border-black/10 text-destiny-grey hover:border-black/25 hover:bg-black/[0.03] focus-visible:ring-destiny-orange",
     card: "border border-black/10 text-destiny-grey hover:border-black/25 hover:bg-black/[0.03] focus-visible:ring-destiny-orange",
+  },
+  // The public site's secondary CTA on light backgrounds: an orange outline
+  // that fills on hover. Distinct from `outline`, which is a neutral hairline
+  // for tertiary actions. This shipped in three places as a pasted class string
+  // before it existed here, which is why `outline` kept getting passed over.
+  accentOutline: {
+    pill: "border-2 border-destiny-orange text-destiny-orange hover:bg-destiny-orange hover:text-white focus-visible:ring-destiny-orange",
+    soft: "border-2 border-destiny-orange text-destiny-orange hover:bg-destiny-orange hover:text-white focus-visible:ring-destiny-orange",
+    card: "border-2 border-destiny-orange text-destiny-orange hover:bg-destiny-orange hover:text-white focus-visible:ring-destiny-orange",
   },
   // For hero sections and other dark photography backgrounds.
   onDark: {
@@ -103,8 +121,46 @@ type ButtonProps = ButtonStyleProps &
   ComponentPropsWithoutRef<"button"> & {
     /** Render as a link. Internal paths go through next/link. */
     href?: string;
+    /**
+     * Show a spinner and block further clicks. The label stays in place and
+     * keeps its width so the button does not resize mid-submit, and
+     * `aria-busy` tells a screen reader something is in flight — otherwise a
+     * disabled button is just silently unresponsive.
+     */
+    loading?: boolean;
     children: ReactNode;
   };
+
+/**
+ * Sized in `em` so one spinner works at every button size, and drawn with
+ * `currentColor` so it inherits the variant's text colour. Hidden from
+ * assistive tech: `aria-busy` on the button already carries the meaning.
+ */
+function Spinner() {
+  return (
+    <svg
+      className="h-[1.1em] w-[1.1em] shrink-0 animate-spin"
+      viewBox="0 0 24 24"
+      fill="none"
+      aria-hidden="true"
+    >
+      <circle
+        cx="12"
+        cy="12"
+        r="10"
+        stroke="currentColor"
+        strokeWidth="3"
+        opacity="0.25"
+      />
+      <path
+        d="M22 12a10 10 0 0 1-10 10"
+        stroke="currentColor"
+        strokeWidth="3"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
 
 export default function Button({
   variant,
@@ -113,6 +169,7 @@ export default function Button({
   fullWidth,
   className,
   href,
+  loading,
   children,
   ...rest
 }: ButtonProps) {
@@ -144,7 +201,13 @@ export default function Button({
   }
 
   return (
-    <button className={classes} {...rest}>
+    <button
+      {...rest}
+      className={classes}
+      aria-busy={loading || undefined}
+      disabled={loading || rest.disabled}
+    >
+      {loading && <Spinner />}
       {children}
     </button>
   );

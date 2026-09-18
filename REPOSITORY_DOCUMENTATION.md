@@ -2249,8 +2249,6 @@ without an auth check, so they must never be reachable on the live site.
 | `/cap-money` | `app/cap-money/page.tsx` | CAP Money Course (Christians Against Poverty), next event. CTAs fall back to `/contact` when nothing is scheduled |
 | `/whats-on` | `app/whats-on/page.tsx` | Events listing — featured-event banner, then upcoming events grouped by month |
 | `/whats-on/[slug]` | `app/whats-on/[slug]/page.tsx` | On-site event page — one per ChurchSuite *series*, with all upcoming sessions, sanitised description, map link, signup and .ics |
-| `/home` | `app/home/page.tsx` | **Temporary** event-card variant preview of the homepage (`?card=a\|a-pill\|c`). noindex — delete once a variant is chosen |
-| `/whats-on/new` | `app/whats-on/new/page.tsx` | **Temporary** event-card variant preview of What's On. noindex — delete once a variant is chosen |
 | `/connect-card` | `app/connect-card/page.tsx` | Prayer requests, connection form |
 | `/jobs` | `app/jobs/page.tsx` | Job listings |
 | `/jobs/[slug]` | `app/jobs/[slug]/page.tsx` | Job detail page |
@@ -2263,7 +2261,7 @@ without an auth check, so they must never be reachable on the live site.
 | `/nfc` | `app/nfc/page.tsx` | "Digital back of seats" — what an NFC tag or QR code on a seat opens during a service. Standalone (no header, footer, site popup or smart search) and `noindex`. Connect Card and Giving are hardcoded fixtures; everything else comes from `nfc_tiles`, including event tiles that resolve against the live ChurchSuite feed and hide themselves once the event has run |
 | `/twelvetwo` | `app/twelvetwo/page.tsx` | Destiny 12:2 recovery course info page |
 | `/dckids` | `app/dckids/page.tsx` | Destiny Kids Camp 2026 campaign page |
-| `/accessibility` | `app/accessibility/page.tsx` | Reduced-motion / glass-FX preferences (client component) |
+| `/accessibility` | `app/accessibility/page.tsx` | Accessibility statement (conformance target, known issues, review date, feedback route) plus the reduced-motion / glass-FX preferences toggle (`app/accessibility/AccessibilityPreferences.tsx`, client component) |
 | `/privacy` | `app/privacy/page.tsx` | Privacy policy |
 | `/terms` | `app/terms/page.tsx` | Terms of use |
 | `/safeguarding` | `app/safeguarding/page.tsx` | Safeguarding policy |
@@ -2410,11 +2408,12 @@ the orange pill alone — same intent, drifting padding and shadow.
 
 | Prop | Values | Notes |
 |---|---|---|
-| `variant` | `primary` · `secondary` · `outline` · `onDark` · `glass` | `onDark`/`glass` are for hero photography |
-| `shape` | `pill` (default) · `soft` | `soft` is `rounded-xl`, the `/admin` chrome |
-| `size` | `xs` · `sm` · `md` · `lg` · `xl` | `sm` is the `/admin` default |
+| `variant` | `primary` · `secondary` · `outline` · `accentOutline` · `onDark` · `glass` | `accentOutline` is the orange-outline-fills-on-hover secondary CTA (previously pasted separately in three files); `onDark`/`glass` are for hero photography |
+| `shape` | `pill` (default) · `soft` · `card` | `soft` is `rounded-xl`, the `/admin` chrome; `card` is the larger icon+label CTAs (Give Online, Text to Give) |
+| `size` | `xs` · `sm` · `md` · `lg` · `xl` · `cta` · `icon` | `sm` is the `/admin` default; `icon` is 44px square for icon-only buttons |
 | `href` | string | Renders `next/link`; `http(s):`/`mailto:`/`tel:` get an external anchor |
 | `fullWidth` | boolean | |
+| `loading` | boolean | Shows a spinner, sets `aria-busy`, disables the button; label stays in place |
 
 Every size is a padding cluster that already existed in the codebase (`px-6 py-3` appeared
 14×, `px-7 py-3` 13×, `px-6 py-2.5` 13×), so adopting it does not shift anything by a few
@@ -2427,6 +2426,65 @@ buttons lacked.
 >
 > Genuinely one-off buttons should stay plain `<button>` elements — this is for the repeated
 > cases. Migration is opportunistic; most call sites are still hand-written strings.
+
+#### `ui/Container.tsx` / `ui/Section.tsx`
+**Server-safe, no directive.** The horizontal frame (`Container`, three widths — `prose`
+`max-w-3xl`, `content` `max-w-5xl`, `wide` `max-w-7xl` default) and a page section (`Section`
+— tinted band via `tone` reusing the block system's `TONE_SURFACE`, plus a `dark` tone
+`Section` adds itself since the block system has no equivalent; padding via `padding`:
+`sm` `py-12 sm:py-16`, `md` `py-16 sm:py-20` default, `lg` `py-20 sm:py-28`). Replace the
+`mx-auto max-w-* px-4 lg:px-8` / `py-*` pairs that were hand-written at ~67 and ~130+ call
+sites respectively.
+
+#### `ui/SectionHeading.tsx` / `ui/Eyebrow.tsx`
+**Server-safe, no directive.** `Eyebrow` is the exact `text-xs font-bold uppercase
+tracking-widest text-destiny-orange` string, pulled out of `components/blocks/tokens.ts`'s
+`EYEBROW` constant so it's reachable without importing the block system. `SectionHeading`
+is eyebrow + heading + lead + an optional action link, one ramp replacing six per-section
+variants. Both carry the `FONT_ROBOTO` inline escape hatch documented under Content Blocks
+below — `h1,h2,h3` are unlayered Arial in `globals.css`.
+
+#### `ui/Card.tsx`
+**Server-safe, no directive.** The card shell (`CARD_SHELL`/`CARD_HOVER` from
+`components/blocks/tokens.ts`, promoted). Pass `href` to make the **whole card** the link —
+motivated by `GetInvolvedSection`, whose image scaled on `group-hover` across the entire
+card while only a small pill at the bottom was actually clickable. `interactive` gets the
+hover lift without a link, for cards whose action lives inside them.
+
+#### `ui/Icon.tsx`
+**Server-safe, no directive.** Wraps a Material Symbols ligature span. Decorative
+(`aria-hidden`) by default — pass `label` only when the icon IS the control or carries
+meaning no adjacent text repeats. Exists because the icon font renders by literal ligature
+text (`play_arrow`, `volunteer_activism`, …), which a screen reader reads verbatim on any
+span not marked `aria-hidden`; roughly 500 of ~570 such spans site-wide have been converted.
+
+#### `ui/PageHero.tsx` / `ui/MediaBanner.tsx`
+**Server-safe, no directive.** `PageHero` (generalised from `components/ministry/
+MinistryHero.tsx`) is the inner-page hero: sharp photo via `next/image priority`, two scrim
+layers, Roboto semibold heading, optional `chips` and `actions`. `MediaBanner` is the
+inset blurred-photo CTA banner (`WorshipWithUsSection`, `ConnectGroupsBanner`, …) — copy
+left, stacked buttons right. Both replace the CSS-`background-image` / independently-pasted
+blur+scrim idiom that had accumulated across ~8–11 files.
+
+#### `ui/Field.tsx` (`Field`, `TextareaField`, `SelectField`)
+**Client component.** The one input shape: generates an id, wires `label`/`aria-describedby`/
+`aria-invalid`, and renders a hint or an error. Replaces three competing `inputClass`
+constants plus a fourth written inline in `ContactForm`.
+
+#### `ui/Badge.tsx` / `ui/Disclosure.tsx`
+**Server-safe, no directive.** `Badge` is a status/category pill with semantic tones
+(`success`/`warning`/`danger`/`info` map onto the `--color-*-bg`/`-fg` pairs in
+`globals.css`, plus `neutral`/`accent`/`onDark`). `Disclosure` is a `<details>`/`<summary>`
+expand-collapse row with no client JS — used for `/visit`'s FAQ, which used to be seven
+permanently-open `<div>`s despite shipping `FAQPage` JSON-LD.
+
+`/dev/ui` is the gallery for all of the above — every variant of every primitive on one
+page, the `components/ui/` sibling of `/dev/blocks`. 404s in production.
+
+#### `ui/BackgroundVideo.tsx`
+**Client component.** A decorative autoplaying hero video that honours the site's
+reduced-motion preference (`AccessibilityContext`, which mirrors the OS setting) by simply
+not rendering when it's on, rather than looping regardless — used on `/serve` and `/alpha`.
 
 #### `ui/Modal.tsx`
 **Client component (`"use client"`).** The shared dialog shell.
@@ -4431,6 +4489,49 @@ mid-service behaviour.
 
 ---
 
+### `lib/churchInfo.ts`
+
+The address, phone, email and Sunday schedule, in one typed place — display strings
+(`SCHEDULE.mainServiceStart` = `"11:00am"`) alongside 24-hour equivalents
+(`SCHEDULE.iso.mainServiceStart` = `"11:00"`) for JSON-LD. Also `ADDRESS_ONE_LINE`,
+`ADDRESS_LINES`, `MAPS_URL`, `DIRECTIONS_URL`, `PARKING_NOTE`, `BUS_NOTE`,
+`VISIT_FACTS`, `ACCESSIBILITY`.
+
+Before this file, the same handful of facts were retyped independently in the
+JSON-LD in `app/layout.tsx`, `/visit`, `/contact`, `/help`, and the `CHURCH_FACTS`
+prose block in `lib/siteKnowledge.ts` (Smart Search's source of truth) — and they had
+drifted: the JSON-LD `Organization` schema listed a different support email than
+every other page on the site.
+
+Deliberately scoped to "when, where, what to expect" — it does **not** absorb the
+charity/company registration numbers, leadership names or mission statement out of
+`CHURCH_FACTS`. Those have a different canonical source (`/governance`, backed by
+the Charity Commission / Companies House registers), so they're still edited
+directly in `siteKnowledge.ts`. `CHURCH_FACTS` quotes `churchInfo` via template
+literals for the facts it does own; `tests/unit/church-info.spec.ts` pins the
+internal consistency (schedule in chronological order, the phone formats agreeing,
+`CHURCH_FACTS` genuinely containing the same strings rather than a hand-typed copy
+that happens to match today) and — deliberately — asserts the support email equals
+`admin@destinytees.uk`, the exact drift this file exists to prevent.
+
+Consumed by `app/layout.tsx`'s JSON-LD, `app/contact/page.tsx`,
+`app/help/page.tsx`'s two schedule/location FAQ answers, `components/ChurchFooter.tsx`,
+`components/home/ServiceTimesBar.tsx`, and `app/visit/page.tsx`.
+
+---
+
+### `lib/useFocusTrap.ts`
+
+Focus trap + Escape + focus-restore for a dialog that can't hand its markup to
+`components/ui/Modal.tsx` wholesale — `Modal.tsx` owns its panel's mount lifecycle
+and unmounts the instant `open` goes false, with no room for an exit transition.
+`components/give/TextToGiveCTA.tsx`'s panel needs its own 350ms scale/fade-out, so
+it keeps its own markup and takes just the trap logic via this hook. `Modal.tsx`
+carries the same logic inline; not deduplicated onto this hook since it isn't
+broken, only *also* correct.
+
+---
+
 ### Shop (`lib/shop*.ts`, `lib/stripe.ts`, `lib/cart-store.ts`)
 - `lib/shop.ts` — client-safe types (`Product`, `ProductVariant`, `Order`, `CartItem`), `formatPrice(pennies)`, `variantPrice`, `fromPrice`, `totalStock`. Prices are integer pennies (GBP).
 - `lib/shop.server.ts` (`server-only`) — public read fetchers: `getPublishedProducts()`, `getProductBySlug()`, `getAllProductsAdmin()` (via `createServiceClient()`).
@@ -5658,6 +5759,24 @@ Everything lives in `app/globals.css`:
 ```css
 @import "tailwindcss";          /* establishes @layer theme, base, components, utilities */
 
+:root {
+  --background: #ffffff;
+  --foreground: #363f48;
+  --surface: #ffffff;
+  --surface-muted: #f5f7fa;
+  --surface-overlay: rgba(255, 255, 255, 0.92);
+  --border-subtle: rgba(0, 0, 0, 0.05);
+  /* Motion literals live here, not in @theme, so both the utilities below AND
+     hand-written animation CSS elsewhere in this file can reference them —
+     see "Radius, elevation, hairline, motion" below. */
+  --motion-ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
+  --motion-ease-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  --motion-ease-overshoot: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --motion-dur-fast: 200ms;
+  --motion-dur-base: 300ms;
+  --motion-dur-slow: 500ms;
+}
+
 @theme inline {
   --color-destiny-orange: #f58021;
   --color-destiny-orange-dark: #d96d10;
@@ -5669,19 +5788,33 @@ Everything lives in `app/globals.css`:
   --color-destiny-white: #ffffff;
   --color-destiny-black: #000000;
   --color-destiny-brown: #2c1a0e;
+  --color-destiny-brown-light: #3d2b1a;
+  --color-muted: #5b6570;   /* 5.9:1 on white — see "Accessible text" below */
+  --color-subtle: #6b7580;  /* 4.7:1 on white */
+  --color-surface: var(--surface);
+  --color-surface-muted: var(--surface-muted);
+  --color-hairline: rgb(0 0 0 / 0.07);
+  --color-divider: rgb(0 0 0 / 0.12);
   --font-sans: var(--font-roboto), system-ui, -apple-system, sans-serif;
   --font-heading: Arial, "Helvetica Neue", sans-serif;
+  --font-admin-heading: var(--font-anton), Arial, "Helvetica Neue", sans-serif;
 }
 ```
+
+(Trimmed for readability — the real file also carries 50–900 shade ramps per
+hue, the `success`/`warning`/`danger`/`info` semantic aliases, and
+`--radius-card`/`--radius-panel`/`--radius-shell` and `--shadow-card`/
+`--shadow-card-hover`, all covered in their own subsections below.)
 
 Tokens declared in `@theme inline` become utilities automatically, so
 `--color-destiny-orange` gives you `text-destiny-orange`, `bg-destiny-orange`,
 `border-destiny-orange` and so on. Add a colour or font by adding a variable
 here — there is no config file to edit.
 
-Fonts are loaded by `next/font` in `app/layout.tsx` (Roboto for body, Anton and
-Playfair Display for display) and exposed as `--font-roboto` / `--font-anton` /
-`--font-playfair`.
+Fonts are loaded by `next/font` in `app/layout.tsx` — Roboto (body), Anton
+(display/hero), Playfair Display (serif accent), Poppins (loaded site-wide;
+`/twelvetwo` is its only current caller) — and exposed as `--font-roboto` /
+`--font-anton` / `--font-playfair` / `--font-poppins`.
 
 #### Colour ramps and semantic tokens
 
@@ -5700,6 +5833,53 @@ so "this is a good outcome" is one concept (`bg-success/10 text-success`)
 reused everywhere instead of every call site hand-picking which green to use.
 `Badge`'s tone map and `MetricCard`'s chip tone (`components/admin/AdminUI.tsx`,
 `app/admin/page.tsx`) both read from these rather than a brand colour directly.
+
+#### Accessible text — `text-muted` / `text-subtle`
+
+The site's idiom for secondary text used to be an opacity modifier on the
+brand grey — `text-destiny-grey/60`, `/50`, `/40` — which reads as "quieter"
+but doesn't survive a contrast check: `#363f48` is 10.5:1 on white, but at
+60% opacity that drops to 3.4:1 and at 40% to 2.1:1, both below the WCAG AA
+floor of 4.5:1 for normal-size text. `/40` was also the *single most common*
+secondary-text value in the codebase before this was fixed.
+
+Two solid-colour steps replace it, each measured on white and pinned by
+`tests/unit/contrast.spec.ts`:
+
+| Token | Hex | Ratio on white | Use |
+|---|---|---|---|
+| `text-muted` | `#5B6570` | 5.9:1 | Secondary body copy, card descriptions |
+| `text-subtle` | `#6B7580` | 4.7:1 | Metadata, captions, eyebrow labels — the quietest allowed to carry meaning |
+
+On dark surfaces the equivalents are alphas rather than solid colours,
+because the backdrop varies: `text-on-dark-muted` (`rgb(255 255 255 / .82)`,
+7.8:1 over `--color-destiny-grey`) and `text-on-dark-subtle` (`/.72`, 6.4:1).
+Over **photography** neither is sufficient by itself — the fix there is a
+stronger scrim, not a lighter text colour, and is applied by hand per hero.
+
+A codemod moved 602 occurrences across 152 files onto these two tokens.
+**Not** touched: `/admin` and `/portal` (each light class there commonly
+pairs with a `dark:` sibling, which needs checking against both themes as
+its own pass) and any `material-symbols-rounded` icon span (decorative;
+darkening a large empty-state glyph to the AA floor would be a visual
+regression, not a fix).
+
+#### Radius, elevation, hairline, motion
+
+Four more scales exist for the same reason as the two above: each replaced a
+handful of near-identical values that had drifted apart from being
+independently invented per call site.
+
+| Token(s) | Values | Replaces |
+|---|---|---|
+| `rounded-card` / `rounded-panel` / `rounded-shell` | 20px / 24px / 32px | `rounded-2xl`, `rounded-3xl`, `rounded-[20px]`, `rounded-[24px]` all meaning "a card" |
+| `shadow-card` / `shadow-card-hover` | the two-layer contact + soft shadow | The literal `shadow-[0_1px_2px_rgba(16,24,40,.04),0_8px_24px_-8px_rgba(16,24,40,.10)]`, pasted verbatim into 16 files |
+| `border-hairline` / `border-divider` | `rgb(0 0 0 / .07)` / `rgb(0 0 0 / .12)` | Six notations in use for a hairline: `border-black/5`, `/6`, `/8`, `/10`, `/15`, `/[0.07]` |
+| `ease-standard` / `ease-expo` / `ease-overshoot` (utilities); `--motion-dur-fast/base/slow` (`:root` only — Tailwind has no duration namespace to hang a utility on) | see `:root` literals above | `cubic-bezier(0.16,1,0.3,1)` was written two different ways (with and without spaces) across 23 sites, alongside two other curves and five ad-hoc durations |
+
+`components/ui/Card.tsx` and `components/ui/Section.tsx`/`Container.tsx` (see
+Components, above) are the primitives built on these; adopting one usually
+means adopting the others.
 
 #### Dark mode — `/admin` only
 

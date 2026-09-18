@@ -4,6 +4,7 @@
 
 import HomeOverscrollColor from "@/components/home/HomeOverscrollColor";
 import HeroSection from "@/components/home/HeroSection";
+import ServiceTimesBar from "@/components/home/ServiceTimesBar";
 import MissionSection from "@/components/home/MissionSection";
 import LatestSermonSection from "@/components/home/LatestSermonSection";
 import WhatsOnSection from "@/components/home/WhatsOnSection";
@@ -28,6 +29,7 @@ export default async function HomePageBody({
     <>
       <HomeOverscrollColor />
       <HeroSection />
+      <ServiceTimesBar />
       <MissionSection />
       <LatestSermonSection video={video} quotaExceeded={quotaExceeded} />
       <WhatsOnSection cardVariant={cardVariant} />

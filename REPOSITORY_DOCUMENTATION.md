@@ -1,7 +1,7 @@
 # Destiny Church Tees Valley — Complete Repository Documentation
 
-**Version:** 1.0.15  
-**Last Updated:** September 16, 2026  
+**Version:** 1.0.16  
+**Last Updated:** September 18, 2026  
 **Repository:** Square Media Group — destinychurch  
 
 This document provides a comprehensive explanation of every major component, line of code purpose, architecture decisions, and how the system works from end-to-end.
@@ -2255,6 +2255,9 @@ without an auth check, so they must never be reachable on the live site.
 | `/jobs` | `app/jobs/page.tsx` | Job listings |
 | `/jobs/[slug]` | `app/jobs/[slug]/page.tsx` | Job detail page |
 | `/training` | `app/training/page.tsx` | `/training` resource library — category → subgroup (optional password) → post |
+| `/training/[categorySlug]` | `app/training/[categorySlug]/page.tsx` | A training category — its subgroups |
+| `/training/[categorySlug]/[subgroupSlug]` | `app/training/[categorySlug]/[subgroupSlug]/page.tsx` | A subgroup's post list (may prompt for the subgroup password) |
+| `/training/[categorySlug]/[subgroupSlug]/[postSlug]` | `app/training/[categorySlug]/[subgroupSlug]/[postSlug]/page.tsx` | A single training post — course material with progress tracking and timed modules |
 | `/baptism` | `app/baptism/page.tsx` | Baptism sign-up |
 | `/child-dedication` | `app/child-dedication/page.tsx` | Child dedication request |
 | `/volunteer` | `app/volunteer/page.tsx` | Volunteer sign-up form |
@@ -2291,7 +2294,9 @@ Each section requires a specific access-level role (see
 | `/admin/analytics` | `app/admin/analytics/page.tsx` | Which links, QR codes and tiles people actually use, plus whole-site traffic. Three tabs: Short links, In person (`/nfc` + `/links`), Whole site (Vercel Web Analytics) |
 | `/admin/cache` | `app/admin/cache/page.tsx` | Invalidate ISR cache |
 | `/admin/posts` | `app/admin/posts/page.tsx` | Standalone content pages |
-| `/admin/training` | `app/admin/training/page.tsx` | Training categories → subgroups → posts |
+| `/admin/training` | `app/admin/training/page.tsx` | Training top level — manage categories |
+| `/admin/training/[categoryId]` | `app/admin/training/[categoryId]/page.tsx` | A category's subgroups — add/edit/reorder the subgroups inside one training category |
+| `/admin/training/[categoryId]/[subgroupId]` | `app/admin/training/[categoryId]/[subgroupId]/page.tsx` | A subgroup's folders and posts — the course-material editor, with fuzzy search over posts |
 | `/admin/alpha` | `app/admin/alpha/page.tsx` | Manage Alpha **and Youth Alpha** events — wrapper over `CourseAdminPage` |
 | `/admin/bible-course` | `app/admin/bible-course/page.tsx` | Manage The Bible Course events — wrapper over `CourseAdminPage` |
 | `/admin/cap-money` | `app/admin/cap-money/page.tsx` | Manage CAP Money Course events — wrapper over `CourseAdminPage` |
@@ -2301,8 +2306,14 @@ Each section requires a specific access-level role (see
 | `/admin/event-popup` | `app/admin/event-popup/page.tsx` | Copy for the popup advertising the featured event (writes `popup_*` on the same row) |
 | `/admin/nfc` | `app/admin/nfc/page.tsx` | Tiles on the `/nfc` page — add/edit/reorder/hide. A ChurchSuite form embed, artwork + copy + CTA, or an event picked from the live calendar (events without a framable signup are shown disabled with the reason) |
 | `/admin/hr` | `app/admin/hr/page.tsx` | HR dashboard (staff, leave, jobs, documents, reviews, checklists) (HR Admin) |
-| `/admin/hr/checklists` | `app/admin/hr/checklists/page.tsx` | Onboarding/offboarding checklist templates (HR Admin) |
+| `/admin/hr/staff` | `app/admin/hr/staff/page.tsx` | Staff directory — searchable list of every staff record, filterable by employment type and status (HR Admin) |
 | `/admin/hr/staff/[id]` | `app/admin/hr/staff/[id]/page.tsx` | Staff record — profile, leave, reviews, documents, live checklists (HR Admin) |
+| `/admin/hr/leave` | `app/admin/hr/leave/page.tsx` | Leave queue — pending/approved requests across all staff, approve/decline with remaining-balance context (HR Admin) |
+| `/admin/hr/jobs` | `app/admin/hr/jobs/page.tsx` | Job board editor — create/edit/close listings that feed the public `/jobs` page (HR Admin) |
+| `/admin/hr/applications` | `app/admin/hr/applications/page.tsx` | Job applications — review submissions and move each through its status pipeline (HR Admin) |
+| `/admin/hr/documents` | `app/admin/hr/documents/page.tsx` | Documents — upload/categorise staff and org-wide files surfaced in `/portal` (HR Admin) |
+| `/admin/hr/reviews` | `app/admin/hr/reviews/page.tsx` | Reviews — schedule and record staff performance/probation reviews (HR Admin) |
+| `/admin/hr/checklists` | `app/admin/hr/checklists/page.tsx` | Onboarding/offboarding checklist templates (HR Admin) |
 | `/portal` | `app/portal/page.tsx` | Staff self-service — own profile, leave requests + balance, documents. Separate auth boundary from `/admin`; see [Authorization Layers](#authorization-layers) |
 | `/portal/leave` | `app/portal/leave/page.tsx` | Staff self-service — request and withdraw own leave |
 | `/portal/documents` | `app/portal/documents/page.tsx` | Staff self-service — download own + org-wide documents |
@@ -2333,7 +2344,7 @@ that one list, so adding a section means editing one file.
 is replaced by `components/admin/AdminTabBar.tsx`, pinned to the bottom of the
 viewport — the shape phones actually use, and one tap per section instead of the
 hamburger drawer's two or three. A tab is a *group*, not a page: a super admin
-can see around thirty-five pages but only eleven groups, so `tabsFor(roles)`
+can see around forty pages but only eleven groups, so `tabsFor(roles)`
 projects `ADMIN_GROUPS` down to one tab per top-level entry. Ungrouped items
 (Dashboard, Posts, Training, Simulated Live, Live Chat) are their own tabs, a
 group left with one visible item collapses to a plain link, and a group with
@@ -3043,8 +3054,42 @@ stay: they're consent and legal, not chrome.
 - `ReportBugLink.tsx` — a "Report a Bug" link rendered in `ChurchFooter.tsx`. Opens an accessible in-app modal (Escape-to-close, body-scroll lock) with a small form: **Full Name**, **Email**, and **How to reproduce**. On submit it captures the current `window.location.href` as `pageUrl` and calls the `submitBugReport` server action, showing inline loading / success / error states.
 - `actions.ts` — `submitBugReport(formData)` server action. Validates name/email/steps, then uses `GITHUB_TOKEN` to open a GitHub Issue on `SquareMediaGroup/destinychurch` via the GitHub REST API (`POST /repos/.../issues`), titled `Bug Report: <name>` with the reporter, page URL, and reproduction steps in the body. Returns `{ success, error? }`; a missing `GITHUB_TOKEN` yields a friendly server-misconfiguration error. **Requires the `GITHUB_TOKEN` env var** (see Configuration).
 
+#### About Page (`components/about/*`)
+- `AboutHero.tsx` — the About page hero band.
+- `AboutMissionStatement.tsx` — the `#mission` mission-statement section (white background).
+- `MagnifySection.tsx` — the church's guiding pillars, rendered from a local `pillars` list.
+- `BeliefsSection.tsx` — a summary of core beliefs, linking through to `/beliefs`.
+- `MeetPastorsSection.tsx` — the lead pastors introduction on a dark gradient panel.
+- `TeamSection.tsx` — the staff/leadership grid, built from a local team list (name, role, photo, email); cards are off-white by default and pick up colour on hover.
+- `AboutGovernanceNote.tsx` — a short governance/transparency note pointing to `/governance`.
+
+#### Visit (`components/visit/*`)
+- `VisitSlideshow.tsx` — a client, auto-advancing photo slideshow of church life used on the Plan-a-Visit page.
+
+#### Alpha (`components/alpha/*`)
+- `AlphaTopics.tsx` — a client, expandable list of the big questions Alpha explores (each an accordion of question + description), with `AnimateIn` reveals.
+
 #### Home Page (`components/home/*`)
-- `HeroSection.tsx` — Main hero banner with video/image
+- `HomePageBody.tsx` — the whole homepage composition, extracted as a server
+  component so the real page (`app/page.tsx`) and the variant-preview route
+  (`app/home/page.tsx`) render identical markup with a different event-card
+  treatment (`cardVariant`) rather than duplicating the layout. It resolves the
+  latest sermon once — `getLatestVideo()`, falling back to `getLatestVideoFromRSS()`
+  when the YouTube quota is exceeded — and renders, in order: `HomeOverscrollColor`,
+  `HeroSection`, `MissionSection`, `LatestSermonSection`, `WhatsOnSection`,
+  `EveryoneHasAPlaceSection`, `WorshipWithUsSection`, `GetInvolvedSection`.
+- `HomeOverscrollColor.tsx` — a render-nothing client component that sets
+  `document.documentElement.style.background` to Destiny orange (`#F58021`) on
+  mount and restores it on unmount, so the overscroll/rubber-band area at the top
+  of the homepage matches the hero rather than flashing white.
+- `HeroSection.tsx` — main hero banner with video/image.
+- `MissionSection.tsx` — centered "Our Mission" statement with the lead pastors'
+  avatar, on a white background.
+- `LatestSermonSection.tsx` — dark image banner (rounded-3xl card, blurred
+  backdrop, left-to-right black gradient, orange + ghost buttons) showing the most
+  recent sermon. Title and speaker come pre-parsed from `video` (see
+  `lib/sermonTitle.ts`); the Watch button links to `/sermons/[id]`, or straight to
+  YouTube when the quota is exceeded. Renders nothing when there is no video.
 - `WhatsOnSection.tsx` — the What's On block, all inside the `max-w-7xl`
   container: header + "View Church Calendar", the event carousel (max 6 events,
   featured one pinned first), and the "View All" button. Falls back to three
@@ -3055,9 +3100,14 @@ stay: they're consent and legal, not chrome.
   arrows use `top-3 bottom-10 my-auto` rather than `top-1/2` so that asymmetric
   padding doesn't push them below the card midline, and the track's negative
   margin tracks the container padding at `lg` (`-mx-8`, not a fixed `-mx-4`).
-- `MinistriesGrid.tsx` — Ministry cards (kids, youth, etc.)
-- `UpcomingSermons.tsx` — Latest sermons carousel
-- `CTAButtons.tsx` — Prominent call-to-action buttons
+- `EveryoneHasAPlaceSection.tsx` — a grid of ministry entry points (Kids, Youth,
+  Young Adults, Connect Groups) with photo, blurb, and link, each revealed with
+  `AnimateIn`.
+- `WorshipWithUsSection.tsx` — full-bleed "Worship With Us" banner (rounded-3xl,
+  lazy-loaded blurred background photo, left-to-right black gradient) inviting
+  visitors to a service.
+- `GetInvolvedSection.tsx` — two-up cards ("Get Connected" → `/connect`, "Join a
+  Team" → `/serve`) on a white background, each with photo, blurb, and CTA.
 
 #### Shop (`components/shop/*`)
 - `ShopProductGrid.tsx` — client wrapper around the `/shop` grid; derives a category

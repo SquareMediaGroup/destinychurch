@@ -17,7 +17,7 @@ export default function CoursesSection({
   const gridIds = COURSE_ORDER.filter((id) => id !== featured.id);
 
   return (
-    <section id="courses" className="bg-[#f5f7fa] py-16">
+    <section id="courses" className="bg-surface-muted py-16 sm:py-20">
       <div className="mx-auto max-w-7xl px-4 lg:px-8">
         <AnimateIn>
           <h2 className="mb-10 text-3xl font-black text-destiny-grey md:text-4xl">

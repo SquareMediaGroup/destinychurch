@@ -84,7 +84,7 @@ export default function EventsGrid({
   const hasResults = flat.length > 0;
 
   return (
-    <section id="events" className="bg-white py-12">
+    <section id="events" className="bg-white py-12 sm:py-16">
       <div className="mx-auto max-w-7xl px-4 lg:px-8">
         {/* Search + grouping toggle */}
         <div className="mb-8 flex flex-col gap-3 sm:flex-row sm:items-center">

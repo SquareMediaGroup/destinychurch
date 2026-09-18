@@ -41,7 +41,7 @@ export default function DevBlocksPage() {
   return (
     <main className="mx-auto max-w-3xl px-4 py-16">
       <h1 className="text-2xl font-black text-destiny-grey">Block gallery</h1>
-      <p className="mt-1 text-sm text-destiny-grey/55">
+      <p className="mt-1 text-sm text-subtle">
         Development only. {BLOCK_LIST.length} block
         {BLOCK_LIST.length === 1 ? "" : "s"} rendered through RichContent at
         their default settings.

@@ -6,7 +6,7 @@ import { submitApplication } from "./actions";
 const inputClass =
   "w-full rounded-xl border border-black/10 bg-white px-4 py-3 text-sm text-destiny-grey outline-none transition placeholder:text-destiny-grey/35 focus:border-destiny-orange/50 focus:ring-2 focus:ring-destiny-orange/15";
 const labelClass =
-  "mb-1.5 block text-xs font-bold uppercase tracking-wider text-destiny-grey/45";
+  "mb-1.5 block text-xs font-bold uppercase tracking-wider text-subtle";
 
 export default function ApplyForm({
   jobId,
@@ -45,7 +45,7 @@ export default function ApplyForm({
           </span>
         </div>
         <h3 className="text-xl font-black text-destiny-grey">Application received</h3>
-        <p className="mx-auto mt-2 max-w-sm text-sm leading-relaxed text-destiny-grey/60">
+        <p className="mx-auto mt-2 max-w-sm text-sm leading-relaxed text-muted">
           Thank you for applying for {jobTitle}. Our team will be in touch if your
           experience is a good fit for the role.
         </p>
@@ -113,9 +113,9 @@ export default function ApplyForm({
           name="cv"
           type="file"
           accept=".pdf,.doc,.docx"
-          className="block w-full text-sm text-destiny-grey/70 file:mr-3 file:rounded-lg file:border-0 file:bg-destiny-orange/10 file:px-4 file:py-2.5 file:text-sm file:font-bold file:text-destiny-orange"
+          className="block w-full text-sm text-muted file:mr-3 file:rounded-lg file:border-0 file:bg-destiny-orange/10 file:px-4 file:py-2.5 file:text-sm file:font-bold file:text-destiny-orange"
         />
-        <p className="mt-1.5 text-xs text-destiny-grey/40">
+        <p className="mt-1.5 text-xs text-subtle">
           PDF or Word, up to 10MB.
         </p>
       </div>

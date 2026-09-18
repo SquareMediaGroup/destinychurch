@@ -60,7 +60,7 @@ export default function PastHighlightsSlideshow({ videos }: { videos: Video[] })
             {/* Title + nav arrows */}
             <div className="absolute inset-x-0 bottom-0 flex items-end justify-between p-5">
               <div className="text-left">
-                <p className="text-xs font-bold uppercase tracking-widest text-white/60">Past Highlight</p>
+                <p className="text-xs font-bold uppercase tracking-widest text-on-dark-muted">Past Highlight</p>
                 <h3 className="mt-1 max-w-lg text-lg font-black text-white line-clamp-2 md:text-xl">
                   {current.title}
                 </h3>

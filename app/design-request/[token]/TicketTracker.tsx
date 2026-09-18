@@ -20,8 +20,8 @@ const STATUS_COLOR: Record<DesignTicketStatus, string> = {
   in_progress: "bg-orange-100 text-orange-700",
   delivered: "bg-green-100 text-green-700",
   changes_requested: "bg-red-100 text-red-700",
-  closed: "bg-black/8 text-destiny-grey/70",
-  cancelled: "bg-black/8 text-destiny-grey/70",
+  closed: "bg-black/8 text-muted",
+  cancelled: "bg-black/8 text-muted",
 };
 
 function when(iso: string): string {
@@ -123,19 +123,19 @@ export default function TicketTracker({
             {DESIGN_STATUS_LABELS[view.status]}
           </span>
           {view.revision > 1 ? (
-            <span className="rounded-full bg-black/5 px-3 py-1 text-xs font-bold text-destiny-grey/60">
+            <span className="rounded-full bg-black/5 px-3 py-1 text-xs font-bold text-muted">
               Round {view.revision}
             </span>
           ) : null}
         </div>
 
         <h1 className="mt-4 text-3xl font-black text-destiny-grey">{view.title}</h1>
-        <p className="mt-2 text-sm leading-relaxed text-destiny-grey/60">
+        <p className="mt-2 text-sm leading-relaxed text-muted">
           {DESIGN_STATUS_BLURB[view.status]}
         </p>
 
         {view.designer_name && view.status !== "open" ? (
-          <p className="mt-4 flex items-center gap-2 text-sm text-destiny-grey/70">
+          <p className="mt-4 flex items-center gap-2 text-sm text-muted">
             <span className="material-symbols-rounded text-lg text-destiny-orange">person</span>
             <span>
               <span className="font-bold text-destiny-grey">{view.designer_name}</span> is looking
@@ -145,7 +145,7 @@ export default function TicketTracker({
         ) : null}
 
         {view.resolution_note ? (
-          <p className="mt-4 rounded-2xl bg-[#f5f7fa] px-4 py-3 text-sm text-destiny-grey/70">
+          <p className="mt-4 rounded-2xl bg-[#f5f7fa] px-4 py-3 text-sm text-muted">
             {view.resolution_note}
           </p>
         ) : null}
@@ -159,7 +159,7 @@ export default function TicketTracker({
             {revisions.map((rev) => (
               <div key={rev}>
                 {revisions.length > 1 ? (
-                  <p className="mb-2 text-xs font-bold uppercase tracking-wider text-destiny-grey/40">
+                  <p className="mb-2 text-xs font-bold uppercase tracking-wider text-subtle">
                     {rev === view.revision ? "Latest" : `Round ${rev}`}
                   </p>
                 ) : null}
@@ -194,7 +194,7 @@ export default function TicketTracker({
                                 <span className="block truncate text-sm font-bold text-destiny-grey">
                                   {file.file_name}
                                 </span>
-                                <span className="block text-xs text-destiny-grey/50">
+                                <span className="block text-xs text-subtle">
                                   Confirmed — will be removed automatically in about 48 hours
                                 </span>
                               </span>
@@ -222,7 +222,7 @@ export default function TicketTracker({
                                 <span className="block truncate text-sm font-bold text-destiny-grey">
                                   {file.file_name}
                                 </span>
-                                <span className="block text-xs text-destiny-grey/50">
+                                <span className="block text-xs text-subtle">
                                   {confirmingId === file.id
                                     ? "Downloading…"
                                     : file.size_bytes
@@ -262,7 +262,7 @@ export default function TicketTracker({
       {canRequestChanges || canClose ? (
         <div className="rounded-3xl border border-black/5 bg-white p-8 shadow-sm">
           <h2 className="mb-1 text-lg font-black text-destiny-grey">How does it look?</h2>
-          <p className="mb-5 text-sm text-destiny-grey/60">
+          <p className="mb-5 text-sm text-muted">
             If it&apos;s right, close it off. If not, tell us what to change.
           </p>
 
@@ -327,7 +327,7 @@ export default function TicketTracker({
           )}
 
           {view.change_requests_used >= MAX_CHANGE_REQUESTS ? (
-            <p className="mt-4 text-sm text-destiny-grey/60">
+            <p className="mt-4 text-sm text-muted">
               This one has been round a few times — it&apos;s probably quicker to speak to the
               design team directly now.
             </p>
@@ -340,35 +340,35 @@ export default function TicketTracker({
         <h2 className="mb-4 text-lg font-black text-destiny-grey">What you asked for</h2>
         <dl className="space-y-4 text-sm">
           <div>
-            <dt className="text-xs font-bold uppercase tracking-wider text-destiny-grey/40">
+            <dt className="text-xs font-bold uppercase tracking-wider text-subtle">
               Brief
             </dt>
-            <dd className="mt-1 whitespace-pre-wrap leading-relaxed text-destiny-grey/70">
+            <dd className="mt-1 whitespace-pre-wrap leading-relaxed text-muted">
               {view.brief}
             </dd>
           </div>
           <div>
-            <dt className="text-xs font-bold uppercase tracking-wider text-destiny-grey/40">
+            <dt className="text-xs font-bold uppercase tracking-wider text-subtle">
               Type
             </dt>
-            <dd className="mt-1 text-destiny-grey/70">
+            <dd className="mt-1 text-muted">
               {DESIGN_CATEGORY_LABELS[view.category]}
             </dd>
           </div>
           {view.needed_by ? (
             <div>
-              <dt className="text-xs font-bold uppercase tracking-wider text-destiny-grey/40">
+              <dt className="text-xs font-bold uppercase tracking-wider text-subtle">
                 Needed by
               </dt>
-              <dd className="mt-1 text-destiny-grey/70">{when(view.needed_by)}</dd>
+              <dd className="mt-1 text-muted">{when(view.needed_by)}</dd>
             </div>
           ) : null}
           {view.specs ? (
             <div>
-              <dt className="text-xs font-bold uppercase tracking-wider text-destiny-grey/40">
+              <dt className="text-xs font-bold uppercase tracking-wider text-subtle">
                 Sizes and formats
               </dt>
-              <dd className="mt-1 whitespace-pre-wrap leading-relaxed text-destiny-grey/70">
+              <dd className="mt-1 whitespace-pre-wrap leading-relaxed text-muted">
                 {view.specs}
               </dd>
             </div>
@@ -391,25 +391,25 @@ export default function TicketTracker({
                       ? "Changes requested"
                       : "Note"}
                   {event.actor_name ? (
-                    <span className="font-normal text-destiny-grey/50">
+                    <span className="font-normal text-subtle">
                       {" "}
                       · {event.actor_name}
                     </span>
                   ) : null}
                 </p>
                 {event.body ? (
-                  <p className="mt-0.5 whitespace-pre-wrap text-sm leading-relaxed text-destiny-grey/60">
+                  <p className="mt-0.5 whitespace-pre-wrap text-sm leading-relaxed text-muted">
                     {event.body}
                   </p>
                 ) : null}
-                <p className="mt-0.5 text-xs text-destiny-grey/40">{when(event.created_at)}</p>
+                <p className="mt-0.5 text-xs text-subtle">{when(event.created_at)}</p>
               </div>
             </li>
           ))}
         </ol>
       </div>
 
-      <p className="pb-8 text-center text-xs text-destiny-grey/40">
+      <p className="pb-8 text-center text-xs text-subtle">
         Keep this link — it&apos;s how you get back to your files. Requested by{" "}
         {view.requester_name} on {when(view.created_at)}.
       </p>

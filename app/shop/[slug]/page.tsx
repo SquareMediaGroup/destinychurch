@@ -56,12 +56,12 @@ export default async function ProductPage({
 
       <div className="relative mx-auto max-w-6xl px-5 pb-28 pt-10 sm:px-8 lg:pt-16">
         {/* Breadcrumb */}
-        <nav className="mb-8 flex items-center gap-1.5 text-sm text-destiny-grey/50">
+        <nav className="mb-8 flex items-center gap-1.5 text-sm text-subtle">
           <Link href="/shop" className="font-semibold transition hover:text-destiny-orange">
             Shop
           </Link>
           <span className="material-symbols-rounded text-base">chevron_right</span>
-          <span className="truncate text-destiny-grey/70">{product.name}</span>
+          <span className="truncate text-muted">{product.name}</span>
         </nav>
 
         <div className="grid grid-cols-1 gap-10 lg:grid-cols-2 lg:gap-14">
@@ -83,14 +83,14 @@ export default async function ProductPage({
 
             {product.description && (
               <div className="mt-10 border-t border-black/10 pt-8">
-                <h2 className="text-xs font-bold uppercase tracking-[0.2em] text-destiny-grey/50">
+                <h2 className="text-xs font-bold uppercase tracking-[0.2em] text-subtle">
                   Details
                 </h2>
                 {/* jsonLd off: this page already emits its own Product entity
                     below, and a second <script> would compete with it. */}
                 <RichContent
                   html={product.description}
-                  className="rte-content mt-3 text-sm leading-relaxed text-destiny-grey/70"
+                  className="rte-content mt-3 text-sm leading-relaxed text-muted"
                   jsonLd={false}
                 />
               </div>

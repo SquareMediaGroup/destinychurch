@@ -39,7 +39,7 @@ export default async function TrainingPage() {
             <h1 className="text-5xl font-black text-white md:text-6xl">
               Training
             </h1>
-            <p className="mx-auto mt-4 max-w-xl text-base text-white/65 md:text-lg">
+            <p className="mx-auto mt-4 max-w-xl text-base text-on-dark-muted md:text-lg">
               Everything you need to serve with confidence. Choose your team
               below — some areas are password protected for those who serve on
               them.
@@ -52,7 +52,7 @@ export default async function TrainingPage() {
       <section className="bg-white pb-24 pt-8">
         <div className="mx-auto max-w-5xl px-4 lg:px-8">
           {categories.length === 0 ? (
-            <p className="py-16 text-center text-destiny-grey/55">
+            <p className="py-16 text-center text-subtle">
               Training content is coming soon.
             </p>
           ) : (
@@ -72,11 +72,11 @@ export default async function TrainingPage() {
                       {category.name}
                     </h2>
                     {category.description && (
-                      <p className="mt-1 flex-1 text-sm leading-snug text-destiny-grey/55">
+                      <p className="mt-1 flex-1 text-sm leading-snug text-subtle">
                         {category.description}
                       </p>
                     )}
-                    <div className="mt-4 flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-destiny-grey/40">
+                    <div className="mt-4 flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-subtle">
                       {category.subgroups.length}{" "}
                       {category.subgroups.length === 1 ? "group" : "groups"}
                       <span className="material-symbols-rounded ml-auto text-base text-destiny-orange transition group-hover:translate-x-0.5">

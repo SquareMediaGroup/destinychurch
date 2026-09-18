@@ -60,7 +60,7 @@ export default function DataGdprPage() {
         <AnimateIn>
           <p className="mb-2 text-xs font-bold uppercase tracking-widest text-destiny-orange">Legal</p>
           <h1 className="mb-2 text-4xl font-black text-destiny-grey md:text-5xl">Data &amp; GDPR Policy</h1>
-          <p className="mb-12 text-sm text-destiny-grey/40">Last modified: March 2026</p>
+          <p className="mb-12 text-sm text-subtle">Last modified: March 2026</p>
         </AnimateIn>
 
         <div className="space-y-10">
@@ -70,7 +70,7 @@ export default function DataGdprPage() {
                 <h2 className="mb-3 text-xl font-black text-destiny-grey">{section.title}</h2>
                 <div className="space-y-3">
                   {section.content.split("\n\n").map((para, j) => (
-                    <p key={j} className="text-sm leading-relaxed text-destiny-grey/70 whitespace-pre-line">
+                    <p key={j} className="text-sm leading-relaxed text-muted whitespace-pre-line">
                       {para}
                     </p>
                   ))}

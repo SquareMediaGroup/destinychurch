@@ -316,6 +316,40 @@ body {
   h3 {
     font-family: var(--font-heading);
   }
+
+  /*
+    Keyboard focus indicator.
+
+    There was no `:focus-visible` rule anywhere in this file, and only
+    `components/ui/Button.tsx` shipped a focus ring of its own — against 469
+    raw `<button>` elements, 191 styled `<Link>`s and 123 hand-rolled orange
+    pills. Worse, `outline-none` appears 102 times without any replacement
+    indicator, which does not merely leave the browser default in place: it
+    removes it. Tabbing through the site was largely invisible.
+
+    A base-layer rule covers every one of those at once. `:focus-visible`
+    rather than `:focus` so a mouse click on a button does not leave a ring
+    behind — the browser's own heuristic decides, which is what it is for.
+
+    Two `outline` properties rather than a `box-shadow`: an outline follows the
+    element's border radius in every current browser, is not clipped by
+    `overflow: hidden` ancestors (the glass pills and carousels are full of
+    them), and stays visible in forced-colors mode. The offset keeps it clear
+    of the element's own border.
+
+    A component that needs a different ring — the dark chrome, or a control on
+    photography — overrides it with a `focus-visible:` utility, which wins
+    because utilities are layered above base.
+  */
+  :focus-visible {
+    outline: 2px solid var(--color-destiny-orange);
+    outline-offset: 2px;
+  }
+
+  /* Anything already carrying its own ring keeps it, without doubling up. */
+  :where(.focus-visible\:ring-2, .focus-visible\:ring-1):focus-visible {
+    outline: none;
+  }
 }
 
 @keyframes mission-wipe-in {

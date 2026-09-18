@@ -11,7 +11,7 @@ export default function GovernanceHero() {
           <h1 className="mb-5 text-4xl font-black text-destiny-grey md:text-5xl">
             Governance &amp; Registration
           </h1>
-          <p className="text-base leading-relaxed text-destiny-grey/60">
+          <p className="text-base leading-relaxed text-muted">
             Destiny Church Tees Valley is a registered charity in England and
             Wales and a company limited by guarantee. The details on this page
             are drawn directly from the public registers held by the Charity

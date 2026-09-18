@@ -62,7 +62,7 @@ export default function BeliefsPage() {
               <h1 className="text-5xl font-black text-white md:text-6xl lg:text-7xl">
                 Our Beliefs
               </h1>
-              <p className="mt-4 text-base text-white/70 md:text-lg">
+              <p className="mt-4 text-base text-on-dark-muted md:text-lg">
                 What we believe as a church and why it matters
               </p>
             </AnimateIn>
@@ -105,7 +105,7 @@ export default function BeliefsPage() {
                   <h3 className="mb-4 text-2xl font-black text-destiny-grey md:text-3xl">
                     {belief.title}
                   </h3>
-                  <p className="text-base leading-relaxed text-destiny-grey/70 md:text-lg">
+                  <p className="text-base leading-relaxed text-muted md:text-lg">
                     {belief.body}
                   </p>
                 </div>

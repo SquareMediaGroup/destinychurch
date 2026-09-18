@@ -284,7 +284,7 @@ export default function SmartSearchWidget({
             disabled={loading}
             maxLength={300}
             tabIndex={expanded ? 0 : -1}
-            className="relative z-10 h-full w-full rounded-full bg-transparent py-3.5 pl-5 pr-20 text-sm text-white placeholder:text-white/50 focus:outline-none disabled:opacity-60"
+            className="relative z-10 h-full w-full rounded-full bg-transparent py-3.5 pl-5 pr-20 text-sm text-white placeholder:text-on-dark-subtle focus:outline-none disabled:opacity-60"
           />
           {/* Clear / loading indicator */}
           {loading ? (
@@ -300,7 +300,7 @@ export default function SmartSearchWidget({
                 setInput("");
                 inputRef.current?.focus();
               }}
-              className="absolute right-12 top-1/2 z-20 -translate-y-1/2 text-xs font-medium text-white/40 transition hover:text-white/70"
+              className="absolute right-12 top-1/2 z-20 -translate-y-1/2 text-xs font-medium text-on-dark-subtle transition hover:text-on-dark-muted"
               aria-label="Clear input"
             >
               Clear
@@ -311,7 +311,7 @@ export default function SmartSearchWidget({
             type="button"
             onClick={collapse}
             tabIndex={expanded ? 0 : -1}
-            className="absolute right-3 top-1/2 z-20 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full text-white/50 transition hover:bg-white/10 hover:text-white"
+            className="absolute right-3 top-1/2 z-20 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full text-on-dark-subtle transition hover:bg-white/10 hover:text-white"
             aria-label="Close Smart Search"
           >
             <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
@@ -370,7 +370,7 @@ export default function SmartSearchWidget({
                     key={page.href}
                     href={page.href}
                     onClick={collapse}
-                    className="group flex items-center gap-3 px-4 py-3 text-sm text-white/60 transition hover:bg-white/8 hover:text-white"
+                    className="group flex items-center gap-3 px-4 py-3 text-sm text-on-dark-muted transition hover:bg-white/8 hover:text-white"
                   >
                     <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-white/8 text-white/30 transition group-hover:bg-destiny-orange/20 group-hover:text-destiny-orange">
                       <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>

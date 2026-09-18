@@ -148,7 +148,7 @@ export default function NfcTileModal({
               {tile.title}
             </p>
             {tile.subtitle && (
-              <p className="mt-0.5 truncate text-xs text-destiny-grey/50">
+              <p className="mt-0.5 truncate text-xs text-subtle">
                 {tile.subtitle}
               </p>
             )}
@@ -158,7 +158,7 @@ export default function NfcTileModal({
             type="button"
             onClick={onClose}
             aria-label="Close"
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-destiny-grey/40 transition hover:bg-gray-100 hover:text-destiny-grey"
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-subtle transition hover:bg-gray-100 hover:text-destiny-grey"
           >
             <span className="material-symbols-rounded text-xl">close</span>
           </button>
@@ -203,7 +203,7 @@ export default function NfcTileModal({
             )}
             <div className="flex flex-col items-start gap-5 p-6 sm:p-8">
               {tile.body && (
-                <p className="whitespace-pre-line text-sm leading-relaxed text-destiny-grey/70">
+                <p className="whitespace-pre-line text-sm leading-relaxed text-muted">
                   {tile.body}
                 </p>
               )}

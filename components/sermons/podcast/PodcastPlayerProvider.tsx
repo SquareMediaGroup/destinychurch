@@ -305,7 +305,7 @@ export function PodcastPlayerProvider({
               </button>
               {/* Desktop scrubber (mobile uses the bottom progress line + tap-to-expand) */}
               <div className="mt-1.5 hidden items-center gap-2 sm:flex">
-                <span className="w-9 shrink-0 text-right font-mono text-[10px] tabular-nums text-white/40">
+                <span className="w-9 shrink-0 text-right font-mono text-[10px] tabular-nums text-on-dark-subtle">
                   {formatClock(currentTime)}
                 </span>
                 <Scrubber
@@ -317,7 +317,7 @@ export function PodcastPlayerProvider({
                     seekTo(f);
                   }}
                 />
-                <span className="w-9 shrink-0 font-mono text-[10px] tabular-nums text-white/40">
+                <span className="w-9 shrink-0 font-mono text-[10px] tabular-nums text-on-dark-subtle">
                   {formatClock(duration)}
                 </span>
               </div>
@@ -327,7 +327,7 @@ export function PodcastPlayerProvider({
             <div className="flex shrink-0 items-center gap-1 sm:gap-1.5">
               <button
                 onClick={() => seekBy(-15)}
-                className="hidden h-9 w-9 items-center justify-center rounded-full text-white/60 transition hover:bg-white/10 hover:text-white sm:flex"
+                className="hidden h-9 w-9 items-center justify-center rounded-full text-on-dark-muted transition hover:bg-white/10 hover:text-white sm:flex"
                 aria-label="Rewind 15 seconds"
               >
                 <span className="material-symbols-rounded text-[22px]">
@@ -345,7 +345,7 @@ export function PodcastPlayerProvider({
               </button>
               <button
                 onClick={() => seekBy(30)}
-                className="hidden h-9 w-9 items-center justify-center rounded-full text-white/60 transition hover:bg-white/10 hover:text-white sm:flex"
+                className="hidden h-9 w-9 items-center justify-center rounded-full text-on-dark-muted transition hover:bg-white/10 hover:text-white sm:flex"
                 aria-label="Forward 30 seconds"
               >
                 <span className="material-symbols-rounded text-[22px]">
@@ -354,14 +354,14 @@ export function PodcastPlayerProvider({
               </button>
               <button
                 onClick={cycleSpeed}
-                className="ml-0.5 hidden h-9 min-w-[44px] items-center justify-center rounded-full border border-white/15 px-2 font-mono text-xs font-bold text-white/70 transition hover:border-white/40 hover:text-white sm:flex"
+                className="ml-0.5 hidden h-9 min-w-[44px] items-center justify-center rounded-full border border-white/15 px-2 font-mono text-xs font-bold text-on-dark-muted transition hover:border-white/40 hover:text-white sm:flex"
                 aria-label="Playback speed"
               >
                 {SPEEDS[speedIdx]}×
               </button>
               <button
                 onClick={handleShare}
-                className="hidden h-9 w-9 items-center justify-center rounded-full text-white/60 transition hover:bg-white/10 hover:text-white sm:flex"
+                className="hidden h-9 w-9 items-center justify-center rounded-full text-on-dark-muted transition hover:bg-white/10 hover:text-white sm:flex"
                 aria-label="Share episode"
               >
                 <span className="material-symbols-rounded text-[20px]">
@@ -395,7 +395,7 @@ export function PodcastPlayerProvider({
                   keyboard_arrow_down
                 </span>
               </button>
-              <span className="text-[11px] font-bold uppercase tracking-[0.3em] text-white/50">
+              <span className="text-[11px] font-bold uppercase tracking-[0.3em] text-on-dark-subtle">
                 Now Playing
               </span>
               <span className="h-10 w-10" aria-hidden />
@@ -422,14 +422,14 @@ export function PodcastPlayerProvider({
                   <h2 className="text-xl font-black leading-snug text-white line-clamp-3">
                     {current.title}
                   </h2>
-                  <p className="mt-1 truncate text-sm text-white/50">
+                  <p className="mt-1 truncate text-sm text-on-dark-subtle">
                     {current.speaker ?? "Destiny Church Tees Valley"}
                   </p>
                 </div>
                 <button
                   onClick={handleShare}
                   aria-label="Share episode"
-                  className="mt-1 flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-white/70 transition hover:bg-white/10 hover:text-white"
+                  className="mt-1 flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-on-dark-muted transition hover:bg-white/10 hover:text-white"
                 >
                   <span className="material-symbols-rounded text-[22px]">
                     {copied ? "check" : "ios_share"}
@@ -441,14 +441,14 @@ export function PodcastPlayerProvider({
               {current.summary && (
                 <div className="mt-7">
                   <div className="flex items-center justify-between gap-3">
-                    <h3 className="text-[11px] font-bold uppercase tracking-[0.25em] text-white/40">
+                    <h3 className="text-[11px] font-bold uppercase tracking-[0.25em] text-on-dark-subtle">
                       About this episode
                     </h3>
                     {publishedLabel && (
                       <span className="shrink-0 text-[11px] text-white/35">{publishedLabel}</span>
                     )}
                   </div>
-                  <p className="mt-2 whitespace-pre-line text-sm leading-relaxed text-white/65">
+                  <p className="mt-2 whitespace-pre-line text-sm leading-relaxed text-on-dark-muted">
                     {current.summary}
                   </p>
                 </div>
@@ -470,7 +470,7 @@ export function PodcastPlayerProvider({
                     seekTo(f);
                   }}
                 />
-                <div className="mt-1 flex justify-between font-mono text-[11px] tabular-nums text-white/45">
+                <div className="mt-1 flex justify-between font-mono text-[11px] tabular-nums text-on-dark-subtle">
                   <span>{formatClock(currentTime)}</span>
                   <span>{formatClock(duration)}</span>
                 </div>
@@ -481,7 +481,7 @@ export function PodcastPlayerProvider({
                 <button
                   onClick={cycleSpeed}
                   aria-label="Playback speed"
-                  className="flex h-11 min-w-[52px] items-center justify-center rounded-full border border-white/15 px-3 font-mono text-sm font-bold text-white/70 transition hover:border-white/40 hover:text-white"
+                  className="flex h-11 min-w-[52px] items-center justify-center rounded-full border border-white/15 px-3 font-mono text-sm font-bold text-on-dark-muted transition hover:border-white/40 hover:text-white"
                 >
                   {SPEEDS[speedIdx]}×
                 </button>
@@ -521,7 +521,7 @@ export function PodcastPlayerProvider({
                   <button
                     onClick={handleCast}
                     aria-label="Cast or AirPlay"
-                    className="flex h-11 w-[52px] items-center justify-center rounded-full text-white/70 transition hover:bg-white/10 hover:text-white"
+                    className="flex h-11 w-[52px] items-center justify-center rounded-full text-on-dark-muted transition hover:bg-white/10 hover:text-white"
                   >
                     <span className="material-symbols-rounded text-[26px]">cast</span>
                   </button>

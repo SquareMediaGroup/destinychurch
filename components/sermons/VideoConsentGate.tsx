@@ -42,7 +42,7 @@ export default function VideoConsentGate({
           <p className="text-base font-black text-white">
             Cookies required to play video
           </p>
-          <p className="mt-1 max-w-xs text-sm text-white/50">
+          <p className="mt-1 max-w-xs text-sm text-on-dark-subtle">
             YouTube uses cookies to serve this video. Accept them to watch.
           </p>
         </div>
@@ -55,12 +55,12 @@ export default function VideoConsentGate({
           </button>
           <button
             onClick={() => savePreferences({ media: true, analytics: false })}
-            className="rounded-full border border-white/20 px-5 py-2.5 text-sm font-medium text-white/70 transition hover:border-white/40 hover:text-white"
+            className="rounded-full border border-white/20 px-5 py-2.5 text-sm font-medium text-on-dark-muted transition hover:border-white/40 hover:text-white"
           >
             Necessary + media only, no tracking
           </button>
         </div>
-        <p className="mt-1 max-w-xs text-[11px] leading-relaxed text-white/40">
+        <p className="mt-1 max-w-xs text-[11px] leading-relaxed text-on-dark-subtle">
           By accepting, you agree to our{" "}
           <Link
             href="/privacy"

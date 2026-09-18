@@ -120,7 +120,7 @@ export default function NewHereHero() {
           <AnimateIn delay={100}>
             <button
               onClick={open}
-              className="group mx-auto mb-10 block w-full overflow-hidden rounded-3xl bg-black shadow-2xl transition-transform duration-300 hover:scale-[1.02] focus:outline-none"
+              className="group mx-auto mb-10 block w-full overflow-hidden rounded-3xl bg-black shadow-2xl transition-transform duration-300 hover:scale-[1.02]"
               style={{ maxWidth: 560 }}
               aria-label="Play welcome video"
             >
@@ -192,7 +192,7 @@ export default function NewHereHero() {
                     </div>
                   </div>
                   <p className="text-base font-bold text-white">Welcome Video by Ps Jonathan and Cath</p>
-                  <p className="mt-2 text-sm text-white/50">Video coming soon</p>
+                  <p className="mt-2 text-sm text-on-dark-subtle">Video coming soon</p>
                 </div>
               </div>
             </div>

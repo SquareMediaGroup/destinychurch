@@ -46,7 +46,7 @@ export default function GetInvolvedSection() {
                   <h3 className="mb-3 text-xl font-black text-destiny-orange">
                     {card.title}
                   </h3>
-                  <p className="mb-5 text-sm leading-relaxed text-destiny-grey/70">
+                  <p className="mb-5 text-sm leading-relaxed text-muted">
                     {card.description}
                   </p>
                   <Link

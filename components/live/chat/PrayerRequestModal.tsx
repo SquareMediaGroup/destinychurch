@@ -77,7 +77,7 @@ export default function PrayerRequestModal({
             </span>
           </div>
           <p className="font-black text-destiny-grey">Thank you</p>
-          <p className="mx-auto mt-2 max-w-xs text-sm leading-relaxed text-destiny-grey/60">
+          <p className="mx-auto mt-2 max-w-xs text-sm leading-relaxed text-muted">
             Someone from the team is praying for this. If you&apos;d like a person
             to get back to you, fill in a connect card and we will.
           </p>
@@ -94,7 +94,7 @@ export default function PrayerRequestModal({
           <div>
             <label
               htmlFor="prayer-name"
-              className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-destiny-grey/45"
+              className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-subtle"
             >
               Your name
             </label>
@@ -112,7 +112,7 @@ export default function PrayerRequestModal({
           <div>
             <label
               htmlFor="prayer-body"
-              className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-destiny-grey/45"
+              className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-subtle"
             >
               What can we pray for?
             </label>
@@ -146,7 +146,7 @@ export default function PrayerRequestModal({
             {busy ? "Sending…" : "Send to the prayer team"}
           </button>
 
-          <p className="text-center text-xs leading-relaxed text-destiny-grey/40">
+          <p className="text-center text-xs leading-relaxed text-subtle">
             In an emergency, please contact your GP or call 999. If you need to
             talk to someone now, the Samaritans are on 116 123, free, at any hour.
           </p>

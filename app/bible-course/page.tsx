@@ -147,7 +147,7 @@ export default function BibleCoursePage() {
           />
           <div className="relative flex flex-col items-center justify-center py-[11rem] px-6 md:px-12 text-center">
             <AnimateIn>
-              <p className="mb-5 text-xs font-bold uppercase tracking-[0.32em] text-white/70">
+              <p className="mb-5 text-xs font-bold uppercase tracking-[0.32em] text-on-dark-muted">
                 By Bible Society
               </p>
               <h1 className="mb-8 max-w-3xl text-5xl font-black leading-[0.95] text-white md:text-6xl lg:text-7xl">
@@ -243,7 +243,7 @@ export default function BibleCoursePage() {
                         </span>
                         {cadenceLabel}
                       </div>
-                      <div className="text-[11px] uppercase tracking-[0.2em] text-destiny-grey/50">
+                      <div className="text-[11px] uppercase tracking-[0.2em] text-subtle">
                         {weekday}
                       </div>
                       <div className="mt-1 flex items-baseline gap-3">
@@ -257,7 +257,7 @@ export default function BibleCoursePage() {
                         </span>
                         <span className="text-lg font-black uppercase tracking-wide text-destiny-grey md:text-xl">
                           {month}{" "}
-                          <span className="text-destiny-grey/40">{year}</span>
+                          <span className="text-subtle">{year}</span>
                         </span>
                       </div>
                     </div>
@@ -272,7 +272,7 @@ export default function BibleCoursePage() {
                           </span>
                           Online
                         </div>
-                        <div className="text-[11px] uppercase tracking-[0.2em] text-destiny-grey/50">
+                        <div className="text-[11px] uppercase tracking-[0.2em] text-subtle">
                           Join via
                         </div>
                         <div className="mt-1 text-2xl font-black leading-tight text-destiny-grey md:text-3xl">
@@ -306,7 +306,7 @@ export default function BibleCoursePage() {
                         </div>
                         {event.location ? (
                           <>
-                            <div className="text-[11px] uppercase tracking-[0.2em] text-destiny-grey/50">
+                            <div className="text-[11px] uppercase tracking-[0.2em] text-subtle">
                               Join us at
                             </div>
                             <div className="mt-1 text-2xl font-black leading-tight text-destiny-grey md:text-3xl">
@@ -315,12 +315,12 @@ export default function BibleCoursePage() {
                           </>
                         ) : (
                           <>
-                            <div className="text-[11px] uppercase tracking-[0.2em] text-destiny-grey/50">
+                            <div className="text-[11px] uppercase tracking-[0.2em] text-subtle">
                               Venue
                             </div>
                             <div className="mt-1 flex items-baseline gap-2">
                               <span
-                                className="text-5xl font-normal italic leading-none text-destiny-grey/40 md:text-6xl"
+                                className="text-5xl font-normal italic leading-none text-subtle md:text-6xl"
                                 style={{
                                   fontFamily:
                                     "var(--font-playfair), Georgia, serif",
@@ -366,7 +366,7 @@ export default function BibleCoursePage() {
               <h2 className="mb-6 text-3xl font-black text-destiny-grey md:text-4xl">
                 The whole story, in eight sessions
               </h2>
-              <div className="space-y-4 text-base leading-relaxed text-destiny-grey/70 md:text-lg">
+              <div className="space-y-4 text-base leading-relaxed text-muted md:text-lg">
                 <p>
                   The Bible Course is a brilliant way to explore the world&apos;s
                   best-selling book. Over eight sessions it offers a big-picture
@@ -394,7 +394,7 @@ export default function BibleCoursePage() {
                     sizes="128px"
                   />
                 </div>
-                <p className="text-xs text-destiny-grey/50">
+                <p className="text-xs text-subtle">
                   Created and produced by Bible Society.
                 </p>
               </div>
@@ -410,7 +410,7 @@ export default function BibleCoursePage() {
             <h2 className="mb-3 text-center text-3xl font-black text-destiny-grey md:text-4xl">
               What you&apos;ll explore
             </h2>
-            <p className="mx-auto mb-12 max-w-2xl text-center text-base text-destiny-grey/60">
+            <p className="mx-auto mb-12 max-w-2xl text-center text-base text-muted">
               Eight sessions that walk through the sweep of the Bible&apos;s story.
             </p>
           </AnimateIn>
@@ -430,7 +430,7 @@ export default function BibleCoursePage() {
                   <h3 className="mb-2 text-lg font-black text-destiny-grey">
                     {s.title}
                   </h3>
-                  <p className="text-sm leading-relaxed text-destiny-grey/60">
+                  <p className="text-sm leading-relaxed text-muted">
                     {s.body}
                   </p>
                 </div>
@@ -466,7 +466,7 @@ export default function BibleCoursePage() {
                   <h3 className="mb-2 text-xl font-black text-destiny-grey">
                     {f.title}
                   </h3>
-                  <p className="text-sm leading-relaxed text-destiny-grey/60">
+                  <p className="text-sm leading-relaxed text-muted">
                     {f.body}
                   </p>
                 </div>
@@ -483,7 +483,7 @@ export default function BibleCoursePage() {
             <h2 className="mb-4 text-3xl font-black text-destiny-grey md:text-4xl">
               Come and see for yourself
             </h2>
-            <p className="mb-8 text-base leading-relaxed text-destiny-grey/60">
+            <p className="mb-8 text-base leading-relaxed text-muted">
               No experience needed and no pressure — just bring your questions.
               Register your interest and we&apos;ll be in touch with the next
               start date.
@@ -501,7 +501,7 @@ export default function BibleCoursePage() {
                   Register your interest
                 </button>
               ) : (
-                <div className="text-sm text-destiny-grey/50">
+                <div className="text-sm text-subtle">
                   {loading
                     ? "Loading course details…"
                     : "No upcoming sessions scheduled yet — check back soon."}

@@ -25,7 +25,7 @@ export default function TrainingProgress({ postIds }: { postIds: string[] }) {
 
   return (
     <div className="mt-6 max-w-md">
-      <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-white/70">
+      <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-on-dark-muted">
         <span>
           {done} of {total} complete
         </span>

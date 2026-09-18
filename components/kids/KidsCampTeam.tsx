@@ -37,7 +37,7 @@ export default function KidsCampTeam() {
                   />
                 </div>
                 <h3 className="text-lg font-bold text-destiny-grey">{member.name}</h3>
-                <p className="text-sm text-destiny-grey/50">{member.role}</p>
+                <p className="text-sm text-subtle">{member.role}</p>
               </div>
             </AnimateIn>
           ))}

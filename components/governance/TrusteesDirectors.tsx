@@ -78,7 +78,7 @@ export default function TrusteesDirectors({
             <h2 className="mb-4 text-3xl font-black text-destiny-grey md:text-4xl lg:text-5xl">
               Trustees &amp; Directors
             </h2>
-            <p className="mx-auto max-w-2xl text-base leading-relaxed text-destiny-grey/60">
+            <p className="mx-auto max-w-2xl text-base leading-relaxed text-muted">
               {sameBoard
                 ? "The people legally responsible for the governance of the church. Each of them serves as both a charity trustee and a company director."
                 : "The people legally responsible for the governance of the church. In a charitable company the same people usually serve as both charity trustees and company directors."}
@@ -109,7 +109,7 @@ export default function TrusteesDirectors({
                         {name}
                       </p>
                       {appointed && (
-                        <p className="text-xs text-destiny-grey/50">
+                        <p className="text-xs text-subtle">
                           Appointed {appointed}
                         </p>
                       )}
@@ -149,7 +149,7 @@ export default function TrusteesDirectors({
                         <p className="text-sm font-bold text-destiny-grey">
                           {officer.name}
                         </p>
-                        <p className="text-xs text-destiny-grey/50">
+                        <p className="text-xs text-subtle">
                           {officer.role}
                           {appointed ? ` — appointed ${appointed}` : ""}
                         </p>

@@ -20,7 +20,7 @@ export interface EmbedProps {
 export default function EmbedBlock({ html, mode }: EmbedProps & BlockRenderContext) {
   if (!html.trim()) {
     return mode === "edit" ? (
-      <div className="rounded-2xl border border-dashed border-black/15 px-5 py-6 text-center text-sm text-destiny-grey/45">
+      <div className="rounded-2xl border border-dashed border-black/15 px-5 py-6 text-center text-sm text-subtle">
         Paste the embed code in the settings panel.
       </div>
     ) : null;
@@ -32,10 +32,10 @@ export default function EmbedBlock({ html, mode }: EmbedProps & BlockRenderConte
     // authoring surface, and the click shield can't help with layout.
     return (
       <div className="rounded-2xl border border-black/10 bg-[#f5f7fa] p-4">
-        <p className="mb-2 text-[11px] font-bold uppercase tracking-wider text-destiny-grey/40">
+        <p className="mb-2 text-[11px] font-bold uppercase tracking-wider text-subtle">
           Custom embed
         </p>
-        <pre className="max-h-40 overflow-auto whitespace-pre-wrap break-all font-mono text-[11px] leading-relaxed text-destiny-grey/60">
+        <pre className="max-h-40 overflow-auto whitespace-pre-wrap break-all font-mono text-[11px] leading-relaxed text-muted">
           {html}
         </pre>
       </div>

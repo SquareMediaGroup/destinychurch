@@ -90,7 +90,7 @@ function LiveNow({
           <h2 className="mt-3 text-3xl font-black leading-tight text-destiny-grey md:text-4xl">
             {heading.trim()}
           </h2>
-          <p className="mt-2 text-sm text-destiny-grey/55">
+          <p className="mt-2 text-sm text-subtle">
             {[speaker, startedAt ? `Started ${formatClockTime(startedAt)}` : null]
               .filter(Boolean)
               .join(" · ") || "Destiny Church Tees Valley"}
@@ -136,9 +136,9 @@ function LiveNow({
         )}
       </div>
 
-      {notice && <p className="mt-5 text-sm text-destiny-grey/55">{notice}</p>}
+      {notice && <p className="mt-5 text-sm text-subtle">{notice}</p>}
 
-      <p className="mt-5 text-sm text-destiny-grey/55">
+      <p className="mt-5 text-sm text-subtle">
         {simulated ? (
           "Trouble with the stream? Refresh the page — you'll rejoin right where we are."
         ) : (
@@ -196,7 +196,7 @@ function Offline({
         <h2 className="mt-3 text-3xl font-black leading-tight text-destiny-grey md:text-4xl">
           We&apos;re not live right now
         </h2>
-        <p className="mt-4 text-base leading-relaxed text-destiny-grey/70">
+        <p className="mt-4 text-base leading-relaxed text-muted">
           The stream goes live every Sunday morning and this page switches over
           on its own — no need to refresh. Until then, the latest message is
           ready to watch.
@@ -268,7 +268,7 @@ function Offline({
               {title}
             </p>
             {latestSermon.publishedAt && (
-              <p className="mt-1 text-xs text-white/70">
+              <p className="mt-1 text-xs text-on-dark-muted">
                 {formatDate(latestSermon.publishedAt)}
               </p>
             )}
@@ -283,7 +283,7 @@ function Offline({
             <span className="material-symbols-rounded mb-3 block text-5xl text-destiny-grey/25">
               play_circle
             </span>
-            <p className="text-sm font-bold text-destiny-grey/40">
+            <p className="text-sm font-bold text-subtle">
               Messages are loading
             </p>
           </div>

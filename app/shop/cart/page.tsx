@@ -16,7 +16,7 @@ export default function CartPage() {
     <div className="relative min-h-screen bg-white text-destiny-grey">
       <div className="mx-auto max-w-4xl px-5 pb-28 pt-12 sm:px-8 lg:pt-16">
         <header className="mb-10">
-          <p className="font-[family-name:var(--font-playfair)] text-2xl italic text-destiny-grey/70">
+          <p className="font-[family-name:var(--font-playfair)] text-2xl italic text-muted">
             Your
           </p>
           <h1 className="font-[family-name:var(--font-heading)] text-4xl font-black uppercase tracking-tight text-destiny-grey sm:text-5xl">
@@ -33,7 +33,7 @@ export default function CartPage() {
             <h2 className="mt-4 font-[family-name:var(--font-heading)] text-2xl font-black text-destiny-grey">
               Your basket is empty
             </h2>
-            <p className="mx-auto mt-2 max-w-sm text-sm text-destiny-grey/55">
+            <p className="mx-auto mt-2 max-w-sm text-sm text-subtle">
               Find something you love in the store.
             </p>
             <Link
@@ -81,13 +81,13 @@ export default function CartPage() {
                             {item.name}
                           </Link>
                           {variant && (
-                            <p className="mt-0.5 text-sm text-destiny-grey/55">{variant}</p>
+                            <p className="mt-0.5 text-sm text-subtle">{variant}</p>
                           )}
                         </div>
                         <button
                           type="button"
                           onClick={() => remove(item.variantId)}
-                          className="rounded-lg p-1.5 text-destiny-grey/40 transition hover:bg-red-50 hover:text-red-600"
+                          className="rounded-lg p-1.5 text-subtle transition hover:bg-red-50 hover:text-red-600"
                           aria-label="Remove item"
                         >
                           <span className="material-symbols-rounded text-lg">close</span>
@@ -99,7 +99,7 @@ export default function CartPage() {
                           <button
                             type="button"
                             onClick={() => setQty(item.variantId, item.quantity - 1)}
-                            className="flex h-9 w-9 items-center justify-center text-destiny-grey/70 hover:text-destiny-grey"
+                            className="flex h-9 w-9 items-center justify-center text-muted hover:text-destiny-grey"
                             aria-label="Decrease quantity"
                           >
                             <span className="material-symbols-rounded text-base">remove</span>
@@ -108,7 +108,7 @@ export default function CartPage() {
                           <button
                             type="button"
                             onClick={() => setQty(item.variantId, item.quantity + 1)}
-                            className="flex h-9 w-9 items-center justify-center text-destiny-grey/70 hover:text-destiny-grey"
+                            className="flex h-9 w-9 items-center justify-center text-muted hover:text-destiny-grey"
                             aria-label="Increase quantity"
                           >
                             <span className="material-symbols-rounded text-base">add</span>
@@ -131,11 +131,11 @@ export default function CartPage() {
               </h2>
               <dl className="mt-4 space-y-2 text-sm">
                 <div className="flex justify-between">
-                  <dt className="text-destiny-grey/60">Subtotal</dt>
+                  <dt className="text-muted">Subtotal</dt>
                   <dd className="font-semibold">{formatPrice(subtotal)}</dd>
                 </div>
                 <div className="flex justify-between">
-                  <dt className="text-destiny-grey/60">Collection</dt>
+                  <dt className="text-muted">Collection</dt>
                   <dd className="font-semibold text-destiny-green">Free</dd>
                 </div>
               </dl>
@@ -152,7 +152,7 @@ export default function CartPage() {
               </Link>
               <Link
                 href="/shop"
-                className="mt-3 flex items-center justify-center gap-1 text-sm font-semibold text-destiny-grey/60 hover:text-destiny-grey"
+                className="mt-3 flex items-center justify-center gap-1 text-sm font-semibold text-muted hover:text-destiny-grey"
               >
                 Continue shopping
               </Link>

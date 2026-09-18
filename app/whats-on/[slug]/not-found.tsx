@@ -20,7 +20,7 @@ export default function EventNotFound() {
         >
           This event has finished or moved
         </h1>
-        <p className="mt-3 text-[15px] leading-relaxed text-destiny-grey/60">
+        <p className="mt-3 text-[15px] leading-relaxed text-muted">
           It may have already taken place, or been renamed in our calendar.
           Have a look at what&apos;s coming up instead.
         </p>

@@ -45,7 +45,7 @@ export default function NfcTileGrid({ tiles }: { tiles: NfcTile[] }) {
                 trackClick("nfc", tile.id, tile.title);
                 setActiveId(tile.id);
               }}
-              className="nfc-card group relative flex h-full w-full flex-col overflow-hidden rounded-2xl border border-black/10 bg-white p-6 text-left outline-none sm:p-7"
+              className="nfc-card group relative flex h-full w-full flex-col overflow-hidden rounded-2xl border border-black/10 bg-white p-6 text-left sm:p-7"
             >
               {/* orange fill on hover / focus */}
               <span aria-hidden className="nfc-fill absolute inset-0 bg-destiny-orange" />
@@ -68,7 +68,7 @@ export default function NfcTileGrid({ tiles }: { tiles: NfcTile[] }) {
                     {tile.title}
                   </h2>
                   {tile.subtitle && (
-                    <p className="nfc-blurb mt-1 text-sm text-destiny-grey/55">
+                    <p className="nfc-blurb mt-1 text-sm text-subtle">
                       {tile.subtitle}
                     </p>
                   )}

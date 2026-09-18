@@ -40,7 +40,7 @@ export default function CookieBanner() {
             Necessary cookies only
           </button>
         </div>
-        <p className="mt-3 text-[11px] leading-relaxed text-white/45">
+        <p className="mt-3 text-[11px] leading-relaxed text-on-dark-subtle">
           By accepting, you agree to our{" "}
           <Link href="/privacy" className="underline underline-offset-2 hover:text-destiny-orange">Privacy Policy</Link>{" "}
           and{" "}

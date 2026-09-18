@@ -51,12 +51,12 @@ export default function FeaturedEventHero({
                 {featured.headline}
               </h2>
               {meta && (
-                <p className="mt-2.5 text-sm font-semibold text-destiny-grey/55">
+                <p className="mt-2.5 text-sm font-semibold text-subtle">
                   {meta}
                 </p>
               )}
               {featured.blurb && (
-                <p className="mt-3.5 max-w-prose text-[15px] leading-[1.55] text-destiny-grey/70">
+                <p className="mt-3.5 max-w-prose text-[15px] leading-[1.55] text-muted">
                   {featured.blurb}
                 </p>
               )}
@@ -84,7 +84,7 @@ export default function FeaturedEventHero({
                 {featured.slug && (
                   <Link
                     href={`/whats-on/${featured.slug}`}
-                    className="text-sm font-semibold text-destiny-grey/60 underline underline-offset-4 transition hover:text-destiny-grey"
+                    className="text-sm font-semibold text-muted underline underline-offset-4 transition hover:text-destiny-grey"
                   >
                     Event details
                   </Link>

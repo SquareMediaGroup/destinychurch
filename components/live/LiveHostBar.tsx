@@ -90,7 +90,7 @@ export default function LiveHostBar({
           <span className="material-symbols-rounded text-xl text-destiny-grey/40">
             lock
           </span>
-          <p className="flex-1 text-sm text-destiny-grey/70">
+          <p className="flex-1 text-sm text-muted">
             Sign in as a Host to run the broadcast from this page.
           </p>
           <button
@@ -124,7 +124,7 @@ export default function LiveHostBar({
             <p className="text-sm font-black text-destiny-grey">
               Broadcast controls
             </p>
-            <p className="mt-0.5 text-xs text-destiny-grey/55">
+            <p className="mt-0.5 text-xs text-subtle">
               {hostName ? `Signed in as ${hostName}. ` : ""}
               {describe(live, simulated)}
             </p>
@@ -145,7 +145,7 @@ export default function LiveHostBar({
               endpoint="/api/live-control"
               onSaved={afterChange}
             />
-            <p className="mt-6 text-xs text-destiny-grey/45">
+            <p className="mt-6 text-xs text-subtle">
               These are the same controls as{" "}
               <Link
                 href="/admin/live"

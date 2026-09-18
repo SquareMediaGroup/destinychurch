@@ -106,7 +106,7 @@ export default function TextToGiveCTA({ keyword, number }: Props) {
           <span className="material-symbols-rounded text-2xl text-white">sms</span>
           <span>
             <span className="block text-sm font-black text-white">Text to Give £10</span>
-            <span className="block text-xs text-white/60">Send instantly</span>
+            <span className="block text-xs text-on-dark-muted">Send instantly</span>
           </span>
           <span className="material-symbols-rounded ml-auto text-lg text-white/60 transition group-hover:translate-x-1">arrow_forward</span>
         </Button>
@@ -128,7 +128,7 @@ export default function TextToGiveCTA({ keyword, number }: Props) {
           <span className="material-symbols-rounded text-2xl text-white">edit</span>
           <span>
             <span className="block text-sm font-black text-white">Custom Amount</span>
-            <span className="block text-xs text-white/60">Choose your amount</span>
+            <span className="block text-xs text-on-dark-muted">Choose your amount</span>
           </span>
           <span className="material-symbols-rounded ml-auto text-lg text-white/60 transition group-hover:translate-x-1">arrow_forward</span>
         </Button>
@@ -157,7 +157,7 @@ export default function TextToGiveCTA({ keyword, number }: Props) {
               <p className="font-black text-destiny-grey">{showQR ? "Scan to Give" : "Custom Amount"}</p>
               <button
                 onClick={closeModal}
-                className="flex h-8 w-8 items-center justify-center rounded-full text-destiny-grey/40 transition hover:bg-gray-100 hover:text-destiny-grey"
+                className="flex h-8 w-8 items-center justify-center rounded-full text-subtle transition hover:bg-gray-100 hover:text-destiny-grey"
                 aria-label="Close"
               >
                 <span className="material-symbols-rounded text-xl">close</span>
@@ -167,7 +167,7 @@ export default function TextToGiveCTA({ keyword, number }: Props) {
             <div className="p-8">
               {showQR ? (
                 <div className="flex flex-col items-center gap-6">
-                  <p className="text-center text-sm text-destiny-grey/60">
+                  <p className="text-center text-sm text-muted">
                     Scan this QR code with your phone to send the gift text
                   </p>
                   <div className="rounded-2xl border-8 border-white bg-white p-4">
@@ -194,7 +194,7 @@ export default function TextToGiveCTA({ keyword, number }: Props) {
                   placeholder="e.g. 25"
                   value={amount}
                   onChange={(e) => setAmount(e.target.value)}
-                  className="w-full rounded-xl border border-black/10 px-4 py-2.5 text-lg font-bold text-destiny-grey placeholder:text-destiny-grey/40 focus:border-destiny-orange focus:outline-none focus:ring-2 focus:ring-destiny-orange/30"
+                  className="w-full rounded-xl border border-black/10 px-4 py-2.5 text-lg font-bold text-destiny-grey placeholder:text-subtle focus:border-destiny-orange focus:outline-none focus:ring-2 focus:ring-destiny-orange/30"
                   onKeyDown={(e) => {
                     if (e.key === "Enter") sendTextMessage();
                   }}

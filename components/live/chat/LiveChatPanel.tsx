@@ -282,7 +282,7 @@ export default function LiveChatPanel() {
         <div className="flex shrink-0 items-center gap-3 border-b border-black/5 px-4 py-3">
           <div className="min-w-0 flex-1">
             <p className="font-black text-destiny-grey">Live chat</p>
-            <p className="text-[11px] text-destiny-grey/45">
+            <p className="text-[11px] text-subtle">
               {viewers > 0
                 ? `${viewers} here now`
                 : "Watching together"}
@@ -304,7 +304,7 @@ export default function LiveChatPanel() {
             <button
               type="button"
               onClick={() => setLoginOpen(true)}
-              className="rounded-full border border-black/10 px-3 py-1.5 text-xs font-bold text-destiny-grey/60 transition hover:border-destiny-orange hover:text-destiny-orange"
+              className="rounded-full border border-black/10 px-3 py-1.5 text-xs font-bold text-muted transition hover:border-destiny-orange hover:text-destiny-orange"
             >
               Log in
             </button>
@@ -380,7 +380,7 @@ function HostControls({
         onClick={() => onSetState(state === "paused" ? "open" : "paused")}
         title={state === "paused" ? "Resume the chat" : "Pause the chat"}
         aria-label={state === "paused" ? "Resume the chat" : "Pause the chat"}
-        className="flex h-8 w-8 items-center justify-center rounded-full text-destiny-grey/50 transition hover:bg-black/5 hover:text-destiny-orange"
+        className="flex h-8 w-8 items-center justify-center rounded-full text-subtle transition hover:bg-black/5 hover:text-destiny-orange"
       >
         <span className="material-symbols-rounded text-lg">
           {state === "paused" ? "play_arrow" : "pause"}
@@ -391,7 +391,7 @@ function HostControls({
         onClick={() => onSetState("closed")}
         title="Close the chat"
         aria-label="Close the chat"
-        className="flex h-8 w-8 items-center justify-center rounded-full text-destiny-grey/50 transition hover:bg-black/5 hover:text-destiny-red"
+        className="flex h-8 w-8 items-center justify-center rounded-full text-subtle transition hover:bg-black/5 hover:text-destiny-red"
       >
         <span className="material-symbols-rounded text-lg">block</span>
       </button>
@@ -415,7 +415,7 @@ function TabButton({
       className={`rounded-full px-3 py-1.5 text-xs font-bold transition ${
         active
           ? "bg-destiny-orange/10 text-destiny-orange"
-          : "text-destiny-grey/50 hover:bg-black/5"
+          : "text-subtle hover:bg-black/5"
       }`}
     >
       {children}

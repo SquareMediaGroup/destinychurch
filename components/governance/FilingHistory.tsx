@@ -26,7 +26,7 @@ export default function FilingHistory({
             <h2 className="mb-4 text-3xl font-black text-destiny-grey md:text-4xl lg:text-5xl">
               Filings &amp; Returns
             </h2>
-            <p className="mx-auto max-w-2xl text-base leading-relaxed text-destiny-grey/60">
+            <p className="mx-auto max-w-2xl text-base leading-relaxed text-muted">
               What we have filed with each regulator, and when. Every document
               is available in full on the official register.
             </p>
@@ -54,7 +54,7 @@ export default function FilingHistory({
                       <p className="text-sm font-bold text-destiny-grey">
                         {filing.description}
                       </p>
-                      <p className="mt-1 text-xs text-destiny-grey/50">
+                      <p className="mt-1 text-xs text-subtle">
                         {formatRegisterDate(filing.date) ?? "Date not recorded"}
                         {filing.category ? ` — ${filing.category}` : ""}
                       </p>
@@ -103,12 +103,12 @@ export default function FilingHistory({
                         {formatRegisterDate(submission.financialYearEnd) ??
                           submission.financialYearEnd}
                       </p>
-                      <p className="mt-1 text-xs text-destiny-grey/50">
+                      <p className="mt-1 text-xs text-subtle">
                         Annual return received:{" "}
                         {formatRegisterDate(submission.annualReturnReceived) ??
                           "Not recorded"}
                       </p>
-                      <p className="text-xs text-destiny-grey/50">
+                      <p className="text-xs text-subtle">
                         Accounts received:{" "}
                         {formatRegisterDate(submission.accountsReceived) ??
                           "Not recorded"}

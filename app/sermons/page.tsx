@@ -76,7 +76,7 @@ export default async function SermonsPage() {
                   Sermons
                 </h1>
 
-                <p className="mx-auto mt-4 max-w-xl text-base text-white/70 md:text-lg">
+                <p className="mx-auto mt-4 max-w-xl text-base text-on-dark-muted md:text-lg">
                   Every message from Destiny Church — watch the latest, or listen
                   back to the whole archive wherever you are.
                 </p>
@@ -108,7 +108,7 @@ export default async function SermonsPage() {
               {hasFeature ? (
                 <FeaturedSermon video={latestVideo} episode={featuredEpisode} />
               ) : (
-                <p className="rounded-2xl border border-black/[0.07] bg-[#f5f7fa] p-8 text-center text-sm text-destiny-grey/60">
+                <p className="rounded-2xl border border-black/[0.07] bg-[#f5f7fa] p-8 text-center text-sm text-muted">
                   Messages are loading. Catch every one on{" "}
                   <a
                     href={SPOTIFY_PODCAST_URL}

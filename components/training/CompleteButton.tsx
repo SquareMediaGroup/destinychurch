@@ -122,7 +122,7 @@ export default function CompleteButton({
       )}
       
       {done && (
-        <p className="mt-2 text-xs text-destiny-grey/45">Tap again to undo.</p>
+        <p className="mt-2 text-xs text-subtle">Tap again to undo.</p>
       )}
     </div>
   );

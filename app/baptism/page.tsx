@@ -46,7 +46,7 @@ export default function BaptismPage() {
               <h1 className="text-5xl font-black text-white md:text-6xl lg:text-7xl">
                 Baptism
               </h1>
-              <p className="mt-4 text-base text-white/70 md:text-lg">
+              <p className="mt-4 text-base text-on-dark-muted md:text-lg">
                 Go public with your faith.
               </p>
             </AnimateIn>
@@ -76,12 +76,12 @@ export default function BaptismPage() {
               <h2 className="mb-5 text-3xl font-black text-destiny-grey md:text-4xl">
                 A public step of faith
               </h2>
-              <p className="mb-4 text-base leading-relaxed text-destiny-grey/70">
+              <p className="mb-4 text-base leading-relaxed text-muted">
                 Baptism is one of the most important steps you can take as a follower of Jesus.
                 It&apos;s a public declaration that you have given your life to Christ, leaving
                 behind your old life and stepping into the new one he has for you.
               </p>
-              <p className="text-base leading-relaxed text-destiny-grey/70">
+              <p className="text-base leading-relaxed text-muted">
                 If you&apos;ve made a decision to follow Jesus and you&apos;re ready to take this
                 step, we&apos;d love to celebrate it with you. Fill in the form below and our
                 team will be in touch.
@@ -107,7 +107,7 @@ export default function BaptismPage() {
                     <span className="material-symbols-rounded text-2xl text-destiny-orange">{perk.icon}</span>
                   </div>
                   <h3 className="mb-2 text-lg font-black text-destiny-grey">{perk.title}</h3>
-                  <p className="text-sm leading-relaxed text-destiny-grey/60">{perk.body}</p>
+                  <p className="text-sm leading-relaxed text-muted">{perk.body}</p>
                 </div>
               </AnimateIn>
             ))}
@@ -125,7 +125,7 @@ export default function BaptismPage() {
             <h2 className="mb-3 text-center text-3xl font-black text-white md:text-4xl">
               Get Baptised
             </h2>
-            <p className="mb-10 text-center text-base text-white/60">
+            <p className="mb-10 text-center text-base text-on-dark-muted">
               Fill in the form below and we&apos;ll be in touch with the next steps.
             </p>
           </AnimateIn>

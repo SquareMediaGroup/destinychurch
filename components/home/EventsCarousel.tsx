@@ -50,7 +50,7 @@ export default function EventsCarousel({ children }: { children: React.ReactNode
    * The insets mirror TRACK_PAD_TOP/BOTTOM.
    */
   const arrowBase =
-    "absolute top-3 bottom-10 my-auto z-10 flex h-8 w-8 items-center justify-center rounded-full border border-black/10 bg-white/80 text-destiny-grey/50 shadow-sm backdrop-blur-sm transition-all duration-200 hover:text-destiny-grey sm:h-9 sm:w-9";
+    "absolute top-3 bottom-10 my-auto z-10 flex h-8 w-8 items-center justify-center rounded-full border border-black/10 bg-white/80 text-subtle shadow-sm backdrop-blur-sm transition-all duration-200 hover:text-destiny-grey sm:h-9 sm:w-9";
 
   return (
     <div className="relative">

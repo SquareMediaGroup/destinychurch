@@ -67,7 +67,7 @@ export default async function DesignRequestPage() {
             <h1 className="mb-4 text-5xl font-black text-white md:text-6xl lg:text-7xl">
               Request a Design
             </h1>
-            <p className="mx-auto max-w-xl text-base text-white/60 md:text-lg">
+            <p className="mx-auto max-w-xl text-base text-on-dark-muted md:text-lg">
               Tell us what you need and one of the team will pick it up. You&apos;ll get a link
               to follow it and download the finished files.
             </p>
@@ -92,7 +92,7 @@ export default async function DesignRequestPage() {
                     </div>
                     <div>
                       <p className="mb-1 text-sm font-bold text-destiny-grey">{item.label}</p>
-                      <p className="text-sm leading-relaxed text-destiny-grey/60">{item.hint}</p>
+                      <p className="text-sm leading-relaxed text-muted">{item.hint}</p>
                     </div>
                   </div>
                 ))}
@@ -102,7 +102,7 @@ export default async function DesignRequestPage() {
                 <p className="mb-2 text-sm font-bold text-destiny-grey">
                   How long does it take?
                 </p>
-                <p className="text-sm leading-relaxed text-destiny-grey/60">
+                <p className="text-sm leading-relaxed text-muted">
                   It depends what else is in the queue, so give us as much notice as you can.
                   Staff requests made while signed in are fast-tracked. If it&apos;s urgent, say
                   so in the brief — and put a date in the &ldquo;needed by&rdquo; box.

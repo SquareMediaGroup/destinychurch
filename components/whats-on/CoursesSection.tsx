@@ -69,7 +69,7 @@ export default function CoursesSection({
                 <h3 className="mb-4 text-4xl font-black text-white md:text-6xl">
                   Keep Growing<br />in Faith
                 </h3>
-                <p className="text-base leading-relaxed text-white/70">
+                <p className="text-base leading-relaxed text-on-dark-muted">
                   Click the button to register your interest in the
                   range of different options available at Destiny Church.
                 </p>
@@ -118,7 +118,7 @@ function FeaturedBlock({ course }: { course: CourseDef }) {
         {/* Content */}
         <div className="relative max-w-lg">
           {f.eyebrow && (
-            <p className="mb-3 text-xs font-bold uppercase tracking-[0.28em] text-white/70">
+            <p className="mb-3 text-xs font-bold uppercase tracking-[0.28em] text-on-dark-muted">
               {f.eyebrow}
             </p>
           )}
@@ -130,7 +130,7 @@ function FeaturedBlock({ course }: { course: CourseDef }) {
               </span>
             ))}
           </h3>
-          <p className="text-base leading-relaxed text-white/70">
+          <p className="text-base leading-relaxed text-on-dark-muted">
             {f.description}
           </p>
         </div>
@@ -175,7 +175,7 @@ function CourseCardView({ course }: { course: CourseDef }) {
               style={{ background: c.overlay.gradient }}
             />
             <div className="absolute inset-x-0 bottom-4 px-5">
-              <p className="text-xs font-bold uppercase tracking-widest text-white/70">
+              <p className="text-xs font-bold uppercase tracking-widest text-on-dark-muted">
                 {c.overlay.eyebrow}
               </p>
               <h3 className="text-2xl font-black text-white">
@@ -193,11 +193,11 @@ function CourseCardView({ course }: { course: CourseDef }) {
           {c.title}
         </h3>
         {c.subtitle && (
-          <p className="mb-1 text-xs font-semibold uppercase tracking-widest text-destiny-grey/40">
+          <p className="mb-1 text-xs font-semibold uppercase tracking-widest text-subtle">
             {c.subtitle}
           </p>
         )}
-        <p className="mb-5 text-sm leading-relaxed text-destiny-grey/70">
+        <p className="mb-5 text-sm leading-relaxed text-muted">
           {c.description}
         </p>
         <Link

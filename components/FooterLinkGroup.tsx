@@ -2,6 +2,7 @@
 
 import { useId, useState } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 
 export interface FooterLink {
   label: string;
@@ -24,9 +25,18 @@ interface Props {
 export default function FooterLinkGroup({ title, links }: Props) {
   const [open, setOpen] = useState(false);
   const panelId = useId();
+  const pathname = usePathname();
+  const headingId = useId();
 
   return (
-    <div className="border-t border-white/10 md:border-t-0">
+    // A labelled landmark per column. Unlabelled, three <nav>s in a row are
+    // all announced as "navigation" and a screen-reader user has to enter each
+    // one to find out which is which; the heading they already read is the
+    // obvious label, so it is reused rather than duplicated.
+    <nav
+      aria-labelledby={headingId}
+      className="border-t border-white/10 md:border-t-0"
+    >
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
@@ -34,7 +44,7 @@ export default function FooterLinkGroup({ title, links }: Props) {
         aria-controls={panelId}
         className="flex w-full items-center justify-between py-4 text-left text-sm font-bold text-white md:cursor-default md:pointer-events-none md:py-0"
       >
-        {title}
+        <span id={headingId}>{title}</span>
         {/* Wrapper carries md:hidden — the global .material-symbols-rounded rule in
             globals.css overrides Tailwind's display utilities on the icon itself. */}
         <span className="md:hidden" aria-hidden="true">
@@ -67,7 +77,7 @@ export default function FooterLinkGroup({ title, links }: Props) {
                   href={link.href}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="block py-3 text-white/70 transition hover:text-white md:py-0"
+                  className="block py-3 text-on-dark-muted transition hover:text-white md:py-0"
                 >
                   {link.label}
                 </a>
@@ -75,7 +85,10 @@ export default function FooterLinkGroup({ title, links }: Props) {
                 <Link
                   key={link.href}
                   href={link.href}
-                  className="block py-3 text-white/70 transition hover:text-white md:py-0"
+                  aria-current={
+                    pathname === link.href.split("#")[0] ? "page" : undefined
+                  }
+                  className="block py-3 text-on-dark-muted transition hover:text-white aria-[current=page]:text-destiny-orange md:py-0"
                 >
                   {link.label}
                 </Link>
@@ -84,6 +97,6 @@ export default function FooterLinkGroup({ title, links }: Props) {
           </div>
         </div>
       </div>
-    </div>
+    </nav>
   );
 }

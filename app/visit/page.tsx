@@ -103,7 +103,7 @@ export default function VisitPage() {
             <AnimateIn>
               <p className="mb-3 text-xs font-bold uppercase tracking-widest text-destiny-orange">You&apos;re Welcome Here</p>
               <h1 className="text-5xl font-black text-white md:text-6xl lg:text-7xl">Plan Your Visit</h1>
-              <p className="mt-4 text-base text-white/70 md:text-lg">
+              <p className="mt-4 text-base text-on-dark-muted md:text-lg">
                 Everything you need to know before you walk through the doors.
               </p>
             </AnimateIn>
@@ -116,7 +116,7 @@ export default function VisitPage() {
         <div className="mx-auto max-w-7xl px-4 lg:px-8">
           <AnimateIn>
             <h2 className="mb-3 text-center text-3xl font-black text-destiny-grey md:text-4xl">When & Where</h2>
-            <p className="mb-12 text-center text-sm text-destiny-grey/50">We meet every Sunday — and we&apos;d love to see you there</p>
+            <p className="mb-12 text-center text-sm text-subtle">We meet every Sunday — and we&apos;d love to see you there</p>
           </AnimateIn>
           <div className="grid gap-6 sm:grid-cols-3">
             <AnimateIn delay={0} className="flex">
@@ -126,9 +126,9 @@ export default function VisitPage() {
                 </div>
                 <div>
                   <p className="mb-1 font-black text-destiny-grey">Every Sunday</p>
-                  <p className="text-sm text-destiny-grey/70">Prayer Service: 10:00am – 10:30am</p>
-                  <p className="mt-1 text-sm text-destiny-grey/70">Main Service: 11:00am – 12:30pm</p>
-                  <p className="mt-1 text-xs text-destiny-grey/40">Doors open from 9:45am</p>
+                  <p className="text-sm text-muted">Prayer Service: 10:00am – 10:30am</p>
+                  <p className="mt-1 text-sm text-muted">Main Service: 11:00am – 12:30pm</p>
+                  <p className="mt-1 text-xs text-subtle">Doors open from 9:45am</p>
                 </div>
               </div>
             </AnimateIn>
@@ -139,9 +139,9 @@ export default function VisitPage() {
                 </div>
                 <div>
                   <p className="mb-1 font-black text-destiny-grey">Destiny Centre</p>
-                  <p className="text-sm text-destiny-grey/70">395 Norton Rd</p>
-                  <p className="text-sm text-destiny-grey/70">Stockton-on-Tees</p>
-                  <p className="mt-1 text-xs text-destiny-grey/40">TS20 2QQ</p>
+                  <p className="text-sm text-muted">395 Norton Rd</p>
+                  <p className="text-sm text-muted">Stockton-on-Tees</p>
+                  <p className="mt-1 text-xs text-subtle">TS20 2QQ</p>
                 </div>
               </div>
             </AnimateIn>
@@ -152,8 +152,8 @@ export default function VisitPage() {
                 </div>
                 <div>
                   <p className="mb-1 font-black text-destiny-grey">Free Parking</p>
-                  <p className="text-sm text-destiny-grey/70">On-site car park</p>
-                  <p className="mt-1 text-xs text-destiny-grey/40">Step-free access available</p>
+                  <p className="text-sm text-muted">On-site car park</p>
+                  <p className="mt-1 text-xs text-subtle">Step-free access available</p>
                 </div>
               </div>
             </AnimateIn>
@@ -168,7 +168,7 @@ export default function VisitPage() {
             <AnimateIn className="w-full md:w-1/2">
               <p className="mb-3 text-xs font-bold uppercase tracking-widest text-destiny-orange">What Happens</p>
               <h2 className="mb-5 text-3xl font-black text-destiny-grey md:text-4xl">What to expect on a Sunday</h2>
-              <p className="mb-8 text-base leading-relaxed text-destiny-grey/70">
+              <p className="mb-8 text-base leading-relaxed text-muted">
                 Whether it&apos;s your first time in a church or your hundredth, we want you to feel at home. Our Sunday services last around 90 minutes and are relaxed, warm and welcoming.
               </p>
               <div className="grid gap-5">
@@ -180,7 +180,7 @@ export default function VisitPage() {
                       </div>
                       <div>
                         <p className="mb-1 font-black text-destiny-grey">{item.title}</p>
-                        <p className="text-sm leading-relaxed text-destiny-grey/60">{item.body}</p>
+                        <p className="text-sm leading-relaxed text-muted">{item.body}</p>
                       </div>
                     </div>
                   </AnimateIn>
@@ -208,14 +208,14 @@ export default function VisitPage() {
           <AnimateIn>
             <p className="mb-3 text-center text-xs font-bold uppercase tracking-widest text-destiny-orange">See For Yourself</p>
             <h2 className="mb-3 text-center text-3xl font-black text-destiny-grey md:text-4xl">What to expect</h2>
-            <p className="mb-10 text-center text-sm text-destiny-grey/50">Get a feel for what Sunday looks like at Destiny</p>
+            <p className="mb-10 text-center text-sm text-subtle">Get a feel for what Sunday looks like at Destiny</p>
           </AnimateIn>
           <AnimateIn delay={80}>
             {/* TODO: Replace src with YouTube embed URL when available */}
             <div className="overflow-hidden rounded-3xl bg-[#f5f7fa] aspect-video flex items-center justify-center">
               <div className="text-center">
                 <span className="material-symbols-rounded mb-3 block text-5xl text-destiny-grey/30">play_circle</span>
-                <p className="text-sm font-bold text-destiny-grey/40">Video coming soon</p>
+                <p className="text-sm font-bold text-subtle">Video coming soon</p>
               </div>
             </div>
           </AnimateIn>
@@ -228,7 +228,7 @@ export default function VisitPage() {
           <AnimateIn>
             <p className="mb-3 text-center text-xs font-bold uppercase tracking-widest text-destiny-orange">Bringing the Family?</p>
             <h2 className="mb-3 text-center text-3xl font-black text-destiny-grey md:text-4xl">We&apos;ve got the kids covered</h2>
-            <p className="mb-12 text-center text-sm text-destiny-grey/50">Safe, fun and faith-filled spaces for every age group</p>
+            <p className="mb-12 text-center text-sm text-subtle">Safe, fun and faith-filled spaces for every age group</p>
           </AnimateIn>
           <div className="grid gap-6 md:grid-cols-3">
             <AnimateIn delay={0}>
@@ -238,7 +238,7 @@ export default function VisitPage() {
                 </div>
                 <h3 className="mb-1 font-black text-destiny-grey">Destiny Kids</h3>
                 <p className="mb-2 text-xs font-bold text-destiny-orange">Ages 0–11 · From 10:45am</p>
-                <p className="mb-5 flex-1 text-sm leading-relaxed text-destiny-grey/60">
+                <p className="mb-5 flex-1 text-sm leading-relaxed text-muted">
                   Age-appropriate classes for babies through to Year 6 — packed with stories, crafts, games and worship. All leaders are DBS-checked and trained.
                 </p>
                 <Link href="/kids" className="text-sm font-bold text-destiny-orange transition hover:underline">
@@ -253,7 +253,7 @@ export default function VisitPage() {
                 </div>
                 <h3 className="mb-1 font-black text-destiny-grey">Destiny Youth</h3>
                 <p className="mb-2 text-xs font-bold text-destiny-orange">Ages 11–18 · Wednesday 7pm</p>
-                <p className="mb-5 flex-1 text-sm leading-relaxed text-destiny-grey/60">
+                <p className="mb-5 flex-1 text-sm leading-relaxed text-muted">
                   A dedicated midweek gathering for young people aged 11–18. KS3, KS4 and KS5 groups — energetic, welcoming and rooted in faith.
                 </p>
                 <Link href="/youth" className="text-sm font-bold text-destiny-orange transition hover:underline">
@@ -268,7 +268,7 @@ export default function VisitPage() {
                 </div>
                 <h3 className="mb-1 font-black text-destiny-grey">Young Adults</h3>
                 <p className="mb-2 text-xs font-bold text-destiny-orange">Ages 18–30+</p>
-                <p className="mb-5 flex-1 text-sm leading-relaxed text-destiny-grey/60">
+                <p className="mb-5 flex-1 text-sm leading-relaxed text-muted">
                   A community for those in their 18s–30s. Events, meals, Connect Groups and doing life together throughout the year.
                 </p>
                 <Link href="/young-adults" className="text-sm font-bold text-destiny-orange transition hover:underline">
@@ -287,7 +287,7 @@ export default function VisitPage() {
             <AnimateIn className="w-full md:w-1/2">
               <p className="mb-3 text-xs font-bold uppercase tracking-widest text-destiny-orange">Getting Here</p>
               <h2 className="mb-5 text-3xl font-black text-destiny-grey md:text-4xl">Find us</h2>
-              <div className="mb-6 space-y-4 text-sm text-destiny-grey/70">
+              <div className="mb-6 space-y-4 text-sm text-muted">
                 <div className="flex items-start gap-3">
                   <span className="material-symbols-rounded mt-0.5 shrink-0 text-xl text-destiny-orange">location_on</span>
                   <div>
@@ -356,14 +356,14 @@ export default function VisitPage() {
         <div className="mx-auto max-w-3xl px-4 lg:px-8">
           <AnimateIn>
             <h2 className="mb-3 text-center text-3xl font-black text-destiny-grey md:text-4xl">Common Questions</h2>
-            <p className="mb-12 text-center text-sm text-destiny-grey/50">Anything else — just ask us</p>
+            <p className="mb-12 text-center text-sm text-subtle">Anything else — just ask us</p>
           </AnimateIn>
           <div className="space-y-4">
             {faqs.map((faq, i) => (
               <AnimateIn key={i} delay={i * 50}>
                 <div className="rounded-2xl bg-[#f5f7fa] p-6">
                   <p className="mb-2 font-black text-destiny-grey">{faq.q}</p>
-                  <p className="text-sm leading-relaxed text-destiny-grey/60">{faq.a}</p>
+                  <p className="text-sm leading-relaxed text-muted">{faq.a}</p>
                 </div>
               </AnimateIn>
             ))}

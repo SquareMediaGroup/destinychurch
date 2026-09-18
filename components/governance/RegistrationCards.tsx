@@ -40,13 +40,13 @@ function Card({
 
         <div className="mb-6">
           <p className="text-4xl font-black text-destiny-grey">{number}</p>
-          <p className="text-sm text-destiny-grey/50">{numberLabel}</p>
+          <p className="text-sm text-subtle">{numberLabel}</p>
         </div>
 
         <dl className="mb-6 space-y-3">
           {rows.map((row) => (
             <div key={row.label} className="border-t border-black/6 pt-3">
-              <dt className="text-xs font-bold uppercase tracking-wide text-destiny-grey/40">
+              <dt className="text-xs font-bold uppercase tracking-wide text-subtle">
                 {row.label}
               </dt>
               <dd className="mt-1 text-sm text-destiny-grey/80">{row.value}</dd>

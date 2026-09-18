@@ -59,7 +59,7 @@ export default function DevUiPage() {
         <SectionHeading
           eyebrow="Typography"
           title="Section heading with a lead"
-          lead="The lead paragraph uses text-muted, which is the accessible replacement for the old text-destiny-grey/60 idiom."
+          lead="The lead paragraph uses text-muted, the accessible replacement for the opacity-on-brand-grey idiom (5.9:1 on white, against 3.4:1 at 60%)."
           action={{ label: "An action link", href: "#" }}
         />
       </Section>

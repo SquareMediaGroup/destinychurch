@@ -17,7 +17,7 @@ export default function ConnectGroupsBanner() {
             <h2 className="mb-3 text-3xl font-black text-white md:text-4xl">
               Join a Connect Group
             </h2>
-            <p className="text-base leading-relaxed text-white/70">
+            <p className="text-base leading-relaxed text-on-dark-muted">
               Connect Groups are where godly friends become spiritual family. Where
               faith is stirred, assumptions are challenged, sisters are found, and
               brothers build each other up. Discover who you are, who God is, and how

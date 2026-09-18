@@ -43,7 +43,7 @@ export default function ServePage() {
             <AnimateIn>
               <p className="mb-3 text-xs font-bold uppercase tracking-widest text-destiny-orange">Get Involved</p>
               <h1 className="text-5xl font-black text-white md:text-6xl lg:text-7xl">Serve</h1>
-              <p className="mt-4 text-base text-white/70 md:text-lg">
+              <p className="mt-4 text-base text-on-dark-muted md:text-lg">
                 You were made for more than just attending. Find your place on the team.
               </p>
             </AnimateIn>
@@ -73,10 +73,10 @@ export default function ServePage() {
               <h2 className="mb-5 text-3xl font-black text-destiny-grey md:text-4xl">
                 You have something to offer
               </h2>
-              <p className="mb-4 text-base leading-relaxed text-destiny-grey/70">
+              <p className="mb-4 text-base leading-relaxed text-muted">
                 Serving isn&apos;t just about filling a rota — it&apos;s one of the most powerful ways to grow in your own faith. When you use your gifts to serve others, you step into the purpose God has placed in you.
               </p>
-              <p className="text-base leading-relaxed text-destiny-grey/70">
+              <p className="text-base leading-relaxed text-muted">
                 Whether you love music, working with children, tech, admin or just making people feel welcome — there is a team at Destiny where you belong and where your contribution genuinely matters.
               </p>
             </AnimateIn>
@@ -100,7 +100,7 @@ export default function ServePage() {
         <div className="mx-auto max-w-7xl px-4 lg:px-8">
           <AnimateIn>
             <h2 className="mb-3 text-center text-3xl font-black text-destiny-grey md:text-4xl">Our Ministries</h2>
-            <p className="mb-12 text-center text-sm text-destiny-grey/50">Tap a card to find out more</p>
+            <p className="mb-12 text-center text-sm text-subtle">Tap a card to find out more</p>
           </AnimateIn>
           <MinistriesGrid />
         </div>
@@ -112,7 +112,7 @@ export default function ServePage() {
           <AnimateIn>
             <p className="mb-3 text-center text-xs font-bold uppercase tracking-widest text-destiny-orange">Ready to Join a Team?</p>
             <h2 className="mb-3 text-center text-3xl font-black text-white md:text-4xl">Get Involved</h2>
-            <p className="mb-10 text-center text-base text-white/60">
+            <p className="mb-10 text-center text-base text-on-dark-muted">
               Fill in the form below and we&apos;ll be in touch to find the best fit for you.
             </p>
           </AnimateIn>

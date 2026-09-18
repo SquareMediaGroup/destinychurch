@@ -304,7 +304,7 @@ export default function HelpPage() {
           />
 
           <p
-            className="help-reveal mt-6 max-w-xl text-base text-destiny-grey/55 sm:text-lg"
+            className="help-reveal mt-6 max-w-xl text-base text-subtle sm:text-lg"
             style={{ animationDelay: "0.26s" }}
           >
             Find answers to common questions, or get in touch and we&apos;ll
@@ -323,7 +323,7 @@ export default function HelpPage() {
               >
                 <Link
                   href={link.href}
-                  className="step-card group relative flex h-full flex-col overflow-hidden rounded-2xl border border-black/10 bg-white p-5 outline-none"
+                  className="step-card group relative flex h-full flex-col overflow-hidden rounded-2xl border border-black/10 bg-white p-5"
                 >
                   {/* orange fill on hover */}
                   <span
@@ -365,14 +365,14 @@ export default function HelpPage() {
                 Common Questions
               </p>
               <h2 className="mt-2 leading-[0.95]">
-                <span className="block font-[family-name:var(--font-playfair)] text-2xl italic text-destiny-grey/70 sm:text-3xl">
+                <span className="block font-[family-name:var(--font-playfair)] text-2xl italic text-muted sm:text-3xl">
                   Frequently
                 </span>
                 <span className="block font-[family-name:var(--font-anton)] text-5xl uppercase tracking-tight text-destiny-grey sm:text-6xl">
                   Asked
                 </span>
               </h2>
-              <p className="mt-4 max-w-xl text-sm text-destiny-grey/55 sm:text-base">
+              <p className="mt-4 max-w-xl text-sm text-subtle sm:text-base">
                 Browse by topic, or contact us if you can&apos;t find what
                 you&apos;re looking for.
               </p>
@@ -394,7 +394,7 @@ export default function HelpPage() {
                 <h2 className="mt-2 font-[family-name:var(--font-heading)] text-2xl font-black text-white sm:text-3xl">
                   Still need help?
                 </h2>
-                <p className="mt-2 max-w-md text-sm text-white/60">
+                <p className="mt-2 max-w-md text-sm text-on-dark-muted">
                   Can&apos;t find the answer you&apos;re looking for? Our team
                   are happy to help — just reach out.
                 </p>
@@ -410,7 +410,7 @@ export default function HelpPage() {
                 </Link>
                 <a
                   href="tel:+441642559797"
-                  className="inline-flex items-center justify-center gap-1.5 text-sm font-semibold text-white/70 underline-offset-4 transition-colors hover:text-white hover:underline"
+                  className="inline-flex items-center justify-center gap-1.5 text-sm font-semibold text-on-dark-muted underline-offset-4 transition-colors hover:text-white hover:underline"
                 >
                   <span className="material-symbols-rounded text-lg">call</span>
                   Or call 01642 559 797

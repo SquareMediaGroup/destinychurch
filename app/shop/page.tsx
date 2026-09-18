@@ -94,7 +94,7 @@ export default async function ShopPage() {
             style={{ animationDelay: "0.2s" }}
           />
           <p
-            className="shop-reveal mt-6 max-w-md text-base text-destiny-grey/60"
+            className="shop-reveal mt-6 max-w-md text-base text-muted"
             style={{ animationDelay: "0.28s" }}
           >
             Wear the vision. Order online and collect at church — every purchase
@@ -112,7 +112,7 @@ export default async function ShopPage() {
             <h2 className="mt-4 font-[family-name:var(--font-heading)] text-2xl font-black text-destiny-grey">
               Nothing in stock just yet
             </h2>
-            <p className="mx-auto mt-2 max-w-sm text-sm text-destiny-grey/55">
+            <p className="mx-auto mt-2 max-w-sm text-sm text-subtle">
               New drops are on the way. Check back soon.
             </p>
           </div>
@@ -130,7 +130,7 @@ export default async function ShopPage() {
               <h2 className="mt-2 font-[family-name:var(--font-heading)] text-2xl font-black text-white sm:text-3xl">
                 Pick it up on a Sunday
               </h2>
-              <p className="mt-2 max-w-md text-sm text-white/60">
+              <p className="mt-2 max-w-md text-sm text-on-dark-muted">
                 Order online and grab your items next time you&apos;re in — we&apos;ll
                 email you the moment they&apos;re ready to collect.
               </p>

@@ -248,7 +248,7 @@ export default function DestinyTwelveTwoPage() {
                         </span>
                         {cadenceLabel}
                       </div>
-                      <div className="text-[11px] uppercase tracking-[0.2em] text-destiny-grey/50">
+                      <div className="text-[11px] uppercase tracking-[0.2em] text-subtle">
                         {weekday}
                       </div>
                       <div className="mt-1 flex items-baseline gap-3">
@@ -262,7 +262,7 @@ export default function DestinyTwelveTwoPage() {
                         </span>
                         <span className="text-lg font-black uppercase tracking-wide text-destiny-grey md:text-xl">
                           {month}{" "}
-                          <span className="text-destiny-grey/40">{year}</span>
+                          <span className="text-subtle">{year}</span>
                         </span>
                       </div>
                     </div>
@@ -277,7 +277,7 @@ export default function DestinyTwelveTwoPage() {
                           </span>
                           Online
                         </div>
-                        <div className="text-[11px] uppercase tracking-[0.2em] text-destiny-grey/50">
+                        <div className="text-[11px] uppercase tracking-[0.2em] text-subtle">
                           Join via
                         </div>
                         <div className="mt-1 text-2xl font-black leading-tight text-destiny-grey md:text-3xl">
@@ -311,7 +311,7 @@ export default function DestinyTwelveTwoPage() {
                         </div>
                         {event.location ? (
                           <>
-                            <div className="text-[11px] uppercase tracking-[0.2em] text-destiny-grey/50">
+                            <div className="text-[11px] uppercase tracking-[0.2em] text-subtle">
                               Join us at
                             </div>
                             <div className="mt-1 text-2xl font-black leading-tight text-destiny-grey md:text-3xl">
@@ -320,12 +320,12 @@ export default function DestinyTwelveTwoPage() {
                           </>
                         ) : (
                           <>
-                            <div className="text-[11px] uppercase tracking-[0.2em] text-destiny-grey/50">
+                            <div className="text-[11px] uppercase tracking-[0.2em] text-subtle">
                               Venue
                             </div>
                             <div className="mt-1 flex items-baseline gap-2">
                               <span
-                                className="text-5xl font-normal italic leading-none text-destiny-grey/40 md:text-6xl"
+                                className="text-5xl font-normal italic leading-none text-subtle md:text-6xl"
                                 style={{
                                   fontFamily:
                                     "var(--font-playfair), Georgia, serif",
@@ -360,7 +360,7 @@ export default function DestinyTwelveTwoPage() {
               <h2 className="mb-6 text-3xl font-black text-destiny-grey md:text-4xl">
                 Faith, fellowship and freedom — together
               </h2>
-              <div className="space-y-4 text-base leading-relaxed text-destiny-grey/70 md:text-lg">
+              <div className="space-y-4 text-base leading-relaxed text-muted md:text-lg">
                 <p>
                   Destiny 12:2 is a Christ-centred 12-step programme that walks
                   with you through life&apos;s hardest places — addiction, hurts,
@@ -387,7 +387,7 @@ export default function DestinyTwelveTwoPage() {
                 </div>
                 <div>
                   <p className="font-bold text-destiny-grey">Louise Sheekey</p>
-                  <p className="text-sm text-destiny-grey/50">
+                  <p className="text-sm text-subtle">
                     Recovery Pastor ·{" "}
                     <a
                       href="mailto:louise@destinytees.uk"
@@ -449,7 +449,7 @@ export default function DestinyTwelveTwoPage() {
                 >
                   {p.title}
                 </p>
-                <p className="text-sm leading-relaxed text-white/70">
+                <p className="text-sm leading-relaxed text-on-dark-muted">
                   {p.body}
                 </p>
               </AnimateIn>
@@ -483,14 +483,14 @@ export default function DestinyTwelveTwoPage() {
               <h2 className="mb-5 text-3xl font-black text-destiny-grey md:text-4xl">
                 The Life Recovery Bible
               </h2>
-              <p className="mb-4 text-base leading-relaxed text-destiny-grey/70">
+              <p className="mb-4 text-base leading-relaxed text-muted">
                 The Life Recovery Bible is a unique and powerful resource for
                 anyone on the journey to healing and wholeness. Its strength lies
                 in weaving biblical truth together with the widely recognised
                 12-step recovery model — making it a vital tool for those grappling
                 with addictions, hurts and habits.
               </p>
-              <p className="mb-6 text-base leading-relaxed text-destiny-grey/70">
+              <p className="mb-6 text-base leading-relaxed text-muted">
                 By intertwining the timeless wisdom of Scripture with the practical
                 framework of the 12 steps, it offers a comprehensive and
                 compassionate guide. It points readers to the truth that spiritual
@@ -515,7 +515,7 @@ export default function DestinyTwelveTwoPage() {
                       <p className="mb-1 text-sm font-black text-destiny-grey">
                         {f.title}
                       </p>
-                      <p className="text-xs leading-relaxed text-destiny-grey/60">
+                      <p className="text-xs leading-relaxed text-muted">
                         {f.body}
                       </p>
                     </div>
@@ -556,7 +556,7 @@ export default function DestinyTwelveTwoPage() {
             <h2 className="mb-4 text-3xl font-black text-destiny-grey md:text-4xl">
               Take the first step
             </h2>
-            <p className="mb-8 text-base leading-relaxed text-destiny-grey/60">
+            <p className="mb-8 text-base leading-relaxed text-muted">
               Whatever you&apos;re carrying, you don&apos;t have to carry it alone.
               Register your interest and we&apos;ll be in touch with the next
               start date.
@@ -574,7 +574,7 @@ export default function DestinyTwelveTwoPage() {
                   Register for Destiny 12:2
                 </button>
               ) : (
-                <div className="text-sm text-destiny-grey/50">
+                <div className="text-sm text-subtle">
                   {loading
                     ? "Loading event details…"
                     : "No upcoming sessions scheduled yet — check back soon."}

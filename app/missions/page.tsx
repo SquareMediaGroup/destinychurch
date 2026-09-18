@@ -77,7 +77,7 @@ export default function MissionsPage() {
             <AnimateIn>
               <p className="mb-3 text-xs font-bold uppercase tracking-widest text-destiny-orange">Destiny Church</p>
               <h1 className="mb-4 text-5xl font-black text-white md:text-6xl lg:text-7xl">Missions</h1>
-              <p className="mx-auto max-w-xl text-base text-white/70 md:text-lg">
+              <p className="mx-auto max-w-xl text-base text-on-dark-muted md:text-lg">
                 Serving the vulnerable. Transforming lives. Reaching the world.
               </p>
             </AnimateIn>
@@ -104,7 +104,7 @@ export default function MissionsPage() {
       <section className="bg-[#f5f7fa] py-14">
         <div className="mx-auto max-w-4xl px-4 lg:px-8">
           <AnimateIn className="mb-10 text-center">
-            <p className="text-xs font-bold uppercase tracking-widest text-destiny-grey/40">Our Mission Partners</p>
+            <p className="text-xs font-bold uppercase tracking-widest text-subtle">Our Mission Partners</p>
           </AnimateIn>
           <div className="flex flex-wrap items-center justify-center gap-12">
             {partners.map((p) => (
@@ -139,7 +139,7 @@ export default function MissionsPage() {
                   {partner.name}
                 </h2>
                 {partner.description.split("\n\n").map((para, j) => (
-                  <p key={j} className="mb-4 text-sm leading-relaxed text-destiny-grey/70">
+                  <p key={j} className="mb-4 text-sm leading-relaxed text-muted">
                     {para}
                   </p>
                 ))}

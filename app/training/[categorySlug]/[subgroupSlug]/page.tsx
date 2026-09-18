@@ -65,7 +65,7 @@ export default async function TrainingSubgroupPage({
           <AnimateIn className="relative z-10 mx-auto max-w-4xl">
             <Link
               href={`/training/${category.slug}`}
-              className="inline-flex items-center gap-1.5 text-xs font-bold text-white/60 transition hover:text-white"
+              className="inline-flex items-center gap-1.5 text-xs font-bold text-on-dark-muted transition hover:text-white"
             >
               <span className="material-symbols-rounded text-base">arrow_back</span>
               {category.name}
@@ -74,7 +74,7 @@ export default async function TrainingSubgroupPage({
               {subgroup.name}
             </h1>
             {subgroup.description && (
-              <p className="mt-3 max-w-xl text-base text-white/65">
+              <p className="mt-3 max-w-xl text-base text-on-dark-muted">
                 {subgroup.description}
               </p>
             )}
@@ -86,7 +86,7 @@ export default async function TrainingSubgroupPage({
       <section className="bg-white pb-24 pt-8">
         <div className="mx-auto max-w-3xl px-4 lg:px-8">
           {posts.length === 0 ? (
-            <p className="py-16 text-center text-destiny-grey/55">
+            <p className="py-16 text-center text-subtle">
               No training posts here yet — check back soon.
             </p>
           ) : (

@@ -52,14 +52,14 @@ export default function BlockSandbox() {
         </span>
         <div className="min-w-0 flex-1">
           <p className="text-sm font-black text-destiny-grey">Block sandbox</p>
-          <p className="text-xs text-destiny-grey/45">
+          <p className="text-xs text-subtle">
             Development only. Nothing here is saved.
           </p>
         </div>
         <button
           type="button"
           onClick={() => editor?.commands.clearContent()}
-          className="rounded-lg border border-black/10 px-2.5 py-1 text-xs font-bold text-destiny-grey/60 transition hover:bg-[#f5f7fa]"
+          className="rounded-lg border border-black/10 px-2.5 py-1 text-xs font-bold text-muted transition hover:bg-[#f5f7fa]"
         >
           Clear
         </button>
@@ -108,7 +108,7 @@ export default function BlockSandbox() {
               className={`rounded-lg px-2.5 py-1 text-xs font-bold transition ${
                 tab === id
                   ? "bg-destiny-orange/10 text-destiny-orange"
-                  : "text-destiny-grey/50 hover:bg-[#f5f7fa]"
+                  : "text-subtle hover:bg-[#f5f7fa]"
               }`}
             >
               {id === "preview" ? "Public preview" : "Stored HTML"}
@@ -117,7 +117,7 @@ export default function BlockSandbox() {
         </div>
         <div className="h-[calc(100%-2.35rem)] overflow-auto px-4 py-3">
           {tab === "html" ? (
-            <pre className="whitespace-pre-wrap break-all font-mono text-[11px] leading-relaxed text-destiny-grey/70">
+            <pre className="whitespace-pre-wrap break-all font-mono text-[11px] leading-relaxed text-muted">
               {html || "(empty)"}
             </pre>
           ) : (

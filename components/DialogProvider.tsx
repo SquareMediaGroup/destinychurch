@@ -194,7 +194,7 @@ function DialogModal({
           </h2>
         )}
         {request.message && (
-          <p className="text-sm leading-relaxed text-destiny-grey/70 dark:text-white/70">
+          <p className="text-sm leading-relaxed text-muted dark:text-on-dark-muted">
             {request.message}
           </p>
         )}

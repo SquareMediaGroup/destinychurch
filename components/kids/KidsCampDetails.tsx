@@ -8,7 +8,7 @@ export default function KidsCampDetails() {
           <h2 className="mb-8 text-3xl font-black leading-tight text-destiny-grey md:text-4xl lg:text-5xl">
             About the Camp
           </h2>
-          <div className="space-y-6 text-base leading-relaxed text-destiny-grey/70 md:text-lg">
+          <div className="space-y-6 text-base leading-relaxed text-muted md:text-lg">
             <p>
               We are hosting a kids camp for Destiny Kids in May 2026! Kids in Year 1 to Year 6 have the exciting opportunity to attend our 3 days residential kids camp at Moor House Adventure Centre.
             </p>

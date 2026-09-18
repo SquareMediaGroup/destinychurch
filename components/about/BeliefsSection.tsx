@@ -10,7 +10,7 @@ export default function BeliefsSection() {
         <AnimateIn>
           <div className="mb-10 flex flex-col items-center rounded-2xl bg-[#f5f7fa] p-5 text-center sm:p-8">
             <h2 className="mb-2 text-2xl font-black text-destiny-grey sm:text-3xl md:text-4xl">Our Beliefs</h2>
-            <p className="mb-5 text-sm text-destiny-grey/50">
+            <p className="mb-5 text-sm text-subtle">
               Learn more about what we as a church believe
             </p>
             <Link
@@ -27,7 +27,7 @@ export default function BeliefsSection() {
           <p className="mb-4 text-xs font-bold uppercase tracking-widest text-destiny-orange">
             Our Foundational Pillars
           </p>
-          <p className="mb-10 max-w-3xl text-sm leading-relaxed text-destiny-grey/70">
+          <p className="mb-10 max-w-3xl text-sm leading-relaxed text-muted">
             The Five Pillars of Destiny Church are clearly seen in two fundamental scriptures
             that are intrinsic to its mission, vision and culture. The two Scriptures are known
             historically as the Great Commandment and the Great Commission and are the
@@ -40,7 +40,7 @@ export default function BeliefsSection() {
         <div className="grid gap-6 md:grid-cols-2">
           <AnimateIn delay={150}>
             <div className="rounded-2xl p-5 sm:p-8" style={{ background: "#F58021" }}>
-              <p className="mb-4 text-xs font-bold uppercase tracking-widest text-white/50">
+              <p className="mb-4 text-xs font-bold uppercase tracking-widest text-on-dark-subtle">
                 The Great Commandment
               </p>
               <p className="mb-6 text-sm leading-relaxed text-white/80">
@@ -52,7 +52,7 @@ export default function BeliefsSection() {
 
           <AnimateIn delay={200}>
             <div className="rounded-2xl p-5 sm:p-8" style={{ background: "#363f48" }}>
-              <p className="mb-4 text-xs font-bold uppercase tracking-widest text-white/50">
+              <p className="mb-4 text-xs font-bold uppercase tracking-widest text-on-dark-subtle">
                 The Great Commission
               </p>
               <p className="mb-6 text-sm leading-relaxed text-white/80">

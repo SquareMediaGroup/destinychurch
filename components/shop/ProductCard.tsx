@@ -20,7 +20,7 @@ export default function ProductCard({ product }: { product: ProductWithVariants 
   return (
     <Link
       href={`/shop/${product.slug}`}
-      className="shop-card group relative flex h-full flex-col overflow-hidden rounded-2xl border border-black/10 bg-white outline-none"
+      className="shop-card group relative flex h-full flex-col overflow-hidden rounded-2xl border border-black/10 bg-white"
     >
       <span aria-hidden className="shop-fill absolute inset-0 bg-destiny-orange" />
 
@@ -46,7 +46,7 @@ export default function ProductCard({ product }: { product: ProductWithVariants 
           </span>
         )}
         {product.category && (
-          <span className="shop-cat absolute right-3 top-3 rounded-full bg-white/90 px-3 py-1 text-[11px] font-bold uppercase tracking-wide text-destiny-grey/70">
+          <span className="shop-cat absolute right-3 top-3 rounded-full bg-white/90 px-3 py-1 text-[11px] font-bold uppercase tracking-wide text-muted">
             {product.category}
           </span>
         )}

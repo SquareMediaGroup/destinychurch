@@ -207,7 +207,7 @@ export default function EventCard({
           {event.name}
         </h3>
         {location && (
-          <p className="mt-2 flex items-center gap-1.5 text-sm leading-[1.45] text-destiny-grey/55">
+          <p className="mt-2 flex items-center gap-1.5 text-sm leading-[1.45] text-subtle">
             <LocationPin className="text-destiny-grey/35" />
             <span className="min-w-0 truncate">{location}</span>
           </p>
@@ -224,7 +224,7 @@ export default function EventCard({
             </span>
           </span>
           {category && (
-            <span className="min-w-0 truncate text-[11.5px] text-destiny-grey/45">
+            <span className="min-w-0 truncate text-[11.5px] text-subtle">
               {category}
             </span>
           )}

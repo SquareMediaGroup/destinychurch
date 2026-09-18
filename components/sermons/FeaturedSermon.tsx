@@ -65,7 +65,7 @@ export default function FeaturedSermon({
             Latest message
           </p>
           {speaker && (
-            <p className="mt-1 flex items-center gap-1 text-sm font-bold text-destiny-grey/70">
+            <p className="mt-1 flex items-center gap-1 text-sm font-bold text-muted">
               <span className="material-symbols-rounded text-base text-destiny-orange">person</span>
               {speaker}
             </p>
@@ -96,7 +96,7 @@ export default function FeaturedSermon({
       </div>
 
       {video && (
-        <p className="mt-5 text-sm text-destiny-grey/55">
+        <p className="mt-5 text-sm text-subtle">
           Missed the rest of the service?{" "}
           <Link
             href={`/sermons/${video.id}`}
@@ -135,7 +135,7 @@ function Meta({
   if (bits.length === 0) return null;
 
   return (
-    <p className="mt-2 text-sm text-destiny-grey/55">{bits.join(" · ")}</p>
+    <p className="mt-2 text-sm text-subtle">{bits.join(" · ")}</p>
   );
 }
 

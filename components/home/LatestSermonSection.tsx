@@ -79,7 +79,7 @@ export default function LatestSermonSection({
 
             {(speaker || date) && (
               <AnimateIn delay={130}>
-                <p className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-white/60">
+                <p className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-on-dark-muted">
                   {speaker && <span className="font-semibold text-white/80">{speaker}</span>}
                   {speaker && date && (
                     <span aria-hidden className="h-1 w-1 rounded-full bg-destiny-orange" />

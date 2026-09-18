@@ -50,7 +50,7 @@ export default function PasswordGate({
           {categoryName}
         </p>
         <h1 className="text-2xl font-black text-destiny-grey">{subgroupName}</h1>
-        <p className="mx-auto mt-2 max-w-xs text-sm text-destiny-grey/55">
+        <p className="mx-auto mt-2 max-w-xs text-sm text-subtle">
           This training group is password protected. Enter the password your team
           leader gave you to continue.
         </p>

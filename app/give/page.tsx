@@ -57,7 +57,7 @@ export default async function GivePage() {
             <h1 className="mb-4 text-5xl font-black text-white md:text-6xl lg:text-7xl">
               Give
             </h1>
-            <p className="mx-auto max-w-xl text-base text-white/60 md:text-lg">
+            <p className="mx-auto max-w-xl text-base text-on-dark-muted md:text-lg">
               Thank you for your generosity. Your giving helps us reach our community,
               grow our church family and make a lasting difference.
             </p>
@@ -93,7 +93,7 @@ export default async function GivePage() {
             <h2 className="mb-2 text-center text-3xl font-black text-destiny-grey md:text-4xl">
               Ways to Give
             </h2>
-            <p className="mb-12 text-center text-sm text-destiny-grey/50">
+            <p className="mb-12 text-center text-sm text-subtle">
               Choose the method that works best for you
             </p>
           </AnimateIn>
@@ -106,7 +106,7 @@ export default async function GivePage() {
                   <span className="material-symbols-rounded text-4xl text-destiny-orange">language</span>
                 </div>
                 <h3 className="mb-2 text-xl font-black text-destiny-grey">Give Online</h3>
-                <p className="text-sm leading-relaxed text-destiny-grey/60">
+                <p className="text-sm leading-relaxed text-muted">
                   Give securely online using debit or credit card. One-off or recurring giving available.
                 </p>
               </a>
@@ -119,7 +119,7 @@ export default async function GivePage() {
                   <span className="material-symbols-rounded text-4xl text-destiny-orange">account_balance</span>
                 </div>
                 <h3 className="mb-2 text-xl font-black text-destiny-grey">Standing Order</h3>
-                <p className="text-sm leading-relaxed text-destiny-grey/60">
+                <p className="text-sm leading-relaxed text-muted">
                   Set up a regular bank transfer directly to Destiny Church from your online banking.
                 </p>
               </a>
@@ -132,7 +132,7 @@ export default async function GivePage() {
                   <span className="material-symbols-rounded text-4xl text-destiny-orange">sms</span>
                 </div>
                 <h3 className="mb-2 text-xl font-black text-destiny-grey">Text to Give</h3>
-                <p className="text-sm leading-relaxed text-destiny-grey/60">
+                <p className="text-sm leading-relaxed text-muted">
                   Give instantly by text message — no app or account needed.
                 </p>
               </a>
@@ -149,7 +149,7 @@ export default async function GivePage() {
               <span className="material-symbols-rounded text-2xl text-destiny-orange">language</span>
               <h2 className="text-2xl font-black text-destiny-grey">Give Online</h2>
             </div>
-            <p className="mb-8 text-sm text-destiny-grey/60">
+            <p className="mb-8 text-sm text-muted">
               Secure online giving powered by ChurchSuite.
             </p>
           </AnimateIn>
@@ -172,7 +172,7 @@ export default async function GivePage() {
               <span className="material-symbols-rounded text-2xl text-destiny-orange">account_balance</span>
               <h2 className="text-2xl font-black text-destiny-grey">Standing Order / Bank Transfer</h2>
             </div>
-            <p className="mb-8 text-sm text-destiny-grey/60">
+            <p className="mb-8 text-sm text-muted">
               Set up a regular or one-off payment directly through your bank using the details below.
             </p>
           </AnimateIn>
@@ -202,7 +202,7 @@ export default async function GivePage() {
               <span className="material-symbols-rounded text-2xl text-destiny-orange">sms</span>
               <h2 className="text-2xl font-black text-destiny-grey">Text to Give</h2>
             </div>
-            <p className="mb-8 text-sm text-destiny-grey/60">
+            <p className="mb-8 text-sm text-muted">
               Send a text message to give instantly — no app or account needed.
             </p>
           </AnimateIn>
@@ -219,7 +219,7 @@ export default async function GivePage() {
                   <p className="mb-2 text-xs font-bold uppercase tracking-widest text-destiny-orange">Step 2</p>
                   <span className="material-symbols-rounded mb-3 block text-4xl text-destiny-grey/40">payments</span>
                   <p className="text-sm font-bold text-destiny-grey">Followed by the amount</p>
-                  <p className="mt-1 text-2xl font-black text-destiny-orange">e.g. give 10 <span className="text-base text-destiny-grey/40">or</span> give 10/mo</p>
+                  <p className="mt-1 text-2xl font-black text-destiny-orange">e.g. give 10 <span className="text-base text-subtle">or</span> give 10/mo</p>
                 </div>
                 <div className="text-center">
                   <p className="mb-2 text-xs font-bold uppercase tracking-widest text-destiny-orange">Step 3</p>
@@ -228,7 +228,7 @@ export default async function GivePage() {
                   <p className="mt-1 text-2xl font-black text-destiny-orange">{content.text_number ?? "07380 307 800"}</p>
                 </div>
               </div>
-              <p className="mt-6 text-center text-xs text-destiny-grey/40">
+              <p className="mt-6 text-center text-xs text-subtle">
                 Add <span className="font-bold">/mo</span> to the end of your amount for a monthly recurring gift.
               </p>
             </div>
@@ -251,7 +251,7 @@ export default async function GivePage() {
               <span className="material-symbols-rounded text-2xl text-destiny-orange">volunteer_activism</span>
               <h2 className="text-2xl font-black text-destiny-grey">Gift Aid</h2>
             </div>
-            <p className="mb-8 text-sm leading-relaxed text-destiny-grey/60">
+            <p className="mb-8 text-sm leading-relaxed text-muted">
               If you&apos;re a UK taxpayer, Gift Aid allows us to reclaim 25p on every £1 you donate
               at no extra cost to you — making your gift go even further.
             </p>
@@ -266,13 +266,13 @@ export default async function GivePage() {
                   "Completing our online Gift Aid Declaration",
                   "Making a declaration in-person at church",
                 ].map((item) => (
-                  <li key={item} className="flex items-center gap-3 text-sm text-destiny-grey/70">
+                  <li key={item} className="flex items-center gap-3 text-sm text-muted">
                     <span className="material-symbols-rounded shrink-0 text-base text-destiny-orange">check_circle</span>
                     {item}
                   </li>
                 ))}
               </ul>
-              <p className="mb-6 text-sm leading-relaxed text-destiny-grey/60">
+              <p className="mb-6 text-sm leading-relaxed text-muted">
                 Please remember to let us know of any changes to your tax status, including changes
                 to your name and address, so we can ensure that no further claims are made against
                 your donations.

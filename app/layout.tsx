@@ -455,11 +455,29 @@ export default async function RootLayout({
               className="flex min-h-screen flex-col bg-[var(--background)] text-[var(--foreground)]"
               style={{ paddingBottom: "var(--podcast-dock-height, 0px)" }}
             >
+              {/* Skip link. The header carries a full nav with two dropdowns,
+                  so without this every keyboard and screen-reader user tabs
+                  through the entire site menu on every page before reaching
+                  any content (WCAG 2.4.1). It is visually hidden until
+                  focused, and it is the first focusable thing in the DOM.
+
+                  Not part of ChurchHeader, which returns null on /admin,
+                  /nfc and /portal — those pages need the skip target too. */}
+              <a
+                href="#main"
+                className="sr-only rounded-full bg-destiny-orange px-5 py-3 text-sm font-bold text-white shadow-lg focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[100] focus:outline-none focus:ring-2 focus:ring-white"
+              >
+                Skip to main content
+              </a>
               <BannerSpacer />
               <Suspense>
                 <ChurchHeader />
               </Suspense>
-              <main className="flex-1">{children}</main>
+              {/* tabIndex={-1} makes the skip link's target focusable, so focus
+                  genuinely moves here rather than only scrolling the page. */}
+              <main id="main" tabIndex={-1} className="flex-1 focus:outline-none">
+                {children}
+              </main>
               <FooterGate><ChurchFooter /></FooterGate>
             </div>
           </PodcastPlayerProvider>

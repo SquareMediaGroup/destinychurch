@@ -23,7 +23,7 @@ const EVENT_TYPES = [
 ];
 
 const inputClass =
-  "w-full rounded-2xl border border-black/10 bg-[#f5f7fa] px-4 py-3 text-sm text-destiny-grey outline-none transition focus:border-destiny-orange focus:ring-2 focus:ring-destiny-orange/20 placeholder:text-destiny-grey/40";
+  "w-full rounded-2xl border border-black/10 bg-[#f5f7fa] px-4 py-3 text-sm text-destiny-grey outline-none transition focus:border-destiny-orange focus:ring-2 focus:ring-destiny-orange/20 placeholder:text-subtle";
 const labelClass = "mb-1.5 block text-sm font-bold text-destiny-grey";
 
 function getDateRestrictionError(date: string, endTime: string): string | null {
@@ -102,7 +102,7 @@ export default function HireForm() {
       </div>
 
       <div>
-        <label className={labelClass} htmlFor="organisation">Organisation / Group <span className="text-destiny-grey/40 font-normal">(optional)</span></label>
+        <label className={labelClass} htmlFor="organisation">Organisation / Group <span className="text-subtle font-normal">(optional)</span></label>
         <input id="organisation" name="organisation" type="text" placeholder="Company or group name" className={inputClass} />
       </div>
 
@@ -206,12 +206,12 @@ export default function HireForm() {
       </div>
 
       <div>
-        <label className={labelClass} htmlFor="requirements">AV / Special Requirements <span className="text-destiny-grey/40 font-normal">(optional)</span></label>
+        <label className={labelClass} htmlFor="requirements">AV / Special Requirements <span className="text-subtle font-normal">(optional)</span></label>
         <input id="requirements" name="requirements" type="text" placeholder="Projector, PA system, chairs layout, etc." className={inputClass} />
       </div>
 
       <div>
-        <label className={labelClass} htmlFor="message">Anything else we should know? <span className="text-destiny-grey/40 font-normal">(optional)</span></label>
+        <label className={labelClass} htmlFor="message">Anything else we should know? <span className="text-subtle font-normal">(optional)</span></label>
         <textarea id="message" name="message" rows={4} placeholder="Any other details about your event…" className={`${inputClass} resize-none`} />
       </div>
 
@@ -227,7 +227,7 @@ export default function HireForm() {
         {status === "loading" ? "Sending enquiry…" : "Send Hire Enquiry"}
       </button>
 
-      <p className="text-center text-xs text-destiny-grey/40">
+      <p className="text-center text-xs text-subtle">
         We aim to respond within 2 working days. For urgent enquiries call{" "}
         <a href="tel:+441642559797" className="underline hover:text-destiny-orange">01642 559797</a>.
       </p>

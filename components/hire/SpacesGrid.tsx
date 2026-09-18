@@ -122,14 +122,14 @@ export default function SpacesGrid() {
           <AnimateIn key={space.name} delay={(i % 3) * 80} className="h-full">
             <button
               onClick={() => setActive(space)}
-              className="group flex h-full w-full flex-col rounded-3xl bg-[#f5f7fa] p-7 text-left transition duration-300 hover:-translate-y-1 hover:shadow-md focus-visible:outline-none"
+              className="group flex h-full w-full flex-col rounded-3xl bg-[#f5f7fa] p-7 text-left transition duration-300 hover:-translate-y-1 hover:shadow-md"
             >
               <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-destiny-orange/10 transition group-hover:bg-destiny-orange/20">
                 <span className="material-symbols-rounded text-2xl text-destiny-orange">{space.icon}</span>
               </div>
               <h3 className="mb-1 font-black text-destiny-grey">{space.name}</h3>
               <p className="mb-3 text-xs font-bold text-destiny-orange">{space.capacity}</p>
-              <p className="flex-1 text-sm leading-relaxed text-destiny-grey/60">{space.description}</p>
+              <p className="flex-1 text-sm leading-relaxed text-muted">{space.description}</p>
               <span className="mt-4 inline-flex items-center gap-1 text-xs font-bold text-destiny-orange">
                 See details
                 <span className="material-symbols-rounded text-sm">arrow_forward</span>
@@ -218,13 +218,13 @@ function SpaceModal({ space, onClose }: { space: Space; onClose: () => void }) {
               <p className="mt-1 text-sm font-bold text-destiny-orange">
                 {space.capacity}
                 {space.capacityNote && (
-                  <span className="ml-1 font-normal text-destiny-grey/50">— {space.capacityNote}</span>
+                  <span className="ml-1 font-normal text-subtle">— {space.capacityNote}</span>
                 )}
               </p>
             </div>
             <button
               onClick={onClose}
-              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-black/5 text-destiny-grey/50 transition hover:bg-black/10"
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-black/5 text-subtle transition hover:bg-black/10"
               aria-label="Close"
             >
               <span className="material-symbols-rounded text-[1.2rem]">close</span>
@@ -238,20 +238,20 @@ function SpaceModal({ space, onClose }: { space: Space; onClose: () => void }) {
           ) : (
             <div className="mx-6 mb-5 flex items-center gap-2 rounded-2xl bg-[#f5f7fa] px-4 py-3">
               <span className="material-symbols-rounded text-lg text-destiny-grey/30">photo_camera</span>
-              <p className="text-xs text-destiny-grey/50">Photos of this space are coming soon.</p>
+              <p className="text-xs text-subtle">Photos of this space are coming soon.</p>
             </div>
           )}
 
           <div className="px-6 pb-4">
-            <p className="text-sm leading-relaxed text-destiny-grey/70">{space.description}</p>
+            <p className="text-sm leading-relaxed text-muted">{space.description}</p>
           </div>
 
           {space.features.length > 0 && (
             <div className="mx-6 mb-6 rounded-2xl bg-[#f5f7fa] p-4">
-              <p className="mb-3 text-[0.7rem] font-bold uppercase tracking-widest text-destiny-grey/40">Equipment &amp; Features</p>
+              <p className="mb-3 text-[0.7rem] font-bold uppercase tracking-widest text-subtle">Equipment &amp; Features</p>
               <ul className="space-y-2">
                 {space.features.map((f) => (
-                  <li key={f} className="flex items-start gap-2.5 text-[0.82rem] text-destiny-grey/70">
+                  <li key={f} className="flex items-start gap-2.5 text-[0.82rem] text-muted">
                     <span className="material-symbols-rounded mt-0.5 shrink-0 text-[0.95rem] text-destiny-orange">check_circle</span>
                     {f}
                   </li>

@@ -47,7 +47,7 @@ export default function NextServiceCountdown({
   const countdown = isClient ? formatCountdown(next, now) : null;
 
   return (
-    <p className={`text-sm text-destiny-grey/60 ${className}`.trim()}>
+    <p className={`text-sm text-muted ${className}`.trim()}>
       <span className="font-bold text-destiny-grey">
         {formatServiceDay(next)}, {usable ? formatClockTime(usable) : "11:00am"}
       </span>

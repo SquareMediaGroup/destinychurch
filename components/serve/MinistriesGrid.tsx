@@ -336,13 +336,13 @@ export default function MinistriesGrid() {
           <AnimateIn key={m.name} delay={fading ? 0 : (i % 4) * 60} className={displayedFilter === "All" ? "h-full" : "h-auto w-full sm:w-[calc(50%-0.5rem)] lg:w-[calc(33.333%-0.667rem)] xl:w-[calc(25%-0.75rem)]"}>
             <button
               onClick={() => setActive(m)}
-              className="group flex h-full w-full flex-col items-center rounded-3xl bg-white p-8 text-center shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-md focus-visible:outline-none"
+              className="group flex h-full w-full flex-col items-center rounded-3xl bg-white p-8 text-center shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-md"
             >
               <div className="mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-destiny-orange/10 transition group-hover:bg-destiny-orange/20">
                 <span className="material-symbols-rounded text-4xl text-destiny-orange">{m.icon}</span>
               </div>
               <h3 className="mb-2 text-xl font-black text-destiny-grey">{m.name}</h3>
-              <p className="text-sm leading-relaxed text-destiny-grey/60">{m.description}</p>
+              <p className="text-sm leading-relaxed text-muted">{m.description}</p>
             </button>
           </AnimateIn>
         ))}
@@ -441,7 +441,7 @@ function MinistryModal({
             </div>
             <button
               onClick={onClose}
-              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-black/5 text-destiny-grey/50 transition hover:bg-black/10"
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-black/5 text-subtle transition hover:bg-black/10"
               aria-label="Close"
             >
               <span className="material-symbols-rounded text-[1.2rem]">close</span>
@@ -457,7 +457,7 @@ function MinistryModal({
 
           {/* Description */}
           <div className="px-6 pb-4">
-            <p className="text-sm leading-relaxed text-destiny-grey/70">
+            <p className="text-sm leading-relaxed text-muted">
               {m.detail}
             </p>
           </div>
@@ -465,12 +465,12 @@ function MinistryModal({
           {/* Requirements */}
           {m.requirements && m.requirements.length > 0 && (
             <div className="mx-6 mb-6 rounded-2xl bg-[#f5f7fa] p-4">
-              <p className="mb-3 text-[0.7rem] font-bold uppercase tracking-widest text-destiny-grey/40">
+              <p className="mb-3 text-[0.7rem] font-bold uppercase tracking-widest text-subtle">
                 Requirements
               </p>
               <ul className="space-y-2">
                 {m.requirements.map((req, i) => (
-                  <li key={i} className="flex items-start gap-2.5 text-[0.82rem] text-destiny-grey/70">
+                  <li key={i} className="flex items-start gap-2.5 text-[0.82rem] text-muted">
                     <span
                       className="material-symbols-rounded mt-0.5 shrink-0 text-[0.95rem]"
                       style={{ color: m.color }}

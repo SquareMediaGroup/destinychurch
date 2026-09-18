@@ -11,7 +11,7 @@ interface Props {
 export default function GiveCTA({ variant = "dark" }: Props) {
   const [open, setOpen] = useState(false);
 
-  const subtitleClass = variant === "dark" ? "text-white/60" : "text-destiny-grey/50";
+  const subtitleClass = variant === "dark" ? "text-on-dark-muted" : "text-subtle";
 
   return (
     <>

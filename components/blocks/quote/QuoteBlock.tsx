@@ -24,7 +24,7 @@ export default function QuoteBlock({
 }: QuoteProps & BlockRenderContext) {
   if (!quote.trim()) {
     return mode === "edit" ? (
-      <div className="rounded-2xl border border-dashed border-black/15 px-5 py-6 text-center text-sm text-destiny-grey/45">
+      <div className="rounded-2xl border border-dashed border-black/15 px-5 py-6 text-center text-sm text-subtle">
         Add the quote in the settings panel.
       </div>
     ) : null;
@@ -59,7 +59,7 @@ export default function QuoteBlock({
               {" · "}
             </span>
           )}
-          {role && <span className="text-destiny-grey/55">{role}</span>}
+          {role && <span className="text-subtle">{role}</span>}
         </figcaption>
       )}
     </figure>

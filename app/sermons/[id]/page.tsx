@@ -162,7 +162,7 @@ export default async function SermonPage({ params }: PageProps) {
         <div className="mb-4 flex items-center justify-between">
           <Link
             href="/sermons"
-            className="inline-flex items-center gap-1.5 text-sm font-semibold text-destiny-grey/60 transition hover:text-destiny-orange"
+            className="inline-flex items-center gap-1.5 text-sm font-semibold text-muted transition hover:text-destiny-orange"
           >
             <span className="material-symbols-rounded text-base">arrow_back</span>
             Back to Sermons
@@ -194,7 +194,7 @@ export default async function SermonPage({ params }: PageProps) {
           </div>
 
           {/* Meta row — server-rendered */}
-          <p className="mb-4 mt-1 text-sm text-destiny-grey/55">
+          <p className="mb-4 mt-1 text-sm text-subtle">
             Destiny Church Tees Valley{date && <> &middot; {date}</>}
           </p>
         </SermonJumpProvider>
@@ -228,7 +228,7 @@ export default async function SermonPage({ params }: PageProps) {
                 </span>
               </div>
               <p className="text-sm font-bold text-destiny-grey">{card.label}</p>
-              <p className="mt-0.5 text-xs text-destiny-grey/55">{card.sub}</p>
+              <p className="mt-0.5 text-xs text-subtle">{card.sub}</p>
               <svg
                 className="absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-destiny-grey/25 transition group-hover:translate-x-1 group-hover:text-destiny-orange"
                 fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}

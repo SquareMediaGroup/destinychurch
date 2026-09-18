@@ -17,7 +17,7 @@ export default function WhatsOnHero() {
             <h1 className="text-5xl font-black text-white md:text-6xl lg:text-7xl">
               What&apos;s On
             </h1>
-            <p className="mt-4 text-base text-white/70 md:text-lg">
+            <p className="mt-4 text-base text-on-dark-muted md:text-lg">
               Learn more about the Events and Courses at DC
             </p>
           </AnimateIn>

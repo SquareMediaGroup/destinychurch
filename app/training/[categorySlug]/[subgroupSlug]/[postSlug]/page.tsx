@@ -66,7 +66,7 @@ export default async function TrainingPostPage({
         <AnimateIn>
           <Link
             href={`/training/${category.slug}/${subgroup.slug}`}
-            className="inline-flex items-center gap-1.5 text-xs font-bold text-destiny-grey/45 transition hover:text-destiny-orange"
+            className="inline-flex items-center gap-1.5 text-xs font-bold text-subtle transition hover:text-destiny-orange"
           >
             <span className="material-symbols-rounded text-base">arrow_back</span>
             {subgroup.name}
@@ -78,7 +78,7 @@ export default async function TrainingPostPage({
             {post.title}
           </h1>
           {post.summary && (
-            <p className="mt-3 text-base text-destiny-grey/60">{post.summary}</p>
+            <p className="mt-3 text-base text-muted">{post.summary}</p>
           )}
         </AnimateIn>
 
@@ -89,7 +89,7 @@ export default async function TrainingPostPage({
               className="rte-content text-[0.97rem] text-destiny-grey/80"
             />
           ) : (
-            <p className="text-sm text-destiny-grey/55">
+            <p className="text-sm text-subtle">
               This post doesn&apos;t have any content yet.
             </p>
           )}
@@ -102,7 +102,7 @@ export default async function TrainingPostPage({
                 href={`${base}/${prev.slug}`}
                 className="group flex flex-col rounded-2xl border border-black/5 bg-white p-4 shadow-sm transition hover:border-destiny-orange/30 hover:shadow-md"
               >
-                <span className="flex items-center gap-1 text-[11px] font-bold uppercase tracking-wider text-destiny-grey/40">
+                <span className="flex items-center gap-1 text-[11px] font-bold uppercase tracking-wider text-subtle">
                   <span className="material-symbols-rounded text-sm">arrow_back</span>
                   Previous
                 </span>
@@ -119,7 +119,7 @@ export default async function TrainingPostPage({
                 href={`${base}/${next.slug}`}
                 className="group flex flex-col items-end rounded-2xl border border-black/5 bg-white p-4 text-right shadow-sm transition hover:border-destiny-orange/30 hover:shadow-md"
               >
-                <span className="flex items-center gap-1 text-[11px] font-bold uppercase tracking-wider text-destiny-grey/40">
+                <span className="flex items-center gap-1 text-[11px] font-bold uppercase tracking-wider text-subtle">
                   Next
                   <span className="material-symbols-rounded text-sm">arrow_forward</span>
                 </span>
@@ -132,7 +132,7 @@ export default async function TrainingPostPage({
                 href={base}
                 className="group flex flex-col items-end rounded-2xl border border-black/5 bg-white p-4 text-right shadow-sm transition hover:border-destiny-orange/30 hover:shadow-md"
               >
-                <span className="flex items-center gap-1 text-[11px] font-bold uppercase tracking-wider text-destiny-grey/40">
+                <span className="flex items-center gap-1 text-[11px] font-bold uppercase tracking-wider text-subtle">
                   Finish
                   <span className="material-symbols-rounded text-sm">done_all</span>
                 </span>

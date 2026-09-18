@@ -60,8 +60,8 @@ export default function PrivacyPage() {
         <AnimateIn>
           <p className="mb-2 text-xs font-bold uppercase tracking-widest text-destiny-orange">Legal</p>
           <h1 className="mb-2 text-4xl font-black text-destiny-grey md:text-5xl">Privacy Policy</h1>
-          <p className="mb-4 text-sm text-destiny-grey/40">Last modified: May 2025</p>
-          <p className="mb-12 text-base leading-relaxed text-destiny-grey/70">
+          <p className="mb-4 text-sm text-subtle">Last modified: May 2025</p>
+          <p className="mb-12 text-base leading-relaxed text-muted">
             Destiny Church uses personal data about individuals for the purpose of general church administration
             and communication. Destiny Church recognises the importance of the correct and lawful treatment of
             personal data. All personal data we process is managed appropriately and in compliance with the
@@ -76,7 +76,7 @@ export default function PrivacyPage() {
                 <h2 className="mb-3 text-xl font-black text-destiny-grey">{section.title}</h2>
                 <div className="space-y-3">
                   {section.content.split("\n\n").map((para, j) => (
-                    <p key={j} className="text-sm leading-relaxed text-destiny-grey/70 whitespace-pre-line">
+                    <p key={j} className="text-sm leading-relaxed text-muted whitespace-pre-line">
                       {para}
                     </p>
                   ))}

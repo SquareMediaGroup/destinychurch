@@ -50,7 +50,7 @@ export default function ChurchSuiteEmbed({
         <span className="material-symbols-rounded text-4xl text-destiny-grey/30">cookie</span>
         <div>
           <p className="text-base font-black text-destiny-grey">Cookies required to load this form</p>
-          <p className="mt-1 max-w-xs text-sm text-destiny-grey/50">
+          <p className="mt-1 max-w-xs text-sm text-subtle">
             This form is provided by ChurchSuite. Accept cookies to load it here.
           </p>
         </div>
@@ -63,12 +63,12 @@ export default function ChurchSuiteEmbed({
           </button>
           <button
             onClick={() => savePreferences({ media: true, analytics: false })}
-            className="rounded-full border border-destiny-grey/20 px-5 py-2.5 text-sm font-medium text-destiny-grey/70 transition hover:border-destiny-grey/40 hover:text-destiny-grey"
+            className="rounded-full border border-destiny-grey/20 px-5 py-2.5 text-sm font-medium text-muted transition hover:border-destiny-grey/40 hover:text-destiny-grey"
           >
             Necessary + forms only, no tracking
           </button>
         </div>
-        <p className="mt-4 max-w-xs text-[11px] leading-relaxed text-destiny-grey/40">
+        <p className="mt-4 max-w-xs text-[11px] leading-relaxed text-subtle">
           By accepting, you agree to our{" "}
           <Link href="/privacy" className="underline underline-offset-2 hover:text-destiny-orange">Privacy Policy</Link>{" "}
           and{" "}

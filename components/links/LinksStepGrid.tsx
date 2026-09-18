@@ -22,7 +22,7 @@ export default function LinksStepGrid({ steps }: { steps: Step[] }) {
             <Link
               href={step.href}
               onClick={() => trackClick("links", step.href, step.title)}
-              className="step-card group relative flex h-full flex-col overflow-hidden rounded-2xl border border-black/10 bg-white p-6 outline-none sm:p-7"
+              className="step-card group relative flex h-full flex-col overflow-hidden rounded-2xl border border-black/10 bg-white p-6 sm:p-7"
             >
               {/* orange fill on hover */}
               <span aria-hidden className="step-fill absolute inset-0 bg-destiny-orange" />
@@ -44,7 +44,7 @@ export default function LinksStepGrid({ steps }: { steps: Step[] }) {
                   <h2 className="step-title font-[family-name:var(--font-heading)] text-xl font-black leading-tight text-destiny-grey sm:text-2xl">
                     {step.title}
                   </h2>
-                  <p className="step-blurb mt-1 text-sm text-destiny-grey/55">
+                  <p className="step-blurb mt-1 text-sm text-subtle">
                     {step.blurb}
                   </p>
                 </div>

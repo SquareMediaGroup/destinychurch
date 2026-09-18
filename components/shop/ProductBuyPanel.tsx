@@ -99,7 +99,7 @@ export default function ProductBuyPanel({ product }: { product: ProductWithVaria
       {/* Colour */}
       {hasColor && (
         <div className="mt-6">
-          <p className="text-xs font-bold uppercase tracking-[0.2em] text-destiny-grey/50">
+          <p className="text-xs font-bold uppercase tracking-[0.2em] text-subtle">
             Colour{selColor ? `: ${selColor}` : ""}
           </p>
           <div className="mt-3 flex flex-wrap gap-2.5">
@@ -140,7 +140,7 @@ export default function ProductBuyPanel({ product }: { product: ProductWithVaria
       {/* Size */}
       {hasSize && (
         <div className="mt-6">
-          <p className="text-xs font-bold uppercase tracking-[0.2em] text-destiny-grey/50">
+          <p className="text-xs font-bold uppercase tracking-[0.2em] text-subtle">
             Size
           </p>
           <div className="mt-3 flex flex-wrap gap-2.5">
@@ -174,7 +174,7 @@ export default function ProductBuyPanel({ product }: { product: ProductWithVaria
           <button
             type="button"
             onClick={() => setQty((q) => Math.max(1, q - 1))}
-            className="flex h-11 w-11 items-center justify-center text-destiny-grey/70 transition hover:text-destiny-grey"
+            className="flex h-11 w-11 items-center justify-center text-muted transition hover:text-destiny-grey"
             aria-label="Decrease quantity"
           >
             <span className="material-symbols-rounded text-lg">remove</span>
@@ -185,7 +185,7 @@ export default function ProductBuyPanel({ product }: { product: ProductWithVaria
             onClick={() =>
               setQty((q) => Math.min(selected?.stock ?? 99, q + 1))
             }
-            className="flex h-11 w-11 items-center justify-center text-destiny-grey/70 transition hover:text-destiny-grey"
+            className="flex h-11 w-11 items-center justify-center text-muted transition hover:text-destiny-grey"
             aria-label="Increase quantity"
           >
             <span className="material-symbols-rounded text-lg">add</span>
@@ -203,7 +203,7 @@ export default function ProductBuyPanel({ product }: { product: ProductWithVaria
         </button>
       </div>
 
-      <p className="mt-4 flex items-center gap-1.5 text-xs text-destiny-grey/50">
+      <p className="mt-4 flex items-center gap-1.5 text-xs text-subtle">
         <span className="material-symbols-rounded text-sm">storefront</span>
         Collect at church — we&apos;ll email you when it&apos;s ready.
       </p>

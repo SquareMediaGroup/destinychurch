@@ -56,7 +56,7 @@ export default function ReportBugLink() {
       <button
         type="button"
         onClick={openModal}
-        className="text-left text-white/50 underline underline-offset-2 transition hover:text-white"
+        className="text-left text-on-dark-subtle underline underline-offset-2 transition hover:text-white"
       >
         Report a Bug
       </button>
@@ -80,7 +80,7 @@ export default function ReportBugLink() {
                 <h2 id="report-bug-title" className="text-xl font-bold text-destiny-grey">
                   Report a Bug
                 </h2>
-                <p className="mt-1 text-sm text-destiny-grey/60">
+                <p className="mt-1 text-sm text-muted">
                   Found something broken? Let us know!
                 </p>
               </div>
@@ -88,7 +88,7 @@ export default function ReportBugLink() {
                 type="button"
                 onClick={closeModal}
                 aria-label="Close"
-                className="shrink-0 rounded-full p-1 text-destiny-grey/50 transition hover:bg-black/5 hover:text-destiny-grey"
+                className="shrink-0 rounded-full p-1 text-subtle transition hover:bg-black/5 hover:text-destiny-grey"
               >
                 <span className="material-symbols-rounded block text-2xl">close</span>
               </button>

@@ -44,7 +44,7 @@ export default function ChatComposer({
 
   if (closed) {
     return (
-      <p className="border-t border-black/5 px-4 py-4 text-center text-sm text-destiny-grey/45">
+      <p className="border-t border-black/5 px-4 py-4 text-center text-sm text-subtle">
         The chat is closed.
       </p>
     );
@@ -112,7 +112,7 @@ export default function ChatComposer({
       )}
 
       {isHost && hostName && (
-        <p className="mb-1.5 text-[11px] text-destiny-grey/40">
+        <p className="mb-1.5 text-[11px] text-subtle">
           Posting as <span className="font-bold text-destiny-orange">{hostName}</span> (Host)
         </p>
       )}
@@ -160,7 +160,7 @@ export default function ChatComposer({
       )}
 
       {needsName && !error && (
-        <p className="mt-2 text-[11px] text-destiny-grey/40">
+        <p className="mt-2 text-[11px] text-subtle">
           No account needed — your name is only used to label your messages.
         </p>
       )}

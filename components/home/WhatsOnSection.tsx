@@ -48,7 +48,7 @@ function EventCardPlaceholder({ index }: { index: number }) {
         >
           {item.name}
         </h3>
-        <p className="mt-1.5 text-sm text-destiny-grey/55">{item.location}</p>
+        <p className="mt-1.5 text-sm text-subtle">{item.location}</p>
       </div>
     </div>
   );
@@ -86,7 +86,7 @@ export default async function WhatsOnSection({
             </h2>
             <Link
               href="/whats-on"
-              className="text-xs font-semibold text-destiny-grey/70 underline underline-offset-4 transition hover:text-destiny-grey sm:text-sm"
+              className="text-xs font-semibold text-muted underline underline-offset-4 transition hover:text-destiny-grey sm:text-sm"
             >
               View Church Calendar
             </Link>

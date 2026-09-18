@@ -74,7 +74,7 @@ export default async function HirePage() {
           <AnimateIn className="relative z-10">
             <p className="mb-3 text-xs font-bold uppercase tracking-widest text-destiny-orange">Venue Hire</p>
             <h1 className="mb-4 text-5xl font-black text-white md:text-6xl lg:text-7xl">Hire Our Venue</h1>
-            <p className="mx-auto max-w-xl text-base text-white/60 md:text-lg">
+            <p className="mx-auto max-w-xl text-base text-on-dark-muted md:text-lg">
               Destiny Centre is available for community, corporate and private hire.
               A flexible, well-equipped space in the heart of Stockton-on-Tees.
             </p>
@@ -102,7 +102,7 @@ export default async function HirePage() {
           <AnimateIn className="mb-12 text-center">
             <p className="mb-3 text-xs font-bold uppercase tracking-widest text-destiny-orange">Our Spaces</p>
             <h2 className="text-3xl font-black text-destiny-grey md:text-4xl">What&apos;s Available</h2>
-            <p className="mx-auto mt-3 max-w-xl text-sm text-destiny-grey/50">
+            <p className="mx-auto mt-3 max-w-xl text-sm text-subtle">
               Tap a space below for photos, capacity and equipment details.
             </p>
           </AnimateIn>
@@ -116,7 +116,7 @@ export default async function HirePage() {
           <AnimateIn className="mb-12 text-center">
             <p className="mb-3 text-xs font-bold uppercase tracking-widest text-destiny-orange">Every Hire, No Exceptions</p>
             <h2 className="text-3xl font-black text-white md:text-4xl">Always Included</h2>
-            <p className="mx-auto mt-3 max-w-xl text-sm text-white/50">
+            <p className="mx-auto mt-3 max-w-xl text-sm text-on-dark-subtle">
               No matter what you&apos;re booking or how long for, every hire comes with all of the following — at no extra cost.
             </p>
           </AnimateIn>
@@ -129,7 +129,7 @@ export default async function HirePage() {
                   </div>
                   <div>
                     <p className="mb-0.5 text-sm font-bold text-white">{item.label}</p>
-                    <p className="text-xs leading-relaxed text-white/50">{item.detail}</p>
+                    <p className="text-xs leading-relaxed text-on-dark-subtle">{item.detail}</p>
                   </div>
                 </div>
               </AnimateIn>
@@ -151,7 +151,7 @@ export default async function HirePage() {
               <span className="material-symbols-rounded shrink-0 text-2xl text-destiny-orange">calendar_month</span>
               <div>
                 <p className="text-sm font-black text-destiny-grey">Availability &amp; Time Restrictions</p>
-                <p className="mt-0.5 text-sm text-destiny-grey/60">
+                <p className="mt-0.5 text-sm text-muted">
                   We are <span className="font-bold text-destiny-grey">not available for hire on Sundays</span>.
                   On <span className="font-bold text-destiny-grey">Wednesdays and Thursdays</span>, all hires must end by <span className="font-bold text-destiny-grey">6:00 PM</span>.
                   There are no other date or time restrictions.
@@ -171,7 +171,7 @@ export default async function HirePage() {
             <AnimateIn>
               <p className="mb-3 text-xs font-bold uppercase tracking-widest text-destiny-orange">Get in Touch</p>
               <h2 className="mb-4 text-3xl font-black text-destiny-grey md:text-4xl">Make a Hire Enquiry</h2>
-              <p className="mb-8 text-sm leading-relaxed text-destiny-grey/60">
+              <p className="mb-8 text-sm leading-relaxed text-muted">
                 Fill in the form and we&apos;ll get back to you within 2 working days with availability and a quote.
                 Prefer to speak to someone? Call or email us directly.
               </p>
@@ -183,7 +183,7 @@ export default async function HirePage() {
                   </div>
                   <div>
                     <p className="mb-0.5 text-sm font-bold text-destiny-grey">Address</p>
-                    <p className="text-sm text-destiny-grey/60">
+                    <p className="text-sm text-muted">
                       Destiny Centre<br />Norton Road<br />Stockton-on-Tees, TS20 2QQ
                     </p>
                   </div>
@@ -212,7 +212,7 @@ export default async function HirePage() {
                   </div>
                   <div>
                     <p className="mb-0.5 text-sm font-bold text-destiny-grey">Parking</p>
-                    <p className="text-sm text-destiny-grey/60">Free on-site parking for hirers and guests</p>
+                    <p className="text-sm text-muted">Free on-site parking for hirers and guests</p>
                   </div>
                 </div>
                 <div className="flex items-start gap-4">
@@ -221,7 +221,7 @@ export default async function HirePage() {
                   </div>
                   <div>
                     <p className="mb-0.5 text-sm font-bold text-destiny-grey">Production Staff</p>
-                    <p className="text-sm text-destiny-grey/60">
+                    <p className="text-sm text-muted">
                       A member of our Production Team can be provided for your event at an additional <span className="font-bold text-destiny-grey">£25 per hour</span> of hire.
                     </p>
                   </div>

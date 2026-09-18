@@ -60,7 +60,7 @@ export default function SafeguardingPage() {
         <AnimateIn>
           <p className="mb-2 text-xs font-bold uppercase tracking-widest text-destiny-orange">Policy</p>
           <h1 className="mb-2 text-4xl font-black text-destiny-grey md:text-5xl">Safeguarding Policy</h1>
-          <p className="mb-4 text-sm text-destiny-grey/40">Last modified: March 2026</p>
+          <p className="mb-4 text-sm text-subtle">Last modified: March 2026</p>
           <div className="mb-12 rounded-2xl bg-destiny-orange/10 px-5 py-4">
             <p className="text-sm font-bold text-destiny-orange">
               If you have an immediate safeguarding concern, call 999. For non-emergency concerns, contact our Safeguarding Lead at admin@destinytees.uk.
@@ -75,7 +75,7 @@ export default function SafeguardingPage() {
                 <h2 className="mb-3 text-xl font-black text-destiny-grey">{section.title}</h2>
                 <div className="space-y-3">
                   {section.content.split("\n\n").map((para, j) => (
-                    <p key={j} className="text-sm leading-relaxed text-destiny-grey/70 whitespace-pre-line">
+                    <p key={j} className="text-sm leading-relaxed text-muted whitespace-pre-line">
                       {para}
                     </p>
                   ))}

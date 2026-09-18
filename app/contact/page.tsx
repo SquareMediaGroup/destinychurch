@@ -27,7 +27,7 @@ export default function ContactPage() {
           <AnimateIn>
             <p className="mb-3 text-xs font-bold uppercase tracking-widest text-destiny-orange">Get in Touch</p>
             <h1 className="mb-4 text-5xl font-black text-white md:text-6xl lg:text-7xl">Contact Us</h1>
-            <p className="mx-auto max-w-xl text-base text-white/60 md:text-lg">
+            <p className="mx-auto max-w-xl text-base text-on-dark-muted md:text-lg">
               We&apos;d love to hear from you. Send us a message and we&apos;ll get back to you as soon as possible.
             </p>
           </AnimateIn>
@@ -48,7 +48,7 @@ export default function ContactPage() {
                   </div>
                   <div>
                     <p className="mb-1 text-sm font-bold text-destiny-grey">Address</p>
-                    <p className="text-sm leading-relaxed text-destiny-grey/60">
+                    <p className="text-sm leading-relaxed text-muted">
                       Destiny Centre<br />
                       Norton Road<br />
                       Stockton-on-Tees<br />
@@ -87,7 +87,7 @@ export default function ContactPage() {
                   </div>
                   <div>
                     <p className="mb-1 text-sm font-bold text-destiny-grey">Sunday Service</p>
-                    <p className="text-sm text-destiny-grey/60">11:00am every Sunday</p>
+                    <p className="text-sm text-muted">11:00am every Sunday</p>
                   </div>
                 </div>
               </div>
@@ -103,7 +103,7 @@ export default function ContactPage() {
                 <span className="material-symbols-rounded text-xl text-destiny-orange">waving_hand</span>
                 <div className="flex-1">
                   <p className="text-sm font-bold text-destiny-grey">New here?</p>
-                  <p className="text-xs text-destiny-grey/60">Fill in a connect card instead — it&apos;s the best way to say hello.</p>
+                  <p className="text-xs text-muted">Fill in a connect card instead — it&apos;s the best way to say hello.</p>
                 </div>
                 <span className="material-symbols-rounded text-sm text-destiny-orange">arrow_forward</span>
               </Link>
@@ -123,7 +123,7 @@ export default function ContactPage() {
             <h2 className="mb-4 text-4xl font-black text-destiny-grey md:text-5xl">
               First Impressions
             </h2>
-            <p className="text-base leading-relaxed text-destiny-grey/60">
+            <p className="text-base leading-relaxed text-muted">
               Visited us recently? We&apos;d love to know what you thought — your feedback helps us make every visit better.
             </p>
           </AnimateIn>

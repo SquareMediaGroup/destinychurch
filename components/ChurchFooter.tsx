@@ -57,12 +57,12 @@ export default async function ChurchFooter() {
                 />
               </div>
             </Link>
-            <p className="max-w-[220px] text-sm text-white/70">
+            <p className="max-w-[220px] text-sm text-on-dark-muted">
               Destiny Church Tees Valley is a multi-cultural church where all
               can find a place to belong and thrive. We&apos;d love to welcome
               you through our doors!
             </p>
-            <div className="text-sm text-white/70">
+            <div className="text-sm text-on-dark-muted">
               <p className="font-bold text-white/90">Destiny Centre</p>
               <p>Norton Road</p>
               <p>Stockton-on-Tees</p>
@@ -77,7 +77,7 @@ export default async function ChurchFooter() {
         </div>
 
         {/* Bottom bar */}
-        <div className="mt-10 flex flex-col gap-3 border-t border-white/10 pt-6 text-xs text-white/50 sm:flex-row sm:items-center sm:justify-between">
+        <div className="mt-10 flex flex-col gap-3 border-t border-white/10 pt-6 text-xs text-on-dark-subtle sm:flex-row sm:items-center sm:justify-between">
           <span>
             &copy; {new Date().getFullYear()}{" "}Destiny Church Tees Valley &middot;{" "}
             <Link

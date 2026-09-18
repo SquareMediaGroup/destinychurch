@@ -24,7 +24,7 @@ export default function WorshipWithUsSection() {
             <h2 className="mb-3 text-2xl font-black text-white sm:mb-4 sm:text-3xl md:text-4xl">
               Worship With Us
             </h2>
-            <p className="text-sm leading-relaxed text-white/70 sm:text-base">
+            <p className="text-sm leading-relaxed text-on-dark-muted sm:text-base">
               Church is a place to belong, not an event to attend. As a community,
               together, we can be more and do more as we press on to be all God
               wants us to be. Come and experience an awesome time of praise,

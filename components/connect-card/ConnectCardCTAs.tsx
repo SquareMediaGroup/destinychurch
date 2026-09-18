@@ -23,7 +23,7 @@ interface Props {
 export default function ConnectCardCTAs({ variant = "dark" }: Props) {
   const [open, setOpen] = useState<ModalType | null>(null);
 
-  const subtitleClass = variant === "dark" ? "text-white/60" : "text-destiny-grey/50";
+  const subtitleClass = variant === "dark" ? "text-on-dark-muted" : "text-subtle";
   // Only read when `open` is non-null (the modal renders nothing otherwise);
   // the fallback just keeps this a plain lookup rather than a nullable one.
   const form = FORMS[open ?? "connect"];

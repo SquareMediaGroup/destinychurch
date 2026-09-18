@@ -66,7 +66,7 @@ export default function PopupShell({
             <h2 className="text-2xl font-black text-destiny-grey">{title}</h2>
           )}
           {body && (
-            <p className="whitespace-pre-line text-sm leading-relaxed text-destiny-grey/70">
+            <p className="whitespace-pre-line text-sm leading-relaxed text-muted">
               {body}
             </p>
           )}

@@ -30,7 +30,7 @@ export default function SiteBanner() {
       <div className="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-[#111] px-6 text-center">
         <span className="material-symbols-rounded mb-6 text-6xl text-white/20">build</span>
         <h1 className="mb-3 text-2xl font-black text-white">We&apos;ll be back soon</h1>
-        <p className="max-w-sm text-base leading-relaxed text-white/60">{banner.message}</p>
+        <p className="max-w-sm text-base leading-relaxed text-on-dark-muted">{banner.message}</p>
         {banner.link && (
           <Link
             href={banner.link}

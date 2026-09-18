@@ -15,7 +15,7 @@ export default function SermonDescription({ text }: SermonDescriptionProps) {
 
   return (
     <div>
-      <p className="whitespace-pre-line text-sm leading-relaxed text-destiny-grey/70">
+      <p className="whitespace-pre-line text-sm leading-relaxed text-muted">
         {displayed}
       </p>
       {isLong && (

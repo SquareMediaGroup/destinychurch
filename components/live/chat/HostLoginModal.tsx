@@ -23,7 +23,7 @@ const initialState = { success: false, error: undefined as string | undefined };
 const inputClass =
   "w-full rounded-2xl border border-black/10 bg-[#f5f7fa] px-4 py-3 text-sm text-destiny-grey outline-none transition placeholder:text-destiny-grey/30 focus:border-destiny-orange focus:ring-2 focus:ring-destiny-orange/20";
 const labelClass =
-  "mb-1.5 block text-xs font-bold uppercase tracking-wider text-destiny-grey/45";
+  "mb-1.5 block text-xs font-bold uppercase tracking-wider text-subtle";
 
 export default function HostLoginModal({
   open,
@@ -96,7 +96,7 @@ export default function HostLoginModal({
           />
         </div>
 
-        <label className="flex items-center gap-2.5 text-sm text-destiny-grey/70">
+        <label className="flex items-center gap-2.5 text-sm text-muted">
           <input
             type="checkbox"
             name="remember"
@@ -121,7 +121,7 @@ export default function HostLoginModal({
           {pending ? "Signing in…" : "Sign in"}
         </button>
 
-        <p className="text-center text-xs leading-relaxed text-destiny-grey/40">
+        <p className="text-center text-xs leading-relaxed text-subtle">
           Watching the service? You don&apos;t need this — just type your name
           in the chat box to join in.
         </p>

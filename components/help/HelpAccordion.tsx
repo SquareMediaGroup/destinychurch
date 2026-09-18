@@ -34,7 +34,7 @@ export default function HelpAccordion({ categories }: Props) {
               className={`flex shrink-0 items-center gap-3 rounded-2xl border px-4 py-3 text-left text-sm font-bold transition-all lg:w-full ${
                 activeCategory === i
                   ? "border-destiny-orange bg-destiny-orange text-white shadow-[0_16px_35px_-18px_rgba(245,128,33,0.55)]"
-                  : "border-black/10 bg-white text-destiny-grey/70 hover:border-destiny-orange/40 hover:text-destiny-grey"
+                  : "border-black/10 bg-white text-muted hover:border-destiny-orange/40 hover:text-destiny-grey"
               }`}
             >
               <span
@@ -98,7 +98,7 @@ export default function HelpAccordion({ categories }: Props) {
                   }`}
                 >
                   <div className="overflow-hidden">
-                    <p className="px-5 pb-5 pl-[3.1rem] text-sm leading-relaxed text-destiny-grey/60">
+                    <p className="px-5 pb-5 pl-[3.1rem] text-sm leading-relaxed text-muted">
                       {faq.a}
                     </p>
                   </div>

@@ -52,7 +52,7 @@ export default function CompletablePostList({
               {post.title}
             </h2>
             {post.summary && (
-              <p className="mt-0.5 text-sm text-destiny-grey/55">
+              <p className="mt-0.5 text-sm text-subtle">
                 {post.summary}
               </p>
             )}
@@ -63,7 +63,7 @@ export default function CompletablePostList({
                 </span>
               )}
               {post.readMinutes > 0 && (
-                <span className={`text-[11px] ${done ? "text-destiny-grey/30" : "text-destiny-grey/40"}`}>
+                <span className={`text-[11px] ${done ? "text-destiny-grey/30" : "text-subtle"}`}>
                   {post.readMinutes} min read
                 </span>
               )}
@@ -100,7 +100,7 @@ export default function CompletablePostList({
         </div>
         <div className="flex flex-col gap-3">
           {folderPosts.length === 0 ? (
-            <p className="py-10 text-center text-destiny-grey/50">No posts in this folder.</p>
+            <p className="py-10 text-center text-subtle">No posts in this folder.</p>
           ) : (
             folderPosts.map(renderPost)
           )}
@@ -162,7 +162,7 @@ export default function CompletablePostList({
                 </div>
                 <div className="mt-2 w-full">
                   <h3 className="font-bold text-destiny-grey">{folder.name}</h3>
-                  <p className="text-sm font-medium text-destiny-grey/50">
+                  <p className="text-sm font-medium text-subtle">
                     {completedCount} / {count} completed
                   </p>
                   <div className="mt-3 h-1.5 w-full overflow-hidden rounded-full bg-black/5">

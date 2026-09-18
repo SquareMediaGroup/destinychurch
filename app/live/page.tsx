@@ -109,7 +109,7 @@ export default async function LivePage() {
               <h1 className="text-5xl font-black text-white md:text-6xl lg:text-7xl">
                 Watch Live
               </h1>
-              <p className="mx-auto mt-4 max-w-xl text-base text-white/70 md:text-lg">
+              <p className="mx-auto mt-4 max-w-xl text-base text-on-dark-muted md:text-lg">
                 Join the service in real time from wherever you are. This page
                 switches to the stream the moment we go on air.
               </p>
@@ -160,7 +160,7 @@ export default async function LivePage() {
             <h2 className="mb-3 text-center text-3xl font-black text-destiny-grey md:text-4xl">
               Take part from home
             </h2>
-            <p className="mb-12 text-center text-sm text-destiny-grey/50">
+            <p className="mb-12 text-center text-sm text-subtle">
               Watching online doesn&apos;t mean watching alone
             </p>
           </AnimateIn>
@@ -173,17 +173,17 @@ export default async function LivePage() {
                   className="group flex w-full flex-col rounded-3xl bg-white p-7 transition hover:shadow-[0_1px_2px_rgba(16,24,40,.04),0_12px_28px_-10px_rgba(16,24,40,.16)]"
                 >
                   <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-2xl bg-destiny-orange/10">
-                    <span className="material-symbols-rounded text-2xl text-destiny-orange">
+                    <span className="material-symbols-rounded text-2xl text-destiny-orange" aria-hidden="true">
                       {item.icon}
                     </span>
                   </div>
                   <p className="mb-2 font-black text-destiny-grey">{item.title}</p>
-                  <p className="mb-6 flex-1 text-sm leading-relaxed text-destiny-grey/60">
+                  <p className="mb-6 flex-1 text-sm leading-relaxed text-muted">
                     {item.body}
                   </p>
                   <span className="inline-flex items-center gap-1.5 text-sm font-bold text-destiny-orange">
                     {item.cta}
-                    <span className="material-symbols-rounded text-base transition group-hover:translate-x-0.5">
+                    <span className="material-symbols-rounded text-base transition group-hover:translate-x-0.5" aria-hidden="true">
                       arrow_forward
                     </span>
                   </span>
@@ -201,7 +201,7 @@ export default async function LivePage() {
             <h2 className="mb-3 text-center text-3xl font-black text-destiny-grey md:text-4xl">
               When we go live
             </h2>
-            <p className="mb-12 text-center text-sm text-destiny-grey/50">
+            <p className="mb-12 text-center text-sm text-subtle">
               Same time every week — and you&apos;re welcome in person too
             </p>
           </AnimateIn>
@@ -211,18 +211,18 @@ export default async function LivePage() {
               <AnimateIn key={fact.title} delay={i * 80} className="flex">
                 <div className="flex w-full items-start gap-4 rounded-3xl bg-[#f5f7fa] p-6">
                   <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-destiny-orange/10">
-                    <span className="material-symbols-rounded text-2xl text-destiny-orange">
+                    <span className="material-symbols-rounded text-2xl text-destiny-orange" aria-hidden="true">
                       {fact.icon}
                     </span>
                   </div>
                   <div className="min-w-0">
                     <p className="mb-1 font-black text-destiny-grey">{fact.title}</p>
                     {fact.lines.map((line) => (
-                      <p key={line} className="text-sm text-destiny-grey/70">
+                      <p key={line} className="text-sm text-muted">
                         {line}
                       </p>
                     ))}
-                    <p className="mt-1 text-xs text-destiny-grey/40">{fact.note}</p>
+                    <p className="mt-1 text-xs text-subtle">{fact.note}</p>
                   </div>
                 </div>
               </AnimateIn>

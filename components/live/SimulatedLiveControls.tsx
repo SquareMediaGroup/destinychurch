@@ -241,7 +241,7 @@ export default function SimulatedLiveControls({
   if (loading) {
     return (
       <div className="flex items-center justify-center py-16">
-        <span className="material-symbols-rounded animate-spin text-3xl text-destiny-grey/20">
+        <span className="material-symbols-rounded animate-spin text-3xl text-destiny-grey/20" aria-hidden="true">
           progress_activity
         </span>
       </div>
@@ -263,7 +263,7 @@ export default function SimulatedLiveControls({
         <label htmlFor="sl-video" className="block text-sm font-black text-destiny-grey dark:text-white">
           YouTube video
         </label>
-        <p className="mt-1 text-xs text-destiny-grey/50 dark:text-white/50">
+        <p className="mt-1 text-xs text-subtle dark:text-on-dark-subtle">
           Paste a link or an ID. Public and unlisted videos both work; private
           ones don&apos;t — the embed refuses to play them.
         </p>
@@ -306,7 +306,7 @@ export default function SimulatedLiveControls({
               </div>
             ) : (
               <div className="flex h-14 w-24 shrink-0 items-center justify-center rounded-lg bg-black/5 dark:bg-white/5">
-                <span className="material-symbols-rounded text-xl text-destiny-grey/30 dark:text-white/30">
+                <span className="material-symbols-rounded text-xl text-destiny-grey/30 dark:text-white/30" aria-hidden="true">
                   movie
                 </span>
               </div>
@@ -315,7 +315,7 @@ export default function SimulatedLiveControls({
               <p className="truncate text-sm font-bold text-destiny-grey dark:text-white">
                 {preview.title ?? preview.videoId}
               </p>
-              <p className="mt-0.5 text-xs text-destiny-grey/50 dark:text-white/50">
+              <p className="mt-0.5 text-xs text-subtle dark:text-on-dark-subtle">
                 {durationSeconds
                   ? `Runs ${formatTimecode(durationSeconds)}`
                   : "Runtime unknown — enter it below"}
@@ -325,7 +325,7 @@ export default function SimulatedLiveControls({
         )}
 
         {preview?.unreadable && (
-          <p className="mt-2 text-xs text-destiny-grey/60 dark:text-white/60">
+          <p className="mt-2 text-xs text-muted dark:text-on-dark-muted">
             YouTube wouldn&apos;t describe this video — it may be private, or the
             API key may be out of quota. If it plays, it will still work; enter
             the runtime by hand so the page knows when to go off air.
@@ -342,7 +342,7 @@ export default function SimulatedLiveControls({
           >
             Runtime
           </label>
-          <p className="mt-1 text-xs text-destiny-grey/50 dark:text-white/50">
+          <p className="mt-1 text-xs text-subtle dark:text-on-dark-subtle">
             In minutes. This is what tells /live when the service is over.
           </p>
           <input
@@ -372,7 +372,7 @@ export default function SimulatedLiveControls({
         >
           Starts at
         </label>
-        <p className="mt-1 text-xs text-destiny-grey/50 dark:text-white/50">
+        <p className="mt-1 text-xs text-subtle dark:text-on-dark-subtle">
           Your device&apos;s time zone. Viewers are placed at <em>now minus this</em>,
           so it&apos;s the one value that has to be right.
         </p>
@@ -399,7 +399,7 @@ export default function SimulatedLiveControls({
         <label htmlFor="sl-title" className="block text-sm font-black text-destiny-grey dark:text-white">
           Broadcast title
         </label>
-        <p className="mt-1 text-xs text-destiny-grey/50 dark:text-white/50">
+        <p className="mt-1 text-xs text-subtle dark:text-on-dark-subtle">
           The heading above the player. Same convention as an upload:{" "}
           <span className="font-mono">Message Title || Ps Speaker</span>.
         </p>
@@ -417,9 +417,9 @@ export default function SimulatedLiveControls({
       <div>
         <label htmlFor="sl-notice" className="block text-sm font-black text-destiny-grey dark:text-white">
           Notice under the player{" "}
-          <span className="font-normal text-destiny-grey/40 dark:text-white/40">(optional)</span>
+          <span className="font-normal text-subtle dark:text-on-dark-subtle">(optional)</span>
         </label>
-        <p className="mt-1 text-xs text-destiny-grey/50 dark:text-white/50">
+        <p className="mt-1 text-xs text-subtle dark:text-on-dark-subtle">
           Leave blank for a plain live experience, or use it to say what this is —
           &ldquo;Recorded at our 11am service&rdquo;.
         </p>
@@ -444,7 +444,7 @@ export default function SimulatedLiveControls({
           <span className="block text-sm font-black text-destiny-grey dark:text-white">
             Schedule this broadcast
           </span>
-          <span className="mt-0.5 block text-xs text-destiny-grey/55 dark:text-white/55">
+          <span className="mt-0.5 block text-xs text-subtle dark:text-on-dark-subtle">
             /live switches over on its own at the start time and switches back
             when the video runs out. A real YouTube stream always takes priority,
             so this can&apos;t hide an actual service.
@@ -496,7 +496,7 @@ export default function SimulatedLiveControls({
         <div className="border-t border-black/8 pt-4 dark:border-white/8">
           {confirmingRemove ? (
             <div className="flex flex-wrap items-center gap-3">
-              <span className="text-sm text-destiny-grey/70 dark:text-white/70">
+              <span className="text-sm text-muted dark:text-on-dark-muted">
                 Remove this service and clear every field?
               </span>
               <button
@@ -510,7 +510,7 @@ export default function SimulatedLiveControls({
               <button
                 type="button"
                 onClick={() => setConfirmingRemove(false)}
-                className="rounded-full px-3 py-2 text-sm font-bold text-destiny-grey/60 transition hover:text-destiny-grey dark:text-white/60 dark:hover:text-white"
+                className="rounded-full px-3 py-2 text-sm font-bold text-muted transition hover:text-destiny-grey dark:text-on-dark-muted dark:hover:text-white"
               >
                 Cancel
               </button>
@@ -519,7 +519,7 @@ export default function SimulatedLiveControls({
             <button
               type="button"
               onClick={() => setConfirmingRemove(true)}
-              className="text-sm font-bold text-destiny-grey/50 transition hover:text-destiny-red dark:text-white/50"
+              className="text-sm font-bold text-subtle transition hover:text-destiny-red dark:text-on-dark-subtle"
             >
               Remove this service
             </button>
@@ -555,7 +555,7 @@ function StatusStrip({
         <p className="mt-2 text-sm font-black text-destiny-grey dark:text-white">
           {formatTimecode(position)} of {formatTimecode(runtime)}
         </p>
-        <p className="mt-0.5 text-xs text-destiny-grey/55 dark:text-white/55">
+        <p className="mt-0.5 text-xs text-subtle dark:text-on-dark-subtle">
           {formatTimecode(Math.max(0, runtime - position))} left. Everyone
           watching is at this point.
         </p>
@@ -575,7 +575,7 @@ function StatusStrip({
           {formatCountdown(new Date(draft.startsAt), new Date(now)) ??
             formatTimecode(inMs / 1000)}
         </p>
-        <p className="mt-0.5 text-xs text-destiny-grey/55 dark:text-white/55">
+        <p className="mt-0.5 text-xs text-subtle dark:text-on-dark-subtle">
           /live goes on air by itself — nobody needs to be at a keyboard.
         </p>
       </div>
@@ -585,13 +585,13 @@ function StatusStrip({
   if (phase === "finished") {
     return (
       <div className="rounded-2xl border border-black/8 bg-[#f5f7fa] p-4 dark:border-white/8 dark:bg-destiny-grey-800">
-        <p className="text-xs font-bold uppercase tracking-widest text-destiny-grey/45 dark:text-white/45">
+        <p className="text-xs font-bold uppercase tracking-widest text-subtle dark:text-on-dark-subtle">
           Finished
         </p>
         <p className="mt-2 text-sm font-black text-destiny-grey dark:text-white">
           This broadcast has run. /live is showing the off-air card.
         </p>
-        <p className="mt-0.5 text-xs text-destiny-grey/55 dark:text-white/55">
+        <p className="mt-0.5 text-xs text-subtle dark:text-on-dark-subtle">
           Set a new start time to run it again.
         </p>
       </div>
@@ -600,13 +600,13 @@ function StatusStrip({
 
   return (
     <div className="rounded-2xl border border-black/8 bg-[#f5f7fa] p-4 dark:border-white/8 dark:bg-destiny-grey-800">
-      <p className="text-xs font-bold uppercase tracking-widest text-destiny-grey/45 dark:text-white/45">
+      <p className="text-xs font-bold uppercase tracking-widest text-subtle dark:text-on-dark-subtle">
         Off
       </p>
       <p className="mt-2 text-sm font-black text-destiny-grey dark:text-white">
         Nothing simulated is scheduled.
       </p>
-      <p className="mt-0.5 text-xs text-destiny-grey/55 dark:text-white/55">
+      <p className="mt-0.5 text-xs text-subtle dark:text-on-dark-subtle">
         /live behaves normally: on air when the YouTube channel is streaming, off
         the rest of the week.
       </p>

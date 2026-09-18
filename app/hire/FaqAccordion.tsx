@@ -9,7 +9,7 @@ export default function FaqAccordion({ faqs }: { faqs: Faq[] }) {
 
   return (
     <div className="mt-10 space-y-2">
-      <p className="mb-3 text-xs font-bold uppercase tracking-widest text-destiny-grey/40">Frequently Asked Questions</p>
+      <p className="mb-3 text-xs font-bold uppercase tracking-widest text-subtle">Frequently Asked Questions</p>
       {faqs.map((faq, i) => (
         <div key={faq.q} className="overflow-hidden rounded-2xl bg-white">
           <button
@@ -24,7 +24,7 @@ export default function FaqAccordion({ faqs }: { faqs: Faq[] }) {
           </button>
           {open === i && (
             <div className="px-5 pb-4">
-              <p className="text-sm leading-relaxed text-destiny-grey/60">{faq.a}</p>
+              <p className="text-sm leading-relaxed text-muted">{faq.a}</p>
             </div>
           )}
         </div>

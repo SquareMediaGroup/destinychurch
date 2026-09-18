@@ -132,7 +132,7 @@ export default function YoungAdultsPage() {
             <h2 className="mb-4 text-3xl font-black text-white md:text-4xl">
               Stay Connected
             </h2>
-            <p className="mb-8 text-base leading-relaxed text-white/65">
+            <p className="mb-8 text-base leading-relaxed text-on-dark-muted">
               The best way to be part of Young Adults is to join one of our Connect Groups. It&apos;s where the real community happens — weekly catch-ups, prayer, and doing life together.
             </p>
             <Link

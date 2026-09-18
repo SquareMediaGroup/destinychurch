@@ -167,7 +167,7 @@ export default function SermonGrid({
             <h2 className="text-3xl font-black text-destiny-grey md:text-4xl">
               Every message
             </h2>
-            <p className="mt-2 text-sm text-destiny-grey/55">
+            <p className="mt-2 text-sm text-subtle">
               {filtered.length} message{filtered.length === 1 ? "" : "s"}
             </p>
           </div>
@@ -175,7 +175,7 @@ export default function SermonGrid({
           <div className="flex w-full gap-2 sm:w-auto">
             {/* Search */}
             <div className="relative min-w-0 flex-1 sm:w-72 sm:flex-none">
-              <span className="material-symbols-rounded pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-xl text-destiny-grey/40">
+              <span className="material-symbols-rounded pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-xl text-destiny-grey/40" aria-hidden="true">
                 search
               </span>
               <input
@@ -186,7 +186,7 @@ export default function SermonGrid({
                 }}
                 placeholder="Search sermons — try a topic or a speaker's name…"
                 aria-label="Search sermons"
-                className="w-full rounded-full border border-black/10 bg-white py-2.5 pl-11 pr-4 text-sm text-destiny-grey outline-none transition placeholder:text-destiny-grey/40 focus:border-destiny-orange focus:ring-2 focus:ring-destiny-orange/20"
+                className="w-full rounded-full border border-black/10 bg-white py-2.5 pl-11 pr-4 text-sm text-destiny-grey outline-none transition placeholder:text-subtle focus:border-destiny-orange focus:ring-2 focus:ring-destiny-orange/20"
               />
             </div>
 
@@ -197,7 +197,7 @@ export default function SermonGrid({
               aria-expanded={filtersOpen}
               className="relative inline-flex shrink-0 items-center gap-1.5 rounded-full border border-black/10 bg-white px-4 py-2.5 text-sm font-bold text-destiny-grey transition hover:border-destiny-orange hover:text-destiny-orange lg:hidden"
             >
-              <span className="material-symbols-rounded text-lg">tune</span>
+              <span className="material-symbols-rounded text-lg" aria-hidden="true">tune</span>
               Filters
               {activeFilterCount > 0 && (
                 <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-destiny-orange px-1 text-[11px] font-bold text-white">
@@ -228,7 +228,7 @@ export default function SermonGrid({
             ))}
           </div>
         ) : (
-          <p className="mt-10 rounded-2xl border border-black/[0.07] bg-[#f5f7fa] p-8 text-center text-sm text-destiny-grey/60">
+          <p className="mt-10 rounded-2xl border border-black/[0.07] bg-[#f5f7fa] p-8 text-center text-sm text-muted">
             No sermons match your search or filters.
           </p>
         )}
@@ -241,7 +241,7 @@ export default function SermonGrid({
               className="inline-flex items-center justify-center gap-2 rounded-full border-2 border-destiny-grey/15 px-7 py-3 text-sm font-bold text-destiny-grey transition hover:border-destiny-grey/40 hover:bg-black/[0.03]"
             >
               Show more
-              <span className="material-symbols-rounded text-lg">expand_more</span>
+              <span className="material-symbols-rounded text-lg" aria-hidden="true">expand_more</span>
             </button>
           </div>
         )}
@@ -283,20 +283,20 @@ function FilterPanel({
     <div className="grid gap-6">
       <div>
         <div className="mb-2 flex items-center justify-between">
-          <p className="text-xs font-bold uppercase tracking-widest text-destiny-grey/50">Sort</p>
+          <p className="text-xs font-bold uppercase tracking-widest text-subtle">Sort</p>
         </div>
         <div className="flex overflow-hidden rounded-full border border-black/10 text-xs font-bold">
           <button
             type="button"
             onClick={() => onSetSort("newest")}
-            className={`flex-1 px-3 py-1.5 transition ${sort === "newest" ? "bg-destiny-grey text-white" : "text-destiny-grey/60"}`}
+            className={`flex-1 px-3 py-1.5 transition ${sort === "newest" ? "bg-destiny-grey text-white" : "text-muted"}`}
           >
             Newest
           </button>
           <button
             type="button"
             onClick={() => onSetSort("oldest")}
-            className={`flex-1 px-3 py-1.5 transition ${sort === "oldest" ? "bg-destiny-grey text-white" : "text-destiny-grey/60"}`}
+            className={`flex-1 px-3 py-1.5 transition ${sort === "oldest" ? "bg-destiny-grey text-white" : "text-muted"}`}
           >
             Oldest
           </button>
@@ -304,7 +304,7 @@ function FilterPanel({
       </div>
 
       <div>
-        <p className="mb-2 text-xs font-bold uppercase tracking-widest text-destiny-grey/50">
+        <p className="mb-2 text-xs font-bold uppercase tracking-widest text-subtle">
           Speakers
         </p>
         <button
@@ -314,15 +314,15 @@ function FilterPanel({
           className={`mb-2 flex w-full items-center gap-2 rounded-xl border px-3 py-2 text-sm font-semibold transition ${
             guestOnly
               ? "border-destiny-orange bg-destiny-orange/10 text-destiny-orange"
-              : "border-black/10 text-destiny-grey/70 hover:border-destiny-orange hover:text-destiny-orange"
+              : "border-black/10 text-muted hover:border-destiny-orange hover:text-destiny-orange"
           }`}
         >
-          <span className="material-symbols-rounded text-lg">groups</span>
+          <span className="material-symbols-rounded text-lg" aria-hidden="true">groups</span>
           Guest speakers only
         </button>
         <div className="flex max-h-48 flex-wrap gap-2 overflow-y-auto lg:max-h-64 lg:flex-col lg:flex-nowrap lg:gap-1">
           {speakers.length === 0 && (
-            <p className="text-sm text-destiny-grey/40">No speakers found yet.</p>
+            <p className="text-sm text-subtle">No speakers found yet.</p>
           )}
           {speakers.map((s) => {
             const active = selectedSpeakers.has(s.key);
@@ -335,7 +335,7 @@ function FilterPanel({
                 className={`rounded-full border px-3 py-1.5 text-left text-sm font-semibold transition lg:rounded-lg lg:border-0 lg:px-2 lg:py-1.5 ${
                   active
                     ? "border-destiny-orange bg-destiny-orange text-white lg:bg-destiny-orange/10 lg:text-destiny-orange"
-                    : "border-black/10 text-destiny-grey/70 hover:border-destiny-orange hover:text-destiny-orange lg:hover:bg-black/[0.04]"
+                    : "border-black/10 text-muted hover:border-destiny-orange hover:text-destiny-orange lg:hover:bg-black/[0.04]"
                 }`}
               >
                 {s.label}
@@ -346,7 +346,7 @@ function FilterPanel({
       </div>
 
       <div>
-        <p className="mb-2 text-xs font-bold uppercase tracking-widest text-destiny-grey/50">
+        <p className="mb-2 text-xs font-bold uppercase tracking-widest text-subtle">
           Month
         </p>
         <div className="flex max-h-48 flex-wrap gap-2 overflow-y-auto lg:max-h-64 lg:flex-col lg:flex-nowrap lg:gap-1">
@@ -357,7 +357,7 @@ function FilterPanel({
             className={`rounded-full border px-3 py-1.5 text-left text-sm font-semibold transition lg:rounded-lg lg:border-0 lg:px-2 lg:py-1.5 ${
               selectedMonth === null
                 ? "border-destiny-orange bg-destiny-orange text-white lg:bg-destiny-orange/10 lg:text-destiny-orange"
-                : "border-black/10 text-destiny-grey/70 hover:border-destiny-orange hover:text-destiny-orange lg:hover:bg-black/[0.04]"
+                : "border-black/10 text-muted hover:border-destiny-orange hover:text-destiny-orange lg:hover:bg-black/[0.04]"
             }`}
           >
             All time
@@ -371,7 +371,7 @@ function FilterPanel({
               className={`rounded-full border px-3 py-1.5 text-left text-sm font-semibold transition lg:rounded-lg lg:border-0 lg:px-2 lg:py-1.5 ${
                 selectedMonth === m.key
                   ? "border-destiny-orange bg-destiny-orange text-white lg:bg-destiny-orange/10 lg:text-destiny-orange"
-                  : "border-black/10 text-destiny-grey/70 hover:border-destiny-orange hover:text-destiny-orange lg:hover:bg-black/[0.04]"
+                  : "border-black/10 text-muted hover:border-destiny-orange hover:text-destiny-orange lg:hover:bg-black/[0.04]"
               }`}
             >
               {m.label}

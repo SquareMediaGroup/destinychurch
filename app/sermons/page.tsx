@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Image from "next/image";
 import { getPodcastShow } from "@/lib/podcast";
 import { CHANNEL_URL, getGuestSpeakerVideoIds } from "@/lib/youtube";
 import { getLatestVideo, getFullSermonArchive } from "@/lib/speakerOverrides.server";
@@ -9,6 +8,7 @@ import SermonGrid from "@/components/sermons/SermonGrid";
 import WatchOnYouTubeBand from "@/components/sermons/WatchOnYouTubeBand";
 import WorshipWithUsSection from "@/components/home/WorshipWithUsSection";
 import AnimateIn from "@/components/AnimateIn";
+import PageHero from "@/components/ui/PageHero";
 
 export const metadata: Metadata = {
   title: "Sermons",
@@ -56,50 +56,33 @@ export default async function SermonsPage() {
   return (
     <>
         {/* ── Hero ─────────────────────────────────────────────── */}
-        <div className="px-4 pt-8 pb-0 lg:px-8">
-          <section className="relative overflow-hidden rounded-3xl">
-            <Image
-              src="/img/photos/Bible Image Destiny Church.webp"
-              alt=""
-              aria-hidden="true"
-              fill
-              priority
-              sizes="100vw"
-              quality={82}
-              className="scale-105 object-cover object-center blur-sm"
-            />
-            <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/55 to-black/75" />
-
-            <div className="relative flex flex-col items-center justify-center px-4 py-24 text-center sm:py-32">
-              <AnimateIn>
-                <h1 className="text-5xl font-black text-white md:text-6xl lg:text-7xl">
-                  Sermons
-                </h1>
-
-                <p className="mx-auto mt-4 max-w-xl text-base text-white/70 md:text-lg">
-                  Every message from Destiny Church — watch the latest, or listen
-                  back to the whole archive wherever you are.
-                </p>
-
-                {/* Platform chips */}
-                <div className="mt-8 flex flex-wrap justify-center gap-2.5">
-                  {platforms.map((p) => (
-                    <a
-                      key={p.label}
-                      href={p.href}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="glass glass-sm glass-pill inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white transition hover:brightness-125"
-                    >
-                      <PlatformIcon name={p.icon} />
-                      {p.label}
-                    </a>
-                  ))}
-                </div>
-              </AnimateIn>
+        {/* The platform chips carry real brand marks (Spotify/Apple/YouTube
+            SVGs) that PageHero's `chips` prop can't express — it only takes a
+            Material Symbols ligature name, and a generic glyph would lose the
+            one thing that makes these recognisable at a glance. They go
+            through `actions` instead, which takes arbitrary content. */}
+        <PageHero
+          image="/img/photos/Bible Image Destiny Church.webp"
+          imageAlt=""
+          title="Sermons"
+          subtitle="Every message from Destiny Church — watch the latest, or listen back to the whole archive wherever you are."
+          actions={
+            <div className="flex flex-wrap justify-center gap-2.5">
+              {platforms.map((p) => (
+                <a
+                  key={p.label}
+                  href={p.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="glass glass-sm glass-pill inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white transition hover:brightness-125"
+                >
+                  <PlatformIcon name={p.icon} />
+                  {p.label}
+                </a>
+              ))}
             </div>
-          </section>
-        </div>
+          }
+        />
 
         {/* ── Featured latest message ──────────────────────────── */}
         <section className="bg-white py-16">
@@ -108,7 +91,7 @@ export default async function SermonsPage() {
               {hasFeature ? (
                 <FeaturedSermon video={latestVideo} episode={featuredEpisode} />
               ) : (
-                <p className="rounded-2xl border border-black/[0.07] bg-[#f5f7fa] p-8 text-center text-sm text-destiny-grey/60">
+                <p className="rounded-2xl border border-black/[0.07] bg-[#f5f7fa] p-8 text-center text-sm text-muted">
                   Messages are loading. Catch every one on{" "}
                   <a
                     href={SPOTIFY_PODCAST_URL}

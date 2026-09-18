@@ -32,7 +32,7 @@ export default function ShopProductGrid({ products }: { products: ProductWithVar
             className={`rounded-full px-4 py-2 text-sm font-bold transition-colors ${
               active === null
                 ? "bg-destiny-grey text-white"
-                : "bg-black/5 text-destiny-grey/70 hover:bg-black/10"
+                : "bg-black/5 text-muted hover:bg-black/10"
             }`}
           >
             All
@@ -45,7 +45,7 @@ export default function ShopProductGrid({ products }: { products: ProductWithVar
               className={`rounded-full px-4 py-2 text-sm font-bold capitalize transition-colors ${
                 active === category
                   ? "bg-destiny-grey text-white"
-                  : "bg-black/5 text-destiny-grey/70 hover:bg-black/10"
+                  : "bg-black/5 text-muted hover:bg-black/10"
               }`}
             >
               {category}
@@ -56,13 +56,13 @@ export default function ShopProductGrid({ products }: { products: ProductWithVar
 
       {filtered.length === 0 ? (
         <div className="shop-reveal rounded-3xl border border-black/10 bg-white/60 p-14 text-center">
-          <span className="material-symbols-rounded text-5xl text-destiny-grey/25">
+          <span className="material-symbols-rounded text-5xl text-destiny-grey/25" aria-hidden="true">
             storefront
           </span>
           <h2 className="mt-4 font-[family-name:var(--font-heading)] text-2xl font-black text-destiny-grey">
             Nothing here yet
           </h2>
-          <p className="mx-auto mt-2 max-w-sm text-sm text-destiny-grey/55">
+          <p className="mx-auto mt-2 max-w-sm text-sm text-subtle">
             Try a different category.
           </p>
         </div>

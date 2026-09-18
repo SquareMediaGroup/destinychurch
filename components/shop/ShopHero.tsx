@@ -100,7 +100,7 @@ export default function ShopHero({ slides }: { slides: ShopHeroSlide[] }) {
                     className="mt-1 inline-flex w-fit items-center gap-2 rounded-full bg-destiny-orange px-7 py-3.5 text-sm font-bold text-white shadow-lg shadow-destiny-orange/30 transition hover:bg-destiny-orange-dark hover:brightness-110"
                   >
                     {slide.cta_text}
-                    <span className="material-symbols-rounded text-lg">
+                    <span className="material-symbols-rounded text-lg" aria-hidden="true">
                       arrow_forward
                     </span>
                   </Link>

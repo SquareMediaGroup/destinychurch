@@ -1,53 +1,27 @@
-import Image from "next/image";
-import Link from "next/link";
-import AnimateIn from "@/components/AnimateIn";
+import Button from "@/components/ui/Button";
+import MediaBanner from "@/components/ui/MediaBanner";
 
+/**
+ * The universal page-closer — reused on 24+ pages (the homepage, /new-here,
+ * /connect, /sermons, /give, /whats-on, and every ministry/course page).
+ * Built on MediaBanner now rather than carrying its own copy of the
+ * blurred-photo-plus-scrim shell that seven other banners each pasted
+ * independently.
+ */
 export default function WorshipWithUsSection() {
   return (
-    <div className="px-4 py-8 lg:px-8">
-      <section className="relative overflow-hidden rounded-3xl">
-        {/* Background image — below the fold on every page that uses it, so lazy load */}
-        <Image
-          src="/img/photos/WorshipWUs.webp"
-          alt=""
-          aria-hidden="true"
-          fill
-          sizes="100vw"
-          quality={80}
-          loading="lazy"
-          className="scale-105 object-cover object-center blur-sm"
-        />
-        {/* Gradient overlay */}
-        <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/60 to-black/40" />
-        <div className="relative mx-auto flex max-w-7xl flex-col items-start justify-between gap-6 px-4 py-10 sm:gap-8 sm:py-16 md:flex-row md:items-center lg:px-8">
-          <AnimateIn className="max-w-xl">
-            <h2 className="mb-3 text-2xl font-black text-white sm:mb-4 sm:text-3xl md:text-4xl">
-              Worship With Us
-            </h2>
-            <p className="text-sm leading-relaxed text-white/70 sm:text-base">
-              Church is a place to belong, not an event to attend. As a community,
-              together, we can be more and do more as we press on to be all God
-              wants us to be. Come and experience an awesome time of praise,
-              worship, teaching and friendship.
-            </p>
-          </AnimateIn>
-
-          <AnimateIn delay={150} className="flex flex-col gap-3">
-            <Link
-              href="/visit"
-              className="rounded-full bg-destiny-orange px-8 py-3 text-center text-sm font-bold text-white shadow-lg shadow-destiny-orange/25 transition hover:brightness-110"
-            >
-              Plan Your Visit
-            </Link>
-            <Link
-              href="/sermons"
-              className="rounded-full border-2 border-white/30 px-8 py-3 text-center text-sm font-bold text-white backdrop-blur transition hover:border-white/60 hover:bg-white/10"
-            >
-              Watch Church Online
-            </Link>
-          </AnimateIn>
-        </div>
-      </section>
-    </div>
+    <MediaBanner
+      image="/img/photos/WorshipWUs.webp"
+      title="Worship With Us"
+      body="Church is a place to belong, not an event to attend. As a community, together, we can be more and do more as we press on to be all God wants us to be. Come and experience an awesome time of praise, worship, teaching and friendship."
+      actions={
+        <>
+          <Button href="/visit">Plan your visit</Button>
+          <Button href="/sermons" variant="onDark">
+            Watch Church Online
+          </Button>
+        </>
+      }
+    />
   );
 }

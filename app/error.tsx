@@ -20,7 +20,7 @@ export default function Error({
       <h1 className="mb-4 text-3xl font-black text-destiny-grey">
         Something went wrong
       </h1>
-      <p className="mb-8 max-w-md text-destiny-grey/70">
+      <p className="mb-8 max-w-md text-muted">
         Sorry, we hit a problem loading this page. You can try again, or head
         back to the home page.
       </p>
@@ -39,7 +39,7 @@ export default function Error({
         </Link>
       </div>
       {error.digest && (
-        <p className="mt-6 text-xs text-destiny-grey/40">
+        <p className="mt-6 text-xs text-subtle">
           Reference: {error.digest}
         </p>
       )}

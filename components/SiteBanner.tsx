@@ -28,16 +28,16 @@ export default function SiteBanner() {
     if (isAdmin) return null;
     return (
       <div className="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-[#111] px-6 text-center">
-        <span className="material-symbols-rounded mb-6 text-6xl text-white/20">build</span>
+        <span className="material-symbols-rounded mb-6 text-6xl text-white/20" aria-hidden="true">build</span>
         <h1 className="mb-3 text-2xl font-black text-white">We&apos;ll be back soon</h1>
-        <p className="max-w-sm text-base leading-relaxed text-white/60">{banner.message}</p>
+        <p className="max-w-sm text-base leading-relaxed text-on-dark-muted">{banner.message}</p>
         {banner.link && (
           <Link
             href={banner.link}
             className="mt-6 inline-flex items-center gap-1.5 rounded-full bg-white/10 px-5 py-2.5 text-sm font-bold text-white transition hover:bg-white/20"
           >
             {banner.link_text ?? "Learn more"}
-            <span className="material-symbols-rounded text-sm">arrow_forward</span>
+            <span className="material-symbols-rounded text-sm" aria-hidden="true">arrow_forward</span>
           </Link>
         )}
       </div>
@@ -134,7 +134,7 @@ function renderBanner(banner: BannerData, index: number) {
       }`}
       style={{ top }}
     >
-      <span className="material-symbols-rounded shrink-0 text-sm text-white/80">
+      <span className="material-symbols-rounded shrink-0 text-sm text-white/80" aria-hidden="true">
         {isNotice ? "info" : "campaign"}
       </span>
       <p className="min-w-0 truncate text-sm font-medium text-white">
@@ -145,7 +145,7 @@ function renderBanner(banner: BannerData, index: number) {
             className="ml-2 inline-flex items-center gap-1 font-bold underline underline-offset-2 hover:no-underline"
           >
             {banner.link_text ?? "Learn more"}
-            <span className="material-symbols-rounded text-xs">arrow_forward</span>
+            <span className="material-symbols-rounded text-xs" aria-hidden="true">arrow_forward</span>
           </Link>
         )}
       </p>

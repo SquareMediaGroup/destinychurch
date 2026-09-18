@@ -1,4 +1,4 @@
-// Artwork for an event card, including the two no-artwork fallbacks.
+// Artwork for an event card, including the no-artwork fallback.
 //
 // Roughly half the ChurchSuite feed has no image at all, so the fallback is a
 // first-class state rather than an afterthought — it shows the date at poster
@@ -6,45 +6,18 @@
 
 import Image from "next/image";
 import { eventImage, formatDayChip, type EventSeries } from "@destiny/shared";
-import type { EventCardVariant } from "@/lib/events";
 
 export default function EventCardArtwork({
   event,
-  variant,
   priority,
   sizes,
 }: {
   event: EventSeries;
-  variant: EventCardVariant;
   priority?: boolean;
   sizes?: string;
 }) {
-  const url = eventImage(event.primary, variant === "c" ? "hero" : "card");
+  const url = eventImage(event.primary, "card");
   const { day, month } = formatDayChip(event.primary.datetime_start);
-
-  if (variant === "c") {
-    return url ? (
-      <Image
-        src={url}
-        alt=""
-        fill
-        priority={priority}
-        sizes={sizes ?? "(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"}
-        className="object-cover transition-transform duration-700 group-hover:scale-[1.04]"
-      />
-    ) : (
-      // Brand panel with an oversized ghost numeral, so the poster silhouette
-      // survives even with nothing to show.
-      <div className="absolute inset-0 bg-gradient-to-br from-destiny-orange to-[#d9530f]">
-        <span
-          aria-hidden
-          className="absolute -right-4 top-2 text-[160px] font-black leading-none text-white/15"
-        >
-          {day}
-        </span>
-      </div>
-    );
-  }
 
   return (
     <div className="relative aspect-[16/10] w-full overflow-hidden bg-[#f5f7fa]">

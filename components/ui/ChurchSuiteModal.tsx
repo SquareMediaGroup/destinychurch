@@ -193,16 +193,16 @@ function ModalPanel({
               {title}
             </p>
             {subtitle && (
-              <p className="mt-0.5 text-xs text-destiny-grey/50">{subtitle}</p>
+              <p className="mt-0.5 text-xs text-subtle">{subtitle}</p>
             )}
           </div>
           <button
             ref={closeRef}
             onClick={onClose}
-            className="flex h-8 w-8 items-center justify-center rounded-full text-destiny-grey/40 transition hover:bg-gray-100 hover:text-destiny-grey"
+            className="flex h-8 w-8 items-center justify-center rounded-full text-subtle transition hover:bg-gray-100 hover:text-destiny-grey"
             aria-label="Close"
           >
-            <span className="material-symbols-rounded text-xl">close</span>
+            <span className="material-symbols-rounded text-xl" aria-hidden="true">close</span>
           </button>
         </div>
         {size === "lg" ? (

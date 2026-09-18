@@ -62,7 +62,7 @@ export default function KidsCampFAQ() {
                       expand_more
                     </span>
                   </summary>
-                  <div className="px-6 pb-5 text-sm leading-relaxed text-destiny-grey/70">
+                  <div className="px-6 pb-5 text-sm leading-relaxed text-muted">
                     {faq.a}
                   </div>
                 </details>

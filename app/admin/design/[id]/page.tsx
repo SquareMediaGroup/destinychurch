@@ -274,7 +274,7 @@ export default function DesignTicketPage({ params }: { params: Promise<{ id: str
                         />
                       ) : null}
                       <div className="flex items-center gap-3">
-                        <span className="material-symbols-rounded text-lg text-destiny-orange">
+                        <span className="material-symbols-rounded text-lg text-destiny-orange" aria-hidden="true">
                           {file.storage_kind === "link" ? "smart_display" : "draft"}
                         </span>
                         <span className="min-w-0 flex-1">
@@ -525,7 +525,7 @@ export default function DesignTicketPage({ params }: { params: Promise<{ id: str
               rel="noreferrer"
               className="mt-5 flex items-center gap-2 text-xs font-bold text-destiny-orange hover:underline"
             >
-              <span className="material-symbols-rounded text-base">visibility</span>
+              <span className="material-symbols-rounded text-base" aria-hidden="true">visibility</span>
               See what they see
             </a>
           </div>

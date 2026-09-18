@@ -41,7 +41,7 @@ const SimulatedLiveControls = dynamic(
     ssr: false,
     loading: () => (
       <div className="flex items-center justify-center py-16">
-        <span className="material-symbols-rounded animate-spin text-3xl text-destiny-grey/20">
+        <span className="material-symbols-rounded animate-spin text-3xl text-destiny-grey/20" aria-hidden="true">
           progress_activity
         </span>
       </div>
@@ -87,10 +87,10 @@ export default function LiveHostBar({
     return (
       <div className="mx-auto max-w-7xl px-4 pt-8 lg:px-8">
         <div className="flex flex-wrap items-center gap-3 rounded-2xl border border-black/8 bg-[#f5f7fa] p-4">
-          <span className="material-symbols-rounded text-xl text-destiny-grey/40">
+          <span className="material-symbols-rounded text-xl text-destiny-grey/40" aria-hidden="true">
             lock
           </span>
-          <p className="flex-1 text-sm text-destiny-grey/70">
+          <p className="flex-1 text-sm text-muted">
             Sign in as a Host to run the broadcast from this page.
           </p>
           <button
@@ -116,7 +116,7 @@ export default function LiveHostBar({
     <div className="mx-auto max-w-7xl px-4 pt-8 lg:px-8">
       <div className="overflow-hidden rounded-2xl border border-destiny-orange/25 bg-destiny-orange/[0.04]">
         <div className="flex flex-wrap items-center gap-x-4 gap-y-3 p-4">
-          <span className="material-symbols-rounded text-xl text-destiny-orange">
+          <span className="material-symbols-rounded text-xl text-destiny-orange" aria-hidden="true">
             settings_input_antenna
           </span>
 
@@ -124,7 +124,7 @@ export default function LiveHostBar({
             <p className="text-sm font-black text-destiny-grey">
               Broadcast controls
             </p>
-            <p className="mt-0.5 text-xs text-destiny-grey/55">
+            <p className="mt-0.5 text-xs text-subtle">
               {hostName ? `Signed in as ${hostName}. ` : ""}
               {describe(live, simulated)}
             </p>
@@ -145,7 +145,7 @@ export default function LiveHostBar({
               endpoint="/api/live-control"
               onSaved={afterChange}
             />
-            <p className="mt-6 text-xs text-destiny-grey/45">
+            <p className="mt-6 text-xs text-subtle">
               These are the same controls as{" "}
               <Link
                 href="/admin/live"

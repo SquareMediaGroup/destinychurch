@@ -115,7 +115,7 @@ export default function AdminTabBar() {
                         : "text-destiny-grey hover:bg-[#f5f7fa] dark:text-white dark:hover:bg-white/5"
                     }`}
                   >
-                    <span className="material-symbols-rounded mt-0.5 text-xl">
+                    <span className="material-symbols-rounded mt-0.5 text-xl" aria-hidden="true">
                       {item.icon}
                     </span>
                     <span className="min-w-0">
@@ -170,7 +170,7 @@ function TabButton({
           }
         />
       )}
-      <span className="material-symbols-rounded relative z-10 text-[22px] leading-none">
+      <span className="material-symbols-rounded relative z-10 text-[22px] leading-none" aria-hidden="true">
         {tab.icon}
       </span>
       <span className="relative z-10 max-w-16 truncate text-[10px] font-bold leading-tight">

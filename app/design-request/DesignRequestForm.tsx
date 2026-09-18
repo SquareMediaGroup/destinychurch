@@ -60,7 +60,7 @@ export default function DesignRequestForm({
   if (status === "success") {
     return (
       <div className="rounded-3xl border border-black/5 bg-white p-8 text-center shadow-sm">
-        <span className="material-symbols-rounded mb-2 block text-4xl text-green-600">
+        <span className="material-symbols-rounded mb-2 block text-4xl text-green-600" aria-hidden="true">
           check_circle
         </span>
         <p className="text-xl font-black text-destiny-grey">Request received</p>
@@ -69,7 +69,7 @@ export default function DesignRequestForm({
             DT-{String(result.ref).padStart(4, "0")}
           </p>
         ) : null}
-        <p className="mx-auto mt-3 max-w-md text-sm leading-relaxed text-destiny-grey/60">
+        <p className="mx-auto mt-3 max-w-md text-sm leading-relaxed text-muted">
           {result.fast
             ? "You're signed in, so this one is fast-tracked. We've emailed you a link to follow it."
             : "We've emailed you a link so you can follow it and download the finished files."}
@@ -87,7 +87,7 @@ export default function DesignRequestForm({
         <button
           type="button"
           onClick={() => setStatus("idle")}
-          className="mt-4 block w-full text-sm font-bold text-destiny-grey/50 transition hover:text-destiny-grey"
+          className="mt-4 block w-full text-sm font-bold text-subtle transition hover:text-destiny-grey"
         >
           Ask for something else
         </button>
@@ -99,13 +99,13 @@ export default function DesignRequestForm({
     <form ref={formRef} onSubmit={handleSubmit} className="space-y-5">
       {signedIn && !unmatched ? (
         <p className="flex items-center gap-2 rounded-2xl bg-destiny-orange/10 px-4 py-3 text-sm font-bold text-destiny-orange">
-          <span className="material-symbols-rounded text-lg">bolt</span>
+          <span className="material-symbols-rounded text-lg" aria-hidden="true">bolt</span>
           You&apos;re signed in — this request will be fast-tracked.
         </p>
       ) : null}
 
       {unmatched ? (
-        <p className="rounded-2xl bg-[#f5f7fa] px-4 py-3 text-sm text-destiny-grey/70">
+        <p className="rounded-2xl bg-[#f5f7fa] px-4 py-3 text-sm text-muted">
           You&apos;re signed in, but we couldn&apos;t match you to a staff record — your request
           will come through as normal priority. Ask HR to link your account if that&apos;s not right.
         </p>
@@ -141,14 +141,14 @@ export default function DesignRequestForm({
           className={FIELD}
           placeholder="you@example.com"
         />
-        <p className="mt-1.5 text-xs text-destiny-grey/50">
+        <p className="mt-1.5 text-xs text-subtle">
           We&apos;ll send your tracking link here, so make sure it&apos;s one you check.
         </p>
 
         {looksLikeStaff ? (
           <div className="mt-3 rounded-2xl border border-destiny-orange/20 bg-destiny-orange/5 px-4 py-3">
             <p className="text-sm font-bold text-destiny-grey">That looks like a staff address</p>
-            <p className="mt-1 text-sm text-destiny-grey/60">
+            <p className="mt-1 text-sm text-muted">
               Sign in and we&apos;ll fast-track your request. You can still send it without
               signing in — it&apos;ll just join the normal queue.
             </p>
@@ -164,7 +164,7 @@ export default function DesignRequestForm({
 
       <div>
         <label className={LABEL} htmlFor="phone">
-          Phone <span className="font-normal text-destiny-grey/40">(optional)</span>
+          Phone <span className="font-normal text-subtle">(optional)</span>
         </label>
         <input id="phone" name="phone" maxLength={40} className={FIELD} />
       </div>
@@ -213,7 +213,7 @@ export default function DesignRequestForm({
 
       <div>
         <label className={LABEL} htmlFor="needed_by">
-          Needed by <span className="font-normal text-destiny-grey/40">(optional)</span>
+          Needed by <span className="font-normal text-subtle">(optional)</span>
         </label>
         <input id="needed_by" name="needed_by" type="date" className={FIELD} />
       </div>
@@ -221,7 +221,7 @@ export default function DesignRequestForm({
       <div>
         <label className={LABEL} htmlFor="specs">
           Sizes, formats, where it&apos;s going{" "}
-          <span className="font-normal text-destiny-grey/40">(optional)</span>
+          <span className="font-normal text-subtle">(optional)</span>
         </label>
         <textarea
           id="specs"

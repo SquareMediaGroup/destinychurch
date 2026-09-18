@@ -333,7 +333,7 @@ export default function AdminDashboard() {
     <div className="mx-auto max-w-6xl px-6 py-8 md:px-8 md:py-10">
       {forbidden && (
         <div className="mb-6 flex items-center gap-2 rounded-xl bg-danger/10 px-4 py-3 text-sm font-bold text-danger">
-          <span className="material-symbols-rounded text-lg">lock</span>
+          <span className="material-symbols-rounded text-lg" aria-hidden="true">lock</span>
           You don&apos;t have access to that section.
         </div>
       )}
@@ -376,7 +376,7 @@ export default function AdminDashboard() {
                           : "bg-destiny-orange/10 text-destiny-orange"
                     }`}
                   >
-                    <span className="material-symbols-rounded text-xl">{alert.icon}</span>
+                    <span className="material-symbols-rounded text-xl" aria-hidden="true">{alert.icon}</span>
                   </span>
                   <p className="min-w-0 flex-1 text-sm font-bold text-destiny-grey dark:text-white">
                     {alert.text}
@@ -384,7 +384,7 @@ export default function AdminDashboard() {
                   <span className="shrink-0 text-xs font-bold text-destiny-orange opacity-0 transition group-hover:opacity-100">
                     {alert.cta}
                   </span>
-                  <span className="material-symbols-rounded shrink-0 text-base text-destiny-grey/25 transition group-hover:text-destiny-orange dark:text-white/25">
+                  <span className="material-symbols-rounded shrink-0 text-base text-destiny-grey/25 transition group-hover:text-destiny-orange dark:text-white/25" aria-hidden="true">
                     arrow_forward
                   </span>
                 </Link>
@@ -550,7 +550,7 @@ export default function AdminDashboard() {
                 href={item.href}
                 className="flex items-center gap-2 rounded-xl border border-black/8 bg-white px-3.5 py-2 text-sm font-bold text-destiny-grey shadow-sm transition hover:shadow-md dark:border-white/10 dark:bg-destiny-grey-800 dark:text-white"
               >
-                <span className="material-symbols-rounded text-lg text-destiny-orange">
+                <span className="material-symbols-rounded text-lg text-destiny-orange" aria-hidden="true">
                   {item.icon}
                 </span>
                 {item.label}
@@ -575,7 +575,7 @@ export default function AdminDashboard() {
                 rel={action.external ? "noreferrer" : undefined}
                 className="flex items-center gap-2 rounded-xl border border-black/8 bg-white px-3.5 py-2 text-sm font-bold text-destiny-grey shadow-sm transition hover:shadow-md dark:border-white/10 dark:bg-destiny-grey-800 dark:text-white"
               >
-                <span className="material-symbols-rounded text-lg text-destiny-orange">
+                <span className="material-symbols-rounded text-lg text-destiny-orange" aria-hidden="true">
                   {action.icon}
                 </span>
                 {action.label}
@@ -618,7 +618,7 @@ function SectionCard({ item }: { item: AdminNavItem }) {
       className="group flex items-start gap-4 rounded-2xl border border-black/5 bg-white p-5 shadow-sm transition hover:shadow-md dark:border-white/8 dark:bg-destiny-grey-800"
     >
       <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-destiny-orange/10 text-destiny-orange">
-        <span className="material-symbols-rounded text-xl">{item.icon}</span>
+        <span className="material-symbols-rounded text-xl" aria-hidden="true">{item.icon}</span>
       </span>
       <div className="min-w-0">
         <p className="mb-0.5 text-sm font-black text-destiny-grey transition-colors group-hover:text-destiny-orange dark:text-white">
@@ -628,7 +628,7 @@ function SectionCard({ item }: { item: AdminNavItem }) {
           {item.description}
         </p>
       </div>
-      <span className="material-symbols-rounded ml-auto mt-0.5 shrink-0 text-base text-destiny-grey/20 transition group-hover:text-destiny-orange/50 dark:text-white/20">
+      <span className="material-symbols-rounded ml-auto mt-0.5 shrink-0 text-base text-destiny-grey/20 transition group-hover:text-destiny-orange/50 dark:text-white/20" aria-hidden="true">
         arrow_forward
       </span>
     </Link>

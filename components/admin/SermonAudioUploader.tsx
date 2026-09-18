@@ -147,7 +147,7 @@ export default function SermonAudioUploader({ onUploaded }: { onUploaded: () => 
         onClick={pickFile}
         className="flex w-full items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-black/10 px-4 py-6 text-sm font-bold text-destiny-grey/60 transition hover:border-destiny-orange hover:text-destiny-orange disabled:opacity-60 dark:border-white/10 dark:text-white/60"
       >
-        <span className="material-symbols-rounded text-xl">graphic_eq</span>
+        <span className="material-symbols-rounded text-xl" aria-hidden="true">graphic_eq</span>
         {fileName || "Choose an audio file"}
       </button>
 

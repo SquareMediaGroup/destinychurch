@@ -61,7 +61,7 @@ export default function SplitSection({
               {title}
             </h2>
             <div
-              className={`space-y-4 text-base leading-relaxed ${dark ? "text-white/70" : "text-destiny-grey/70"}`}
+              className={`space-y-4 text-base leading-relaxed ${dark ? "text-on-dark-muted" : "text-muted"}`}
             >
               {children}
             </div>

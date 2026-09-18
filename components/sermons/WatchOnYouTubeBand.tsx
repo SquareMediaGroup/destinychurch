@@ -30,7 +30,7 @@ export default function WatchOnYouTubeBand({
           <h2 className="mt-3 text-3xl font-black leading-tight text-white sm:text-4xl">
             Every sermon, on the big screen.
           </h2>
-          <p className="mt-4 text-[15px] leading-relaxed text-white/65">
+          <p className="mt-4 text-[15px] leading-relaxed text-on-dark-muted">
             Our full back-catalogue of services lives on YouTube — worship,
             testimonies and the full message, all in one place.
           </p>

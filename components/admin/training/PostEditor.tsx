@@ -135,7 +135,7 @@ export function PostEditor({
               aria-label="Close"
               className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-destiny-grey/50 dark:text-white/50 transition hover:bg-[#f5f7fa] hover:text-destiny-grey dark:hover:text-white"
             >
-              <span className="material-symbols-rounded text-xl">close</span>
+              <span className="material-symbols-rounded text-xl" aria-hidden="true">close</span>
             </button>
             <input
               value={form.title}

@@ -114,11 +114,11 @@ export default function JobsPage() {
         action={
           <div className="flex items-center gap-2">
             <Link href="/admin/hr/applications" className={ghostBtn}>
-              <span className="material-symbols-rounded text-lg">inbox</span>
+              <span className="material-symbols-rounded text-lg" aria-hidden="true">inbox</span>
               Applications
             </Link>
             <button className={primaryBtn} onClick={() => setEditing("new")}>
-              <span className="material-symbols-rounded text-lg">add</span>
+              <span className="material-symbols-rounded text-lg" aria-hidden="true">add</span>
               New role
             </button>
           </div>
@@ -136,7 +136,7 @@ export default function JobsPage() {
           hint="Create your first job or internship to start receiving applications."
           action={
             <button className={primaryBtn} onClick={() => setEditing("new")}>
-              <span className="material-symbols-rounded text-lg">add</span>
+              <span className="material-symbols-rounded text-lg" aria-hidden="true">add</span>
               New role
             </button>
           }
@@ -231,7 +231,7 @@ export default function JobsPage() {
                                 className="text-destiny-grey/40 dark:text-white/40 transition hover:text-destiny-orange"
                                 aria-label={`View ${j.title} live`}
                               >
-                                <span className="material-symbols-rounded text-xl">
+                                <span className="material-symbols-rounded text-xl" aria-hidden="true">
                                   open_in_new
                                 </span>
                               </a>
@@ -241,14 +241,14 @@ export default function JobsPage() {
                               className="text-destiny-grey/40 dark:text-white/40 transition hover:text-destiny-orange"
                               aria-label={`Edit ${j.title}`}
                             >
-                              <span className="material-symbols-rounded text-xl">edit</span>
+                              <span className="material-symbols-rounded text-xl" aria-hidden="true">edit</span>
                             </button>
                             <button
                               onClick={() => remove(j)}
                               className="text-destiny-grey/40 dark:text-white/40 transition hover:text-destiny-red"
                               aria-label={`Delete ${j.title}`}
                             >
-                              <span className="material-symbols-rounded text-xl">delete</span>
+                              <span className="material-symbols-rounded text-xl" aria-hidden="true">delete</span>
                             </button>
                           </div>
                         </td>

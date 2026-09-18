@@ -458,7 +458,7 @@ function Palette({ onClose }: { onClose: () => void }) {
       >
         {/* Query */}
         <div className="flex items-center gap-3 border-b border-white/10 px-5 py-4">
-          <span className="material-symbols-rounded text-xl text-white/45">search</span>
+          <span className="material-symbols-rounded text-xl text-white/45" aria-hidden="true">search</span>
           <input
             ref={inputRef}
             value={query}
@@ -471,7 +471,7 @@ function Palette({ onClose }: { onClose: () => void }) {
             className="min-w-0 flex-1 bg-transparent text-base text-white outline-none placeholder:text-white/35"
           />
           {searching && (
-            <span className="material-symbols-rounded animate-spin text-lg text-white/40">
+            <span className="material-symbols-rounded animate-spin text-lg text-white/40" aria-hidden="true">
               progress_activity
             </span>
           )}
@@ -481,7 +481,7 @@ function Palette({ onClose }: { onClose: () => void }) {
             aria-label="Close search"
             className="flex h-7 w-7 items-center justify-center rounded-lg text-white/40 transition hover:bg-white/10 hover:text-white"
           >
-            <span className="material-symbols-rounded text-lg">close</span>
+            <span className="material-symbols-rounded text-lg" aria-hidden="true">close</span>
           </button>
         </div>
 
@@ -494,7 +494,7 @@ function Palette({ onClose }: { onClose: () => void }) {
         >
           {flat.length === 0 ? (
             <div className="px-5 py-10 text-center">
-              <span className="material-symbols-rounded text-3xl text-white/25">
+              <span className="material-symbols-rounded text-3xl text-white/25" aria-hidden="true">
                 search_off
               </span>
               <p className="mt-2 text-sm font-bold text-white/70">
@@ -554,7 +554,7 @@ function Palette({ onClose }: { onClose: () => void }) {
                         </span>
                       )}
                       {isActive && (
-                        <span className="material-symbols-rounded shrink-0 text-base text-destiny-orange/80">
+                        <span className="material-symbols-rounded shrink-0 text-base text-destiny-orange/80" aria-hidden="true">
                           keyboard_return
                         </span>
                       )}
@@ -674,7 +674,7 @@ function ShortcutSheet({ onClose }: { onClose: () => void }) {
             aria-label="Close"
             className="flex h-8 w-8 items-center justify-center rounded-lg text-white/50 transition hover:bg-white/10 hover:text-white"
           >
-            <span className="material-symbols-rounded text-xl">close</span>
+            <span className="material-symbols-rounded text-xl" aria-hidden="true">close</span>
           </button>
         </div>
         <div className="max-h-[70vh] overflow-y-auto px-6 py-5">
@@ -729,7 +729,7 @@ export function CommandTrigger({ className = "" }: { className?: string }) {
       data-tour="command-trigger"
       className={`group flex items-center gap-2 rounded-xl border border-black/10 bg-white dark:border-white/10 dark:bg-destiny-grey-800 px-3 py-2 text-sm text-destiny-grey/45 dark:text-white/45 transition hover:border-black/20 hover:text-destiny-grey dark:hover:text-white ${className}`}
     >
-      <span className="material-symbols-rounded text-lg text-destiny-grey/35 dark:text-white/35 transition group-hover:text-destiny-orange">
+      <span className="material-symbols-rounded text-lg text-destiny-grey/35 dark:text-white/35 transition group-hover:text-destiny-orange" aria-hidden="true">
         search
       </span>
       <span className="font-medium">Search</span>
@@ -752,7 +752,7 @@ export function CommandTriggerIcon({ className = "" }: { className?: string }) {
       data-tour="command-trigger"
       className={`flex h-9 w-9 items-center justify-center rounded-xl bg-[#f5f7fa] text-destiny-grey dark:text-white transition hover:bg-black/8 ${className}`}
     >
-      <span className="material-symbols-rounded text-xl">search</span>
+      <span className="material-symbols-rounded text-xl" aria-hidden="true">search</span>
     </button>
   );
 }

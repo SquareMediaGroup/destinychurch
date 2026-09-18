@@ -74,7 +74,7 @@ export default function AlphaTopics() {
             <h2 className="mb-8 text-3xl font-black text-destiny-grey md:text-4xl">
               The Topics
             </h2>
-            <p className="mb-6 text-sm text-destiny-grey/60">
+            <p className="mb-6 text-sm text-muted">
               Click on any topic to learn what you&apos;ll explore in that session. No pressure — just open conversations about the questions that matter most.
             </p>
             <div className="space-y-2">
@@ -97,7 +97,7 @@ export default function AlphaTopics() {
                         {topic.question}
                       </p>
                       {expanded === topic.question && (
-                        <p className="mt-3 text-xs text-destiny-grey/70 leading-relaxed">
+                        <p className="mt-3 text-xs text-muted leading-relaxed">
                           {topic.description}
                         </p>
                       )}

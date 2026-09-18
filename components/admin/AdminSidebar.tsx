@@ -163,7 +163,7 @@ function NavDropdown({
           {group.icon}
         </span>
         <span className="flex-1 text-left">{label}</span>
-        <span className="material-symbols-rounded text-base opacity-50">
+        <span className="material-symbols-rounded text-base opacity-50" aria-hidden="true">
           {open ? "expand_less" : "expand_more"}
         </span>
       </button>
@@ -310,7 +310,7 @@ export default function AdminSidebar() {
               aria-label="Account"
               aria-haspopup="dialog"
             >
-              <span className="material-symbols-rounded text-xl">account_circle</span>
+              <span className="material-symbols-rounded text-xl" aria-hidden="true">account_circle</span>
             </button>
           </div>
         </div>
@@ -365,7 +365,7 @@ export default function AdminSidebar() {
               onClick={() => setAccountOpen(false)}
               className="flex items-center gap-3 rounded-2xl px-3 py-3 text-sm font-bold text-destiny-grey transition hover:bg-[#f5f7fa] dark:text-white dark:hover:bg-white/5"
             >
-              <span className="material-symbols-rounded text-xl">open_in_new</span>
+              <span className="material-symbols-rounded text-xl" aria-hidden="true">open_in_new</span>
               View site
             </Link>
             <form action="/api/admin/logout" method="POST">
@@ -373,7 +373,7 @@ export default function AdminSidebar() {
                 type="submit"
                 className="flex w-full items-center gap-3 rounded-2xl px-3 py-3 text-sm font-bold text-destiny-grey transition hover:bg-[#f5f7fa] dark:text-white dark:hover:bg-white/5"
               >
-                <span className="material-symbols-rounded text-xl">logout</span>
+                <span className="material-symbols-rounded text-xl" aria-hidden="true">logout</span>
                 Sign out
               </button>
             </form>
@@ -454,7 +454,7 @@ function SidebarContents({
           target="_blank"
           className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-bold text-destiny-grey/50 transition hover:bg-[#f5f7fa] hover:text-destiny-grey dark:text-white/50 dark:hover:bg-white/5 dark:hover:text-white"
         >
-          <span className="material-symbols-rounded text-xl">open_in_new</span>
+          <span className="material-symbols-rounded text-xl" aria-hidden="true">open_in_new</span>
           View site
         </Link>
         <form action="/api/admin/logout" method="POST">
@@ -462,7 +462,7 @@ function SidebarContents({
             type="submit"
             className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-bold text-destiny-grey/50 transition hover:bg-[#f5f7fa] hover:text-destiny-grey dark:text-white/50 dark:hover:bg-white/5 dark:hover:text-white"
           >
-            <span className="material-symbols-rounded text-xl">logout</span>
+            <span className="material-symbols-rounded text-xl" aria-hidden="true">logout</span>
             Sign out
           </button>
         </form>

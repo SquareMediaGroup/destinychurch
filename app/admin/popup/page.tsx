@@ -124,7 +124,7 @@ export default function AdminPopupPage() {
 
         {loading ? (
           <div className="flex items-center justify-center py-16">
-            <span className="material-symbols-rounded animate-spin text-3xl text-destiny-grey/20 dark:text-white/20">
+            <span className="material-symbols-rounded animate-spin text-3xl text-destiny-grey/20 dark:text-white/20" aria-hidden="true">
               progress_activity
             </span>
           </div>
@@ -162,7 +162,7 @@ export default function AdminPopupPage() {
                     {popup.cta_text && (
                       <span className="mt-2 inline-flex w-fit items-center gap-2 rounded-xl bg-destiny-orange px-5 py-2.5 text-sm font-bold text-white">
                         {popup.cta_text}
-                        <span className="material-symbols-rounded text-base">
+                        <span className="material-symbols-rounded text-base" aria-hidden="true">
                           arrow_forward
                         </span>
                       </span>
@@ -253,7 +253,7 @@ export default function AdminPopupPage() {
                       className="absolute right-3 top-3 flex h-8 w-8 items-center justify-center rounded-lg bg-black/60 text-white backdrop-blur transition hover:bg-black/80"
                       aria-label="Remove image"
                     >
-                      <span className="material-symbols-rounded text-base">
+                      <span className="material-symbols-rounded text-base" aria-hidden="true">
                         close
                       </span>
                     </button>
@@ -274,7 +274,7 @@ export default function AdminPopupPage() {
                       disabled={uploading}
                       className="hidden"
                     />
-                    <span className="material-symbols-rounded text-3xl text-destiny-grey/40 dark:text-white/40">
+                    <span className="material-symbols-rounded text-3xl text-destiny-grey/40 dark:text-white/40" aria-hidden="true">
                       {uploading ? "progress_activity" : "add_photo_alternate"}
                     </span>
                     <p className="text-sm font-bold text-destiny-grey dark:text-white">
@@ -368,7 +368,7 @@ export default function AdminPopupPage() {
               >
                 {saved ? (
                   <>
-                    <span className="material-symbols-rounded text-base">
+                    <span className="material-symbols-rounded text-base" aria-hidden="true">
                       check
                     </span>
                     Saved

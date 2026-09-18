@@ -86,7 +86,7 @@ function UnknownBlockView({ node, deleteNode }: ReactNodeViewProps) {
       className="dc-block-shell my-8 rounded-xl border-2 border-dashed border-destiny-grey/25 bg-[#f5f7fa] p-5"
     >
       <div contentEditable={false} className="flex items-start gap-3">
-        <span className="material-symbols-rounded shrink-0 text-[20px] text-destiny-grey/40 dark:text-white/40">
+        <span className="material-symbols-rounded shrink-0 text-[20px] text-destiny-grey/40 dark:text-white/40" aria-hidden="true">
           help
         </span>
         <div className="min-w-0 flex-1">

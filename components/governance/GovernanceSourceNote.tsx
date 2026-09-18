@@ -36,7 +36,7 @@ export default function GovernanceSourceNote({
             <h2 className="mb-3 text-xl font-black text-destiny-grey">
               Where this information comes from
             </h2>
-            <p className="mb-4 text-sm leading-relaxed text-destiny-grey/70">
+            <p className="mb-4 text-sm leading-relaxed text-muted">
               This page is generated from the public registers held by the{" "}
               <a
                 href={CHARITY_REGISTER_URL}
@@ -71,7 +71,7 @@ export default function GovernanceSourceNote({
               </div>
             )}
 
-            <p className="text-sm text-destiny-grey/40">
+            <p className="text-sm text-subtle">
               Last refreshed:{" "}
               {formatRegisterDate(fetchedAt) ?? "unknown"}
             </p>

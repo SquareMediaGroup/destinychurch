@@ -99,7 +99,7 @@ export default function ProductBuyPanel({ product }: { product: ProductWithVaria
       {/* Colour */}
       {hasColor && (
         <div className="mt-6">
-          <p className="text-xs font-bold uppercase tracking-[0.2em] text-destiny-grey/50">
+          <p className="text-xs font-bold uppercase tracking-[0.2em] text-subtle">
             Colour{selColor ? `: ${selColor}` : ""}
           </p>
           <div className="mt-3 flex flex-wrap gap-2.5">
@@ -140,7 +140,7 @@ export default function ProductBuyPanel({ product }: { product: ProductWithVaria
       {/* Size */}
       {hasSize && (
         <div className="mt-6">
-          <p className="text-xs font-bold uppercase tracking-[0.2em] text-destiny-grey/50">
+          <p className="text-xs font-bold uppercase tracking-[0.2em] text-subtle">
             Size
           </p>
           <div className="mt-3 flex flex-wrap gap-2.5">
@@ -174,10 +174,10 @@ export default function ProductBuyPanel({ product }: { product: ProductWithVaria
           <button
             type="button"
             onClick={() => setQty((q) => Math.max(1, q - 1))}
-            className="flex h-11 w-11 items-center justify-center text-destiny-grey/70 transition hover:text-destiny-grey"
+            className="flex h-11 w-11 items-center justify-center text-muted transition hover:text-destiny-grey"
             aria-label="Decrease quantity"
           >
-            <span className="material-symbols-rounded text-lg">remove</span>
+            <span className="material-symbols-rounded text-lg" aria-hidden="true">remove</span>
           </button>
           <span className="w-8 text-center text-sm font-bold text-destiny-grey">{qty}</span>
           <button
@@ -185,10 +185,10 @@ export default function ProductBuyPanel({ product }: { product: ProductWithVaria
             onClick={() =>
               setQty((q) => Math.min(selected?.stock ?? 99, q + 1))
             }
-            className="flex h-11 w-11 items-center justify-center text-destiny-grey/70 transition hover:text-destiny-grey"
+            className="flex h-11 w-11 items-center justify-center text-muted transition hover:text-destiny-grey"
             aria-label="Increase quantity"
           >
-            <span className="material-symbols-rounded text-lg">add</span>
+            <span className="material-symbols-rounded text-lg" aria-hidden="true">add</span>
           </button>
         </div>
 
@@ -198,13 +198,13 @@ export default function ProductBuyPanel({ product }: { product: ProductWithVaria
           disabled={!inStock}
           className="inline-flex flex-1 items-center justify-center gap-2 rounded-full bg-destiny-orange px-7 py-3.5 text-sm font-bold text-white shadow-lg shadow-destiny-orange/25 transition hover:bg-destiny-orange-dark disabled:cursor-not-allowed disabled:bg-destiny-grey/30 disabled:shadow-none"
         >
-          <span className="material-symbols-rounded text-lg">shopping_bag</span>
+          <span className="material-symbols-rounded text-lg" aria-hidden="true">shopping_bag</span>
           {inStock ? "Add to basket" : "Sold out"}
         </button>
       </div>
 
-      <p className="mt-4 flex items-center gap-1.5 text-xs text-destiny-grey/50">
-        <span className="material-symbols-rounded text-sm">storefront</span>
+      <p className="mt-4 flex items-center gap-1.5 text-xs text-subtle">
+        <span className="material-symbols-rounded text-sm" aria-hidden="true">storefront</span>
         Collect at church — we&apos;ll email you when it&apos;s ready.
       </p>
       <Link
@@ -212,7 +212,7 @@ export default function ProductBuyPanel({ product }: { product: ProductWithVaria
         className="mt-2 inline-flex items-center gap-1 text-sm font-semibold text-destiny-orange underline-offset-4 hover:underline"
       >
         View basket
-        <span className="material-symbols-rounded text-base">arrow_forward</span>
+        <span className="material-symbols-rounded text-base" aria-hidden="true">arrow_forward</span>
       </Link>
     </div>
   );

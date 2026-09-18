@@ -61,11 +61,11 @@ function UnassignedPanel() {
       />
       <div className="absolute inset-0 bg-gradient-to-br from-black/85 via-black/65 to-destiny-grey/90" />
       <div className="glass relative z-10 w-full max-w-md rounded-3xl p-8 text-center">
-        <span className="material-symbols-rounded mb-4 text-4xl text-white/40">
+        <span className="material-symbols-rounded mb-4 text-4xl text-white/40" aria-hidden="true">
           person_off
         </span>
         <h1 className="text-xl font-black text-white">Account not set up</h1>
-        <p className="mt-2 text-sm text-white/50">
+        <p className="mt-2 text-sm text-on-dark-subtle">
           Your account isn&apos;t set up for the dashboard or the staff portal yet.
           Contact an administrator.
         </p>
@@ -182,8 +182,8 @@ function ChoosePanel({
         </span>
         <h1 className="text-3xl font-black text-white md:text-4xl">Where to next?</h1>
         {email && (
-          <p className="mt-2 text-sm text-white/40">
-            Signed in as <span className="text-white/70">{email}</span>
+          <p className="mt-2 text-sm text-on-dark-subtle">
+            Signed in as <span className="text-on-dark-muted">{email}</span>
           </p>
         )}
       </div>
@@ -202,13 +202,13 @@ function ChoosePanel({
                 aria-disabled="true"
                 className="glass flex cursor-not-allowed items-center gap-4 rounded-3xl border border-white/10 p-5 opacity-50 animate-[fadeInUp_0.45s_ease-out_both]"
               >
-                <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-white/10 text-white/40">
-                  <span className="material-symbols-rounded text-[28px]">lock</span>
+                <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-white/10 text-on-dark-subtle">
+                  <span className="material-symbols-rounded text-[28px]" aria-hidden="true">lock</span>
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
-                    <h2 className="text-base font-bold text-white/70">{sys.title}</h2>
-                    <span className="rounded-full bg-white/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white/50">
+                    <h2 className="text-base font-bold text-on-dark-muted">{sys.title}</h2>
+                    <span className="rounded-full bg-white/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-on-dark-subtle">
                       No access
                     </span>
                   </div>
@@ -228,13 +228,13 @@ function ChoosePanel({
               className="glass group flex items-center gap-4 rounded-3xl border border-white/10 p-5 transition animate-[fadeInUp_0.45s_ease-out_both] hover:border-destiny-orange/40 hover:bg-white/10"
             >
               <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-destiny-orange/15 text-destiny-orange transition group-hover:bg-destiny-orange group-hover:text-white">
-                <span className="material-symbols-rounded text-[28px]">{sys.icon}</span>
+                <span className="material-symbols-rounded text-[28px]" aria-hidden="true">{sys.icon}</span>
               </div>
               <div className="min-w-0 flex-1">
                 <h2 className="text-base font-bold text-white">{sys.title}</h2>
-                <p className="mt-1 text-sm leading-snug text-white/45">{sys.description}</p>
+                <p className="mt-1 text-sm leading-snug text-on-dark-subtle">{sys.description}</p>
               </div>
-              <span className="material-symbols-rounded text-white/25 transition group-hover:translate-x-1 group-hover:text-destiny-orange">
+              <span className="material-symbols-rounded text-white/25 transition group-hover:translate-x-1 group-hover:text-destiny-orange" aria-hidden="true">
                 chevron_right
               </span>
             </Link>
@@ -248,7 +248,7 @@ function ChoosePanel({
           type="button"
           onClick={onSignOut}
           disabled={signingOut}
-          className="text-xs font-bold uppercase tracking-wider text-white/40 transition hover:text-white/70 disabled:opacity-50"
+          className="text-xs font-bold uppercase tracking-wider text-on-dark-subtle transition hover:text-on-dark-muted disabled:opacity-50"
         >
           {signingOut ? "Signing out…" : "Sign out"}
         </button>
@@ -276,7 +276,7 @@ function LoginPanel({
         <h1 className="text-3xl font-black text-white md:text-4xl">
           Welcome back
         </h1>
-        <p className="mt-2 text-sm text-white/40">
+        <p className="mt-2 text-sm text-on-dark-subtle">
           Sign in to continue to the dashboard
         </p>
       </div>
@@ -285,7 +285,7 @@ function LoginPanel({
       <div className="glass rounded-3xl p-8">
         <form action={formAction} className="flex flex-col gap-5">
           <div>
-            <label className="mb-2 block text-xs font-bold uppercase tracking-wider text-white/40">
+            <label className="mb-2 block text-xs font-bold uppercase tracking-wider text-on-dark-subtle">
               Email
             </label>
             <input
@@ -300,7 +300,7 @@ function LoginPanel({
 
           <div>
             <div className="mb-2 flex items-center justify-between">
-              <label className="block text-xs font-bold uppercase tracking-wider text-white/40">
+              <label className="block text-xs font-bold uppercase tracking-wider text-on-dark-subtle">
                 Password
               </label>
               <Link
@@ -320,7 +320,7 @@ function LoginPanel({
             />
           </div>
 
-          <label className="flex items-center gap-2.5 text-sm text-white/60">
+          <label className="flex items-center gap-2.5 text-sm text-on-dark-muted">
             <input
               type="checkbox"
               name="remember"
@@ -332,7 +332,7 @@ function LoginPanel({
 
           {error && (
             <div className="flex items-center gap-3 rounded-2xl bg-red-500/10 px-4 py-3 text-sm text-red-400">
-              <span className="material-symbols-rounded text-base">error</span>
+              <span className="material-symbols-rounded text-base" aria-hidden="true">error</span>
               {error}
             </div>
           )}

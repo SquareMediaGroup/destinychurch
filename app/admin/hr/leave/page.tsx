@@ -108,7 +108,7 @@ export default function LeavePage() {
         back={{ href: "/admin/hr", label: "HR" }}
         action={
           <button className={primaryBtn} onClick={() => setAdding(true)}>
-            <span className="material-symbols-rounded text-lg">add</span>
+            <span className="material-symbols-rounded text-lg" aria-hidden="true">add</span>
             Request leave
           </button>
         }

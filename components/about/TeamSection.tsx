@@ -45,7 +45,7 @@ function TeamCard({ name, role, photo, cardBg, email }: { name: string; role: st
         )}
       </div>
       <p className="font-bold text-destiny-grey">{name}</p>
-      <p className="text-sm text-destiny-grey/50">{role}</p>
+      <p className="text-sm text-subtle">{role}</p>
     </div>
   );
 }

@@ -25,7 +25,7 @@ function Panel({
     <AnimateIn delay={delay}>
       <div className="h-full rounded-3xl bg-[#f5f7fa] p-8">
         <div className="mb-6 flex items-center gap-3">
-          <span className="material-symbols-rounded text-2xl text-destiny-orange">
+          <span className="material-symbols-rounded text-2xl text-destiny-orange" aria-hidden="true">
             {icon}
           </span>
           <h3 className="text-2xl font-black text-destiny-grey">{title}</h3>
@@ -78,7 +78,7 @@ export default function TrusteesDirectors({
             <h2 className="mb-4 text-3xl font-black text-destiny-grey md:text-4xl lg:text-5xl">
               Trustees &amp; Directors
             </h2>
-            <p className="mx-auto max-w-2xl text-base leading-relaxed text-destiny-grey/60">
+            <p className="mx-auto max-w-2xl text-base leading-relaxed text-muted">
               {sameBoard
                 ? "The people legally responsible for the governance of the church. Each of them serves as both a charity trustee and a company director."
                 : "The people legally responsible for the governance of the church. In a charitable company the same people usually serve as both charity trustees and company directors."}
@@ -90,7 +90,7 @@ export default function TrusteesDirectors({
           <AnimateIn delay={100}>
             <div className="rounded-3xl bg-[#f5f7fa] p-8">
               <div className="mb-6 flex items-center gap-3">
-                <span className="material-symbols-rounded text-2xl text-destiny-orange">
+                <span className="material-symbols-rounded text-2xl text-destiny-orange" aria-hidden="true">
                   groups
                 </span>
                 <h3 className="text-2xl font-black text-destiny-grey">
@@ -109,7 +109,7 @@ export default function TrusteesDirectors({
                         {name}
                       </p>
                       {appointed && (
-                        <p className="text-xs text-destiny-grey/50">
+                        <p className="text-xs text-subtle">
                           Appointed {appointed}
                         </p>
                       )}
@@ -149,7 +149,7 @@ export default function TrusteesDirectors({
                         <p className="text-sm font-bold text-destiny-grey">
                           {officer.name}
                         </p>
-                        <p className="text-xs text-destiny-grey/50">
+                        <p className="text-xs text-subtle">
                           {officer.role}
                           {appointed ? ` — appointed ${appointed}` : ""}
                         </p>

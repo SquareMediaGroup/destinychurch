@@ -147,7 +147,7 @@ export default function StaffProfilePage() {
         back={{ href: "/admin/hr/staff", label: "Staff directory" }}
         action={
           <button className={ghostBtn} onClick={() => setModal("edit")}>
-            <span className="material-symbols-rounded text-lg">edit</span>
+            <span className="material-symbols-rounded text-lg" aria-hidden="true">edit</span>
             Edit
           </button>
         }
@@ -240,14 +240,14 @@ export default function StaffProfilePage() {
                       className="text-destiny-grey/40 dark:text-white/40 transition hover:text-destiny-orange"
                       aria-label="Download"
                     >
-                      <span className="material-symbols-rounded text-xl">download</span>
+                      <span className="material-symbols-rounded text-xl" aria-hidden="true">download</span>
                     </button>
                     <button
                       onClick={() => deleteDoc(d.id)}
                       className="text-destiny-grey/40 dark:text-white/40 transition hover:text-destiny-red"
                       aria-label="Delete"
                     >
-                      <span className="material-symbols-rounded text-xl">delete</span>
+                      <span className="material-symbols-rounded text-xl" aria-hidden="true">delete</span>
                     </button>
                   </div>
                 </li>
@@ -333,7 +333,7 @@ function Section({
           onClick={onAdd}
           className="inline-flex items-center gap-1 text-xs font-bold text-destiny-orange transition hover:brightness-110"
         >
-          <span className="material-symbols-rounded text-base">add</span>
+          <span className="material-symbols-rounded text-base" aria-hidden="true">add</span>
           {addLabel}
         </button>
       </div>

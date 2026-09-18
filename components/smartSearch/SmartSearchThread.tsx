@@ -124,7 +124,7 @@ export function SmartSearchThread({
           </div>
           <div className="rounded-2xl rounded-tl-sm bg-white/10 px-4 py-3">
             {toolStatus ? (
-              <span className="text-xs text-white/60">{toolStatus}</span>
+              <span className="text-xs text-on-dark-muted">{toolStatus}</span>
             ) : (
               <Suspense fallback={<OrbFallback />}>
                 <ThinkingOrb state="searching" size={20} />

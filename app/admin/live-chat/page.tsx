@@ -246,7 +246,7 @@ export default function AdminLiveChatPage() {
                 : "bg-white text-destiny-grey/60 hover:text-destiny-grey dark:bg-destiny-grey-800 dark:text-white/50 dark:hover:text-white"
             }`}
           >
-            <span className="material-symbols-rounded text-base">{t.icon}</span>
+            <span className="material-symbols-rounded text-base" aria-hidden="true">{t.icon}</span>
             {t.label}
             {t.id === "prayer" && openPrayers > 0 && (
               <span
@@ -272,7 +272,7 @@ export default function AdminLiveChatPage() {
 
       {loading ? (
         <div className="flex items-center justify-center py-16">
-          <span className="material-symbols-rounded animate-spin text-3xl text-destiny-grey/20 dark:text-white/20">
+          <span className="material-symbols-rounded animate-spin text-3xl text-destiny-grey/20 dark:text-white/20" aria-hidden="true">
             progress_activity
           </span>
         </div>
@@ -323,7 +323,7 @@ function ConsoleTab({
     return (
       <Card>
         <div className="py-8 text-center">
-          <span className="material-symbols-rounded mb-3 block text-4xl text-destiny-grey/20 dark:text-white/20">
+          <span className="material-symbols-rounded mb-3 block text-4xl text-destiny-grey/20 dark:text-white/20" aria-hidden="true">
             videocam_off
           </span>
           <p className="font-black text-destiny-grey dark:text-white">No chat running</p>
@@ -366,7 +366,7 @@ function ConsoleTab({
               onClick={() => onSetState(current.state === "paused" ? "open" : "paused")}
               className="inline-flex items-center gap-2 rounded-xl border border-black/10 bg-white dark:border-white/10 dark:bg-destiny-grey-800 px-4 py-2.5 text-sm font-bold text-destiny-grey/70 dark:text-white/70 transition hover:bg-[#f5f7fa] dark:hover:bg-white/10 disabled:opacity-60"
             >
-              <span className="material-symbols-rounded text-base">
+              <span className="material-symbols-rounded text-base" aria-hidden="true">
                 {current.state === "paused" ? "play_arrow" : "pause"}
               </span>
               {current.state === "paused" ? "Resume" : "Pause"}
@@ -377,7 +377,7 @@ function ConsoleTab({
               onClick={() => onSetState("closed")}
               className="inline-flex items-center gap-2 rounded-xl bg-destiny-red px-4 py-2.5 text-sm font-bold text-white transition hover:brightness-110 disabled:opacity-40"
             >
-              <span className="material-symbols-rounded text-base">block</span>
+              <span className="material-symbols-rounded text-base" aria-hidden="true">block</span>
               Close chat
             </button>
           </div>
@@ -592,7 +592,7 @@ function ThreadsTab({ threads }: { threads: Thread[] }) {
               className="flex items-center gap-3 rounded-2xl bg-[#f5f7fa] px-4 py-3"
             >
               <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-destiny-orange/10">
-                <span className="material-symbols-rounded text-lg text-destiny-orange">
+                <span className="material-symbols-rounded text-lg text-destiny-orange" aria-hidden="true">
                   person
                 </span>
               </div>

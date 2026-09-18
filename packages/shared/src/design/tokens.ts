@@ -47,6 +47,31 @@ export const colors = {
 export const accentColor = colors.orange;
 
 /**
+ * Text colours for secondary copy, kept byte-identical to `--color-muted` and
+ * `--color-subtle` in `app/globals.css`.
+ *
+ * These are solid colours rather than an alpha on `colors.grey` on purpose.
+ * The web used to fade the brand grey for "quieter" text and every step that
+ * looked quiet enough also fell below the WCAG AA floor of 4.5:1 — grey at 60%
+ * on white is 3.4:1, at 40% it is 2.1:1. Measured on white these are 5.9:1 and
+ * 4.7:1; `tests/unit/contrast.spec.ts` pins them there.
+ *
+ * `onDark*` are alphas because the backdrop varies. Over `colors.grey` they are
+ * 7.8:1 and 6.4:1. Over a PHOTOGRAPH neither is sufficient by itself — darken
+ * the scrim rather than reaching for a brighter text colour.
+ */
+export const textColors = {
+  /** Secondary body copy, card descriptions. */
+  muted: "#5B6570",
+  /** Metadata, captions, labels. The quietest colour allowed to carry meaning. */
+  subtle: "#6B7580",
+  /** Secondary copy on a dark surface. */
+  onDarkMuted: "rgba(255, 255, 255, 0.82)",
+  /** Metadata on a dark surface. */
+  onDarkSubtle: "rgba(255, 255, 255, 0.72)",
+} as const;
+
+/**
  * The rainbow brand gradient (as used for the logo mark and on the web via
  * `app/globals.css`). Ordered stops; wrap back to orange to loop seamlessly.
  */

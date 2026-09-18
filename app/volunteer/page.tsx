@@ -36,7 +36,7 @@ export default function VolunteerPage() {
             <h1 className="mb-4 text-5xl font-black text-white md:text-6xl lg:text-7xl">
               Volunteer with Us
             </h1>
-            <p className="mx-auto max-w-2xl text-base text-white/60 md:text-lg">
+            <p className="mx-auto max-w-2xl text-base text-on-dark-muted md:text-lg">
               Everyone has something to offer. Whether you love music, working with kids, welcoming people or running tech — there&apos;s a place for you on one of our serve teams.
             </p>
           </AnimateIn>
@@ -50,10 +50,10 @@ export default function VolunteerPage() {
             <h2 className="mb-5 text-3xl font-black text-destiny-grey md:text-4xl">
               Why Serve?
             </h2>
-            <p className="mb-4 text-base leading-relaxed text-destiny-grey/70">
+            <p className="mb-4 text-base leading-relaxed text-muted">
               Serving is more than just helping out — it&apos;s about using your gifts to make a real difference. When you serve, you grow in your faith, build meaningful relationships and become part of something bigger than yourself.
             </p>
-            <p className="text-base leading-relaxed text-destiny-grey/70">
+            <p className="text-base leading-relaxed text-muted">
               No experience needed. We&apos;ll train you, support you and walk alongside you every step of the way.
             </p>
           </AnimateIn>
@@ -92,10 +92,10 @@ export default function VolunteerPage() {
               <AnimateIn key={step.title} delay={i * 80}>
                 <div className="flex flex-col items-start rounded-3xl bg-white p-8 shadow-sm">
                   <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-destiny-orange/10">
-                    <span className="material-symbols-rounded text-3xl text-destiny-orange">{step.icon}</span>
+                    <span className="material-symbols-rounded text-3xl text-destiny-orange" aria-hidden="true">{step.icon}</span>
                   </div>
                   <h3 className="mb-2 text-xl font-black text-destiny-grey">{step.title}</h3>
-                  <p className="text-sm leading-relaxed text-destiny-grey/60">{step.body}</p>
+                  <p className="text-sm leading-relaxed text-muted">{step.body}</p>
                 </div>
               </AnimateIn>
             ))}
@@ -110,14 +110,14 @@ export default function VolunteerPage() {
             <h2 className="mb-4 text-3xl font-black text-destiny-grey md:text-4xl">
               Ready to Join a Team?
             </h2>
-            <p className="mb-8 text-base leading-relaxed text-destiny-grey/60">
+            <p className="mb-8 text-base leading-relaxed text-muted">
               Let us know which team you&apos;re interested in and we&apos;ll get back to you with more information.
             </p>
             <Link
               href="/connect-card"
               className="inline-flex items-center gap-2 rounded-full bg-destiny-orange px-8 py-3 text-sm font-bold text-white shadow-lg shadow-destiny-orange/25 transition hover:brightness-110"
             >
-              <span className="material-symbols-rounded text-lg">edit_note</span>
+              <span className="material-symbols-rounded text-lg" aria-hidden="true">edit_note</span>
               Fill Out Connect Card
             </Link>
           </AnimateIn>

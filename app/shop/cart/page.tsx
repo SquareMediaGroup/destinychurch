@@ -16,7 +16,7 @@ export default function CartPage() {
     <div className="relative min-h-screen bg-white text-destiny-grey">
       <div className="mx-auto max-w-4xl px-5 pb-28 pt-12 sm:px-8 lg:pt-16">
         <header className="mb-10">
-          <p className="font-[family-name:var(--font-playfair)] text-2xl italic text-destiny-grey/70">
+          <p className="font-[family-name:var(--font-playfair)] text-2xl italic text-muted">
             Your
           </p>
           <h1 className="font-[family-name:var(--font-heading)] text-4xl font-black uppercase tracking-tight text-destiny-grey sm:text-5xl">
@@ -27,13 +27,13 @@ export default function CartPage() {
 
         {!mounted ? null : items.length === 0 ? (
           <div className="rounded-3xl border border-black/10 bg-[#f9fafb] p-14 text-center">
-            <span className="material-symbols-rounded text-5xl text-destiny-grey/25">
+            <span className="material-symbols-rounded text-5xl text-destiny-grey/25" aria-hidden="true">
               shopping_bag
             </span>
             <h2 className="mt-4 font-[family-name:var(--font-heading)] text-2xl font-black text-destiny-grey">
               Your basket is empty
             </h2>
-            <p className="mx-auto mt-2 max-w-sm text-sm text-destiny-grey/55">
+            <p className="mx-auto mt-2 max-w-sm text-sm text-subtle">
               Find something you love in the store.
             </p>
             <Link
@@ -41,7 +41,7 @@ export default function CartPage() {
               className="mt-6 inline-flex items-center justify-center gap-2 rounded-full bg-destiny-orange px-7 py-3.5 text-sm font-bold text-white transition hover:bg-destiny-orange-dark"
             >
               Browse the store
-              <span className="material-symbols-rounded text-lg">arrow_forward</span>
+              <span className="material-symbols-rounded text-lg" aria-hidden="true">arrow_forward</span>
             </Link>
           </div>
         ) : (
@@ -65,7 +65,7 @@ export default function CartPage() {
                           className="object-cover"
                         />
                       ) : (
-                        <span className="material-symbols-rounded absolute inset-0 m-auto h-fit w-fit text-2xl text-destiny-grey/20">
+                        <span className="material-symbols-rounded absolute inset-0 m-auto h-fit w-fit text-2xl text-destiny-grey/20" aria-hidden="true">
                           checkroom
                         </span>
                       )}
@@ -81,16 +81,16 @@ export default function CartPage() {
                             {item.name}
                           </Link>
                           {variant && (
-                            <p className="mt-0.5 text-sm text-destiny-grey/55">{variant}</p>
+                            <p className="mt-0.5 text-sm text-subtle">{variant}</p>
                           )}
                         </div>
                         <button
                           type="button"
                           onClick={() => remove(item.variantId)}
-                          className="rounded-lg p-1.5 text-destiny-grey/40 transition hover:bg-red-50 hover:text-red-600"
+                          className="rounded-lg p-1.5 text-subtle transition hover:bg-red-50 hover:text-red-600"
                           aria-label="Remove item"
                         >
-                          <span className="material-symbols-rounded text-lg">close</span>
+                          <span className="material-symbols-rounded text-lg" aria-hidden="true">close</span>
                         </button>
                       </div>
 
@@ -99,19 +99,19 @@ export default function CartPage() {
                           <button
                             type="button"
                             onClick={() => setQty(item.variantId, item.quantity - 1)}
-                            className="flex h-9 w-9 items-center justify-center text-destiny-grey/70 hover:text-destiny-grey"
+                            className="flex h-9 w-9 items-center justify-center text-muted hover:text-destiny-grey"
                             aria-label="Decrease quantity"
                           >
-                            <span className="material-symbols-rounded text-base">remove</span>
+                            <span className="material-symbols-rounded text-base" aria-hidden="true">remove</span>
                           </button>
                           <span className="w-7 text-center text-sm font-bold">{item.quantity}</span>
                           <button
                             type="button"
                             onClick={() => setQty(item.variantId, item.quantity + 1)}
-                            className="flex h-9 w-9 items-center justify-center text-destiny-grey/70 hover:text-destiny-grey"
+                            className="flex h-9 w-9 items-center justify-center text-muted hover:text-destiny-grey"
                             aria-label="Increase quantity"
                           >
-                            <span className="material-symbols-rounded text-base">add</span>
+                            <span className="material-symbols-rounded text-base" aria-hidden="true">add</span>
                           </button>
                         </div>
                         <p className="font-bold text-destiny-grey">
@@ -131,11 +131,11 @@ export default function CartPage() {
               </h2>
               <dl className="mt-4 space-y-2 text-sm">
                 <div className="flex justify-between">
-                  <dt className="text-destiny-grey/60">Subtotal</dt>
+                  <dt className="text-muted">Subtotal</dt>
                   <dd className="font-semibold">{formatPrice(subtotal)}</dd>
                 </div>
                 <div className="flex justify-between">
-                  <dt className="text-destiny-grey/60">Collection</dt>
+                  <dt className="text-muted">Collection</dt>
                   <dd className="font-semibold text-destiny-green">Free</dd>
                 </div>
               </dl>
@@ -148,11 +148,11 @@ export default function CartPage() {
                 className="mt-6 flex items-center justify-center gap-2 rounded-full bg-destiny-orange px-7 py-3.5 text-sm font-bold text-white transition hover:bg-destiny-orange-dark"
               >
                 Checkout
-                <span className="material-symbols-rounded text-lg">lock</span>
+                <span className="material-symbols-rounded text-lg" aria-hidden="true">lock</span>
               </Link>
               <Link
                 href="/shop"
-                className="mt-3 flex items-center justify-center gap-1 text-sm font-semibold text-destiny-grey/60 hover:text-destiny-grey"
+                className="mt-3 flex items-center justify-center gap-1 text-sm font-semibold text-muted hover:text-destiny-grey"
               >
                 Continue shopping
               </Link>

@@ -155,14 +155,14 @@ export default function KidsPage() {
               When
             </p>
             <p className="font-bold text-white">1st &amp; 3rd Sunday morning</p>
-            <p className="text-sm text-white/55">of every month</p>
+            <p className="text-sm text-on-dark-subtle">of every month</p>
           </div>
           <div className="rounded-2xl border border-white/10 bg-white/[0.07] p-5">
             <p className="mb-2 text-[11.5px] font-bold uppercase tracking-[0.09em] text-destiny-orange">
               Where
             </p>
             <p className="font-bold text-white">Tots Room</p>
-            <p className="text-sm text-white/55">Destiny Centre</p>
+            <p className="text-sm text-on-dark-subtle">Destiny Centre</p>
           </div>
         </div>
         <div className="pt-2">
@@ -196,10 +196,10 @@ export default function KidsPage() {
                 >
                   Funke Awojide
                 </h2>
-                <p className="mb-4 text-base leading-relaxed text-destiny-grey/70">
+                <p className="mb-4 text-base leading-relaxed text-muted">
                   Funke leads our Destiny Kids ministry with passion and dedication. She and her team create a safe, fun and faith-filled environment where every child can experience God&apos;s love and grow in their faith.
                 </p>
-                <p className="text-sm text-destiny-grey/45">
+                <p className="text-sm text-subtle">
                   Kids Pastor ·{" "}
                   <a
                     href="mailto:funke@destinytees.uk"

@@ -3,6 +3,7 @@ import Image from "next/image";
 import { isYouTubeQuotaExceeded } from "@/lib/youtube";
 import ReportBugLink from "@/components/report-bug/ReportBugLink";
 import FooterLinkGroup from "@/components/FooterLinkGroup";
+import { ADDRESS, SCHEDULE } from "@/lib/churchInfo";
 
 const connectLinks = [
   { label: "New Here?", href: "/new-here" },
@@ -57,16 +58,26 @@ export default async function ChurchFooter() {
                 />
               </div>
             </Link>
-            <p className="max-w-[220px] text-sm text-white/70">
+            <p className="max-w-[220px] text-sm text-on-dark-muted">
               Destiny Church Tees Valley is a multi-cultural church where all
               can find a place to belong and thrive. We&apos;d love to welcome
               you through our doors!
             </p>
-            <div className="text-sm text-white/70">
-              <p className="font-bold text-white/90">Destiny Centre</p>
-              <p>Norton Road</p>
-              <p>Stockton-on-Tees</p>
-              <p>TS20 2QQ</p>
+            <div className="text-sm text-on-dark-muted">
+              <p className="font-bold text-white/90">{ADDRESS.venue}</p>
+              <p>{ADDRESS.street}</p>
+              <p>{ADDRESS.locality}</p>
+              <p>{ADDRESS.postcode}</p>
+            </div>
+
+            {/* Service times — the footer carried the address without ever
+                saying when to come. */}
+            <div className="text-sm text-on-dark-muted">
+              <p className="font-bold text-white/90">Sundays</p>
+              <p>
+                {SCHEDULE.mainServiceStart}&ndash;{SCHEDULE.mainServiceEnd}
+                {" "}(doors {SCHEDULE.doorsOpen})
+              </p>
             </div>
           </div>
 
@@ -77,7 +88,7 @@ export default async function ChurchFooter() {
         </div>
 
         {/* Bottom bar */}
-        <div className="mt-10 flex flex-col gap-3 border-t border-white/10 pt-6 text-xs text-white/50 sm:flex-row sm:items-center sm:justify-between">
+        <div className="mt-10 flex flex-col gap-3 border-t border-white/10 pt-6 text-xs text-on-dark-subtle sm:flex-row sm:items-center sm:justify-between">
           <span>
             &copy; {new Date().getFullYear()}{" "}Destiny Church Tees Valley &middot;{" "}
             <Link

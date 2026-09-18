@@ -53,7 +53,7 @@ export default function FormSection({
               {title}
             </h2>
             {subtitle && (
-              <p className="mx-auto max-w-xl text-base leading-relaxed text-white/60">
+              <p className="mx-auto max-w-xl text-base leading-relaxed text-on-dark-muted">
                 {subtitle}
               </p>
             )}

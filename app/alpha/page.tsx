@@ -11,6 +11,7 @@ const ALPHA_HERO_VIDEO =
 import WorshipWithUsSection from "@/components/home/WorshipWithUsSection";
 import ChurchSuiteModal from "@/components/ui/ChurchSuiteModal";
 import AlphaTopics from "@/components/alpha/AlphaTopics";
+import BackgroundVideo from "@/components/ui/BackgroundVideo";
 
 interface AlphaEvent {
   id: string;
@@ -117,16 +118,7 @@ export default function AlphaPage() {
       <div className="px-4 pt-8 pb-8 lg:px-8">
         <section className="relative overflow-hidden rounded-3xl bg-[#3a0606]">
           {/* Background video */}
-          <video
-            src={ALPHA_HERO_VIDEO}
-            autoPlay
-            muted
-            loop
-            playsInline
-            preload="auto"
-            aria-hidden="true"
-            className="absolute inset-0 h-full w-full object-cover"
-          />
+          <BackgroundVideo src={ALPHA_HERO_VIDEO} />
           {/* Black overlay 40% */}
           <div
             className="absolute inset-0"
@@ -153,7 +145,7 @@ export default function AlphaPage() {
                       onClick={openSignup}
                       className="mt-4 inline-flex items-center gap-3 rounded-full bg-destiny-orange px-6 py-3 text-sm font-bold text-white shadow-lg shadow-destiny-orange/30 transition hover:brightness-110"
                     >
-                      <span className="material-symbols-rounded text-lg">person_add</span>
+                      <span className="material-symbols-rounded text-lg" aria-hidden="true">person_add</span>
                       Sign Up Now
                     </button>
                     <button
@@ -221,7 +213,7 @@ export default function AlphaPage() {
                   {/* Header label */}
                   {events.length > 1 && (
                     <div className="border-b border-dashed border-destiny-grey/15 px-8 py-4 md:px-10">
-                      <p className="text-[11px] font-bold uppercase tracking-[0.28em] text-destiny-grey/50">
+                      <p className="text-[11px] font-bold uppercase tracking-[0.28em] text-subtle">
                         {eventLabel}
                       </p>
                     </div>
@@ -231,10 +223,10 @@ export default function AlphaPage() {
                     {/* Date */}
                     <div className="border-b border-dashed border-destiny-grey/15 px-8 py-7 md:border-b-0 md:border-r md:px-10">
                       <div className="mb-3 flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.28em] text-destiny-orange">
-                        <span className="material-symbols-rounded text-sm leading-none">event</span>
+                        <span className="material-symbols-rounded text-sm leading-none" aria-hidden="true">event</span>
                         {cadenceLabel}
                       </div>
-                      <div className="text-[11px] uppercase tracking-[0.2em] text-destiny-grey/50">
+                      <div className="text-[11px] uppercase tracking-[0.2em] text-subtle">
                         {weekday}
                       </div>
                       <div className="mt-1 flex items-baseline gap-3">
@@ -245,7 +237,7 @@ export default function AlphaPage() {
                           {day}
                         </span>
                         <span className="text-lg font-black uppercase tracking-wide text-destiny-grey md:text-xl">
-                          {month} <span className="text-destiny-grey/40">{year}</span>
+                          {month} <span className="text-subtle">{year}</span>
                         </span>
                       </div>
                     </div>
@@ -254,10 +246,10 @@ export default function AlphaPage() {
                     {isOnline ? (
                       <div className="px-8 py-7 md:px-10">
                         <div className="mb-3 flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.28em] text-destiny-orange">
-                          <span className="material-symbols-rounded text-sm leading-none">videocam</span>
+                          <span className="material-symbols-rounded text-sm leading-none" aria-hidden="true">videocam</span>
                           Online
                         </div>
-                        <div className="text-[11px] uppercase tracking-[0.2em] text-destiny-grey/50">
+                        <div className="text-[11px] uppercase tracking-[0.2em] text-subtle">
                           Join via
                         </div>
                         <div className="mt-1 flex flex-wrap items-baseline gap-x-3 gap-y-1">
@@ -265,7 +257,7 @@ export default function AlphaPage() {
                             {platformLabel}
                           </span>
                           {event.meeting_id && (
-                            <span className="font-mono text-xs text-destiny-grey/50">
+                            <span className="font-mono text-xs text-subtle">
                               #{event.meeting_id}
                             </span>
                           )}
@@ -279,14 +271,14 @@ export default function AlphaPage() {
                                 rel="noopener noreferrer"
                                 className="inline-flex items-center gap-1.5 rounded-full bg-destiny-grey px-3.5 py-1.5 text-[11px] font-bold uppercase tracking-wide text-white transition hover:bg-destiny-orange"
                               >
-                                <span className="material-symbols-rounded text-[14px] leading-none">
+                                <span className="material-symbols-rounded text-[14px] leading-none" aria-hidden="true">
                                   open_in_new
                                 </span>
                                 Join meeting
                               </a>
                             )}
                             {event.meeting_passcode && (
-                              <span className="text-[11px] uppercase tracking-wide text-destiny-grey/50">
+                              <span className="text-[11px] uppercase tracking-wide text-subtle">
                                 Passcode{" "}
                                 <span className="font-mono text-destiny-grey/80 normal-case tracking-normal">
                                   {event.meeting_passcode}
@@ -299,12 +291,12 @@ export default function AlphaPage() {
                     ) : (
                       <div className="px-8 py-7 md:px-10">
                         <div className="mb-3 flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.28em] text-destiny-orange">
-                          <span className="material-symbols-rounded text-sm leading-none">place</span>
+                          <span className="material-symbols-rounded text-sm leading-none" aria-hidden="true">place</span>
                           Where
                         </div>
                         {event.location ? (
                           <>
-                            <div className="text-[11px] uppercase tracking-[0.2em] text-destiny-grey/50">
+                            <div className="text-[11px] uppercase tracking-[0.2em] text-subtle">
                               Join us at
                             </div>
                             <div className="mt-1 text-2xl font-black leading-tight text-destiny-grey md:text-3xl">
@@ -313,12 +305,12 @@ export default function AlphaPage() {
                           </>
                         ) : (
                           <>
-                            <div className="text-[11px] uppercase tracking-[0.2em] text-destiny-grey/50">
+                            <div className="text-[11px] uppercase tracking-[0.2em] text-subtle">
                               Venue
                             </div>
                             <div className="mt-1 flex items-baseline gap-2">
                               <span
-                                className="text-5xl font-normal italic leading-none text-destiny-grey/40 md:text-6xl"
+                                className="text-5xl font-normal italic leading-none text-subtle md:text-6xl"
                                 style={{ fontFamily: "var(--font-playfair), Georgia, serif" }}
                               >
                                 tba
@@ -347,13 +339,13 @@ export default function AlphaPage() {
               <h2 className="mb-5 text-3xl font-black text-destiny-grey md:text-4xl">
                 A space to ask any question
               </h2>
-              <p className="mb-4 text-base leading-relaxed text-destiny-grey/70">
+              <p className="mb-4 text-base leading-relaxed text-muted">
                 Alpha is a series of sessions exploring the Christian faith. Run over several weeks,
                 each session looks at a different question around faith and is designed to create
                 conversation. It&apos;s for anyone — whether you&apos;re curious, sceptical, or
                 just exploring.
               </p>
-              <p className="text-base leading-relaxed text-destiny-grey/70">
+              <p className="text-base leading-relaxed text-muted">
                 It&apos;s completely free, there&apos;s no pressure and no commitment. Come as you are,
                 bring your questions and see what you think.
               </p>
@@ -386,10 +378,10 @@ export default function AlphaPage() {
               <AnimateIn key={step.title} delay={i * 80}>
                 <div className="flex flex-col items-start rounded-3xl bg-white p-8 shadow-sm">
                   <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-destiny-orange/10">
-                    <span className="material-symbols-rounded text-3xl text-destiny-orange">{step.icon}</span>
+                    <span className="material-symbols-rounded text-3xl text-destiny-orange" aria-hidden="true">{step.icon}</span>
                   </div>
                   <h3 className="mb-2 text-xl font-black text-destiny-grey">{step.title}</h3>
-                  <p className="text-sm leading-relaxed text-destiny-grey/60">{step.body}</p>
+                  <p className="text-sm leading-relaxed text-muted">{step.body}</p>
                 </div>
               </AnimateIn>
             ))}
@@ -424,7 +416,7 @@ export default function AlphaPage() {
               <h2 className="mb-5 text-3xl font-black text-white md:text-4xl">
                 Youth Alpha
               </h2>
-              <p className="mb-6 text-base leading-relaxed text-white/70">
+              <p className="mb-6 text-base leading-relaxed text-on-dark-muted">
                 Youth Alpha is the same great course, redesigned specifically for young people.
                 Same big questions, same open conversations — just in a format that connects
                 with a younger generation.
@@ -444,7 +436,7 @@ export default function AlphaPage() {
             <h2 className="mb-4 text-3xl font-black text-destiny-grey md:text-4xl">
               Ready to give it a try?
             </h2>
-            <p className="mb-8 text-base leading-relaxed text-destiny-grey/60">
+            <p className="mb-8 text-base leading-relaxed text-muted">
               Alpha is free, relaxed and open to everyone. Register your interest below
               and we&apos;ll be in touch with the next start date.
             </p>
@@ -468,7 +460,7 @@ export default function AlphaPage() {
                   </button>
                 </>
               ) : (
-                <div className="text-sm text-destiny-grey/50">
+                <div className="text-sm text-subtle">
                   {loading ? "Loading event details..." : "No upcoming events scheduled yet"}
                 </div>
               )}

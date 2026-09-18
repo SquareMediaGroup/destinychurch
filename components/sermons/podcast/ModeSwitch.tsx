@@ -39,10 +39,10 @@ export default function ModeSwitch({
             className={`inline-flex items-center gap-1.5 rounded-full px-5 py-2 text-sm font-bold transition ${
               selected
                 ? "bg-destiny-orange text-white shadow-sm shadow-destiny-orange/25"
-                : "text-destiny-grey/60 hover:text-destiny-grey"
+                : "text-muted hover:text-destiny-grey"
             }`}
           >
-            <span className="material-symbols-rounded text-lg">{opt.icon}</span>
+            <span className="material-symbols-rounded text-lg" aria-hidden="true">{opt.icon}</span>
             {opt.label}
           </button>
         );

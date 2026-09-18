@@ -77,7 +77,7 @@ export default function StaffPage() {
         back={{ href: "/admin/hr", label: "HR" }}
         action={
           <button className={primaryBtn} onClick={() => setEditing("new")}>
-            <span className="material-symbols-rounded text-lg">add</span>
+            <span className="material-symbols-rounded text-lg" aria-hidden="true">add</span>
             Add staff
           </button>
         }
@@ -94,7 +94,7 @@ export default function StaffPage() {
           hint="Add your first team member to get started."
           action={
             <button className={primaryBtn} onClick={() => setEditing("new")}>
-              <span className="material-symbols-rounded text-lg">add</span>
+              <span className="material-symbols-rounded text-lg" aria-hidden="true">add</span>
               Add staff
             </button>
           }
@@ -176,7 +176,7 @@ export default function StaffPage() {
                           className="text-destiny-grey/40 dark:text-white/40 transition hover:text-destiny-orange"
                           aria-label={`Edit ${fullName(s)}`}
                         >
-                          <span className="material-symbols-rounded text-xl">edit</span>
+                          <span className="material-symbols-rounded text-xl" aria-hidden="true">edit</span>
                         </button>
                       </td>
                     </tr>

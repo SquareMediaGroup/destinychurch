@@ -110,7 +110,7 @@ export default function AdminUsersPage() {
         back={{ href: "/admin", label: "Dashboard" }}
         action={
           <button className={primaryBtn} onClick={() => setEditing("new")}>
-            <span className="material-symbols-rounded text-lg">add</span>
+            <span className="material-symbols-rounded text-lg" aria-hidden="true">add</span>
             Add user
           </button>
         }
@@ -127,7 +127,7 @@ export default function AdminUsersPage() {
           hint="Add a login and pick which sections that person can reach."
           action={
             <button className={primaryBtn} onClick={() => setEditing("new")}>
-              <span className="material-symbols-rounded text-lg">add</span>
+              <span className="material-symbols-rounded text-lg" aria-hidden="true">add</span>
               Add user
             </button>
           }
@@ -206,14 +206,14 @@ export default function AdminUsersPage() {
                             className="text-destiny-grey/40 dark:text-white/40 transition hover:text-destiny-orange"
                             aria-label={`Edit access for ${u.email}`}
                           >
-                            <span className="material-symbols-rounded text-xl">edit</span>
+                            <span className="material-symbols-rounded text-xl" aria-hidden="true">edit</span>
                           </button>
                           <button
                             onClick={() => handleDelete(u)}
                             className="text-destiny-grey/40 dark:text-white/40 transition hover:text-destiny-red"
                             aria-label={`Remove ${u.email}`}
                           >
-                            <span className="material-symbols-rounded text-xl">delete</span>
+                            <span className="material-symbols-rounded text-xl" aria-hidden="true">delete</span>
                           </button>
                         </div>
                       </td>

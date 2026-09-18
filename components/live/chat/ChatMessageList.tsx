@@ -63,7 +63,7 @@ export default function ChatMessageList({
         aria-label="Live chat messages"
       >
         {messages.length === 0 ? (
-          <p className="py-8 text-center text-sm text-destiny-grey/40">
+          <p className="py-8 text-center text-sm text-subtle">
             {emptyHint ?? "No messages yet — say hello."}
           </p>
         ) : (
@@ -185,9 +185,9 @@ function ModButton({
       onClick={onClick}
       title={label}
       aria-label={label}
-      className="flex h-6 w-6 items-center justify-center rounded-full text-destiny-grey/40 transition hover:bg-black/5 hover:text-destiny-grey focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-destiny-orange/40"
+      className="flex h-6 w-6 items-center justify-center rounded-full text-subtle transition hover:bg-black/5 hover:text-destiny-grey focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-destiny-orange/40"
     >
-      <span className="material-symbols-rounded text-base">{icon}</span>
+      <span className="material-symbols-rounded text-base" aria-hidden="true">{icon}</span>
     </button>
   );
 }

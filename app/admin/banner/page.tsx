@@ -112,7 +112,7 @@ export default function AdminBannerPage() {
 
         {loading ? (
           <div className="flex items-center justify-center py-16">
-            <span className="material-symbols-rounded animate-spin text-3xl text-destiny-grey/20 dark:text-white/20">
+            <span className="material-symbols-rounded animate-spin text-3xl text-destiny-grey/20 dark:text-white/20" aria-hidden="true">
               progress_activity
             </span>
           </div>
@@ -122,7 +122,7 @@ export default function AdminBannerPage() {
             {banner.active && !!banner.message && (
               isSitewide ? (
                 <div className="flex flex-col items-center justify-center gap-3 rounded-2xl bg-[#111] px-6 py-10 text-center">
-                  <span className="material-symbols-rounded text-4xl text-white/20">build</span>
+                  <span className="material-symbols-rounded text-4xl text-white/20" aria-hidden="true">build</span>
                   <p className="text-base font-black text-white">We&apos;ll be back soon</p>
                   <p className="text-sm text-white/60">{banner.message}</p>
                   {banner.link && (
@@ -138,7 +138,7 @@ export default function AdminBannerPage() {
                 <div
                   className={`flex items-center justify-center gap-3 rounded-2xl px-6 py-3 ${selectedType.color}`}
                 >
-                  <span className="material-symbols-rounded text-sm text-white/80">
+                  <span className="material-symbols-rounded text-sm text-white/80" aria-hidden="true">
                     {selectedType.icon}
                   </span>
                   <p className="text-sm font-medium text-white">
@@ -222,7 +222,7 @@ export default function AdminBannerPage() {
                         <span
                           className={`mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-white ${t.color}`}
                         >
-                          <span className="material-symbols-rounded text-base">
+                          <span className="material-symbols-rounded text-base" aria-hidden="true">
                             {t.icon}
                           </span>
                         </span>
@@ -313,7 +313,7 @@ export default function AdminBannerPage() {
               >
                 {saved ? (
                   <>
-                    <span className="material-symbols-rounded text-base">
+                    <span className="material-symbols-rounded text-base" aria-hidden="true">
                       check
                     </span>
                     Saved

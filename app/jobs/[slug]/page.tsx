@@ -54,11 +54,11 @@ function Meta({
 }) {
   return (
     <div className="flex items-start gap-3">
-      <span className="material-symbols-rounded mt-0.5 text-xl text-destiny-orange">
+      <span className="material-symbols-rounded mt-0.5 text-xl text-destiny-orange" aria-hidden="true">
         {icon}
       </span>
       <div>
-        <p className="text-[11px] font-bold uppercase tracking-wider text-destiny-grey/40">
+        <p className="text-[11px] font-bold uppercase tracking-wider text-subtle">
           {label}
         </p>
         <p className="text-sm font-bold text-destiny-grey">{value}</p>
@@ -116,16 +116,16 @@ export default async function JobDetailPage({
           <AnimateIn className="relative z-10 mx-auto max-w-4xl">
             <Link
               href="/jobs"
-              className="inline-flex items-center gap-1.5 text-xs font-bold text-white/60 transition hover:text-white"
+              className="inline-flex items-center gap-1.5 text-xs font-bold text-on-dark-muted transition hover:text-white"
             >
-              <span className="material-symbols-rounded text-base">arrow_back</span>
+              <span className="material-symbols-rounded text-base" aria-hidden="true">arrow_back</span>
               All roles
             </Link>
             <div className="mt-5 flex flex-wrap items-center gap-2">
               <span className="rounded-full bg-destiny-orange/20 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-destiny-orange">
                 {KIND_LABELS[job.kind]}
               </span>
-              <span className="rounded-full bg-white/10 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-white/70">
+              <span className="rounded-full bg-white/10 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-on-dark-muted">
                 {EMPLOYMENT_LABELS[job.employment_type]}
               </span>
               {closed && (
@@ -141,7 +141,7 @@ export default async function JobDetailPage({
               {job.title}
             </h1>
             {job.summary && (
-              <p className="mt-4 max-w-2xl text-base text-white/65 md:text-lg">
+              <p className="mt-4 max-w-2xl text-base text-on-dark-muted md:text-lg">
                 {job.summary}
               </p>
             )}
@@ -174,7 +174,7 @@ export default async function JobDetailPage({
                 </div>
               )
             ) : (
-              <p className="text-sm leading-relaxed text-destiny-grey/60">
+              <p className="text-sm leading-relaxed text-muted">
                 We&apos;d love to tell you more about this role. Apply below or get in
                 touch and our team will share the full details.
               </p>
@@ -184,7 +184,7 @@ export default async function JobDetailPage({
           {/* Sidebar meta */}
           <AnimateIn className="order-1 lg:order-2" delay={80}>
             <div className="sticky top-24 rounded-3xl border border-black/5 bg-[#f5f7fa] p-6">
-              <p className="mb-4 text-xs font-bold uppercase tracking-widest text-destiny-grey/40">
+              <p className="mb-4 text-xs font-bold uppercase tracking-widest text-subtle">
                 Role details
               </p>
               <div className="space-y-4">
@@ -213,7 +213,7 @@ export default async function JobDetailPage({
               <h2 className="text-2xl font-black text-destiny-grey">
                 Applications are closed
               </h2>
-              <p className="mx-auto mt-2 max-w-sm text-sm text-destiny-grey/60">
+              <p className="mx-auto mt-2 max-w-sm text-sm text-muted">
                 The closing date for this role has passed. Take a look at our other
                 opportunities — the right one may be waiting.
               </p>
@@ -233,7 +233,7 @@ export default async function JobDetailPage({
                 <h2 className="text-3xl font-black text-destiny-grey">
                   Apply for {job.title}
                 </h2>
-                <p className="mt-2 text-sm text-destiny-grey/55">
+                <p className="mt-2 text-sm text-subtle">
                   Tell us about yourself — we read every application.
                 </p>
               </AnimateIn>

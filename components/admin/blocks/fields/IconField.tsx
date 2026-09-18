@@ -42,7 +42,7 @@ export function IconField({
           aria-hidden
           className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-black/10 bg-[#f5f7fa] text-destiny-grey/70 dark:text-white/70 lg:h-10 lg:w-10"
         >
-          <span className="material-symbols-rounded text-[20px]">
+          <span className="material-symbols-rounded text-[20px]" aria-hidden="true">
             {value || "add"}
           </span>
         </span>

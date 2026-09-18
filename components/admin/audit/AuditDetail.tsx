@@ -109,7 +109,7 @@ export function AuditDetail({
           <div className="mb-2 flex flex-wrap items-center gap-2">
             <Badge tone={actionTone(entry.action)}>{actionLabel(entry.action)}</Badge>
             <span className="inline-flex items-center gap-1 text-xs font-bold text-destiny-grey/45 dark:text-white/45">
-              <span className="material-symbols-rounded text-sm">
+              <span className="material-symbols-rounded text-sm" aria-hidden="true">
                 {sectionIcon(entry.section)}
               </span>
               {sectionLabel(entry.section)}

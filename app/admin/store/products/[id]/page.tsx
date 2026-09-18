@@ -411,7 +411,7 @@ export default function ProductEditorPage({
           href="/admin/store"
           className="inline-flex items-center gap-1 text-sm font-semibold text-destiny-grey/60 dark:text-white/60 hover:text-destiny-grey dark:hover:text-white"
         >
-          <span className="material-symbols-rounded text-base">arrow_back</span>
+          <span className="material-symbols-rounded text-base" aria-hidden="true">arrow_back</span>
           Store
         </Link>
         <div className="flex items-center gap-2">
@@ -421,7 +421,7 @@ export default function ProductEditorPage({
               target="_blank"
               className="inline-flex items-center gap-1.5 rounded-full border border-black/10 px-4 py-2 text-sm font-bold text-destiny-grey dark:text-white transition hover:bg-[#f5f7fa] dark:hover:bg-white/10"
             >
-              <span className="material-symbols-rounded text-base">open_in_new</span>
+              <span className="material-symbols-rounded text-base" aria-hidden="true">open_in_new</span>
               View
             </Link>
           )}
@@ -506,7 +506,7 @@ export default function ProductEditorPage({
                 className="absolute right-1 top-1 flex h-6 w-6 items-center justify-center rounded-full bg-black/60 text-white opacity-0 transition group-hover:opacity-100"
                 aria-label="Remove image"
               >
-                <span className="material-symbols-rounded text-base">close</span>
+                <span className="material-symbols-rounded text-base" aria-hidden="true">close</span>
               </button>
             </div>
           ))}
@@ -516,7 +516,7 @@ export default function ProductEditorPage({
             disabled={uploading}
             className="flex h-28 w-28 flex-col items-center justify-center gap-1 rounded-xl border-2 border-dashed border-black/15 text-destiny-grey/50 dark:text-white/50 transition hover:border-destiny-orange hover:text-destiny-orange disabled:opacity-50"
           >
-            <span className="material-symbols-rounded text-2xl">add_photo_alternate</span>
+            <span className="material-symbols-rounded text-2xl" aria-hidden="true">add_photo_alternate</span>
             <span className="text-xs font-semibold">{uploading ? "Uploading…" : "Add"}</span>
           </button>
           <input
@@ -622,7 +622,7 @@ export default function ProductEditorPage({
                     className="text-destiny-grey/40 dark:text-white/40 transition hover:text-red-600"
                     aria-label={`Remove ${c.name}`}
                   >
-                    <span className="material-symbols-rounded text-base">close</span>
+                    <span className="material-symbols-rounded text-base" aria-hidden="true">close</span>
                   </button>
                 </span>
               ))}
@@ -655,7 +655,7 @@ export default function ProductEditorPage({
               onClick={() => addColour(newColour)}
               className="inline-flex items-center gap-1 rounded-full bg-destiny-grey px-4 py-2.5 text-sm font-bold text-white transition hover:brightness-110"
             >
-              <span className="material-symbols-rounded text-base">add</span>
+              <span className="material-symbols-rounded text-base" aria-hidden="true">add</span>
               Add
             </button>
           </div>
@@ -730,7 +730,7 @@ export default function ProductEditorPage({
                 onClick={() => addOption(newOption)}
                 className="inline-flex items-center gap-1 rounded-full bg-destiny-grey px-4 py-2.5 text-sm font-bold text-white transition hover:brightness-110"
               >
-                <span className="material-symbols-rounded text-base">add</span>
+                <span className="material-symbols-rounded text-base" aria-hidden="true">add</span>
                 Add
               </button>
             </div>
@@ -764,7 +764,7 @@ export default function ProductEditorPage({
                   onClick={applyStockToAll}
                   className="inline-flex items-center gap-1 rounded-full border border-black/10 px-3 py-1.5 text-xs font-bold text-destiny-grey dark:text-white transition hover:bg-[#f5f7fa] dark:hover:bg-white/10"
                 >
-                  <span className="material-symbols-rounded text-base">done_all</span>
+                  <span className="material-symbols-rounded text-base" aria-hidden="true">done_all</span>
                   Apply to all
                 </button>
               </div>
@@ -812,7 +812,7 @@ export default function ProductEditorPage({
                                   title="Not available — click to add"
                                   className="flex h-10 w-full min-w-[3.5rem] items-center justify-center rounded-lg border border-dashed border-black/15 text-destiny-grey/30 dark:text-white/30 transition hover:border-destiny-orange hover:text-destiny-orange"
                                 >
-                                  <span className="material-symbols-rounded text-base">add</span>
+                                  <span className="material-symbols-rounded text-base" aria-hidden="true">add</span>
                                 </button>
                               ) : (
                                 <div className="group relative">
@@ -837,7 +837,7 @@ export default function ProductEditorPage({
                                     title="Remove this combination"
                                     className="absolute -right-1 -top-1 hidden h-4 w-4 items-center justify-center rounded-full bg-destiny-grey text-white group-hover:flex"
                                   >
-                                    <span className="material-symbols-rounded text-[11px]">close</span>
+                                    <span className="material-symbols-rounded text-[11px]" aria-hidden="true">close</span>
                                   </button>
                                 </div>
                               )}
@@ -872,7 +872,7 @@ export default function ProductEditorPage({
                   onClick={applyStockToAll}
                   className="inline-flex items-center gap-1 rounded-full border border-black/10 px-3 py-1.5 text-xs font-bold text-destiny-grey dark:text-white transition hover:bg-[#f5f7fa] dark:hover:bg-white/10"
                 >
-                  <span className="material-symbols-rounded text-base">done_all</span>
+                  <span className="material-symbols-rounded text-base" aria-hidden="true">done_all</span>
                   Apply to all
                 </button>
               </div>
@@ -916,7 +916,7 @@ export default function ProductEditorPage({
                         title={`Remove ${s}`}
                         className="text-destiny-grey/40 dark:text-white/40 transition hover:text-red-600"
                       >
-                        <span className="material-symbols-rounded text-base">close</span>
+                        <span className="material-symbols-rounded text-base" aria-hidden="true">close</span>
                       </button>
                     </div>
                   );
@@ -945,7 +945,7 @@ export default function ProductEditorPage({
           onClick={deleteProduct}
           className="inline-flex items-center gap-1.5 text-sm font-bold text-red-600 transition hover:text-red-700"
         >
-          <span className="material-symbols-rounded text-base">delete</span>
+          <span className="material-symbols-rounded text-base" aria-hidden="true">delete</span>
           Delete product
         </button>
       </div>

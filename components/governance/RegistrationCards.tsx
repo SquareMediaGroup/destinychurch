@@ -32,7 +32,7 @@ function Card({
     <AnimateIn delay={delay}>
       <div className="flex h-full flex-col rounded-3xl bg-[#f5f7fa] p-8">
         <div className="mb-6 flex items-center gap-3">
-          <span className="material-symbols-rounded text-2xl text-destiny-orange">
+          <span className="material-symbols-rounded text-2xl text-destiny-orange" aria-hidden="true">
             {icon}
           </span>
           <h3 className="text-2xl font-black text-destiny-grey">{title}</h3>
@@ -40,13 +40,13 @@ function Card({
 
         <div className="mb-6">
           <p className="text-4xl font-black text-destiny-grey">{number}</p>
-          <p className="text-sm text-destiny-grey/50">{numberLabel}</p>
+          <p className="text-sm text-subtle">{numberLabel}</p>
         </div>
 
         <dl className="mb-6 space-y-3">
           {rows.map((row) => (
             <div key={row.label} className="border-t border-black/6 pt-3">
-              <dt className="text-xs font-bold uppercase tracking-wide text-destiny-grey/40">
+              <dt className="text-xs font-bold uppercase tracking-wide text-subtle">
                 {row.label}
               </dt>
               <dd className="mt-1 text-sm text-destiny-grey/80">{row.value}</dd>

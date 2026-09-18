@@ -15,7 +15,7 @@ export default function TrainingProgress({ postIds }: { postIds: string[] }) {
   if (done === total) {
     return (
       <div className="mt-6 inline-flex items-center gap-2 rounded-full bg-white/10 px-4 py-2">
-        <span className="material-symbols-rounded text-xl text-destiny-green">
+        <span className="material-symbols-rounded text-xl text-destiny-green" aria-hidden="true">
           check_circle
         </span>
         <span className="text-sm font-bold text-white">Training complete</span>
@@ -25,7 +25,7 @@ export default function TrainingProgress({ postIds }: { postIds: string[] }) {
 
   return (
     <div className="mt-6 max-w-md">
-      <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-white/70">
+      <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-on-dark-muted">
         <span>
           {done} of {total} complete
         </span>

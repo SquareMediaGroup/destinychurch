@@ -80,7 +80,7 @@ export function PageHeader({
             href={back.href}
             className="mb-2 inline-flex items-center gap-1 text-xs font-bold text-destiny-grey/45 transition hover:text-destiny-grey dark:text-white/45 dark:hover:text-white"
           >
-            <span className="material-symbols-rounded text-base">arrow_back</span>
+            <span className="material-symbols-rounded text-base" aria-hidden="true">arrow_back</span>
             {back.label}
           </a>
         )}
@@ -179,7 +179,7 @@ export function Modal({
             className="flex h-8 w-8 items-center justify-center rounded-lg text-destiny-grey/50 transition hover:bg-[#f5f7fa] hover:text-destiny-grey dark:text-white/50 dark:hover:bg-white/10 dark:hover:text-white"
             aria-label="Close"
           >
-            <span className="material-symbols-rounded text-xl">close</span>
+            <span className="material-symbols-rounded text-xl" aria-hidden="true">close</span>
           </button>
         </div>
         {children}
@@ -203,7 +203,7 @@ export function EmptyState({
 }) {
   return (
     <div className="flex flex-col items-center justify-center rounded-3xl border border-dashed border-black/10 bg-white/50 px-6 py-16 text-center dark:border-white/10 dark:bg-white/[0.02]">
-      <span className="material-symbols-rounded mb-3 text-4xl text-destiny-grey/25 dark:text-white/25">
+      <span className="material-symbols-rounded mb-3 text-4xl text-destiny-grey/25 dark:text-white/25" aria-hidden="true">
         {icon}
       </span>
       <p className="font-bold text-destiny-grey/70 dark:text-white/70">{title}</p>
@@ -224,7 +224,7 @@ export function ErrorNote({ children }: { children: ReactNode }) {
       role="alert"
       className="mb-4 flex items-start gap-2 rounded-xl bg-danger/10 px-4 py-2.5 text-sm font-medium text-danger"
     >
-      <span className="material-symbols-rounded mt-px text-base">error</span>
+      <span className="material-symbols-rounded mt-px text-base" aria-hidden="true">error</span>
       <span>{children}</span>
     </p>
   );
@@ -269,7 +269,7 @@ export function SearchInput({
 
   return (
     <div data-tour="list-search" className={`relative min-w-0 flex-1 sm:max-w-xs ${className}`}>
-      <span className="material-symbols-rounded pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-lg text-destiny-grey/35 dark:text-white/35">
+      <span className="material-symbols-rounded pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-lg text-destiny-grey/35 dark:text-white/35" aria-hidden="true">
         search
       </span>
       <input
@@ -295,7 +295,7 @@ export function SearchInput({
           aria-label="Clear search"
           className="absolute right-2 top-1/2 flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-md text-destiny-grey/40 transition hover:bg-black/5 hover:text-destiny-grey dark:text-white/40 dark:hover:bg-white/10 dark:hover:text-white"
         >
-          <span className="material-symbols-rounded text-base">close</span>
+          <span className="material-symbols-rounded text-base" aria-hidden="true">close</span>
         </button>
       ) : (
         <kbd className="pointer-events-none absolute right-2.5 top-1/2 hidden -translate-y-1/2 rounded border border-black/10 bg-[#f5f7fa] px-1.5 py-0.5 text-[10px] font-bold text-destiny-grey/35 sm:block dark:border-white/10 dark:bg-white/5 dark:text-white/35">
@@ -493,7 +493,7 @@ export function PageLoading({ label = "Loading" }: { label?: string }) {
       aria-busy="true"
       aria-live="polite"
     >
-      <span className="material-symbols-rounded animate-spin text-xl">
+      <span className="material-symbols-rounded animate-spin text-xl" aria-hidden="true">
         progress_activity
       </span>
       {label}
@@ -595,7 +595,7 @@ export function MetricCard({
       <span
         className={`flex h-11 w-11 items-center justify-center rounded-xl ${iconBg} ${iconColor}`}
       >
-        <span className="material-symbols-rounded text-2xl">{icon}</span>
+        <span className="material-symbols-rounded text-2xl" aria-hidden="true">{icon}</span>
       </span>
 
       <div className="mt-5 flex items-end justify-between gap-2">

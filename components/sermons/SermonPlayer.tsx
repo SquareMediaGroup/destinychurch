@@ -184,7 +184,7 @@ export default function SermonPlayer({ videoId, thumbnail }: SermonPlayerProps) 
                 <div className="h-1 w-8 rounded-full bg-white/20" />
                 <button
                   onClick={() => setDismissed(true)}
-                  className="flex h-6 w-6 items-center justify-center rounded-full bg-black/60 text-white/60 transition hover:bg-black/80 hover:text-white"
+                  className="flex h-6 w-6 items-center justify-center rounded-full bg-black/60 text-on-dark-muted transition hover:bg-black/80 hover:text-white"
                   aria-label="Close mini player"
                 >
                   <span className="h-3 w-3"><IconClose /></span>
@@ -197,7 +197,7 @@ export default function SermonPlayer({ videoId, thumbnail }: SermonPlayerProps) 
             <div className="absolute inset-0 z-10 pointer-events-none">
               <button
                 onClick={() => sentinelRef.current?.scrollIntoView({ behavior: "smooth" })}
-                className="pointer-events-auto absolute left-2 top-2 flex h-7 w-7 items-center justify-center rounded-full bg-black/70 text-white/60 transition hover:text-white"
+                className="pointer-events-auto absolute left-2 top-2 flex h-7 w-7 items-center justify-center rounded-full bg-black/70 text-on-dark-muted transition hover:text-white"
                 aria-label="Scroll to player"
               >
                 <span className="h-3.5 w-3.5"><IconScrollUp /></span>

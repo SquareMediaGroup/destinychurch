@@ -103,31 +103,31 @@ function RoleCard({ job }: { job: Job }) {
           {EMPLOYMENT_LABELS[job.employment_type]}
         </span>
         {closed && (
-          <span className="rounded-full bg-black/5 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-destiny-grey/45">
+          <span className="rounded-full bg-black/5 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-subtle">
             Closed
           </span>
         )}
       </div>
       <h3 className="text-xl font-black text-destiny-grey">{job.title}</h3>
       {(job.department || job.location) && (
-        <p className="mt-1 text-sm text-destiny-grey/45">
+        <p className="mt-1 text-sm text-subtle">
           {[job.department, job.location].filter(Boolean).join(" · ")}
         </p>
       )}
       {job.summary && (
-        <p className="mt-4 flex-1 text-sm leading-relaxed text-destiny-grey/60">
+        <p className="mt-4 flex-1 text-sm leading-relaxed text-muted">
           {job.summary}
         </p>
       )}
       <div className="mt-6 flex items-center justify-between">
         <span className="inline-flex items-center gap-1.5 text-sm font-bold text-destiny-orange">
           View role
-          <span className="material-symbols-rounded text-base transition-transform group-hover:translate-x-1">
+          <span className="material-symbols-rounded text-base transition-transform group-hover:translate-x-1" aria-hidden="true">
             arrow_forward
           </span>
         </span>
         {job.closing_date && !closed && (
-          <span className="text-xs text-destiny-grey/40">
+          <span className="text-xs text-subtle">
             Closes{" "}
             {new Date(job.closing_date).toLocaleDateString("en-GB", {
               day: "numeric",
@@ -178,7 +178,7 @@ export default async function JobsPage() {
                 <em>calling.</em>
               </span>
             </h1>
-            <p className="mx-auto mt-6 max-w-xl text-base text-white/65 md:text-lg">
+            <p className="mx-auto mt-6 max-w-xl text-base text-on-dark-muted md:text-lg">
               Find out more about working in ministry at Destiny Church — where your
               gifts and passion meet God&apos;s purpose for your life.
             </p>
@@ -207,7 +207,7 @@ export default async function JobsPage() {
             <h2 className="text-3xl font-black leading-tight text-destiny-grey md:text-4xl">
               Join your talents with your passion for the local church
             </h2>
-            <p className="mx-auto mt-5 max-w-2xl text-base leading-relaxed text-destiny-grey/60">
+            <p className="mx-auto mt-5 max-w-2xl text-base leading-relaxed text-muted">
               God has equipped you with unique gifts and a purpose. At Destiny Church
               we&apos;re committed to creating an environment where you can use those
               gifts to serve, grow and make an impact. We hear we say this a lot — it&apos;s
@@ -233,12 +233,12 @@ export default async function JobsPage() {
               <AnimateIn key={step.title} delay={i * 90}>
                 <div className="flex h-full flex-col rounded-3xl bg-white p-7 shadow-sm">
                   <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-2xl bg-destiny-orange/10">
-                    <span className="material-symbols-rounded text-2xl text-destiny-orange">
+                    <span className="material-symbols-rounded text-2xl text-destiny-orange" aria-hidden="true">
                       {step.icon}
                     </span>
                   </div>
                   <h3 className="mb-2 font-black text-destiny-grey">{step.title}</h3>
-                  <p className="text-sm leading-relaxed text-destiny-grey/60">
+                  <p className="text-sm leading-relaxed text-muted">
                     {step.body}
                   </p>
                 </div>
@@ -263,11 +263,11 @@ export default async function JobsPage() {
           {!hasAny ? (
             <AnimateIn>
               <div className="mx-auto max-w-xl rounded-3xl border border-dashed border-black/10 bg-[#f5f7fa] px-6 py-16 text-center">
-                <span className="material-symbols-rounded mb-3 text-4xl text-destiny-grey/25">
+                <span className="material-symbols-rounded mb-3 text-4xl text-destiny-grey/25" aria-hidden="true">
                   work_off
                 </span>
                 <p className="font-black text-destiny-grey">No open roles right now</p>
-                <p className="mx-auto mt-2 max-w-sm text-sm text-destiny-grey/50">
+                <p className="mx-auto mt-2 max-w-sm text-sm text-subtle">
                   We don&apos;t have any vacancies at the moment, but new roles appear
                   here as they open. In the meantime, there are always ways to get
                   involved.
@@ -284,7 +284,7 @@ export default async function JobsPage() {
             <div className="space-y-14">
               {openJobs.length > 0 && (
                 <div>
-                  <h3 className="mb-6 text-sm font-bold uppercase tracking-widest text-destiny-grey/40">
+                  <h3 className="mb-6 text-sm font-bold uppercase tracking-widest text-subtle">
                     Jobs
                   </h3>
                   <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
@@ -299,7 +299,7 @@ export default async function JobsPage() {
 
               {internships.length > 0 && (
                 <div>
-                  <h3 className="mb-6 text-sm font-bold uppercase tracking-widest text-destiny-grey/40">
+                  <h3 className="mb-6 text-sm font-bold uppercase tracking-widest text-subtle">
                     Internships
                   </h3>
                   <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
@@ -332,7 +332,7 @@ export default async function JobsPage() {
               <AnimateIn key={perk.label} delay={i * 50}>
                 <div className="flex h-full flex-col items-center gap-3 rounded-3xl bg-white p-6 text-center shadow-sm">
                   <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-destiny-orange/10">
-                    <span className="material-symbols-rounded text-2xl text-destiny-orange">
+                    <span className="material-symbols-rounded text-2xl text-destiny-orange" aria-hidden="true">
                       {perk.icon}
                     </span>
                   </div>
@@ -365,14 +365,14 @@ export default async function JobsPage() {
                   <h2 className="text-2xl font-black md:text-3xl">
                     Who we hire to join our team
                   </h2>
-                  <p className="mt-4 text-sm leading-relaxed text-white/60">
+                  <p className="mt-4 text-sm leading-relaxed text-on-dark-muted">
                     Our team members come from diverse backgrounds and ministry
                     experiences, but they all share some distinct passions.
                   </p>
                   <ul className="mt-6 space-y-3">
                     {VALUES.map((v) => (
                       <li key={v} className="flex items-start gap-2.5">
-                        <span className="material-symbols-rounded mt-0.5 text-base text-destiny-orange">
+                        <span className="material-symbols-rounded mt-0.5 text-base text-destiny-orange" aria-hidden="true">
                           check_circle
                         </span>
                         <span className="text-sm leading-relaxed text-white/80">

@@ -121,7 +121,7 @@ export default async function NfcPage() {
           />
 
           <p
-            className="nfc-reveal mt-6 max-w-lg text-sm leading-relaxed text-destiny-grey/60"
+            className="nfc-reveal mt-6 max-w-lg text-sm leading-relaxed text-muted"
             style={{ animationDelay: "0.24s" }}
           >
             Everything you need, right here — no queue, no paperwork. Tap
@@ -138,15 +138,15 @@ export default async function NfcPage() {
           className="nfc-reveal mt-14 flex flex-col items-start gap-2 border-t border-black/10 pt-8 sm:flex-row sm:items-center sm:justify-between"
           style={{ animationDelay: "0.8s" }}
         >
-          <p className="text-xs font-bold uppercase tracking-[0.24em] text-destiny-grey/40">
+          <p className="text-xs font-bold uppercase tracking-[0.24em] text-subtle">
             Destiny Church Tees Valley
           </p>
           <Link
             href="/"
-            className="inline-flex items-center gap-1.5 text-sm font-semibold text-destiny-grey/60 underline-offset-4 transition-colors hover:text-destiny-orange hover:underline"
+            className="inline-flex items-center gap-1.5 text-sm font-semibold text-muted underline-offset-4 transition-colors hover:text-destiny-orange hover:underline"
           >
             Visit the full website
-            <span className="material-symbols-rounded text-base">arrow_forward</span>
+            <span className="material-symbols-rounded text-base" aria-hidden="true">arrow_forward</span>
           </Link>
         </footer>
       </div>

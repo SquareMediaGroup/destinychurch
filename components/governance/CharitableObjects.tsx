@@ -29,7 +29,7 @@ export default function CharitableObjects({
               <h3 className="mb-3 text-xl font-black text-destiny-grey">
                 Charitable objects
               </h3>
-              <p className="whitespace-pre-line text-sm leading-relaxed text-destiny-grey/70">
+              <p className="whitespace-pre-line text-sm leading-relaxed text-muted">
                 {details.objects}
               </p>
             </div>
@@ -42,7 +42,7 @@ export default function CharitableObjects({
               <h3 className="mb-3 text-xl font-black text-destiny-grey">
                 How we carry them out
               </h3>
-              <p className="whitespace-pre-line text-sm leading-relaxed text-destiny-grey/70">
+              <p className="whitespace-pre-line text-sm leading-relaxed text-muted">
                 {details.activities}
               </p>
             </div>
@@ -59,7 +59,7 @@ export default function CharitableObjects({
                 {details.areasOfOperation.map((area) => (
                   <li
                     key={area}
-                    className="rounded-full bg-white px-4 py-2 text-sm font-bold text-destiny-grey/70"
+                    className="rounded-full bg-white px-4 py-2 text-sm font-bold text-muted"
                   >
                     {area}
                   </li>

@@ -154,7 +154,7 @@ export default function Modal({
               {title}
             </p>
             {description && (
-              <p id={descId} className="mt-0.5 text-sm text-destiny-grey/55">
+              <p id={descId} className="mt-0.5 text-sm text-subtle">
                 {description}
               </p>
             )}
@@ -165,9 +165,9 @@ export default function Modal({
               type="button"
               onClick={onClose}
               aria-label="Close"
-              className="-mr-1 flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-destiny-grey/50 transition hover:bg-black/5 hover:text-destiny-grey focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-destiny-orange/40"
+              className="-mr-1 flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-subtle transition hover:bg-black/5 hover:text-destiny-grey focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-destiny-orange/40"
             >
-              <span className="material-symbols-rounded text-xl">close</span>
+              <span className="material-symbols-rounded text-xl" aria-hidden="true">close</span>
             </button>
           )}
         </div>

@@ -102,7 +102,7 @@ export default function HrDashboardPage() {
                 className="group flex items-center gap-4 rounded-3xl border border-black/5 bg-white dark:border-white/8 dark:bg-destiny-grey-800 p-5 shadow-sm transition hover:border-destiny-orange/30 hover:shadow-md"
               >
                 <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-destiny-orange/10 text-destiny-orange">
-                  <span className="material-symbols-rounded text-[26px]">{s.icon}</span>
+                  <span className="material-symbols-rounded text-[26px]" aria-hidden="true">{s.icon}</span>
                 </div>
                 <div>
                   <p className="text-2xl font-black text-destiny-grey dark:text-white">{s.value}</p>
@@ -172,7 +172,7 @@ export default function HrDashboardPage() {
                           Due {formatDate(r.next_review_date)}
                         </p>
                       </div>
-                      <span className="material-symbols-rounded text-destiny-grey/30 dark:text-white/30">
+                      <span className="material-symbols-rounded text-destiny-grey/30 dark:text-white/30" aria-hidden="true">
                         chevron_right
                       </span>
                     </li>
@@ -197,7 +197,7 @@ export default function HrDashboardPage() {
                   className="group flex items-start gap-4 rounded-2xl border border-black/5 bg-white dark:border-white/8 dark:bg-destiny-grey-800 p-5 shadow-sm transition hover:shadow-md"
                 >
                   <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-destiny-orange/10 text-destiny-orange">
-                    <span className="material-symbols-rounded text-xl">{item.icon}</span>
+                    <span className="material-symbols-rounded text-xl" aria-hidden="true">{item.icon}</span>
                   </span>
                   <div className="min-w-0">
                     <p className="mb-0.5 text-sm font-black text-destiny-grey dark:text-white transition-colors group-hover:text-destiny-orange">

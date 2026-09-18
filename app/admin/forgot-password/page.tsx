@@ -61,7 +61,7 @@ export default function ForgotPasswordPage() {
             {state.message ? (
               <div className="space-y-4">
                 <div className="flex items-start gap-3 rounded-2xl bg-green-500/10 px-4 py-3">
-                  <span className="material-symbols-rounded mt-0.5 text-green-400">
+                  <span className="material-symbols-rounded mt-0.5 text-green-400" aria-hidden="true">
                     check_circle
                   </span>
                   <p className="text-sm text-green-400">{state.message}</p>
@@ -73,7 +73,7 @@ export default function ForgotPasswordPage() {
                   href="/login"
                   className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-destiny-orange px-6 py-3.5 text-sm font-bold text-white shadow-lg shadow-destiny-orange/25 transition hover:brightness-110"
                 >
-                  <span className="material-symbols-rounded text-base">
+                  <span className="material-symbols-rounded text-base" aria-hidden="true">
                     arrow_back
                   </span>
                   Back to login
@@ -97,7 +97,7 @@ export default function ForgotPasswordPage() {
 
                 {state.error && (
                   <div className="flex items-center gap-3 rounded-2xl bg-red-500/10 px-4 py-3 text-sm text-red-400">
-                    <span className="material-symbols-rounded text-base">
+                    <span className="material-symbols-rounded text-base" aria-hidden="true">
                       error
                     </span>
                     {state.error}

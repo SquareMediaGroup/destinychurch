@@ -61,7 +61,7 @@ export default function PortalDesignPage() {
           </p>
         </div>
         <Link
-          href="/design-request"
+          href="/portal/design/request"
           className="rounded-full bg-destiny-orange px-5 py-2.5 text-sm font-bold text-white transition hover:brightness-110"
         >
           New request

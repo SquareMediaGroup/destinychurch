@@ -2,7 +2,9 @@
 
 ## Git
 
-- Always push to `main` branch. Never push to feature branches.
+- Never push directly to `main`. Work on a feature branch (branch off `main`, e.g. `feature/short-description`).
+- Push the feature branch and open a pull request for every change.
+- PRs must be reviewed and approved before merging — do not self-merge without approval.
 
 ## Documentation
 

@@ -23,6 +23,19 @@
   --border-subtle: rgba(0, 0, 0, 0.05);
   --color-destiny-brown: #2c1a0e;
   --color-destiny-brown-light: #3d2b1a;
+
+  /* Motion vocabulary. Three curves and three durations cover everything the
+   * site actually does. `cubic-bezier(0.16,1,0.3,1)` was previously written
+   * both with and without spaces — the same curve, ungreppable as one value —
+   * across 23 sites, alongside two other curves and five ad-hoc durations.
+   * These are `:root` (not `@theme`) so the hand-written animation CSS below
+   * can reference them; `@theme inline` re-exports the curves as utilities. */
+  --motion-ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
+  --motion-ease-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  --motion-ease-overshoot: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --motion-dur-fast: 200ms;
+  --motion-dur-base: 300ms;
+  --motion-dur-slow: 500ms;
 }
 
 @theme inline {
@@ -148,6 +161,72 @@
    * own display headings, so this costs no new font download — it is simply
    * used in a place it wasn't before. */
   --font-admin-heading: var(--font-anton), Arial, "Helvetica Neue", sans-serif;
+
+  /* ---------------------------------------------------------------------
+   * Accessible secondary text.
+   *
+   * The site's idiom for "quieter text" was an opacity modifier on the brand
+   * grey — `text-destiny-grey/60`, `/50`, `/40`. That reads fine but it does
+   * not survive a contrast check: #363f48 is 10.5:1 on white, and the blends
+   * are 3.4:1 (/60), 2.6:1 (/50) and 2.1:1 (/40). WCAG AA wants 4.5:1 for
+   * normal-size text, so the codebase's MOST COMMON secondary value was also
+   * its worst. There is no opacity that is both visibly quieter than the body
+   * colour and above the floor by a useful margin, which is why these are
+   * solid colours rather than more alphas.
+   *
+   * Two steps, both measured on #ffffff:
+   *   text-muted   #5B6570  5.9:1  secondary body copy, card descriptions
+   *   text-subtle  #6B7580  4.7:1  metadata, captions, eyebrow labels
+   *
+   * Anything quieter than `text-subtle` is decorative only and must not carry
+   * information. On dark surfaces the equivalents are alphas, because the
+   * backdrop varies: 0.82 and 0.72 give 7.8:1 and 6.4:1 on --color-destiny-grey.
+   * Over PHOTOGRAPHY neither is sufficient on its own — the fix there is a
+   * stronger scrim, not a lighter text colour. */
+  --color-muted: #5b6570;
+  --color-subtle: #6b7580;
+  --color-on-dark-muted: rgb(255 255 255 / 0.82);
+  --color-on-dark-subtle: rgb(255 255 255 / 0.72);
+
+  /* Surfaces. `bg-[#f5f7fa]` was hardcoded in 228 places while :root already
+   * carried --surface-muted with the same value; exposing it here turns the
+   * literal into `bg-surface-muted`. */
+  --color-surface: var(--surface);
+  --color-surface-muted: var(--surface-muted);
+
+  /* Hairlines. Six near-identical notations were in use — border-black/5, /6,
+   * /8, /10, /15 and /[0.07] — across 441 sites. Two steps cover every real
+   * use: `hairline` for card and section edges, `soft` for dividers that need
+   * to be seen. */
+  --color-hairline: rgb(0 0 0 / 0.07);
+  --color-divider: rgb(0 0 0 / 0.12);
+
+  /* Radii. `rounded-2xl`, `rounded-3xl`, `rounded-[20px]` and `rounded-[24px]`
+   * were all in use for "a card", so the corner told you nothing about what a
+   * thing was. Three named steps: a card, a panel of cards, a full-bleed
+   * section shell. Buttons stay `rounded-full`. */
+  --radius-card: 20px;
+  --radius-panel: 24px;
+  --radius-shell: 32px;
+
+  /* Elevation. The two-layer literal below was pasted verbatim into 16 files.
+   * It is a good shadow — a tight contact shadow plus a wide soft one — and it
+   * only ever needed a name. */
+  --shadow-card: 0 1px 2px rgb(16 24 40 / 0.04), 0 8px 24px -8px rgb(16 24 40 / 0.1);
+  --shadow-card-hover: 0 2px 4px rgb(16 24 40 / 0.05), 0 16px 36px -12px rgb(16 24 40 / 0.16);
+
+  /* Motion easings, re-exported from the `--motion-*` literals in `:root`.
+   *
+   * The literals live in `:root` (above) and are referenced here rather than
+   * repeated: `@theme inline` resolves the reference into the utility, so
+   * `ease-expo` works as a class AND `var(--motion-ease-expo)` works in the
+   * hand-written CSS further down this file. Durations get no `@theme` entry
+   * because Tailwind has no duration namespace to hang them on — an unknown
+   * namespace is dropped silently, which is why they are `:root`-only and used
+   * as `duration-[var(--motion-dur-base)]`. */
+  --ease-standard: var(--motion-ease-standard);
+  --ease-expo: var(--motion-ease-expo);
+  --ease-overshoot: var(--motion-ease-overshoot);
 }
 
 html {

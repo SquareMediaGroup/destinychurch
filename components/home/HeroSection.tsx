@@ -47,7 +47,7 @@ export default function HeroSection() {
           href="/visit"
           className="rounded-full bg-destiny-orange px-6 py-3 text-xs font-bold text-white shadow-lg shadow-destiny-orange/30 transition hover:brightness-110 sm:px-8 sm:py-3.5 sm:text-sm"
         >
-          Plan a Visit
+          Plan your visit
         </Link>
         <Link
           href="/new-here"

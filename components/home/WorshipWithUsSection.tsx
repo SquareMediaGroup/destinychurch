@@ -37,7 +37,7 @@ export default function WorshipWithUsSection() {
               href="/visit"
               className="rounded-full bg-destiny-orange px-8 py-3 text-center text-sm font-bold text-white shadow-lg shadow-destiny-orange/25 transition hover:brightness-110"
             >
-              Plan Your Visit
+              Plan your visit
             </Link>
             <Link
               href="/sermons"

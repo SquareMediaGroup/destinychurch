@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import AnimateIn from "@/components/AnimateIn";
 import HelpAccordion from "@/components/help/HelpAccordion";
+import { ADDRESS_ONE_LINE, SCHEDULE } from "@/lib/churchInfo";
 
 export const metadata: Metadata = {
   title: "Help",
@@ -33,11 +34,11 @@ const categories = [
     faqs: [
       {
         q: "What time does the Sunday service start?",
-        a: "Our main Sunday service runs from 11:00am to approximately 12:30pm. We also hold a Prayer Service from 10:00am to 10:30am. Doors open from 9:45am so you can arrive early, settle in and grab a coffee.",
+        a: `Our main Sunday service runs from ${SCHEDULE.mainServiceStart} to approximately ${SCHEDULE.mainServiceEnd}. We also hold a Prayer Service from ${SCHEDULE.prayerServiceStart} to ${SCHEDULE.prayerServiceEnd}. Doors open from ${SCHEDULE.doorsOpen} so you can arrive early, settle in and grab a coffee.`,
       },
       {
         q: "Where are you located?",
-        a: "We meet at Destiny Centre, Norton Road, Stockton-on-Tees, TS20 2QQ. Free on-site parking is available. Our Welcome Team will be glad to help when you arrive.",
+        a: `We meet at ${ADDRESS_ONE_LINE}. Free on-site parking is available. Our Welcome Team will be glad to help when you arrive.`,
       },
       {
         q: "What should I wear?",

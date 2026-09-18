@@ -26,6 +26,14 @@ import { createServiceClient } from "@/utils/supabase/service";
 import { unstable_noStore as noStore } from "next/cache";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { SmartSearchVisibilityProvider } from "@/lib/smartSearchVisibility";
+import {
+  ADDRESS,
+  CHURCH_NAME,
+  EMAIL,
+  GEO,
+  PHONE,
+  SCHEDULE,
+} from "@/lib/churchInfo";
 
 const roboto = Roboto({
   variable: "--font-roboto",
@@ -174,7 +182,7 @@ const orgSchema = {
     {
       "@type": ["Church", "LocalBusiness"],
       "@id": "https://destinytees.uk/#church",
-      name: "Destiny Church Tees Valley",
+      name: CHURCH_NAME,
       url: "https://destinytees.uk",
       logo: "https://destinytees.uk/img/logo.webp",
       image: "https://destinytees.uk/og/sermons-hero.webp",
@@ -182,25 +190,28 @@ const orgSchema = {
         "A multi-cultural church where all can find a place to belong and thrive. Bible-based teaching, vibrant worship, and genuine community.",
       address: {
         "@type": "PostalAddress",
-        streetAddress: "395 Norton Road",
-        addressLocality: "Stockton-on-Tees",
-        addressRegion: "Teesside",
-        postalCode: "TS20 2QQ",
-        addressCountry: "GB",
+        streetAddress: ADDRESS.street,
+        addressLocality: ADDRESS.locality,
+        addressRegion: ADDRESS.region,
+        postalCode: ADDRESS.postcode,
+        addressCountry: ADDRESS.country,
       },
       geo: {
         "@type": "GeoCoordinates",
-        latitude: 54.5778,
-        longitude: -1.3197,
+        latitude: GEO.latitude,
+        longitude: GEO.longitude,
       },
-      telephone: "+44-1642-559797",
-      email: "hello@destinytees.uk",
+      telephone: PHONE.e164,
+      email: EMAIL,
       openingHoursSpecification: [
         {
           "@type": "OpeningHoursSpecification",
           dayOfWeek: "Sunday",
-          opens: "10:30",
-          closes: "13:00",
+          // Doors open through the end of the main service — previously
+          // "10:30"–"13:00", which matched neither the doors time (9:45) nor
+          // the main service's actual end (12:30).
+          opens: SCHEDULE.iso.doorsOpen,
+          closes: SCHEDULE.iso.mainServiceEnd,
         },
       ],
       sameAs: [
@@ -220,18 +231,18 @@ const orgSchema = {
         "@type": "Schedule",
         repeatFrequency: "P1W",
         byDay: "https://schema.org/Sunday",
-        startTime: "11:00",
-        endTime: "12:30",
+        startTime: SCHEDULE.iso.mainServiceStart,
+        endTime: SCHEDULE.iso.mainServiceEnd,
       },
       location: {
         "@type": "Place",
-        name: "Destiny Centre",
+        name: ADDRESS.venue,
         address: {
           "@type": "PostalAddress",
-          streetAddress: "395 Norton Road",
-          addressLocality: "Stockton-on-Tees",
-          postalCode: "TS20 2QQ",
-          addressCountry: "GB",
+          streetAddress: ADDRESS.street,
+          addressLocality: ADDRESS.locality,
+          postalCode: ADDRESS.postcode,
+          addressCountry: ADDRESS.country,
         },
       },
       organizer: { "@id": "https://destinytees.uk/#church" },

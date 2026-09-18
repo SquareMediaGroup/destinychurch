@@ -3,6 +3,7 @@ import Link from "next/link";
 import AnimateIn from "@/components/AnimateIn";
 import ContactForm from "./ContactForm";
 import ChurchSuiteEmbed from "@/components/ChurchSuiteEmbed";
+import { ADDRESS_LINES, EMAIL, PHONE, SCHEDULE } from "@/lib/churchInfo";
 
 export const metadata: Metadata = {
   title: "Contact Us",
@@ -49,10 +50,12 @@ export default function ContactPage() {
                   <div>
                     <p className="mb-1 text-sm font-bold text-destiny-grey">Address</p>
                     <p className="text-sm leading-relaxed text-muted">
-                      Destiny Centre<br />
-                      Norton Road<br />
-                      Stockton-on-Tees<br />
-                      TS20 2QQ
+                      {ADDRESS_LINES.map((line) => (
+                        <span key={line}>
+                          {line}
+                          <br />
+                        </span>
+                      ))}
                     </p>
                   </div>
                 </div>
@@ -63,8 +66,8 @@ export default function ContactPage() {
                   </div>
                   <div>
                     <p className="mb-1 text-sm font-bold text-destiny-grey">Email</p>
-                    <a href="mailto:admin@destinytees.uk" className="text-sm text-destiny-orange hover:underline">
-                      admin@destinytees.uk
+                    <a href={`mailto:${EMAIL}`} className="text-sm text-destiny-orange hover:underline">
+                      {EMAIL}
                     </a>
                   </div>
                 </div>
@@ -75,8 +78,8 @@ export default function ContactPage() {
                   </div>
                   <div>
                     <p className="mb-1 text-sm font-bold text-destiny-grey">Phone</p>
-                    <a href="tel:+441642559797" className="text-sm text-destiny-orange hover:underline">
-                      01642 559 797
+                    <a href={PHONE.href} className="text-sm text-destiny-orange hover:underline">
+                      {PHONE.display}
                     </a>
                   </div>
                 </div>
@@ -87,7 +90,7 @@ export default function ContactPage() {
                   </div>
                   <div>
                     <p className="mb-1 text-sm font-bold text-destiny-grey">Sunday Service</p>
-                    <p className="text-sm text-muted">11:00am every Sunday</p>
+                    <p className="text-sm text-muted">{SCHEDULE.mainServiceStart} every Sunday</p>
                   </div>
                 </div>
               </div>

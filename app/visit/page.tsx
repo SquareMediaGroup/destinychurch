@@ -10,6 +10,7 @@ import Card from "@/components/ui/Card";
 import Disclosure from "@/components/ui/Disclosure";
 import Icon from "@/components/ui/Icon";
 import Button from "@/components/ui/Button";
+import BackgroundVideo from "@/components/ui/BackgroundVideo";
 import { TONE_SURFACE, TONE_ACCENT } from "@/components/blocks/tokens";
 import {
   ADDRESS,
@@ -37,6 +38,14 @@ export const metadata: Metadata = {
     images: ["/og/visit.webp"],
   },
 };
+
+/**
+ * Placeholder for the "what to expect" explainer video — reuses the Alpha
+ * hero clip (app/alpha/page.tsx) purely as a stand-in until a real one is
+ * shot for /visit.
+ */
+const WHAT_TO_EXPECT_VIDEO =
+  "https://player.vimeo.com/progressive_redirect/playback/1158973369/rendition/1080p/file.mp4%20%281080p%29.mp4?loc=external&signature=62a42712f74bca4e0082af9c72980c99f54ccf6cebabdfa6ca58dfeae7e7caee";
 
 /**
  * The physical journey through a Sunday, in order — the pattern every source
@@ -235,6 +244,16 @@ export default function VisitPage() {
               <p className="mt-1 text-xs text-subtle">Step-free access available</p>
             </div>
           </Card>
+        </div>
+      </Section>
+
+      {/* What-to-expect video — placeholder using the Alpha hero clip until a
+          real "what to expect" video is shot. Swap WHAT_TO_EXPECT_VIDEO for
+          the final asset when it's ready; nothing else here needs to change. */}
+      <Section tone="muted" padding="none" className="pt-16 sm:pt-20">
+        <div className="relative mx-auto aspect-video w-full max-w-3xl overflow-hidden rounded-3xl bg-destiny-grey">
+          <BackgroundVideo src={WHAT_TO_EXPECT_VIDEO} />
+          <div className="absolute inset-0 bg-black/20" aria-hidden="true" />
         </div>
       </Section>
 

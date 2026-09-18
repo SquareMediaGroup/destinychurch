@@ -786,6 +786,10 @@ CREATE TABLE hr_staff (
   end_date date,
   annual_leave_entitlement numeric DEFAULT 0,
   notes text,
+  -- Public URL into the `staff-avatars` storage bucket. Set from /portal's
+  -- account settings (POST /api/portal/me/avatar), never from the admin HR
+  -- forms — a staff member's own picture, self-managed.
+  avatar_url text,
   -- The staff record's backend login. Mandatory from creation onward:
   -- unique (no two staff share a login) and NOT NULL (there is no "no login"
   -- or "revoke access" state any more). References auth.users on delete set
@@ -2312,7 +2316,7 @@ Each section requires a specific access-level role (see
 | `/admin/hr/documents` | `app/admin/hr/documents/page.tsx` | Documents — upload/categorise staff and org-wide files surfaced in `/portal` (HR Admin) |
 | `/admin/hr/reviews` | `app/admin/hr/reviews/page.tsx` | Reviews — schedule and record staff performance/probation reviews (HR Admin) |
 | `/admin/hr/checklists` | `app/admin/hr/checklists/page.tsx` | Onboarding/offboarding checklist templates (HR Admin) |
-| `/portal` | `app/portal/page.tsx` | Staff self-service — own profile, leave requests + balance, documents. Separate auth boundary from `/admin`; see [Authorization Layers](#authorization-layers) |
+| `/portal` | `app/portal/page.tsx` | Staff self-service — own profile, account settings (profile picture, email, password), leave requests + balance, documents. Separate auth boundary from `/admin`; see [Authorization Layers](#authorization-layers) |
 | `/portal/leave` | `app/portal/leave/page.tsx` | Staff self-service — request and withdraw own leave |
 | `/portal/documents` | `app/portal/documents/page.tsx` | Staff self-service — download own + org-wide documents |
 | `/portal/design` | `app/portal/design/page.tsx` | Staff self-service — own design requests. Matched by staff link *and* by email, so requests filed from the public form while signed out still appear |
@@ -3947,6 +3951,10 @@ returned to its own author marked as waiting, so they don't retype it.
 // every query to the returned staff.id, never to anything the client supplies.
 
 GET  /api/portal/me            // the caller's own hr_staff profile
+PATCH /api/portal/me           // change own email — auth.updateUser() on the caller's own session (Supabase sends a confirmation email); hr_staff.email is updated immediately alongside it
+POST /api/portal/me/password   // change own password — re-authenticates with currentPassword (signInWithPassword) before auth.updateUser(), so a wrong current password rejects the change
+POST /api/portal/me/avatar     // upload a profile picture to the `staff-avatars` bucket, replaces hr_staff.avatar_url
+DELETE /api/portal/me/avatar   // remove the current profile picture
 GET  /api/portal/leave         // own leave requests (newest first)
 POST /api/portal/leave         // file own leave — staff_id + status forced server-side, never from the body
 DELETE /api/portal/leave/[id]  // withdraw own request, pending only; 404 (not 403) on a mismatch, so IDs can't be probed

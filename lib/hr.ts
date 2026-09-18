@@ -26,6 +26,7 @@ export interface Staff {
   end_date: string | null;
   annual_leave_entitlement: number;
   notes: string | null;
+  avatar_url: string | null;
   auth_user_id: string;
   created_at: string;
   updated_at: string;

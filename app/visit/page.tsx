@@ -249,21 +249,25 @@ export default function VisitPage() {
           lead="Exactly what to expect, from parking the car to your first coffee."
           align="center"
         />
-        <ol className="relative mt-12 space-y-8 sm:pl-4">
-          {/* A single connecting line behind the numbered dots — decorative,
-              so it's aria-hidden and excluded from the list semantics. */}
-          <div
-            aria-hidden="true"
-            className="absolute bottom-6 left-[23px] top-6 hidden w-px bg-hairline sm:block"
-          />
+        <ol className="relative mx-auto mt-12 max-w-xl space-y-10">
           {timeline.map((step, i) => (
             <AnimateIn key={step.title} delay={i * 60}>
-              <li className="relative flex gap-5 sm:gap-6">
+              <li className="relative flex flex-col items-center text-center">
+                {/* Connects this dot to the next one only — not a single line
+                    for the whole list — so it stops short after the last
+                    step. Decorative, so it's aria-hidden and excluded from
+                    the list semantics. */}
+                {i < timeline.length - 1 && (
+                  <div
+                    aria-hidden="true"
+                    className="absolute left-1/2 top-6 hidden h-[calc(100%+2.5rem)] w-px -translate-x-1/2 bg-hairline sm:block"
+                  />
+                )}
                 <div className="relative z-10 flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-destiny-orange text-white shadow-lg shadow-destiny-orange/25">
                   <Icon name={step.icon} size="lg" />
                 </div>
-                <div className="pt-1.5">
-                  <div className="flex flex-wrap items-baseline gap-2">
+                <div className="mt-3">
+                  <div className="flex flex-wrap items-baseline justify-center gap-2">
                     <p className="font-black text-destiny-grey">{step.title}</p>
                     {step.time && (
                       <span className="text-xs font-bold uppercase tracking-wider text-destiny-orange">
@@ -271,7 +275,7 @@ export default function VisitPage() {
                       </span>
                     )}
                   </div>
-                  <p className="mt-1 max-w-xl text-sm leading-relaxed text-muted">
+                  <p className="mx-auto mt-1 max-w-xl text-sm leading-relaxed text-muted">
                     {step.body}
                   </p>
                 </div>

@@ -57,5 +57,5 @@ export default function NextGatheringStatus({ nextIso }: { nextIso: string }) {
   // in ServiceTimesBar already stands on its own.
   if (!countdown) return null;
 
-  return <p className="mt-0.5 text-sm text-subtle">Starts in {countdown}</p>;
+  return <p className="mt-0.5 text-sm text-on-dark-subtle">Starts in {countdown}</p>;
 }

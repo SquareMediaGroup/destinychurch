@@ -1199,10 +1199,17 @@ body {
   }
 }
 
-@media (min-width: 768px) {
-  .hero-text-animate {
-    animation: fadeInUp 0.9s ease forwards;
-  }
+/*
+  The homepage's hero entrance used to be gated behind `min-width: 768px`, so
+  mobile — the device most visitors use — got no entrance at all on the
+  site's single most important element while desktop got a fade-up. There was
+  no technical reason for the gate; it plays fine at any width, and the
+  sitewide `html[data-motion="reduced"] *` kill switch (see globals.css,
+  further down this file) already covers it for reduced-motion visitors at
+  every breakpoint.
+*/
+.hero-text-animate {
+  animation: fadeInUp 0.9s ease forwards;
 }
 
 

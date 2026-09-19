@@ -475,12 +475,9 @@ export default function VisitPage() {
             us to know you&apos;re coming, fill in a Connect Card and
             we&apos;ll be ready to give you a proper welcome.
           </p>
-          <Link
-            href="/connect-card"
-            className="inline-flex items-center justify-center rounded-full bg-destiny-orange px-8 py-3.5 text-sm font-bold text-white shadow-lg shadow-destiny-orange/25 transition hover:brightness-110"
-          >
+          <Button href="/connect-card" size="xl">
             Fill in a Connect Card
-          </Link>
+          </Button>
         </div>
       </Section>
 

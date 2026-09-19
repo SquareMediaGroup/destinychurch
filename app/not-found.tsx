@@ -1,6 +1,7 @@
 import Link from "next/link";
 import NotFoundSearch from "@/components/NotFoundSearch";
 import { isSmartSearchEnabled } from "@/lib/serviceStatus";
+import Button from "@/components/ui/Button";
 
 export default async function NotFound() {
   const searchEnabled = await isSmartSearchEnabled();
@@ -16,12 +17,9 @@ export default async function NotFound() {
 
       <NotFoundSearch searchEnabled={searchEnabled} />
 
-      <Link
-        href="/"
-        className="mt-8 rounded-full bg-destiny-orange px-6 py-3 text-sm font-bold text-white shadow-lg shadow-destiny-orange/25 transition hover:brightness-110"
-      >
+      <Button href="/" size="md" className="mt-8">
         Back to home
-      </Link>
+      </Button>
 
       <div className="mt-6 flex items-center gap-4 text-sm">
         <Link href="/help" className="font-medium text-muted underline-offset-2 hover:text-destiny-orange hover:underline">

@@ -3,6 +3,7 @@ import Link from "next/link";
 import AnimateIn from "@/components/AnimateIn";
 import HelpAccordion from "@/components/help/HelpAccordion";
 import { ADDRESS_ONE_LINE, SCHEDULE } from "@/lib/churchInfo";
+import Button from "@/components/ui/Button";
 
 export const metadata: Metadata = {
   title: "Help",
@@ -402,13 +403,10 @@ export default function HelpPage() {
               </div>
 
               <div className="flex shrink-0 flex-col gap-3 sm:items-end">
-                <Link
-                  href="/contact"
-                  className="inline-flex items-center justify-center gap-2 rounded-full bg-destiny-orange px-7 py-3.5 text-sm font-bold text-white transition-transform hover:scale-[1.03] hover:bg-destiny-orange-dark"
-                >
+                <Button href="/contact" size="xl">
                   Send a Message
                   <span className="material-symbols-rounded text-lg" aria-hidden="true">arrow_forward</span>
-                </Link>
+                </Button>
                 <a
                   href="tel:+441642559797"
                   className="inline-flex items-center justify-center gap-1.5 text-sm font-semibold text-on-dark-muted underline-offset-4 transition-colors hover:text-white hover:underline"

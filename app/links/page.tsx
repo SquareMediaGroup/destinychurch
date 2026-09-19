@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import LinksStepGrid from "@/components/links/LinksStepGrid";
 import { LINKS_STEPS } from "@/lib/linksSteps";
+import Button from "@/components/ui/Button";
 
 export const metadata: Metadata = {
   title: "Next Steps",
@@ -140,13 +141,10 @@ export default function LinksPage() {
             </div>
 
             <div className="flex shrink-0 flex-col gap-3 sm:items-end">
-              <Link
-                href="/new-here"
-                className="inline-flex items-center justify-center gap-2 rounded-full bg-destiny-orange px-7 py-3.5 text-sm font-bold text-white transition-transform hover:scale-[1.03] hover:bg-destiny-orange-dark"
-              >
+              <Button href="/new-here" size="xl">
                 Start with New Here
                 <span className="material-symbols-rounded text-lg" aria-hidden="true">arrow_forward</span>
-              </Link>
+              </Button>
               <Link
                 href="/contact"
                 className="inline-flex items-center justify-center gap-1.5 text-sm font-semibold text-on-dark-muted underline-offset-4 transition-colors hover:text-white hover:underline"

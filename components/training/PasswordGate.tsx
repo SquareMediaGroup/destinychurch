@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Button from "@/components/ui/Button";
 
 // Shown in place of a sub-group's content until the correct password is entered.
 // On success the server sets a signed unlock cookie and we refresh the route,
@@ -66,13 +67,9 @@ export default function PasswordGate({
             className="w-full rounded-xl border border-black/10 bg-white px-4 py-3 text-center text-sm text-destiny-grey outline-none transition placeholder:text-destiny-grey/30 focus:border-destiny-orange/50 focus:ring-2 focus:ring-destiny-orange/15"
           />
           {error && <p className="text-sm font-bold text-destiny-red">{error}</p>}
-          <button
-            type="submit"
-            disabled={loading || !password}
-            className="rounded-full bg-destiny-orange px-6 py-3 text-sm font-bold text-white shadow-lg shadow-destiny-orange/30 transition hover:brightness-110 disabled:opacity-60"
-          >
+          <Button type="submit" disabled={!password} loading={loading} size="md">
             {loading ? "Checking…" : "Unlock"}
-          </button>
+          </Button>
         </form>
       </div>
     </div>

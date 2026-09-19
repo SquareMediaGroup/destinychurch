@@ -9,6 +9,7 @@ import {
   type DesignTicketCategory,
   type DesignTicketStatus,
 } from "@/lib/designTickets";
+import Button from "@/components/ui/Button";
 
 interface PortalTicket {
   id: string;
@@ -60,12 +61,9 @@ export default function PortalDesignPage() {
             Everything you&apos;ve asked the design team for.
           </p>
         </div>
-        <Link
-          href="/design-request"
-          className="rounded-full bg-destiny-orange px-5 py-2.5 text-sm font-bold text-white transition hover:brightness-110"
-        >
+        <Button href="/design-request" size="sm">
           New request
-        </Link>
+        </Button>
       </div>
 
       {loading ? (

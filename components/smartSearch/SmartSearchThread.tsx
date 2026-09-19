@@ -6,7 +6,6 @@
 // CTA rendering either way; only the surrounding chrome differs per surface.
 
 import { lazy, Suspense } from "react";
-import Link from "next/link";
 import {
   ProductResultCards,
   SermonResultCards,
@@ -15,6 +14,7 @@ import {
   WebResultsCard,
 } from "@/components/smartSearch/ResultCards";
 import type { ChatMessage } from "@/lib/useSmartSearchChat";
+import Button from "@/components/ui/Button";
 
 const ThinkingOrb = lazy(() =>
   import("thinking-orbs").then((mod) => ({ default: mod.ThinkingOrb })),
@@ -100,16 +100,12 @@ export function SmartSearchThread({
                 )}
 
                 {!msg.options?.length && msg.page && msg.ctaLabel && (
-                  <Link
-                    href={msg.page}
-                    onClick={onCtaClick}
-                    className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-destiny-orange px-4 py-2 text-xs font-bold text-white transition hover:brightness-110"
-                  >
+                  <Button href={msg.page} onClick={onCtaClick} size="xs" className="mt-2">
                     {msg.ctaLabel}
                     <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
                     </svg>
-                  </Link>
+                  </Button>
                 )}
               </>
             )}

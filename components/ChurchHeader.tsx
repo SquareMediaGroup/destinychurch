@@ -7,6 +7,7 @@ import { usePathname } from "next/navigation";
 import { useBannerBars } from "@/lib/useBannerBars";
 import { useHydrated } from "@/lib/useHydrated";
 import CartButton from "@/components/shop/CartButton";
+import Button from "@/components/ui/Button";
 
 const aboutDropdown = [
   { href: "/about", label: "Our Mission" },
@@ -411,12 +412,11 @@ export default function ChurchHeader() {
                   ← View Site
                 </Link>
               ) : (
-                <Link
-                  href="/new-here"
-                  className="hidden whitespace-nowrap rounded-full bg-destiny-orange px-4 py-2 text-sm font-bold text-white shadow-lg shadow-destiny-orange/25 transition hover:brightness-110 md:inline-flex md:px-5 md:py-2.5"
-                >
-                  New Here?
-                </Link>
+                <span className="hidden md:inline-flex">
+                  <Button href="/new-here" size="sm" className="whitespace-nowrap">
+                    New Here?
+                  </Button>
+                </span>
               )}
 
               <button

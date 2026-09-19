@@ -6,6 +6,7 @@ import WorshipWithUsSection from "@/components/home/WorshipWithUsSection";
 import NewHereHero from "@/components/new-here/NewHereHero";
 import YouSaidYesButton from "@/components/new-here/YouSaidYesButton";
 import ChurchSuiteEmbed from "@/components/ChurchSuiteEmbed";
+import Button from "@/components/ui/Button";
 
 export const metadata: Metadata = {
   title: "New Here?",
@@ -166,12 +167,9 @@ export default function NewHerePage() {
               <p className="mb-8 text-sm font-bold text-on-dark-subtle">
                 Jonathan &amp; Cath Harris, Lead Pastors
               </p>
-              <Link
-                href="/about"
-                className="rounded-full bg-destiny-orange px-8 py-3 text-sm font-bold text-white shadow-lg shadow-destiny-orange/25 transition hover:brightness-110"
-              >
+              <Button href="/about" size="lg">
                 Learn more About Us
-              </Link>
+              </Button>
             </AnimateIn>
           </div>
         </div>

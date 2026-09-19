@@ -191,7 +191,7 @@ destinychurch/
 │   │   ├── store/                 # Shop admin (products, orders, hero)
 │   │   ├── hr/                    # HR admin (staff, leave, jobs, docs, reviews, checklists) — hr_admin
 │   │   └── onboarding/            # Super-admin preview of each role's onboarding tour
-│   ├── portal/                    # Staff self-service — own profile, leave, documents (linked hr_staff)
+│   ├── portal/                    # Staff self-service — dashboard, profile, team, reviews, leave, documents (linked hr_staff)
 │   │   ├── layout.tsx             # Portal shell (separate auth boundary from /admin)
 │   │   ├── page.tsx               # Profile + leave balance overview
 │   │   ├── leave/page.tsx         # Request/withdraw own leave
@@ -213,7 +213,7 @@ destinychurch/
 │   │   │   │                      #   hr/ includes checklists/ + checklist-templates/
 │   │   │   ├── simulated-live/    # Simulated live config + YouTube link lookup (Host)
 │   │   │   └── ...
-│   │   ├── portal/                # Staff self-service API — me/, leave/, documents/, design/ (linked hr_staff)
+│   │   ├── portal/                # Staff self-service API — me/, reviews/, checklists/, team/, leave/, documents/, design/ (linked hr_staff)
 │   │   ├── design-request/        # Public, share-token-scoped: [token]/ + deliverable downloads/confirm
 │   │   ├── cron/                  # Vercel Cron — live-chat-purge/, hr-review-reminders/, design-deliverables-purge/, … (Bearer CRON_SECRET)
 │   │   ├── chat/                  # POST /api/chat — Smart Search tool-calling chat
@@ -2316,7 +2316,10 @@ Each section requires a specific access-level role (see
 | `/admin/hr/documents` | `app/admin/hr/documents/page.tsx` | Documents — upload/categorise staff and org-wide files surfaced in `/portal` (HR Admin) |
 | `/admin/hr/reviews` | `app/admin/hr/reviews/page.tsx` | Reviews — schedule and record staff performance/probation reviews (HR Admin) |
 | `/admin/hr/checklists` | `app/admin/hr/checklists/page.tsx` | Onboarding/offboarding checklist templates (HR Admin) |
-| `/portal` | `app/portal/page.tsx` | Staff self-service — own profile, account settings (profile picture, email, password), leave requests + balance, documents. Separate auth boundary from `/admin`; see [Authorization Layers](#authorization-layers) |
+| `/portal` | `app/portal/page.tsx` | Staff self-service dashboard — holiday balance, onboarding progress, next review, open design requests and document count as cards linking into each section. Separate auth boundary from `/admin`; see [Authorization Layers](#authorization-layers) |
+| `/portal/profile` | `app/portal/profile/page.tsx` | Own profile fields (department, employment, dates) plus account settings — profile picture, email, password |
+| `/portal/team` | `app/portal/team/page.tsx` | Directory of colleagues with a portal login — name, role, department, work email, picture. Searchable client-side; never shows phone or anything else from `hr_staff` |
+| `/portal/reviews` | `app/portal/reviews/page.tsx` | Own onboarding checklist (tick off items) and review history (dates/type only — see `GET /api/portal/reviews`, which never sends `hr_reviews.summary`) |
 | `/portal/leave` | `app/portal/leave/page.tsx` | Staff self-service — request and withdraw own leave |
 | `/portal/documents` | `app/portal/documents/page.tsx` | Staff self-service — download own + org-wide documents |
 | `/portal/design` | `app/portal/design/page.tsx` | Staff self-service — own design requests, plus a link to `/portal/design/request` to file a new one. Matched by staff link *and* by email, so requests filed before this page existed still appear |
@@ -3960,6 +3963,10 @@ POST /api/portal/leave         // file own leave — staff_id + status forced se
 DELETE /api/portal/leave/[id]  // withdraw own request, pending only; 404 (not 403) on a mismatch, so IDs can't be probed
 GET  /api/portal/documents     // own documents + org-wide ones (staff_id IS NULL)
 GET  /api/portal/documents/[id] // 60s signed download URL from the hr-documents bucket; 404 on a foreign doc
+GET  /api/portal/reviews       // own hr_reviews — id/review_date/type/reviewer/next_review_date only, never `summary`
+GET  /api/portal/checklists    // own hr_checklist_items where kind = 'onboarding' (offboarding is HR/manager-only)
+PATCH /api/portal/checklists/[id] // toggle is_done on one of your own onboarding items; 404 on a mismatch
+GET  /api/portal/team          // directory of non-"left" hr_staff — name, role, department, email, avatar; never phone or notes
 ```
 
 A leave request/decision here (and from `/admin/hr`) triggers a notification

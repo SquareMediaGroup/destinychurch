@@ -4,6 +4,7 @@ import HireForm from "./HireForm";
 import FaqAccordion from "./FaqAccordion";
 import SpacesGrid from "@/components/hire/SpacesGrid";
 import { getPageContent } from "@/lib/pageContent";
+import Button, { buttonClasses } from "@/components/ui/Button";
 
 export const metadata: Metadata = {
   title: "Hire Our Venue",
@@ -79,18 +80,12 @@ export default async function HirePage() {
               A flexible, well-equipped space in the heart of Stockton-on-Tees.
             </p>
             <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
-              <a
-                href="#enquiry"
-                className="rounded-full bg-destiny-orange px-7 py-3 text-sm font-bold text-white shadow-lg shadow-destiny-orange/30 transition hover:brightness-110"
-              >
+              <a href="#enquiry" className={buttonClasses({ size: "lg" })}>
                 Make an Enquiry
               </a>
-              <a
-                href={`tel:+44${phone.replace(/^0/, "").replace(/\s/g, "")}`}
-                className="rounded-full border-2 border-white/30 px-7 py-3 text-sm font-bold text-white backdrop-blur-sm transition hover:border-white hover:bg-white/10"
-              >
+              <Button href={`tel:+44${phone.replace(/^0/, "").replace(/\s/g, "")}`} variant="onDark" size="lg">
                 Call Us
-              </a>
+              </Button>
             </div>
           </AnimateIn>
         </section>

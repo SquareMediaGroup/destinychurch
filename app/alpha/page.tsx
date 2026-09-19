@@ -141,37 +141,28 @@ export default function AlphaPage() {
               <div className="flex flex-col gap-3 sm:flex-row items-center justify-center">
                 {!loading && events.length > 0 ? (
                   <>
-                    <button
-                      onClick={openSignup}
-                      className="mt-4 inline-flex items-center gap-3 rounded-full bg-destiny-orange px-6 py-3 text-sm font-bold text-white shadow-lg shadow-destiny-orange/30 transition hover:brightness-110"
-                    >
+                    <Button onClick={openSignup} size="md" className="mt-4">
                       <span className="material-symbols-rounded text-lg" aria-hidden="true">person_add</span>
                       Sign Up Now
-                    </button>
-                    <button
-                      onClick={openVideo}
-                      className="mt-4 inline-flex items-center gap-3 rounded-full bg-white/10 px-6 py-3 text-sm font-bold text-white backdrop-blur-sm transition hover:bg-white/20"
-                    >
+                    </Button>
+                    <Button onClick={openVideo} variant="glass" size="md" className="mt-4">
                       <span className="flex h-5 w-5 items-center justify-center">
                         <svg className="ml-0.5 h-4 w-4 text-white" fill="currentColor" viewBox="0 0 24 24">
                           <path d="M8 5v14l11-7z" />
                         </svg>
                       </span>
                       Watch promo
-                    </button>
+                    </Button>
                   </>
                 ) : (
-                  <button
-                    onClick={openVideo}
-                    className="mt-4 inline-flex items-center gap-3 rounded-full bg-white/10 px-6 py-3 text-sm font-bold text-white backdrop-blur-sm transition hover:bg-white/20"
-                  >
+                  <Button onClick={openVideo} variant="glass" size="md" className="mt-4">
                     <span className="flex h-5 w-5 items-center justify-center">
                       <svg className="ml-0.5 h-4 w-4 text-white" fill="currentColor" viewBox="0 0 24 24">
                         <path d="M8 5v14l11-7z" />
                       </svg>
                     </span>
                     Watch the promo
-                  </button>
+                  </Button>
                 )}
               </div>
             </AnimateIn>
@@ -443,12 +434,9 @@ export default function AlphaPage() {
             <div className="flex flex-col items-center justify-center gap-3 sm:flex-row">
               {!loading && events.length > 0 ? (
                 <>
-                  <button
-                    onClick={openSignup}
-                    className="rounded-full bg-destiny-orange px-8 py-3 text-sm font-bold text-white shadow-lg shadow-destiny-orange/25 transition hover:brightness-110"
-                  >
+                  <Button onClick={openSignup} size="lg">
                     Register for Alpha
-                  </button>
+                  </Button>
                   <button
                     onClick={openVideo}
                     className="inline-flex items-center gap-2 rounded-full border-2 border-destiny-grey/20 px-8 py-3 text-sm font-bold text-destiny-grey transition hover:border-destiny-orange hover:text-destiny-orange"

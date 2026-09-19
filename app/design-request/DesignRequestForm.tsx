@@ -4,6 +4,7 @@ import { useRef, useState } from "react";
 import Link from "next/link";
 import { submitDesignRequest } from "./actions";
 import { DESIGN_CATEGORY_LABELS, type DesignTicketCategory } from "@/lib/designTickets";
+import Button from "@/components/ui/Button";
 
 const FIELD =
   "w-full rounded-2xl border border-black/10 bg-[#f5f7fa] px-4 py-3 text-sm text-destiny-grey outline-none transition focus:border-destiny-orange focus:ring-2 focus:ring-destiny-orange/20";
@@ -76,12 +77,9 @@ export default function DesignRequestForm({
         </p>
 
         {result.token ? (
-          <Link
-            href={`/design-request/${result.token}`}
-            className="mt-6 inline-block rounded-full bg-destiny-orange px-8 py-3 text-sm font-bold text-white shadow-lg shadow-destiny-orange/25 transition hover:brightness-110"
-          >
+          <Button href={`/design-request/${result.token}`} size="lg" className="mt-6">
             Track this request
-          </Link>
+          </Button>
         ) : null}
 
         <button
@@ -245,13 +243,9 @@ export default function DesignRequestForm({
         </p>
       ) : null}
 
-      <button
-        type="submit"
-        disabled={status === "loading"}
-        className="w-full rounded-full bg-destiny-orange py-3 text-sm font-bold text-white shadow-lg shadow-destiny-orange/25 transition hover:brightness-110 disabled:opacity-60"
-      >
+      <Button type="submit" size="md" fullWidth loading={status === "loading"}>
         {status === "loading" ? "Sending…" : "Send request"}
-      </button>
+      </Button>
     </form>
   );
 }

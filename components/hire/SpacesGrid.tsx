@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { useState } from "react";
 import AnimateIn from "@/components/AnimateIn";
+import { buttonClasses } from "@/components/ui/Button";
 
 type Photo = { src: string; caption: string };
 
@@ -264,7 +265,7 @@ function SpaceModal({ space, onClose }: { space: Space; onClose: () => void }) {
             <a
               href="#enquiry"
               onClick={onClose}
-              className="flex w-full items-center justify-center rounded-full bg-destiny-orange py-3 text-sm font-bold text-white transition hover:opacity-90"
+              className={buttonClasses({ size: "md", fullWidth: true })}
             >
               Enquire About This Space
             </a>

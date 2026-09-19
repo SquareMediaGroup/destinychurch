@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import AnimateIn from "@/components/AnimateIn";
 import FaqAccordion from "@/app/hire/FaqAccordion";
+import Button, { buttonClasses } from "@/components/ui/Button";
 import { getPublishedJobs } from "@/lib/jobs.server";
 import {
   EMPLOYMENT_LABELS,
@@ -183,18 +184,12 @@ export default async function JobsPage() {
               gifts and passion meet God&apos;s purpose for your life.
             </p>
             <div className="mt-9 flex flex-wrap items-center justify-center gap-3">
-              <a
-                href="#openings"
-                className="rounded-full bg-destiny-orange px-7 py-3 text-sm font-bold text-white shadow-lg shadow-destiny-orange/30 transition hover:brightness-110"
-              >
+              <a href="#openings" className={buttonClasses({ size: "lg" })}>
                 View open roles
               </a>
-              <Link
-                href="/serve"
-                className="rounded-full border-2 border-white/25 px-7 py-3 text-sm font-bold text-white backdrop-blur-sm transition hover:border-white hover:bg-white/10"
-              >
+              <Button href="/serve" variant="onDark" size="lg" className="backdrop-blur-sm">
                 Volunteer instead
-              </Link>
+              </Button>
             </div>
           </AnimateIn>
         </section>
@@ -272,12 +267,9 @@ export default async function JobsPage() {
                   here as they open. In the meantime, there are always ways to get
                   involved.
                 </p>
-                <Link
-                  href="/serve"
-                  className="mt-6 inline-flex rounded-full bg-destiny-orange px-6 py-2.5 text-sm font-bold text-white transition hover:brightness-110"
-                >
+                <Button href="/serve" size="sm" className="mt-6">
                   Explore volunteering
-                </Link>
+                </Button>
               </div>
             </AnimateIn>
           ) : (

@@ -8,6 +8,7 @@ import {
   useElements,
 } from "@stripe/react-stripe-js";
 import { formatPrice } from "@/lib/shop";
+import Button from "@/components/ui/Button";
 
 // Inner payment step — must be rendered inside <Elements>. Confirms the
 // PaymentIntent and redirects to the success page on completion.
@@ -96,11 +97,7 @@ export default function CheckoutForm({
         </div>
       )}
 
-      <button
-        type="submit"
-        disabled={!stripe || submitting}
-        className="flex w-full items-center justify-center gap-2 rounded-full bg-destiny-orange px-7 py-4 text-sm font-bold text-white shadow-lg shadow-destiny-orange/25 transition hover:bg-destiny-orange-dark disabled:cursor-not-allowed disabled:bg-destiny-grey/30 disabled:shadow-none"
-      >
+      <Button type="submit" size="cta" fullWidth disabled={!stripe} loading={submitting}>
         {submitting ? (
           "Processing…"
         ) : (
@@ -109,7 +106,7 @@ export default function CheckoutForm({
             Pay {formatPrice(totalPennies)}
           </>
         )}
-      </button>
+      </Button>
 
       <p className="flex items-center justify-center gap-1.5 text-xs text-subtle">
         <span className="material-symbols-rounded text-sm" aria-hidden="true">verified_user</span>

@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useCookieConsent } from "@/lib/cookieConsent";
 import { useHydrated } from "@/lib/useHydrated";
 import { loadYTApi } from "@/lib/youtubeIframe";
+import Button from "@/components/ui/Button";
 
 interface LivePlayerProps {
   videoId: string;
@@ -267,12 +268,9 @@ export default function LivePlayer({ videoId, onEnded, getTargetTime }: LivePlay
             </p>
           </div>
           <div className="flex flex-wrap justify-center gap-3">
-            <button
-              onClick={allowAll}
-              className="rounded-full bg-destiny-orange px-5 py-2.5 text-sm font-bold text-white shadow-lg shadow-destiny-orange/20 transition hover:brightness-110"
-            >
+            <Button onClick={allowAll} size="sm">
               Accept all cookies
-            </button>
+            </Button>
             <button
               onClick={() => savePreferences({ media: true, analytics: false })}
               className="rounded-full border border-white/20 px-5 py-2.5 text-sm font-medium text-on-dark-muted transition hover:border-white/40 hover:text-white"

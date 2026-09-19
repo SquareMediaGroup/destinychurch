@@ -27,6 +27,7 @@ import {
   type SimulatedLiveConfig,
   type SimulatedPhase,
 } from "@/lib/simulatedLive";
+import Button from "@/components/ui/Button";
 
 interface Loaded extends SimulatedLiveConfig {
   phase: SimulatedPhase;
@@ -459,13 +460,9 @@ export default function SimulatedLiveControls({
       )}
 
       <div className="flex flex-wrap items-center gap-3">
-        <button
-          type="submit"
-          disabled={saving}
-          className="rounded-full bg-destiny-orange px-6 py-3 text-sm font-bold text-white shadow-lg shadow-destiny-orange/25 transition hover:brightness-110 disabled:opacity-50"
-        >
+        <Button type="submit" size="md" loading={saving}>
           {saving ? "Saving…" : "Save"}
-        </button>
+        </Button>
         <button
           type="button"
           onClick={() => void startNow()}

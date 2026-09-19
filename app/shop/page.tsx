@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { getPublishedProducts, getActiveShopHeroSlides } from "@/lib/shop.server";
 import ShopHero from "@/components/shop/ShopHero";
 import ShopProductGrid from "@/components/shop/ShopProductGrid";
+import Button from "@/components/ui/Button";
 
 export const metadata: Metadata = {
   title: "Shop",
@@ -135,13 +135,10 @@ export default async function ShopPage() {
                 email you the moment they&apos;re ready to collect.
               </p>
             </div>
-            <Link
-              href="/visit"
-              className="inline-flex shrink-0 items-center justify-center gap-2 rounded-full bg-destiny-orange px-7 py-3.5 text-sm font-bold text-white transition-transform hover:scale-[1.03] hover:bg-destiny-orange-dark"
-            >
+            <Button href="/visit" size="xl" className="shrink-0">
               Plan your visit
               <span className="material-symbols-rounded text-lg" aria-hidden="true">arrow_forward</span>
-            </Link>
+            </Button>
           </div>
         </div>
       </div>

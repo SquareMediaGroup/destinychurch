@@ -5,6 +5,7 @@ import Image from "next/image";
 import { useCart, cartSubtotal } from "@/lib/cart-store";
 import { formatPrice } from "@/lib/shop";
 import { useHydrated } from "@/lib/useHydrated";
+import Button from "@/components/ui/Button";
 
 export default function CartPage() {
   const { items, setQty, remove } = useCart();
@@ -36,13 +37,10 @@ export default function CartPage() {
             <p className="mx-auto mt-2 max-w-sm text-sm text-subtle">
               Find something you love in the store.
             </p>
-            <Link
-              href="/shop"
-              className="mt-6 inline-flex items-center justify-center gap-2 rounded-full bg-destiny-orange px-7 py-3.5 text-sm font-bold text-white transition hover:bg-destiny-orange-dark"
-            >
+            <Button href="/shop" size="xl" className="mt-6">
               Browse the store
               <span className="material-symbols-rounded text-lg" aria-hidden="true">arrow_forward</span>
-            </Link>
+            </Button>
           </div>
         ) : (
           <div className="grid grid-cols-1 gap-10 lg:grid-cols-[1fr_20rem]">
@@ -143,13 +141,10 @@ export default function CartPage() {
                 <span className="font-black text-destiny-grey">Total</span>
                 <span className="font-black text-destiny-grey">{formatPrice(subtotal)}</span>
               </div>
-              <Link
-                href="/shop/checkout"
-                className="mt-6 flex items-center justify-center gap-2 rounded-full bg-destiny-orange px-7 py-3.5 text-sm font-bold text-white transition hover:bg-destiny-orange-dark"
-              >
+              <Button href="/shop/checkout" size="xl" fullWidth className="mt-6">
                 Checkout
                 <span className="material-symbols-rounded text-lg" aria-hidden="true">lock</span>
-              </Link>
+              </Button>
               <Link
                 href="/shop"
                 className="mt-3 flex items-center justify-center gap-1 text-sm font-semibold text-muted hover:text-destiny-grey"

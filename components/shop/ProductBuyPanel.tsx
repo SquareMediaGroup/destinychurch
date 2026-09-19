@@ -11,6 +11,7 @@ import {
   type ProductVariant,
   type ProductWithVariants,
 } from "@/lib/shop";
+import Button from "@/components/ui/Button";
 
 export default function ProductBuyPanel({ product }: { product: ProductWithVariants }) {
   const toast = useToast();
@@ -192,15 +193,10 @@ export default function ProductBuyPanel({ product }: { product: ProductWithVaria
           </button>
         </div>
 
-        <button
-          type="button"
-          onClick={handleAdd}
-          disabled={!inStock}
-          className="inline-flex flex-1 items-center justify-center gap-2 rounded-full bg-destiny-orange px-7 py-3.5 text-sm font-bold text-white shadow-lg shadow-destiny-orange/25 transition hover:bg-destiny-orange-dark disabled:cursor-not-allowed disabled:bg-destiny-grey/30 disabled:shadow-none"
-        >
+        <Button type="button" onClick={handleAdd} disabled={!inStock} size="xl" className="flex-1">
           <span className="material-symbols-rounded text-lg" aria-hidden="true">shopping_bag</span>
           {inStock ? "Add to basket" : "Sold out"}
-        </button>
+        </Button>
       </div>
 
       <p className="mt-4 flex items-center gap-1.5 text-xs text-subtle">

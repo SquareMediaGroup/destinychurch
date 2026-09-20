@@ -19,8 +19,8 @@ Designed, engineered, and deployed by [Square Media Group](mailto:hello@squareme
 - Merchandise shop with Stripe checkout (cards, Apple Pay, Google Pay, Link) and category filtering
 - Staff training courses with progress tracking and timed modules
 - HR & jobs system — job board, applications, staff directory, leave requests, documents, reviews, onboarding/offboarding checklists, and email notifications (leave decisions + a daily review-reminder digest)
-- Staff self-service portal (`/portal`) — a separate login surface where staff view their profile, request leave, download documents, and track their design requests (an `hr_admin` access level runs HR without full super-admin)
-- Design request queue — anyone can ask the design team for artwork at `/design-request`; designers work the queue in `/admin/design`, deliver files (images/PDFs in Supabase Storage, video as a Drive/Playbook link), and the requester downloads them from a share-token tracker with no login. Confirmed downloads are auto-purged after 48 hours
+- Staff self-service portal (`/portal`) — a separate login surface where staff manage their account (avatar, email, password), request leave, download documents, and file and track their design requests (an `hr_admin` access level runs HR without full super-admin)
+- Design request queue — staff ask the design team for artwork at `/portal/design/request` (staff-only, name/email pre-filled from their record); designers work the queue in `/admin/design`, deliver files (images/PDFs in Supabase Storage, video as a Drive/Playbook link), and the requester tracks and downloads them from a share-token tracker at `/design-request/[token]` with no login. Confirmed downloads are auto-purged after 48 hours
 - Role-based admin onboarding — new admins are walked through a guided tour scoped to their access level, with nothing saved during the tour
 - Venue hire enquiry system
 - Connect card, prayer request, and contact forms
@@ -140,7 +140,7 @@ app/
 ├── connect-card/     # Connection & prayer form
 ├── contact/          # Contact form
 ├── dckids/           # DC Kids ministry
-├── design-request/   # Public design request form + [token]/ requester tracker
+├── design-request/   # [token]/ share-token requester tracker (public); the request form itself lives at /portal/design/request
 ├── give/             # Giving & donations
 ├── governance/       # Charity/company registration & transparency (live regulator data)
 ├── hire/             # Venue hire enquiries

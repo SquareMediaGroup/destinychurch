@@ -1,22 +1,58 @@
 import { getPodcastShow } from "@/lib/podcast";
-import { getUploadedVideos } from "@/lib/speakerOverrides.server";
+import {
+  getUploadedVideos,
+  getFullSermonArchive,
+  getSpeakerOverrides,
+  type SpeakerOverrideRow,
+} from "@/lib/speakerOverrides.server";
+import { getPlaylistSnippet, getPlaylistVideoIds } from "@/lib/youtube";
+import { getSermonSeriesRows } from "@/lib/sermonSeries.server";
 import { PageHeader, Badge, cardClass } from "@/components/admin/AdminUI";
 import SermonsAdminClient from "./SermonsAdminClient";
 import SpeakerReviewPanel from "@/components/admin/SpeakerReviewPanel";
+import SpeakerEditor from "@/components/admin/SpeakerEditor";
+import SeriesManager, { type SeriesManagerRow } from "@/components/admin/SeriesManager";
 
 export const dynamic = "force-dynamic";
 
 export default async function SermonsAdminPage() {
-  const [show, archive] = await Promise.all([
+  const [show, archive, fullArchive, seriesRows] = await Promise.all([
     getPodcastShow().catch(() => null),
     // One page is plenty to resolve a pairing hint against recently-published
     // videos — the admin only needs this for episodes uploaded in the last
     // few weeks, not the whole channel history.
     getUploadedVideos().catch(() => ({ videos: [], nextPageToken: null })),
+    // The manual speaker editor searches the whole archive, same scope as the
+    // AI review job below.
+    getFullSermonArchive().catch(() => []),
+    getSermonSeriesRows().catch(() => []),
   ]);
 
   const recentEpisodes = (show?.episodes ?? []).slice(0, 10);
   const videosById = new Map(archive.videos.map((v) => [v.id, v]));
+
+  const overridesMap = await getSpeakerOverrides(fullArchive.map((v) => v.id)).catch(
+    () => new Map<string, SpeakerOverrideRow>()
+  );
+  const overrides = Object.fromEntries(overridesMap);
+
+  const seriesManagerRows: SeriesManagerRow[] = await Promise.all(
+    seriesRows.map(async (row): Promise<SeriesManagerRow> => {
+      const [snippet, videoIds] = await Promise.all([
+        getPlaylistSnippet(row.playlistId).catch(() => null),
+        getPlaylistVideoIds(row.playlistId).catch(() => new Set<string>()),
+      ]);
+      if (!snippet) {
+        return { playlistId: row.playlistId, title: null, videoCount: null, unresolved: true };
+      }
+      return {
+        playlistId: row.playlistId,
+        title: snippet.title,
+        videoCount: videoIds.size,
+        unresolved: false,
+      };
+    })
+  );
 
   return (
     <div className="mx-auto max-w-3xl">
@@ -30,7 +66,15 @@ export default async function SermonsAdminPage() {
       </div>
 
       <div className="mt-8">
+        <SeriesManager rows={seriesManagerRows} />
+      </div>
+
+      <div className="mt-8">
         <SpeakerReviewPanel />
+      </div>
+
+      <div className="mt-8">
+        <SpeakerEditor videos={fullArchive} overrides={overrides} />
       </div>
 
       <div className="mt-8">

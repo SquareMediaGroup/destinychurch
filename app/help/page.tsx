@@ -138,7 +138,7 @@ const categories = [
     faqs: [
       {
         q: "Where can I watch sermons online?",
-        a: "All sermons are available on our Sermons page. You can filter by speaker, series, or date. We also upload to YouTube — search 'Destiny Church Tees Valley'.",
+        a: "All sermons are available on our Sermons page. You can filter by series or date, and search by topic or speaker. We also upload to YouTube — search 'Destiny Church Tees Valley'.",
       },
       {
         q: "Where can I follow Destiny Church on social media?",

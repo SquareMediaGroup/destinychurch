@@ -31,6 +31,14 @@ export default function LatestSermonSection({
     : `/sermons/${video.id}`;
   const allHref = quotaExceeded ? CHANNEL_URL : "/sermons";
   const allLabel = quotaExceeded ? "Watch on YouTube" : "See All Sermons";
+  // The thumbnail below links to the same place as "Watch Now" but stays a
+  // plain Link rather than a Button, so it needs the new-tab treatment Button
+  // applies for itself once `watchHref` points at YouTube. Deliberately not
+  // named `external`: the DOM lib declares a global of that name, so a stale
+  // reference to one still type-checks and fails only at runtime.
+  const externalLinkProps = quotaExceeded
+    ? { target: "_blank", rel: "noopener noreferrer" }
+    : {};
 
   return (
     <div className="px-4 py-8 lg:px-8">
@@ -104,7 +112,7 @@ export default function LatestSermonSection({
           <AnimateIn delay={150} className="w-full md:w-1/2">
             <Link
               href={watchHref}
-              {...external}
+              {...externalLinkProps}
               aria-label={`Watch: ${title}`}
               className="group relative block overflow-hidden rounded-2xl shadow-2xl ring-1 ring-white/10"
               style={{ aspectRatio: "16 / 9" }}

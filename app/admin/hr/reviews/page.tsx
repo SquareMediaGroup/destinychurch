@@ -97,7 +97,7 @@ export default function ReviewsPage() {
         back={{ href: "/admin/hr", label: "HR" }}
         action={
           <button className={primaryBtn} onClick={() => setAdding(true)}>
-            <span className="material-symbols-rounded text-lg">add</span>
+            <span className="material-symbols-rounded text-lg" aria-hidden="true">add</span>
             Log review
           </button>
         }
@@ -114,7 +114,7 @@ export default function ReviewsPage() {
           hint="Record appraisals and 1-to-1s to keep track of next steps."
           action={
             <button className={primaryBtn} onClick={() => setAdding(true)}>
-              <span className="material-symbols-rounded text-lg">add</span>
+              <span className="material-symbols-rounded text-lg" aria-hidden="true">add</span>
               Log review
             </button>
           }
@@ -189,7 +189,7 @@ export default function ReviewsPage() {
                         className="text-destiny-grey/40 dark:text-white/40 transition hover:text-destiny-red"
                         aria-label="Delete review"
                       >
-                        <span className="material-symbols-rounded text-xl">delete</span>
+                        <span className="material-symbols-rounded text-xl" aria-hidden="true">delete</span>
                       </button>
                     </div>
                     {r.summary && (

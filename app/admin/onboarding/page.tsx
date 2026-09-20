@@ -72,7 +72,7 @@ export default function OnboardingAdminPage() {
             >
               <div className="mb-3 flex items-center gap-3">
                 <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-destiny-orange/10">
-                  <span className="material-symbols-rounded text-xl text-destiny-orange">
+                  <span className="material-symbols-rounded text-xl text-destiny-orange" aria-hidden="true">
                     {tour.icon}
                   </span>
                 </span>
@@ -106,14 +106,14 @@ export default function OnboardingAdminPage() {
                   className="inline-flex items-center gap-1.5 rounded-xl bg-destiny-orange px-4 py-2.5 text-sm font-bold text-white shadow-sm transition hover:brightness-110"
                   onClick={() => startRole(role)}
                 >
-                  <span className="material-symbols-rounded text-lg">play_arrow</span>
+                  <span className="material-symbols-rounded text-lg" aria-hidden="true">play_arrow</span>
                   Run this tour
                 </button>
                 <button
                   className="inline-flex items-center gap-1.5 rounded-xl border border-black/10 bg-white dark:border-white/10 dark:bg-destiny-grey-800 px-4 py-2.5 text-sm font-bold text-destiny-grey/70 dark:text-white/70 transition hover:bg-[#f5f7fa] dark:hover:bg-white/10"
                   onClick={() => preview(role)}
                 >
-                  <span className="material-symbols-rounded text-lg">visibility</span>
+                  <span className="material-symbols-rounded text-lg" aria-hidden="true">visibility</span>
                   Preview as {ROLE_LABELS[role]}
                 </button>
               </div>

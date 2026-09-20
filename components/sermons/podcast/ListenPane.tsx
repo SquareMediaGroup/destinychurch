@@ -54,7 +54,7 @@ export default function ListenPane({
 
       <div className="min-w-0">
         {episode.summary && (
-          <p className="line-clamp-4 text-sm leading-relaxed text-destiny-grey/70">
+          <p className="line-clamp-4 text-sm leading-relaxed text-muted">
             {episode.summary}
           </p>
         )}

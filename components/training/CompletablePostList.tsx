@@ -43,7 +43,7 @@ export default function CompletablePostList({
                 : "bg-destiny-orange/10 text-destiny-orange"
             }`}
           >
-            <span className="material-symbols-rounded text-[20px]">
+            <span className="material-symbols-rounded text-[20px]" aria-hidden="true">
               {done ? "check_circle" : "play_lesson"}
             </span>
           </span>
@@ -52,7 +52,7 @@ export default function CompletablePostList({
               {post.title}
             </h2>
             {post.summary && (
-              <p className="mt-0.5 text-sm text-destiny-grey/55">
+              <p className="mt-0.5 text-sm text-subtle">
                 {post.summary}
               </p>
             )}
@@ -63,13 +63,13 @@ export default function CompletablePostList({
                 </span>
               )}
               {post.readMinutes > 0 && (
-                <span className={`text-[11px] ${done ? "text-destiny-grey/30" : "text-destiny-grey/40"}`}>
+                <span className={`text-[11px] ${done ? "text-destiny-grey/30" : "text-subtle"}`}>
                   {post.readMinutes} min read
                 </span>
               )}
             </div>
           </div>
-          <span className="material-symbols-rounded mt-1 text-base text-destiny-grey/30 transition group-hover:translate-x-0.5 group-hover:text-destiny-orange">
+          <span className="material-symbols-rounded mt-1 text-base text-destiny-grey/30 transition group-hover:translate-x-0.5 group-hover:text-destiny-orange" aria-hidden="true">
             arrow_forward
           </span>
         </Link>
@@ -92,7 +92,7 @@ export default function CompletablePostList({
             onClick={() => setActiveFolderId(null)}
             className="flex h-10 w-10 items-center justify-center rounded-full bg-black/5 text-destiny-grey transition hover:bg-black/10"
           >
-            <span className="material-symbols-rounded text-xl">arrow_back</span>
+            <span className="material-symbols-rounded text-xl" aria-hidden="true">arrow_back</span>
           </button>
           <h2 className="text-2xl font-black text-destiny-grey">
             {activeFolder?.name}
@@ -100,7 +100,7 @@ export default function CompletablePostList({
         </div>
         <div className="flex flex-col gap-3">
           {folderPosts.length === 0 ? (
-            <p className="py-10 text-center text-destiny-grey/50">No posts in this folder.</p>
+            <p className="py-10 text-center text-subtle">No posts in this folder.</p>
           ) : (
             folderPosts.map(renderPost)
           )}
@@ -118,7 +118,7 @@ export default function CompletablePostList({
             className="group flex items-center gap-4 rounded-2xl border border-destiny-orange/20 bg-destiny-orange/5 p-5 transition hover:border-destiny-orange/40 hover:bg-destiny-orange/10"
           >
             <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-destiny-orange text-white shadow-md shadow-destiny-orange/30">
-              <span className="material-symbols-rounded text-[22px]">play_arrow</span>
+              <span className="material-symbols-rounded text-[22px]" aria-hidden="true">play_arrow</span>
             </span>
             <div className="flex-1 min-w-0">
               <p className="text-[10px] font-bold uppercase tracking-widest text-destiny-orange">
@@ -128,7 +128,7 @@ export default function CompletablePostList({
                 {nextIncomplete.title}
               </p>
             </div>
-            <span className="material-symbols-rounded text-base text-destiny-orange transition group-hover:translate-x-0.5">
+            <span className="material-symbols-rounded text-base text-destiny-orange transition group-hover:translate-x-0.5" aria-hidden="true">
               arrow_forward
             </span>
           </Link>
@@ -162,7 +162,7 @@ export default function CompletablePostList({
                 </div>
                 <div className="mt-2 w-full">
                   <h3 className="font-bold text-destiny-grey">{folder.name}</h3>
-                  <p className="text-sm font-medium text-destiny-grey/50">
+                  <p className="text-sm font-medium text-subtle">
                     {completedCount} / {count} completed
                   </p>
                   <div className="mt-3 h-1.5 w-full overflow-hidden rounded-full bg-black/5">

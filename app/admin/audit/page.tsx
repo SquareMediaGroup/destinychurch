@@ -317,7 +317,7 @@ export default function AuditLogPage() {
 
             {entityFilter && (
               <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-destiny-orange/25 bg-destiny-orange/5 px-4 py-2.5 dark:border-destiny-orange/35 dark:bg-destiny-orange/10">
-                <span className="material-symbols-rounded text-base text-destiny-orange">
+                <span className="material-symbols-rounded text-base text-destiny-orange" aria-hidden="true">
                   filter_alt
                 </span>
                 <p className="text-sm font-bold text-destiny-grey dark:text-white">
@@ -411,7 +411,7 @@ export default function AuditLogPage() {
                             </span>
                             <span aria-hidden>·</span>
                             <span className="inline-flex items-center gap-1">
-                              <span className="material-symbols-rounded text-sm">
+                              <span className="material-symbols-rounded text-sm" aria-hidden="true">
                                 {sectionIcon(entry.section)}
                               </span>
                               {sectionLabel(entry.section)}
@@ -428,7 +428,7 @@ export default function AuditLogPage() {
                           </span>
                         </span>
                         <span className="ml-auto hidden shrink-0 items-center gap-1 text-xs font-bold text-destiny-grey/35 sm:flex dark:text-white/35">
-                          <span className="material-symbols-rounded text-base">
+                          <span className="material-symbols-rounded text-base" aria-hidden="true">
                             {actionIcon(entry.action)}
                           </span>
                           {actionLabel(entry.action)}

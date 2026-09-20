@@ -76,7 +76,7 @@ export default function CheckoutForm({
           onLoadError={() => setHasExpress(false)}
           options={{ buttonHeight: 48 }}
         />
-        <div className="flex items-center gap-3 text-xs font-semibold uppercase tracking-[0.15em] text-destiny-grey/40">
+        <div className="flex items-center gap-3 text-xs font-semibold uppercase tracking-[0.15em] text-subtle">
           <span className="h-px flex-1 bg-black/10" />
           Or pay by card
           <span className="h-px flex-1 bg-black/10" />
@@ -105,14 +105,14 @@ export default function CheckoutForm({
           "Processing…"
         ) : (
           <>
-            <span className="material-symbols-rounded text-lg">lock</span>
+            <span className="material-symbols-rounded text-lg" aria-hidden="true">lock</span>
             Pay {formatPrice(totalPennies)}
           </>
         )}
       </button>
 
-      <p className="flex items-center justify-center gap-1.5 text-xs text-destiny-grey/50">
-        <span className="material-symbols-rounded text-sm">verified_user</span>
+      <p className="flex items-center justify-center gap-1.5 text-xs text-subtle">
+        <span className="material-symbols-rounded text-sm" aria-hidden="true">verified_user</span>
         Secured by Stripe — your card details never touch our servers.
       </p>
     </form>

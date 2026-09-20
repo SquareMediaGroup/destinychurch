@@ -9,11 +9,11 @@ export default function TermsPage() {
         <AnimateIn>
           <p className="mb-2 text-xs font-bold uppercase tracking-widest text-destiny-orange">Legal</p>
           <h1 className="mb-2 text-4xl font-black text-destiny-grey md:text-5xl">Terms of Use</h1>
-          <p className="mb-12 text-sm text-destiny-grey/40">Last modified: May 2025</p>
+          <p className="mb-12 text-sm text-subtle">Last modified: May 2025</p>
         </AnimateIn>
 
         <AnimateIn delay={80}>
-          <div className="prose prose-sm max-w-none text-destiny-grey/70 [&_h2]:mb-3 [&_h2]:mt-10 [&_h2]:text-xl [&_h2]:font-black [&_h2]:text-destiny-grey [&_p]:mb-4 [&_p]:leading-relaxed [&_ul]:mb-4 [&_ul]:space-y-2 [&_ul]:pl-5 [&_li]:list-disc [&_li]:leading-relaxed">
+          <div className="prose prose-sm max-w-none text-muted [&_h2]:mb-3 [&_h2]:mt-10 [&_h2]:text-xl [&_h2]:font-black [&_h2]:text-destiny-grey [&_p]:mb-4 [&_p]:leading-relaxed [&_ul]:mb-4 [&_ul]:space-y-2 [&_ul]:pl-5 [&_li]:list-disc [&_li]:leading-relaxed">
             <p>
               Welcome to the Destiny Church Tees Valley website, web applications and services (&ldquo;Destiny Church sites&rdquo;).
               By continuing to use Destiny Church sites offered by Destiny Church Tees Valley (&ldquo;Destiny Church&rdquo;, &ldquo;we&rdquo; or &ldquo;us&rdquo;),

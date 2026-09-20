@@ -32,7 +32,7 @@ export default function GalleryBlock({
   const usable = items.filter((item) => safeUrl(item.src));
   if (usable.length === 0) {
     return mode === "edit" ? (
-      <div className="rounded-2xl border border-dashed border-black/15 px-5 py-6 text-center text-sm text-destiny-grey/45">
+      <div className="rounded-2xl border border-dashed border-black/15 px-5 py-6 text-center text-sm text-subtle">
         Add an image in the settings panel.
       </div>
     ) : null;

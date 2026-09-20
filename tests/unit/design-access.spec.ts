@@ -124,13 +124,13 @@ test("a super admin still reaches it", () => {
 });
 
 /**
- * The requester's surfaces are reached by share token, not by a session, so
- * middleware must not be guarding them — a token link that redirects to /login
- * is a broken link for everyone who isn't staff.
+ * The requester's tracking page is reached by share token, not by a session,
+ * so middleware must not be guarding it — a token link that redirects to
+ * /login is a broken link for everyone who isn't staff. The request *form*
+ * itself now lives at /portal/design/request, which is staff-only.
  */
-test("the requester's own pages are outside the admin guard", () => {
+test("the requester's tracking page is outside the admin guard", () => {
   for (const path of [
-    "/design-request",
     "/design-request/0123456789abcdef0123456789abcdef",
     "/api/design-request/0123456789abcdef0123456789abcdef",
   ]) {

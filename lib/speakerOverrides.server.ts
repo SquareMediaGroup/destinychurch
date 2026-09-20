@@ -28,6 +28,28 @@ async function fetchOverrides(ids: string[]): Promise<Map<string, string | null>
   return new Map((data ?? []).map((r) => [r.video_id as string, r.speaker as string | null]));
 }
 
+export type SpeakerOverrideRow = {
+  speaker: string | null;
+  /** "ai" (batch review) or "admin" (manual edit) — see app/api/admin/sermons/speaker/route.ts. */
+  reviewedBy: string;
+};
+
+/** Raw override rows, keyed by video id — for the admin editor's revert/source badge, not the public read path (which only needs the speaker value, via fetchOverrides above). */
+export async function getSpeakerOverrides(ids: string[]): Promise<Map<string, SpeakerOverrideRow>> {
+  if (ids.length === 0) return new Map();
+  const supabase = createServiceClient();
+  const { data } = await supabase
+    .from("speaker_overrides")
+    .select("video_id, speaker, reviewed_by")
+    .in("video_id", ids);
+  return new Map(
+    (data ?? []).map((r) => [
+      r.video_id as string,
+      { speaker: r.speaker as string | null, reviewedBy: r.reviewed_by as string },
+    ])
+  );
+}
+
 function applyOverrides(videos: YTVideo[], overrides: Map<string, string | null>): YTVideo[] {
   if (overrides.size === 0) return videos;
   return videos.map((v) => (overrides.has(v.id) ? { ...v, speaker: overrides.get(v.id)! } : v));

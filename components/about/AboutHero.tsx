@@ -22,7 +22,7 @@ export default function AboutHero() {
             <h1 className="text-3xl font-black text-white sm:text-5xl md:text-6xl lg:text-7xl">
               About Us
             </h1>
-            <p className="mt-4 text-base text-white/70 md:text-lg">
+            <p className="mt-4 text-base text-on-dark-muted md:text-lg">
               Learn more about the Church &amp; What We Believe
             </p>
           </AnimateIn>

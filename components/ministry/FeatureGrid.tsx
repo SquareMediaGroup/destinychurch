@@ -59,7 +59,7 @@ export default function FeatureGrid({
                 </h2>
               )}
               {subheading && (
-                <p className="mx-auto max-w-2xl text-base leading-relaxed text-destiny-grey/60">
+                <p className="mx-auto max-w-2xl text-base leading-relaxed text-muted">
                   {subheading}
                 </p>
               )}
@@ -94,7 +94,7 @@ export default function FeatureGrid({
                 >
                   {item.title}
                 </h3>
-                <p className="text-sm leading-relaxed text-destiny-grey/60">
+                <p className="text-sm leading-relaxed text-muted">
                   {item.body}
                 </p>
               </div>

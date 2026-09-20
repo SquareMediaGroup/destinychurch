@@ -108,7 +108,7 @@ export function RedirectQrModal({
 
         <div className="flex gap-3">
           <button type="button" className={ghostBtn} onClick={downloadSvg}>
-            <span className="material-symbols-rounded text-lg">download</span>
+            <span className="material-symbols-rounded text-lg" aria-hidden="true">download</span>
             Download SVG
           </button>
           <button
@@ -117,7 +117,7 @@ export function RedirectQrModal({
             onClick={downloadPng}
             disabled={busy === "png"}
           >
-            <span className="material-symbols-rounded text-lg">download</span>
+            <span className="material-symbols-rounded text-lg" aria-hidden="true">download</span>
             {busy === "png" ? "Preparing…" : "Download PNG"}
           </button>
         </div>

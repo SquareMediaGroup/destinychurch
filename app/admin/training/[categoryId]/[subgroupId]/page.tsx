@@ -135,7 +135,7 @@ function PostListSection({
                           className="text-destiny-grey/40 dark:text-white/40 transition hover:text-destiny-orange"
                           aria-label="View live"
                         >
-                          <span className="material-symbols-rounded text-xl">
+                          <span className="material-symbols-rounded text-xl" aria-hidden="true">
                             open_in_new
                           </span>
                         </a>
@@ -148,7 +148,7 @@ function PostListSection({
                         className="text-destiny-grey/40 dark:text-white/40 transition hover:text-destiny-orange group-hover:text-destiny-orange"
                         aria-label="Edit"
                       >
-                        <span className="material-symbols-rounded text-xl">edit</span>
+                        <span className="material-symbols-rounded text-xl" aria-hidden="true">edit</span>
                       </button>
                       <button
                         onClick={(e) => {
@@ -158,7 +158,7 @@ function PostListSection({
                         className="text-destiny-grey/40 dark:text-white/40 transition hover:text-destiny-red"
                         aria-label="Delete"
                       >
-                        <span className="material-symbols-rounded text-xl">delete</span>
+                        <span className="material-symbols-rounded text-xl" aria-hidden="true">delete</span>
                       </button>
                     </div>
                   </td>
@@ -225,7 +225,7 @@ function SearchResults({
               </td>
               <td className="hidden px-5 py-3.5 sm:table-cell">
                 <span className="inline-flex items-center gap-1.5 text-xs font-bold text-destiny-grey/50 dark:text-white/50">
-                  <span className="material-symbols-rounded text-base text-destiny-orange/60">
+                  <span className="material-symbols-rounded text-base text-destiny-orange/60" aria-hidden="true">
                     {p.folder_id ? "folder" : "folder_open"}
                   </span>
                   {folderName(p.folder_id)}
@@ -255,7 +255,7 @@ function SearchResults({
                       className="text-destiny-grey/40 dark:text-white/40 transition hover:text-destiny-orange"
                       aria-label={`View ${p.title} live`}
                     >
-                      <span className="material-symbols-rounded text-xl">open_in_new</span>
+                      <span className="material-symbols-rounded text-xl" aria-hidden="true">open_in_new</span>
                     </a>
                   )}
                   <button
@@ -266,7 +266,7 @@ function SearchResults({
                     className="text-destiny-grey/40 dark:text-white/40 transition hover:text-destiny-orange group-hover:text-destiny-orange"
                     aria-label={`Edit ${p.title}`}
                   >
-                    <span className="material-symbols-rounded text-xl">edit</span>
+                    <span className="material-symbols-rounded text-xl" aria-hidden="true">edit</span>
                   </button>
                   <button
                     onClick={(e) => {
@@ -276,7 +276,7 @@ function SearchResults({
                     className="text-destiny-grey/40 dark:text-white/40 transition hover:text-destiny-red"
                     aria-label={`Delete ${p.title}`}
                   >
-                    <span className="material-symbols-rounded text-xl">delete</span>
+                    <span className="material-symbols-rounded text-xl" aria-hidden="true">delete</span>
                   </button>
                 </div>
               </td>
@@ -467,11 +467,11 @@ export default function TrainingPostsPage() {
               className="flex items-center gap-1.5 rounded-full bg-black/5 px-4 py-2 text-sm font-bold text-destiny-grey dark:text-white transition hover:bg-black/10"
               onClick={() => setEditingFolder("new")}
             >
-              <span className="material-symbols-rounded text-lg">folder</span>
+              <span className="material-symbols-rounded text-lg" aria-hidden="true">folder</span>
               New Folder
             </button>
             <button className={primaryBtn} onClick={() => setEditingPost("new")}>
-              <span className="material-symbols-rounded text-lg">add</span>
+              <span className="material-symbols-rounded text-lg" aria-hidden="true">add</span>
               New post
             </button>
           </div>
@@ -503,7 +503,7 @@ export default function TrainingPostsPage() {
           hint="Create a folder or a training post to get started."
           action={
             <button className={primaryBtn} onClick={() => setEditingPost("new")}>
-              <span className="material-symbols-rounded text-lg">add</span>
+              <span className="material-symbols-rounded text-lg" aria-hidden="true">add</span>
               New post
             </button>
           }
@@ -566,7 +566,7 @@ export default function TrainingPostsPage() {
                     className="group relative flex cursor-pointer flex-col gap-2 rounded-3xl border border-black/5 bg-white dark:border-white/8 dark:bg-destiny-grey-800 p-5 shadow-sm transition hover:border-destiny-orange/30 hover:shadow-md"
                   >
                     <div className="flex items-center justify-between">
-                      <span className="material-symbols-rounded text-3xl text-destiny-orange/80 transition group-hover:text-destiny-orange">
+                      <span className="material-symbols-rounded text-3xl text-destiny-orange/80 transition group-hover:text-destiny-orange" aria-hidden="true">
                         folder
                       </span>
                       <span
@@ -617,7 +617,7 @@ export default function TrainingPostsPage() {
                 onClick={() => setActiveFolderId(null)}
                 className="flex h-8 w-8 items-center justify-center rounded-full bg-black/5 text-destiny-grey dark:text-white transition hover:bg-black/10"
               >
-                <span className="material-symbols-rounded text-xl">arrow_back</span>
+                <span className="material-symbols-rounded text-xl" aria-hidden="true">arrow_back</span>
               </button>
               <h2 className="text-lg font-bold text-destiny-grey dark:text-white">
                 {activeFolder?.name}
@@ -629,14 +629,14 @@ export default function TrainingPostsPage() {
                 className="flex h-8 w-8 items-center justify-center rounded-full text-destiny-grey/40 dark:text-white/40 transition hover:bg-black/5 hover:text-destiny-orange"
                 title="Edit folder"
               >
-                <span className="material-symbols-rounded text-xl">edit</span>
+                <span className="material-symbols-rounded text-xl" aria-hidden="true">edit</span>
               </button>
               <button
                 onClick={() => removeFolder(activeFolder!)}
                 className="flex h-8 w-8 items-center justify-center rounded-full text-destiny-grey/40 dark:text-white/40 transition hover:bg-black/5 hover:text-destiny-red"
                 title="Delete folder"
               >
-                <span className="material-symbols-rounded text-xl">delete</span>
+                <span className="material-symbols-rounded text-xl" aria-hidden="true">delete</span>
               </button>
             </div>
           </div>

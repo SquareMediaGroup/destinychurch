@@ -49,7 +49,7 @@ export default function ConnectCardPage() {
             <AnimateIn>
               <p className="mb-3 text-xs font-bold uppercase tracking-widest text-destiny-orange">Stay Connected</p>
               <h1 className="mb-4 text-5xl font-black text-white md:text-6xl lg:text-7xl">Connect Card</h1>
-              <p className="mb-10 text-base text-white/70 md:text-lg">
+              <p className="mb-10 text-base text-on-dark-muted md:text-lg">
                 Take the next step — we&apos;d love to get to know you.
               </p>
             </AnimateIn>
@@ -67,10 +67,10 @@ export default function ConnectCardPage() {
             <AnimateIn className="w-full md:w-1/2">
               <p className="mb-3 text-xs font-bold uppercase tracking-widest text-destiny-orange">Who We Are</p>
               <h2 className="mb-5 text-3xl font-black text-destiny-grey md:text-4xl">We&apos;d love to know you</h2>
-              <p className="mb-4 text-base leading-relaxed text-destiny-grey/70">
+              <p className="mb-4 text-base leading-relaxed text-muted">
                 Whether you visited for the first time last Sunday or you&apos;ve been coming for years — filling in a Connect Card is one of the simplest ways to take a next step with Destiny Church.
               </p>
-              <p className="text-base leading-relaxed text-destiny-grey/70">
+              <p className="text-base leading-relaxed text-muted">
                 It helps us get to know you better, point you towards the right community, and make sure you feel at home. There&apos;s no obligation — just an open door.
               </p>
             </AnimateIn>
@@ -100,11 +100,11 @@ export default function ConnectCardPage() {
               <AnimateIn key={step.title} delay={i * 80}>
                 <div className="flex flex-col items-start rounded-3xl bg-white p-7 shadow-sm">
                   <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-destiny-orange/10">
-                    <span className="material-symbols-rounded text-2xl text-destiny-orange">{step.icon}</span>
+                    <span className="material-symbols-rounded text-2xl text-destiny-orange" aria-hidden="true">{step.icon}</span>
                   </div>
                   <p className="mb-1 text-xs font-bold text-destiny-orange">Step {i + 1}</p>
                   <h3 className="mb-2 text-lg font-black text-destiny-grey">{step.title}</h3>
-                  <p className="text-sm leading-relaxed text-destiny-grey/60">{step.body}</p>
+                  <p className="text-sm leading-relaxed text-muted">{step.body}</p>
                 </div>
               </AnimateIn>
             ))}
@@ -118,7 +118,7 @@ export default function ConnectCardPage() {
           <AnimateIn>
             <p className="mb-3 text-center text-xs font-bold uppercase tracking-widest text-destiny-orange">Take a Next Step</p>
             <h2 className="mb-3 text-center text-3xl font-black text-white md:text-4xl">We&apos;re here for you</h2>
-            <p className="mb-10 text-center text-base text-white/60">
+            <p className="mb-10 text-center text-base text-on-dark-muted">
               Fill in a connect card, or share something you&apos;d like us to pray about. Either way, we&apos;re listening.
             </p>
           </AnimateIn>
@@ -158,13 +158,13 @@ export default function ConnectCardPage() {
                   className="group flex items-center gap-4 rounded-2xl bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
                 >
                   <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-destiny-orange/10">
-                    <span className="material-symbols-rounded text-xl text-destiny-orange">{item.icon}</span>
+                    <span className="material-symbols-rounded text-xl text-destiny-orange" aria-hidden="true">{item.icon}</span>
                   </div>
                   <div>
                     <p className="font-black text-destiny-grey">{item.label}</p>
-                    <p className="text-xs text-destiny-grey/50">{item.sub}</p>
+                    <p className="text-xs text-subtle">{item.sub}</p>
                   </div>
-                  <span className="material-symbols-rounded ml-auto text-destiny-grey/30 transition group-hover:translate-x-0.5 group-hover:text-destiny-orange">chevron_right</span>
+                  <span className="material-symbols-rounded ml-auto text-destiny-grey/30 transition group-hover:translate-x-0.5 group-hover:text-destiny-orange" aria-hidden="true">chevron_right</span>
                 </Link>
               </AnimateIn>
             ))}

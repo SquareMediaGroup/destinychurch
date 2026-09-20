@@ -21,7 +21,7 @@ export default function KidsCampHero() {
             <h1 className="text-3xl font-black text-white sm:text-5xl md:text-6xl lg:text-7xl">
               Kids Camp 2026
             </h1>
-            <p className="mt-4 text-base text-white/70 md:text-lg">
+            <p className="mt-4 text-base text-on-dark-muted md:text-lg">
               3 days of discipleship, worship and adventure at Moor House Adventure Centre
             </p>
             <a

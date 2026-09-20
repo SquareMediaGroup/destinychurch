@@ -72,7 +72,7 @@ export default function ChecklistTemplatesPage() {
         back={{ href: "/admin/hr", label: "HR" }}
         action={
           <button className={primaryBtn} onClick={() => setEditing("new")}>
-            <span className="material-symbols-rounded text-lg">add</span>
+            <span className="material-symbols-rounded text-lg" aria-hidden="true">add</span>
             New template
           </button>
         }
@@ -89,7 +89,7 @@ export default function ChecklistTemplatesPage() {
           hint="Create a template so onboarding a new starter is a click, not a retype."
           action={
             <button className={primaryBtn} onClick={() => setEditing("new")}>
-              <span className="material-symbols-rounded text-lg">add</span>
+              <span className="material-symbols-rounded text-lg" aria-hidden="true">add</span>
               New template
             </button>
           }
@@ -142,14 +142,14 @@ export default function ChecklistTemplatesPage() {
                           className="text-destiny-grey/40 dark:text-white/40 transition hover:text-destiny-orange"
                           aria-label={`Edit ${t.name}`}
                         >
-                          <span className="material-symbols-rounded text-xl">edit</span>
+                          <span className="material-symbols-rounded text-xl" aria-hidden="true">edit</span>
                         </button>
                         <button
                           onClick={() => remove(t)}
                           className="text-destiny-grey/40 dark:text-white/40 transition hover:text-destiny-red"
                           aria-label={`Delete ${t.name}`}
                         >
-                          <span className="material-symbols-rounded text-xl">delete</span>
+                          <span className="material-symbols-rounded text-xl" aria-hidden="true">delete</span>
                         </button>
                       </div>
                     </td>

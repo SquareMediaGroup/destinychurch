@@ -128,8 +128,8 @@ function DesignQueue() {
         title="Design tickets"
         subtitle="Requests from the church, and what's happening to them."
         action={
-          <Link href="/design-request" target="_blank" className={primaryBtn}>
-            <span className="material-symbols-rounded text-lg">open_in_new</span>
+          <Link href="/portal/design/request" target="_blank" className={primaryBtn}>
+            <span className="material-symbols-rounded text-lg" aria-hidden="true">open_in_new</span>
             Request form
           </Link>
         }

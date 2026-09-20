@@ -1,37 +1,34 @@
 /**
- * Map deep-links for the Destiny Centre.
+ * Opening the church's address in whatever map app the visitor's device has.
  *
- * "Open in maps" has no single URL that works everywhere, so we build two and
- * pick one at render time:
+ * The address itself is NOT defined here — `lib/churchInfo.ts` owns it, and
+ * this module derives from that. What lives here is the part churchInfo has no
+ * opinion on: which map *app* to send someone to.
  *
- * - Google's `maps/search/?api=1` URL is the universal fallback. It's a plain
- *   https link, so it works on desktop, and Android/iOS hand it to the Google
- *   Maps app when that app is installed.
- * - `maps.apple.com` is the equivalent on Apple platforms, where Google Maps
- *   often isn't installed and the system map app is Apple Maps. It also degrades
- *   to a web map on non-Apple devices, so it's never a dead end.
+ * churchInfo's `MAPS_URL` and `DIRECTIONS_URL` are both Google, which is the
+ * right default but wrong on Apple hardware, where Google Maps often isn't
+ * installed and a google.com link strands the visitor in a browser instead of
+ * the map app they actually use. So:
  *
- * Both take free text rather than coordinates, and there are two strings for it
- * because what reads well and what geocodes well aren't the same:
+ * - Google's `maps/search/?api=1` URL is the cross-platform default. It's a
+ *   plain https link, so it works on desktop, and Android/iOS hand it to the
+ *   Google Maps app when that app is installed.
+ * - `maps.apple.com` is the equivalent on Apple platforms. It degrades to a web
+ *   map elsewhere, so it's never a dead end.
  *
- * - `DESTINY_CENTRE_ADDRESS` is what the UI prints. It leads with the venue
- *   name, which is how people say where the church is.
- * - `DESTINY_CENTRE_MAP_QUERY` is what map apps are handed. It's the postal
- *   address with the street number and no venue name, so the app geocodes to
- *   the building instead of searching for "Destiny Centre" and landing on
- *   whatever it thinks that is.
- *
- * Keep the two pointing at the same place — they're the same building, written
- * for two different readers.
+ * The query is the postal address with the street number and no venue name,
+ * even where the UI prints the venue name — a map app given "Destiny Centre"
+ * searches for a place by that name and can land anywhere, while a street
+ * address geocodes to the building.
  */
 
-/** The address as the UI prints it — venue name first. */
-export const DESTINY_CENTRE_ADDRESS =
-  "Destiny Centre, Norton Road, Stockton-on-Tees, TS20 2QQ";
+import { ADDRESS } from "@/lib/churchInfo";
 
-/** The address as map apps should be given it — street number, no venue name. */
-export const DESTINY_CENTRE_MAP_QUERY =
-  "395 Norton Road, Stockton-on-Tees, TS20 2QQ";
+/**
+ * What map apps are handed: street number, no venue name. Built from
+ * `churchInfo`'s ADDRESS so it can't drift from what the site displays.
+ */
+export const DESTINY_CENTRE_MAP_QUERY = `${ADDRESS.street}, ${ADDRESS.locality}, ${ADDRESS.postcode}`;
 
 /** Google Maps search URL — the cross-platform default. */
 export function googleMapsUrl(query: string = DESTINY_CENTRE_MAP_QUERY): string {

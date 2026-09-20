@@ -328,7 +328,7 @@ export default function AdminNfcPage() {
             }}
             className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-destiny-orange px-5 py-2.5 text-sm font-bold text-white shadow-sm shadow-destiny-orange/20 transition hover:brightness-110"
           >
-            <span className="material-symbols-rounded text-base">add</span>
+            <span className="material-symbols-rounded text-base" aria-hidden="true">add</span>
             New tile
           </button>
         </div>
@@ -347,7 +347,7 @@ export default function AdminNfcPage() {
           <ul className="flex flex-col gap-2">
             {PINNED_TILES.map((t) => (
               <li key={t.id} className="flex items-center gap-3 text-sm">
-                <span className="material-symbols-rounded text-xl text-destiny-orange">
+                <span className="material-symbols-rounded text-xl text-destiny-orange" aria-hidden="true">
                   {t.icon}
                 </span>
                 <span className="font-bold text-destiny-grey dark:text-white">{t.title}</span>
@@ -363,7 +363,7 @@ export default function AdminNfcPage() {
 
         {loading ? (
           <div className="flex items-center justify-center py-16">
-            <span className="material-symbols-rounded animate-spin text-3xl text-destiny-grey/20 dark:text-white/20">
+            <span className="material-symbols-rounded animate-spin text-3xl text-destiny-grey/20 dark:text-white/20" aria-hidden="true">
               progress_activity
             </span>
           </div>
@@ -384,7 +384,7 @@ export default function AdminNfcPage() {
                   tile.active ? "" : "opacity-55"
                 }`}
               >
-                <span className="material-symbols-rounded text-2xl text-destiny-orange">
+                <span className="material-symbols-rounded text-2xl text-destiny-orange" aria-hidden="true">
                   {tile.icon}
                 </span>
 
@@ -420,7 +420,7 @@ export default function AdminNfcPage() {
                     aria-label="Move up"
                     className="flex h-8 w-8 items-center justify-center rounded-lg text-destiny-grey/40 dark:text-white/40 transition hover:bg-gray-100 hover:text-destiny-grey dark:hover:bg-white/10 dark:hover:text-white disabled:opacity-30 disabled:hover:bg-transparent"
                   >
-                    <span className="material-symbols-rounded text-lg">
+                    <span className="material-symbols-rounded text-lg" aria-hidden="true">
                       arrow_upward
                     </span>
                   </button>
@@ -431,7 +431,7 @@ export default function AdminNfcPage() {
                     aria-label="Move down"
                     className="flex h-8 w-8 items-center justify-center rounded-lg text-destiny-grey/40 dark:text-white/40 transition hover:bg-gray-100 hover:text-destiny-grey dark:hover:bg-white/10 dark:hover:text-white disabled:opacity-30 disabled:hover:bg-transparent"
                   >
-                    <span className="material-symbols-rounded text-lg">
+                    <span className="material-symbols-rounded text-lg" aria-hidden="true">
                       arrow_downward
                     </span>
                   </button>
@@ -458,7 +458,7 @@ export default function AdminNfcPage() {
                     aria-label="Edit"
                     className="flex h-8 w-8 items-center justify-center rounded-lg text-destiny-grey/40 dark:text-white/40 transition hover:bg-gray-100 hover:text-destiny-grey dark:hover:bg-white/10 dark:hover:text-white"
                   >
-                    <span className="material-symbols-rounded text-lg">edit</span>
+                    <span className="material-symbols-rounded text-lg" aria-hidden="true">edit</span>
                   </button>
                   <button
                     type="button"
@@ -466,7 +466,7 @@ export default function AdminNfcPage() {
                     aria-label="Delete"
                     className="flex h-8 w-8 items-center justify-center rounded-lg text-destiny-grey/40 dark:text-white/40 transition hover:bg-red-50 hover:text-red-600"
                   >
-                    <span className="material-symbols-rounded text-lg">delete</span>
+                    <span className="material-symbols-rounded text-lg" aria-hidden="true">delete</span>
                   </button>
                 </div>
               </li>
@@ -490,7 +490,7 @@ export default function AdminNfcPage() {
                 aria-label="Cancel"
                 className="flex h-8 w-8 items-center justify-center rounded-full text-destiny-grey/40 dark:text-white/40 transition hover:bg-gray-100 hover:text-destiny-grey dark:hover:bg-white/10 dark:hover:text-white"
               >
-                <span className="material-symbols-rounded text-xl">close</span>
+                <span className="material-symbols-rounded text-xl" aria-hidden="true">close</span>
               </button>
             </div>
 
@@ -609,7 +609,7 @@ export default function AdminNfcPage() {
                         : "border-black/10 text-destiny-grey/50 dark:text-white/50 hover:border-destiny-orange/40"
                     }`}
                   >
-                    <span className="material-symbols-rounded text-xl">{icon}</span>
+                    <span className="material-symbols-rounded text-xl" aria-hidden="true">{icon}</span>
                   </button>
                 ))}
               </div>
@@ -621,7 +621,7 @@ export default function AdminNfcPage() {
 
                 {editing.event_identifier && (
                   <div className="mb-3 flex items-center gap-3 rounded-xl border-2 border-destiny-orange bg-destiny-orange/5 px-4 py-3">
-                    <span className="material-symbols-rounded text-xl text-destiny-orange">
+                    <span className="material-symbols-rounded text-xl text-destiny-orange" aria-hidden="true">
                       event_available
                     </span>
                     <div className="min-w-0 flex-1">
@@ -718,7 +718,7 @@ export default function AdminNfcPage() {
                                     {reason}
                                   </span>
                                 ) : chosen ? (
-                                  <span className="material-symbols-rounded shrink-0 text-lg text-destiny-orange">
+                                  <span className="material-symbols-rounded shrink-0 text-lg text-destiny-orange" aria-hidden="true">
                                     check_circle
                                   </span>
                                 ) : null}
@@ -807,7 +807,7 @@ export default function AdminNfcPage() {
                         aria-label="Remove image"
                         className="absolute right-3 top-3 flex h-8 w-8 items-center justify-center rounded-lg bg-black/60 text-white backdrop-blur transition hover:bg-black/80"
                       >
-                        <span className="material-symbols-rounded text-base">
+                        <span className="material-symbols-rounded text-base" aria-hidden="true">
                           close
                         </span>
                       </button>
@@ -828,7 +828,7 @@ export default function AdminNfcPage() {
                         disabled={uploading}
                         className="hidden"
                       />
-                      <span className="material-symbols-rounded text-3xl text-destiny-grey/40 dark:text-white/40">
+                      <span className="material-symbols-rounded text-3xl text-destiny-grey/40 dark:text-white/40" aria-hidden="true">
                         {uploading ? "progress_activity" : "add_photo_alternate"}
                       </span>
                       <p className="text-sm font-bold text-destiny-grey dark:text-white">

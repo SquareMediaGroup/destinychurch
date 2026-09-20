@@ -152,7 +152,7 @@ export default function CheckoutPage() {
     <div className="relative min-h-screen bg-white text-destiny-grey">
       <div className="mx-auto max-w-4xl px-5 pb-28 pt-12 sm:px-8 lg:pt-16">
         <header className="mb-10">
-          <p className="font-[family-name:var(--font-playfair)] text-2xl italic text-destiny-grey/70">
+          <p className="font-[family-name:var(--font-playfair)] text-2xl italic text-muted">
             Secure
           </p>
           <h1 className="font-[family-name:var(--font-heading)] text-4xl font-black uppercase tracking-tight text-destiny-grey sm:text-5xl">
@@ -189,7 +189,7 @@ export default function CheckoutPage() {
                   onChange={(v) => setCustomer((c) => ({ ...c, phone: v }))}
                 />
                 <div>
-                  <label className="mb-1.5 block text-xs font-bold uppercase tracking-[0.15em] text-destiny-grey/50">
+                  <label className="mb-1.5 block text-xs font-bold uppercase tracking-[0.15em] text-subtle">
                     Order notes (optional)
                   </label>
                   <textarea
@@ -215,7 +215,7 @@ export default function CheckoutPage() {
                   className="flex w-full items-center justify-center gap-2 rounded-full bg-destiny-orange px-7 py-4 text-sm font-bold text-white transition hover:bg-destiny-orange-dark disabled:bg-destiny-grey/30"
                 >
                   {loading ? "Starting…" : "Continue to payment"}
-                  <span className="material-symbols-rounded text-lg">arrow_forward</span>
+                  <span className="material-symbols-rounded text-lg" aria-hidden="true">arrow_forward</span>
                 </button>
 
                 {TEST_BYPASS && (
@@ -223,9 +223,9 @@ export default function CheckoutPage() {
                     type="button"
                     onClick={completeTestOrder}
                     disabled={loading}
-                    className="flex w-full items-center justify-center gap-2 rounded-full border border-dashed border-destiny-grey/30 px-7 py-3 text-sm font-bold text-destiny-grey/70 transition hover:border-destiny-grey/50 hover:text-destiny-grey disabled:opacity-50"
+                    className="flex w-full items-center justify-center gap-2 rounded-full border border-dashed border-destiny-grey/30 px-7 py-3 text-sm font-bold text-muted transition hover:border-destiny-grey/50 hover:text-destiny-grey disabled:opacity-50"
                   >
-                    <span className="material-symbols-rounded text-lg">science</span>
+                    <span className="material-symbols-rounded text-lg" aria-hidden="true">science</span>
                     Complete test order (skip payment)
                   </button>
                 )}
@@ -261,15 +261,15 @@ export default function CheckoutPage() {
             <ul className="mt-4 space-y-3">
               {items.map((i) => (
                 <li key={i.variantId} className="flex justify-between gap-3 text-sm">
-                  <span className="min-w-0 text-destiny-grey/70">
+                  <span className="min-w-0 text-muted">
                     <span className="font-semibold text-destiny-grey">{i.name}</span>
                     {[i.color, i.size].filter(Boolean).length > 0 && (
-                      <span className="text-destiny-grey/50">
+                      <span className="text-subtle">
                         {" "}
                         ({[i.color, i.size].filter(Boolean).join(" / ")})
                       </span>
                     )}
-                    <span className="text-destiny-grey/50"> × {i.quantity}</span>
+                    <span className="text-subtle"> × {i.quantity}</span>
                   </span>
                   <span className="shrink-0 font-semibold">
                     {formatPrice(i.unitPricePennies * i.quantity)}
@@ -281,8 +281,8 @@ export default function CheckoutPage() {
               <span className="font-black text-destiny-grey">Total</span>
               <span className="font-black text-destiny-grey">{formatPrice(subtotal)}</span>
             </div>
-            <p className="mt-3 flex items-center gap-1.5 text-xs text-destiny-grey/50">
-              <span className="material-symbols-rounded text-sm">storefront</span>
+            <p className="mt-3 flex items-center gap-1.5 text-xs text-subtle">
+              <span className="material-symbols-rounded text-sm" aria-hidden="true">storefront</span>
               Collection at church
             </p>
           </aside>
@@ -307,7 +307,7 @@ function Field({
 }) {
   return (
     <div>
-      <label className="mb-1.5 block text-xs font-bold uppercase tracking-[0.15em] text-destiny-grey/50">
+      <label className="mb-1.5 block text-xs font-bold uppercase tracking-[0.15em] text-subtle">
         {label}
       </label>
       <input

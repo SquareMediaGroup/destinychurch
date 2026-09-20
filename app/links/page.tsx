@@ -133,7 +133,7 @@ export default function LinksPage() {
               <h2 className="mt-2 font-[family-name:var(--font-heading)] text-2xl font-black text-white sm:text-3xl">
                 Not sure where to begin?
               </h2>
-              <p className="mt-2 max-w-md text-sm text-white/60">
+              <p className="mt-2 max-w-md text-sm text-on-dark-muted">
                 Start with the basics and we&apos;ll help you find your place — no
                 pressure, no experience needed.
               </p>
@@ -145,11 +145,11 @@ export default function LinksPage() {
                 className="inline-flex items-center justify-center gap-2 rounded-full bg-destiny-orange px-7 py-3.5 text-sm font-bold text-white transition-transform hover:scale-[1.03] hover:bg-destiny-orange-dark"
               >
                 Start with New Here
-                <span className="material-symbols-rounded text-lg">arrow_forward</span>
+                <span className="material-symbols-rounded text-lg" aria-hidden="true">arrow_forward</span>
               </Link>
               <Link
                 href="/contact"
-                className="inline-flex items-center justify-center gap-1.5 text-sm font-semibold text-white/70 underline-offset-4 transition-colors hover:text-white hover:underline"
+                className="inline-flex items-center justify-center gap-1.5 text-sm font-semibold text-on-dark-muted underline-offset-4 transition-colors hover:text-white hover:underline"
               >
                 Or get in touch
               </Link>

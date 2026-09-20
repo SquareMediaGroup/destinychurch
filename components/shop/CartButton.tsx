@@ -20,7 +20,7 @@ export default function CartButton({ className = "" }: { className?: string }) {
       aria-label={`Basket, ${count} item${count === 1 ? "" : "s"}`}
       className={`relative inline-flex h-10 w-10 items-center justify-center rounded-full text-white/90 transition hover:bg-white/10 hover:text-destiny-orange ${className}`}
     >
-      <span className="material-symbols-rounded text-[22px]">shopping_bag</span>
+      <span className="material-symbols-rounded text-[22px]" aria-hidden="true">shopping_bag</span>
       <span className="absolute -right-0.5 -top-0.5 flex h-5 min-w-[1.25rem] items-center justify-center rounded-full bg-destiny-orange px-1 text-[11px] font-bold text-white">
         {count}
       </span>

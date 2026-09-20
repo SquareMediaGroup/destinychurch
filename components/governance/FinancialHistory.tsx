@@ -41,7 +41,7 @@ export default function FinancialHistory({
             <h2 className="mb-4 text-3xl font-black text-destiny-grey md:text-4xl lg:text-5xl">
               Financial History
             </h2>
-            <p className="mx-auto max-w-2xl text-base leading-relaxed text-destiny-grey/60">
+            <p className="mx-auto max-w-2xl text-base leading-relaxed text-muted">
               Income and expenditure as reported to the Charity Commission in
               our annual returns, covering the last five financial years on the
               register.
@@ -54,7 +54,7 @@ export default function FinancialHistory({
             <AnimateIn delay={100}>
               <div className="rounded-3xl bg-white p-8">
                 <div className="mb-4 flex items-center gap-3">
-                  <span className="material-symbols-rounded text-2xl text-destiny-orange">
+                  <span className="material-symbols-rounded text-2xl text-destiny-orange" aria-hidden="true">
                     trending_up
                   </span>
                   <h3 className="text-xl font-black text-destiny-grey">
@@ -64,7 +64,7 @@ export default function FinancialHistory({
                 <p className="text-4xl font-black text-destiny-grey">
                   {formatCurrency(latest.income) ?? "Not reported"}
                 </p>
-                <p className="text-sm text-destiny-grey/50">
+                <p className="text-sm text-subtle">
                   Year ending{" "}
                   {formatRegisterDate(latest.financialYearEnd) ??
                     latest.financialYearEnd}
@@ -75,7 +75,7 @@ export default function FinancialHistory({
             <AnimateIn delay={150}>
               <div className="rounded-3xl bg-white p-8">
                 <div className="mb-4 flex items-center gap-3">
-                  <span className="material-symbols-rounded text-2xl text-destiny-orange">
+                  <span className="material-symbols-rounded text-2xl text-destiny-orange" aria-hidden="true">
                     payments
                   </span>
                   <h3 className="text-xl font-black text-destiny-grey">
@@ -85,7 +85,7 @@ export default function FinancialHistory({
                 <p className="text-4xl font-black text-destiny-grey">
                   {formatCurrency(latest.expenditure) ?? "Not reported"}
                 </p>
-                <p className="text-sm text-destiny-grey/50">
+                <p className="text-sm text-subtle">
                   Year ending{" "}
                   {formatRegisterDate(latest.financialYearEnd) ??
                     latest.financialYearEnd}
@@ -98,11 +98,11 @@ export default function FinancialHistory({
         <AnimateIn delay={200}>
           <div className="rounded-3xl bg-white p-6 sm:p-8">
             <div className="mb-6 flex flex-wrap items-center gap-x-6 gap-y-2">
-              <span className="flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-destiny-grey/50">
+              <span className="flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-subtle">
                 <span className="h-2 w-6 rounded-full bg-destiny-orange" />
                 Income
               </span>
-              <span className="flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-destiny-grey/50">
+              <span className="flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-subtle">
                 <span className="h-2 w-6 rounded-full bg-destiny-grey" />
                 Expenditure
               </span>
@@ -121,7 +121,7 @@ export default function FinancialHistory({
 
                     <div className="mb-2">
                       <div className="mb-1 flex items-center justify-between text-sm">
-                        <span className="text-destiny-grey/60">Income</span>
+                        <span className="text-muted">Income</span>
                         <span className="font-bold text-destiny-grey">
                           {formatCurrency(year.income) ?? "Not reported"}
                         </span>
@@ -136,7 +136,7 @@ export default function FinancialHistory({
 
                     <div>
                       <div className="mb-1 flex items-center justify-between text-sm">
-                        <span className="text-destiny-grey/60">
+                        <span className="text-muted">
                           Expenditure
                         </span>
                         <span className="font-bold text-destiny-grey">

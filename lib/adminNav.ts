@@ -386,8 +386,8 @@ export const ADMIN_GROUPS: AdminNavGroup[] = [
     ],
   },
   {
-    // The design request queue. Requests arrive from the public
-    // /design-request page; designers claim them here and deliver the files.
+    // The design request queue. Requests arrive from the staff-only
+    // /portal/design/request page; designers claim them here and deliver the files.
     label: "Design",
     icon: "draw",
     items: [

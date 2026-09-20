@@ -10,7 +10,9 @@ export default function FooterGate({ children }: { children: ReactNode }) {
     // /nfc is the in-service NFC landing page — deliberately chrome-free.
     pathname.startsWith("/nfc") ||
     // /portal is the staff self-service area — its own minimal shell.
-    pathname.startsWith("/portal")
+    pathname.startsWith("/portal") ||
+    // /login is the staff/admin sign-in page — deliberately chrome-free.
+    pathname === "/login"
   )
     return null;
   return <>{children}</>;

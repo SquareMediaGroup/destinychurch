@@ -95,7 +95,7 @@ export default function YouthAlphaSection() {
               <h2 className="mb-5 text-3xl font-black text-white md:text-4xl">
                 Youth Alpha
               </h2>
-              <p className="text-base leading-relaxed text-white/70">
+              <p className="text-base leading-relaxed text-on-dark-muted">
                 Got questions about life, faith and what it all means? Youth Alpha is a space
                 for young people to explore the big questions honestly, without pressure or
                 judgement.

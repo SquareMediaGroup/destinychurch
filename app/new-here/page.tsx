@@ -76,7 +76,7 @@ export default function NewHerePage() {
                   </div>
 
                   {/* Body */}
-                  <p className="mb-5 flex-1 text-sm leading-relaxed text-destiny-grey/70">
+                  <p className="mb-5 flex-1 text-sm leading-relaxed text-muted">
                     {card.description}
                   </p>
 
@@ -108,7 +108,7 @@ export default function NewHerePage() {
             <h2 className="mb-4 text-4xl font-black text-destiny-grey md:text-5xl">
               Add Yourself to Our<br />Address Book
             </h2>
-            <p className="text-base leading-relaxed text-destiny-grey/60">
+            <p className="text-base leading-relaxed text-muted">
               Let us know you&apos;re here — fill in your details and we&apos;ll be in touch to help you find your feet.
             </p>
           </AnimateIn>
@@ -155,7 +155,7 @@ export default function NewHerePage() {
                   />
                 </span>
               </h2>
-              <p className="mb-6 max-w-xl text-base leading-relaxed text-white/70">
+              <p className="mb-6 max-w-xl text-base leading-relaxed text-on-dark-muted">
                 Jonathan and Catherine are leaders with a passion for family, for the city and for
                 seeing God&apos;s love and comfort outworked in people. They have both served as lead
                 pastors at Destiny for over two decades. Jonathan is the church&apos;s Senior Pastor,
@@ -163,7 +163,7 @@ export default function NewHerePage() {
                 has a heart for teaching and training; she is an integral part of our Community and
                 Care Team leading our town. They are proud parents to Faith Moradi &amp; Nadine Harris.
               </p>
-              <p className="mb-8 text-sm font-bold text-white/40">
+              <p className="mb-8 text-sm font-bold text-on-dark-subtle">
                 Jonathan &amp; Cath Harris, Lead Pastors
               </p>
               <Link

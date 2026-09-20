@@ -205,7 +205,7 @@ export default function TourSpotlight({
                 className="flex h-7 w-7 items-center justify-center rounded-lg text-white/50 transition hover:bg-white/10 hover:text-white"
                 aria-label="Exit the tour"
               >
-                <span className="material-symbols-rounded text-lg">close</span>
+                <span className="material-symbols-rounded text-lg" aria-hidden="true">close</span>
               </button>
             </div>
 
@@ -214,7 +214,7 @@ export default function TourSpotlight({
 
             {step.sandbox && (
               <p className="mt-3 flex items-start gap-1.5 rounded-xl bg-white/8 px-3 py-2 text-xs font-bold text-white/60">
-                <span className="material-symbols-rounded text-sm leading-none">shield</span>
+                <span className="material-symbols-rounded text-sm leading-none" aria-hidden="true">shield</span>
                 Practice only — nothing on this page will be saved.
               </p>
             )}
@@ -240,7 +240,7 @@ export default function TourSpotlight({
                   className="inline-flex items-center gap-1.5 rounded-xl bg-destiny-orange px-4 py-2.5 text-sm font-bold text-white shadow-sm transition hover:brightness-110"
                 >
                   {index + 1 === total ? "Finish" : "Next"}
-                  <span className="material-symbols-rounded text-base">arrow_forward</span>
+                  <span className="material-symbols-rounded text-base" aria-hidden="true">arrow_forward</span>
                 </button>
               )}
             </div>

@@ -10,7 +10,7 @@ export default async function NotFound() {
       <h1 className="mb-4 text-3xl font-black text-destiny-grey">
         Page not found
       </h1>
-      <p className="mb-8 text-destiny-grey/70">
+      <p className="mb-8 text-muted">
         The page you&apos;re looking for doesn&apos;t exist.
       </p>
 
@@ -24,11 +24,11 @@ export default async function NotFound() {
       </Link>
 
       <div className="mt-6 flex items-center gap-4 text-sm">
-        <Link href="/help" className="font-medium text-destiny-grey/70 underline-offset-2 hover:text-destiny-orange hover:underline">
+        <Link href="/help" className="font-medium text-muted underline-offset-2 hover:text-destiny-orange hover:underline">
           Help
         </Link>
         <span className="text-destiny-grey/20">|</span>
-        <Link href="/links" className="font-medium text-destiny-grey/70 underline-offset-2 hover:text-destiny-orange hover:underline">
+        <Link href="/links" className="font-medium text-muted underline-offset-2 hover:text-destiny-orange hover:underline">
           Useful Links
         </Link>
       </div>

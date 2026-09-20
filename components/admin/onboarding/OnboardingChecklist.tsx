@@ -77,7 +77,7 @@ export default function OnboardingChecklist() {
                             : "border border-white/25 text-transparent"
                         }`}
                       >
-                        <span className="material-symbols-rounded text-sm">check</span>
+                        <span className="material-symbols-rounded text-sm" aria-hidden="true">check</span>
                       </span>
                       <span
                         className={`text-sm font-bold ${
@@ -111,7 +111,7 @@ export default function OnboardingChecklist() {
           aria-expanded={open}
           className="relative flex items-center gap-2 rounded-full px-5 py-3 text-sm font-bold text-white"
         >
-          <span className="material-symbols-rounded text-lg text-destiny-orange">
+          <span className="material-symbols-rounded text-lg text-destiny-orange" aria-hidden="true">
             {open ? "expand_more" : "rocket_launch"}
           </span>
           Get Started

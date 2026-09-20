@@ -115,7 +115,7 @@ export default function TrainingSubgroupsPage() {
         back={{ href: "/admin/training", label: "Training" }}
         action={
           <button className={primaryBtn} onClick={() => setEditing("new")}>
-            <span className="material-symbols-rounded text-lg">add</span>
+            <span className="material-symbols-rounded text-lg" aria-hidden="true">add</span>
             New sub-group
           </button>
         }
@@ -132,7 +132,7 @@ export default function TrainingSubgroupsPage() {
           hint="Add a sub-group like Sound or AV, then set its password."
           action={
             <button className={primaryBtn} onClick={() => setEditing("new")}>
-              <span className="material-symbols-rounded text-lg">add</span>
+              <span className="material-symbols-rounded text-lg" aria-hidden="true">add</span>
               New sub-group
             </button>
           }
@@ -168,7 +168,7 @@ export default function TrainingSubgroupsPage() {
 
           {!canReorder && (
             <p className="mb-3 flex items-center gap-1.5 text-xs text-destiny-grey/45 dark:text-white/45">
-              <span className="material-symbols-rounded text-base">info</span>
+              <span className="material-symbols-rounded text-base" aria-hidden="true">info</span>
               Clear the search to drag sub-groups into a new order.
             </p>
           )}
@@ -249,21 +249,21 @@ export default function TrainingSubgroupsPage() {
                               aria-label={`Manage posts in ${s.name}`}
                               title="Manage posts"
                             >
-                              <span className="material-symbols-rounded text-xl">article</span>
+                              <span className="material-symbols-rounded text-xl" aria-hidden="true">article</span>
                             </Link>
                             <button
                               onClick={() => setEditing(s)}
                               className="text-destiny-grey/40 dark:text-white/40 transition hover:text-destiny-orange"
                               aria-label={`Edit ${s.name}`}
                             >
-                              <span className="material-symbols-rounded text-xl">edit</span>
+                              <span className="material-symbols-rounded text-xl" aria-hidden="true">edit</span>
                             </button>
                             <button
                               onClick={() => remove(s)}
                               className="text-destiny-grey/40 dark:text-white/40 transition hover:text-destiny-red"
                               aria-label={`Delete ${s.name}`}
                             >
-                              <span className="material-symbols-rounded text-xl">delete</span>
+                              <span className="material-symbols-rounded text-xl" aria-hidden="true">delete</span>
                             </button>
                           </div>
                         </td>

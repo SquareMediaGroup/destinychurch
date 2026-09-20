@@ -16,14 +16,19 @@ const FORMS: Record<ModalType, { src: string; title: string }> = {
   },
 };
 
-interface Props {
-  variant?: "dark" | "light";
-}
-
-export default function ConnectCardCTAs({ variant = "dark" }: Props) {
+/**
+ * Both CTAs are designed for a dark band and say so in their markup: white
+ * labels, a `border-white/25` outline, white icons.
+ *
+ * There used to be a `variant?: "dark" | "light"` prop, but it only switched
+ * the subtitle colour — everything else stayed hardcoded white — so
+ * `variant="light"` would have rendered white text on a white surface. Neither
+ * call site passed it. Removed rather than finished: a light treatment should
+ * be built when something actually needs one, against a real design, instead
+ * of left as a prop that breaks the first time it is used.
+ */
+export default function ConnectCardCTAs() {
   const [open, setOpen] = useState<ModalType | null>(null);
-
-  const subtitleClass = variant === "dark" ? "text-white/60" : "text-destiny-grey/50";
   // Only read when `open` is non-null (the modal renders nothing otherwise);
   // the fallback just keeps this a plain lookup rather than a nullable one.
   const form = FORMS[open ?? "connect"];
@@ -36,12 +41,12 @@ export default function ConnectCardCTAs({ variant = "dark" }: Props) {
           onClick={() => setOpen("connect")}
           className="group flex items-center gap-4 rounded-2xl bg-destiny-orange px-7 py-4 text-left shadow-xl shadow-destiny-orange/30 transition hover:brightness-110"
         >
-          <span className="material-symbols-rounded text-2xl text-white">person_add</span>
+          <span className="material-symbols-rounded text-2xl text-white" aria-hidden="true">person_add</span>
           <span>
             <span className="block text-sm font-black text-white">Fill in a Connect Card</span>
-            <span className={`block text-xs ${subtitleClass}`}>Let us know who you are</span>
+            <span className="block text-xs text-on-dark-muted">Let us know who you are</span>
           </span>
-          <span className="material-symbols-rounded ml-4 text-lg text-white/60 transition group-hover:translate-x-1">arrow_forward</span>
+          <span className="material-symbols-rounded ml-4 text-lg text-white/60 transition group-hover:translate-x-1" aria-hidden="true">arrow_forward</span>
         </button>
 
         {/* Prayer Request */}
@@ -49,12 +54,12 @@ export default function ConnectCardCTAs({ variant = "dark" }: Props) {
           onClick={() => setOpen("prayer")}
           className="group flex items-center gap-4 rounded-2xl border-2 border-white/25 px-7 py-4 text-left transition hover:border-destiny-orange"
         >
-          <span className="material-symbols-rounded text-2xl text-destiny-orange">volunteer_activism</span>
+          <span className="material-symbols-rounded text-2xl text-destiny-orange" aria-hidden="true">volunteer_activism</span>
           <span>
             <span className="block text-sm font-black text-white">Submit a Prayer Request</span>
-            <span className={`block text-xs ${subtitleClass}`}>We&apos;d love to pray with you</span>
+            <span className="block text-xs text-on-dark-muted">We&apos;d love to pray with you</span>
           </span>
-          <span className="material-symbols-rounded ml-4 text-lg text-white/40 transition group-hover:translate-x-1 group-hover:text-destiny-orange">arrow_forward</span>
+          <span className="material-symbols-rounded ml-4 text-lg text-white/40 transition group-hover:translate-x-1 group-hover:text-destiny-orange" aria-hidden="true">arrow_forward</span>
         </button>
       </div>
 

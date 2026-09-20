@@ -255,7 +255,7 @@ function ApplicationDetail({
             className="text-destiny-grey/40 dark:text-white/40 transition hover:text-destiny-grey dark:hover:text-white"
             aria-label="Close"
           >
-            <span className="material-symbols-rounded text-2xl">close</span>
+            <span className="material-symbols-rounded text-2xl" aria-hidden="true">close</span>
           </button>
         </div>
 
@@ -289,7 +289,7 @@ function ApplicationDetail({
                   rel="noreferrer"
                   className="inline-flex items-center gap-1.5 font-bold text-destiny-orange hover:underline"
                 >
-                  <span className="material-symbols-rounded text-base">download</span>
+                  <span className="material-symbols-rounded text-base" aria-hidden="true">download</span>
                   {app.cv_name}
                 </a>
               ) : (
@@ -336,14 +336,14 @@ function ApplicationDetail({
             onClick={onDelete}
             className="inline-flex items-center gap-1.5 text-sm font-bold text-destiny-red/70 transition hover:text-destiny-red"
           >
-            <span className="material-symbols-rounded text-lg">delete</span>
+            <span className="material-symbols-rounded text-lg" aria-hidden="true">delete</span>
             Delete
           </button>
           <a
             href={`mailto:${app.email}?subject=Your application for ${encodeURIComponent(app.job_title)}`}
             className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-destiny-orange px-4 py-2.5 text-sm font-bold text-white shadow-sm transition hover:brightness-110"
           >
-            <span className="material-symbols-rounded text-lg">mail</span>
+            <span className="material-symbols-rounded text-lg" aria-hidden="true">mail</span>
             Reply
           </a>
         </div>

@@ -80,7 +80,7 @@ export function IconPicker({
                   : "text-destiny-grey/60 dark:text-white/60 hover:bg-black/5"
               }`}
             >
-              <span className="material-symbols-rounded text-[20px]">{name}</span>
+              <span className="material-symbols-rounded text-[20px]" aria-hidden="true">{name}</span>
             </button>
           );
         })}

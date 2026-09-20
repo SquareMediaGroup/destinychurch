@@ -103,7 +103,7 @@ export function ChecklistSection({
             onClick={() => setAdding((a) => !a)}
             className="inline-flex items-center gap-1 text-xs font-bold text-destiny-orange transition hover:brightness-110"
           >
-            <span className="material-symbols-rounded text-base">add</span>
+            <span className="material-symbols-rounded text-base" aria-hidden="true">add</span>
             Item
           </button>
         )}
@@ -158,7 +158,7 @@ export function ChecklistSection({
                 className="text-destiny-grey/30 dark:text-white/30 transition hover:text-destiny-red"
                 aria-label={`Remove ${item.label}`}
               >
-                <span className="material-symbols-rounded text-base">close</span>
+                <span className="material-symbols-rounded text-base" aria-hidden="true">close</span>
               </button>
             </li>
           ))}
@@ -283,7 +283,7 @@ export function ChecklistTemplateModal({
                   className="text-destiny-grey/40 dark:text-white/40 transition hover:text-destiny-red"
                   aria-label="Remove item"
                 >
-                  <span className="material-symbols-rounded text-lg">close</span>
+                  <span className="material-symbols-rounded text-lg" aria-hidden="true">close</span>
                 </button>
               </div>
             ))}

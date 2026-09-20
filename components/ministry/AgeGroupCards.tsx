@@ -66,7 +66,7 @@ export default function AgeGroupCards({
               {heading}
             </h2>
             {subheading && (
-              <p className="mx-auto max-w-2xl text-base leading-relaxed text-destiny-grey/60">
+              <p className="mx-auto max-w-2xl text-base leading-relaxed text-muted">
                 {subheading}
               </p>
             )}
@@ -105,13 +105,13 @@ export default function AgeGroupCards({
                 </div>
 
                 <div className="flex flex-1 flex-col p-6">
-                  <p className="text-sm leading-relaxed text-destiny-grey/70">
+                  <p className="text-sm leading-relaxed text-muted">
                     {group.description}
                   </p>
                   {group.detail && (
                     <div className="mt-auto border-t border-black/[0.07] pt-4">
                       <dl className="flex items-baseline gap-2">
-                        <dt className="text-xs font-bold uppercase tracking-wide text-destiny-grey/40">
+                        <dt className="text-xs font-bold uppercase tracking-wide text-subtle">
                           Where
                         </dt>
                         <dd className="text-sm font-semibold text-destiny-grey/80">

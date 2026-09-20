@@ -98,6 +98,8 @@ export default function ChurchHeader() {
   const [alphaActive, setAlphaActive] = useState(false);
   const [youtubeQuotaExceeded, setYoutubeQuotaExceeded] = useState(false);
   const headerRef = useRef<HTMLElement>(null);
+  const mobileToggleRef = useRef<HTMLButtonElement>(null);
+  const mobileMenuRef = useRef<HTMLDivElement>(null);
   const lastScrollY = useRef(0);
   const hoverTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const rafId = useRef<number | null>(null);
@@ -115,6 +117,48 @@ export default function ChurchHeader() {
     setMobileOpen(false);
     setMobileSubmenu(null);
   };
+
+  /**
+   * Is this nav item the page we are on?
+   *
+   * Nav hrefs carry hash fragments (`/whats-on#events`, `/about#pillars`) that
+   * `usePathname()` never returns, so they have to come off before comparing —
+   * otherwise nothing ever matches. Exact match only: `/sermons` should not
+   * light up while you are reading `/sermons/123`, because "you are here" and
+   * "you came from here" are different claims.
+   */
+  const isCurrent = (href: string) => pathname === href.split("#")[0];
+
+  // Escape closes the menu and puts focus back on the button that opened it.
+  // Without the second half, closing leaves focus on a link inside a hidden
+  // overlay and the next Tab restarts from the top of the document.
+  useEffect(() => {
+    if (!mobileOpen) return;
+
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key !== "Escape") return;
+      setMobileOpen(false);
+      setMobileSubmenu(null);
+      mobileToggleRef.current?.focus();
+    };
+
+    document.addEventListener("keydown", onKeyDown);
+    return () => document.removeEventListener("keydown", onKeyDown);
+  }, [mobileOpen]);
+
+  // Move focus into the menu when it opens, so a keyboard user is actually
+  // taken there rather than continuing from the toggle into the page behind.
+  useEffect(() => {
+    if (!mobileOpen) return;
+    // After the clip-path reveal starts; focusing an element mid-transition is
+    // fine, but it must be after `inert` has been removed on this render.
+    const id = requestAnimationFrame(() => {
+      mobileMenuRef.current
+        ?.querySelector<HTMLElement>("a[href], button:not([disabled])")
+        ?.focus();
+    });
+    return () => cancelAnimationFrame(id);
+  }, [mobileOpen]);
 
 
   const handleScroll = useCallback(() => {
@@ -202,10 +246,12 @@ export default function ChurchHeader() {
 
   // /nfc is the in-service NFC landing page: standalone, no site nav.
   // /portal is the staff self-service area: its own minimal shell, no site nav.
+  // /login is the staff/admin sign-in page: standalone, no site nav.
   if (
     pathname.startsWith("/admin") ||
     pathname.startsWith("/nfc") ||
-    pathname.startsWith("/portal")
+    pathname.startsWith("/portal") ||
+    pathname === "/login"
   )
     return null;
 
@@ -264,7 +310,13 @@ export default function ChurchHeader() {
             </Link>
 
             {/* Desktop nav */}
-            <nav className="hidden items-center gap-1 md:flex">
+            {/* Labelled because a page can have several <nav> landmarks —
+                this one, the footer's link groups, and the mobile menu — and
+                an unlabelled landmark is announced as just "navigation". */}
+            <nav
+              aria-label="Main"
+              className="hidden items-center gap-1 md:flex"
+            >
               {!isAdmin &&
                 navItems.map((item) => {
                   if (item.dropdown) {
@@ -278,7 +330,12 @@ export default function ChurchHeader() {
                       >
                         <Link
                           href={item.href!}
-                          className="whitespace-nowrap rounded-full px-2.5 py-2 text-sm font-medium text-white/90 transition hover:text-destiny-orange lg:px-4"
+                          aria-current={isCurrent(item.href!) ? "page" : undefined}
+                          className={`whitespace-nowrap rounded-full px-2.5 py-2 text-sm font-medium transition hover:text-destiny-orange lg:px-4 ${
+                            isCurrent(item.href!)
+                              ? "text-destiny-orange"
+                              : "text-white/90"
+                          }`}
                         >
                           {item.label}
                         </Link>
@@ -297,7 +354,12 @@ export default function ChurchHeader() {
                     <Link
                       key={item.href}
                       href={item.href!}
-                      className="whitespace-nowrap rounded-full px-2.5 py-2 text-sm font-medium text-white/90 transition hover:text-destiny-orange lg:px-4"
+                      aria-current={isCurrent(item.href!) ? "page" : undefined}
+                      className={`whitespace-nowrap rounded-full px-2.5 py-2 text-sm font-medium transition hover:text-destiny-orange lg:px-4 ${
+                        isCurrent(item.href!)
+                          ? "text-destiny-orange"
+                          : "text-white/90"
+                      }`}
                     >
                       {item.label}
                     </Link>
@@ -329,7 +391,7 @@ export default function ChurchHeader() {
                   <form action="/api/admin/logout" method="POST">
                     <button
                       type="submit"
-                      className="rounded-full px-4 py-2 text-sm font-medium text-white/50 transition hover:text-white/90"
+                      className="rounded-full px-4 py-2 text-sm font-medium text-on-dark-subtle transition hover:text-white/90"
                     >
                       Sign out
                     </button>
@@ -358,13 +420,15 @@ export default function ChurchHeader() {
               )}
 
               <button
+                ref={mobileToggleRef}
                 type="button"
                 onClick={() => {
                   setMobileOpen(!mobileOpen);
                   setMobileSubmenu(null);
                 }}
                 aria-expanded={mobileOpen}
-                aria-label="Toggle navigation"
+                aria-controls="mobile-menu"
+                aria-label={mobileOpen ? "Close navigation" : "Open navigation"}
                 className="relative z-10 h-9 w-9 rounded-full text-white md:hidden"
               >
                 <span className="absolute inset-0 flex flex-col items-center justify-center gap-[5px]">
@@ -383,7 +447,22 @@ export default function ChurchHeader() {
           so its `fixed` positioning isn't scoped by the header's own
           transform (which would otherwise turn "inset-0" into "cover the
           header's own box" instead of the viewport). */}
+      {/* `inert` is what makes "closed" actually mean closed. The overlay stays
+          mounted so its clip-path reveal can animate, and it used to rely on
+          `pointerEvents: none` alone — which stops clicks but does nothing to
+          the tab order, so every link in the closed menu was still reachable by
+          keyboard and still announced by a screen reader, on every page.
+
+          `inert` removes the whole subtree from the tab order AND the
+          accessibility tree without unmounting it, which is exactly the
+          distinction `pointer-events` cannot express. */}
       <div
+        id="mobile-menu"
+        ref={mobileMenuRef}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Site navigation"
+        inert={!mobileOpen}
         className="fixed inset-0 z-40 md:hidden"
         style={{ pointerEvents: mobileOpen ? "auto" : "none" }}
       >

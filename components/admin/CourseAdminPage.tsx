@@ -611,7 +611,7 @@ function TogglePill({
           : "text-destiny-grey/50 dark:text-white/50 hover:text-destiny-grey dark:hover:text-white"
       }`}
     >
-      <span className="material-symbols-rounded text-base">{icon}</span>
+      <span className="material-symbols-rounded text-base" aria-hidden="true">{icon}</span>
       {label}
     </button>
   );
@@ -644,13 +644,13 @@ function EventSection({
 
       {loading ? (
         <div className="flex items-center justify-center py-16">
-          <span className="material-symbols-rounded animate-spin text-3xl text-destiny-grey/20 dark:text-white/20">
+          <span className="material-symbols-rounded animate-spin text-3xl text-destiny-grey/20 dark:text-white/20" aria-hidden="true">
             progress_activity
           </span>
         </div>
       ) : events.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-16 text-center">
-          <span className="material-symbols-rounded mb-3 text-4xl text-destiny-grey/20 dark:text-white/20">
+          <span className="material-symbols-rounded mb-3 text-4xl text-destiny-grey/20 dark:text-white/20" aria-hidden="true">
             event
           </span>
           <p className="text-sm font-bold text-destiny-grey/40 dark:text-white/40">No events yet</p>
@@ -702,7 +702,7 @@ function EventSection({
                     </span>
                     {showsNext && (
                       <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-bold text-emerald-700">
-                        <span className="material-symbols-rounded text-[12px] leading-none">
+                        <span className="material-symbols-rounded text-[12px] leading-none" aria-hidden="true">
                           schedule
                         </span>
                         Next {nextLabel}
@@ -710,7 +710,7 @@ function EventSection({
                     )}
                     {isOnline ? (
                       <span className="inline-flex items-center gap-1 rounded-full bg-blue-500/10 px-2 py-0.5 text-[10px] font-bold text-blue-600">
-                        <span className="material-symbols-rounded text-[12px] leading-none">
+                        <span className="material-symbols-rounded text-[12px] leading-none" aria-hidden="true">
                           videocam
                         </span>
                         {platformLabel}
@@ -759,7 +759,7 @@ function EventSection({
                     title="Delete"
                     className="flex h-8 w-8 items-center justify-center rounded-lg text-destiny-grey/30 dark:text-white/30 transition hover:bg-red-50 hover:text-red-500"
                   >
-                    <span className="material-symbols-rounded text-base">
+                    <span className="material-symbols-rounded text-base" aria-hidden="true">
                       delete
                     </span>
                   </button>

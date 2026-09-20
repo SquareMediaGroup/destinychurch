@@ -47,7 +47,7 @@ function CardBody({ card }: { card: PromoCard }) {
       style={{ backgroundColor: tint, borderColor: border }}
     >
       {card.dateStart ? (
-        <div className="mb-5 text-[0.8rem] font-medium leading-snug text-destiny-grey/55">
+        <div className="mb-5 text-[0.8rem] font-medium leading-snug text-subtle">
           <p>{card.dateStart}</p>
           {card.dateEnd ? <p>&rarr; {card.dateEnd}</p> : null}
         </div>
@@ -80,7 +80,7 @@ function CardBody({ card }: { card: PromoCard }) {
       </p>
 
       {card.description ? (
-        <p className="mt-3 text-[0.9rem] leading-[1.45] text-destiny-grey/70">
+        <p className="mt-3 text-[0.9rem] leading-[1.45] text-muted">
           {card.description}
         </p>
       ) : null}

@@ -30,8 +30,6 @@ function isExcluded(pathname: string, eventSlug: string): boolean {
   const path = pathname.replace(/\/+$/, "") || "/";
   return (
     path === "/whats-on" ||
-    // Temporary: the card-variant preview route. Remove with app/whats-on/new/.
-    path === "/whats-on/new" ||
     // The in-service NFC page is chrome-free and already a grid of popups.
     path === "/nfc" ||
     // Admin pages should never show popups to staff.

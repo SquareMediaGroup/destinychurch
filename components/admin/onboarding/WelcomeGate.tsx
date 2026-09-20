@@ -62,7 +62,7 @@ export default function WelcomeGate({
                 key={tour.role}
                 className="flex items-start gap-3 rounded-2xl bg-white/8 px-4 py-3"
               >
-                <span className="material-symbols-rounded mt-0.5 text-lg text-destiny-orange">
+                <span className="material-symbols-rounded mt-0.5 text-lg text-destiny-orange" aria-hidden="true">
                   {tour.icon}
                 </span>
                 <span>
@@ -84,7 +84,7 @@ export default function WelcomeGate({
               className="inline-flex items-center gap-2 rounded-xl bg-destiny-orange px-5 py-3 text-sm font-bold text-white shadow-sm transition hover:brightness-110"
             >
               Show me around
-              <span className="material-symbols-rounded text-lg">arrow_forward</span>
+              <span className="material-symbols-rounded text-lg" aria-hidden="true">arrow_forward</span>
             </button>
             <button
               type="button"

@@ -23,7 +23,7 @@ import type {
 
 function UnavailableNote({ reason }: { reason?: string }) {
   return (
-    <div className="mt-2 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white/50">
+    <div className="mt-2 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-on-dark-subtle">
       {reason ?? "That lookup isn't available right now."}
     </div>
   );
@@ -58,18 +58,18 @@ export function WeatherResultCard({ data }: { data: WeatherToolResult }) {
 
   return (
     <div className="mt-2 flex items-center gap-4 rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
-      <span className="material-symbols-rounded text-4xl text-destiny-orange">
+      <span className="material-symbols-rounded text-4xl text-destiny-orange" aria-hidden="true">
         {weatherIcon(data.condition ?? "")}
       </span>
       <div className="min-w-0">
-        <p className="text-[11px] font-bold uppercase tracking-wide text-white/40">
+        <p className="text-[11px] font-bold uppercase tracking-wide text-on-dark-subtle">
           {data.location} &middot; {data.date ? formatDate(data.date) : ""}
         </p>
         <p className="mt-0.5 text-base font-black text-white">
           {data.condition}, {data.tempMinC}&deg;&ndash;{data.tempMaxC}&deg;C
         </p>
         {typeof data.precipitationChance === "number" && (
-          <p className="mt-0.5 text-sm text-white/50">{data.precipitationChance}% chance of rain</p>
+          <p className="mt-0.5 text-sm text-on-dark-subtle">{data.precipitationChance}% chance of rain</p>
         )}
       </div>
     </div>
@@ -122,7 +122,7 @@ export function WebResultsCard({ data }: { data: SearchWebResult }) {
           className="block rounded-xl px-3 py-2 transition hover:bg-white/8"
         >
           <p className="truncate text-sm font-bold text-white/85">{r.title}</p>
-          <p className="mt-0.5 line-clamp-2 text-xs text-white/45">{r.snippet}</p>
+          <p className="mt-0.5 line-clamp-2 text-xs text-on-dark-subtle">{r.snippet}</p>
         </a>
       ))}
     </div>
@@ -154,7 +154,7 @@ function SermonResultCard({ sermon }: { sermon: SermonResult }) {
       />
       <div className="min-w-0">
         <p className="line-clamp-2 text-sm font-bold text-white">{sermon.title}</p>
-        <p className="mt-0.5 truncate text-xs text-white/45">
+        <p className="mt-0.5 truncate text-xs text-on-dark-subtle">
           {[sermon.speaker, date].filter(Boolean).join(" · ")}
         </p>
       </div>
@@ -260,7 +260,7 @@ function ProductResultCard({ product }: { product: ProductResult }) {
           />
         ) : (
           <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-xl bg-white/8 text-white/30">
-            <span className="material-symbols-rounded text-2xl">apparel</span>
+            <span className="material-symbols-rounded text-2xl" aria-hidden="true">apparel</span>
           </div>
         )}
         <div className="min-w-0 flex-1">
@@ -270,7 +270,7 @@ function ProductResultCard({ product }: { product: ProductResult }) {
           >
             {product.name}
           </Link>
-          <p className="mt-0.5 text-xs text-white/45">{product.fitLabel}</p>
+          <p className="mt-0.5 text-xs text-on-dark-subtle">{product.fitLabel}</p>
           <p className="mt-0.5 text-sm font-black text-white">
             {selected ? formatPrice(price) : `from ${formatPrice(price)}`}
           </p>
@@ -358,7 +358,7 @@ function ProductResultCard({ product }: { product: ProductResult }) {
           onClick={handleAdd}
           disabled={!inStock}
         >
-          <span className="material-symbols-rounded text-base">
+          <span className="material-symbols-rounded text-base" aria-hidden="true">
             {added ? "check" : "shopping_bag"}
           </span>
           {inStock ? (added ? "Added to basket" : "Add to basket") : "Sold out"}

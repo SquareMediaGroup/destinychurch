@@ -44,13 +44,13 @@ export default function PasswordGate({
     <div className="mx-auto max-w-md px-4 py-20 lg:px-8">
       <div className="rounded-3xl border border-black/5 bg-white p-8 text-center shadow-sm">
         <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-destiny-orange/10 text-destiny-orange">
-          <span className="material-symbols-rounded text-[28px]">lock</span>
+          <span className="material-symbols-rounded text-[28px]" aria-hidden="true">lock</span>
         </div>
         <p className="mb-1 text-xs font-bold uppercase tracking-widest text-destiny-orange">
           {categoryName}
         </p>
         <h1 className="text-2xl font-black text-destiny-grey">{subgroupName}</h1>
-        <p className="mx-auto mt-2 max-w-xs text-sm text-destiny-grey/55">
+        <p className="mx-auto mt-2 max-w-xs text-sm text-subtle">
           This training group is password protected. Enter the password your team
           leader gave you to continue.
         </p>

@@ -40,7 +40,7 @@ export function AdminThemeToggle({ className = "" }: { className?: string }) {
       title={`Theme: ${LABEL[theme]} — click to change`}
       className={`flex h-9 w-9 items-center justify-center rounded-xl border border-black/10 bg-white text-destiny-grey/45 transition hover:text-destiny-grey dark:border-white/10 dark:bg-destiny-grey-800 dark:text-white/45 dark:hover:text-white ${className}`}
     >
-      <span className="material-symbols-rounded text-lg">{ICON[theme]}</span>
+      <span className="material-symbols-rounded text-lg" aria-hidden="true">{ICON[theme]}</span>
     </button>
   );
 }

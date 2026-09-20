@@ -146,7 +146,7 @@ export function BlockInspector({
 
     return (
       <div className="flex h-full flex-col items-center justify-center px-6 py-10 text-center">
-        <span className="material-symbols-rounded text-3xl text-destiny-grey/20 dark:text-white/20">
+        <span className="material-symbols-rounded text-3xl text-destiny-grey/20 dark:text-white/20" aria-hidden="true">
           tune
         </span>
         <p className="mt-2 text-sm font-bold text-destiny-grey/50 dark:text-white/50">
@@ -164,7 +164,7 @@ export function BlockInspector({
     <div className="flex h-full flex-col">
       {!sheet && (
         <div className="flex items-center gap-2 border-b border-black/8 px-4 py-3">
-          <span className="material-symbols-rounded text-[19px] text-destiny-orange">
+          <span className="material-symbols-rounded text-[19px] text-destiny-orange" aria-hidden="true">
             {def.icon}
           </span>
           <span className="min-w-0 flex-1 truncate text-sm font-black text-destiny-grey dark:text-white">
@@ -177,7 +177,7 @@ export function BlockInspector({
               aria-label="Close settings"
               className="flex h-7 w-7 items-center justify-center rounded-lg text-destiny-grey/45 dark:text-white/45 transition hover:bg-[#f5f7fa]"
             >
-              <span className="material-symbols-rounded text-lg">close</span>
+              <span className="material-symbols-rounded text-lg" aria-hidden="true">close</span>
             </button>
           )}
         </div>

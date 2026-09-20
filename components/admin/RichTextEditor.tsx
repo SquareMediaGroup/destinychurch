@@ -115,7 +115,7 @@ function ToolbarButton({
           : "text-destiny-grey/60 dark:text-white/60 hover:bg-black/5 dark:hover:bg-white/10"
       }`}
     >
-      <span className="material-symbols-rounded text-[20px]">{icon}</span>
+      <span className="material-symbols-rounded text-[20px]" aria-hidden="true">{icon}</span>
     </button>
   );
 }

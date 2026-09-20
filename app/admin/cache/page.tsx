@@ -34,7 +34,7 @@ export default function AdminCachePage() {
           <ul className="mb-6 flex flex-col gap-2">
             {PAGES.map((p) => (
               <li key={p} className="flex items-center gap-3 text-sm text-destiny-grey/70 dark:text-white/70">
-                <span className="material-symbols-rounded text-base text-destiny-orange/60">arrow_right</span>
+                <span className="material-symbols-rounded text-base text-destiny-orange/60" aria-hidden="true">arrow_right</span>
                 <code className="font-mono">{p}</code>
               </li>
             ))}
@@ -42,13 +42,13 @@ export default function AdminCachePage() {
 
           {status === "done" && (
             <div className="mb-4 flex items-center gap-2 rounded-xl bg-green-50 px-4 py-3 text-sm font-semibold text-green-700">
-              <span className="material-symbols-rounded text-base">check_circle</span>
+              <span className="material-symbols-rounded text-base" aria-hidden="true">check_circle</span>
               Cache cleared — pages will rebuild on next visit.
             </div>
           )}
           {status === "error" && (
             <div className="mb-4 flex items-center gap-2 rounded-xl bg-red-50 px-4 py-3 text-sm font-semibold text-red-600">
-              <span className="material-symbols-rounded text-base">error</span>
+              <span className="material-symbols-rounded text-base" aria-hidden="true">error</span>
               Something went wrong. Try again.
             </div>
           )}

@@ -5,7 +5,8 @@ import { FIT_LABELS, fromPrice, type ProductWithVariants } from "@/lib/shop";
 import type { YTVideo } from "@/lib/youtube";
 import { getFullSermonArchive } from "@/lib/speakerOverrides.server";
 import { searchSermons } from "@/lib/sermonSearch";
-import { DESTINY_CENTRE_ADDRESS, DESTINY_CENTRE_MAP_QUERY, googleMapsUrl } from "@/lib/maps";
+import { DESTINY_CENTRE_MAP_QUERY, googleMapsUrl } from "@/lib/maps";
+import { ADDRESS_ONE_LINE } from "@/lib/churchInfo";
 
 // ── Smart Search tools ─────────────────────────────────────────────────────
 // Tool-calling tools the /api/chat route exposes to the model. Each network
@@ -443,7 +444,7 @@ function runGetDirections(): DirectionsToolResult {
   const embedKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_EMBED_API_KEY;
   return {
     available: Boolean(embedKey),
-    address: DESTINY_CENTRE_ADDRESS,
+    address: ADDRESS_ONE_LINE,
     embedUrl: embedKey
       ? `https://www.google.com/maps/embed/v1/place?key=${embedKey}&q=${encodeURIComponent(DESTINY_CENTRE_MAP_QUERY)}`
       : undefined,

@@ -118,7 +118,7 @@ export default function DocumentsPage() {
         back={{ href: "/admin/hr", label: "HR" }}
         action={
           <button className={primaryBtn} onClick={() => setAdding(true)}>
-            <span className="material-symbols-rounded text-lg">upload</span>
+            <span className="material-symbols-rounded text-lg" aria-hidden="true">upload</span>
             Upload
           </button>
         }
@@ -135,7 +135,7 @@ export default function DocumentsPage() {
           hint="Upload contracts, policies or other staff files."
           action={
             <button className={primaryBtn} onClick={() => setAdding(true)}>
-              <span className="material-symbols-rounded text-lg">upload</span>
+              <span className="material-symbols-rounded text-lg" aria-hidden="true">upload</span>
               Upload
             </button>
           }
@@ -220,14 +220,14 @@ export default function DocumentsPage() {
                             className="text-destiny-grey/40 dark:text-white/40 transition hover:text-destiny-orange"
                             aria-label={`Download ${d.title}`}
                           >
-                            <span className="material-symbols-rounded text-xl">download</span>
+                            <span className="material-symbols-rounded text-xl" aria-hidden="true">download</span>
                           </button>
                           <button
                             onClick={() => remove(d.id)}
                             className="text-destiny-grey/40 dark:text-white/40 transition hover:text-destiny-red"
                             aria-label={`Delete ${d.title}`}
                           >
-                            <span className="material-symbols-rounded text-xl">delete</span>
+                            <span className="material-symbols-rounded text-xl" aria-hidden="true">delete</span>
                           </button>
                         </div>
                       </td>

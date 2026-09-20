@@ -1,7 +1,23 @@
+import {
+  ADDRESS_ONE_LINE,
+  BUS_NOTE,
+  EMAIL,
+  PHONE,
+  SCHEDULE,
+  VISIT_FACTS,
+} from "@/lib/churchInfo";
+
 // ── Smart Search knowledge base ──────────────────────────────────────────────
 // Single source of truth for everything the Smart Search assistant is allowed to
 // say about Destiny. Consumed by the chat API route (the floating Smart Search
-// widget). Edit church facts HERE and nowhere else.
+// widget). Edit church facts HERE and nowhere else — with one exception: the
+// address, phone, Sunday schedule and accessibility facts are quoted from
+// lib/churchInfo.ts below, because those same facts are also rendered on
+// /visit, /contact, /help and the JSON-LD in app/layout.tsx, and used to drift
+// independently in each place (the JSON-LD listed a different support email
+// than every other page on the site). Edit THOSE facts in churchInfo.ts;
+// everything else in CHURCH_FACTS (mission, leadership, charity registration)
+// has no other consumer and is still edited directly here.
 
 /**
  * Pages the assistant is allowed to link to, with an intent hint used by the
@@ -95,9 +111,9 @@ export const CHURCH_FACTS = `
 CHURCH BASICS:
 - Name: Destiny Church Tees Valley
 - Website: destinytees.uk
-- Address: Destiny Centre, Norton Road, Stockton-on-Tees, TS20 2QQ
-- Phone: 01642 559797
-- Email: admin@destinytees.uk
+- Address: ${ADDRESS_ONE_LINE}
+- Phone: ${PHONE.display}
+- Email: ${EMAIL}
 - Registered charity number (England & Wales): 1119951. Company number: 06261423.
   NOTE: several unrelated charities are also called "Destiny Church" — in particular
   "Destiny Church Trust" (Scottish charity SC017898) is a DIFFERENT organisation.
@@ -113,13 +129,13 @@ CHURCH BASICS:
 - Bible-based, Pentecostal Christian church in Tees Valley.
 
 SUNDAY SERVICES:
-- Prayer Service: 10:00am – 10:30am
-- Main Sunday Service: 11:00am – approx 12:30pm (about 90 minutes)
-- Doors open: 9:45am (doors open at this time for prayer, then main service starts at 11:00am)
+- Prayer Service: ${SCHEDULE.prayerServiceStart} – ${SCHEDULE.prayerServiceEnd}
+- Main Sunday Service: ${SCHEDULE.mainServiceStart} – approx ${SCHEDULE.mainServiceEnd} (about ${SCHEDULE.mainServiceDurationMinutes} minutes)
+- Doors open: ${SCHEDULE.doorsOpen} (doors open at this time for prayer, then main service starts at ${SCHEDULE.mainServiceStart})
 - Dress code: none — come as you are
 - What to expect: contemporary worship, Bible-based teaching, prayer, community
-- Free on-site parking | Step-free access | Accessible toilets | BSL interpretation | Hearing loop
-- Several bus routes stop on Norton Road outside
+- ${VISIT_FACTS.join(" | ")} | Accessible toilets | Hearing loop
+- ${BUS_NOTE}
 - LIVESTREAM: Watch live online every Sunday at 11:00am at /live (destinytees.uk/live)
 
 LEAD PASTORS:

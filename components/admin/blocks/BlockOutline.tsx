@@ -53,7 +53,7 @@ export function BlockOutline({
               aria-hidden
               className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-destiny-orange/10 text-destiny-orange"
             >
-              <span className="material-symbols-rounded text-[18px]">
+              <span className="material-symbols-rounded text-[18px]" aria-hidden="true">
                 {def?.icon ?? "help"}
               </span>
             </span>

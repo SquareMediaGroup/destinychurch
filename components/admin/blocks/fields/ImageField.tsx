@@ -87,7 +87,7 @@ export function ImageField({
               : "border-black/12 hover:border-destiny-orange/40 hover:bg-[#f5f7fa]"
           }`}
         >
-          <span className="material-symbols-rounded text-2xl text-destiny-grey/35 dark:text-white/35">
+          <span className="material-symbols-rounded text-2xl text-destiny-grey/35 dark:text-white/35" aria-hidden="true">
             {uploading ? "hourglass_top" : "add_photo_alternate"}
           </span>
           <p className="mt-1 text-xs font-bold text-destiny-grey/60 dark:text-white/60">

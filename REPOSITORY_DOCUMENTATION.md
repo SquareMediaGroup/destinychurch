@@ -1,7 +1,7 @@
 # Destiny Church Tees Valley — Complete Repository Documentation
 
-**Version:** 1.0.15  
-**Last Updated:** September 16, 2026  
+**Version:** 1.0.16  
+**Last Updated:** September 18, 2026  
 **Repository:** Square Media Group — destinychurch  
 
 This document provides a comprehensive explanation of every major component, line of code purpose, architecture decisions, and how the system works from end-to-end.
@@ -163,7 +163,7 @@ destinychurch/
 │   ├── terms/                     # Terms of use
 │   ├── training/                  # /training resource library (category → subgroup → post)
 │   ├── contact/                   # Contact form
-│   ├── design-request/            # Public design request form + [token]/ requester tracker
+│   ├── design-request/            # [token]/ requester tracker (public, share-token-scoped); the request form itself lives at /portal/design/request
 │   ├── visit/                     # Plan a visit
 │   ├── new-here/                  # First-time visitor guide
 │   ├── hire/                      # Venue hire enquiries
@@ -191,7 +191,7 @@ destinychurch/
 │   │   ├── store/                 # Shop admin (products, orders, hero)
 │   │   ├── hr/                    # HR admin (staff, leave, jobs, docs, reviews, checklists) — hr_admin
 │   │   └── onboarding/            # Super-admin preview of each role's onboarding tour
-│   ├── portal/                    # Staff self-service — own profile, leave, documents (linked hr_staff)
+│   ├── portal/                    # Staff self-service — dashboard, profile, team, reviews, leave, documents (linked hr_staff)
 │   │   ├── layout.tsx             # Portal shell (separate auth boundary from /admin)
 │   │   ├── page.tsx               # Profile + leave balance overview
 │   │   ├── leave/page.tsx         # Request/withdraw own leave
@@ -213,7 +213,7 @@ destinychurch/
 │   │   │   │                      #   hr/ includes checklists/ + checklist-templates/
 │   │   │   ├── simulated-live/    # Simulated live config + YouTube link lookup (Host)
 │   │   │   └── ...
-│   │   ├── portal/                # Staff self-service API — me/, leave/, documents/, design/ (linked hr_staff)
+│   │   ├── portal/                # Staff self-service API — me/, reviews/, checklists/, team/, leave/, documents/, design/ (linked hr_staff)
 │   │   ├── design-request/        # Public, share-token-scoped: [token]/ + deliverable downloads/confirm
 │   │   ├── cron/                  # Vercel Cron — live-chat-purge/, hr-review-reminders/, design-deliverables-purge/, … (Bearer CRON_SECRET)
 │   │   ├── chat/                  # POST /api/chat — Smart Search tool-calling chat
@@ -360,7 +360,8 @@ destinychurch/
 │       │                                  # search_path to the ip_category trigger, relocate btree_gist
 │       ├── 20260902_remove_media_boards.sql # Drops the media_boards/media_photos tables (Media Boards feature removed)
 │       ├── 20260912_01_sermon_admin_role.sql # `sermon_admin` access level on admin_roles (/admin/sermons)
-│       └── 20260912_02_speaker_overrides.sql # speaker_overrides table — AI/human speaker corrections for the sermon archive
+│       ├── 20260912_02_speaker_overrides.sql # speaker_overrides table — AI/human speaker corrections for the sermon archive
+│       └── 20260920_01_sermon_series.sql  # sermon_series table — playlist ids curated as sermon series
 │
 ├── utils/                         # Utility modules
 │   ├── supabase/                  # Supabase client factories
@@ -787,6 +788,10 @@ CREATE TABLE hr_staff (
   end_date date,
   annual_leave_entitlement numeric DEFAULT 0,
   notes text,
+  -- Public URL into the `staff-avatars` storage bucket. Set from /portal's
+  -- account settings (POST /api/portal/me/avatar), never from the admin HR
+  -- forms — a staff member's own picture, self-managed.
+  avatar_url text,
   -- The staff record's backend login. Mandatory from creation onward:
   -- unique (no two staff share a login) and NOT NULL (there is no "no login"
   -- or "revoke access" state any more). References auth.users on delete set
@@ -1741,7 +1746,7 @@ Both migrations are applied to production; `get_advisors` is clean on all of the
 
 #### 25. **design_tickets / design_ticket_deliverables / design_ticket_events**
 
-The design request queue (`/design-request` → `/admin/design`). Someone asks the design
+The design request queue (`/portal/design/request` → `/admin/design`). Someone asks the design
 team for a poster, a designer claims it, works it, uploads the finished file, and the
 requester downloads it or asks for changes.
 
@@ -1877,10 +1882,10 @@ ours, so there is nothing to schedule.
 `admin_roles` has no target worth pointing at from here. Same reasoning as the old
 `media_photos.reviewed_by`.
 
-**Used by:** `app/design-request/*` (public form and tokenised tracker), `app/admin/design/*`
-(queue and detail), `app/portal/design` (staff), `app/api/admin/design/**`,
-`app/api/design-request/**`, `app/api/portal/design`, `lib/designTickets.ts`,
-`lib/designTickets.server.ts`, `lib/designEmail.ts`.
+**Used by:** `app/design-request/[token]` (public tokenised tracker), `app/portal/design/request`
+(staff-only form), `app/admin/design/*` (queue and detail), `app/portal/design` (staff),
+`app/api/admin/design/**`, `app/api/design-request/**`, `app/api/portal/design`,
+`lib/designTickets.ts`, `lib/designTickets.server.ts`, `lib/designEmail.ts`.
 
 ---
 
@@ -1905,6 +1910,26 @@ CREATE TABLE speaker_overrides (
 **Read it through the wrapper.** Every video-serving path reads through `lib/speakerOverrides.server.ts` rather than `lib/youtube.ts` directly, so a correction takes effect everywhere at once; `lib/youtube.ts` itself stays a pure YouTube API client with no Supabase dependency.
 
 **Used By:** `lib/speakerOverrides.server.ts` (read wrappers), `lib/speakerReview.server.ts` (writes), `app/api/admin/sermons/review-speakers`, `components/admin/SpeakerReviewPanel.tsx`.
+
+---
+
+#### 27. **sermon_series** (playlist-backed sermon series)
+**Purpose:** A YouTube playlist id curated as a sermon "series", filterable on `/sermons`. Same "no DB" exception as `speaker_overrides` above — only the playlist id is stored; title, description and video membership are always read live from YouTube through `lib/sermonSeries.server.ts`. Migration: `supabase/migrations/20260920_01_sermon_series.sql`.
+
+```sql
+CREATE TABLE sermon_series (
+  playlist_id text PRIMARY KEY,
+  added_by text,
+  sort_order integer NOT NULL DEFAULT 0,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+
+-- RLS: Service role only (deny-all "service only" policy, same as every other table)
+```
+
+**Why it exists.** Speaker sorting/filtering was removed from `/sermons` in favour of series, sourced from YouTube playlists an admin curates in `/admin/sermons`. Rather than duplicate a playlist's title/description into Postgres (which would drift from YouTube), only the id is persisted — `lib/sermonSeries.server.ts` resolves it against the YouTube Data API (`playlists.list` for the snippet, `playlistItems.list` for membership) on every read, the same live-fetch philosophy the rest of the sermons feature uses.
+
+**Used By:** `lib/sermonSeries.server.ts` (reads), `app/api/admin/sermons/series` and `app/api/admin/sermons/series/[id]` (writes), `components/admin/SeriesManager.tsx`, `app/sermons/page.tsx` → `components/sermons/SermonGrid.tsx` (the public Series filter).
 
 ---
 
@@ -2126,15 +2151,32 @@ anything new to it.
 
 The same `FilterPanel` is rendered twice: as a **persistent sidebar** at
 desktop widths and as the original **dropdown** on mobile, where a standing
-sidebar doesn't fit. Alongside the speaker and month facets there's a
-**"Guest speakers only"** filter (and a per-card badge). Guest status is *not*
-inferred from parsed speaker names — it's backed by the channel's curated
-"Guest Speakers" YouTube playlist: `lib/youtube.ts`'s `getGuestSpeakerVideoIds()`
-(over the shared `getPlaylistVideoIds()`) returns the set of video ids in
-`GUEST_SPEAKERS_PLAYLIST_ID`, fetched once server-side and matched against the
-archive (45 of 288 sermons are guest-preached as of that build). The fetch
-fails open to an empty set, so a YouTube outage just hides the badge rather
-than breaking the page.
+sidebar doesn't fit. Speaker filtering/sorting was removed in September 2026
+(a sermon's speaker still shows on its card and title — it just isn't a
+facet any more) in favour of a **Series** filter and a standalone
+**"Guest speakers only"** toggle (and a per-card badge).
+
+**Series** (added September 2026, single-select like Month) is backed by
+admin-curated YouTube playlists — `lib/sermonSeries.server.ts`'s
+`getSermonSeriesList()` reads the `sermon_series` table (Database Schema §27,
+playlist ids only) and resolves each against the YouTube Data API for its
+title/description (`lib/youtube.ts`'s new `getPlaylistSnippet()`) and video
+membership (`getPlaylistVideoIds()`), server-side in `app/sermons/page.tsx`.
+A playlist that fails to resolve (deleted/private) is silently dropped —
+fail-open, same posture as guest speakers below — and the whole Series
+section hides itself when nothing is configured. Series are managed from
+`/admin/sermons` (`components/admin/SeriesManager.tsx`): an admin pastes a
+playlist URL or bare id, the API validates it exists via `getPlaylistSnippet`
+before inserting, and removing a series only ever deletes the pointer row —
+the YouTube playlist itself is untouched.
+
+Guest status is *not* inferred from parsed speaker names — it's backed by the
+channel's curated "Guest Speakers" YouTube playlist: `lib/youtube.ts`'s
+`getGuestSpeakerVideoIds()` (over the shared `getPlaylistVideoIds()`) returns
+the set of video ids in `GUEST_SPEAKERS_PLAYLIST_ID`, fetched once
+server-side and matched against the archive (45 of 288 sermons are
+guest-preached as of that build). The fetch fails open to an empty set, so a
+YouTube outage just hides the badge rather than breaking the page.
 
 **Listen to any sermon** — every archive card whose video has a *confident*
 audio pairing gets a **Listen** button, not just the featured card.
@@ -2161,6 +2203,20 @@ confirmed to survive to the public RSS feed `lib/podcast.ts` reads, since
 `extractYouTubeIdHint()` reads it back out and `stripHtml()` strips it before
 it's ever shown as show notes; `pairAudioForVideo()` treats a match as
 deterministic, skipping the heuristic entirely.
+
+**Manual speaker correction** (`components/admin/SpeakerEditor.tsx`, added
+September 2026) — the hand-edit counterpart to the AI review above. Searches
+the full archive (`useAdminList`, same fuzzy search every other admin list
+uses) and lets an admin type a speaker directly per video, showing whether
+the current value is AI-set, manually-set or unreviewed. Both paths write the
+same `speaker_overrides` row (`reviewed_by: "admin"` vs `"ai"`); a **Revert**
+button — enabled only when an override row exists — deletes it outright
+rather than setting it to blank, falling back to `lib/sermonTitle.ts`'s
+regex-parsed name (distinct from explicitly saving an empty speaker, which
+records a *confirmed* "no individual speaker", same null-vs-no-row rule as
+the AI path). `POST`/`DELETE /api/admin/sermons/speaker` are the two routes
+behind it. Title and description are never editable anywhere in this admin
+section — both always follow YouTube.
 
 **AI-recommended sermons** — `find_sermons`, a tool on the sitewide Smart
 Search chat (`lib/smartSearch/tools.ts`, same pattern as its `find_products`
@@ -2223,11 +2279,11 @@ without an auth check, so they must never be reachable on the live site.
 | `/` | `app/page.tsx` | Home page — hero, featured sermon, CTAs |
 | `/about` | `app/about/page.tsx` | About church, team, vision, mission |
 | `/beliefs` | `app/beliefs/page.tsx` | Statement of faith, doctrine |
-| `/sermons` | `app/sermons/page.tsx` | Latest message as video (with an audio switch), speaker/month filters and free-text search over the full archive |
+| `/sermons` | `app/sermons/page.tsx` | Latest message as video (with an audio switch), series/month filters, a guest-speakers toggle and free-text search over the full archive |
 | `/sermons/[id]` | `app/sermons/[id]/page.tsx` | Individual sermon — a **Watch/Listen** switch (`components/sermons/SermonWatchListen.tsx`, the same `ModeSwitch`/`ListenPane` the featured card uses) when a confident audio pairing exists, otherwise the plain YouTube embed; plus skip-to-sermon and next steps. Title/meta rows stay server-rendered (no CLS); only the player area switches |
 | `/live` | `app/live/page.tsx` | Livestream page — standard hero + section rhythm, with a client island that swaps between the custom glass player and an off-air card. On air for a real YouTube broadcast, or for a **simulated** one (a pre-recorded video played from a fixed start time; see `lib/simulatedLive.ts`). Signed-in Hosts also get the **broadcast controls** inline at the top of the page (`LiveHostBar`), so starting, editing or removing a service never means leaving `/live` |
 | `/contact` | `app/contact/page.tsx` | Contact form, address, hours |
-| `/design-request` | `app/design-request/page.tsx` | Ask the design team for something. Name and email are always required, so a request is never anonymous; someone signed in when they submit is fast-tracked. A `@destinytees.uk` address typed while signed out gets a "sign in and we'll fast-track it" nudge, not a block |
+| `/portal/design/request` | `app/portal/design/request/page.tsx` | Ask the design team for something. Staff-only — gated by the `/portal` middleware, which requires a linked `hr_staff` row. Name and email default from the staff record; every request is fast-tracked |
 | `/design-request/[token]` | `app/design-request/[token]/page.tsx` | The requester's own tracker, reached by share token rather than a login — status, the brief as submitted, every revision's files, and buttons to ask for changes or close it. `robots: noindex` |
 | `/give` | `app/give/page.tsx` | Giving info — bank details, online giving |
 | `/shop` | `app/shop/page.tsx` | Store front — published products grid with category filter chips (`ShopProductGrid`), editorial `/links` style |
@@ -2250,12 +2306,13 @@ without an auth check, so they must never be reachable on the live site.
 | `/cap-money` | `app/cap-money/page.tsx` | CAP Money Course (Christians Against Poverty), next event. CTAs fall back to `/contact` when nothing is scheduled |
 | `/whats-on` | `app/whats-on/page.tsx` | Events listing — featured-event banner, then upcoming events grouped by month |
 | `/whats-on/[slug]` | `app/whats-on/[slug]/page.tsx` | On-site event page — one per ChurchSuite *series*, with all upcoming sessions, sanitised description, map link, signup and .ics |
-| `/home` | `app/home/page.tsx` | **Temporary** event-card variant preview of the homepage (`?card=a\|a-pill\|c`). noindex — delete once a variant is chosen |
-| `/whats-on/new` | `app/whats-on/new/page.tsx` | **Temporary** event-card variant preview of What's On. noindex — delete once a variant is chosen |
 | `/connect-card` | `app/connect-card/page.tsx` | Prayer requests, connection form |
 | `/jobs` | `app/jobs/page.tsx` | Job listings |
 | `/jobs/[slug]` | `app/jobs/[slug]/page.tsx` | Job detail page |
 | `/training` | `app/training/page.tsx` | `/training` resource library — category → subgroup (optional password) → post |
+| `/training/[categorySlug]` | `app/training/[categorySlug]/page.tsx` | A training category — its subgroups |
+| `/training/[categorySlug]/[subgroupSlug]` | `app/training/[categorySlug]/[subgroupSlug]/page.tsx` | A subgroup's post list (may prompt for the subgroup password) |
+| `/training/[categorySlug]/[subgroupSlug]/[postSlug]` | `app/training/[categorySlug]/[subgroupSlug]/[postSlug]/page.tsx` | A single training post — course material with progress tracking and timed modules |
 | `/baptism` | `app/baptism/page.tsx` | Baptism sign-up |
 | `/child-dedication` | `app/child-dedication/page.tsx` | Child dedication request |
 | `/volunteer` | `app/volunteer/page.tsx` | Volunteer sign-up form |
@@ -2264,7 +2321,7 @@ without an auth check, so they must never be reachable on the live site.
 | `/nfc` | `app/nfc/page.tsx` | "Digital back of seats" — what an NFC tag or QR code on a seat opens during a service. Standalone (no header, footer, site popup or smart search) and `noindex`. Connect Card and Giving are hardcoded fixtures; everything else comes from `nfc_tiles`, including event tiles that resolve against the live ChurchSuite feed and hide themselves once the event has run |
 | `/twelvetwo` | `app/twelvetwo/page.tsx` | Destiny 12:2 recovery course info page |
 | `/dckids` | `app/dckids/page.tsx` | Destiny Kids Camp 2026 campaign page |
-| `/accessibility` | `app/accessibility/page.tsx` | Reduced-motion / glass-FX preferences (client component) |
+| `/accessibility` | `app/accessibility/page.tsx` | Accessibility statement (conformance target, known issues, review date, feedback route) plus the reduced-motion / glass-FX preferences toggle (`app/accessibility/AccessibilityPreferences.tsx`, client component) |
 | `/privacy` | `app/privacy/page.tsx` | Privacy policy |
 | `/terms` | `app/terms/page.tsx` | Terms of use |
 | `/safeguarding` | `app/safeguarding/page.tsx` | Safeguarding policy |
@@ -2292,7 +2349,9 @@ Each section requires a specific access-level role (see
 | `/admin/analytics` | `app/admin/analytics/page.tsx` | Which links, QR codes and tiles people actually use, plus whole-site traffic. Three tabs: Short links, In person (`/nfc` + `/links`), Whole site (Vercel Web Analytics) |
 | `/admin/cache` | `app/admin/cache/page.tsx` | Invalidate ISR cache |
 | `/admin/posts` | `app/admin/posts/page.tsx` | Standalone content pages |
-| `/admin/training` | `app/admin/training/page.tsx` | Training categories → subgroups → posts |
+| `/admin/training` | `app/admin/training/page.tsx` | Training top level — manage categories |
+| `/admin/training/[categoryId]` | `app/admin/training/[categoryId]/page.tsx` | A category's subgroups — add/edit/reorder the subgroups inside one training category |
+| `/admin/training/[categoryId]/[subgroupId]` | `app/admin/training/[categoryId]/[subgroupId]/page.tsx` | A subgroup's folders and posts — the course-material editor, with fuzzy search over posts |
 | `/admin/alpha` | `app/admin/alpha/page.tsx` | Manage Alpha **and Youth Alpha** events — wrapper over `CourseAdminPage` |
 | `/admin/bible-course` | `app/admin/bible-course/page.tsx` | Manage The Bible Course events — wrapper over `CourseAdminPage` |
 | `/admin/cap-money` | `app/admin/cap-money/page.tsx` | Manage CAP Money Course events — wrapper over `CourseAdminPage` |
@@ -2302,13 +2361,22 @@ Each section requires a specific access-level role (see
 | `/admin/event-popup` | `app/admin/event-popup/page.tsx` | Copy for the popup advertising the featured event (writes `popup_*` on the same row) |
 | `/admin/nfc` | `app/admin/nfc/page.tsx` | Tiles on the `/nfc` page — add/edit/reorder/hide. A ChurchSuite form embed, artwork + copy + CTA, or an event picked from the live calendar (events without a framable signup are shown disabled with the reason) |
 | `/admin/hr` | `app/admin/hr/page.tsx` | HR dashboard (staff, leave, jobs, documents, reviews, checklists) (HR Admin) |
-| `/admin/hr/checklists` | `app/admin/hr/checklists/page.tsx` | Onboarding/offboarding checklist templates (HR Admin) |
+| `/admin/hr/staff` | `app/admin/hr/staff/page.tsx` | Staff directory — searchable list of every staff record, filterable by employment type and status (HR Admin) |
 | `/admin/hr/staff/[id]` | `app/admin/hr/staff/[id]/page.tsx` | Staff record — profile, leave, reviews, documents, live checklists (HR Admin) |
-| `/portal` | `app/portal/page.tsx` | Staff self-service — own profile, leave requests + balance, documents. Separate auth boundary from `/admin`; see [Authorization Layers](#authorization-layers) |
+| `/admin/hr/leave` | `app/admin/hr/leave/page.tsx` | Leave queue — pending/approved requests across all staff, approve/decline with remaining-balance context (HR Admin) |
+| `/admin/hr/jobs` | `app/admin/hr/jobs/page.tsx` | Job board editor — create/edit/close listings that feed the public `/jobs` page (HR Admin) |
+| `/admin/hr/applications` | `app/admin/hr/applications/page.tsx` | Job applications — review submissions and move each through its status pipeline (HR Admin) |
+| `/admin/hr/documents` | `app/admin/hr/documents/page.tsx` | Documents — upload/categorise staff and org-wide files surfaced in `/portal` (HR Admin) |
+| `/admin/hr/reviews` | `app/admin/hr/reviews/page.tsx` | Reviews — schedule and record staff performance/probation reviews (HR Admin) |
+| `/admin/hr/checklists` | `app/admin/hr/checklists/page.tsx` | Onboarding/offboarding checklist templates (HR Admin) |
+| `/portal` | `app/portal/page.tsx` | Staff self-service dashboard — holiday balance, onboarding progress, next review, open design requests and document count as cards linking into each section. Separate auth boundary from `/admin`; see [Authorization Layers](#authorization-layers) |
+| `/portal/profile` | `app/portal/profile/page.tsx` | Own profile fields (department, employment, dates) plus account settings — profile picture, email, password |
+| `/portal/team` | `app/portal/team/page.tsx` | Directory of colleagues with a portal login — name, role, department, work email, picture. Searchable client-side; never shows phone or anything else from `hr_staff` |
+| `/portal/reviews` | `app/portal/reviews/page.tsx` | Own onboarding checklist (tick off items) and review history (dates/type only — see `GET /api/portal/reviews`, which never sends `hr_reviews.summary`) |
 | `/portal/leave` | `app/portal/leave/page.tsx` | Staff self-service — request and withdraw own leave |
 | `/portal/documents` | `app/portal/documents/page.tsx` | Staff self-service — download own + org-wide documents |
-| `/portal/design` | `app/portal/design/page.tsx` | Staff self-service — own design requests. Matched by staff link *and* by email, so requests filed from the public form while signed out still appear |
-| `/admin/sermons` | `app/admin/sermons/page.tsx` | Publish sermon audio to Buzzsprout (video keeps going to YouTube separately) — title/speaker/notes/optional YouTube video id, plus a read-only recent-episodes list showing pairing status (Sermon Admin) |
+| `/portal/design` | `app/portal/design/page.tsx` | Staff self-service — own design requests, plus a link to `/portal/design/request` to file a new one. Matched by staff link *and* by email, so requests filed before this page existed still appear |
+| `/admin/sermons` | `app/admin/sermons/page.tsx` | Publish sermon audio to Buzzsprout (video keeps going to YouTube separately); add/remove YouTube playlists as sermon series; run the AI speaker review or manually search-and-correct any sermon's speaker; a read-only recent-episodes list showing pairing status (Sermon Admin) |
 | `/admin/design` | `app/admin/design/page.tsx` | Design ticket queue — search, status/priority/mine filters, inline Claim. Defaults to "Needs someone" rather than everything (Design Admin) |
 | `/admin/design/[id]` | `app/admin/design/[id]/page.tsx` | Ticket detail — brief, requester, the thread, the deliverable uploader, and only the transition buttons `canTransition` allows from here (Design Admin) |
 | `/admin/store` | `app/admin/store/page.tsx` | Store — product list |
@@ -2334,7 +2402,7 @@ that one list, so adding a section means editing one file.
 is replaced by `components/admin/AdminTabBar.tsx`, pinned to the bottom of the
 viewport — the shape phones actually use, and one tap per section instead of the
 hamburger drawer's two or three. A tab is a *group*, not a page: a super admin
-can see around thirty-five pages but only eleven groups, so `tabsFor(roles)`
+can see around forty pages but only eleven groups, so `tabsFor(roles)`
 projects `ADMIN_GROUPS` down to one tab per top-level entry. Ungrouped items
 (Dashboard, Posts, Training, Simulated Live, Live Chat) are their own tabs, a
 group left with one visible item collapses to a plain link, and a group with
@@ -2411,11 +2479,12 @@ the orange pill alone — same intent, drifting padding and shadow.
 
 | Prop | Values | Notes |
 |---|---|---|
-| `variant` | `primary` · `secondary` · `outline` · `onDark` · `glass` | `onDark`/`glass` are for hero photography |
-| `shape` | `pill` (default) · `soft` | `soft` is `rounded-xl`, the `/admin` chrome |
-| `size` | `xs` · `sm` · `md` · `lg` · `xl` | `sm` is the `/admin` default |
+| `variant` | `primary` · `secondary` · `outline` · `accentOutline` · `onDark` · `glass` | `accentOutline` is the orange-outline-fills-on-hover secondary CTA (previously pasted separately in three files); `onDark`/`glass` are for hero photography |
+| `shape` | `pill` (default) · `soft` · `card` | `soft` is `rounded-xl`, the `/admin` chrome; `card` is the larger icon+label CTAs (Give Online, Text to Give) |
+| `size` | `xs` · `sm` · `md` · `lg` · `xl` · `cta` · `icon` | `sm` is the `/admin` default; `icon` is 44px square for icon-only buttons |
 | `href` | string | Renders `next/link`; `http(s):`/`mailto:`/`tel:` get an external anchor |
 | `fullWidth` | boolean | |
+| `loading` | boolean | Shows a spinner, sets `aria-busy`, disables the button; label stays in place |
 
 Every size is a padding cluster that already existed in the codebase (`px-6 py-3` appeared
 14×, `px-7 py-3` 13×, `px-6 py-2.5` 13×), so adopting it does not shift anything by a few
@@ -2428,6 +2497,65 @@ buttons lacked.
 >
 > Genuinely one-off buttons should stay plain `<button>` elements — this is for the repeated
 > cases. Migration is opportunistic; most call sites are still hand-written strings.
+
+#### `ui/Container.tsx` / `ui/Section.tsx`
+**Server-safe, no directive.** The horizontal frame (`Container`, three widths — `prose`
+`max-w-3xl`, `content` `max-w-5xl`, `wide` `max-w-7xl` default) and a page section (`Section`
+— tinted band via `tone` reusing the block system's `TONE_SURFACE`, plus a `dark` tone
+`Section` adds itself since the block system has no equivalent; padding via `padding`:
+`sm` `py-12 sm:py-16`, `md` `py-16 sm:py-20` default, `lg` `py-20 sm:py-28`). Replace the
+`mx-auto max-w-* px-4 lg:px-8` / `py-*` pairs that were hand-written at ~67 and ~130+ call
+sites respectively.
+
+#### `ui/SectionHeading.tsx` / `ui/Eyebrow.tsx`
+**Server-safe, no directive.** `Eyebrow` is the exact `text-xs font-bold uppercase
+tracking-widest text-destiny-orange` string, pulled out of `components/blocks/tokens.ts`'s
+`EYEBROW` constant so it's reachable without importing the block system. `SectionHeading`
+is eyebrow + heading + lead + an optional action link, one ramp replacing six per-section
+variants. Both carry the `FONT_ROBOTO` inline escape hatch documented under Content Blocks
+below — `h1,h2,h3` are unlayered Arial in `globals.css`.
+
+#### `ui/Card.tsx`
+**Server-safe, no directive.** The card shell (`CARD_SHELL`/`CARD_HOVER` from
+`components/blocks/tokens.ts`, promoted). Pass `href` to make the **whole card** the link —
+motivated by `GetInvolvedSection`, whose image scaled on `group-hover` across the entire
+card while only a small pill at the bottom was actually clickable. `interactive` gets the
+hover lift without a link, for cards whose action lives inside them.
+
+#### `ui/Icon.tsx`
+**Server-safe, no directive.** Wraps a Material Symbols ligature span. Decorative
+(`aria-hidden`) by default — pass `label` only when the icon IS the control or carries
+meaning no adjacent text repeats. Exists because the icon font renders by literal ligature
+text (`play_arrow`, `volunteer_activism`, …), which a screen reader reads verbatim on any
+span not marked `aria-hidden`; roughly 500 of ~570 such spans site-wide have been converted.
+
+#### `ui/PageHero.tsx` / `ui/MediaBanner.tsx`
+**Server-safe, no directive.** `PageHero` (generalised from `components/ministry/
+MinistryHero.tsx`) is the inner-page hero: sharp photo via `next/image priority`, two scrim
+layers, Roboto semibold heading, optional `chips` and `actions`. `MediaBanner` is the
+inset blurred-photo CTA banner (`WorshipWithUsSection`, `ConnectGroupsBanner`, …) — copy
+left, stacked buttons right. Both replace the CSS-`background-image` / independently-pasted
+blur+scrim idiom that had accumulated across ~8–11 files.
+
+#### `ui/Field.tsx` (`Field`, `TextareaField`, `SelectField`)
+**Client component.** The one input shape: generates an id, wires `label`/`aria-describedby`/
+`aria-invalid`, and renders a hint or an error. Replaces three competing `inputClass`
+constants plus a fourth written inline in `ContactForm`.
+
+#### `ui/Badge.tsx` / `ui/Disclosure.tsx`
+**Server-safe, no directive.** `Badge` is a status/category pill with semantic tones
+(`success`/`warning`/`danger`/`info` map onto the `--color-*-bg`/`-fg` pairs in
+`globals.css`, plus `neutral`/`accent`/`onDark`). `Disclosure` is a `<details>`/`<summary>`
+expand-collapse row with no client JS — used for `/visit`'s FAQ, which used to be seven
+permanently-open `<div>`s despite shipping `FAQPage` JSON-LD.
+
+`/dev/ui` is the gallery for all of the above — every variant of every primitive on one
+page, the `components/ui/` sibling of `/dev/blocks`. 404s in production.
+
+#### `ui/BackgroundVideo.tsx`
+**Client component.** A decorative autoplaying hero video that honours the site's
+reduced-motion preference (`AccessibilityContext`, which mirrors the OS setting) by simply
+not rendering when it's on, rather than looping regardless — used on `/serve` and `/alpha`.
 
 #### `ui/Modal.tsx`
 **Client component (`"use client"`).** The shared dialog shell.
@@ -2477,14 +2605,14 @@ focus to whatever opened it, and locks body scroll — restoring the *previous*
 - **What:** Sitewide footer (server component — awaits `isYouTubeQuotaExceeded()` to drop the Sermons link when the YouTube quota is blown)
 - **Displays:** Brand blurb + address, three link columns (Church / Connect / Legal), copyright, Report a Bug, phone
 - **Layout:** 4-column grid from `md:` up; on mobile the three link columns render as accordions via `FooterLinkGroup`
-- **Address:** The "Destiny Centre / Norton Road / Stockton-on-Tees / TS20 2QQ" block is one `MapsLink` wrapping an `<address>` — the whole block is a single tap target that opens the device's map app. What it *sends* the map app is "395 Norton Road, Stockton-on-Tees, TS20 2QQ", not the text on screen (see `lib/maps.ts`)
+- **Address:** The four `ADDRESS` lines from `lib/churchInfo.ts` are one `MapsLink` wrapping an `<address>` — the whole block is a single tap target that opens the device's map app. What it *sends* the map app omits `ADDRESS.venue` (see `lib/maps.ts`), so the text on screen and the map query deliberately differ
 
 #### `MapsLink.tsx` + `lib/maps.ts`
 - **What:** Client component that wraps an address in a link to the device's map app
 - **Why two URLs:** There's no single "open in maps" URL. `https://www.google.com/maps/search/?api=1&query=…` is the cross-platform default (Android and desktop hand it to Google Maps or the browser); `https://maps.apple.com/?q=…` is what iOS/iPadOS/macOS want, where Google Maps often isn't installed
 - **Hydration:** The server always renders the Google URL; `useHydrated()` (the `useSyncExternalStore` snapshot in `lib/useHydrated.ts`) flips the href to Apple Maps after hydration on Apple devices. Sniffing the user agent during render instead would produce a server/client markup mismatch
-- **`lib/maps.ts`:** Holds the two address strings and `googleMapsUrl()`, `appleMapsUrl()`, `isApplePlatform()`, `deviceMapsUrl()`
-- **Two strings, not one:** the UI prints the venue name, the map app gets the postal address — see `lib/maps.ts` below
+- **`lib/maps.ts`:** Holds `DESTINY_CENTRE_MAP_QUERY` and `googleMapsUrl()`, `appleMapsUrl()`, `isApplePlatform()`, `deviceMapsUrl()`. The address comes from `lib/churchInfo.ts`; this only decides which map app
+- **Printed vs. sent:** the UI prints `ADDRESS.venue` first, the map app gets the postal address without it — see `lib/maps.ts` below
 - **Gotcha:** iPadOS reports a "Macintosh" user agent, so the Apple check also tests `navigator.maxTouchPoints > 1`
 - **Gotcha:** because the visible text and the map query differ, callers should pass `aria-label` built from the children rather than letting it default to the query — WCAG 2.5.3 wants the accessible name to contain the visible text
 
@@ -3054,8 +3182,42 @@ stay: they're consent and legal, not chrome.
 - `ReportBugLink.tsx` — a "Report a Bug" link rendered in `ChurchFooter.tsx`. Opens an accessible in-app modal (Escape-to-close, body-scroll lock) with a small form: **Full Name**, **Email**, and **How to reproduce**. On submit it captures the current `window.location.href` as `pageUrl` and calls the `submitBugReport` server action, showing inline loading / success / error states.
 - `actions.ts` — `submitBugReport(formData)` server action. Validates name/email/steps, then uses `GITHUB_TOKEN` to open a GitHub Issue on `SquareMediaGroup/destinychurch` via the GitHub REST API (`POST /repos/.../issues`), titled `Bug Report: <name>` with the reporter, page URL, and reproduction steps in the body. Returns `{ success, error? }`; a missing `GITHUB_TOKEN` yields a friendly server-misconfiguration error. **Requires the `GITHUB_TOKEN` env var** (see Configuration).
 
+#### About Page (`components/about/*`)
+- `AboutHero.tsx` — the About page hero band.
+- `AboutMissionStatement.tsx` — the `#mission` mission-statement section (white background).
+- `MagnifySection.tsx` — the church's guiding pillars, rendered from a local `pillars` list.
+- `BeliefsSection.tsx` — a summary of core beliefs, linking through to `/beliefs`.
+- `MeetPastorsSection.tsx` — the lead pastors introduction on a dark gradient panel.
+- `TeamSection.tsx` — the staff/leadership grid, built from a local team list (name, role, photo, email); cards are off-white by default and pick up colour on hover.
+- `AboutGovernanceNote.tsx` — a short governance/transparency note pointing to `/governance`.
+
+#### Visit (`components/visit/*`)
+- `VisitSlideshow.tsx` — a client, auto-advancing photo slideshow of church life used on the Plan-a-Visit page.
+
+#### Alpha (`components/alpha/*`)
+- `AlphaTopics.tsx` — a client, expandable list of the big questions Alpha explores (each an accordion of question + description), with `AnimateIn` reveals.
+
 #### Home Page (`components/home/*`)
-- `HeroSection.tsx` — Main hero banner with video/image
+- `HomePageBody.tsx` — the whole homepage composition, extracted as a server
+  component so the real page (`app/page.tsx`) and the variant-preview route
+  (`app/home/page.tsx`) render identical markup with a different event-card
+  treatment (`cardVariant`) rather than duplicating the layout. It resolves the
+  latest sermon once — `getLatestVideo()`, falling back to `getLatestVideoFromRSS()`
+  when the YouTube quota is exceeded — and renders, in order: `HomeOverscrollColor`,
+  `HeroSection`, `MissionSection`, `LatestSermonSection`, `WhatsOnSection`,
+  `EveryoneHasAPlaceSection`, `WorshipWithUsSection`, `GetInvolvedSection`.
+- `HomeOverscrollColor.tsx` — a render-nothing client component that sets
+  `document.documentElement.style.background` to Destiny orange (`#F58021`) on
+  mount and restores it on unmount, so the overscroll/rubber-band area at the top
+  of the homepage matches the hero rather than flashing white.
+- `HeroSection.tsx` — main hero banner with video/image.
+- `MissionSection.tsx` — centered "Our Mission" statement with the lead pastors'
+  avatar, on a white background.
+- `LatestSermonSection.tsx` — dark image banner (rounded-3xl card, blurred
+  backdrop, left-to-right black gradient, orange + ghost buttons) showing the most
+  recent sermon. Title and speaker come pre-parsed from `video` (see
+  `lib/sermonTitle.ts`); the Watch button links to `/sermons/[id]`, or straight to
+  YouTube when the quota is exceeded. Renders nothing when there is no video.
 - `WhatsOnSection.tsx` — the What's On block, all inside the `max-w-7xl`
   container: header + "View Church Calendar", the event carousel (max 6 events,
   featured one pinned first), and the "View All" button. Falls back to three
@@ -3066,9 +3228,14 @@ stay: they're consent and legal, not chrome.
   arrows use `top-3 bottom-10 my-auto` rather than `top-1/2` so that asymmetric
   padding doesn't push them below the card midline, and the track's negative
   margin tracks the container padding at `lg` (`-mx-8`, not a fixed `-mx-4`).
-- `MinistriesGrid.tsx` — Ministry cards (kids, youth, etc.)
-- `UpcomingSermons.tsx` — Latest sermons carousel
-- `CTAButtons.tsx` — Prominent call-to-action buttons
+- `EveryoneHasAPlaceSection.tsx` — a grid of ministry entry points (Kids, Youth,
+  Young Adults, Connect Groups) with photo, blurb, and link, each revealed with
+  `AnimateIn`.
+- `WorshipWithUsSection.tsx` — full-bleed "Worship With Us" banner (rounded-3xl,
+  lazy-loaded blurred background photo, left-to-right black gradient) inviting
+  visitors to a service.
+- `GetInvolvedSection.tsx` — two-up cards ("Get Connected" → `/connect`, "Join a
+  Team" → `/serve`) on a white background, each with photo, blurb, and CTA.
 
 #### Shop (`components/shop/*`)
 - `ShopProductGrid.tsx` — client wrapper around the `/shop` grid; derives a category
@@ -3283,6 +3450,40 @@ row) to `/portal`; admin roles take priority, so someone who is both lands on
 // re-reviews everything. Node runtime, maxDuration = 300 — a full first pass is
 // a few dozen batched OpenAI calls. Driven from the Speaker Review panel on
 // /admin/sermons (components/admin/SpeakerReviewPanel.tsx).
+```
+
+#### `POST` / `DELETE /api/admin/sermons/speaker`
+```typescript
+// POST   Body: { video_id, speaker } → upserts speaker_overrides
+//        (reviewed_by: "admin"). speaker: "" is stored as null — a
+//        *confirmed* "no individual speaker", same rule the AI path uses.
+// DELETE Body: { video_id } → deletes the override row outright (the
+//        "Revert to YouTube" action — falls back to lib/sermonTitle.ts's
+//        regex-parsed speaker, distinct from POSTing an empty speaker).
+//
+// AUTHORIZATION: sermon_admin, via ROUTE_RULES.
+//
+// The manual, hand-typed counterpart to review-speakers above — both write
+// the same speaker_overrides row. Driven from the manual speaker editor on
+// /admin/sermons (components/admin/SpeakerEditor.tsx). recordAudit() on
+// both verbs.
+```
+
+#### `GET` / `POST /api/admin/sermons/series`, `DELETE /api/admin/sermons/series/[id]`
+```typescript
+// GET    → sermon_series rows merged with a live YouTube snippet per row.
+// POST   Body: { input } → a pasted playlist URL or bare id. Extracts the
+//        id from a URL's `list=` param, validates it resolves via
+//        getPlaylistSnippet() (lib/youtube.ts), then inserts into
+//        sermon_series. 409 on a duplicate playlist_id.
+// DELETE (on /[id], the playlist id) → removes the row only — the YouTube
+//        playlist itself is never touched.
+//
+// AUTHORIZATION: sermon_admin, via ROUTE_RULES.
+//
+// Manages the playlist ids that back the public Series filter on /sermons
+// (see Database Schema §27, lib/sermonSeries.server.ts). Driven from
+// components/admin/SeriesManager.tsx. recordAudit() on POST and DELETE.
 ```
 
 #### Design tickets — `/api/admin/design/tickets/**`
@@ -3850,11 +4051,19 @@ returned to its own author marked as waiting, so they don't retype it.
 // every query to the returned staff.id, never to anything the client supplies.
 
 GET  /api/portal/me            // the caller's own hr_staff profile
+PATCH /api/portal/me           // change own email — auth.updateUser() on the caller's own session (Supabase sends a confirmation email); hr_staff.email is updated immediately alongside it
+POST /api/portal/me/password   // change own password — re-authenticates with currentPassword (signInWithPassword) before auth.updateUser(), so a wrong current password rejects the change
+POST /api/portal/me/avatar     // upload a profile picture to the `staff-avatars` bucket, replaces hr_staff.avatar_url
+DELETE /api/portal/me/avatar   // remove the current profile picture
 GET  /api/portal/leave         // own leave requests (newest first)
 POST /api/portal/leave         // file own leave — staff_id + status forced server-side, never from the body
 DELETE /api/portal/leave/[id]  // withdraw own request, pending only; 404 (not 403) on a mismatch, so IDs can't be probed
 GET  /api/portal/documents     // own documents + org-wide ones (staff_id IS NULL)
 GET  /api/portal/documents/[id] // 60s signed download URL from the hr-documents bucket; 404 on a foreign doc
+GET  /api/portal/reviews       // own hr_reviews — id/review_date/type/reviewer/next_review_date only, never `summary`
+GET  /api/portal/checklists    // own hr_checklist_items where kind = 'onboarding' (offboarding is HR/manager-only)
+PATCH /api/portal/checklists/[id] // toggle is_done on one of your own onboarding items; 404 on a mismatch
+GET  /api/portal/team          // directory of non-"left" hr_staff — name, role, department, email, avatar; never phone or notes
 ```
 
 A leave request/decision here (and from `/admin/hr`) triggers a notification
@@ -4444,40 +4653,80 @@ mid-service behaviour.
 
 ### `lib/maps.ts`
 
-Map deep-links for the Destiny Centre. There is no single "open in maps" URL
-that works everywhere, so this builds two and the caller picks one at render
-time:
+Opening the address in whatever map app the visitor's device has. The address
+itself is **not** defined here — `lib/churchInfo.ts` owns it and this derives
+from it. What lives here is the part `churchInfo` has no opinion on: which map
+*app* to send someone to.
+
+`churchInfo`'s `MAPS_URL` and `DIRECTIONS_URL` are both Google, which is the
+right default and the wrong answer on Apple hardware, where Google Maps often
+isn't installed and a `google.com` link strands the visitor in a browser instead
+of the map app they actually use. So:
 
 - `googleMapsUrl(query?)` — `https://www.google.com/maps/search/?api=1&query=…`.
   The cross-platform default: a plain https link, so it works on desktop, and
   Android/iOS hand it to the Google Maps app when installed.
 - `appleMapsUrl(query?)` — `https://maps.apple.com/?q=…`. The right answer on
-  Apple platforms, where Google Maps often isn't installed. Degrades to a web
-  map elsewhere, so it's never a dead end.
+  Apple platforms. Degrades to a web map elsewhere, so it's never a dead end.
 - `isApplePlatform()` — browser-only user-agent check. Also tests
   `navigator.maxTouchPoints > 1`, because iPadOS reports itself as "Macintosh".
 - `deviceMapsUrl(query?)` — Apple URL on Apple devices, Google everywhere else
   (including the server, where `navigator` is undefined).
 
-**There are two address strings, and the split is the point:**
+`DESTINY_CENTRE_MAP_QUERY` is what every builder here defaults to:
+`` `${ADDRESS.street}, ${ADDRESS.locality}, ${ADDRESS.postcode}` `` — the postal
+address, **without** `ADDRESS.venue`. That omission is deliberate and is the
+whole point of the module. Hand a map app "Destiny Centre" and it searches for a
+place by that name and can land anywhere; hand it a street number and it
+geocodes to the building. The UI still prints the venue name — see
+`components/MapsLink.tsx` under Components, which also covers why the accessible
+name has to be built from the visible text rather than from the query.
 
-- `DESTINY_CENTRE_ADDRESS` — `"Destiny Centre, Norton Road, Stockton-on-Tees,
-  TS20 2QQ"`. What the UI prints. Leads with the venue name, because that's how
-  people say where the church is.
-- `DESTINY_CENTRE_MAP_QUERY` — `"395 Norton Road, Stockton-on-Tees, TS20 2QQ"`.
-  What map apps are handed, and the default for every URL builder here. Street
-  number, no venue name, matching `streetAddress` in the schema.org
-  `PostalAddress` in `app/layout.tsx` — so the app geocodes to the building
-  instead of searching for "Destiny Centre" and landing on whatever it decides
-  that is.
+Because the query is built from `churchInfo`'s `ADDRESS` rather than typed out,
+editing the address in one place moves the map pin too.
 
-Both are consumed by `components/MapsLink.tsx` (footer) and the
-`get_directions` Smart Search tool in `lib/smartSearch/tools.ts`, which prints
-`address` on its result card while its `mapsUrl` and Google embed `q` both use
-the map query.
+---
 
-If you edit one string, edit the other — they're the same building written for
-two different readers, and nothing enforces that.
+### `lib/churchInfo.ts`
+
+The address, phone, email and Sunday schedule, in one typed place — display strings
+(`SCHEDULE.mainServiceStart` = `"11:00am"`) alongside 24-hour equivalents
+(`SCHEDULE.iso.mainServiceStart` = `"11:00"`) for JSON-LD. Also `ADDRESS_ONE_LINE`,
+`ADDRESS_LINES`, `MAPS_URL`, `DIRECTIONS_URL`, `PARKING_NOTE`, `BUS_NOTE`,
+`VISIT_FACTS`, `ACCESSIBILITY`.
+
+Before this file, the same handful of facts were retyped independently in the
+JSON-LD in `app/layout.tsx`, `/visit`, `/contact`, `/help`, and the `CHURCH_FACTS`
+prose block in `lib/siteKnowledge.ts` (Smart Search's source of truth) — and they had
+drifted: the JSON-LD `Organization` schema listed a different support email than
+every other page on the site.
+
+Deliberately scoped to "when, where, what to expect" — it does **not** absorb the
+charity/company registration numbers, leadership names or mission statement out of
+`CHURCH_FACTS`. Those have a different canonical source (`/governance`, backed by
+the Charity Commission / Companies House registers), so they're still edited
+directly in `siteKnowledge.ts`. `CHURCH_FACTS` quotes `churchInfo` via template
+literals for the facts it does own; `tests/unit/church-info.spec.ts` pins the
+internal consistency (schedule in chronological order, the phone formats agreeing,
+`CHURCH_FACTS` genuinely containing the same strings rather than a hand-typed copy
+that happens to match today) and — deliberately — asserts the support email equals
+`admin@destinytees.uk`, the exact drift this file exists to prevent.
+
+Consumed by `app/layout.tsx`'s JSON-LD, `app/contact/page.tsx`,
+`app/help/page.tsx`'s two schedule/location FAQ answers, `components/ChurchFooter.tsx`,
+`components/home/ServiceTimesBar.tsx`, and `app/visit/page.tsx`.
+
+---
+
+### `lib/useFocusTrap.ts`
+
+Focus trap + Escape + focus-restore for a dialog that can't hand its markup to
+`components/ui/Modal.tsx` wholesale — `Modal.tsx` owns its panel's mount lifecycle
+and unmounts the instant `open` goes false, with no room for an exit transition.
+`components/give/TextToGiveCTA.tsx`'s panel needs its own 350ms scale/fade-out, so
+it keeps its own markup and takes just the trap logic via this hook. `Modal.tsx`
+carries the same logic inline; not deduplicated onto this hook since it isn't
+broken, only *also* correct.
 
 ---
 
@@ -4542,6 +4791,13 @@ since only membership matters). `getGuestSpeakerVideoIds()` wraps it for
 `GUEST_SPEAKERS_PLAYLIST_ID`, backing the archive grid's "Guest speakers only"
 filter. Fails open to an empty set so a YouTube outage hides the filter rather
 than breaking the page.
+
+**`getPlaylistSnippet(playlistId)`** (added September 2026) — a playlist's own
+title/description/thumbnail via `playlists.list` (`part=snippet`). Backs the
+Series feature: it's both how `lib/sermonSeries.server.ts` resolves a
+configured playlist's display name, and the existence check the admin
+"add series" API uses before inserting a row — a `null` return means "not
+found or private" either way.
 
 ```typescript
 // Wrapper around YouTube Data API v3
@@ -4612,6 +4868,19 @@ answer is kept rather than yanking a running stream off the page.
 ### `lib/speakerOverrides.server.ts` — speaker-corrected YouTube reads
 
 Thin wrappers around `lib/youtube.ts` (`getFullSermonArchive`, `getUploadedVideos`, `getVideo`, `getLatestVideo`, `getAllVideos`) that overlay the `speaker_overrides` table onto each returned video. Every video-serving path in the app reads through **this** module, not `lib/youtube.ts` directly, so a stored speaker correction takes effect everywhere at once and `lib/youtube.ts` stays a pure YouTube client with no Supabase dependency. Only overridden ids are replaced — a video with no override row keeps its regex-parsed speaker untouched. See the [`speaker_overrides`](#26-speaker_overrides-sermon-speaker-corrections) table for the null-vs-no-row distinction.
+
+**`getSpeakerOverrides(ids)`** (added September 2026) — the admin-only sibling of the internal `fetchOverrides()` above: returns the raw override rows (`speaker` *and* `reviewed_by`, not just the resolved speaker value) so `components/admin/SpeakerEditor.tsx` can tell an AI-set correction apart from a manually-set one and know whether its Revert button has anything to delete. Public read paths keep using the plain wrapper functions above; this is only for the admin editor's own state.
+
+### `lib/sermonSeries.server.ts` — playlist-backed sermon series
+
+The `sermon_series` (Database Schema §27) read side, mirroring `lib/speakerOverrides.server.ts`'s shape: the DB only ever holds a `playlist_id` pointer, everything else is resolved live against YouTube.
+
+```typescript
+export async function getSermonSeriesRows(): Promise<SermonSeriesRow[]>   // raw DB rows, no YouTube calls
+export async function getSermonSeriesList(): Promise<SermonSeries[]>      // DB rows + live title/description/videoIds
+```
+
+`getSermonSeriesRows()` is what the admin `SeriesManager` list reads, so a playlist that's gone private or been deleted still shows up (as "Unresolved") and can be removed. `getSermonSeriesList()` is what `app/sermons/page.tsx` reads for the public Series filter — it resolves each row against `getPlaylistSnippet()` and `getPlaylistVideoIds()` in parallel and silently drops any playlist that fails to resolve, the same fail-open posture as `getGuestSpeakerVideoIds()`, so one bad playlist can't take the whole page down.
 
 ### `lib/speakerReview.server.ts` — AI speaker review
 
@@ -5708,6 +5977,24 @@ Everything lives in `app/globals.css`:
 ```css
 @import "tailwindcss";          /* establishes @layer theme, base, components, utilities */
 
+:root {
+  --background: #ffffff;
+  --foreground: #363f48;
+  --surface: #ffffff;
+  --surface-muted: #f5f7fa;
+  --surface-overlay: rgba(255, 255, 255, 0.92);
+  --border-subtle: rgba(0, 0, 0, 0.05);
+  /* Motion literals live here, not in @theme, so both the utilities below AND
+     hand-written animation CSS elsewhere in this file can reference them —
+     see "Radius, elevation, hairline, motion" below. */
+  --motion-ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
+  --motion-ease-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  --motion-ease-overshoot: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --motion-dur-fast: 200ms;
+  --motion-dur-base: 300ms;
+  --motion-dur-slow: 500ms;
+}
+
 @theme inline {
   --color-destiny-orange: #f58021;
   --color-destiny-orange-dark: #d96d10;
@@ -5719,19 +6006,33 @@ Everything lives in `app/globals.css`:
   --color-destiny-white: #ffffff;
   --color-destiny-black: #000000;
   --color-destiny-brown: #2c1a0e;
+  --color-destiny-brown-light: #3d2b1a;
+  --color-muted: #5b6570;   /* 5.9:1 on white — see "Accessible text" below */
+  --color-subtle: #6b7580;  /* 4.7:1 on white */
+  --color-surface: var(--surface);
+  --color-surface-muted: var(--surface-muted);
+  --color-hairline: rgb(0 0 0 / 0.07);
+  --color-divider: rgb(0 0 0 / 0.12);
   --font-sans: var(--font-roboto), system-ui, -apple-system, sans-serif;
   --font-heading: Arial, "Helvetica Neue", sans-serif;
+  --font-admin-heading: var(--font-anton), Arial, "Helvetica Neue", sans-serif;
 }
 ```
+
+(Trimmed for readability — the real file also carries 50–900 shade ramps per
+hue, the `success`/`warning`/`danger`/`info` semantic aliases, and
+`--radius-card`/`--radius-panel`/`--radius-shell` and `--shadow-card`/
+`--shadow-card-hover`, all covered in their own subsections below.)
 
 Tokens declared in `@theme inline` become utilities automatically, so
 `--color-destiny-orange` gives you `text-destiny-orange`, `bg-destiny-orange`,
 `border-destiny-orange` and so on. Add a colour or font by adding a variable
 here — there is no config file to edit.
 
-Fonts are loaded by `next/font` in `app/layout.tsx` (Roboto for body, Anton and
-Playfair Display for display) and exposed as `--font-roboto` / `--font-anton` /
-`--font-playfair`.
+Fonts are loaded by `next/font` in `app/layout.tsx` — Roboto (body), Anton
+(display/hero), Playfair Display (serif accent), Poppins (loaded site-wide;
+`/twelvetwo` is its only current caller) — and exposed as `--font-roboto` /
+`--font-anton` / `--font-playfair` / `--font-poppins`.
 
 #### Colour ramps and semantic tokens
 
@@ -5750,6 +6051,53 @@ so "this is a good outcome" is one concept (`bg-success/10 text-success`)
 reused everywhere instead of every call site hand-picking which green to use.
 `Badge`'s tone map and `MetricCard`'s chip tone (`components/admin/AdminUI.tsx`,
 `app/admin/page.tsx`) both read from these rather than a brand colour directly.
+
+#### Accessible text — `text-muted` / `text-subtle`
+
+The site's idiom for secondary text used to be an opacity modifier on the
+brand grey — `text-destiny-grey/60`, `/50`, `/40` — which reads as "quieter"
+but doesn't survive a contrast check: `#363f48` is 10.5:1 on white, but at
+60% opacity that drops to 3.4:1 and at 40% to 2.1:1, both below the WCAG AA
+floor of 4.5:1 for normal-size text. `/40` was also the *single most common*
+secondary-text value in the codebase before this was fixed.
+
+Two solid-colour steps replace it, each measured on white and pinned by
+`tests/unit/contrast.spec.ts`:
+
+| Token | Hex | Ratio on white | Use |
+|---|---|---|---|
+| `text-muted` | `#5B6570` | 5.9:1 | Secondary body copy, card descriptions |
+| `text-subtle` | `#6B7580` | 4.7:1 | Metadata, captions, eyebrow labels — the quietest allowed to carry meaning |
+
+On dark surfaces the equivalents are alphas rather than solid colours,
+because the backdrop varies: `text-on-dark-muted` (`rgb(255 255 255 / .82)`,
+7.8:1 over `--color-destiny-grey`) and `text-on-dark-subtle` (`/.72`, 6.4:1).
+Over **photography** neither is sufficient by itself — the fix there is a
+stronger scrim, not a lighter text colour, and is applied by hand per hero.
+
+A codemod moved 602 occurrences across 152 files onto these two tokens.
+**Not** touched: `/admin` and `/portal` (each light class there commonly
+pairs with a `dark:` sibling, which needs checking against both themes as
+its own pass) and any `material-symbols-rounded` icon span (decorative;
+darkening a large empty-state glyph to the AA floor would be a visual
+regression, not a fix).
+
+#### Radius, elevation, hairline, motion
+
+Four more scales exist for the same reason as the two above: each replaced a
+handful of near-identical values that had drifted apart from being
+independently invented per call site.
+
+| Token(s) | Values | Replaces |
+|---|---|---|
+| `rounded-card` / `rounded-panel` / `rounded-shell` | 20px / 24px / 32px | `rounded-2xl`, `rounded-3xl`, `rounded-[20px]`, `rounded-[24px]` all meaning "a card" |
+| `shadow-card` / `shadow-card-hover` | the two-layer contact + soft shadow | The literal `shadow-[0_1px_2px_rgba(16,24,40,.04),0_8px_24px_-8px_rgba(16,24,40,.10)]`, pasted verbatim into 16 files |
+| `border-hairline` / `border-divider` | `rgb(0 0 0 / .07)` / `rgb(0 0 0 / .12)` | Six notations in use for a hairline: `border-black/5`, `/6`, `/8`, `/10`, `/15`, `/[0.07]` |
+| `ease-standard` / `ease-expo` / `ease-overshoot` (utilities); `--motion-dur-fast/base/slow` (`:root` only — Tailwind has no duration namespace to hang a utility on) | see `:root` literals above | `cubic-bezier(0.16,1,0.3,1)` was written two different ways (with and without spaces) across 23 sites, alongside two other curves and five ad-hoc durations |
+
+`components/ui/Card.tsx` and `components/ui/Section.tsx`/`Container.tsx` (see
+Components, above) are the primitives built on these; adopting one usually
+means adopting the others.
 
 #### Dark mode — `/admin` only
 
@@ -6100,6 +6448,7 @@ ENABLE_SMART_SEARCH=true
 - `app/admin/store/orders/[id]/page.tsx` — Order detail (fulfillment)
 - `app/admin/store/hero/page.tsx` — Shop hero slides (add/edit/reorder rotating hero)
 - `app/admin/live/page.tsx` — Simulated Live (schedule a pre-recorded video to play on `/live` as a broadcast)
+- `app/admin/sermons/page.tsx` — Publish sermon audio to Buzzsprout; manage playlist-backed series; AI or manual speaker correction (Sermon Admin)
 - `app/admin/users/page.tsx` — Admin logins and access-level roles (Super Admin only)
 - `app/admin/audit/page.tsx` — Audit log: ask it in plain English, or search/filter and read the field-by-field detail. Second tab holds the weekly AI reports (Super Admin only)
 - `app/admin/analytics/page.tsx` — Click analytics: Short links, In person (`/nfc` + `/links`), Whole site (Vercel Web Analytics)

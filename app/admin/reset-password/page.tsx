@@ -89,7 +89,7 @@ export default function ResetPasswordPage() {
 
               {state.error && (
                 <div className="flex items-center gap-3 rounded-2xl bg-red-500/10 px-4 py-3 text-sm text-red-400">
-                  <span className="material-symbols-rounded text-base">
+                  <span className="material-symbols-rounded text-base" aria-hidden="true">
                     error
                   </span>
                   {state.error}

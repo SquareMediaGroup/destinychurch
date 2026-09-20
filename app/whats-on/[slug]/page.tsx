@@ -172,14 +172,14 @@ export default async function EventPage({ params }: Props) {
       />
 
       <div className="mx-auto max-w-4xl px-4 pt-8 lg:px-8">
-        <nav className="mb-6 text-sm text-destiny-grey/50">
+        <nav className="mb-6 text-sm text-subtle">
           <Link href="/whats-on#events" className="transition hover:text-destiny-grey">
             What&apos;s On
           </Link>
           <span className="mx-2" aria-hidden>
             /
           </span>
-          <span className="text-destiny-grey/70">{series.name}</span>
+          <span className="text-muted">{series.name}</span>
         </nav>
 
         {image && (
@@ -200,7 +200,7 @@ export default async function EventPage({ params }: Props) {
             <span className="text-[26px] font-black leading-none text-destiny-orange">
               {chip.day}
             </span>
-            <span className="mt-1 text-[10px] font-bold uppercase tracking-[0.14em] text-destiny-grey/55">
+            <span className="mt-1 text-[10px] font-bold uppercase tracking-[0.14em] text-subtle">
               {chip.month}
             </span>
           </div>
@@ -211,11 +211,11 @@ export default async function EventPage({ params }: Props) {
             >
               {series.name}
             </h1>
-            <p className="mt-2 text-[15px] text-destiny-grey/65">
+            <p className="mt-2 text-[15px] text-muted">
               {formatDateRange(event)}
             </p>
             {event.category?.name && (
-              <p className="mt-1 text-[13px] text-destiny-grey/45">
+              <p className="mt-1 text-[13px] text-subtle">
                 {event.category.name}
               </p>
             )}
@@ -224,14 +224,14 @@ export default async function EventPage({ params }: Props) {
 
         {(location?.name || location?.address) && (
           <section className="mt-8 rounded-2xl border border-black/[0.07] bg-[#f5f7fa] p-5">
-            <h2 className="text-[11.5px] font-bold uppercase tracking-[0.09em] text-destiny-grey/45">
+            <h2 className="text-[11.5px] font-bold uppercase tracking-[0.09em] text-subtle">
               Where
             </h2>
             <p className="mt-2 text-[15px] font-semibold text-destiny-grey">
               {location.name || location.address}
             </p>
             {location.name && location.address && (
-              <p className="mt-0.5 text-sm text-destiny-grey/60">{location.address}</p>
+              <p className="mt-0.5 text-sm text-muted">{location.address}</p>
             )}
             {maps && (
               <a
@@ -249,7 +249,7 @@ export default async function EventPage({ params }: Props) {
 
         {description && (
           <section className="mt-10">
-            <h2 className="text-[11.5px] font-bold uppercase tracking-[0.09em] text-destiny-grey/45">
+            <h2 className="text-[11.5px] font-bold uppercase tracking-[0.09em] text-subtle">
               About
             </h2>
             {/* Routed through RichContent for one code path, though this
@@ -264,7 +264,7 @@ export default async function EventPage({ params }: Props) {
 
         {series.sessionCount > 1 && (
           <section className="mt-10">
-            <h2 className="text-[11.5px] font-bold uppercase tracking-[0.09em] text-destiny-grey/45">
+            <h2 className="text-[11.5px] font-bold uppercase tracking-[0.09em] text-subtle">
               Upcoming sessions
             </h2>
             <ul className="mt-3 divide-y divide-black/[0.07] overflow-hidden rounded-2xl border border-black/[0.07]">
@@ -281,7 +281,7 @@ export default async function EventPage({ params }: Props) {
                         month: "long",
                       })}
                     </p>
-                    <p className="text-sm text-destiny-grey/55">
+                    <p className="text-sm text-subtle">
                       {formatTimeRange(occurrence)}
                     </p>
                   </div>
@@ -318,7 +318,7 @@ export default async function EventPage({ params }: Props) {
           </a>
           <Link
             href="/whats-on#events"
-            className="text-sm font-semibold text-destiny-grey/60 underline underline-offset-4 transition hover:text-destiny-grey"
+            className="text-sm font-semibold text-muted underline underline-offset-4 transition hover:text-destiny-grey"
           >
             See all events
           </Link>

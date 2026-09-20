@@ -4,6 +4,7 @@ import { isYouTubeQuotaExceeded } from "@/lib/youtube";
 import ReportBugLink from "@/components/report-bug/ReportBugLink";
 import FooterLinkGroup from "@/components/FooterLinkGroup";
 import MapsLink from "@/components/MapsLink";
+import { ADDRESS, SCHEDULE } from "@/lib/churchInfo";
 
 const connectLinks = [
   { label: "New Here?", href: "/new-here" },
@@ -58,24 +59,34 @@ export default async function ChurchFooter() {
                 />
               </div>
             </Link>
-            <p className="max-w-[220px] text-sm text-white/70">
+            <p className="max-w-[220px] text-sm text-on-dark-muted">
               Destiny Church Tees Valley is a multi-cultural church where all
               can find a place to belong and thrive. We&apos;d love to welcome
               you through our doors!
             </p>
             <MapsLink
-              className="group block text-sm text-white/70 transition hover:text-white focus-visible:text-white"
-              aria-label="Open Destiny Centre, Norton Road, Stockton-on-Tees, TS20 2QQ in maps"
+              className="group block text-sm text-on-dark-muted transition hover:text-white focus-visible:text-white"
+              aria-label={`Open ${ADDRESS.venue}, ${ADDRESS.street}, ${ADDRESS.locality}, ${ADDRESS.postcode} in maps`}
             >
               <address className="not-italic">
                 <span className="block font-bold text-white/90 transition group-hover:text-white group-focus-visible:text-white">
-                  Destiny Centre
+                  {ADDRESS.venue}
                 </span>
-                <span className="block">Norton Road</span>
-                <span className="block">Stockton-on-Tees</span>
-                <span className="block">TS20 2QQ</span>
+                <span className="block">{ADDRESS.street}</span>
+                <span className="block">{ADDRESS.locality}</span>
+                <span className="block">{ADDRESS.postcode}</span>
               </address>
             </MapsLink>
+
+            {/* Service times — the footer carried the address without ever
+                saying when to come. */}
+            <div className="text-sm text-on-dark-muted">
+              <p className="font-bold text-white/90">Sundays</p>
+              <p>
+                {SCHEDULE.mainServiceStart}&ndash;{SCHEDULE.mainServiceEnd}
+                {" "}(doors {SCHEDULE.doorsOpen})
+              </p>
+            </div>
           </div>
 
           {/* Link columns — accordions on mobile, plain columns from md: up */}
@@ -85,7 +96,7 @@ export default async function ChurchFooter() {
         </div>
 
         {/* Bottom bar */}
-        <div className="mt-10 flex flex-col gap-3 border-t border-white/10 pt-6 text-xs text-white/50 sm:flex-row sm:items-center sm:justify-between">
+        <div className="mt-10 flex flex-col gap-3 border-t border-white/10 pt-6 text-xs text-on-dark-subtle sm:flex-row sm:items-center sm:justify-between">
           <span>
             &copy; {new Date().getFullYear()}{" "}Destiny Church Tees Valley &middot;{" "}
             <Link

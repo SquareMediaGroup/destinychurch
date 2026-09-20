@@ -23,6 +23,19 @@
   --border-subtle: rgba(0, 0, 0, 0.05);
   --color-destiny-brown: #2c1a0e;
   --color-destiny-brown-light: #3d2b1a;
+
+  /* Motion vocabulary. Three curves and three durations cover everything the
+   * site actually does. `cubic-bezier(0.16,1,0.3,1)` was previously written
+   * both with and without spaces — the same curve, ungreppable as one value —
+   * across 23 sites, alongside two other curves and five ad-hoc durations.
+   * These are `:root` (not `@theme`) so the hand-written animation CSS below
+   * can reference them; `@theme inline` re-exports the curves as utilities. */
+  --motion-ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
+  --motion-ease-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  --motion-ease-overshoot: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --motion-dur-fast: 200ms;
+  --motion-dur-base: 300ms;
+  --motion-dur-slow: 500ms;
 }
 
 @theme inline {
@@ -148,6 +161,72 @@
    * own display headings, so this costs no new font download — it is simply
    * used in a place it wasn't before. */
   --font-admin-heading: var(--font-anton), Arial, "Helvetica Neue", sans-serif;
+
+  /* ---------------------------------------------------------------------
+   * Accessible secondary text.
+   *
+   * The site's idiom for "quieter text" was an opacity modifier on the brand
+   * grey — `text-destiny-grey/60`, `/50`, `/40`. That reads fine but it does
+   * not survive a contrast check: #363f48 is 10.5:1 on white, and the blends
+   * are 3.4:1 (/60), 2.6:1 (/50) and 2.1:1 (/40). WCAG AA wants 4.5:1 for
+   * normal-size text, so the codebase's MOST COMMON secondary value was also
+   * its worst. There is no opacity that is both visibly quieter than the body
+   * colour and above the floor by a useful margin, which is why these are
+   * solid colours rather than more alphas.
+   *
+   * Two steps, both measured on #ffffff:
+   *   text-muted   #5B6570  5.9:1  secondary body copy, card descriptions
+   *   text-subtle  #6B7580  4.7:1  metadata, captions, eyebrow labels
+   *
+   * Anything quieter than `text-subtle` is decorative only and must not carry
+   * information. On dark surfaces the equivalents are alphas, because the
+   * backdrop varies: 0.82 and 0.72 give 7.8:1 and 6.4:1 on --color-destiny-grey.
+   * Over PHOTOGRAPHY neither is sufficient on its own — the fix there is a
+   * stronger scrim, not a lighter text colour. */
+  --color-muted: #5b6570;
+  --color-subtle: #6b7580;
+  --color-on-dark-muted: rgb(255 255 255 / 0.82);
+  --color-on-dark-subtle: rgb(255 255 255 / 0.72);
+
+  /* Surfaces. `bg-[#f5f7fa]` was hardcoded in 228 places while :root already
+   * carried --surface-muted with the same value; exposing it here turns the
+   * literal into `bg-surface-muted`. */
+  --color-surface: var(--surface);
+  --color-surface-muted: var(--surface-muted);
+
+  /* Hairlines. Six near-identical notations were in use — border-black/5, /6,
+   * /8, /10, /15 and /[0.07] — across 441 sites. Two steps cover every real
+   * use: `hairline` for card and section edges, `soft` for dividers that need
+   * to be seen. */
+  --color-hairline: rgb(0 0 0 / 0.07);
+  --color-divider: rgb(0 0 0 / 0.12);
+
+  /* Radii. `rounded-2xl`, `rounded-3xl`, `rounded-[20px]` and `rounded-[24px]`
+   * were all in use for "a card", so the corner told you nothing about what a
+   * thing was. Three named steps: a card, a panel of cards, a full-bleed
+   * section shell. Buttons stay `rounded-full`. */
+  --radius-card: 20px;
+  --radius-panel: 24px;
+  --radius-shell: 32px;
+
+  /* Elevation. The two-layer literal below was pasted verbatim into 16 files.
+   * It is a good shadow — a tight contact shadow plus a wide soft one — and it
+   * only ever needed a name. */
+  --shadow-card: 0 1px 2px rgb(16 24 40 / 0.04), 0 8px 24px -8px rgb(16 24 40 / 0.1);
+  --shadow-card-hover: 0 2px 4px rgb(16 24 40 / 0.05), 0 16px 36px -12px rgb(16 24 40 / 0.16);
+
+  /* Motion easings, re-exported from the `--motion-*` literals in `:root`.
+   *
+   * The literals live in `:root` (above) and are referenced here rather than
+   * repeated: `@theme inline` resolves the reference into the utility, so
+   * `ease-expo` works as a class AND `var(--motion-ease-expo)` works in the
+   * hand-written CSS further down this file. Durations get no `@theme` entry
+   * because Tailwind has no duration namespace to hang them on — an unknown
+   * namespace is dropped silently, which is why they are `:root`-only and used
+   * as `duration-[var(--motion-dur-base)]`. */
+  --ease-standard: var(--motion-ease-standard);
+  --ease-expo: var(--motion-ease-expo);
+  --ease-overshoot: var(--motion-ease-overshoot);
 }
 
 html {
@@ -236,6 +315,40 @@ body {
   h2,
   h3 {
     font-family: var(--font-heading);
+  }
+
+  /*
+    Keyboard focus indicator.
+
+    There was no `:focus-visible` rule anywhere in this file, and only
+    `components/ui/Button.tsx` shipped a focus ring of its own — against 469
+    raw `<button>` elements, 191 styled `<Link>`s and 123 hand-rolled orange
+    pills. Worse, `outline-none` appears 102 times without any replacement
+    indicator, which does not merely leave the browser default in place: it
+    removes it. Tabbing through the site was largely invisible.
+
+    A base-layer rule covers every one of those at once. `:focus-visible`
+    rather than `:focus` so a mouse click on a button does not leave a ring
+    behind — the browser's own heuristic decides, which is what it is for.
+
+    Two `outline` properties rather than a `box-shadow`: an outline follows the
+    element's border radius in every current browser, is not clipped by
+    `overflow: hidden` ancestors (the glass pills and carousels are full of
+    them), and stays visible in forced-colors mode. The offset keeps it clear
+    of the element's own border.
+
+    A component that needs a different ring — the dark chrome, or a control on
+    photography — overrides it with a `focus-visible:` utility, which wins
+    because utilities are layered above base.
+  */
+  :focus-visible {
+    outline: 2px solid var(--color-destiny-orange);
+    outline-offset: 2px;
+  }
+
+  /* Anything already carrying its own ring keeps it, without doubling up. */
+  :where(.focus-visible\:ring-2, .focus-visible\:ring-1):focus-visible {
+    outline: none;
   }
 }
 
@@ -857,18 +970,70 @@ body {
   to   { max-height: 0; opacity: 0; }
 }
 
+/*
+  Keyboard parity.
+
+  The reveal was keyed on :hover alone, so a keyboard user tabbing onto a card
+  got no overlay and no description — the same content gap as touch, below.
+*/
+.ehap-card:focus-visible .ehap-card-image {
+  animation: ehap-zoom-in 0.55s cubic-bezier(0.85, 0, 0.15, 1) both;
+}
+
+.ehap-card:focus-visible .ehap-card-overlay {
+  animation: ehap-overlay-in 0.45s cubic-bezier(0.85, 0, 0.15, 1) both;
+}
+
+.ehap-card:focus-visible .ehap-card-desc {
+  animation: ehap-desc-in 0.5s cubic-bezier(0.85, 0, 0.15, 1) both;
+}
+
+/*
+  Touch devices: show the description outright.
+
+  This was the single biggest content bug in the design. Each card's body copy
+  lived behind `:hover` with `max-height: 0`, and a phone has no hover — so on
+  the device most visitors use, the copy explaining Kids, Youth, Young Adults
+  and Connect Groups simply did not exist. It was in the DOM (so a screen
+  reader read it) but clipped to nothing visually, which is also a mismatch
+  between what is announced and what is seen.
+
+  `hover: none` is the accurate test — narrower than "small screen", since a
+  small window on a laptop still hovers fine and should keep the reveal.
+*/
+@media (hover: none) {
+  .ehap-card .ehap-card-overlay {
+    opacity: 1;
+  }
+
+  .ehap-card .ehap-card-desc {
+    /* No animation and no max-height clamp: the copy is simply present. The
+       10rem ceiling exists to animate against and would truncate a longer
+       description that is now shown unconditionally. */
+    max-height: none;
+    opacity: 1;
+    animation: none;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .ehap-card:hover .ehap-card-image,
   .ehap-card:not(:hover) .ehap-card-image,
   .ehap-card:hover .ehap-card-overlay,
   .ehap-card:not(:hover) .ehap-card-overlay,
   .ehap-card:hover .ehap-card-desc,
-  .ehap-card:not(:hover) .ehap-card-desc {
+  .ehap-card:not(:hover) .ehap-card-desc,
+  .ehap-card:focus-visible .ehap-card-image,
+  .ehap-card:focus-visible .ehap-card-overlay,
+  .ehap-card:focus-visible .ehap-card-desc {
     animation: none;
   }
-  .ehap-card:hover .ehap-card-image    { transform: scale(1.07); }
-  .ehap-card:hover .ehap-card-overlay  { opacity: 1; }
-  .ehap-card:hover .ehap-card-desc     { max-height: 10rem; opacity: 1; }
+  .ehap-card:hover .ehap-card-image,
+  .ehap-card:focus-visible .ehap-card-image { transform: scale(1.07); }
+  .ehap-card:hover .ehap-card-overlay,
+  .ehap-card:focus-visible .ehap-card-overlay { opacity: 1; }
+  .ehap-card:hover .ehap-card-desc,
+  .ehap-card:focus-visible .ehap-card-desc { max-height: 10rem; opacity: 1; }
 }
 
 /* The loading layer over a third-party iframe — see
@@ -1006,10 +1171,45 @@ body {
   animation: fadeInUp 0.6s ease both;
 }
 
-@media (min-width: 768px) {
-  .hero-text-animate {
-    animation: fadeInUp 0.9s ease forwards;
+/*
+  Reduced-motion fail-safe for AnimateIn (270 call sites across the public
+  site).
+
+  `.animate-pending { opacity: 0 }` is applied by AnimateIn's own JS, not by
+  this stylesheet, and the ONLY thing that ever removes it is the
+  `.animate-in.is-visible` animation firing. The site-wide reduced-motion kill
+  switch further down this file (`html[data-motion="reduced"] *`) zeroes every
+  animation's *duration*, but a zero-duration animation still runs — it just
+  finishes instantly, landing on the animation's own end state. For
+  `fadeInUp`, that end state is `opacity: 1`, so in practice this already
+  worked in the case that matters most.
+
+  This second rule exists for the case that doesn't: if the inline
+  data-motion script in app/layout.tsx never runs (JS disabled, blocked, or an
+  error before it executes), an element that IntersectionObserver has not yet
+  reported as visible sits at `.animate-pending`'s opacity: 0 with nothing left
+  to trigger the transition — content that is in the DOM, below the fold, and
+  permanently invisible once scrolled to. `@media (prefers-reduced-motion:
+  reduce)` doesn't depend on that script at all, so it is a safety net
+  underneath it rather than a duplicate of it.
+*/
+@media (prefers-reduced-motion: reduce) {
+  .animate-pending {
+    opacity: 1;
   }
+}
+
+/*
+  The homepage's hero entrance used to be gated behind `min-width: 768px`, so
+  mobile — the device most visitors use — got no entrance at all on the
+  site's single most important element while desktop got a fade-up. There was
+  no technical reason for the gate; it plays fine at any width, and the
+  sitewide `html[data-motion="reduced"] *` kill switch (see globals.css,
+  further down this file) already covers it for reduced-motion visitors at
+  every breakpoint.
+*/
+.hero-text-animate {
+  animation: fadeInUp 0.9s ease forwards;
 }
 
 

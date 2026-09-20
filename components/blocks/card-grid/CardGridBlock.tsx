@@ -55,7 +55,7 @@ export default function CardGridBlock({
       : items.filter((item) => item.title.trim() || item.body.trim());
   if (usable.length === 0) {
     return mode === "edit" ? (
-      <div className="rounded-2xl border border-dashed border-black/15 px-5 py-6 text-center text-sm text-destiny-grey/45">
+      <div className="rounded-2xl border border-dashed border-black/15 px-5 py-6 text-center text-sm text-subtle">
         Add a card in the settings panel.
       </div>
     ) : null;

@@ -94,7 +94,7 @@ export default async function ShopPage() {
             style={{ animationDelay: "0.2s" }}
           />
           <p
-            className="shop-reveal mt-6 max-w-md text-base text-destiny-grey/60"
+            className="shop-reveal mt-6 max-w-md text-base text-muted"
             style={{ animationDelay: "0.28s" }}
           >
             Wear the vision. Order online and collect at church — every purchase
@@ -106,13 +106,13 @@ export default async function ShopPage() {
         {/* Grid */}
         {products.length === 0 ? (
           <div className="shop-reveal rounded-3xl border border-black/10 bg-white/60 p-14 text-center">
-            <span className="material-symbols-rounded text-5xl text-destiny-grey/25">
+            <span className="material-symbols-rounded text-5xl text-destiny-grey/25" aria-hidden="true">
               storefront
             </span>
             <h2 className="mt-4 font-[family-name:var(--font-heading)] text-2xl font-black text-destiny-grey">
               Nothing in stock just yet
             </h2>
-            <p className="mx-auto mt-2 max-w-sm text-sm text-destiny-grey/55">
+            <p className="mx-auto mt-2 max-w-sm text-sm text-subtle">
               New drops are on the way. Check back soon.
             </p>
           </div>
@@ -130,7 +130,7 @@ export default async function ShopPage() {
               <h2 className="mt-2 font-[family-name:var(--font-heading)] text-2xl font-black text-white sm:text-3xl">
                 Pick it up on a Sunday
               </h2>
-              <p className="mt-2 max-w-md text-sm text-white/60">
+              <p className="mt-2 max-w-md text-sm text-on-dark-muted">
                 Order online and grab your items next time you&apos;re in — we&apos;ll
                 email you the moment they&apos;re ready to collect.
               </p>
@@ -140,7 +140,7 @@ export default async function ShopPage() {
               className="inline-flex shrink-0 items-center justify-center gap-2 rounded-full bg-destiny-orange px-7 py-3.5 text-sm font-bold text-white transition-transform hover:scale-[1.03] hover:bg-destiny-orange-dark"
             >
               Plan your visit
-              <span className="material-symbols-rounded text-lg">arrow_forward</span>
+              <span className="material-symbols-rounded text-lg" aria-hidden="true">arrow_forward</span>
             </Link>
           </div>
         </div>

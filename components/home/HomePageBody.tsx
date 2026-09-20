@@ -1,9 +1,8 @@
-// The body of the homepage, extracted so the real page and the variant preview
-// route (/home) render identical markup with a different event-card treatment
-// rather than duplicating the composition.
+// The body of the homepage, extracted so app/page.tsx stays a thin route file.
 
 import HomeOverscrollColor from "@/components/home/HomeOverscrollColor";
 import HeroSection from "@/components/home/HeroSection";
+import ServiceTimesBar from "@/components/home/ServiceTimesBar";
 import MissionSection from "@/components/home/MissionSection";
 import LatestSermonSection from "@/components/home/LatestSermonSection";
 import WhatsOnSection from "@/components/home/WhatsOnSection";
@@ -12,13 +11,8 @@ import WorshipWithUsSection from "@/components/home/WorshipWithUsSection";
 import GetInvolvedSection from "@/components/home/GetInvolvedSection";
 import { isYouTubeQuotaExceeded, getLatestVideoFromRSS } from "@/lib/youtube";
 import { getLatestVideo } from "@/lib/speakerOverrides.server";
-import type { EventCardVariant } from "@/lib/events";
 
-export default async function HomePageBody({
-  cardVariant = "a",
-}: {
-  cardVariant?: EventCardVariant;
-}) {
+export default async function HomePageBody() {
   const quotaExceeded = await isYouTubeQuotaExceeded();
   const video = quotaExceeded
     ? await getLatestVideoFromRSS()
@@ -28,9 +22,10 @@ export default async function HomePageBody({
     <>
       <HomeOverscrollColor />
       <HeroSection />
+      <ServiceTimesBar />
       <MissionSection />
       <LatestSermonSection video={video} quotaExceeded={quotaExceeded} />
-      <WhatsOnSection cardVariant={cardVariant} />
+      <WhatsOnSection />
       <EveryoneHasAPlaceSection />
       <WorshipWithUsSection />
       <GetInvolvedSection />

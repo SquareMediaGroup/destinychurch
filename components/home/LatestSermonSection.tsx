@@ -19,10 +19,11 @@ export default function LatestSermonSection({
 
   const date = formatDate(video.publishedAt);
 
-  // Upload titles often read "Message Title || Ps Speaker"; lift the speaker out.
-  const [rawTitle, ...speakerParts] = video.title.split("||");
-  const title = rawTitle.trim();
-  const speaker = speakerParts.join("||").trim();
+  // Title and speaker are already separated upstream by parseYouTubeTitle()
+  // (lib/sermonTitle.ts), which handles the channel's "|", "||" and " - Ps X"
+  // conventions — video.title never still carries the speaker segment.
+  const title = video.title;
+  const speaker = video.speaker;
 
   const watchHref = quotaExceeded
     ? `https://www.youtube.com/watch?v=${video.id}`
@@ -78,7 +79,7 @@ export default function LatestSermonSection({
 
             {(speaker || date) && (
               <AnimateIn delay={130}>
-                <p className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-white/60">
+                <p className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-on-dark-muted">
                   {speaker && <span className="font-semibold text-white/80">{speaker}</span>}
                   {speaker && date && (
                     <span aria-hidden className="h-1 w-1 rounded-full bg-destiny-orange" />
@@ -95,7 +96,7 @@ export default function LatestSermonSection({
                   {...external}
                   className="inline-flex items-center gap-2 rounded-full bg-destiny-orange px-6 py-3 text-sm font-bold text-white shadow-lg shadow-destiny-orange/25 transition hover:brightness-110"
                 >
-                  <span className="material-symbols-rounded text-base">play_arrow</span>
+                  <span className="material-symbols-rounded text-base" aria-hidden="true">play_arrow</span>
                   Watch Now
                 </Link>
                 <Link

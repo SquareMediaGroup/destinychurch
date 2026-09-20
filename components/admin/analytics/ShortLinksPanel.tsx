@@ -58,7 +58,7 @@ export function ShortLinksPanel({
     <div className="flex flex-col gap-6">
       {target && (
         <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-destiny-orange/25 bg-destiny-orange/5 px-4 py-2.5">
-          <span className="material-symbols-rounded text-base text-destiny-orange">
+          <span className="material-symbols-rounded text-base text-destiny-orange" aria-hidden="true">
             filter_alt
           </span>
           <p className="text-sm font-bold text-destiny-grey dark:text-white">

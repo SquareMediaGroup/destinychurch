@@ -40,7 +40,7 @@ export default function FactStrip({ facts, tone = "muted" }: Props) {
                   >
                     {fact.icon}
                   </span>
-                  <p className="text-[11.5px] font-bold uppercase tracking-[0.09em] text-destiny-grey/45">
+                  <p className="text-[11.5px] font-bold uppercase tracking-[0.09em] text-subtle">
                     {fact.label}
                   </p>
                 </div>
@@ -51,7 +51,7 @@ export default function FactStrip({ facts, tone = "muted" }: Props) {
                   {fact.value}
                 </p>
                 {fact.note && (
-                  <p className="mt-2 text-sm leading-relaxed text-destiny-grey/50">
+                  <p className="mt-2 text-sm leading-relaxed text-subtle">
                     {fact.note}
                   </p>
                 )}

@@ -64,7 +64,7 @@ export default function SermonCard({
           <p className="line-clamp-2 text-[15px] font-bold leading-snug text-destiny-grey">
             {video.title}
           </p>
-          {date && <p className="mt-1.5 text-xs text-destiny-grey/55">{date}</p>}
+          {date && <p className="mt-1.5 text-xs text-subtle">{date}</p>}
         </div>
       </Link>
 

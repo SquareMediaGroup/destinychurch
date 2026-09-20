@@ -61,7 +61,7 @@ export default function PortalDesignPage() {
           </p>
         </div>
         <Link
-          href="/design-request"
+          href="/portal/design/request"
           className="rounded-full bg-destiny-orange px-5 py-2.5 text-sm font-bold text-white transition hover:brightness-110"
         >
           New request
@@ -72,7 +72,7 @@ export default function PortalDesignPage() {
         <p className="text-sm text-destiny-grey/50">Loading…</p>
       ) : tickets.length === 0 ? (
         <div className="rounded-3xl border border-black/5 bg-white p-10 text-center">
-          <span className="material-symbols-rounded mb-2 block text-4xl text-destiny-grey/30">
+          <span className="material-symbols-rounded mb-2 block text-4xl text-destiny-grey/30" aria-hidden="true">
             draw
           </span>
           <p className="font-bold text-destiny-grey">Nothing yet</p>

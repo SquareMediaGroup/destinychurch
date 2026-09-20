@@ -77,7 +77,7 @@ function SidePanel({
           aria-label={`Show ${label}`}
           className="flex h-full w-full flex-col items-center gap-2 pt-3 text-destiny-grey/45 dark:text-white/45 transition hover:bg-[#f5f7fa] hover:text-destiny-grey dark:hover:text-white"
         >
-          <span className="material-symbols-rounded text-[19px]">{icon}</span>
+          <span className="material-symbols-rounded text-[19px]" aria-hidden="true">{icon}</span>
           <span className="text-[11px] font-bold uppercase tracking-wider [writing-mode:vertical-rl]">
             {label}
           </span>
@@ -98,7 +98,7 @@ function SidePanel({
         onClick={onToggle}
         className="flex items-center justify-center gap-1 border-t border-black/8 py-2 text-[11px] font-bold uppercase tracking-wider text-destiny-grey/35 dark:text-white/35 transition hover:bg-[#f5f7fa] hover:text-destiny-grey dark:hover:text-white"
       >
-        <span className="material-symbols-rounded text-[15px]">
+        <span className="material-symbols-rounded text-[15px]" aria-hidden="true">
           {side === "left" ? "chevron_left" : "chevron_right"}
         </span>
         Hide
@@ -281,7 +281,7 @@ export function PostEditor({
               aria-label="Close"
               className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-destiny-grey/50 dark:text-white/50 transition hover:bg-[#f5f7fa] hover:text-destiny-grey dark:hover:text-white"
             >
-              <span className="material-symbols-rounded text-xl">close</span>
+              <span className="material-symbols-rounded text-xl" aria-hidden="true">close</span>
             </button>
             <input
               value={form.title}
@@ -376,7 +376,7 @@ export function PostEditor({
           aria-label="Close"
           className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-destiny-grey/50 dark:text-white/50 transition active:bg-[#f5f7fa]"
         >
-          <span className="material-symbols-rounded text-xl">close</span>
+          <span className="material-symbols-rounded text-xl" aria-hidden="true">close</span>
         </button>
         <input
           value={form.title}

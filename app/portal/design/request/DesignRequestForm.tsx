@@ -15,30 +15,19 @@ const CATEGORIES = Object.entries(DESIGN_CATEGORY_LABELS) as [
 ][];
 
 export interface DesignRequestFormProps {
-  /** Prefilled from the session when there is one. */
+  /** Prefilled from the staff record. */
   defaultName?: string;
   defaultEmail?: string;
-  signedIn: boolean;
-  /** Signed in, but no staff record and no admin role — priority won't apply. */
-  unmatched?: boolean;
 }
 
 export default function DesignRequestForm({
   defaultName = "",
   defaultEmail = "",
-  signedIn,
-  unmatched = false,
 }: DesignRequestFormProps) {
   const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
   const [errorMsg, setErrorMsg] = useState("");
-  const [result, setResult] = useState<{ token?: string; ref?: number; fast?: boolean }>({});
-  const [email, setEmail] = useState(defaultEmail);
+  const [result, setResult] = useState<{ token?: string; ref?: number }>({});
   const formRef = useRef<HTMLFormElement>(null);
-
-  // The nudge, not a gate. A staff address typed while signed out is still a
-  // real request from a real person — we just can't prove it's them, so it
-  // goes in at normal priority rather than being turned away.
-  const looksLikeStaff = !signedIn && /@destinytees\.uk\s*$/i.test(email);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -48,7 +37,7 @@ export default function DesignRequestForm({
     const res = await submitDesignRequest(new FormData(e.currentTarget));
 
     if (res.success) {
-      setResult({ token: res.token, ref: res.ref, fast: res.fastTracked });
+      setResult({ token: res.token, ref: res.ref });
       setStatus("success");
       formRef.current?.reset();
     } else {
@@ -70,9 +59,8 @@ export default function DesignRequestForm({
           </p>
         ) : null}
         <p className="mx-auto mt-3 max-w-md text-sm leading-relaxed text-destiny-grey/60">
-          {result.fast
-            ? "You're signed in, so this one is fast-tracked. We've emailed you a link to follow it."
-            : "We've emailed you a link so you can follow it and download the finished files."}
+          You&apos;re signed in, so this one is fast-tracked. We&apos;ve emailed you a link to
+          follow it.
         </p>
 
         {result.token ? (
@@ -97,19 +85,10 @@ export default function DesignRequestForm({
 
   return (
     <form ref={formRef} onSubmit={handleSubmit} className="space-y-5">
-      {signedIn && !unmatched ? (
-        <p className="flex items-center gap-2 rounded-2xl bg-destiny-orange/10 px-4 py-3 text-sm font-bold text-destiny-orange">
-          <span className="material-symbols-rounded text-lg">bolt</span>
-          You&apos;re signed in — this request will be fast-tracked.
-        </p>
-      ) : null}
-
-      {unmatched ? (
-        <p className="rounded-2xl bg-[#f5f7fa] px-4 py-3 text-sm text-destiny-grey/70">
-          You&apos;re signed in, but we couldn&apos;t match you to a staff record — your request
-          will come through as normal priority. Ask HR to link your account if that&apos;s not right.
-        </p>
-      ) : null}
+      <p className="flex items-center gap-2 rounded-2xl bg-destiny-orange/10 px-4 py-3 text-sm font-bold text-destiny-orange">
+        <span className="material-symbols-rounded text-lg">bolt</span>
+        You&apos;re signed in — this request will be fast-tracked.
+      </p>
 
       <div>
         <label className={LABEL} htmlFor="name">
@@ -136,30 +115,13 @@ export default function DesignRequestForm({
           type="email"
           required
           maxLength={254}
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
+          defaultValue={defaultEmail}
           className={FIELD}
           placeholder="you@example.com"
         />
         <p className="mt-1.5 text-xs text-destiny-grey/50">
           We&apos;ll send your tracking link here, so make sure it&apos;s one you check.
         </p>
-
-        {looksLikeStaff ? (
-          <div className="mt-3 rounded-2xl border border-destiny-orange/20 bg-destiny-orange/5 px-4 py-3">
-            <p className="text-sm font-bold text-destiny-grey">That looks like a staff address</p>
-            <p className="mt-1 text-sm text-destiny-grey/60">
-              Sign in and we&apos;ll fast-track your request. You can still send it without
-              signing in — it&apos;ll just join the normal queue.
-            </p>
-            <Link
-              href="/login?next=/design-request"
-              className="mt-2 inline-block text-sm font-bold text-destiny-orange underline"
-            >
-              Sign in
-            </Link>
-          </div>
-        ) : null}
       </div>
 
       <div>

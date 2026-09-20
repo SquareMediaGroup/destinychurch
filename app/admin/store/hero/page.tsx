@@ -113,7 +113,7 @@ export default function AdminShopHeroPage() {
           onClick={addSlide}
           className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-destiny-orange px-5 py-2.5 text-sm font-bold text-white shadow-sm shadow-destiny-orange/20 transition hover:brightness-110"
         >
-          <span className="material-symbols-rounded text-base">add</span>
+          <span className="material-symbols-rounded text-base" aria-hidden="true">add</span>
           Add slide
         </button>
       </div>
@@ -126,13 +126,13 @@ export default function AdminShopHeroPage() {
 
       {loading ? (
         <div className="flex items-center justify-center py-16">
-          <span className="material-symbols-rounded animate-spin text-3xl text-destiny-grey/20 dark:text-white/20">
+          <span className="material-symbols-rounded animate-spin text-3xl text-destiny-grey/20 dark:text-white/20" aria-hidden="true">
             progress_activity
           </span>
         </div>
       ) : slides.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-black/15 bg-white px-6 py-14 text-center dark:border-white/15 dark:bg-destiny-grey-800">
-          <span className="material-symbols-rounded text-4xl text-destiny-grey/25 dark:text-white/25">
+          <span className="material-symbols-rounded text-4xl text-destiny-grey/25 dark:text-white/25" aria-hidden="true">
             wallpaper
           </span>
           <p className="mt-3 text-sm font-bold text-destiny-grey dark:text-white">
@@ -260,7 +260,7 @@ function SlideCard({
             className="flex h-8 w-8 items-center justify-center rounded-lg text-destiny-grey/50 dark:text-white/50 transition hover:bg-[#f5f7fa] dark:hover:bg-white/10 disabled:opacity-30"
             aria-label="Move up"
           >
-            <span className="material-symbols-rounded text-lg">arrow_upward</span>
+            <span className="material-symbols-rounded text-lg" aria-hidden="true">arrow_upward</span>
           </button>
           <button
             type="button"
@@ -269,7 +269,7 @@ function SlideCard({
             className="flex h-8 w-8 items-center justify-center rounded-lg text-destiny-grey/50 dark:text-white/50 transition hover:bg-[#f5f7fa] dark:hover:bg-white/10 disabled:opacity-30"
             aria-label="Move down"
           >
-            <span className="material-symbols-rounded text-lg">arrow_downward</span>
+            <span className="material-symbols-rounded text-lg" aria-hidden="true">arrow_downward</span>
           </button>
           <button
             type="button"
@@ -277,7 +277,7 @@ function SlideCard({
             className="flex h-8 w-8 items-center justify-center rounded-lg text-red-500 transition hover:bg-red-50"
             aria-label="Delete slide"
           >
-            <span className="material-symbols-rounded text-lg">delete</span>
+            <span className="material-symbols-rounded text-lg" aria-hidden="true">delete</span>
           </button>
         </div>
       </div>
@@ -304,7 +304,7 @@ function SlideCard({
               className="absolute right-3 top-3 flex h-8 w-8 items-center justify-center rounded-lg bg-black/60 text-white backdrop-blur transition hover:bg-black/80"
               aria-label="Remove image"
             >
-              <span className="material-symbols-rounded text-base">close</span>
+              <span className="material-symbols-rounded text-base" aria-hidden="true">close</span>
             </button>
           </div>
         ) : (
@@ -323,7 +323,7 @@ function SlideCard({
               disabled={uploading}
               className="hidden"
             />
-            <span className="material-symbols-rounded text-3xl text-destiny-grey/40 dark:text-white/40">
+            <span className="material-symbols-rounded text-3xl text-destiny-grey/40 dark:text-white/40" aria-hidden="true">
               {uploading ? "progress_activity" : "add_photo_alternate"}
             </span>
             <p className="text-sm font-bold text-destiny-grey dark:text-white">
@@ -407,7 +407,7 @@ function SlideCard({
         >
           {saved ? (
             <>
-              <span className="material-symbols-rounded text-base">check</span>
+              <span className="material-symbols-rounded text-base" aria-hidden="true">check</span>
               Saved
             </>
           ) : saving ? (

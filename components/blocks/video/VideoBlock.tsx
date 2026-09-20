@@ -30,7 +30,7 @@ export default function VideoBlock({
 
   if (!id) {
     return mode === "edit" ? (
-      <div className="rounded-2xl border border-dashed border-black/15 px-5 py-6 text-center text-sm text-destiny-grey/45">
+      <div className="rounded-2xl border border-dashed border-black/15 px-5 py-6 text-center text-sm text-subtle">
         {url.trim()
           ? "That doesn't look like a YouTube link."
           : "Paste a YouTube link in the settings panel."}

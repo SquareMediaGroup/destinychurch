@@ -90,7 +90,7 @@ function LiveNow({
           <h2 className="mt-3 text-3xl font-black leading-tight text-destiny-grey md:text-4xl">
             {heading.trim()}
           </h2>
-          <p className="mt-2 text-sm text-destiny-grey/55">
+          <p className="mt-2 text-sm text-subtle">
             {[speaker, startedAt ? `Started ${formatClockTime(startedAt)}` : null]
               .filter(Boolean)
               .join(" · ") || "Destiny Church Tees Valley"}
@@ -107,7 +107,7 @@ function LiveNow({
             rel="noopener noreferrer"
             className="inline-flex shrink-0 items-center gap-2 self-start rounded-full border-2 border-black/10 px-5 py-2.5 text-sm font-bold text-destiny-grey transition hover:border-destiny-orange hover:text-destiny-orange sm:self-auto"
           >
-            <span className="material-symbols-rounded text-lg">open_in_new</span>
+            <span className="material-symbols-rounded text-lg" aria-hidden="true">open_in_new</span>
             Open on YouTube
           </a>
         )}
@@ -136,9 +136,9 @@ function LiveNow({
         )}
       </div>
 
-      {notice && <p className="mt-5 text-sm text-destiny-grey/55">{notice}</p>}
+      {notice && <p className="mt-5 text-sm text-subtle">{notice}</p>}
 
-      <p className="mt-5 text-sm text-destiny-grey/55">
+      <p className="mt-5 text-sm text-subtle">
         {simulated ? (
           "Trouble with the stream? Refresh the page — you'll rejoin right where we are."
         ) : (
@@ -196,7 +196,7 @@ function Offline({
         <h2 className="mt-3 text-3xl font-black leading-tight text-destiny-grey md:text-4xl">
           We&apos;re not live right now
         </h2>
-        <p className="mt-4 text-base leading-relaxed text-destiny-grey/70">
+        <p className="mt-4 text-base leading-relaxed text-muted">
           The stream goes live every Sunday morning and this page switches over
           on its own — no need to refresh. Until then, the latest message is
           ready to watch.
@@ -204,7 +204,7 @@ function Offline({
 
         <div className="mt-6 flex items-start gap-3 rounded-2xl bg-white p-4">
           <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-destiny-orange/10">
-            <span className="material-symbols-rounded text-xl text-destiny-orange">
+            <span className="material-symbols-rounded text-xl text-destiny-orange" aria-hidden="true">
               schedule
             </span>
           </div>
@@ -219,7 +219,7 @@ function Offline({
             href="/sermons"
             className="inline-flex items-center gap-2 rounded-full bg-destiny-orange px-6 py-3 text-sm font-bold text-white shadow-lg shadow-destiny-orange/25 transition hover:brightness-110"
           >
-            <span className="material-symbols-rounded text-base">play_arrow</span>
+            <span className="material-symbols-rounded text-base" aria-hidden="true">play_arrow</span>
             Watch past messages
           </Link>
           <Link
@@ -268,7 +268,7 @@ function Offline({
               {title}
             </p>
             {latestSermon.publishedAt && (
-              <p className="mt-1 text-xs text-white/70">
+              <p className="mt-1 text-xs text-on-dark-muted">
                 {formatDate(latestSermon.publishedAt)}
               </p>
             )}
@@ -280,10 +280,10 @@ function Offline({
           style={{ aspectRatio: "16/9" }}
         >
           <div className="text-center">
-            <span className="material-symbols-rounded mb-3 block text-5xl text-destiny-grey/25">
+            <span className="material-symbols-rounded mb-3 block text-5xl text-destiny-grey/25" aria-hidden="true">
               play_circle
             </span>
-            <p className="text-sm font-bold text-destiny-grey/40">
+            <p className="text-sm font-bold text-subtle">
               Messages are loading
             </p>
           </div>

@@ -20,5 +20,5 @@ export const metadata: Metadata = {
 export const revalidate = 300;
 
 export default async function WhatsOnPage() {
-  return <WhatsOnPageBody cardVariant="a" />;
+  return <WhatsOnPageBody />;
 }

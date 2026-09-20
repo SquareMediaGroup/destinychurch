@@ -1,7 +1,6 @@
 "use client";
 
 import { useRef, useState } from "react";
-import Link from "next/link";
 import { submitDesignRequest } from "./actions";
 import { DESIGN_CATEGORY_LABELS, type DesignTicketCategory } from "@/lib/designTickets";
 import Button from "@/components/ui/Button";

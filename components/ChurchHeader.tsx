@@ -246,10 +246,12 @@ export default function ChurchHeader() {
 
   // /nfc is the in-service NFC landing page: standalone, no site nav.
   // /portal is the staff self-service area: its own minimal shell, no site nav.
+  // /login is the staff/admin sign-in page: standalone, no site nav.
   if (
     pathname.startsWith("/admin") ||
     pathname.startsWith("/nfc") ||
-    pathname.startsWith("/portal")
+    pathname.startsWith("/portal") ||
+    pathname === "/login"
   )
     return null;
 

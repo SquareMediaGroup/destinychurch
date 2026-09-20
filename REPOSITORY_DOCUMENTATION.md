@@ -359,7 +359,8 @@ destinychurch/
 │       │                                  # search_path to the ip_category trigger, relocate btree_gist
 │       ├── 20260902_remove_media_boards.sql # Drops the media_boards/media_photos tables (Media Boards feature removed)
 │       ├── 20260912_01_sermon_admin_role.sql # `sermon_admin` access level on admin_roles (/admin/sermons)
-│       └── 20260912_02_speaker_overrides.sql # speaker_overrides table — AI/human speaker corrections for the sermon archive
+│       ├── 20260912_02_speaker_overrides.sql # speaker_overrides table — AI/human speaker corrections for the sermon archive
+│       └── 20260920_01_sermon_series.sql  # sermon_series table — playlist ids curated as sermon series
 │
 ├── utils/                         # Utility modules
 │   ├── supabase/                  # Supabase client factories
@@ -1911,6 +1912,26 @@ CREATE TABLE speaker_overrides (
 
 ---
 
+#### 27. **sermon_series** (playlist-backed sermon series)
+**Purpose:** A YouTube playlist id curated as a sermon "series", filterable on `/sermons`. Same "no DB" exception as `speaker_overrides` above — only the playlist id is stored; title, description and video membership are always read live from YouTube through `lib/sermonSeries.server.ts`. Migration: `supabase/migrations/20260920_01_sermon_series.sql`.
+
+```sql
+CREATE TABLE sermon_series (
+  playlist_id text PRIMARY KEY,
+  added_by text,
+  sort_order integer NOT NULL DEFAULT 0,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+
+-- RLS: Service role only (deny-all "service only" policy, same as every other table)
+```
+
+**Why it exists.** Speaker sorting/filtering was removed from `/sermons` in favour of series, sourced from YouTube playlists an admin curates in `/admin/sermons`. Rather than duplicate a playlist's title/description into Postgres (which would drift from YouTube), only the id is persisted — `lib/sermonSeries.server.ts` resolves it against the YouTube Data API (`playlists.list` for the snippet, `playlistItems.list` for membership) on every read, the same live-fetch philosophy the rest of the sermons feature uses.
+
+**Used By:** `lib/sermonSeries.server.ts` (reads), `app/api/admin/sermons/series` and `app/api/admin/sermons/series/[id]` (writes), `components/admin/SeriesManager.tsx`, `app/sermons/page.tsx` → `components/sermons/SermonGrid.tsx` (the public Series filter).
+
+---
+
 **Key Point:** No table uses authenticated user RLS. All member-facing features use API proxy routes that enforce authentication in application code, then access the database with the service role key. This gives finer control and better error messages.
 
 ---
@@ -2129,15 +2150,32 @@ anything new to it.
 
 The same `FilterPanel` is rendered twice: as a **persistent sidebar** at
 desktop widths and as the original **dropdown** on mobile, where a standing
-sidebar doesn't fit. Alongside the speaker and month facets there's a
-**"Guest speakers only"** filter (and a per-card badge). Guest status is *not*
-inferred from parsed speaker names — it's backed by the channel's curated
-"Guest Speakers" YouTube playlist: `lib/youtube.ts`'s `getGuestSpeakerVideoIds()`
-(over the shared `getPlaylistVideoIds()`) returns the set of video ids in
-`GUEST_SPEAKERS_PLAYLIST_ID`, fetched once server-side and matched against the
-archive (45 of 288 sermons are guest-preached as of that build). The fetch
-fails open to an empty set, so a YouTube outage just hides the badge rather
-than breaking the page.
+sidebar doesn't fit. Speaker filtering/sorting was removed in September 2026
+(a sermon's speaker still shows on its card and title — it just isn't a
+facet any more) in favour of a **Series** filter and a standalone
+**"Guest speakers only"** toggle (and a per-card badge).
+
+**Series** (added September 2026, single-select like Month) is backed by
+admin-curated YouTube playlists — `lib/sermonSeries.server.ts`'s
+`getSermonSeriesList()` reads the `sermon_series` table (Database Schema §27,
+playlist ids only) and resolves each against the YouTube Data API for its
+title/description (`lib/youtube.ts`'s new `getPlaylistSnippet()`) and video
+membership (`getPlaylistVideoIds()`), server-side in `app/sermons/page.tsx`.
+A playlist that fails to resolve (deleted/private) is silently dropped —
+fail-open, same posture as guest speakers below — and the whole Series
+section hides itself when nothing is configured. Series are managed from
+`/admin/sermons` (`components/admin/SeriesManager.tsx`): an admin pastes a
+playlist URL or bare id, the API validates it exists via `getPlaylistSnippet`
+before inserting, and removing a series only ever deletes the pointer row —
+the YouTube playlist itself is untouched.
+
+Guest status is *not* inferred from parsed speaker names — it's backed by the
+channel's curated "Guest Speakers" YouTube playlist: `lib/youtube.ts`'s
+`getGuestSpeakerVideoIds()` (over the shared `getPlaylistVideoIds()`) returns
+the set of video ids in `GUEST_SPEAKERS_PLAYLIST_ID`, fetched once
+server-side and matched against the archive (45 of 288 sermons are
+guest-preached as of that build). The fetch fails open to an empty set, so a
+YouTube outage just hides the badge rather than breaking the page.
 
 **Listen to any sermon** — every archive card whose video has a *confident*
 audio pairing gets a **Listen** button, not just the featured card.
@@ -2164,6 +2202,20 @@ confirmed to survive to the public RSS feed `lib/podcast.ts` reads, since
 `extractYouTubeIdHint()` reads it back out and `stripHtml()` strips it before
 it's ever shown as show notes; `pairAudioForVideo()` treats a match as
 deterministic, skipping the heuristic entirely.
+
+**Manual speaker correction** (`components/admin/SpeakerEditor.tsx`, added
+September 2026) — the hand-edit counterpart to the AI review above. Searches
+the full archive (`useAdminList`, same fuzzy search every other admin list
+uses) and lets an admin type a speaker directly per video, showing whether
+the current value is AI-set, manually-set or unreviewed. Both paths write the
+same `speaker_overrides` row (`reviewed_by: "admin"` vs `"ai"`); a **Revert**
+button — enabled only when an override row exists — deletes it outright
+rather than setting it to blank, falling back to `lib/sermonTitle.ts`'s
+regex-parsed name (distinct from explicitly saving an empty speaker, which
+records a *confirmed* "no individual speaker", same null-vs-no-row rule as
+the AI path). `POST`/`DELETE /api/admin/sermons/speaker` are the two routes
+behind it. Title and description are never editable anywhere in this admin
+section — both always follow YouTube.
 
 **AI-recommended sermons** — `find_sermons`, a tool on the sitewide Smart
 Search chat (`lib/smartSearch/tools.ts`, same pattern as its `find_products`
@@ -2226,7 +2278,7 @@ without an auth check, so they must never be reachable on the live site.
 | `/` | `app/page.tsx` | Home page — hero, featured sermon, CTAs |
 | `/about` | `app/about/page.tsx` | About church, team, vision, mission |
 | `/beliefs` | `app/beliefs/page.tsx` | Statement of faith, doctrine |
-| `/sermons` | `app/sermons/page.tsx` | Latest message as video (with an audio switch), speaker/month filters and free-text search over the full archive |
+| `/sermons` | `app/sermons/page.tsx` | Latest message as video (with an audio switch), series/month filters, a guest-speakers toggle and free-text search over the full archive |
 | `/sermons/[id]` | `app/sermons/[id]/page.tsx` | Individual sermon — a **Watch/Listen** switch (`components/sermons/SermonWatchListen.tsx`, the same `ModeSwitch`/`ListenPane` the featured card uses) when a confident audio pairing exists, otherwise the plain YouTube embed; plus skip-to-sermon and next steps. Title/meta rows stay server-rendered (no CLS); only the player area switches |
 | `/live` | `app/live/page.tsx` | Livestream page — standard hero + section rhythm, with a client island that swaps between the custom glass player and an off-air card. On air for a real YouTube broadcast, or for a **simulated** one (a pre-recorded video played from a fixed start time; see `lib/simulatedLive.ts`). Signed-in Hosts also get the **broadcast controls** inline at the top of the page (`LiveHostBar`), so starting, editing or removing a service never means leaving `/live` |
 | `/contact` | `app/contact/page.tsx` | Contact form, address, hours |
@@ -2320,7 +2372,7 @@ Each section requires a specific access-level role (see
 | `/portal/leave` | `app/portal/leave/page.tsx` | Staff self-service — request and withdraw own leave |
 | `/portal/documents` | `app/portal/documents/page.tsx` | Staff self-service — download own + org-wide documents |
 | `/portal/design` | `app/portal/design/page.tsx` | Staff self-service — own design requests, plus a link to `/portal/design/request` to file a new one. Matched by staff link *and* by email, so requests filed before this page existed still appear |
-| `/admin/sermons` | `app/admin/sermons/page.tsx` | Publish sermon audio to Buzzsprout (video keeps going to YouTube separately) — title/speaker/notes/optional YouTube video id, plus a read-only recent-episodes list showing pairing status (Sermon Admin) |
+| `/admin/sermons` | `app/admin/sermons/page.tsx` | Publish sermon audio to Buzzsprout (video keeps going to YouTube separately); add/remove YouTube playlists as sermon series; run the AI speaker review or manually search-and-correct any sermon's speaker; a read-only recent-episodes list showing pairing status (Sermon Admin) |
 | `/admin/design` | `app/admin/design/page.tsx` | Design ticket queue — search, status/priority/mine filters, inline Claim. Defaults to "Needs someone" rather than everything (Design Admin) |
 | `/admin/design/[id]` | `app/admin/design/[id]/page.tsx` | Ticket detail — brief, requester, the thread, the deliverable uploader, and only the transition buttons `canTransition` allows from here (Design Admin) |
 | `/admin/store` | `app/admin/store/page.tsx` | Store — product list |
@@ -3384,6 +3436,40 @@ row) to `/portal`; admin roles take priority, so someone who is both lands on
 // re-reviews everything. Node runtime, maxDuration = 300 — a full first pass is
 // a few dozen batched OpenAI calls. Driven from the Speaker Review panel on
 // /admin/sermons (components/admin/SpeakerReviewPanel.tsx).
+```
+
+#### `POST` / `DELETE /api/admin/sermons/speaker`
+```typescript
+// POST   Body: { video_id, speaker } → upserts speaker_overrides
+//        (reviewed_by: "admin"). speaker: "" is stored as null — a
+//        *confirmed* "no individual speaker", same rule the AI path uses.
+// DELETE Body: { video_id } → deletes the override row outright (the
+//        "Revert to YouTube" action — falls back to lib/sermonTitle.ts's
+//        regex-parsed speaker, distinct from POSTing an empty speaker).
+//
+// AUTHORIZATION: sermon_admin, via ROUTE_RULES.
+//
+// The manual, hand-typed counterpart to review-speakers above — both write
+// the same speaker_overrides row. Driven from the manual speaker editor on
+// /admin/sermons (components/admin/SpeakerEditor.tsx). recordAudit() on
+// both verbs.
+```
+
+#### `GET` / `POST /api/admin/sermons/series`, `DELETE /api/admin/sermons/series/[id]`
+```typescript
+// GET    → sermon_series rows merged with a live YouTube snippet per row.
+// POST   Body: { input } → a pasted playlist URL or bare id. Extracts the
+//        id from a URL's `list=` param, validates it resolves via
+//        getPlaylistSnippet() (lib/youtube.ts), then inserts into
+//        sermon_series. 409 on a duplicate playlist_id.
+// DELETE (on /[id], the playlist id) → removes the row only — the YouTube
+//        playlist itself is never touched.
+//
+// AUTHORIZATION: sermon_admin, via ROUTE_RULES.
+//
+// Manages the playlist ids that back the public Series filter on /sermons
+// (see Database Schema §27, lib/sermonSeries.server.ts). Driven from
+// components/admin/SeriesManager.tsx. recordAudit() on POST and DELETE.
 ```
 
 #### Design tickets — `/api/admin/design/tickets/**`
@@ -4652,6 +4738,13 @@ since only membership matters). `getGuestSpeakerVideoIds()` wraps it for
 filter. Fails open to an empty set so a YouTube outage hides the filter rather
 than breaking the page.
 
+**`getPlaylistSnippet(playlistId)`** (added September 2026) — a playlist's own
+title/description/thumbnail via `playlists.list` (`part=snippet`). Backs the
+Series feature: it's both how `lib/sermonSeries.server.ts` resolves a
+configured playlist's display name, and the existence check the admin
+"add series" API uses before inserting a row — a `null` return means "not
+found or private" either way.
+
 ```typescript
 // Wrapper around YouTube Data API v3
 export async function getAllVideos(maxResults = 50): Promise<YTVideo[]> {
@@ -4721,6 +4814,19 @@ answer is kept rather than yanking a running stream off the page.
 ### `lib/speakerOverrides.server.ts` — speaker-corrected YouTube reads
 
 Thin wrappers around `lib/youtube.ts` (`getFullSermonArchive`, `getUploadedVideos`, `getVideo`, `getLatestVideo`, `getAllVideos`) that overlay the `speaker_overrides` table onto each returned video. Every video-serving path in the app reads through **this** module, not `lib/youtube.ts` directly, so a stored speaker correction takes effect everywhere at once and `lib/youtube.ts` stays a pure YouTube client with no Supabase dependency. Only overridden ids are replaced — a video with no override row keeps its regex-parsed speaker untouched. See the [`speaker_overrides`](#26-speaker_overrides-sermon-speaker-corrections) table for the null-vs-no-row distinction.
+
+**`getSpeakerOverrides(ids)`** (added September 2026) — the admin-only sibling of the internal `fetchOverrides()` above: returns the raw override rows (`speaker` *and* `reviewed_by`, not just the resolved speaker value) so `components/admin/SpeakerEditor.tsx` can tell an AI-set correction apart from a manually-set one and know whether its Revert button has anything to delete. Public read paths keep using the plain wrapper functions above; this is only for the admin editor's own state.
+
+### `lib/sermonSeries.server.ts` — playlist-backed sermon series
+
+The `sermon_series` (Database Schema §27) read side, mirroring `lib/speakerOverrides.server.ts`'s shape: the DB only ever holds a `playlist_id` pointer, everything else is resolved live against YouTube.
+
+```typescript
+export async function getSermonSeriesRows(): Promise<SermonSeriesRow[]>   // raw DB rows, no YouTube calls
+export async function getSermonSeriesList(): Promise<SermonSeries[]>      // DB rows + live title/description/videoIds
+```
+
+`getSermonSeriesRows()` is what the admin `SeriesManager` list reads, so a playlist that's gone private or been deleted still shows up (as "Unresolved") and can be removed. `getSermonSeriesList()` is what `app/sermons/page.tsx` reads for the public Series filter — it resolves each row against `getPlaylistSnippet()` and `getPlaylistVideoIds()` in parallel and silently drops any playlist that fails to resolve, the same fail-open posture as `getGuestSpeakerVideoIds()`, so one bad playlist can't take the whole page down.
 
 ### `lib/speakerReview.server.ts` — AI speaker review
 
@@ -6288,6 +6394,7 @@ ENABLE_SMART_SEARCH=true
 - `app/admin/store/orders/[id]/page.tsx` — Order detail (fulfillment)
 - `app/admin/store/hero/page.tsx` — Shop hero slides (add/edit/reorder rotating hero)
 - `app/admin/live/page.tsx` — Simulated Live (schedule a pre-recorded video to play on `/live` as a broadcast)
+- `app/admin/sermons/page.tsx` — Publish sermon audio to Buzzsprout; manage playlist-backed series; AI or manual speaker correction (Sermon Admin)
 - `app/admin/users/page.tsx` — Admin logins and access-level roles (Super Admin only)
 - `app/admin/audit/page.tsx` — Audit log: ask it in plain English, or search/filter and read the field-by-field detail. Second tab holds the weekly AI reports (Super Admin only)
 - `app/admin/analytics/page.tsx` — Click analytics: Short links, In person (`/nfc` + `/links`), Whole site (Vercel Web Analytics)

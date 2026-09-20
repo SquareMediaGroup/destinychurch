@@ -3,28 +3,11 @@
 import { useMemo, useState } from "react";
 import type { YTVideo } from "@/lib/youtube";
 import type { PodcastEpisode } from "@/lib/podcast";
-import { normalizeSpeakerName } from "@/lib/sermonTitle";
+import type { SermonSeries } from "@/lib/sermonSeries.server";
 import { searchSermons } from "@/lib/sermonSearch";
 import SermonCard from "./SermonCard";
 
 const PAGE_SIZE = 24;
-
-/** One speaker filter option — label is whichever raw spelling appeared first. */
-interface SpeakerOption {
-  key: string;
-  label: string;
-}
-
-function speakerOptions(videos: YTVideo[]): SpeakerOption[] {
-  const seen = new Map<string, string>();
-  for (const v of videos) {
-    const key = normalizeSpeakerName(v.speaker);
-    if (key && !seen.has(key)) seen.set(key, v.speaker!);
-  }
-  return [...seen.entries()]
-    .map(([key, label]) => ({ key, label }))
-    .sort((a, b) => a.label.localeCompare(b.label));
-}
 
 interface MonthOption {
   key: string; // "2026-09"
@@ -56,35 +39,39 @@ export default function SermonGrid({
   videos,
   episodesByVideoId = {},
   guestSpeakerIds = [],
+  series = [],
 }: {
   videos: YTVideo[];
   /** video id → its confidently-paired podcast episode, when one exists. */
   episodesByVideoId?: Record<string, PodcastEpisode>;
   /** video ids in the curated "Guest Speakers" YouTube playlist. */
   guestSpeakerIds?: string[];
+  /** Admin-curated sermon series, each backed by a YouTube playlist. */
+  series?: SermonSeries[];
 }) {
   const [query, setQuery] = useState("");
-  const [selectedSpeakers, setSelectedSpeakers] = useState<Set<string>>(new Set());
   const [selectedMonth, setSelectedMonth] = useState<string | null>(null);
+  const [selectedSeries, setSelectedSeries] = useState<string | null>(null);
   const [guestOnly, setGuestOnly] = useState(false);
   const [sort, setSort] = useState<"newest" | "oldest">("newest");
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const [filtersOpen, setFiltersOpen] = useState(false);
 
-  const speakers = useMemo(() => speakerOptions(videos), [videos]);
   const months = useMemo(() => monthOptions(videos), [videos]);
   const guestIdSet = useMemo(() => new Set(guestSpeakerIds), [guestSpeakerIds]);
+  const seriesVideoIdSets = useMemo(
+    () => new Map(series.map((s) => [s.id, new Set(s.videoIds)])),
+    [series]
+  );
 
   const filtered = useMemo(() => {
     let pool = videos;
-    if (selectedSpeakers.size > 0) {
-      pool = pool.filter((v) => {
-        const key = normalizeSpeakerName(v.speaker);
-        return key !== null && selectedSpeakers.has(key);
-      });
-    }
     if (selectedMonth) {
       pool = pool.filter((v) => monthKey(v.publishedAt) === selectedMonth);
+    }
+    if (selectedSeries) {
+      const ids = seriesVideoIdSets.get(selectedSeries);
+      pool = pool.filter((v) => ids?.has(v.id));
     }
     if (guestOnly) {
       pool = pool.filter((v) => guestIdSet.has(v.id));
@@ -101,25 +88,20 @@ export default function SermonGrid({
         ? b.publishedAt.localeCompare(a.publishedAt)
         : a.publishedAt.localeCompare(b.publishedAt)
     );
-  }, [videos, query, selectedSpeakers, selectedMonth, guestOnly, guestIdSet, sort]);
+  }, [videos, query, selectedMonth, selectedSeries, seriesVideoIdSets, guestOnly, guestIdSet, sort]);
 
   const visible = filtered.slice(0, visibleCount);
   const activeFilterCount =
-    selectedSpeakers.size + (selectedMonth ? 1 : 0) + (guestOnly ? 1 : 0);
-
-  function toggleSpeaker(key: string) {
-    setVisibleCount(PAGE_SIZE);
-    setSelectedSpeakers((prev) => {
-      const next = new Set(prev);
-      if (next.has(key)) next.delete(key);
-      else next.add(key);
-      return next;
-    });
-  }
+    (selectedMonth ? 1 : 0) + (selectedSeries ? 1 : 0) + (guestOnly ? 1 : 0);
 
   function selectMonth(key: string | null) {
     setVisibleCount(PAGE_SIZE);
     setSelectedMonth(key);
+  }
+
+  function selectSeries(id: string | null) {
+    setVisibleCount(PAGE_SIZE);
+    setSelectedSeries(id);
   }
 
   function toggleGuestOnly() {
@@ -128,23 +110,23 @@ export default function SermonGrid({
   }
 
   function clearFilters() {
-    setSelectedSpeakers(new Set());
     setSelectedMonth(null);
+    setSelectedSeries(null);
     setGuestOnly(false);
     setVisibleCount(PAGE_SIZE);
   }
 
   const filterPanel = (
     <FilterPanel
-      speakers={speakers}
       months={months}
-      selectedSpeakers={selectedSpeakers}
+      series={series}
       selectedMonth={selectedMonth}
+      selectedSeries={selectedSeries}
       guestOnly={guestOnly}
       sort={sort}
       activeFilterCount={activeFilterCount}
-      onToggleSpeaker={toggleSpeaker}
       onSelectMonth={selectMonth}
+      onSelectSeries={selectSeries}
       onToggleGuestOnly={toggleGuestOnly}
       onSetSort={setSort}
       onClear={clearFilters}
@@ -253,28 +235,28 @@ export default function SermonGrid({
 /* ── Filter panel — shared between the desktop sidebar and the mobile dropdown ── */
 
 function FilterPanel({
-  speakers,
   months,
-  selectedSpeakers,
+  series,
   selectedMonth,
+  selectedSeries,
   guestOnly,
   sort,
   activeFilterCount,
-  onToggleSpeaker,
   onSelectMonth,
+  onSelectSeries,
   onToggleGuestOnly,
   onSetSort,
   onClear,
 }: {
-  speakers: SpeakerOption[];
   months: MonthOption[];
-  selectedSpeakers: Set<string>;
+  series: SermonSeries[];
   selectedMonth: string | null;
+  selectedSeries: string | null;
   guestOnly: boolean;
   sort: "newest" | "oldest";
   activeFilterCount: number;
-  onToggleSpeaker: (key: string) => void;
   onSelectMonth: (key: string | null) => void;
+  onSelectSeries: (id: string | null) => void;
   onToggleGuestOnly: () => void;
   onSetSort: (sort: "newest" | "oldest") => void;
   onClear: () => void;
@@ -304,14 +286,11 @@ function FilterPanel({
       </div>
 
       <div>
-        <p className="mb-2 text-xs font-bold uppercase tracking-widest text-subtle">
-          Speakers
-        </p>
         <button
           type="button"
           onClick={onToggleGuestOnly}
           aria-pressed={guestOnly}
-          className={`mb-2 flex w-full items-center gap-2 rounded-xl border px-3 py-2 text-sm font-semibold transition ${
+          className={`flex w-full items-center gap-2 rounded-xl border px-3 py-2 text-sm font-semibold transition ${
             guestOnly
               ? "border-destiny-orange bg-destiny-orange/10 text-destiny-orange"
               : "border-black/10 text-muted hover:border-destiny-orange hover:text-destiny-orange"
@@ -320,30 +299,44 @@ function FilterPanel({
           <span className="material-symbols-rounded text-lg" aria-hidden="true">groups</span>
           Guest speakers only
         </button>
-        <div className="flex max-h-48 flex-wrap gap-2 overflow-y-auto lg:max-h-64 lg:flex-col lg:flex-nowrap lg:gap-1">
-          {speakers.length === 0 && (
-            <p className="text-sm text-subtle">No speakers found yet.</p>
-          )}
-          {speakers.map((s) => {
-            const active = selectedSpeakers.has(s.key);
-            return (
+      </div>
+
+      {series.length > 0 && (
+        <div>
+          <p className="mb-2 text-xs font-bold uppercase tracking-widest text-subtle">
+            Series
+          </p>
+          <div className="flex max-h-48 flex-wrap gap-2 overflow-y-auto lg:max-h-64 lg:flex-col lg:flex-nowrap lg:gap-1">
+            <button
+              type="button"
+              onClick={() => onSelectSeries(null)}
+              aria-pressed={selectedSeries === null}
+              className={`rounded-full border px-3 py-1.5 text-left text-sm font-semibold transition lg:rounded-lg lg:border-0 lg:px-2 lg:py-1.5 ${
+                selectedSeries === null
+                  ? "border-destiny-orange bg-destiny-orange text-white lg:bg-destiny-orange/10 lg:text-destiny-orange"
+                  : "border-black/10 text-muted hover:border-destiny-orange hover:text-destiny-orange lg:hover:bg-black/[0.04]"
+              }`}
+            >
+              All series
+            </button>
+            {series.map((s) => (
               <button
-                key={s.key}
+                key={s.id}
                 type="button"
-                onClick={() => onToggleSpeaker(s.key)}
-                aria-pressed={active}
+                onClick={() => onSelectSeries(s.id)}
+                aria-pressed={selectedSeries === s.id}
                 className={`rounded-full border px-3 py-1.5 text-left text-sm font-semibold transition lg:rounded-lg lg:border-0 lg:px-2 lg:py-1.5 ${
-                  active
+                  selectedSeries === s.id
                     ? "border-destiny-orange bg-destiny-orange text-white lg:bg-destiny-orange/10 lg:text-destiny-orange"
                     : "border-black/10 text-muted hover:border-destiny-orange hover:text-destiny-orange lg:hover:bg-black/[0.04]"
                 }`}
               >
-                {s.label}
+                {s.title}
               </button>
-            );
-          })}
+            ))}
+          </div>
         </div>
-      </div>
+      )}
 
       <div>
         <p className="mb-2 text-xs font-bold uppercase tracking-widest text-subtle">

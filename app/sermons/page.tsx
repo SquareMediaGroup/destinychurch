@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { getPodcastShow } from "@/lib/podcast";
 import { CHANNEL_URL, getGuestSpeakerVideoIds } from "@/lib/youtube";
 import { getLatestVideo, getFullSermonArchive } from "@/lib/speakerOverrides.server";
+import { getSermonSeriesList } from "@/lib/sermonSeries.server";
 import { pairAudioForVideo, pairArchiveWithEpisodes } from "@/lib/sermonPairing";
 import FeaturedSermon from "@/components/sermons/FeaturedSermon";
 import SermonGrid from "@/components/sermons/SermonGrid";
@@ -35,11 +36,12 @@ const platforms = [
 ];
 
 export default async function SermonsPage() {
-  const [show, latestVideo, archive, guestSpeakerIds] = await Promise.all([
+  const [show, latestVideo, archive, guestSpeakerIds, series] = await Promise.all([
     getPodcastShow().catch(() => null),
     getLatestVideo().catch(() => null),
     getFullSermonArchive().catch(() => []),
     getGuestSpeakerVideoIds().catch(() => new Set<string>()),
+    getSermonSeriesList().catch(() => []),
   ]);
 
   const episodes = show?.episodes ?? [];
@@ -113,6 +115,7 @@ export default async function SermonsPage() {
               videos={archive}
               episodesByVideoId={Object.fromEntries(episodesByVideoId)}
               guestSpeakerIds={[...guestSpeakerIds]}
+              series={series}
             />
           </div>
         </section>

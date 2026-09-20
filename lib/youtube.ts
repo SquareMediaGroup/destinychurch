@@ -374,6 +374,43 @@ export function getGuestSpeakerVideoIds(): Promise<Set<string>> {
   return getPlaylistVideoIds(GUEST_SPEAKERS_PLAYLIST_ID);
 }
 
+export type PlaylistSnippet = {
+  id: string;
+  title: string;
+  description: string;
+  thumbnail: string | null;
+};
+
+/**
+ * A playlist's own title/description — used for sermon series, where the
+ * playlist itself (not any one video in it) is the thing being displayed.
+ * `null` on any error or a not-found/private playlist, which the admin
+ * "add series" flow also uses as its existence check.
+ */
+export async function getPlaylistSnippet(playlistId: string): Promise<PlaylistSnippet | null> {
+  try {
+    const url = new URL("https://www.googleapis.com/youtube/v3/playlists");
+    url.searchParams.set("part", "snippet");
+    url.searchParams.set("id", playlistId);
+    url.searchParams.set("key", API_KEY ?? "");
+
+    const res = await fetch(url.toString(), { next: { revalidate: 3600 } });
+    if (!res.ok) return null;
+    const data = await res.json();
+    const item = (data.items ?? [])[0];
+    if (!item?.snippet?.title) return null;
+
+    return {
+      id: playlistId,
+      title: decodeEntities(item.snippet.title),
+      description: item.snippet.description ?? "",
+      thumbnail: item.snippet.thumbnails?.medium?.url ?? item.snippet.thumbnails?.default?.url ?? null,
+    };
+  } catch {
+    return null;
+  }
+}
+
 type DetailItemWithLive = DetailItem & { liveStreamingDetails?: { actualStartTime?: string } };
 
 async function fetchVideoDetailsWithLiveInfo(ids: string[]): Promise<Map<string, DetailItemWithLive>> {

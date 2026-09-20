@@ -21,12 +21,19 @@ function monthOptions(videos: YTVideo[]): MonthOption[] {
     if (isNaN(d.getTime())) continue;
     const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
     if (!seen.has(key)) {
-      seen.set(key, d.toLocaleDateString("en-GB", { month: "long", year: "numeric" }));
+      seen.set(key, d.toLocaleDateString("en-GB", { month: "long" }));
     }
   }
   return [...seen.entries()]
     .map(([key, label]) => ({ key, label }))
     .sort((a, b) => (a.key < b.key ? 1 : -1)); // newest month first
+}
+
+/** Years with at least one sermon, newest first — e.g. ["2026", "2025", …]. */
+function yearOptions(months: MonthOption[]): string[] {
+  const seen = new Set<string>();
+  for (const m of months) seen.add(m.key.slice(0, 4));
+  return [...seen].sort((a, b) => (a < b ? 1 : -1));
 }
 
 function monthKey(iso: string): string | null {
@@ -50,6 +57,7 @@ export default function SermonGrid({
   series?: SermonSeries[];
 }) {
   const [query, setQuery] = useState("");
+  const [selectedYear, setSelectedYear] = useState<string | null>(null);
   const [selectedMonth, setSelectedMonth] = useState<string | null>(null);
   const [selectedSeries, setSelectedSeries] = useState<string | null>(null);
   const [guestOnly, setGuestOnly] = useState(false);
@@ -58,6 +66,11 @@ export default function SermonGrid({
   const [filtersOpen, setFiltersOpen] = useState(false);
 
   const months = useMemo(() => monthOptions(videos), [videos]);
+  const years = useMemo(() => yearOptions(months), [months]);
+  const monthsForYear = useMemo(
+    () => (selectedYear ? months.filter((m) => m.key.startsWith(selectedYear)) : []),
+    [months, selectedYear]
+  );
   const guestIdSet = useMemo(() => new Set(guestSpeakerIds), [guestSpeakerIds]);
   const seriesVideoIdSets = useMemo(
     () => new Map(series.map((s) => [s.id, new Set(s.videoIds)])),
@@ -68,6 +81,8 @@ export default function SermonGrid({
     let pool = videos;
     if (selectedMonth) {
       pool = pool.filter((v) => monthKey(v.publishedAt) === selectedMonth);
+    } else if (selectedYear) {
+      pool = pool.filter((v) => monthKey(v.publishedAt)?.startsWith(selectedYear));
     }
     if (selectedSeries) {
       const ids = seriesVideoIdSets.get(selectedSeries);
@@ -88,11 +103,27 @@ export default function SermonGrid({
         ? b.publishedAt.localeCompare(a.publishedAt)
         : a.publishedAt.localeCompare(b.publishedAt)
     );
-  }, [videos, query, selectedMonth, selectedSeries, seriesVideoIdSets, guestOnly, guestIdSet, sort]);
+  }, [
+    videos,
+    query,
+    selectedYear,
+    selectedMonth,
+    selectedSeries,
+    seriesVideoIdSets,
+    guestOnly,
+    guestIdSet,
+    sort,
+  ]);
 
   const visible = filtered.slice(0, visibleCount);
   const activeFilterCount =
-    (selectedMonth ? 1 : 0) + (selectedSeries ? 1 : 0) + (guestOnly ? 1 : 0);
+    (selectedYear || selectedMonth ? 1 : 0) + (selectedSeries ? 1 : 0) + (guestOnly ? 1 : 0);
+
+  function selectYear(year: string | null) {
+    setVisibleCount(PAGE_SIZE);
+    setSelectedYear(year);
+    setSelectedMonth(null);
+  }
 
   function selectMonth(key: string | null) {
     setVisibleCount(PAGE_SIZE);
@@ -110,6 +141,7 @@ export default function SermonGrid({
   }
 
   function clearFilters() {
+    setSelectedYear(null);
     setSelectedMonth(null);
     setSelectedSeries(null);
     setGuestOnly(false);
@@ -118,13 +150,16 @@ export default function SermonGrid({
 
   const filterPanel = (
     <FilterPanel
-      months={months}
+      years={years}
+      monthsForYear={monthsForYear}
       series={series}
+      selectedYear={selectedYear}
       selectedMonth={selectedMonth}
       selectedSeries={selectedSeries}
       guestOnly={guestOnly}
       sort={sort}
       activeFilterCount={activeFilterCount}
+      onSelectYear={selectYear}
       onSelectMonth={selectMonth}
       onSelectSeries={selectSeries}
       onToggleGuestOnly={toggleGuestOnly}
@@ -134,7 +169,7 @@ export default function SermonGrid({
   );
 
   return (
-    <div className="lg:grid lg:grid-cols-[260px_1fr] lg:items-start lg:gap-8">
+    <div className="lg:grid lg:grid-cols-[260px_1fr] lg:gap-8">
       {/* Sidebar — desktop only, always visible */}
       <aside className="hidden lg:block">
         <div className="sticky top-24 rounded-2xl border border-black/[0.07] bg-white p-5">
@@ -235,26 +270,33 @@ export default function SermonGrid({
 /* ── Filter panel — shared between the desktop sidebar and the mobile dropdown ── */
 
 function FilterPanel({
-  months,
+  years,
+  monthsForYear,
   series,
+  selectedYear,
   selectedMonth,
   selectedSeries,
   guestOnly,
   sort,
   activeFilterCount,
+  onSelectYear,
   onSelectMonth,
   onSelectSeries,
   onToggleGuestOnly,
   onSetSort,
   onClear,
 }: {
-  months: MonthOption[];
+  years: string[];
+  /** Months within `selectedYear` only — empty until a year is picked. */
+  monthsForYear: MonthOption[];
   series: SermonSeries[];
+  selectedYear: string | null;
   selectedMonth: string | null;
   selectedSeries: string | null;
   guestOnly: boolean;
   sort: "newest" | "oldest";
   activeFilterCount: number;
+  onSelectYear: (year: string | null) => void;
   onSelectMonth: (key: string | null) => void;
   onSelectSeries: (id: string | null) => void;
   onToggleGuestOnly: () => void;
@@ -340,38 +382,75 @@ function FilterPanel({
 
       <div>
         <p className="mb-2 text-xs font-bold uppercase tracking-widest text-subtle">
-          Month
+          Year
         </p>
-        <div className="flex max-h-48 flex-wrap gap-2 overflow-y-auto lg:max-h-64 lg:flex-col lg:flex-nowrap lg:gap-1">
+        <div className="flex flex-wrap gap-2 lg:flex-col lg:gap-1">
           <button
             type="button"
-            onClick={() => onSelectMonth(null)}
-            aria-pressed={selectedMonth === null}
+            onClick={() => onSelectYear(null)}
+            aria-pressed={selectedYear === null}
             className={`rounded-full border px-3 py-1.5 text-left text-sm font-semibold transition lg:rounded-lg lg:border-0 lg:px-2 lg:py-1.5 ${
-              selectedMonth === null
+              selectedYear === null
                 ? "border-destiny-orange bg-destiny-orange text-white lg:bg-destiny-orange/10 lg:text-destiny-orange"
                 : "border-black/10 text-muted hover:border-destiny-orange hover:text-destiny-orange lg:hover:bg-black/[0.04]"
             }`}
           >
             All time
           </button>
-          {months.map((m) => (
+          {years.map((y) => (
             <button
-              key={m.key}
+              key={y}
               type="button"
-              onClick={() => onSelectMonth(m.key)}
-              aria-pressed={selectedMonth === m.key}
+              onClick={() => onSelectYear(y)}
+              aria-pressed={selectedYear === y}
               className={`rounded-full border px-3 py-1.5 text-left text-sm font-semibold transition lg:rounded-lg lg:border-0 lg:px-2 lg:py-1.5 ${
-                selectedMonth === m.key
+                selectedYear === y
                   ? "border-destiny-orange bg-destiny-orange text-white lg:bg-destiny-orange/10 lg:text-destiny-orange"
                   : "border-black/10 text-muted hover:border-destiny-orange hover:text-destiny-orange lg:hover:bg-black/[0.04]"
               }`}
             >
-              {m.label}
+              {y}
             </button>
           ))}
         </div>
       </div>
+
+      {selectedYear && (
+        <div>
+          <p className="mb-2 text-xs font-bold uppercase tracking-widest text-subtle">
+            Month
+          </p>
+          <div className="flex flex-wrap gap-2 lg:flex-col lg:gap-1">
+            <button
+              type="button"
+              onClick={() => onSelectMonth(null)}
+              aria-pressed={selectedMonth === null}
+              className={`rounded-full border px-3 py-1.5 text-left text-sm font-semibold transition lg:rounded-lg lg:border-0 lg:px-2 lg:py-1.5 ${
+                selectedMonth === null
+                  ? "border-destiny-orange bg-destiny-orange text-white lg:bg-destiny-orange/10 lg:text-destiny-orange"
+                  : "border-black/10 text-muted hover:border-destiny-orange hover:text-destiny-orange lg:hover:bg-black/[0.04]"
+              }`}
+            >
+              All of {selectedYear}
+            </button>
+            {monthsForYear.map((m) => (
+              <button
+                key={m.key}
+                type="button"
+                onClick={() => onSelectMonth(m.key)}
+                aria-pressed={selectedMonth === m.key}
+                className={`rounded-full border px-3 py-1.5 text-left text-sm font-semibold transition lg:rounded-lg lg:border-0 lg:px-2 lg:py-1.5 ${
+                  selectedMonth === m.key
+                    ? "border-destiny-orange bg-destiny-orange text-white lg:bg-destiny-orange/10 lg:text-destiny-orange"
+                    : "border-black/10 text-muted hover:border-destiny-orange hover:text-destiny-orange lg:hover:bg-black/[0.04]"
+                }`}
+              >
+                {m.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       {activeFilterCount > 0 && (
         <button

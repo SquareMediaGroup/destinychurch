@@ -10,7 +10,7 @@ Designed, engineered, and deployed by [Square Media Group](mailto:hello@squareme
 
 ## Features
 
-- Sermon streaming and full-archive browsing — speaker, month, and guest-speaker filters with fuzzy search, a Watch/Listen switch on any paired sermon (podcast audio that keeps playing as you navigate the site), and a live-stream banner
+- Sermon streaming and full-archive browsing — series, month/year, and guest-speaker filters with fuzzy search (by topic or speaker name), admin-curated playlist-backed series and manual or AI speaker correction, a Watch/Listen switch on any paired sermon (podcast audio that keeps playing as you navigate the site), and a live-stream banner
 - Live chat on `/live` — public chat with a host backstage channel, moderation, and prayer requests (Supabase Realtime)
 - Simulated live — play a pre-recorded video on `/live` as a self-synchronising broadcast, with on-page host broadcast controls
 - Events and "What's On" listings — unified event cards, on-site event pages, a swappable featured event/course, ICS calendar downloads, and on-site ChurchSuite signup
@@ -19,7 +19,7 @@ Designed, engineered, and deployed by [Square Media Group](mailto:hello@squareme
 - Merchandise shop with Stripe checkout (cards, Apple Pay, Google Pay, Link) and category filtering
 - Staff training courses with progress tracking and timed modules
 - HR & jobs system — job board, applications, staff directory, leave requests, documents, reviews, onboarding/offboarding checklists, and email notifications (leave decisions + a daily review-reminder digest)
-- Staff self-service portal (`/portal`) — a separate login surface where staff view their profile, request leave, download documents, and track their design requests (an `hr_admin` access level runs HR without full super-admin)
+- Staff self-service portal (`/portal`) — a separate login surface, opening on a dashboard of at-a-glance cards (holiday balance, onboarding progress, next review, open design requests, document count) that link into each section: profile and account settings, a searchable team directory, leave requests, document downloads, onboarding checklist and review history, and design requests (an `hr_admin` access level runs HR without full super-admin)
 - Design request queue — anyone can ask the design team for artwork at `/design-request`; designers work the queue in `/admin/design`, deliver files (images/PDFs in Supabase Storage, video as a Drive/Playbook link), and the requester downloads them from a share-token tracker with no login. Confirmed downloads are auto-purged after 48 hours
 - Role-based admin onboarding — new admins are walked through a guided tour scoped to their access level, with nothing saved during the tour
 - Venue hire enquiry system
@@ -151,7 +151,7 @@ app/
 ├── missions/         # Missions & outreach
 ├── new-here/         # First-time visitor guide
 ├── nfc/              # "Digital back of seats" — NFC/QR tap-to-open service page
-├── portal/           # Staff self-service (profile, leave, documents, design requests)
+├── portal/           # Staff self-service dashboard (profile, team directory, leave, documents, reviews, design requests)
 ├── safeguarding/     # Safeguarding policy
 ├── sermons/          # Sermon archive & individual pages
 ├── serve/            # Volunteer opportunities

@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
 import { createServiceClient } from "@/utils/supabase/service";
 import { readPortalUser } from "@/lib/staffPortalAuth";
-import { dayCount } from "@/lib/hr";
+import { dayCount, fullName } from "@/lib/hr";
 import { sendLeaveRequestedEmail } from "@/lib/hrEmail";
+import { recordNotification } from "@/lib/notify.server";
 
 export async function GET() {
   const identity = await readPortalUser();
@@ -61,6 +62,16 @@ export async function POST(request: Request) {
   } catch (err) {
     console.error("Leave-requested email failed:", err);
   }
+
+  await recordNotification({
+    section: "hr",
+    kind: "new_leave_request",
+    entityId: data.id,
+    entityLabel: fullName(identity.staff),
+    summary: `New leave request from ${fullName(identity.staff)}`,
+    href: `/admin/hr/leave?open=${data.id}`,
+    roles: ["hr_admin"],
+  });
 
   return NextResponse.json(data, { status: 201 });
 }

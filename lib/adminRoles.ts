@@ -161,6 +161,9 @@ const OPEN_PATHS = [
   // Everyone's own onboarding progress — the route only ever reads and writes
   // the caller's row, keyed off their cookie session.
   /^\/api\/admin\/onboarding$/,
+  // The notification bell — every admin needs it regardless of role; the
+  // route itself filters content to the roles the caller actually holds.
+  /^\/api\/admin\/notifications(\/|$)/,
 ];
 
 export function hasAccess(roles: RoleFlags, pathname: string): boolean {

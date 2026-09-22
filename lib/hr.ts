@@ -75,6 +75,7 @@ export interface Review extends StaffRef {
   review_date: string;
   type: ReviewType;
   reviewer: string | null;
+  reviewer_auth_user_id: string | null;
   summary: string | null;
   next_review_date: string | null;
   created_at: string;

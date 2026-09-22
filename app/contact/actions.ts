@@ -5,6 +5,7 @@ import { createServiceClient } from "@/utils/supabase/service";
 import { Resend } from "resend";
 import { checkRateLimit, clientIp } from "@/lib/rateLimit";
 import { escapeHtml, escapeHtmlMultiline, isValidEmail } from "@/lib/formEmail";
+import { recordNotification } from "@/lib/notify.server";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
@@ -288,13 +289,17 @@ export async function submitContactForm(formData: FormData) {
 
   try {
     const supabase = createServiceClient();
-    const { error } = await supabase.from("contact_messages").insert({
-      name,
-      email,
-      subject,
-      message,
-      created_at: new Date().toISOString(),
-    });
+    const { data, error } = await supabase
+      .from("contact_messages")
+      .insert({
+        name,
+        email,
+        subject,
+        message,
+        created_at: new Date().toISOString(),
+      })
+      .select("id")
+      .single();
 
     if (error) throw error;
 
@@ -307,6 +312,16 @@ export async function submitContactForm(formData: FormData) {
     });
 
     if (emailError) throw new Error(emailError.message);
+
+    await recordNotification({
+      section: "site",
+      kind: "new_contact_message",
+      entityId: data.id,
+      entityLabel: name,
+      summary: `New contact message from ${name}: ${subject}`,
+      href: `/admin/site/contact?open=${data.id}`,
+      roles: ["site_admin"],
+    });
 
     return { success: true };
   } catch (err) {

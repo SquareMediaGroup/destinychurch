@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import Link from "next/link";
 import {
   API,
@@ -17,10 +17,11 @@ import {
   ListToolbar,
   FilterChips,
   TableSkeleton,
+  BulkBar,
   primaryBtn,
   ghostBtn,
 } from "@/components/admin/AdminUI";
-import { useAdminList } from "@/lib/useAdminList";
+import { useAdminList, useRowSelection } from "@/lib/useAdminList";
 import { fetchAdminArray, useAdminLoader } from "@/lib/useAdminLoader";
 import { JobModal } from "@/components/admin/hr/JobModal";
 import { useDialog } from "@/components/DialogProvider";
@@ -35,6 +36,7 @@ export default function JobsPage() {
   const { confirm } = useDialog();
   const [jobs, setJobs] = useState<Job[]>([]);
   const [editing, setEditing] = useState<Job | "new" | null>(null);
+  const [working, setWorking] = useState(false);
 
   const load = useCallback(async () => {
     setJobs(await fetchAdminArray<Job>(`${API}/jobs`));
@@ -105,6 +107,66 @@ export default function JobsPage() {
     reload();
   }
 
+  const selection = useRowSelection(jobs);
+  const visibleIds = useMemo(() => list.visible.map((j) => j.id), [list.visible]);
+  const allVisibleSelected =
+    visibleIds.length > 0 && visibleIds.every((id) => selection.selected.has(id));
+
+  async function bulkPublish(publish: boolean) {
+    const ids = [...selection.selected];
+    if (ids.length === 0) return;
+    setWorking(true);
+    setError("");
+    const results = await Promise.allSettled(
+      ids.map((id) =>
+        fetch(`${API}/jobs/${id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ is_published: publish }),
+        }).then((r) => {
+          if (!r.ok) throw new Error();
+        }),
+      ),
+    );
+    const failed = results.filter((r) => r.status === "rejected").length;
+    if (failed) {
+      setError(
+        `${failed} of ${ids.length} could not be ${publish ? "published" : "unpublished"}.`,
+      );
+    }
+    selection.clear();
+    setWorking(false);
+    reload();
+  }
+
+  async function bulkDelete() {
+    const ids = [...selection.selected];
+    if (ids.length === 0) return;
+    if (
+      !(await confirm({
+        title: `Delete ${ids.length} role${ids.length === 1 ? "" : "s"}`,
+        message: `This permanently deletes ${ids.length} job listing${ids.length === 1 ? "" : "s"}. This cannot be undone.`,
+        confirmLabel: "Delete",
+        tone: "danger",
+      }))
+    )
+      return;
+    setWorking(true);
+    setError("");
+    const results = await Promise.allSettled(
+      ids.map((id) =>
+        fetch(`${API}/jobs/${id}`, { method: "DELETE" }).then((r) => {
+          if (!r.ok) throw new Error();
+        }),
+      ),
+    );
+    const failed = results.filter((r) => r.status === "rejected").length;
+    if (failed) setError(`${failed} of ${ids.length} could not be deleted.`);
+    selection.clear();
+    setWorking(false);
+    reload();
+  }
+
   return (
     <div className="mx-auto max-w-6xl px-5 py-10">
       <PageHeader
@@ -158,7 +220,31 @@ export default function JobsPage() {
                 onChange={(v) => list.setFilter("status", v)}
               />
             }
-          />
+          >
+            <BulkBar count={selection.count} noun="role" onClear={selection.clear}>
+              <button
+                className="rounded-lg bg-destiny-green/10 px-3 py-1.5 text-xs font-bold text-destiny-green transition hover:bg-destiny-green/20 disabled:opacity-50"
+                disabled={working}
+                onClick={() => bulkPublish(true)}
+              >
+                Publish
+              </button>
+              <button
+                className="rounded-lg bg-black/5 px-3 py-1.5 text-xs font-bold text-destiny-grey/70 dark:text-white/70 transition hover:bg-black/10 disabled:opacity-50"
+                disabled={working}
+                onClick={() => bulkPublish(false)}
+              >
+                Unpublish
+              </button>
+              <button
+                className="rounded-lg bg-destiny-red/10 px-3 py-1.5 text-xs font-bold text-destiny-red transition hover:bg-destiny-red/20 disabled:opacity-50"
+                disabled={working}
+                onClick={bulkDelete}
+              >
+                Delete
+              </button>
+            </BulkBar>
+          </ListToolbar>
 
           {list.visible.length === 0 ? (
             <EmptyState
@@ -179,6 +265,15 @@ export default function JobsPage() {
               <table className="w-full text-left text-sm">
                 <thead className="border-b border-black/5 text-xs font-bold uppercase tracking-wider text-destiny-grey/40 dark:text-white/40">
                   <tr>
+                    <th className="w-10 pl-5 pr-0 py-3.5">
+                      <input
+                        type="checkbox"
+                        aria-label="Select all shown"
+                        checked={allVisibleSelected}
+                        onChange={() => selection.toggleAll(visibleIds)}
+                        className="accent-destiny-orange"
+                      />
+                    </th>
                     <th className="px-5 py-3.5">Role</th>
                     <th className="hidden px-5 py-3.5 sm:table-cell">Type</th>
                     <th className="hidden px-5 py-3.5 md:table-cell">Closing</th>
@@ -190,7 +285,21 @@ export default function JobsPage() {
                   {list.visible.map((j) => {
                     const closed = isClosed(j);
                     return (
-                      <tr key={j.id} className="transition hover:bg-[#f5f7fa] dark:hover:bg-white/10">
+                      <tr
+                        key={j.id}
+                        className={`transition hover:bg-[#f5f7fa] dark:hover:bg-white/10 ${
+                          selection.selected.has(j.id) ? "bg-destiny-orange/5" : ""
+                        }`}
+                      >
+                        <td className="w-10 py-3.5 pl-5 pr-0" onClick={(e) => e.stopPropagation()}>
+                          <input
+                            type="checkbox"
+                            aria-label={`Select ${j.title}`}
+                            checked={selection.selected.has(j.id)}
+                            onChange={() => selection.toggle(j.id)}
+                            className="accent-destiny-orange"
+                          />
+                        </td>
                         <td className="px-5 py-3.5">
                           <p className="font-bold text-destiny-grey dark:text-white">{j.title}</p>
                           <p className="text-xs text-destiny-grey/45 dark:text-white/45">

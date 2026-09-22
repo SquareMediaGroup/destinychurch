@@ -13,6 +13,7 @@ import { NextResponse } from "next/server";
 import { createServiceClient } from "@/utils/supabase/service";
 import { getSessionById, emit } from "@/lib/liveChat.server";
 import { hostTopic } from "@/lib/liveChatGuest";
+import { recordNotification } from "@/lib/notify.server";
 import { readGuest, readHost, clientIp } from "@/lib/liveChatAuth";
 import {
   normaliseBody,
@@ -104,6 +105,16 @@ export async function POST(request: Request) {
   }
 
   await emit(hostTopic(sessionId), "prayer", { request: data });
+
+  await recordNotification({
+    section: "live",
+    kind: "new_prayer_request",
+    entityId: data.id,
+    entityLabel: data.display_name,
+    summary: `New prayer request from ${data.display_name}`,
+    href: `/admin/live-chat?tab=prayer`,
+    roles: ["host"],
+  });
 
   return NextResponse.json({ ok: true }, { status: 201 });
 }

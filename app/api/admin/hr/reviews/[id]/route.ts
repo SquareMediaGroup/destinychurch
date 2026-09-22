@@ -16,6 +16,7 @@ export async function PATCH(
     "review_date",
     "type",
     "reviewer",
+    "reviewer_auth_user_id",
     "summary",
     "next_review_date",
   ]) {

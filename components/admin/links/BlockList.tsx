@@ -307,7 +307,7 @@ export default function BlockList({
                 <span className="material-symbols-rounded text-lg" aria-hidden="true">close</span>
               </button>
             </div>
-            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+            <div className="grid grid-cols-2 gap-2 @2xl:grid-cols-4">
               {LINK_BLOCK_TYPES.map((type) => (
                 <button
                   key={type}

@@ -133,7 +133,7 @@ export default function AppearanceTab({
   return (
     <div className="space-y-4">
       <Card title="Start from a theme">
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+        <div className="grid grid-cols-2 gap-3 @md:grid-cols-3">
           {THEME_PRESETS.map((preset) => {
             const current = theme.preset === preset.key;
             return (
@@ -244,7 +244,7 @@ export default function AppearanceTab({
       </Card>
 
       <Card title="Colours">
-        <div className="grid gap-4 sm:grid-cols-3">
+        <div className="grid gap-4 @xl:grid-cols-3">
           <ColorField label="Text" value={theme.text.color} onChange={(v) => patch("text", { color: v })} />
           <ColorField label="Headings" value={theme.text.heading} onChange={(v) => patch("text", { heading: v })} />
           <ColorField
@@ -258,7 +258,7 @@ export default function AppearanceTab({
 
       <Card title="Buttons">
         <FieldShell label="Style">
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
+          <div className="grid grid-cols-2 gap-2 @md:grid-cols-3 @2xl:grid-cols-5">
             {BUTTON_STYLES.map((style) => (
               <button
                 key={style}
@@ -276,7 +276,7 @@ export default function AppearanceTab({
             ))}
           </div>
         </FieldShell>
-        <div className="grid gap-4 sm:grid-cols-3">
+        <div className="grid gap-4 @xl:grid-cols-3">
           <SelectField
             label="Corners"
             value={theme.button.radius}
@@ -299,7 +299,7 @@ export default function AppearanceTab({
             onChange={(v) => patch("button", { hover: v as Theme["button"]["hover"] })}
           />
         </div>
-        <div className="grid gap-4 sm:grid-cols-3">
+        <div className="grid gap-4 @xl:grid-cols-3">
           <ColorField
             label={theme.button.style === "outline" ? "Outline" : "Button"}
             value={theme.button.bg}
@@ -311,7 +311,7 @@ export default function AppearanceTab({
       </Card>
 
       <Card title="Fonts">
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="grid gap-4 @md:grid-cols-2">
           <SelectField
             label="Headings"
             value={theme.font.heading}
@@ -328,7 +328,7 @@ export default function AppearanceTab({
       </Card>
 
       <Card title="Layout">
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="grid gap-4 @md:grid-cols-2">
           <SelectField
             label="Header"
             value={theme.layout.style}

@@ -122,7 +122,7 @@ export default function SubmissionsTab({ pageId }: { pageId: string }) {
                 <span className="material-symbols-rounded text-lg" aria-hidden="true">delete</span>
               </button>
             </div>
-            <dl className="grid gap-x-4 gap-y-1.5 sm:grid-cols-[minmax(0,10rem)_1fr]">
+            <dl className="grid gap-x-4 gap-y-1.5 @md:grid-cols-[minmax(0,10rem)_1fr]">
               {(Array.isArray(row.data) ? row.data : []).map((v) => (
                 <div key={v.id} className="contents">
                   <dt className="text-xs font-bold text-destiny-grey/50 dark:text-white/50">{v.label}</dt>

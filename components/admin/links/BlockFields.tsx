@@ -69,7 +69,7 @@ function LinkFields({ d, set }: { d: Record<string, unknown>; set: Patch }) {
         onChange={(v) => set({ subtitle: v })}
       />
       <HrefField label="Link" value={url} onChange={(v) => set({ url: v })} />
-      <div className="grid gap-4 sm:grid-cols-2">
+      <div className="grid gap-4 @md:grid-cols-2">
         <SelectField
           label="Style"
           value={str(d.style) || "button"}
@@ -164,7 +164,7 @@ function EventFields({
             placeholder="Optional — e.g. Coming up"
             onChange={(v) => set({ heading: v })}
           />
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className="grid gap-4 @md:grid-cols-2">
             <NumberField
               label="How many"
               value={Number(d.count ?? 3)}
@@ -334,7 +334,7 @@ function FormFields({ d, set }: { d: Record<string, unknown>; set: Patch }) {
         )}
       </FieldShell>
 
-      <div className="grid gap-4 sm:grid-cols-2">
+      <div className="grid gap-4 @md:grid-cols-2">
         <TextField label="Button text" value={str(d.submitLabel)} maxLength={30} onChange={(v) => set({ submitLabel: v })} />
         <TextField
           label="Email responses to"
@@ -409,7 +409,7 @@ export function ScheduleFields({
   const bad = block.starts_at && block.ends_at && Date.parse(block.starts_at) >= Date.parse(block.ends_at);
   return (
     <div>
-      <div className="grid gap-4 sm:grid-cols-2">
+      <div className="grid gap-4 @md:grid-cols-2">
         <FieldShell label="Show from">
           <input
             type="datetime-local"
@@ -453,7 +453,7 @@ export default function BlockFields({
       return (
         <>
           <TextField label="Heading" value={str(d.text)} maxLength={80} onChange={(v) => onData({ text: v })} />
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className="grid gap-4 @md:grid-cols-2">
             <SelectField
               label="Size"
               value={str(d.size) || "md"}

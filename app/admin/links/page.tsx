@@ -166,7 +166,7 @@ export default function LinksPagesAdmin() {
   const slugOk = SLUG_RE.test(slug) && slug !== MAIN_SLUG;
 
   return (
-    <div>
+    <div className="mx-auto max-w-5xl px-5 py-10 sm:px-8">
       <PageHeader
         title="Links Pages"
         subtitle="Linktree-style pages for Instagram bios, QR codes and NFC tags."
@@ -194,11 +194,11 @@ export default function LinksPagesAdmin() {
             return (
               <li
                 key={p.id}
-                className="flex flex-wrap items-center gap-3 rounded-2xl border border-black/5 bg-white p-3 pr-4 shadow-sm dark:border-white/8 dark:bg-destiny-grey-800"
+                className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-x-3 gap-y-2 rounded-2xl border border-black/5 bg-white p-3 shadow-sm sm:grid-cols-[auto_minmax(0,1fr)_auto_auto] sm:gap-x-4 sm:pr-4 dark:border-white/8 dark:bg-destiny-grey-800"
               >
                 <ThemeChip theme={p.theme} />
-                <a href={`/admin/links/${p.id}`} className="min-w-0 flex-1">
-                  <span className="flex items-center gap-2">
+                <a href={`/admin/links/${p.id}`} className="min-w-0">
+                  <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
                     <span className="truncate font-bold text-destiny-grey dark:text-white">
                       {p.title || pagePath(p.slug)}
                     </span>
@@ -213,7 +213,8 @@ export default function LinksPagesAdmin() {
                     {p.blockCount === 1 ? "" : "s"}
                   </span>
                 </a>
-                <div className="flex items-center gap-4 text-right">
+                {/* Phones: the numbers take their own row under the title. */}
+                <div className="order-last col-span-3 flex items-center gap-4 border-t border-black/5 pt-2 pl-[3.75rem] sm:order-none sm:col-span-1 sm:border-0 sm:pt-0 sm:pl-0 sm:text-right dark:border-white/8">
                   <div>
                     <p className="text-sm font-black text-destiny-grey dark:text-white">
                       {compactNumber(p.views30)}

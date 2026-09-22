@@ -167,31 +167,50 @@ export default function LinksEditor({ id }: { id: string }) {
     }
   }
 
-  if (loadError) return <ErrorNote>{loadError}</ErrorNote>;
-  if (!page) return <PageLoading label="Loading page" />;
+  // The same page container every admin page uses (see /admin/nfc,
+  // /admin/featured-event) — wider than most, because the editor sits beside a
+  // phone-sized preview on big screens.
+  const shell = "mx-auto max-w-7xl px-4 pb-40 pt-6 md:pb-28 xl:pb-10 sm:px-6 sm:pt-8 lg:px-8 lg:pt-10";
+
+  if (loadError)
+    return (
+      <div className={shell}>
+        <ErrorNote>{loadError}</ErrorNote>
+      </div>
+    );
+  if (!page)
+    return (
+      <div className={shell}>
+        <PageLoading label="Loading page" />
+      </div>
+    );
 
   const path = pagePath(savedSlug);
   const livePreview = <LinkPageView page={page} theme={page.theme} blocks={preview} preview />;
 
   return (
     <ImageUploaderContext.Provider value={uploadLinksImage}>
+      <div className={shell}>
       <PageHeader
         title={page.title || path}
         subtitle={`${path}${page.published || savedSlug === MAIN_SLUG ? "" : " · Draft"}`}
         back={{ href: "/admin/links", label: "Links pages" }}
         action={
           <div className="flex items-center gap-2">
-            {dirty && (
-              <span className="hidden text-xs font-bold text-warning sm:inline" role="status">
-                Unsaved changes
-              </span>
-            )}
             <Button href={path} variant="outline" shape="soft" size="sm">
               View live
             </Button>
-            <Button variant="primary" shape="soft" size="sm" onClick={save} loading={saving} disabled={!dirty || saving}>
-              {saving ? "Saving" : "Save"}
-            </Button>
+            {/* Below xl, the unsaved-changes note and Save live in the bottom bar. */}
+            <div className="hidden items-center gap-2 xl:flex">
+              {dirty && (
+                <span className="text-xs font-bold text-warning" role="status">
+                  Unsaved changes
+                </span>
+              )}
+              <Button variant="primary" shape="soft" size="sm" onClick={save} loading={saving} disabled={!dirty || saving}>
+                {saving ? "Saving" : "Save"}
+              </Button>
+            </div>
           </div>
         }
       />
@@ -203,12 +222,16 @@ export default function LinksEditor({ id }: { id: string }) {
         </p>
       )}
 
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_400px]">
-        <div className="min-w-0">
+      {/* The preview column only appears at xl: below that, the sidebar plus a
+          400px phone would leave the editor too narrow to use. The editor
+          column is a size container, so its inner grids respond to the space
+          they actually have (@md:, @xl:) rather than to the viewport. */}
+      <div className="grid gap-8 xl:grid-cols-[minmax(0,1fr)_380px]">
+        <div className="@container min-w-0">
           <div
             role="tablist"
             aria-label="Editor sections"
-            className="-mx-4 mb-4 flex gap-1 overflow-x-auto px-4 pb-1 [scrollbar-width:none] lg:mx-0 lg:px-0"
+            className="-mx-4 mb-5 flex gap-1 overflow-x-auto px-4 pb-1 [scrollbar-width:none] sm:mx-0 sm:flex-wrap sm:px-0"
           >
             {TABS.map((t) => (
               <button
@@ -249,7 +272,7 @@ export default function LinksEditor({ id }: { id: string }) {
           </div>
         </div>
 
-        <aside className="hidden lg:block" aria-label="Live preview">
+        <aside className="hidden xl:block" aria-label="Live preview">
           <div className="sticky top-4">
             <p className="mb-2 text-center text-xs font-bold uppercase tracking-wider text-destiny-grey/40 dark:text-white/40">
               Live preview{dirty ? " · unsaved" : ""}
@@ -259,30 +282,30 @@ export default function LinksEditor({ id }: { id: string }) {
         </aside>
       </div>
 
-      {/* Phones and tablets: the preview lives in a sheet behind a button. */}
-      <button
-        type="button"
-        onClick={() => setPreviewOpen(true)}
-        className="fixed bottom-[calc(5.5rem+env(safe-area-inset-bottom))] right-4 z-40 inline-flex items-center gap-2 rounded-full bg-destiny-grey px-4 py-3 text-sm font-bold text-white shadow-xl lg:hidden"
-      >
-        <span className="material-symbols-rounded text-lg" aria-hidden="true">smartphone</span>
-        Preview
-      </button>
+      </div>
+
+      {/* Below xl: one bar for Preview and Save, pinned above the admin's
+          mobile tab bar (which is only there below md). */}
+      <div className="fixed inset-x-0 bottom-[calc(5.25rem+env(safe-area-inset-bottom))] z-40 flex justify-center px-4 md:bottom-6 md:left-56 xl:hidden">
+        <div className="flex w-full max-w-md items-center gap-2 rounded-2xl bg-white p-2 shadow-2xl ring-1 ring-black/10 dark:bg-destiny-grey-800 dark:ring-white/10">
+          <Button variant="outline" shape="soft" size="sm" onClick={() => setPreviewOpen(true)}>
+            Preview
+          </Button>
+          <span
+            className={`min-w-0 flex-1 truncate text-center text-xs font-bold ${dirty ? "text-warning" : "text-destiny-grey/45 dark:text-white/45"}`}
+            role="status"
+          >
+            {dirty ? "Unsaved changes" : "All changes saved"}
+          </span>
+          <Button variant="primary" shape="soft" size="sm" onClick={save} loading={saving} disabled={!dirty || saving}>
+            Save
+          </Button>
+        </div>
+      </div>
       {previewOpen && (
         <Sheet title="Preview" subtitle={dirty ? "Includes unsaved changes" : path} onClose={() => setPreviewOpen(false)}>
           <div className="min-h-[70vh] overflow-hidden">{livePreview}</div>
         </Sheet>
-      )}
-
-      {dirty && (
-        <div className="fixed inset-x-0 bottom-[calc(1rem+env(safe-area-inset-bottom))] z-40 flex justify-center px-4 lg:hidden">
-          <div className="flex w-full max-w-md items-center justify-between gap-3 rounded-2xl bg-white px-4 py-3 shadow-2xl ring-1 ring-black/10 dark:bg-destiny-grey-800">
-            <span className="text-sm font-bold text-destiny-grey dark:text-white">Unsaved changes</span>
-            <Button variant="primary" shape="soft" size="sm" onClick={save} loading={saving} disabled={saving}>
-              Save
-            </Button>
-          </div>
-        </div>
       )}
     </ImageUploaderContext.Provider>
   );

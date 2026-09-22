@@ -86,7 +86,7 @@ export default function AnalyticsTab({ pageId }: { pageId: string }) {
 
       {error && <ErrorNote>{error}</ErrorNote>}
 
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-2 gap-3 @2xl:grid-cols-4">
         <MetricCard icon="visibility" iconColor="text-info" iconBg="bg-info/10" label="Views" loading={!stats} value={compactNumber(stats?.totals.views ?? 0)} />
         <MetricCard icon="person" iconColor="text-destiny-purple" iconBg="bg-destiny-purple/10" label="Visitors" loading={!stats} value={compactNumber(stats?.totals.visitors ?? 0)} />
         <MetricCard icon="touch_app" iconColor="text-destiny-orange" iconBg="bg-destiny-orange/10" label="Clicks" loading={!stats} value={compactNumber(stats?.totals.clicks ?? 0)} />
@@ -122,7 +122,7 @@ export default function AnalyticsTab({ pageId }: { pageId: string }) {
               emptyLabel="No clickable blocks on this page yet."
             />
           </Panel>
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className="grid gap-4 @md:grid-cols-2">
             <Panel title="How people arrived">
               <BarRows rows={stats.sources.map((s) => ({ key: s.key, label: s.key, value: s.count }))} emptyLabel="No visits yet." />
             </Panel>

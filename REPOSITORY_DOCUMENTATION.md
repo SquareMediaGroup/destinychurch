@@ -361,7 +361,8 @@ destinychurch/
 │       ├── 20260902_remove_media_boards.sql # Drops the media_boards/media_photos tables (Media Boards feature removed)
 │       ├── 20260912_01_sermon_admin_role.sql # `sermon_admin` access level on admin_roles (/admin/sermons)
 │       ├── 20260912_02_speaker_overrides.sql # speaker_overrides table — AI/human speaker corrections for the sermon archive
-│       └── 20260920_01_sermon_series.sql  # sermon_series table — playlist ids curated as sermon series
+│       ├── 20260920_01_sermon_series.sql  # sermon_series table — playlist ids curated as sermon series
+│       └── 20260922_02_live_chat_rpc_grants.sql # Revoke anon/authenticated EXECUTE on live chat definer fns; host check → `private`
 │
 ├── utils/                         # Utility modules
 │   ├── supabase/                  # Supabase client factories
@@ -1424,8 +1425,21 @@ patterns (so the three cannot overlap). Clients get SELECT (receive) and
 deliberately **no broadcast INSERT** — a client holding the anon key can never
 put a message, least of all one wearing a HOST badge, onto a channel. The one
 INSERT policy is scoped to `extension = 'presence'`, which is what powers the
-"N here now" count. Host checks go through `public.is_live_chat_host()`, which is
+"N here now" count. Host checks go through `private.is_live_chat_host()`, which is
 `SECURITY DEFINER` because `admin_roles` is itself deny-all.
+
+**Function grants** (`20260922_02_live_chat_rpc_grants.sql`). All three live chat
+functions are `SECURITY DEFINER`, so who can EXECUTE them matters:
+
+| Function | EXECUTE | Why |
+|----------|---------|-----|
+| `public.live_chat_emit()` | `service_role` only | Called by `emit()` in `lib/liveChat.server.ts` via `createServiceClient()`. Open to anon, it would be the broadcast INSERT the policies above deliberately withhold. |
+| `public.live_chat_purge()` | `service_role` only | Called by the cron route via `createServiceClient()`. Open to anon, anyone could wipe the history. |
+| `private.is_live_chat_host()` | `authenticated`, `service_role` | Realtime evaluates the `live_chat_host_receive` policy *as the subscriber*, so `authenticated` must be able to run it. It lives in the non-exposed `private` schema so it isn't callable via `/rest/v1/rpc`. Anon never reaches that policy. |
+
+Postgres grants EXECUTE to `PUBLIC` on every new function, so the original
+migration left all three callable by anyone holding the anon key until this
+migration locked them down.
 
 **Retention:** `live_chat_purge(retain_days default 7)` deletes messages, prayer
 requests and closed sessions older than 7 days. Called daily at 04:00 by
@@ -5853,6 +5867,24 @@ CREATE POLICY "service only" ON hr_staff USING (false);
 API routes use the service role key for reads/writes (RLS is bypassed), relying on the
 middleware gate above rather than per-table role checks. `admin_roles` itself follows
 the same deny-all pattern — read only via `createServiceClient()`.
+
+**`SECURITY DEFINER` functions need explicit grants.** Postgres gives `PUBLIC`
+EXECUTE on every new function, and PostgREST exposes everything in `public` at
+`/rest/v1/rpc/<name>`. A definer function runs as its owner and bypasses RLS, so
+unless you revoke that grant, anyone with the anon key can call it. The pattern:
+
+```sql
+-- Server-only (called through createServiceClient()):
+revoke all on function public.my_fn(...) from public, anon, authenticated;
+grant execute on function public.my_fn(...) to service_role;
+```
+
+A helper that an RLS policy calls runs as the querying role, so that role needs
+EXECUTE. Put it in the non-exposed `private` schema instead of `public` (see
+`private.is_live_chat_host()`). Trigger functions don't need the caller to hold
+EXECUTE. Run `get_advisors` (security) after any migration that adds a function:
+lints 0028/0029 flag definer functions that anon or authenticated can reach.
+Current examples: `decrement_variant_stock`, `live_chat_emit`, `live_chat_purge`.
 
 **Why two layers?**
 - **Defense in depth** — the middleware gate is the single source of truth for "is this

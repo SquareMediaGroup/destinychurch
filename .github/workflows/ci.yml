@@ -1,0 +1,36 @@
+name: CI
+
+# Fast checks on every pull request and every push to main. Nothing here needs
+# secrets: the unit project is plain Node (no browser, no dev server, no
+# Supabase), so it runs the same on a fork as on a branch of this repo.
+#
+# The browser e2e suite stays in playwright.yml (manual trigger) because it
+# needs a running site to point at.
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  checks:
+    name: Typecheck, lint, unit tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+      - name: Typecheck
+        run: npm run typecheck
+      - name: Lint
+        run: npm run lint
+      - name: Unit tests
+        run: npm run test:unit -- --reporter=list

@@ -14,6 +14,9 @@ const eslintConfig = defineConfig([
     "next-env.d.ts",
     // The mobile app (React Native/Expo) has its own toolchain and lint config.
     "mobile/**",
+    // Agent worktrees are full copies of the app, gitignored; linting them
+    // would report every problem twice.
+    ".claude/**",
   ]),
 ]);
 

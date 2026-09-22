@@ -518,7 +518,7 @@ a.lp-image:hover {
   background-position: center;
   background-repeat: repeat-x;
   width: 5rem;
-  align-self: center;
+  margin-inline: auto;
 }
 .lp-divider[data-style="space"] {
   height: 1rem;

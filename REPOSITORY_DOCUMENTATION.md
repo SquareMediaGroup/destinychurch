@@ -4137,8 +4137,12 @@ POST /api/webhooks/stripe
 POST /api/store/checkout/bypass
 //   TEST ONLY. 404 unless server env SHOP_TEST_BYPASS=1. Creates a real order and
 //   finalises it WITHOUT Stripe (paid, stock decremented, emails) so the full flow
-//   can be demoed without a payment. The checkout page shows a "Complete test order"
-//   button when NEXT_PUBLIC_SHOP_TEST_BYPASS=1. Never set either flag in production.
+//   can be demoed without a payment. Restricted server-side to
+//   @squaremediagroup.org / @destinytees.uk emails. When NEXT_PUBLIC_SHOP_TEST_BYPASS=1
+//   and the customer enters a @destinytees.uk email, pressing "Continue to payment" on
+//   the checkout page shows a popup asking whether to "Complete test order" (skips
+//   Stripe) or "Continue to payment" (real payment) — there's no standing test button
+//   visible to regular customers. Never set either flag in production.
 
 // Shared order logic (pricing recompute, order creation, paid-finalisation) lives
 // in lib/checkout.server.ts and is used by checkout, the webhook, and the bypass.

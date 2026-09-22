@@ -1,7 +1,7 @@
 # Destiny Church Tees Valley — Complete Repository Documentation
 
-**Version:** 1.0.16  
-**Last Updated:** September 18, 2026  
+**Version:** 1.0.17  
+**Last Updated:** September 22, 2026  
 **Repository:** Square Media Group — destinychurch  
 
 This document provides a comprehensive explanation of every major component, line of code purpose, architecture decisions, and how the system works from end-to-end.
@@ -35,7 +35,7 @@ Destiny Church Tees Valley is a **full-stack church website platform** built by 
 
 - **Public Pages:** About, beliefs, events, contact, giving, venue hire
 - **Ministry Pages:** Kids, youth, young adults, missions, connect groups
-- **Media:** Sermon archive with 50+ videos, series/speaker filtering, AI-powered search
+- **Media:** Sermon archive with 50+ videos, series filtering (speaker filtering was removed in September 2026), AI-powered search
 - **Member Engagement:** Prayer requests, volunteer signup, venue enquiries, connection forms
 - **Admin Dashboard:** Protected area for staff to manage sermons, pages, redirects, banners, HR, jobs, training
 - **Infrastructure:** Email, analytics, webhooks, caching, rate limiting

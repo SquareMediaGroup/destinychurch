@@ -535,6 +535,13 @@ CREATE TABLE contact_messages (
 - `app/contact/actions.ts` (server action) inserts submissions
 - Admin dashboard to view inquiries
 
+**Accessibility subject:** Selecting "Accessibility" in `ContactForm` reveals
+a checkbox group (step-free access, BSL, hearing loop, large print) plus a
+free-text "anything else" field. There's no dedicated column for these —
+`submitContactForm` folds the selected items into the `message` body as a
+labelled "Accessibility requirements:" block before insert/email, so no
+migration was needed.
+
 ---
 
 #### 6. **hire_enquiries**

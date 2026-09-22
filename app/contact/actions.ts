@@ -37,6 +37,15 @@ function getTheme(subject: string): SubjectTheme {
         intro: "A privacy-related message has been submitted through the website contact form.",
         bgGradient: "linear-gradient(135deg, #0a1628 0%, #071020 60%, #050d1a 100%)",
       };
+    case "Accessibility":
+      return {
+        accentColor: "#8b5cf6",
+        accentShadow: "rgba(139,92,246,0.4)",
+        badgeLabel: "Accessibility",
+        headline: "Accessibility Request",
+        intro: "An accessibility request has been submitted through the website contact form.",
+        bgGradient: "linear-gradient(135deg, #170a28 0%, #0f0720 60%, #0d0d0d 100%)",
+      };
     case "Complaints":
       return {
         accentColor: "#f59e0b",
@@ -218,14 +227,48 @@ function buildContactEmailHtml(name: string, email: string, subject: string, mes
 </html>`;
 }
 
+const ACCESSIBILITY_CHECKBOXES: Array<{ field: string; label: string }> = [
+  { field: "accessibility_step_free", label: "Step-free access" },
+  { field: "accessibility_bsl", label: "BSL (British Sign Language) interpretation" },
+  { field: "accessibility_hearing_loop", label: "Hearing loop" },
+  { field: "accessibility_large_print", label: "Large print materials" },
+];
+
+/**
+ * The `contact_messages` table has no columns for accessibility needs, and
+ * adding a migration + email template branch per checkbox isn't worth it for
+ * four booleans — so they're folded into the message body as a clearly
+ * labelled block, the same place a caller would have typed them anyway.
+ */
+function appendAccessibilityRequirements(message: string, formData: FormData) {
+  const requested = ACCESSIBILITY_CHECKBOXES.filter(
+    ({ field }) => formData.get(field) === "on",
+  ).map(({ label }) => label);
+  const other = formData.get("accessibility_other")?.toString().trim();
+
+  if (requested.length === 0 && !other) return message;
+
+  const lines = [
+    "Accessibility requirements:",
+    ...requested.map((label) => `- ${label}`),
+    ...(other ? [`- Other: ${other}`] : []),
+  ];
+
+  return `${lines.join("\n")}\n\n${message}`;
+}
+
 export async function submitContactForm(formData: FormData) {
   const name = formData.get("name")?.toString().trim();
   const email = formData.get("email")?.toString().trim();
   const subject = formData.get("subject")?.toString().trim();
-  const message = formData.get("message")?.toString().trim();
+  let message = formData.get("message")?.toString().trim();
 
   if (!name || !email || !subject || !message) {
     return { success: false, error: "Please fill in all fields." };
+  }
+
+  if (subject === "Accessibility") {
+    message = appendAccessibilityRequirements(message, formData);
   }
 
   if (name.length > 200 || email.length > 254 || subject.length > 200 || message.length > 5000) {

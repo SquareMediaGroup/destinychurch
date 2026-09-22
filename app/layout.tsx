@@ -178,7 +178,9 @@ async function readActivePopup() {
 // fresh server render with five Supabase/YouTube round trips in front of it,
 // and every page's own `revalidate` export was silently ignored.
 //
-// Each read is now cached under a tag from lib/siteCache.server.ts. The admin
+// Each read is now cached under a tag from lib/siteCache.server.ts — the
+// banner, popup and live status here, the event popup and Smart Search flag in
+// their own modules (they have other readers that need the same cache). The admin
 // routes that write these tables expire the tag, so an edit is live on the next
 // request; the `revalidate` here is only the backstop for changes made outside
 // the admin (a direct SQL fix, a ChurchSuite feed change, a start/end window
@@ -192,20 +194,6 @@ const getActivePopup = unstable_cache(readActivePopup, ["layout-popup"], {
   tags: [SITE_CACHE_TAGS.popup],
   revalidate: 300,
 });
-
-const getCachedEventPopup = unstable_cache(
-  () => getActiveEventPopup(),
-  ["layout-event-popup"],
-  // Short-ish: the featured event has its own start/end window and drops out
-  // when ChurchSuite says the event has finished, neither of which is an edit.
-  { tags: [SITE_CACHE_TAGS.featuredEvent], revalidate: 300 },
-);
-
-const getCachedSmartSearchEnabled = unstable_cache(
-  isSmartSearchEnabled,
-  ["layout-smart-search-enabled"],
-  { tags: [SITE_CACHE_TAGS.serviceStatus], revalidate: 300 },
-);
 
 // Only the first paint depends on this. LiveContext polls /api/youtube/live as
 // soon as it mounts, so a minute-old answer here is corrected within a second
@@ -305,8 +293,10 @@ export default async function RootLayout({
     await Promise.all([
       getActiveBanner(),
       getActivePopup(),
-      getCachedEventPopup(),
-      getCachedSmartSearchEnabled(),
+      // Both cached at the source: lib/events.server.ts caches the featured
+      // event row and lib/serviceStatus.ts the Smart Search flag.
+      getActiveEventPopup(),
+      isSmartSearchEnabled(),
       getCachedLiveStatus(),
     ]);
 

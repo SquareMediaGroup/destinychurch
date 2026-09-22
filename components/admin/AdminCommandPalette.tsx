@@ -433,7 +433,7 @@ function Palette({ onClose }: { onClose: () => void }) {
   // It's an overlay dimming the whole page, the same category as those two,
   // not persistent chrome, so it doesn't need to react to the theme at all —
   // which conveniently sidesteps a real wiring problem: AdminCommandProvider
-  // mounts above /admin/layout.tsx's own `.dark`-carrying wrapper div, so a
+  // mounts above AdminShell.tsx's own `.dark`-carrying wrapper div, so a
   // theme-reactive `dark:` class here would never actually match.
   return (
     <motion.div

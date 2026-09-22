@@ -1,3 +1,4 @@
+import { unstable_cache } from "next/cache";
 import { createServiceClient } from "@/utils/supabase/service";
 import { expireSiteCache, SITE_CACHE_TAGS } from "@/lib/siteCache.server";
 
@@ -47,9 +48,15 @@ export async function getSmartSearchStatus(): Promise<ServiceStatus> {
   }
 }
 
-export async function isSmartSearchEnabled(): Promise<boolean> {
-  return (await getSmartSearchStatus()).enabled;
-}
+// Read by the root layout and the root not-found page, which render as part of
+// every page — so this must be cached, or one uncached Supabase read makes the
+// whole site dynamic. setSmartSearchStatus() expires the tag. The health check
+// reads getSmartSearchStatus() directly, uncached, as it should.
+export const isSmartSearchEnabled = unstable_cache(
+  async (): Promise<boolean> => (await getSmartSearchStatus()).enabled,
+  ["smart-search-enabled"],
+  { tags: [SITE_CACHE_TAGS.serviceStatus], revalidate: 300 },
+);
 
 export async function setSmartSearchStatus(patch: {
   enabled: boolean;

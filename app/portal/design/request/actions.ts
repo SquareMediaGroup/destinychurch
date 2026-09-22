@@ -10,7 +10,8 @@ import {
   resolveRequesterIdentity,
 } from "@/lib/designTickets.server";
 import { sendNewRequestAlert, sendRequestReceivedEmail } from "@/lib/designEmail";
-import { DESIGN_CATEGORY_LABELS, type DesignTicketCategory } from "@/lib/designTickets";
+import { DESIGN_CATEGORY_LABELS, ticketRef, type DesignTicketCategory } from "@/lib/designTickets";
+import { recordNotification } from "@/lib/notify.server";
 
 export interface DesignRequestResult {
   success: boolean;
@@ -110,6 +111,16 @@ export async function submitDesignRequest(formData: FormData): Promise<DesignReq
     } catch (emailErr) {
       console.error("📧 Design request email failed:", emailErr);
     }
+
+    await recordNotification({
+      section: "design",
+      kind: "new_ticket",
+      entityId: data.id,
+      entityLabel: data.title,
+      summary: `New design ticket ${ticketRef(data.ref)}: ${data.title}`,
+      href: `/admin/design/${data.id}`,
+      roles: ["design_admin"],
+    });
 
     return {
       success: true,

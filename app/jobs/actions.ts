@@ -5,6 +5,7 @@ import { createServiceClient } from "@/utils/supabase/service";
 import { Resend } from "resend";
 import { checkRateLimit, clientIp } from "@/lib/rateLimit";
 import { escapeHtmlMultiline, isValidEmail } from "@/lib/formEmail";
+import { recordNotification } from "@/lib/notify.server";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 const BUCKET = "job-applications";
@@ -143,17 +144,21 @@ export async function submitApplication(formData: FormData) {
   }
 
   try {
-    const { error } = await supabase.from("job_applications").insert({
-      job_id: jobId,
-      job_title: jobTitle,
-      first_name: firstName,
-      last_name: lastName,
-      email,
-      phone: phone || null,
-      cover_letter: coverLetter || null,
-      cv_path: cvPath,
-      cv_name: cvName,
-    });
+    const { data, error } = await supabase
+      .from("job_applications")
+      .insert({
+        job_id: jobId,
+        job_title: jobTitle,
+        first_name: firstName,
+        last_name: lastName,
+        email,
+        phone: phone || null,
+        cover_letter: coverLetter || null,
+        cv_path: cvPath,
+        cv_name: cvName,
+      })
+      .select("id")
+      .single();
 
     if (error) {
       // Roll back the orphaned CV so storage doesn't drift from the table.
@@ -174,6 +179,16 @@ export async function submitApplication(formData: FormData) {
         coverLetter,
         cvName: cvName || undefined,
       }),
+    });
+
+    await recordNotification({
+      section: "hr",
+      kind: "new_application",
+      entityId: data.id,
+      entityLabel: `${firstName} ${lastName}`,
+      summary: `New application for ${jobTitle} from ${firstName} ${lastName}`,
+      href: `/admin/hr/applications?open=${data.id}`,
+      roles: ["hr_admin"],
     });
 
     return { success: true };

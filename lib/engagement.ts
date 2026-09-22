@@ -33,10 +33,18 @@ export const ENGAGEMENT_SOURCES = {
     description: "Tiles on /nfc, opened by the NFC tag or QR code on a seat.",
   },
   links: {
-    label: "Next Steps",
+    label: "Links pages",
     noun: "click",
     icon: "list_alt",
-    description: "The six cards on /links.",
+    description: "Buttons, events and embeds on /links and /links/<slug>.",
+  },
+  // Page views, recorded server-side by components/links/LinkPageRoute.tsx —
+  // the denominator for each links page's click-through rate.
+  links_view: {
+    label: "Links page views",
+    noun: "view",
+    icon: "visibility",
+    description: "Visits to /links and /links/<slug>.",
   },
 } as const;
 

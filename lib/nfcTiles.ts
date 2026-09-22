@@ -37,7 +37,13 @@ export interface NfcTile {
  */
 export function isEmbeddable(url: string): boolean {
   try {
-    return new URL(url).hostname.endsWith("churchsuite.com");
+    const { protocol, hostname } = new URL(url);
+    // The domain or a subdomain of it — a bare endsWith would also pass
+    // "notchurchsuite.com".
+    return (
+      protocol === "https:" &&
+      (hostname === "churchsuite.com" || hostname.endsWith(".churchsuite.com"))
+    );
   } catch {
     return false;
   }

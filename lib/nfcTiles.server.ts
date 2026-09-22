@@ -8,19 +8,13 @@
 
 import "server-only";
 import { unstable_noStore as noStore } from "next/cache";
-import {
-  eventSignupUrl,
-  formatKicker,
-  parseFeedDate,
-  type EventIndex,
-  type EventSeries,
-} from "@destiny/shared";
+import { formatKicker, type EventIndex } from "@destiny/shared";
 import { createServiceClient } from "@/utils/supabase/service";
 import { getEventIndex } from "@/lib/events.server";
+import { findSeries, framableSignupUrl, seriesEndsAt } from "@/lib/eventTargets.server";
 import {
   NFC_TILE_COLUMNS,
   PINNED_TILES,
-  SIGNUP_ANCHOR,
   isEmbeddable,
   type NfcTile,
   type NfcTileMode,
@@ -58,22 +52,6 @@ function mapRow(row: NfcTileRow): NfcTile {
   };
 }
 
-/** The row's series in the live index, by identifier then by sequence. */
-function findSeries(row: NfcTileRow, index: EventIndex): EventSeries | null {
-  const byIdentifier = row.event_identifier
-    ? index.byIdentifier.get(row.event_identifier)
-    : undefined;
-  if (byIdentifier) return byIdentifier;
-
-  // ChurchSuite reissues occurrence identifiers when a series is edited, so the
-  // sequence is the more durable key — fall back to it before giving up.
-  if (row.event_sequence != null) {
-    const key = String(row.event_sequence);
-    return index.series.find((s) => s.seriesKey === key) ?? null;
-  }
-  return null;
-}
-
 /**
  * Refresh an event tile from the feed, or drop it if its event has finished.
  *
@@ -91,19 +69,13 @@ function resolveEventTile(
     return null;
   }
 
-  const series = findSeries(row, index);
+  const series = findSeries(index, row.event_identifier, row.event_sequence);
   // No hit means either the feed is down (fetchChurchSuiteEvents returns [] on
   // any error) or the event was pulled from ChurchSuite. Either way the stored
   // snapshot is still the best answer, and event_ends_at still governs expiry.
   if (!series) return tile;
 
-  const signupUrl = eventSignupUrl(series.primary);
-  const fresh =
-    signupUrl && isEmbeddable(signupUrl)
-      ? signupUrl.includes("#")
-        ? signupUrl
-        : `${signupUrl}${SIGNUP_ANCHOR}`
-      : null;
+  const fresh = framableSignupUrl(series);
 
   return {
     ...tile,
@@ -115,11 +87,7 @@ function resolveEventTile(
     // when the event actually is, even after ChurchSuite moves it.
     subtitle: tile.subtitle || formatKicker(series.primary),
     eventSlug: series.slug,
-    eventEndsAt: new Date(
-      Math.max(
-        ...series.occurrences.map((o) => parseFeedDate(o.datetime_end).getTime())
-      )
-    ).toISOString(),
+    eventEndsAt: seriesEndsAt(series),
   };
 }
 

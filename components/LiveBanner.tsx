@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useLiveStatus } from "@/contexts/LiveContext";
+import { isLinksPagePath } from "@/lib/linkPages/paths";
 
 export default function LiveBanner() {
   const { live } = useLiveStatus();
@@ -13,6 +14,7 @@ export default function LiveBanner() {
   if (pathname.startsWith("/admin")) return null;
   if (pathname.startsWith("/portal")) return null;
   if (pathname === "/login") return null;
+  if (isLinksPagePath(pathname)) return null;
 
   return (
     <div

@@ -1,10 +1,18 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { createContext, useContext, useRef, useState } from "react";
 import { useToast } from "@/components/ToastProvider";
-import { UPLOAD_ACCEPT, uploadPostImage } from "@/lib/adminUpload";
+import { UPLOAD_ACCEPT, uploadPostImage, type UploadResult } from "@/lib/adminUpload";
 import { MAX_UPLOAD_SIZE_MB } from "@/lib/ai/media-types";
 import { FieldShell, fieldInputClass } from "./BasicFields";
+
+/**
+ * Where ImageField sends its files. Defaults to the posts upload route; a
+ * surface whose editors can't reach that route (the links pages belong to
+ * event_admin, posts to site_admin) wraps its fields in a provider with its
+ * own uploader rather than forking the field.
+ */
+export const ImageUploaderContext = createContext<(file: File) => Promise<UploadResult>>(uploadPostImage);
 
 export function ImageField({
   label,
@@ -21,11 +29,12 @@ export function ImageField({
   const [uploading, setUploading] = useState(false);
   const [dragOver, setDragOver] = useState(false);
   const toast = useToast();
+  const uploader = useContext(ImageUploaderContext);
 
   async function upload(file: File | undefined) {
     if (!file) return;
     setUploading(true);
-    const result = await uploadPostImage(file);
+    const result = await uploader(file);
     setUploading(false);
     if ("error" in result) {
       toast.error(result.error);

@@ -5,10 +5,9 @@
 // repo's deny-all-plus-service-role RLS convention.
 
 import { NextResponse } from "next/server";
-import { eventSignupUrl, parseFeedDate } from "@destiny/shared";
 import { createServiceClient } from "@/utils/supabase/service";
-import { getEventIndex } from "@/lib/events.server";
-import { SIGNUP_ANCHOR, isEmbeddable, type NfcTileMode } from "@/lib/nfcTiles";
+import { resolveEventTarget } from "@/lib/eventTargets.server";
+import { isEmbeddable, type NfcTileMode } from "@/lib/nfcTiles";
 import { readForAudit, recordAudit } from "@/lib/audit.server";
 
 const BUCKET = "popup-images";
@@ -105,8 +104,12 @@ async function buildPayload(
     // Re-resolved here rather than trusted from the client: the browser sends an
     // identifier, and everything else on the row — the signup URL the popup will
     // frame, the slug, the expiry — is derived from the live feed on the server.
-    const resolved = await resolveEvent(identifier, input.event_sequence);
+    const resolved = await resolveEventTarget(identifier, input.event_sequence, {
+      requireSignup: true,
+    });
     if ("error" in resolved) return { error: resolved.error };
+    // requireSignup guarantees a framable URL; the guard is for the type.
+    if (!resolved.signupUrl) return { error: "That event has no signup form." };
 
     return {
       payload: {
@@ -141,76 +144,6 @@ async function buildPayload(
       image_path: String(input.image_path ?? "").trim() || null,
       ...NO_EVENT,
     },
-  };
-}
-
-/**
- * Look an event up in the live feed and work out what an event tile should store.
- *
- * The failure messages matter: an admin standing in a foyer twenty minutes before
- * a service needs to know *which* of the three things went wrong and what to do
- * instead, not that the save failed.
- */
-async function resolveEvent(
-  identifier: string,
-  sequenceInput: unknown
-): Promise<
-  | {
-      signupUrl: string;
-      slug: string;
-      name: string;
-      sequence: number | null;
-      endsAt: string;
-    }
-  | { error: string }
-> {
-  const { series, byIdentifier } = await getEventIndex();
-
-  // ChurchSuite reissues occurrence identifiers when a series is edited, so fall
-  // back to the sequence — the more durable key — before declaring it gone.
-  const sequence = Number(sequenceInput);
-  const found =
-    byIdentifier.get(identifier) ??
-    (Number.isFinite(sequence)
-      ? series.find((s) => s.seriesKey === String(sequence))
-      : undefined);
-
-  if (!found)
-    return {
-      error:
-        "That event isn't in the ChurchSuite calendar any more — it may have finished or been removed.",
-    };
-
-  const signupUrl = eventSignupUrl(found.primary);
-  if (!signupUrl)
-    return {
-      error: `"${found.name}" doesn't take signups in ChurchSuite. Use a details tile with a link to the event page instead.`,
-    };
-
-  if (!isEmbeddable(signupUrl)) {
-    let host = "another site";
-    try {
-      host = new URL(signupUrl).hostname;
-    } catch {
-      // Keep the generic wording; the point of the message is the way out.
-    }
-    return {
-      error: `"${found.name}" books through ${host}, which refuses to be shown inside our page. Use a details tile linking to it instead.`,
-    };
-  }
-
-  return {
-    signupUrl: signupUrl.includes("#")
-      ? signupUrl
-      : `${signupUrl}${SIGNUP_ANCHOR}`,
-    slug: found.slug,
-    name: found.name,
-    sequence: found.primary.sequence ?? null,
-    endsAt: new Date(
-      Math.max(
-        ...found.occurrences.map((o) => parseFeedDate(o.datetime_end).getTime())
-      )
-    ).toISOString(),
   };
 }
 

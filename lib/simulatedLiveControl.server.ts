@@ -12,6 +12,7 @@
 import "server-only";
 import { createServiceClient } from "@/utils/supabase/service";
 import { clearSimulatedLiveCache, rowToConfig } from "@/lib/simulatedLive.server";
+import { expireSiteCache, SITE_CACHE_TAGS } from "@/lib/siteCache.server";
 import {
   parseYouTubeId,
   simulatedEndsAt,
@@ -114,6 +115,8 @@ export async function writeSimulatedLive(
   // This instance's memo is now wrong; other instances expire theirs within ten
   // seconds. Without it, "Start now" appears to do nothing for a moment.
   clearSimulatedLiveCache();
+  // And the layout's cached first-paint live status (lib/siteCache.server.ts).
+  expireSiteCache(SITE_CACHE_TAGS.live);
 
   const { data } = await currentRow();
   return { ok: true, data: withPhase(rowToConfig(data)) };
@@ -146,6 +149,7 @@ export async function clearSimulatedLive(): Promise<ControlResult> {
 
   if (error) return { ok: false, status: 500, error: error.message };
   clearSimulatedLiveCache();
+  expireSiteCache(SITE_CACHE_TAGS.live);
 
   const { data } = await currentRow();
   return { ok: true, data: withPhase(rowToConfig(data)) };

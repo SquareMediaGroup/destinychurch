@@ -1,6 +1,9 @@
 import AnimateIn from "@/components/AnimateIn";
 
-export const metadata = { title: "Data & GDPR Policy" };
+export const metadata = {
+  title: "Data & GDPR Policy",
+  alternates: { canonical: "/data-gdpr" },
+};
 
 const sections = [
   {

@@ -23,7 +23,8 @@ import { CHANNEL_URL } from "@/lib/youtube";
 import BannerSpacer from "@/components/BannerSpacer";
 import { PodcastPlayerProvider } from "@/components/sermons/podcast/PodcastPlayerProvider";
 import { createServiceClient } from "@/utils/supabase/service";
-import { unstable_noStore as noStore } from "next/cache";
+import { unstable_cache } from "next/cache";
+import { SITE_CACHE_TAGS } from "@/lib/siteCache.server";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { SmartSearchVisibilityProvider } from "@/lib/smartSearchVisibility";
 import {
@@ -72,9 +73,6 @@ export const metadata: Metadata = {
   },
   description:
     "Destiny Church Tees Valley — a multi-cultural church where all can find a place to belong and thrive. Join us Sundays at 11am.",
-  alternates: {
-    canonical: "/",
-  },
   openGraph: {
     title: "Destiny Church Tees Valley",
     description:
@@ -98,8 +96,7 @@ export const metadata: Metadata = {
   },
 };
 
-async function getActiveBanner() {
-  noStore();
+async function readActiveBanner() {
   try {
     const supabase = createServiceClient();
     const { data: rows } = await supabase
@@ -157,8 +154,7 @@ async function getActiveBanner() {
   }
 }
 
-async function getActivePopup() {
-  noStore();
+async function readActivePopup() {
   try {
     const supabase = createServiceClient();
     const { data } = await supabase
@@ -175,6 +171,50 @@ async function getActivePopup() {
     return null;
   }
 }
+
+// Every page on the site renders this layout, so how these five reads are
+// cached decides whether *any* public page can be served from the CDN. They
+// used to call noStore(), which made the entire site dynamic: every visit was a
+// fresh server render with five Supabase/YouTube round trips in front of it,
+// and every page's own `revalidate` export was silently ignored.
+//
+// Each read is now cached under a tag from lib/siteCache.server.ts. The admin
+// routes that write these tables expire the tag, so an edit is live on the next
+// request; the `revalidate` here is only the backstop for changes made outside
+// the admin (a direct SQL fix, a ChurchSuite feed change, a start/end window
+// passing). The shortest one also caps how long any page is cached for.
+const getActiveBanner = unstable_cache(readActiveBanner, ["layout-banner"], {
+  tags: [SITE_CACHE_TAGS.banner],
+  revalidate: 300,
+});
+
+const getActivePopup = unstable_cache(readActivePopup, ["layout-popup"], {
+  tags: [SITE_CACHE_TAGS.popup],
+  revalidate: 300,
+});
+
+const getCachedEventPopup = unstable_cache(
+  () => getActiveEventPopup(),
+  ["layout-event-popup"],
+  // Short-ish: the featured event has its own start/end window and drops out
+  // when ChurchSuite says the event has finished, neither of which is an edit.
+  { tags: [SITE_CACHE_TAGS.featuredEvent], revalidate: 300 },
+);
+
+const getCachedSmartSearchEnabled = unstable_cache(
+  isSmartSearchEnabled,
+  ["layout-smart-search-enabled"],
+  { tags: [SITE_CACHE_TAGS.serviceStatus], revalidate: 300 },
+);
+
+// Only the first paint depends on this. LiveContext polls /api/youtube/live as
+// soon as it mounts, so a minute-old answer here is corrected within a second
+// of the page loading; it just decides whether the banner is there from the
+// start or appears a moment later.
+const getCachedLiveStatus = unstable_cache(getLiveStatus, ["layout-live-status"], {
+  tags: [SITE_CACHE_TAGS.live],
+  revalidate: 60,
+});
 
 const orgSchema = {
   "@context": "https://schema.org",
@@ -265,9 +305,9 @@ export default async function RootLayout({
     await Promise.all([
       getActiveBanner(),
       getActivePopup(),
-      getActiveEventPopup(),
-      isSmartSearchEnabled(),
-      getLiveStatus(),
+      getCachedEventPopup(),
+      getCachedSmartSearchEnabled(),
+      getCachedLiveStatus(),
     ]);
 
   return (

@@ -5,6 +5,7 @@ import {
   isCourseEventType,
 } from "@/lib/courseEvents";
 import { readForAudit, recordAudit } from "@/lib/audit.server";
+import { expireSiteCache, SITE_CACHE_TAGS } from "@/lib/siteCache.server";
 
 export async function GET(request: Request) {
   const url = new URL(request.url);
@@ -100,6 +101,7 @@ export async function PUT(request: Request) {
   }
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  expireSiteCache(SITE_CACHE_TAGS.banner);
 
   // The banner sits across the top of every page on the site, so "who turned
   // that on" is one of the questions this log gets asked most. Say whether it

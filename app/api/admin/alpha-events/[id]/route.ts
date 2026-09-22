@@ -1,6 +1,7 @@
 import { createClient } from "@supabase/supabase-js";
 import { COURSE_EVENT_META, isCourseEventType } from "@/lib/courseEvents";
 import { readForAudit, recordAudit } from "@/lib/audit.server";
+import { expireSiteCache, SITE_CACHE_TAGS } from "@/lib/siteCache.server";
 
 function courseLabel(type: unknown): string {
   return isCourseEventType(type) ? COURSE_EVENT_META[type].label : String(type ?? "course");
@@ -46,6 +47,8 @@ export async function PATCH(
     const toggledOnly = Object.keys(body).length === 1 && "active" in body;
     const label = `${courseLabel(data.type)} — ${formatCourseDate(data.start_date)}`;
 
+    // A course banner in the layout resolves against these rows.
+    expireSiteCache(SITE_CACHE_TAGS.banner);
     await recordAudit({
       action: "update",
       section: "courses",
@@ -83,6 +86,8 @@ export async function DELETE(
 
     if (error) throw error;
 
+    // A course banner in the layout resolves against these rows.
+    expireSiteCache(SITE_CACHE_TAGS.banner);
     await recordAudit({
       action: "delete",
       section: "courses",

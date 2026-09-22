@@ -8,6 +8,7 @@
 import { NextResponse } from "next/server";
 import { createServiceClient } from "@/utils/supabase/service";
 import { readForAudit, recordAudit } from "@/lib/audit.server";
+import { expireSiteCache, SITE_CACHE_TAGS } from "@/lib/siteCache.server";
 
 const BUCKET = "popup-images";
 
@@ -92,7 +93,8 @@ export async function PUT(request: Request) {
     after: payload,
   });
 
-  // No revalidatePath: app/layout.tsx reads the popup with noStore(), so this
-  // is live on the next request.
+  // app/layout.tsx caches the event popup under this tag; expiring it makes
+  // the change live on the next request.
+  expireSiteCache(SITE_CACHE_TAGS.featuredEvent);
   return NextResponse.json({ ok: true });
 }

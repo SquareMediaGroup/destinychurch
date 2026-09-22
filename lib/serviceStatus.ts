@@ -1,4 +1,5 @@
 import { createServiceClient } from "@/utils/supabase/service";
+import { expireSiteCache, SITE_CACHE_TAGS } from "@/lib/siteCache.server";
 
 // Runtime kill-switch / health state for Smart Search, backed by the
 // `service_status` Supabase table. Reads FAIL OPEN: if the table or Supabase is
@@ -70,4 +71,6 @@ export async function setSmartSearchStatus(patch: {
     },
     { onConflict: "service" },
   );
+  // The root layout caches the enabled flag (lib/siteCache.server.ts).
+  expireSiteCache(SITE_CACHE_TAGS.serviceStatus);
 }

@@ -403,7 +403,7 @@ destinychurch/
 │   └── ...
 │
 ├── .github/                       # GitHub workflows
-│   └── workflows/                 # CI/CD pipelines
+│   └── workflows/                 # ci.yml (every PR), playwright.yml (manual e2e), AI content jobs
 │
 ├── .claude/                       # Claude Code settings
 ├── .vscode/                       # VS Code workspace settings
@@ -4439,6 +4439,20 @@ Browser specs run with `npm run test:e2e`. Those needing an admin session
 (`admin-blocks`, `admin-courses`) skip themselves unless `ADMIN_EMAIL` and
 `ADMIN_PASSWORD` are set; credentials come from the environment only and live in
 the gitignored `CLAUDE.local.md`.
+
+**CI.** `.github/workflows/ci.yml` runs `typecheck`, `lint` and `test:unit` on
+every pull request and every push to `main`. It needs no secrets — the unit
+project never touches Supabase, a browser or a dev server — which is what lets it
+run on every PR, including ones from forks. Keep it that way: a unit spec that
+needs credentials belongs in the e2e projects instead. `next build` is
+deliberately not in CI because page-data collection needs live Supabase env vars;
+Vercel's preview build covers that. The browser suite stays in `playwright.yml`,
+manual-trigger only, because it needs a running site to point at.
+
+`tsconfig.json` and `eslint.config.mjs` both exclude `.claude/`: agent worktrees
+under `.claude/worktrees/` are gitignored full copies of the app, and without the
+exclusion a local `npm run typecheck` or `lint` checks every file twice and
+reports the stale copy's errors as yours.
 
 ---
 

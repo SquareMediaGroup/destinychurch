@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   formatPrice,
   fromPrice,
@@ -15,27 +15,38 @@ import {
   PageHeader,
   Badge,
   EmptyState,
+  ErrorNote,
   ListToolbar,
   FilterChips,
   CardSkeleton,
+  BulkBar,
   primaryBtn,
   ghostBtn,
 } from "@/components/admin/AdminUI";
-import { useAdminList } from "@/lib/useAdminList";
+import { useAdminList, useRowSelection } from "@/lib/useAdminList";
+import { useDialog } from "@/components/DialogProvider";
+import { downloadCsv, toCsv } from "@/lib/csv";
 
 /** Matches the dashboard's low-stock alert so both agree on "low". */
 const LOW_STOCK_THRESHOLD = 3;
 
 export default function AdminStorePage() {
+  const { confirm } = useDialog();
   const [products, setProducts] = useState<ProductWithVariants[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [working, setWorking] = useState(false);
 
-  useEffect(() => {
+  const load = () => {
     fetch(`${SHOP_ADMIN_API}/products`)
       .then((r) => r.json())
       .then((data) => setProducts(Array.isArray(data) ? data : []))
       .catch(() => setProducts([]))
       .finally(() => setLoading(false));
+  };
+
+  useEffect(() => {
+    load();
   }, []);
 
   const list = useAdminList<ProductWithVariants>({
@@ -77,6 +88,81 @@ export default function AdminStorePage() {
     },
   });
 
+  const selection = useRowSelection(products);
+  const visibleIds = useMemo(() => list.visible.map((p) => p.id), [list.visible]);
+  const allVisibleSelected =
+    visibleIds.length > 0 && visibleIds.every((id) => selection.selected.has(id));
+
+  async function bulkPublish(publish: boolean) {
+    const ids = [...selection.selected];
+    if (ids.length === 0) return;
+    setWorking(true);
+    setError("");
+    const results = await Promise.allSettled(
+      ids.map((id) =>
+        fetch(`${SHOP_ADMIN_API}/products/${id}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ is_published: publish }),
+        }).then((r) => {
+          if (!r.ok) throw new Error();
+        }),
+      ),
+    );
+    const failed = results.filter((r) => r.status === "rejected").length;
+    if (failed) {
+      setError(
+        `${failed} of ${ids.length} could not be ${publish ? "published" : "unpublished"}.`,
+      );
+    }
+    selection.clear();
+    setWorking(false);
+    load();
+  }
+
+  async function bulkDelete() {
+    const ids = [...selection.selected];
+    if (ids.length === 0) return;
+    if (
+      !(await confirm({
+        title: `Delete ${ids.length} product${ids.length === 1 ? "" : "s"}`,
+        message: `This permanently deletes ${ids.length} product${ids.length === 1 ? "" : "s"} and their variants and photos. This cannot be undone.`,
+        confirmLabel: "Delete",
+        tone: "danger",
+      }))
+    )
+      return;
+    setWorking(true);
+    setError("");
+    const results = await Promise.allSettled(
+      ids.map((id) =>
+        fetch(`${SHOP_ADMIN_API}/products/${id}`, { method: "DELETE" }).then((r) => {
+          if (!r.ok) throw new Error();
+        }),
+      ),
+    );
+    const failed = results.filter((r) => r.status === "rejected").length;
+    if (failed) setError(`${failed} of ${ids.length} could not be deleted.`);
+    selection.clear();
+    setWorking(false);
+    load();
+  }
+
+  function exportSelectedCsv() {
+    const ids = selection.selected;
+    const rows = products.filter((p) => ids.has(p.id));
+    const csv = toCsv(
+      ["Name", "Price", "Stock", "Status"],
+      rows.map((p) => [
+        p.name,
+        formatPrice(fromPrice(p)),
+        totalStock(p),
+        p.is_published ? "Published" : "Draft",
+      ]),
+    );
+    downloadCsv(`destiny-products-${new Date().toISOString().slice(0, 10)}.csv`, csv);
+  }
+
   return (
     <div className="mx-auto max-w-5xl px-5 py-10 sm:px-8">
       <PageHeader
@@ -96,6 +182,8 @@ export default function AdminStorePage() {
           </div>
         }
       />
+
+      <ErrorNote>{error}</ErrorNote>
 
       {loading ? (
         <CardSkeleton count={4} />
@@ -138,7 +226,38 @@ export default function AdminStorePage() {
                 />
               </div>
             }
-          />
+          >
+            <BulkBar count={selection.count} noun="product" onClear={selection.clear}>
+              <button
+                className="rounded-lg bg-destiny-green/10 px-3 py-1.5 text-xs font-bold text-destiny-green transition hover:bg-destiny-green/20 disabled:opacity-50"
+                disabled={working}
+                onClick={() => bulkPublish(true)}
+              >
+                Publish
+              </button>
+              <button
+                className="rounded-lg bg-black/5 px-3 py-1.5 text-xs font-bold text-destiny-grey/70 dark:text-white/70 transition hover:bg-black/10 disabled:opacity-50"
+                disabled={working}
+                onClick={() => bulkPublish(false)}
+              >
+                Unpublish
+              </button>
+              <button
+                className="rounded-lg bg-black/5 px-3 py-1.5 text-xs font-bold text-destiny-grey/70 dark:text-white/70 transition hover:bg-black/10 disabled:opacity-50"
+                disabled={working}
+                onClick={exportSelectedCsv}
+              >
+                Export selected as CSV
+              </button>
+              <button
+                className="rounded-lg bg-destiny-red/10 px-3 py-1.5 text-xs font-bold text-destiny-red transition hover:bg-destiny-red/20 disabled:opacity-50"
+                disabled={working}
+                onClick={bulkDelete}
+              >
+                Delete
+              </button>
+            </BulkBar>
+          </ListToolbar>
 
           {list.visible.length === 0 ? (
             <EmptyState
@@ -155,15 +274,39 @@ export default function AdminStorePage() {
               }
             />
           ) : (
-            <ul className="space-y-2">
-              {list.visible.map((p) => {
+            <>
+              <label className="mb-2 flex items-center gap-2 text-xs font-bold text-destiny-grey/50 dark:text-white/50">
+                <input
+                  type="checkbox"
+                  checked={allVisibleSelected}
+                  onChange={() => selection.toggleAll(visibleIds)}
+                  className="accent-destiny-orange"
+                />
+                Select all shown
+              </label>
+              <ul className="space-y-2">
+                {list.visible.map((p) => {
                 const stock = totalStock(p);
                 const low = stock <= LOW_STOCK_THRESHOLD;
                 return (
-                  <li key={p.id}>
+                  <li
+                    key={p.id}
+                    className={`flex items-center gap-2 rounded-xl border p-1 transition ${
+                      selection.selected.has(p.id)
+                        ? "border-destiny-orange/40 bg-destiny-orange/5"
+                        : "border-transparent"
+                    }`}
+                  >
+                    <input
+                      type="checkbox"
+                      aria-label={`Select ${p.name}`}
+                      checked={selection.selected.has(p.id)}
+                      onChange={() => selection.toggle(p.id)}
+                      className="ml-2 shrink-0 accent-destiny-orange"
+                    />
                     <Link
                       href={`/admin/store/products/${p.id}`}
-                      className="flex items-center gap-4 rounded-xl border border-black/8 bg-white dark:border-white/8 dark:bg-destiny-grey-800 p-3 transition hover:border-destiny-orange/40 hover:bg-[#fffaf5] dark:hover:bg-white/5"
+                      className="flex flex-1 items-center gap-4 rounded-xl border border-black/8 bg-white dark:border-white/8 dark:bg-destiny-grey-800 p-3 transition hover:border-destiny-orange/40 hover:bg-[#fffaf5] dark:hover:bg-white/5"
                     >
                       <div className="h-14 w-14 shrink-0 overflow-hidden rounded-lg bg-[#f5f7fa]">
                         {p.images[0] ? (
@@ -216,7 +359,8 @@ export default function AdminStorePage() {
                   </li>
                 );
               })}
-            </ul>
+              </ul>
+            </>
           )}
         </>
       )}

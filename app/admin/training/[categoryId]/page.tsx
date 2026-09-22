@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import {
@@ -16,9 +16,10 @@ import {
   ListToolbar,
   FilterChips,
   TableSkeleton,
+  BulkBar,
   primaryBtn,
 } from "@/components/admin/AdminUI";
-import { useAdminList } from "@/lib/useAdminList";
+import { useAdminList, useRowSelection } from "@/lib/useAdminList";
 import { SubgroupModal } from "@/components/admin/training/SubgroupModal";
 import { useReorder } from "@/components/admin/training/useReorder";
 import { useDialog } from "@/components/DialogProvider";
@@ -31,6 +32,7 @@ export default function TrainingSubgroupsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [editing, setEditing] = useState<TrainingSubgroup | "new" | null>(null);
+  const [working, setWorking] = useState(false);
 
   const load = useCallback(async () => {
     try {
@@ -107,6 +109,66 @@ export default function TrainingSubgroupsPage() {
     load();
   }
 
+  const selection = useRowSelection(subgroups);
+  const visibleIds = useMemo(() => list.visible.map((s) => s.id), [list.visible]);
+  const allVisibleSelected =
+    visibleIds.length > 0 && visibleIds.every((id) => selection.selected.has(id));
+
+  async function bulkPublish(publish: boolean) {
+    const ids = [...selection.selected];
+    if (ids.length === 0) return;
+    setWorking(true);
+    setError("");
+    const results = await Promise.allSettled(
+      ids.map((id) =>
+        fetch(`${API}/subgroups/${id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ is_published: publish }),
+        }).then((r) => {
+          if (!r.ok) throw new Error();
+        }),
+      ),
+    );
+    const failed = results.filter((r) => r.status === "rejected").length;
+    if (failed) {
+      setError(
+        `${failed} of ${ids.length} could not be ${publish ? "published" : "hidden"}.`,
+      );
+    }
+    selection.clear();
+    setWorking(false);
+    load();
+  }
+
+  async function bulkDelete() {
+    const ids = [...selection.selected];
+    if (ids.length === 0) return;
+    if (
+      !(await confirm({
+        title: `Delete ${ids.length} sub-group${ids.length === 1 ? "" : "s"}`,
+        message: `This permanently deletes ${ids.length} sub-group${ids.length === 1 ? "" : "s"} and their posts. This cannot be undone.`,
+        confirmLabel: "Delete",
+        tone: "danger",
+      }))
+    )
+      return;
+    setWorking(true);
+    setError("");
+    const results = await Promise.allSettled(
+      ids.map((id) =>
+        fetch(`${API}/subgroups/${id}`, { method: "DELETE" }).then((r) => {
+          if (!r.ok) throw new Error();
+        }),
+      ),
+    );
+    const failed = results.filter((r) => r.status === "rejected").length;
+    if (failed) setError(`${failed} of ${ids.length} could not be deleted.`);
+    selection.clear();
+    setWorking(false);
+    load();
+  }
+
   return (
     <div className="mx-auto max-w-6xl px-5 py-10">
       <PageHeader
@@ -164,7 +226,31 @@ export default function TrainingSubgroupsPage() {
                 />
               </div>
             }
-          />
+          >
+            <BulkBar count={selection.count} noun="sub-group" onClear={selection.clear}>
+              <button
+                className="rounded-lg bg-destiny-green/10 px-3 py-1.5 text-xs font-bold text-destiny-green transition hover:bg-destiny-green/20 disabled:opacity-50"
+                disabled={working}
+                onClick={() => bulkPublish(true)}
+              >
+                Publish
+              </button>
+              <button
+                className="rounded-lg bg-black/5 px-3 py-1.5 text-xs font-bold text-destiny-grey/70 dark:text-white/70 transition hover:bg-black/10 disabled:opacity-50"
+                disabled={working}
+                onClick={() => bulkPublish(false)}
+              >
+                Hide
+              </button>
+              <button
+                className="rounded-lg bg-destiny-red/10 px-3 py-1.5 text-xs font-bold text-destiny-red transition hover:bg-destiny-red/20 disabled:opacity-50"
+                disabled={working}
+                onClick={bulkDelete}
+              >
+                Delete
+              </button>
+            </BulkBar>
+          </ListToolbar>
 
           {!canReorder && (
             <p className="mb-3 flex items-center gap-1.5 text-xs text-destiny-grey/45 dark:text-white/45">
@@ -193,6 +279,15 @@ export default function TrainingSubgroupsPage() {
                 <thead className="border-b border-black/5 text-xs font-bold uppercase tracking-wider text-destiny-grey/40 dark:text-white/40">
                   <tr>
                     {canReorder && <th className="w-10 px-2 py-3.5"></th>}
+                    <th className="w-10 pl-5 pr-0 py-3.5">
+                      <input
+                        type="checkbox"
+                        aria-label="Select all shown"
+                        checked={allVisibleSelected}
+                        onChange={() => selection.toggleAll(visibleIds)}
+                        className="accent-destiny-orange"
+                      />
+                    </th>
                     <th className="px-5 py-3.5">Sub-group</th>
                     <th className="px-5 py-3.5">Access</th>
                     <th className="px-5 py-3.5">Status</th>
@@ -206,7 +301,9 @@ export default function TrainingSubgroupsPage() {
                       <tr
                         key={s.id}
                         {...(canReorder ? rowProps(idx) : {})}
-                        className="transition hover:bg-[#f5f7fa] dark:hover:bg-white/10"
+                        className={`transition hover:bg-[#f5f7fa] dark:hover:bg-white/10 ${
+                          selection.selected.has(s.id) ? "bg-destiny-orange/5" : ""
+                        }`}
                       >
                         {canReorder && (
                           <td className="px-2 py-3.5 text-center">
@@ -218,6 +315,15 @@ export default function TrainingSubgroupsPage() {
                             </span>
                           </td>
                         )}
+                        <td className="w-10 py-3.5 pl-5 pr-0" onClick={(e) => e.stopPropagation()}>
+                          <input
+                            type="checkbox"
+                            aria-label={`Select ${s.name}`}
+                            checked={selection.selected.has(s.id)}
+                            onChange={() => selection.toggle(s.id)}
+                            className="accent-destiny-orange"
+                          />
+                        </td>
                         <td className="px-5 py-3.5">
                           <Link
                             href={`/admin/training/${categoryId}/${s.id}`}

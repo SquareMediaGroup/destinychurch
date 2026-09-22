@@ -78,7 +78,10 @@ create table if not exists public.link_form_submissions (
   block_id uuid references public.link_blocks(id) on delete set null,
   block_label text,
   email text,
-  data jsonb not null default '{}'::jsonb,
+  -- [{ "id", "label", "value" }] in the form's field order. An array because
+  -- jsonb objects don't keep key order. The label is captured at submit time,
+  -- so renaming a field later doesn't relabel old responses.
+  data jsonb not null default '[]'::jsonb,
   created_at timestamptz not null default now()
 );
 

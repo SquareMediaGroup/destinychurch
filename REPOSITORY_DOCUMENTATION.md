@@ -801,7 +801,7 @@ CREATE TABLE link_blocks (
 CREATE TABLE link_form_submissions (
   id uuid PRIMARY KEY, page_id uuid ON DELETE CASCADE,
   block_id uuid ON DELETE SET NULL, block_label text,  -- responses outlive the form block
-  email text, data jsonb,                         -- { fieldId: { label, value } }
+  email text, data jsonb,                         -- [{ id, label, value }] in field order
   created_at timestamptz
 );
 ```
@@ -3734,8 +3734,8 @@ GET  /api/admin/analytics/site  // the "Whole site" tab's data
 // `website` is a honeypot: filled in → quiet { ok: true }, nothing stored.
 // The block must be an active form block on a published page; values are
 // checked against that block's own field list (required, email format,
-// length), and anything not in the list is dropped. Stores { label, value }
-// per field in link_form_submissions, then — via after(), never failing the
+// length), and anything not in the list is dropped. Stores [{ id, label, value }]
+// in field order in link_form_submissions, then — via after(), never failing the
 // request — emails notifyEmail if the block has one (lib/emailCard.ts). The
 // email's link uses SITE_ORIGIN (lib/appApi.ts), not destinytees.uk.
 // Rate-limited per IP at the site-wide default.

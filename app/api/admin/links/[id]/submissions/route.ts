@@ -12,8 +12,15 @@ export const dynamic = "force-dynamic";
 type Params = { params: Promise<{ id: string }> };
 
 interface StoredValue {
+  id: string;
   label: string;
   value: string | boolean;
+}
+
+/** Stored as an ordered array; tolerate an object in case one ever slips in. */
+function values(data: unknown): StoredValue[] {
+  if (Array.isArray(data)) return data as StoredValue[];
+  return data && typeof data === "object" ? (Object.values(data) as StoredValue[]) : [];
 }
 
 /** One CSV cell. Quotes doubled; leading =+-@ neutralised so a spreadsheet can't run it as a formula. */
@@ -43,7 +50,7 @@ export async function GET(request: Request, { params }: Params) {
   // Columns: the union of every field label, in first-seen order.
   const labels: string[] = [];
   for (const row of rows) {
-    for (const v of Object.values((row.data ?? {}) as Record<string, StoredValue>)) {
+    for (const v of values(row.data)) {
       if (v?.label && !labels.includes(v.label)) labels.push(v.label);
     }
   }
@@ -51,9 +58,7 @@ export async function GET(request: Request, { params }: Params) {
   const lines = [
     ["Received", "Form", ...labels].map(csvCell).join(","),
     ...rows.map((row) => {
-      const byLabel = new Map(
-        Object.values((row.data ?? {}) as Record<string, StoredValue>).map((v) => [v.label, v.value]),
-      );
+      const byLabel = new Map(values(row.data).map((v) => [v.label, v.value]));
       return [
         new Date(row.created_at).toISOString(),
         row.block_label ?? "",

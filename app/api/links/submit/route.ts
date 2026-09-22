@@ -56,7 +56,9 @@ export async function POST(request: Request) {
   const form = parsed.data;
 
   const input = (body.values && typeof body.values === "object" ? body.values : {}) as Record<string, unknown>;
-  const stored: Record<string, { label: string; value: string | boolean }> = {};
+  // An array, not an object keyed by field id: jsonb doesn't keep object key
+  // order, and a response should read in the order the form asked.
+  const stored: { id: string; label: string; value: string | boolean }[] = [];
   let email: string | null = null;
 
   for (const field of form.fields) {
@@ -65,7 +67,7 @@ export async function POST(request: Request) {
       const checked = raw === true;
       if (field.required && !checked)
         return NextResponse.json({ error: `Please tick “${field.label}”.` }, { status: 400 });
-      stored[field.id] = { label: field.label, value: checked };
+      stored.push({ id: field.id, label: field.label, value: checked });
       continue;
     }
 
@@ -79,7 +81,7 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: `“${field.label}” doesn't look like an email address.` }, { status: 400 });
       email ??= value.toLowerCase();
     }
-    stored[field.id] = { label: field.label, value };
+    stored.push({ id: field.id, label: field.label, value });
   }
 
   const { error } = await supabase.from("link_form_submissions").insert({
@@ -106,7 +108,7 @@ export async function POST(request: Request) {
         badge: "Links page form",
         heading: form.title,
         intro: `Someone filled in the “${form.title}” form on ${path}.`,
-        rows: Object.values(stored).map((v) => [
+        rows: stored.map((v) => [
           v.label,
           typeof v.value === "boolean" ? (v.value ? "Yes" : "No") : v.value || "—",
         ]),

@@ -270,7 +270,7 @@ export default function LinksEditor({ id }: { id: string }) {
       </button>
       {previewOpen && (
         <Sheet title="Preview" subtitle={dirty ? "Includes unsaved changes" : path} onClose={() => setPreviewOpen(false)}>
-          <div className="-mx-4 min-h-[70vh] overflow-hidden">{livePreview}</div>
+          <div className="min-h-[70vh] overflow-hidden">{livePreview}</div>
         </Sheet>
       )}
 

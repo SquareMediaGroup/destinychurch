@@ -398,6 +398,9 @@
   align-items: stretch;
   gap: 0;
   padding: 0;
+  /* A pill radius (999px) on a tall card turns it into an ellipse and clips the
+     artwork; cards keep the theme's corners up to a sensible maximum. */
+  border-radius: min(var(--lp-radius), 28px);
 }
 .lp-btn-art {
   aspect-ratio: 16 / 9;

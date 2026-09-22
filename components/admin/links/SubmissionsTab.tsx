@@ -12,7 +12,8 @@ interface Submission {
   id: string;
   block_label: string | null;
   email: string | null;
-  data: Record<string, { label: string; value: string | boolean }>;
+  /** In the order the form asked. */
+  data: { id: string; label: string; value: string | boolean }[];
   created_at: string;
 }
 
@@ -122,8 +123,8 @@ export default function SubmissionsTab({ pageId }: { pageId: string }) {
               </button>
             </div>
             <dl className="grid gap-x-4 gap-y-1.5 sm:grid-cols-[minmax(0,10rem)_1fr]">
-              {Object.entries(row.data ?? {}).map(([key, v]) => (
-                <div key={key} className="contents">
+              {(Array.isArray(row.data) ? row.data : []).map((v) => (
+                <div key={v.id} className="contents">
                   <dt className="text-xs font-bold text-destiny-grey/50 dark:text-white/50">{v.label}</dt>
                   <dd className="whitespace-pre-line break-words text-sm text-destiny-grey dark:text-white">
                     {typeof v.value === "boolean" ? (v.value ? "Yes" : "No") : v.value || "—"}

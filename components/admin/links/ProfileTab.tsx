@@ -2,7 +2,7 @@
 
 // The top of a links page: photo, name, bio and the row of social icons.
 
-import { FieldShell, SelectField, TextAreaField, TextField, fieldInputClass } from "@/components/admin/blocks/fields/BasicFields";
+import { FieldShell, SelectField, TextAreaField, fieldInputClass } from "@/components/admin/blocks/fields/BasicFields";
 import { ImageField } from "@/components/admin/blocks/fields/ImageField";
 import { SOCIAL_KEYS, SOCIAL_PLATFORMS, normaliseSocialUrl, type SocialKey } from "@/lib/linkPages/socials";
 import { safeHref } from "@/lib/linkPages/urls";
@@ -53,7 +53,19 @@ export default function ProfileTab({
     <div className="space-y-4">
       <Card title="Profile">
         <ImageField label="Photo or logo" value={page.avatar_url} onChange={(v) => setPage({ avatar_url: v })} />
-        <TextField label="Name" value={page.title} maxLength={80} onChange={(v) => setPage({ title: v })} />
+        <FieldShell
+          label="Heading"
+          htmlFor="links-profile-name"
+          help="The big title at the top of the page. Leave it blank to show no heading."
+        >
+          <input
+            id="links-profile-name"
+            className={fieldInputClass}
+            value={page.title}
+            maxLength={80}
+            onChange={(e) => setPage({ title: e.target.value })}
+          />
+        </FieldShell>
         <TextAreaField
           label="Bio"
           value={page.bio}

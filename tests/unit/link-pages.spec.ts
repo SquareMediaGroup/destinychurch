@@ -115,9 +115,9 @@ test("colours and gradients are checked, url() never gets through", () => {
   expect(isThemeGradient("linear-gradient(red, blue); color: red")).toBe(false);
 });
 
-test("hover text colour stays readable on the accent", () => {
+test("hover text is white on the accent, like /help, unless the accent is very light", () => {
   expect(readableOn("#ffffff")).toBe("#1a1a1a");
-  expect(readableOn("#f58021")).toBe("#1a1a1a");
+  expect(readableOn("#f58021")).toBe("#ffffff");
   expect(readableOn("#0857ba")).toBe("#ffffff");
   expect(readableOn("rgba(17,17,17,1)")).toBe("#ffffff");
 });

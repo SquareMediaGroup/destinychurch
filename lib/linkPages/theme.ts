@@ -254,12 +254,10 @@ function channels(value: string): [number, number, number] | null {
 }
 
 /**
- * Near-black or white, whichever has the higher contrast ratio against
- * `background` — the text colour for a button while the hover fill (the
- * accent) sweeps up behind it. Compared by WCAG contrast rather than a
- * luminance cut-off, so Destiny orange gets dark text (about 7:1) instead of
- * white (about 2.6:1, below the AA floor tests/unit/contrast.spec.ts holds the
- * rest of the site to).
+ * The text colour while the hover fill (the accent) sweeps up behind a button.
+ * White, as on /help and the old Next Steps cards — the brand look is white on
+ * Destiny orange. Only a very light accent (Sunrise's white, a pale pastel)
+ * gets near-black instead, because white on white would vanish.
  */
 export function readableOn(background: string): string {
   const c = channels(background);
@@ -268,11 +266,8 @@ export function readableOn(background: string): string {
     const s = x / 255;
     return s <= 0.03928 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4;
   });
-  const bg = 0.2126 * r + 0.7152 * g + 0.0722 * b;
-  const DARK = 0.0103; // relative luminance of #1a1a1a
-  const vsWhite = 1.05 / (bg + 0.05);
-  const vsDark = (bg + 0.05) / (DARK + 0.05);
-  return vsDark >= vsWhite ? "#1a1a1a" : "#ffffff";
+  const luminance = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+  return luminance > 0.6 ? "#1a1a1a" : "#ffffff";
 }
 
 /**

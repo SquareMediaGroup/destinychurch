@@ -186,7 +186,27 @@ export default function LinksEditor({ id }: { id: string }) {
     );
 
   const path = pagePath(savedSlug);
-  const livePreview = <LinkPageView page={page} theme={page.theme} blocks={preview} preview />;
+  const editProfile = () => {
+    setPreviewOpen(false);
+    setTab("profile");
+    // Focus the Heading field once the Profile tab has rendered. The tab switch
+    // goes through the router, so poll briefly rather than guess a delay.
+    let tries = 0;
+    const focusField = () => {
+      const field = document.getElementById("links-profile-name") as HTMLInputElement | null;
+      if (field) {
+        field.focus();
+        field.select();
+        field.scrollIntoView({ block: "center", behavior: "smooth" });
+      } else if (tries++ < 20) {
+        setTimeout(focusField, 50);
+      }
+    };
+    focusField();
+  };
+  const livePreview = (
+    <LinkPageView page={page} theme={page.theme} blocks={preview} preview onEditProfile={editProfile} />
+  );
 
   return (
     <ImageUploaderContext.Provider value={uploadLinksImage}>

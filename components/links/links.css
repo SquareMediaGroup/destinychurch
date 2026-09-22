@@ -122,6 +122,43 @@
 .lp-root[data-layout="hero"] .lp-profile {
   margin-top: -3rem;
 }
+/* Editor preview: the header is a click target for the Profile tab. */
+.lp-profile[data-editable="true"] {
+  position: relative;
+  cursor: pointer;
+  border-radius: 20px;
+  outline: 2px dashed transparent;
+  outline-offset: 6px;
+  transition: outline-color 0.2s ease;
+}
+.lp-profile[data-editable="true"]:hover,
+.lp-profile[data-editable="true"]:focus-visible {
+  outline-color: color-mix(in srgb, var(--lp-accent) 70%, transparent);
+}
+.lp-edit-hint {
+  position: absolute;
+  top: -0.25rem;
+  right: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  border-radius: 999px;
+  padding: 0.2rem 0.55rem;
+  font-size: 0.6875rem;
+  font-weight: 800;
+  background: var(--lp-accent);
+  color: var(--lp-accent-ink);
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+.lp-edit-hint .material-symbols-rounded {
+  font-size: 14px;
+}
+.lp-profile[data-editable="true"]:hover .lp-edit-hint,
+.lp-profile[data-editable="true"]:focus-visible .lp-edit-hint {
+  opacity: 1;
+}
+
 .lp-avatar {
   width: 6rem;
   height: 6rem;

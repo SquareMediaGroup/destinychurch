@@ -5278,8 +5278,8 @@ KNOWLEDGE:
 // theme.ts — client-safe. ThemeSchema: every field defaults (the defaults ARE
 //   Destiny Light, so '{}' is a finished theme) and every field `.catch()`es, so
 //   one bad value falls back alone instead of failing the page. THEME_PRESETS
-//   (7), FONT_OPTIONS allowlist, themeToCssVars(), readableOn() (hover ink by
-//   WCAG contrast ratio, not a luminance cut-off). Themes never carry raw CSS:
+//   (7), FONT_OPTIONS allowlist, themeToCssVars(), readableOn() (hover text: white, as on /help;
+//   near-black only on a very light accent). Themes never carry raw CSS:
 //   colours/gradients are regex-checked and url( is refused.
 // urls.ts — safeHref() (http(s)/mailto/tel/site path; no javascript:, no //host,
 //   no bare #), safeMediaUrl() (https or site path), toEmbed() — an allowlist:

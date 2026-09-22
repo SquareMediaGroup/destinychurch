@@ -91,12 +91,18 @@ export default function LinkPageView({
   theme,
   blocks,
   preview = false,
+  onEditProfile,
 }: {
   page: LinkPageWithId;
   theme: Theme;
   blocks: ResolvedBlock[];
   /** The editor's live preview: no tracking, no navigation, no submissions. */
   preview?: boolean;
+  /**
+   * Editor only: makes the photo, name and bio one click target that jumps to
+   * the Profile tab. The public page never passes it, so it stays a plain header.
+   */
+  onEditProfile?: () => void;
 }) {
   const bg = theme.background;
   const imageUrl = bg.type === "image" ? safeMediaUrl(bg.imageUrl) : null;
@@ -150,7 +156,30 @@ export default function LinkPageView({
           </div>
         )}
 
-        <header className="lp-profile">
+        <header
+          className="lp-profile"
+          {...(onEditProfile
+            ? {
+                "data-editable": "true",
+                role: "button",
+                tabIndex: 0,
+                title: "Edit name, bio and photo",
+                onClick: onEditProfile,
+                onKeyDown: (e: React.KeyboardEvent) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    onEditProfile();
+                  }
+                },
+              }
+            : {})}
+        >
+          {onEditProfile && (
+            <span className="lp-edit-hint" aria-hidden="true">
+              <span className="material-symbols-rounded">edit</span>
+              Edit
+            </span>
+          )}
           {avatarUrl && (
             // eslint-disable-next-line @next/next/no-img-element -- admin upload
             <img

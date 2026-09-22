@@ -30,15 +30,16 @@ export default function ReviewsPage() {
   const [staff, setStaff] = useState<Staff[]>([]);
   const [reviews, setReviews] = useState<Review[]>([]);
   const [adding, setAdding] = useState(false);
+  const [mineOnly, setMineOnly] = useState(false);
 
   const load = useCallback(async () => {
     const [s, r] = await Promise.all([
       fetchAdminArray<Staff>(`${API}/staff`),
-      fetchAdminArray<Review>(`${API}/reviews`),
+      fetchAdminArray<Review>(`${API}/reviews${mineOnly ? "?mine=1" : ""}`),
     ]);
     setStaff(s);
     setReviews(r);
-  }, []);
+  }, [mineOnly]);
 
   const { loading, error, setError, reload } = useAdminLoader(load);
 
@@ -143,6 +144,12 @@ export default function ReviewsPage() {
                   onChange={(v) =>
                     list.setFilter("due", list.filterValues.due === v ? "all" : v)
                   }
+                />
+                <FilterChips
+                  label="Mine"
+                  options={[{ value: "mine", label: "My reviews" }]}
+                  value={mineOnly ? "mine" : ""}
+                  onChange={(v) => setMineOnly(v === "mine" && !mineOnly)}
                 />
               </div>
             }

@@ -1,7 +1,7 @@
 # Destiny Church Tees Valley — Complete Repository Documentation
 
-**Version:** 1.0.16  
-**Last Updated:** September 18, 2026  
+**Version:** 1.0.17  
+**Last Updated:** September 23, 2026  
 **Repository:** Square Media Group — destinychurch  
 
 This document provides a comprehensive explanation of every major component, line of code purpose, architecture decisions, and how the system works from end-to-end.
@@ -975,20 +975,37 @@ CREATE TABLE hr_reviews (
   review_date date NOT NULL,
   type text NOT NULL DEFAULT 'one_to_one'
     CHECK (type IN ('appraisal','one_to_one')),
-  reviewer text,                       -- Name of reviewer (free text, not a linked account)
+  reviewer text,                       -- Legacy free-text reviewer name; kept for old rows and non-admin reviewers
+  reviewer_auth_user_id uuid           -- 20260922: the auth user who owns this review (references auth.users)
+    REFERENCES auth.users(id),
   summary text,                        -- Notes/outcomes
   next_review_date date,               -- Scheduled follow-up
   reminder_sent_at timestamptz,        -- 20260824: set once the digest has flagged this review, so it isn't re-sent daily
   created_at timestamptz DEFAULT now()
 );
 
--- RLS: Service role only
--- Indexes: staff_id; a partial index on next_review_date WHERE reminder_sent_at IS NULL
+-- RLS: service role full access, PLUS a "reviewer can read own reviews" SELECT
+--      policy (reviewer_auth_user_id = auth.uid()) — the first non-deny-all
+--      policy in this codebase (20260922_hr_review_reviewer_scoping.sql)
+-- Indexes: staff_id; reviewer_auth_user_id; a partial index on next_review_date WHERE reminder_sent_at IS NULL
 ```
+
+**Reviewer scoping (20260922).** `reviewer_auth_user_id` links a review to the
+admin who actually ran it, so a reviewer can self-serve "my reviews" without a
+service-role fetch of the whole table. The admin UI's reviewer field is now a
+picker sourced from the existing `available-admins` endpoint (writing both the
+free-text `reviewer` label and `reviewer_auth_user_id`) rather than free text.
+`GET /api/admin/hr/reviews?mine=1` filters to the caller's own reviews,
+enforced server-side from the same actor headers `lib/audit.server.ts` reads
+(`AUDIT_ACTOR_HEADERS`) — no actor on the request yields an empty list, never
+everyone's reviews. The select-own RLS policy is defense-in-depth for any
+future user-context client; today's admin UI still goes through the service
+role and filters explicitly in the route.
 
 **Used By:**
 - Admin to log reviews
 - HR dashboard to track review schedule
+- `GET /api/admin/hr/reviews?mine=1` — the reviewer's own reviews (self-service)
 - `GET /api/cron/hr-review-reminders` — daily digest of reviews due within 14 days (see API Routes)
 
 ---
@@ -1584,7 +1601,7 @@ default 365).
 **Used By:**
 - `lib/audit.server.ts` — `recordAudit()`, the only writer
 - `app/api/admin/audit/*` — list, ask, reports (Super Admin only)
-- `app/api/cron/audit-weekly-report` — writes `audit_reports`, runs the purge
+- `app/api/cron/audit-weekly-report` — writes `audit_reports`, runs the `audit_log` purge and `purge_old_notifications()`
 - `app/admin/audit/page.tsx` — the console
 
 ---
@@ -1954,7 +1971,78 @@ CREATE TABLE sermon_series (
 
 ---
 
-**Key Point:** No table uses authenticated user RLS. All member-facing features use API proxy routes that enforce authentication in application code, then access the database with the service role key. This gives finer control and better error messages.
+#### 28. **notifications / notification_reads** (admin notification center)
+**Purpose:** The data behind the admin **notification bell** — one row per inbound event a section's admins should see (new order, new job application, new design ticket, prayer request, contact message, leave request). Migration: `supabase/migrations/20260922_02_notifications.sql`.
+
+```sql
+CREATE TABLE notifications (
+  id           bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  created_at   timestamptz NOT NULL DEFAULT now(),
+  section      text NOT NULL,               -- e.g. "store", "hr", "design"
+  kind         text NOT NULL,               -- e.g. "order", "application", "ticket"
+  entity_id    text,                         -- the source row's id, as text
+  entity_label text,
+  summary      text NOT NULL,                -- one plain sentence: "New order #1042 from Jane Doe"
+  href         text NOT NULL,                -- admin deep link, e.g. /admin/store/orders?open=<id>
+  roles        text[] NOT NULL,              -- AdminRole values this notification is relevant to
+  metadata     jsonb
+);
+
+CREATE TABLE notification_reads (             -- per-admin read state (several admins share one notification)
+  notification_id bigint NOT NULL REFERENCES notifications(id) ON DELETE CASCADE,
+  auth_user_id    uuid   NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  read_at         timestamptz NOT NULL DEFAULT now(),
+  PRIMARY KEY (notification_id, auth_user_id)
+);
+
+-- RLS: both tables are deny-all ("service only") — the API routes always go
+--      through createServiceClient(). Indexes: notifications(created_at desc),
+--      GIN(roles); notification_reads(auth_user_id).
+```
+
+**Read state is per-viewer, not per-notification.** Several admins share the same
+source tables, so "read" is a fact about `(notification, viewer)`, which is why it
+lives in its own `notification_reads` table rather than a column on `notifications`.
+
+**Delivery follows the live-chat Broadcast precedent, not Postgres Changes.**
+Opening Postgres Changes on `notifications` would need an authenticated SELECT
+policy straight on the table — exactly the class of mistake the live-chat
+migration warns against. Instead the service-role insert path calls
+`admin_notify_emit(topic, event, payload)` (a `SECURITY DEFINER` wrapper over
+`realtime.send`) to push the row onto a **private Broadcast topic** named
+`admin-notifications:<role>`, one per `AdminRole`. A notification for
+`['store_admin']` is broadcast to `admin-notifications:store_admin` **and always**
+`admin-notifications:super_admin` — mirroring how a Super Admin's route access
+bypasses every `ROUTE_RULES` entry. A `realtime.messages` SELECT policy
+(`admin_notifications_receive`) only lets a signed-in admin receive a topic for a
+role they actually hold, gated by `admin_has_role(text)` (also `SECURITY DEFINER`,
+because `admin_roles` is deny-all). There is no insert policy — the browser never
+posts to the topic, only the service key does.
+
+**Retention.** `purge_old_notifications()` deletes notifications (and, via cascade,
+their read-receipts) older than **60 days**, called from the weekly audit cron
+(`/api/cron/audit-weekly-report`) alongside the existing `audit_log` purge.
+
+**Used By:** `lib/notify.server.ts` (`recordNotification()`, the one writer — called
+alongside, never in place of, each submission's existing insert/email logic, and
+never throws), `lib/useNotifications.ts` (the client Realtime hook),
+`components/admin/AdminNotificationBell.tsx` (the bell in `AdminHeader`),
+`app/api/admin/notifications` + `/[id]/read` + `/read-all` (feed and read state).
+Call sites: new order (`lib/checkout.server.ts`), job application (`app/jobs/actions.ts`),
+design ticket (`app/portal/design/request/actions.ts`), prayer request
+(`app/api/live-chat/prayer`), contact message (`app/contact/actions.ts`), leave
+request (`app/api/portal/leave`).
+
+---
+
+**Key Point:** Member-facing features use API proxy routes that enforce
+authentication in application code, then access the database with the service
+role key — this gives finer control and better error messages. Two authenticated
+SELECT policies now exist as **defense-in-depth** alongside that model (they are
+not the primary boundary): `hr_reviews`' "reviewer can read own reviews"
+(`reviewer_auth_user_id = auth.uid()`) and the `realtime.messages`
+`admin_notifications_receive` policy for the notification Broadcast topics. Every
+base data table is still deny-all to the anon/authenticated roles.
 
 ---
 
@@ -2989,7 +3077,8 @@ to keep.
 #### Admin Components (`components/admin/*`)
 - `AdminSidebar.tsx` — Admin navigation. At `md`+ the full sidebar; below `md` only a slim top bar (logo, breadcrumbs, ⌘K, theme toggle, account sheet), with navigation itself handed to `AdminTabBar`
 - `AdminTabBar.tsx` — The mobile bottom tab bar: a scrolling row of Liquid Glass group tabs derived from `tabsFor()`, with a `Sheet` for multi-page groups and a view-transitioned active pill. See "Admin navigation, search and keyboard shortcuts"
-- `AdminHeader.tsx` — Sticky desktop header for the admin shell (`md`+ only); shows the full breadcrumb trail from `breadcrumbsFor(pathname)` — every level above the current page a link — plus ⌘K, the theme toggle, shortcut help and a "View live site" button
+- `AdminHeader.tsx` — Sticky desktop header for the admin shell (`md`+ only); shows the full breadcrumb trail from `breadcrumbsFor(pathname)` — every level above the current page a link — plus ⌘K, the notification bell (`AdminNotificationBell`), the theme toggle, shortcut help and a "View live site" button
+- `AdminNotificationBell.tsx` — The notification bell: an unread badge and a dropdown of the most recent notifications for whatever roles the signed-in admin holds. Data and Realtime delivery both come from `lib/useNotifications.ts` (initial `GET /api/admin/notifications`, then a private Broadcast channel per held role); marking one or all read is optimistic and reconciled on the next refresh. See the `notifications` table in Database Schema for the delivery model.
 - `RichTextEditor.tsx` — Shared TipTap rich-text editor (HTML output); used by posts, training posts, HR job descriptions, and (since `a22301b`) shop product descriptions. Optional `blocks` / `onEditor` props admit [content blocks](#content-blocks) — schema and drop handling only; the blocks UI is a separate surface owned by the parent, deliberately **not** part of this toolbar.
   The toolbar does exactly one job: reformat the current text selection. The old "Embed YouTube video", "Embed ChurchSuite form" and "Embed HTML" buttons are now the Video, ChurchSuite form and Custom embed blocks — they inserted new objects rather than formatting a selection, so they belonged in the sidebar. `enableYouTube` and `enableHtmlEmbed` now only register the legacy `youtube` / `htmlEmbed` nodes so pages authored with those buttons keep parsing; `enableChurchSuite` is gone entirely (it only ever drove a button, since ChurchSuite embeds were stored as `htmlEmbed`).
 - `blocks/*` — **Client.** Editor side of the content-block system: the TipTap node factory, node-view chrome, the Blocks sidebar, the schema-driven settings inspector and its field components. See [Content Blocks](#content-blocks).
@@ -4595,7 +4684,12 @@ had rendered.
   number on each chip tells you what clicking it would show.
 - `useRowSelection` is separate, so lists that don't need bulk actions pay
   nothing. It filters dead ids on read rather than pruning them in an effect —
-  deleting a selected row would otherwise leave a phantom in the count.
+  deleting a selected row would otherwise leave a phantom in the count. The
+  `useRowSelection` + `BulkBar` pattern (first used on `app/admin/posts/page.tsx`)
+  now also drives bulk actions on the HR staff, applications and jobs pages, the
+  training categories and sub-groups pages, and the store products and orders
+  pages — each reusing its existing per-row `[id]/route.ts` via
+  `Promise.allSettled` rather than any new bulk API endpoint.
 
 **Sorting and drag-reorder don't mix.** On the training pages a row's position
 *is* the public ordering, so dragging inside a filtered view would write a
@@ -6538,6 +6632,10 @@ ENABLE_SMART_SEARCH=true
   - Audit log: `audit.ts` (vocabulary + diffing + redaction), `audit.server.ts`
     (`recordAudit()`, the only writer), `auditAI.ts` (tools + prompt),
     `auditEmail.ts` (the weekly report email)
+  - Notification center: `notify.server.ts` (`recordNotification()`, the one
+    writer — writes the row then Broadcasts it, never throws), `useNotifications.ts`
+    (the client bell hook — fetch + per-role Realtime subscription, mirroring
+    `useLiveChat.ts`)
   - Click analytics (`/admin/analytics`): `engagement.ts` (vocabulary + wire
     format), `engagement.server.ts` (`recordEngagement()`), `botDetect.ts`
     (crawler/device/OS/browser detection), `track.ts` (client `sendBeacon`),
@@ -6548,12 +6646,14 @@ ENABLE_SMART_SEARCH=true
 ### API Routes (`app/api/`)
 - **Admin endpoints:** Banners, redirects, pop-ups, cache revalidation, posts, training, alpha-events, featured-course, HR, store management, simulated live,
   plus `me` (signed-in identity + roles), `search` (role-filtered cross-section record search behind the ⌘K palette),
+  `notifications` (the notification bell's feed: `GET` for the role-filtered list with the caller's read state folded in,
+  `/[id]/read` and `/read-all` to mark read — every admin may call it and it narrows the rows itself, like `search`),
   `audit` (the audit log: list, `ask` for the plain-English answer, `reports` for the weekly ones — Super Admin only)
   and `analytics` (`engagement_rollup` for Short links/In person, `analytics/site` for the Vercel panel — Site Admin or Super Admin)
 - **Cron endpoints (`/api/cron/*`, `CRON_SECRET`-gated, scheduled in `vercel.json`):** `analytics-anonymise` (daily,
   nulls old `engagement_events` IPs), `live-chat-purge` (daily), `hr-review-reminders` (daily),
   `audit-weekly-report` (Sunday evening — writes and emails the week's admin-activity report, then
-  runs the audit-log retention purge), `ip-reputation-refresh` (weekly — refreshes the VPN/Tor/
+  runs the audit-log retention purge and `purge_old_notifications()`), `ip-reputation-refresh` (weekly — refreshes the VPN/Tor/
   datacenter/Private-Relay range lists behind `engagement_events.ip_category`), `design-deliverables-purge`
   (daily — deletes design deliverables the requester confirmed at least 48h ago)
 - **Public endpoints:** `/api/chat` (Smart Search tool-calling chat, per-IP rate-limited), YouTube (videos/status/thumbnail/live), Alpha info, training unlock + read timer (`/api/training/posts/[id]/timer`), `/api/track` (click-analytics beacon for `/nfc` and `/links`)

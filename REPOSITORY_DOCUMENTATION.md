@@ -1,7 +1,7 @@
 # Destiny Church Tees Valley — Complete Repository Documentation
 
-**Version:** 1.0.16  
-**Last Updated:** September 18, 2026  
+**Version:** 1.0.17  
+**Last Updated:** September 23, 2026  
 **Repository:** Square Media Group — destinychurch  
 
 This document provides a comprehensive explanation of every major component, line of code purpose, architecture decisions, and how the system works from end-to-end.
@@ -229,6 +229,7 @@ destinychurch/
 │   ├── ChurchHeader.tsx           # Site header with nav
 │   ├── ChurchFooter.tsx           # Site footer
 │   ├── FooterLinkGroup.tsx        # Footer link column (accordion on mobile)
+│   ├── MapsLink.tsx               # Address link that opens the device's map app
 │   ├── Providers.tsx              # Client context providers
 │   ├── CookieBanner.tsx           # GDPR cookie consent
 │   ├── AnalyticsGate.tsx          # Conditional analytics loading
@@ -360,7 +361,8 @@ destinychurch/
 │       ├── 20260902_remove_media_boards.sql # Drops the media_boards/media_photos tables (Media Boards feature removed)
 │       ├── 20260912_01_sermon_admin_role.sql # `sermon_admin` access level on admin_roles (/admin/sermons)
 │       ├── 20260912_02_speaker_overrides.sql # speaker_overrides table — AI/human speaker corrections for the sermon archive
-│       └── 20260920_01_sermon_series.sql  # sermon_series table — playlist ids curated as sermon series
+│       ├── 20260920_01_sermon_series.sql  # sermon_series table — playlist ids curated as sermon series
+│       └── 20260922_02_live_chat_rpc_grants.sql # Revoke anon/authenticated EXECUTE on live chat definer fns; host check → `private`
 │
 ├── utils/                         # Utility modules
 │   ├── supabase/                  # Supabase client factories
@@ -401,7 +403,7 @@ destinychurch/
 │   └── ...
 │
 ├── .github/                       # GitHub workflows
-│   └── workflows/                 # CI/CD pipelines
+│   └── workflows/                 # ci.yml (every PR), playwright.yml (manual e2e), AI content jobs
 │
 ├── .claude/                       # Claude Code settings
 ├── .vscode/                       # VS Code workspace settings
@@ -533,6 +535,13 @@ CREATE TABLE contact_messages (
 **Used By:**
 - `app/contact/actions.ts` (server action) inserts submissions
 - Admin dashboard to view inquiries
+
+**Accessibility subject:** Selecting "Accessibility" in `ContactForm` reveals
+a checkbox group (step-free access, BSL, hearing loop, large print) plus a
+free-text "anything else" field. There's no dedicated column for these —
+`submitContactForm` folds the selected items into the `message` body as a
+labelled "Accessibility requirements:" block before insert/email, so no
+migration was needed.
 
 ---
 
@@ -769,6 +778,62 @@ unreachable. `event_ends_at` is what hides the tile once the event has run; the 
 
 ---
 
+#### 9a. **link_pages / link_blocks / link_form_submissions**
+**Purpose:** The Linktree-style pages at `/links` (slug `main`) and `/links/<slug>`, built in `/admin/links`.
+Migration: `supabase/migrations/20260922_01_link_pages.sql`.
+
+```sql
+CREATE TABLE link_pages (
+  id uuid PRIMARY KEY, slug text UNIQUE,          -- 'main' renders at /links itself
+  title text, bio text, avatar_url text,
+  theme jsonb DEFAULT '{}',                       -- parsed by ThemeSchema; '{}' = Destiny Light
+  socials jsonb DEFAULT '[]',                     -- [{ platform, url }]
+  socials_position text,                          -- 'top' | 'bottom'
+  seo_title text, seo_description text, og_image_url text,
+  noindex boolean, published boolean,
+  created_at timestamptz, updated_at timestamptz
+);
+CREATE TABLE link_blocks (
+  id uuid PRIMARY KEY,                            -- generated in the browser, stable across saves
+  page_id uuid REFERENCES link_pages ON DELETE CASCADE,
+  sort_order int, active boolean,
+  type text,                                      -- link|header|text|image|divider|event|embed|form
+  data jsonb,                                     -- per-type shape, zod-checked (lib/linkPages/types.ts)
+  starts_at timestamptz, ends_at timestamptz      -- optional schedule
+);
+CREATE TABLE link_form_submissions (
+  id uuid PRIMARY KEY, page_id uuid ON DELETE CASCADE,
+  block_id uuid ON DELETE SET NULL, block_label text,  -- responses outlive the form block
+  email text, data jsonb,                         -- [{ id, label, value }] in field order
+  created_at timestamptz
+);
+```
+
+**Why `data` is jsonb rather than columns:** eight block types with mostly disjoint settings. The
+shape is enforced where it matters — `LinkBlockSchema` parses every block in the admin API before
+anything is written, and the renderer safeParses on the way out and skips anything that fails, so a
+bad row is a missing block rather than a broken page. It's the same split post content blocks use.
+
+**Why a save RPC:** `link_page_save(page_id, page, blocks)` updates the page, deletes removed blocks
+and upserts the rest (array position = sort order) in one transaction. The editor saves a page as a
+unit; doing that as separate PostgREST calls could leave a page half-saved. The upsert's `WHERE
+page_id = …` stops a request from moving another page's block by naming its id. Execute is granted to
+`service_role` only.
+
+**Why the main page is seeded:** the migration creates `main` with the six Next Steps that `/links`
+used to hardcode, so the switch-over changes the look and loses nothing. Those six also stay in
+`lib/linksSteps.ts` as the fallback `/links` renders if the database can't answer.
+
+**RLS:** public select on published pages and on active blocks of published pages; submissions are
+service-only (deny-all), since they hold personal data. All writes go through `/api/admin/links/*`.
+
+**Used By:**
+- `lib/linkPages/linkPages.server.ts` → `getLinkPage()`, read by `components/links/LinkPageRoute.tsx`
+- `app/api/admin/links/*` + `components/admin/links/*` for the editor
+- `app/api/links/submit/route.ts` writes submissions; `app/api/track/route.ts` validates clicks
+
+---
+
 #### 10. **hr_staff**
 **Purpose:** Employee/volunteer directory
 
@@ -968,20 +1033,37 @@ CREATE TABLE hr_reviews (
   review_date date NOT NULL,
   type text NOT NULL DEFAULT 'one_to_one'
     CHECK (type IN ('appraisal','one_to_one')),
-  reviewer text,                       -- Name of reviewer (free text, not a linked account)
+  reviewer text,                       -- Legacy free-text reviewer name; kept for old rows and non-admin reviewers
+  reviewer_auth_user_id uuid           -- 20260922: the auth user who owns this review (references auth.users)
+    REFERENCES auth.users(id),
   summary text,                        -- Notes/outcomes
   next_review_date date,               -- Scheduled follow-up
   reminder_sent_at timestamptz,        -- 20260824: set once the digest has flagged this review, so it isn't re-sent daily
   created_at timestamptz DEFAULT now()
 );
 
--- RLS: Service role only
--- Indexes: staff_id; a partial index on next_review_date WHERE reminder_sent_at IS NULL
+-- RLS: service role full access, PLUS a "reviewer can read own reviews" SELECT
+--      policy (reviewer_auth_user_id = auth.uid()) — the first non-deny-all
+--      policy in this codebase (20260922_hr_review_reviewer_scoping.sql)
+-- Indexes: staff_id; reviewer_auth_user_id; a partial index on next_review_date WHERE reminder_sent_at IS NULL
 ```
+
+**Reviewer scoping (20260922).** `reviewer_auth_user_id` links a review to the
+admin who actually ran it, so a reviewer can self-serve "my reviews" without a
+service-role fetch of the whole table. The admin UI's reviewer field is now a
+picker sourced from the existing `available-admins` endpoint (writing both the
+free-text `reviewer` label and `reviewer_auth_user_id`) rather than free text.
+`GET /api/admin/hr/reviews?mine=1` filters to the caller's own reviews,
+enforced server-side from the same actor headers `lib/audit.server.ts` reads
+(`AUDIT_ACTOR_HEADERS`) — no actor on the request yields an empty list, never
+everyone's reviews. The select-own RLS policy is defense-in-depth for any
+future user-context client; today's admin UI still goes through the service
+role and filters explicitly in the route.
 
 **Used By:**
 - Admin to log reviews
 - HR dashboard to track review schedule
+- `GET /api/admin/hr/reviews?mine=1` — the reviewer's own reviews (self-service)
 - `GET /api/cron/hr-review-reminders` — daily digest of reviews due within 14 days (see API Routes)
 
 ---
@@ -1311,6 +1393,8 @@ All tables have RLS enabled. Access rules:
 | featured_course | - | - | Yes | Featured course setting (read via server component) |
 | site_popup | - | - | Yes | Protect pop-up content |
 | nfc_tiles | Yes | - | Yes | Public tiles on /nfc (read via server component) |
+| link_pages / link_blocks | Yes | - | Yes | Published pages and their active blocks (read via server component) |
+| link_form_submissions | - | - | Yes | Form responses — personal data, deny-all "service only" |
 | hr_* (staff, leave, reviews, docs) | - | - | Yes | Sensitive HR data |
 | jobs | Yes | - | Yes | Public listings |
 | job_applications | - | - | Yes | Protect applications |
@@ -1418,8 +1502,21 @@ patterns (so the three cannot overlap). Clients get SELECT (receive) and
 deliberately **no broadcast INSERT** — a client holding the anon key can never
 put a message, least of all one wearing a HOST badge, onto a channel. The one
 INSERT policy is scoped to `extension = 'presence'`, which is what powers the
-"N here now" count. Host checks go through `public.is_live_chat_host()`, which is
+"N here now" count. Host checks go through `private.is_live_chat_host()`, which is
 `SECURITY DEFINER` because `admin_roles` is itself deny-all.
+
+**Function grants** (`20260922_02_live_chat_rpc_grants.sql`). All three live chat
+functions are `SECURITY DEFINER`, so who can EXECUTE them matters:
+
+| Function | EXECUTE | Why |
+|----------|---------|-----|
+| `public.live_chat_emit()` | `service_role` only | Called by `emit()` in `lib/liveChat.server.ts` via `createServiceClient()`. Open to anon, it would be the broadcast INSERT the policies above deliberately withhold. |
+| `public.live_chat_purge()` | `service_role` only | Called by the cron route via `createServiceClient()`. Open to anon, anyone could wipe the history. |
+| `private.is_live_chat_host()` | `authenticated`, `service_role` | Realtime evaluates the `live_chat_host_receive` policy *as the subscriber*, so `authenticated` must be able to run it. It lives in the non-exposed `private` schema so it isn't callable via `/rest/v1/rpc`. Anon never reaches that policy. |
+
+Postgres grants EXECUTE to `PUBLIC` on every new function, so the original
+migration left all three callable by anyone holding the anon key until this
+migration locked them down.
 
 **Retention:** `live_chat_purge(retain_days default 7)` deletes messages, prayer
 requests and closed sessions older than 7 days. Called daily at 04:00 by
@@ -1564,7 +1661,7 @@ default 365).
 **Used By:**
 - `lib/audit.server.ts` — `recordAudit()`, the only writer
 - `app/api/admin/audit/*` — list, ask, reports (Super Admin only)
-- `app/api/cron/audit-weekly-report` — writes `audit_reports`, runs the purge
+- `app/api/cron/audit-weekly-report` — writes `audit_reports`, runs the `audit_log` purge and `purge_old_notifications()`
 - `app/admin/audit/page.tsx` — the console
 
 ---
@@ -1934,7 +2031,78 @@ CREATE TABLE sermon_series (
 
 ---
 
-**Key Point:** No table uses authenticated user RLS. All member-facing features use API proxy routes that enforce authentication in application code, then access the database with the service role key. This gives finer control and better error messages.
+#### 28. **notifications / notification_reads** (admin notification center)
+**Purpose:** The data behind the admin **notification bell** — one row per inbound event a section's admins should see (new order, new job application, new design ticket, prayer request, contact message, leave request). Migration: `supabase/migrations/20260922_02_notifications.sql`.
+
+```sql
+CREATE TABLE notifications (
+  id           bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  created_at   timestamptz NOT NULL DEFAULT now(),
+  section      text NOT NULL,               -- e.g. "store", "hr", "design"
+  kind         text NOT NULL,               -- e.g. "order", "application", "ticket"
+  entity_id    text,                         -- the source row's id, as text
+  entity_label text,
+  summary      text NOT NULL,                -- one plain sentence: "New order #1042 from Jane Doe"
+  href         text NOT NULL,                -- admin deep link, e.g. /admin/store/orders?open=<id>
+  roles        text[] NOT NULL,              -- AdminRole values this notification is relevant to
+  metadata     jsonb
+);
+
+CREATE TABLE notification_reads (             -- per-admin read state (several admins share one notification)
+  notification_id bigint NOT NULL REFERENCES notifications(id) ON DELETE CASCADE,
+  auth_user_id    uuid   NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  read_at         timestamptz NOT NULL DEFAULT now(),
+  PRIMARY KEY (notification_id, auth_user_id)
+);
+
+-- RLS: both tables are deny-all ("service only") — the API routes always go
+--      through createServiceClient(). Indexes: notifications(created_at desc),
+--      GIN(roles); notification_reads(auth_user_id).
+```
+
+**Read state is per-viewer, not per-notification.** Several admins share the same
+source tables, so "read" is a fact about `(notification, viewer)`, which is why it
+lives in its own `notification_reads` table rather than a column on `notifications`.
+
+**Delivery follows the live-chat Broadcast precedent, not Postgres Changes.**
+Opening Postgres Changes on `notifications` would need an authenticated SELECT
+policy straight on the table — exactly the class of mistake the live-chat
+migration warns against. Instead the service-role insert path calls
+`admin_notify_emit(topic, event, payload)` (a `SECURITY DEFINER` wrapper over
+`realtime.send`) to push the row onto a **private Broadcast topic** named
+`admin-notifications:<role>`, one per `AdminRole`. A notification for
+`['store_admin']` is broadcast to `admin-notifications:store_admin` **and always**
+`admin-notifications:super_admin` — mirroring how a Super Admin's route access
+bypasses every `ROUTE_RULES` entry. A `realtime.messages` SELECT policy
+(`admin_notifications_receive`) only lets a signed-in admin receive a topic for a
+role they actually hold, gated by `admin_has_role(text)` (also `SECURITY DEFINER`,
+because `admin_roles` is deny-all). There is no insert policy — the browser never
+posts to the topic, only the service key does.
+
+**Retention.** `purge_old_notifications()` deletes notifications (and, via cascade,
+their read-receipts) older than **60 days**, called from the weekly audit cron
+(`/api/cron/audit-weekly-report`) alongside the existing `audit_log` purge.
+
+**Used By:** `lib/notify.server.ts` (`recordNotification()`, the one writer — called
+alongside, never in place of, each submission's existing insert/email logic, and
+never throws), `lib/useNotifications.ts` (the client Realtime hook),
+`components/admin/AdminNotificationBell.tsx` (the bell in `AdminHeader`),
+`app/api/admin/notifications` + `/[id]/read` + `/read-all` (feed and read state).
+Call sites: new order (`lib/checkout.server.ts`), job application (`app/jobs/actions.ts`),
+design ticket (`app/portal/design/request/actions.ts`), prayer request
+(`app/api/live-chat/prayer`), contact message (`app/contact/actions.ts`), leave
+request (`app/api/portal/leave`).
+
+---
+
+**Key Point:** Member-facing features use API proxy routes that enforce
+authentication in application code, then access the database with the service
+role key — this gives finer control and better error messages. Two authenticated
+SELECT policies now exist as **defense-in-depth** alongside that model (they are
+not the primary boundary): `hr_reviews`' "reviewer can read own reviews"
+(`reviewer_auth_user_id = auth.uid()`) and the `realtime.messages`
+`admin_notifications_receive` policy for the notification Broadcast topics. Every
+base data table is still deny-all to the anon/authenticated roles.
 
 ---
 
@@ -2063,8 +2231,10 @@ Both dialog helpers reuse the visual conventions from `components/admin/hr/HrUI.
 ### Layer 3: Header & Navigation (`components/ChurchHeader.tsx`)
 
 Rendered on the public site (client component). It self-suppresses (returns
-`null`) on the chrome-free shells — `/admin`, `/nfc`, and `/portal` — so those
-areas render without site nav.
+`null`) on the chrome-free shells — `/admin`, `/nfc`, `/links` (and `/links/*`),
+and `/portal` — so those areas render without site nav. `/links` is matched by
+`isLinksPagePath()` (`lib/linkPages/paths.ts`) so `/linkshare`-style paths aren't
+caught; the same helper gates the footer, banners, popups and Smart Search.
 
 - **Logo** — Clickable link to home
 - **Navigation menu** — Top-level links plus hover **dropdowns** ("About", "What's on") that fade in as white rounded cards with a staggered per-item reveal
@@ -2247,7 +2417,7 @@ from beyond the query text itself.
 
 Displayed on every page:
 
-- **Contact info** — Address, phone, email
+- **Contact info** — Address (tappable — opens the device's map app via `MapsLink`), phone, email
 - **Social links** — YouTube, Facebook, Instagram
 - **Quick links** — Common pages
 - **Copyright** — Auto-updates year
@@ -2318,7 +2488,8 @@ without an auth check, so they must never be reachable on the live site.
 | `/child-dedication` | `app/child-dedication/page.tsx` | Child dedication request |
 | `/volunteer` | `app/volunteer/page.tsx` | Volunteer sign-up form |
 | `/help` | `app/help/page.tsx` | Help centre / FAQ |
-| `/links` | `app/links/page.tsx` | "Next Steps" link-in-bio style page. The six cards live in `lib/linksSteps.ts` and render via the client `components/links/LinksStepGrid.tsx`, which beacons each click to `POST /api/track` before navigating |
+| `/links` | `app/links/page.tsx` | The main Linktree-style page (`link_pages` slug `main`), built in `/admin/links`. Chrome-free like `/nfc`. Rendered by `components/links/LinkPageRoute.tsx` → `LinkPageView`; falls back to the six hardcoded Next Steps in `lib/linksSteps.ts` if the database can't answer, so it is never blank |
+| `/links/[slug]` | `app/links/[slug]/page.tsx` | Any other links page (youth, a course, a conference). Unpublished or unknown slugs are a 404; `/links/main` is a 404 (it would duplicate `/links`). Pages marked "hide from search" are `noindex` and left out of the sitemap |
 | `/nfc` | `app/nfc/page.tsx` | "Digital back of seats" — what an NFC tag or QR code on a seat opens during a service. Standalone (no header, footer, site popup or smart search) and `noindex`. Connect Card and Giving are hardcoded fixtures; everything else comes from `nfc_tiles`, including event tiles that resolve against the live ChurchSuite feed and hide themselves once the event has run |
 | `/twelvetwo` | `app/twelvetwo/page.tsx` | Destiny 12:2 recovery course info page |
 | `/dckids` | `app/dckids/page.tsx` | Destiny Kids Camp 2026 campaign page |
@@ -2361,6 +2532,8 @@ Each section requires a specific access-level role (see
 | `/admin/featured-event` | `app/admin/featured-event/page.tsx` | Promote one ChurchSuite event — picker plus headline/blurb/image/CTA overrides and a promote window |
 | `/admin/event-popup` | `app/admin/event-popup/page.tsx` | Copy for the popup advertising the featured event (writes `popup_*` on the same row) |
 | `/admin/nfc` | `app/admin/nfc/page.tsx` | Tiles on the `/nfc` page — add/edit/reorder/hide. A ChurchSuite form embed, artwork + copy + CTA, or an event picked from the live calendar (events without a framable signup are shown disabled with the reason) |
+| `/admin/links` | `app/admin/links/page.tsx` | Links pages list — 30-day views/clicks per page, create from a theme preset or as a copy, delete (not `main`) (Event Admin) |
+| `/admin/links/[id]` | `app/admin/links/[id]/page.tsx` | The links page editor (`components/admin/links/LinksEditor.tsx`): Blocks, Appearance, Profile, Settings, Responses and Stats tabs beside a live phone preview. `?tab=` deep-links a tab (Event Admin) |
 | `/admin/hr` | `app/admin/hr/page.tsx` | HR dashboard (staff, leave, jobs, documents, reviews, checklists) (HR Admin) |
 | `/admin/hr/staff` | `app/admin/hr/staff/page.tsx` | Staff directory — searchable list of every staff record, filterable by employment type and status (HR Admin) |
 | `/admin/hr/staff/[id]` | `app/admin/hr/staff/[id]/page.tsx` | Staff record — profile, leave, reviews, documents, live checklists (HR Admin) |
@@ -2606,6 +2779,16 @@ focus to whatever opened it, and locks body scroll — restoring the *previous*
 - **What:** Sitewide footer (server component — awaits `isYouTubeQuotaExceeded()` to drop the Sermons link when the YouTube quota is blown)
 - **Displays:** Brand blurb + address, three link columns (Church / Connect / Legal), copyright, Report a Bug, phone
 - **Layout:** 4-column grid from `md:` up; on mobile the three link columns render as accordions via `FooterLinkGroup`
+- **Address:** The four `ADDRESS` lines from `lib/churchInfo.ts` are one `MapsLink` wrapping an `<address>` — the whole block is a single tap target that opens the device's map app. What it *sends* the map app omits `ADDRESS.venue` (see `lib/maps.ts`), so the text on screen and the map query deliberately differ
+
+#### `MapsLink.tsx` + `lib/maps.ts`
+- **What:** Client component that wraps an address in a link to the device's map app
+- **Why two URLs:** There's no single "open in maps" URL. `https://www.google.com/maps/search/?api=1&query=…` is the cross-platform default (Android and desktop hand it to Google Maps or the browser); `https://maps.apple.com/?q=…` is what iOS/iPadOS/macOS want, where Google Maps often isn't installed
+- **Hydration:** The server always renders the Google URL; `useHydrated()` (the `useSyncExternalStore` snapshot in `lib/useHydrated.ts`) flips the href to Apple Maps after hydration on Apple devices. Sniffing the user agent during render instead would produce a server/client markup mismatch
+- **`lib/maps.ts`:** Holds `DESTINY_CENTRE_MAP_QUERY` and `googleMapsUrl()`, `appleMapsUrl()`, `isApplePlatform()`, `deviceMapsUrl()`. The address comes from `lib/churchInfo.ts`; this only decides which map app
+- **Printed vs. sent:** the UI prints `ADDRESS.venue` first, the map app gets the postal address without it — see `lib/maps.ts` below
+- **Gotcha:** iPadOS reports a "Macintosh" user agent, so the Apple check also tests `navigator.maxTouchPoints > 1`
+- **Gotcha:** because the visible text and the map query differ, callers should pass `aria-label` built from the children rather than letting it default to the query — WCAG 2.5.3 wants the accessible name to contain the visible text
 
 #### `FooterLinkGroup.tsx`
 - **What:** One footer link column — a client component so it can hold open/closed state
@@ -2704,7 +2887,7 @@ through the site's normal nav and the "New Here?" page/link, which were never pa
   component returns `null` — there's no fallback experience without the AI, so the widget just isn't
   rendered.
 - **Path suppression.** The widget hides itself on the chrome-free / auth-gated areas via a
-  `usePathname()` check: `/admin`, `/training`, `/nfc`, and `/portal` all return `null`. `/portal` is
+  `usePathname()` check: `/admin`, `/training`, `/nfc`, `/links`, and `/portal` all return `null`. `/portal` is
   the staff self-service shell (its own minimal chrome), so the floating widget — like the site header,
   footer, and the cookie banner (`CookieBanner.tsx`, which also returns `null` under `/portal`) — is
   suppressed there.
@@ -2988,7 +3171,8 @@ to keep.
 #### Admin Components (`components/admin/*`)
 - `AdminSidebar.tsx` — Admin navigation. At `md`+ the full sidebar; below `md` only a slim top bar (logo, breadcrumbs, ⌘K, theme toggle, account sheet), with navigation itself handed to `AdminTabBar`
 - `AdminTabBar.tsx` — The mobile bottom tab bar: a scrolling row of Liquid Glass group tabs derived from `tabsFor()`, with a `Sheet` for multi-page groups and a view-transitioned active pill. See "Admin navigation, search and keyboard shortcuts"
-- `AdminHeader.tsx` — Sticky desktop header for the admin shell (`md`+ only); shows the full breadcrumb trail from `breadcrumbsFor(pathname)` — every level above the current page a link — plus ⌘K, the theme toggle, shortcut help and a "View live site" button
+- `AdminHeader.tsx` — Sticky desktop header for the admin shell (`md`+ only); shows the full breadcrumb trail from `breadcrumbsFor(pathname)` — every level above the current page a link — plus ⌘K, the notification bell (`AdminNotificationBell`), the theme toggle, shortcut help and a "View live site" button
+- `AdminNotificationBell.tsx` — The notification bell: an unread badge and a dropdown of the most recent notifications for whatever roles the signed-in admin holds. Data and Realtime delivery both come from `lib/useNotifications.ts` (initial `GET /api/admin/notifications`, then a private Broadcast channel per held role); marking one or all read is optimistic and reconciled on the next refresh. See the `notifications` table in Database Schema for the delivery model.
 - `RichTextEditor.tsx` — Shared TipTap rich-text editor (HTML output); used by posts, training posts, HR job descriptions, and (since `a22301b`) shop product descriptions. Optional `blocks` / `onEditor` props admit [content blocks](#content-blocks) — schema and drop handling only; the blocks UI is a separate surface owned by the parent, deliberately **not** part of this toolbar.
   The toolbar does exactly one job: reformat the current text selection. The old "Embed YouTube video", "Embed ChurchSuite form" and "Embed HTML" buttons are now the Video, ChurchSuite form and Custom embed blocks — they inserted new objects rather than formatting a selection, so they belonged in the sidebar. `enableYouTube` and `enableHtmlEmbed` now only register the legacy `youtube` / `htmlEmbed` nodes so pages authored with those buttons keep parsing; `enableChurchSuite` is gone entirely (it only ever drove a button, since ChurchSuite embeds were stored as `htmlEmbed`).
 - `blocks/*` — **Client.** Editor side of the content-block system: the TipTap node factory, node-view chrome, the Blocks sidebar, the schema-driven settings inspector and its field components. See [Content Blocks](#content-blocks).
@@ -3165,6 +3349,64 @@ the gap means recomputing the cap and the breakpoint together. The article is fi
 DOM and placed with `col-start-2`, so promo content never precedes it for crawlers or screen
 readers. **Do not add `self-start`/`h-fit` to the rail `<aside>`** — the grid's default stretch
 is what gives the sticky card its scroll range; hugging the content silently disables sticky.
+
+#### Links Pages (`components/links/*`)
+
+The public renderer for `/links` and `/links/<slug>`, also used — unchanged — as the editor's live
+preview.
+
+- `LinkPageView.tsx` — **no `"use client"`**: a shared component, like the content blocks. It
+  server-renders the page and the editor renders the very same component from unsaved state, so the
+  preview is exactly the page. The theme arrives as `--lp-*` custom properties on the wrapper
+  (`themeToCssVars`) plus `data-*` attributes for the discrete choices; `links.css` is the only place
+  those turn into CSS. Groups consecutive plain link buttons so a "grid" theme can set them two-up.
+- `links.css` — the whole stylesheet. Width rules are **container queries** on `.lp-main`, not media
+  queries: in the editor the page sits in a 375px phone frame on a desktop screen and has to lay out
+  like the phone. All motion is off under `prefers-reduced-motion`, background video included.
+- `fonts.ts` — the extra theme typefaces (Inter, Space Grotesk, DM Serif Display, Caveat) via
+  `next/font`, loaded only where a links page renders. Anton is deliberately not offered.
+- Client islands, one per interactive block: `LinkButton.tsx` (click beacon, spotlight animation,
+  ChurchSuite links in `ChurchSuiteModal`), `LinkEvents.tsx` (event cards; signups open in the
+  modal, the rest link to `/whats-on/<slug>`), `LinkEmbed.tsx` (YouTube/Vimeo/Spotify/Apple
+  Podcasts/Maps behind the media-cookie consent gate, ChurchSuite via `ChurchSuiteEmbed`; inline or
+  in a `ui/Modal`), `LinkForm.tsx` (collapsed by default, honeypot field, posts to
+  `/api/links/submit`). All take `preview` and swallow clicks/submits in the editor.
+- `SocialIcons.tsx` — brand marks from `simple-icons` (CC0; Material Symbols has no brand glyphs).
+- `LinkPageRoute.tsx` — server-only glue for both routes: loads the page once per request
+  (`React.cache`), builds metadata, and records the page view (`links_view`) via `after()`.
+
+#### Links Page Editor (`components/admin/links/*`)
+
+- `LinksEditor.tsx` — holds page + blocks in local state until Save, which PUTs everything in one
+  request. Sends the `updated_at` it loaded; a 409 means someone else saved first. Wraps its fields
+  in `ImageUploaderContext` so `ImageField` uploads to `/api/admin/links/upload` (event_admin can't
+  reach the posts upload route).
+- `BlockList.tsx` — the block stack. Reordering is **@dnd-kit**, not the native-drag
+  `useListReorder` hook, because HTML5 drag-and-drop doesn't fire on touch screens. Keyboard sensor
+  included (Space + arrows on the handle).
+- `BlockFields.tsx` — per-type settings, built from `components/admin/blocks/fields/*`. The event
+  block uses the shared `components/admin/EventPicker.tsx` (lifted out of `/admin/nfc`).
+- `AppearanceTab.tsx` + `ColorField.tsx` — presets, then every theme value, grouped into collapsible
+  sections (Theme, Background, Colours, Buttons, Header, Fonts, Social icons, Layout and motion) that
+  show their current value while closed. Theme options beyond the basics: background pattern
+  (dots/grid/lines + strength), button size, spacing, border width, custom corner radius, icons and
+  arrows on/off, header alignment, heading size and uppercase, photo size and accent ring, social
+  icon style and size, page width, and the site footer on/off. All default to the original look, so
+  older saved themes render unchanged. Updates are functional (`setTheme(prev => …)`) so rapid edits
+  don't overwrite each other. `ColorField` wraps `react-best-gradient-color-picker` (loaded on first
+  open) and only commits values `ThemeSchema` would accept.
+- `controls.tsx` — the editor's shared `Section` (collapsible, with a summary line), `Segmented`
+  (radio-group picker for short choices) and `Slider`.
+- Per-block overrides: a link can set its own button colour, text colour, text alignment and hide its
+  icon ("Customise this button"); a heading can set its own colour. They ride on the same `--lp-*`
+  custom properties as the theme, so every button style honours them.
+- `ProfileTab.tsx`, `SettingsTab.tsx` (slug, publish, noindex, SEO, share links, QR PNG/SVG via
+  `qrcode.react`), `SubmissionsTab.tsx` (responses, CSV, per-response delete), `AnalyticsTab.tsx`
+  (reuses `DayChart`/`BarRows` from `components/admin/analytics/Charts.tsx`).
+- `editorTypes.ts` — `previewBlocks()` turns unsaved blocks into what the live page would show now
+  (inactive, out-of-schedule and invalid blocks dropped; events resolved from the picker feed).
+  Share and QR links use `window.location.origin`, **not** destinytees.uk, which still points at
+  the old site.
 
 #### NFC Page (`components/nfc/*`)
 
@@ -3631,6 +3873,19 @@ GET  /api/admin/analytics/site  // the "Whole site" tab's data
 // Vercel's API must never hold up the click-log numbers on the other tabs.
 ```
 
+#### `POST /api/links/submit` — public form-block submissions
+```typescript
+// Body: { blockId, values: { [fieldId]: string | boolean }, website }.
+// `website` is a honeypot: filled in → quiet { ok: true }, nothing stored.
+// The block must be an active form block on a published page; values are
+// checked against that block's own field list (required, email format,
+// length), and anything not in the list is dropped. Stores [{ id, label, value }]
+// in field order in link_form_submissions, then — via after(), never failing the
+// request — emails notifyEmail if the block has one (lib/emailCard.ts). The
+// email's link uses SITE_ORIGIN (lib/appApi.ts), not destinytees.uk.
+// Rate-limited per IP at the site-wide default.
+```
+
 #### `POST /api/track` — public beacon for `/nfc` and `/links`
 ```typescript
 // Unauthenticated, reachable by anyone — the pages it serves are public. Not
@@ -3640,7 +3895,9 @@ GET  /api/admin/analytics/site  // the "Whole site" tab's data
 // not CORS-safelisted for beacons): { source: "nfc"|"links", targetKey }.
 // "redirect" is never accepted here — see lib/track.ts's BeaconSource.
 // targetKey is checked against the real thing it claims to be (a live
-// nfc_tiles id/PINNED_TILES fixture, or an href in lib/linksSteps.ts) before
+// nfc_tiles id/PINNED_TILES fixture, an active link_blocks id on a published
+// links page, or — for /links' database-down fallback — an href in
+// lib/linksSteps.ts) before
 // anything is written; the label always comes from that lookup, never the
 // body. Rate-limited via lib/rateLimit.ts's checkRateLimit(ip, 600) — a much
 // higher ceiling than the site-wide default of 15/min, because this endpoint
@@ -3654,6 +3911,23 @@ Super Admin only (fail closed). That is deliberate rather than an oversight: the
 log spans every section, so a rule granting any other role would let them read
 HR's activity, and a rule narrow enough to prevent that would be a second,
 drifting copy of the RBAC table.
+
+#### `/api/admin/links/*` — links pages (Event Admin)
+```typescript
+// GET    /api/admin/links                 → { pages } with 30-day views30/clicks30
+// POST   /api/admin/links                 { slug, title, preset?, duplicateFrom? } → new draft page
+// DELETE /api/admin/links?id=             (not the main page; blocks + responses cascade)
+// GET    /api/admin/links/[id]            → { page, blocks (raw, so broken ones can be fixed), updatedAt }
+// PUT    /api/admin/links/[id]            { page, blocks, updatedAt } → validateSave()
+//        (lib/linkPages/save.server.ts: zod per block, pinned events re-resolved
+//        against the live feed, main page can't move or unpublish) → link_page_save()
+//        409 if updated_at moved since the editor loaded (someone else saved).
+// GET    /api/admin/links/[id]/submissions[?format=csv]   (CSV cells formula-escaped)
+// DELETE /api/admin/links/[id]/submissions?submission=    (audited without the person's details)
+// GET    /api/admin/links/[id]/analytics?range=week|month|quarter
+//        views (links_view) + clicks (links) for the page's blocks, bots excluded
+// POST   /api/admin/links/upload          sharp → WebP ≤2000px into post-media, `links-` prefix
+```
 
 #### `GET /api/admin/search`
 ```typescript
@@ -4150,8 +4424,12 @@ POST /api/webhooks/stripe
 POST /api/store/checkout/bypass
 //   TEST ONLY. 404 unless server env SHOP_TEST_BYPASS=1. Creates a real order and
 //   finalises it WITHOUT Stripe (paid, stock decremented, emails) so the full flow
-//   can be demoed without a payment. The checkout page shows a "Complete test order"
-//   button when NEXT_PUBLIC_SHOP_TEST_BYPASS=1. Never set either flag in production.
+//   can be demoed without a payment. Restricted server-side to
+//   @squaremediagroup.org / @destinytees.uk emails. When NEXT_PUBLIC_SHOP_TEST_BYPASS=1
+//   and the customer enters a @destinytees.uk email, pressing "Continue to payment" on
+//   the checkout page shows a popup asking whether to "Complete test order" (skips
+//   Stripe) or "Continue to payment" (real payment) — there's no standing test button
+//   visible to regular customers. Never set either flag in production.
 
 // Shared order logic (pricing recompute, order creation, paid-finalisation) lives
 // in lib/checkout.server.ts and is used by checkout, the webhook, and the bypass.
@@ -4435,6 +4713,20 @@ Browser specs run with `npm run test:e2e`. Those needing an admin session
 `ADMIN_PASSWORD` are set; credentials come from the environment only and live in
 the gitignored `CLAUDE.local.md`.
 
+**CI.** `.github/workflows/ci.yml` runs `typecheck`, `lint` and `test:unit` on
+every pull request and every push to `main`. It needs no secrets — the unit
+project never touches Supabase, a browser or a dev server — which is what lets it
+run on every PR, including ones from forks. Keep it that way: a unit spec that
+needs credentials belongs in the e2e projects instead. `next build` is
+deliberately not in CI because page-data collection needs live Supabase env vars;
+Vercel's preview build covers that. The browser suite stays in `playwright.yml`,
+manual-trigger only, because it needs a running site to point at.
+
+`tsconfig.json` and `eslint.config.mjs` both exclude `.claude/`: agent worktrees
+under `.claude/worktrees/` are gitignored full copies of the app, and without the
+exclusion a local `npm run typecheck` or `lint` checks every file twice and
+reports the stale copy's errors as yours.
+
 ---
 
 ## Libraries & Utilities
@@ -4576,7 +4868,12 @@ had rendered.
   number on each chip tells you what clicking it would show.
 - `useRowSelection` is separate, so lists that don't need bulk actions pay
   nothing. It filters dead ids on read rather than pruning them in an effect —
-  deleting a selected row would otherwise leave a phantom in the count.
+  deleting a selected row would otherwise leave a phantom in the count. The
+  `useRowSelection` + `BulkBar` pattern (first used on `app/admin/posts/page.tsx`)
+  now also drives bulk actions on the HR staff, applications and jobs pages, the
+  training categories and sub-groups pages, and the store products and orders
+  pages — each reusing its existing per-row `[id]/route.ts` via
+  `Promise.allSettled` rather than any new bulk API endpoint.
 
 **Sorting and drag-reorder don't mix.** On the training pages a row's position
 *is* the public ordering, so dragging inside a filtered view would write a
@@ -4668,6 +4965,42 @@ hardcoded BST/GMT switchover dates to go stale.
 Used by `components/live/NextServiceCountdown.tsx`. Covered by
 `tests/unit/service-times.spec.ts`, which pins both DST boundaries and the
 mid-service behaviour.
+
+---
+
+### `lib/maps.ts`
+
+Opening the address in whatever map app the visitor's device has. The address
+itself is **not** defined here — `lib/churchInfo.ts` owns it and this derives
+from it. What lives here is the part `churchInfo` has no opinion on: which map
+*app* to send someone to.
+
+`churchInfo`'s `MAPS_URL` and `DIRECTIONS_URL` are both Google, which is the
+right default and the wrong answer on Apple hardware, where Google Maps often
+isn't installed and a `google.com` link strands the visitor in a browser instead
+of the map app they actually use. So:
+
+- `googleMapsUrl(query?)` — `https://www.google.com/maps/search/?api=1&query=…`.
+  The cross-platform default: a plain https link, so it works on desktop, and
+  Android/iOS hand it to the Google Maps app when installed.
+- `appleMapsUrl(query?)` — `https://maps.apple.com/?q=…`. The right answer on
+  Apple platforms. Degrades to a web map elsewhere, so it's never a dead end.
+- `isApplePlatform()` — browser-only user-agent check. Also tests
+  `navigator.maxTouchPoints > 1`, because iPadOS reports itself as "Macintosh".
+- `deviceMapsUrl(query?)` — Apple URL on Apple devices, Google everywhere else
+  (including the server, where `navigator` is undefined).
+
+`DESTINY_CENTRE_MAP_QUERY` is what every builder here defaults to:
+`` `${ADDRESS.street}, ${ADDRESS.locality}, ${ADDRESS.postcode}` `` — the postal
+address, **without** `ADDRESS.venue`. That omission is deliberate and is the
+whole point of the module. Hand a map app "Destiny Centre" and it searches for a
+place by that name and can land anywhere; hand it a street number and it
+geocodes to the building. The UI still prints the venue name — see
+`components/MapsLink.tsx` under Components, which also covers why the accessible
+name has to be built from the visible text rather than from the query.
+
+Because the query is built from `churchInfo`'s `ADDRESS` rather than typed out,
+editing the address in one place moves the map pin too.
 
 ---
 
@@ -5125,6 +5458,39 @@ KNOWLEDGE:
 
 ---
 
+### `lib/linkPages/*` — links pages
+
+```typescript
+// types.ts — client-safe. One zod schema per block type (BLOCK_DATA_SCHEMAS),
+//   LinkBlockSchema (discriminated union + schedule check), LinkPageSchema,
+//   SLUG_RE, MAIN_SLUG ('main' = /links), BLOCK_META, defaultBlockData(), blockLabel().
+// theme.ts — client-safe. ThemeSchema: every field defaults (the defaults ARE
+//   Destiny Light, so '{}' is a finished theme) and every field `.catch()`es, so
+//   one bad value falls back alone instead of failing the page. THEME_PRESETS
+//   (7), FONT_OPTIONS allowlist, themeToCssVars(), readableOn() (hover text: white, as on /help;
+//   near-black only on a very light accent). Themes never carry raw CSS:
+//   colours/gradients are regex-checked and url( is refused.
+// urls.ts — safeHref() (http(s)/mailto/tel/site path; no javascript:, no //host,
+//   no bare #), safeMediaUrl() (https or site path), toEmbed() — an allowlist:
+//   YouTube (nocookie), Vimeo (dnt), Spotify, Apple Podcasts, Google Maps
+//   *embed* URLs, ChurchSuite.
+// socials.ts — SOCIAL_PLATFORMS (simple-icons paths + Material Symbols for
+//   email/phone/website), normaliseSocialUrl().
+// paths.ts — isLinksPagePath(), for the site-chrome gates.
+// linkPages.server.ts — getLinkPage(slug) (noStore; schedule on the server
+//   clock; event blocks resolved, finished/missing single events dropped),
+//   fallbackMainPage(), listIndexableLinkPages() (sitemap), toPage()/toBlock().
+// save.server.ts — validateSave(), the admin PUT's whole check.
+```
+
+### `lib/eventTargets.server.ts`
+
+Pointing something at a ChurchSuite event, shared by `/nfc` event tiles and links page event
+blocks so the two can't drift: `findSeries()` (identifier, then the more durable sequence),
+`seriesEndsAt()`, `framableSignupUrl()` (anchored to the form, or null), and
+`resolveEventTarget(identifier, sequence, { requireSignup })` for saves — `/nfc` requires a framable
+signup (a tile *is* the form), a links page event card doesn't.
+
 ### `lib/nfcTiles.ts` / `lib/nfcTiles.server.ts`
 
 The tile list behind `/nfc`, deliberately split in two.
@@ -5135,7 +5501,7 @@ export type NfcTileMode = "embed" | "info" | "event";
 export const PINNED_TILES: NfcTile[];               // Connect Card, Giving — always first
 export const SIGNUP_ANCHOR: string;                 // "#form_event_signup"
 export const NFC_TILE_COLUMNS: string;              // the explicit select list
-export function isEmbeddable(url: string): boolean; // hostname ends with churchsuite.com
+export function isEmbeddable(url: string): boolean; // https, churchsuite.com or a subdomain of it
 
 // lib/nfcTiles.server.ts — `import "server-only"`
 export async function getNfcTiles(): Promise<NfcTile[]>;
@@ -5389,7 +5755,7 @@ share. Modelled closely on the audit log, split the same way.
 
 - **`lib/engagement.ts`** — the vocabulary, client-safe (touches neither the
   database nor `next/headers`). Closed sets so the page's filters can be chips:
-  `ENGAGEMENT_SOURCES` (`redirect` / `nfc` / `links`, each with its own noun —
+  `ENGAGEMENT_SOURCES` (`redirect` / `nfc` / `links` / `links_view`, each with its own noun —
   "click" vs "tap" — icon and blurb), `SRC_TAGS` (`qr` / `nfc` / `print` /
   `social`, the `?s=` values that separate "scanned the flyer" from "clicked the
   post"), and `IP_CATEGORIES` (`apple_private_relay` / `vpn` / `tor` /
@@ -5447,10 +5813,14 @@ share. Modelled closely on the audit log, split the same way.
   `Promise.allSettled`, so one dimension failing doesn't blank the rest; only
   the totals call failing takes down the whole panel. Cached via Next's fetch
   cache at `revalidate: 300`.
-- **`lib/linksSteps.ts`** — client-safe. `LINKS_STEPS`, the six `/links` cards,
-  pulled out of `app/links/page.tsx` so `POST /api/track` has something
-  authoritative to validate a `links` beacon's `targetKey` against — a value
-  not in this array is rejected, not written.
+- **`lib/linksSteps.ts`** — client-safe. `LINKS_STEPS`, the six Next Steps
+  `/links` used to hardcode. No longer what `/links` renders (that's
+  `link_pages` now); kept as `fallbackMainPage()`'s content for when the
+  database can't answer, and still accepted by `POST /api/track` as `links`
+  targets because that fallback reports clicks against their hrefs. `links`
+  clicks are otherwise keyed by `link_blocks.id`, and `links_view` rows (page
+  views, keyed by `link_pages.id`) are written server-side by
+  `components/links/LinkPageRoute.tsx`.
 - **`lib/useEngagementRollup.ts`** — client hook. One fetch/loading/error
   effect behind every tab that reads `engagement_events`
   (`ShortLinksPanel`/`InPersonPanel`), rather than three copies of it. The
@@ -5851,6 +6221,24 @@ CREATE POLICY "service only" ON hr_staff USING (false);
 API routes use the service role key for reads/writes (RLS is bypassed), relying on the
 middleware gate above rather than per-table role checks. `admin_roles` itself follows
 the same deny-all pattern — read only via `createServiceClient()`.
+
+**`SECURITY DEFINER` functions need explicit grants.** Postgres gives `PUBLIC`
+EXECUTE on every new function, and PostgREST exposes everything in `public` at
+`/rest/v1/rpc/<name>`. A definer function runs as its owner and bypasses RLS, so
+unless you revoke that grant, anyone with the anon key can call it. The pattern:
+
+```sql
+-- Server-only (called through createServiceClient()):
+revoke all on function public.my_fn(...) from public, anon, authenticated;
+grant execute on function public.my_fn(...) to service_role;
+```
+
+A helper that an RLS policy calls runs as the querying role, so that role needs
+EXECUTE. Put it in the non-exposed `private` schema instead of `public` (see
+`private.is_live_chat_host()`). Trigger functions don't need the caller to hold
+EXECUTE. Run `get_advisors` (security) after any migration that adds a function:
+lints 0028/0029 flag definer functions that anon or authenticated can reach.
+Current examples: `decrement_variant_stock`, `live_chat_emit`, `live_chat_purge`.
 
 **Why two layers?**
 - **Defense in depth** — the middleware gate is the single source of truth for "is this
@@ -6490,22 +6878,28 @@ ENABLE_SMART_SEARCH=true
   - Audit log: `audit.ts` (vocabulary + diffing + redaction), `audit.server.ts`
     (`recordAudit()`, the only writer), `auditAI.ts` (tools + prompt),
     `auditEmail.ts` (the weekly report email)
+  - Notification center: `notify.server.ts` (`recordNotification()`, the one
+    writer — writes the row then Broadcasts it, never throws), `useNotifications.ts`
+    (the client bell hook — fetch + per-role Realtime subscription, mirroring
+    `useLiveChat.ts`)
   - Click analytics (`/admin/analytics`): `engagement.ts` (vocabulary + wire
     format), `engagement.server.ts` (`recordEngagement()`), `botDetect.ts`
     (crawler/device/OS/browser detection), `track.ts` (client `sendBeacon`),
     `vercelAnalytics.server.ts` (Vercel Web Analytics API wrapper),
-    `linksSteps.ts` (the `/links` cards, shared with the beacon validator),
+    `linksSteps.ts` (the `/links` database-down fallback, shared with the beacon validator),
     `useEngagementRollup.ts` (the fetch hook the page's tabs share)
 
 ### API Routes (`app/api/`)
 - **Admin endpoints:** Banners, redirects, pop-ups, cache revalidation, posts, training, alpha-events, featured-course, HR, store management, simulated live,
   plus `me` (signed-in identity + roles), `search` (role-filtered cross-section record search behind the ⌘K palette),
+  `notifications` (the notification bell's feed: `GET` for the role-filtered list with the caller's read state folded in,
+  `/[id]/read` and `/read-all` to mark read — every admin may call it and it narrows the rows itself, like `search`),
   `audit` (the audit log: list, `ask` for the plain-English answer, `reports` for the weekly ones — Super Admin only)
   and `analytics` (`engagement_rollup` for Short links/In person, `analytics/site` for the Vercel panel — Site Admin or Super Admin)
 - **Cron endpoints (`/api/cron/*`, `CRON_SECRET`-gated, scheduled in `vercel.json`):** `analytics-anonymise` (daily,
   nulls old `engagement_events` IPs), `live-chat-purge` (daily), `hr-review-reminders` (daily),
   `audit-weekly-report` (Sunday evening — writes and emails the week's admin-activity report, then
-  runs the audit-log retention purge), `ip-reputation-refresh` (weekly — refreshes the VPN/Tor/
+  runs the audit-log retention purge and `purge_old_notifications()`), `ip-reputation-refresh` (weekly — refreshes the VPN/Tor/
   datacenter/Private-Relay range lists behind `engagement_events.ip_category`), `design-deliverables-purge`
   (daily — deletes design deliverables the requester confirmed at least 48h ago)
 - **Public endpoints:** `/api/chat` (Smart Search tool-calling chat, per-IP rate-limited), YouTube (videos/status/thumbnail/live), Alpha info, training unlock + read timer (`/api/training/posts/[id]/timer`), `/api/track` (click-analytics beacon for `/nfc` and `/links`)

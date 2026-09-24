@@ -12,6 +12,7 @@ import { usePathname } from "next/navigation";
 import { breadcrumbsFor } from "@/lib/adminNav";
 import { CommandTrigger, useAdminCommand } from "@/components/admin/AdminCommandPalette";
 import { AdminThemeToggle } from "@/components/admin/AdminThemeToggle";
+import { AdminNotificationBell } from "@/components/admin/AdminNotificationBell";
 
 export default function AdminHeader() {
   const pathname = usePathname();
@@ -55,6 +56,7 @@ export default function AdminHeader() {
 
       <div className="flex shrink-0 items-center gap-2">
         <CommandTrigger />
+        <AdminNotificationBell />
         <AdminThemeToggle />
         <button
           type="button"

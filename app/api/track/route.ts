@@ -7,10 +7,11 @@
 //      ever come from the server-side path in app/[slug]/page.tsx. If a
 //      browser could post them, anyone with curl could inflate a flyer's
 //      numbers to order.
-//   2. `targetKey` is checked against the real thing it claims to be — one of
-//      the six /links hrefs, or a live nfc_tiles id (fixture or row). The body
-//      can name a target; it can never invent one, and the label written to
-//      the log always comes from our own lookup, never from the request.
+//   2. `targetKey` is checked against the real thing it claims to be — an
+//      active block on a published links page (or one of the six fallback
+//      /links hrefs), or a live nfc_tiles id (fixture or row). The body can
+//      name a target; it can never invent one, and the label written to the
+//      log always comes from our own lookup, never from the request.
 //   3. Rate-limited, but not at the site-wide default. lib/rateLimit.ts's
 //      15/minute exists for endpoints one person hits repeatedly; this one is
 //      hit by a whole room. On a Sunday the congregation is behind one church
@@ -27,6 +28,7 @@ import { checkRateLimit, clientIp } from "@/lib/rateLimit";
 import { readRequestContext, recordEngagement } from "@/lib/engagement.server";
 import { isBeaconSource } from "@/lib/track";
 import { findLinksStep } from "@/lib/linksSteps";
+import { blockLabel } from "@/lib/linkPages/types";
 import { PINNED_TILES } from "@/lib/nfcTiles";
 
 export const dynamic = "force-dynamic";
@@ -46,6 +48,31 @@ async function resolveNfcTile(id: string): Promise<{ label: string } | null> {
     .maybeSingle();
 
   return data ? { label: data.title } : null;
+}
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/**
+ * The links-page target it claims to be: an active block on a published page,
+ * or — for the hardcoded fallback /links renders when the database is down —
+ * one of the six Next Steps hrefs.
+ */
+async function resolveLinksTarget(key: string): Promise<{ label: string } | null> {
+  const step = findLinksStep(key);
+  if (step) return { label: step.title };
+  if (!UUID_RE.test(key)) return null;
+
+  const { data } = await createServiceClient()
+    .from("link_blocks")
+    .select("type, data, link_pages!inner(published)")
+    .eq("id", key)
+    .eq("active", true)
+    .eq("link_pages.published", true)
+    .maybeSingle();
+
+  return data
+    ? { label: blockLabel(data as { type: string; data: Record<string, unknown> }) }
+    : null;
 }
 
 export async function POST(request: Request) {
@@ -72,7 +99,7 @@ export async function POST(request: Request) {
     // can pick which real target it's reporting, not what to call it.
     const targetLabel =
       body.source === "links"
-        ? findLinksStep(targetKey)?.title ?? null
+        ? (await resolveLinksTarget(targetKey))?.label ?? null
         : (await resolveNfcTile(targetKey))?.label ?? null;
     if (targetLabel === null) return NO_CONTENT();
 

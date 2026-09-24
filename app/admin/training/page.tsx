@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { API, type TrainingCategory } from "@/lib/training";
@@ -12,9 +12,10 @@ import {
   ListToolbar,
   FilterChips,
   TableSkeleton,
+  BulkBar,
   primaryBtn,
 } from "@/components/admin/AdminUI";
-import { useAdminList } from "@/lib/useAdminList";
+import { useAdminList, useRowSelection } from "@/lib/useAdminList";
 import { CategoryModal } from "@/components/admin/training/CategoryModal";
 import { useReorder } from "@/components/admin/training/useReorder";
 import { useDialog } from "@/components/DialogProvider";
@@ -26,6 +27,7 @@ export default function TrainingCategoriesPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [editing, setEditing] = useState<TrainingCategory | "new" | null>(null);
+  const [working, setWorking] = useState(false);
 
   const load = useCallback(async () => {
     try {
@@ -95,6 +97,66 @@ export default function TrainingCategoriesPage() {
     load();
   }
 
+  const selection = useRowSelection(categories);
+  const visibleIds = useMemo(() => list.visible.map((c) => c.id), [list.visible]);
+  const allVisibleSelected =
+    visibleIds.length > 0 && visibleIds.every((id) => selection.selected.has(id));
+
+  async function bulkPublish(publish: boolean) {
+    const ids = [...selection.selected];
+    if (ids.length === 0) return;
+    setWorking(true);
+    setError("");
+    const results = await Promise.allSettled(
+      ids.map((id) =>
+        fetch(`${API}/categories/${id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ is_published: publish }),
+        }).then((r) => {
+          if (!r.ok) throw new Error();
+        }),
+      ),
+    );
+    const failed = results.filter((r) => r.status === "rejected").length;
+    if (failed) {
+      setError(
+        `${failed} of ${ids.length} could not be ${publish ? "published" : "hidden"}.`,
+      );
+    }
+    selection.clear();
+    setWorking(false);
+    load();
+  }
+
+  async function bulkDelete() {
+    const ids = [...selection.selected];
+    if (ids.length === 0) return;
+    if (
+      !(await confirm({
+        title: `Delete ${ids.length} categor${ids.length === 1 ? "y" : "ies"}`,
+        message: `This permanently deletes ${ids.length} categor${ids.length === 1 ? "y" : "ies"}, along with their sub-groups and posts. This cannot be undone.`,
+        confirmLabel: "Delete",
+        tone: "danger",
+      }))
+    )
+      return;
+    setWorking(true);
+    setError("");
+    const results = await Promise.allSettled(
+      ids.map((id) =>
+        fetch(`${API}/categories/${id}`, { method: "DELETE" }).then((r) => {
+          if (!r.ok) throw new Error();
+        }),
+      ),
+    );
+    const failed = results.filter((r) => r.status === "rejected").length;
+    if (failed) setError(`${failed} of ${ids.length} could not be deleted.`);
+    selection.clear();
+    setWorking(false);
+    load();
+  }
+
   return (
     <div className="mx-auto max-w-6xl px-5 py-10">
       <PageHeader
@@ -142,7 +204,31 @@ export default function TrainingCategoriesPage() {
                 onChange={(v) => list.setFilter("status", v)}
               />
             }
-          />
+          >
+            <BulkBar count={selection.count} noun="category" onClear={selection.clear}>
+              <button
+                className="rounded-lg bg-destiny-green/10 px-3 py-1.5 text-xs font-bold text-destiny-green transition hover:bg-destiny-green/20 disabled:opacity-50"
+                disabled={working}
+                onClick={() => bulkPublish(true)}
+              >
+                Publish
+              </button>
+              <button
+                className="rounded-lg bg-black/5 px-3 py-1.5 text-xs font-bold text-destiny-grey/70 dark:text-white/70 transition hover:bg-black/10 disabled:opacity-50"
+                disabled={working}
+                onClick={() => bulkPublish(false)}
+              >
+                Hide
+              </button>
+              <button
+                className="rounded-lg bg-destiny-red/10 px-3 py-1.5 text-xs font-bold text-destiny-red transition hover:bg-destiny-red/20 disabled:opacity-50"
+                disabled={working}
+                onClick={bulkDelete}
+              >
+                Delete
+              </button>
+            </BulkBar>
+          </ListToolbar>
 
           {!canReorder && (
             <p className="mb-3 flex items-center gap-1.5 text-xs text-destiny-grey/45 dark:text-white/45">
@@ -171,6 +257,15 @@ export default function TrainingCategoriesPage() {
                 <thead className="border-b border-black/5 text-xs font-bold uppercase tracking-wider text-destiny-grey/40 dark:text-white/40">
                   <tr>
                     {canReorder && <th className="w-10 px-2 py-3.5"></th>}
+                    <th className="w-10 pl-5 pr-0 py-3.5">
+                      <input
+                        type="checkbox"
+                        aria-label="Select all shown"
+                        checked={allVisibleSelected}
+                        onChange={() => selection.toggleAll(visibleIds)}
+                        className="accent-destiny-orange"
+                      />
+                    </th>
                     <th className="px-5 py-3.5">Category</th>
                     <th className="px-5 py-3.5">Status</th>
                     <th className="px-5 py-3.5 text-right">Actions</th>
@@ -183,7 +278,9 @@ export default function TrainingCategoriesPage() {
                       <tr
                         key={c.id}
                         {...(canReorder ? rowProps(idx) : {})}
-                        className="transition hover:bg-[#f5f7fa] dark:hover:bg-white/10"
+                        className={`transition hover:bg-[#f5f7fa] dark:hover:bg-white/10 ${
+                          selection.selected.has(c.id) ? "bg-destiny-orange/5" : ""
+                        }`}
                       >
                         {canReorder && (
                           <td className="px-2 py-3.5 text-center">
@@ -195,6 +292,15 @@ export default function TrainingCategoriesPage() {
                             </span>
                           </td>
                         )}
+                        <td className="w-10 py-3.5 pl-5 pr-0" onClick={(e) => e.stopPropagation()}>
+                          <input
+                            type="checkbox"
+                            aria-label={`Select ${c.name}`}
+                            checked={selection.selected.has(c.id)}
+                            onChange={() => selection.toggle(c.id)}
+                            className="accent-destiny-orange"
+                          />
+                        </td>
                         <td className="px-5 py-3.5">
                           <Link
                             href={`/admin/training/${c.id}`}

@@ -1,10 +1,13 @@
-// The six "Next Steps" cards on /links, and nothing else about that page.
+// The six "Next Steps" /links has always shown.
 //
-// Pulled out of app/links/page.tsx so the beacon at app/api/track/route.ts has
-// something authoritative to validate a click against: a target_key it can't
-// find here isn't a step that exists, and the row is rejected rather than
-// written. The renderer (components/links/LinksStepGrid.tsx) and the validator
-// read the same array, so the two can never drift apart.
+// /links is now built in /admin/links (lib/linkPages/), and these are no longer
+// what it renders. They survive in two places, deliberately:
+//   - fallbackMainPage() in lib/linkPages/linkPages.server.ts renders them if
+//     the database can't answer, so /links is never blank;
+//   - app/api/track/route.ts still accepts their hrefs as click targets, since
+//     that fallback page reports clicks against them.
+// The migration that created link_pages seeded these same six as the first
+// blocks on the main page.
 
 export interface Step {
   index: string;

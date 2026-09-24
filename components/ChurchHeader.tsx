@@ -8,6 +8,7 @@ import { useBannerBars } from "@/lib/useBannerBars";
 import { useHydrated } from "@/lib/useHydrated";
 import CartButton from "@/components/shop/CartButton";
 import Button from "@/components/ui/Button";
+import { isLinksPagePath } from "@/lib/linkPages/paths";
 
 const aboutDropdown = [
   { href: "/about", label: "Our Mission" },
@@ -246,11 +247,13 @@ export default function ChurchHeader() {
   const bannerBars = useBannerBars();
 
   // /nfc is the in-service NFC landing page: standalone, no site nav.
+  // /links and /links/<slug> are the Linktree-style pages: the same idea.
   // /portal is the staff self-service area: its own minimal shell, no site nav.
   // /login is the staff/admin sign-in page: standalone, no site nav.
   if (
     pathname.startsWith("/admin") ||
     pathname.startsWith("/nfc") ||
+    isLinksPagePath(pathname) ||
     pathname.startsWith("/portal") ||
     pathname === "/login"
   )

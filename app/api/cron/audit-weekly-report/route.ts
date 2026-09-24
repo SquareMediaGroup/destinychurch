@@ -278,6 +278,11 @@ export async function GET(request: Request) {
     console.error("⚠️ Audit log purge failed:", purgeError.message);
   }
 
+  const { error: notificationPurgeError } = await supabase.rpc("purge_old_notifications");
+  if (notificationPurgeError) {
+    console.error("⚠️ Notification purge failed:", notificationPurgeError.message);
+  }
+
   console.log(
     `📊 Weekly audit report: ${entries.length} entries, emailed to ${to.length} Super Admin(s).`,
   );

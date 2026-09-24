@@ -3,6 +3,7 @@
 import { usePathname } from "next/navigation";
 import { useFloatingSmartSearchHidden } from "@/lib/smartSearchVisibility";
 import SmartSearchWidget from "@/components/smartSearch/SmartSearchWidget";
+import { isLinksPagePath } from "@/lib/linkPages/paths";
 
 export default function FloatingSmartSearch({
   searchEnabled = true,
@@ -20,6 +21,7 @@ export default function FloatingSmartSearch({
     pathname.startsWith("/admin") ||
     pathname.startsWith("/training") ||
     pathname.startsWith("/nfc") ||
+    isLinksPagePath(pathname) ||
     pathname.startsWith("/portal")
   )
     return null;

@@ -197,6 +197,8 @@ The `/admin` area is protected by Supabase Auth. Log in at `/login` to manage:
 - **Audit Log** — a searchable record of every admin change, an AI you can ask in plain English, and a weekly AI activity report (Super Admin)
 - **Cache** — trigger on-demand revalidation
 
+A notification bell in the admin header surfaces inbound events (new orders, job applications, design tickets, prayer requests, contact messages, leave requests) in real time, scoped to each admin's access level, with per-viewer read state. Most admin list pages also support bulk actions (multi-select delete/update).
+
 Every admin list is fuzzy-searchable with live status filters (mirrored into the URL), and a global ⌘K palette jumps to any page, quick action, or record. Navigation is driven from a single registry (`lib/adminNav.ts`) shared by the sidebar, breadcrumbs, dashboard grid, and palette.
 
 ---

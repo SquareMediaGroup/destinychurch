@@ -1,6 +1,7 @@
 import type { MetadataRoute } from "next";
 import { getTrainingTree } from "@/lib/training.server";
 import { getEventIndex } from "@/lib/events.server";
+import { listIndexableLinkPages } from "@/lib/linkPages/linkPages.server";
 
 const BASE_URL = "https://destinytees.uk";
 
@@ -37,9 +38,25 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     // Fall back to just the landing page if the data fetch fails.
   }
 
+  // Published links pages other than /links itself, unless an admin ticked
+  // "hide from search" (a page meant only for people holding the QR code).
+  let linkPages: MetadataRoute.Sitemap = [];
+  try {
+    linkPages = (await listIndexableLinkPages()).map((p) => ({
+      url: `${BASE_URL}/links/${p.slug}`,
+      lastModified: p.updated_at,
+      changeFrequency: "weekly" as const,
+      priority: 0.5,
+    }));
+  } catch {
+    // A database blip shouldn't take the whole sitemap down.
+  }
+
   return [
     ...training,
     ...events,
+    ...linkPages,
+    { url: `${BASE_URL}/links`,        changeFrequency: "weekly",  priority: 0.7 },
     { url: `${BASE_URL}/`,             changeFrequency: "weekly",  priority: 1.0 },
     { url: `${BASE_URL}/about`,        changeFrequency: "monthly", priority: 0.9 },
     { url: `${BASE_URL}/beliefs`,      changeFrequency: "yearly",  priority: 0.7 },

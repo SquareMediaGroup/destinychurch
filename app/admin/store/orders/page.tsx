@@ -12,12 +12,14 @@ import {
 import {
   PageHeader,
   EmptyState,
+  ErrorNote,
   ListToolbar,
   FilterChips,
   CardSkeleton,
+  BulkBar,
   ghostBtn,
 } from "@/components/admin/AdminUI";
-import { useAdminList } from "@/lib/useAdminList";
+import { useAdminList, useRowSelection } from "@/lib/useAdminList";
 import { downloadCsv, toCsv } from "@/lib/csv";
 
 const TONE_CLASS: Record<string, string> = {
@@ -49,16 +51,29 @@ const dateFmt = new Intl.DateTimeFormat("en-GB", {
   year: "numeric",
 });
 
+// Mirrors the status actions on the order detail page.
+const NEXT_ACTIONS: { status: OrderStatus; label: string; icon: string }[] = [
+  { status: "fulfilled", label: "Mark fulfilled", icon: "check_circle" },
+  { status: "cancelled", label: "Cancel order", icon: "cancel" },
+  { status: "refunded", label: "Mark refunded", icon: "currency_pound" },
+];
+
 export default function AdminOrdersPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [working, setWorking] = useState(false);
 
-  useEffect(() => {
+  const load = () => {
     fetch(`${SHOP_ADMIN_API}/orders`)
       .then((r) => r.json())
       .then((data) => setOrders(Array.isArray(data) ? data : []))
       .catch(() => setOrders([]))
       .finally(() => setLoading(false));
+  };
+
+  useEffect(() => {
+    load();
   }, []);
 
   const list = useAdminList<Order>({
@@ -95,8 +110,15 @@ export default function AdminOrdersPage() {
     [list.visible],
   );
 
-  /** Export whatever is on screen, so a filter doubles as a report selector. */
+  const selection = useRowSelection(orders);
+  const visibleIds = useMemo(() => list.visible.map((o) => o.id), [list.visible]);
+  const allVisibleSelected =
+    visibleIds.length > 0 && visibleIds.every((id) => selection.selected.has(id));
+
+  /** Exports the selection when one is active, otherwise everything on screen —
+   * so a filter still doubles as a report selector when nothing is picked. */
   function exportCsv() {
+    const rows = selection.count > 0 ? orders.filter((o) => selection.selected.has(o.id)) : list.visible;
     const csv = toCsv(
       [
         "Order number",
@@ -111,7 +133,7 @@ export default function AdminOrdersPage() {
         "Paid at",
         "Notes",
       ],
-      list.visible.map((o) => [
+      rows.map((o) => [
         o.order_number,
         new Date(o.created_at).toISOString().slice(0, 10),
         ORDER_STATUS_LABELS[o.status],
@@ -128,6 +150,31 @@ export default function AdminOrdersPage() {
     downloadCsv(`destiny-orders-${new Date().toISOString().slice(0, 10)}.csv`, csv);
   }
 
+  async function bulkSetStatus(status: OrderStatus) {
+    const ids = [...selection.selected];
+    if (ids.length === 0) return;
+    setWorking(true);
+    setError("");
+    const results = await Promise.allSettled(
+      ids.map((id) =>
+        fetch(`${SHOP_ADMIN_API}/orders/${id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ status }),
+        }).then((r) => {
+          if (!r.ok) throw new Error();
+        }),
+      ),
+    );
+    const failed = results.filter((r) => r.status === "rejected").length;
+    if (failed) {
+      setError(`${failed} of ${ids.length} could not be marked ${ORDER_STATUS_LABELS[status].toLowerCase()}.`);
+    }
+    selection.clear();
+    setWorking(false);
+    load();
+  }
+
   return (
     <div className="mx-auto max-w-5xl px-5 py-10 sm:px-8">
       <PageHeader
@@ -139,14 +186,20 @@ export default function AdminOrdersPage() {
             <button
               className={ghostBtn}
               onClick={exportCsv}
-              title="Download the orders currently shown as a spreadsheet"
+              title={
+                selection.count > 0
+                  ? "Download the selected orders as a spreadsheet"
+                  : "Download the orders currently shown as a spreadsheet"
+              }
             >
               <span className="material-symbols-rounded text-lg" aria-hidden="true">download</span>
-              Export CSV
+              {selection.count > 0 ? `Export selected (${selection.count})` : "Export all"}
             </button>
           ) : undefined
         }
       />
+
+      <ErrorNote>{error}</ErrorNote>
 
       {loading ? (
         <CardSkeleton count={4} />
@@ -173,7 +226,24 @@ export default function AdminOrdersPage() {
                 onChange={(v) => list.setFilter("status", v)}
               />
             }
-          />
+          >
+            <BulkBar count={selection.count} noun="order" onClear={selection.clear}>
+              {NEXT_ACTIONS.map((a) => (
+                <button
+                  key={a.status}
+                  className={`rounded-lg px-3 py-1.5 text-xs font-bold transition disabled:opacity-50 ${
+                    a.status === "fulfilled"
+                      ? "bg-destiny-green/10 text-destiny-green hover:bg-destiny-green/20"
+                      : "bg-black/5 text-destiny-grey/70 dark:text-white/70 hover:bg-black/10"
+                  }`}
+                  disabled={working}
+                  onClick={() => bulkSetStatus(a.status)}
+                >
+                  {a.label}
+                </button>
+              ))}
+            </BulkBar>
+          </ListToolbar>
 
           {shownTotal > 0 && (
             <p className="mb-4 text-xs font-bold text-destiny-grey/45 dark:text-white/45">
@@ -197,12 +267,36 @@ export default function AdminOrdersPage() {
               }
             />
           ) : (
-            <ul className="space-y-2">
+            <>
+              <label className="mb-2 flex items-center gap-2 text-xs font-bold text-destiny-grey/50 dark:text-white/50">
+                <input
+                  type="checkbox"
+                  checked={allVisibleSelected}
+                  onChange={() => selection.toggleAll(visibleIds)}
+                  className="accent-destiny-orange"
+                />
+                Select all shown
+              </label>
+              <ul className="space-y-2">
               {list.visible.map((o) => (
-                <li key={o.id}>
+                <li
+                  key={o.id}
+                  className={`flex items-center gap-2 rounded-xl border p-1 transition ${
+                    selection.selected.has(o.id)
+                      ? "border-destiny-orange/40 bg-destiny-orange/5"
+                      : "border-transparent"
+                  }`}
+                >
+                  <input
+                    type="checkbox"
+                    aria-label={`Select order ${o.order_number}`}
+                    checked={selection.selected.has(o.id)}
+                    onChange={() => selection.toggle(o.id)}
+                    className="ml-2 shrink-0 accent-destiny-orange"
+                  />
                   <Link
                     href={`/admin/store/orders/${o.id}`}
-                    className="flex items-center gap-4 rounded-xl border border-black/8 bg-white dark:border-white/8 dark:bg-destiny-grey-800 p-4 transition hover:border-destiny-orange/40 hover:bg-[#fffaf5] dark:hover:bg-white/5"
+                    className="flex flex-1 items-center gap-4 rounded-xl border border-black/8 bg-white dark:border-white/8 dark:bg-destiny-grey-800 p-4 transition hover:border-destiny-orange/40 hover:bg-[#fffaf5] dark:hover:bg-white/5"
                   >
                     <div className="min-w-0 flex-1">
                       <p className="font-bold text-destiny-grey dark:text-white">
@@ -229,7 +323,8 @@ export default function AdminOrdersPage() {
                   </Link>
                 </li>
               ))}
-            </ul>
+              </ul>
+            </>
           )}
         </>
       )}

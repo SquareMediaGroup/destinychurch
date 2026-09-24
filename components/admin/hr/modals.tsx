@@ -80,6 +80,59 @@ function StaffPicker({
   );
 }
 
+function ReviewerPicker({
+  authUserId,
+  label,
+  onChange,
+}: {
+  authUserId: string;
+  label: string;
+  onChange: (v: { authUserId: string; label: string }) => void;
+}) {
+  const [admins, setAdmins] = useState<
+    { id: string; email: string | null; roles: string[] }[]
+  >([]);
+
+  useEffect(() => {
+    fetch(`${API}/staff/available-admins`)
+      .then((r) => (r.ok ? r.json() : []))
+      .then(setAdmins)
+      .catch(() => setAdmins([]));
+  }, []);
+
+  return (
+    <div>
+      <label className={labelClass}>Reviewer</label>
+      <select
+        className={inputClass}
+        value={authUserId}
+        onChange={(e) => {
+          const admin = admins.find((a) => a.id === e.target.value);
+          onChange({
+            authUserId: admin?.id ?? "",
+            label: admin?.email ?? "",
+          });
+        }}
+      >
+        <option value="">Select…</option>
+        {admins.map((a) => (
+          <option key={a.id} value={a.id}>
+            {a.email}
+          </option>
+        ))}
+      </select>
+      {!authUserId && (
+        <input
+          className={`${inputClass} mt-2`}
+          placeholder="Or type a name"
+          value={label}
+          onChange={(e) => onChange({ authUserId: "", label: e.target.value })}
+        />
+      )}
+    </div>
+  );
+}
+
 // ── Staff ────────────────────────────────────────────────────────────────
 export function StaffModal({
   staff,
@@ -610,6 +663,7 @@ export function ReviewModal({
     review_date: new Date().toISOString().slice(0, 10),
     type: "one_to_one" as ReviewType,
     reviewer: "",
+    reviewer_auth_user_id: "",
     summary: "",
     next_review_date: "",
   });
@@ -671,14 +725,14 @@ export function ReviewModal({
             />
           </div>
         </div>
-        <div>
-          <label className={labelClass}>Reviewer</label>
-          <input
-            className={inputClass}
-            value={form.reviewer}
-            onChange={(e) => set("reviewer", e.target.value)}
-          />
-        </div>
+        <ReviewerPicker
+          authUserId={form.reviewer_auth_user_id}
+          label={form.reviewer}
+          onChange={({ authUserId, label }) => {
+            set("reviewer_auth_user_id", authUserId);
+            set("reviewer", label);
+          }}
+        />
         <div>
           <label className={labelClass}>Summary</label>
           <textarea

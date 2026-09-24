@@ -45,11 +45,17 @@ export default function CheckoutPage() {
   const [orderNumber, setOrderNumber] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showTestOrderPrompt, setShowTestOrderPrompt] = useState(false);
 
 
   const subtotal = useMemo(() => cartSubtotal(items), [items]);
 
-  async function startPayment(e: React.FormEvent) {
+  const isTestTeamEmail = TEST_BYPASS && /@destinytees\.uk$/i.test(customer.email.trim());
+
+  // Team members checking out with a @destinytees.uk address get asked
+  // whether they meant to run a test order (skips Stripe) or pay for real —
+  // everyone else goes straight to payment as normal.
+  function handleContinueClick(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
 
@@ -62,6 +68,16 @@ export default function CheckoutPage() {
       return;
     }
 
+    if (isTestTeamEmail) {
+      setShowTestOrderPrompt(true);
+      return;
+    }
+
+    startPayment();
+  }
+
+  async function startPayment() {
+    setError(null);
     setLoading(true);
     try {
       const res = await fetch("/api/store/checkout", {
@@ -147,6 +163,45 @@ export default function CheckoutPage() {
 
   return (
     <div className="relative min-h-screen bg-white text-destiny-grey">
+      {showTestOrderPrompt && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-5">
+          <div className="w-full max-w-sm rounded-3xl bg-white p-6 shadow-xl">
+            <h2 className="font-[family-name:var(--font-heading)] text-lg font-black text-destiny-grey">
+              Test order detected
+            </h2>
+            <p className="mt-2 text-sm text-muted">
+              This email is a Destiny Tees team address. Would you like to complete a test
+              order (skips payment) or continue to real payment?
+            </p>
+            <div className="mt-6 flex flex-col gap-3">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowTestOrderPrompt(false);
+                  completeTestOrder();
+                }}
+                disabled={loading}
+                className="flex w-full items-center justify-center gap-2 rounded-full border border-dashed border-destiny-grey/30 px-7 py-3 text-sm font-bold text-muted transition hover:border-destiny-grey/50 hover:text-destiny-grey disabled:opacity-50"
+              >
+                <span className="material-symbols-rounded text-lg" aria-hidden="true">science</span>
+                Complete test order
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowTestOrderPrompt(false);
+                  startPayment();
+                }}
+                disabled={loading}
+                className="flex w-full items-center justify-center gap-2 rounded-full bg-destiny-orange px-7 py-3.5 text-sm font-bold text-white transition hover:bg-destiny-orange-dark disabled:bg-destiny-grey/30"
+              >
+                Continue to payment
+                <span className="material-symbols-rounded text-lg" aria-hidden="true">arrow_forward</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       <div className="mx-auto max-w-4xl px-5 pb-28 pt-12 sm:px-8 lg:pt-16">
         <header className="mb-10">
           <p className="font-[family-name:var(--font-playfair)] text-2xl italic text-muted">
@@ -162,7 +217,7 @@ export default function CheckoutPage() {
           <div>
             {!clientSecret ? (
               /* Step 1 — contact details */
-              <form onSubmit={startPayment} className="space-y-5">
+              <form onSubmit={handleContinueClick} className="space-y-5">
                 <h2 className="font-[family-name:var(--font-heading)] text-lg font-black text-destiny-grey">
                   Your details
                 </h2>
@@ -210,18 +265,6 @@ export default function CheckoutPage() {
                   {loading ? "Starting…" : "Continue to payment"}
                   <span className="material-symbols-rounded text-lg" aria-hidden="true">arrow_forward</span>
                 </Button>
-
-                {TEST_BYPASS && (
-                  <button
-                    type="button"
-                    onClick={completeTestOrder}
-                    disabled={loading}
-                    className="flex w-full items-center justify-center gap-2 rounded-full border border-dashed border-destiny-grey/30 px-7 py-3 text-sm font-bold text-muted transition hover:border-destiny-grey/50 hover:text-destiny-grey disabled:opacity-50"
-                  >
-                    <span className="material-symbols-rounded text-lg" aria-hidden="true">science</span>
-                    Complete test order (skip payment)
-                  </button>
-                )}
               </form>
             ) : stripePromise ? (
               /* Step 2 — payment */

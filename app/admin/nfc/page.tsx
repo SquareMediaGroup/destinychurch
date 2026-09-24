@@ -10,6 +10,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { useDialog } from "@/components/DialogProvider";
 import { PINNED_TILES } from "@/lib/nfcTiles";
+import EventPicker, { useEventFeed } from "@/components/admin/EventPicker";
 
 type TileMode = "embed" | "info" | "event";
 
@@ -36,19 +37,6 @@ interface Tile {
   event_ends_at: string;
 }
 
-/** One upcoming event as /api/admin/events projects it. */
-interface PickerEvent {
-  slug: string;
-  identifier: string | null;
-  sequence: number | null;
-  name: string;
-  start: string;
-  endsAt: string;
-  location: string | null;
-  sessionCount: number;
-  signupUrl: string | null;
-  signupEmbeddable: boolean;
-}
 
 const MAX_BYTES = 50 * 1024 * 1024;
 
@@ -156,29 +144,14 @@ export default function AdminNfcPage() {
   const fileInput = useRef<HTMLInputElement>(null);
 
   // The ChurchSuite feed, loaded lazily: most edits never touch an event tile.
-  const [events, setEvents] = useState<PickerEvent[] | null>(null);
-  const [eventsLoading, setEventsLoading] = useState(false);
-  const [eventFilter, setEventFilter] = useState("");
-
-  const loadEvents = useCallback(async () => {
-    setEventsLoading(true);
-    try {
-      const res = await fetch("/api/admin/events");
-      const data = await res.json();
-      setEvents((data.events ?? []) as PickerEvent[]);
-    } catch {
-      setEvents([]);
-      setError("Could not load the ChurchSuite calendar. Try again in a moment.");
-    } finally {
-      setEventsLoading(false);
-    }
-  }, []);
-
+  const {
+    events,
+    loading: eventsLoading,
+    error: eventsError,
+  } = useEventFeed(editing?.mode === "event");
   useEffect(() => {
-    if (editing?.mode === "event" && events === null && !eventsLoading) {
-      loadEvents();
-    }
-  }, [editing?.mode, events, eventsLoading, loadEvents]);
+    if (eventsError) setError(eventsError);
+  }, [eventsError]);
 
   const load = useCallback(async () => {
     try {
@@ -616,127 +589,49 @@ export default function AdminNfcPage() {
             </div>
 
             {editing.mode === "event" ? (
-              <div>
-                <label className={labelClass}>Which event</label>
-
-                {editing.event_identifier && (
-                  <div className="mb-3 flex items-center gap-3 rounded-xl border-2 border-destiny-orange bg-destiny-orange/5 px-4 py-3">
-                    <span className="material-symbols-rounded text-xl text-destiny-orange" aria-hidden="true">
-                      event_available
-                    </span>
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-bold text-destiny-grey dark:text-white">
-                        {editing.event_name || "Selected event"}
-                      </p>
-                      {editing.event_ends_at && (
-                        <p className="truncate text-xs text-destiny-grey/50 dark:text-white/50">
-                          {hasEnded(editing)
-                            ? "This event has finished — pick another one."
-                            : `Runs until ${formatStart(editing.event_ends_at)}`}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                )}
-
-                <input
-                  type="search"
-                  value={eventFilter}
-                  onChange={(e) => setEventFilter(e.target.value)}
-                  placeholder="Search upcoming events"
-                  className={inputClass}
-                />
-
-                <div className="mt-3 max-h-80 overflow-y-auto rounded-xl border border-black/10 dark:border-white/10">
-                  {eventsLoading || events === null ? (
-                    <p className="px-4 py-8 text-center text-sm text-destiny-grey/45 dark:text-white/45">
-                      Loading the ChurchSuite calendar…
-                    </p>
-                  ) : events.length === 0 ? (
-                    <p className="px-4 py-8 text-center text-sm text-destiny-grey/45 dark:text-white/45">
-                      No upcoming events in ChurchSuite.
-                    </p>
-                  ) : (
-                    <ul className="divide-y divide-black/5 dark:divide-white/8">
-                      {events
-                        .filter((ev) =>
-                          ev.name.toLowerCase().includes(eventFilter.toLowerCase())
-                        )
-                        .map((ev) => {
-                          const chosen =
-                            !!ev.identifier &&
-                            ev.identifier === editing.event_identifier;
-                          // Disabled rather than hidden: "why isn't my event
-                          // here?" is a worse question than a visible reason.
-                          const reason = !ev.signupUrl
-                            ? "No signups in ChurchSuite"
-                            : !ev.signupEmbeddable
-                              ? "Books on another site"
-                              : null;
-
-                          return (
-                            <li key={ev.slug}>
-                              <button
-                                type="button"
-                                disabled={!!reason || !ev.identifier}
-                                onClick={() =>
-                                  setEditing((t) =>
-                                    t
-                                      ? {
-                                          ...t,
-                                          event_identifier: ev.identifier ?? "",
-                                          event_sequence: ev.sequence,
-                                          event_slug: ev.slug,
-                                          event_name: ev.name,
-                                          event_ends_at: ev.endsAt,
-                                          title:
-                                            t.title || titleFromEvent(ev.name),
-                                        }
-                                      : t
-                                  )
-                                }
-                                className={`flex w-full items-center gap-3 px-4 py-3 text-left transition disabled:cursor-not-allowed disabled:opacity-45 ${
-                                  chosen
-                                    ? "bg-destiny-orange/5"
-                                    : "hover:bg-gray-50 dark:hover:bg-white/10 disabled:hover:bg-transparent"
-                                }`}
-                              >
-                                <div className="min-w-0 flex-1">
-                                  <p className="truncate text-sm font-bold text-destiny-grey dark:text-white">
-                                    {ev.name}
-                                  </p>
-                                  <p className="truncate text-xs text-destiny-grey/50 dark:text-white/50">
-                                    {formatStart(ev.start)}
-                                    {ev.sessionCount > 1
-                                      ? ` · ${ev.sessionCount} sessions`
-                                      : ""}
-                                    {ev.location ? ` · ${ev.location}` : ""}
-                                  </p>
-                                </div>
-                                {reason ? (
-                                  <span className="shrink-0 text-xs font-bold text-destiny-grey/40 dark:text-white/40">
-                                    {reason}
-                                  </span>
-                                ) : chosen ? (
-                                  <span className="material-symbols-rounded shrink-0 text-lg text-destiny-orange" aria-hidden="true">
-                                    check_circle
-                                  </span>
-                                ) : null}
-                              </button>
-                            </li>
-                          );
-                        })}
-                    </ul>
-                  )}
-                </div>
-
-                <p className="mt-1.5 text-xs text-destiny-grey/45 dark:text-white/45">
-                  Tapping the tile opens the event&rsquo;s ChurchSuite signup form
-                  in the page. Events without signups, or that book through another
-                  site, can&rsquo;t be used here — add a details tile linking to
-                  them instead.
-                </p>
-              </div>
+              <EventPicker
+                events={events}
+                loading={eventsLoading}
+                selectedIdentifier={editing.event_identifier}
+                selectedName={editing.event_name}
+                selectedNote={
+                  editing.event_ends_at
+                    ? hasEnded(editing)
+                      ? "This event has finished — pick another one."
+                      : `Runs until ${formatStart(editing.event_ends_at)}`
+                    : null
+                }
+                disabledReason={(ev) =>
+                  !ev.signupUrl
+                    ? "No signups in ChurchSuite"
+                    : !ev.signupEmbeddable
+                      ? "Books on another site"
+                      : null
+                }
+                onPick={(ev) =>
+                  setEditing((t) =>
+                    t
+                      ? {
+                          ...t,
+                          event_identifier: ev.identifier ?? "",
+                          event_sequence: ev.sequence,
+                          event_slug: ev.slug,
+                          event_name: ev.name,
+                          event_ends_at: ev.endsAt,
+                          title: t.title || titleFromEvent(ev.name),
+                        }
+                      : t
+                  )
+                }
+                help={
+                  <>
+                    Tapping the tile opens the event&rsquo;s ChurchSuite signup form
+                    in the page. Events without signups, or that book through another
+                    site, can&rsquo;t be used here — add a details tile linking to
+                    them instead.
+                  </>
+                }
+              />
             ) : editing.mode === "embed" ? (
               <>
                 <div>

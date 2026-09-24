@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import {
   API,
   APPLICATION_STATUS_LABELS,
@@ -16,10 +16,12 @@ import {
   ListToolbar,
   FilterChips,
   TableSkeleton,
+  BulkBar,
 } from "@/components/admin/AdminUI";
-import { useAdminList } from "@/lib/useAdminList";
+import { useAdminList, useRowSelection } from "@/lib/useAdminList";
 import { fetchAdminArray, useAdminLoader } from "@/lib/useAdminLoader";
 import { useDialog } from "@/components/DialogProvider";
+import { downloadCsv, toCsv } from "@/lib/csv";
 
 type WithCv = JobApplication & { cv_url?: string | null };
 
@@ -35,12 +37,13 @@ export default function ApplicationsPage() {
   const { confirm } = useDialog();
   const [apps, setApps] = useState<JobApplication[]>([]);
   const [open, setOpen] = useState<WithCv | null>(null);
+  const [working, setWorking] = useState(false);
 
   const load = useCallback(async () => {
     setApps(await fetchAdminArray<JobApplication>(`${API}/applications`));
   }, []);
 
-  const { loading, error, setError } = useAdminLoader(load);
+  const { loading, error, setError, reload } = useAdminLoader(load);
 
   const list = useAdminList<JobApplication>({
     items: apps,
@@ -67,6 +70,11 @@ export default function ApplicationsPage() {
     },
     defaultSort: { field: "applied", direction: "desc" },
   });
+
+  const selection = useRowSelection(apps);
+  const visibleIds = useMemo(() => list.visible.map((a) => a.id), [list.visible]);
+  const allVisibleSelected =
+    visibleIds.length > 0 && visibleIds.every((id) => selection.selected.has(id));
 
   async function openDetail(app: JobApplication) {
     setError("");
@@ -110,6 +118,75 @@ export default function ApplicationsPage() {
     setOpen(null);
   }
 
+  async function bulkSetStatus(status: ApplicationStatus) {
+    const ids = [...selection.selected];
+    if (ids.length === 0) return;
+    setWorking(true);
+    setError("");
+    const results = await Promise.allSettled(
+      ids.map((id) =>
+        fetch(`${API}/applications/${id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ status }),
+        }).then((r) => {
+          if (!r.ok) throw new Error();
+        }),
+      ),
+    );
+    const failed = results.filter((r) => r.status === "rejected").length;
+    if (failed) {
+      setError(`${failed} of ${ids.length} could not be moved to “${APPLICATION_STATUS_LABELS[status]}”.`);
+    }
+    selection.clear();
+    setWorking(false);
+    reload();
+  }
+
+  async function bulkDelete() {
+    const ids = [...selection.selected];
+    if (ids.length === 0) return;
+    if (
+      !(await confirm({
+        title: `Delete ${ids.length} application${ids.length === 1 ? "" : "s"}`,
+        message: `This permanently deletes ${ids.length} application${ids.length === 1 ? "" : "s"} and any uploaded CVs. This cannot be undone.`,
+        confirmLabel: "Delete",
+        tone: "danger",
+      }))
+    )
+      return;
+    setWorking(true);
+    setError("");
+    const results = await Promise.allSettled(
+      ids.map((id) =>
+        fetch(`${API}/applications/${id}`, { method: "DELETE" }).then((r) => {
+          if (!r.ok) throw new Error();
+        }),
+      ),
+    );
+    const failed = results.filter((r) => r.status === "rejected").length;
+    if (failed) setError(`${failed} of ${ids.length} could not be deleted.`);
+    selection.clear();
+    setWorking(false);
+    reload();
+  }
+
+  function exportSelectedCsv() {
+    const ids = selection.selected;
+    const rows = apps.filter((a) => ids.has(a.id));
+    const csv = toCsv(
+      ["Name", "Email", "Role", "Applied", "Status"],
+      rows.map((a) => [
+        `${a.first_name} ${a.last_name}`,
+        a.email,
+        a.job_title,
+        new Date(a.created_at).toISOString().slice(0, 10),
+        APPLICATION_STATUS_LABELS[a.status],
+      ]),
+    );
+    downloadCsv(`destiny-applications-${new Date().toISOString().slice(0, 10)}.csv`, csv);
+  }
+
   return (
     <div className="mx-auto max-w-6xl px-5 py-10">
       <PageHeader
@@ -145,7 +222,40 @@ export default function ApplicationsPage() {
               onChange={(v) => list.setFilter("status", v)}
             />
           }
-        />
+        >
+          <BulkBar count={selection.count} noun="application" onClear={selection.clear}>
+            <button
+              className="rounded-lg bg-black/5 px-3 py-1.5 text-xs font-bold text-destiny-grey/70 dark:text-white/70 transition hover:bg-black/10 disabled:opacity-50"
+              disabled={working}
+              onClick={exportSelectedCsv}
+            >
+              Export selected as CSV
+            </button>
+            {STATUSES.map((s) => (
+              <button
+                key={s}
+                className={`rounded-lg px-3 py-1.5 text-xs font-bold transition disabled:opacity-50 ${
+                  s === "rejected"
+                    ? "bg-destiny-red/10 text-destiny-red hover:bg-destiny-red/20"
+                    : s === "hired" || s === "shortlisted"
+                      ? "bg-destiny-green/10 text-destiny-green hover:bg-destiny-green/20"
+                      : "bg-black/5 text-destiny-grey/70 dark:text-white/70 hover:bg-black/10"
+                }`}
+                disabled={working}
+                onClick={() => bulkSetStatus(s)}
+              >
+                Mark {APPLICATION_STATUS_LABELS[s]}
+              </button>
+            ))}
+            <button
+              className="rounded-lg bg-destiny-red/10 px-3 py-1.5 text-xs font-bold text-destiny-red transition hover:bg-destiny-red/20 disabled:opacity-50"
+              disabled={working}
+              onClick={bulkDelete}
+            >
+              Delete
+            </button>
+          </BulkBar>
+        </ListToolbar>
 
         {list.visible.length === 0 ? (
           <EmptyState
@@ -166,6 +276,15 @@ export default function ApplicationsPage() {
           <table className="w-full text-left text-sm">
             <thead className="border-b border-black/5 text-xs font-bold uppercase tracking-wider text-destiny-grey/40 dark:text-white/40">
               <tr>
+                <th className="w-10 pl-5 pr-0 py-3.5">
+                  <input
+                    type="checkbox"
+                    aria-label="Select all shown"
+                    checked={allVisibleSelected}
+                    onChange={() => selection.toggleAll(visibleIds)}
+                    className="accent-destiny-orange"
+                  />
+                </th>
                 <th className="px-5 py-3.5">Candidate</th>
                 <th className="hidden px-5 py-3.5 sm:table-cell">Role</th>
                 <th className="hidden px-5 py-3.5 md:table-cell">Applied</th>
@@ -176,9 +295,20 @@ export default function ApplicationsPage() {
               {list.visible.map((a) => (
                 <tr
                   key={a.id}
-                  className="cursor-pointer transition hover:bg-[#f5f7fa] dark:hover:bg-white/10"
+                  className={`cursor-pointer transition hover:bg-[#f5f7fa] dark:hover:bg-white/10 ${
+                    selection.selected.has(a.id) ? "bg-destiny-orange/5" : ""
+                  }`}
                   onClick={() => openDetail(a)}
                 >
+                  <td className="w-10 py-3.5 pl-5 pr-0" onClick={(e) => e.stopPropagation()}>
+                    <input
+                      type="checkbox"
+                      aria-label={`Select ${a.first_name} ${a.last_name}`}
+                      checked={selection.selected.has(a.id)}
+                      onChange={() => selection.toggle(a.id)}
+                      className="accent-destiny-orange"
+                    />
+                  </td>
                   <td className="px-5 py-3.5">
                     <p className="font-bold text-destiny-grey dark:text-white">
                       {a.first_name} {a.last_name}

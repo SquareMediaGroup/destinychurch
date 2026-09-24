@@ -104,6 +104,9 @@ const ROUTE_RULES: { pattern: RegExp; roles: AdminRole[] }[] = [
   { pattern: /^\/api\/admin\/popup(\/|$)/, roles: ["event_admin"] },
   { pattern: /^\/api\/admin\/featured-event(\/|$)/, roles: ["event_admin"] },
   { pattern: /^\/api\/admin\/nfc(\/|$)/, roles: ["event_admin"] },
+  // Links pages (/links, /links/<slug>) — the same people who run /nfc.
+  { pattern: /^\/admin\/links(\/|$)/, roles: ["event_admin"] },
+  { pattern: /^\/api\/admin\/links(\/|$)/, roles: ["event_admin"] },
 
   // Store
   { pattern: /^\/admin\/store(\/|$)/, roles: ["store_admin"] },
@@ -161,6 +164,9 @@ const OPEN_PATHS = [
   // Everyone's own onboarding progress — the route only ever reads and writes
   // the caller's row, keyed off their cookie session.
   /^\/api\/admin\/onboarding$/,
+  // The notification bell — every admin needs it regardless of role; the
+  // route itself filters content to the roles the caller actually holds.
+  /^\/api\/admin\/notifications(\/|$)/,
 ];
 
 export function hasAccess(roles: RoleFlags, pathname: string): boolean {

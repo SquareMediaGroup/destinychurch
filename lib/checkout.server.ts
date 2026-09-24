@@ -7,6 +7,7 @@ import { customAlphabet } from "nanoid";
 import { Resend } from "resend";
 import { createServiceClient } from "@/utils/supabase/service";
 import { formatPrice, type OrderItem, type OrderWithItems } from "@/lib/shop";
+import { recordNotification } from "@/lib/notify.server";
 
 const orderId = customAlphabet("ACDEFGHJKLMNPQRSTUVWXYZ23456789", 8);
 const resend = new Resend(process.env.RESEND_API_KEY);
@@ -225,6 +226,16 @@ export async function finalizeOrderPaid(orderDbId: string): Promise<boolean> {
   } catch (err) {
     console.error("Order confirmation email failed:", err);
   }
+
+  await recordNotification({
+    section: "store",
+    kind: "new_order",
+    entityId: order.id,
+    entityLabel: order.customer_name,
+    summary: `New order ${order.order_number} from ${order.customer_name}`,
+    href: `/admin/store/orders/${order.id}`,
+    roles: ["store_admin"],
+  });
 
   return true;
 }

@@ -63,6 +63,7 @@ test('Subject dropdown has expected options', async ({ page }) => {
   await expect(select.locator('option[value="Privacy"]')).toHaveCount(1);
   await expect(select.locator('option[value="Complaints"]')).toHaveCount(1);
   await expect(select.locator('option[value="Enquiries"]')).toHaveCount(1);
+  await expect(select.locator('option[value="Accessibility"]')).toHaveCount(1);
   await expect(select.locator('option[value="Other"]')).toHaveCount(1);
 });
 
@@ -75,6 +76,23 @@ test('Selecting Safeguarding shows emergency warning', async ({ page }) => {
 test('Safeguarding warning not shown for other subjects', async ({ page }) => {
   await page.locator('#subject').selectOption('Other');
   await expect(page.getByText('If someone is in immediate danger')).not.toBeVisible();
+});
+
+test('Selecting Accessibility shows accessibility questions', async ({ page }) => {
+  await page.locator('#subject').selectOption('Accessibility');
+  await expect(
+    page.getByRole('group', { name: 'What do you need for your visit?' })
+  ).toBeVisible();
+  await expect(page.getByLabel('Step-free access')).toBeVisible();
+  await expect(page.getByLabel('BSL (British Sign Language) interpretation')).toBeVisible();
+  await expect(page.getByLabel('Hearing loop')).toBeVisible();
+});
+
+test('Accessibility questions not shown for other subjects', async ({ page }) => {
+  await page.locator('#subject').selectOption('Other');
+  await expect(
+    page.getByRole('group', { name: 'What do you need for your visit?' })
+  ).not.toBeVisible();
 });
 
 // ── Form validation ────────────────────────────────────────────────────────

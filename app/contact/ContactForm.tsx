@@ -6,6 +6,13 @@ import Button from "@/components/ui/Button";
 import Icon from "@/components/ui/Icon";
 import { Field, SelectField, TextareaField } from "@/components/ui/Field";
 
+const ACCESSIBILITY_OPTIONS = [
+  { name: "accessibility_step_free", label: "Step-free access" },
+  { name: "accessibility_bsl", label: "BSL (British Sign Language) interpretation" },
+  { name: "accessibility_hearing_loop", label: "Hearing loop" },
+  { name: "accessibility_large_print", label: "Large print materials" },
+] as const;
+
 export default function ContactForm() {
   const [status, setStatus] = useState<
     "idle" | "loading" | "success" | "error"
@@ -97,8 +104,51 @@ export default function ContactForm() {
         <option value="Privacy">Privacy</option>
         <option value="Complaints">Complaints</option>
         <option value="Enquiries">Enquiries</option>
+        <option value="Accessibility">Accessibility</option>
         <option value="Other">Other</option>
       </SelectField>
+
+      {subject === "Accessibility" && (
+        <fieldset className="rounded-panel border border-hairline bg-surface-muted px-4 py-4">
+          <legend className="px-1 text-sm font-bold text-destiny-grey">
+            What do you need for your visit?
+          </legend>
+          <p className="mb-3 text-xs text-subtle">
+            Let us know so we can make sure it&apos;s ready for you.
+          </p>
+          <div className="space-y-2.5">
+            {ACCESSIBILITY_OPTIONS.map((option) => (
+              <label
+                key={option.name}
+                className="flex items-center gap-2.5 text-sm text-destiny-grey"
+              >
+                <input
+                  type="checkbox"
+                  name={option.name}
+                  className="h-4 w-4 shrink-0 rounded border-hairline text-destiny-orange focus:outline-none focus:ring-2 focus:ring-destiny-orange/30"
+                />
+                {option.label}
+              </label>
+            ))}
+          </div>
+
+          <div className="mt-4">
+            <label
+              htmlFor="accessibility_other"
+              className="mb-1.5 block text-sm font-bold text-destiny-grey"
+            >
+              Anything else we should know?
+            </label>
+            <textarea
+              id="accessibility_other"
+              name="accessibility_other"
+              rows={3}
+              placeholder="Optional — tell us about any other access needs"
+              className="w-full rounded-xl border border-hairline bg-white px-4 py-3 text-sm text-destiny-grey transition placeholder:text-subtle focus:border-destiny-orange focus:outline-none focus:ring-2 focus:ring-destiny-orange/30"
+            />
+          </div>
+        </fieldset>
+      )}
 
       {subject === "Safeguarding" && (
         // role="alert" so choosing "Safeguarding" actually announces the 999

@@ -3,6 +3,7 @@ import Image from "next/image";
 import { isYouTubeQuotaExceeded } from "@/lib/youtube";
 import ReportBugLink from "@/components/report-bug/ReportBugLink";
 import FooterLinkGroup from "@/components/FooterLinkGroup";
+import MapsLink from "@/components/MapsLink";
 import { ADDRESS, SCHEDULE } from "@/lib/churchInfo";
 
 const connectLinks = [
@@ -63,12 +64,19 @@ export default async function ChurchFooter() {
               can find a place to belong and thrive. We&apos;d love to welcome
               you through our doors!
             </p>
-            <div className="text-sm text-on-dark-muted">
-              <p className="font-bold text-white/90">{ADDRESS.venue}</p>
-              <p>{ADDRESS.street}</p>
-              <p>{ADDRESS.locality}</p>
-              <p>{ADDRESS.postcode}</p>
-            </div>
+            <MapsLink
+              className="group block text-sm text-on-dark-muted transition hover:text-white focus-visible:text-white"
+              aria-label={`Open ${ADDRESS.venue}, ${ADDRESS.street}, ${ADDRESS.locality}, ${ADDRESS.postcode} in maps`}
+            >
+              <address className="not-italic">
+                <span className="block font-bold text-white/90 transition group-hover:text-white group-focus-visible:text-white">
+                  {ADDRESS.venue}
+                </span>
+                <span className="block">{ADDRESS.street}</span>
+                <span className="block">{ADDRESS.locality}</span>
+                <span className="block">{ADDRESS.postcode}</span>
+              </address>
+            </MapsLink>
 
             {/* Service times — the footer carried the address without ever
                 saying when to come. */}

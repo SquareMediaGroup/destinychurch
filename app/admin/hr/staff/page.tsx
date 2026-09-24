@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useMemo, useState, useCallback } from "react";
 import Link from "next/link";
 import {
   API,
@@ -18,11 +18,14 @@ import {
   ListToolbar,
   FilterChips,
   TableSkeleton,
+  BulkBar,
   primaryBtn,
 } from "@/components/admin/AdminUI";
-import { useAdminList } from "@/lib/useAdminList";
+import { useAdminList, useRowSelection } from "@/lib/useAdminList";
 import { fetchAdminArray, useAdminLoader } from "@/lib/useAdminLoader";
 import { StaffModal } from "@/components/admin/hr/modals";
+import { useDialog } from "@/components/DialogProvider";
+import { downloadCsv, toCsv } from "@/lib/csv";
 
 const STATUS_TONE: Record<StaffStatus, string> = {
   active: "green",
@@ -31,8 +34,10 @@ const STATUS_TONE: Record<StaffStatus, string> = {
 };
 
 export default function StaffPage() {
+  const { confirm } = useDialog();
   const [staff, setStaff] = useState<Staff[]>([]);
   const [editing, setEditing] = useState<Staff | "new" | null>(null);
+  const [working, setWorking] = useState(false);
 
   const load = useCallback(async () => {
     setStaff(await fetchAdminArray<Staff>(`${API}/staff`));
@@ -68,6 +73,57 @@ export default function StaffPage() {
     },
     defaultSort: { field: "name", direction: "asc" },
   });
+
+  const selection = useRowSelection(staff);
+  const visibleIds = useMemo(() => list.visible.map((s) => s.id), [list.visible]);
+  const allVisibleSelected =
+    visibleIds.length > 0 && visibleIds.every((id) => selection.selected.has(id));
+
+  async function bulkDelete() {
+    const ids = [...selection.selected];
+    if (ids.length === 0) return;
+    if (
+      !(await confirm({
+        title: `Delete ${ids.length} staff member${ids.length === 1 ? "" : "s"}`,
+        message: `This permanently deletes ${ids.length} staff record${ids.length === 1 ? "" : "s"}, including any staff-only login. This cannot be undone.`,
+        confirmLabel: "Delete",
+        tone: "danger",
+      }))
+    )
+      return;
+    setWorking(true);
+    setError("");
+    const results = await Promise.allSettled(
+      ids.map((id) =>
+        fetch(`${API}/staff/${id}`, { method: "DELETE" }).then((r) => {
+          if (!r.ok) throw new Error();
+        }),
+      ),
+    );
+    const failed = results.filter((r) => r.status === "rejected").length;
+    if (failed) setError(`${failed} of ${ids.length} could not be deleted.`);
+    selection.clear();
+    setWorking(false);
+    reload();
+  }
+
+  function exportSelectedCsv() {
+    const ids = selection.selected;
+    const rows = staff.filter((s) => ids.has(s.id));
+    const csv = toCsv(
+      ["Name", "Role", "Department", "Type", "Status", "Email", "Start date"],
+      rows.map((s) => [
+        fullName(s),
+        s.job_title ?? "",
+        s.department ?? "",
+        EMPLOYMENT_LABELS[s.employment_type],
+        STATUS_LABELS[s.status],
+        s.email ?? "",
+        s.start_date ?? "",
+      ]),
+    );
+    downloadCsv(`destiny-staff-${new Date().toISOString().slice(0, 10)}.csv`, csv);
+  }
 
   return (
     <div className="mx-auto max-w-6xl px-5 py-10">
@@ -116,7 +172,24 @@ export default function StaffPage() {
                 onChange={(v) => list.setFilter("status", v)}
               />
             }
-          />
+          >
+            <BulkBar count={selection.count} noun="staff member" onClear={selection.clear}>
+              <button
+                className="rounded-lg bg-black/5 px-3 py-1.5 text-xs font-bold text-destiny-grey/70 dark:text-white/70 transition hover:bg-black/10 disabled:opacity-50"
+                disabled={working}
+                onClick={exportSelectedCsv}
+              >
+                Export selected as CSV
+              </button>
+              <button
+                className="rounded-lg bg-destiny-red/10 px-3 py-1.5 text-xs font-bold text-destiny-red transition hover:bg-destiny-red/20 disabled:opacity-50"
+                disabled={working}
+                onClick={bulkDelete}
+              >
+                Delete
+              </button>
+            </BulkBar>
+          </ListToolbar>
 
           {list.visible.length === 0 ? (
             <EmptyState
@@ -137,6 +210,15 @@ export default function StaffPage() {
               <table className="w-full text-left text-sm">
                 <thead className="border-b border-black/5 text-xs font-bold uppercase tracking-wider text-destiny-grey/40 dark:text-white/40">
                   <tr>
+                    <th className="w-10 pl-5 pr-0 py-3.5">
+                      <input
+                        type="checkbox"
+                        aria-label="Select all shown"
+                        checked={allVisibleSelected}
+                        onChange={() => selection.toggleAll(visibleIds)}
+                        className="accent-destiny-orange"
+                      />
+                    </th>
                     <th className="px-5 py-3.5">Name</th>
                     <th className="hidden px-5 py-3.5 sm:table-cell">Role</th>
                     <th className="hidden px-5 py-3.5 md:table-cell">Type</th>
@@ -146,7 +228,21 @@ export default function StaffPage() {
                 </thead>
                 <tbody className="divide-y divide-black/5">
                   {list.visible.map((s) => (
-                    <tr key={s.id} className="transition hover:bg-[#f5f7fa] dark:hover:bg-white/10">
+                    <tr
+                      key={s.id}
+                      className={`transition hover:bg-[#f5f7fa] dark:hover:bg-white/10 ${
+                        selection.selected.has(s.id) ? "bg-destiny-orange/5" : ""
+                      }`}
+                    >
+                      <td className="w-10 py-3.5 pl-5 pr-0" onClick={(e) => e.stopPropagation()}>
+                        <input
+                          type="checkbox"
+                          aria-label={`Select ${fullName(s)}`}
+                          checked={selection.selected.has(s.id)}
+                          onChange={() => selection.toggle(s.id)}
+                          className="accent-destiny-orange"
+                        />
+                      </td>
                       <td className="px-5 py-3.5">
                         <Link
                           href={`/admin/hr/staff/${s.id}`}

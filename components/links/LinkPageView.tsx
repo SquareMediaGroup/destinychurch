@@ -41,7 +41,12 @@ function Block({ block, preview }: { block: ResolvedBlock; preview: boolean }) {
 
     case "header":
       return (
-        <h2 className="lp-heading" data-size={block.data.size} data-align={block.data.align}>
+        <h2
+          className="lp-heading"
+          data-size={block.data.size}
+          data-align={block.data.align}
+          style={block.data.color ? { color: block.data.color } : undefined}
+        >
           {block.data.text}
         </h2>
       );
@@ -125,6 +130,19 @@ export default function LinkPageView({
       data-links={theme.layout.links}
       data-layout={coverUrl ? "hero" : "classic"}
       data-entrance={String(theme.effects.entrance && !preview)}
+      data-size={theme.button.size}
+      data-spacing={theme.button.spacing}
+      data-width={theme.layout.width}
+      data-pattern={theme.background.pattern}
+      data-icons={String(theme.button.showIcons)}
+      data-arrows={String(theme.button.showArrows)}
+      data-profile-align={theme.profile.align}
+      data-title-size={theme.profile.titleSize}
+      data-uppercase={String(theme.profile.uppercase)}
+      data-social-style={theme.socials.style}
+      data-social-size={theme.socials.size}
+      data-avatar-size={theme.avatar.size}
+      data-avatar-ring={String(theme.avatar.ring)}
       data-preview={String(preview)}
     >
       <div className="lp-bg" aria-hidden="true">
@@ -146,6 +164,7 @@ export default function LinkPageView({
         )}
         {(imageUrl || videoUrl) && bg.overlay > 0 && <div className="lp-bg-overlay" />}
         {bg.glow && <div className="lp-bg-glow" />}
+        {bg.pattern !== "none" && <div className="lp-bg-pattern" />}
       </div>
 
       <div className="lp-main">
@@ -205,7 +224,9 @@ export default function LinkPageView({
               <SocialIcons socials={page.socials} position="top" preview={preview} />
             </div>
           )}
-          {!avatarUrl && !page.socials.length && <div className="lp-rule lp-reveal" style={reveal()} />}
+          {theme.profile.showRule && !avatarUrl && !page.socials.length && (
+            <div className="lp-rule lp-reveal" style={reveal()} />
+          )}
         </header>
 
         <div className="lp-blocks">
@@ -230,7 +251,9 @@ export default function LinkPageView({
           <SocialIcons socials={page.socials} position="bottom" preview={preview} />
         )}
 
-        {/* No site nav on these pages, so give people one way out. */}
+        {/* No site nav on these pages, so give people one way out — unless the
+            theme turns it off (a page for one event that shouldn't lead away). */}
+        {theme.layout.showFooter && (
         <footer className="lp-footer">
           <span>Destiny Church Tees Valley</span>
           <Link href="/" prefetch={false} tabIndex={preview ? -1 : undefined}>
@@ -240,6 +263,7 @@ export default function LinkPageView({
             </span>
           </Link>
         </footer>
+        )}
       </div>
     </div>
   );

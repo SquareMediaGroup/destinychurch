@@ -77,7 +77,14 @@ const FONT_KEYS = Object.keys(FONT_OPTIONS) as [FontKey, ...FontKey[]];
 /* ── Schema ───────────────────────────────────────────────────────────────── */
 
 export const BUTTON_STYLES = ["fill", "outline", "soft", "hard", "glass"] as const;
-export const BUTTON_RADII = ["square", "rounded", "pill"] as const;
+export const BUTTON_RADII = ["square", "rounded", "pill", "custom"] as const;
+export const BUTTON_SIZES = ["compact", "normal", "large"] as const;
+export const SPACINGS = ["tight", "normal", "loose"] as const;
+export const PAGE_WIDTHS = ["narrow", "normal", "wide"] as const;
+export const BG_PATTERNS = ["none", "dots", "grid", "lines"] as const;
+export const TITLE_SIZES = ["sm", "md", "lg", "xl"] as const;
+export const SOCIAL_STYLES = ["plain", "filled", "outline"] as const;
+export const ICON_SIZES = ["sm", "md", "lg"] as const;
 export const HOVER_EFFECTS = ["fill", "lift", "grow", "none"] as const;
 export const AVATAR_SHAPES = ["circle", "rounded", "square", "hidden"] as const;
 export const BACKGROUND_TYPES = ["solid", "gradient", "image", "video"] as const;
@@ -98,6 +105,10 @@ export const ThemeSchema = z.object({
       blur: z.number().min(0).max(20).catch(0).default(0),
       /** The soft orange/blue glow the Destiny pages carry in their corners. */
       glow: z.boolean().catch(true).default(true),
+      /** A subtle repeating texture over the background, drawn in the text colour. */
+      pattern: z.enum(BG_PATTERNS).catch("none").default("none"),
+      /** Pattern strength, 2–30 (%). */
+      patternOpacity: z.number().min(2).max(30).catch(8).default(8),
     })
     .default({}),
   text: z
@@ -116,6 +127,15 @@ export const ThemeSchema = z.object({
       shadow: color("#2d2d2d"),
       align: z.enum(["left", "center"]).catch("left").default("left"),
       hover: z.enum(HOVER_EFFECTS).catch("fill").default("fill"),
+      /** radius="custom": corner radius in px, 0–40. */
+      radiusPx: z.number().min(0).max(40).catch(18).default(18),
+      size: z.enum(BUTTON_SIZES).catch("normal").default("normal"),
+      /** Gap between blocks. */
+      spacing: z.enum(SPACINGS).catch("normal").default("normal"),
+      /** Border thickness for fill/outline/hard styles, 0–4 (px). */
+      borderWidth: z.number().min(0).max(4).catch(1).default(1),
+      showIcons: z.boolean().catch(true).default(true),
+      showArrows: z.boolean().catch(true).default(true),
     })
     .default({}),
   font: z
@@ -127,6 +147,9 @@ export const ThemeSchema = z.object({
   avatar: z
     .object({
       shape: z.enum(AVATAR_SHAPES).catch("circle").default("circle"),
+      size: z.enum(ICON_SIZES).catch("md").default("md"),
+      /** A ring in the accent colour around the photo. */
+      ring: z.boolean().catch(false).default(false),
     })
     .default({}),
   layout: z
@@ -136,6 +159,24 @@ export const ThemeSchema = z.object({
       coverUrl: mediaUrl,
       /** `grid` sets plain link buttons two-up from tablet width, like the old /links. */
       links: z.enum(["list", "grid"]).catch("grid").default("grid"),
+      width: z.enum(PAGE_WIDTHS).catch("normal").default("normal"),
+      /** "Destiny Church Tees Valley · Visit the full website" at the bottom. */
+      showFooter: z.boolean().catch(true).default(true),
+    })
+    .default({}),
+  profile: z
+    .object({
+      align: z.enum(["center", "left"]).catch("center").default("center"),
+      titleSize: z.enum(TITLE_SIZES).catch("lg").default("lg"),
+      uppercase: z.boolean().catch(false).default(false),
+      /** The short accent line under the header when there's no photo or socials. */
+      showRule: z.boolean().catch(true).default(true),
+    })
+    .default({}),
+  socials: z
+    .object({
+      style: z.enum(SOCIAL_STYLES).catch("plain").default("plain"),
+      size: z.enum(ICON_SIZES).catch("md").default("md"),
     })
     .default({}),
   effects: z
@@ -231,7 +272,7 @@ export const DEFAULT_THEME: Theme = THEME_PRESETS[0].theme;
 
 /* ── Rendering ────────────────────────────────────────────────────────────── */
 
-const RADII: Record<Theme["button"]["radius"], string> = {
+const RADII: Record<Exclude<Theme["button"]["radius"], "custom">, string> = {
   square: "4px",
   rounded: "18px",
   pill: "999px",
@@ -291,7 +332,9 @@ export function themeToCssVars(theme: Theme): Record<string, string> {
     "--lp-btn-bg": theme.button.bg,
     "--lp-btn-text": theme.button.text,
     "--lp-btn-shadow": theme.button.shadow,
-    "--lp-radius": RADII[theme.button.radius],
+    "--lp-radius": theme.button.radius === "custom" ? `${theme.button.radiusPx}px` : RADII[theme.button.radius],
+    "--lp-border-w": `${theme.button.borderWidth}px`,
+    "--lp-pattern-opacity": String(theme.background.patternOpacity / 100),
     "--lp-font-heading": FONT_OPTIONS[theme.font.heading].css,
     "--lp-font-body": FONT_OPTIONS[theme.font.body].css,
   };

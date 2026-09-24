@@ -7,15 +7,7 @@ import { ImageField } from "@/components/admin/blocks/fields/ImageField";
 import { SOCIAL_KEYS, SOCIAL_PLATFORMS, normaliseSocialUrl, type SocialKey } from "@/lib/linkPages/socials";
 import { safeHref } from "@/lib/linkPages/urls";
 import type { EditorPage } from "./editorTypes";
-
-function Card({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <section className="rounded-2xl border border-black/8 bg-white p-4 dark:border-white/8 dark:bg-destiny-grey-800">
-      <h3 className="mb-4 text-sm font-black text-destiny-grey dark:text-white">{title}</h3>
-      <div className="space-y-4">{children}</div>
-    </section>
-  );
-}
+import { Section } from "./controls";
 
 function PlatformIcon({ platform }: { platform: SocialKey }) {
   const p = SOCIAL_PLATFORMS[platform];
@@ -50,8 +42,8 @@ export default function ProfileTab({
   };
 
   return (
-    <div className="space-y-4">
-      <Card title="Profile">
+    <div className="space-y-3">
+      <Section title="Profile" icon="account_circle" defaultOpen>
         <ImageField label="Photo or logo" value={page.avatar_url} onChange={(v) => setPage({ avatar_url: v })} />
         <FieldShell
           label="Heading"
@@ -74,9 +66,9 @@ export default function ProfileTab({
           placeholder="A line or two about who this page is for"
           onChange={(v) => setPage({ bio: v })}
         />
-      </Card>
+      </Section>
 
-      <Card title="Social icons">
+      <Section title="Social icons" icon="share" defaultOpen>
         {socials.length > 0 && (
           <ul className="space-y-2">
             {socials.map((social, i) => {
@@ -156,7 +148,7 @@ export default function ProfileTab({
           ]}
           onChange={(v) => setPage({ socials_position: v as EditorPage["socials_position"] })}
         />
-      </Card>
+      </Section>
     </div>
   );
 }

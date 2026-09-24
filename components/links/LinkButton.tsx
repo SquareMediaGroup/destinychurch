@@ -74,7 +74,7 @@ export default function LinkButton({
       {thumbnail ? (
         // eslint-disable-next-line @next/next/no-img-element -- admin-supplied URL, no intrinsic size
         <img className="lp-btn-thumb" src={thumbnail} alt="" loading="lazy" />
-      ) : (
+      ) : d.hideIcon ? null : (
         <span className="lp-btn-icon material-symbols-rounded" aria-hidden="true">
           {d.icon}
         </span>
@@ -87,10 +87,18 @@ export default function LinkButton({
     </>
   );
 
+  // Per-button overrides ride on the same custom properties the theme sets,
+  // so every button style (outline, glass, hard shadow) picks them up.
+  const overrides: Record<string, string> = {};
+  if (d.bg) overrides["--lp-btn-bg"] = d.bg;
+  if (d.color) overrides["--lp-btn-text"] = d.color;
+
   const common = {
     className: "lp-btn",
     "data-variant": featured ? "featured" : "button",
     "data-highlight": d.highlight,
+    ...(d.align !== "theme" ? { "data-align": d.align } : {}),
+    style: overrides as React.CSSProperties,
     onClick,
   };
 

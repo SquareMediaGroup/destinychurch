@@ -14,15 +14,7 @@ import { ImageField } from "@/components/admin/blocks/fields/ImageField";
 import { useToast } from "@/components/ToastProvider";
 import { MAIN_SLUG, SLUG_RE } from "@/lib/linkPages/types";
 import { liveUrl, type EditorPage } from "./editorTypes";
-
-function Card({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <section className="rounded-2xl border border-black/8 bg-white p-4 dark:border-white/8 dark:bg-destiny-grey-800">
-      <h3 className="mb-4 text-sm font-black text-destiny-grey dark:text-white">{title}</h3>
-      <div className="space-y-4">{children}</div>
-    </section>
-  );
-}
+import { Section } from "./controls";
 
 function CopyRow({ label, value, help }: { label: string; value: string; help?: string }) {
   const toast = useToast();
@@ -92,8 +84,8 @@ export default function SettingsTab({
   const slugInvalid = !isMain && !SLUG_RE.test(page.slug);
 
   return (
-    <div className="space-y-4">
-      <Card title="Address">
+    <div className="space-y-3">
+      <Section title="Address" icon="link" defaultOpen>
         {isMain ? (
           <p className="text-sm text-destiny-grey/60 dark:text-white/60">
             This is the main page — it always lives at <strong>/links</strong> and is always published.
@@ -127,9 +119,9 @@ export default function SettingsTab({
           value={page.noindex}
           onChange={(v) => setPage({ noindex: v })}
         />
-      </Card>
+      </Section>
 
-      <Card title="Share">
+      <Section title="Share" icon="qr_code_2" defaultOpen>
         {!page.published && !isMain && (
           <p className="rounded-xl bg-warning/10 px-3 py-2 text-xs font-bold text-warning">
             This page isn&apos;t published yet — these links won&apos;t work until it is.
@@ -172,9 +164,9 @@ export default function SettingsTab({
             </div>
           </div>
         </FieldShell>
-      </Card>
+      </Section>
 
-      <Card title="Search and social previews">
+      <Section title="Search and social previews" icon="travel_explore" defaultOpen>
         <TextField
           label="Title"
           value={page.seo_title}
@@ -196,7 +188,7 @@ export default function SettingsTab({
           value={page.og_image_url}
           onChange={(v) => setPage({ og_image_url: v })}
         />
-      </Card>
+      </Section>
     </div>
   );
 }

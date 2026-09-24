@@ -19,6 +19,8 @@ import { EMBED_HELP, safeHref, toEmbed } from "@/lib/linkPages/urls";
 import { isEmbeddable } from "@/lib/nfcTiles";
 import { FORM_FIELD_KINDS, newFieldId, type FormFieldKind } from "@/lib/linkPages/types";
 import type { EditorBlock } from "./editorTypes";
+import ColorField from "./ColorField";
+import { Segmented } from "./controls";
 
 type Patch = (data: Record<string, unknown>) => void;
 
@@ -55,9 +57,55 @@ function HrefField({
   );
 }
 
+/**
+ * A colour that can be left to the theme. Blank shows a "Theme colour" button;
+ * once set, the picker plus a way back to the theme.
+ */
+function OverrideColor({
+  label,
+  value,
+  fallback,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  /** Where the picker starts when an override is first added. */
+  fallback: string;
+  onChange: (next: string) => void;
+}) {
+  if (!value) {
+    return (
+      <FieldShell label={label}>
+        <button
+          type="button"
+          onClick={() => onChange(fallback)}
+          className={`${fieldInputClass} flex items-center gap-2 text-left text-destiny-grey/55 dark:text-white/55`}
+        >
+          <span className="material-symbols-rounded text-lg" aria-hidden="true">format_paint</span>
+          Theme colour — tap to change
+        </button>
+      </FieldShell>
+    );
+  }
+  return (
+    <div>
+      <ColorField label={label} value={value} onChange={onChange} />
+      <button
+        type="button"
+        onClick={() => onChange("")}
+        className="mt-1.5 text-xs font-bold text-destiny-grey/55 hover:text-destiny-orange dark:text-white/55"
+      >
+        Use the theme colour
+      </button>
+    </div>
+  );
+}
+
 function LinkFields({ d, set }: { d: Record<string, unknown>; set: Patch }) {
   const url = str(d.url);
   const canPopup = isEmbeddable(url);
+  const open = str(d.open) || "same";
+  const custom = Boolean(str(d.bg) || str(d.color) || (str(d.align) && str(d.align) !== "theme") || d.hideIcon === true);
   return (
     <>
       <TextField label="Button text" value={str(d.title)} maxLength={80} onChange={(v) => set({ title: v })} />
@@ -69,46 +117,77 @@ function LinkFields({ d, set }: { d: Record<string, unknown>; set: Patch }) {
         onChange={(v) => set({ subtitle: v })}
       />
       <HrefField label="Link" value={url} onChange={(v) => set({ url: v })} />
-      <div className="grid gap-4 @md:grid-cols-2">
-        <SelectField
-          label="Style"
+      <Segmented
+        label="Opens"
+        value={open === "popup" && !canPopup ? "same" : open}
+        options={[
+          { value: "same", label: "Same tab" },
+          { value: "new", label: "New tab" },
+          ...(canPopup ? [{ value: "popup", label: "Popup" }] : []),
+        ]}
+        onChange={(v) => set({ open: v })}
+        help={canPopup ? "ChurchSuite links can open in a popup without leaving the page." : undefined}
+      />
+      <div className="grid gap-4 @xl:grid-cols-2">
+        <Segmented
+          label="Shape"
           value={str(d.style) || "button"}
           options={[
             { value: "button", label: "Button" },
-            { value: "featured", label: "Featured card (big image)" },
+            { value: "featured", label: "Big image card" },
           ]}
           onChange={(v) => set({ style: v })}
         />
-        <SelectField
-          label="Opens"
-          value={str(d.open) || "same"}
+        <Segmented
+          label="Spotlight"
+          value={str(d.highlight) || "none"}
           options={[
-            { value: "same", label: "In the same tab" },
-            { value: "new", label: "In a new tab" },
-            ...(canPopup ? [{ value: "popup", label: "In a popup on this page" }] : []),
+            { value: "none", label: "None" },
+            { value: "pulse", label: "Pulse" },
+            { value: "shake", label: "Wiggle" },
+            { value: "glow", label: "Glow" },
           ]}
-          onChange={(v) => set({ open: v })}
-          help={canPopup ? "ChurchSuite links can open in a popup without leaving the page." : undefined}
+          onChange={(v) => set({ highlight: v })}
         />
       </div>
-      <SelectField
-        label="Spotlight"
-        value={str(d.highlight) || "none"}
-        options={[
-          { value: "none", label: "None" },
-          { value: "pulse", label: "Pulse" },
-          { value: "shake", label: "Wiggle every few seconds" },
-          { value: "glow", label: "Glow" },
-        ]}
-        onChange={(v) => set({ highlight: v })}
-        help="Draws the eye to this one link. Use it sparingly."
-      />
-      <IconField label="Icon" value={str(d.icon)} onChange={(v) => set({ icon: v })} help="Shown when there's no thumbnail." />
-      <ImageField
-        label={str(d.style) === "featured" ? "Card image" : "Thumbnail"}
-        value={str(d.thumbnail)}
-        onChange={(v) => set({ thumbnail: v })}
-      />
+      <div className="grid gap-4 @xl:grid-cols-2">
+        <IconField label="Icon" value={str(d.icon)} onChange={(v) => set({ icon: v })} help="Shown when there's no thumbnail." />
+        <ImageField
+          label={str(d.style) === "featured" ? "Card image" : "Thumbnail"}
+          value={str(d.thumbnail)}
+          onChange={(v) => set({ thumbnail: v })}
+        />
+      </div>
+
+      <details open={custom} className="group rounded-xl border border-black/8 dark:border-white/10">
+        <summary className="flex cursor-pointer list-none items-center gap-2 px-3.5 py-3 text-sm font-bold text-destiny-grey dark:text-white">
+          <span className="material-symbols-rounded text-lg text-destiny-orange" aria-hidden="true">tune</span>
+          Customise this button
+          {custom && (
+            <span className="rounded-full bg-destiny-orange/10 px-2 py-0.5 text-[11px] font-bold text-destiny-orange">Custom</span>
+          )}
+          <span className="material-symbols-rounded ml-auto text-lg text-destiny-grey/40 transition-transform group-open:rotate-180 dark:text-white/40" aria-hidden="true">
+            expand_more
+          </span>
+        </summary>
+        <div className="space-y-4 border-t border-black/5 px-3.5 pb-4 pt-4 dark:border-white/8">
+          <div className="grid gap-4 @xl:grid-cols-2">
+            <OverrideColor label="Button colour" value={str(d.bg)} fallback="#f58021" onChange={(v) => set({ bg: v })} />
+            <OverrideColor label="Text colour" value={str(d.color)} fallback="#ffffff" onChange={(v) => set({ color: v })} />
+          </div>
+          <Segmented
+            label="Text align"
+            value={str(d.align) || "theme"}
+            options={[
+              { value: "theme", label: "Theme" },
+              { value: "left", label: "Left", icon: "format_align_left" },
+              { value: "center", label: "Centre", icon: "format_align_center" },
+            ]}
+            onChange={(v) => set({ align: v })}
+          />
+          <ToggleField label="Hide the icon" value={d.hideIcon === true} onChange={(v) => set({ hideIcon: v })} />
+        </div>
+      </details>
     </>
   );
 }
@@ -129,12 +208,12 @@ function EventFields({
   const endsAt = str(d.event_ends_at);
   return (
     <>
-      <SelectField
+      <Segmented
         label="Show"
         value={mode}
         options={[
-          { value: "upcoming", label: "The next few events, automatically" },
-          { value: "single", label: "One event I choose" },
+          { value: "upcoming", label: "Next few, automatically" },
+          { value: "single", label: "One I choose" },
         ]}
         onChange={(v) => set({ mode: v })}
       />
@@ -218,12 +297,12 @@ function EmbedFields({ d, set }: { d: Record<string, unknown>; set: Patch }) {
         )}
       </FieldShell>
       <TextField label="Title" value={str(d.title)} maxLength={80} placeholder="Optional" onChange={(v) => set({ title: v })} />
-      <SelectField
+      <Segmented
         label="Display"
         value={str(d.display) || "inline"}
         options={[
           { value: "inline", label: "On the page" },
-          { value: "popup", label: "As a button that opens a popup" },
+          { value: "popup", label: "Button + popup" },
         ]}
         onChange={(v) => set({ display: v })}
       />
@@ -453,34 +532,35 @@ export default function BlockFields({
       return (
         <>
           <TextField label="Heading" value={str(d.text)} maxLength={80} onChange={(v) => onData({ text: v })} />
-          <div className="grid gap-4 @md:grid-cols-2">
-            <SelectField
+          <div className="grid gap-4 @xl:grid-cols-2">
+            <Segmented
               label="Size"
               value={str(d.size) || "md"}
               options={[
-                { value: "sm", label: "Small caps label" },
+                { value: "sm", label: "Label" },
                 { value: "md", label: "Medium" },
                 { value: "lg", label: "Large" },
               ]}
               onChange={(v) => onData({ size: v })}
             />
-            <SelectField
+            <Segmented
               label="Align"
               value={str(d.align) || "center"}
               options={[
-                { value: "center", label: "Centre" },
-                { value: "left", label: "Left" },
+                { value: "center", label: "Centre", icon: "format_align_center" },
+                { value: "left", label: "Left", icon: "format_align_left" },
               ]}
               onChange={(v) => onData({ align: v })}
             />
           </div>
+          <OverrideColor label="Colour" value={str(d.color)} fallback="#f58021" onChange={(v) => onData({ color: v })} />
         </>
       );
     case "text":
       return (
         <>
           <TextAreaField label="Text" value={str(d.body)} rows={4} maxLength={1000} onChange={(v) => onData({ body: v })} />
-          <SelectField
+          <Segmented
             label="Align"
             value={str(d.align) || "center"}
             options={[
@@ -503,14 +583,14 @@ export default function BlockFields({
             onChange={(v) => onData({ alt: v })}
           />
           <HrefField label="Link" optional value={str(d.link)} onChange={(v) => onData({ link: v })} />
-          <SelectField
+          <Segmented
             label="Shape"
             value={str(d.aspect) || "auto"}
             options={[
-              { value: "auto", label: "As uploaded" },
+              { value: "auto", label: "Original" },
               { value: "square", label: "Square" },
-              { value: "wide", label: "Wide (16:9)" },
-              { value: "portrait", label: "Portrait (4:5)" },
+              { value: "wide", label: "Wide" },
+              { value: "portrait", label: "Portrait" },
             ]}
             onChange={(v) => onData({ aspect: v })}
           />
@@ -518,13 +598,13 @@ export default function BlockFields({
       );
     case "divider":
       return (
-        <SelectField
+        <Segmented
           label="Style"
           value={str(d.style) || "line"}
           options={[
             { value: "line", label: "Line" },
             { value: "dots", label: "Dots" },
-            { value: "space", label: "Empty space" },
+            { value: "space", label: "Space" },
           ]}
           onChange={(v) => onData({ style: v })}
         />

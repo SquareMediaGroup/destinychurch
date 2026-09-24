@@ -18,6 +18,7 @@ import { LINKS_STEPS } from "@/lib/linksSteps";
 import { DEFAULT_THEME, parseTheme } from "./theme";
 import {
   LinkBlockSchema,
+  LinkDataSchema,
   LinkPageSchema,
   MAIN_SLUG,
   type EventCard,
@@ -177,16 +178,13 @@ export function fallbackMainPage(): ResolvedLinkPage {
       active: true,
       starts_at: null,
       ends_at: null,
-      data: {
+      // Through the schema, so every newer field gets its default.
+      data: LinkDataSchema.parse({
         title: step.title,
         subtitle: step.blurb,
         url: step.href,
         icon: step.icon,
-        thumbnail: "",
-        style: "button" as const,
-        highlight: "none" as const,
-        open: "same" as const,
-      },
+      }),
     })),
   };
 }

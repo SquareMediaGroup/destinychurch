@@ -26,6 +26,7 @@ import { createServiceClient } from "@/utils/supabase/service";
 import { unstable_cache } from "next/cache";
 import { SITE_CACHE_TAGS } from "@/lib/siteCache.server";
 import { SpeedInsights } from "@vercel/speed-insights/next";
+import { ICON_NAMES } from "@/lib/iconNames";
 import { SmartSearchVisibilityProvider } from "@/lib/smartSearchVisibility";
 import {
   ADDRESS,
@@ -35,6 +36,10 @@ import {
   PHONE,
   SCHEDULE,
 } from "@/lib/churchInfo";
+
+// Subset to the icons the site uses: ~40 KB instead of the full ~410 KB font.
+// ICON_NAMES is regenerated before every dev/build by scripts/sync-icon-names.mjs.
+const MATERIAL_SYMBOLS_URL = `https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,500,0,0&icon_names=${ICON_NAMES.join(",")}&display=block`;
 
 const roboto = Roboto({
   variable: "--font-roboto",
@@ -303,24 +308,16 @@ export default async function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
-        {/* This stylesheet is render-blocking and cross-origin, so warm the
-            connection first — it saves a DNS + TLS round trip on every page. */}
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        {/* The stylesheet below is already in the HTML, so fonts.googleapis.com
+            needs no preconnect (Lighthouse flagged it as unused). The font file
+            it points at is only discovered once that CSS arrives, so warming
+            fonts.gstatic.com is what saves the round trip. */}
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
         {/* display=block, not the usual swap: every icon on the site is a
             ligature, so a fallback face would paint the literal text
             ("shopping_bag", "arrow_forward") before swapping to the glyph.
-            That is also why google-font-display is silenced — its "block is not
-            recommended" advice is aimed at body text, and block is what Google
-            themselves document for Material Symbols.
-            no-page-custom-font checks for a Pages Router `pages/_document.js`;
-            this is the App Router root layout, so the link is already on every
-            page, which is exactly what the rule wants. */}
-        {/* eslint-disable-next-line @next/next/google-font-display, @next/next/no-page-custom-font */}
-        <link
-          rel="stylesheet"
-          href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,500,0,0&display=block"
-        />
+            Block is what Google themselves document for Material Symbols. */}
+        <link rel="stylesheet" href={MATERIAL_SYMBOLS_URL} />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(orgSchema) }}

@@ -2700,6 +2700,8 @@ hover lift without a link, for cards whose action lives inside them.
 meaning no adjacent text repeats. Exists because the icon font renders by literal ligature
 text (`play_arrow`, `volunteer_activism`, …), which a screen reader reads verbatim on any
 span not marked `aria-hidden`; roughly 500 of ~570 such spans site-wide have been converted.
+The icon font is **subset** to the names in `lib/iconNames.ts` (see Libraries & Utilities) —
+any name outside that list renders as its literal text.
 
 #### `ui/PageHero.tsx` / `ui/MediaBanner.tsx`
 **Server-safe, no directive.** `PageHero` (generalised from `components/ministry/
@@ -4943,6 +4945,38 @@ Used by `components/live/NextServiceCountdown.tsx`. Covered by
 mid-service behaviour.
 
 ---
+
+### `lib/iconNames.ts` / `scripts/sync-icon-names.mjs` — icon font subset
+
+The Material Symbols Rounded font is ~410 KB in full. `app/layout.tsx` requests it from
+Google Fonts with `&icon_names=…` built from `ICON_NAMES`, which brings it down to ~40 KB
+(PageSpeed flagged the full font as the page's largest and render-blocking resource).
+
+- **Generated, never hand-edited.** `scripts/sync-icon-names.mjs` intersects every quoted
+  string literal and bare JSX text under `app/`, `components/`, `lib/`, `contexts/`,
+  `utils/` and `packages/shared/src` with the real Material Symbols names in
+  `scripts/material-symbols-names.txt`, then writes the sorted list (Google requires
+  alphabetical order). It deliberately over-collects — a stray `"home"` string adds the
+  `home` glyph for ~100 bytes — so dynamic icons (`{item.icon}` fed from config arrays,
+  ternaries) are caught without parsing the code.
+- **Runs automatically** as `predev` and `prebuild`, so a new `<Icon name="…">` just works.
+  By hand: `npm run icons:sync`. Refresh Google's name list (new icons released):
+  `npm run icons:sync -- --refresh`.
+- **Admin-entered icons can't escape the list.** `IconField` (block editor + links blocks)
+  searches `ICON_NAMES` and has no free-text entry; the NFC tile and training
+  `IconPicker` lists are literals in code, so they're collected automatically.
+- **Gotcha:** if an icon only ever exists in the database (not in any picker or code), it
+  would drop out of the subset. Every current DB value (`nfc_tiles.icon`,
+  `training_categories.icon`, `link_blocks.data.icon`) is in a picker list.
+
+### `lib/alphaSession.ts`
+
+`getNextAlphaSession(startDate, frequency, customIntervalDays?, now?)` — the next session
+of a course (Alpha, 12:2, Bible course, CAP) as a local-midnight `Date`. Works on calendar
+days: a date-only `start_date` ("2026-09-30") is parsed as that day, not UTC midnight
+(which is the previous day west of UTC), and "today" is London's date. Before this, the
+site banner showed US visitors the wrong weekday and threw React hydration error #418.
+Covered by `tests/unit/alpha-session.spec.ts`, which runs each case in four timezones.
 
 ### `lib/maps.ts`
 

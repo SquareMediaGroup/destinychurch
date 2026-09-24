@@ -6,7 +6,9 @@
     "packages/*"
   ],
   "scripts": {
+    "predev": "node scripts/sync-icon-names.mjs",
     "dev": "next dev",
+    "prebuild": "node scripts/sync-icon-names.mjs",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
@@ -14,7 +16,8 @@
     "test": "playwright test",
     "test:unit": "playwright test --project=unit",
     "test:e2e": "playwright test --project=chromium",
-    "gen:ios-assets": "node scripts/generate-ios-assets.mjs"
+    "gen:ios-assets": "node scripts/generate-ios-assets.mjs",
+    "icons:sync": "node scripts/sync-icon-names.mjs"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",

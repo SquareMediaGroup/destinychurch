@@ -25,7 +25,10 @@ export async function GET(
       return new NextResponse(buffer, {
         headers: {
           "Content-Type": "image/jpeg",
-          "Cache-Control": "public, max-age=300, s-maxage=300",
+          // A video's thumbnail almost never changes after upload, and the
+          // old 5-minute TTL made browsers refetch ~140 KB every visit.
+          "Cache-Control":
+            "public, max-age=86400, s-maxage=604800, stale-while-revalidate=86400",
         },
       });
     }

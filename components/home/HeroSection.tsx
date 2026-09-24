@@ -4,15 +4,19 @@ import Link from "next/link";
 export default function HeroSection() {
   return (
     <section className="relative flex min-h-screen items-center justify-center overflow-hidden bg-destiny-grey">
-      {/* Background image — LCP candidate, served via next/image with priority */}
+      {/* Background image — the LCP element. `preload` puts it in the <head>;
+          fetchPriority="high" is needed on top because Next 16 no longer adds it,
+          and without it the browser queues this behind fonts and scripts.
+          (No `quality` prop: only 75 is allowed by the images config, so
+          anything else was being silently served at 75 anyway.) */}
       <Image
         src="/img/photos/Hero BKG.webp"
         alt=""
         aria-hidden="true"
         fill
-        priority
+        preload
+        fetchPriority="high"
         sizes="100vw"
-        quality={85}
         className="object-cover object-center"
       />
       <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/40 to-black/70" />
@@ -31,7 +35,9 @@ export default function HeroSection() {
               height={100}
               className="absolute left-1/2 w-[105%] -translate-x-[49%]"
               style={{ bottom: "-0.3em" }}
-              priority
+              // Eager so it doesn't pop in, but not preloaded: a second
+              // preload would compete with the hero image for bandwidth.
+              loading="eager"
               aria-hidden="true"
             />
           </span>

@@ -3355,9 +3355,20 @@ preview.
   included (Space + arrows on the handle).
 - `BlockFields.tsx` — per-type settings, built from `components/admin/blocks/fields/*`. The event
   block uses the shared `components/admin/EventPicker.tsx` (lifted out of `/admin/nfc`).
-- `AppearanceTab.tsx` + `ColorField.tsx` — presets, then every theme value. `ColorField` wraps
-  `react-best-gradient-color-picker` (loaded on first open) and only commits values `ThemeSchema`
-  would accept.
+- `AppearanceTab.tsx` + `ColorField.tsx` — presets, then every theme value, grouped into collapsible
+  sections (Theme, Background, Colours, Buttons, Header, Fonts, Social icons, Layout and motion) that
+  show their current value while closed. Theme options beyond the basics: background pattern
+  (dots/grid/lines + strength), button size, spacing, border width, custom corner radius, icons and
+  arrows on/off, header alignment, heading size and uppercase, photo size and accent ring, social
+  icon style and size, page width, and the site footer on/off. All default to the original look, so
+  older saved themes render unchanged. Updates are functional (`setTheme(prev => …)`) so rapid edits
+  don't overwrite each other. `ColorField` wraps `react-best-gradient-color-picker` (loaded on first
+  open) and only commits values `ThemeSchema` would accept.
+- `controls.tsx` — the editor's shared `Section` (collapsible, with a summary line), `Segmented`
+  (radio-group picker for short choices) and `Slider`.
+- Per-block overrides: a link can set its own button colour, text colour, text alignment and hide its
+  icon ("Customise this button"); a heading can set its own colour. They ride on the same `--lp-*`
+  custom properties as the theme, so every button style honours them.
 - `ProfileTab.tsx`, `SettingsTab.tsx` (slug, publish, noindex, SEO, share links, QR PNG/SVG via
   `qrcode.react`), `SubmissionsTab.tsx` (responses, CSV, per-response delete), `AnalyticsTab.tsx`
   (reuses `DayChart`/`BarRows` from `components/admin/analytics/Charts.tsx`).

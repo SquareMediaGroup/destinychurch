@@ -124,7 +124,10 @@ export default function LinksEditor({ id }: { id: string }) {
   }, [dirty]);
 
   const setPage = (patch: Partial<EditorPage>) => setPageState((p) => (p ? { ...p, ...patch } : p));
-  const setTheme = (theme: Theme) => setPage({ theme });
+  // Accepts an updater so rapid edits each build on the latest theme rather
+  // than on the one captured when the control last rendered.
+  const setTheme = (next: Theme | ((prev: Theme) => Theme)) =>
+    setPageState((p) => (p ? { ...p, theme: typeof next === "function" ? next(p.theme) : next } : p));
   const setBlocks = (updater: (prev: EditorBlock[]) => EditorBlock[]) => setBlocksState(updater);
 
   const preview = useMemo(

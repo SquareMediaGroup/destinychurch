@@ -40,13 +40,44 @@ import {
 import BlockFields, { ScheduleFields } from "./BlockFields";
 import { blockProblem, newBlockId, type EditorBlock } from "./editorTypes";
 
-function scheduleNote(block: EditorBlock, now: number): string | null {
+const shortDate = (iso: string) =>
+  new Date(iso).toLocaleString("en-GB", { day: "numeric", month: "short", hour: "numeric", minute: "2-digit" });
+
+/** Status chips for the collapsed card: what would stop this showing, at a glance. */
+function statusChips(block: EditorBlock, problem: string | null, now: number) {
+  const chips: { label: string; tone: "red" | "amber" | "grey" | "blue"; title?: string }[] = [];
+  if (problem) chips.push({ label: "Needs finishing", tone: "red", title: problem });
+  if (!block.active) chips.push({ label: "Hidden", tone: "grey" });
   if (block.starts_at && Date.parse(block.starts_at) > now)
-    return `Scheduled — shows from ${new Date(block.starts_at).toLocaleString("en-GB", { dateStyle: "medium", timeStyle: "short" })}`;
-  if (block.ends_at && Date.parse(block.ends_at) <= now) return "Schedule ended — not showing";
-  if (block.ends_at)
-    return `Hides after ${new Date(block.ends_at).toLocaleString("en-GB", { dateStyle: "medium", timeStyle: "short" })}`;
-  return null;
+    chips.push({ label: `From ${shortDate(block.starts_at)}`, tone: "blue" });
+  else if (block.ends_at && Date.parse(block.ends_at) <= now) chips.push({ label: "Schedule ended", tone: "amber" });
+  else if (block.ends_at) chips.push({ label: `Until ${shortDate(block.ends_at)}`, tone: "blue" });
+  return chips;
+}
+
+const CHIP_TONES = {
+  red: "bg-danger/10 text-danger",
+  amber: "bg-warning/15 text-warning",
+  grey: "bg-black/5 text-destiny-grey/60 dark:bg-white/10 dark:text-white/60",
+  blue: "bg-info/10 text-info",
+};
+
+/** The muted second line: what the block is and where it goes. */
+function detailLine(block: EditorBlock, typeLabel: string): string {
+  const d = block.data;
+  const s = (k: string) => (typeof d[k] === "string" ? (d[k] as string) : "");
+  switch (block.type) {
+    case "link":
+      return s("url") || "No link yet";
+    case "event":
+      return d.mode === "single" ? "Pinned event" : `Next ${Number(d.count ?? 3)} events${s("category") ? ` · ${s("category")}` : ""}`;
+    case "embed":
+      return s("url") || "Nothing embedded yet";
+    case "form":
+      return `${Array.isArray(d.fields) ? d.fields.length : 0} fields${s("notifyEmail") ? ` · emails ${s("notifyEmail")}` : ""}`;
+    default:
+      return typeLabel;
+  }
 }
 
 function SortableBlock({
@@ -77,7 +108,7 @@ function SortableBlock({
   const [showSchedule, setShowSchedule] = useState(Boolean(block.starts_at || block.ends_at));
   const meta = BLOCK_META[block.type];
   const problem = blockProblem(block);
-  const note = scheduleNote(block, now);
+  const chips = statusChips(block, problem, now);
   const label = blockLabel(block);
 
   return (
@@ -115,18 +146,25 @@ function SortableBlock({
             </span>
           </span>
           <span className="min-w-0 flex-1">
-            <span className="block truncate text-sm font-bold text-destiny-grey dark:text-white">{label}</span>
-            <span className="block truncate text-xs text-destiny-grey/45 dark:text-white/45">
-              {problem ? (
-                <span className="font-bold text-destiny-red">{problem}</span>
-              ) : note ? (
-                note
-              ) : (
-                <>
-                  {meta.label}
-                  {block.type === "link" && typeof block.data.url === "string" ? ` · ${block.data.url}` : ""}
-                </>
-              )}
+            <span className="flex min-w-0 items-center gap-2">
+              <span className="truncate text-sm font-bold text-destiny-grey dark:text-white">{label}</span>
+              <span className="hidden shrink-0 rounded-md bg-black/5 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-destiny-grey/50 @sm:inline dark:bg-white/10 dark:text-white/50">
+                {meta.label}
+              </span>
+            </span>
+            <span className="mt-0.5 flex min-w-0 flex-wrap items-center gap-1.5">
+              {chips.map((chip) => (
+                <span
+                  key={chip.label}
+                  title={chip.title}
+                  className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] font-bold ${CHIP_TONES[chip.tone]}`}
+                >
+                  {chip.label}
+                </span>
+              ))}
+              <span className="min-w-0 truncate text-xs text-destiny-grey/45 dark:text-white/45">
+                {detailLine(block, meta.label)}
+              </span>
             </span>
           </span>
           <span
@@ -137,6 +175,10 @@ function SortableBlock({
           </span>
         </button>
 
+        <div className="hidden items-center @md:flex">
+          <IconAction icon="content_copy" label={`Duplicate ${label}`} onClick={onDuplicate} />
+          <IconAction icon="delete" label={`Delete ${label}`} onClick={onDelete} danger />
+        </div>
         <Toggle
           checked={block.active}
           onChange={(active) => onChange({ active })}
@@ -166,7 +208,8 @@ function SortableBlock({
             </button>
           )}
 
-          <div className="flex flex-wrap gap-2 border-t border-black/5 pt-3 dark:border-white/8">
+          {/* Narrow panels have no room for the header's icon buttons. */}
+          <div className="flex flex-wrap gap-2 border-t border-black/5 pt-3 @md:hidden dark:border-white/8">
             <button
               type="button"
               onClick={onDuplicate}
@@ -187,6 +230,36 @@ function SortableBlock({
         </div>
       )}
     </li>
+  );
+}
+
+function IconAction({
+  icon,
+  label,
+  onClick,
+  danger,
+}: {
+  icon: string;
+  label: string;
+  onClick: () => void;
+  danger?: boolean;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label={label}
+      title={label}
+      className={`flex h-9 w-9 items-center justify-center rounded-lg transition ${
+        danger
+          ? "text-destiny-grey/35 hover:bg-destiny-red/5 hover:text-destiny-red dark:text-white/35"
+          : "text-destiny-grey/35 hover:bg-black/5 hover:text-destiny-grey dark:text-white/35 dark:hover:bg-white/10 dark:hover:text-white"
+      }`}
+    >
+      <span className="material-symbols-rounded text-lg" aria-hidden="true">
+        {icon}
+      </span>
+    </button>
   );
 }
 

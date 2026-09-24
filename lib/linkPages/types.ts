@@ -11,7 +11,7 @@
 
 import { z } from "zod";
 import { safeHref, safeMediaUrl, toEmbed } from "./urls";
-import { ThemeSchema, type Theme } from "./theme";
+import { ThemeSchema, isThemeColor, type Theme } from "./theme";
 import { SOCIAL_KEYS, type SocialKey } from "./socials";
 
 /* ── Shared field helpers ─────────────────────────────────────────────────── */
@@ -36,6 +36,13 @@ const media = z
   .max(2000)
   .refine((v) => v === "" || safeMediaUrl(v) !== null, "Images must be an upload or an https:// URL")
   .default("");
+/** An optional colour override: blank means "use the theme". */
+const colorOverride = z
+  .string()
+  .trim()
+  .refine((v) => v === "" || isThemeColor(v), "Not a colour")
+  .default("");
+
 const icon = z
   .string()
   .trim()
@@ -58,12 +65,18 @@ export const LinkDataSchema = z.object({
   highlight: z.enum(["none", "pulse", "shake", "glow"]).default("none"),
   /** `popup` opens a ChurchSuite URL in the in-page modal; anything else falls back to a new tab. */
   open: z.enum(["same", "new", "popup"]).default("same"),
+  /** Per-button overrides; blank = the theme's. */
+  bg: colorOverride,
+  color: colorOverride,
+  align: z.enum(["theme", "left", "center"]).default("theme"),
+  hideIcon: z.boolean().default(false),
 });
 
 export const HeaderDataSchema = z.object({
   text: required(80, "Heading"),
   size: z.enum(["sm", "md", "lg"]).default("md"),
   align: z.enum(["left", "center"]).default("center"),
+  color: colorOverride,
 });
 
 export const TextDataSchema = z.object({
@@ -282,9 +295,9 @@ export function newFieldId(): string {
 export function defaultBlockData(type: LinkBlockType): Record<string, unknown> {
   switch (type) {
     case "link":
-      return { title: "", subtitle: "", url: "", icon: "", thumbnail: "", style: "button", highlight: "none", open: "same" };
+      return { title: "", subtitle: "", url: "", icon: "", thumbnail: "", style: "button", highlight: "none", open: "same", bg: "", color: "", align: "theme", hideIcon: false };
     case "header":
-      return { text: "", size: "md", align: "center" };
+      return { text: "", size: "md", align: "center", color: "" };
     case "text":
       return { body: "", align: "center" };
     case "image":

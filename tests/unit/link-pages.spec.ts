@@ -236,3 +236,33 @@ test("the preview shows what the live page would: active, in-schedule, valid blo
   expect(events[0].signupUrl).toBe("https://destinytees.churchsuite.com/events/abc#form_event_signup");
   expect(events[0].href).toBe("/whats-on/alpha");
 });
+
+/* ── Customisation options ────────────────────────────────────────────────── */
+
+test("new theme options default so older saved themes look exactly as before", () => {
+  const t = parseTheme({ button: { style: "outline" } });
+  expect(t.button.size).toBe("normal");
+  expect(t.button.spacing).toBe("normal");
+  expect(t.button.borderWidth).toBe(1);
+  expect(t.button.showIcons).toBe(true);
+  expect(t.layout.width).toBe("normal");
+  expect(t.layout.showFooter).toBe(true);
+  expect(t.profile).toEqual({ align: "center", titleSize: "lg", uppercase: false, showRule: true });
+  expect(t.socials).toEqual({ style: "plain", size: "md" });
+  expect(t.background.pattern).toBe("none");
+});
+
+test("custom corner radius is clamped and emitted in px", () => {
+  const vars = themeToCssVars(parseTheme({ button: { radius: "custom", radiusPx: 12 } }));
+  expect(vars["--lp-radius"]).toBe("12px");
+  expect(parseTheme({ button: { radiusPx: 400 } }).button.radiusPx).toBe(18);
+});
+
+test("per-button colour overrides accept colours or blank, never CSS", () => {
+  const link = (data: Record<string, unknown>) =>
+    LinkBlockSchema.safeParse({ id: ID, type: "link", data: { title: "Hi", url: "/x", ...data } }).success;
+  expect(link({ bg: "#0857ba", color: "rgba(255,255,255,1)" })).toBe(true);
+  expect(link({ bg: "" })).toBe(true);
+  expect(link({ bg: "red; background:url(https://x)" })).toBe(false);
+  expect(link({ align: "center", hideIcon: true })).toBe(true);
+});

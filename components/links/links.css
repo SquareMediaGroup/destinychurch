@@ -237,12 +237,14 @@
 .lp-blocks {
   display: flex;
   flex-direction: column;
-  gap: 0.875rem;
+  gap: var(--lp-gap, 0.875rem);
 }
 .lp-grid {
   display: grid;
-  gap: 0.875rem;
+  gap: var(--lp-gap, 0.875rem);
 }
+.lp-root[data-spacing="tight"] { --lp-gap: 0.5rem; }
+.lp-root[data-spacing="loose"] { --lp-gap: 1.25rem; }
 @container lp (min-width: 520px) {
   .lp-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -281,7 +283,7 @@
   text-align: left;
   color: var(--lp-btn-text);
   background: var(--lp-btn-bg);
-  border: 1px solid var(--lp-hairline);
+  border: var(--lp-border-w, 1px) solid var(--lp-hairline);
   cursor: pointer;
   transition:
     transform 0.45s cubic-bezier(0.16, 1, 0.3, 1),
@@ -298,14 +300,14 @@
 /* Styles */
 .lp-root[data-btn="outline"] .lp-btn {
   background: transparent;
-  border: 2px solid var(--lp-btn-bg);
+  border: calc(var(--lp-border-w, 1px) + 1px) solid var(--lp-btn-bg);
 }
 .lp-root[data-btn="soft"] .lp-btn {
   border-color: transparent;
   box-shadow: 0 14px 34px -18px color-mix(in srgb, var(--lp-btn-shadow) 60%, transparent);
 }
 .lp-root[data-btn="hard"] .lp-btn {
-  border: 2px solid var(--lp-btn-shadow);
+  border: calc(var(--lp-border-w, 1px) + 1px) solid var(--lp-btn-shadow);
   box-shadow: 5px 5px 0 var(--lp-btn-shadow);
 }
 .lp-root[data-btn="glass"] .lp-btn {
@@ -793,6 +795,90 @@ a.lp-image:hover {
 .lp-footer a:hover {
   color: var(--lp-accent);
 }
+
+/* ── Theme options ──────────────────────────────────────────────────────── */
+
+/* Page width */
+.lp-root[data-width="narrow"] .lp-main { max-width: 32rem; }
+.lp-root[data-width="narrow"][data-links="grid"] .lp-main { max-width: 44rem; }
+.lp-root[data-width="wide"] .lp-main { max-width: 46rem; }
+.lp-root[data-width="wide"][data-links="grid"] .lp-main { max-width: 64rem; }
+
+/* Background pattern, drawn in the text colour so it suits light and dark. */
+.lp-bg-pattern {
+  position: absolute;
+  inset: 0;
+  opacity: var(--lp-pattern-opacity, 0.08);
+}
+.lp-root[data-pattern="dots"] .lp-bg-pattern {
+  background-image: radial-gradient(var(--lp-text) 1.2px, transparent 1.6px);
+  background-size: 18px 18px;
+}
+.lp-root[data-pattern="grid"] .lp-bg-pattern {
+  background-image:
+    linear-gradient(var(--lp-text) 1px, transparent 1px),
+    linear-gradient(90deg, var(--lp-text) 1px, transparent 1px);
+  background-size: 28px 28px;
+}
+.lp-root[data-pattern="lines"] .lp-bg-pattern {
+  background-image: repeating-linear-gradient(135deg, var(--lp-text) 0 1px, transparent 1px 14px);
+}
+
+/* Button size */
+.lp-root[data-size="compact"] .lp-btn { min-height: 52px; padding: 0.625rem 0.875rem; gap: 0.75rem; }
+.lp-root[data-size="compact"] .lp-btn-title { font-size: 0.9375rem; }
+.lp-root[data-size="large"] .lp-btn { min-height: 78px; padding: 1.125rem 1.25rem; }
+.lp-root[data-size="large"] .lp-btn-title { font-size: 1.0625rem; }
+.lp-root[data-size="large"] .lp-btn-sub { font-size: 0.875rem; }
+.lp-btn[data-variant="featured"] { padding: 0 !important; }
+
+/* Icons and arrows on/off (thumbnails stay — they're content, not decoration) */
+.lp-root[data-icons="false"] .lp-btn-icon { display: none; }
+.lp-root[data-arrows="false"] .lp-btn-arrow { display: none; }
+
+/* Per-button text alignment beats the theme's */
+.lp-btn[data-align="center"] .lp-btn-body { text-align: center; }
+.lp-btn[data-align="left"] .lp-btn-body { text-align: left; }
+
+/* Header */
+.lp-root[data-profile-align="left"] .lp-profile {
+  align-items: flex-start;
+  text-align: left;
+}
+.lp-root[data-profile-align="left"] .lp-socials { justify-content: flex-start; }
+.lp-root[data-title-size="sm"] .lp-title { font-size: clamp(1.5rem, 6cqi, 2rem); }
+.lp-root[data-title-size="md"] .lp-title { font-size: clamp(1.75rem, 7.5cqi, 2.5rem); }
+.lp-root[data-title-size="xl"] .lp-title { font-size: clamp(2.5rem, 12cqi, 4.25rem); line-height: 0.98; }
+.lp-root[data-uppercase="true"] .lp-title { text-transform: uppercase; letter-spacing: 0.01em; }
+
+.lp-root[data-avatar-size="sm"] .lp-avatar { width: 4.5rem; height: 4.5rem; }
+.lp-root[data-avatar-size="lg"] .lp-avatar { width: 8rem; height: 8rem; }
+.lp-root[data-avatar-ring="true"] .lp-avatar {
+  box-shadow:
+    0 0 0 3px var(--lp-surface-color),
+    0 0 0 6px var(--lp-accent);
+}
+
+/* Social icons */
+.lp-root[data-social-style="filled"] .lp-social {
+  background: var(--lp-btn-bg);
+  color: var(--lp-btn-text);
+}
+.lp-root[data-social-style="outline"] .lp-social {
+  border: 1.5px solid color-mix(in srgb, var(--lp-text) 35%, transparent);
+}
+.lp-root[data-social-style="filled"] .lp-social:hover,
+.lp-root[data-social-style="outline"] .lp-social:hover {
+  background: var(--lp-accent);
+  color: var(--lp-accent-ink);
+  border-color: var(--lp-accent);
+}
+.lp-root[data-social-size="sm"] .lp-social { width: 36px; height: 36px; }
+.lp-root[data-social-size="sm"] .lp-social svg { width: 17px; height: 17px; }
+.lp-root[data-social-size="sm"] .lp-social .material-symbols-rounded { font-size: 19px; }
+.lp-root[data-social-size="lg"] .lp-social { width: 54px; height: 54px; }
+.lp-root[data-social-size="lg"] .lp-social svg { width: 26px; height: 26px; }
+.lp-root[data-social-size="lg"] .lp-social .material-symbols-rounded { font-size: 28px; }
 
 /* ── Reduced motion ───────────────────────────────────────────────────────── */
 

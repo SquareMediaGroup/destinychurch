@@ -88,7 +88,7 @@ export interface AdminThemeState {
  * shared with every public route, and an imperative mutation here would have
  * no natural cleanup on client-side navigation away from /admin — the class
  * would simply be left behind on `<html>` after AdminLayout unmounts. Instead
- * components/admin/AdminShell.tsx puts `themeClass` directly on its own wrapper div, so
+ * app/admin/layout.tsx puts `themeClass` directly on its own wrapper div, so
  * React's normal render lifecycle is the only thing that ever adds or removes
  * it — leaving nothing behind when a visitor navigates back to the public site.
  */

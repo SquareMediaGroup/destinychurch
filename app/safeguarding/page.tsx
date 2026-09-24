@@ -1,9 +1,6 @@
 import AnimateIn from "@/components/AnimateIn";
 
-export const metadata = {
-  title: "Safeguarding Policy",
-  alternates: { canonical: "/safeguarding" },
-};
+export const metadata = { title: "Safeguarding Policy" };
 
 const sections = [
   {

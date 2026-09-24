@@ -1,6 +1,6 @@
 // Minimal shell for the staff self-service portal.
 //
-// Deliberately NOT the admin shell (components/admin/AdminShell.tsx) — it pulls in AdminSidebar,
+// Deliberately NOT app/admin/layout.tsx — that shell pulls in AdminSidebar,
 // AdminCommandProvider (⌘K) and the onboarding-tour provider, all shaped for
 // the RBAC admin surface. A portal user is not an admin (see
 // lib/staffPortalAuth.ts), so this is a plain header + content shell reusing

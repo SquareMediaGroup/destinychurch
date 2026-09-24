@@ -27,6 +27,7 @@ Designed, engineered, and deployed by [Square Media Group](mailto:hello@squareme
 - Giving, volunteer, and serve pages
 - `/governance` transparency page — charity and company registration, trustees/directors, charitable objects, and five-year financial and filing history, drawn live from the Charity Commission and Companies House registers
 - `/nfc` "digital back of seats" — a standalone page an NFC tag or QR code on a seat opens during a service, with admin-managed tiles
+- Link-in-bio pages — a Linktree-style builder in `/admin/links` powering the chrome-free `/links` hub and any number of themed pages at `/links/<slug>` (link, embed, event, and form blocks; per-page themes, profiles, and settings; view/click analytics and exportable form-submission responses). `/links` never renders blank — it falls back to hardcoded Next Steps if the database can't answer
 - AI Smart Search — OpenAI tool-calling chat with product cards, weather, maps/directions, and live web search
 - Click analytics — a privacy-respecting `/admin/analytics` dashboard for short-link, QR-code, and NFC-tile engagement (with VPN/Tor/datacenter/Private-Relay tagging) alongside whole-site traffic
 - Protected admin dashboard (sermons, pages/posts, redirects, banner, popup, shop, training, HR, Alpha, recovery, analytics, audit log)
@@ -146,7 +147,7 @@ app/
 ├── hire/             # Venue hire enquiries
 ├── jobs/             # Job board & applications
 ├── kids/             # Kids ministry
-├── links/            # Link hub
+├── links/            # Link-in-bio pages (Linktree-style) + [slug]/ themed pages
 ├── live/             # Live stream
 ├── missions/         # Missions & outreach
 ├── new-here/         # First-time visitor guide
@@ -193,6 +194,7 @@ The `/admin` area is protected by Supabase Auth. Log in at `/login` to manage:
 - **Redirects** — configure URL redirects
 - **Banner & Popup** — control the site-wide announcement banner and popups
 - **NFC** — manage the tiles shown on the `/nfc` "digital back of seats" page
+- **Links** — build and theme the `/links` link-in-bio pages, view per-page view/click analytics, and export form-block responses (Event Admin)
 - **Analytics** — which short links, QR codes, and NFC tiles people actually use, plus whole-site traffic, in one place (Site Admin)
 - **Audit Log** — a searchable record of every admin change, an AI you can ask in plain English, and a weekly AI activity report (Super Admin)
 - **Cache** — trigger on-demand revalidation

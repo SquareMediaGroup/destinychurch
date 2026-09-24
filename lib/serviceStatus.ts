@@ -1,6 +1,4 @@
-import { unstable_cache } from "next/cache";
 import { createServiceClient } from "@/utils/supabase/service";
-import { expireSiteCache, SITE_CACHE_TAGS } from "@/lib/siteCache.server";
 
 // Runtime kill-switch / health state for Smart Search, backed by the
 // `service_status` Supabase table. Reads FAIL OPEN: if the table or Supabase is
@@ -48,15 +46,9 @@ export async function getSmartSearchStatus(): Promise<ServiceStatus> {
   }
 }
 
-// Read by the root layout and the root not-found page, which render as part of
-// every page — so this must be cached, or one uncached Supabase read makes the
-// whole site dynamic. setSmartSearchStatus() expires the tag. The health check
-// reads getSmartSearchStatus() directly, uncached, as it should.
-export const isSmartSearchEnabled = unstable_cache(
-  async (): Promise<boolean> => (await getSmartSearchStatus()).enabled,
-  ["smart-search-enabled"],
-  { tags: [SITE_CACHE_TAGS.serviceStatus], revalidate: 300 },
-);
+export async function isSmartSearchEnabled(): Promise<boolean> {
+  return (await getSmartSearchStatus()).enabled;
+}
 
 export async function setSmartSearchStatus(patch: {
   enabled: boolean;
@@ -78,6 +70,4 @@ export async function setSmartSearchStatus(patch: {
     },
     { onConflict: "service" },
   );
-  // The root layout caches the enabled flag (lib/siteCache.server.ts).
-  expireSiteCache(SITE_CACHE_TAGS.serviceStatus);
 }

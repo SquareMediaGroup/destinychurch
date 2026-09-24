@@ -20,12 +20,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
 
   const post = await getPublishedPostBySlug(slug);
-  if (post) {
-    // Its own URL, explicitly. Posts are where pages carried over from the old
-    // site get rebuilt (/fasting, /reading-the-bible, ...), so they need to be
-    // indexable in their own right.
-    return { title: post.title, alternates: { canonical: `/${post.slug}` } };
-  }
+  if (post) return { title: post.title };
   return {};
 }
 

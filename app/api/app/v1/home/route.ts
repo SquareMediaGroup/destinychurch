@@ -23,8 +23,8 @@ import { getLatestVideo } from "@/lib/speakerOverrides.server";
 // all in parallel, and let each section fail on its own. The envelope reports
 // `degraded` if any section is missing, and the app omits just that card.
 //
-// Dynamic because it reads the request (the `simulate` preview parameter). The
-// CDN header we set still bounds how often it is hit.
+// `getFeaturedEvent` reads Supabase and calls `noStore()`, which is why this
+// route is dynamic. The CDN header we set still bounds how often it is hit.
 
 export const dynamic = "force-dynamic";
 

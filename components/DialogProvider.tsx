@@ -115,7 +115,7 @@ function DialogModal({
 
   // DialogProvider is mounted once, site-wide (components/Providers.tsx), so
   // this modal renders as a sibling of the whole app tree rather than a
-  // descendant of AdminShell.tsx's own `.dark`-carrying wrapper div — the
+  // descendant of /admin/layout.tsx's own `.dark`-carrying wrapper div — the
   // ancestor selector every other dark: class in the admin relies on
   // (@custom-variant dark in app/globals.css) would never match here. It
   // carries its own `.dark` instead, and only ever on /admin: /portal also

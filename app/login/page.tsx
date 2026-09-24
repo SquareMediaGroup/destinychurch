@@ -6,7 +6,6 @@ import LoginClient from "./LoginClient";
 
 export const metadata = {
   title: "Staff Sign-In",
-  robots: { index: false, follow: false },
 };
 
 // Always evaluate the session per request — never cache the login state.

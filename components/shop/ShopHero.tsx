@@ -2,9 +2,9 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
-import Link from "next/link";
 import type { ShopHeroSlide } from "@/lib/shop";
 import { useMediaQuery } from "@/lib/useMediaQuery";
+import Button from "@/components/ui/Button";
 
 const ROTATE_MS = 6000;
 
@@ -94,16 +94,17 @@ export default function ShopHero({ slides }: { slides: ShopHeroSlide[] }) {
                   </p>
                 )}
                 {slide.cta_text && slide.cta_link && (
-                  <Link
+                  <Button
                     href={slide.cta_link}
                     tabIndex={isActive ? 0 : -1}
-                    className="mt-1 inline-flex w-fit items-center gap-2 rounded-full bg-destiny-orange px-7 py-3.5 text-sm font-bold text-white shadow-lg shadow-destiny-orange/30 transition hover:bg-destiny-orange-dark hover:brightness-110"
+                    size="xl"
+                    className="mt-1 w-fit"
                   >
                     {slide.cta_text}
                     <span className="material-symbols-rounded text-lg" aria-hidden="true">
                       arrow_forward
                     </span>
-                  </Link>
+                  </Button>
                 )}
               </div>
             </div>

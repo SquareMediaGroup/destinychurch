@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { submitBugReport } from "./actions";
 import { useScrollLock } from "@/lib/useScrollLock";
+import Button from "@/components/ui/Button";
 
 export default function ReportBugLink() {
   const [open, setOpen] = useState(false);
@@ -103,13 +104,9 @@ export default function ReportBugLink() {
                 <p className="text-sm text-green-600">
                   Thanks for helping us out — our tech team will take a look.
                 </p>
-                <button
-                  type="button"
-                  onClick={closeModal}
-                  className="mt-4 rounded-full bg-destiny-orange px-6 py-2.5 text-sm font-bold text-white transition hover:brightness-110"
-                >
+                <Button type="button" onClick={closeModal} size="sm" className="mt-4">
                   Close
-                </button>
+                </Button>
               </div>
             ) : (
               <form ref={formRef} onSubmit={handleSubmit} className="space-y-4">
@@ -159,13 +156,9 @@ export default function ReportBugLink() {
                   <p className="rounded-2xl bg-red-50 px-4 py-3 text-sm text-red-600">{errorMsg}</p>
                 )}
 
-                <button
-                  type="submit"
-                  disabled={status === "loading"}
-                  className="w-full rounded-full bg-destiny-orange py-3 text-sm font-bold text-white shadow-lg shadow-destiny-orange/25 transition hover:brightness-110 disabled:opacity-60"
-                >
+                <Button type="submit" size="md" fullWidth loading={status === "loading"}>
                   {status === "loading" ? "Sending…" : "Send Bug Report"}
-                </button>
+                </Button>
               </form>
             )}
           </div>

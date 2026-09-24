@@ -607,7 +607,9 @@ CREATE TABLE alpha_events (
 >
 > **Adding a course is now three steps:** the migration, a `COURSE_EVENT_META` entry, and a
 > `COURSE_ADMIN_PAGES` entry plus a four-line route file. See *Course admin pages* under
-> Components.
+> Components. Its public landing page reuses `CourseEventCard` and `useCourseEvents` (see
+> *Course pages* under Components) for the "when and where" card and the event fetch, but
+> is otherwise its own page — see that section for why it isn't a fifth thin wrapper.
 
 ---
 
@@ -3003,6 +3005,35 @@ not been brought onto the shared vocabulary yet.
 - `KidsCampHero.tsx`, `KidsCampDetails.tsx`, `KidsCampTeam.tsx` (safeguarding leads),
   `KidsCampVideo.tsx`, `KidsCampForm.tsx`, `KidsCampFAQ.tsx` (client-side accordion)
 
+#### Course pages (`app/alpha`, `app/bible-course`, `app/twelvetwo`, `app/cap-money`)
+
+Alpha, The Bible Course, Destiny 12:2 and CAP Money each hand-rolled the same ~150-line
+"when and where" ticket-stub event card and the same ~35-line fetch/filter/loading
+boilerplate against `/api/alpha-events` — identical structure, differing only in each
+course's brand accent colour and which event `type` it filters for. That exact
+duplication (not the whole page — see below) is now shared:
+
+- **`components/courses/CourseEventCard.tsx`** — the event card. Takes `accentColor`
+  (each course's own brand colour — pull it from `COURSE_ADMIN_PAGES` in
+  `lib/courseEvents.ts` rather than re-hardcoding a hex) and an optional `label`, Alpha's
+  one real variation: it runs Alpha and Youth Alpha through the same feed, so when more
+  than one event is showing it needs a header saying which is which.
+- **`lib/useCourseEvents.ts`** — `useCourseEvents(matchesType)` for the fetch (each page
+  passes its own type filter, e.g. `(e) => e.type === "cap"`), and
+  `summarizeCourseSession(event)` for the "Starting/Next session &lt;date&gt;" line every
+  course's `ChurchSuiteModal` subtitle shows.
+
+This did **not** become one monolithic `CourseLanding` template covering the whole page.
+Past the event card, each page has genuinely different content — Alpha's video modal and
+Youth Alpha cross-promo, Bible Course's 8-session/4-feature grids, Destiny 12:2's Life
+Recovery Bible cross-sell and pastor contact card, CAP Money's stats row and debt-help
+CTA — and a template flexible enough to cover all of that would need an "arbitrary
+sections" escape hatch, which reduces duplication less than it looks like. Each page also
+keeps its own brand-coloured hero and CTA buttons rather than going through
+`components/ui/Button` — that component's variants are fixed Tailwind classes, not
+arbitrary hex colours, and each course's colour is a deliberate, already-coordinated brand
+decision (matched to `COURSE_ADMIN_PAGES`'s admin-side accent), not drift to converge.
+
 #### Governance (`components/governance/*`)
 
 Section components for `/governance`. All are server components taking plain props from
@@ -5001,6 +5032,31 @@ that happens to match today) and — deliberately — asserts the support email 
 Consumed by `app/layout.tsx`'s JSON-LD, `app/contact/page.tsx`,
 `app/help/page.tsx`'s two schedule/location FAQ answers, `components/ChurchFooter.tsx`,
 `components/home/ServiceTimesBar.tsx`, and `app/visit/page.tsx`.
+
+---
+
+### `lib/useCourseEvents.ts`
+
+Client-side polling for `/api/alpha-events`, factored out of Alpha, The Bible
+Course, Destiny 12:2 and CAP Money — each page previously carried its own copy
+of the same fetch/filter/loading-state effect, differing only in which event
+`type` it kept.
+
+`useCourseEvents(matchesType)` fetches once on mount, keeps rows where
+`matchesType(event) && event.active !== false`, and returns `{ events, loading }`.
+A page passes its own filter, e.g. `(e) => e.type === "cap"`, or — Alpha's one
+real variation, since it runs Alpha and Youth Alpha through the same feed —
+`(e) => e.type === "alpha" || e.type === "youth_alpha"`.
+
+`summarizeCourseSession(event)` wraps `lib/alphaSession.ts`'s
+`getNextAlphaSession` into the `subtitle` string every course's
+`ChurchSuiteModal` shows ("Starting 12 January 2026" / "Next session 19 January
+2026"), so that formatting lives in one place instead of four.
+
+Paired with `components/courses/CourseEventCard.tsx` for the "when and where"
+card each of the four pages renders per event — see *Course pages* under
+Components for why the rest of each page stayed separate rather than becoming
+one shared template.
 
 ---
 

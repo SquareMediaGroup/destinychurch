@@ -6,6 +6,7 @@ import { formatDate, type YTVideo } from "@/lib/youtube";
 import LivePlayer from "./LivePlayer";
 import NextServiceCountdown from "./NextServiceCountdown";
 import { useLiveNow } from "./useLiveNow";
+import Button from "@/components/ui/Button";
 
 /**
  * The one part of /live that changes with the broadcast: the player while we're
@@ -215,13 +216,10 @@ function Offline({
         </div>
 
         <div className="mt-7 flex flex-wrap gap-3">
-          <Link
-            href="/sermons"
-            className="inline-flex items-center gap-2 rounded-full bg-destiny-orange px-6 py-3 text-sm font-bold text-white shadow-lg shadow-destiny-orange/25 transition hover:brightness-110"
-          >
+          <Button href="/sermons" size="md">
             <span className="material-symbols-rounded text-base" aria-hidden="true">play_arrow</span>
             Watch past messages
-          </Link>
+          </Button>
           <Link
             href="/visit"
             className="inline-flex items-center gap-2 rounded-full border-2 border-black/10 px-6 py-3 text-sm font-bold text-destiny-grey transition hover:border-destiny-orange hover:text-destiny-orange"

@@ -29,6 +29,7 @@ import Link from "next/link";
 import dynamic from "next/dynamic";
 import HostLoginModal from "@/components/live/chat/HostLoginModal";
 import { useLiveStatus } from "@/contexts/LiveContext";
+import Button from "@/components/ui/Button";
 
 /**
  * Loaded only when a Host opens the panel. /live is a public page and this form
@@ -93,12 +94,9 @@ export default function LiveHostBar({
           <p className="flex-1 text-sm text-muted">
             Sign in as a Host to run the broadcast from this page.
           </p>
-          <button
-            onClick={() => setSignInOpen(true)}
-            className="rounded-full bg-destiny-orange px-5 py-2.5 text-sm font-bold text-white transition hover:brightness-110"
-          >
+          <Button onClick={() => setSignInOpen(true)} size="sm">
             Host sign in
-          </button>
+          </Button>
         </div>
         <HostLoginModal
           open={signInOpen}
@@ -130,13 +128,9 @@ export default function LiveHostBar({
             </p>
           </div>
 
-          <button
-            onClick={() => setOpen((v) => !v)}
-            aria-expanded={open}
-            className="rounded-full bg-destiny-orange px-5 py-2.5 text-sm font-bold text-white transition hover:brightness-110"
-          >
+          <Button onClick={() => setOpen((v) => !v)} aria-expanded={open} size="sm">
             {open ? "Close" : "Manage service"}
-          </button>
+          </Button>
         </div>
 
         {open && (

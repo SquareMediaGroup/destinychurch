@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import Link from "next/link";
+import Button from "@/components/ui/Button";
 
 export default function Error({
   error,
@@ -25,18 +25,12 @@ export default function Error({
         back to the home page.
       </p>
       <div className="flex flex-wrap items-center justify-center gap-3">
-        <button
-          onClick={reset}
-          className="rounded-full bg-destiny-orange px-6 py-3 text-sm font-bold text-white shadow-lg shadow-destiny-orange/25 transition hover:brightness-110"
-        >
+        <Button onClick={reset} size="md">
           Try again
-        </button>
-        <Link
-          href="/"
-          className="rounded-full border border-destiny-grey/20 px-6 py-3 text-sm font-bold text-destiny-grey transition hover:bg-destiny-grey/5"
-        >
+        </Button>
+        <Button href="/" variant="outline" size="md">
           Back to home
-        </Link>
+        </Button>
       </div>
       {error.digest && (
         <p className="mt-6 text-xs text-subtle">

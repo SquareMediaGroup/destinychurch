@@ -8,6 +8,7 @@ import { useLiveStatus } from "@/contexts/LiveContext";
 import { getNextAlphaSession } from "@/lib/alphaSession";
 import { COURSE_EVENT_META, isCourseEventType } from "@/lib/courseEvents";
 import { useScrollLock } from "@/lib/useScrollLock";
+import { isLinksPagePath } from "@/lib/linkPages/paths";
 
 export default function SiteBanner() {
   const banner = useBanner();
@@ -49,6 +50,9 @@ export default function SiteBanner() {
   }
 
   if (isAdmin) return null;
+  // Links pages are chrome-free — no promo banners. (The maintenance block
+  // above still applies: if the site is down, so are they.)
+  if (isLinksPagePath(pathname)) return null;
   if (!banner.active) return null;
 
   // The live banner takes priority — don't stack other banners under it.

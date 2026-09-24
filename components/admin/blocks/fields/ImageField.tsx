@@ -1,10 +1,18 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { createContext, useContext, useRef, useState } from "react";
 import { useToast } from "@/components/ToastProvider";
-import { UPLOAD_ACCEPT, uploadPostImage } from "@/lib/adminUpload";
+import { UPLOAD_ACCEPT, uploadPostImage, type UploadResult } from "@/lib/adminUpload";
 import { MAX_UPLOAD_SIZE_MB } from "@/lib/ai/media-types";
 import { FieldShell, fieldInputClass } from "./BasicFields";
+
+/**
+ * Where ImageField sends its files. Defaults to the posts upload route; a
+ * surface whose editors can't reach that route (the links pages belong to
+ * event_admin, posts to site_admin) wraps its fields in a provider with its
+ * own uploader rather than forking the field.
+ */
+export const ImageUploaderContext = createContext<(file: File) => Promise<UploadResult>>(uploadPostImage);
 
 export function ImageField({
   label,
@@ -21,11 +29,12 @@ export function ImageField({
   const [uploading, setUploading] = useState(false);
   const [dragOver, setDragOver] = useState(false);
   const toast = useToast();
+  const uploader = useContext(ImageUploaderContext);
 
   async function upload(file: File | undefined) {
     if (!file) return;
     setUploading(true);
-    const result = await uploadPostImage(file);
+    const result = await uploader(file);
     setUploading(false);
     if ("error" in result) {
       toast.error(result.error);
@@ -53,7 +62,7 @@ export function ImageField({
                 type="button"
                 disabled={uploading}
                 onClick={() => inputRef.current?.click()}
-                className="min-h-10 rounded-lg border border-black/10 px-3 text-xs font-bold text-destiny-grey/60 dark:text-white/60 transition hover:bg-[#f5f7fa] lg:min-h-0 lg:px-2.5 lg:py-1"
+                className="min-h-10 rounded-lg border border-black/10 px-3 text-xs font-bold text-destiny-grey/60 dark:border-white/10 dark:text-white/60 transition hover:bg-[#f5f7fa] dark:hover:bg-white/10 lg:min-h-0 lg:px-2.5 lg:py-1"
               >
                 {uploading ? "Uploading…" : "Replace"}
               </button>
@@ -84,7 +93,7 @@ export function ImageField({
           className={`flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed px-4 py-6 text-center transition ${
             dragOver
               ? "border-destiny-orange bg-destiny-orange/5"
-              : "border-black/12 hover:border-destiny-orange/40 hover:bg-[#f5f7fa]"
+              : "border-black/12 hover:border-destiny-orange/40 hover:bg-[#f5f7fa] dark:border-white/15 dark:hover:bg-white/5"
           }`}
         >
           <span className="material-symbols-rounded text-2xl text-destiny-grey/35 dark:text-white/35" aria-hidden="true">

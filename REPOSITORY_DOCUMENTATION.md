@@ -776,6 +776,62 @@ unreachable. `event_ends_at` is what hides the tile once the event has run; the 
 
 ---
 
+#### 9a. **link_pages / link_blocks / link_form_submissions**
+**Purpose:** The Linktree-style pages at `/links` (slug `main`) and `/links/<slug>`, built in `/admin/links`.
+Migration: `supabase/migrations/20260922_01_link_pages.sql`.
+
+```sql
+CREATE TABLE link_pages (
+  id uuid PRIMARY KEY, slug text UNIQUE,          -- 'main' renders at /links itself
+  title text, bio text, avatar_url text,
+  theme jsonb DEFAULT '{}',                       -- parsed by ThemeSchema; '{}' = Destiny Light
+  socials jsonb DEFAULT '[]',                     -- [{ platform, url }]
+  socials_position text,                          -- 'top' | 'bottom'
+  seo_title text, seo_description text, og_image_url text,
+  noindex boolean, published boolean,
+  created_at timestamptz, updated_at timestamptz
+);
+CREATE TABLE link_blocks (
+  id uuid PRIMARY KEY,                            -- generated in the browser, stable across saves
+  page_id uuid REFERENCES link_pages ON DELETE CASCADE,
+  sort_order int, active boolean,
+  type text,                                      -- link|header|text|image|divider|event|embed|form
+  data jsonb,                                     -- per-type shape, zod-checked (lib/linkPages/types.ts)
+  starts_at timestamptz, ends_at timestamptz      -- optional schedule
+);
+CREATE TABLE link_form_submissions (
+  id uuid PRIMARY KEY, page_id uuid ON DELETE CASCADE,
+  block_id uuid ON DELETE SET NULL, block_label text,  -- responses outlive the form block
+  email text, data jsonb,                         -- [{ id, label, value }] in field order
+  created_at timestamptz
+);
+```
+
+**Why `data` is jsonb rather than columns:** eight block types with mostly disjoint settings. The
+shape is enforced where it matters — `LinkBlockSchema` parses every block in the admin API before
+anything is written, and the renderer safeParses on the way out and skips anything that fails, so a
+bad row is a missing block rather than a broken page. It's the same split post content blocks use.
+
+**Why a save RPC:** `link_page_save(page_id, page, blocks)` updates the page, deletes removed blocks
+and upserts the rest (array position = sort order) in one transaction. The editor saves a page as a
+unit; doing that as separate PostgREST calls could leave a page half-saved. The upsert's `WHERE
+page_id = …` stops a request from moving another page's block by naming its id. Execute is granted to
+`service_role` only.
+
+**Why the main page is seeded:** the migration creates `main` with the six Next Steps that `/links`
+used to hardcode, so the switch-over changes the look and loses nothing. Those six also stay in
+`lib/linksSteps.ts` as the fallback `/links` renders if the database can't answer.
+
+**RLS:** public select on published pages and on active blocks of published pages; submissions are
+service-only (deny-all), since they hold personal data. All writes go through `/api/admin/links/*`.
+
+**Used By:**
+- `lib/linkPages/linkPages.server.ts` → `getLinkPage()`, read by `components/links/LinkPageRoute.tsx`
+- `app/api/admin/links/*` + `components/admin/links/*` for the editor
+- `app/api/links/submit/route.ts` writes submissions; `app/api/track/route.ts` validates clicks
+
+---
+
 #### 10. **hr_staff**
 **Purpose:** Employee/volunteer directory
 
@@ -1335,6 +1391,8 @@ All tables have RLS enabled. Access rules:
 | featured_course | - | - | Yes | Featured course setting (read via server component) |
 | site_popup | - | - | Yes | Protect pop-up content |
 | nfc_tiles | Yes | - | Yes | Public tiles on /nfc (read via server component) |
+| link_pages / link_blocks | Yes | - | Yes | Published pages and their active blocks (read via server component) |
+| link_form_submissions | - | - | Yes | Form responses — personal data, deny-all "service only" |
 | hr_* (staff, leave, reviews, docs) | - | - | Yes | Sensitive HR data |
 | jobs | Yes | - | Yes | Public listings |
 | job_applications | - | - | Yes | Protect applications |
@@ -2171,8 +2229,10 @@ Both dialog helpers reuse the visual conventions from `components/admin/hr/HrUI.
 ### Layer 3: Header & Navigation (`components/ChurchHeader.tsx`)
 
 Rendered on the public site (client component). It self-suppresses (returns
-`null`) on the chrome-free shells — `/admin`, `/nfc`, and `/portal` — so those
-areas render without site nav.
+`null`) on the chrome-free shells — `/admin`, `/nfc`, `/links` (and `/links/*`),
+and `/portal` — so those areas render without site nav. `/links` is matched by
+`isLinksPagePath()` (`lib/linkPages/paths.ts`) so `/linkshare`-style paths aren't
+caught; the same helper gates the footer, banners, popups and Smart Search.
 
 - **Logo** — Clickable link to home
 - **Navigation menu** — Top-level links plus hover **dropdowns** ("About", "What's on") that fade in as white rounded cards with a staggered per-item reveal
@@ -2426,7 +2486,8 @@ without an auth check, so they must never be reachable on the live site.
 | `/child-dedication` | `app/child-dedication/page.tsx` | Child dedication request |
 | `/volunteer` | `app/volunteer/page.tsx` | Volunteer sign-up form |
 | `/help` | `app/help/page.tsx` | Help centre / FAQ |
-| `/links` | `app/links/page.tsx` | "Next Steps" link-in-bio style page. The six cards live in `lib/linksSteps.ts` and render via the client `components/links/LinksStepGrid.tsx`, which beacons each click to `POST /api/track` before navigating |
+| `/links` | `app/links/page.tsx` | The main Linktree-style page (`link_pages` slug `main`), built in `/admin/links`. Chrome-free like `/nfc`. Rendered by `components/links/LinkPageRoute.tsx` → `LinkPageView`; falls back to the six hardcoded Next Steps in `lib/linksSteps.ts` if the database can't answer, so it is never blank |
+| `/links/[slug]` | `app/links/[slug]/page.tsx` | Any other links page (youth, a course, a conference). Unpublished or unknown slugs are a 404; `/links/main` is a 404 (it would duplicate `/links`). Pages marked "hide from search" are `noindex` and left out of the sitemap |
 | `/nfc` | `app/nfc/page.tsx` | "Digital back of seats" — what an NFC tag or QR code on a seat opens during a service. Standalone (no header, footer, site popup or smart search) and `noindex`. Connect Card and Giving are hardcoded fixtures; everything else comes from `nfc_tiles`, including event tiles that resolve against the live ChurchSuite feed and hide themselves once the event has run |
 | `/twelvetwo` | `app/twelvetwo/page.tsx` | Destiny 12:2 recovery course info page |
 | `/dckids` | `app/dckids/page.tsx` | Destiny Kids Camp 2026 campaign page |
@@ -2469,6 +2530,8 @@ Each section requires a specific access-level role (see
 | `/admin/featured-event` | `app/admin/featured-event/page.tsx` | Promote one ChurchSuite event — picker plus headline/blurb/image/CTA overrides and a promote window |
 | `/admin/event-popup` | `app/admin/event-popup/page.tsx` | Copy for the popup advertising the featured event (writes `popup_*` on the same row) |
 | `/admin/nfc` | `app/admin/nfc/page.tsx` | Tiles on the `/nfc` page — add/edit/reorder/hide. A ChurchSuite form embed, artwork + copy + CTA, or an event picked from the live calendar (events without a framable signup are shown disabled with the reason) |
+| `/admin/links` | `app/admin/links/page.tsx` | Links pages list — 30-day views/clicks per page, create from a theme preset or as a copy, delete (not `main`) (Event Admin) |
+| `/admin/links/[id]` | `app/admin/links/[id]/page.tsx` | The links page editor (`components/admin/links/LinksEditor.tsx`): Blocks, Appearance, Profile, Settings, Responses and Stats tabs beside a live phone preview. `?tab=` deep-links a tab (Event Admin) |
 | `/admin/hr` | `app/admin/hr/page.tsx` | HR dashboard (staff, leave, jobs, documents, reviews, checklists) (HR Admin) |
 | `/admin/hr/staff` | `app/admin/hr/staff/page.tsx` | Staff directory — searchable list of every staff record, filterable by employment type and status (HR Admin) |
 | `/admin/hr/staff/[id]` | `app/admin/hr/staff/[id]/page.tsx` | Staff record — profile, leave, reviews, documents, live checklists (HR Admin) |
@@ -2822,7 +2885,7 @@ through the site's normal nav and the "New Here?" page/link, which were never pa
   component returns `null` — there's no fallback experience without the AI, so the widget just isn't
   rendered.
 - **Path suppression.** The widget hides itself on the chrome-free / auth-gated areas via a
-  `usePathname()` check: `/admin`, `/training`, `/nfc`, and `/portal` all return `null`. `/portal` is
+  `usePathname()` check: `/admin`, `/training`, `/nfc`, `/links`, and `/portal` all return `null`. `/portal` is
   the staff self-service shell (its own minimal chrome), so the floating widget — like the site header,
   footer, and the cookie banner (`CookieBanner.tsx`, which also returns `null` under `/portal`) — is
   suppressed there.
@@ -3255,6 +3318,53 @@ the gap means recomputing the cap and the breakpoint together. The article is fi
 DOM and placed with `col-start-2`, so promo content never precedes it for crawlers or screen
 readers. **Do not add `self-start`/`h-fit` to the rail `<aside>`** — the grid's default stretch
 is what gives the sticky card its scroll range; hugging the content silently disables sticky.
+
+#### Links Pages (`components/links/*`)
+
+The public renderer for `/links` and `/links/<slug>`, also used — unchanged — as the editor's live
+preview.
+
+- `LinkPageView.tsx` — **no `"use client"`**: a shared component, like the content blocks. It
+  server-renders the page and the editor renders the very same component from unsaved state, so the
+  preview is exactly the page. The theme arrives as `--lp-*` custom properties on the wrapper
+  (`themeToCssVars`) plus `data-*` attributes for the discrete choices; `links.css` is the only place
+  those turn into CSS. Groups consecutive plain link buttons so a "grid" theme can set them two-up.
+- `links.css` — the whole stylesheet. Width rules are **container queries** on `.lp-main`, not media
+  queries: in the editor the page sits in a 375px phone frame on a desktop screen and has to lay out
+  like the phone. All motion is off under `prefers-reduced-motion`, background video included.
+- `fonts.ts` — the extra theme typefaces (Inter, Space Grotesk, DM Serif Display, Caveat) via
+  `next/font`, loaded only where a links page renders. Anton is deliberately not offered.
+- Client islands, one per interactive block: `LinkButton.tsx` (click beacon, spotlight animation,
+  ChurchSuite links in `ChurchSuiteModal`), `LinkEvents.tsx` (event cards; signups open in the
+  modal, the rest link to `/whats-on/<slug>`), `LinkEmbed.tsx` (YouTube/Vimeo/Spotify/Apple
+  Podcasts/Maps behind the media-cookie consent gate, ChurchSuite via `ChurchSuiteEmbed`; inline or
+  in a `ui/Modal`), `LinkForm.tsx` (collapsed by default, honeypot field, posts to
+  `/api/links/submit`). All take `preview` and swallow clicks/submits in the editor.
+- `SocialIcons.tsx` — brand marks from `simple-icons` (CC0; Material Symbols has no brand glyphs).
+- `LinkPageRoute.tsx` — server-only glue for both routes: loads the page once per request
+  (`React.cache`), builds metadata, and records the page view (`links_view`) via `after()`.
+
+#### Links Page Editor (`components/admin/links/*`)
+
+- `LinksEditor.tsx` — holds page + blocks in local state until Save, which PUTs everything in one
+  request. Sends the `updated_at` it loaded; a 409 means someone else saved first. Wraps its fields
+  in `ImageUploaderContext` so `ImageField` uploads to `/api/admin/links/upload` (event_admin can't
+  reach the posts upload route).
+- `BlockList.tsx` — the block stack. Reordering is **@dnd-kit**, not the native-drag
+  `useListReorder` hook, because HTML5 drag-and-drop doesn't fire on touch screens. Keyboard sensor
+  included (Space + arrows on the handle).
+- `BlockFields.tsx` — per-type settings, built from `components/admin/blocks/fields/*`. The event
+  block uses the shared `components/admin/EventPicker.tsx` (lifted out of `/admin/nfc`).
+- `AppearanceTab.tsx` + `ColorField.tsx` — presets, then every theme value. `ColorField` wraps
+  `react-best-gradient-color-picker` (loaded on first open) and only commits values `ThemeSchema`
+  would accept.
+- `ProfileTab.tsx`, `SettingsTab.tsx` (slug, publish, noindex, SEO, share links, QR PNG/SVG via
+  `qrcode.react`), `SubmissionsTab.tsx` (responses, CSV, per-response delete), `AnalyticsTab.tsx`
+  (reuses `DayChart`/`BarRows` from `components/admin/analytics/Charts.tsx`).
+- `editorTypes.ts` — `previewBlocks()` turns unsaved blocks into what the live page would show now
+  (inactive, out-of-schedule and invalid blocks dropped; events resolved from the picker feed).
+  Share and QR links use `window.location.origin`, **not** destinytees.uk, which still points at
+  the old site.
 
 #### NFC Page (`components/nfc/*`)
 
@@ -3721,6 +3831,19 @@ GET  /api/admin/analytics/site  // the "Whole site" tab's data
 // Vercel's API must never hold up the click-log numbers on the other tabs.
 ```
 
+#### `POST /api/links/submit` — public form-block submissions
+```typescript
+// Body: { blockId, values: { [fieldId]: string | boolean }, website }.
+// `website` is a honeypot: filled in → quiet { ok: true }, nothing stored.
+// The block must be an active form block on a published page; values are
+// checked against that block's own field list (required, email format,
+// length), and anything not in the list is dropped. Stores [{ id, label, value }]
+// in field order in link_form_submissions, then — via after(), never failing the
+// request — emails notifyEmail if the block has one (lib/emailCard.ts). The
+// email's link uses SITE_ORIGIN (lib/appApi.ts), not destinytees.uk.
+// Rate-limited per IP at the site-wide default.
+```
+
 #### `POST /api/track` — public beacon for `/nfc` and `/links`
 ```typescript
 // Unauthenticated, reachable by anyone — the pages it serves are public. Not
@@ -3730,7 +3853,9 @@ GET  /api/admin/analytics/site  // the "Whole site" tab's data
 // not CORS-safelisted for beacons): { source: "nfc"|"links", targetKey }.
 // "redirect" is never accepted here — see lib/track.ts's BeaconSource.
 // targetKey is checked against the real thing it claims to be (a live
-// nfc_tiles id/PINNED_TILES fixture, or an href in lib/linksSteps.ts) before
+// nfc_tiles id/PINNED_TILES fixture, an active link_blocks id on a published
+// links page, or — for /links' database-down fallback — an href in
+// lib/linksSteps.ts) before
 // anything is written; the label always comes from that lookup, never the
 // body. Rate-limited via lib/rateLimit.ts's checkRateLimit(ip, 600) — a much
 // higher ceiling than the site-wide default of 15/min, because this endpoint
@@ -3744,6 +3869,23 @@ Super Admin only (fail closed). That is deliberate rather than an oversight: the
 log spans every section, so a rule granting any other role would let them read
 HR's activity, and a rule narrow enough to prevent that would be a second,
 drifting copy of the RBAC table.
+
+#### `/api/admin/links/*` — links pages (Event Admin)
+```typescript
+// GET    /api/admin/links                 → { pages } with 30-day views30/clicks30
+// POST   /api/admin/links                 { slug, title, preset?, duplicateFrom? } → new draft page
+// DELETE /api/admin/links?id=             (not the main page; blocks + responses cascade)
+// GET    /api/admin/links/[id]            → { page, blocks (raw, so broken ones can be fixed), updatedAt }
+// PUT    /api/admin/links/[id]            { page, blocks, updatedAt } → validateSave()
+//        (lib/linkPages/save.server.ts: zod per block, pinned events re-resolved
+//        against the live feed, main page can't move or unpublish) → link_page_save()
+//        409 if updated_at moved since the editor loaded (someone else saved).
+// GET    /api/admin/links/[id]/submissions[?format=csv]   (CSV cells formula-escaped)
+// DELETE /api/admin/links/[id]/submissions?submission=    (audited without the person's details)
+// GET    /api/admin/links/[id]/analytics?range=week|month|quarter
+//        views (links_view) + clicks (links) for the page's blocks, bots excluded
+// POST   /api/admin/links/upload          sharp → WebP ≤2000px into post-media, `links-` prefix
+```
 
 #### `GET /api/admin/search`
 ```typescript
@@ -5256,6 +5398,39 @@ KNOWLEDGE:
 
 ---
 
+### `lib/linkPages/*` — links pages
+
+```typescript
+// types.ts — client-safe. One zod schema per block type (BLOCK_DATA_SCHEMAS),
+//   LinkBlockSchema (discriminated union + schedule check), LinkPageSchema,
+//   SLUG_RE, MAIN_SLUG ('main' = /links), BLOCK_META, defaultBlockData(), blockLabel().
+// theme.ts — client-safe. ThemeSchema: every field defaults (the defaults ARE
+//   Destiny Light, so '{}' is a finished theme) and every field `.catch()`es, so
+//   one bad value falls back alone instead of failing the page. THEME_PRESETS
+//   (7), FONT_OPTIONS allowlist, themeToCssVars(), readableOn() (hover text: white, as on /help;
+//   near-black only on a very light accent). Themes never carry raw CSS:
+//   colours/gradients are regex-checked and url( is refused.
+// urls.ts — safeHref() (http(s)/mailto/tel/site path; no javascript:, no //host,
+//   no bare #), safeMediaUrl() (https or site path), toEmbed() — an allowlist:
+//   YouTube (nocookie), Vimeo (dnt), Spotify, Apple Podcasts, Google Maps
+//   *embed* URLs, ChurchSuite.
+// socials.ts — SOCIAL_PLATFORMS (simple-icons paths + Material Symbols for
+//   email/phone/website), normaliseSocialUrl().
+// paths.ts — isLinksPagePath(), for the site-chrome gates.
+// linkPages.server.ts — getLinkPage(slug) (noStore; schedule on the server
+//   clock; event blocks resolved, finished/missing single events dropped),
+//   fallbackMainPage(), listIndexableLinkPages() (sitemap), toPage()/toBlock().
+// save.server.ts — validateSave(), the admin PUT's whole check.
+```
+
+### `lib/eventTargets.server.ts`
+
+Pointing something at a ChurchSuite event, shared by `/nfc` event tiles and links page event
+blocks so the two can't drift: `findSeries()` (identifier, then the more durable sequence),
+`seriesEndsAt()`, `framableSignupUrl()` (anchored to the form, or null), and
+`resolveEventTarget(identifier, sequence, { requireSignup })` for saves — `/nfc` requires a framable
+signup (a tile *is* the form), a links page event card doesn't.
+
 ### `lib/nfcTiles.ts` / `lib/nfcTiles.server.ts`
 
 The tile list behind `/nfc`, deliberately split in two.
@@ -5266,7 +5441,7 @@ export type NfcTileMode = "embed" | "info" | "event";
 export const PINNED_TILES: NfcTile[];               // Connect Card, Giving — always first
 export const SIGNUP_ANCHOR: string;                 // "#form_event_signup"
 export const NFC_TILE_COLUMNS: string;              // the explicit select list
-export function isEmbeddable(url: string): boolean; // hostname ends with churchsuite.com
+export function isEmbeddable(url: string): boolean; // https, churchsuite.com or a subdomain of it
 
 // lib/nfcTiles.server.ts — `import "server-only"`
 export async function getNfcTiles(): Promise<NfcTile[]>;
@@ -5520,7 +5695,7 @@ share. Modelled closely on the audit log, split the same way.
 
 - **`lib/engagement.ts`** — the vocabulary, client-safe (touches neither the
   database nor `next/headers`). Closed sets so the page's filters can be chips:
-  `ENGAGEMENT_SOURCES` (`redirect` / `nfc` / `links`, each with its own noun —
+  `ENGAGEMENT_SOURCES` (`redirect` / `nfc` / `links` / `links_view`, each with its own noun —
   "click" vs "tap" — icon and blurb), `SRC_TAGS` (`qr` / `nfc` / `print` /
   `social`, the `?s=` values that separate "scanned the flyer" from "clicked the
   post"), and `IP_CATEGORIES` (`apple_private_relay` / `vpn` / `tor` /
@@ -5578,10 +5753,14 @@ share. Modelled closely on the audit log, split the same way.
   `Promise.allSettled`, so one dimension failing doesn't blank the rest; only
   the totals call failing takes down the whole panel. Cached via Next's fetch
   cache at `revalidate: 300`.
-- **`lib/linksSteps.ts`** — client-safe. `LINKS_STEPS`, the six `/links` cards,
-  pulled out of `app/links/page.tsx` so `POST /api/track` has something
-  authoritative to validate a `links` beacon's `targetKey` against — a value
-  not in this array is rejected, not written.
+- **`lib/linksSteps.ts`** — client-safe. `LINKS_STEPS`, the six Next Steps
+  `/links` used to hardcode. No longer what `/links` renders (that's
+  `link_pages` now); kept as `fallbackMainPage()`'s content for when the
+  database can't answer, and still accepted by `POST /api/track` as `links`
+  targets because that fallback reports clicks against their hrefs. `links`
+  clicks are otherwise keyed by `link_blocks.id`, and `links_view` rows (page
+  views, keyed by `link_pages.id`) are written server-side by
+  `components/links/LinkPageRoute.tsx`.
 - **`lib/useEngagementRollup.ts`** — client hook. One fetch/loading/error
   effect behind every tab that reads `engagement_events`
   (`ShortLinksPanel`/`InPersonPanel`), rather than three copies of it. The
@@ -6697,7 +6876,7 @@ all but one request a minute.
     format), `engagement.server.ts` (`recordEngagement()`), `botDetect.ts`
     (crawler/device/OS/browser detection), `track.ts` (client `sendBeacon`),
     `vercelAnalytics.server.ts` (Vercel Web Analytics API wrapper),
-    `linksSteps.ts` (the `/links` cards, shared with the beacon validator),
+    `linksSteps.ts` (the `/links` database-down fallback, shared with the beacon validator),
     `useEngagementRollup.ts` (the fetch hook the page's tabs share)
 
 ### API Routes (`app/api/`)

@@ -104,6 +104,9 @@ const ROUTE_RULES: { pattern: RegExp; roles: AdminRole[] }[] = [
   { pattern: /^\/api\/admin\/popup(\/|$)/, roles: ["event_admin"] },
   { pattern: /^\/api\/admin\/featured-event(\/|$)/, roles: ["event_admin"] },
   { pattern: /^\/api\/admin\/nfc(\/|$)/, roles: ["event_admin"] },
+  // Links pages (/links, /links/<slug>) — the same people who run /nfc.
+  { pattern: /^\/admin\/links(\/|$)/, roles: ["event_admin"] },
+  { pattern: /^\/api\/admin\/links(\/|$)/, roles: ["event_admin"] },
 
   // Store
   { pattern: /^\/admin\/store(\/|$)/, roles: ["store_admin"] },

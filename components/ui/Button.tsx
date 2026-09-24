@@ -68,7 +68,9 @@ const VARIANTS: Record<Variant, Record<Shape, string>> = {
   },
   outline: {
     pill: "border border-black/10 text-destiny-grey hover:border-black/25 hover:bg-black/[0.03] focus-visible:ring-destiny-orange",
-    soft: "border border-black/10 text-destiny-grey hover:border-black/25 hover:bg-black/[0.03] focus-visible:ring-destiny-orange",
+    // `soft` is the admin shape, and the admin has a dark mode; the hairline
+    // and grey text vanish on it without these.
+    soft: "border border-black/10 text-destiny-grey hover:border-black/25 hover:bg-black/[0.03] focus-visible:ring-destiny-orange dark:border-white/15 dark:text-white/80 dark:hover:border-white/30 dark:hover:bg-white/5",
     card: "border border-black/10 text-destiny-grey hover:border-black/25 hover:bg-black/[0.03] focus-visible:ring-destiny-orange",
   },
   // The public site's secondary CTA on light backgrounds: an orange outline

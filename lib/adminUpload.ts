@@ -24,7 +24,16 @@ export type UploadResult = { url: string } | { error: string };
 export const UPLOAD_ACCEPT = ALLOWED_IMAGE_ACCEPT;
 export const UPLOAD_MAX_BYTES = MAX_UPLOAD_SIZE_BYTES;
 
-export async function uploadPostImage(file: File): Promise<UploadResult> {
+export function uploadPostImage(file: File): Promise<UploadResult> {
+  return uploadImageTo("/api/admin/posts/upload", file);
+}
+
+/** The links page editor's uploader — see app/api/admin/links/upload/route.ts. */
+export function uploadLinksImage(file: File): Promise<UploadResult> {
+  return uploadImageTo("/api/admin/links/upload", file);
+}
+
+async function uploadImageTo(endpoint: string, file: File): Promise<UploadResult> {
   // Checked here as well as server-side so an oversized photo fails instantly
   // rather than after a slow upload.
   if (file.size > UPLOAD_MAX_BYTES) {
@@ -37,7 +46,7 @@ export async function uploadPostImage(file: File): Promise<UploadResult> {
   formData.append("file", file);
 
   try {
-    const res = await fetch("/api/admin/posts/upload", {
+    const res = await fetch(endpoint, {
       method: "POST",
       body: formData,
     });

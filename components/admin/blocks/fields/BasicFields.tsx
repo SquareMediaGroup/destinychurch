@@ -229,7 +229,7 @@ export function ToggleField({
       role="switch"
       aria-checked={value}
       onClick={() => onChange(!value)}
-      className="flex w-full items-start justify-between gap-3 rounded-xl bg-[#f5f7fa] px-3.5 py-3 text-left transition active:bg-black/[0.06]"
+      className="flex w-full items-start justify-between gap-3 rounded-xl bg-[#f5f7fa] px-3.5 py-3 text-left transition active:bg-black/[0.06] dark:bg-white/5 dark:active:bg-white/10"
     >
       <span className="min-w-0">
         <span className="block text-sm font-bold text-destiny-grey dark:text-white">{label}</span>

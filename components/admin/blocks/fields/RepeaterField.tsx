@@ -219,7 +219,7 @@ function RowAction({
       className={`inline-flex min-h-10 items-center gap-1.5 rounded-xl border border-black/10 bg-white dark:border-white/10 dark:bg-destiny-grey-800 px-3 text-xs font-bold transition disabled:pointer-events-none disabled:opacity-30 ${
         destructive
           ? "text-destiny-red/80 hover:border-destiny-red/30 hover:bg-destiny-red/5"
-          : "text-destiny-grey/60 dark:text-white/60 hover:bg-[#f5f7fa] hover:text-destiny-grey dark:hover:text-white"
+          : "text-destiny-grey/60 dark:text-white/60 hover:bg-[#f5f7fa] dark:hover:bg-white/10 hover:text-destiny-grey dark:hover:text-white"
       }`}
     >
       <span aria-hidden className="material-symbols-rounded text-[16px]">{icon}</span>

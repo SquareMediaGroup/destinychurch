@@ -158,6 +158,14 @@ export const ADMIN_GROUPS: AdminNavGroup[] = [
         description: "Tiles on the /nfc page — add, edit, reorder or hide.",
         keywords: ["tap", "card", "tiles", "signup", "welcome card"],
       },
+      {
+        href: "/admin/links",
+        label: "Links Pages",
+        icon: "link",
+        role: "event_admin",
+        description: "Linktree-style pages at /links — blocks, themes, forms and stats.",
+        keywords: ["linktree", "link in bio", "next steps", "instagram", "qr", "bio"],
+      },
     ],
   },
   {

@@ -2,6 +2,7 @@ import { createClient } from "@supabase/supabase-js";
 import { COURSE_EVENT_META, isCourseEventType } from "@/lib/courseEvents";
 import { humanise } from "@/lib/audit";
 import { recordAudit } from "@/lib/audit.server";
+import { expireSiteCache, SITE_CACHE_TAGS } from "@/lib/siteCache.server";
 
 /** "Alpha" rather than "youth_alpha" in the log sentence. */
 function courseLabel(type: unknown): string {
@@ -94,6 +95,8 @@ export async function POST(req: Request) {
 
     if (error) throw error;
 
+    // A course banner in the layout resolves against these rows.
+    expireSiteCache(SITE_CACHE_TAGS.banner);
     await recordAudit({
       action: "create",
       section: "courses",

@@ -1,6 +1,9 @@
 import AnimateIn from "@/components/AnimateIn";
 
-export const metadata = { title: "Privacy Policy" };
+export const metadata = {
+  title: "Privacy Policy",
+  alternates: { canonical: "/privacy" },
+};
 
 const sections = [
   {

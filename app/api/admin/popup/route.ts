@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createServiceClient } from "@/utils/supabase/service";
 import { readForAudit, recordAudit } from "@/lib/audit.server";
+import { expireSiteCache, SITE_CACHE_TAGS } from "@/lib/siteCache.server";
 
 export async function GET() {
   const supabase = createServiceClient();
@@ -83,6 +84,7 @@ export async function PUT(request: Request) {
   }
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  expireSiteCache(SITE_CACHE_TAGS.popup);
 
   const wasActive = Boolean(before?.active);
   const verb = payload.active && !wasActive

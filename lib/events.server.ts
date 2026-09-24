@@ -1,7 +1,8 @@
 // Server-only event lookups: the ChurchSuite index, and the featured event
 // that /whats-on, the homepage carousel and the event popup all read.
 import "server-only";
-import { unstable_noStore as noStore } from "next/cache";
+import { unstable_cache } from "next/cache";
+import { SITE_CACHE_TAGS } from "@/lib/siteCache.server";
 import {
   buildEventIndex,
   eventDescriptionText,
@@ -84,7 +85,20 @@ export type ResolvedEventPopup = {
 const EMPTY = (value: string | null | undefined): boolean =>
   !value || value.trim().length === 0;
 
-async function readFeaturedRow(): Promise<FeaturedEventRow | null> {
+// Cached under the featured-event tag, which both admin routes that write this
+// row expire (lib/siteCache.server.ts). Only the row is cached, not what is
+// derived from it: the start/end window and "has the event finished" checks
+// below still run on every render, so a page's own revalidate period is what
+// bounds how late a promotion appears or drops off.
+//
+// This used to be noStore(), and because the homepage, /whats-on and the root
+// layout's event popup all read it, it kept each of them from being cached.
+const readFeaturedRow = unstable_cache(readFeaturedRowUncached, ["featured-event-row"], {
+  tags: [SITE_CACHE_TAGS.featuredEvent],
+  revalidate: 300,
+});
+
+async function readFeaturedRowUncached(): Promise<FeaturedEventRow | null> {
   try {
     const supabase = createServiceClient();
     const { data } = await supabase
@@ -124,7 +138,6 @@ function isWithinWindow(row: FeaturedEventRow, now: number): boolean {
 export async function getFeaturedEvent(
   index?: EventIndex,
 ): Promise<ResolvedFeaturedEvent | null> {
-  noStore();
   const row = await readFeaturedRow();
   if (!row) return null;
 
@@ -187,7 +200,6 @@ export async function getFeaturedEvent(
 export async function getActiveEventPopup(
   index?: EventIndex,
 ): Promise<ResolvedEventPopup | null> {
-  noStore();
   const row = await readFeaturedRow();
   if (!row || !row.popup_active) return null;
 

@@ -2053,7 +2053,7 @@ base data table is still deny-all to the anon/authenticated roles.
 The root layout wraps every page in the application. It:
 
 1. **Defines metadata & SEO** — Title templates, description, Open Graph images for social share
-2. **Fetches server data** — Banner, pop-up, feature flags (called on every request)
+2. **Fetches server data** — Banner, pop-up, event popup, Smart Search flag and live status, each through `unstable_cache` with a tag from `lib/siteCache.server.ts` (see [Caching Strategy](#caching-strategy) — these reads decide whether *any* page can be cached)
 3. **Renders custom SVG filter** — A sophisticated glass refraction effect used for visual polish
 4. **Wraps in providers** — Context providers for auth, theme, analytics
 5. **Loads fonts** — Roboto, Anton, Playfair Display from Google Fonts
@@ -3046,7 +3046,7 @@ Role-based guided tours for `/admin`. See
 for the registry and the "nothing is saved" guarantee this whole surface exists
 to keep.
 
-- `OnboardingProvider.tsx` — **Client.** Mounted in `app/admin/layout.tsx`
+- `OnboardingProvider.tsx` — **Client.** Mounted in `components/admin/AdminShell.tsx`
   inside `AdminCommandProvider`. Owns the state machine: which section a step
   belongs to, navigating to a step's route, polling for its `data-tour` anchor
   (the page it lands on is usually still fetching), and switching demo mode on
@@ -3810,7 +3810,8 @@ drifting copy of the RBAC table.
 // Partial update of the popup_* columns only. A full-row upsert from the
 // event-popup admin page would blank every hero override.
 // Rejects popup_active when no event is featured, with a readable message.
-// No revalidatePath — app/layout.tsx reads the popup with noStore().
+// Expires the layout's `featured-event` cache tag (lib/siteCache.server.ts),
+// so the change is live on the next request.
 ```
 
 #### `POST /api/admin/popup/upload`
@@ -4546,6 +4547,12 @@ reports the stale copy's errors as yours.
 ---
 
 ## Libraries & Utilities
+
+### `lib/siteCache.server.ts`
+
+Cache tags for the root layout's reads and `expireSiteCache(...tags)`, which
+expires them immediately. Why this exists, and which route expires which tag, is
+under [Caching Strategy](#caching-strategy).
 
 ### `lib/adminNav.ts`
 
@@ -5816,8 +5823,9 @@ Access levels live in `lib/adminRoles.ts` + the `admin_roles` table — nine
 independent per-user booleans (`training_admin`, `event_admin`, `store_admin`,
 `site_admin`, `host`, `hr_admin`, `design_admin`, `sermon_admin`, `super_admin`; see [admin_roles](#10b-admin_roles)). Auth *and*
 role enforcement both happen centrally in `middleware.ts`, not in
-`app/admin/layout.tsx` (which is a client component purely responsible for the
-sidebar/header shell; it does not check auth or roles itself).
+`app/admin/layout.tsx` (a server wrapper that only marks the segment dynamic)
+or `components/admin/AdminShell.tsx` (the client sidebar/header shell); neither
+checks auth or roles itself.
 
 **Route → role mapping** (`ROUTE_RULES` in `lib/adminRoles.ts`; `super_admin`
 always passes and isn't repeated per rule; anything under `/admin` or
@@ -6263,7 +6271,7 @@ redefines the variant instead:
 
 so `dark:` utilities do nothing anywhere a `.dark` class doesn't exist. The
 only place that class is ever applied is the `/admin` shell's own wrapper div
-(`app/admin/layout.tsx`), driven by `lib/adminTheme.ts`'s `useAdminTheme()`
+(`components/admin/AdminShell.tsx`, rendered by `app/admin/layout.tsx`), driven by `lib/adminTheme.ts`'s `useAdminTheme()`
 hook — so the public site is structurally unaffected; there is no code path
 that can put `.dark` on anything outside `/admin`.
 
@@ -6457,12 +6465,61 @@ ENABLE_SMART_SEARCH=true
 
 ### Caching Strategy
 
+**The root layout decides whether any page is cached.** Every page renders
+`app/layout.tsx`, so one uncached read there makes the whole site dynamic. Until
+2026-09 that is exactly what happened: the banner and popup reads called
+`noStore()`, the event popup called it too, and the live-status check makes
+`no-store` fetches to YouTube. Every public page went out as
+`cache-control: private, no-store` with a ~1s server render in front of it, and
+every page's own `revalidate` export was ignored.
+
+The layout's five reads are now each cached with `unstable_cache` under a tag
+from `lib/siteCache.server.ts` — the banner, popup and live status in the layout
+itself, the featured-event row in `lib/events.server.ts` and the Smart Search
+flag in `lib/serviceStatus.ts`, because those two have other readers (the
+homepage and `/whats-on` read the featured event; `app/not-found.tsx` reads the
+flag) that need the same cache. Inside an `unstable_cache` scope Next treats
+`noStore()` as a no-op and inner fetches as uncached network calls, but neither
+makes the *page* dynamic. While a page is prerendered, each cached read also
+lowers the page's revalidate period to its own and adds its tags to the page,
+so expiring a tag rebuilds every page that showed that data.
+
+**Anything the root layout or `app/not-found.tsx` reads must be cached.** The
+root not-found boundary is rendered as part of every page's prerender, so an
+uncached read there is exactly as site-wide as one in the layout — that is how
+`not-found.tsx`'s Smart Search check kept most pages dynamic even after the
+layout was fixed. To see why a route is still dynamic, run `npx next build --debug`
+and look for `Static generation failed due to dynamic usage on …, reason: …`.
+
+`app/admin/layout.tsx` is a small server component that declares
+`dynamic = "force-dynamic"` and renders the client chrome in
+`components/admin/AdminShell.tsx`. Admin pages were always rendered per request
+(because the whole site was); once they no longer were, their `useSearchParams()`
+list filters failed the static prerender, and there is nothing in an admin page
+worth prerendering anyway.
+
+| Read | Tag | Backstop | Expired by |
+|---|---|---|---|
+| Site/course banner | `site-banner` | 5 min | `PUT /api/admin/banner`, every `alpha-events` write (course banners resolve against those rows) |
+| First-visit popup | `site-popup` | 5 min | `PUT /api/admin/popup` |
+| Featured event row (event popup, homepage, `/whats-on`) | `featured-event` | 5 min | `PUT /api/admin/featured-event`, `PUT …/featured-event/popup` |
+| Smart Search enabled | `service-status` | 5 min | `setSmartSearchStatus()` |
+| Live status (first paint only) | `live-status` | 60 s | `writeSimulatedLive()` / `clearSimulatedLive()` |
+
+`expireSiteCache()` calls `revalidateTag(tag, { expire: 0 })` rather than the
+default `"max"` profile, so the next request rebuilds instead of being served the
+stale copy once more. A new route that writes one of these tables must call it,
+or the edit looks unsaved until the backstop runs out. The 60-second live-status
+cache is safe because `LiveContext` polls `/api/youtube/live` as soon as it mounts;
+it also caps every page's cache lifetime at a minute, which is still a CDN hit for
+all but one request a minute.
+
 | Content | Strategy | TTL | Invalidation |
 |---------|----------|-----|--------------|
 | Static assets (`/img`, `/fonts`) | Immutable | 1 year | Filename change |
-| Home page | ISR | 1 hour | `revalidatePath("/")` |
-| Sermon archive | ISR | 4 hours | `revalidatePath("/sermons")` |
-| Dynamic pages (`/[slug]`) | ISR | 24 hours | `revalidatePath("/[slug]")` |
+| Public pages | ISR | ≤ 60 s (layout's live-status backstop) or the page's own `revalidate`, whichever is shorter | Layout tags above; page-specific `revalidatePath` |
+| Still dynamic by design | `/[slug]` posts, `/live`, `/login`, `/sermons/[id]`, `/shop/[slug]`, `/training/*`, `/admin/*`, `/portal/*` | - | - |
+| Still dynamic, could be cached | `/hire`, `/nfc` — `lib/pageContent.ts` and `getNfcTiles()` call `noStore()` | - | - |
 | Redirects | Edge | Infinite | Deploy |
 | API responses | None | - | Fresh on every request |
 | Images | Browser cache | 30 days | `next/image` optimization |

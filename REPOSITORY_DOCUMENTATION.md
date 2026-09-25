@@ -263,16 +263,18 @@ destinychurch/
 │   └── ...
 │
 ├── lib/                           # Utility functions and helpers
-│   ├── supabase.ts                # Supabase admin client (server-only)
-│   ├── supabase-browser.ts        # Supabase client (browser)
+│   ├── supabase-browser.ts        # Supabase client (browser) — server/service clients live in utils/supabase/
 │   ├── podcast.ts                 # Buzzsprout RSS feed (sermon audio)
 │   ├── sermonPairing.ts           # Pairs videos with podcast episodes — the featured card + every confident archive match
 │   ├── sermonTitle.ts             # Parses "Title | Speaker | Destiny Church LIVE" YouTube titles
 │   ├── sermonSearch.ts            # Shared Fuse.js sermon search — the /sermons box + find_sermons
 │   ├── buzzsprout.server.ts       # Publishes sermon audio to Buzzsprout (admin upload flow)
 │   ├── youtube.ts                 # YouTube API client
+│   ├── youtubeLookup.server.ts    # Resolves a YouTube id to title + runtime for simulated broadcasts
+│   ├── simulatedLiveLookup.ts     # Shared body of both simulated-live "what is this link?" lookup routes
 │   ├── smartSearch.ts             # AI search logic (parseAnswer, fallbacks)
 │   ├── smartSearch/tools.ts       # Smart Search tool-calling tools (products, sermons, weather, maps, web)
+│   ├── useSmartSearchChat.ts      # React hook backing the Smart Search chat UI (streaming prose + tool cards)
 │   ├── embedLoading.ts            # Stage timings for the embed loading overlay
 │   ├── pageContent.ts             # Dynamic page editing
 │   ├── posts.ts                   # Dynamic posts/pages
@@ -300,12 +302,12 @@ destinychurch/
 │   ├── rateLimit.ts               # Rate limiting
 │   ├── loginRateLimit.ts          # Login attempt limiting
 │   ├── podcast.ts                 # Podcast metadata
-│   ├── accessRequestEmail.ts      # Email templates
 │   ├── passwordResetEmail.ts      # Email templates
 │   ├── staffLogins.ts             # Create/link/delete a staff record's mandatory backend login (new login or an existing admin's)
 │   ├── sermonPlayerContext.tsx    # Sermon player state
-│   ├── sermonSearchContext.tsx    # Sermon search state
 │   ├── cookieConsent.tsx          # Cookie preferences
+│   ├── settings.tsx               # Client site-prefs context (text size, reduce motion; localStorage-backed)
+│   ├── smartSearchVisibility.tsx  # Lets a page hide the global floating Smart Search pill while mounted
 │   ├── alphaSession.ts            # Alpha course sessions
 │   ├── trainingAccess.ts          # Training permissions
 │   ├── ai/                        # Only media-types.ts remains — the AI page-generation
@@ -317,7 +319,7 @@ destinychurch/
 │   └── ...
 │
 ├── supabase/                      # Supabase configuration
-│   └── migrations/                # Database schema migrations (49 files) — selected highlights:
+│   └── migrations/                # Database schema migrations (74 files) — selected highlights:
 │       ├── 001_redirects.sql      # URL redirect table
 │       ├── 002_hidden_videos.sql  # Hidden sermon videos (feature since removed)
 │       ├── 003_content.sql        # Site banner & page content
@@ -4935,6 +4937,27 @@ It is an external store rather than component state because the value exists bef
 
 ---
 
+### `lib/settings.tsx` — client site preferences
+
+A `"use client"` React context holding the visitor's site preferences —
+`textSize: "normal" | "large"` and `reduceMotion` — persisted to `localStorage`
+under `destiny-settings`. It reads any stored value on mount (falling back to the
+defaults on the server or when nothing is stored) and exposes setters that write
+back. Distinct from `accessibilityPrefs.ts` above, which owns the Glass FX /
+reduced-motion values applied before first paint.
+
+---
+
+### `lib/smartSearchVisibility.tsx` — one Smart Search entry point at a time
+
+A tiny `"use client"` context (`SmartSearchVisibilityProvider`,
+`useFloatingSmartSearchHidden`, and a hook that hides the pill for a component's
+lifetime) that lets a page which embeds its own Smart Search box — the 404 page,
+for example — hide the globally-rendered floating pill while it is mounted, so a
+visitor never sees two Smart Search entry points on screen at once.
+
+---
+
 ### `lib/embedLoading.ts`
 
 The stage timings behind `ui/EmbedLoadingOverlay` (see Components), kept apart
@@ -5322,6 +5345,21 @@ must come back null rather than scheduling a broadcast of nothing. Pinned by
 
 ---
 
+### `lib/youtubeLookup.server.ts` / `lib/simulatedLiveLookup.ts` — the "what is this link?" preview
+
+`youtubeLookup.server.ts` (`server-only`) resolves a YouTube id to just the two
+things a simulated broadcast needs — its title and its runtime — via
+`lookupVideo(videoId)`, returning `null` when the video can't be read (bad id,
+private upload, missing API key, exhausted quota). `simulatedLiveLookup.ts`
+(`server-only`) is the shared body of both preview routes —
+`/api/admin/simulated-live/lookup` and `/api/live-control/lookup` — parsing the
+pasted link with `parseYouTubeId` and returning a `NextResponse`; a well-formed
+but unreadable id still comes back (`unreadable: true`) because an unlisted video
+usually still *plays* and the runtime can be typed in by hand. Only the auth
+wrapped around the two routes differs.
+
+---
+
 ### `lib/smartSearch.ts`
 
 Parses the LLM response and validates navigation:
@@ -5394,6 +5432,19 @@ export function cooldownAnswer(): SmartSearchResult {
 1. **Allowlist validation** — Page URLs must be in `PAGE_INTENTS`; any hallucinated links are dropped
 2. **Rate limiting** — Max 5 searches per IP per minute
 3. **Fallback answers** — If service unavailable, still show a friendly response (never "error")
+
+---
+
+### `lib/useSmartSearchChat.ts` — the chat UI hook
+
+The React hook backing the Smart Search chat surface. It streams the reply and
+shows `visibleProse()` — the answer with its trailing `OPTION:` / `PAGE:` / `CTA:`
+directive lines stripped — so the visitor only ever reads clean prose while text
+is still arriving; the full reply is parsed once (`parseAnswer` from
+`lib/smartSearch`) when it completes. Each `ChatMessage` carries the parsed tool
+cards (`ProductResult`, `SermonResult`, weather, directions, web results from
+`lib/smartSearch/tools`) alongside its text, and `cooldownAnswer` supplies the
+friendly message when the visitor is rate-limited.
 
 ---
 

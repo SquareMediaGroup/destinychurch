@@ -65,7 +65,7 @@ Designed, engineered, and deployed by [Square Media Group](mailto:hello@squareme
 
 ### Prerequisites
 
-- Node.js 18+
+- Node.js 20+ (required by Next.js 16)
 - A [Supabase](https://supabase.com) project
 - A [Resend](https://resend.com) account
 - A Google [YouTube Data API v3](https://developers.google.com/youtube/v3) key

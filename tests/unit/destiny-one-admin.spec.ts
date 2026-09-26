@@ -124,3 +124,35 @@ test.describe("the two Destiny One roles", () => {
     expect(hasAccess(hr, "/api/admin/destiny-one/safeguarding/reports")).toBe(false);
   });
 });
+
+test.describe("deploying before the migration doesn't lock admins out", () => {
+  test("a role row from a database without the new columns keeps every existing role", async () => {
+    const { rolesFromRow } = await import("../../lib/adminRoles");
+    // What admin_roles looks like before 20260926/20260927 are applied.
+    const oldRow = {
+      auth_user_id: "x",
+      email: "admin@example.org",
+      training_admin: false,
+      event_admin: true,
+      store_admin: false,
+      site_admin: false,
+      host: false,
+      hr_admin: false,
+      design_admin: false,
+      sermon_admin: false,
+      super_admin: true,
+    };
+    const flags = rolesFromRow(oldRow);
+    expect(flags.super_admin).toBe(true);
+    expect(flags.event_admin).toBe(true);
+    expect(flags.safeguarding_admin).toBe(false);
+    expect(flags.destiny_one_admin).toBe(false);
+    expect(hasAccess(flags, "/admin/hr")).toBe(true); // super admin still gets everywhere
+  });
+
+  test("only a real true grants a role", async () => {
+    const { rolesFromRow } = await import("../../lib/adminRoles");
+    expect(rolesFromRow({ super_admin: "true", host: 1 }).super_admin).toBe(false);
+    expect(rolesFromRow({ super_admin: "true", host: 1 }).host).toBe(false);
+  });
+});

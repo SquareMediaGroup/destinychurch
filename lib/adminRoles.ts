@@ -202,30 +202,28 @@ export async function getRoles(
   supabase: ServiceClient,
   authUserId: string,
 ): Promise<RoleFlags> {
-  // The column list is spelled out rather than `*` so a new access level has to
-  // be added here deliberately — but that also means forgetting this line makes
-  // the new role silently read as false everywhere. Keep it in step with
-  // AdminRole above.
-  const { data } = await supabase
+  // `*`, not a spelled-out column list. A named column that doesn't exist yet
+  // makes PostgREST fail the WHOLE query, and a failed read here means NO_ROLES
+  // for everyone — Super Admins included — locking the entire admin out
+  // whenever new code (with a new access level) reaches a database that hasn't
+  // had that level's migration applied yet, as on a PR preview. With `*`, a
+  // not-yet-migrated role simply reads as false and every other role still
+  // works. rolesFromRow is typed against AdminRole, so a new role still can't
+  // be forgotten here.
+  const { data, error } = await supabase
     .from("admin_roles")
-    .select(
-      "training_admin, event_admin, store_admin, site_admin, host, hr_admin, design_admin, sermon_admin, safeguarding_admin, destiny_one_admin, super_admin",
-    )
+    .select("*")
     .eq("auth_user_id", authUserId)
     .maybeSingle();
 
+  if (error) console.error("⚠️ admin_roles read failed:", error.message);
   if (!data) return NO_ROLES;
-  return {
-    training_admin: Boolean(data.training_admin),
-    event_admin: Boolean(data.event_admin),
-    store_admin: Boolean(data.store_admin),
-    site_admin: Boolean(data.site_admin),
-    host: Boolean(data.host),
-    hr_admin: Boolean(data.hr_admin),
-    design_admin: Boolean(data.design_admin),
-    sermon_admin: Boolean(data.sermon_admin),
-    safeguarding_admin: Boolean(data.safeguarding_admin),
-    destiny_one_admin: Boolean(data.destiny_one_admin),
-    super_admin: Boolean(data.super_admin),
-  };
+  return rolesFromRow(data);
+}
+
+/** Role flags from an admin_roles row. Columns the database doesn't have yet read as false. */
+export function rolesFromRow(row: Record<string, unknown>): RoleFlags {
+  const flags = { ...NO_ROLES };
+  for (const role of ADMIN_ROLES) flags[role] = row[role] === true;
+  return flags;
 }

@@ -4,11 +4,9 @@
 import { createServiceClient } from "@/utils/supabase/service";
 import { roleLabel, ADMIN_ROLES, type AdminRole } from "@/lib/adminRoles";
 
-// Spelled out (not built from ADMIN_ROLES.join()) so PostgREST's select
-// string parser can type it — a template-string select can't be parsed at
-// the type level. Keep in step with ADMIN_ROLES.
-const ADMIN_ROLE_COLUMNS =
-  "training_admin, event_admin, store_admin, site_admin, host, hr_admin, design_admin, sermon_admin, safeguarding_admin, destiny_one_admin, super_admin";
+// admin_roles is read with `*` rather than a named column list: naming a
+// column that a not-yet-migrated database doesn't have fails the whole query
+// (see getRoles in lib/adminRoles.ts). Missing role columns just read as false.
 
 type ServiceClient = ReturnType<typeof createServiceClient>;
 
@@ -105,7 +103,7 @@ export async function adminIdentitiesByAuthUserId(
   const map = new Map<string, { email: string | null; roles: string[] }>();
   const { data } = await supabase
     .from("admin_roles")
-    .select(`auth_user_id, email, ${ADMIN_ROLE_COLUMNS}`);
+    .select("*");
   for (const admin of data ?? []) {
     map.set(admin.auth_user_id, {
       email: admin.email,
@@ -127,7 +125,7 @@ export async function listUnlinkedAdmins(
   const [{ data: admins }, { data: staffRows }] = await Promise.all([
     supabase
       .from("admin_roles")
-      .select(`auth_user_id, email, ${ADMIN_ROLE_COLUMNS}`)
+      .select("*")
       .order("email", { ascending: true }),
     supabase.from("hr_staff").select("id, auth_user_id").not("auth_user_id", "is", null),
   ]);

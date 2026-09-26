@@ -202,23 +202,32 @@ export async function getRoles(
   supabase: ServiceClient,
   authUserId: string,
 ): Promise<RoleFlags> {
-  // `*`, not a spelled-out column list. A named column that doesn't exist yet
-  // makes PostgREST fail the WHOLE query, and a failed read here means NO_ROLES
-  // for everyone — Super Admins included — locking the entire admin out
-  // whenever new code (with a new access level) reaches a database that hasn't
-  // had that level's migration applied yet, as on a PR preview. With `*`, a
-  // not-yet-migrated role simply reads as false and every other role still
-  // works. rolesFromRow is typed against AdminRole, so a new role still can't
-  // be forgotten here.
+  // The column list is spelled out rather than `*` so a new access level has to
+  // be added here deliberately (tests/unit/design-access.spec.ts guards it).
+  //
+  // But a named column that the database doesn't have yet fails the WHOLE
+  // query — and a failed read here meant NO_ROLES for everyone, Super Admins
+  // included, whenever new code with a new access level reached a database
+  // that hadn't had that level's migration yet (a PR preview, or a deploy that
+  // lands before its migration). So on an error we retry once with `*`: the
+  // missing role reads as false and every existing role keeps working.
   const { data, error } = await supabase
+    .from("admin_roles")
+    .select(
+      "training_admin, event_admin, store_admin, site_admin, host, hr_admin, design_admin, sermon_admin, safeguarding_admin, destiny_one_admin, super_admin",
+    )
+    .eq("auth_user_id", authUserId)
+    .maybeSingle();
+
+  if (!error) return data ? rolesFromRow(data) : NO_ROLES;
+
+  console.error("⚠️ admin_roles read failed, retrying with *:", error.message);
+  const { data: fallback } = await supabase
     .from("admin_roles")
     .select("*")
     .eq("auth_user_id", authUserId)
     .maybeSingle();
-
-  if (error) console.error("⚠️ admin_roles read failed:", error.message);
-  if (!data) return NO_ROLES;
-  return rolesFromRow(data);
+  return fallback ? rolesFromRow(fallback) : NO_ROLES;
 }
 
 /** Role flags from an admin_roles row. Columns the database doesn't have yet read as false. */

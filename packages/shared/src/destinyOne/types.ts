@@ -29,6 +29,9 @@ export interface D1ErrorBody {
 
 export type D1ErrorCode =
   | "unauthenticated"
+  /** Signed in, no invite: show the access request form (POST /me/access-request). */
+  | "access_request_needed"
+  /** Waiting for approval, or invite-only. Show `message`. */
   | "not_verified"
   | "consent_required"
   | "forbidden"
@@ -53,8 +56,29 @@ export interface D1Me {
   consents: (D1Consent & { acceptedAt: string })[];
   /** Notices still to accept before chat unlocks. Empty when all done. */
   outstandingConsents: D1Consent[];
-  /** Linked to a ChurchSuite record. Unlinked accounts stay `pending`. */
+  /** Verified by Destiny staff (invite or approval) or ChurchSuite. Unverified accounts stay `pending`. */
   verified: boolean;
+  verification: "invite" | "admin" | "churchsuite" | null;
+  /**
+   * Which screen the app should show:
+   *   active            → the app
+   *   request_needed    → the access request form
+   *   request_submitted → "waiting for approval"
+   *   invite_only       → "ask for an invite"
+   *   suspended         → "speak to the church office"
+   */
+  onboarding: "active" | "request_needed" | "request_submitted" | "invite_only" | "suspended";
+  /** Copy for the non-active states, so the wording can change without an app release. */
+  onboardingMessage: string | null;
+}
+
+export interface D1AccessRequest {
+  /** Their real name, as the church knows them. */
+  name: string;
+  /** YYYY-MM-DD. Optional; staff confirm age when approving. Only the 18th birthday is kept. */
+  dateOfBirth?: string;
+  /** e.g. "I serve on the Media team". Up to 500 characters. */
+  note?: string;
 }
 
 export interface D1LastMessage {

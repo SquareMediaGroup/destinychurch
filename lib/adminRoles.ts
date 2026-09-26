@@ -15,6 +15,7 @@ export type AdminRole =
   | "design_admin"
   | "sermon_admin"
   | "safeguarding_admin"
+  | "destiny_one_admin"
   | "super_admin";
 
 export const ADMIN_ROLES: AdminRole[] = [
@@ -27,6 +28,7 @@ export const ADMIN_ROLES: AdminRole[] = [
   "design_admin",
   "sermon_admin",
   "safeguarding_admin",
+  "destiny_one_admin",
   "super_admin",
 ];
 
@@ -48,6 +50,7 @@ export const ROLE_LABELS: Record<AdminRole, string> = {
   design_admin: "Design Admin",
   sermon_admin: "Sermon Admin",
   safeguarding_admin: "Safeguarding Admin",
+  destiny_one_admin: "Destiny One Admin",
   super_admin: "Super Admin",
 };
 
@@ -76,6 +79,7 @@ export const NO_ROLES: RoleFlags = {
   design_admin: false,
   sermon_admin: false,
   safeguarding_admin: false,
+  destiny_one_admin: false,
   super_admin: false,
 };
 
@@ -149,10 +153,16 @@ const ROUTE_RULES: { pattern: RegExp; roles: AdminRole[] }[] = [
   { pattern: /^\/admin\/sermons(\/|$)/, roles: ["sermon_admin"] },
   { pattern: /^\/api\/admin\/sermons(\/|$)/, roles: ["sermon_admin"] },
 
-  // Safeguarding — Destiny One reports, frozen groups, audited transcript
-  // review, and linking app accounts to ChurchSuite records by hand.
-  { pattern: /^\/admin\/safeguarding(\/|$)/, roles: ["safeguarding_admin"] },
-  { pattern: /^\/api\/admin\/destiny-one(\/|$)/, roles: ["safeguarding_admin"] },
+  // Destiny One — safeguarding first, because the broader rule below would
+  // otherwise swallow it (first match wins). Safeguarding is reports, paused
+  // groups and audited transcript review; it is the ONLY place message content
+  // can be read.
+  { pattern: /^\/admin\/destiny-one\/safeguarding(\/|$)/, roles: ["safeguarding_admin"] },
+  { pattern: /^\/api\/admin\/destiny-one\/safeguarding(\/|$)/, roles: ["safeguarding_admin"] },
+  // Destiny One — running the app: invites, approvals, members, communities,
+  // groups, settings. No message content anywhere in these routes.
+  { pattern: /^\/admin\/destiny-one(\/|$)/, roles: ["destiny_one_admin"] },
+  { pattern: /^\/api\/admin\/destiny-one(\/|$)/, roles: ["destiny_one_admin"] },
 
 ];
 
@@ -199,7 +209,7 @@ export async function getRoles(
   const { data } = await supabase
     .from("admin_roles")
     .select(
-      "training_admin, event_admin, store_admin, site_admin, host, hr_admin, design_admin, sermon_admin, safeguarding_admin, super_admin",
+      "training_admin, event_admin, store_admin, site_admin, host, hr_admin, design_admin, sermon_admin, safeguarding_admin, destiny_one_admin, super_admin",
     )
     .eq("auth_user_id", authUserId)
     .maybeSingle();
@@ -215,6 +225,7 @@ export async function getRoles(
     design_admin: Boolean(data.design_admin),
     sermon_admin: Boolean(data.sermon_admin),
     safeguarding_admin: Boolean(data.safeguarding_admin),
+    destiny_one_admin: Boolean(data.destiny_one_admin),
     super_admin: Boolean(data.super_admin),
   };
 }

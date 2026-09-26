@@ -13,9 +13,13 @@ This document is the technical input for it.
 
 | Data | Where | Why | Kept |
 |---|---|---|---|
-| Real name | `d1_members.display_name` (from ChurchSuite) | Members must know who they're talking to; no pseudonyms in a safeguarding context | While the account exists; "Former member" after deletion |
-| Date they turn 18 | `d1_members.adult_on` | The 2-adult rule. **Full date of birth is never stored** — only the date that matters | As above |
-| ChurchSuite ids | `d1_members.churchsuite_*_id` | Links the account to the church's system of record | As above |
+| Real name | `d1_members.display_name` (set by staff via invite/approval; from ChurchSuite only for ChurchSuite sign-ins) | Members must know who they're talking to; no pseudonyms in a safeguarding context | While the account exists; "Former member" after deletion |
+| Date they turn 18 | `d1_members.adult_on` (staff decision) | The 2-adult rule. **Full date of birth is never stored** — only the date that matters | As above |
+| Self-declared age | `d1_members.declared_adult_on` (from the access request; again only the 18th birthday) | Helps staff review a request. Never used by any rule | As above |
+| Access request note | `d1_members.request_note` (≤500 chars) | Helps staff review a request | As above |
+| Verification record | `verified_at`, `verified_by`, `verification_source` | Accountability: who let this person in, and how | As above |
+| Invites | `d1_invites` (email, name, adult flag, roles, communities) | Pre-approving people | Until accepted/revoked; review and prune periodically |
+| ChurchSuite ids (optional) | `d1_members.churchsuite_*_id` | Reference link only; ChurchSuite is not required | As above |
 | Sign-in email | Supabase Auth (`auth.users`) only | Sign-in. Not copied into Destiny One tables, never shown to other members | Until account deletion |
 | Messages, reactions, files | `d1_messages`, `d1_reactions`, `d1-chat-media` bucket | The service | Retention window (§4) |
 | Group membership history | `d1_group_members` (incl. `left_at`) | Safeguarding: who was present when | Until the group is deleted |
@@ -49,7 +53,8 @@ ChurchSuite client by an allow-list — `lib/destinyOne/churchsuite.ts` `toPerso
 |---|---|---|---|
 | Supabase | Database, auth, storage, realtime | Everything in §1 | **Confirm the project region is EU/UK** before launch |
 | Vercel | Runs the API | Transient (requests) | Confirm function region |
-| ChurchSuite | System of record | Name, email, DOB (read-only by us) | UK |
+| ChurchSuite (optional) | Only if connected: staff sign-in and the approval lookup | Name, email, DOB (read-only by us; DOB reduced to the 18th birthday) | UK |
+| Resend | Sends invite emails | Invitee's email and first name | Confirm region / DPA |
 | Expo (push service) | Relays notifications | Push token + opaque group id — **no content, no names** | US |
 | Apple APNs / Google FCM | Deliver notifications | As above | US |
 
@@ -88,4 +93,6 @@ should say who holds the role and how these logs are reviewed.
 - [ ] Retention period agreed (D6) and `D1_MESSAGE_RETENTION_DAYS` set
 - [ ] Privacy notice + terms + chat-review notice written; versions match `REQUIRED_CONSENTS` in `packages/shared/src/destinyOne/policy.ts`
 - [ ] Safeguarding policy names who holds `safeguarding_admin` and how review logs are checked
-- [ ] ChurchSuite OAuth apps created with the narrowest scopes (`addressbook.read children.read`; `user` for sign-in)
+- [ ] Decide invite-only vs open to requests (`/admin/destiny-one/settings`)
+- [ ] Decide who holds Destiny One Admin (runs the app, no message access) and Safeguarding Admin (message review) — keep the latter to as few people as possible
+- [ ] If ChurchSuite is connected at all: OAuth apps with the narrowest scopes (`addressbook.read children.read`; `user` for sign-in)

@@ -4,7 +4,7 @@ import { recordAudit } from "@/lib/audit.server";
 import { dbFailure, requireSafeguardingAdmin } from "@/lib/destinyOne/admin.server";
 import { adminFreezeSchema } from "@/lib/destinyOne/schemas";
 
-// POST /api/admin/destiny-one/groups/[id]/freeze  { frozen, reason }
+// POST /api/admin/destiny-one/safeguarding/groups/[id]/freeze  { frozen, reason }
 //
 // Freeze a group by hand while something is looked into, or lift a manual
 // freeze. A manual freeze is never lifted by the automatic 2-adult rule;

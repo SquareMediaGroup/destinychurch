@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { createServiceClient } from "@/utils/supabase/service";
 import { requireSafeguardingAdmin } from "@/lib/destinyOne/admin.server";
 
-// GET /api/admin/destiny-one/reports?status=open|reviewing|closed
+// GET /api/admin/destiny-one/safeguarding/reports?status=open|reviewing|closed
 //
 // Reported messages with just enough context to triage: who reported, the
 // group, and the message itself (even if it has since been deleted — that is

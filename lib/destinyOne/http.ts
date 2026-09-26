@@ -29,6 +29,7 @@ export function oneJson<T>(data: T, httpStatus = 200): NextResponse {
 
 const STATUS_FOR: Record<D1ErrorCode, number> = {
   unauthenticated: 401,
+  access_request_needed: 403,
   not_verified: 403,
   consent_required: 403,
   forbidden: 403,

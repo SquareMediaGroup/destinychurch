@@ -4,7 +4,7 @@ import { recordAudit } from "@/lib/audit.server";
 import { requireSafeguardingAdmin } from "@/lib/destinyOne/admin.server";
 import { adminResolveSchema } from "@/lib/destinyOne/schemas";
 
-// PATCH /api/admin/destiny-one/reports/[id]  { status: reviewing|closed, resolution? }
+// PATCH /api/admin/destiny-one/safeguarding/reports/[id]  { status: reviewing|closed, resolution? }
 
 export const dynamic = "force-dynamic";
 

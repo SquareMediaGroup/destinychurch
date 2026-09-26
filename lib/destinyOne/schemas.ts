@@ -23,6 +23,15 @@ export const consentsSchema = z.object({
     .max(10),
 });
 
+export const accessRequestSchema = z.object({
+  name: z.string().trim().min(2, "Please enter your full name.").max(120),
+  dateOfBirth: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, "Date of birth should look like 2008-05-17.")
+    .optional(),
+  note: z.string().trim().max(500).optional(),
+});
+
 export const deleteAccountSchema = z.object({
   confirm: z.literal("DELETE", { errorMap: () => ({ message: 'Send { "confirm": "DELETE" } to delete your account.' }) }),
 });
@@ -102,14 +111,72 @@ export const exchangeSchema = z.object({
 
 // ── Admin (safeguarding) ──
 
+const dob = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Dates should look like 2008-05-17.");
+const leaderRoles = z.array(z.enum(["group_leader", "senior_leadership"])).max(2);
+
+/** Staff's decision on someone's age. See adultOnForDecision. */
+export const ageDecisionSchema = z.object({
+  adult: z.boolean(),
+  dateOfBirth: dob.optional().nullable(),
+});
+
+export const adminApproveSchema = ageDecisionSchema.extend({
+  displayName: z.string().trim().min(2).max(120).optional(),
+  communityIds: z.array(uuid).max(20).default([]),
+});
+
 export const adminMemberSchema = z
   .object({
-    /** Link to a ChurchSuite record by hand — for shared-email families, minors, and mismatches. */
-    link: z
+    displayName: z.string().trim().min(2, "Enter their full name.").max(120).optional(),
+    roles: leaderRoles.optional(),
+    status: z.enum(["active", "suspended"]).optional(),
+    age: ageDecisionSchema.optional(),
+    /** Link (or with null, unlink) a ChurchSuite record — for reference only. */
+    churchsuite: z
       .object({ kind: z.enum(["contact", "child"]), id: z.number().int().positive() })
+      .nullable()
       .optional(),
-    status: z.enum(["pending", "active", "suspended"]).optional(),
-    roles: z.array(z.enum(["group_leader", "senior_leadership"])).max(2).optional(),
+  })
+  .refine((v) => Object.keys(v).length > 0, "Nothing to change.");
+
+export const inviteSchema = z.object({
+  email: z.string().trim().toLowerCase().email("That email address doesn't look right."),
+  name: z.string().trim().min(2, "Enter their full name.").max(120),
+  adult: z.boolean(),
+  dateOfBirth: dob.optional().nullable(),
+  roles: leaderRoles.default([]),
+  communityIds: z.array(uuid).max(20).default([]),
+});
+
+export const invitesSchema = z.object({ invites: z.array(inviteSchema).min(1).max(100) });
+
+export const invitePatchSchema = z.object({ action: z.enum(["resend", "revoke"]) });
+
+export const adminCommunitySchema = z.object({
+  name,
+  description: optionalText(500),
+  adminIds: z.array(uuid).max(20).default([]),
+});
+
+export const adminCommunityPatchSchema = z
+  .object({ name: name.optional(), description: optionalText(500), archived: z.boolean().optional() })
+  .refine((v) => Object.keys(v).length > 0, "Nothing to change.");
+
+export const adminRoleSchema = z.object({ memberId: uuid, role: z.enum(["admin", "member"]) });
+export const adminRemoveSchema = z.object({ memberId: uuid });
+
+export const adminGroupSchema = z.object({
+  name,
+  department: optionalText(80),
+  description: optionalText(500),
+  memberIds: z.array(uuid).max(500).default([]),
+  adminIds: z.array(uuid).max(20).default([]),
+});
+
+export const adminSettingsSchema = z
+  .object({
+    allowAccessRequests: z.boolean().optional(),
+    inviteExpiryDays: z.number().int().min(1).max(365).optional(),
   })
   .refine((v) => Object.keys(v).length > 0, "Nothing to change.");
 

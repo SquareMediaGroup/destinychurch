@@ -79,6 +79,7 @@ export const AUDIT_SECTIONS = {
   design: { label: "Design", icon: "draw" },
   sermons: { label: "Sermons", icon: "mic" },
   safeguarding: { label: "Safeguarding", icon: "shield" },
+  destiny_one: { label: "Destiny One", icon: "forum" },
   media: { label: "Media", icon: "photo_library" },
   users: { label: "Users & access", icon: "group" },
   account: { label: "Account", icon: "key" },

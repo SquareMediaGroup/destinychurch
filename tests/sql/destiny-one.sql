@@ -43,12 +43,13 @@ insert into auth.users (id, email, phone) values
   ('00000000-0000-0000-0000-00000000000e', 'minor2@example.org', null),
   ('00000000-0000-0000-0000-00000000000f', 'phone@example.org', '+447700900000');
 
-insert into public.d1_members (id, auth_user_id, display_name, adult_on, status, roles) values
-  ('10000000-0000-0000-0000-00000000000a', '00000000-0000-0000-0000-00000000000a', 'Lead Adult',   '1990-01-01', 'active', '{senior_leadership,group_leader}'),
-  ('10000000-0000-0000-0000-00000000000b', '00000000-0000-0000-0000-00000000000b', 'Second Adult', '1985-06-01', 'active', '{}'),
-  ('10000000-0000-0000-0000-00000000000c', '00000000-0000-0000-0000-00000000000c', 'Third Adult',  '1980-03-03', 'active', '{}'),
-  ('10000000-0000-0000-0000-00000000000d', '00000000-0000-0000-0000-00000000000d', 'Minor One',    current_date + 400, 'active', '{}'),
-  ('10000000-0000-0000-0000-00000000000e', '00000000-0000-0000-0000-00000000000e', 'Minor Two',    null, 'active', '{}');
+-- Everyone here was verified by staff ('admin'): activation now requires it.
+insert into public.d1_members (id, auth_user_id, display_name, adult_on, status, roles, verified_at, verification_source) values
+  ('10000000-0000-0000-0000-00000000000a', '00000000-0000-0000-0000-00000000000a', 'Lead Adult',   '1990-01-01', 'active', '{senior_leadership,group_leader}', now(), 'admin'),
+  ('10000000-0000-0000-0000-00000000000b', '00000000-0000-0000-0000-00000000000b', 'Second Adult', '1985-06-01', 'active', '{}', now(), 'admin'),
+  ('10000000-0000-0000-0000-00000000000c', '00000000-0000-0000-0000-00000000000c', 'Third Adult',  '1980-03-03', 'active', '{}', now(), 'admin'),
+  ('10000000-0000-0000-0000-00000000000d', '00000000-0000-0000-0000-00000000000d', 'Minor One',    current_date + 400, 'active', '{}', now(), 'admin'),
+  ('10000000-0000-0000-0000-00000000000e', '00000000-0000-0000-0000-00000000000e', 'Minor Two',    null, 'active', '{}', now(), 'admin');
 
 -- Shorthand used below.
 \set lead   '''10000000-0000-0000-0000-00000000000a'''
@@ -64,8 +65,8 @@ select pg_temp.check(not public.d1_is_adult(:minor1::uuid), 'adult_on in the fut
 select pg_temp.check(not public.d1_is_adult(:minor2::uuid), 'no adult_on is a minor (fail safe)');
 
 select pg_temp.expect_error(
-  $$insert into public.d1_members (auth_user_id, display_name, adult_on, status)
-    values ('00000000-0000-0000-0000-00000000000f', 'Has Phone', '1990-01-01', 'active')$$,
+  $$insert into public.d1_members (auth_user_id, display_name, adult_on, status, verified_at, verification_source)
+    values ('00000000-0000-0000-0000-00000000000f', 'Has Phone', '1990-01-01', 'active', now(), 'admin')$$,
   'phone number');
 select pg_temp.check(true, 'an auth user with a phone number cannot be activated');
 
@@ -166,8 +167,9 @@ select pg_temp.check(
           where group_id = (select v from ids where k = 'youth') and kind = 'frozen' and adult_count = 1),
   'a safeguarding event is recorded with the adult count');
 select pg_temp.check(
-  exists (select 1 from public.notifications where roles = '{safeguarding_admin}' and kind = 'd1_frozen'),
-  'the freeze reaches the admin notification bell');
+  exists (select 1 from public.notifications
+          where roles = '{destiny_one_admin,safeguarding_admin}' and kind = 'd1_frozen'),
+  'the freeze reaches Destiny One and safeguarding admins');
 select pg_temp.check(
   exists (select 1 from realtime.messages where topic = 'admin-notifications:safeguarding_admin'),
   'the freeze is broadcast to safeguarding admins');
@@ -233,8 +235,8 @@ select public.d1_report_message(:minor1::uuid,
   (select max(id) from public.d1_messages where group_id = (select v from ids where k = 'youth') and deleted_at is null),
   'This made me uncomfortable');
 select pg_temp.check(
-  exists (select 1 from public.notifications where kind = 'd1_report'),
-  'a report reaches safeguarding');
+  exists (select 1 from public.notifications where kind = 'd1_report' and roles = '{safeguarding_admin}'),
+  'a report reaches safeguarding admins only');
 
 select pg_temp.expect_error(
   format($$select public.d1_post_message(%L, %L, 'sneaky')$$, :adult2, (select v from ids where k = 'youth')),
@@ -317,5 +319,128 @@ select pg_temp.check(
 select pg_temp.check(
   not exists (select 1 from public.d1_members where id = :minor2::uuid),
   'an erased member with no remaining messages is removed entirely');
+
+-- ════════════════════════════════════════════════════════════════════════════
+-- Part 2: staff verification, invites, admin-path operations
+-- ════════════════════════════════════════════════════════════════════════════
+
+insert into auth.users (id, email) values
+  ('00000000-0000-0000-0000-000000000011', 'self@example.org'),
+  ('00000000-0000-0000-0000-000000000012', 'invited@example.org'),
+  ('00000000-0000-0000-0000-000000000013', 'kid@example.org'),
+  ('00000000-0000-0000-0000-000000000014', 'staff@example.org');
+
+select pg_temp.expect_error(
+  $$insert into public.d1_members (auth_user_id, display_name, status)
+    values ('00000000-0000-0000-0000-000000000011', 'Self Signup', 'active')$$,
+  'verified before');
+select pg_temp.check(true, 'nobody becomes active without a verification record');
+
+-- A self-declared adult is pending, and even if activated by mistake without
+-- adult_on, the declaration never counts.
+insert into public.d1_members (id, auth_user_id, display_name, status, declared_adult_on, request_submitted_at)
+  values ('20000000-0000-0000-0000-000000000011', '00000000-0000-0000-0000-000000000011',
+          'Self Signup', 'pending', '1990-01-01', now());
+update public.d1_members set status = 'active', verified_at = now(), verification_source = 'admin'
+  where id = '20000000-0000-0000-0000-000000000011';
+select pg_temp.check(
+  not public.d1_is_adult('20000000-0000-0000-0000-000000000011'),
+  'a self-declared date of birth never makes someone an adult');
+
+-- Invites
+insert into public.d1_invites (email, display_name, is_adult, roles, community_ids, expires_at)
+  values ('invited@example.org', 'Invited Adult', true, '{group_leader}',
+          array[(select v from ids where k = 'community')], now() + interval '30 days');
+insert into public.d1_invites (email, display_name, is_adult, adult_on, community_ids, expires_at)
+  values ('kid@example.org', 'Invited Kid', false, current_date + 900,
+          array[(select v from ids where k = 'community')], now() + interval '30 days');
+
+select pg_temp.expect_error(
+  $$insert into public.d1_invites (email, display_name, is_adult, roles, expires_at)
+    values ('x@example.org', 'X', false, '{group_leader}', now() + interval '1 day')$$,
+  'd1_invites_leaders_are_adults');
+select pg_temp.check(true, 'an under-18 invite cannot carry a leader role');
+
+select pg_temp.check(
+  public.d1_accept_invite('00000000-0000-0000-0000-000000000099', 'nobody@example.org') is null,
+  'signing in without an invite accepts nothing');
+
+create temp table accepted (k text primary key, v uuid);
+insert into accepted select 'adult', public.d1_accept_invite('00000000-0000-0000-0000-000000000012', ' Invited@Example.org ');
+insert into accepted select 'kid', public.d1_accept_invite('00000000-0000-0000-0000-000000000013', 'kid@example.org');
+
+select pg_temp.check(
+  (select status = 'active' and verification_source = 'invite' and 'group_leader' = any (roles)
+     from public.d1_members where id = (select v from accepted where k = 'adult')),
+  'accepting an invite activates the member with its roles');
+select pg_temp.check(public.d1_is_adult((select v from accepted where k = 'adult')),
+  'an adult invite makes a verified adult');
+select pg_temp.check(not public.d1_is_adult((select v from accepted where k = 'kid')),
+  'an under-18 invite makes a minor');
+select pg_temp.check(
+  exists (select 1 from public.d1_community_members
+          where member_id = (select v from accepted where k = 'kid')
+            and community_id = (select v from ids where k = 'community')),
+  'an accepted invite joins its communities');
+select pg_temp.check(
+  public.d1_accept_invite('00000000-0000-0000-0000-000000000012', 'invited@example.org') is null,
+  'an invite can only be used once');
+
+-- Admin-path operations still obey every rule.
+select pg_temp.expect_error(
+  format($$select public.d1_admin_create_group(%L, 'x', null, null, array[%L, %L]::uuid[])$$,
+    (select v from ids where k = 'community'), :lead, :adult3),
+  'at least 3 people');
+select pg_temp.check(true, 'an admin-created group still needs 3 people');
+
+select pg_temp.expect_error(
+  format($$select public.d1_admin_create_group(%L, 'x', null, null, array[%L, %L, %L]::uuid[])$$,
+    (select v from ids where k = 'community'), :lead,
+    (select v from accepted where k = 'kid'), :minor1),
+  'at least 2 verified adults');
+select pg_temp.check(true, 'an admin-created group still needs 2 adults');
+
+select pg_temp.expect_error(
+  format($$select public.d1_admin_create_group(%L, 'x', null, null, array[%L, %L, %L]::uuid[], array[%L]::uuid[])$$,
+    (select v from ids where k = 'community'), :lead, :adult3, :minor1, :minor1),
+  'Group admins must be verified adults');
+select pg_temp.check(true, 'an admin cannot make a minor a group admin');
+
+insert into ids select 'media', public.d1_admin_create_group(
+  (select v from ids where k = 'community'), 'Media Team', 'Media', null,
+  array[:lead, :adult3, (select v from accepted where k = 'kid')]::uuid[],
+  array[(select v from accepted where k = 'adult')]::uuid[]);
+select pg_temp.check(
+  (select state from public.d1_groups where id = (select v from ids where k = 'media')) = 'active'
+    and (select role from public.d1_group_members
+         where group_id = (select v from ids where k = 'media')
+           and member_id = (select v from accepted where k = 'adult')) = 'admin',
+  'an admin can create a valid group with a chosen group admin');
+
+select public.d1_admin_remove_group_member((select v from ids where k = 'media'), :adult3::uuid);
+select public.d1_admin_remove_group_member((select v from ids where k = 'media'), :lead::uuid);
+select pg_temp.check(
+  (select state from public.d1_groups where id = (select v from ids where k = 'media')) = 'frozen',
+  'admin removals freeze a group that breaks the rule, same as anyone else');
+
+insert into ids select 'staffcom', public.d1_admin_create_community('Staff', null, '{}');
+select pg_temp.check(
+  (select state from public.d1_groups where community_id = (select v from ids where k = 'staffcom') and kind = 'announcements') = 'frozen',
+  'an admin-created community starts with its announcements paused until people join');
+
+select pg_temp.check(
+  (select member_count from public.d1_admin_groups((select v from ids where k = 'community'))
+     where id = (select v from ids where k = 'youth')) >= 3,
+  'the admin group list reports live counts');
+select pg_temp.check(
+  (select email from public.d1_admin_members() where id = :lead::uuid) = 'lead@example.org',
+  'the admin member list includes the sign-in email');
+
+select pg_temp.check(
+  not has_function_privilege('authenticated', 'public.d1_admin_create_group(uuid, text, text, text, uuid[], uuid[])', 'execute')
+  and not has_function_privilege('authenticated', 'public.d1_accept_invite(uuid, text)', 'execute')
+  and not has_function_privilege('anon', 'public.d1_admin_members(text)', 'execute')
+  and has_function_privilege('authenticated', 'public.d1_can_receive(text)', 'execute'),
+  'admin functions are service-role only; the realtime helpers stay open');
 
 \echo 'All Destiny One SQL checks passed.'

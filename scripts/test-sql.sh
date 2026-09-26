@@ -17,9 +17,9 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 PG_BIN="${PG_BIN:-/usr/lib/postgresql/16/bin}"
 PORT="${PG_TEST_PORT:-54329}"
 
-# suite name → migration it tests
+# suite name → the migrations it tests, applied in order (space-separated)
 declare -A SUITES=(
-  [destiny-one]="supabase/migrations/20260926_01_destiny_one.sql"
+  [destiny-one]="supabase/migrations/20260926_01_destiny_one.sql supabase/migrations/20260927_01_destiny_one_admin.sql"
 )
 
 selected=("$@")
@@ -40,8 +40,8 @@ trap cleanup EXIT
 
 status=0
 for suite in "${selected[@]}"; do
-  migration="${SUITES[$suite]:-}"
-  if [ -z "$migration" ]; then echo "❌ unknown suite: $suite"; exit 2; fi
+  migrations="${SUITES[$suite]:-}"
+  if [ -z "$migrations" ]; then echo "❌ unknown suite: $suite"; exit 2; fi
 
   echo "🧪 $suite"
   as_pg "'$PG_BIN/pg_ctl' -D '$WORK/data' -m immediate stop" >/dev/null 2>&1 || true
@@ -49,7 +49,8 @@ for suite in "${selected[@]}"; do
   as_pg "'$PG_BIN/initdb' -D '$WORK/data' -U postgres -A trust" >/dev/null
   as_pg "'$PG_BIN/pg_ctl' -D '$WORK/data' -o '-p $PORT -k $WORK' -l '$WORK/pg.log' -w start" >/dev/null
 
-  cat "$ROOT/tests/sql/supabase-stubs.sql" "$ROOT/$migration" > "$WORK/setup.sql"
+  cat "$ROOT/tests/sql/supabase-stubs.sql" > "$WORK/setup.sql"
+  for m in $migrations; do cat "$ROOT/$m" >> "$WORK/setup.sql"; done
   cp "$ROOT/tests/sql/$suite.sql" "$WORK/suite.sql"
   chmod 644 "$WORK"/*.sql
 

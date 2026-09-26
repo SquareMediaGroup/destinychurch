@@ -1,10 +1,11 @@
 // Nightly Destiny One sync (03:30).
 //
-//  1. Refreshes every linked member from ChurchSuite: real name, the date they
-//     turn 18, and whether their record is still active. Someone removed from
-//     ChurchSuite goes back to `pending`, which takes them out of their
-//     groups' counts — and any group that then has fewer than 2 adults
-//     freezes, as it should. A ChurchSuite outage changes nothing (§5.3).
+//  1. OPTIONAL — only when ChurchSuite is configured, and only for members who
+//     were verified BY ChurchSuite (Sign in with ChurchSuite). Staff-verified
+//     members (invites, approvals) are never touched. Refreshes name and
+//     adult date; someone removed from ChurchSuite goes back to `pending`
+//     for staff to look at, and any group left with < 2 adults pauses. An
+//     outage changes nothing.
 //  2. Re-checks every live group against the rules (d1_reconcile_all) as
 //     defence in depth, in case anything slipped past the triggers.
 //
@@ -39,8 +40,8 @@ export async function GET(request: Request) {
       const { data, error } = await supabase
         .from("d1_members")
         .select(MEMBER_COLUMNS)
-        .in("status", ["active", "pending"])
-        .or("churchsuite_contact_id.not.is.null,churchsuite_child_id.not.is.null")
+        .eq("status", "active")
+        .eq("verification_source", "churchsuite")
         .order("id")
         .range(from, from + PAGE - 1);
       if (error) {

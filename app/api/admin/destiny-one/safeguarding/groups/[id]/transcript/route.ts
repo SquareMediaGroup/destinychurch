@@ -5,7 +5,7 @@ import { recordAudit } from "@/lib/audit.server";
 import { requireSafeguardingAdmin } from "@/lib/destinyOne/admin.server";
 import { MEDIA_BUCKET } from "@/lib/destinyOne/chat.server";
 
-// GET /api/admin/destiny-one/groups/[id]/transcript?reason=…&from=…&to=…
+// GET /api/admin/destiny-one/safeguarding/groups/[id]/transcript?reason=…&from=…&to=…
 //
 // The full record of a group for a safeguarding investigation: everyone who
 // has ever been in it (with join/leave times and adult status), and every

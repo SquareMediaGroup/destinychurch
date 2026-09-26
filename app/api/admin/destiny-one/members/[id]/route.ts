@@ -1,93 +1,145 @@
 import { NextResponse } from "next/server";
+import { adultOnFromDateOfBirth, todayInLondon } from "@destiny/shared";
 import { createServiceClient } from "@/utils/supabase/service";
 import { recordAudit } from "@/lib/audit.server";
-import { dbFailure, requireSafeguardingAdmin } from "@/lib/destinyOne/admin.server";
+import { communityMemberships, getMember } from "@/lib/destinyOne/adminData.server";
+import { dbFailure, parseBody, requireDestinyOneAdmin } from "@/lib/destinyOne/admin.server";
 import { ChurchSuiteUnavailable, getChild, getContact } from "@/lib/destinyOne/churchsuite.server";
+import { adultOnForDecision } from "@/lib/destinyOne/onboarding";
 import { adminMemberSchema } from "@/lib/destinyOne/schemas";
 
-// PATCH /api/admin/destiny-one/members/[id]
-//   { link?: { kind: "contact"|"child", id }, status?, roles? }
-//
-// • link    — tie a pending account to a specific ChurchSuite record. Name
-//             and adult status come from that record, never typed in here.
-// • status  — suspend (takes them out of every group's counts at once; groups
-//             that drop below 2 adults freeze) or reinstate.
-// • roles   — group_leader / senior_leadership. Adults only; the database
-//             refuses otherwise.
+// GET    /api/admin/destiny-one/members/[id] — one member, with their communities and groups
+// PATCH  /api/admin/destiny-one/members/[id]
+//          { displayName?, roles?, status?: active|suspended, age?: { adult, dateOfBirth? },
+//            churchsuite?: { kind, id } | null }
+//        Staff are the source of truth for names and ages now (not ChurchSuite).
+//        Suspending takes them out of every group's counts at once; any group
+//        left with < 2 adults pauses. Leader roles need an adult (the database
+//        enforces it). A ChurchSuite link here is for reference only.
+// DELETE /api/admin/destiny-one/members/[id] — GDPR erasure, as if they'd
+//        deleted their own account.
 
 export const dynamic = "force-dynamic";
 
-export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
-  const admin = await requireSafeguardingAdmin();
+type Params = { params: Promise<{ id: string }> };
+
+export async function GET(_request: Request, { params }: Params) {
+  const admin = await requireDestinyOneAdmin();
   if (admin instanceof NextResponse) return admin;
   const id = (await params).id;
 
-  const parsed = adminMemberSchema.safeParse(await request.json().catch(() => ({})));
-  if (!parsed.success) return NextResponse.json({ error: parsed.error.issues[0]?.message }, { status: 400 });
-  const input = parsed.data;
+  const member = await getMember(id);
+  if (!member) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  return NextResponse.json({ member, ...(await communityMemberships(id)) });
+}
 
-  const supabase = createServiceClient();
-  const { data: before } = await supabase
-    .from("d1_members")
-    .select("id, display_name, status, roles, churchsuite_contact_id, churchsuite_child_id")
-    .eq("id", id)
-    .maybeSingle();
+export async function PATCH(request: Request, { params }: Params) {
+  const admin = await requireDestinyOneAdmin();
+  if (admin instanceof NextResponse) return admin;
+  const id = (await params).id;
+
+  const body = await parseBody(request, adminMemberSchema);
+  if ("response" in body) return body.response;
+  const input = body.data;
+
+  const before = await getMember(id);
   if (!before) return NextResponse.json({ error: "Not found" }, { status: 404 });
-  if (before.status === "deleted") return NextResponse.json({ error: "This account was deleted." }, { status: 409 });
 
   const update: Record<string, unknown> = {};
-
-  if (input.link) {
-    let person;
-    try {
-      person = input.link.kind === "contact" ? await getContact(input.link.id) : await getChild(input.link.id);
-    } catch (err) {
-      if (err instanceof ChurchSuiteUnavailable) {
-        return NextResponse.json({ error: "ChurchSuite isn't responding. Try again shortly." }, { status: 503 });
-      }
-      throw err;
+  if (input.displayName) update.display_name = input.displayName;
+  if (input.roles) update.roles = input.roles;
+  if (input.status) {
+    if (input.status === "active" && !before.verifiedAt && !input.age) {
+      return NextResponse.json(
+        { error: "Confirm whether they're an adult or under 18 before activating them." },
+        { status: 422 },
+      );
     }
-    if (!person) return NextResponse.json({ error: "No such ChurchSuite record." }, { status: 404 });
+    update.status = input.status;
+  }
+  if (input.age) {
+    const decided = adultOnForDecision(input.age, todayInLondon(), adultOnFromDateOfBirth);
+    if (!decided.ok) return NextResponse.json({ error: decided.error }, { status: 422 });
     Object.assign(update, {
-      display_name: person.displayName,
-      adult_on: person.adultOn,
-      churchsuite_contact_id: person.kind === "contact" ? person.id : null,
-      churchsuite_child_id: person.kind === "child" ? person.id : null,
-      last_synced_at: new Date().toISOString(),
-      status: input.status ?? (person.status === "active" ? "active" : "pending"),
+      adult_on: decided.adultOn,
+      verified_at: new Date().toISOString(),
+      verified_by: admin.userId,
+      verification_source: "admin",
     });
   }
-  if (input.status) update.status = input.status;
-  if (input.roles) update.roles = input.roles;
-
-  if (update.status === "active" && !input.link && !before.churchsuite_contact_id && !before.churchsuite_child_id) {
-    return NextResponse.json({ error: "Link this account to a ChurchSuite record before activating it." }, { status: 422 });
+  if (input.churchsuite !== undefined) {
+    if (input.churchsuite === null) {
+      Object.assign(update, { churchsuite_contact_id: null, churchsuite_child_id: null });
+    } else {
+      try {
+        const person =
+          input.churchsuite.kind === "contact"
+            ? await getContact(input.churchsuite.id)
+            : await getChild(input.churchsuite.id);
+        if (!person) return NextResponse.json({ error: "No such ChurchSuite record." }, { status: 404 });
+      } catch (err) {
+        if (err instanceof ChurchSuiteUnavailable) {
+          return NextResponse.json({ error: "ChurchSuite isn't available." }, { status: 503 });
+        }
+        throw err;
+      }
+      Object.assign(update, {
+        churchsuite_contact_id: input.churchsuite.kind === "contact" ? input.churchsuite.id : null,
+        churchsuite_child_id: input.churchsuite.kind === "child" ? input.churchsuite.id : null,
+      });
+    }
   }
 
-  const { data: after, error } = await supabase
+  const { error } = await createServiceClient().from("d1_members").update(update).eq("id", id);
+  if (error) return dbFailure(error);
+
+  const after = await getMember(id);
+  await recordAudit({
+    action: "update",
+    section: "destiny_one",
+    entity: "app member",
+    entityId: id,
+    entityLabel: after?.displayName ?? before.displayName,
+    summary: input.status === "suspended"
+      ? `Suspended the Destiny One account "${before.displayName}"`
+      : input.status === "active" && before.status !== "active"
+        ? `Reinstated the Destiny One account "${before.displayName}"`
+        : `Changed the Destiny One account "${before.displayName}"`,
+    before: { displayName: before.displayName, status: before.status, roles: before.roles, isAdult: before.isAdult },
+    after: after
+      ? { displayName: after.displayName, status: after.status, roles: after.roles, isAdult: after.isAdult }
+      : null,
+  });
+  return NextResponse.json({ member: after });
+}
+
+export async function DELETE(_request: Request, { params }: Params) {
+  const admin = await requireDestinyOneAdmin();
+  if (admin instanceof NextResponse) return admin;
+  const id = (await params).id;
+
+  const supabase = createServiceClient();
+  const { data: row } = await supabase
     .from("d1_members")
-    .update(update)
+    .select("id, display_name, auth_user_id")
     .eq("id", id)
-    .select("id, display_name, status, roles, churchsuite_contact_id, churchsuite_child_id")
-    .single();
-  if (error) {
-    if (error.code === "23505") {
-      return NextResponse.json({ error: "That ChurchSuite record is already linked to another account." }, { status: 409 });
-    }
-    return dbFailure(error);
+    .maybeSingle();
+  if (!row) return NextResponse.json({ error: "Not found" }, { status: 404 });
+
+  const { error } = await supabase.rpc("d1_erase_member", { p_member: id });
+  if (error) return dbFailure(error);
+  if (row.auth_user_id) {
+    const { error: authError } = await supabase.auth.admin.deleteUser(row.auth_user_id);
+    if (authError) console.error("⚠️ Destiny One erase: auth user delete failed:", authError.message);
   }
 
   await recordAudit({
-    action: "update",
-    section: "safeguarding",
+    action: "delete",
+    section: "destiny_one",
     entity: "app member",
     entityId: id,
-    entityLabel: after.display_name,
-    summary: input.link
-      ? `Linked the Destiny One account "${after.display_name}" to ChurchSuite ${input.link.kind} #${input.link.id}`
-      : `Changed the Destiny One account "${after.display_name}"`,
-    before,
-    after,
+    entityLabel: row.display_name,
+    summary: `Deleted the Destiny One account "${row.display_name}"`,
   });
-  return NextResponse.json({ member: after });
+  return NextResponse.json({ ok: true });
 }

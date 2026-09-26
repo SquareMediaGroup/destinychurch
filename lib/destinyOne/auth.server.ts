@@ -25,6 +25,8 @@ import {
 } from "@destiny/shared";
 import { createServiceClient } from "@/utils/supabase/service";
 import { OneError } from "@/lib/destinyOne/http";
+import { ONBOARDING_MESSAGES, onboardingState } from "@/lib/destinyOne/onboarding";
+import { getSettings } from "@/lib/destinyOne/settings.server";
 
 export interface AuthUser {
   id: string;
@@ -42,11 +44,14 @@ export interface MemberRow {
   churchsuite_contact_id: number | null;
   churchsuite_child_id: number | null;
   churchsuite_user_id: number | null;
+  verified_at: string | null;
+  verification_source: "invite" | "admin" | "churchsuite" | null;
+  request_submitted_at: string | null;
   created_at: string;
 }
 
 export const MEMBER_COLUMNS =
-  "id, auth_user_id, display_name, status, roles, adult_on, churchsuite_contact_id, churchsuite_child_id, churchsuite_user_id, created_at";
+  "id, auth_user_id, display_name, status, roles, adult_on, churchsuite_contact_id, churchsuite_child_id, churchsuite_user_id, verified_at, verification_source, request_submitted_at, created_at";
 
 export interface Caller {
   user: AuthUser;
@@ -112,14 +117,13 @@ export async function requireMember(
   const user = await authenticate(request);
   const member = await loadMemberByAuthUser(user.id);
 
-  if (!member || member.status === "pending") {
+  if (!member || member.status !== "active") {
+    const state = onboardingState(member, await getSettings());
+    const shown = state === "active" ? "suspended" : state; // unreachable: not active above
     throw new OneError(
-      "not_verified",
-      "We haven't been able to match your account to the church's records yet. The church office will be in touch.",
+      shown === "request_needed" ? "access_request_needed" : shown === "suspended" ? "forbidden" : "not_verified",
+      ONBOARDING_MESSAGES[shown],
     );
-  }
-  if (member.status !== "active") {
-    throw new OneError("forbidden", "This account is not currently able to use Destiny One.");
   }
 
   if (opts.requireConsent !== false) {
@@ -134,7 +138,8 @@ export async function requireMember(
 
 /** The D1Me payload for a member row (any status). */
 export async function toMe(member: MemberRow): Promise<D1Me> {
-  const consents = await loadConsents(member.id);
+  const [consents, settings] = await Promise.all([loadConsents(member.id), getSettings()]);
+  const state = onboardingState(member, settings);
   return {
     id: member.id,
     displayName: member.display_name,
@@ -143,6 +148,9 @@ export async function toMe(member: MemberRow): Promise<D1Me> {
     isAdult: isAdult(member.adult_on),
     consents,
     outstandingConsents: outstandingConsents(consents),
-    verified: Boolean(member.churchsuite_contact_id || member.churchsuite_child_id),
+    verified: Boolean(member.verified_at),
+    verification: member.verification_source,
+    onboarding: state,
+    onboardingMessage: state === "active" ? null : ONBOARDING_MESSAGES[state],
   };
 }

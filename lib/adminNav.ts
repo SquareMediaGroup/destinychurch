@@ -432,6 +432,71 @@ export const ADMIN_GROUPS: AdminNavGroup[] = [
       },
     ],
   },
+  {
+    // The Destiny One members' app (apps/destiny-one). Two roles: Destiny One
+    // Admin runs it and never sees messages; Safeguarding Admin is the only
+    // role that can read them, and every read is audited.
+    label: "Destiny One",
+    icon: "forum",
+    items: [
+      {
+        href: "/admin/destiny-one",
+        label: "Destiny One",
+        icon: "forum",
+        role: "destiny_one_admin",
+        description: "The members' app: who's in, communities and groups.",
+        keywords: ["app", "chat", "messaging", "whatsapp", "groups", "mobile"],
+      },
+      {
+        href: "/admin/destiny-one/requests",
+        label: "Access requests",
+        icon: "how_to_reg",
+        role: "destiny_one_admin",
+        description: "Approve people who asked to join, as an adult or under 18.",
+        keywords: ["approve", "pending", "verify", "sign up", "join"],
+      },
+      {
+        href: "/admin/destiny-one/invites",
+        label: "Invites",
+        icon: "outgoing_mail",
+        role: "destiny_one_admin",
+        description: "Invite people by email so they're in as soon as they sign in.",
+        keywords: ["invite", "email", "add people", "onboard"],
+      },
+      {
+        href: "/admin/destiny-one/members",
+        label: "App members",
+        icon: "group",
+        role: "destiny_one_admin",
+        description: "Everyone with an account: names, ages, leader roles, suspensions.",
+        keywords: ["users", "people", "leaders", "suspend", "age"],
+      },
+      {
+        href: "/admin/destiny-one/communities",
+        label: "Communities & groups",
+        icon: "diversity_3",
+        role: "destiny_one_admin",
+        description: "Communities, their department groups, and who's in them.",
+        keywords: ["departments", "teams", "announcements", "paused", "frozen"],
+      },
+      {
+        href: "/admin/destiny-one/safeguarding",
+        label: "Safeguarding",
+        icon: "shield",
+        role: "safeguarding_admin",
+        description: "Reports, paused groups and audited conversation review.",
+        keywords: ["reports", "review", "transcript", "freeze", "concern"],
+      },
+      {
+        href: "/admin/destiny-one/settings",
+        label: "App settings",
+        icon: "tune",
+        role: "destiny_one_admin",
+        description: "Invite-only or open to requests, invite expiry, retention.",
+        keywords: ["invite only", "requests", "retention", "configuration"],
+      },
+    ],
+  },
 ];
 
 /** Every item, flattened, in sidebar order. */

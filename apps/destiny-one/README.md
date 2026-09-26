@@ -51,10 +51,19 @@ a root npm workspace, on purpose: the website's build never installs React Nativ
 
 1. Email: `requestEmailCode(email)` → `verifyEmailCode(email, code)`; or
    ChurchSuite (staff/leaders): `signInWithChurchSuite()`.
-2. Both end in `api.link()`, returning `D1Me`. `status: "pending"` means the church hasn't matched the
-   account to its records yet — show a friendly "we'll be in touch" state.
+2. Both end in `api.link()`, returning `D1Me`. Anyone with an open invite for that email is let
+   straight in. Otherwise route on `me.onboarding`:
+   - `request_needed` → access request form → `api.requestAccess({ name, dateOfBirth?, note? })`
+   - `request_submitted` → "waiting for approval" (show `me.onboardingMessage`)
+   - `invite_only` / `suspended` → show `me.onboardingMessage`
+   - `active` → continue
 3. If `outstandingConsents` isn't empty, show the notices and call `api.acceptConsents(...)`.
 4. Then `api.communities()`, `subscribeToMe(me.id, …)`, and per open group `subscribeToGroup(id, …)`.
+
+People are verified by Destiny staff (invites and approvals in the website admin), not by
+ChurchSuite. Sign in with ChurchSuite is an optional extra for staff.
+
+The full list of screens and states to design is in `docs/destiny-one-ui-spec.md`.
 
 ## Checks
 

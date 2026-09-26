@@ -1,37 +1,40 @@
-// Destiny One — matching an app account to a ChurchSuite person.
+// Destiny One — turning a sign-in into a member.
 //
-// Accounts are provisioned against ChurchSuite, not self-declared
-// (docs/mobile-app-scope.md §3). Anyone can sign in with an email they
-// control; nobody can *chat* until that sign-in has been tied to exactly one
-// active ChurchSuite record, which is where their real name and adult/minor
-// status come from.
+// Verification is done by Destiny's own staff, not by ChurchSuite
+// (supabase/migrations/20260927_01_destiny_one_admin.sql). After a sign-in:
 //
-// Every uncertain case lands on `pending`, which can read nothing and post
-// nothing, and a safeguarding admin links it by hand
-// (/api/admin/destiny-one/members/[id]):
-//   • no ChurchSuite record with that exact email
-//   • more than one (a shared family address)
-//   • the record is already linked to a different account
-//   • ChurchSuite is down on first sign-in
+//   1. Already a member            → as they are.
+//   2. An open invite for the email → active, with the name / adult status /
+//                                     roles / communities the admin set. The
+//                                     email one-time code already proved they
+//                                     own the address.
+//   3. Sign in with ChurchSuite     → OPTIONAL: if ChurchSuite is configured and
+//                                     the ChurchSuite user is linked to an
+//                                     active contact, verified from that.
+//   4. Anyone else                  → pending. They fill in an access request
+//                                     (or are told it's invite-only), and a
+//                                     Destiny One Admin approves them.
 //
-// ChurchSuite being down never *downgrades* an existing member: an outage is
-// "no change", not "this person has gone" (§5.3).
+// ChurchSuite is never required, and its being down never blocks or
+// downgrades anyone.
 
 import "server-only";
+import { adultOnFromDateOfBirth, type D1AccessRequest } from "@destiny/shared";
 import { createServiceClient } from "@/utils/supabase/service";
-import { pickByEmail, type CsPerson } from "@/lib/destinyOne/churchsuite";
+import { type CsPerson } from "@/lib/destinyOne/churchsuite";
 import {
   ChurchSuiteUnavailable,
   churchSuiteConfigured,
-  findPeopleByEmail,
   getChild,
   getContact,
 } from "@/lib/destinyOne/churchsuite.server";
 import { MEMBER_COLUMNS, loadMemberByAuthUser, type AuthUser, type MemberRow } from "@/lib/destinyOne/auth.server";
 import { OneError } from "@/lib/destinyOne/http";
+import { getSettings } from "@/lib/destinyOne/settings.server";
 import { recordNotification } from "@/lib/notify.server";
 
-const PENDING_NAME = "Pending verification";
+/** Shown to staff until the person submits their access request. */
+const UNNAMED = "New sign-in";
 
 export interface SignInHint {
   /** From Sign in with ChurchSuite: the ChurchSuite user and their linked contact. */
@@ -39,163 +42,183 @@ export interface SignInHint {
   contactId: number | null;
 }
 
-type Resolved =
-  | { kind: "person"; person: CsPerson }
-  | { kind: "gone" } // looked up by id and ChurchSuite says it no longer exists
-  | { kind: "unmatched"; why: string }
-  | { kind: "unavailable" };
+async function load(memberId: string): Promise<MemberRow> {
+  const { data, error } = await createServiceClient()
+    .from("d1_members")
+    .select(MEMBER_COLUMNS)
+    .eq("id", memberId)
+    .single();
+  if (error || !data) throw new OneError("unavailable", "Something went wrong. Please try again.");
+  return data as MemberRow;
+}
 
-async function resolve(existing: MemberRow | null, email: string | null, hint?: SignInHint): Promise<Resolved> {
-  if (!churchSuiteConfigured()) return { kind: "unavailable" };
+async function createPending(authUserId: string): Promise<MemberRow> {
+  const { data, error } = await createServiceClient()
+    .from("d1_members")
+    .insert({ auth_user_id: authUserId, display_name: UNNAMED, status: "pending" })
+    .select(MEMBER_COLUMNS)
+    .single();
+  if (error || !data) {
+    // Two sign-ins racing: the other one created it.
+    const existing = await loadMemberByAuthUser(authUserId);
+    if (existing) return existing;
+    throw new OneError("unavailable", "Something went wrong. Please try again.");
+  }
+  return data as MemberRow;
+}
+
+/** An open invite for this email, accepted. Null if there isn't one. */
+async function acceptInvite(user: AuthUser): Promise<MemberRow | null> {
+  if (!user.email) return null;
+  const { data, error } = await createServiceClient().rpc("d1_accept_invite", {
+    p_auth_user: user.id,
+    p_email: user.email,
+  });
+  if (error) {
+    // e.g. the database refusing an account with a phone number on it.
+    console.error("⚠️ Destiny One invite could not be accepted:", error.message);
+    return null;
+  }
+  return data ? load(data as string) : null;
+}
+
+/** Optional ChurchSuite verification for staff who used Sign in with ChurchSuite. */
+async function verifyFromChurchSuite(existing: MemberRow | null, authUserId: string, hint: SignInHint): Promise<MemberRow | null> {
+  if (!churchSuiteConfigured() || !hint.contactId) return null;
+
+  let person: CsPerson | null;
   try {
-    if (existing?.churchsuite_contact_id) {
-      const p = await getContact(existing.churchsuite_contact_id);
-      return p ? { kind: "person", person: p } : { kind: "gone" };
-    }
-    if (existing?.churchsuite_child_id) {
-      const p = await getChild(existing.churchsuite_child_id);
-      return p ? { kind: "person", person: p } : { kind: "gone" };
-    }
-    if (hint?.contactId) {
-      const p = await getContact(hint.contactId);
-      return p ? { kind: "person", person: p } : { kind: "unmatched", why: "ChurchSuite user has no contact" };
-    }
-    if (!email) return { kind: "unmatched", why: "no email on the account" };
-
-    const pick = pickByEmail(await findPeopleByEmail(email), email);
-    if (pick.kind === "match") return { kind: "person", person: pick.person };
-    return {
-      kind: "unmatched",
-      why: pick.kind === "ambiguous" ? `${pick.count} ChurchSuite records share this email` : "no ChurchSuite record",
-    };
+    person = await getContact(hint.contactId);
   } catch (err) {
-    if (err instanceof ChurchSuiteUnavailable) {
-      console.warn("⚠️ ChurchSuite unavailable during Destiny One identity check:", err.message);
-      return { kind: "unavailable" };
-    }
+    if (err instanceof ChurchSuiteUnavailable) return null;
     throw err;
   }
-}
+  if (!person || person.status !== "active") return null;
 
-function fieldsFor(person: CsPerson): Partial<MemberRow> & { last_synced_at: string } {
-  return {
+  const supabase = createServiceClient();
+  const { data: clash } = await supabase
+    .from("d1_members")
+    .select("id")
+    .eq("churchsuite_contact_id", person.id)
+    .neq("id", existing?.id ?? "00000000-0000-0000-0000-000000000000")
+    .limit(1);
+  if ((clash ?? []).length) {
+    console.warn("⚠️ ChurchSuite contact already linked to another Destiny One account; leaving for staff.");
+    return null;
+  }
+
+  const fields = {
     display_name: person.displayName,
     adult_on: person.adultOn,
-    churchsuite_contact_id: person.kind === "contact" ? person.id : null,
-    churchsuite_child_id: person.kind === "child" ? person.id : null,
-    status: person.status === "active" ? "active" : "pending",
+    churchsuite_contact_id: person.id,
+    churchsuite_user_id: hint.churchsuiteUserId,
+    status: "active",
+    verified_at: new Date().toISOString(),
+    verification_source: "churchsuite",
     last_synced_at: new Date().toISOString(),
   };
-}
-
-async function linkedElsewhere(person: CsPerson, memberId: string | null): Promise<boolean> {
-  const column = person.kind === "contact" ? "churchsuite_contact_id" : "churchsuite_child_id";
-  let query = createServiceClient().from("d1_members").select("id").eq(column, person.id);
-  if (memberId) query = query.neq("id", memberId);
-  const { data } = await query.limit(1);
-  return (data ?? []).length > 0;
-}
-
-async function write(existing: MemberRow | null, authUserId: string, fields: Record<string, unknown>): Promise<MemberRow> {
-  const supabase = createServiceClient();
   const result = existing
     ? await supabase.from("d1_members").update(fields).eq("id", existing.id).select(MEMBER_COLUMNS).single()
-    : await supabase
-        .from("d1_members")
-        .insert({ auth_user_id: authUserId, display_name: PENDING_NAME, ...fields })
-        .select(MEMBER_COLUMNS)
-        .single();
-
+    : await supabase.from("d1_members").insert({ auth_user_id: authUserId, ...fields }).select(MEMBER_COLUMNS).single();
   if (result.error) {
-    // A DB rule refused it (e.g. a phone number on the auth user, or a leader
-    // role on someone ChurchSuite now says is under 18). Fall back to pending
-    // rather than failing sign-in outright.
-    console.error("⚠️ Destiny One member write refused:", result.error.message);
-    if (!existing) {
-      const fallback = await supabase
-        .from("d1_members")
-        .insert({ auth_user_id: authUserId, display_name: PENDING_NAME, status: "pending" })
-        .select(MEMBER_COLUMNS)
-        .single();
-      if (fallback.error) throw new OneError("unavailable", "Something went wrong. Please try again.");
-      await announcePending(fallback.data as MemberRow);
-      return fallback.data as MemberRow;
-    }
-    return existing;
+    console.error("⚠️ Destiny One ChurchSuite verification refused:", result.error.message);
+    return null;
   }
-  const row = result.data as MemberRow;
-  if (!existing && row.status === "pending") await announcePending(row);
-  return row;
-}
-
-/**
- * A pending account is told "the church office will be in touch" — this is
- * what makes that true. Once per account (on first creation), not per sign-in.
- */
-async function announcePending(row: MemberRow): Promise<void> {
-  await recordNotification({
-    section: "safeguarding",
-    kind: "d1_pending_member",
-    entityId: row.id,
-    entityLabel: null,
-    summary: "A new Destiny One sign-in needs linking to a ChurchSuite record before it can chat",
-    href: "/admin/safeguarding",
-    roles: ["safeguarding_admin"],
-  });
+  return result.data as MemberRow;
 }
 
 /**
  * Called after every sign-in (POST /auth/link, and the ChurchSuite callback).
- * Idempotent: re-running it refreshes the name and adult status.
+ * Idempotent.
  */
-export async function linkMember(user: AuthUser, hint?: SignInHint): Promise<MemberRow> {
+export async function onboardMember(user: AuthUser, hint?: SignInHint): Promise<MemberRow> {
   const existing = await loadMemberByAuthUser(user.id);
-  if (existing && (existing.status === "suspended" || existing.status === "deleted")) return existing;
+  if (existing && existing.status !== "pending") return existing;
 
-  // The database refuses to activate an account with a phone number on it;
-  // don't even look it up.
-  if (user.phone) return existing ?? write(null, user.id, { status: "pending" });
+  const invited = await acceptInvite(user);
+  if (invited) return invited;
 
-  const resolved = await resolve(existing, user.email, hint);
-
-  switch (resolved.kind) {
-    case "unavailable":
-      return existing ?? write(null, user.id, { status: "pending" });
-
-    case "gone":
-      // Removed from ChurchSuite. Back to pending: their groups re-evaluate and
-      // freeze if they were one of the two adults, which is the point.
-      return write(existing, user.id, { status: "pending", last_synced_at: new Date().toISOString() });
-
-    case "unmatched":
-      console.log(`🔎 Destiny One sign-in left pending (${resolved.why})`);
-      return existing ?? write(null, user.id, { status: "pending" });
-
-    case "person": {
-      if (await linkedElsewhere(resolved.person, existing?.id ?? null)) {
-        console.warn("⚠️ ChurchSuite record already linked to another Destiny One account; leaving pending.");
-        return existing ?? write(null, user.id, { status: "pending" });
-      }
-      const fields: Record<string, unknown> = { ...fieldsFor(resolved.person) };
-      if (hint) fields.churchsuite_user_id = hint.churchsuiteUserId;
-      return write(existing, user.id, fields);
-    }
+  if (hint && !user.phone) {
+    const verified = await verifyFromChurchSuite(existing, user.id, hint);
+    if (verified) return verified;
   }
+
+  return existing ?? createPending(user.id);
 }
 
 /**
- * Nightly refresh of one linked member (the destiny-one-sync cron). Returns
- * what changed, for the log. Never throws on a ChurchSuite outage.
+ * The access request form (POST /me/access-request). Records what the person
+ * says about themselves for a Destiny One Admin to review. The date of birth
+ * is kept only as `declared_adult_on`, which no rule ever reads — only the
+ * admin's decision on approval counts.
+ */
+export async function submitAccessRequest(member: MemberRow, input: D1AccessRequest): Promise<MemberRow> {
+  if (member.status !== "pending") {
+    throw new OneError("invalid", "This account doesn't need an access request.");
+  }
+  const settings = await getSettings();
+  if (!settings.allowAccessRequests) {
+    throw new OneError(
+      "forbidden",
+      "Destiny One is invite-only at the moment. Ask your team leader or the church office for an invite.",
+    );
+  }
+
+  const first = !member.request_submitted_at;
+  const { data, error } = await createServiceClient()
+    .from("d1_members")
+    .update({
+      display_name: input.name,
+      declared_adult_on: adultOnFromDateOfBirth(input.dateOfBirth),
+      request_note: input.note?.trim() || null,
+      request_submitted_at: new Date().toISOString(),
+    })
+    .eq("id", member.id)
+    .select(MEMBER_COLUMNS)
+    .single();
+  if (error || !data) throw new OneError("unavailable", "Something went wrong. Please try again.");
+
+  if (first) {
+    await recordNotification({
+      section: "destiny_one",
+      kind: "d1_access_request",
+      entityId: member.id,
+      entityLabel: input.name,
+      summary: `${input.name} asked to join Destiny One`,
+      href: "/admin/destiny-one/requests",
+      roles: ["destiny_one_admin"],
+    });
+  }
+  return data as MemberRow;
+}
+
+/**
+ * Nightly refresh (destiny-one-sync cron) — ONLY for members who were verified
+ * by ChurchSuite in the first place. Staff-verified members are never touched
+ * by ChurchSuite, even if staff linked a record for reference. Never throws on
+ * an outage.
  */
 export async function resyncMember(member: MemberRow): Promise<"unchanged" | "updated" | "gone" | "skipped"> {
-  if (member.status === "deleted" || member.status === "suspended") return "skipped";
+  if (member.verification_source !== "churchsuite" || member.status !== "active") return "skipped";
+  if (!churchSuiteConfigured()) return "skipped";
   if (!member.churchsuite_contact_id && !member.churchsuite_child_id) return "skipped";
 
-  const resolved = await resolve(member, null);
-  if (resolved.kind === "unavailable" || resolved.kind === "unmatched") return "skipped";
+  let person: CsPerson | null;
+  try {
+    person = member.churchsuite_contact_id
+      ? await getContact(member.churchsuite_contact_id)
+      : member.churchsuite_child_id
+        ? await getChild(member.churchsuite_child_id)
+        : null;
+  } catch (err) {
+    if (err instanceof ChurchSuiteUnavailable) return "skipped";
+    throw err;
+  }
 
   const supabase = createServiceClient();
-  if (resolved.kind === "gone") {
+  if (!person || person.status !== "active") {
+    // Gone from ChurchSuite: back to pending for staff to look at. Their
+    // groups re-evaluate and pause if they were one of the two adults.
     await supabase
       .from("d1_members")
       .update({ status: "pending", last_synced_at: new Date().toISOString() })
@@ -203,13 +226,11 @@ export async function resyncMember(member: MemberRow): Promise<"unchanged" | "up
     return "gone";
   }
 
-  const next = fieldsFor(resolved.person);
-  const changed =
-    next.display_name !== member.display_name ||
-    next.adult_on !== member.adult_on ||
-    next.status !== member.status;
-
-  const { error } = await supabase.from("d1_members").update(next).eq("id", member.id);
+  const changed = person.displayName !== member.display_name || person.adultOn !== member.adult_on;
+  const { error } = await supabase
+    .from("d1_members")
+    .update({ display_name: person.displayName, adult_on: person.adultOn, last_synced_at: new Date().toISOString() })
+    .eq("id", member.id);
   if (error) {
     console.error(`⚠️ Destiny One resync refused for ${member.id}:`, error.message);
     return "skipped";

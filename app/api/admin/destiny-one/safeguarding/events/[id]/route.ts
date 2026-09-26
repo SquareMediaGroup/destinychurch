@@ -3,7 +3,7 @@ import { createServiceClient } from "@/utils/supabase/service";
 import { recordAudit } from "@/lib/audit.server";
 import { requireSafeguardingAdmin } from "@/lib/destinyOne/admin.server";
 
-// PATCH /api/admin/destiny-one/events/[id] — mark a safeguarding event handled.
+// PATCH /api/admin/destiny-one/safeguarding/events/[id] — mark a safeguarding event handled.
 
 export const dynamic = "force-dynamic";
 

@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { createServiceClient } from "@/utils/supabase/service";
 import { requireSafeguardingAdmin } from "@/lib/destinyOne/admin.server";
 
-// GET /api/admin/destiny-one/events?open=1
+// GET /api/admin/destiny-one/safeguarding/events?open=1
 //
 // The safeguarding queue: groups that froze (fell below 2 adults or 3
 // members), unfroze, were frozen by hand, and reports. Newest first.

@@ -9,6 +9,7 @@ import type {
   D1Consent,
   D1DirectoryEntry,
   D1Envelope,
+  D1AccessRequest,
   D1ErrorBody,
   D1ErrorCode,
   D1Export,
@@ -88,6 +89,8 @@ export function createDestinyOneClient({ baseUrl, getAccessToken, fetchImpl }: D
     exchangeChurchSuiteCode: (code: string, verifier: string) =>
       call<{ tokenHash: string; type: "magiclink" }>("POST", "/auth/churchsuite/exchange", { code, verifier }),
     me: () => call<D1Me>("GET", "/me"),
+    /** For `onboarding: "request_needed"` — ask the church team for access. */
+    requestAccess: (input: D1AccessRequest) => call<D1Me>("POST", "/me/access-request", input),
     acceptConsents: (consents: D1Consent[]) => call<D1Me>("POST", "/me/consents", { consents }),
     exportMyData: () => call<D1Export>("GET", "/me/export"),
     deleteAccount: () => call<{ deleted: true }>("DELETE", "/me", { confirm: "DELETE" }),

@@ -3,7 +3,7 @@ import { cookies } from "next/headers";
 import { createServiceClient } from "@/utils/supabase/service";
 import { seal, unseal } from "@/lib/destinyOne/churchsuite";
 import { exchangeAuthCode, getCurrentUser } from "@/lib/destinyOne/churchsuite.server";
-import { linkMember } from "@/lib/destinyOne/identity.server";
+import { onboardMember } from "@/lib/destinyOne/identity.server";
 import { oneError } from "@/lib/destinyOne/http";
 import {
   HANDOFF_TTL_SECONDS,
@@ -72,7 +72,7 @@ export async function GET(request: Request) {
       throw link.error ?? new Error("No sign-in token generated");
     }
 
-    await linkMember(
+    await onboardMember(
       { id: link.data.user.id, email: csUser.email, phone: link.data.user.phone || null },
       { churchsuiteUserId: csUser.userId, contactId: csUser.contactId },
     );

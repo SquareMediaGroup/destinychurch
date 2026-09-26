@@ -362,6 +362,10 @@ destinychurch/
 │       ├── 20260912_01_sermon_admin_role.sql # `sermon_admin` access level on admin_roles (/admin/sermons)
 │       ├── 20260912_02_speaker_overrides.sql # speaker_overrides table — AI/human speaker corrections for the sermon archive
 │       ├── 20260920_01_sermon_series.sql  # sermon_series table — playlist ids curated as sermon series
+│       ├── 20260926_01_destiny_one.sql    # Destiny One messaging (d1_* tables, safeguarding triggers,
+│       │                                  # Realtime policy) + admin_roles.safeguarding_admin — see §29
+│       ├── 20260927_01_destiny_one_admin.sql # Destiny One part 2: staff verification, d1_invites,
+│       │                                  # d1_settings, d1_admin_* functions, destiny_one_admin role
 │       └── 20260922_02_live_chat_rpc_grants.sql # Revoke anon/authenticated EXECUTE on live chat definer fns; host check → `private`
 │
 ├── utils/                         # Utility modules
@@ -375,6 +379,12 @@ destinychurch/
 │   └── content/                   # Source copy for policy/partner text — the live pages render
 │                                   # an edited subset, so these are the fuller source. See its README.
 ├── apps/                          # Standalone companion apps that live in this repo but ship
+│   ├── destiny-one/               # Destiny One — the members' messaging app (Expo SDK 57, React
+│   │                               # Native, iOS + Android, Liquid Glass via expo-glass-effect).
+│   │                               # Its own npm project (NOT a root workspace, so the website build
+│   │                               # never installs React Native); imports @destiny/shared through a
+│   │                               # file: link + metro.config.js. Backend: /api/app/v1/one/*.
+│   │                               # Skeleton only — no screens yet. See "Destiny One" below.
 │   └── live-caption/              # separately from the website. Currently:
 │                                   # Live Caption — a macOS app (SwiftUI, Swift 6, XcodeGen) that
 │                                   # captions live audio in real time with a local whisper.cpp model
@@ -392,7 +402,9 @@ destinychurch/
 │   └── shared/                    # @destiny/shared — framework-agnostic types/logic shared by the web
 │                                   # app and the app BFF (the Swift app can't import TS). Ships raw TS
 │                                   # (Next transpiles it via `transpilePackages`). Modules under src/:
-│                                   # churchsuite/{events,dates,series,sanitize,ics} and design/tokens.ts
+│                                   # churchsuite/{events,dates,series,sanitize,ics}, design/tokens.ts,
+│                                   # and destinyOne/{types,policy,client} (Destiny One wire types,
+│                                   # safeguarding rules and the typed API client)
 │                                   # (canonical DC brand palette/typography matching app/globals.css).
 ├── tests/                         # Playwright E2E specs (contact, cookies, give,
 │                                   # navigation, sermons) — run via `npx playwright test`
@@ -926,7 +938,7 @@ simply never grow a row since `toursFor()` returns nothing for them. See
 ---
 
 #### 10c. **admin_roles**
-**Purpose:** Access levels for `/admin` — nine independent booleans per admin login, checked by `middleware.ts` on every `/admin/*` and `/api/admin/*` request
+**Purpose:** Access levels for `/admin` — eleven independent booleans per admin login, checked by `middleware.ts` on every `/admin/*` and `/api/admin/*` request
 
 ```sql
 CREATE TABLE admin_roles (
@@ -940,6 +952,8 @@ CREATE TABLE admin_roles (
   hr_admin boolean NOT NULL DEFAULT false,  -- /admin/hr
   design_admin boolean NOT NULL DEFAULT false,  -- /admin/design — the design ticket queue
   sermon_admin boolean NOT NULL DEFAULT false,  -- /admin/sermons — publishing audio to Buzzsprout
+  safeguarding_admin boolean NOT NULL DEFAULT false,  -- /admin/destiny-one/safeguarding — reports, paused groups, audited transcripts
+  destiny_one_admin boolean NOT NULL DEFAULT false,   -- /admin/destiny-one — invites, approvals, members, communities (no messages)
   super_admin boolean NOT NULL DEFAULT false,
   created_at timestamptz NOT NULL DEFAULT now(),
   updated_at timestamptz NOT NULL DEFAULT now()
@@ -2095,13 +2109,95 @@ request (`app/api/portal/leave`).
 
 ---
 
+#### 29. **d1_*** (Destiny One — members' group messaging)
+**Purpose:** The data behind Destiny One, the Expo app (`apps/destiny-one`): WhatsApp-Communities-style
+messaging — a **community** holds an **Announcements** group everyone is in (admins post) plus
+department **sub-groups**. Migration: `supabase/migrations/20260926_01_destiny_one.sql`.
+
+| Table | Holds |
+|---|---|
+| `d1_members` | One row per app account. `auth_user_id` (nullable — set null when the account is deleted), `display_name` (from ChurchSuite, not editable by the member), `churchsuite_contact_id` / `churchsuite_child_id` / `churchsuite_user_id`, **`adult_on`** (the 18th birthday — the full date of birth is never stored), `status` (`pending`/`active`/`suspended`/`deleted`), `roles` (`group_leader`, `senior_leadership`) |
+| `d1_consents` | Which version of `privacy` / `terms` / `chat_review_notice` a member accepted, when |
+| `d1_communities`, `d1_community_members` | Communities and who is in them (`admin`/`member`) |
+| `d1_groups` | `kind` (`announcements`/`group`), `department`, `state` (`active`/`frozen`/`archived`), `freeze_kind` (`auto`/`manual`), `frozen_reason` |
+| `d1_group_members` | Membership incl. history (`left_at` kept, so a review can see who was present when), `last_read_message_id`, `muted_until` |
+| `d1_messages` | `body` ≤ 4000, `reply_to`, `attachment_id`, soft-delete `deleted_at`/`deleted_by`. Immutable except the delete stamp |
+| `d1_reactions`, `d1_attachments` | Reactions; files in the private `d1-chat-media` bucket (images/PDF, 20 MB) |
+| `d1_reports`, `d1_safeguarding_events` | The safeguarding queue |
+| `d1_push_tokens` | Expo push tokens |
+
+**There is no phone column anywhere, by rule** (the safeguarding policy forbids phone numbers), and
+`tests/sql/destiny-one.sql` fails if one is ever added.
+
+**The rules are enforced in the database**, not the API, so no client and no route bug can get round
+them:
+1. **No 1:1 chats.** `d1_create_group` refuses fewer than 3 people.
+2. **Only leaders create groups** (`group_leader` / `senior_leadership`, adults only); only senior
+   leadership creates communities.
+3. **At least 2 verified adults in every group, always.** Checked at creation, then by a *deferred*
+   constraint trigger on `d1_group_members` (and on `d1_members` status/`adult_on` changes) that calls
+   `d1_evaluate_group`: below 3 members or 2 adults → `frozen` (read-only) + a `d1_safeguarding_events`
+   row; back above → unfrozen automatically. Leaving is never blocked (scoping doc D1: freeze + notify).
+   "Adult" is `adult_on <= current_date`, so turning 18 needs no job; no `adult_on` = minor (fail safe).
+   Group/community admins and leader roles must be adults.
+4. **No E2EE, reviewable.** Deleted messages keep their body until the retention purge; messages
+   can't be edited in place.
+5. An account whose `auth.users.phone` is set can't be made `active`.
+
+Safeguarding events are written into `notifications` for the `safeguarding_admin` role by a trigger and
+broadcast on `admin-notifications:safeguarding_admin`, so they ring the existing admin bell.
+
+**Functions** (all `SECURITY DEFINER`, `EXECUTE` revoked from `anon`/`authenticated` — service role
+only; each takes the acting member explicitly): `d1_create_community`, `d1_add_community_members`,
+`d1_remove_community_member`, `d1_create_group`, `d1_add_group_members`, `d1_remove_group_member`,
+`d1_post_message`, `d1_delete_message`, `d1_react`, `d1_report_message`, `d1_set_manual_freeze`,
+`d1_erase_member` (GDPR erasure: leave everything, anonymise to "Former member"), `d1_purge_expired`,
+`d1_reconcile_all`, `d1_group_overview` (the chat list with unread counts in one query), plus
+`d1_emit` (wraps `realtime.send`). Writes emit on private Broadcast topics `d1-group:<id>` and
+`d1-member:<id>`; the `d1_receive` policy on `realtime.messages` (via `d1_can_receive`, the only
+functions granted to `authenticated`) lets only current, active members receive them.
+
+Also adds `admin_roles.safeguarding_admin` and redefines `admin_has_role()` to know it.
+
+**Part 2 — `20260927_01_destiny_one_admin.sql`: staff verify people, not ChurchSuite.** Destiny wants
+minimal reliance on ChurchSuite, so identity now comes from Destiny's own staff:
+- **`d1_members`** gains `verified_at`, `verified_by`, `verification_source` (`invite` / `admin` /
+  `churchsuite`), `declared_adult_on`, `request_note`, `request_submitted_at`. **New rule: nobody
+  becomes `active` without a verification record.** `adult_on` is still the one field the 2-adult
+  rule reads; staff set it — adult without a DOB → the verification date; under-18 with a DOB →
+  their 18th birthday; under-18 without → null. `declared_adult_on` is what a person said about
+  themselves in an access request: shown to the reviewer, **never read by any rule**.
+- **`d1_invites`** — email, name, `is_adult`, optional `adult_on`, leader `roles`, `community_ids`,
+  `status` (`pending`/`accepted`/`revoked`/`expired`), `expires_at`. One open invite per email.
+  `d1_accept_invite(auth_user, email)` activates the member on sign-in with that email (the email
+  one-time code proves ownership — no invite token) and joins the listed communities.
+- **`d1_settings`** (one row) — `allow_access_requests` (off = invite-only), `invite_expiry_days`.
+- **Admin-path functions** with no acting member (website staff may have no app account):
+  `d1_admin_create_community`, `_add_community_members`, `_set_community_role`,
+  `_remove_community_member`, `_create_group`, `_add_group_members`, `_remove_group_member`,
+  `_set_group_role`, sharing `d1__check_composition` (≥3 people, ≥2 adults). Every part-1 trigger
+  still applies. Plus reads `d1_admin_members` (joins the sign-in email from `auth.users` in one
+  query) and `d1_admin_groups` (live counts).
+- **Notifications re-routed:** an automatic pause → `destiny_one_admin` + `safeguarding_admin`; a
+  report → `safeguarding_admin` only.
+- **`admin_roles.destiny_one_admin`**, and `admin_has_role()` redefined to include it.
+
+**Tested by:** `scripts/test-sql.sh` (`npm run test:sql`) — applies Supabase stubs + both migrations to
+a throwaway local Postgres 16 and runs `tests/sql/destiny-one.sql` (69 checks).
+
+**Used By:** `lib/destinyOne/*`, `app/api/app/v1/one/**`, `app/api/admin/destiny-one/**`,
+`app/api/cron/destiny-one-{sync,purge}`.
+
+---
+
 **Key Point:** Member-facing features use API proxy routes that enforce
 authentication in application code, then access the database with the service
 role key — this gives finer control and better error messages. Two authenticated
 SELECT policies now exist as **defense-in-depth** alongside that model (they are
 not the primary boundary): `hr_reviews`' "reviewer can read own reviews"
 (`reviewer_auth_user_id = auth.uid()`) and the `realtime.messages`
-`admin_notifications_receive` policy for the notification Broadcast topics. Every
+`admin_notifications_receive` policy for the notification Broadcast topics, and
+`d1_receive` for Destiny One's `d1-group:*` / `d1-member:*` topics. Every
 base data table is still deny-all to the anon/authenticated roles.
 
 ---
@@ -2550,6 +2646,13 @@ Each section requires a specific access-level role (see
 | `/portal/leave` | `app/portal/leave/page.tsx` | Staff self-service — request and withdraw own leave |
 | `/portal/documents` | `app/portal/documents/page.tsx` | Staff self-service — download own + org-wide documents |
 | `/portal/design` | `app/portal/design/page.tsx` | Staff self-service — own design requests, plus a link to `/portal/design/request` to file a new one. Matched by staff link *and* by email, so requests filed before this page existed still appear |
+| `/admin/destiny-one` | `app/admin/destiny-one/page.tsx` | Destiny One overview: requests waiting, active members, open invites, paused groups (Destiny One Admin) |
+| `/admin/destiny-one/requests` | `app/admin/destiny-one/requests/page.tsx` | Approve access requests as adult or under 18 (optional DOB, name fix, communities), or decline; optional ChurchSuite lookup (Destiny One Admin) |
+| `/admin/destiny-one/invites` | `app/admin/destiny-one/invites/page.tsx` | Invite one or many people by email with age, leader role and communities; resend, revoke (Destiny One Admin) |
+| `/admin/destiny-one/members` | `app/admin/destiny-one/members/page.tsx` | Everyone with an account; panel to fix name, age, leader roles, suspend, delete (Destiny One Admin) |
+| `/admin/destiny-one/communities` (+ `/[id]`) | `app/admin/destiny-one/communities/**` | Communities, their Announcements and department groups with live people/adult counts and pause reasons; add/remove people, roles, create/archive groups with a live rule check. No message content (Destiny One Admin) |
+| `/admin/destiny-one/safeguarding` | `app/admin/destiny-one/safeguarding/page.tsx` | Queue, reports, all groups, manual pause, and the reason-gated, audited transcript viewer (Safeguarding Admin) |
+| `/admin/destiny-one/settings` | `app/admin/destiny-one/settings/page.tsx` | Invite-only vs open to requests, invite expiry; retention and ChurchSuite status read-only (Destiny One Admin) |
 | `/admin/sermons` | `app/admin/sermons/page.tsx` | Publish sermon audio to Buzzsprout (video keeps going to YouTube separately); add/remove YouTube playlists as sermon series; run the AI speaker review or manually search-and-correct any sermon's speaker; a read-only recent-episodes list showing pairing status (Sermon Admin) |
 | `/admin/design` | `app/admin/design/page.tsx` | Design ticket queue — search, status/priority/mine filters, inline Claim. Defaults to "Needs someone" rather than everything (Design Admin) |
 | `/admin/design/[id]` | `app/admin/design/[id]/page.tsx` | Ticket detail — brief, requester, the thread, the deliverable uploader, and only the transition buttons `canTransition` allows from here (Design Admin) |
@@ -2966,6 +3069,11 @@ eventually wanders into alone, and a moderated space nobody is moderating.
 ---
 
 ### Page-Specific Components
+
+#### Destiny One admin (`components/admin/destinyOne/PeoplePicker.tsx`)
+- `PeoplePicker` — searchable multi-select of people with an Adult / Under 18 badge each.
+- `RuleCheck` — the live "N people, M adults — meets the rules / needs 3 people including 2 adults"
+  line under the picker, so whoever builds a group sees the rule before the server enforces it.
 
 #### Ministry pages (`components/ministry/*`)
 
@@ -4329,6 +4437,96 @@ returned to its own author marked as waiting, so they don't retype it.
 // once a day, the real-world floor is 48-72h, not exactly 48. Per-row try/catch:
 // one file that won't delete is logged and skipped, not a whole failed run.
 ```
+
+#### `GET /api/cron/destiny-one-sync`
+```typescript
+// Daily at 03:30. Bearer CRON_SECRET (fails closed). OPTIONAL ChurchSuite part: only when
+// configured, and only for members verified BY ChurchSuite (verification_source='churchsuite') —
+// staff-verified members are never touched. Removed from ChurchSuite → `pending`, which pauses
+// any group left with < 2 adults. An outage changes nothing. Then d1_reconcile_all() re-checks
+// every live group (always runs).
+```
+
+#### `GET /api/cron/destiny-one-purge`
+```typescript
+// Daily at 04:15. Bearer CRON_SECRET. d1_purge_expired(D1_MESSAGE_RETENTION_DAYS, default 365,
+// floor 30) deletes messages, their attachment rows, erased members with no remaining messages,
+// and closed reports / resolved events past the window; the route then removes the storage
+// objects. ⚠️ 365 is a placeholder pending the safeguarding policy decision (scoping doc D6).
+```
+
+#### Destiny One API (`/api/app/v1/one/*`)
+The backend for the Expo app. Every route: `Authorization: Bearer <Supabase access token>` (no
+cookies, so `middleware.ts` doesn't see these), resolved by `lib/destinyOne/auth.server.ts`, which
+applies three gates — signed in → `active`, staff-verified member (`access_request_needed` / `not_verified` / `forbidden` otherwise, per `onboardingState`) →
+current notices accepted (`consent_required`). Responses use the app envelope with
+`Cache-Control: private, no-store`; errors are `{ error: { code, message } }` with a stable `code`
+and a message the app can show. Writes call the `d1_*` SQL functions, whose own errors (e.g. "A group
+needs at least 2 verified adults.") pass through as `rule_violation` (422). Typed client:
+`createDestinyOneClient` in `@destiny/shared`.
+
+| Route | Methods | Notes |
+|---|---|---|
+| `auth/link` | POST | After every sign-in: accept an open invite for the email (`onboardMember`), return `D1Me` with `onboarding` |
+| `me/access-request` | POST | `{ name, dateOfBirth?, note? }` — ask to join; a Destiny One Admin approves |
+| `auth/churchsuite/start` → `callback` → `exchange` | GET, GET, POST | Sign in with ChurchSuite (below) |
+| `me` | GET, DELETE | DELETE = GDPR erasure (`{ "confirm": "DELETE" }`) |
+| `me/consents` | POST | Current versions only (`REQUIRED_CONSENTS`) |
+| `me/export` | GET | GDPR access: profile, consents, memberships, own messages, own reports |
+| `me/push-tokens` | POST, DELETE | Expo tokens |
+| `communities` | GET, POST | POST: senior leadership |
+| `communities/[id]` | GET | |
+| `communities/[id]/members` | POST, DELETE | DELETE without `memberId` = leave |
+| `communities/[id]/groups` | POST | Create a sub-group (≥3 people, ≥2 adults) |
+| `groups/[id]` | GET, PATCH | PATCH: rename/describe/archive (managers) |
+| `groups/[id]/members` | POST, DELETE | Leaving never blocked |
+| `groups/[id]/messages` | GET, POST | Only messages since you joined; POST pushes a content-free notification via `after()` |
+| `groups/[id]/read`, `/mute`, `/attachments` | POST | Read marker, mute, signed upload URL |
+| `messages/[id]` | DELETE | Soft delete (content kept for review) |
+| `messages/[id]/report`, `/reactions` | POST (+DELETE) | Report → safeguarding bell |
+| `directory` | GET | Leaders only; names + adult flag, never contact details |
+
+**Sign in with ChurchSuite.** ChurchSuite's OAuth (authorisation code, scope `user`,
+`GET /account/users/current`) identifies ChurchSuite **users** — staff and leaders with a login — not
+every member, so members sign in with a Supabase email one-time code instead. `start` takes the app's
+redirect (`destinyone://…` only; `exp://` in development) and the **app's** PKCE challenge, and keeps
+our own PKCE verifier + state in a sealed HttpOnly cookie (`DESTINY_ONE_SECRET`, AES-256-GCM).
+`callback` exchanges the code, ensures a confirmed Supabase user for the ChurchSuite email, links it,
+mints a magic-link token hash — and redirects with a sealed 2-minute code, **not** the token. The app
+redeems that at `exchange` with its verifier, then `verifyOtp({ token_hash })`. An app that hijacks the
+`destinyone://` scheme on Android gets a code it can't use.
+
+#### Destiny One admin API (`/api/admin/destiny-one/*`)
+Two roles, split by path in `lib/adminRoles.ts` ROUTE_RULES (the safeguarding rule is listed first
+so the broader one can't swallow it) and re-checked in every route by `requireDestinyOneAdmin` /
+`requireSafeguardingAdmin` (`lib/destinyOne/admin.server.ts`). Every mutation calls `recordAudit`
+(section `destiny_one` or `safeguarding`).
+
+**Destiny One Admin (`destiny_one_admin`) — runs the app, never sees message content:**
+- `GET overview` — counts for the landing page.
+- `GET members?status=`, `GET/PATCH/DELETE members/[id]` — name, age decision (`age: { adult,
+  dateOfBirth? }` → `adultOnForDecision`), leader roles, suspend/reinstate, optional ChurchSuite
+  reference link, GDPR erasure.
+- `POST members/[id]/approve` (`{ adult, dateOfBirth?, displayName?, communityIds? }`),
+  `POST members/[id]/decline` (suspends, so they don't re-queue).
+- `GET/POST invites` (one or up to 100; per-invite errors returned), `PATCH invites/[id]` (resend
+  restarts expiry / revoke). Invite email: `lib/destinyOne/inviteEmail.server.ts` — the invitee's
+  name only, no community names.
+- `GET/POST communities`, `GET/PATCH communities/[id]`, `POST/PATCH/DELETE communities/[id]/members`,
+  `POST communities/[id]/groups`, `GET/PATCH groups/[id]` (archive/restore), `POST/PATCH/DELETE
+  groups/[id]/members` — all through the `d1_admin_*` SQL functions, so the rules hold.
+- `GET/PATCH settings` — access requests on/off, invite expiry; retention shown read-only.
+- `GET churchsuite?q=` — OPTIONAL lookup on the approval screen; 404 when ChurchSuite isn't configured.
+
+**Safeguarding Admin (`safeguarding_admin`) — `/api/admin/destiny-one/safeguarding/*`, the only
+place message content can be read:**
+- `GET events?open=1`, `PATCH events/[id]` — the pause/report queue; mark handled.
+- `GET reports?status=`, `PATCH reports/[id]` — triage reports (resolution text redacted in the audit log).
+- `GET groups` — every group with counts, to pick one to review or pause.
+- `GET groups/[id]/transcript?reason=…&from=…&to=…` — full history incl. deleted messages and
+  membership history. **Requires a reason** and defaults to the last 30 days; every read is written
+  to the audit log (`action: "view"`, section `safeguarding`) with who, which group, window and reason.
+- `POST groups/[id]/freeze` — manual pause / lift (a manual pause isn't lifted by the automatic rule).
 
 > There is no `/api/webhooks/vercel` or GitHub webhook route, and no `youtube-sync`
 > cron/cache job — `app/api/webhooks/` currently only contains `stripe/` (see Shop
@@ -6009,6 +6207,39 @@ fresh URL per click.
 
 ---
 
+### `lib/destinyOne/*` — Destiny One backend
+
+Part 2 additions: `onboarding.ts` (pure: `onboardingState`, `ONBOARDING_MESSAGES`,
+`adultOnForDecision` — turns an admin's adult/under-18 choice + optional DOB into `adult_on`, and
+refuses a mismatch), `settings.server.ts` (`getSettings`, `retentionDays`), `adminData.server.ts`
+(admin reads: members with email, groups with counts, community/group people, invites),
+`adminTypes.ts` + `adminClient.ts` (client-safe shapes and `adminSend` for the admin pages),
+`inviteEmail.server.ts`. `identity.server.ts` now exports `onboardMember`, `submitAccessRequest`
+and a ChurchSuite-only `resyncMember`.
+
+- `http.ts` — `oneJson`/`oneError`/`OneError`, `oneRoute` (turns a thrown `OneError` into the error
+  response), `fromDbError` (maps the SQL functions' SQLSTATEs: `P0001` → 422 `rule_violation`, `42501` →
+  403, `P0002` → 404; anything else is logged and reported generically), `readBody` (zod), `limit`
+  (per-member `lib/rateLimit.ts` wrapper).
+- `auth.server.ts` — `authenticate` (Bearer → Supabase user), `requireMember` (the three gates), `toMe`.
+- `churchsuite.ts` (pure, unit-tested) — `toPerson`, the **data-minimisation allow-list**: a ChurchSuite
+  record becomes `{ kind, id, displayName, email, adultOn, status }` and nothing else — no phone,
+  address, medical notes or DOB ever leave it. Children-module records are always minors.
+  `pickByEmail` (exact, active, and *ambiguous* on a shared family email → stays pending). PKCE,
+  `seal`/`unseal` (AES-256-GCM with expiry), `isAllowedAppRedirect`.
+- `churchsuite.server.ts` — ChurchSuite API v2: client-credentials token (cached), contact/child
+  lookups, auth-code exchange, current user. Throws `ChurchSuiteUnavailable` on outage so callers treat
+  it as "no change".
+- `identity.server.ts` — `onboardMember` (invite → active; optional ChurchSuite sign-in → verified; else `pending`), `submitAccessRequest`, `resyncMember` (ChurchSuite-verified members only; outages never downgrade).
+- `chat.server.ts` — reads shaped into `@destiny/shared` types: community list, group detail (adult flags
+  only for managers), message pages with signed attachment URLs; deleted messages returned without body.
+- `push.server.ts` — Expo push, **content-free** ("New message" + group id), prunes dead tokens.
+- `schemas.ts` — zod request schemas (limits mirror the SQL CHECKs). `admin.server.ts` —
+  `requireSafeguardingAdmin`. `signin.server.ts` — ChurchSuite hand-off constants.
+- `packages/shared/src/destinyOne/policy.ts` — the rules as pure functions (`adultOnFromDateOfBirth`,
+  `canCreateGroup`, `checkComposition`, `canPost`, `REQUIRED_CONSENTS`, …) for early refusals in the
+  API and button-hiding in the app. The database is the authority; this is a copy.
+
 ## Authentication & Authorization
 
 ### Supabase Auth Flow
@@ -6058,9 +6289,10 @@ remembered, so existing sessions aren't unexpectedly downgraded.
 
 ### Authorization Layers
 
-Access levels live in `lib/adminRoles.ts` + the `admin_roles` table — nine
+Access levels live in `lib/adminRoles.ts` + the `admin_roles` table — eleven
 independent per-user booleans (`training_admin`, `event_admin`, `store_admin`,
-`site_admin`, `host`, `hr_admin`, `design_admin`, `sermon_admin`, `super_admin`; see [admin_roles](#10b-admin_roles)). Auth *and*
+`site_admin`, `host`, `hr_admin`, `design_admin`, `sermon_admin`, `safeguarding_admin`,
+`destiny_one_admin`, `super_admin`; see [admin_roles](#10b-admin_roles)). Auth *and*
 role enforcement both happen centrally in `middleware.ts`, not in
 `app/admin/layout.tsx` (which is a client component purely responsible for the
 sidebar/header shell; it does not check auth or roles itself).
@@ -6298,6 +6530,25 @@ Same rate limit and Supabase password checks (`signInCore` in
 > public side.
 
 ---
+
+### Destiny One member identity (`/api/app/v1/one`)
+
+Separate from admin auth: app members are Supabase Auth users with **no admin_roles row** and
+**no cookies** — the Expo app keeps its session in the iOS Keychain / Android Keystore
+(`expo-secure-store`) and sends a Bearer token. Two sign-in methods, neither with a phone number:
+email one-time code (Supabase OTP) and Sign in with ChurchSuite (optional, for staff/leaders).
+
+**Staff verify people, not ChurchSuite.** After sign-in, `onboardMember` (`identity.server.ts`):
+existing member → as is; an open invite for the email → active with the invite's name, age, roles
+and communities; Sign in with ChurchSuite (if configured) → verified from the linked contact;
+anyone else → `pending`. `D1Me.onboarding` tells the app which screen to show
+(`request_needed` → the access request form, `POST /me/access-request`; `request_submitted`;
+`invite_only` when `d1_settings.allow_access_requests` is off; `suspended`; `active`), with
+`onboardingMessage` copy served from the server (`lib/destinyOne/onboarding.ts`). A Destiny One
+Admin approves requests as adult or under 18 at `/admin/destiny-one/requests`. Members must also
+accept the current privacy / terms / chat-review notices. Leader roles (`group_leader`,
+`senior_leadership`) are set by a Destiny One Admin. Supabase's phone auth provider should be
+**disabled**; the database refuses to activate an account with a phone number regardless.
 
 ### Session Management
 
@@ -6684,6 +6935,28 @@ VERCEL_API_TOKEN=
 VERCEL_ANALYTICS_PROJECT_ID=
 VERCEL_ANALYTICS_TEAM_ID=
 
+# Destiny One (the Expo messaging app's backend, /api/app/v1/one)
+#   ChurchSuite is OPTIONAL for Destiny One (staff verify people via invites/approvals). Leave these
+#   unset to run without it; set them to enable Sign in with ChurchSuite and the approval lookup.
+#   CHURCHSUITE_CLIENT_ID / _SECRET        — OAuth app, client credentials; scopes addressbook.read
+#                                            children.read (override with CHURCHSUITE_SCOPES)
+#   CHURCHSUITE_OAUTH_CLIENT_ID / _SECRET  — "Sign in with ChurchSuite" app (auth code + PKCE, scope
+#                                            user). Falls back to the pair above.
+#   DESTINY_ONE_SECRET                     — 32+ random chars; seals the OAuth state cookie and the
+#                                            one-time sign-in hand-off code
+#   D1_MESSAGE_RETENTION_DAYS              — default 365 (placeholder pending safeguarding sign-off)
+#   EXPO_ACCESS_TOKEN                      — optional; only if Expo push security is enabled
+#   D1_APP_STORE_URL / D1_PLAY_STORE_URL   — optional; store links in the invite email once published
+CHURCHSUITE_CLIENT_ID=
+CHURCHSUITE_CLIENT_SECRET=
+CHURCHSUITE_OAUTH_CLIENT_ID=
+CHURCHSUITE_OAUTH_CLIENT_SECRET=
+DESTINY_ONE_SECRET=
+D1_MESSAGE_RETENTION_DAYS=365
+EXPO_ACCESS_TOKEN=
+D1_APP_STORE_URL=
+D1_PLAY_STORE_URL=
+
 # Feature flags (also toggleable via the `service_status` DB table, e.g. 'smart_search')
 ENABLE_SMART_SEARCH=true
 ```
@@ -6832,6 +7105,7 @@ ENABLE_SMART_SEARCH=true
 ### Admin Pages
 - `app/login/page.tsx` — Staff sign-in (there is no `app/admin/login`; that path is a stale-bookmark redirect to `/admin`)
 - `app/admin/page.tsx` — Admin home (dashboard)
+- `app/admin/destiny-one/**` — Destiny One: overview, access requests, invites, app members, communities & groups (Destiny One Admin), safeguarding (Safeguarding Admin), app settings
 - `app/admin/banner/page.tsx` — Banner management
 - `app/admin/popup/page.tsx` — Pop-up management
 - `app/admin/redirects/page.tsx` — Redirect management
@@ -6994,8 +7268,32 @@ feed normalisation of its own, because the BFF already does all of it.
   constraints (adult/minor boundary via ChurchSuite DOB data), ChurchSuite API integration, and
   payments/sermon-feed reuse. It now also includes **Appendix A (ChurchSuite API v2 technical
   reference)** and **Appendix B (Apple Human Interface Guidelines considerations)**. Phase 1
-  (the native SwiftUI tab shell over the `/api/app/v1` BFF) is now built; later phases (chat, payments,
-  push) are still planning-only.
+  (the native SwiftUI tab shell over the `/api/app/v1` BFF) is now built. **Chat has since moved
+  off Matrix** — see Destiny One below.
+
+### Destiny One (Expo, iOS + Android) — `apps/destiny-one/`
+The members' messaging app — "WhatsApp Communities" with department sub-groups, under the
+safeguarding rules in the `d1_*` schema (§29). **Separate from the Swift app in `mobile/`**, which
+remains the content app (sermons/events/give). Chat was scoped on a self-hosted Matrix homeserver;
+it was built on Supabase instead (Postgres + triggers + Realtime Broadcast) because it needed
+shipping urgently, needs no new server to run and patch, and the safeguarding rules sit in the
+same database as the data rather than in a separate Synapse module.
+- **Status: skeleton + complete backend. No screens yet** (one placeholder route).
+- Expo SDK 57, Expo Router (`src/app/`), TypeScript. Its own npm project with its own lockfile —
+  deliberately **not** a root workspace so Vercel never installs React Native. It imports
+  `@destiny/shared` via `"file:../../packages/shared"`; `metro.config.js` watches that folder.
+  Excluded from the root `tsconfig.json` and `eslint.config.mjs`.
+- `app.json`: name "Destiny One", scheme `destinyone`, bundle/package id `uk.destinytees.one`, Android
+  `blockedPermissions` strips phone-state/SMS/contacts/location permissions any dependency might add.
+- `src/lib/`: `config.ts` (EXPO_PUBLIC_* — see `.env.example`), `secureStorage.ts` (Supabase session in
+  Keychain/Keystore, chunked for Android's size limit), `supabase.ts` (auth + Realtime only — never
+  data), `api.ts` (the shared typed client), `auth.ts` (email OTP; ChurchSuite via
+  `expo-web-browser` auth session + app-side PKCE), `realtime.ts` (private `d1-group:*` / `d1-member:*`
+  channels), `push.ts` (ask contextually, never on launch; content-free).
+- `src/components/GlassSurface.tsx` — Liquid Glass (`expo-glass-effect` `GlassView`) on iOS 26+, a
+  translucent solid fallback on Android / older iOS. The one surface primitive for app chrome.
+- Checks: `npm run typecheck`, `npx expo-doctor`, `npx expo export --platform ios --platform android`.
+- GDPR notes (data map, processors, retention, erasure, review audit): `docs/destiny-one-gdpr.md`.
 
 ### Live Caption (macOS app) — `apps/live-caption/`
 A standalone **macOS app** (not part of the website deploy) that captions live audio in real time for Destiny's AVL setup (ATEM, ProPresenter, Dante, NDI). It captures from a Core Audio device or an NDI network source, transcribes locally with a Metal-accelerated [whisper.cpp](https://github.com/ggml-org/whisper.cpp) model, and shows the caption on a connected display and/or publishes it as a live NDI source. **Audio never leaves the machine** — transcription is entirely local.

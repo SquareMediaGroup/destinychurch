@@ -24,6 +24,14 @@
     {
       "path": "/api/cron/design-deliverables-purge",
       "schedule": "0 4 * * *"
+    },
+    {
+      "path": "/api/cron/destiny-one-sync",
+      "schedule": "30 3 * * *"
+    },
+    {
+      "path": "/api/cron/destiny-one-purge",
+      "schedule": "15 4 * * *"
     }
   ]
 }

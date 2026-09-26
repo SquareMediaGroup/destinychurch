@@ -14,6 +14,8 @@ export type AdminRole =
   | "hr_admin"
   | "design_admin"
   | "sermon_admin"
+  | "safeguarding_admin"
+  | "destiny_one_admin"
   | "super_admin";
 
 export const ADMIN_ROLES: AdminRole[] = [
@@ -25,6 +27,8 @@ export const ADMIN_ROLES: AdminRole[] = [
   "hr_admin",
   "design_admin",
   "sermon_admin",
+  "safeguarding_admin",
+  "destiny_one_admin",
   "super_admin",
 ];
 
@@ -45,6 +49,8 @@ export const ROLE_LABELS: Record<AdminRole, string> = {
   hr_admin: "HR Admin",
   design_admin: "Design Admin",
   sermon_admin: "Sermon Admin",
+  safeguarding_admin: "Safeguarding Admin",
+  destiny_one_admin: "Destiny One Admin",
   super_admin: "Super Admin",
 };
 
@@ -72,6 +78,8 @@ export const NO_ROLES: RoleFlags = {
   hr_admin: false,
   design_admin: false,
   sermon_admin: false,
+  safeguarding_admin: false,
+  destiny_one_admin: false,
   super_admin: false,
 };
 
@@ -145,6 +153,17 @@ const ROUTE_RULES: { pattern: RegExp; roles: AdminRole[] }[] = [
   { pattern: /^\/admin\/sermons(\/|$)/, roles: ["sermon_admin"] },
   { pattern: /^\/api\/admin\/sermons(\/|$)/, roles: ["sermon_admin"] },
 
+  // Destiny One — safeguarding first, because the broader rule below would
+  // otherwise swallow it (first match wins). Safeguarding is reports, paused
+  // groups and audited transcript review; it is the ONLY place message content
+  // can be read.
+  { pattern: /^\/admin\/destiny-one\/safeguarding(\/|$)/, roles: ["safeguarding_admin"] },
+  { pattern: /^\/api\/admin\/destiny-one\/safeguarding(\/|$)/, roles: ["safeguarding_admin"] },
+  // Destiny One — running the app: invites, approvals, members, communities,
+  // groups, settings. No message content anywhere in these routes.
+  { pattern: /^\/admin\/destiny-one(\/|$)/, roles: ["destiny_one_admin"] },
+  { pattern: /^\/api\/admin\/destiny-one(\/|$)/, roles: ["destiny_one_admin"] },
+
 ];
 
 // Paths any authenticated admin can reach regardless of role.
@@ -184,27 +203,36 @@ export async function getRoles(
   authUserId: string,
 ): Promise<RoleFlags> {
   // The column list is spelled out rather than `*` so a new access level has to
-  // be added here deliberately — but that also means forgetting this line makes
-  // the new role silently read as false everywhere. Keep it in step with
-  // AdminRole above.
-  const { data } = await supabase
+  // be added here deliberately (tests/unit/design-access.spec.ts guards it).
+  //
+  // But a named column that the database doesn't have yet fails the WHOLE
+  // query — and a failed read here meant NO_ROLES for everyone, Super Admins
+  // included, whenever new code with a new access level reached a database
+  // that hadn't had that level's migration yet (a PR preview, or a deploy that
+  // lands before its migration). So on an error we retry once with `*`: the
+  // missing role reads as false and every existing role keeps working.
+  const { data, error } = await supabase
     .from("admin_roles")
     .select(
-      "training_admin, event_admin, store_admin, site_admin, host, hr_admin, design_admin, sermon_admin, super_admin",
+      "training_admin, event_admin, store_admin, site_admin, host, hr_admin, design_admin, sermon_admin, safeguarding_admin, destiny_one_admin, super_admin",
     )
     .eq("auth_user_id", authUserId)
     .maybeSingle();
 
-  if (!data) return NO_ROLES;
-  return {
-    training_admin: Boolean(data.training_admin),
-    event_admin: Boolean(data.event_admin),
-    store_admin: Boolean(data.store_admin),
-    site_admin: Boolean(data.site_admin),
-    host: Boolean(data.host),
-    hr_admin: Boolean(data.hr_admin),
-    design_admin: Boolean(data.design_admin),
-    sermon_admin: Boolean(data.sermon_admin),
-    super_admin: Boolean(data.super_admin),
-  };
+  if (!error) return data ? rolesFromRow(data) : NO_ROLES;
+
+  console.error("⚠️ admin_roles read failed, retrying with *:", error.message);
+  const { data: fallback } = await supabase
+    .from("admin_roles")
+    .select("*")
+    .eq("auth_user_id", authUserId)
+    .maybeSingle();
+  return fallback ? rolesFromRow(fallback) : NO_ROLES;
+}
+
+/** Role flags from an admin_roles row. Columns the database doesn't have yet read as false. */
+export function rolesFromRow(row: Record<string, unknown>): RoleFlags {
+  const flags = { ...NO_ROLES };
+  for (const role of ADMIN_ROLES) flags[role] = row[role] === true;
+  return flags;
 }

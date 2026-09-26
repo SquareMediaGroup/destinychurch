@@ -14,6 +14,7 @@ export type AdminRole =
   | "hr_admin"
   | "design_admin"
   | "sermon_admin"
+  | "safeguarding_admin"
   | "super_admin";
 
 export const ADMIN_ROLES: AdminRole[] = [
@@ -25,6 +26,7 @@ export const ADMIN_ROLES: AdminRole[] = [
   "hr_admin",
   "design_admin",
   "sermon_admin",
+  "safeguarding_admin",
   "super_admin",
 ];
 
@@ -45,6 +47,7 @@ export const ROLE_LABELS: Record<AdminRole, string> = {
   hr_admin: "HR Admin",
   design_admin: "Design Admin",
   sermon_admin: "Sermon Admin",
+  safeguarding_admin: "Safeguarding Admin",
   super_admin: "Super Admin",
 };
 
@@ -72,6 +75,7 @@ export const NO_ROLES: RoleFlags = {
   hr_admin: false,
   design_admin: false,
   sermon_admin: false,
+  safeguarding_admin: false,
   super_admin: false,
 };
 
@@ -145,6 +149,11 @@ const ROUTE_RULES: { pattern: RegExp; roles: AdminRole[] }[] = [
   { pattern: /^\/admin\/sermons(\/|$)/, roles: ["sermon_admin"] },
   { pattern: /^\/api\/admin\/sermons(\/|$)/, roles: ["sermon_admin"] },
 
+  // Safeguarding — Destiny One reports, frozen groups, audited transcript
+  // review, and linking app accounts to ChurchSuite records by hand.
+  { pattern: /^\/admin\/safeguarding(\/|$)/, roles: ["safeguarding_admin"] },
+  { pattern: /^\/api\/admin\/destiny-one(\/|$)/, roles: ["safeguarding_admin"] },
+
 ];
 
 // Paths any authenticated admin can reach regardless of role.
@@ -190,7 +199,7 @@ export async function getRoles(
   const { data } = await supabase
     .from("admin_roles")
     .select(
-      "training_admin, event_admin, store_admin, site_admin, host, hr_admin, design_admin, sermon_admin, super_admin",
+      "training_admin, event_admin, store_admin, site_admin, host, hr_admin, design_admin, sermon_admin, safeguarding_admin, super_admin",
     )
     .eq("auth_user_id", authUserId)
     .maybeSingle();
@@ -205,6 +214,7 @@ export async function getRoles(
     hr_admin: Boolean(data.hr_admin),
     design_admin: Boolean(data.design_admin),
     sermon_admin: Boolean(data.sermon_admin),
+    safeguarding_admin: Boolean(data.safeguarding_admin),
     super_admin: Boolean(data.super_admin),
   };
 }

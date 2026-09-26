@@ -29,6 +29,7 @@ const ROLE_HINTS: Record<AdminRole, string> = {
   hr_admin: "Staff directory, leave, jobs, applications, documents and reviews.",
   design_admin: "Design ticket queue: claim, deliver and close requests.",
   sermon_admin: "Publishes sermon audio to Buzzsprout.",
+  safeguarding_admin: "Destiny One app: reports, frozen groups and audited chat review.",
   super_admin: "Full access, including the sitewide banner, cache and users.",
 };
 

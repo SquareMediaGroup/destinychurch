@@ -14,6 +14,7 @@
     "test": "playwright test",
     "test:unit": "playwright test --project=unit",
     "test:e2e": "playwright test --project=chromium",
+    "test:sql": "scripts/test-sql.sh",
     "gen:ios-assets": "node scripts/generate-ios-assets.mjs"
   },
   "dependencies": {

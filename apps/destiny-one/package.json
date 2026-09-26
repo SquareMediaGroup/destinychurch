@@ -1,0 +1,38 @@
+{
+  "name": "destiny-one",
+  "version": "1.0.0",
+  "main": "expo-router/entry",
+  "dependencies": {
+    "@destiny/shared": "file:../../packages/shared",
+    "@supabase/supabase-js": "^2.117.2",
+    "expo": "~57.0.25",
+    "expo-constants": "~57.0.19",
+    "expo-crypto": "~57.0.3",
+    "expo-device": "~57.0.2",
+    "expo-glass-effect": "~57.0.4",
+    "expo-linking": "~57.0.11",
+    "expo-notifications": "~57.0.21",
+    "expo-router": "~57.0.23",
+    "expo-secure-store": "~57.0.4",
+    "expo-status-bar": "~57.0.1",
+    "expo-web-browser": "~57.0.3",
+    "react": "19.2.3",
+    "react-dom": "19.2.3",
+    "react-native": "0.86.3",
+    "react-native-safe-area-context": "~5.7.0",
+    "react-native-screens": "~4.26.0"
+  },
+  "devDependencies": {
+    "@types/react": "~19.2.2",
+    "typescript": "~6.0.3"
+  },
+  "scripts": {
+    "start": "expo start",
+    "android": "expo start --android",
+    "ios": "expo start --ios",
+    "typecheck": "tsc --noEmit",
+    "doctor": "npx expo-doctor"
+  },
+  "private": true,
+  "description": "Destiny One \u2014 the Destiny Church members app (iOS + Android, Expo). Backend: /api/app/v1/one in the parent repo."
+}

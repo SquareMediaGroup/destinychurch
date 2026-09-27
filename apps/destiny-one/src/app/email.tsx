@@ -6,6 +6,7 @@ import { router } from "expo-router";
 import { AuthScreen } from "@/components/AuthScreen";
 import { Icon } from "@/components/Icon";
 import { Field, FormError, LargeTitle, Lead, PrimaryButton } from "@/components/ui";
+import { api, D1ApiError } from "@/lib/api";
 import { requestEmailCode } from "@/lib/auth";
 import { useTheme } from "@/theme/tokens";
 
@@ -25,6 +26,18 @@ export default function Email() {
     }
     setBusy(true);
     setError(null);
+    try {
+      // Don't send a code to someone who can't get in (the server decides).
+      await api.checkEmail(value);
+    } catch (err) {
+      // Only a definite "no account" stops here. Anything else (offline, an
+      // older server without the check) carries on: sign-in re-checks anyway.
+      if (err instanceof D1ApiError && err.code === "not_verified") {
+        setError(err.message);
+        setBusy(false);
+        return;
+      }
+    }
     try {
       await requestEmailCode(value);
       router.push({ pathname: "/code", params: { email: value } });

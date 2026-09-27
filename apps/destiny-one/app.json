@@ -55,7 +55,12 @@
       "typedRoutes": true
     },
     "extra": {
-      "apiBaseUrl": "https://destinychurch.vercel.app"
-    }
+      "apiBaseUrl": "https://destinychurch.vercel.app",
+      "router": {},
+      "eas": {
+        "projectId": "f64f36cf-9df5-4e2a-bd80-4a658a7c523a"
+      }
+    },
+    "owner": "squaremedia"
   }
 }

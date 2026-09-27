@@ -88,7 +88,7 @@ export default function Community() {
           try {
             await api.leaveCommunity(id);
             setLeaving(false);
-            router.dismissTo("/groups");
+            router.dismissTo("/chats");
             queryClient.setQueryData<D1CommunitySummary[]>(keys.communities, (old) => old?.filter((x) => x.id !== id));
             invalidateCommunities();
           } catch (err) {

@@ -19,7 +19,7 @@ PORT="${PG_TEST_PORT:-54329}"
 
 # suite name → the migrations it tests, applied in order (space-separated)
 declare -A SUITES=(
-  [destiny-one]="supabase/migrations/20260926_01_destiny_one.sql supabase/migrations/20260927_01_destiny_one_admin.sql"
+  [destiny-one]="supabase/migrations/20260926_01_destiny_one.sql supabase/migrations/20260927_01_destiny_one_admin.sql supabase/migrations/20260927_02_destiny_one_leader_invites.sql supabase/migrations/20260927_03_destiny_one_message_search.sql"
 )
 
 selected=("$@")

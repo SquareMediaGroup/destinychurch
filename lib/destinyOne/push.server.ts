@@ -1,16 +1,17 @@
 // Destiny One — push notifications through Expo's push service.
 //
-// CONTENT-FREE by design (docs/mobile-app-scope.md D4, B.3): the notification
-// says "New message" and nothing else — no sender, no group name, no text.
-// Expo, APNs and FCM are US-run processors; this way no message content and
-// nothing about a minor passes through them, and nothing sensitive shows on a
-// lock screen. The group id rides in `data` (an opaque uuid) so a tap can open
-// the right group once the app has fetched it over our own API.
+// The notification shows the group name as its title and "Sender: first line"
+// as its body (decided 2026-09-27, replacing the earlier content-free "New
+// message"). That means the sender's name and up to PUSH_PREVIEW_CHARS of text pass
+// through Expo, APNs and FCM (US-run processors) and can show on a lock
+// screen; the privacy notice and docs/destiny-one-gdpr.md must say so. Members
+// can mute any group. The group id rides in `data` so a tap opens that group.
 //
 // Best-effort: called from `after()`, so a slow or failing push never delays
 // or fails the message send.
 
 import "server-only";
+import { pushPreviewText, type PushPreview } from "@destiny/shared";
 import { createServiceClient } from "@/utils/supabase/service";
 
 const EXPO_PUSH_URL = "https://exp.host/--/api/v2/push/send";
@@ -21,10 +22,14 @@ interface ExpoTicket {
   details?: { error?: string };
 }
 
-export async function pushNewMessage(groupId: string, senderId: string): Promise<void> {
+export async function pushNewMessage(groupId: string, senderId: string, preview: PushPreview): Promise<void> {
   try {
     const supabase = createServiceClient();
     const now = new Date().toISOString();
+
+    const { data: group } = await supabase.from("d1_groups").select("name").eq("id", groupId).maybeSingle();
+    const title = (group?.name as string | undefined) ?? "Destiny One";
+    const body = pushPreviewText(preview);
 
     const { data: members } = await supabase
       .from("d1_group_members")
@@ -46,18 +51,18 @@ export async function pushNewMessage(groupId: string, senderId: string): Promise
     const all = (tokens ?? []).map((t) => t.token as string);
 
     for (let i = 0; i < all.length; i += CHUNK) {
-      await send(all.slice(i, i + CHUNK), groupId);
+      await send(all.slice(i, i + CHUNK), groupId, title, body);
     }
   } catch (err) {
     console.error("⚠️ Destiny One push failed:", err);
   }
 }
 
-async function send(tokens: string[], groupId: string): Promise<void> {
+async function send(tokens: string[], groupId: string, title: string, body: string): Promise<void> {
   const messages = tokens.map((to) => ({
     to,
-    title: "Destiny One",
-    body: "New message",
+    title,
+    body,
     sound: "default",
     channelId: "messages",
     data: { type: "message", groupId },

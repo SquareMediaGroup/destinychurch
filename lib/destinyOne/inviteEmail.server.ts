@@ -12,7 +12,11 @@ import { sendEmailCard } from "@/lib/emailCard";
 const IOS_URL = process.env.D1_APP_STORE_URL || null;
 const ANDROID_URL = process.env.D1_PLAY_STORE_URL || null;
 
-export async function sendInviteEmail(to: string, name: string): Promise<void> {
+/**
+ * `needsApproval`: a leader's invite — they sign in, then the church office
+ * confirms them before they're in.
+ */
+export async function sendInviteEmail(to: string, name: string, opts: { needsApproval?: boolean } = {}): Promise<void> {
   const rows: [string, string][] = [["Sign in with", to]];
   if (IOS_URL) rows.push(["iPhone", IOS_URL]);
   if (ANDROID_URL) rows.push(["Android", ANDROID_URL]);
@@ -24,7 +28,9 @@ export async function sendInviteEmail(to: string, name: string): Promise<void> {
     heading: `Hi ${name.split(" ")[0]}, you're invited`,
     intro:
       "You've been invited to Destiny One, the Destiny Church app for our teams and groups. " +
-      "Download the app and sign in with this email address — you'll be sent a code, and you're in. " +
+      (opts.needsApproval
+        ? "Download the app and sign in with this email address — you'll be sent a code. The church office will then confirm your place, usually within a day or two. "
+        : "Download the app and sign in with this email address — you'll be sent a code, and you're in. ") +
       (IOS_URL || ANDROID_URL ? "" : "The app is coming to the App Store and Google Play soon."),
     rows,
     ...(IOS_URL ? { ctaHref: IOS_URL, ctaLabel: "Get the app" } : {}),

@@ -55,6 +55,24 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     if (joinError) console.error("⚠️ Destiny One approve: community join failed:", joinError.message);
   }
 
+  // Invited by a leader: join the groups they were invited to (and each
+  // group's community first). A group that's gone or archived is skipped.
+  const { data: pendingGroups } = await supabase.from("d1_members").select("request_group_ids").eq("id", id).single();
+  const groupIds = ((pendingGroups?.request_group_ids as string[] | null) ?? []);
+  for (const groupId of groupIds) {
+    const { data: group } = await supabase.from("d1_groups").select("community_id, state").eq("id", groupId).maybeSingle();
+    if (!group || group.state === "archived") continue;
+    const { error: commError } = await supabase.rpc("d1_admin_add_community_members", {
+      p_community: group.community_id,
+      p_members: [id],
+      p_role: "member",
+    });
+    if (commError) console.error("⚠️ Destiny One approve: community join failed:", commError.message);
+    const { error: groupError } = await supabase.rpc("d1_admin_add_group_members", { p_group: groupId, p_members: [id], p_role: "member" });
+    if (groupError) console.error("⚠️ Destiny One approve: group join failed:", groupError.message);
+  }
+  if (groupIds.length) await supabase.from("d1_members").update({ request_group_ids: [] }).eq("id", id);
+
   const name = input.displayName ?? before.displayName;
   await recordAudit({
     action: "approve",
@@ -63,7 +81,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     entityId: id,
     entityLabel: name,
     summary: `Approved ${name} for Destiny One as ${decided.adultOn && decided.adultOn <= todayInLondon() ? "an adult" : "under 18"}`,
-    metadata: { communityIds: input.communityIds, dateOfBirthGiven: Boolean(input.dateOfBirth) },
+    metadata: { communityIds: input.communityIds, groupIds, dateOfBirthGiven: Boolean(input.dateOfBirth) },
   });
   return NextResponse.json({ member: await getMember(id) });
 }

@@ -152,3 +152,49 @@ export function validateMessageBody(body: string | null | undefined, hasAttachme
   }
   return { ok: true };
 }
+
+// ── Notifications ───────────────────────────────────────────────────────────
+
+/** How much of a message a push notification may carry. */
+export const PUSH_PREVIEW_CHARS = 100;
+
+export interface PushPreview {
+  senderName: string;
+  body: string | null;
+  attachmentMime: string | null;
+}
+
+/** "Leah Simmons: Thanks Jonathan" — the first line only, cut to PUSH_PREVIEW_CHARS. */
+export function pushPreviewText({ senderName, body, attachmentMime }: PushPreview): string {
+  const firstLine = (body ?? "").trim().split(/\r?\n/)[0]?.trim() ?? "";
+  let text: string;
+  if (firstLine) {
+    text = firstLine.length > PUSH_PREVIEW_CHARS ? `${firstLine.slice(0, PUSH_PREVIEW_CHARS - 1).trimEnd()}\u2026` : firstLine;
+  } else if (attachmentMime) {
+    text = attachmentMime.startsWith("image/") ? "Photo" : "File";
+  } else {
+    text = "New message";
+  }
+  return `${senderName}: ${text}`;
+}
+
+// ── Search ──────────────────────────────────────────────────────────────────
+
+/** Minimum characters before message search runs. */
+export const MIN_SEARCH_CHARS = 2;
+
+/**
+ * Typed words → a Postgres prefix tsquery: "Run  sheet!" → "run:* & sheet:*".
+ * Letters and digits only, so nothing typed can change the query's meaning.
+ * Null when there's nothing to search for.
+ */
+export function toPrefixQuery(input: string): string | null {
+  const words = input
+    .toLowerCase()
+    .normalize("NFKC")
+    .split(/[^\p{L}\p{N}]+/u)
+    .filter(Boolean)
+    .slice(0, 8);
+  if (!words.length || words.join("").length < MIN_SEARCH_CHARS) return null;
+  return words.map((w) => `${w}:*`).join(" & ");
+}

@@ -1,5 +1,8 @@
 import { test, expect } from "@playwright/test";
 import {
+  toPrefixQuery,
+  PUSH_PREVIEW_CHARS,
+  pushPreviewText,
   REQUIRED_CONSENTS,
   adultOnFromDateOfBirth,
   canCreateCommunity,
@@ -134,5 +137,37 @@ test.describe("consents", () => {
     // Members must be told chats aren't end-to-end encrypted and can be
     // reviewed by safeguarding. Removing this would be a GDPR transparency gap.
     expect(REQUIRED_CONSENTS.map((c) => c.document)).toContain("chat_review_notice");
+  });
+});
+
+test.describe("pushPreviewText", () => {
+  test("sender and first line only", () => {
+    expect(pushPreviewText({ senderName: "Leah Simmons", body: "Thanks Jonathan\nSee you Sunday", attachmentMime: null })).toBe("Leah Simmons: Thanks Jonathan");
+  });
+  test("long lines are cut with an ellipsis", () => {
+    const out = pushPreviewText({ senderName: "Tom", body: "a".repeat(300), attachmentMime: null });
+    expect(out.length).toBe("Tom: ".length + PUSH_PREVIEW_CHARS);
+    expect(out.endsWith("\u2026")).toBe(true);
+  });
+  test("attachment-only messages", () => {
+    expect(pushPreviewText({ senderName: "Sam", body: null, attachmentMime: "image/jpeg" })).toBe("Sam: Photo");
+    expect(pushPreviewText({ senderName: "Sam", body: "  ", attachmentMime: "application/pdf" })).toBe("Sam: File");
+  });
+});
+
+test.describe("toPrefixQuery", () => {
+  test("words become prefix terms", () => {
+    expect(toPrefixQuery("Run  sheet!")).toBe("run:* & sheet:*");
+  });
+  test("operators and quotes can't get through", () => {
+    expect(toPrefixQuery("a' | !b & (c)")).toBe("a:* & b:* & c:*");
+  });
+  test("too short or empty finds nothing", () => {
+    expect(toPrefixQuery("")).toBeNull();
+    expect(toPrefixQuery("x")).toBeNull();
+    expect(toPrefixQuery("!!!")).toBeNull();
+  });
+  test("accented letters are kept", () => {
+    expect(toPrefixQuery("Café")).toBe("café:*");
   });
 });

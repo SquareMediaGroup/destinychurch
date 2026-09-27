@@ -17,6 +17,7 @@ import type {
   D1Me,
   D1MembershipRole,
   D1Message,
+  D1MessageHit,
   D1MessagePage,
   D1UploadTicket,
 } from "./types";
@@ -122,6 +123,9 @@ export function createDestinyOneClient({ baseUrl, getAccessToken, fetchImpl }: D
     removeGroupMember: (id: string, memberId: string) =>
       call<{ ok: true }>("DELETE", `/groups/${id}/members`, { memberId }),
     leaveGroup: (id: string) => call<{ ok: true }>("DELETE", `/groups/${id}/members`, {}),
+    /** Leaders: invite someone new by email. Staff confirm them before they join. */
+    inviteToGroup: (id: string, input: { email: string; name: string; adult: boolean; note?: string }) =>
+      call<{ ok: true }>("POST", `/groups/${id}/invites`, input),
     mute: (id: string, until: string | null) => call<{ ok: true }>("POST", `/groups/${id}/mute`, { until }),
     markRead: (id: string, messageId: number) => call<{ ok: true }>("POST", `/groups/${id}/read`, { messageId }),
 
@@ -139,6 +143,9 @@ export function createDestinyOneClient({ baseUrl, getAccessToken, fetchImpl }: D
       call<{ ok: true }>("DELETE", `/messages/${messageId}/reactions`, { emoji }),
     requestUpload: (groupId: string, input: { mimeType: string; sizeBytes: number }) =>
       call<D1UploadTicket>("POST", `/groups/${groupId}/attachments`, input),
+
+    /** Search your messages (groups you're in, since you joined; never deleted ones). */
+    searchMessages: (query: string) => call<D1MessageHit[]>("GET", `/search/messages${q({ q: query })}`),
 
     // ── Directory (leaders) ──
     directory: (query: string, communityId?: string) =>

@@ -16,7 +16,7 @@ These are enforced by the server. The UI only needs to present them honestly.
 3. **No phone numbers anywhere.** No phone field, no SMS codes, no "invite from contacts", and no contact details shown on any profile.
 4. **Chats are not end-to-end encrypted and can be reviewed by the safeguarding team.** Don't use lock icons or "encrypted" badges. The onboarding notice says this plainly.
 5. **Real names only.** Members can't change their own name; the church office sets it.
-6. **Push notifications say only "New message".** No sender, group name or text.
+6. **Push notifications show a preview:** the group name as the title and "Sender: first line" as the body (changed from "New message" only on 2026-09-27; see docs/destiny-one-gdpr.md §3).
 7. **Only leaders see who is under 18**, and only where they need it (building a group).
 
 ---

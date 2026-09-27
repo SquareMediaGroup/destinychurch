@@ -1,22 +1,38 @@
-// Placeholder until the real screens are designed.
+// Launch gate: waits for the stored session, then sends the member wherever
+// the server says they belong (routeFor).
 
-import { StyleSheet, Text, View } from "react-native";
-import { GlassSurface } from "@/components/GlassSurface";
+import { useState } from "react";
+import { ActivityIndicator, View } from "react-native";
+import { Redirect } from "expo-router";
+import { ErrorState } from "@/components/ui";
+import { routeFor, useSession } from "@/state/session";
+import { ORANGE, useTheme } from "@/theme/tokens";
 
 export default function Index() {
-  return (
-    <View style={styles.screen}>
-      <GlassSurface style={styles.card}>
-        <Text style={styles.title}>Destiny One</Text>
-        <Text style={styles.subtitle}>Backend ready. Screens coming next.</Text>
-      </GlassSurface>
-    </View>
-  );
-}
+  const { ready, session, me, refreshMe } = useSession();
+  const [retrying, setRetrying] = useState(false);
+  const t = useTheme();
 
-const styles = StyleSheet.create({
-  screen: { flex: 1, alignItems: "center", justifyContent: "center", padding: 24 },
-  card: { borderRadius: 24, paddingVertical: 28, paddingHorizontal: 32, alignItems: "center", gap: 8 },
-  title: { fontSize: 28, fontWeight: "700" },
-  subtitle: { fontSize: 15, opacity: 0.7, textAlign: "center" },
-});
+  if (ready && session && !me && !retrying) {
+    // Signed in, but the server couldn't be reached.
+    return (
+      <View style={{ flex: 1, justifyContent: "center", backgroundColor: t.bg }}>
+        <ErrorState
+          message="Couldn't reach Destiny One. Check your connection and try again."
+          onRetry={() => {
+            setRetrying(true);
+            void refreshMe().finally(() => setRetrying(false));
+          }}
+        />
+      </View>
+    );
+  }
+  if (!ready || (session && !me)) {
+    return (
+      <View style={{ flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: t.bg }}>
+        <ActivityIndicator color={ORANGE} />
+      </View>
+    );
+  }
+  return <Redirect href={session ? routeFor(me) : "/welcome"} />;
+}

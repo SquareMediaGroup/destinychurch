@@ -169,6 +169,18 @@ export interface D1MessagePage {
   nextBefore: number | null;
 }
 
+/** A message found by search. Only ever from groups the caller is in, since they joined. */
+export interface D1MessageHit {
+  id: number;
+  groupId: string;
+  groupName: string;
+  communityName: string;
+  sender: { id: string; displayName: string } | null;
+  body: string;
+  createdAt: string;
+  mine: boolean;
+}
+
 export interface D1DirectoryEntry {
   id: string;
   displayName: string;

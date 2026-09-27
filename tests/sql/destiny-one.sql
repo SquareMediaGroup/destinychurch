@@ -443,4 +443,62 @@ select pg_temp.check(
   and has_function_privilege('authenticated', 'public.d1_can_receive(text)', 'execute'),
   'admin functions are service-role only; the realtime helpers stay open');
 
+-- ── Leader invites (part 3) ─────────────────────────────────────────────────
+
+insert into auth.users (id, email) values ('00000000-0000-0000-0000-0000000000ee', 'invited@example.org');
+insert into public.d1_invites (email, display_name, is_adult, community_ids, group_ids, needs_approval, invited_by_member, expires_at)
+  values ('invited@example.org', 'Invited Person', true,
+          array[(select v from ids where k = 'community')]::uuid[], array[(select v from ids where k = 'youth')]::uuid[],
+          true, :lead::uuid, now() + interval '7 days');
+select public.d1_accept_invite('00000000-0000-0000-0000-0000000000ee'::uuid, 'invited@example.org');
+select pg_temp.check(
+  (select status = 'pending' and adult_on is null and verified_at is null and request_submitted_at is not null
+          and request_group_ids = array[(select v from ids where k = 'youth')]::uuid[]
+          and request_note like 'Invited by Lead Adult to %(leader says: adult)%'
+   from public.d1_members where auth_user_id = '00000000-0000-0000-0000-0000000000ee'),
+  'a leader invite becomes an access request, never an active or age-verified account');
+select pg_temp.check(
+  not exists (select 1 from public.d1_group_members gm join public.d1_members m on m.id = gm.member_id
+              where m.auth_user_id = '00000000-0000-0000-0000-0000000000ee'),
+  'a leader invite joins no group or community until staff approve');
+select pg_temp.expect_error(
+  $$insert into public.d1_invites (email, display_name, roles, needs_approval, expires_at)
+    values ('x@example.org', 'X', '{group_leader}', true, now() + interval '1 day')$$,
+  'd1_invites_leader_invites_no_roles');
+select pg_temp.check(true, 'a leader invite cannot grant leader roles');
+
+-- ── Message search (part 4) ─────────────────────────────────────────────────
+
+create temp table found (k text primary key, v bigint);
+insert into found select 'early', public.d1_post_message(:lead::uuid, (select v from ids where k = 'announce'), 'Run sheet from before');
+-- Pretend Lead joined after that message was sent.
+update public.d1_group_members set joined_at = clock_timestamp()
+  where group_id = (select v from ids where k = 'announce') and member_id = :lead::uuid;
+insert into found select 'live', public.d1_post_message(:lead::uuid, (select v from ids where k = 'announce'), 'Sunday run sheet is ready');
+insert into found select 'gone', public.d1_post_message(:lead::uuid, (select v from ids where k = 'announce'), 'Old run sheet, ignore');
+select public.d1_delete_message(:lead::uuid, (select v from found where k = 'gone'));
+
+select pg_temp.check(
+  exists (select 1 from public.d1_search_messages(:lead::uuid, 'run:* & sheet:*') where id = (select v from found where k = 'live')),
+  'search finds a message in a group you are in');
+select pg_temp.check(
+  not exists (select 1 from public.d1_search_messages(:lead::uuid, 'run:* & sheet:*') where id = (select v from found where k = 'gone')),
+  'search never returns a deleted message');
+select pg_temp.check(
+  not exists (select 1 from public.d1_search_messages(:lead::uuid, 'run:* & sheet:*') where id = (select v from found where k = 'early')),
+  'search never returns messages from before you joined');
+
+insert into auth.users (id, email) values ('00000000-0000-0000-0000-0000000000ff', 'outsider@example.org');
+insert into public.d1_members (id, auth_user_id, display_name, adult_on, status, verified_at, verification_source) values
+  ('10000000-0000-0000-0000-0000000000ff', '00000000-0000-0000-0000-0000000000ff', 'Outsider', '1990-01-01', 'active', now(), 'admin');
+select pg_temp.check(
+  (select count(*) from public.d1_search_messages('10000000-0000-0000-0000-0000000000ff'::uuid, 'run:* & sheet:*')) = 0,
+  'search finds nothing in groups you are not in');
+select pg_temp.check(
+  (select count(*) from public.d1_search_messages(:lead::uuid, 'run & | ! (')) = 0,
+  'a malformed query finds nothing instead of erroring');
+select pg_temp.check(
+  not has_function_privilege('authenticated', 'public.d1_search_messages(uuid, text, integer)', 'execute'),
+  'message search is service-role only');
+
 \echo 'All Destiny One SQL checks passed.'

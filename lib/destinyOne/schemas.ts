@@ -150,6 +150,14 @@ export const inviteSchema = z.object({
 
 export const invitesSchema = z.object({ invites: z.array(inviteSchema).min(1).max(100) });
 
+/** A group leader inviting someone from the app. Staff confirm age on approval. */
+export const leaderInviteSchema = z.object({
+  email: z.string().trim().toLowerCase().email("That email address doesn't look right."),
+  name: z.string().trim().min(2, "Enter their full name.").max(120),
+  adult: z.boolean(),
+  note: z.string().trim().max(300).optional(),
+});
+
 export const invitePatchSchema = z.object({ action: z.enum(["resend", "revoke"]) });
 
 export const adminCommunitySchema = z.object({

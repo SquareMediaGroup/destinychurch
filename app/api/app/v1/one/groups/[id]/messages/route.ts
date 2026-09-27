@@ -56,6 +56,13 @@ export const POST = oneRoute<IdParams>(async (request, { params }) => {
   });
   if (error) throw fromDbError(error);
 
-  after(() => pushNewMessage(id, caller.member.id));
-  return oneJson(await getMessage(caller, data as number), 201);
+  const message = await getMessage(caller, data as number);
+  after(() =>
+    pushNewMessage(id, caller.member.id, {
+      senderName: caller.member.display_name,
+      body: input.body ?? null,
+      attachmentMime: message.attachment?.mimeType ?? null,
+    }),
+  );
+  return oneJson(message, 201);
 });

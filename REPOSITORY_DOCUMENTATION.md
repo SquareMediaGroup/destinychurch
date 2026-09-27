@@ -364,6 +364,8 @@ destinychurch/
 │       ├── 20260920_01_sermon_series.sql  # sermon_series table — playlist ids curated as sermon series
 │       ├── 20260926_01_destiny_one.sql    # Destiny One messaging (d1_* tables, safeguarding triggers,
 │       │                                  # Realtime policy) + admin_roles.safeguarding_admin — see §29
+│       ├── 20260927_04_destiny_one_invite_members.sql # Destiny One part 5: staff invites create the
+│       │                                   # member up front (groups before sign-in); d1_sign_in_status
 │       ├── 20260927_03_destiny_one_message_search.sql # Destiny One part 4: message search
 │       ├── 20260927_02_destiny_one_leader_invites.sql # Destiny One part 3: leader invites
 │       │                                   # (needs_approval → access request; groups joined on approval)
@@ -4471,6 +4473,7 @@ needs at least 2 verified adults.") pass through as `rule_violation` (422). Type
 | Route | Methods | Notes |
 |---|---|---|
 | `auth/link` | POST | After every sign-in: accept an open invite for the email (`onboardMember`), return `D1Me` with `onboarding` |
+| `auth/check` | POST | No sign-in: `{ email }` — asked before a code is sent; 403 `not_verified` with a message when the email has no account, no open invite and access requests are off (`d1_sign_in_status`). Per-IP rate limit |
 | `me/access-request` | POST | `{ name, dateOfBirth?, note? }` — ask to join; a Destiny One Admin approves |
 | `auth/churchsuite/start` → `callback` → `exchange` | GET, GET, POST | Sign in with ChurchSuite (below) |
 | `me` | GET, DELETE | DELETE = GDPR erasure (`{ "confirm": "DELETE" }`) |
@@ -7313,6 +7316,16 @@ same database as the data rather than in a separate Synapse module.
   `20260927_03_destiny_one_message_search.sql`. Tapping a hit opens the group (not the exact message yet).
 - **Differences from the prototype:** Settings adds Download my data and Delete my account (safeguarding policy + UK GDPR access and
   erasure). Emoji reactions are allowed as member content (confirmed 2026-09-27).
+- **Sign-in:** the email screen calls `api.checkEmail` first and shows "no account" without sending
+  a code; any other failure falls through to sending it (sign-in re-checks). "Sign in with
+  ChurchSuite" shows **Coming soon** (the flow in `lib/auth.ts` is built but not switched on).
+- **Staff invites create the member up front** (`d1_invite_create_member`, auth_user_id null,
+  active, in the invite's communities), so staff can put them in groups on the website before they
+  open the app; first sign-in links the login (`d1_accept_invite`), folding in any earlier pending
+  row. Revoking before sign-in erases that member. They count toward the 2-adults rule from the
+  moment they're invited.
+- **Tab bar:** the highlight slides between tabs on a spring, the new icon bounces, scenes
+  cross-fade; Reduce Motion turns the slide and bounce off.
 - **Invite by email (leaders)** — `invite` route, opened from Add people for a group.
   `POST /groups/[id]/invites` creates a `needs_approval` invite: on sign-in the person becomes an
   access request pre-filled "Invited by X to Group (leader says: adult)", and staff approval in

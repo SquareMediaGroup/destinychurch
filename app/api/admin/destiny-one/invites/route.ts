@@ -12,9 +12,11 @@ import { getSettings } from "@/lib/destinyOne/settings.server";
 // GET  /api/admin/destiny-one/invites — every invite, newest first
 // POST /api/admin/destiny-one/invites  { invites: [{ email, name, adult, dateOfBirth?, roles, communityIds }] }
 //
-// An invite pre-approves someone: when they sign in with that email (the
-// one-time code proves it's theirs) they're active straight away, with the
-// name, adult status, leader roles and communities set here. One or many at
+// An invite pre-approves someone and creates them straight away (no login
+// yet), so staff can add them to groups before they open the app. When they
+// sign in with that email (the one-time code proves it's theirs) their login
+// is linked to that member, with the name, adult status, leader roles and
+// communities set here. One or many at
 // once — each is checked on its own, and the response says which failed.
 
 export const dynamic = "force-dynamic";
@@ -72,7 +74,7 @@ export async function POST(request: Request) {
       continue;
     }
 
-    const { error } = await supabase.from("d1_invites").insert({
+    const { data: row, error } = await supabase.from("d1_invites").insert({
       email: invite.email,
       display_name: invite.name,
       is_adult: invite.adult,
@@ -82,14 +84,19 @@ export async function POST(request: Request) {
       invited_by: admin.userId,
       expires_at: expiresAt,
       last_sent_at: new Date().toISOString(),
-    });
-    if (error) {
+    }).select("id").single();
+    if (error || !row) {
       failed.push({
         email: invite.email,
-        error: error.code === "23505" ? "There's already an open invite for this email." : "Could not create the invite.",
+        error: error?.code === "23505" ? "There's already an open invite for this email." : "Could not create the invite.",
       });
       continue;
     }
+
+    // Create them now, so staff can put them into groups before they ever
+    // open the app. Signing in with this email links their login to it.
+    const { error: memberError } = await supabase.rpc("d1_invite_create_member", { p_invite: row.id });
+    if (memberError) console.error("⚠️ Destiny One invite: member not created:", memberError.message);
 
     // A pending sign-in with this email picks the invite up next time they
     // open the app; the email tells them to.

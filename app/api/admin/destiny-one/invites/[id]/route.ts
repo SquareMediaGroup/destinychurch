@@ -9,7 +9,8 @@ import { getSettings } from "@/lib/destinyOne/settings.server";
 // PATCH /api/admin/destiny-one/invites/[id]  — body { action } is resend or revoke
 //
 // Resend emails it again and restarts the expiry clock (an expired invite
-// becomes usable again). Revoke stops it being accepted.
+// becomes usable again). Revoke stops it being accepted and, if they never
+// signed in, erases the member created for the invite.
 
 export const dynamic = "force-dynamic";
 
@@ -24,7 +25,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   const supabase = createServiceClient();
   const { data: invite } = await supabase
     .from("d1_invites")
-    .select("id, email, display_name, status")
+    .select("id, email, display_name, status, member_id")
     .eq("id", id)
     .maybeSingle();
   if (!invite) return NextResponse.json({ error: "Not found" }, { status: 404 });
@@ -34,6 +35,15 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
 
   if (body.data.action === "revoke") {
     await supabase.from("d1_invites").update({ status: "revoked", revoked_at: new Date().toISOString() }).eq("id", id);
+    // They never signed in: remove the member created for the invite (leaves
+    // any groups they were put in; the rules re-check as usual).
+    if (invite.member_id) {
+      const { data: m } = await supabase.from("d1_members").select("auth_user_id").eq("id", invite.member_id).maybeSingle();
+      if (m && !m.auth_user_id) {
+        const { error: eraseError } = await supabase.rpc("d1_erase_member", { p_member: invite.member_id });
+        if (eraseError) console.error("⚠️ Destiny One revoke: member not erased:", eraseError.message);
+      }
+    }
   } else {
     const { inviteExpiryDays } = await getSettings();
     const { error } = await supabase

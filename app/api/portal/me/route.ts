@@ -34,7 +34,11 @@ export async function PATCH(request: Request) {
     if (!first_name || !last_name) {
       return NextResponse.json({ error: "Please enter your first and last name." }, { status: 400 });
     }
-    await service.from("hr_staff").update({ first_name, last_name }).eq("id", identity.staff.id);
+    if (first_name.length > 100 || last_name.length > 100) {
+      return NextResponse.json({ error: "Please keep each name under 100 characters." }, { status: 400 });
+    }
+    const { error } = await service.from("hr_staff").update({ first_name, last_name }).eq("id", identity.staff.id);
+    if (error) return NextResponse.json({ error: "Could not save your name." }, { status: 500 });
     return NextResponse.json({ success: true });
   }
 

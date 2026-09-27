@@ -10,6 +10,7 @@ import {
   ActivityIndicator,
   Animated,
   Easing,
+  Image,
   Modal,
   Pressable,
   StyleSheet,
@@ -211,7 +212,7 @@ export function initials(name: string | null | undefined): string {
     .toUpperCase();
 }
 
-export function Avatar({ name, size, radius, announcements }: { name: string; size: number; radius?: number; announcements?: boolean }) {
+export function Avatar({ name, size, radius, announcements, uri }: { name: string; size: number; radius?: number; announcements?: boolean; uri?: string | null }) {
   const t = useTheme();
   const r = radius ?? size / 2;
   if (announcements) {
@@ -219,6 +220,14 @@ export function Avatar({ name, size, radius, announcements }: { name: string; si
       <View style={{ width: size, height: size, borderRadius: r, backgroundColor: t.accentSoft, alignItems: "center", justifyContent: "center" }}>
         <Icon name="megaphone" size={Math.round(size * 0.46)} color={t.tint} strokeWidth={1.9} />
       </View>
+    );
+  }
+  if (uri) {
+    return (
+      <Image
+        source={{ uri }}
+        style={{ width: size, height: size, borderRadius: r, backgroundColor: t.avatar }}
+      />
     );
   }
   return (

@@ -13,11 +13,21 @@ import { breadcrumbsFor } from "@/lib/adminNav";
 import { CommandTrigger, useAdminCommand } from "@/components/admin/AdminCommandPalette";
 import { AdminThemeToggle } from "@/components/admin/AdminThemeToggle";
 import { AdminNotificationBell } from "@/components/admin/AdminNotificationBell";
+import { useAdminSession } from "@/lib/useAdminSession";
+
+function initials(name: string | null, email: string | null): string {
+  if (name) {
+    const parts = name.trim().split(/\s+/);
+    return `${parts[0]?.[0] ?? ""}${parts[1]?.[0] ?? ""}`.toUpperCase();
+  }
+  return (email?.[0] ?? "?").toUpperCase();
+}
 
 export default function AdminHeader() {
   const pathname = usePathname();
   const crumbs = breadcrumbsFor(pathname);
   const { openShortcuts } = useAdminCommand();
+  const session = useAdminSession();
 
   return (
     <header className="sticky top-0 z-20 hidden h-16 items-center justify-between gap-4 border-b border-black/8 bg-white/90 px-8 backdrop-blur dark:border-white/8 dark:bg-destiny-grey-900/90 md:flex">
@@ -74,6 +84,19 @@ export default function AdminHeader() {
         >
           <span className="material-symbols-rounded text-lg" aria-hidden="true">open_in_new</span>
           View live site
+        </Link>
+        <Link
+          href="/admin/profile"
+          aria-label="My profile"
+          title="My profile"
+          className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full border border-black/10 bg-white text-xs font-black text-destiny-orange transition hover:border-destiny-orange/40 dark:border-white/10 dark:bg-destiny-grey-800"
+        >
+          {session.avatarUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={session.avatarUrl} alt="" className="h-full w-full object-cover" />
+          ) : (
+            initials(session.name, session.email)
+          )}
         </Link>
       </div>
     </header>

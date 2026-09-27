@@ -105,6 +105,10 @@ function AccountSettings({
   const [email, setEmail] = useState(staff.email ?? "");
   const [emailBusy, setEmailBusy] = useState(false);
 
+  const [firstName, setFirstName] = useState(staff.first_name ?? "");
+  const [lastName, setLastName] = useState(staff.last_name ?? "");
+  const [nameBusy, setNameBusy] = useState(false);
+
   const [passwordModalOpen, setPasswordModalOpen] = useState(false);
   const [currentPassword, setCurrentPassword] = useState("");
   const [password, setPassword] = useState("");
@@ -181,6 +185,27 @@ function AccountSettings({
     }
   }
 
+  async function handleNameSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setNameBusy(true);
+    try {
+      const res = await fetch("/api/portal/me", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ first_name: firstName, last_name: lastName }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        toast.push({ message: data.error ?? "Couldn't update your name", tone: "error" });
+        return;
+      }
+      onChange({ ...staff, first_name: firstName, last_name: lastName });
+      toast.push({ message: "Name updated", tone: "success" });
+    } finally {
+      setNameBusy(false);
+    }
+  }
+
   async function handlePasswordSubmit(e: React.FormEvent) {
     e.preventDefault();
     setPasswordError("");
@@ -253,6 +278,47 @@ function AccountSettings({
       </div>
 
       <div className="grid gap-8 sm:grid-cols-2">
+        <form onSubmit={handleNameSubmit} className="space-y-3">
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div>
+              <label className={LABEL} htmlFor="account-first-name">
+                First name
+              </label>
+              <input
+                id="account-first-name"
+                type="text"
+                required
+                value={firstName}
+                onChange={(e) => setFirstName(e.target.value)}
+                className={FIELD}
+              />
+            </div>
+            <div>
+              <label className={LABEL} htmlFor="account-last-name">
+                Last name
+              </label>
+              <input
+                id="account-last-name"
+                type="text"
+                required
+                value={lastName}
+                onChange={(e) => setLastName(e.target.value)}
+                className={FIELD}
+              />
+            </div>
+          </div>
+          <button
+            type="submit"
+            disabled={
+              nameBusy ||
+              (firstName === (staff.first_name ?? "") && lastName === (staff.last_name ?? ""))
+            }
+            className="rounded-full bg-destiny-orange px-5 py-2.5 text-sm font-bold text-white transition hover:brightness-110 disabled:opacity-50"
+          >
+            {nameBusy ? "Saving…" : "Update name"}
+          </button>
+        </form>
+
         <form onSubmit={handleEmailSubmit} className="space-y-3">
           <div>
             <label className={LABEL} htmlFor="account-email">

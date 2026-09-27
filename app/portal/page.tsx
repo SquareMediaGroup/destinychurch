@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import {
   PORTAL_API,
@@ -13,6 +13,7 @@ import {
   type Review,
 } from "@/lib/hr";
 import { PageLoading, ErrorNote } from "@/components/admin/AdminUI";
+import { useToast } from "@/components/ToastProvider";
 
 interface PortalTicket {
   status: "open" | "claimed" | "in_progress" | "delivered" | "changes_requested" | "closed" | "cancelled";
@@ -110,6 +111,10 @@ export default function PortalHomePage() {
             </div>
           </div>
 
+          {!staff.avatar_url ? (
+            <AvatarOnboardingPrompt staff={staff} onChange={(s) => setStaff(s)} />
+          ) : null}
+
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             <DashCard
               href="/portal/leave"
@@ -152,6 +157,104 @@ export default function PortalHomePage() {
           </div>
         </>
       )}
+    </div>
+  );
+}
+
+function dismissedKey(staffId: string): string {
+  return `portal-avatar-prompt-dismissed:${staffId}`;
+}
+
+// A one-time onboarding nudge shown on the home page until a staff member
+// either uploads a picture or dismisses it. Uses localStorage rather than a
+// database column since "did they see this" isn't data anyone else needs.
+function AvatarOnboardingPrompt({
+  staff,
+  onChange,
+}: {
+  staff: Staff;
+  onChange: (staff: Staff) => void;
+}) {
+  const toast = useToast();
+  const fileInput = useRef<HTMLInputElement>(null);
+  const [dismissed, setDismissed] = useState(true);
+  const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    try {
+      setDismissed(localStorage.getItem(dismissedKey(staff.id)) === "1");
+    } catch {
+      setDismissed(false);
+    }
+  }, [staff.id]);
+
+  function dismiss() {
+    setDismissed(true);
+    try {
+      localStorage.setItem(dismissedKey(staff.id), "1");
+    } catch {
+      // localStorage may be unavailable (private browsing) — dismissing
+      // just won't persist across reloads, which is fine.
+    }
+  }
+
+  async function handleSelect(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+
+    setBusy(true);
+    try {
+      const form = new FormData();
+      form.append("file", file);
+      const res = await fetch("/api/portal/me/avatar", { method: "POST", body: form });
+      const data = await res.json();
+      if (!res.ok) {
+        toast.push({ message: data.error ?? "Couldn't upload that image", tone: "error" });
+        return;
+      }
+      onChange({ ...staff, avatar_url: data.avatar_url });
+      dismiss();
+      toast.push({ message: "Profile picture updated", tone: "success" });
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  if (dismissed) return null;
+
+  return (
+    <div className="mb-8 flex flex-wrap items-center justify-between gap-4 rounded-3xl border border-destiny-orange/20 bg-destiny-orange/5 p-5">
+      <div>
+        <p className="font-bold text-destiny-grey">Add a profile picture</p>
+        <p className="mt-0.5 text-sm text-destiny-grey/60">
+          Help your team recognise you around the portal.
+        </p>
+      </div>
+      <div className="flex items-center gap-2">
+        <button
+          type="button"
+          disabled={busy}
+          onClick={() => fileInput.current?.click()}
+          className="rounded-full bg-destiny-orange px-5 py-2.5 text-sm font-bold text-white transition hover:brightness-110 disabled:opacity-60"
+        >
+          {busy ? "Uploading…" : "Add picture"}
+        </button>
+        <button
+          type="button"
+          onClick={dismiss}
+          className="rounded-full px-4 py-2.5 text-sm font-bold text-destiny-grey/50 transition hover:text-destiny-grey"
+        >
+          Skip for now
+        </button>
+        <input
+          ref={fileInput}
+          type="file"
+          accept="image/jpeg,image/png,image/webp,image/gif"
+          className="hidden"
+          onChange={handleSelect}
+        />
+      </div>
     </div>
   );
 }

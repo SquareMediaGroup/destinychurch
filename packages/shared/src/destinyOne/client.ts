@@ -74,6 +74,38 @@ export function createDestinyOneClient({ baseUrl, getAccessToken, fetchImpl }: D
     return json.data;
   }
 
+  /** Like `call`, but sends `file` as multipart/form-data instead of JSON. */
+  async function callForm<T>(method: string, path: string, file: Blob): Promise<T> {
+    const token = await getAccessToken();
+    const body = new FormData();
+    body.append("file", file);
+
+    let res: Response;
+    try {
+      res = await doFetch(`${root}${path}`, {
+        method,
+        headers: {
+          Accept: "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body,
+      });
+    } catch (err) {
+      throw new D1ApiError("network", err instanceof Error ? err.message : "Network error", 0);
+    }
+
+    const json = (await res.json().catch(() => null)) as D1Envelope<T> | D1ErrorBody | null;
+    if (!res.ok || !json || "error" in json) {
+      const error = json && "error" in json ? json.error : null;
+      throw new D1ApiError(
+        error?.code ?? "unavailable",
+        error?.message ?? "Something went wrong. Please try again.",
+        res.status,
+      );
+    }
+    return json.data;
+  }
+
   const q = (params: Record<string, string | number | undefined>) => {
     const entries = Object.entries(params).filter(([, v]) => v !== undefined) as [string, string | number][];
     return entries.length ? `?${new URLSearchParams(entries.map(([k, v]) => [k, String(v)]))}` : "";
@@ -100,6 +132,9 @@ export function createDestinyOneClient({ baseUrl, getAccessToken, fetchImpl }: D
     registerPushToken: (token: string, platform: "ios" | "android") =>
       call<{ ok: true }>("POST", "/me/push-tokens", { token, platform }),
     unregisterPushToken: (token: string) => call<{ ok: true }>("DELETE", "/me/push-tokens", { token }),
+    /** Upload/replace my profile picture. `file` is a multipart form part (React Native's `{ uri, name, type }` shape works). */
+    uploadAvatar: (file: Blob) => callForm<D1Me>("POST", "/me/avatar", file),
+    removeAvatar: () => call<D1Me>("DELETE", "/me/avatar"),
 
     // ── Communities ──
     communities: () => call<D1CommunitySummary[]>("GET", "/communities"),

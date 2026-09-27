@@ -2,8 +2,9 @@
 // sign out. Your name is read-only — the church office sets it.
 
 import { useState } from "react";
-import { Alert, ScrollView, Share, Text, View } from "react-native";
+import { ActivityIndicator, Alert, Pressable, ScrollView, Share, Text, View } from "react-native";
 import { router } from "expo-router";
+import * as ImagePicker from "expo-image-picker";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Constants from "expo-constants";
 import { openDocument } from "@/components/SafetyNotice";
@@ -15,8 +16,9 @@ import { ORANGE, INK, useTheme } from "@/theme/tokens";
 export default function Settings() {
   const t = useTheme();
   const insets = useSafeAreaInsets();
-  const { me, email, isLeader, signOut } = useSession();
+  const { me, setMe, email, isLeader, signOut } = useSession();
   const [signingOut, setSigningOut] = useState(false);
+  const [avatarBusy, setAvatarBusy] = useState(false);
 
   const role = me?.roles.includes("senior_leadership") ? "Senior leadership" : isLeader ? "Group leader" : "Member";
 
@@ -29,18 +31,59 @@ export default function Settings() {
     }
   }
 
+  async function changeAvatar() {
+    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permission.granted) {
+      Alert.alert("Photo access needed", "Allow photo access in Settings to change your picture.");
+      return;
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ["images"],
+      allowsMultipleSelection: false,
+      quality: 0.8,
+      allowsEditing: true,
+      aspect: [1, 1],
+    });
+    if (result.canceled || !result.assets[0]) return;
+
+    const asset = result.assets[0];
+    setAvatarBusy(true);
+    try {
+      const file = {
+        uri: asset.uri,
+        name: asset.fileName ?? "avatar.jpg",
+        type: asset.mimeType ?? "image/jpeg",
+      } as unknown as Blob;
+      setMe(await api.uploadAvatar(file));
+    } catch (err) {
+      Alert.alert("Couldn't update your picture", errorMessage(err));
+    } finally {
+      setAvatarBusy(false);
+    }
+  }
+
   return (
     <ScrollView style={{ flex: 1, backgroundColor: t.grouped }} contentContainerStyle={{ paddingTop: insets.top + 52, paddingHorizontal: 16, paddingBottom: 120, gap: 22 }}>
       <LargeTitle style={{ paddingHorizontal: 4 }}>Settings</LargeTitle>
 
       <Card style={{ flexDirection: "row", alignItems: "center", gap: 14, padding: 16 }}>
-        <Avatar name={me?.displayName ?? ""} size={60} />
+        <Pressable onPress={changeAvatar} disabled={avatarBusy} style={{ opacity: avatarBusy ? 0.5 : 1 }}>
+          <Avatar name={me?.displayName ?? ""} uri={me?.avatarUrl} size={60} />
+          {avatarBusy && (
+            <View style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, alignItems: "center", justifyContent: "center" }}>
+              <ActivityIndicator color={t.text} />
+            </View>
+          )}
+        </Pressable>
         <View style={{ flex: 1, minWidth: 0, gap: 2 }}>
           <Text style={{ fontSize: 20, fontWeight: "600", color: t.text }}>{me?.displayName}</Text>
           <Text numberOfLines={1} style={{ fontSize: 15, color: t.muted }}>
             {role}
             {email ? ` · ${email}` : ""}
           </Text>
+          <Pressable onPress={changeAvatar} disabled={avatarBusy}>
+            <Text style={{ fontSize: 14, fontWeight: "600", color: ORANGE, marginTop: 2 }}>Change picture</Text>
+          </Pressable>
         </View>
       </Card>
       <Text style={{ marginTop: -14, paddingHorizontal: 16, fontSize: 13, lineHeight: 18, color: t.subtle }}>

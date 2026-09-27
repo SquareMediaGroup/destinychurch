@@ -1,14 +1,15 @@
 // B1 Chats — variant 1B "Cards and filters": All / Unread / Announcements
 // chips, then one card per community with "See all" to the community page.
 
-import { useCallback, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { FlatList, Pressable, RefreshControl, ScrollView, Text, View } from "react-native";
-import { router, useFocusEffect } from "expo-router";
+import { router } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { GlassSurface } from "@/components/GlassSurface";
 import { CardGroupRow, orderedGroups } from "@/components/GroupRows";
 import { Icon } from "@/components/Icon";
 import { Bone, Card, EmptyState, ErrorState, LargeTitle, Separator, SkeletonGroup } from "@/components/ui";
+import { prefetchGroup } from "@/lib/queries";
 import { useSession } from "@/state/session";
 import { ORANGE, useTheme } from "@/theme/tokens";
 
@@ -25,12 +26,6 @@ export default function Chats() {
   const { communities, communitiesError, refreshCommunities, isLeader } = useSession();
   const [filter, setFilter] = useState<Filter>("all");
   const [refreshing, setRefreshing] = useState(false);
-
-  useFocusEffect(
-    useCallback(() => {
-      void refreshCommunities();
-    }, [refreshCommunities]),
-  );
 
   // A community with nothing left after filtering shows no card.
   const cards = useMemo(
@@ -119,7 +114,7 @@ export default function Chats() {
             {groups.map((g, i) => (
               <View key={g.id}>
                 {i > 0 ? <Separator inset={70} /> : null}
-                <CardGroupRow group={g} onPress={() => router.push(`/group/${g.id}`)} />
+                <CardGroupRow group={g} onPressIn={() => prefetchGroup(g.id)} onPress={() => router.push(`/group/${g.id}`)} />
               </View>
             ))}
           </Card>

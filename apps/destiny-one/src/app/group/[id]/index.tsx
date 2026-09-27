@@ -17,6 +17,7 @@ import { Divider, MessageBubble, buildRows, type Row } from "@/components/Messag
 import { NotificationPrompt } from "@/components/NotificationPrompt";
 import { Avatar, BackButton, ConfirmDialog, EmptyState, ErrorState, GlassIconButton, PrimaryButton, withAlpha } from "@/components/ui";
 import { plural } from "@/lib/format";
+import { setOpenGroup } from "@/lib/queries";
 import { uploadAttachment } from "@/lib/upload";
 import { useConversation, type LocalMessage } from "@/lib/useConversation";
 import { errorMessage, useGroupSummary, useSession } from "@/state/session";
@@ -28,7 +29,9 @@ export default function GroupChat() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { me } = useSession();
   const summary = useGroupSummary(id);
-  const convo = useConversation(id, me);
+  // Read before the chat marks itself read, for the "New messages" divider.
+  const [unreadAtOpen] = useState(() => summary?.group.unreadCount ?? 0);
+  const convo = useConversation(id, me, unreadAtOpen);
   const { group, messages, firstUnreadId, markRead } = convo;
 
   const list = useRef<FlatList<Row>>(null);
@@ -44,6 +47,13 @@ export default function GroupChat() {
   const byId = useMemo(() => new Map((messages ?? []).map((m) => [m.id, m])), [messages]);
   const admins = useMemo(() => new Set((group?.members ?? []).filter((m) => m.role === "admin").map((m) => m.id)), [group]);
 
+  // While on screen, new messages here aren't unread.
+  useFocusEffect(
+    useCallback(() => {
+      setOpenGroup(id);
+      return () => setOpenGroup(null);
+    }, [id]),
+  );
   // Read receipts while the chat is on screen.
   useFocusEffect(useCallback(() => markRead(), [markRead]));
 
@@ -115,7 +125,10 @@ export default function GroupChat() {
       {!messages ? (
         convo.error ? (
           <View style={{ flex: 1, justifyContent: "center" }}>
-            <ErrorState message={convo.error} onRetry={() => router.replace(`/group/${id}`)} />
+            <ErrorState message={convo.error} onRetry={() => {
+                void convo.reload();
+                void convo.reloadGroup();
+              }} />
           </View>
         ) : (
           <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>

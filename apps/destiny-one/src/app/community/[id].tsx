@@ -1,33 +1,31 @@
 // B2 Community — its groups (the ones I'm in) and Leave community.
 // Leaders (canManage) get New group and Add people.
 
-import { useCallback, useState } from "react";
+import { useState } from "react";
 import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
-import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import type { D1CommunitySummary } from "@destiny/shared";
 import { orderedGroups } from "@/components/GroupRows";
+import { invalidateCommunities, keys, prefetchGroup, useCommunity } from "@/lib/queries";
+import { queryClient } from "@/lib/queryClient";
 import { Icon } from "@/components/Icon";
 import { Avatar, Bone, Card, CardButton, ConfirmDialog, ErrorState, FloatingBack, LargeTitle, SecondaryButton, SkeletonGroup, SkeletonRows } from "@/components/ui";
 import { api } from "@/lib/api";
-import { errorMessage, useSession } from "@/state/session";
+import { errorMessage } from "@/state/session";
 import { useTheme } from "@/theme/tokens";
 
 export default function Community() {
   const t = useTheme();
   const insets = useSafeAreaInsets();
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { refreshCommunities } = useSession();
-  const [c, setC] = useState<D1CommunitySummary | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const community = useCommunity(id);
+  const c = community.data;
+  const error = community.error ? errorMessage(community.error) : null;
   const [leaving, setLeaving] = useState(false);
   const [busy, setBusy] = useState(false);
 
-  const load = useCallback(() => {
-    setError(null);
-    api.community(id).then(setC, (err) => setError(errorMessage(err)));
-  }, [id]);
-  useFocusEffect(load);
+  const load = () => void community.refetch();
 
   return (
     <View style={{ flex: 1, backgroundColor: t.grouped }}>
@@ -46,7 +44,7 @@ export default function Community() {
 
           <Card>
             {orderedGroups(c).map((g) => (
-              <Pressable key={g.id} onPress={() => router.push(`/group/${g.id}`)} style={({ pressed }) => ({ flexDirection: "row", alignItems: "center", gap: 12, paddingLeft: 16, backgroundColor: pressed ? t.fill : "transparent" })}>
+              <Pressable key={g.id} onPressIn={() => prefetchGroup(g.id)} onPress={() => router.push(`/group/${g.id}`)} style={({ pressed }) => ({ flexDirection: "row", alignItems: "center", gap: 12, paddingLeft: 16, backgroundColor: pressed ? t.fill : "transparent" })}>
                 <Avatar name={g.name} size={40} announcements={g.kind === "announcements"} />
                 <View style={{ flex: 1, minWidth: 0, flexDirection: "row", alignItems: "center", gap: 8, paddingVertical: 12, paddingRight: 16, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: t.sep }}>
                   <View style={{ flex: 1, minWidth: 0, gap: 1 }}>
@@ -89,9 +87,10 @@ export default function Community() {
           setBusy(true);
           try {
             await api.leaveCommunity(id);
-            await refreshCommunities();
             setLeaving(false);
             router.dismissTo("/chats");
+            queryClient.setQueryData<D1CommunitySummary[]>(keys.communities, (old) => old?.filter((x) => x.id !== id));
+            invalidateCommunities();
           } catch (err) {
             setLeaving(false);
             Alert.alert("Couldn't leave the community", errorMessage(err));

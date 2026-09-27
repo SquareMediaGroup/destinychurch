@@ -14,6 +14,7 @@ import { Icon } from "@/components/Icon";
 import { Avatar, EmptyState, Field, LargeTitle, TextButton } from "@/components/ui";
 import { api } from "@/lib/api";
 import { listTime } from "@/lib/format";
+import { prefetchGroup } from "@/lib/queries";
 import { errorMessage, useSession } from "@/state/session";
 import { ORANGE, useTheme } from "@/theme/tokens";
 
@@ -143,7 +144,7 @@ export function SearchView({ mode }: { mode: "tab" | "modal" }) {
           if (item.kind === "group") {
             const { g, c } = item.hit;
             return (
-              <Pressable onPress={() => open(`/group/${g.id}`)} style={({ pressed }) => ({ flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 8, paddingHorizontal: 20, backgroundColor: pressed ? t.fill : "transparent" })}>
+              <Pressable onPressIn={() => prefetchGroup(g.id)} onPress={() => open(`/group/${g.id}`)} style={({ pressed }) => ({ flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 8, paddingHorizontal: 20, backgroundColor: pressed ? t.fill : "transparent" })}>
                 <Avatar name={g.name} size={40} announcements={g.kind === "announcements"} />
                 <View style={{ flex: 1, gap: 1 }}>
                   <Text style={{ fontSize: 17, fontWeight: "600", color: t.text }}>{g.name}</Text>

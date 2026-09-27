@@ -1,21 +1,21 @@
 // C4 Edit / archive group (leaders and group admins).
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ScrollView, View } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import type { D1GroupDetail } from "@destiny/shared";
 import { Bone, CardButton, ConfirmDialog, Field, FieldLabel, FormError, ModalHeader, PrimaryButton, SkeletonGroup } from "@/components/ui";
 import { api } from "@/lib/api";
-import { errorMessage, useSession } from "@/state/session";
+import { removeGroupLocally, setGroup, updateGroupSummary, useGroup } from "@/lib/queries";
+import { errorMessage } from "@/state/session";
 import { useTheme } from "@/theme/tokens";
 
 export default function EditGroup() {
   const t = useTheme();
   const insets = useSafeAreaInsets();
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { refreshCommunities } = useSession();
-  const [group, setGroup] = useState<D1GroupDetail | null>(null);
+  const groupQuery = useGroup(id);
+  const group = groupQuery.data ?? null;
   const [name, setName] = useState("");
   const [department, setDepartment] = useState("");
   const [description, setDescription] = useState("");
@@ -23,26 +23,33 @@ export default function EditGroup() {
   const [archiving, setArchiving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Fill the form once, from the cached group (or the fetch, if not cached).
+  const filled = useRef(false);
   useEffect(() => {
-    api.group(id).then(
-      (g) => {
-        setGroup(g);
-        setName(g.name);
-        setDepartment(g.department ?? "");
-        setDescription(g.description ?? "");
-      },
-      (err) => setError(errorMessage(err)),
-    );
-  }, [id]);
+    if (group && !filled.current) {
+      filled.current = true;
+      setName(group.name);
+      setDepartment(group.department ?? "");
+      setDescription(group.description ?? "");
+    }
+  }, [group]);
+  useEffect(() => {
+    if (groupQuery.error && !group) setError(errorMessage(groupQuery.error));
+  }, [groupQuery.error, group]);
 
   async function save(archived?: boolean) {
     setBusy(true);
     setError(null);
     try {
-      await api.updateGroup(id, archived ? { archived: true } : { name: name.trim(), department: department.trim() || null, description: description.trim() || null });
-      await refreshCommunities();
-      if (archived) router.dismissTo("/chats");
-      else router.back();
+      const updated = await api.updateGroup(id, archived ? { archived: true } : { name: name.trim(), department: department.trim() || null, description: description.trim() || null });
+      if (archived) {
+        router.dismissTo("/chats");
+        removeGroupLocally(id);
+        return;
+      }
+      setGroup(updated);
+      updateGroupSummary(id, (g) => ({ ...g, name: updated.name, department: updated.department }));
+      router.back();
     } catch (err) {
       setError(errorMessage(err));
     } finally {

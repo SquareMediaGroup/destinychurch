@@ -1,5 +1,8 @@
 // Everything B3 Group chat needs: the group, its messages (paged oldest to
-// newest), live updates on d1-group:<id>, and the write actions.
+// newest), and the write actions. Both live in the app cache (src/lib/queries.ts),
+// so a chat you've opened before renders on the first frame, and the app-wide
+// Realtime hub keeps it current even while it isn't on screen. Opening a chat
+// only asks the server when nothing is cached or the cache was marked stale.
 //
 // Sends are optimistic: a local message with a negative id shows at once as
 // "sending", is swapped for the server's copy on success, and stays as
@@ -7,172 +10,54 @@
 // de-duplicated by id (messages) or ignored (our own reactions, which were
 // already applied locally).
 
-import { useCallback, useEffect, useRef, useState } from "react";
-import type { D1GroupDetail, D1Me, D1Message } from "@destiny/shared";
+import { useCallback, useRef, useState } from "react";
+import type { D1Me } from "@destiny/shared";
 import { api } from "@/lib/api";
-import { readCachedConversation, writeCachedConversation } from "@/lib/messageCache";
-import { subscribeToGroup } from "@/lib/realtime";
+import { keys, PAGE, updateGroupSummary, updateMessages, upsert, useGroup, useMessages, type LocalMessage, type MessagesData } from "@/lib/queries";
+import { queryClient } from "@/lib/queryClient";
 import { errorMessage } from "@/state/session";
 
-export type LocalMessage = D1Message & { status?: "sending" | "failed"; localAttachment?: { name: string; mimeType: string; sizeBytes: number | null } };
+export type { LocalMessage };
 
-const PAGE = 40;
 let localIds = -1;
 
-function upsert(list: LocalMessage[], msg: LocalMessage): LocalMessage[] {
-  const i = list.findIndex((m) => m.id === msg.id);
-  if (i >= 0) {
-    const next = list.slice();
-    next[i] = { ...list[i], ...msg };
-    return next;
-  }
-  // Server messages stay in id order; unsent local ones (negative ids) stay last.
-  const server = list.filter((m) => m.id > 0);
-  const local = list.filter((m) => m.id < 0);
-  if (msg.id < 0) return [...list, msg];
-  const at = server.findIndex((m) => m.id > msg.id);
-  if (at >= 0) server.splice(at, 0, msg);
-  else server.push(msg);
-  return [...server, ...local];
-}
+type Pending = { input: { body?: string; replyTo?: number; attachmentId?: string }; upload?: () => Promise<string> };
+/** Unsent messages, kept outside the screen so "tap to retry" still works after leaving and coming back. */
+const pending = new Map<number, Pending>();
 
-export function useConversation(groupId: string, me: D1Me | null) {
-  const [group, setGroup] = useState<D1GroupDetail | null>(null);
-  const [messages, setMessages] = useState<LocalMessage[] | null>(null);
-  const [nextBefore, setNextBefore] = useState<number | null>(null);
+export function useConversation(groupId: string, me: D1Me | null, unreadAtOpen: number) {
+  const groupQuery = useGroup(groupId);
+  const messagesQuery = useMessages(groupId);
+  const group = groupQuery.data ?? null;
+  const messages = messagesQuery.data?.messages ?? null;
+  const nextBefore = messagesQuery.data?.nextBefore ?? null;
   const [loadingOlder, setLoadingOlder] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [firstUnreadId, setFirstUnreadId] = useState<number | null>(null);
   const lastRead = useRef(0);
-  const meId = me?.id;
 
-  // Keep the on-device cache fresh so the next open of this chat is instant.
-  useEffect(() => {
-    if (!group || !messages) return;
-    writeCachedConversation(groupId, { group, messages: messages.filter((m) => m.id > 0), nextBefore });
-  }, [groupId, group, messages, nextBefore]);
+  // Where the "New messages" divider goes: worked out once, from the unread
+  // count the chat list had when this chat was opened.
+  const firstUnread = useRef<number | null | undefined>(undefined);
+  if (firstUnread.current === undefined && messages) {
+    const others = messages.filter((m) => !m.mine && m.id > 0);
+    firstUnread.current = unreadAtOpen > 0 && others.length ? others[Math.max(0, others.length - unreadAtOpen)].id : null;
+  }
 
-  const loadGroup = useCallback(async () => {
-    try {
-      setGroup(await api.group(groupId));
-    } catch (err) {
-      setError(errorMessage(err));
-    }
+  const setMessages = useCallback((fn: (list: LocalMessage[]) => LocalMessage[]) => {
+    queryClient.setQueryData<MessagesData>(keys.messages(groupId), (old) => ({ messages: fn(old?.messages ?? []), nextBefore: old?.nextBefore ?? null }));
   }, [groupId]);
 
-  const loadLatest = useCallback(async () => {
-    try {
-      const page = await api.messages(groupId, { limit: PAGE });
-      setMessages((prev) => {
-        let next = prev ?? [];
-        for (const m of page.messages) next = upsert(next, m);
-        return next;
-      });
-      setNextBefore((prev) => prev ?? page.nextBefore);
-      setError(null);
-      return page;
-    } catch (err) {
-      setError(errorMessage(err));
-      return null;
-    }
-  }, [groupId]);
-
-  // Initial load: show the cached copy at once (no spinner on a re-open),
-  // then fetch group + latest page and work out where "New messages" goes.
-  useEffect(() => {
-    let cancelled = false;
-    setGroup(null);
-    setMessages(null);
-    readCachedConversation(groupId).then((cached) => {
-      if (cancelled || !cached) return;
-      setGroup(cached.group);
-      setMessages(cached.messages);
-      setNextBefore(cached.nextBefore);
-    });
-    Promise.all([api.group(groupId), api.messages(groupId, { limit: PAGE })])
-      .then(([g, page]) => {
-        if (cancelled) return;
-        setGroup(g);
-        setMessages(page.messages);
-        setNextBefore(page.nextBefore);
-        const others = page.messages.filter((m) => !m.mine);
-        if (g.unreadCount > 0 && others.length) setFirstUnreadId(others[Math.max(0, others.length - g.unreadCount)].id);
-      })
-      .catch((err) => !cancelled && setError(errorMessage(err)));
-    return () => {
-      cancelled = true;
-    };
-  }, [groupId]);
-
-  // Live updates.
-  useEffect(() => {
-    let unsubscribe: (() => void) | undefined;
-    let stopped = false;
-    subscribeToGroup(groupId, (e) => {
-      switch (e.event) {
-        case "message": {
-          const p = e.payload;
-          if (p.attachmentId) {
-            // The event has no signed URL; fetch the page to get one.
-            void loadLatest();
-            return;
-          }
-          setMessages((prev) =>
-            upsert(prev ?? [], {
-              id: p.id,
-              groupId: p.groupId,
-              sender: p.sender,
-              body: p.body,
-              replyTo: p.replyTo,
-              attachment: null,
-              reactions: [],
-              createdAt: p.createdAt,
-              deleted: false,
-              mine: p.sender.id === meId,
-            }),
-          );
-          return;
-        }
-        case "message_deleted":
-          setMessages((prev) => (prev ?? []).map((m) => (m.id === e.payload.id ? { ...m, deleted: true, body: null, attachment: null, reactions: [] } : m)));
-          return;
-        case "reaction": {
-          const { messageId, memberId, emoji, added } = e.payload;
-          if (memberId === meId) return;
-          setMessages((prev) =>
-            (prev ?? []).map((m) => {
-              if (m.id !== messageId) return m;
-              const existing = m.reactions.find((r) => r.emoji === emoji);
-              let reactions = m.reactions;
-              if (existing) reactions = m.reactions.map((r) => (r.emoji === emoji ? { ...r, count: r.count + (added ? 1 : -1) } : r));
-              else if (added) reactions = [...m.reactions, { emoji, count: 1, mine: false }];
-              return { ...m, reactions: reactions.filter((r) => r.count > 0) };
-            }),
-          );
-          return;
-        }
-        case "members_changed":
-        case "group_state":
-          void loadGroup();
-          return;
-      }
-    }).then((fn) => {
-      if (stopped) fn();
-      else unsubscribe = fn;
-    });
-    return () => {
-      stopped = true;
-      unsubscribe?.();
-    };
-  }, [groupId, meId, loadGroup, loadLatest]);
+  const reload = useCallback(() => queryClient.refetchQueries({ queryKey: keys.messages(groupId) }), [groupId]);
+  const reloadGroup = useCallback(() => queryClient.refetchQueries({ queryKey: keys.group(groupId) }), [groupId]);
 
   const loadOlder = useCallback(async () => {
     if (!nextBefore || loadingOlder) return;
     setLoadingOlder(true);
     try {
       const page = await api.messages(groupId, { before: nextBefore, limit: PAGE });
-      setMessages((prev) => [...page.messages, ...(prev ?? []).filter((m) => !page.messages.some((p) => p.id === m.id))]);
-      setNextBefore(page.nextBefore);
+      queryClient.setQueryData<MessagesData>(keys.messages(groupId), (old) => ({
+        messages: [...page.messages, ...(old?.messages ?? []).filter((m) => !page.messages.some((p) => p.id === m.id))],
+        nextBefore: page.nextBefore,
+      }));
     } catch {
       // Leave nextBefore as is; scrolling up again retries.
     } finally {
@@ -185,27 +70,25 @@ export function useConversation(groupId: string, me: D1Me | null) {
     const newest = [...(messages ?? [])].reverse().find((m) => m.id > 0);
     if (!newest || newest.id <= lastRead.current) return;
     lastRead.current = newest.id;
+    updateGroupSummary(groupId, (g) => (g.unreadCount ? { ...g, unreadCount: 0 } : g));
     void api.markRead(groupId, newest.id).catch(() => {
       lastRead.current = 0;
     });
   }, [groupId, messages]);
 
   const post = useCallback(
-    async (local: LocalMessage, input: { body?: string; replyTo?: number; attachmentId?: string }) => {
+    async (local: LocalMessage, input: Pending["input"]) => {
       try {
         const sent = await api.send(groupId, input);
-        setMessages((prev) => upsert((prev ?? []).filter((m) => m.id !== local.id), sent));
-        if (sent.attachment) void loadLatest();
+        setMessages((list) => upsert(list.filter((m) => m.id !== local.id), sent));
+        if (sent.attachment) void reload();
       } catch (err) {
-        setMessages((prev) => (prev ?? []).map((m) => (m.id === local.id ? { ...m, status: "failed" } : m)));
+        updateMessages(groupId, (list) => list.map((m) => (m.id === local.id ? { ...m, status: "failed" } : m)));
         throw err;
       }
     },
-    [groupId, loadLatest],
+    [groupId, setMessages, reload],
   );
-
-  type Pending = { input: { body?: string; replyTo?: number; attachmentId?: string }; upload?: () => Promise<string> };
-  const pending = useRef(new Map<number, Pending>());
 
   /** Uploads first (if a file is attached), then posts. The bubble shows straight away. */
   const deliver = useCallback(
@@ -214,14 +97,14 @@ export function useConversation(groupId: string, me: D1Me | null) {
         try {
           p.input.attachmentId = await p.upload();
         } catch (err) {
-          setMessages((prev) => (prev ?? []).map((m) => (m.id === local.id ? { ...m, status: "failed" } : m)));
+          updateMessages(groupId, (list) => list.map((m) => (m.id === local.id ? { ...m, status: "failed" } : m)));
           throw err;
         }
       }
       await post(local, p.input);
-      pending.current.delete(local.id);
+      pending.delete(local.id);
     },
-    [post],
+    [groupId, post],
   );
 
   const send = useCallback(
@@ -241,33 +124,39 @@ export function useConversation(groupId: string, me: D1Me | null) {
         localAttachment: attach?.file,
       };
       const p: Pending = { input: { ...input }, upload: attach?.upload };
-      pending.current.set(local.id, p);
-      setMessages((prev) => [...(prev ?? []), local]);
+      pending.set(local.id, p);
+      setMessages((list) => [...list, local]);
       await deliver(local, p);
     },
-    [groupId, me, deliver],
+    [groupId, me, deliver, setMessages],
   );
 
   const retry = useCallback(
     async (localId: number) => {
-      const p = pending.current.get(localId);
+      const p = pending.get(localId);
       const local = messages?.find((m) => m.id === localId);
       if (!p || !local) return;
-      setMessages((prev) => (prev ?? []).map((m) => (m.id === localId ? { ...m, status: "sending" } : m)));
+      updateMessages(groupId, (list) => list.map((m) => (m.id === localId ? { ...m, status: "sending" } : m)));
       await deliver(local, p).catch(() => undefined);
     },
-    [messages, deliver],
+    [groupId, messages, deliver],
   );
 
-  const discard = useCallback((localId: number) => {
-    pending.current.delete(localId);
-    setMessages((prev) => (prev ?? []).filter((m) => m.id !== localId));
-  }, []);
+  const discard = useCallback(
+    (localId: number) => {
+      pending.delete(localId);
+      updateMessages(groupId, (list) => list.filter((m) => m.id !== localId));
+    },
+    [groupId],
+  );
 
-  const remove = useCallback(async (messageId: number) => {
-    await api.deleteMessage(messageId);
-    setMessages((prev) => (prev ?? []).map((m) => (m.id === messageId ? { ...m, deleted: true, body: null, attachment: null, reactions: [] } : m)));
-  }, []);
+  const remove = useCallback(
+    async (messageId: number) => {
+      await api.deleteMessage(messageId);
+      updateMessages(groupId, (list) => list.map((m) => (m.id === messageId ? { ...m, deleted: true, body: null, attachment: null, reactions: [] } : m)));
+    },
+    [groupId],
+  );
 
   const toggleReaction = useCallback(
     async (messageId: number, emoji: string) => {
@@ -275,8 +164,8 @@ export function useConversation(groupId: string, me: D1Me | null) {
       if (!msg) return;
       const mine = msg.reactions.some((r) => r.emoji === emoji && r.mine);
       const apply = (on: boolean) =>
-        setMessages((prev) =>
-          (prev ?? []).map((m) => {
+        updateMessages(groupId, (list) =>
+          list.map((m) => {
             if (m.id !== messageId) return m;
             const r = m.reactions.find((x) => x.emoji === emoji);
             const reactions = r
@@ -295,8 +184,26 @@ export function useConversation(groupId: string, me: D1Me | null) {
         throw err;
       }
     },
-    [messages],
+    [groupId, messages],
   );
 
-  return { group, reloadGroup: loadGroup, messages, error, reload: loadLatest, loadOlder, hasOlder: !!nextBefore, loadingOlder, firstUnreadId, markRead, send, retry, discard, remove, toggleReaction };
+  const failed = messagesQuery.error ?? groupQuery.error;
+  return {
+    group,
+    reloadGroup,
+    messages,
+    // Only worth showing when there's nothing cached to fall back on.
+    error: failed && !messages ? errorMessage(failed) : null,
+    reload,
+    loadOlder,
+    hasOlder: !!nextBefore,
+    loadingOlder,
+    firstUnreadId: firstUnread.current ?? null,
+    markRead,
+    send,
+    retry,
+    discard,
+    remove,
+    toggleReaction,
+  };
 }

@@ -1,7 +1,7 @@
 import { test, expect } from "@playwright/test";
 import { adultOnFromDateOfBirth } from "../../packages/shared/src/destinyOne/policy";
 import { ONBOARDING_MESSAGES, adultOnForDecision, onboardingState } from "../../lib/destinyOne/onboarding";
-import { accessRequestSchema, invitesSchema } from "../../lib/destinyOne/schemas";
+import { accessRequestSchema, adminSettingsSchema, invitesSchema } from "../../lib/destinyOne/schemas";
 import { NO_ROLES, hasAccess, type RoleFlags } from "../../lib/adminRoles";
 
 /**
@@ -154,5 +154,22 @@ test.describe("deploying before the migration doesn't lock admins out", () => {
     const { rolesFromRow } = await import("../../lib/adminRoles");
     expect(rolesFromRow({ super_admin: "true", event_admin: 1 }).super_admin).toBe(false);
     expect(rolesFromRow({ super_admin: "true", event_admin: 1 }).event_admin).toBe(false);
+  });
+});
+
+test.describe("adminSettingsSchema: app versions", () => {
+  test("minimum builds are whole numbers of at least 1", () => {
+    expect(adminSettingsSchema.safeParse({ minBuildIos: 12 }).success).toBe(true);
+    expect(adminSettingsSchema.safeParse({ minBuildIos: 0 }).success).toBe(false);
+    expect(adminSettingsSchema.safeParse({ minBuildAndroid: 2.5 }).success).toBe(false);
+  });
+  test("a blank message clears it", () => {
+    const parsed = adminSettingsSchema.safeParse({ maintenanceMessage: "   " });
+    expect(parsed.success && parsed.data.maintenanceMessage).toBeNull();
+  });
+  test("messages are trimmed and capped at 500 characters", () => {
+    const parsed = adminSettingsSchema.safeParse({ forceUpdateMessage: "  Please update.  " });
+    expect(parsed.success && parsed.data.forceUpdateMessage).toBe("Please update.");
+    expect(adminSettingsSchema.safeParse({ forceUpdateMessage: "x".repeat(501) }).success).toBe(false);
   });
 });

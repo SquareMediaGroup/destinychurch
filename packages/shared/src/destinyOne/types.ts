@@ -41,6 +41,21 @@ export type D1ErrorCode =
   | "rate_limited"
   | "unavailable";
 
+/**
+ * GET /config — read before sign-in. The app shows the update screen when its
+ * native build number is below `minBuild` for its platform, and the
+ * maintenance screen whenever `maintenanceMessage` is set.
+ */
+export interface D1AppConfig {
+  minBuild: { ios: number; android: number };
+  /** Replaces the default update-screen copy. */
+  forceUpdateMessage: string | null;
+  /** When set, the app shows this instead of working. */
+  maintenanceMessage: string | null;
+  /** Where the Update button goes. */
+  storeUrl: { ios: string; android: string };
+}
+
 export interface D1Consent {
   document: D1ConsentDocument;
   version: string;

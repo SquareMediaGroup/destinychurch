@@ -57,7 +57,7 @@ export const persister = createAsyncStoragePersister({
 });
 
 /** Saved to disk. Anything else (e.g. directory searches) is memory-only. */
-const SAVED = new Set(["me", "communities", "community", "group", "messages"]);
+const SAVED = new Set(["me", "communities", "community", "group", "messages", "appConfig"]);
 
 export const persistOptions = {
   persister,

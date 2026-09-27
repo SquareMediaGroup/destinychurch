@@ -1,5 +1,5 @@
-// Settings tab (D1–D4): profile, notifications, the notices again, your data,
-// sign out. Your name is read-only — the church office sets it.
+// Settings tab (D1–D4): profile, accounts, notifications, the notices again,
+// your data, sign out. Your name is read-only — the church office sets it.
 
 import { useState } from "react";
 import { ActivityIndicator, Alert, Pressable, ScrollView, Share, Text, View } from "react-native";
@@ -16,7 +16,8 @@ import { ORANGE, INK, useTheme } from "@/theme/tokens";
 export default function Settings() {
   const t = useTheme();
   const insets = useSafeAreaInsets();
-  const { me, setMe, email, isLeader, signOut } = useSession();
+  const { me, setMe, email, isLeader, signOut, accounts } = useSession();
+  const others = accounts.length - 1;
   const [signingOut, setSigningOut] = useState(false);
   const [avatarBusy, setAvatarBusy] = useState(false);
 
@@ -91,6 +92,10 @@ export default function Settings() {
       </Text>
 
       <Card>
+        <SettingsRow icon="people" label={others > 0 ? "Switch account" : "Add another account"} value={others > 0 ? String(accounts.length) : undefined} onPress={() => router.push("/accounts")} />
+      </Card>
+
+      <Card>
         <SettingsRow icon="bell" iconBg={ORANGE} iconColor={INK} label="Notifications" onPress={() => router.push("/notifications")} />
       </Card>
 
@@ -114,7 +119,8 @@ export default function Settings() {
         onPress={async () => {
           setSigningOut(true);
           await signOut();
-          router.replace("/welcome");
+          // Another account signed in on this phone takes over; otherwise, the welcome screen.
+          router.replace("/");
         }}
       />
       <Text style={{ textAlign: "center", fontSize: 13, color: t.subtle }}>Destiny One {Constants.expoConfig?.version ?? ""}</Text>

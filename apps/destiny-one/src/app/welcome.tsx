@@ -2,16 +2,26 @@
 // ChurchSuite for staff and leaders (A4) shows "Coming soon" for now.
 // No phone option, by design.
 
+import { useEffect } from "react";
 import { Text, View } from "react-native";
 import { router } from "expo-router";
 import { SvgXml } from "react-native-svg";
 import { AuthScreen } from "@/components/AuthScreen";
 import { LOGO_XML } from "@/components/logoXml";
-import { Lead, PrimaryButton } from "@/components/ui";
+import { Lead, PrimaryButton, TextButton } from "@/components/ui";
+import { cancelAdd } from "@/lib/accounts";
+import { useSession } from "@/state/session";
 import { useTheme } from "@/theme/tokens";
 
 export default function Welcome() {
   const t = useTheme();
+  const { accounts } = useSession();
+
+  // A plain sign-in from here, never a half-finished "Add account".
+  useEffect(() => {
+    void cancelAdd();
+  }, []);
+
   return (
     <AuthScreen
       footer={
@@ -25,6 +35,7 @@ export default function Welcome() {
             </View>
           </View>
           <Text style={{ fontSize: 13, lineHeight: 18, color: t.subtle, textAlign: "center" }}>ChurchSuite sign-in for staff and leaders is coming soon.</Text>
+          {accounts.length > 0 ? <TextButton label="Use another account on this phone" onPress={() => router.push("/accounts")} style={{ alignSelf: "center", paddingVertical: 8 }} /> : null}
         </>
       }
     >

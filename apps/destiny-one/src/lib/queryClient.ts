@@ -13,7 +13,8 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { QueryClient } from "@tanstack/react-query";
 import { createAsyncStoragePersister } from "@tanstack/query-async-storage-persister";
-import type { PersistedClient } from "@tanstack/react-query-persist-client";
+import { persistQueryClientRestore, persistQueryClientSave, type PersistedClient } from "@tanstack/react-query-persist-client";
+import { CACHE_KEY, LEGACY_CACHE_KEY, activeMemberId, isFirstSlot, loadAccounts } from "@/lib/accounts";
 import type { MessagesData } from "@/lib/queries";
 
 const MONTH = 30 * 24 * 60 * 60 * 1000;
@@ -49,11 +50,46 @@ function trimForDisk(client: PersistedClient): PersistedClient {
   return { ...client, clientState: { ...client.clientState, queries } };
 }
 
+/** Whose data this is: the `me` entry's member id. */
+function ownerOf(client: PersistedClient): string | null {
+  const me = client.clientState.queries.find((q) => q.queryKey[0] === "me");
+  return (me?.state.data as { id?: string } | null | undefined)?.id ?? null;
+}
+
+// One saved cache per account (src/lib/accounts.ts), under `d1.cache.v2:<member id>`.
+//
+// A write goes under the member id found IN the data being written, never
+// "whoever is active now": the persister throttles writes, so one queued just
+// before a switch can land after it. Keying by the data's owner means it
+// still lands in its own account's file. Data with no `me` is not saved.
+const storage = {
+  async getItem(): Promise<string | null> {
+    await loadAccounts();
+    const memberId = activeMemberId();
+    if (memberId) return AsyncStorage.getItem(`${CACHE_KEY}:${memberId}`);
+    // First launch after the multi-account update: the old single cache
+    // belongs to whoever is in the first slot. Hand it over once.
+    if (!isFirstSlot()) return null;
+    const legacy = await AsyncStorage.getItem(LEGACY_CACHE_KEY);
+    if (legacy) await AsyncStorage.removeItem(LEGACY_CACHE_KEY);
+    return legacy;
+  },
+  async setItem(_key: string, value: string): Promise<void> {
+    const newline = value.indexOf("\n");
+    const owner = value.slice(0, newline);
+    if (owner) await AsyncStorage.setItem(`${CACHE_KEY}:${owner}`, value.slice(newline + 1));
+  },
+  async removeItem(): Promise<void> {
+    const memberId = activeMemberId();
+    if (memberId) await AsyncStorage.removeItem(`${CACHE_KEY}:${memberId}`);
+  },
+};
+
 export const persister = createAsyncStoragePersister({
-  storage: AsyncStorage,
-  key: "d1.cache.v1",
+  storage,
+  key: CACHE_KEY,
   throttleTime: 1000,
-  serialize: (client) => JSON.stringify(trimForDisk(client)),
+  serialize: (client) => `${ownerOf(client) ?? ""}\n${JSON.stringify(trimForDisk(client))}`,
 });
 
 /** Saved to disk. Anything else (e.g. directory searches) is memory-only. */
@@ -69,9 +105,26 @@ export const persistOptions = {
   buster: "1",
 };
 
-/** Forget everything (sign-out, account deleted, a different person signed in). */
+/** Forget everything for the active account (sign-out, account deleted, a different person signed in). */
 export async function clearCache(): Promise<void> {
   await queryClient.cancelQueries();
   queryClient.clear();
   await persister.removeClient();
+}
+
+/** Switching accounts, step 1: save what's in memory to its owner's file, right now. */
+export async function saveCacheNow(): Promise<void> {
+  await queryClient.cancelQueries();
+  await persistQueryClientSave({ queryClient, persister, buster: persistOptions.buster, dehydrateOptions: persistOptions.dehydrateOptions }).catch(() => undefined);
+}
+
+/**
+ * Switching accounts, step 2 (once the other account is active): drop the old
+ * account's data from memory, leaving its file alone, and load the active
+ * account's saved cache in its place.
+ */
+export async function swapInActiveCache(): Promise<void> {
+  await queryClient.cancelQueries();
+  queryClient.clear();
+  await persistQueryClientRestore({ queryClient, persister, maxAge: persistOptions.maxAge, buster: persistOptions.buster }).catch(() => undefined);
 }

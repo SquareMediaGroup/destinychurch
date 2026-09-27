@@ -50,6 +50,10 @@ export default function RootLayout() {
             <Stack.Screen name="report" options={{ presentation: "modal", contentStyle: { backgroundColor: t.grouped } }} />
             <Stack.Screen name="report-sent" options={{ presentation: "modal", gestureEnabled: false }} />
             <Stack.Screen name="search" options={{ animation: "fade" }} />
+            <Stack.Screen
+              name="accounts"
+              options={{ presentation: "formSheet", sheetAllowedDetents: "fitToContents", sheetGrabberVisible: true, sheetCornerRadius: 28, contentStyle: { backgroundColor: t.grouped } }}
+            />
           </Stack>
         </SessionProvider>
       </PersistQueryClientProvider>

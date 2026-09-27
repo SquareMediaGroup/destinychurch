@@ -14,9 +14,8 @@
 // When the member channel re-joins after a drop, onRejoin fires so the caller
 // can catch up with one background re-fetch.
 
-import type { RealtimeChannel } from "@supabase/supabase-js";
+import type { RealtimeChannel, SupabaseClient } from "@supabase/supabase-js";
 import type { D1RealtimeEvent } from "@destiny/shared";
-import { supabase } from "@/lib/supabase";
 
 type Handler = (event: D1RealtimeEvent) => void;
 
@@ -26,7 +25,8 @@ export interface Hub {
   stop: () => void;
 }
 
-export function startHub(memberId: string, onEvent: Handler, onRejoin: () => void): Hub {
+/** `supabase` is the account's own client (accounts.client()), kept for the hub's whole life. */
+export function startHub(supabase: SupabaseClient, memberId: string, onEvent: Handler, onRejoin: () => void): Hub {
   const channels = new Map<string, RealtimeChannel>();
   let stopped = false;
   let authed: Promise<void> | null = null;

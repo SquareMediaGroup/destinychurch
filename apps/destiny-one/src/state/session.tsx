@@ -13,19 +13,25 @@
 //   - coming back to the app after more than CATCH_UP_AFTER_MS away,
 //   - the Realtime socket re-joining after a drop.
 // Switching tabs or opening a screen never re-fetches on its own.
+//
+// Several accounts can be signed in at once (src/lib/accounts.ts). Switching
+// saves this account's cache to its own file, makes the other account active,
+// and loads that one's saved cache, so it opens as instantly as a cold start.
 
-import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
 import { AppState } from "react-native";
 import { useIsRestoring, useQuery } from "@tanstack/react-query";
 import type { Session } from "@supabase/supabase-js";
 import type { D1CommunitySummary, D1Me } from "@destiny/shared";
 import { canCreateGroup } from "@destiny/shared";
+import * as accounts from "@/lib/accounts";
+import type { Account } from "@/lib/accounts";
 import { api, D1ApiError } from "@/lib/api";
 import { signOut as authSignOut } from "@/lib/auth";
+import { movePushToActiveAccount } from "@/lib/push";
 import { applyEvent, keys } from "@/lib/queries";
-import { clearCache, queryClient } from "@/lib/queryClient";
+import { clearCache, queryClient, saveCacheNow, swapInActiveCache } from "@/lib/queryClient";
 import { startHub, type Hub } from "@/lib/realtime";
-import { supabase } from "@/lib/supabase";
 
 type Href = "/welcome" | "/request" | "/waiting" | "/notices" | "/chats";
 
@@ -59,7 +65,17 @@ interface SessionValue {
   communitiesError: string | null;
   /** Pull-to-refresh and "Try again". Everything else updates by itself. */
   refreshCommunities: () => Promise<void>;
+  /** Signs the active account out. If another account is signed in, switches to it. */
   signOut: () => Promise<void>;
+  /** Every account signed in on this device, the active one included. */
+  accounts: Account[];
+  activeSlot: string;
+  switching: boolean;
+  switchTo: (slot: string) => Promise<void>;
+  /** After "Add account" signs in: make the new account the active one. */
+  finishAdding: (me: D1Me) => Promise<void>;
+  /** Sign another (not the active) account out and forget it on this device. */
+  removeAccount: (slot: string) => Promise<void>;
 }
 
 const Ctx = createContext<SessionValue | null>(null);
@@ -69,7 +85,8 @@ async function fetchMe(): Promise<D1Me | null> {
     return await api.me();
   } catch (err) {
     if (err instanceof D1ApiError && err.code === "unauthenticated") {
-      await supabase.auth.signOut();
+      // The listener in SessionProvider forgets the account.
+      await accounts.client().auth.signOut();
       return null;
     }
     throw err;
@@ -83,17 +100,28 @@ function catchUp() {
 
 export function SessionProvider({ children }: { children: ReactNode }) {
   const restoring = useIsRestoring();
+  const [accountsLoaded, setAccountsLoaded] = useState(false);
   const [authChecked, setAuthChecked] = useState(false);
   const [session, setSession] = useState<Session | null>(null);
+  const [switching, setSwitching] = useState(false);
+  /** Set while switchTo / signOut run, so the auth listener leaves the tidying to them. */
+  const busy = useRef(false);
 
-  const meQuery = useQuery({ queryKey: keys.me, queryFn: fetchMe, enabled: !!session && !restoring });
+  const activeSlot = useSyncExternalStore(accounts.subscribe, accounts.activeSlot);
+  const accountList = useSyncExternalStore(accounts.subscribe, accounts.accounts);
+
+  useEffect(() => {
+    void accounts.loadAccounts().then(() => setAccountsLoaded(true));
+  }, []);
+
+  const meQuery = useQuery({ queryKey: keys.me, queryFn: fetchMe, enabled: !!session && !restoring && !switching });
   const me = session ? (meQuery.data ?? null) : null;
   const meRef = useRef<D1Me | null>(null);
   meRef.current = me;
 
   const active = me?.onboarding === "active" && me.outstandingConsents.length === 0;
 
-  const communitiesQuery = useQuery({ queryKey: keys.communities, queryFn: () => api.communities(), enabled: active && !restoring });
+  const communitiesQuery = useQuery({ queryKey: keys.communities, queryFn: () => api.communities(), enabled: active && !restoring && !switching });
   const communities = active ? (communitiesQuery.data ?? null) : null;
   const communitiesError = communitiesQuery.error ? errorMessage(communitiesQuery.error, "Couldn't load your chats.") : null;
 
@@ -113,30 +141,44 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     await queryClient.refetchQueries({ queryKey: keys.communities });
   }, []);
 
-  // Auth session: restore on launch, follow sign-in / sign-out.
+  // Auth session of the active account: restore on launch and on every
+  // switch, follow sign-in / sign-out.
   useEffect(() => {
+    if (!accountsLoaded) return;
     let cancelled = false;
-    supabase.auth
+    const client = accounts.client();
+    client.auth
       .getSession()
       .then(({ data }) => !cancelled && setSession(data.session))
       .catch(() => undefined) // unreadable keychain: treat as signed out
       .finally(() => !cancelled && setAuthChecked(true));
-    const { data: sub } = supabase.auth.onAuthStateChange((_event, next) => {
+    const { data: sub } = client.auth.onAuthStateChange((event, next) => {
+      if (cancelled) return;
       setSession(next);
-      if (!next) void clearCache();
+      // Signed out from elsewhere (session revoked, account deleted): forget
+      // this account here too. Our own sign-out and switching tidy up themselves.
+      if (event === "SIGNED_OUT" && !busy.current) void clearCache().then(() => accounts.removeAccount(activeSlot, { signOut: false }));
     });
     return () => {
       cancelled = true;
       sub.subscription.unsubscribe();
     };
-  }, []);
+  }, [accountsLoaded, activeSlot]);
+
+  // Keep the account list's name, picture and email current.
+  const userId = session?.user.id;
+  const userEmail = session?.user.email ?? null;
+  useEffect(() => {
+    if (switching || !me || !userId) return;
+    void accounts.recordAccount(activeSlot, { userId, memberId: me.id, email: userEmail, displayName: me.displayName, avatarUrl: me.avatarUrl });
+  }, [switching, me, userId, userEmail, activeSlot]);
 
   // Realtime: one hub for the member topic and every group in the chat list.
   const hub = useRef<Hub | null>(null);
   const meId = me?.id;
   useEffect(() => {
     if (!active || !meId) return;
-    const h = startHub(meId, (e) => applyEvent(e, meId), catchUp);
+    const h = startHub(accounts.client(), meId, (e) => applyEvent(e, meId), catchUp);
     hub.current = h;
     return () => {
       h.stop();
@@ -167,9 +209,82 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     return () => sub.remove();
   }, [refreshMe]);
 
+  // The order matters. The old account's cache is saved (to its own file)
+  // before anything changes; the other account is made active before the
+  // in-memory cache is emptied, so anything fetched from here on is fetched
+  // as the new account; and in-flight requests from the old one are
+  // cancelled rather than landing in the new account's cache.
+  const runSwitch = useCallback(async (slot: string, knownMe?: D1Me) => {
+    setSwitching(true);
+    try {
+      await saveCacheNow();
+      await accounts.activate(slot);
+      await swapInActiveCache();
+      if (knownMe) queryClient.setQueryData(keys.me, knownMe);
+      const { data } = await accounts.client().auth.getSession().catch(() => ({ data: { session: null } }));
+      setSession(data.session);
+      // Its session ended while it was inactive (signed out elsewhere, say).
+      if (!data.session) await accounts.removeAccount(slot, { signOut: false });
+    } finally {
+      setSwitching(false);
+    }
+    // Behind the saved data: catch up on what happened while it was inactive.
+    catchUp();
+    void movePushToActiveAccount().catch(() => undefined);
+  }, []);
+
+  const switchTo = useCallback(
+    async (slot: string) => {
+      if (slot === accounts.activeSlot() || busy.current) return;
+      busy.current = true;
+      try {
+        await runSwitch(slot);
+      } finally {
+        busy.current = false;
+      }
+    },
+    [runSwitch],
+  );
+
+  const finishAdding = useCallback(
+    async (next: D1Me) => {
+      const { data } = await accounts.signInClient().auth.getSession();
+      const user = data.session?.user;
+      const slot = accounts.finishAdd();
+      if (!slot || !user) return;
+      // Signed into the account they're already on: nothing to add.
+      if (next.id === meRef.current?.id) {
+        await accounts.removeAccount(slot, { signOut: false });
+        return;
+      }
+      busy.current = true;
+      try {
+        await accounts.recordAccount(slot, { userId: user.id, memberId: next.id, email: user.email ?? null, displayName: next.displayName, avatarUrl: next.avatarUrl });
+        await runSwitch(slot, next);
+      } finally {
+        busy.current = false;
+      }
+    },
+    [runSwitch],
+  );
+
   const signOut = useCallback(async () => {
-    await authSignOut();
-    await clearCache();
+    busy.current = true;
+    try {
+      const slot = accounts.activeSlot();
+      await authSignOut();
+      await clearCache();
+      await accounts.removeAccount(slot, { signOut: false });
+      const next = accounts.accounts()[0];
+      if (next) await runSwitch(next.slot);
+    } finally {
+      busy.current = false;
+    }
+  }, [runSwitch]);
+
+  const removeAccount = useCallback(async (slot: string) => {
+    if (slot === accounts.activeSlot()) return;
+    await accounts.removeAccount(slot, { signOut: true });
   }, []);
 
   // Ready once the cache is back from disk and we know who's signed in. With
@@ -189,8 +304,14 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       communitiesError,
       refreshCommunities,
       signOut,
+      accounts: accountList,
+      activeSlot,
+      switching,
+      switchTo,
+      finishAdding,
+      removeAccount,
     }),
-    [ready, session, me, setMe, refreshMe, communities, communitiesError, refreshCommunities, signOut],
+    [ready, session, me, setMe, refreshMe, communities, communitiesError, refreshCommunities, signOut, accountList, activeSlot, switching, switchTo, finishAdding, removeAccount],
   );
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;

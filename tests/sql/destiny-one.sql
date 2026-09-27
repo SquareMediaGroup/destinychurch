@@ -467,6 +467,39 @@ select pg_temp.expect_error(
   'd1_invites_leader_invites_no_roles');
 select pg_temp.check(true, 'a leader invite cannot grant leader roles');
 
+-- ── Invited members exist before sign-in (part 5) ───────────────────────────
+
+insert into public.d1_invites (id, email, display_name, is_adult, community_ids, expires_at)
+  values ('20000000-0000-0000-0000-0000000000aa', 'early@example.org', 'Early Bird', true,
+          array[(select v from ids where k = 'community')]::uuid[], now() + interval '7 days');
+select public.d1_invite_create_member('20000000-0000-0000-0000-0000000000aa');
+select pg_temp.check(
+  (select m.status = 'active' and m.auth_user_id is null and m.verification_source = 'invite'
+   from public.d1_members m join public.d1_invites i on i.member_id = m.id
+   where i.id = '20000000-0000-0000-0000-0000000000aa'),
+  'a staff invite creates an active, staff-verified member with no login yet');
+select pg_temp.check(
+  exists (select 1 from public.d1_community_members cm join public.d1_invites i on i.member_id = cm.member_id
+          where i.id = '20000000-0000-0000-0000-0000000000aa'),
+  'the invited member is in the invite''s communities straight away');
+select pg_temp.check(public.d1_sign_in_status('Early@Example.org ') = 'invite', 'an open invite can sign in');
+select pg_temp.check(public.d1_sign_in_status('lead@example.org') = 'member', 'an existing member can sign in');
+update public.d1_settings set allow_access_requests = false;
+select pg_temp.check(public.d1_sign_in_status('nobody@example.org') = 'none', 'invite-only: an unknown email is turned away');
+update public.d1_settings set allow_access_requests = true;
+select pg_temp.check(public.d1_sign_in_status('nobody@example.org') = 'request', 'requests open: an unknown email may request access');
+
+insert into auth.users (id, email) values ('00000000-0000-0000-0000-0000000000ab', 'early@example.org');
+-- A sign-in from before the invite left a pending row; it gets folded in.
+insert into public.d1_members (auth_user_id, display_name, status) values ('00000000-0000-0000-0000-0000000000ab', 'New sign-in', 'pending');
+select pg_temp.check(
+  public.d1_accept_invite('00000000-0000-0000-0000-0000000000ab'::uuid, 'early@example.org')
+    = (select member_id from public.d1_invites where id = '20000000-0000-0000-0000-0000000000aa'),
+  'signing in links the login to the member created at invite time');
+select pg_temp.check(
+  (select count(*) from public.d1_members where auth_user_id = '00000000-0000-0000-0000-0000000000ab') = 1,
+  'the earlier pending row is folded in, not left behind');
+
 -- ── Message search (part 4) ─────────────────────────────────────────────────
 
 create temp table found (k text primary key, v bigint);

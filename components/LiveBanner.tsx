@@ -1,16 +1,15 @@
 "use client";
 
-import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useLiveStatus } from "@/contexts/LiveContext";
 import { isLinksPagePath } from "@/lib/linkPages/paths";
+import { youtubeWatchUrl } from "@/lib/youtubeId";
 
 export default function LiveBanner() {
-  const { live } = useLiveStatus();
+  const { live, videoId } = useLiveStatus();
   const pathname = usePathname();
 
   if (!live) return null;
-  if (pathname === "/live") return null;
   if (pathname.startsWith("/admin")) return null;
   if (pathname.startsWith("/portal")) return null;
   if (pathname === "/login") return null;
@@ -26,12 +25,14 @@ export default function LiveBanner() {
         We are live
       </span>
       <span aria-hidden="true" className="h-3 w-px bg-white/40" />
-      <Link
-        href="/live"
+      <a
+        href={youtubeWatchUrl(videoId)}
+        target="_blank"
+        rel="noopener noreferrer"
         className="text-sm font-bold text-white underline underline-offset-2 transition hover:no-underline"
       >
         Watch now →
-      </Link>
+      </a>
     </div>
   );
 }

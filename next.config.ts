@@ -39,6 +39,13 @@ const nextConfig: NextConfig = {
   async redirects() {
     return [
       {
+        // The on-site /live page and its chat were retired; old links and QR
+        // codes go straight to the channel's live tab instead.
+        source: "/live",
+        destination: "https://www.youtube.com/destinychurchteesvalley/live",
+        permanent: false,
+      },
+      {
         source: "/prayer-request",
         destination: "/connect-card",
         permanent: true,

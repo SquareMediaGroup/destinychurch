@@ -6,8 +6,7 @@
 // admin_notify_emit() fans a notification out in
 // supabase/migrations/20260922_02_notifications.sql.
 //
-// Subscription pattern copied from components/live/chat/useLiveChat.ts: the
-// memoised browser client, realtime.setAuth() before subscribing, a private
+// Subscription pattern: the memoised browser client, realtime.setAuth() before subscribing, a private
 // channel per topic, cleanup via removeChannel on unmount.
 
 import { useCallback, useEffect, useState } from "react";

@@ -33,7 +33,6 @@ const pages: { path: string; title: RegExp; heading: RegExp }[] = [
   { path: '/governance', title: /Governance/, heading: /Governance/ },
   { path: '/links', title: /Next Steps/, heading: /.+/ },
   { path: '/nfc', title: /Welcome/, heading: /.+/ },
-  { path: '/live', title: /Watch Live/, heading: /Live/ },
   { path: '/shop', title: /Shop/, heading: /.+/ },
   { path: '/alpha', title: /.+/, heading: /.+/ },
   { path: '/bible-course', title: /.+/, heading: /.+/ },

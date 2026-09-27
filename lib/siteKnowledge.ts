@@ -31,7 +31,6 @@ export const PAGE_INTENTS: { href: string; cta: string; intent: string }[] = [
   { href: "/new-here",        cta: "Start Here",              intent: "new to the church, getting started, what to know" },
   { href: "/about",           cta: "Meet the Team",           intent: "pastors, leadership, staff, team, vision, mission, history" },
   { href: "/sermons",         cta: "Watch Sermons",           intent: "sermons, messages, watch, listen, talks" },
-  { href: "/live",            cta: "Watch Live",              intent: "watch live, livestream, live service, online, Sundays at 11am" },
   { href: "/alpha",           cta: "Find Out More",           intent: "Alpha course, exploring faith, big questions about life and Jesus" },
   { href: "/serve",           cta: "Get Involved",            intent: "serving, volunteering, joining a team" },
   { href: "/kids",            cta: "Destiny Kids",            intent: "kids, children, ages 0-11, Sunday children's ministry" },
@@ -136,7 +135,7 @@ SUNDAY SERVICES:
 - What to expect: contemporary worship, Bible-based teaching, prayer, community
 - ${VISIT_FACTS.join(" | ")} | Accessible toilets | Hearing loop
 - ${BUS_NOTE}
-- LIVESTREAM: Watch live online every Sunday at 11:00am at /live (destinytees.uk/live)
+- LIVESTREAM: Watch live online every Sunday at 11:00am on our YouTube channel (youtube.com/destinychurchteesvalley)
 
 LEAD PASTORS:
 - Jonathan Harris — Senior Pastor. Has led Destiny for over 25 years. Passionate about building team and unleashing potential in others.

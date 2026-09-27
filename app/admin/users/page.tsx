@@ -25,7 +25,6 @@ const ROLE_HINTS: Record<AdminRole, string> = {
   event_admin: "Courses + announcements (not the sitewide banner).",
   store_admin: "Store: products, orders, hero.",
   site_admin: "Posts and redirects.",
-  host: "Moderates the live chat, and can sign in on /live itself.",
   hr_admin: "Staff directory, leave, jobs, applications, documents and reviews.",
   design_admin: "Design ticket queue: claim, deliver and close requests.",
   sermon_admin: "Publishes sermon audio to Buzzsprout.",

@@ -225,7 +225,7 @@ test("every tab a super admin sees comes from the registry, once", () => {
 });
 
 test("the tabs cover exactly the pages the sidebar shows", () => {
-  for (const role of ["super_admin", "store_admin", "hr_admin", "host"] as const) {
+  for (const role of ["super_admin", "store_admin", "hr_admin"] as const) {
     const granted = roles(role);
     const viaTabs = tabsFor(granted).flatMap((t) => t.items.map((i) => i.href));
     const viaSidebar = visibleItems(granted).map((i) => i.href);
@@ -240,13 +240,6 @@ test("a single-role user gets a short bar", () => {
 });
 
 test("a group with one visible item collapses to a link, not a sheet", () => {
-  // A host can see Simulated Live and Live Chat (both ungrouped) and nothing
-  // inside a labelled group, so every tab they get is a leaf with an href.
-  for (const tab of tabsFor(roles("host"))) {
-    expect(tab.href, `${tab.key} should be a direct link`).toBeTruthy();
-    expect(tab.items).toHaveLength(1);
-  }
-
   // And in general: any tab holding exactly one page is a link to it.
   for (const tab of tabsFor(roles("super_admin"))) {
     if (tab.items.length === 1) expect(tab.href).toBe(tab.items[0].href);

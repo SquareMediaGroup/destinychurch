@@ -4,9 +4,7 @@
 // A portal user's identity is "does this auth user have a linked hr_staff
 // row", which is not an access-level boolean and must never become one:
 // conflating it with admin_roles would let "can see my own payslip" leak
-// into "can manage HR". This mirrors lib/liveChatAuth.ts's readHost() — the
-// one other place in the app that authorises an authenticated user outside
-// the admin_roles table.
+// into "can manage HR".
 //
 // Every /api/portal/* handler must call readPortalUser() and scope every
 // query to the returned staff.id — never to anything a client supplies.

@@ -210,7 +210,7 @@ test("roles are named, never printed as columns", () => {
   expect(roleList(["event_admin", "store_admin", "site_admin"])).toBe(
     "Event Admin, Store Admin and Site Admin",
   );
-  expect(roleList(["host"])).toBe("Host");
+  expect(roleList(["hr_admin"])).toBe("HR Admin");
   expect(roleList([])).toBe("");
 });
 
@@ -239,7 +239,7 @@ test("bare identifiers in a diff are tidied, real content is not", () => {
 });
 
 test("a list of roles reads as a list, not as JSON", () => {
-  expect(formatValue(["super_admin", "host"])).toBe("Super Admin, Host");
+  expect(formatValue(["super_admin", "hr_admin"])).toBe("Super Admin, HR Admin");
 });
 
 test("the field names people actually see are the worst offenders, so they are named", () => {

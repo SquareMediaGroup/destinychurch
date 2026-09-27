@@ -11,8 +11,6 @@ Designed, engineered, and deployed by [Square Media Group](mailto:hello@squareme
 ## Features
 
 - Sermon streaming and full-archive browsing — speaker, month, and guest-speaker filters with fuzzy search, a Watch/Listen switch on any paired sermon (podcast audio that keeps playing as you navigate the site), and a live-stream banner
-- Live chat on `/live` — public chat with a host backstage channel, moderation, and prayer requests (Supabase Realtime)
-- Simulated live — play a pre-recorded video on `/live` as a self-synchronising broadcast, with on-page host broadcast controls
 - Events and "What's On" listings — unified event cards, on-site event pages, a swappable featured event/course, ICS calendar downloads, and on-site ChurchSuite signup
 - Ministry pages (Kids/DC Kids, Youth, Young Adults, Missions, Connect groups)
 - The Bible Course and Alpha journeys, including Alpha signup and event management
@@ -147,7 +145,6 @@ app/
 ├── jobs/             # Job board & applications
 ├── kids/             # Kids ministry
 ├── links/            # Link hub
-├── live/             # Live stream
 ├── missions/         # Missions & outreach
 ├── new-here/         # First-time visitor guide
 ├── nfc/              # "Digital back of seats" — NFC/QR tap-to-open service page
@@ -188,8 +185,6 @@ The `/admin` area is protected by Supabase Auth. Log in at `/login` to manage:
 - **HR & Jobs** — job listings, applications, staff directory (every record linked to a backend login), leave, documents, reviews, onboarding/offboarding checklists (HR Admin access level)
 - **Design** — the design request queue: claim tickets, message the requester, upload deliverables, and move each ticket through its workflow (Design Admin access level)
 - **Alpha & Recovery** — signups and events
-- **Live Chat** — host console for the `/live` chat: room state, moderation queue, muted guests, and prayer requests
-- **Simulated Live** — configure the pre-recorded broadcast shown on `/live` (video and start time)
 - **Redirects** — configure URL redirects
 - **Banner & Popup** — control the site-wide announcement banner and popups
 - **NFC** — manage the tiles shown on the `/nfc` "digital back of seats" page

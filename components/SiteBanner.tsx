@@ -56,7 +56,7 @@ export default function SiteBanner() {
   if (!banner.active) return null;
 
   // The live banner takes priority — don't stack other banners under it.
-  const liveVisible = live && pathname !== "/live";
+  const liveVisible = live;
   if (liveVisible) return null;
 
   const primary = renderBanner(banner, 0);

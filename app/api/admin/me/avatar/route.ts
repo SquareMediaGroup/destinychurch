@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { createClient } from "@/utils/supabase/server";
 import { createServiceClient } from "@/utils/supabase/service";
+import { recordAudit } from "@/lib/audit.server";
 
 export const runtime = "nodejs";
 
@@ -67,6 +68,16 @@ export async function POST(request: Request) {
     if (previousPath) await supabase.storage.from(BUCKET).remove([previousPath]);
   }
 
+  await recordAudit({
+    action: "upload",
+    section: "account",
+    entity: "profile picture",
+    entityId: user.id,
+    entityLabel: user.email ?? user.id,
+    summary: `${user.email ?? "An admin"} updated their profile picture`,
+    changes: null,
+  });
+
   return NextResponse.json({ avatar_url: data.publicUrl });
 }
 
@@ -95,6 +106,16 @@ export async function DELETE() {
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
   if (path) await supabase.storage.from(BUCKET).remove([path]);
+
+  await recordAudit({
+    action: "update",
+    section: "account",
+    entity: "profile picture",
+    entityId: user.id,
+    entityLabel: user.email ?? user.id,
+    summary: `${user.email ?? "An admin"} removed their profile picture`,
+    changes: null,
+  });
 
   return NextResponse.json({ success: true });
 }

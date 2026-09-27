@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 import { createClient } from "@/utils/supabase/server";
 import { createServiceClient } from "@/utils/supabase/service";
 import { getRoles } from "@/lib/adminRoles";
+import { recordAudit } from "@/lib/audit.server";
 
 // Who is signed in, plus their roles, in one request.
 //
@@ -59,7 +60,23 @@ export async function PATCH(request: Request) {
   }
 
   const service = createServiceClient();
+  const { data: before } = await service
+    .from("admin_roles")
+    .select("name")
+    .eq("auth_user_id", user.id)
+    .maybeSingle();
   await service.from("admin_roles").update({ name }).eq("auth_user_id", user.id);
+
+  await recordAudit({
+    action: "update",
+    section: "account",
+    entity: "profile",
+    entityId: user.id,
+    entityLabel: name,
+    summary: `${user.email ?? "An admin"} updated their name`,
+    before: before ?? null,
+    after: { name },
+  });
 
   return NextResponse.json({ success: true });
 }

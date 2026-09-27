@@ -7304,7 +7304,8 @@ same database as the data rather than in a separate Synapse module.
 - **UI kit:** `src/theme/tokens.ts` (the prototype's light/dark tokens), `src/components/ui.tsx`
   (the rotating orange **beam** border on primary buttons and focused fields — a spinning linear
   gradient in a clipped frame, since RN has no conic-gradient — plus buttons, fields, cards,
-  dialogs), `Icon.tsx` (the design's line icons via `react-native-svg`), `MessageBubble.tsx`,
+  dialogs, and pulsing loading skeletons — `SkeletonGroup`, `Bone`, `SkeletonRows` — used by
+  Chats, Groups, Community, Group info and Edit group while data loads), `Icon.tsx` (the design's line icons via `react-native-svg`), `MessageBubble.tsx`,
   `MessageActions.tsx` (long-press sheet), `Composer.tsx`, `NotificationPrompt.tsx` (A10, asked once
   on first group open), `SafetyNotice.tsx`.
 - **Search** (`search` route): groups from the cached list, plus messages via `GET /search/messages`

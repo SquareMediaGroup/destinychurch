@@ -1,5 +1,6 @@
 import { test, expect } from "@playwright/test";
 import {
+  toPrefixQuery,
   PUSH_PREVIEW_CHARS,
   pushPreviewText,
   REQUIRED_CONSENTS,
@@ -151,5 +152,22 @@ test.describe("pushPreviewText", () => {
   test("attachment-only messages", () => {
     expect(pushPreviewText({ senderName: "Sam", body: null, attachmentMime: "image/jpeg" })).toBe("Sam: Photo");
     expect(pushPreviewText({ senderName: "Sam", body: "  ", attachmentMime: "application/pdf" })).toBe("Sam: File");
+  });
+});
+
+test.describe("toPrefixQuery", () => {
+  test("words become prefix terms", () => {
+    expect(toPrefixQuery("Run  sheet!")).toBe("run:* & sheet:*");
+  });
+  test("operators and quotes can't get through", () => {
+    expect(toPrefixQuery("a' | !b & (c)")).toBe("a:* & b:* & c:*");
+  });
+  test("too short or empty finds nothing", () => {
+    expect(toPrefixQuery("")).toBeNull();
+    expect(toPrefixQuery("x")).toBeNull();
+    expect(toPrefixQuery("!!!")).toBeNull();
+  });
+  test("accented letters are kept", () => {
+    expect(toPrefixQuery("Café")).toBe("café:*");
   });
 });

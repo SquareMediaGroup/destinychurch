@@ -17,6 +17,7 @@ import type {
   D1Me,
   D1MembershipRole,
   D1Message,
+  D1MessageHit,
   D1MessagePage,
   D1UploadTicket,
 } from "./types";
@@ -142,6 +143,9 @@ export function createDestinyOneClient({ baseUrl, getAccessToken, fetchImpl }: D
       call<{ ok: true }>("DELETE", `/messages/${messageId}/reactions`, { emoji }),
     requestUpload: (groupId: string, input: { mimeType: string; sizeBytes: number }) =>
       call<D1UploadTicket>("POST", `/groups/${groupId}/attachments`, input),
+
+    /** Search your messages (groups you're in, since you joined; never deleted ones). */
+    searchMessages: (query: string) => call<D1MessageHit[]>("GET", `/search/messages${q({ q: query })}`),
 
     // ── Directory (leaders) ──
     directory: (query: string, communityId?: string) =>

@@ -177,3 +177,24 @@ export function pushPreviewText({ senderName, body, attachmentMime }: PushPrevie
   }
   return `${senderName}: ${text}`;
 }
+
+// ── Search ──────────────────────────────────────────────────────────────────
+
+/** Minimum characters before message search runs. */
+export const MIN_SEARCH_CHARS = 2;
+
+/**
+ * Typed words → a Postgres prefix tsquery: "Run  sheet!" → "run:* & sheet:*".
+ * Letters and digits only, so nothing typed can change the query's meaning.
+ * Null when there's nothing to search for.
+ */
+export function toPrefixQuery(input: string): string | null {
+  const words = input
+    .toLowerCase()
+    .normalize("NFKC")
+    .split(/[^\p{L}\p{N}]+/u)
+    .filter(Boolean)
+    .slice(0, 8);
+  if (!words.length || words.join("").length < MIN_SEARCH_CHARS) return null;
+  return words.map((w) => `${w}:*`).join(" & ");
+}

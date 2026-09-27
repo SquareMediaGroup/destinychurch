@@ -364,6 +364,7 @@ destinychurch/
 │       ├── 20260920_01_sermon_series.sql  # sermon_series table — playlist ids curated as sermon series
 │       ├── 20260926_01_destiny_one.sql    # Destiny One messaging (d1_* tables, safeguarding triggers,
 │       │                                  # Realtime policy) + admin_roles.safeguarding_admin — see §29
+│       ├── 20260927_03_destiny_one_message_search.sql # Destiny One part 4: message search
 │       ├── 20260927_02_destiny_one_leader_invites.sql # Destiny One part 3: leader invites
 │       │                                   # (needs_approval → access request; groups joined on approval)
 │       ├── 20260927_01_destiny_one_admin.sql # Destiny One part 2: staff verification, d1_invites,
@@ -4484,6 +4485,7 @@ needs at least 2 verified adults.") pass through as `rule_violation` (422). Type
 | `groups/[id]/members` | POST, DELETE | Leaving never blocked |
 | `groups/[id]/messages` | GET, POST | Only messages since you joined; POST pushes a notification via `after()` (group name, "Sender: first line") |
 | `groups/[id]/invites` | POST | Leaders: `{ email, name, adult, note? }` — invite someone new; they become an access request for staff to approve, then join the group |
+| `search/messages` | GET | `?q=` — full-text search of your messages: groups you are in, since you joined, never deleted; newest 30 |
 | `groups/[id]/read`, `/mute`, `/attachments` | POST | Read marker, mute, signed upload URL |
 | `messages/[id]` | DELETE | Soft delete (content kept for review) |
 | `messages/[id]/report`, `/reactions` | POST (+DELETE) | Report → safeguarding bell |
@@ -7293,7 +7295,7 @@ same database as the data rather than in a separate Synapse module.
   `group/[id]/info` (B6; leaders: rules panel, make admin / remove), `group/[id]/edit` (C4),
   `community/[id]` (B2), `new-group` (C1, modal), `add-people` (C2; `?groupId` adds to a group,
   `?communityId` picks for New group), `notifications` (D2 + per-group mute), `search` (groups
-  only — there is no message-search endpoint yet), `report` + `report-sent` (B5), `chat-safety`,
+  and messages), `report` + `report-sent` (B5), `chat-safety`,
   `delete-account` (D3, type DELETE).
 - **State:** `src/state/session.tsx` (auth session, `me`, the shared communities list refreshed on
   focus / foreground / `d1-member:*` events, `routeFor`, `errorMessage`); `src/state/picker.ts`
@@ -7305,8 +7307,11 @@ same database as the data rather than in a separate Synapse module.
   dialogs), `Icon.tsx` (the design's line icons via `react-native-svg`), `MessageBubble.tsx`,
   `MessageActions.tsx` (long-press sheet), `Composer.tsx`, `NotificationPrompt.tsx` (A10, asked once
   on first group open), `SafetyNotice.tsx`.
-- **Differences from the prototype:** search covers groups only (no message-search endpoint yet);
-  Settings adds Download my data and Delete my account (safeguarding policy + UK GDPR access and
+- **Search** (`search` route): groups from the cached list, plus messages via `GET /search/messages`
+  (`d1_search_messages`: groups you're in, since you joined, never deleted; stored tsvector + GIN,
+  prefix query built by `toPrefixQuery` in `@destiny/shared`). Migration
+  `20260927_03_destiny_one_message_search.sql`. Tapping a hit opens the group (not the exact message yet).
+- **Differences from the prototype:** Settings adds Download my data and Delete my account (safeguarding policy + UK GDPR access and
   erasure). Emoji reactions are allowed as member content (confirmed 2026-09-27).
 - **Invite by email (leaders)** — `invite` route, opened from Add people for a group.
   `POST /groups/[id]/invites` creates a `needs_approval` invite: on sign-in the person becomes an

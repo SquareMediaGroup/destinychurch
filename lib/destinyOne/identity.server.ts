@@ -79,7 +79,21 @@ async function acceptInvite(user: AuthUser): Promise<MemberRow | null> {
     console.error("⚠️ Destiny One invite could not be accepted:", error.message);
     return null;
   }
-  return data ? load(data as string) : null;
+  if (!data) return null;
+  const member = await load(data as string);
+  if (member.status === "pending" && member.request_submitted_at) {
+    // A leader's invite: they're now waiting in the Requests queue.
+    await recordNotification({
+      section: "destiny_one",
+      kind: "d1_access_request",
+      entityId: member.id,
+      entityLabel: member.display_name,
+      summary: `${member.display_name} signed in from a leader's invite and is waiting for approval`,
+      href: "/admin/destiny-one/requests",
+      roles: ["destiny_one_admin"],
+    });
+  }
+  return member;
 }
 
 /** Optional ChurchSuite verification for staff who used Sign in with ChurchSuite. */

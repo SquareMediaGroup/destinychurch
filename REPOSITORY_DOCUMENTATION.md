@@ -364,6 +364,8 @@ destinychurch/
 │       ├── 20260920_01_sermon_series.sql  # sermon_series table — playlist ids curated as sermon series
 │       ├── 20260926_01_destiny_one.sql    # Destiny One messaging (d1_* tables, safeguarding triggers,
 │       │                                  # Realtime policy) + admin_roles.safeguarding_admin — see §29
+│       ├── 20260927_02_destiny_one_leader_invites.sql # Destiny One part 3: leader invites
+│       │                                   # (needs_approval → access request; groups joined on approval)
 │       ├── 20260927_01_destiny_one_admin.sql # Destiny One part 2: staff verification, d1_invites,
 │       │                                  # d1_settings, d1_admin_* functions, destiny_one_admin role
 │       └── 20260922_02_live_chat_rpc_grants.sql # Revoke anon/authenticated EXECUTE on live chat definer fns; host check → `private`
@@ -4480,7 +4482,8 @@ needs at least 2 verified adults.") pass through as `rule_violation` (422). Type
 | `communities/[id]/groups` | POST | Create a sub-group (≥3 people, ≥2 adults) |
 | `groups/[id]` | GET, PATCH | PATCH: rename/describe/archive (managers) |
 | `groups/[id]/members` | POST, DELETE | Leaving never blocked |
-| `groups/[id]/messages` | GET, POST | Only messages since you joined; POST pushes a content-free notification via `after()` |
+| `groups/[id]/messages` | GET, POST | Only messages since you joined; POST pushes a notification via `after()` (group name, "Sender: first line") |
+| `groups/[id]/invites` | POST | Leaders: `{ email, name, adult, note? }` — invite someone new; they become an access request for staff to approve, then join the group |
 | `groups/[id]/read`, `/mute`, `/attachments` | POST | Read marker, mute, signed upload URL |
 | `messages/[id]` | DELETE | Soft delete (content kept for review) |
 | `messages/[id]/report`, `/reactions` | POST (+DELETE) | Report → safeguarding bell |
@@ -6233,7 +6236,7 @@ and a ChurchSuite-only `resyncMember`.
 - `identity.server.ts` — `onboardMember` (invite → active; optional ChurchSuite sign-in → verified; else `pending`), `submitAccessRequest`, `resyncMember` (ChurchSuite-verified members only; outages never downgrade).
 - `chat.server.ts` — reads shaped into `@destiny/shared` types: community list, group detail (adult flags
   only for managers), message pages with signed attachment URLs; deleted messages returned without body.
-- `push.server.ts` — Expo push, **content-free** ("New message" + group id), prunes dead tokens.
+- `push.server.ts` — Expo push: title = group name, body = `pushPreviewText()` ("Sender: first line", 100 chars, from `@destiny/shared`), `data.groupId`; prunes dead tokens. Previews pass through Expo/APNs/FCM — see docs/destiny-one-gdpr.md §3.
 - `schemas.ts` — zod request schemas (limits mirror the SQL CHECKs). `admin.server.ts` —
   `requireSafeguardingAdmin`. `signin.server.ts` — ChurchSuite hand-off constants.
 - `packages/shared/src/destinyOne/policy.ts` — the rules as pure functions (`adultOnFromDateOfBirth`,
@@ -7302,11 +7305,14 @@ same database as the data rather than in a separate Synapse module.
   dialogs), `Icon.tsx` (the design's line icons via `react-native-svg`), `MessageBubble.tsx`,
   `MessageActions.tsx` (long-press sheet), `Composer.tsx`, `NotificationPrompt.tsx` (A10, asked once
   on first group open), `SafetyNotice.tsx`.
-- **Deliberate differences from the prototype:** notification copy says notifications only read
-  "New message" (the prototype said previews show the sender — contradicts rule 6); "Invite by email"
-  is left out of Add people (not built, spec open question 3); Settings adds Download my data and
-  Delete my account (spec D3). Reactions use the prototype's emoji quick row — they're member
-  content, but the picker is emoji UI, so this is an explicit exception to the no-emoji rule.
+- **Differences from the prototype:** search covers groups only (no message-search endpoint yet);
+  Settings adds Download my data and Delete my account (safeguarding policy + UK GDPR access and
+  erasure). Emoji reactions are allowed as member content (confirmed 2026-09-27).
+- **Invite by email (leaders)** — `invite` route, opened from Add people for a group.
+  `POST /groups/[id]/invites` creates a `needs_approval` invite: on sign-in the person becomes an
+  access request pre-filled "Invited by X to Group (leader says: adult)", and staff approval in
+  `/admin/destiny-one/requests` confirms their age and joins them to the group
+  (`request_group_ids`). Migration `20260927_02_destiny_one_leader_invites.sql`.
 - Expo SDK 57, Expo Router (`src/app/`), TypeScript. Its own npm project with its own lockfile —
   deliberately **not** a root workspace so Vercel never installs React Native. It imports
   `@destiny/shared` via `"file:../../packages/shared"`; `metro.config.js` watches that folder.
@@ -7317,7 +7323,7 @@ same database as the data rather than in a separate Synapse module.
   Keychain/Keystore, chunked for Android's size limit), `supabase.ts` (auth + Realtime only — never
   data), `api.ts` (the shared typed client), `auth.ts` (email OTP; ChurchSuite via
   `expo-web-browser` auth session + app-side PKCE), `realtime.ts` (private `d1-group:*` / `d1-member:*`
-  channels), `push.ts` (ask contextually, never on launch; content-free).
+  channels), `push.ts` (ask contextually, never on launch).
 - `src/components/GlassSurface.tsx` — Liquid Glass (`expo-glass-effect` `GlassView`) on iOS 26+, a
   translucent solid fallback on Android / older iOS. The one surface primitive for app chrome.
 - Checks: `npm run typecheck`, `npx expo-doctor`, `npx expo export --platform ios --platform android`.

@@ -10,7 +10,7 @@ import { router, useLocalSearchParams } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import type { D1DirectoryEntry } from "@destiny/shared";
 import { Icon } from "@/components/Icon";
-import { Avatar, EmptyState, Field, ModalHeader, PrimaryButton, SectionLabel } from "@/components/ui";
+import { Avatar, Card, EmptyState, Field, ModalHeader, PrimaryButton, SectionLabel } from "@/components/ui";
 import { api } from "@/lib/api";
 import { picker, usePicked } from "@/state/picker";
 import { errorMessage, useSession } from "@/state/session";
@@ -113,6 +113,24 @@ export default function AddPeople() {
             </Pressable>
           ))}
         </ScrollView>
+      ) : null}
+
+      {forGroup ? (
+        <Card style={{ marginTop: 16 }}>
+          <Pressable
+            onPress={() => router.push({ pathname: "/invite", params: { groupId } })}
+            accessibilityRole="button"
+            style={({ pressed }) => ({ flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 12, paddingHorizontal: 16, backgroundColor: pressed ? t.fill : "transparent" })}
+          >
+            <View style={{ width: 38, height: 38, borderRadius: 19, backgroundColor: t.accentSoft, alignItems: "center", justifyContent: "center" }}>
+              <Icon name="mail" size={18} color={t.tint} strokeWidth={1.9} />
+            </View>
+            <View style={{ flex: 1, gap: 1 }}>
+              <Text style={{ fontSize: 17, color: t.tint }}>Invite by email</Text>
+              <Text style={{ fontSize: 13, color: t.muted }}>For someone who isn't on Destiny One yet</Text>
+            </View>
+          </Pressable>
+        </Card>
       ) : null}
 
       <View style={{ flex: 1, marginTop: 16, gap: 8 }}>

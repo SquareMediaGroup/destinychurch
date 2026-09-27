@@ -46,7 +46,7 @@ export function NotificationPrompt({ enabled }: { enabled: boolean }) {
           <View style={{ gap: 6, alignItems: "center" }}>
             <Text style={{ fontSize: 22, fontWeight: "700", color: t.text }}>Turn on notifications</Text>
             <Text style={{ fontSize: 15, lineHeight: 21, color: t.muted, textAlign: "center", maxWidth: 290 }}>
-              Get a notification when there's a new message. Notifications never show the message itself.
+              Know when your groups post. You can mute any group at any time.
             </Text>
           </View>
           <View style={{ alignSelf: "stretch", gap: 6, marginTop: 4 }}>

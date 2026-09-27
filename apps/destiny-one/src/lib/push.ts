@@ -2,9 +2,9 @@
 //
 // Ask CONTEXTUALLY (docs/mobile-app-scope.md B.3) — e.g. just after someone
 // joins their first group, with a line explaining what they'll get — never on
-// first launch. Notifications are content-free by design: "New message",
-// nothing else, so no message text or names pass through Apple/Google/Expo or
-// show on a lock screen. `data.groupId` says which group to open on tap.
+// first launch. A notification shows the group name, the sender and the first
+// line of the message (lib/destinyOne/push.server.ts). `data.groupId` says
+// which group to open on tap.
 
 import { Platform } from "react-native";
 import * as Device from "expo-device";

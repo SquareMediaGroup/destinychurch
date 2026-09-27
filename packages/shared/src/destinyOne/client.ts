@@ -122,6 +122,9 @@ export function createDestinyOneClient({ baseUrl, getAccessToken, fetchImpl }: D
     removeGroupMember: (id: string, memberId: string) =>
       call<{ ok: true }>("DELETE", `/groups/${id}/members`, { memberId }),
     leaveGroup: (id: string) => call<{ ok: true }>("DELETE", `/groups/${id}/members`, {}),
+    /** Leaders: invite someone new by email. Staff confirm them before they join. */
+    inviteToGroup: (id: string, input: { email: string; name: string; adult: boolean; note?: string }) =>
+      call<{ ok: true }>("POST", `/groups/${id}/invites`, input),
     mute: (id: string, until: string | null) => call<{ ok: true }>("POST", `/groups/${id}/mute`, { until }),
     markRead: (id: string, messageId: number) => call<{ ok: true }>("POST", `/groups/${id}/read`, { messageId }),
 

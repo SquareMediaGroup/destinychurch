@@ -82,7 +82,7 @@ export default function NotificationSettings() {
             <Switch value={!!allowed} onValueChange={toggle} trackColor={{ true: ORANGE, false: t.fill2 }} accessibilityLabel="Allow notifications" />
           </Card>
           <Text style={{ paddingHorizontal: 16, fontSize: 13, lineHeight: 18, color: t.subtle }}>
-            Notifications only say "New message". They never show who sent it or what it says.
+            Message previews show the sender and first line. Announcements always notify unless muted.
           </Text>
         </View>
 

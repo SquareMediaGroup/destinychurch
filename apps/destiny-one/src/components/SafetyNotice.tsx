@@ -11,6 +11,7 @@ export const SAFETY_POINTS = [
   "Chats are not end-to-end encrypted. The safeguarding team can review them if a concern is raised.",
   "Deleted messages are kept for a time, in case they're needed for safeguarding.",
   "Every group has at least 2 adults. If a group drops below that, it pauses until the rule is met again.",
+  "Notifications show the sender and the first line of a message, so they can appear on your lock screen. You can mute any group.",
 ];
 
 export function openDocument(doc: "privacy" | "terms") {

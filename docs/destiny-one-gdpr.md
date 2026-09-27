@@ -55,12 +55,16 @@ ChurchSuite client by an allow-list — `lib/destinyOne/churchsuite.ts` `toPerso
 | Vercel | Runs the API | Transient (requests) | Confirm function region |
 | ChurchSuite (optional) | Only if connected: staff sign-in and the approval lookup | Name, email, DOB (read-only by us; DOB reduced to the 18th birthday) | UK |
 | Resend | Sends invite emails | Invitee's email and first name | Confirm region / DPA |
-| Expo (push service) | Relays notifications | Push token + opaque group id — **no content, no names** | US |
+| Expo (push service) | Relays notifications | Push token, group id and name, **sender's name and the first line of the message** (up to 100 characters) | US |
 | Apple APNs / Google FCM | Deliver notifications | As above | US |
 
-Notifications are content-free by design (`lib/destinyOne/push.server.ts`) so no message text,
-names, or information about a child passes through US processors. Document all of the above in the
-privacy notice and hold DPAs with each.
+Notifications carry a preview: the group name, the sender's name and the first line of the message
+(`lib/destinyOne/push.server.ts`, decided 2026-09-27 — they were content-free before). So message
+text and names, including those of children, pass through US processors and can show on a lock
+screen. **The privacy notice and the "How your chats are kept safe" notice must say this**, the
+transfer needs a lawful basis (UK IDTA / Addendum with Expo, Apple and Google), and it belongs in
+the DPIA. Members can reduce it by muting groups. Document all of the above in the privacy notice
+and hold DPAs with each.
 
 ## 4. Retention
 

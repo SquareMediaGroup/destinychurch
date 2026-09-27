@@ -33,7 +33,7 @@ export async function pushNewMessage(groupId: string, senderId: string, preview:
 
     const { data: members } = await supabase
       .from("d1_group_members")
-      .select("member_id, muted_until, d1_members!inner(status)")
+      .select("member_id, muted_until, d1_members!d1_group_members_member_id_fkey!inner(status)")
       .eq("group_id", groupId)
       .is("left_at", null)
       .neq("member_id", senderId)

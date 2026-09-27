@@ -168,7 +168,7 @@ export async function getGroup(caller: Caller, groupId: string): Promise<D1Group
   const [{ data: members, error }, canManage] = await Promise.all([
     supabase
       .from("d1_group_members")
-      .select("role, joined_at, d1_members!inner(id, display_name, adult_on, status)")
+      .select("role, joined_at, d1_members!d1_group_members_member_id_fkey!inner(id, display_name, adult_on, status)")
       .eq("group_id", groupId)
       .is("left_at", null)
       .eq("d1_members.status", "active")

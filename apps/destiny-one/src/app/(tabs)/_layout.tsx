@@ -1,4 +1,4 @@
-// Chats / Groups / Settings, with the design's floating glass tab bar.
+// Chats / Search / Settings, with the design's floating glass tab bar.
 //
 // Switching tabs: the highlight slides to the new tab on a spring, the new
 // tab's icon gives a small bounce, and the screens cross-fade ("fade"
@@ -19,7 +19,7 @@ import { useTheme } from "@/theme/tokens";
 
 const TABS: Record<string, { label: string; icon: IconName }> = {
   chats: { label: "Chats", icon: "chats" },
-  groups: { label: "Groups", icon: "people" },
+  find: { label: "Search", icon: "search" },
   settings: { label: "Settings", icon: "sliders" },
 };
 
@@ -127,7 +127,7 @@ export default function TabsLayout() {
   return (
     <Tabs screenOptions={{ headerShown: false, animation: "fade" }} tabBar={(props) => <TabBar {...props} />}>
       <Tabs.Screen name="chats" />
-      <Tabs.Screen name="groups" />
+      <Tabs.Screen name="find" />
       <Tabs.Screen name="settings" />
     </Tabs>
   );

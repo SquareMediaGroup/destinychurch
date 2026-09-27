@@ -49,6 +49,8 @@ export interface D1Consent {
 export interface D1Me {
   id: string;
   displayName: string;
+  /** Self-uploaded profile picture. Unlike displayName, members can set this themselves. */
+  avatarUrl: string | null;
   status: D1MemberStatus;
   roles: D1LeaderRole[];
   isAdult: boolean;

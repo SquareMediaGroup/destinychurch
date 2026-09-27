@@ -18,14 +18,14 @@
 
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   visibleGroups,
   visibleQuickActions,
   ADMIN_NAV_ITEMS,
   type AdminNavItem,
 } from "@/lib/adminNav";
-import { useAdminSession } from "@/lib/useAdminSession";
+import { useAdminSession, clearAdminSessionCache } from "@/lib/useAdminSession";
 import { useAdminRecents } from "@/lib/adminRecents";
 import { totalStock, type ProductWithVariants, type Order } from "@/lib/shop";
 import type { Post } from "@/lib/posts";
@@ -354,6 +354,8 @@ export default function AdminDashboard() {
         <CommandTrigger className="md:hidden" />
       </div>
 
+      <AvatarNudge />
+
       {/* Needs attention */}
       {!busy && alerts.length > 0 && (
         <section className="mb-10">
@@ -632,5 +634,94 @@ function SectionCard({ item }: { item: AdminNavItem }) {
         arrow_forward
       </span>
     </Link>
+  );
+}
+
+function dismissedKey(adminId: string): string {
+  return `dc-admin-avatar-prompt-dismissed:${adminId}`;
+}
+
+// A one-time onboarding nudge, mirroring the portal's, shown until an admin
+// either uploads a picture or dismisses it.
+function AvatarNudge() {
+  const session = useAdminSession();
+  const fileInput = useRef<HTMLInputElement>(null);
+  const [dismissed, setDismissed] = useState(true);
+  const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    if (!session.loaded || !session.id) return;
+    try {
+      setDismissed(localStorage.getItem(dismissedKey(session.id)) === "1");
+    } catch {
+      setDismissed(false);
+    }
+  }, [session.loaded, session.id]);
+
+  function dismiss() {
+    setDismissed(true);
+    if (!session.id) return;
+    try {
+      localStorage.setItem(dismissedKey(session.id), "1");
+    } catch {
+      // localStorage may be unavailable (private browsing) — dismissing
+      // just won't persist across reloads, which is fine.
+    }
+  }
+
+  async function handleSelect(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+
+    setBusy(true);
+    try {
+      const form = new FormData();
+      form.append("file", file);
+      const res = await fetch("/api/admin/me/avatar", { method: "POST", body: form });
+      if (res.ok) {
+        clearAdminSessionCache();
+        dismiss();
+      }
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  if (!session.loaded || session.avatarUrl || dismissed) return null;
+
+  return (
+    <div className="mb-8 flex flex-wrap items-center justify-between gap-4 rounded-3xl border border-destiny-orange/20 bg-destiny-orange/5 p-5">
+      <div>
+        <p className="font-bold text-destiny-grey dark:text-white">Add a profile picture</p>
+        <p className="mt-0.5 text-sm text-destiny-grey/60 dark:text-white/60">
+          Help your teammates recognise you around the admin.
+        </p>
+      </div>
+      <div className="flex items-center gap-2">
+        <button
+          type="button"
+          disabled={busy}
+          onClick={() => fileInput.current?.click()}
+          className="rounded-full bg-destiny-orange px-5 py-2.5 text-sm font-bold text-white transition hover:brightness-110 disabled:opacity-60"
+        >
+          {busy ? "Uploading…" : "Add picture"}
+        </button>
+        <button
+          type="button"
+          onClick={dismiss}
+          className="rounded-full px-4 py-2.5 text-sm font-bold text-destiny-grey/50 transition hover:text-destiny-grey dark:text-white/50 dark:hover:text-white"
+        >
+          Skip for now
+        </button>
+        <input
+          ref={fileInput}
+          type="file"
+          accept="image/jpeg,image/png,image/webp,image/gif"
+          className="hidden"
+          onChange={handleSelect}
+        />
+      </div>
+    </div>
   );
 }

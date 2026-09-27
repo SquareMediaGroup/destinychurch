@@ -160,9 +160,14 @@ const ROUTE_RULES: { pattern: RegExp; roles: AdminRole[] }[] = [
 // /api/admin/me only ever returns the caller's own email and role flags.
 const OPEN_PATHS = [
   /^\/admin$/,
+  /^\/admin\/profile$/,
   /^\/api\/admin\/logout$/,
   /^\/api\/admin\/me$/,
   /^\/api\/admin\/me\/roles$/,
+  // Every admin's own profile picture — the route only ever writes the
+  // caller's own admin_roles row, keyed off their session, same as
+  // /api/admin/me itself.
+  /^\/api\/admin\/me\/avatar$/,
   /^\/api\/admin\/search$/,
   // Everyone's own onboarding progress — the route only ever reads and writes
   // the caller's row, keyed off their cookie session.

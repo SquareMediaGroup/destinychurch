@@ -38,6 +38,7 @@ export interface MemberRow {
   id: string;
   auth_user_id: string | null;
   display_name: string;
+  avatar_url: string | null;
   status: D1MemberStatus;
   roles: D1LeaderRole[];
   adult_on: string | null;
@@ -51,7 +52,7 @@ export interface MemberRow {
 }
 
 export const MEMBER_COLUMNS =
-  "id, auth_user_id, display_name, status, roles, adult_on, churchsuite_contact_id, churchsuite_child_id, churchsuite_user_id, verified_at, verification_source, request_submitted_at, created_at";
+  "id, auth_user_id, display_name, avatar_url, status, roles, adult_on, churchsuite_contact_id, churchsuite_child_id, churchsuite_user_id, verified_at, verification_source, request_submitted_at, created_at";
 
 export interface Caller {
   user: AuthUser;
@@ -143,6 +144,7 @@ export async function toMe(member: MemberRow): Promise<D1Me> {
   return {
     id: member.id,
     displayName: member.display_name,
+    avatarUrl: member.avatar_url,
     status: member.status,
     roles: member.roles ?? [],
     isAdult: isAdult(member.adult_on),

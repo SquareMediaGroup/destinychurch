@@ -26,11 +26,40 @@ export async function GET() {
 
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const roles = await getRoles(createServiceClient(), user.id);
+  const service = createServiceClient();
+  const roles = await getRoles(service, user.id);
+  const { data: profile } = await service
+    .from("admin_roles")
+    .select("name, avatar_url")
+    .eq("auth_user_id", user.id)
+    .maybeSingle();
 
   return NextResponse.json({
     email: user.email ?? null,
     id: user.id,
     roles,
+    name: profile?.name ?? null,
+    avatar_url: profile?.avatar_url ?? null,
   });
+}
+
+// Self-service name change. No auth-side counterpart, so it's a plain
+// admin_roles update scoped to the caller's own auth_user_id.
+export async function PATCH(request: Request) {
+  const cookieStore = await cookies();
+  const {
+    data: { user },
+  } = await createClient(cookieStore).auth.getUser();
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const body = await request.json().catch(() => null);
+  const name = body?.name?.toString().trim();
+  if (!name) {
+    return NextResponse.json({ error: "Please enter your name." }, { status: 400 });
+  }
+
+  const service = createServiceClient();
+  await service.from("admin_roles").update({ name }).eq("auth_user_id", user.id);
+
+  return NextResponse.json({ success: true });
 }

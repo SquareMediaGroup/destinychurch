@@ -8,10 +8,13 @@ import { useEffect, useMemo, useState } from "react";
 import { ActivityIndicator, Alert, FlatList, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import type { D1DirectoryEntry } from "@destiny/shared";
 import { Icon } from "@/components/Icon";
 import { Avatar, Card, EmptyState, Field, ModalHeader, PrimaryButton, SectionLabel } from "@/components/ui";
 import { api } from "@/lib/api";
+import { keys, useGroup } from "@/lib/queries";
+import { queryClient } from "@/lib/queryClient";
 import { picker, usePicked } from "@/state/picker";
 import { errorMessage, useSession } from "@/state/session";
 import { INK, ORANGE, useTheme } from "@/theme/tokens";
@@ -20,7 +23,7 @@ export default function AddPeople() {
   const t = useTheme();
   const insets = useSafeAreaInsets();
   const { groupId, communityId: communityParam } = useLocalSearchParams<{ groupId?: string; communityId?: string }>();
-  const { me, communities, refreshCommunities } = useSession();
+  const { me, communities } = useSession();
   const forGroup = !!groupId;
 
   const groupCommunity = useMemo(() => {
@@ -32,32 +35,28 @@ export default function AddPeople() {
   const pickedForNew = usePicked();
   const [pickedHere, setPickedHere] = useState<D1DirectoryEntry[]>([]);
   const picked = forGroup ? pickedHere : pickedForNew;
-  const [existing, setExisting] = useState<Set<string>>(new Set());
   const [query, setQuery] = useState("");
-  const [results, setResults] = useState<D1DirectoryEntry[] | null>(null);
-  const [loading, setLoading] = useState(false);
   const [busy, setBusy] = useState(false);
 
-  useEffect(() => {
-    if (groupId) api.group(groupId).then((g) => setExisting(new Set(g.members.map((m) => m.id))), () => undefined);
-  }, [groupId]);
+  const members = useGroup(groupId).data?.members;
+  const existing = useMemo(() => new Set((members ?? []).map((m) => m.id)), [members]);
 
-  // Debounced directory search.
+  // Debounced directory search. Results are kept for a few minutes (in memory
+  // only), so reopening this screen or going back to an earlier search is instant.
+  const [term, setTerm] = useState("");
   useEffect(() => {
-    let cancelled = false;
-    setLoading(true);
-    const id = setTimeout(() => {
-      api
-        .directory(query.trim(), communityId)
-        .then((r) => !cancelled && setResults(r))
-        .catch(() => !cancelled && setResults([]))
-        .finally(() => !cancelled && setLoading(false));
-    }, 250);
-    return () => {
-      cancelled = true;
-      clearTimeout(id);
-    };
-  }, [query, communityId]);
+    const id = setTimeout(() => setTerm(query.trim()), 250);
+    return () => clearTimeout(id);
+  }, [query]);
+  const directory = useQuery({
+    queryKey: ["directory", communityId ?? "", term],
+    queryFn: () => api.directory(term, communityId).catch(() => [] as D1DirectoryEntry[]),
+    staleTime: 5 * 60_000,
+    gcTime: 10 * 60_000,
+    placeholderData: keepPreviousData,
+  });
+  const results = directory.data ?? null;
+  const loading = directory.isFetching || term !== query.trim();
 
   const visible = (results ?? []).filter((p) => p.id !== me?.id && !existing.has(p.id));
   const isOn = (p: D1DirectoryEntry) => picked.some((x) => x.id === p.id);
@@ -71,7 +70,8 @@ export default function AddPeople() {
     setBusy(true);
     try {
       await api.addGroupMembers(groupId, picked.map((p) => p.id));
-      await refreshCommunities();
+      // The group screens refresh in the background; no need to wait here.
+      void queryClient.invalidateQueries({ queryKey: keys.group(groupId) });
       router.back();
     } catch (err) {
       Alert.alert("Couldn't add people", errorMessage(err));

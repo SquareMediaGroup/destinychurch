@@ -1,8 +1,7 @@
 // Groups tab — the communities you belong to, as cards. Opens B2 Community.
 
-import { useCallback } from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
-import { router, useFocusEffect } from "expo-router";
+import { router } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { GlassSurface } from "@/components/GlassSurface";
 import { Icon } from "@/components/Icon";
@@ -15,12 +14,6 @@ export default function Groups() {
   const t = useTheme();
   const insets = useSafeAreaInsets();
   const { communities, communitiesError, refreshCommunities, isLeader } = useSession();
-
-  useFocusEffect(
-    useCallback(() => {
-      void refreshCommunities();
-    }, [refreshCommunities]),
-  );
 
   return (
     <ScrollView style={{ flex: 1, backgroundColor: t.grouped }} contentContainerStyle={{ paddingTop: insets.top, paddingHorizontal: 16, paddingBottom: 120 }}>

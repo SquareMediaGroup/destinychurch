@@ -6878,10 +6878,35 @@ same database as the data rather than in a separate Synapse module.
   `?communityId` picks for New group), `notifications` (D2 + per-group mute), `search` (groups
   and messages), `report` + `report-sent` (B5), `chat-safety`,
   `delete-account` (D3, type DELETE).
-- **State:** `src/state/session.tsx` (auth session, `me`, the shared communities list refreshed on
-  focus / foreground / `d1-member:*` events, `routeFor`, `errorMessage`); `src/state/picker.ts`
-  (Add people selection for New group). `src/lib/useConversation.ts` owns a chat: paging, realtime,
-  optimistic sends with "Not sent. Tap to retry.", uploads, reactions, deletes, read receipts.
+- **State:** `src/state/session.tsx` (auth session, `me`, the communities list, the Realtime hub,
+  catch-up, `routeFor`, `errorMessage`); `src/state/picker.ts` (Add people selection for New group).
+  `src/lib/useConversation.ts` owns a chat: paging, optimistic sends with "Not sent. Tap to retry.",
+  uploads, reactions, deletes, read receipts.
+- **Data cache — instant screens, database-driven updates.** All app data lives in one TanStack
+  Query cache (`src/lib/queryClient.ts`), saved to AsyncStorage (`d1.cache.v1`) and restored at
+  launch, so the app opens straight onto the last known chat list and any chat opened before
+  renders on its first frame. `staleTime: Infinity`: **nothing is re-fetched because a screen
+  mounted or a tab was pressed.** Keys and hooks are in `src/lib/queries.ts` (`["me"]`,
+  `["communities"]`, `["community", id]`, `["group", id]`, `["messages", groupId]`; directory
+  searches are memory-only). Data changes reach the app in three ways:
+  1. **Realtime events** — `src/lib/realtime.ts` runs one hub that joins `d1-member:<me>` and
+     `d1-group:<id>` for *every* group in the chat list (not just the open chat). `applyEvent()`
+     patches the cache straight from the payload: a new message updates that chat's messages, the
+     row's last message, and its unread count (not for my own messages or the chat on screen);
+     deletes, reactions and pause state patch in place; member changes and joins/leaves mark the
+     affected entries stale so they re-fetch in the background. No database change was needed:
+     `d1_emit` already sent everything.
+  2. **Catch-up** — Broadcast doesn't replay, so the whole cache is marked stale (on-screen entries
+     re-fetch quietly, others when next opened) on cold start, on returning after more than 30s
+     in the background, and when the member channel re-joins after a socket drop. A re-fetched
+     message page is **merged** by id; if it doesn't overlap the cached messages the old copy is
+     replaced, so a long absence can't leave a silent gap.
+  3. **The app's own writes** update the cache from the server's reply or optimistically (sends,
+     reactions, leave group/community, mute, edit, new group). Nothing waits on a chat-list refresh.
+  Rows prefetch on touch-down (`prefetchGroup`). Only the newest 60 messages per chat are saved to
+  disk, never unsent ones. Sign-out, and a different member signing in, wipe the cache
+  (`clearCache`). `gcTime` is `Infinity` on purpose: a finite 30 days overflows `setTimeout`'s
+  24.8-day limit and fires at once, dropping every chat not on screen.
 - **UI kit:** `src/theme/tokens.ts` (the prototype's light/dark tokens), `src/components/ui.tsx`
   (the rotating orange **beam** border on primary buttons and focused fields — a spinning linear
   gradient in a clipped frame, since RN has no conic-gradient — plus buttons, fields, cards,
@@ -6919,8 +6944,9 @@ same database as the data rather than in a separate Synapse module.
 - `src/lib/`: `config.ts` (EXPO_PUBLIC_* — see `.env.example`), `secureStorage.ts` (Supabase session in
   Keychain/Keystore, chunked for Android's size limit), `supabase.ts` (auth + Realtime only — never
   data), `api.ts` (the shared typed client), `auth.ts` (email OTP; ChurchSuite via
-  `expo-web-browser` auth session + app-side PKCE), `realtime.ts` (private `d1-group:*` / `d1-member:*`
-  channels), `push.ts` (ask contextually, never on launch).
+  `expo-web-browser` auth session + app-side PKCE), `realtime.ts` (the app-wide hub over private
+  `d1-group:*` / `d1-member:*` channels), `queryClient.ts` + `queries.ts` (the saved data cache, see
+  above), `push.ts` (ask contextually, never on launch).
 - `src/components/GlassSurface.tsx` — Liquid Glass (`expo-glass-effect` `GlassView`) on iOS 26+, a
   translucent solid fallback on Android / older iOS. The one surface primitive for app chrome.
 - Checks: `npm run typecheck`, `npx expo-doctor`, `npx expo export --platform ios --platform android`.

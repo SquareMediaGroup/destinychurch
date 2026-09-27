@@ -5,11 +5,13 @@ import { useEffect, useMemo, useState } from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { checkComposition, MIN_GROUP_ADULTS, MIN_GROUP_MEMBERS } from "@destiny/shared";
+import { checkComposition, MIN_GROUP_ADULTS, MIN_GROUP_MEMBERS, type D1CommunitySummary } from "@destiny/shared";
 import { Icon } from "@/components/Icon";
 import { Avatar, Card, Field, FieldLabel, FormError, ModalHeader, PrimaryButton, Separator } from "@/components/ui";
 import { api } from "@/lib/api";
 import { plural } from "@/lib/format";
+import { invalidateCommunities, keys, setGroup } from "@/lib/queries";
+import { queryClient } from "@/lib/queryClient";
 import { picker, usePicked } from "@/state/picker";
 import { errorMessage, useSession } from "@/state/session";
 import { useTheme } from "@/theme/tokens";
@@ -18,7 +20,7 @@ export default function NewGroup() {
   const t = useTheme();
   const insets = useSafeAreaInsets();
   const params = useLocalSearchParams<{ communityId?: string }>();
-  const { me, communities, refreshCommunities } = useSession();
+  const { me, communities } = useSession();
   const manageable = useMemo(() => (communities ?? []).filter((c) => c.canManage), [communities]);
   // Chosen explicitly, else the one we came from, else the first we can manage
   // (derived, because the chat list may still be loading on first render).
@@ -60,7 +62,12 @@ export default function NewGroup() {
         description: description.trim() || undefined,
         memberIds: picked.map((p) => p.id),
       });
-      await refreshCommunities();
+      // Show it everywhere at once; the chat list confirms in the background.
+      setGroup(g);
+      queryClient.setQueryData<D1CommunitySummary[]>(keys.communities, (old) =>
+        old?.map((c) => (c.id === g.communityId && !c.groups.some((x) => x.id === g.id) ? { ...c, groups: [...c.groups, g] } : c)),
+      );
+      invalidateCommunities();
       router.dismiss();
       router.push(`/group/${g.id}`);
     } catch (err) {

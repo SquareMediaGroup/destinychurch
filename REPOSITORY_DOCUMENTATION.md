@@ -2004,7 +2004,10 @@ minimal reliance on ChurchSuite, so identity now comes from Destiny's own staff:
   `status` (`pending`/`accepted`/`revoked`/`expired`), `expires_at`. One open invite per email.
   `d1_accept_invite(auth_user, email)` activates the member on sign-in with that email (the email
   one-time code proves ownership — no invite token) and joins the listed communities.
-- **`d1_settings`** (one row) — `allow_access_requests` (off = invite-only), `invite_expiry_days`.
+- **`d1_settings`** (one row) — `allow_access_requests` (off = invite-only), `invite_expiry_days`,
+  `min_build_ios` / `min_build_android` (builds below see the app's "update" screen),
+  `force_update_message`, `maintenance_message` (set = the whole app shows it instead of working).
+  The last four are served publicly by `GET /api/app/v1/one/config`.
 - **Admin-path functions** with no acting member (website staff may have no app account):
   `d1_admin_create_community`, `_add_community_members`, `_set_community_role`,
   `_remove_community_member`, `_create_group`, `_add_group_members`, `_remove_group_member`,
@@ -2490,7 +2493,7 @@ Each section requires a specific access-level role (see
 | `/admin/destiny-one/members` | `app/admin/destiny-one/members/page.tsx` | Everyone with an account; panel to fix name, age, leader roles, suspend, delete (Destiny One Admin) |
 | `/admin/destiny-one/communities` (+ `/[id]`) | `app/admin/destiny-one/communities/**` | Communities, their Announcements and department groups with live people/adult counts and pause reasons; add/remove people, roles, create/archive groups with a live rule check. No message content (Destiny One Admin) |
 | `/admin/destiny-one/safeguarding` | `app/admin/destiny-one/safeguarding/page.tsx` | Queue, reports, all groups, manual pause, and the reason-gated, audited transcript viewer (Safeguarding Admin) |
-| `/admin/destiny-one/settings` | `app/admin/destiny-one/settings/page.tsx` | Invite-only vs open to requests, invite expiry; retention and ChurchSuite status read-only (Destiny One Admin) |
+| `/admin/destiny-one/settings` | `app/admin/destiny-one/settings/page.tsx` | Invite-only vs open to requests, invite expiry, minimum app builds per platform + update message, maintenance switch; retention and ChurchSuite status read-only (Destiny One Admin) |
 | `/admin/sermons` | `app/admin/sermons/page.tsx` | Publish sermon audio to Buzzsprout (video keeps going to YouTube separately); add/remove YouTube playlists as sermon series; run the AI speaker review or manually search-and-correct any sermon's speaker; a read-only recent-episodes list showing pairing status (Sermon Admin) |
 | `/admin/design` | `app/admin/design/page.tsx` | Design ticket queue — search, status/priority/mine filters, inline Claim. Defaults to "Needs someone" rather than everything (Design Admin) |
 | `/admin/design/[id]` | `app/admin/design/[id]/page.tsx` | Ticket detail — brief, requester, the thread, the deliverable uploader, and only the transition buttons `canTransition` allows from here (Design Admin) |
@@ -4165,6 +4168,7 @@ needs at least 2 verified adults.") pass through as `rule_violation` (422). Type
 
 | Route | Methods | Notes |
 |---|---|---|
+| `config` | GET | No sign-in, no token, and the only `/one` route the CDN may cache (`s-maxage=60`): `D1AppConfig` — `minBuild { ios, android }`, `forceUpdateMessage`, `maintenanceMessage`, `storeUrl` (env `D1_IOS_STORE_URL`, default `itms-beta://` = TestFlight; `D1_ANDROID_STORE_URL`). The app's forced-update gate (`appGate()` in `@destiny/shared`, `src/lib/appGate.ts`) |
 | `auth/link` | POST | After every sign-in: accept an open invite for the email (`onboardMember`), return `D1Me` with `onboarding` |
 | `auth/check` | POST | No sign-in: `{ email }` — asked before a code is sent; 403 `not_verified` with a message when the email has no account, no open invite and access requests are off (`d1_sign_in_status`). Per-IP rate limit |
 | `me/access-request` | POST | `{ name, dateOfBirth?, note? }` — ask to join; a Destiny One Admin approves |

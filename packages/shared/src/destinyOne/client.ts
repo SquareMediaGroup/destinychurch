@@ -5,6 +5,7 @@
 // D1ApiError carrying the server's stable error code.
 
 import type {
+  D1AppConfig,
   D1CommunitySummary,
   D1Consent,
   D1DirectoryEntry,
@@ -45,8 +46,8 @@ export function createDestinyOneClient({ baseUrl, getAccessToken, fetchImpl }: D
   const root = `${baseUrl.replace(/\/$/, "")}/api/app/v1/one`;
   const doFetch = fetchImpl ?? fetch;
 
-  async function call<T>(method: string, path: string, body?: unknown): Promise<T> {
-    const token = await getAccessToken();
+  async function call<T>(method: string, path: string, body?: unknown, opts: { anonymous?: boolean } = {}): Promise<T> {
+    const token = opts.anonymous ? null : await getAccessToken();
     let res: Response;
     try {
       res = await doFetch(`${root}${path}`, {
@@ -112,6 +113,10 @@ export function createDestinyOneClient({ baseUrl, getAccessToken, fetchImpl }: D
   };
 
   return {
+    // ── App ──
+    /** Minimum builds, maintenance switch. Sent without a token so it works signed out and the CDN can cache it. */
+    appConfig: () => call<D1AppConfig>("GET", "/config", undefined, { anonymous: true }),
+
     // ── Account ──
     /** Links the signed-in account to its ChurchSuite record. Call after every sign-in. */
     link: () => call<D1Me>("POST", "/auth/link"),

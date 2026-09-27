@@ -47,7 +47,22 @@
       [
         "expo-notifications",
         {
-          "defaultChannel": "messages"
+          "defaultChannel": "messages",
+          "icon": "./assets/notification-icon.png",
+          "color": "#4F6FEE"
+        }
+      ],
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 160,
+          "resizeMode": "contain",
+          "backgroundColor": "#FFFFFF",
+          "dark": {
+            "image": "./assets/splash-icon.png",
+            "backgroundColor": "#000000"
+          }
         }
       ]
     ],

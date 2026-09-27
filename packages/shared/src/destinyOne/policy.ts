@@ -6,7 +6,7 @@
 // button rather than show one that will fail. If the two ever disagree, the
 // database wins and this file is the bug.
 
-import type { D1Consent, D1LeaderRole, D1MemberStatus, D1MembershipRole, D1GroupKind, D1GroupState } from "./types";
+import type { D1AppConfig, D1Consent, D1LeaderRole, D1MemberStatus, D1MembershipRole, D1GroupKind, D1GroupState } from "./types";
 
 /** No 1:1 chats: a "group" of two is a DM with extra steps. */
 export const MIN_GROUP_MEMBERS = 3;
@@ -197,4 +197,20 @@ export function toPrefixQuery(input: string): string | null {
     .slice(0, 8);
   if (!words.length || words.join("").length < MIN_SEARCH_CHARS) return null;
   return words.map((w) => `${w}:*`).join(" & ");
+}
+
+export type D1AppGate = "ok" | "update" | "maintenance";
+
+/**
+ * Whether this build of the app may run. `build` is the native build number
+ * (null in Expo Go, dev clients without one, and on web: always allowed, so a
+ * developer is never locked out). Maintenance beats everything, since it means
+ * "nobody, whatever their build".
+ */
+export function appGate(config: D1AppConfig | null | undefined, platform: string, build: number | null): D1AppGate {
+  if (!config) return "ok";
+  if (config.maintenanceMessage) return "maintenance";
+  if (build === null || !Number.isFinite(build)) return "ok";
+  const min = platform === "ios" ? config.minBuild.ios : platform === "android" ? config.minBuild.android : 1;
+  return build < min ? "update" : "ok";
 }

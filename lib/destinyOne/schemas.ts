@@ -185,6 +185,11 @@ export const adminSettingsSchema = z
   .object({
     allowAccessRequests: z.boolean().optional(),
     inviteExpiryDays: z.number().int().min(1).max(365).optional(),
+    minBuildIos: z.number().int().min(1).max(1_000_000).optional(),
+    minBuildAndroid: z.number().int().min(1).max(1_000_000).optional(),
+    // Blank clears it (back to the default copy / app back on).
+    forceUpdateMessage: z.string().trim().max(500).transform((v) => v || null).nullable().optional(),
+    maintenanceMessage: z.string().trim().max(500).transform((v) => v || null).nullable().optional(),
   })
   .refine((v) => Object.keys(v).length > 0, "Nothing to change.");
 

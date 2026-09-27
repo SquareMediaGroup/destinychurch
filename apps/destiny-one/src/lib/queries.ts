@@ -5,6 +5,7 @@
 //   ["community", id]      only when it isn't already in the chat list
 //   ["group", id]          group details (members, rules, what I can do)
 //   ["messages", groupId]  { messages, nextBefore }, oldest first
+//   ["appConfig"]          minimum builds + maintenance switch (src/lib/appGate.ts)
 //
 // applyEvent() is the "database told us something changed" path. Where the
 // event carries enough, it patches the cache directly (no request at all);
@@ -28,6 +29,7 @@ export const keys = {
   community: (id: string) => ["community", id] as const,
   group: (id: string) => ["group", id] as const,
   messages: (groupId: string) => ["messages", groupId] as const,
+  appConfig: ["appConfig"] as const,
 };
 
 export const PAGE = 40;

@@ -1,0 +1,53 @@
+// Line icons from the Destiny One design (24×24 viewBox, stroked). One
+// component so every screen draws them the same way.
+
+import Svg, { Circle, Path, Rect } from "react-native-svg";
+
+type Shape = { d?: string[]; circles?: [number, number, number][]; rects?: [number, number, number, number, number][] };
+
+const ICONS = {
+  back: { d: ["M15 5l-7 7 7 7"] },
+  close: { d: ["M6 6l12 12M18 6L6 18"] },
+  chevronRight: { d: ["M9 5l7 7-7 7"] },
+  chevronDown: { d: ["M6 9l6 6 6-6"] },
+  updown: { d: ["M8 10l4-4 4 4M8 14l4 4 4-4"] },
+  search: { d: ["M20 20l-3.5-3.5"], circles: [[11, 11, 7]] },
+  plus: { d: ["M12 5v14M5 12h14"] },
+  mail: { d: ["M3.5 7.5l8.5 6 8.5-6"], rects: [[3, 5, 18, 14, 3]] },
+  clock: { d: ["M12 7v5l3.2 2"], circles: [[12, 12, 9]] },
+  doc: { d: ["M14 3H7a2 2 0 00-2 2v14a2 2 0 002 2h10a2 2 0 002-2V8z", "M14 3v5h5"] },
+  docLines: { d: ["M14 3H7a2 2 0 00-2 2v14a2 2 0 002 2h10a2 2 0 002-2V8z", "M14 3v5h5M9 13h6M9 17h4"] },
+  terms: { d: ["M5 4h14v16H5zM9 8h6M9 12h6M9 16h3"] },
+  shield: { d: ["M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"] },
+  megaphone: { d: ["M4 10v4h3l7 4V6L7 10z", "M17.5 9a4 4 0 010 6"] },
+  pause: { d: ["M9 6v12M15 6v12"] },
+  bellOff: { d: ["M6 16V11a6 6 0 019.5-4.9M18 11v5l1.5 2H8", "M10 20a2 2 0 004 0M4 4l16 16"] },
+  bell: { d: ["M6 16v-5a6 6 0 0112 0v5l1.5 2h-15z", "M10 20a2 2 0 004 0"] },
+  chats: { d: ["M4 11.5c0-4 3.6-7 8-7s8 3 8 7-3.6 7-8 7c-1.1 0-2.2-.2-3.2-.5L4.5 19.5l1.3-3.4A6.6 6.6 0 014 11.5z"] },
+  people: { d: ["M3.5 19a5.5 5.5 0 0111 0", "M16 14.2a4.5 4.5 0 015 4.8"], circles: [[9, 8, 3.2], [17, 9, 2.5]] },
+  sliders: { d: ["M4 7h9M19 7h1M4 17h3M13 17h7"], circles: [[16, 7, 2.6], [10, 17, 2.6]] },
+  addPerson: { d: ["M3.5 20a6.5 6.5 0 0113 0M19 8v6M16 11h6"], circles: [[10, 8, 3.5]] },
+  check: { d: ["M5 12.5l4.5 4.5L19 7.5"] },
+  alert: { d: ["M12 6.5v7M12 17.5v.01"] },
+  alertCircle: { d: ["M12 7.5v5.5M12 16.5v.01"], circles: [[12, 12, 9]] },
+  reply: { d: ["M9 7L4 12l5 5", "M4 12h10a6 6 0 016 6"] },
+  copy: { d: ["M16 8V6a2 2 0 00-2-2H6a2 2 0 00-2 2v8a2 2 0 002 2h2"], rects: [[8, 8, 12, 12, 2.5]] },
+  flag: { d: ["M5 21V4M5 4h11l-2 4 2 4H5"] },
+  trash: { d: ["M4 7h16M10 7V4.5h4V7M6.5 7l1 13h9l1-13"] },
+  send: { d: ["M12 19V5M6 11l6-6 6 6"] },
+  camera: { d: ["M4 8h3l2-2.5h6L17 8h3v11H4z"], circles: [[12, 13, 3.5]] },
+  wifiOff: { d: ["M4 4l16 16M8.5 16.5a5 5 0 017 0M5 12.5a10 10 0 015-2.6M14 10a10 10 0 015 2.5M2 8.8a15 15 0 015.3-3.3M12 4.5a15 15 0 0110 4.3"], circles: [[12, 20, 0.6]] },
+} satisfies Record<string, Shape>;
+
+export type IconName = keyof typeof ICONS;
+
+export function Icon({ name, size = 22, color, strokeWidth = 2 }: { name: IconName; size?: number; color: string; strokeWidth?: number }) {
+  const s: Shape = ICONS[name];
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round">
+      {s.d?.map((d) => <Path key={d} d={d} />)}
+      {s.circles?.map(([cx, cy, r]) => <Circle key={`${cx}-${cy}`} cx={cx} cy={cy} r={r} />)}
+      {s.rects?.map(([x, y, w, h, rx]) => <Rect key={`${x}-${y}`} x={x} y={y} width={w} height={h} rx={rx} />)}
+    </Svg>
+  );
+}

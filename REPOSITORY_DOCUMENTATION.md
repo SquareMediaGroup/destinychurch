@@ -384,7 +384,7 @@ destinychurch/
 │   │                               # Its own npm project (NOT a root workspace, so the website build
 │   │                               # never installs React Native); imports @destiny/shared through a
 │   │                               # file: link + metro.config.js. Backend: /api/app/v1/one/*.
-│   │                               # Skeleton only — no screens yet. See "Destiny One" below.
+│   │                               # Every screen built (design variants 1C + 1F). See "Destiny One" below.
 │   └── live-caption/              # separately from the website. Currently:
 │                                   # Live Caption — a macOS app (SwiftUI, Swift 6, XcodeGen) that
 │                                   # captions live audio in real time with a local whisper.cpp model
@@ -7278,7 +7278,35 @@ remains the content app (sermons/events/give). Chat was scoped on a self-hosted 
 it was built on Supabase instead (Postgres + triggers + Realtime Broadcast) because it needed
 shipping urgently, needs no new server to run and patch, and the safeguarding rules sit in the
 same database as the data rather than in a separate Synapse module.
-- **Status: skeleton + complete backend. No screens yet** (one placeholder route).
+- **Status: every screen built on the complete backend.** Built from the Claude Design prototype
+  (`DestinyOne.dc.html`, project "Destiny One") and `docs/destiny-one-ui-spec.md`. Chosen variants:
+  **1C "Compact" chat list** (sticky glass community headers that collapse, an unread dot, one
+  line of preview) and **1F "Avatars" conversation** (bubbles; the sender's avatar beside the last
+  message of a run and their name above the first). Not yet run on a device: there's no Xcode on
+  the dev Mac, so it has only been checked with `expo export` and a web preview on mock data.
+- **Routes (`src/app/`):** `index` (launch gate → `routeFor(me)`), `welcome` (A1), `email` (A2),
+  `code` (A3), `request` (A5), `waiting` (A6–A8, copy from `me.onboardingMessage`), `notices` (A9),
+  `(tabs)/{chats,groups,settings}` with a floating glass tab bar, `group/[id]` (B3 conversation),
+  `group/[id]/info` (B6; leaders: rules panel, make admin / remove), `group/[id]/edit` (C4),
+  `community/[id]` (B2), `new-group` (C1, modal), `add-people` (C2; `?groupId` adds to a group,
+  `?communityId` picks for New group), `notifications` (D2 + per-group mute), `search` (groups
+  only — there is no message-search endpoint yet), `report` + `report-sent` (B5), `chat-safety`,
+  `delete-account` (D3, type DELETE).
+- **State:** `src/state/session.tsx` (auth session, `me`, the shared communities list refreshed on
+  focus / foreground / `d1-member:*` events, `routeFor`, `errorMessage`); `src/state/picker.ts`
+  (Add people selection for New group). `src/lib/useConversation.ts` owns a chat: paging, realtime,
+  optimistic sends with "Not sent. Tap to retry.", uploads, reactions, deletes, read receipts.
+- **UI kit:** `src/theme/tokens.ts` (the prototype's light/dark tokens), `src/components/ui.tsx`
+  (the rotating orange **beam** border on primary buttons and focused fields — a spinning linear
+  gradient in a clipped frame, since RN has no conic-gradient — plus buttons, fields, cards,
+  dialogs), `Icon.tsx` (the design's line icons via `react-native-svg`), `MessageBubble.tsx`,
+  `MessageActions.tsx` (long-press sheet), `Composer.tsx`, `NotificationPrompt.tsx` (A10, asked once
+  on first group open), `SafetyNotice.tsx`.
+- **Deliberate differences from the prototype:** notification copy says notifications only read
+  "New message" (the prototype said previews show the sender — contradicts rule 6); "Invite by email"
+  is left out of Add people (not built, spec open question 3); Settings adds Download my data and
+  Delete my account (spec D3). Reactions use the prototype's emoji quick row — they're member
+  content, but the picker is emoji UI, so this is an explicit exception to the no-emoji rule.
 - Expo SDK 57, Expo Router (`src/app/`), TypeScript. Its own npm project with its own lockfile —
   deliberately **not** a root workspace so Vercel never installs React Native. It imports
   `@destiny/shared` via `"file:../../packages/shared"`; `metro.config.js` watches that folder.

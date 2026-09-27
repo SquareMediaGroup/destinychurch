@@ -4,7 +4,7 @@ The Destiny Church members' messaging app — communities with department sub-gr
 iOS and Android with Expo (SDK 57) and React Native. Liquid Glass on iOS 26+ via
 `expo-glass-effect`.
 
-**Status:** project skeleton wired to the complete backend. No screens yet.
+**Status:** every screen built (design variants 1C chat list + 1F conversation), wired to the complete backend. Not yet run on a device.
 
 ## The rules (enforced by the server, not this app)
 
@@ -33,8 +33,12 @@ rather than Expo Go for full behaviour: `npx expo run:ios` / `run:android`, or
 ## Layout
 
 ```
-src/app/                 Expo Router routes (placeholder only)
-src/components/          GlassSurface — Liquid Glass on iOS 26+, solid fallback elsewhere
+src/app/                 Expo Router routes — one per screen in docs/destiny-one-ui-spec.md
+src/components/          UI kit (ui.tsx: beam, buttons, fields, cards, dialogs), Icon, GlassSurface,
+                         MessageBubble (1F), MessageActions, Composer, GroupRows (1C)
+src/theme/tokens.ts      Light/dark colour tokens from the Claude Design prototype
+src/state/               session (me, routing, shared chat list), picker (Add people selection)
+src/lib/useConversation  One chat: paging, realtime, optimistic send/retry, uploads, reactions
 src/lib/config.ts        EXPO_PUBLIC_* config
 src/lib/secureStorage.ts Supabase session in Keychain/Keystore
 src/lib/supabase.ts      Auth + Realtime only (never data)

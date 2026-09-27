@@ -4,10 +4,11 @@
 // in for the attach shortcut once there's text.
 
 import { forwardRef, useState } from "react";
-import { Alert, Pressable, Text, TextInput, View } from "react-native";
+import { Pressable, Text, TextInput, View } from "react-native";
 import * as DocumentPicker from "expo-document-picker";
 import * as ImagePicker from "expo-image-picker";
 import { ATTACHMENT_MIME_TYPES, MAX_ATTACHMENT_BYTES, MAX_MESSAGE_LENGTH } from "@destiny/shared";
+import { AttachSheet } from "@/components/AttachSheet";
 import { GlassSurface } from "@/components/GlassSurface";
 import { Icon } from "@/components/Icon";
 import { Beam } from "@/components/ui";
@@ -25,13 +26,16 @@ interface Props {
   onCancelReply: () => void;
   onSend: (text: string) => void;
   onAttach: (file: PickedFile) => void;
+  onAttachPoll: () => void;
+  onAttachEvent: () => void;
   onError: (message: string) => void;
 }
 
-export const Composer = forwardRef<TextInput, Props>(function Composer({ replying, onCancelReply, onSend, onAttach, onError }, ref) {
+export const Composer = forwardRef<TextInput, Props>(function Composer({ replying, onCancelReply, onSend, onAttach, onAttachPoll, onAttachEvent, onError }, ref) {
   const t = useTheme();
   const [draft, setDraft] = useState("");
   const [focused, setFocused] = useState(false);
+  const [sheetOpen, setSheetOpen] = useState(false);
   const hasText = draft.trim().length > 0;
 
   function acceptAsset(a: { uri: string; name: string; mimeType: string; size: number | null }) {
@@ -80,15 +84,6 @@ export const Composer = forwardRef<TextInput, Props>(function Composer({ replyin
     imagePickerAsset(res.assets[0], "Photo.jpg");
   }
 
-  function pick() {
-    Alert.alert("Add to message", undefined, [
-      { text: "Take Photo", onPress: () => void takePhoto() },
-      { text: "Choose Photo", onPress: () => void pickPhoto() },
-      { text: "Choose File", onPress: () => void pickFile() },
-      { text: "Cancel", style: "cancel" },
-    ]);
-  }
-
   function send() {
     const text = draft.trim();
     if (!text) return;
@@ -114,7 +109,7 @@ export const Composer = forwardRef<TextInput, Props>(function Composer({ replyin
       ) : null}
 
       <View style={{ flexDirection: "row", alignItems: "flex-end", gap: 8 }}>
-        <Pressable onPress={pick} accessibilityRole="button" accessibilityLabel="Attach a photo or PDF">
+        <Pressable onPress={() => setSheetOpen(true)} accessibilityRole="button" accessibilityLabel="Add to message">
           {({ pressed }) => (
             <GlassSurface interactive style={[{ width: 44, height: 44, borderRadius: 22, alignItems: "center", justifyContent: "center", opacity: pressed ? 0.7 : 1 }, t.shadow]}>
               <Icon name="plus" size={22} color={t.text} />
@@ -150,6 +145,31 @@ export const Composer = forwardRef<TextInput, Props>(function Composer({ replyin
           </GlassSurface>
         </Beam>
       </View>
+
+      <AttachSheet
+        visible={sheetOpen}
+        onClose={() => setSheetOpen(false)}
+        onPhotos={() => {
+          setSheetOpen(false);
+          void pickPhoto();
+        }}
+        onCamera={() => {
+          setSheetOpen(false);
+          void takePhoto();
+        }}
+        onDocument={() => {
+          setSheetOpen(false);
+          void pickFile();
+        }}
+        onPoll={() => {
+          setSheetOpen(false);
+          onAttachPoll();
+        }}
+        onEvent={() => {
+          setSheetOpen(false);
+          onAttachEvent();
+        }}
+      />
     </View>
   );
 });

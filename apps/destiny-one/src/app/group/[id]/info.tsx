@@ -7,7 +7,7 @@ import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { checkComposition, type D1GroupDetail, type D1GroupMember } from "@destiny/shared";
 import { Icon, type IconName } from "@/components/Icon";
-import { AdminTag, Avatar, Card, CardButton, ConfirmDialog, ErrorState, FloatingBack, SectionLabel } from "@/components/ui";
+import { AdminTag, Avatar, Bone, Card, CardButton, ConfirmDialog, ErrorState, FloatingBack, SectionLabel, SkeletonGroup, SkeletonRows } from "@/components/ui";
 import { api } from "@/lib/api";
 import { plural } from "@/lib/format";
 import { errorMessage, useSession } from "@/state/session";
@@ -24,6 +24,7 @@ export default function GroupInfo() {
   const [busy, setBusy] = useState(false);
 
   const load = useCallback(() => {
+    setError(null);
     api.group(id).then(setGroup, (err) => setError(errorMessage(err)));
   }, [id]);
   useFocusEffect(load);
@@ -31,7 +32,25 @@ export default function GroupInfo() {
   if (!group) {
     return (
       <View style={{ flex: 1, backgroundColor: t.grouped }}>
-        {error ? <View style={{ flex: 1, justifyContent: "center" }}><ErrorState message={error} onRetry={load} /></View> : null}
+        {error ? (
+          <View style={{ flex: 1, justifyContent: "center" }}>
+            <ErrorState message={error} onRetry={load} />
+          </View>
+        ) : (
+          <SkeletonGroup label="Loading group" style={{ paddingTop: insets.top + 56, paddingHorizontal: 16, gap: 20 }}>
+            <View style={{ alignItems: "center", gap: 10 }}>
+              <Bone width={92} height={92} />
+              <Bone width="50%" height={24} radius={8} />
+              <Bone width="35%" height={14} />
+            </View>
+            <View style={{ flexDirection: "row", gap: 10 }}>
+              {[0, 1, 2].map((i) => (
+                <Bone key={i} height={64} radius={18} style={{ flex: 1 }} />
+              ))}
+            </View>
+            <SkeletonRows count={5} avatar={38} />
+          </SkeletonGroup>
+        )}
         <FloatingBack background={t.grouped} />
       </View>
     );

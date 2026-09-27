@@ -9,7 +9,7 @@ import type { D1GroupSummary } from "@destiny/shared";
 import { GlassSurface } from "@/components/GlassSurface";
 import { CompactGroupRow, orderedGroups } from "@/components/GroupRows";
 import { Icon } from "@/components/Icon";
-import { EmptyState, ErrorState, LargeTitle } from "@/components/ui";
+import { Bone, EmptyState, ErrorState, LargeTitle, SkeletonGroup } from "@/components/ui";
 import { plural } from "@/lib/format";
 import { useSession } from "@/state/session";
 import { ORANGE, useTheme } from "@/theme/tokens";
@@ -132,15 +132,15 @@ function OfflineBanner() {
 function ListSkeleton() {
   const t = useTheme();
   return (
-    <View accessibilityLabel="Loading chats" style={{ paddingTop: 12 }}>
+    <SkeletonGroup label="Loading chats" style={{ paddingTop: 12 }}>
       {[0, 1, 2, 3, 4].map((i) => (
         <View key={i} style={{ flexDirection: "row", gap: 10, paddingLeft: 32, paddingRight: 16, paddingVertical: 13, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: t.sep }}>
           <View style={{ flex: 1, gap: 8 }}>
-            <View style={{ width: `${45 + ((i * 17) % 30)}%`, height: 14, borderRadius: 7, backgroundColor: t.fill }} />
-            <View style={{ width: `${70 + ((i * 11) % 20)}%`, height: 12, borderRadius: 6, backgroundColor: t.fill }} />
+            <Bone width={`${45 + ((i * 17) % 30)}%`} height={14} />
+            <Bone width={`${70 + ((i * 11) % 20)}%`} height={12} />
           </View>
         </View>
       ))}
-    </View>
+    </SkeletonGroup>
   );
 }

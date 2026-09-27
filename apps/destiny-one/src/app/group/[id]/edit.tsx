@@ -5,7 +5,7 @@ import { ScrollView, View } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import type { D1GroupDetail } from "@destiny/shared";
-import { CardButton, ConfirmDialog, Field, FieldLabel, FormError, ModalHeader, PrimaryButton } from "@/components/ui";
+import { Bone, CardButton, ConfirmDialog, Field, FieldLabel, FormError, ModalHeader, PrimaryButton, SkeletonGroup } from "@/components/ui";
 import { api } from "@/lib/api";
 import { errorMessage, useSession } from "@/state/session";
 import { useTheme } from "@/theme/tokens";
@@ -54,22 +54,33 @@ export default function EditGroup() {
   return (
     <View style={{ flex: 1, backgroundColor: t.grouped, paddingTop: insets.top, paddingHorizontal: 16, paddingBottom: Math.max(insets.bottom, 16) }}>
       <ModalHeader title="Edit group" icon="back" />
-      <ScrollView contentContainerStyle={{ gap: 20, paddingTop: 14 }} keyboardShouldPersistTaps="handled">
-        <View style={{ gap: 8 }}>
-          <FieldLabel>Name</FieldLabel>
-          <Field value={name} onChangeText={setName} background={t.card} />
-        </View>
-        <View style={{ gap: 8 }}>
-          <FieldLabel optional>Department</FieldLabel>
-          <Field value={department} onChangeText={setDepartment} placeholder="e.g. Media" background={t.card} />
-        </View>
-        <View style={{ gap: 8 }}>
-          <FieldLabel optional>Description</FieldLabel>
-          <Field value={description} onChangeText={setDescription} placeholder="What's this group for?" multiline background={t.card} />
-        </View>
-        <FormError message={error} />
-        {group ? <CardButton label="Archive group" onPress={() => setArchiving(true)} /> : null}
-      </ScrollView>
+      {!group && !error ? (
+        <SkeletonGroup label="Loading group" style={{ gap: 20, paddingTop: 14, flex: 1 }}>
+          {[52, 52, 80].map((h, i) => (
+            <View key={i} style={{ gap: 8 }}>
+              <Bone width={90} height={12} style={{ marginLeft: 4 }} />
+              <Bone height={h} radius={16} style={{ backgroundColor: t.card }} />
+            </View>
+          ))}
+        </SkeletonGroup>
+      ) : (
+        <ScrollView contentContainerStyle={{ gap: 20, paddingTop: 14 }} keyboardShouldPersistTaps="handled">
+          <View style={{ gap: 8 }}>
+            <FieldLabel>Name</FieldLabel>
+            <Field value={name} onChangeText={setName} background={t.card} />
+          </View>
+          <View style={{ gap: 8 }}>
+            <FieldLabel optional>Department</FieldLabel>
+            <Field value={department} onChangeText={setDepartment} placeholder="e.g. Media" background={t.card} />
+          </View>
+          <View style={{ gap: 8 }}>
+            <FieldLabel optional>Description</FieldLabel>
+            <Field value={description} onChangeText={setDescription} placeholder="What's this group for?" multiline background={t.card} />
+          </View>
+          <FormError message={error} />
+          {group ? <CardButton label="Archive group" onPress={() => setArchiving(true)} /> : null}
+        </ScrollView>
+      )}
       <PrimaryButton label="Save" onPress={() => save()} busy={busy && !archiving} disabled={!group || !name.trim()} style={{ marginTop: 14 }} />
       <ConfirmDialog
         visible={archiving}

@@ -8,7 +8,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import type { D1CommunitySummary } from "@destiny/shared";
 import { orderedGroups } from "@/components/GroupRows";
 import { Icon } from "@/components/Icon";
-import { Avatar, Card, CardButton, ConfirmDialog, ErrorState, FloatingBack, LargeTitle, SecondaryButton } from "@/components/ui";
+import { Avatar, Bone, Card, CardButton, ConfirmDialog, ErrorState, FloatingBack, LargeTitle, SecondaryButton, SkeletonGroup, SkeletonRows } from "@/components/ui";
 import { api } from "@/lib/api";
 import { errorMessage, useSession } from "@/state/session";
 import { useTheme } from "@/theme/tokens";
@@ -24,6 +24,7 @@ export default function Community() {
   const [busy, setBusy] = useState(false);
 
   const load = useCallback(() => {
+    setError(null);
     api.community(id).then(setC, (err) => setError(errorMessage(err)));
   }, [id]);
   useFocusEffect(load);
@@ -66,7 +67,15 @@ export default function Community() {
         <View style={{ flex: 1, justifyContent: "center" }}>
           <ErrorState message={error} onRetry={load} />
         </View>
-      ) : null}
+      ) : (
+        <SkeletonGroup label="Loading community" style={{ paddingTop: insets.top + 56, paddingHorizontal: 16, gap: 20 }}>
+          <View style={{ paddingHorizontal: 4, gap: 10 }}>
+            <Bone width="60%" height={32} radius={10} />
+            <Bone width="85%" height={14} />
+          </View>
+          <SkeletonRows count={4} />
+        </SkeletonGroup>
+      )}
       <FloatingBack background={t.grouped} />
 
       <ConfirmDialog

@@ -347,6 +347,58 @@ export function EmptyState({ title, body }: { title: string; body?: string }) {
   );
 }
 
+// ── Loading skeletons ───────────────────────────────────────────────────────
+
+/** Shared pulse so every placeholder on screen breathes in step. */
+function usePulse() {
+  const v = useRef(new Animated.Value(0.55)).current;
+  useEffect(() => {
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(v, { toValue: 1, duration: 700, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
+        Animated.timing(v, { toValue: 0.55, duration: 700, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
+      ]),
+    );
+    loop.start();
+    return () => loop.stop();
+  }, [v]);
+  return v;
+}
+
+/** Wraps a block of placeholders in one pulsing, screen-reader-labelled view. */
+export function SkeletonGroup({ label, children, style }: { label: string; children: ReactNode; style?: StyleProp<ViewStyle> }) {
+  const opacity = usePulse();
+  return (
+    <Animated.View accessible accessibilityRole="progressbar" accessibilityLabel={label} accessibilityState={{ busy: true }} style={[{ opacity }, style]}>
+      {children}
+    </Animated.View>
+  );
+}
+
+/** One grey placeholder shape. Put it inside a SkeletonGroup to animate. */
+export function Bone({ width, height, radius, style }: { width?: ViewStyle["width"]; height: number; radius?: number; style?: StyleProp<ViewStyle> }) {
+  const t = useTheme();
+  return <View style={[{ width: width ?? "100%", height, borderRadius: radius ?? height / 2, backgroundColor: t.fill }, style]} />;
+}
+
+/** Placeholder for a card of avatar + two-line rows (members, groups). */
+export function SkeletonRows({ count, avatar = 40 }: { count: number; avatar?: number }) {
+  const t = useTheme();
+  return (
+    <Card>
+      {Array.from({ length: count }, (_, i) => (
+        <View key={i} style={{ flexDirection: "row", alignItems: "center", gap: 12, paddingLeft: 16 }}>
+          <Bone width={avatar} height={avatar} />
+          <View style={{ flex: 1, gap: 7, paddingVertical: 14, paddingRight: 16, borderBottomWidth: i < count - 1 ? StyleSheet.hairlineWidth : 0, borderBottomColor: t.sep }}>
+            <Bone width={`${45 + ((i * 17) % 30)}%`} height={14} />
+            <Bone width={`${25 + ((i * 11) % 20)}%`} height={11} />
+          </View>
+        </View>
+      ))}
+    </Card>
+  );
+}
+
 /** E3: generic error with Try again, showing the server's message. */
 export function ErrorState({ message, onRetry }: { message: string; onRetry: () => void }) {
   const t = useTheme();

@@ -6,7 +6,7 @@ import { router, useFocusEffect } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { GlassSurface } from "@/components/GlassSurface";
 import { Icon } from "@/components/Icon";
-import { Avatar, EmptyState, ErrorState, LargeTitle } from "@/components/ui";
+import { Avatar, Bone, EmptyState, ErrorState, LargeTitle, SkeletonGroup } from "@/components/ui";
 import { plural } from "@/lib/format";
 import { useSession } from "@/state/session";
 import { useTheme } from "@/theme/tokens";
@@ -40,6 +40,7 @@ export default function Groups() {
       <Text style={{ paddingHorizontal: 4, paddingBottom: 18, fontSize: 15, lineHeight: 20, color: t.muted }}>Communities you belong to.</Text>
 
       {!communities && communitiesError ? <ErrorState message={communitiesError} onRetry={() => void refreshCommunities()} /> : null}
+      {!communities && !communitiesError ? <CommunitiesSkeleton /> : null}
       {communities && communities.length === 0 ? <EmptyState title="No communities yet" body="Your team leader will add you." /> : null}
 
       <View style={{ gap: 12 }}>
@@ -61,5 +62,23 @@ export default function Groups() {
         ))}
       </View>
     </ScrollView>
+  );
+}
+
+function CommunitiesSkeleton() {
+  const t = useTheme();
+  return (
+    <SkeletonGroup label="Loading communities" style={{ gap: 12 }}>
+      {[0, 1, 2].map((i) => (
+        <View key={i} style={{ flexDirection: "row", alignItems: "center", gap: 14, padding: 16, borderRadius: 22, backgroundColor: t.card, borderWidth: 0.5, borderColor: t.glassLine }}>
+          <Bone width={52} height={52} radius={16} />
+          <View style={{ flex: 1, gap: 8 }}>
+            <Bone width={`${40 + i * 15}%`} height={16} />
+            <Bone width="80%" height={12} />
+            <Bone width="25%" height={11} />
+          </View>
+        </View>
+      ))}
+    </SkeletonGroup>
   );
 }

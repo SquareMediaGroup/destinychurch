@@ -382,7 +382,7 @@ destinychurch/
 │   │                               # Its own npm project (NOT a root workspace, so the website build
 │   │                               # never installs React Native); imports @destiny/shared through a
 │   │                               # file: link + metro.config.js. Backend: /api/app/v1/one/*.
-│   │                               # Every screen built (design variants 1C + 1F). See "Destiny One" below.
+│   │                               # Every screen built (design variants 1B + 1F). See "Destiny One" below.
 │   └── live-caption/              # separately from the website. Currently:
 │                                   # Live Caption — a macOS app (SwiftUI, Swift 6, XcodeGen) that
 │                                   # captions live audio in real time with a local whisper.cpp model
@@ -6863,8 +6863,8 @@ shipping urgently, needs no new server to run and patch, and the safeguarding ru
 same database as the data rather than in a separate Synapse module.
 - **Status: every screen built on the complete backend.** Built from the Claude Design prototype
   (`DestinyOne.dc.html`, project "Destiny One") and `docs/destiny-one-ui-spec.md`. Chosen variants:
-  **1C "Compact" chat list** (sticky glass community headers that collapse, an unread dot, one
-  line of preview) and **1F "Avatars" conversation** (bubbles; the sender's avatar beside the last
+  **1B "Cards and filters" chat list** (All / Unread / Announcements chips, one rounded card per
+  community with "See all", count badges) and **1F "Avatars" conversation** (bubbles; the sender's avatar beside the last
   message of a run and their name above the first). Not yet run on a device: there's no Xcode on
   the dev Mac, so it has only been checked with `expo export` and a web preview on mock data.
 - **Routes (`src/app/`):** `index` (launch gate → `routeFor(me)`), `welcome` (A1), `email` (A2),

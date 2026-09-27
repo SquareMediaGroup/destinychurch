@@ -1,9 +1,13 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useIsDesktop } from "@/lib/useIsDesktop";
 import { useScrollLock } from "@/lib/useScrollLock";
-import { API, type Post } from "@/lib/posts";
+import { API, type Post, type PostFields } from "@/lib/posts";
+import type { PostTemplate } from "@/lib/postTemplates";
+import { useDialog } from "@/components/DialogProvider";
+import { useSelectedBlock } from "@/components/admin/blocks/useSelectedBlock";
+import { PageSettings } from "./PageSettings";
 import { slugify } from "@/lib/jobs";
 import { primaryBtn, ghostBtn } from "@/components/admin/AdminUI";
 import { Sheet } from "@/components/admin/Sheet";
@@ -163,17 +167,74 @@ function SlugHint({ state }: { state: SlugState }) {
   return null;
 }
 
+function SlugField({
+  id,
+  value,
+  onChange,
+  state,
+}: {
+  id: string;
+  value: string;
+  onChange: (v: string) => void;
+  state: SlugState;
+}) {
+  return (
+    <div>
+      <label
+        htmlFor={id}
+        className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-destiny-grey/45 dark:text-white/45"
+      >
+        Page URL
+      </label>
+      <div className="flex items-center gap-1.5">
+        <span className="text-sm font-bold text-destiny-grey/40 dark:text-white/40">/</span>
+        <input
+          id={id}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder="easter-2026"
+          // 16px on phones: iOS zooms the page on any smaller focused input.
+          className="w-full rounded-xl border border-black/10 bg-white dark:border-white/10 dark:bg-destiny-grey-800 px-3.5 py-2.5 text-base text-destiny-grey dark:text-white outline-none transition placeholder:text-destiny-grey/30 dark:placeholder:text-white/30 focus:border-destiny-orange/50 focus:ring-2 focus:ring-destiny-orange/15 lg:text-sm"
+        />
+      </div>
+      <p className="mt-1.5 text-xs font-medium">
+        <SlugHint state={state} />
+      </p>
+    </div>
+  );
+}
+
+function initialFields(post: Post | null, template?: PostTemplate): PostFields {
+  const base: PostFields = {
+    title: post?.title ?? "",
+    slug: post?.slug ?? "",
+    body: post?.body ?? "",
+    is_published: post?.is_published ?? false,
+    hero_style: post?.hero_style ?? "plain",
+    hero_image_url: post?.hero_image_url ?? null,
+    subtitle: post?.subtitle ?? null,
+    description: post?.description ?? null,
+    og_image_url: post?.og_image_url ?? null,
+    show_rails: post?.show_rails ?? true,
+  };
+  return post ? base : { ...base, ...template?.fields };
+}
+
 export function PostEditor({
   post,
+  template,
   onClose,
   onSaved,
   onError,
 }: {
   post: Post | null;
+  /** New posts only: the starter layout picked from the template chooser. */
+  template?: PostTemplate;
   onClose: () => void;
   onSaved: () => void;
   onError: (msg: string) => void;
 }) {
+  const { confirm } = useDialog();
   const isDesktop = useIsDesktop();
   // The editor instance, published by RichTextEditor via onEditor, so the
   // Blocks sidebar and the inspector can drive it.
@@ -183,21 +244,35 @@ export function PostEditor({
   // Mobile only: the slug + published sheet, the equivalent of the desktop
   // settings row that there is no width for on a phone.
   const [pageSettingsOpen, setPageSettingsOpen] = useState(false);
-  const [form, setForm] = useState({
-    title: post?.title ?? "",
-    slug: post?.slug ?? "",
-    body: post?.body ?? "",
-    is_published: post?.is_published ?? false,
-  });
+  const [form, setForm] = useState<PostFields>(() => initialFields(post, template));
+  // What's on the server, to tell whether closing would lose anything. JSON
+  // rather than a deep-equal helper: the form is small and flat.
+  // A new post starts "clean" at its template, so closing an untouched one
+  // doesn't ask.
+  const [savedSnapshot, setSavedSnapshot] = useState(() =>
+    JSON.stringify(initialFields(post, template)),
+  );
+  const dirty = JSON.stringify(form) !== savedSnapshot;
+  // Set once a new post has been saved (by Preview) so later saves PATCH it.
+  const [postId, setPostId] = useState<string | undefined>(post?.id);
   const [saving, setSaving] = useState(false);
   // Once the admin edits the slug by hand, stop auto-deriving it from the title.
   const slugTouched = useRef(Boolean(post));
 
-  const slugState = useSlugCheck(form.slug, post?.id);
+  const slugState = useSlugCheck(form.slug, postId);
 
-  function set<K extends keyof typeof form>(key: K, value: (typeof form)[K]) {
+  // Right sidebar: Page settings or the selected block's settings. Derived
+  // rather than synced — selecting a block shows Block, deselecting shows
+  // Page, and a manual tab choice holds until the selection changes.
+  const selected = useSelectedBlock(editorInstance);
+  const selectionKey = selected ? `${selected.pos}|${selected.blockName}` : "";
+  const [tabChoice, setTabChoice] = useState<{ key: string; tab: "page" | "block" } | null>(null);
+  const rightTab =
+    tabChoice && tabChoice.key === selectionKey ? tabChoice.tab : selected ? "block" : "page";
+
+  const set = useCallback(<K extends keyof PostFields>(key: K, value: PostFields[K]) => {
     setForm((f) => ({ ...f, [key]: value }));
-  }
+  }, []);
 
   function onTitleChange(title: string) {
     setForm((f) => ({
@@ -216,47 +291,118 @@ export function PostEditor({
   // breakpoints are full-screen now, so this is unconditional.
   useScrollLock(true);
 
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
-    document.addEventListener("keydown", onKey);
-    return () => document.removeEventListener("keydown", onKey);
-  }, [onClose]);
+  async function requestClose() {
+    if (
+      dirty &&
+      !(await confirm({
+        title: "Discard changes?",
+        message: "You have unsaved changes to this page. Close without saving?",
+        confirmLabel: "Discard",
+        tone: "danger",
+      }))
+    ) {
+      return;
+    }
+    onClose();
+  }
 
-  async function submit(e?: React.FormEvent) {
-    e?.preventDefault();
+  /** Saves the post. Returns its id, or null if validation or the request failed. */
+  async function save({ close }: { close: boolean }): Promise<string | null> {
+    if (saving) return null;
     if (!form.title.trim()) {
       onError("A post title is required.");
-      return;
+      return null;
     }
     if (!form.slug.trim()) {
       onError("A URL slug is required.");
-      return;
+      return null;
     }
     if (slugState.status === "unavailable") {
       onError(slugState.reason);
-      return;
+      return null;
+    }
+    if (form.hero_style === "image" && !form.hero_image_url) {
+      onError("The Image header needs an image — add one in Page settings, or pick another header.");
+      return null;
     }
     setSaving(true);
 
-    const url = post ? `${API}/${post.id}` : API;
-    const method = post ? "PATCH" : "POST";
+    const url = postId ? `${API}/${postId}` : API;
+    const method = postId ? "PATCH" : "POST";
     const res = await fetch(url, {
       method,
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(form),
     });
     setSaving(false);
+    const data = await res.json().catch(() => ({}));
     if (!res.ok) {
-      const data = await res.json().catch(() => ({}));
       onError(data.error || "Something went wrong.");
+      return null;
+    }
+    setPostId(data.id);
+    setSavedSnapshot(JSON.stringify(form));
+    if (close) onSaved();
+    return data.id as string;
+  }
+
+  /**
+   * Save, then open a signed preview. The tab is opened before the awaits so
+   * it counts as a direct response to the click — browsers block popups
+   * opened after an async gap.
+   */
+  async function preview() {
+    const tab = window.open("about:blank", "_blank");
+    const id = await save({ close: false });
+    if (!id) {
+      tab?.close();
       return;
     }
-    onSaved();
+    const res = await fetch(`${API}/${id}/preview`);
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || !data.url) {
+      tab?.close();
+      onError(data.error || "Couldn't create a preview link.");
+      return;
+    }
+    if (tab) tab.location.href = data.url;
+    else window.open(data.url, "_blank");
   }
+
+  // Latest handlers for the document-level listeners, so they don't need
+  // re-binding on every keystroke.
+  const handlers = useRef({ requestClose, save: () => save({ close: true }) });
+  useEffect(() => {
+    handlers.current = { requestClose, save: () => save({ close: true }) };
+  });
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && !e.defaultPrevented) handlers.current.requestClose();
+      if (e.key === "s" && (e.metaKey || e.ctrlKey)) {
+        e.preventDefault();
+        handlers.current.save();
+      }
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, []);
+
+  // A tab close or reload would lose edits too.
+  useEffect(() => {
+    if (!dirty) return;
+    const onBeforeUnload = (e: BeforeUnloadEvent) => e.preventDefault();
+    window.addEventListener("beforeunload", onBeforeUnload);
+    return () => window.removeEventListener("beforeunload", onBeforeUnload);
+  }, [dirty]);
+
+  const slugField = (id: string) => (
+    <SlugField id={id} value={form.slug} onChange={onSlugChange} state={slugState} />
+  );
 
   const editor = (
     <RichTextEditor
-      value={form.body}
+      value={form.body ?? ""}
       onChange={(html) => set("body", html)}
       placeholder="Write the page content — use the toolbar for text, and the Blocks panel for FAQs, callouts and cards."
       advanced
@@ -277,7 +423,7 @@ export function PostEditor({
           <div className="flex items-center gap-3 px-5 py-3">
             <button
               type="button"
-              onClick={onClose}
+              onClick={requestClose}
               aria-label="Close"
               className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-destiny-grey/50 dark:text-white/50 transition hover:bg-[#f5f7fa] hover:text-destiny-grey dark:hover:text-white"
             >
@@ -298,30 +444,23 @@ export function PostEditor({
                 onChange={(v) => set("is_published", v)}
               />
             </div>
-            <button type="button" className={ghostBtn} onClick={onClose}>
-              Cancel
+            {dirty && (
+              <span className="text-xs font-medium text-destiny-grey/45 dark:text-white/45">
+                Unsaved changes
+              </span>
+            )}
+            <button type="button" className={ghostBtn} disabled={saving} onClick={preview}>
+              Preview
             </button>
             <button
               type="button"
               className={primaryBtn}
               disabled={saving}
-              onClick={() => submit()}
+              onClick={() => save({ close: true })}
+              title="Save (Ctrl+S)"
             >
-              {saving ? "Saving…" : post ? "Save changes" : "Create post"}
+              {saving ? "Saving…" : postId ? "Save changes" : "Create post"}
             </button>
-          </div>
-          {/* Settings row: slug + live availability */}
-          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-black/5 bg-[#f9fafb] px-5 py-2.5">
-            <span className="text-sm font-bold text-destiny-grey/45 dark:text-white/45">/</span>
-            <input
-              value={form.slug}
-              onChange={(e) => onSlugChange(e.target.value)}
-              placeholder="page-url-slug"
-              className="w-64 shrink-0 rounded-lg border border-black/10 bg-white dark:border-white/10 dark:bg-destiny-grey-800 px-3 py-1.5 text-sm text-destiny-grey dark:text-white outline-none transition focus:border-destiny-orange/50 focus:ring-2 focus:ring-destiny-orange/15"
-            />
-            <span className="text-xs font-medium">
-              <SlugHint state={slugState} />
-            </span>
           </div>
         </div>
 
@@ -344,7 +483,35 @@ export function PostEditor({
           </div>
 
           <SidePanel side="right" open={inspectorOpen} onToggle={() => setInspectorOpen((v) => !v)} label="Settings" icon="tune">
-            <BlockInspector editor={editorInstance} />
+            <div className="flex h-full flex-col">
+              <div role="tablist" aria-label="Settings" className="flex shrink-0 gap-1 border-b border-black/8 p-2 dark:border-white/8">
+                {(["page", "block"] as const).map((tab) => (
+                  <button
+                    key={tab}
+                    type="button"
+                    role="tab"
+                    aria-selected={rightTab === tab}
+                    onClick={() => setTabChoice({ key: selectionKey, tab })}
+                    className={`flex-1 rounded-lg py-1.5 text-xs font-bold uppercase tracking-wider transition ${
+                      rightTab === tab
+                        ? "bg-[#f5f7fa] text-destiny-grey dark:bg-white/10 dark:text-white"
+                        : "text-destiny-grey/45 hover:text-destiny-grey dark:text-white/45 dark:hover:text-white"
+                    }`}
+                  >
+                    {tab === "page" ? "Page" : "Block"}
+                  </button>
+                ))}
+              </div>
+              <div className="min-h-0 flex-1">
+                {rightTab === "page" ? (
+                  <div className="h-full overflow-y-auto p-4">
+                    <PageSettings form={form} set={set} urlAndStatus={slugField("post-slug-desktop")} />
+                  </div>
+                ) : (
+                  <BlockInspector editor={editorInstance} />
+                )}
+              </div>
+            </div>
           </SidePanel>
         </div>
       </div>
@@ -372,7 +539,7 @@ export function PostEditor({
       <div className="flex shrink-0 items-center gap-1.5 border-b border-black/10 px-2 py-2 pt-[max(0.5rem,env(safe-area-inset-top))]">
         <button
           type="button"
-          onClick={onClose}
+          onClick={requestClose}
           aria-label="Close"
           className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-destiny-grey/50 dark:text-white/50 transition active:bg-[#f5f7fa]"
         >
@@ -389,7 +556,7 @@ export function PostEditor({
           type="button"
           className={`${primaryBtn} shrink-0 px-3.5`}
           disabled={saving}
-          onClick={() => submit()}
+          onClick={() => save({ close: true })}
         >
           {saving ? "Saving…" : "Save"}
         </button>
@@ -432,28 +599,7 @@ export function PostEditor({
           onClose={() => setPageSettingsOpen(false)}
         >
           <div className="flex flex-col gap-5 px-4 py-4">
-            <div>
-              <label
-                htmlFor="post-slug"
-                className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-destiny-grey/45 dark:text-white/45"
-              >
-                URL slug
-              </label>
-              <div className="flex items-center gap-1.5">
-                <span className="text-sm font-bold text-destiny-grey/40 dark:text-white/40">/</span>
-                <input
-                  id="post-slug"
-                  value={form.slug}
-                  onChange={(e) => onSlugChange(e.target.value)}
-                  placeholder="easter-2026"
-                  // 16px: iOS zooms the page on any smaller focused input.
-                  className="w-full rounded-xl border border-black/10 bg-white dark:border-white/10 dark:bg-destiny-grey-800 px-3.5 py-2.5 text-base text-destiny-grey dark:text-white outline-none transition placeholder:text-destiny-grey/30 dark:placeholder:text-white/30 focus:border-destiny-orange/50 focus:ring-2 focus:ring-destiny-orange/15"
-                />
-              </div>
-              <p className="mt-1.5 text-xs font-medium">
-                <SlugHint state={slugState} />
-              </p>
-            </div>
+            {slugField("post-slug")}
 
             <div className="flex items-center justify-between gap-3 rounded-xl bg-[#f5f7fa] px-4 py-3">
               <div className="min-w-0">
@@ -468,6 +614,19 @@ export function PostEditor({
               />
             </div>
 
+            <PageSettings form={form} set={set} />
+
+            <button
+              type="button"
+              className={`${ghostBtn} w-full`}
+              disabled={saving}
+              onClick={() => {
+                setPageSettingsOpen(false);
+                preview();
+              }}
+            >
+              Preview
+            </button>
             <button
               type="button"
               className={`${ghostBtn} w-full`}

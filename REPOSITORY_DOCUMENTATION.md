@@ -273,7 +273,7 @@ destinychurch/
 │   ├── smartSearch/tools.ts       # Smart Search tool-calling tools (products, sermons, weather, maps, web)
 │   ├── embedLoading.ts            # Stage timings for the embed loading overlay
 │   ├── pageContent.ts             # Dynamic page editing
-│   ├── posts.ts                   # Dynamic posts/pages
+│   ├── posts.ts                   # Post types + hero styles (postTemplates.ts: starter layouts; postPreview.server.ts: signed draft previews)
 │   ├── training.ts                # Training courses
 │   ├── jobs.ts / jobs.server.ts   # Job listing & applications
 │   ├── hr.ts                      # HR staff operations, types, leave/review label maps
@@ -1221,6 +1221,13 @@ CREATE TABLE posts (
   slug text UNIQUE NOT NULL,
   body text,
   is_published boolean NOT NULL DEFAULT false,
+  -- Page settings (20260927_04_posts_page_settings.sql)
+  hero_style text NOT NULL DEFAULT 'plain',   -- plain | image | banner (CHECK)
+  hero_image_url text,
+  subtitle text,
+  description text,                            -- meta description + social card
+  og_image_url text,                           -- share image; falls back to hero_image_url
+  show_rails boolean NOT NULL DEFAULT true,    -- promo rails beside the page at 1600px+
   created_at timestamptz DEFAULT now(),
   updated_at timestamptz DEFAULT now()
 );
@@ -1228,8 +1235,15 @@ CREATE TABLE posts (
 -- RLS: Service role only; public read happens server-side via lib/posts.server.ts
 ```
 
+**Why presets, not styling:** the page settings are deliberately page-level choices (how the page
+opens, what it says when shared, whether the rails show) rather than per-element colours, spacing
+or layout. That's what keeps the Posts editor a page builder that non-designers can use without
+producing off-brand pages. Columns/sections, per-block styling, revisions and scheduling were
+considered and left out on purpose. `lib/posts-fields.ts` validates these fields for both the
+POST and PATCH routes.
+
 **Used By:**
-- `lib/posts.server.ts` (`getPublishedPostBySlug`) for the public `/[slug]` catch-all
+- `lib/posts.server.ts` (`getPostForView`) for the public `/[slug]` catch-all
 - `app/api/admin/posts` CRUD, admin dashboard to write pages
 
 ---
@@ -2312,11 +2326,17 @@ higher-traffic public surface, no conversational context to extract filters
 from beyond the query text itself.
 
 #### `/app/[slug]/page.tsx` — Dynamic Catchall
-- Looks up `slug` via `getPublishedPostBySlug()` (`lib/posts.server.ts`) against the `posts`
-  table — there is no separate `dynamic_pages` table. Renders the post's `body` through
-  `RichContent` (upgrades embedded content blocks into real components; falls back to the
-  equivalent of raw HTML for a post with none), with the promo rails from
-  `components/posts/PostRails.tsx`.
+- Looks up `slug` via `getPostForView()` (`lib/posts.server.ts`) against the `posts`
+  table — there is no separate `dynamic_pages` table. Renders the post's hero (`PostHero`, from
+  `hero_style`), then its `body` through `RichContent` (upgrades embedded content blocks into
+  real components; falls back to the equivalent of raw HTML for a post with none), with the
+  promo rails from `components/posts/PostRails.tsx` unless the post turns them off.
+  `generateMetadata` emits the post's description and Open Graph image.
+- **Draft previews:** `?preview=<token>` shows an unpublished post when the token is a valid
+  signature for that post's id (`lib/postPreview.server.ts` — `<expiry>.<hmac>`, one hour, signed
+  with the Supabase secret key like the training unlock cookies). Tokens come from
+  `GET /api/admin/posts/[id]/preview`. The page shows a "Preview" bar and is `noindex`. Without a
+  valid token a draft 404s exactly as before.
 - If no post matches, falls back to an active `redirects` row for the same slug (see Database
   Schema §1) and `redirect()`s there. A hit is recorded via `after()` — read `headers()` during
   render (an `after()` callback in a Server Component can't call it), close over the values, and
@@ -3170,12 +3190,25 @@ The member-facing pieces of the `/training` resource library.
 - `useTrainingProgress.ts` — Per-browser completion store in `localStorage` (no per-user accounts; trainees share a group password). Exposes `useCompletedSet()` and `toggleCompleted()`; starts empty on first render to avoid hydration mismatch, then fills in after mount and stays reactive across tabs via a custom event + the `storage` event.
 
 #### Admin Content/Training/HR Components (`components/admin/{posts,training,hr}/*`)
-- `posts/PostEditor.tsx` — Standalone page editor (uses `RichTextEditor`). Full-screen at **both** breakpoints; only the panel placement differs. Desktop gets the permanent Blocks and Settings sidebars; mobile edits the title in the header, puts the slug and published switch behind a "Page settings" sheet, and gives the rest of the screen to the editor. It was previously a `Modal` on mobile — the whole form inside a scrolling popup, with the editor capped at 420px and scrolling separately inside that, so the page content got about a third of the screen and a newly added block was immediately pushed out of sight.
+- `posts/PostEditor.tsx` — Standalone page editor (uses `RichTextEditor`). Full-screen at **both** breakpoints; only the panel placement differs. Desktop gets the permanent Blocks and Settings sidebars; mobile edits the title in the header, puts the slug and published switch behind a "Page settings" sheet, and gives the rest of the screen to the editor. It was previously a `Modal` on mobile — the whole form inside a scrolling popup, with the editor capped at 420px and scrolling separately inside that, so the page content got about a third of the screen and a newly added block was immediately pushed out of sight. The desktop right sidebar has **Page** and **Block** tabs: Page holds the URL and `PageSettings`, Block the `BlockInspector`; selecting a block switches to Block and deselecting returns to Page (derived from the selection, not synced by an effect). Tracks unsaved changes (closing, Escape and tab close ask first), saves on Ctrl/Cmd+S, and has a **Preview** button that saves then opens a signed preview link. New posts start from a template (`lib/postTemplates.ts`).
+- `posts/PageSettings.tsx` — Page-level settings shared by the desktop sidebar and the mobile sheet: header style picker (Plain / Image / Banner thumbnails), header image, subtitle, description with a 160-character counter, share image and the promo-rails toggle. Reuses the block inspector's field components (`ImageField`, `TextField`, …) so uploads go through the same `post-media` route.
 - `training/PostEditor.tsx` — Training post editor (uses `RichTextEditor`). Still a `Modal` on mobile: its body is one field among many rather than the whole point of the screen, and it inherits the mobile block sheets and toolbar from `BlockTools` either way.
 - `training/CategoryModal.tsx`, `SubgroupModal.tsx`, `FolderModal.tsx`, `IconPicker.tsx` — Training tree CRUD modals
 - `hr/HrUI.tsx` — Staff directory, leave requests, documents (main HR dashboard shell)
 - `hr/JobModal.tsx` — Create/edit job listing (uses `RichTextEditor`)
 - `hr/modals.tsx` — Remaining HR CRUD modals (staff, leave, reviews, applications)
+
+#### Post Hero (`components/posts/PostHero.tsx`)
+**Server.** `PostHero` renders the page header for the `image` (full-bleed photo, title over a
+scrim) and `banner` (solid brand-orange band) styles; `PostPlainTitle` is the in-column title for
+`plain`. An `image` post with no image falls back to plain rather than an empty dark box.
+
+#### Post Templates (`lib/postTemplates.ts`)
+Starter layouts shown when creating a post: Blank, Event, Campaign, Info + FAQ. Each is ordinary
+body HTML plus page settings. Blocks are serialised from each block's own `defaults` via
+`encodeProps`, so a template can't drift from a block's schema — `tests/unit/post-templates.spec.ts`
+parses every template block against the wire format and its schema. The admin list also has a
+**Duplicate** action (a draft copy at `<slug>-copy`), an Edited column and thumbnails.
 
 #### Post Promo Rails (`components/posts/*`)
 Desktop-only internal advertising in the empty margins of a post page. Added 2026-07-26.
@@ -3916,6 +3949,13 @@ drifting copy of the RBAC table.
 // 1. Check auth
 // 2. Call revalidatePath(path) or revalidateTag(tag)
 // 3. Return success
+```
+
+#### `GET /api/admin/posts/[id]/preview`
+```typescript
+// Signed preview URL for a (possibly unpublished) post
+// Returns: { url: "/<slug>?preview=<expiry>.<hmac>" } — valid for one hour
+// See lib/postPreview.server.ts and the /[slug] catch-all
 ```
 
 #### `GET /api/admin/posts/check-slug`

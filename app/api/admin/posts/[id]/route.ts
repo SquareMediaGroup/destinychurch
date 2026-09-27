@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createServiceClient } from "@/utils/supabase/service";
 import { checkSlug } from "@/lib/posts-slug";
 import { readForAudit, recordAudit } from "@/lib/audit.server";
+import { parsePageSettings } from "@/lib/posts-fields";
 
 export async function GET(
   _request: Request,
@@ -39,6 +40,12 @@ export async function PATCH(
   }
   if (body.body !== undefined) updates.body = body.body?.trim() || null;
   if (body.is_published !== undefined) updates.is_published = body.is_published;
+
+  const settings = parsePageSettings(body);
+  if (!settings.ok) {
+    return NextResponse.json({ error: settings.error }, { status: 400 });
+  }
+  Object.assign(updates, settings.fields);
 
   if (body.slug !== undefined) {
     const result = await checkSlug(supabase, body.slug ?? "", id);

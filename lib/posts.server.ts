@@ -2,20 +2,31 @@
 import "server-only";
 import { createServiceClient } from "@/utils/supabase/service";
 import type { Post } from "@/lib/posts";
+import { verifyPreviewToken } from "@/lib/postPreview.server";
 
-/** A single published post by slug, or null. Used by the /[slug] catch-all. */
-export async function getPublishedPostBySlug(slug: string): Promise<Post | null> {
+/**
+ * The post at this slug, or null. Published posts are returned to anyone; a
+ * draft only when `previewToken` is a valid signed preview for that post.
+ */
+export async function getPostForView(
+  slug: string,
+  previewToken?: string,
+): Promise<{ post: Post; preview: boolean } | null> {
   const supabase = createServiceClient();
   const { data, error } = await supabase
     .from("posts")
     .select("*")
     .eq("slug", slug)
-    .eq("is_published", true)
     .maybeSingle();
 
   if (error) {
-    console.error("getPublishedPostBySlug error:", error.message);
+    console.error("getPostForView error:", error.message);
     return null;
   }
-  return (data as Post) ?? null;
+  const post = data as Post | null;
+  if (!post) return null;
+  if (post.is_published) return { post, preview: false };
+  if (verifyPreviewToken(post.id, previewToken)) return { post, preview: true };
+  return null;
 }
+

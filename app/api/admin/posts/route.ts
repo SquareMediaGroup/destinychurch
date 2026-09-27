@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createServiceClient } from "@/utils/supabase/service";
 import { checkSlug } from "@/lib/posts-slug";
 import { recordAudit } from "@/lib/audit.server";
+import { parsePageSettings } from "@/lib/posts-fields";
 
 export async function GET() {
   const supabase = createServiceClient();
@@ -21,6 +22,11 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "A post title is required." }, { status: 400 });
   }
 
+  const settings = parsePageSettings(body);
+  if (!settings.ok) {
+    return NextResponse.json({ error: settings.error }, { status: 400 });
+  }
+
   const supabase = createServiceClient();
   const result = await checkSlug(supabase, body.slug ?? "");
   if (!result.ok) {
@@ -34,6 +40,7 @@ export async function POST(request: Request) {
       slug: result.slug,
       body: body.body?.trim() || null,
       is_published: body.is_published ?? false,
+      ...settings.fields,
     })
     .select()
     .single();

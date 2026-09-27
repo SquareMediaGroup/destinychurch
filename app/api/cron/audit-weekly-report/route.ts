@@ -7,8 +7,8 @@
 // Super Admin.
 //
 // Like the other crons, this route is NOT under /api/admin, so middleware.ts
-// doesn't guard it: it authorises with CRON_SECRET the way live-chat-purge and
-// hr-review-reminders do.
+// doesn't guard it: it authorises with CRON_SECRET the way
+// hr-review-reminders does.
 //
 // Two deliberate divisions of labour:
 //

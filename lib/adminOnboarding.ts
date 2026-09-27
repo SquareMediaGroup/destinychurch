@@ -27,7 +27,7 @@ import type { RoleFlags } from "@/lib/adminRoles";
  * lands with no tour and no build error, rather than forcing a placeholder
  * tour into existence just to satisfy a type.
  */
-export type OnboardedRole = "training_admin" | "event_admin" | "store_admin" | "site_admin" | "host";
+export type OnboardedRole = "training_admin" | "event_admin" | "store_admin" | "site_admin";
 
 export interface TourStep {
   id: string;
@@ -416,58 +416,11 @@ const TRAINING: Tour = {
   ],
 };
 
-const HOST: Tour = {
-  role: "host",
-  label: "Host",
-  icon: "smart_display",
-  blurb: "Sunday broadcasts and moderating the live chat.",
-  sections: [
-    {
-      id: "host-broadcast",
-      label: "Run a broadcast",
-      steps: [
-        {
-          id: "live-intro",
-          route: "/admin/live",
-          anchor: "page-header",
-          placement: "bottom",
-          sandbox: true,
-          title: "Playing a recording as if it were live",
-          body: "Point this at a video and the public live page plays it on a schedule, exactly like a real stream — nobody watching can skip ahead. The controls also sit on the live page itself, so running a service never means leaving it.",
-        },
-      ],
-    },
-    {
-      id: "host-chat",
-      label: "Moderate the chat",
-      steps: [
-        {
-          id: "chat-intro",
-          route: "/admin/live-chat",
-          anchor: "page-header",
-          placement: "bottom",
-          title: "The room during a service",
-          body: "Messages arrive here as they're posted. You can approve held messages, delete, mute someone, pause the room or close it — and prayer requests come through as their own queue rather than getting lost in the scroll.",
-        },
-        {
-          id: "chat-prayer",
-          route: "/admin/live-chat",
-          anchor: "list-toolbar",
-          placement: "bottom",
-          title: "Prayer comes first",
-          body: "Work the prayer queue before the general chat. Someone who asked for prayer and heard nothing back is the one person a Sunday online shouldn't lose.",
-        },
-      ],
-    },
-  ],
-};
-
 export const TOURS: Record<OnboardedRole, Tour> = {
   store_admin: STORE,
   site_admin: SITE,
   event_admin: EVENT,
   training_admin: TRAINING,
-  host: HOST,
 };
 
 /** Short names for the access levels, for buttons that can't fit a sentence. */
@@ -476,7 +429,6 @@ export const ROLE_LABELS: Record<OnboardedRole, string> = {
   store_admin: "Store",
   event_admin: "Events",
   training_admin: "Training",
-  host: "Host",
 };
 
 /** Fixed order, so a two-role user always sees their tours in the same sequence. */
@@ -485,7 +437,6 @@ export const TOUR_ORDER: OnboardedRole[] = [
   "store_admin",
   "event_admin",
   "training_admin",
-  "host",
 ];
 
 /**

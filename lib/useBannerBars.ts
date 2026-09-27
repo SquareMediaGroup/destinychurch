@@ -21,7 +21,7 @@ export function useBannerBars(): number {
   if (banner.active && banner.type === "sitewide") return 0;
 
   // The live banner takes priority — other banners don't stack under it.
-  if (live.live && pathname !== "/live") return 1;
+  if (live.live) return 1;
 
   let count = 0;
   if (isVisible(banner)) count += 1;

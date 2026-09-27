@@ -89,7 +89,7 @@ test("a two-role admin gets both checklists, in registry order", () => {
 });
 
 test("progress is counted in sections, not steps", () => {
-  const sections = checklistForRole("host");
+  const sections = checklistForRole("store_admin");
   expect(progressFor(sections, new Set())).toEqual({
     done: 0,
     total: sections.length,

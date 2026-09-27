@@ -152,7 +152,7 @@ test.describe("deploying before the migration doesn't lock admins out", () => {
 
   test("only a real true grants a role", async () => {
     const { rolesFromRow } = await import("../../lib/adminRoles");
-    expect(rolesFromRow({ super_admin: "true", host: 1 }).super_admin).toBe(false);
-    expect(rolesFromRow({ super_admin: "true", host: 1 }).host).toBe(false);
+    expect(rolesFromRow({ super_admin: "true", event_admin: 1 }).super_admin).toBe(false);
+    expect(rolesFromRow({ super_admin: "true", event_admin: 1 }).event_admin).toBe(false);
   });
 });

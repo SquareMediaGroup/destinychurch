@@ -113,7 +113,7 @@ test("a design admin reaches nothing else in the admin", () => {
 });
 
 test("other roles do not reach the design queue", () => {
-  for (const role of ["training_admin", "event_admin", "store_admin", "site_admin", "hr_admin", "host"] as const) {
+  for (const role of ["training_admin", "event_admin", "store_admin", "site_admin", "hr_admin"] as const) {
     expect(hasAccess(only(role), "/admin/design"), role).toBe(false);
     expect(hasAccess(only(role), "/api/admin/design/tickets"), role).toBe(false);
   }

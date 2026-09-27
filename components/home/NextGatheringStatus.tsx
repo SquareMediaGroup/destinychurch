@@ -1,10 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
 import { useLiveStatus } from "@/contexts/LiveContext";
 import { useAccessibility } from "@/contexts/AccessibilityContext";
 import { formatCountdown } from "@/lib/serviceTimes";
+import { youtubeWatchUrl } from "@/lib/youtubeId";
 
 /**
  * The one part of ServiceTimesBar that can't be server-rendered: "is a
@@ -18,7 +18,7 @@ import { formatCountdown } from "@/lib/serviceTimes";
  * no "loading…" state to flash away, only an enhancement appearing.
  */
 export default function NextGatheringStatus({ nextIso }: { nextIso: string }) {
-  const { live } = useLiveStatus();
+  const { live, videoId } = useLiveStatus();
   const { reducedMotion } = useAccessibility();
   const [countdown, setCountdown] = useState<string | null>(null);
 
@@ -45,9 +45,14 @@ export default function NextGatheringStatus({ nextIso }: { nextIso: string }) {
           <span className="relative inline-flex h-2 w-2 rounded-full bg-destiny-red" />
         </span>
         Live now —{" "}
-        <Link href="/live" className="underline underline-offset-2">
+        <a
+          href={youtubeWatchUrl(videoId)}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="underline underline-offset-2"
+        >
           watch online
-        </Link>
+        </a>
       </p>
     );
   }

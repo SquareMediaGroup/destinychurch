@@ -5,7 +5,7 @@
 // real check. Every URL on a links page travels from a text input straight
 // into an `href` or `src`, where React does not escape `javascript:`.
 
-import { parseYouTubeId } from "@/lib/simulatedLive";
+import { parseYouTubeId } from "@/lib/youtubeId";
 import { isEmbeddable } from "@/lib/nfcTiles";
 
 /**

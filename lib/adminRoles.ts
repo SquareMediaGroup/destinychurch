@@ -10,7 +10,6 @@ export type AdminRole =
   | "event_admin"
   | "store_admin"
   | "site_admin"
-  | "host"
   | "hr_admin"
   | "design_admin"
   | "sermon_admin"
@@ -23,7 +22,6 @@ export const ADMIN_ROLES: AdminRole[] = [
   "event_admin",
   "store_admin",
   "site_admin",
-  "host",
   "hr_admin",
   "design_admin",
   "sermon_admin",
@@ -45,7 +43,6 @@ export const ROLE_LABELS: Record<AdminRole, string> = {
   event_admin: "Event Admin",
   store_admin: "Store Admin",
   site_admin: "Site Admin",
-  host: "Host",
   hr_admin: "HR Admin",
   design_admin: "Design Admin",
   sermon_admin: "Sermon Admin",
@@ -74,7 +71,6 @@ export const NO_ROLES: RoleFlags = {
   event_admin: false,
   store_admin: false,
   site_admin: false,
-  host: false,
   hr_admin: false,
   design_admin: false,
   sermon_admin: false,
@@ -128,18 +124,6 @@ const ROUTE_RULES: { pattern: RegExp; roles: AdminRole[] }[] = [
   { pattern: /^\/api\/admin\/posts(\/|$)/, roles: ["site_admin"] },
   { pattern: /^\/api\/admin\/redirects(\/|$)/, roles: ["site_admin"] },
   { pattern: /^\/api\/admin\/analytics(\/|$)/, roles: ["site_admin"] },
-
-  // Host — the live chat console. Hosts also moderate from /live itself, which
-  // is a public page and so sits outside this table; those routes authorise
-  // themselves via lib/liveChatAuth.ts.
-  { pattern: /^\/admin\/live-chat(\/|$)/, roles: ["host"] },
-  { pattern: /^\/api\/admin\/live-chat(\/|$)/, roles: ["host"] },
-
-  // Host — simulated live. Same people, same Sunday: whoever is running the
-  // room is who starts the broadcast. Note these patterns require a `/` or the
-  // end of the string after "live", so they can't swallow /admin/live-chat.
-  { pattern: /^\/admin\/live(\/|$)/, roles: ["host"] },
-  { pattern: /^\/api\/admin\/simulated-live(\/|$)/, roles: ["host"] },
 
   // HR — staff directory, leave, jobs, applications, documents, reviews
   { pattern: /^\/admin\/hr(\/|$)/, roles: ["hr_admin"] },
@@ -214,7 +198,7 @@ export async function getRoles(
   const { data, error } = await supabase
     .from("admin_roles")
     .select(
-      "training_admin, event_admin, store_admin, site_admin, host, hr_admin, design_admin, sermon_admin, safeguarding_admin, destiny_one_admin, super_admin",
+      "training_admin, event_admin, store_admin, site_admin, hr_admin, design_admin, sermon_admin, safeguarding_admin, destiny_one_admin, super_admin",
     )
     .eq("auth_user_id", authUserId)
     .maybeSingle();

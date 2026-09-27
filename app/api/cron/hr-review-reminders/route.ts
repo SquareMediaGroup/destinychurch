@@ -3,7 +3,7 @@
 // hr_reviews.reviewer is free text, not a linked account, so there's no
 // per-reviewer address to target — one digest goes to the HR inbox instead.
 // This route is NOT under /api/admin, so middleware.ts doesn't guard it. It
-// authorises with CRON_SECRET instead, the way live-chat-purge does.
+// authorises with CRON_SECRET instead, like the other crons.
 
 import { NextResponse } from "next/server";
 import { createServiceClient } from "@/utils/supabase/service";

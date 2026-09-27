@@ -150,7 +150,6 @@ destinychurch/
 │   ├── help/                      # Help centre / FAQ
 │   ├── kids/                      # Kids ministry
 │   ├── links/                     # "Next Steps" link-in-bio style page
-│   ├── live/                      # Livestream page (real broadcast or simulated live)
 │   ├── login/                     # Staff sign-in
 │   ├── youth/                     # Youth ministry
 │   ├── young-adults/              # Young adults ministry
@@ -211,11 +210,10 @@ destinychurch/
 │   │   │   ├── onboarding/        # Per-admin tour progress
 │   │   │   ├── posts/, training/, alpha-events/, featured-course/, hr/, store/, shop-hero/
 │   │   │   │                      #   hr/ includes checklists/ + checklist-templates/
-│   │   │   ├── simulated-live/    # Simulated live config + YouTube link lookup (Host)
 │   │   │   └── ...
 │   │   ├── portal/                # Staff self-service API — me/, reviews/, checklists/, team/, leave/, documents/, design/ (linked hr_staff)
 │   │   ├── design-request/        # Public, share-token-scoped: [token]/ + deliverable downloads/confirm
-│   │   ├── cron/                  # Vercel Cron — live-chat-purge/, hr-review-reminders/, design-deliverables-purge/, … (Bearer CRON_SECRET)
+│   │   ├── cron/                  # Vercel Cron — hr-review-reminders/, design-deliverables-purge/, … (Bearer CRON_SECRET)
 │   │   ├── chat/                  # POST /api/chat — Smart Search tool-calling chat
 │   │   ├── youtube/                # videos/, thumbnail/[id]/, status/, live/
 │   │   ├── alpha-ask/, alpha-events/ # Public Alpha info endpoints
@@ -346,8 +344,6 @@ destinychurch/
 │       ├── 20260712_02_featured_course.sql # Featured course (What's On)
 │       ├── 20260728_featured_event.sql   # Featured ChurchSuite event + its popup
 │       ├── 20260807_alpha_events_cap_type.sql # CAP Money Course
-│       ├── 20260817_live_chat.sql, 20260817_02_host_role.sql # /live chat rooms/messages + `host` admin role
-│       ├── 20260818_simulated_live.sql # Pre-recorded broadcast config for /live
 │       ├── 20260821_admin_onboarding.sql # Per-admin onboarding/tour progress (admin_onboarding)
 │       ├── 20260822_hr_admin_role.sql  # `hr_admin` access level on admin_roles
 │       ├── 20260824_hr_review_reminders.sql # hr_reviews.reminder_sent_at for the daily digest
@@ -369,7 +365,6 @@ destinychurch/
 │       │                                   # (needs_approval → access request; groups joined on approval)
 │       ├── 20260927_01_destiny_one_admin.sql # Destiny One part 2: staff verification, d1_invites,
 │       │                                  # d1_settings, d1_admin_* functions, destiny_one_admin role
-│       └── 20260922_02_live_chat_rpc_grants.sql # Revoke anon/authenticated EXECUTE on live chat definer fns; host check → `private`
 │
 ├── utils/                         # Utility modules
 │   ├── supabase/                  # Supabase client factories
@@ -951,7 +946,6 @@ CREATE TABLE admin_roles (
   event_admin boolean NOT NULL DEFAULT false,
   store_admin boolean NOT NULL DEFAULT false,
   site_admin boolean NOT NULL DEFAULT false,
-  host boolean NOT NULL DEFAULT false,      -- live chat: /admin/live-chat + moderating on /live
   hr_admin boolean NOT NULL DEFAULT false,  -- /admin/hr
   design_admin boolean NOT NULL DEFAULT false,  -- /admin/design — the design ticket queue
   sermon_admin boolean NOT NULL DEFAULT false,  -- /admin/sermons — publishing audio to Buzzsprout
@@ -1423,186 +1417,8 @@ All tables have RLS enabled. Access rules:
 | shop_hero_slides | - | - | Yes | Editable /shop hero (public read via server components) |
 | sermons / sermon_transcripts / sermon_link_suggestions / ai_reports / auth_users / admin_users | - | - | Yes | Base-schema legacy tables (deny-all "service only"; not read by the app) |
 | studio_assets / studio_components | - | - | Yes | Orphaned Studio-builder tables (never dropped; unused) |
-| live_chat_sessions / live_chat_messages / live_chat_prayer_requests / live_chat_blocks | - | - | Yes | Live chat on /live (deny-all "service only"; delivery is Realtime Broadcast, not table reads) |
-| simulated_live | - | - | Yes | Simulated live broadcast on /live (deny-all "service only"; singleton) |
 | engagement_events | - | - | Yes | Click analytics across shortlinks / nfc / links (deny-all "service only"; read via `security definer` rollup RPCs) |
 | ip_reputation_ranges | - | - | Yes | VPN/Tor/datacenter/Apple-Private-Relay CIDR ranges (deny-all "service only"; read only by the `before insert` trigger on `engagement_events`) |
-
-#### 21. **live_chat_sessions / live_chat_messages / live_chat_prayer_requests / live_chat_blocks**
-
-**Purpose:** The live chat on `/live` — public chat, a host backstage channel,
-host↔guest direct threads and prayer requests.
-
-```sql
--- One row per broadcast. `state` gates the room: the panel follows the YouTube
--- live status, but a Host can open early, pause mid-service, or close it.
-create table live_chat_sessions (
-  id uuid primary key default gen_random_uuid(),
-  video_id text,                    -- unique where not null: one room per broadcast
-  title text,
-  state text not null default 'closed'   -- closed | open | paused
-    check (state in ('closed','open','paused')),
-  opened_at timestamptz,
-  closed_at timestamptz,
-  created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now()
-);
-
--- status: visible | held | hidden. `held` is the auto-hold queue — the message
--- is stored and shown to its author and to Hosts, and to nobody else, until a
--- Host approves it. Held/hidden rows are kept rather than deleted so there is
--- something to review after an incident.
-create table live_chat_messages (
-  id uuid primary key default gen_random_uuid(),
-  session_id uuid not null references live_chat_sessions (id) on delete cascade,
-  channel text not null check (channel in ('public','backstage','direct')),
-  thread_key text,                  -- the guest id, for `direct` threads only
-  author_kind text not null check (author_kind in ('guest','host')),
-  author_guest_id text,             -- guests: the signed-cookie id
-  author_user_id uuid references auth.users (id) on delete set null,  -- hosts
-  display_name text not null,
-  body text not null check (char_length(body) between 1 and 500),
-  status text not null default 'visible'
-    check (status in ('visible','held','hidden')),
-  held_reason text,
-  moderated_by uuid references auth.users (id) on delete set null,
-  moderated_at timestamptz,
-  created_at timestamptz not null default now()
-);
-
--- A separate table, not a fourth channel: these must never be reachable by the
--- code paths that publish to the public channel, and a table boundary makes
--- that impossible rather than merely unlikely.
-create table live_chat_prayer_requests (
-  id uuid primary key default gen_random_uuid(),
-  session_id uuid references live_chat_sessions (id) on delete cascade,
-  guest_id text,
-  display_name text not null,
-  body text not null check (char_length(body) between 1 and 1000),
-  status text not null default 'new' check (status in ('new','praying','done')),
-  claimed_by uuid references auth.users (id) on delete set null,
-  claimed_at timestamptz,
-  created_at timestamptz not null default now()
-);
-
--- scope='session' mutes for one service; scope='global' carries across them.
-create table live_chat_blocks (
-  id uuid primary key default gen_random_uuid(),
-  session_id uuid references live_chat_sessions (id) on delete cascade,
-  guest_id text not null,
-  scope text not null default 'session' check (scope in ('session','global')),
-  reason text,
-  blocked_by uuid references auth.users (id) on delete set null,
-  created_at timestamptz not null default now(),
-  expires_at timestamptz
-);
-
--- RLS: deny-all "service only" on all four, like every other table here. The
--- browser never reads these — see the Realtime note below.
-```
-
-**Realtime.** This is the repo's first use of Supabase Realtime. Delivery is
-**Broadcast**, not Postgres Changes: Postgres Changes would have meant opening
-`anon` SELECT on `live_chat_messages`, which contradicts the deny-all convention
-and would have shipped held messages to the very people they were held from.
-Instead the API moderates a message, stores it, and calls `live_chat_emit()` —
-which pushes it onto a private topic. Topics are:
-
-| Topic | Audience |
-|-------|----------|
-| `live-chat:<session>:public` | anyone, including signed-out guests |
-| `live-chat:<session>:host` | Hosts only (backstage, held queue, prayer queue) |
-| `live-chat:<session>:dm:<dm key>` | one guest's direct thread |
-
-Authorization is RLS on `realtime.messages` with **anchored regex** topic
-patterns (so the three cannot overlap). Clients get SELECT (receive) and
-deliberately **no broadcast INSERT** — a client holding the anon key can never
-put a message, least of all one wearing a HOST badge, onto a channel. The one
-INSERT policy is scoped to `extension = 'presence'`, which is what powers the
-"N here now" count. Host checks go through `private.is_live_chat_host()`, which is
-`SECURITY DEFINER` because `admin_roles` is itself deny-all.
-
-**Function grants** (`20260922_02_live_chat_rpc_grants.sql`). All three live chat
-functions are `SECURITY DEFINER`, so who can EXECUTE them matters:
-
-| Function | EXECUTE | Why |
-|----------|---------|-----|
-| `public.live_chat_emit()` | `service_role` only | Called by `emit()` in `lib/liveChat.server.ts` via `createServiceClient()`. Open to anon, it would be the broadcast INSERT the policies above deliberately withhold. |
-| `public.live_chat_purge()` | `service_role` only | Called by the cron route via `createServiceClient()`. Open to anon, anyone could wipe the history. |
-| `private.is_live_chat_host()` | `authenticated`, `service_role` | Realtime evaluates the `live_chat_host_receive` policy *as the subscriber*, so `authenticated` must be able to run it. It lives in the non-exposed `private` schema so it isn't callable via `/rest/v1/rpc`. Anon never reaches that policy. |
-
-Postgres grants EXECUTE to `PUBLIC` on every new function, so the original
-migration left all three callable by anyone holding the anon key until this
-migration locked them down.
-
-**Retention:** `live_chat_purge(retain_days default 7)` deletes messages, prayer
-requests and closed sessions older than 7 days. Called daily at 04:00 by
-`/api/cron/live-chat-purge` (see `vercel.json`).
-
-**Used By:**
-- `components/live/chat/*` — the panel on `/live`
-- `app/api/live-chat/*` — public routes (self-authorising; outside the middleware matcher)
-- `app/api/admin/live-chat/*` — Host console routes (gated by `middleware.ts`)
-- `app/admin/live-chat/page.tsx` — the Host console
-- `lib/liveChat.server.ts`, `lib/liveChatGuest.ts`, `lib/liveChatModeration.ts`, `lib/liveChatAuth.ts`
-
-#### 22. **simulated_live**
-
-**Purpose:** Playing a pre-uploaded YouTube video on `/live` as though it were a
-broadcast — our version of Church Online Platform's simulated live. The entire
-feature is one row and one idea: a video id plus the instant the "broadcast"
-starts. Everyone loads the same video seeked to `now - starts_at`, so a viewer who
-opens the page twenty minutes in joins twenty minutes in.
-
-```sql
-create table simulated_live (
-  id integer primary key default 1 check (id = 1),   -- singleton
-
-  active           boolean not null default false,   -- admin intent, not "on air"
-  video_id         text,                             -- 11-char id; public or unlisted
-  title            text,                             -- heading above the player
-  starts_at        timestamptz,                      -- the playhead origin
-  duration_seconds integer,                          -- resolved from contentDetails
-  notice           text,                             -- optional line under the player
-
-  created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now(),
-
-  -- A draft can be saved half-filled; it can never be switched on half-filled.
-  constraint simulated_live_ready_when_active check (
-    not active
-    or (video_id is not null and starts_at is not null and duration_seconds is not null)
-  ),
-  constraint simulated_live_video_id_format
-    check (video_id is null or video_id ~ '^[A-Za-z0-9_-]{11}$'),
-  constraint simulated_live_duration_positive
-    check (duration_seconds is null or (duration_seconds > 0 and duration_seconds <= 86400))
-);
-```
-
-**Why a singleton rather than a schedule table.** `/live` shows one thing at a
-time, and a list of scheduled simulcasts would need conflict rules, overlap
-resolution and a "which one is on air right now" picker — all to express something
-the church currently does once a week. If recurring simulated services are wanted
-later, this row becomes the resolved *current* broadcast and a
-`simulated_live_schedule` table feeds it.
-
-**`active` is intent, not state.** Whether it is on air is `active` **plus the
-clock**: before `starts_at` it is scheduled, after `starts_at + duration_seconds`
-it is finished, and `/live` returns to the off-air card on its own without anyone
-switching anything off.
-
-**A real broadcast always wins.** `lib/liveStatus.server.ts` checks YouTube first
-and only falls through to this row when the channel genuinely isn't streaming, so
-a simulated event left switched on cannot hide an actual service.
-
-**Used By:**
-- `lib/simulatedLive.server.ts` (the only reader) → `lib/liveStatus.server.ts`
-- `app/api/admin/simulated-live/*` — save and link lookup (Host)
-- `app/admin/live/page.tsx` — the admin console
-- `lib/simulatedLive.ts` — the shared arithmetic, also used client-side
-
----
 
 #### 23. **audit_log / audit_reports**
 
@@ -2081,10 +1897,9 @@ CREATE TABLE notification_reads (             -- per-admin read state (several a
 source tables, so "read" is a fact about `(notification, viewer)`, which is why it
 lives in its own `notification_reads` table rather than a column on `notifications`.
 
-**Delivery follows the live-chat Broadcast precedent, not Postgres Changes.**
+**Delivery uses Realtime Broadcast, not Postgres Changes.**
 Opening Postgres Changes on `notifications` would need an authenticated SELECT
-policy straight on the table — exactly the class of mistake the live-chat
-migration warns against. Instead the service-role insert path calls
+policy straight on the table — exactly the class of mistake to avoid. Instead the service-role insert path calls
 `admin_notify_emit(topic, event, payload)` (a `SECURITY DEFINER` wrapper over
 `realtime.send`) to push the row onto a **private Broadcast topic** named
 `admin-notifications:<role>`, one per `AdminRole`. A notification for
@@ -2106,8 +1921,7 @@ never throws), `lib/useNotifications.ts` (the client Realtime hook),
 `components/admin/AdminNotificationBell.tsx` (the bell in `AdminHeader`),
 `app/api/admin/notifications` + `/[id]/read` + `/read-all` (feed and read state).
 Call sites: new order (`lib/checkout.server.ts`), job application (`app/jobs/actions.ts`),
-design ticket (`app/portal/design/request/actions.ts`), prayer request
-(`app/api/live-chat/prayer`), contact message (`app/contact/actions.ts`), leave
+design ticket (`app/portal/design/request/actions.ts`), contact message (`app/contact/actions.ts`), leave
 request (`app/api/portal/leave`).
 
 ---
@@ -2551,7 +2365,6 @@ without an auth check, so they must never be reachable on the live site.
 | `/beliefs` | `app/beliefs/page.tsx` | Statement of faith, doctrine |
 | `/sermons` | `app/sermons/page.tsx` | Latest message as video (with an audio switch), series/month filters, a guest-speakers toggle and free-text search over the full archive |
 | `/sermons/[id]` | `app/sermons/[id]/page.tsx` | Individual sermon — a **Watch/Listen** switch (`components/sermons/SermonWatchListen.tsx`, the same `ModeSwitch`/`ListenPane` the featured card uses) when a confident audio pairing exists, otherwise the plain YouTube embed; plus skip-to-sermon and next steps. Title/meta rows stay server-rendered (no CLS); only the player area switches |
-| `/live` | `app/live/page.tsx` | Livestream page — standard hero + section rhythm, with a client island that swaps between the custom glass player and an off-air card. On air for a real YouTube broadcast, or for a **simulated** one (a pre-recorded video played from a fixed start time; see `lib/simulatedLive.ts`). Signed-in Hosts also get the **broadcast controls** inline at the top of the page (`LiveHostBar`), so starting, editing or removing a service never means leaving `/live` |
 | `/contact` | `app/contact/page.tsx` | Contact form, address, hours |
 | `/portal/design/request` | `app/portal/design/request/page.tsx` | Ask the design team for something. Staff-only — gated by the `/portal` middleware, which requires a linked `hr_staff` row. Name and email default from the staff record; every request is fast-tracked |
 | `/design-request/[token]` | `app/design-request/[token]/page.tsx` | The requester's own tracker, reached by share token rather than a login — status, the brief as submitted, every revision's files, and buttons to ask for changes or close it. `robots: noindex` |
@@ -2668,8 +2481,6 @@ Each section requires a specific access-level role (see
 | `/admin/users` | `app/admin/users/page.tsx` | Manage admin logins and their access-level roles (Super Admin only) |
 | `/admin/onboarding` | `app/admin/onboarding/page.tsx` | What each access level is taught on first sign-in, and the admin previewed from their side (Super Admin only) |
 | `/admin/audit` | `app/admin/audit/page.tsx` | Audit log — everything anyone does in the admin. Ask it in plain English ("who added the Faith Hoodie to the store?") or read it: search, filter by person/area/kind/date, open any entry for the field-by-field before and after. Second tab holds the weekly AI reports (Super Admin only) |
-| `/admin/live` | `app/admin/live/page.tsx` | Simulated Live — schedule a pre-recorded video to play on `/live` as though it were a broadcast. Paste a link (preview resolves title, thumbnail and runtime), pick a start time or press **Start now**, and a once-a-second status strip reports scheduled / on air with the exact position / finished (Host). A thin wrapper over `SimulatedLiveControls`, the same component the Host bar on `/live` mounts — the on-page version is the one that gets used on a Sunday; this is the admin-shell entry point the sidebar and ⌘K palette land on |
-| `/admin/live-chat` | `app/admin/live-chat/page.tsx` | Live chat console — room state, held queue, muted guests, prayer queue, direct threads, history (Host) |
 
 #### Admin navigation, search and keyboard shortcuts
 
@@ -2684,7 +2495,7 @@ viewport — the shape phones actually use, and one tap per section instead of t
 hamburger drawer's two or three. A tab is a *group*, not a page: a super admin
 can see around forty pages but only eleven groups, so `tabsFor(roles)`
 projects `ADMIN_GROUPS` down to one tab per top-level entry. Ungrouped items
-(Dashboard, Posts, Training, Simulated Live, Live Chat) are their own tabs, a
+(Dashboard, Posts, Training) are their own tabs, a
 group left with one visible item collapses to a plain link, and a group with
 several opens a bottom `Sheet` listing its pages with their descriptions.
 
@@ -2863,7 +2674,7 @@ focus to whatever opened it, and locks body scroll — restoring the *previous*
 `.dc-modal-backdrop` / `.dc-modal-panel` in `globals.css`, with a
 `prefers-reduced-motion` block.
 
-> Written for the Host sign-in popup on `/live`. Before it there were six one-off
+> Before it there were six one-off
 > modals and only `NfcTileModal` had real dialog semantics — its own header
 > comment notes the others have "no role, no focus management and no trap". New
 > modals should use this; the existing six can migrate when next touched.
@@ -3020,56 +2831,13 @@ through the site's normal nav and the "New Here?" page/link, which were never pa
 #### `LiveBanner.tsx`
 - **What:** "WE ARE LIVE" banner bar, styled like `SiteBanner.tsx`'s bars
 - **Data:** `LiveContext` (server-seeded in root layout via `getLiveStatus()`, then polled client-side every 30s)
-- **Behavior:** Renders at the top banner slot whenever the channel is live; hidden on `/live`, `/admin/*`, and `/portal/*`. CTA links to `/live`. The live bar **takes priority over the DB banners** — while it shows, the sitewide/alpha/recovery banners are hidden rather than stacked beneath it (`lib/useBannerBars.ts` returns `1` when live off `/live`), so there is only ever one bar to notice during a service.
+- **Behavior:** Renders at the top banner slot whenever the channel is live; hidden on `/admin/*` and `/portal/*`. CTA opens the broadcast on YouTube in a new tab (`youtubeWatchUrl()` in `lib/youtubeId.ts`); the old `/live` URL redirects to the channel's live tab (`next.config.ts`). The live bar **takes priority over the DB banners** — while it shows, the sitewide/alpha/recovery banners are hidden rather than stacked beneath it (`lib/useBannerBars.ts` returns `1` when live off `/live`), so there is only ever one bar to notice during a service.
 
 #### `contexts/LiveContext.tsx`
-- **What:** The single client-side source of live state, consumed by the banner and every part of `/live`
+- **What:** The single client-side source of live state, consumed by the banner and the homepage status line
 - **Seeding:** The root layout passes `getLiveStatus()` straight in, so the first paint is already correct — polling only ever corrects it afterwards
 - **Polling:** `/api/youtube/live` every 30s, plus an immediate poll on mount and on `visibilitychange` / `focus` / `online`. The mount poll matters: the server render can be a minute stale, and "we went live 40 seconds ago" is exactly when someone opens the page.
 - **Grace period:** `live` does not drop to false until **two consecutive** negative polls (`OFFLINE_GRACE`), so one flaky request doesn't pull a running service off someone's screen. The streak is counted per poll — an earlier version counted it in an effect keyed on `live`, which only re-runs when the boolean flips, so it could never reach two.
-- **`markOffline()`:** lets the player tear the live view down immediately on its ENDED/error event, well before YouTube's own pages agree
-- **Clock skew:** every payload carries `serverTime`; the provider stores `serverTime - Date.now()` on each poll and exposes `getPositionSeconds()`, the shared playhead for a simulated broadcast (`now + skew - startedAt`). Derived from the origin rather than from a number the server sent, so a payload that took a moment to arrive is still right.
-- **`synced`:** true once any poll has landed (including a failed one — an offline device must not leave a player permanently unmounted waiting for a clock). A *simulated* player waits for it before mounting; a real one never does. Costs a fraction of a second, against dropping everyone into the service at a point derived from an unchecked device clock.
-- **Gotcha:** `startedAtRef` is written from inside the poll, not from an effect on `state`. Child effects run before parent ones, so the player's mount effect — which reads the position to decide where to start — would otherwise see the *previous* broadcast's origin on the very render that put it on screen.
-
-#### `/live` components (`components/live/*`)
-The page itself is a server component carrying the site's normal hero + alternating
-`bg-white` / `bg-[#f5f7fa]` sections (`AnimateIn` reveals, `font-black` headings,
-orange eyebrows, `WatchOnYouTubeBand`, `WorshipWithUsSection`). Only the parts that
-change with the broadcast are client islands:
-
-- **`LiveStage.tsx`** — the player when we're on air, an off-air card the rest of the week. Live: red "On air now" eyebrow, the broadcast title (splitting the `Title || Ps Speaker` upload convention), start time, and an "Open on YouTube" escape hatch. Off air: next-service countdown, links to `/sermons` and `/visit`, and the latest message as a thumbnail card. **During a simulated broadcast both YouTube links are dropped** — sending someone to YouTube mid-simulcast hands them a scrubbable video with a view count, which is a worse experience *and* gives the game away. An optional `notice` renders under the player.
-- **`LiveHeroStatus.tsx`** — the hero eyebrow. A red pulsing "Live now" pill while streaming, the site's standard orange eyebrow otherwise.
-- **`useLiveNow.ts`** — the one place the "are we live?" rule is derived, so the hero badge and the player can't disagree. A simulated broadcast is live in exactly the same sense; only the *player* has the extra `playerReady` condition (below).
-- **`NextServiceCountdown.tsx`** — "Sunday 14 September, 11:00am · in 2 days 4 hours". The date renders on the server too (it's identical either side of hydration); the relative half waits for the client, since a countdown computed server-side is wrong by however long the response sat in a cache. An optional `startsAt` overrides the standing Sunday rhythm with a scheduled simulated broadcast — which may well be a Wednesday evening, so the time comes from the value rather than being assumed to be 11:00am. A `startsAt` already in the past is ignored, which covers the half-minute between a broadcast starting and the next poll noticing.
-- **`LivePlayer.tsx`** — YouTube IFrame API player with `controls=0` and a fully custom glass control bar (play/pause, mute, volume, fullscreen, live-edge seek). See `lib/youtubeIframe.ts` for the shared API loader (also used by `SermonPlayer.tsx`). `onEnded` is held in a ref so the mount effect stays keyed on the video id alone, and `onError` is treated as an ending too — a pulled or privated broadcast otherwise leaves the player wedged on a black rectangle.
-
-  **Simulated mode** is switched on by the presence of a `getTargetTime` prop — a *getter*, not a number, because a number would change every second and re-key the effect that owns the iframe, tearing the player down mid-service. In that mode:
-  - It joins at `playerVars.start`, not by seeking after `onReady`, so YouTube buffers from the right place and nobody sees the opening seconds flash past.
-  - **There is no DVR.** A drift check every 10s pulls the playhead back if it is more than 5s out (buffering, a phone locking, a throttled background tab), and pressing play after a pause rejoins where the service *is* — the same thing pressing play on a real live stream does. Drift is only corrected while the player reports `PLAYING`; yanking a deliberately paused player forward would be a jump-scare rather than a sync.
-  - The **LIVE** pill seeks to the shared position rather than `getDuration()`. For a real stream the live edge is the end of the buffer; for a simulated one the end of the file is where the broadcast *finishes*, and seeking there would skip the rest of the service.
-  - Running past the end of the video ends the broadcast even if `ENDED` never fires — it doesn't when the tab was asleep.
-
-- **`LiveHostBar.tsx`** — the broadcast controls, on `/live` itself. A Host starts and stops a service *during* one, usually on a phone, while watching the page the congregation is watching; sending them to `/admin/live` means leaving the thing they are trying to check at the moment they can least afford to. So the controls come to the page.
-  - **Visibility is decided on the server.** `app/live/page.tsx` calls `readHost()` and passes the answer down. A visitor pays no request for it, there is no flash of admin UI while a fetch resolves, and the client cannot promote itself — `/api/live-control` re-checks with `requireHost()` regardless of what the component believes. Anonymous visitors cost nothing either: with no auth cookie `getUser()` answers null without a network call, and the page is already `force-dynamic` so nothing is cached across viewers.
-  - **Signing in when you aren't:** `/live#host` reveals a prompt that opens the same `HostLoginModal` the chat panel uses. That escape hatch exists because the chat panel — the only other way in — renders nothing while off air, which is exactly when someone needs to schedule next Sunday.
-  - `SimulatedLiveControls` is loaded with `next/dynamic` (`ssr: false`) so its bundle only downloads when a Host actually opens the panel.
-- **`SimulatedLiveControls.tsx`** — the form itself, written once and mounted in two places: this bar and `/admin/live`. They differ only in the `endpoint` prop, because the route hanging off the public page has to authorise itself while the admin one is covered by middleware. Holds the link preview, the runtime fallback, the start time, the once-a-second status strip, **Start now**, **Take off air**, and **Remove this service** (a two-tap confirm, since it clears every field).
-
-#### Live chat (`components/live/chat/*`)
-The chat beside the player, and our own version of the Church Online Platform.
-Mounts only when a room exists, and a room only exists while we're on air — an
-always-present chat box under an offline player is an empty room someone
-eventually wanders into alone, and a moderated space nobody is moderating.
-
-- **`LiveChatPanel.tsx`** — the shell. Holds session state, both subscriptions, and every action. Renders `null` when off air, so the offline card keeps the full width of the section.
-- **`useLiveChat.ts`** — the one place the codebase opens a websocket. Subscribes to a private Broadcast topic with `setAuth()` + `{ config: { private: true } }`, plus Presence for the viewer count. **Must use the memoised `getSupabaseBrowserClient()`** — it is the only browser client in the codebase precisely because a per-call factory means a new client, and a new client means a new socket per mount. Receive-only by design: sending goes over HTTP to `/api/live-chat/messages`, gets moderated, and comes back down the channel.
-- **`ChatMessageList.tsx`** — the transcript. Follows the bottom only while you're already at the bottom, with a "jump to latest" button otherwise, so reading back doesn't get yanked. Host rows carry inline approve/delete/mute controls.
-- **`ChatComposer.tsx`** — message box with the guest name field inline above it, rather than a modal demanding a name before the chat is readable. Enter sends, Shift+Enter breaks the line.
-- **`HostLoginModal.tsx`** — Host sign-in without leaving the service. Same rate limit and Supabase checks as `/login` (it's the same server-action core), but returns instead of redirecting — a Host opens this mid-service and being thrown to `/admin` is the one thing that must not happen.
-- **`PrayerRequestModal.tsx`** — prayer requests. Never touches the public channel; states plainly above the box who reads it.
-
----
 
 ### Page-Specific Components
 
@@ -3779,13 +3547,8 @@ export async function applyForJob(jobId: string, formData: ApplicationData) {
 // adminSignIn(prev, fd) — signInCore, then redirect(resolvePostLoginPath(...))
 //                         → /admin for an admin, /portal for a linked staff
 //                         member, else an "account not set up" error
-// hostSignIn(prev, fd)  — signInCore, then returns { success } and stays put
 // adminSignOut()        — signOut + delete sb-remember
 ```
-Split because `redirect()` throws to unwind the request, which works for a
-full-page form and not at all for the Host popup on `/live`, which has to stay
-where it is and re-render. `hostSignIn` does **not** check the host role — it
-establishes who you are; `lib/liveChatAuth.ts` decides what that lets you do.
 `adminSignIn` sends admins to `/admin` and non-admin staff (a linked `hr_staff`
 row) to `/portal`; admin roles take priority, so someone who is both lands on
 `/admin` and can still reach `/portal` by URL.
@@ -4145,57 +3908,6 @@ drifting copy of the RBAC table.
 // No revalidatePath — getNfcTiles() reads with noStore().
 ```
 
-#### Simulated live admin routes (`/api/admin/simulated-live/*`)
-```typescript
-// Host role (ROUTE_RULES in lib/adminRoles.ts) — the same people who run the
-// chat on a Sunday are the ones who start the broadcast.
-
-GET    /api/admin/simulated-live          // the row + derived { phase, endsAt, serverTime }
-PUT    /api/admin/simulated-live          // { active, video, title, notice, startsAt, durationSeconds }
-DELETE /api/admin/simulated-live          // blank the row entirely — "remove this service"
-GET    /api/admin/simulated-live/lookup   // ?url= → { videoId, title, durationSeconds, thumbnail }
-
-// Thin wrappers. The logic is in lib/simulatedLiveControl.server.ts and is
-// shared with /api/live-control (the same controls, mounted on /live). Two
-// surfaces editing one row must not be able to disagree about what a valid
-// broadcast is, and one implementation is how that is guaranteed rather than
-// hoped for.
-//
-// DELETE is deliberately distinct from `active: false`. Taking something off
-// air is a thing you do mid-service and might undo; removing it is "we're not
-// doing this", and leaving a half-remembered video id and last week's start
-// time in the form is how someone accidentally re-broadcasts it.
-
-// PUT re-resolves the runtime from YouTube rather than trusting the form: an
-// admin who edits the start time after pasting the link must not be able to
-// leave a stale duration behind. The submitted value is the fallback for when
-// YouTube can't be reached (no API key, exhausted quota) — which is exactly when
-// the admin page shows the manual runtime field.
-//
-// PUT calls clearSimulatedLiveCache() on the way out; without it "Start now"
-// appears to do nothing for up to ten seconds on that instance.
-//
-// lookup returns 200 with `unreadable: true` for a well-formed id YouTube won't
-// describe. An unlisted video that the API declines to describe will usually
-// still *play*, so the id is handed back and the runtime typed in by hand.
-```
-
-#### Live chat admin routes (`/api/admin/live-chat/*`)
-```typescript
-// Auth comes free: middleware.ts matches /api/admin/:path*, and lib/adminRoles.ts
-// maps these to the `host` role. Route bodies contain no auth code.
-
-GET  /api/admin/live-chat/session    // current room + last 20 sessions
-POST /api/admin/live-chat/session    // { session, state: open|paused|closed }
-GET  /api/admin/live-chat/moderate   // ?session= → { held[], blocks[] }
-POST /api/admin/live-chat/moderate   // { action: approve|hide|mute|unmute, message|blockId }
-GET  /api/admin/live-chat/prayer     // ?session= → the prayer queue
-POST /api/admin/live-chat/prayer     // { id, status: new|praying|done } — claims/releases
-GET  /api/admin/live-chat/threads    // ?session= → open direct threads
-```
-Moderation actions name a **message**, never a guest: the server resolves the
-author from the row, which is why no guest id is ever broadcast to the room.
-
 #### `POST /api/admin/revalidate`
 ```typescript
 // Manually trigger ISR for a path
@@ -4321,75 +4033,16 @@ and filters/reveals it entirely client-side, no further network calls.
 ```typescript
 // Livestream status, polled client-side every 30s by LiveContext.
 // Response: { live, videoId, title?, startedAt?, scheduledFor?,
-//             simulated?, endsAt?, notice?, serverTime?, checkedAt }
+//             serverTime?, checkedAt }
 // dynamic = "force-dynamic"; Cache-Control: s-maxage=30, stale-while-revalidate=30
 //
 // ?debug=1 additionally returns `source` — which detection layer answered
-// (channel-page | videos.list | simulated | simulated-scheduled |
+// (channel-page | videos.list |
 // confirmed-offline | no-signal | disabled | no-channel | error) — and sets
 // no-store. That is the fastest way to work out why the banner is or isn't
 // showing in production without a redeploy.
 
 // Backed by lib/liveStatus.server.ts getLiveStatus() — see Libraries & Utilities.
-```
-
-**Why the cache header is conditional.** When `simulated` is set (a simulated
-broadcast airing *or* scheduled) the response switches to `no-store`. The payload
-carries `serverTime`, which the browser subtracts from its own clock to work out
-how far into the video to be; a response held at the edge for 30 seconds would
-hand every viewer a 30-second-old clock and put them 30 seconds behind the room.
-Nothing in a real broadcast's payload is time-sensitive to the second, so those
-still cache normally.
-
-#### Broadcast control from /live (`/api/live-control/*`)
-```typescript
-// ⚠️ NOT covered by middleware.ts (its matcher is /admin/* and /api/admin/*).
-// These hang off the public /live page, exactly like /api/live-chat/*, so every
-// handler authorises itself with requireHost() from lib/liveChatAuth.ts as its
-// first statement — before reading a body, a query string or the database.
-
-GET    /api/live-control          // current config + { phase, endsAt, serverTime }
-PUT    /api/live-control          // save (same body as the admin route)
-DELETE /api/live-control          // blank the row — "remove this service"
-GET    /api/live-control/lookup   // ?url= → video title, runtime, thumbnail
-
-// 401 when signed out, 403 when signed in without the `host` role.
-//
-// The lookup route is gated too, not just the writes: it spends YouTube API
-// quota, so it must not be callable by anyone who finds the path.
-//
-// tests/unit/live-control-auth.spec.ts reads this folder's source and fails if
-// a handler is added without requireHost(), or with it after something that
-// touches caller input. The failure mode otherwise is silent — an unguarded
-// route works perfectly for whoever is testing it, because they are signed in.
-```
-
-#### Live chat public routes (`/api/live-chat/*`)
-```typescript
-// ⚠️ NOT covered by middleware.ts (its matcher is /admin/* and /api/admin/*).
-// Every route here authorises itself via lib/liveChatAuth.ts — readGuest() or
-// requireHost(). A handler that reads a body before establishing the caller is
-// a bug.
-
-GET  /api/live-chat/me         // { guest, host, isHost } — derived server-side
-GET  /api/live-chat/session    // current room + the topics this caller may join
-POST /api/live-chat/identity   // { name } → sets the signed dc_live_guest cookie
-GET  /api/live-chat/messages   // ?session=&channel=[&thread=] — history
-POST /api/live-chat/messages   // { session, channel, body } — the moderated path
-POST /api/live-chat/prayer     // { session, name, body } — never public
-```
-
-`POST /messages` runs its checks in a deliberate order — room open? → who is
-asking? → muted? → rate limited? → what did they say? — so nothing the caller
-typed is read before the caller is established, and a flooder can't use the word
-filter as a CPU sink. Verdicts are `allow` / `hold` / `reject`; a held message is
-returned to its own author marked as waiting, so they don't retype it.
-
-#### `GET /api/cron/live-chat-purge`
-```typescript
-// Daily at 04:00 (vercel.json). Bearer CRON_SECRET — fails closed with 503 if
-// the secret is unset, since an open "delete the chat history" endpoint is worse
-// than the cron not running. Calls live_chat_purge(7).
 ```
 
 #### `GET /api/cron/hr-review-reminders`
@@ -4407,7 +4060,7 @@ returned to its own author marked as waiting, so they don't retype it.
 
 #### `GET /api/cron/analytics-anonymise`
 ```typescript
-// Daily at 03:00 (vercel.json, ahead of the 04:00 live-chat purge). Bearer
+// Daily at 03:00 (vercel.json). Bearer
 // CRON_SECRET — fails closed with 503 if unset. Calls
 // engagement_anonymise_ips(ANALYTICS_IP_RETENTION_DAYS ?? 90), which blanks
 // `ip` on old engagement_events rows and returns how many it touched.
@@ -5165,7 +4818,7 @@ hardcoded BST/GMT switchover dates to go stale.
 - `formatServiceDay(date)` — "Sunday 14 September" in London's calendar.
 - `formatCountdown(target, from?)` — "2 days 4 hours" → "18 minutes"; null once the target has passed.
 
-Used by `components/live/NextServiceCountdown.tsx`. Covered by
+Covered by
 `tests/unit/service-times.spec.ts`, which pins both DST boundaries and the
 mid-service behaviour.
 
@@ -5379,8 +5032,7 @@ export async function getLatestVideo(): Promise<YTVideo | null> {
 
 // Livestream detection — the *real broadcast* half. Zero-quota on the happy
 // path; escalates only when scraping is inconclusive. Callers want
-// getLiveStatus() from lib/liveStatus.server.ts, which layers simulated live
-// underneath this.
+// getLiveStatus() from lib/liveStatus.server.ts, which stamps serverTime on it.
 export async function getYouTubeLiveStatus(): Promise<LiveStatus> { /* ... */ }
 ```
 
@@ -5444,84 +5096,16 @@ export async function reviewSermonSpeakers(opts?: { force?: boolean }): Promise<
 
 ### `lib/liveStatus.server.ts` — the composed "are we live?"
 
-**The one function the site should ask.** Two different things can put `/live` on
-air, and nothing downstream — the banner, the player, the live-chat guard, the
-mobile app's BFF — should have to know which:
+**The one function the site should ask.** A thin wrapper over
+`getYouTubeLiveStatus()` that stamps `serverTime` on the answer. The banner, the
+homepage status line and the mobile app's BFF all read it.
 
 ```typescript
 export async function getLiveStatus(): Promise<LiveStatus>
 ```
 
-1. **A real YouTube broadcast** — `getYouTubeLiveStatus()` from `lib/youtube.ts`.
-2. **A simulated one** — the `simulated_live` row, played as a broadcast.
-
-**The real broadcast is checked first and always wins.** That ordering is the
-safety property, not an optimisation: a simulated event someone forgot to switch
-off can never take an actual Sunday stream off the page. It costs nothing either
-way, since the YouTube check is memoised in-process regardless.
-
-Every answer now carries `serverTime`. A simulated answer additionally carries
-`simulated: true`, `endsAt` and `notice`, and its `startedAt` is the instant the
-simulated broadcast began — the origin every viewer's playhead is measured from.
-A simulated broadcast that hasn't started yet returns off-air *plus*
-`scheduledFor`, so the off-air card counts down to a real time instead of the
-standing "next Sunday, 11am" guess.
-
-`simulated` is set on exactly the airing and the scheduled answers, which makes
-it the flag the routes check before allowing a CDN cache.
-
----
-
-### `lib/simulatedLive.ts` / `lib/simulatedLive.server.ts` — simulated live
-
-**What it is.** Playing a pre-uploaded YouTube video on `/live` as though it were
-a broadcast — our version of what Church Online Platform does. Paste a link, set a
-start time, and everyone watching is at the same moment; someone who opens the
-page twenty minutes in joins twenty minutes in and can't rewind to the beginning.
-
-**The whole idea is one subtraction.** Nothing is streamed and nothing is pushed.
-Every viewer loads the same video seeked to `now - startsAt`:
-
-```
-before startsAt                        → scheduled  (off air, counting down)
-startsAt … startsAt + durationSeconds  → airing at that many seconds in
-after that                             → finished   (off air, on its own)
-```
-
-Because the position is *derived* rather than stored or broadcast, viewers stay in
-sync with no coordination, and a response that sat in a cache for ten seconds is
-still correct — `now - startsAt` doesn't go stale the way a "you are at 00:14:32"
-number would.
-
-**Split across two files for bundling reasons.** `lib/simulatedLive.ts` is pure
-arithmetic (`simulatedPhase`, `simulatedPosition`, `simulatedEndsAt`,
-`parseYouTubeId`, `parseIsoDurationSeconds`, `formatTimecode`) and is imported by
-the admin page as well as the server. `lib/simulatedLive.server.ts` holds the
-service-role read of the singleton row and is `server-only`, memoised for 10
-seconds (shorter than the YouTube path's 30 — this is the row an admin has just
-pressed "Start now" on while watching `/live` in another tab), with
-`clearSimulatedLiveCache()` called after an admin write.
-
-**Clock skew is handled, because it has to be.** Each viewer computes their own
-position, so a device whose clock is two minutes fast would watch two minutes
-ahead of the chat it is reading. Every live-status payload carries `serverTime`;
-`LiveContext` stores `serverTime - Date.now()` on each poll and adds it before
-subtracting `startedAt`. It re-measures every 30s, so it also self-corrects if the
-device clock is adjusted mid-service.
-
-**Runtime is resolved, not trusted.** `duration_seconds` comes from
-`contentDetails.duration` when the link is saved (`parseIsoDurationSeconds`), and
-is re-resolved on every save so editing the start time can't leave a stale one
-behind. It is *stored* rather than fetched per request because it is the only
-thing that says when to go off air, and it must keep working if the YouTube API
-key is missing or out of quota — which is exactly when the admin page offers a
-manual runtime field instead.
-
-**What `parseYouTubeId` has to get right.** Watch URLs, `youtu.be`, `/live/`,
-`/embed/`, `/shorts/`, bare ids, and — the case a loose regex fails — *channel*
-links. `youtube.com/@DestinyOnlineChurch` contains eleven plausible characters and
-must come back null rather than scheduling a broadcast of nothing. Pinned by
-`tests/unit/simulated-live.spec.ts`.
+(Before the on-site `/live` page and chat were retired this also layered a
+"simulated" broadcast underneath the real one; that is gone.)
 
 ---
 
@@ -5619,7 +5203,6 @@ export const PAGE_INTENTS = [
   { href: "/give", cta: "Give Now", intent: "giving, donations, bank details..." },
   { href: "/visit", cta: "Plan Your Visit", intent: "visiting, first time..." },
   { href: "/sermons", cta: "Watch Sermons", intent: "sermons, messages..." },
-  { href: "/live", cta: "Watch Live", intent: "livestream, live service, Sundays at 11am" },
   { href: "/shop", cta: "Browse Merch", intent: "shop, apparel, merch, buy" },
   { href: "/help", cta: "Help Centre", intent: "help, FAQ, questions" },
   // ... 17 more pages (kids, youth, Alpha, serve, connect, missions, etc.)
@@ -6082,8 +5665,7 @@ maps used by both the admin UI and the notification emails.
 `lib/adminRoles.ts`. A portal user's identity is "does this auth user have a
 linked `hr_staff` row", **not** an access-level boolean, and must never become
 one: conflating it with `admin_roles` would let "can see my own payslip" leak
-into "can manage HR". This mirrors `lib/liveChatAuth.ts`'s `readHost()` — the
-other place the app authorises an authenticated user outside `admin_roles`.
+into "can manage HR".
 
 - `isLinkedToStaff(supabase, authUserId)` — cheap boolean for `middleware.ts`.
 - `readPortalUser()` — returns `{ userId, staff }` or `null`; every `/api/portal/*`
@@ -6296,7 +5878,7 @@ remembered, so existing sessions aren't unexpectedly downgraded.
 
 Access levels live in `lib/adminRoles.ts` + the `admin_roles` table — eleven
 independent per-user booleans (`training_admin`, `event_admin`, `store_admin`,
-`site_admin`, `host`, `hr_admin`, `design_admin`, `sermon_admin`, `safeguarding_admin`,
+`site_admin`, `hr_admin`, `design_admin`, `sermon_admin`, `safeguarding_admin`,
 `destiny_one_admin`, `super_admin`; see [admin_roles](#10b-admin_roles)). Auth *and*
 role enforcement both happen centrally in `middleware.ts`, not in
 `app/admin/layout.tsx` (which is a client component purely responsible for the
@@ -6312,7 +5894,6 @@ always passes and isn't repeated per rule; anything under `/admin` or
 | `event_admin` | Courses (`alpha`, `recovery`, `bible-course`, `cap-money`, `featured-course`) + Announcements except Banner (`popup`, `featured-event`, `event-popup`, `nfc`) | `/api/admin/{alpha-events,events,featured-course,featured-event,popup,nfc}` |
 | `store_admin` | `/admin/store/**` | `/api/admin/{store,shop-hero}/**` |
 | `site_admin` | `/admin/posts`, `/admin/redirects`, `/admin/analytics` | `/api/admin/{posts,redirects,analytics}/**` |
-| `host` | `/admin/live-chat`, `/admin/live` | `/api/admin/live-chat/**`, `/api/admin/simulated-live/**` |
 | `hr_admin` | `/admin/hr/**` (staff, leave, jobs, applications, documents, reviews, checklists) | `/api/admin/hr/**` |
 | `design_admin` | `/admin/design/**` (the design ticket queue) | `/api/admin/design/**` |
 | `super_admin` | Everything, plus Banner, Clear Cache, `/admin/users` and `/admin/audit` | `/api/admin/{banner,revalidate,users,audit}/**` |
@@ -6398,11 +5979,6 @@ Reading it is Super Admin only, by omission from `ROUTE_RULES` rather than by a
 rule: the log spans every section, so any narrower grant would leak one team's
 activity to another. See [audit_log / audit_reports](#23-audit_log--audit_reports).
 
-> The `host` level is the first one that also governs a **public** page. `/live`
-> is not matched by `middleware.ts`, so the chat routes under `/api/live-chat`
-> authorise themselves via `lib/liveChatAuth.ts`; `ROUTE_RULES` only covers the
-> `/admin/live-chat` console. See [Live chat identity](#live-chat-identity-live).
-
 ##### The staff portal — a second auth boundary
 
 `/portal` and `/api/portal/*` (staff self-service — own profile, leave,
@@ -6413,8 +5989,7 @@ checked independently of `hasAccess()`. A signed-in admin with no staff record
 cannot reach the portal, and a staff member with no admin role cannot reach
 `/admin` — the two boundaries are deliberately orthogonal. Every `/api/portal/*`
 handler re-derives identity with `readPortalUser()` and scopes queries to that
-staff id, so the portal never trusts request state it can't verify itself. This
-is the same "authorise outside `admin_roles`" pattern as the Host on `/live`.
+staff id, so the portal never trusts request state it can't verify itself.
 
 #### Layer 1: Middleware (`middleware.ts`)
 ```typescript
@@ -6471,11 +6046,10 @@ grant execute on function public.my_fn(...) to service_role;
 ```
 
 A helper that an RLS policy calls runs as the querying role, so that role needs
-EXECUTE. Put it in the non-exposed `private` schema instead of `public` (see
-`private.is_live_chat_host()`). Trigger functions don't need the caller to hold
+EXECUTE. Put it in the non-exposed `private` schema instead of `public` . Trigger functions don't need the caller to hold
 EXECUTE. Run `get_advisors` (security) after any migration that adds a function:
 lints 0028/0029 flag definer functions that anon or authenticated can reach.
-Current examples: `decrement_variant_stock`, `live_chat_emit`, `live_chat_purge`.
+Current example: `decrement_variant_stock`.
 
 **Why two layers?**
 - **Defense in depth** — the middleware gate is the single source of truth for "is this
@@ -6501,38 +6075,6 @@ server-side limits instead:
   capped at 2000 chars, and the final message must be a user turn ≤300 chars. The
   per-request `ToolContext` also confines `extract_page` to URLs a prior `search_web` call
   in the same request actually returned.
-
----
-
-### Live chat identity (`/live`)
-
-Two different things sign in on the live page, and only one of them is an account.
-
-**Guests have no account at all.** A display name goes into `dc_live_guest`, an
-HMAC-signed HTTP-only cookie (`lib/liveChatGuest.ts`, same construction as
-`lib/trainingAccess.ts`). No email, no password, no `auth.users` row. It is
-*signed* for two reasons: a mute is applied to the guest id, so an unsigned
-cookie would just be edited to shed it; and the server needs an id it can trust
-to rate-limit on. Renaming keeps the id, so a mute survives a name change — the
-obvious first thing someone tries.
-
-The direct-message channel key is **derived**, not stored:
-`dmKeyFor(id) = HMAC(secret, "dm:" + id)`. The topic name is therefore itself the
-capability — unguessable without the server secret — and the key never appears in
-anything sent to another client.
-
-**Hosts are staff logins** with the `host` access level, signing in through
-`HostLoginModal` on the page itself rather than being redirected to `/login`.
-Same rate limit and Supabase password checks (`signInCore` in
-`app/login/actions.ts`).
-
-> The `host` role gates `/admin/live-chat` and `/admin/live` (Simulated Live)
-> through the normal `ROUTE_RULES`
-> table, but Hosts also act on `/live`, which is public and unmatched by
-> middleware. Those routes — `/api/live-chat/*` for moderation and
-> `/api/live-control/*` for running the broadcast — call `requireHost()` in
-> `lib/liveChatAuth.ts`, the single place that decides who someone is on the
-> public side.
 
 ---
 
@@ -6855,7 +6397,7 @@ YOUTUBE_API_KEY=AIza...
 YOUTUBE_CHANNEL_ID=UCxx...
 YOUTUBE_CHANNEL_HANDLE=DestinyOnlineChurch       # optional; overrides the CHANNEL_HANDLE constant (the @ name) for live detection
 YOUTUBE_CHANNEL_VANITY=destinychurchteesvalley   # optional; overrides the CHANNEL_VANITY constant (the custom URL)
-LIVE_DISABLED=                              # set to 1 to force the /live page and banner off air
+LIVE_DISABLED=                              # set to 1 to force the live banner off air
 
 # Buzzsprout (sermon podcast audio)
 BUZZSPROUT_API_TOKEN=<token from the Buzzsprout account's My Account page>   # /admin/sermons upload flow only — reading the feed needs no key
@@ -6899,7 +6441,6 @@ GITHUB_TOKEN=ghp_...
 
 # Cron bearer token — gates the jobs declared in vercel.json:
 #   /api/cron/analytics-anonymise    (daily 03:00) — anonymises engagement_events IPs
-#   /api/cron/live-chat-purge        (daily 04:00) — deletes chat history older than 7 days
 #   /api/cron/hr-review-reminders    (daily 06:00) — HR review digest to HR_NOTIFICATIONS_EMAIL
 #   /api/cron/audit-weekly-report    (Sun 20:00)   — AI admin-activity report to every Super
 #                                                    Admin, then the audit-log retention purge
@@ -7073,7 +6614,6 @@ ENABLE_SMART_SEARCH=true
 - `app/page.tsx` — Home (hero, latest sermon, CTAs)
 - `app/sermons/page.tsx` — Sermons (video-first featured message, video archive grid)
 - `app/sermons/[id]/page.tsx` — Sermon detail (video, next steps)
-- `app/live/page.tsx` — Livestream (hero + sections, with a client island for the glass player / off-air card)
 - `app/about/page.tsx` — About church
 - `app/beliefs/page.tsx` — Statement of faith
 - `app/kids/page.tsx` — Kids ministry
@@ -7123,7 +6663,6 @@ ENABLE_SMART_SEARCH=true
 - `app/admin/store/orders/page.tsx` — Orders list
 - `app/admin/store/orders/[id]/page.tsx` — Order detail (fulfillment)
 - `app/admin/store/hero/page.tsx` — Shop hero slides (add/edit/reorder rotating hero)
-- `app/admin/live/page.tsx` — Simulated Live (schedule a pre-recorded video to play on `/live` as a broadcast)
 - `app/admin/sermons/page.tsx` — Publish sermon audio to Buzzsprout; manage playlist-backed series; AI or manual speaker correction (Sermon Admin)
 - `app/admin/users/page.tsx` — Admin logins and access-level roles (Super Admin only)
 - `app/admin/audit/page.tsx` — Audit log: ask it in plain English, or search/filter and read the field-by-field detail. Second tab holds the weekly AI reports (Super Admin only)
@@ -7159,8 +6698,7 @@ ENABLE_SMART_SEARCH=true
     `auditEmail.ts` (the weekly report email)
   - Notification center: `notify.server.ts` (`recordNotification()`, the one
     writer — writes the row then Broadcasts it, never throws), `useNotifications.ts`
-    (the client bell hook — fetch + per-role Realtime subscription, mirroring
-    `useLiveChat.ts`)
+    (the client bell hook — fetch + per-role Realtime subscription)
   - Click analytics (`/admin/analytics`): `engagement.ts` (vocabulary + wire
     format), `engagement.server.ts` (`recordEngagement()`), `botDetect.ts`
     (crawler/device/OS/browser detection), `track.ts` (client `sendBeacon`),
@@ -7169,14 +6707,14 @@ ENABLE_SMART_SEARCH=true
     `useEngagementRollup.ts` (the fetch hook the page's tabs share)
 
 ### API Routes (`app/api/`)
-- **Admin endpoints:** Banners, redirects, pop-ups, cache revalidation, posts, training, alpha-events, featured-course, HR, store management, simulated live,
+- **Admin endpoints:** Banners, redirects, pop-ups, cache revalidation, posts, training, alpha-events, featured-course, HR, store management,
   plus `me` (signed-in identity + roles), `search` (role-filtered cross-section record search behind the ⌘K palette),
   `notifications` (the notification bell's feed: `GET` for the role-filtered list with the caller's read state folded in,
   `/[id]/read` and `/read-all` to mark read — every admin may call it and it narrows the rows itself, like `search`),
   `audit` (the audit log: list, `ask` for the plain-English answer, `reports` for the weekly ones — Super Admin only)
   and `analytics` (`engagement_rollup` for Short links/In person, `analytics/site` for the Vercel panel — Site Admin or Super Admin)
 - **Cron endpoints (`/api/cron/*`, `CRON_SECRET`-gated, scheduled in `vercel.json`):** `analytics-anonymise` (daily,
-  nulls old `engagement_events` IPs), `live-chat-purge` (daily), `hr-review-reminders` (daily),
+  nulls old `engagement_events` IPs), `hr-review-reminders` (daily),
   `audit-weekly-report` (Sunday evening — writes and emails the week's admin-activity report, then
   runs the audit-log retention purge and `purge_old_notifications()`), `ip-reputation-refresh` (weekly — refreshes the VPN/Tor/
   datacenter/Private-Relay range lists behind `engagement_events.ip_category`), `design-deliverables-purge`
@@ -7360,7 +6898,6 @@ A standalone **macOS app** (not part of the website deploy) that captions live a
   - Training resource library, standalone posts
   - Shop (products, variants, orders, hero slides) and RLS/security hardening passes
   - NFC tiles (the `/nfc` "digital back of seats" page, incl. event mode) and admin roles
-  - Live chat (sessions, messages, prayer requests, blocks) and simulated live
   - The admin audit log (`audit_log`) and its weekly AI reports (`audit_reports`)
   - Click analytics (`engagement_events`) — storage layer for shortlink / nfc /
     links engagement, with `security definer` rollup and IP-anonymise functions

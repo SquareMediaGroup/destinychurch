@@ -13,7 +13,7 @@
 // to run every night to keep the promise the privacy notice makes, and the
 // weekly report only runs on Sundays.
 //
-// Same shape as app/api/cron/live-chat-purge/route.ts: CRON_SECRET, fail
+// Same shape as app/api/cron/hr-review-reminders/route.ts: CRON_SECRET, fail
 // closed if it's unset, one RPC call, console summary.
 
 import { NextResponse } from "next/server";

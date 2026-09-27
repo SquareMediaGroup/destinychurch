@@ -10,6 +10,8 @@ import { Card, FloatingBack, LargeTitle, PickRow, SectionLabel } from "@/compone
 import { Icon } from "@/components/Icon";
 import { api } from "@/lib/api";
 import { registerForPush } from "@/lib/push";
+import { keys, updateGroupSummary } from "@/lib/queries";
+import { queryClient } from "@/lib/queryClient";
 import { errorMessage, useGroupSummary, useSession } from "@/state/session";
 import { ORANGE, useTheme } from "@/theme/tokens";
 
@@ -31,7 +33,7 @@ export default function NotificationSettings() {
   const t = useTheme();
   const insets = useSafeAreaInsets();
   const { groupId } = useLocalSearchParams<{ groupId?: string }>();
-  const { communities, refreshCommunities } = useSession();
+  const { communities } = useSession();
   const focus = useGroupSummary(groupId);
   const [allowed, setAllowed] = useState<boolean | null>(null);
   const [chosen, setChosen] = useState<MuteLabel | null>(null);
@@ -61,8 +63,10 @@ export default function NotificationSettings() {
     const prev = chosen;
     setChosen(label);
     try {
-      await api.mute(groupId, untilFor(MUTES.find((m) => m.label === label)!.hours));
-      await refreshCommunities();
+      const until = untilFor(MUTES.find((m) => m.label === label)!.hours);
+      await api.mute(groupId, until);
+      updateGroupSummary(groupId, (g) => ({ ...g, muted: until !== null }));
+      void queryClient.invalidateQueries({ queryKey: keys.group(groupId) });
     } catch (err) {
       setChosen(prev);
       Alert.alert("Couldn't change the mute", errorMessage(err));

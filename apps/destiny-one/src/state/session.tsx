@@ -2,23 +2,35 @@
 //
 //   session      Supabase auth session (null = signed out)
 //   me           D1Me from the BFF; drives routing via routeFor()
-//   communities  api.communities(), refreshed on focus, on foreground, and on
-//                d1-member:<id> events (added to / removed from a group)
+//   communities  the chat list
 //
-// Screens read from here rather than each fetching the chat list, so the
-// Chats, Groups, Notifications and Search screens always agree.
+// `me` and `communities` live in the app cache (src/lib/queryClient.ts), which
+// is saved on the device: after the first launch the app opens straight onto
+// the last known chat list, with no spinner and no skeleton. It then stays
+// current through Realtime (src/lib/realtime.ts → applyEvent), and only goes
+// back to the server to catch up on events it may have missed:
+//   - once per cold start (see RootLayout),
+//   - coming back to the app after more than CATCH_UP_AFTER_MS away,
+//   - the Realtime socket re-joining after a drop.
+// Switching tabs or opening a screen never re-fetches on its own.
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { AppState } from "react-native";
+import { useIsRestoring, useQuery } from "@tanstack/react-query";
 import type { Session } from "@supabase/supabase-js";
 import type { D1CommunitySummary, D1Me } from "@destiny/shared";
 import { canCreateGroup } from "@destiny/shared";
 import { api, D1ApiError } from "@/lib/api";
 import { signOut as authSignOut } from "@/lib/auth";
-import { subscribeToMe } from "@/lib/realtime";
+import { applyEvent, keys } from "@/lib/queries";
+import { clearCache, queryClient } from "@/lib/queryClient";
+import { startHub, type Hub } from "@/lib/realtime";
 import { supabase } from "@/lib/supabase";
 
 type Href = "/welcome" | "/request" | "/waiting" | "/notices" | "/chats";
+
+/** Away for longer than this and the app quietly checks for anything it missed. */
+const CATCH_UP_AFTER_MS = 30_000;
 
 /** Where someone belongs, from the server's view of them. */
 export function routeFor(me: D1Me | null): Href {
@@ -45,42 +57,60 @@ interface SessionValue {
   isLeader: boolean;
   communities: D1CommunitySummary[] | null;
   communitiesError: string | null;
+  /** Pull-to-refresh and "Try again". Everything else updates by itself. */
   refreshCommunities: () => Promise<void>;
   signOut: () => Promise<void>;
 }
 
 const Ctx = createContext<SessionValue | null>(null);
 
+async function fetchMe(): Promise<D1Me | null> {
+  try {
+    return await api.me();
+  } catch (err) {
+    if (err instanceof D1ApiError && err.code === "unauthenticated") {
+      await supabase.auth.signOut();
+      return null;
+    }
+    throw err;
+  }
+}
+
+/** Every cached entry goes stale; whatever is on screen re-fetches in the background. */
+function catchUp() {
+  void queryClient.invalidateQueries();
+}
+
 export function SessionProvider({ children }: { children: ReactNode }) {
-  const [ready, setReady] = useState(false);
+  const restoring = useIsRestoring();
+  const [authChecked, setAuthChecked] = useState(false);
   const [session, setSession] = useState<Session | null>(null);
-  const [me, setMe] = useState<D1Me | null>(null);
-  const [communities, setCommunities] = useState<D1CommunitySummary[] | null>(null);
-  const [communitiesError, setCommunitiesError] = useState<string | null>(null);
+
+  const meQuery = useQuery({ queryKey: keys.me, queryFn: fetchMe, enabled: !!session && !restoring });
+  const me = session ? (meQuery.data ?? null) : null;
   const meRef = useRef<D1Me | null>(null);
   meRef.current = me;
 
-  const refreshMe = useCallback(async () => {
-    try {
-      const next = await api.me();
-      setMe(next);
-      return next;
-    } catch (err) {
-      if (err instanceof D1ApiError && err.code === "unauthenticated") {
-        await supabase.auth.signOut();
-        setMe(null);
-      }
-      return null;
-    }
+  const active = me?.onboarding === "active" && me.outstandingConsents.length === 0;
+
+  const communitiesQuery = useQuery({ queryKey: keys.communities, queryFn: () => api.communities(), enabled: active && !restoring });
+  const communities = active ? (communitiesQuery.data ?? null) : null;
+  const communitiesError = communitiesQuery.error ? errorMessage(communitiesQuery.error, "Couldn't load your chats.") : null;
+
+  const setMe = useCallback((next: D1Me) => {
+    const previous = queryClient.getQueryData<D1Me | null>(keys.me);
+    // Someone else signed in on this device: nothing of theirs may show.
+    if (previous && previous.id !== next.id) void clearCache();
+    queryClient.setQueryData(keys.me, next);
   }, []);
 
+  const refreshMe = useCallback(
+    () => queryClient.fetchQuery({ queryKey: keys.me, queryFn: fetchMe, staleTime: 0 }).catch(() => null),
+    [],
+  );
+
   const refreshCommunities = useCallback(async () => {
-    try {
-      setCommunities(await api.communities());
-      setCommunitiesError(null);
-    } catch (err) {
-      setCommunitiesError(err instanceof Error ? err.message : "Couldn't load your chats.");
-    }
+    await queryClient.refetchQueries({ queryKey: keys.communities });
   }, []);
 
   // Auth session: restore on launch, follow sign-in / sign-out.
@@ -88,60 +118,63 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     let cancelled = false;
     supabase.auth
       .getSession()
-      .then(async ({ data }) => {
-        if (cancelled) return;
-        setSession(data.session);
-        if (data.session) await refreshMe();
-      })
+      .then(({ data }) => !cancelled && setSession(data.session))
       .catch(() => undefined) // unreadable keychain: treat as signed out
-      .finally(() => !cancelled && setReady(true));
+      .finally(() => !cancelled && setAuthChecked(true));
     const { data: sub } = supabase.auth.onAuthStateChange((_event, next) => {
       setSession(next);
-      if (!next) {
-        setMe(null);
-        setCommunities(null);
-      }
+      if (!next) void clearCache();
     });
     return () => {
       cancelled = true;
       sub.subscription.unsubscribe();
     };
-  }, [refreshMe]);
+  }, []);
 
-  const active = me?.onboarding === "active" && me.outstandingConsents.length === 0;
-
-  // Chat list + "you were added / removed" events, once fully onboarded.
+  // Realtime: one hub for the member topic and every group in the chat list.
+  const hub = useRef<Hub | null>(null);
+  const meId = me?.id;
   useEffect(() => {
-    if (!active || !me) return;
-    void refreshCommunities();
-    let unsubscribe: (() => void) | undefined;
-    let stopped = false;
-    subscribeToMe(me.id, () => void refreshCommunities()).then((fn) => {
-      if (stopped) fn();
-      else unsubscribe = fn;
-    });
+    if (!active || !meId) return;
+    const h = startHub(meId, (e) => applyEvent(e, meId), catchUp);
+    hub.current = h;
     return () => {
-      stopped = true;
-      unsubscribe?.();
+      h.stop();
+      hub.current = null;
     };
-  }, [active, me?.id, refreshCommunities]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [active, meId]);
 
-  // Coming back to the app: waiting members re-check approval (A6), active
-  // members refresh the chat list.
+  const groupIds = useMemo(() => (communities ?? []).flatMap((c) => c.groups.map((g) => g.id)).sort().join(","), [communities]);
   useEffect(() => {
+    hub.current?.setGroups(groupIds ? groupIds.split(",") : []);
+  }, [groupIds, active, meId]);
+
+  // Coming back to the app: waiting members re-check approval (A6); active
+  // members catch up on anything missed while the socket was asleep.
+  useEffect(() => {
+    let awaySince: number | null = null;
     const sub = AppState.addEventListener("change", (state) => {
-      if (state !== "active" || !meRef.current) return;
+      if (state !== "active") {
+        awaySince ??= Date.now();
+        return;
+      }
+      const away = awaySince === null ? 0 : Date.now() - awaySince;
+      awaySince = null;
+      if (!meRef.current) return;
       if (meRef.current.onboarding !== "active") void refreshMe();
-      else void refreshCommunities();
+      else if (away > CATCH_UP_AFTER_MS) catchUp();
     });
     return () => sub.remove();
-  }, [refreshMe, refreshCommunities]);
+  }, [refreshMe]);
 
   const signOut = useCallback(async () => {
     await authSignOut();
-    setMe(null);
-    setCommunities(null);
+    await clearCache();
   }, []);
+
+  // Ready once the cache is back from disk and we know who's signed in. With
+  // a saved `me` that's immediate; the first ever launch waits for the server.
+  const ready = authChecked && !restoring && (!session || meQuery.data !== undefined || meQuery.isFetched);
 
   const value = useMemo<SessionValue>(
     () => ({
@@ -157,7 +190,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       refreshCommunities,
       signOut,
     }),
-    [ready, session, me, refreshMe, communities, communitiesError, refreshCommunities, signOut],
+    [ready, session, me, setMe, refreshMe, communities, communitiesError, refreshCommunities, signOut],
   );
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;

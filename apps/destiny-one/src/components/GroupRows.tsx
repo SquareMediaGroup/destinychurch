@@ -29,7 +29,7 @@ export function previewParts(g: D1GroupSummary): { who: string; line: string; it
 }
 
 /** 1B "Cards" row: rounded-square avatar, count badge, one-line preview. */
-export function CardGroupRow({ group, onPress }: { group: D1GroupSummary; onPress: () => void }) {
+export function CardGroupRow({ group, onPress, onPressIn }: { group: D1GroupSummary; onPress: () => void; onPressIn?: () => void }) {
   const t = useTheme();
   const unread = group.unreadCount > 0;
   const frozen = group.state === "frozen";
@@ -48,6 +48,7 @@ export function CardGroupRow({ group, onPress }: { group: D1GroupSummary; onPres
   return (
     <Pressable
       onPress={onPress}
+      onPressIn={onPressIn}
       accessibilityRole="button"
       accessibilityLabel={label}
       style={({ pressed }) => ({ flexDirection: "row", alignItems: "center", gap: 12, paddingLeft: 14, backgroundColor: pressed ? t.fill : "transparent" })}

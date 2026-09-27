@@ -1,15 +1,17 @@
 // B6 Group info. Everyone: members, mute, search, leave. Leaders/admins
 // (canManage): the rules panel, Add people, manage members (C3), Edit (C4).
 
-import { useCallback, useState } from "react";
+import { useState } from "react";
 import { ActionSheetIOS, Alert, Platform, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
-import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { checkComposition, type D1GroupDetail, type D1GroupMember } from "@destiny/shared";
+import { checkComposition, type D1GroupMember } from "@destiny/shared";
 import { Icon, type IconName } from "@/components/Icon";
 import { AdminTag, Avatar, Bone, Card, CardButton, ConfirmDialog, ErrorState, FloatingBack, SectionLabel, SkeletonGroup, SkeletonRows } from "@/components/ui";
 import { api } from "@/lib/api";
 import { plural } from "@/lib/format";
+import { keys, removeGroupLocally, useGroup } from "@/lib/queries";
+import { queryClient } from "@/lib/queryClient";
 import { errorMessage, useSession } from "@/state/session";
 import { INK, ORANGE, useTheme } from "@/theme/tokens";
 
@@ -17,17 +19,15 @@ export default function GroupInfo() {
   const t = useTheme();
   const insets = useSafeAreaInsets();
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { me, communities, refreshCommunities } = useSession();
-  const [group, setGroup] = useState<D1GroupDetail | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const { me, communities } = useSession();
+  const groupQuery = useGroup(id);
+  const group = groupQuery.data ?? null;
+  const error = groupQuery.error ? errorMessage(groupQuery.error) : null;
   const [leaving, setLeaving] = useState(false);
   const [busy, setBusy] = useState(false);
 
-  const load = useCallback(() => {
-    setError(null);
-    api.group(id).then(setGroup, (err) => setError(errorMessage(err)));
-  }, [id]);
-  useFocusEffect(load);
+  // Also used after a leader changes a member, so the list updates without waiting for the Realtime event.
+  const load = () => void queryClient.refetchQueries({ queryKey: keys.group(id) });
 
   if (!group) {
     return (
@@ -182,9 +182,9 @@ export default function GroupInfo() {
           setBusy(true);
           try {
             await api.leaveGroup(group.id);
-            await refreshCommunities();
             setLeaving(false);
             router.dismissTo("/chats");
+            removeGroupLocally(group.id);
           } catch (err) {
             setLeaving(false);
             Alert.alert("Couldn't leave the group", errorMessage(err));

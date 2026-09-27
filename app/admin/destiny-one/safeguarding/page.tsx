@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useState } from "react";
+import type { D1MessageContent } from "@destiny/shared";
 import {
   PageHeader,
   Badge,
@@ -43,6 +44,7 @@ interface Report {
   message: {
     id: number;
     body: string | null;
+    content: D1MessageContent | null;
     created_at: string;
     deleted_at: string | null;
     deleted_by_admin: string | null;
@@ -218,7 +220,7 @@ export default function SafeguardingPage() {
                 {r.message && (
                   <blockquote className="rounded-xl bg-black/5 px-3 py-2 text-sm dark:bg-white/10">
                     <span className="font-bold">{r.message.sender?.display_name ?? "Former member"}:</span>{" "}
-                    {r.message.body ?? "(attachment)"}
+                    {r.message.body ?? (r.message.content ? contentText(r.message.content) : "(attachment)")}
                     {r.message.deleted_at && <Badge tone="grey">{r.message.deleted_by_admin ? "Removed by safeguarding" : "Deleted"}</Badge>}
                   </blockquote>
                 )}
@@ -277,6 +279,7 @@ interface Transcript {
   messages: {
     id: number;
     body: string | null;
+    content: D1MessageContent | null;
     created_at: string;
     deleted_at: string | null;
     sender: { display_name: string } | null;
@@ -354,6 +357,7 @@ function TranscriptModal({ group, onClose }: { group: { id: string; name: string
                     {m.deleted_at ? ` · deleted ${new Date(m.deleted_at).toLocaleString("en-GB")}` : ""}
                   </p>
                   {m.body && <p className="whitespace-pre-wrap">{m.body}</p>}
+                  {m.content && <p className="whitespace-pre-wrap italic">{contentText(m.content)}</p>}
                   {m.attachment && (
                     <p>
                       Attachment ({m.attachment.mime_type}){" "}
@@ -372,4 +376,10 @@ function TranscriptModal({ group, onClose }: { group: { id: string; name: string
       )}
     </Modal>
   );
+}
+
+/** Polls and events have no body; reviewers still need to read what was posted. */
+function contentText(content: D1MessageContent): string {
+  if (content.kind === "poll") return `Poll: ${content.poll.question} (${content.poll.options.map((o) => o.label).join(" / ")})`;
+  return `Event: ${content.event.name}`;
 }

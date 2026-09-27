@@ -5,7 +5,7 @@
 // the database reports in its own words).
 
 import { z } from "zod";
-import { ATTACHMENT_MIME_TYPES, MAX_ATTACHMENT_BYTES, MAX_MESSAGE_LENGTH } from "@destiny/shared";
+import { ATTACHMENT_MIME_TYPES, MAX_ATTACHMENT_BYTES, MAX_MESSAGE_LENGTH, MAX_POLL_OPTIONS, MAX_POLL_OPTION_LENGTH, MAX_POLL_QUESTION_LENGTH, MIN_POLL_OPTIONS } from "@destiny/shared";
 
 const uuid = z.string().uuid("That id isn't valid.").transform((s) => s.toLowerCase());
 const name = z.string().trim().min(1, "A name is required.").max(80, "Names can be up to 80 characters.");
@@ -75,13 +75,36 @@ export const updateGroupSchema = z
   })
   .refine((v) => Object.keys(v).length > 0, "Nothing to change.");
 
+export const pollDraftSchema = z.object({
+  question: z.string().trim().min(1, "Add a question.").max(MAX_POLL_QUESTION_LENGTH),
+  options: z
+    .array(z.string().trim().min(1).max(MAX_POLL_OPTION_LENGTH))
+    .min(MIN_POLL_OPTIONS, `Add at least ${MIN_POLL_OPTIONS} options.`)
+    .max(MAX_POLL_OPTIONS, `Polls can have up to ${MAX_POLL_OPTIONS} options.`),
+  allowMultiple: z.boolean(),
+});
+
+export const eventRefSchema = z.object({
+  seriesKey: z.string().trim().min(1).max(80),
+  slug: z.string().trim().min(1).max(200),
+});
+
 export const sendMessageSchema = z
   .object({
     body: z.string().max(MAX_MESSAGE_LENGTH, `Messages can be up to ${MAX_MESSAGE_LENGTH} characters.`).optional(),
     replyTo: z.number().int().positive().optional(),
     attachmentId: uuid.optional(),
+    poll: pollDraftSchema.optional(),
+    event: eventRefSchema.optional(),
   })
-  .refine((v) => Boolean(v.body?.trim()) || Boolean(v.attachmentId), "A message can't be empty.");
+  .refine(
+    (v) => Boolean(v.body?.trim()) || Boolean(v.attachmentId) || Boolean(v.poll) || Boolean(v.event),
+    "A message can't be empty.",
+  );
+
+export const voteSchema = z.object({
+  optionIds: z.array(z.string().trim().min(1).max(40)).max(20),
+});
 
 export const readSchema = z.object({ messageId: z.number().int().positive() });
 

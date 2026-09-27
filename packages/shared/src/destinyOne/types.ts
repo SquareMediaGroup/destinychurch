@@ -168,6 +168,75 @@ export interface D1Reaction {
   mine: boolean;
 }
 
+/**
+ * A ChurchSuite event, captured as of when it was shared into the chat. Not a
+ * live mirror of ChurchSuite — the card shows what the event looked like at
+ * send time, so a chat history doesn't retroactively change as the calendar
+ * is edited. Tapping the card always opens `webUrl`, which is live.
+ */
+export interface D1EventContent {
+  kind: "event";
+  event: {
+    seriesKey: string;
+    slug: string;
+    name: string;
+    startsAt: string;
+    location: string | null;
+    imageUrl: string | null;
+    webUrl: string;
+  };
+}
+
+export interface D1PollOption {
+  id: string;
+  label: string;
+}
+
+export interface D1PollTally {
+  optionId: string;
+  count: number;
+}
+
+export interface D1PollContent {
+  kind: "poll";
+  poll: {
+    id: string;
+    question: string;
+    options: D1PollOption[];
+    allowMultiple: boolean;
+    /** How many distinct members have voted at all. */
+    totalVoters: number;
+    votes: D1PollTally[];
+    /** This member's current choice(s). Empty if they haven't voted. */
+    myOptionIds: string[];
+  };
+}
+
+export type D1MessageContent = D1EventContent | D1PollContent;
+
+/** What the app sends to create a poll — the server mints option ids and tallies. */
+export interface D1PollDraft {
+  question: string;
+  options: string[];
+  allowMultiple: boolean;
+}
+
+/** What the app sends to attach an event — the server re-fetches and snapshots it. */
+export interface D1EventRef {
+  seriesKey: string;
+  slug: string;
+}
+
+/** A ChurchSuite event, as offered in the app's event picker. */
+export interface D1EventSummary {
+  seriesKey: string;
+  slug: string;
+  name: string;
+  startsAt: string;
+  location: string | null;
+  thumbnailUrl: string | null;
+}
+
 export interface D1Message {
   id: number;
   groupId: string;
@@ -176,6 +245,8 @@ export interface D1Message {
   body: string | null;
   replyTo: number | null;
   attachment: D1Attachment | null;
+  /** A poll or event embed. Independent of `body`/`attachment` — a message can carry just this. */
+  content: D1MessageContent | null;
   reactions: D1Reaction[];
   createdAt: string;
   deleted: boolean;
@@ -216,9 +287,10 @@ export interface D1UploadTicket {
 
 /** Realtime events on `d1-group:<id>` and `d1-member:<id>` (Broadcast). */
 export type D1RealtimeEvent =
-  | { event: "message"; payload: { id: number; groupId: string; sender: { id: string; displayName: string }; body: string | null; replyTo: number | null; attachmentId: string | null; createdAt: string } }
+  | { event: "message"; payload: { id: number; groupId: string; sender: { id: string; displayName: string }; body: string | null; replyTo: number | null; attachmentId: string | null; content: D1MessageContent | null; createdAt: string } }
   | { event: "message_deleted"; payload: { id: number; groupId: string } }
   | { event: "reaction"; payload: { messageId: number; groupId: string; memberId: string; emoji: string; added: boolean } }
+  | { event: "poll_vote"; payload: { messageId: number; groupId: string; votes: D1PollTally[]; totalVoters: number } }
   | { event: "members_changed"; payload: { groupId: string } }
   | { event: "group_state"; payload: { groupId: string; state: D1GroupState; reason: string | null } }
   | { event: "group_joined"; payload: { groupId: string } }

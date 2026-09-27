@@ -622,4 +622,37 @@ select pg_temp.check(
   not has_function_privilege('authenticated', 'public.d1_admin_delete_message(bigint, uuid)', 'execute'),
   'the takedown function is service-role only');
 
+-- ── Polls (part 7) ──────────────────────────────────────────────────────────
+
+insert into found select 'poll', public.d1_post_message(:adult3::uuid, (select v from ids where k = 'youth'), null, null, null,
+  '{"kind":"poll","poll":{"id":"p1","question":"Pizza or pasta?","options":[{"id":"o1","label":"Pizza"},{"id":"o2","label":"Pasta"}],"allowMultiple":false}}'::jsonb);
+select pg_temp.check(
+  (select body is null and content->>'kind' = 'poll' from public.d1_messages where id = (select v from found where k = 'poll')),
+  'a poll is a message with content and no body');
+select public.d1_vote(:minor1::uuid, (select v from found where k = 'poll'), array['o1']);
+select public.d1_vote(:minor1::uuid, (select v from found where k = 'poll'), array['o2']);
+select pg_temp.check(
+  (select array_agg(option_id) from public.d1_poll_votes where message_id = (select v from found where k = 'poll')) = array['o2'],
+  'changing a vote replaces it');
+select pg_temp.check(
+  exists (select 1 from realtime.messages where event = 'poll_vote'
+          and (payload->>'messageId')::bigint = (select v from found where k = 'poll')
+          and payload->>'groupId' = (select v from ids where k = 'youth')::text),
+  'votes are broadcast live with the group id');
+select pg_temp.expect_error(
+  format($$select public.d1_vote(%L, %L, array['o1','o2'])$$, :minor1, (select v from found where k = 'poll')),
+  'only allows one choice');
+select pg_temp.check(true, 'single-choice polls take one choice');
+select pg_temp.expect_error(
+  format($$select public.d1_vote(%L, %L, array['nope'])$$, :minor1, (select v from found where k = 'poll')),
+  'not an option');
+select pg_temp.check(true, 'you can only vote for options on the poll');
+select pg_temp.expect_error(
+  format($$select public.d1_vote(%L, %L, array['o1'])$$, :adult2, (select v from found where k = 'poll')),
+  'current members');
+select pg_temp.check(true, 'only current members can vote');
+select pg_temp.check(
+  not has_function_privilege('authenticated', 'public.d1_vote(uuid, bigint, text[])', 'execute'),
+  'voting is service-role only');
+
 \echo 'All Destiny One SQL checks passed.'

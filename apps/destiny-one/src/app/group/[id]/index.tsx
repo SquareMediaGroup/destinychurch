@@ -21,6 +21,8 @@ import { api } from "@/lib/api";
 import { hideSender, setOpenGroup } from "@/lib/queries";
 import { uploadAttachment } from "@/lib/upload";
 import { useConversation, type LocalMessage } from "@/lib/useConversation";
+import { eventPick, useEventPick } from "@/state/eventPick";
+import { pollDraft, usePollDraft } from "@/state/pollDraft";
 import { errorMessage, useGroupSummary, useSession } from "@/state/session";
 import { ORANGE, useTheme } from "@/theme/tokens";
 
@@ -65,6 +67,23 @@ export default function GroupChat() {
     const id = setTimeout(() => setToast(null), 3500);
     return () => clearTimeout(id);
   }, [toast]);
+
+  // A poll composed, or an event chosen, on the modal screens that opened
+  // from this one's attach sheet — sent as soon as it comes back.
+  const { sendPoll, sendEvent } = convo;
+  const draft = usePollDraft();
+  useEffect(() => {
+    if (!draft) return;
+    pollDraft.clear();
+    void sendPoll(draft).catch((err) => setToast(errorMessage(err, "Couldn't send the poll. Try again.")));
+  }, [draft, sendPoll]);
+
+  const chosenEvent = useEventPick();
+  useEffect(() => {
+    if (!chosenEvent) return;
+    eventPick.clear();
+    void sendEvent(chosenEvent).catch((err) => setToast(errorMessage(err, "Couldn't share the event. Try again.")));
+  }, [chosenEvent, sendEvent]);
 
   const name = group?.name ?? summary?.group.name ?? "";
   const isAnnouncements = (group?.kind ?? summary?.group.kind) === "announcements";
@@ -119,6 +138,8 @@ export default function GroupChat() {
       onCancelReply={() => setReplyTo(null)}
       onSend={sendText}
       onAttach={sendFile}
+      onAttachPoll={() => router.push(`/group/${id}/poll`)}
+      onAttachEvent={() => router.push(`/group/${id}/event-picker`)}
       onError={setToast}
     />
   );
@@ -166,6 +187,7 @@ export default function GroupChat() {
                 onLongPress={() => setActionFor(item.m)}
                 onOpenAttachment={(url) => void WebBrowser.openBrowserAsync(url)}
                 onToggleReaction={(emoji) => void convo.toggleReaction(item.m.id, emoji).catch((err) => setToast(errorMessage(err)))}
+                onVotePoll={(optionIds) => void convo.vote(item.m.id, optionIds).catch((err) => setToast(errorMessage(err)))}
                 onRetry={() =>
                   Alert.alert("Message not sent", undefined, [
                     { text: "Try again", onPress: () => void convo.retry(item.m.id) },

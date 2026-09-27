@@ -1,24 +1,29 @@
-// B1 Chats — variant 1C "Compact": communities as sticky glass headers that
-// collapse, one dense row per group with an unread dot.
+// B1 Chats — variant 1B "Cards and filters": All / Unread / Announcements
+// chips, then one card per community with "See all" to the community page.
 
 import { useCallback, useMemo, useState } from "react";
-import { Pressable, RefreshControl, SectionList, StyleSheet, Text, View } from "react-native";
+import { FlatList, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
 import { router, useFocusEffect } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import type { D1GroupSummary } from "@destiny/shared";
 import { GlassSurface } from "@/components/GlassSurface";
-import { CompactGroupRow, orderedGroups } from "@/components/GroupRows";
+import { CardGroupRow, orderedGroups } from "@/components/GroupRows";
 import { Icon } from "@/components/Icon";
-import { EmptyState, ErrorState, LargeTitle } from "@/components/ui";
-import { plural } from "@/lib/format";
+import { Card, EmptyState, ErrorState, LargeTitle, Separator } from "@/components/ui";
 import { useSession } from "@/state/session";
 import { ORANGE, useTheme } from "@/theme/tokens";
+
+type Filter = "all" | "unread" | "announcements";
+const FILTERS: { key: Filter; label: string }[] = [
+  { key: "all", label: "All" },
+  { key: "unread", label: "Unread" },
+  { key: "announcements", label: "Announcements" },
+];
 
 export default function Chats() {
   const t = useTheme();
   const insets = useSafeAreaInsets();
   const { communities, communitiesError, refreshCommunities, isLeader } = useSession();
-  const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
+  const [filter, setFilter] = useState<Filter>("all");
   const [refreshing, setRefreshing] = useState(false);
 
   useFocusEffect(
@@ -27,14 +32,16 @@ export default function Chats() {
     }, [refreshCommunities]),
   );
 
-  const sections = useMemo(
+  // A community with nothing left after filtering shows no card.
+  const cards = useMemo(
     () =>
-      (communities ?? []).map((c) => ({
-        key: c.id,
-        community: c,
-        data: collapsed[c.id] ? [] : orderedGroups(c),
-      })),
-    [communities, collapsed],
+      (communities ?? [])
+        .map((c) => ({
+          community: c,
+          groups: orderedGroups(c).filter((g) => (filter === "unread" ? g.unreadCount > 0 : filter === "announcements" ? g.kind === "announcements" : true)),
+        }))
+        .filter((x) => x.groups.length > 0),
+    [communities, filter],
   );
 
   const onRefresh = async () => {
@@ -58,6 +65,24 @@ export default function Chats() {
       </View>
       <LargeTitle style={{ paddingHorizontal: 20, paddingTop: 2, paddingBottom: 8 }}>Chats</LargeTitle>
       {communitiesError && communities ? <OfflineBanner /> : null}
+      {communities && communities.length > 0 ? (
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingTop: 6, paddingHorizontal: 16, paddingBottom: 4, gap: 8 }}>
+          {FILTERS.map((f) => {
+            const on = f.key === filter;
+            return (
+              <Pressable
+                key={f.key}
+                accessibilityRole="button"
+                accessibilityState={{ selected: on }}
+                onPress={() => setFilter(f.key)}
+                style={{ height: 34, borderRadius: 17, paddingHorizontal: 15, justifyContent: "center", backgroundColor: on ? t.text : t.fill }}
+              >
+                <Text style={{ fontSize: 15, fontWeight: "600", color: on ? t.bg : t.text }}>{f.label}</Text>
+              </Pressable>
+            );
+          })}
+        </ScrollView>
+      ) : null}
     </View>
   );
 
@@ -70,40 +95,40 @@ export default function Chats() {
     );
   }
 
+  const empty =
+    communities.length === 0 ? (
+      <EmptyState title="No chats yet" body="You're not in any groups yet. Your team leader will add you." />
+    ) : (
+      <EmptyState title={filter === "unread" ? "All caught up" : "No announcements"} body={filter === "unread" ? "You've read everything." : "None of your communities have announcements."} />
+    );
+
   return (
-    <SectionList
+    <FlatList
       style={{ flex: 1, backgroundColor: t.bg }}
       contentContainerStyle={{ paddingBottom: 120 }}
-      sections={sections}
-      keyExtractor={(g: D1GroupSummary) => g.id}
-      stickySectionHeadersEnabled
+      data={cards}
+      keyExtractor={(x) => x.community.id}
       ListHeaderComponent={header}
-      ListEmptyComponent={<EmptyState title="No chats yet" body="You're not in any groups yet. Your team leader will add you." />}
+      ListEmptyComponent={empty}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={ORANGE} />}
-      renderSectionHeader={({ section }) => {
-        const c = section.community;
-        const isCollapsed = !!collapsed[c.id];
-        const unread = c.groups.reduce((n, g) => n + g.unreadCount, 0);
-        return (
-          <Pressable
-            accessibilityRole="button"
-            accessibilityState={{ expanded: !isCollapsed }}
-            accessibilityLabel={`${c.name}, ${plural(c.groups.length, "group")}${isCollapsed && unread ? `, ${unread} unread` : ""}`}
-            onPress={() => setCollapsed((s) => ({ ...s, [c.id]: !s[c.id] }))}
-          >
-            <GlassSurface style={{ flexDirection: "row", alignItems: "center", gap: 6, paddingTop: 12, paddingBottom: 8, paddingHorizontal: 20, borderRadius: 0, borderWidth: 0 }}>
-              <Text style={{ fontSize: 13, fontWeight: "600", color: t.muted }}>{c.name}</Text>
-              <Text style={{ fontSize: 13, color: t.subtle }}>· {plural(c.groups.length, "group")}</Text>
-              <View style={{ flex: 1 }} />
-              {isCollapsed && unread > 0 ? <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: ORANGE }} /> : null}
-              <View style={{ transform: [{ rotate: isCollapsed ? "-90deg" : "0deg" }] }}>
-                <Icon name="chevronDown" size={13} color={t.subtle} strokeWidth={2.6} />
+      renderItem={({ item: { community: c, groups } }) => (
+        <View style={{ paddingTop: 18, paddingHorizontal: 16 }}>
+          <View style={{ flexDirection: "row", alignItems: "baseline", justifyContent: "space-between", paddingHorizontal: 4, paddingBottom: 8 }}>
+            <Text numberOfLines={1} style={{ flex: 1, fontSize: 15, fontWeight: "600", color: t.muted }}>{c.name}</Text>
+            <Pressable accessibilityRole="button" accessibilityLabel={`See all in ${c.name}`} onPress={() => router.push(`/community/${c.id}`)} hitSlop={8}>
+              <Text style={{ fontSize: 15, color: t.tint }}>See all</Text>
+            </Pressable>
+          </View>
+          <Card shadow>
+            {groups.map((g, i) => (
+              <View key={g.id}>
+                {i > 0 ? <Separator inset={70} /> : null}
+                <CardGroupRow group={g} onPress={() => router.push(`/group/${g.id}`)} />
               </View>
-            </GlassSurface>
-          </Pressable>
-        );
-      }}
-      renderItem={({ item }) => <CompactGroupRow group={item} onPress={() => router.push(`/group/${item.id}`)} />}
+            ))}
+          </Card>
+        </View>
+      )}
     />
   );
 }

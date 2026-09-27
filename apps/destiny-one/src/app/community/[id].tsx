@@ -91,7 +91,7 @@ export default function Community() {
             await api.leaveCommunity(id);
             await refreshCommunities();
             setLeaving(false);
-            router.dismissTo("/groups");
+            router.dismissTo("/chats");
           } catch (err) {
             setLeaving(false);
             Alert.alert("Couldn't leave the community", errorMessage(err));

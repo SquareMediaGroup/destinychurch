@@ -6872,11 +6872,12 @@ same database as the data rather than in a separate Synapse module.
   the dev Mac, so it has only been checked with `expo export` and a web preview on mock data.
 - **Routes (`src/app/`):** `index` (launch gate → `routeFor(me)`), `welcome` (A1), `email` (A2),
   `code` (A3), `request` (A5), `waiting` (A6–A8, copy from `me.onboardingMessage`), `notices` (A9),
-  `(tabs)/{chats,groups,settings}` with a floating glass tab bar, `group/[id]` (B3 conversation),
+  `(tabs)/{chats,find,settings}` with a floating glass tab bar (Chats / Search / Settings; there's no
+  Groups tab, since Chats already shows every community and "See all" opens `community/[id]`), `group/[id]` (B3 conversation),
   `group/[id]/info` (B6; leaders: rules panel, make admin / remove), `group/[id]/edit` (C4),
   `community/[id]` (B2), `new-group` (C1, modal), `add-people` (C2; `?groupId` adds to a group,
-  `?communityId` picks for New group), `notifications` (D2 + per-group mute), `search` (groups
-  and messages), `report` + `report-sent` (B5), `chat-safety`,
+  `?communityId` picks for New group), `notifications` (D2 + per-group mute), `search` (full-screen search opened from a chat; the
+  Search tab `(tabs)/find` uses the same `SearchView` component), `report` + `report-sent` (B5), `chat-safety`,
   `delete-account` (D3, type DELETE).
 - **State:** `src/state/session.tsx` (auth session, `me`, the shared communities list refreshed on
   focus / foreground / `d1-member:*` events, `routeFor`, `errorMessage`); `src/state/picker.ts`
@@ -6886,7 +6887,7 @@ same database as the data rather than in a separate Synapse module.
   (the rotating orange **beam** border on primary buttons and focused fields — a spinning linear
   gradient in a clipped frame, since RN has no conic-gradient — plus buttons, fields, cards,
   dialogs, and pulsing loading skeletons — `SkeletonGroup`, `Bone`, `SkeletonRows` — used by
-  Chats, Groups, Community, Group info and Edit group while data loads), `Icon.tsx` (the design's line icons via `react-native-svg`), `MessageBubble.tsx`,
+  Chats, Community, Group info and Edit group while data loads), `Icon.tsx` (the design's line icons via `react-native-svg`), `MessageBubble.tsx`,
   `MessageActions.tsx` (long-press sheet), `Composer.tsx`, `NotificationPrompt.tsx` (A10, asked once
   on first group open), `SafetyNotice.tsx`.
 - **Search** (`search` route): groups from the cached list, plus messages via `GET /search/messages`

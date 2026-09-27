@@ -2,7 +2,7 @@
 // chips, then one card per community with "See all" to the community page.
 
 import { useCallback, useMemo, useState } from "react";
-import { FlatList, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
+import { FlatList, Pressable, RefreshControl, ScrollView, Text, View } from "react-native";
 import { router, useFocusEffect } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { GlassSurface } from "@/components/GlassSurface";
@@ -53,15 +53,11 @@ export default function Chats() {
   const header = (
     <View style={{ paddingTop: insets.top }}>
       <View style={{ height: 52, flexDirection: "row", alignItems: "center", justifyContent: "flex-end", paddingHorizontal: 16 }}>
-        <GlassSurface style={[{ height: 44, borderRadius: 22, flexDirection: "row", alignItems: "center", paddingHorizontal: 4 }, t.shadow]}>
-          <HeaderIcon icon="search" label="Search" onPress={() => router.push("/search")} />
-          {isLeader ? (
-            <>
-              <View style={{ width: StyleSheet.hairlineWidth, height: 20, backgroundColor: t.sep }} />
-              <HeaderIcon icon="plus" label="New group" onPress={() => router.push("/new-group")} />
-            </>
-          ) : null}
-        </GlassSurface>
+        {isLeader ? (
+          <GlassSurface style={[{ height: 44, borderRadius: 22, flexDirection: "row", alignItems: "center", paddingHorizontal: 4 }, t.shadow]}>
+            <HeaderIcon icon="plus" label="New group" onPress={() => router.push("/new-group")} />
+          </GlassSurface>
+        ) : null}
       </View>
       <LargeTitle style={{ paddingHorizontal: 20, paddingTop: 2, paddingBottom: 8 }}>Chats</LargeTitle>
       {communitiesError && communities ? <OfflineBanner /> : null}
@@ -133,7 +129,7 @@ export default function Chats() {
   );
 }
 
-function HeaderIcon({ icon, label, onPress }: { icon: "search" | "plus"; label: string; onPress: () => void }) {
+function HeaderIcon({ icon, label, onPress }: { icon: "plus"; label: string; onPress: () => void }) {
   const t = useTheme();
   return (
     <Pressable accessibilityRole="button" accessibilityLabel={label} onPress={onPress} style={({ pressed }) => ({ width: 40, height: 40, alignItems: "center", justifyContent: "center", opacity: pressed ? 0.5 : 1 })}>

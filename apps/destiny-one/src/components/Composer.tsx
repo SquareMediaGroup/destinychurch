@@ -1,10 +1,12 @@
-// The message composer: attach (image or PDF, 20 MB), a glass text field that
-// lights up with the beam while focused, the reply bar, and the send button
-// that swaps in for the attach shortcut once there's text.
+// The message composer: attach (image or PDF, 20 MB) from files or the photo
+// library, take a photo with the camera, a glass text field that lights up
+// with the beam while focused, the reply bar, and the send button that swaps
+// in for the attach shortcut once there's text.
 
 import { forwardRef, useState } from "react";
-import { Pressable, Text, TextInput, View } from "react-native";
+import { Alert, Pressable, Text, TextInput, View } from "react-native";
 import * as DocumentPicker from "expo-document-picker";
+import * as ImagePicker from "expo-image-picker";
 import { ATTACHMENT_MIME_TYPES, MAX_ATTACHMENT_BYTES, MAX_MESSAGE_LENGTH } from "@destiny/shared";
 import { GlassSurface } from "@/components/GlassSurface";
 import { Icon } from "@/components/Icon";
@@ -32,12 +34,8 @@ export const Composer = forwardRef<TextInput, Props>(function Composer({ replyin
   const [focused, setFocused] = useState(false);
   const hasText = draft.trim().length > 0;
 
-  async function pick() {
-    const res = await DocumentPicker.getDocumentAsync({ type: [...ATTACHMENT_MIME_TYPES], copyToCacheDirectory: true, multiple: false });
-    if (res.canceled || !res.assets[0]) return;
-    const a = res.assets[0];
-    const mimeType = a.mimeType ?? "";
-    if (!(ATTACHMENT_MIME_TYPES as readonly string[]).includes(mimeType)) {
+  function acceptAsset(a: { uri: string; name: string; mimeType: string; size: number | null }) {
+    if (!(ATTACHMENT_MIME_TYPES as readonly string[]).includes(a.mimeType)) {
       onError("You can send photos and PDFs.");
       return;
     }
@@ -45,7 +43,50 @@ export const Composer = forwardRef<TextInput, Props>(function Composer({ replyin
       onError("Files can be up to 20 MB.");
       return;
     }
-    onAttach({ uri: a.uri, name: a.name, mimeType, size: a.size ?? null });
+    onAttach(a);
+  }
+
+  async function pickFile() {
+    const res = await DocumentPicker.getDocumentAsync({ type: [...ATTACHMENT_MIME_TYPES], copyToCacheDirectory: true, multiple: false });
+    if (res.canceled || !res.assets[0]) return;
+    const a = res.assets[0];
+    acceptAsset({ uri: a.uri, name: a.name, mimeType: a.mimeType ?? "", size: a.size ?? null });
+  }
+
+  function imagePickerAsset(a: ImagePicker.ImagePickerAsset, fallbackName: string) {
+    const mimeType = a.mimeType ?? (a.uri.toLowerCase().endsWith(".png") ? "image/png" : "image/jpeg");
+    acceptAsset({ uri: a.uri, name: a.fileName ?? fallbackName, mimeType, size: a.fileSize ?? null });
+  }
+
+  async function pickPhoto() {
+    const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!perm.granted) {
+      onError("Allow photo library access to send a photo.");
+      return;
+    }
+    const res = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ["images"], quality: 0.9 });
+    if (res.canceled || !res.assets[0]) return;
+    imagePickerAsset(res.assets[0], "Photo.jpg");
+  }
+
+  async function takePhoto() {
+    const perm = await ImagePicker.requestCameraPermissionsAsync();
+    if (!perm.granted) {
+      onError("Allow camera access to take a photo.");
+      return;
+    }
+    const res = await ImagePicker.launchCameraAsync({ quality: 0.9 });
+    if (res.canceled || !res.assets[0]) return;
+    imagePickerAsset(res.assets[0], "Photo.jpg");
+  }
+
+  function pick() {
+    Alert.alert("Add to message", undefined, [
+      { text: "Take Photo", onPress: () => void takePhoto() },
+      { text: "Choose Photo", onPress: () => void pickPhoto() },
+      { text: "Choose File", onPress: () => void pickFile() },
+      { text: "Cancel", style: "cancel" },
+    ]);
   }
 
   function send() {
@@ -102,7 +143,7 @@ export const Composer = forwardRef<TextInput, Props>(function Composer({ replyin
                 <Icon name="send" size={17} color={INK} strokeWidth={2.8} />
               </Pressable>
             ) : (
-              <Pressable onPress={pick} accessibilityLabel="Attach a photo" style={{ width: 33, height: 33, alignItems: "center", justifyContent: "center" }}>
+              <Pressable onPress={() => void takePhoto()} accessibilityRole="button" accessibilityLabel="Take a photo" style={{ width: 33, height: 33, alignItems: "center", justifyContent: "center" }}>
                 <Icon name="camera" size={21} color={t.subtle} strokeWidth={1.9} />
               </Pressable>
             )}

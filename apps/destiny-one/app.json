@@ -38,6 +38,13 @@
       "expo-secure-store",
       "expo-web-browser",
       [
+        "expo-image-picker",
+        {
+          "cameraPermission": "Destiny One uses the camera so you can take a photo to send in a chat.",
+          "photosPermission": "Destiny One uses your photos so you can send one in a chat."
+        }
+      ],
+      [
         "expo-notifications",
         {
           "defaultChannel": "messages"

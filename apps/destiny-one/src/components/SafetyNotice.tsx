@@ -8,10 +8,10 @@ import { config } from "@/lib/config";
 import { useTheme } from "@/theme/tokens";
 
 export const SAFETY_POINTS = [
-  "Chats are not end-to-end encrypted. The safeguarding team can review them if a concern is raised.",
-  "Deleted messages are kept for a time, in case they're needed for safeguarding.",
-  "Every group has at least 2 adults. If a group drops below that, it pauses until the rule is met again.",
-  "Notifications show the sender and the first line of a message, so they can appear on your lock screen. You can mute any group.",
+  "Every group always has at least 2 adults in it, so no one is ever chatting alone.",
+  "Chats aren't end-to-end encrypted, so our safeguarding team can step in if something doesn't look right — that's what keeps everyone protected here.",
+  "If a message is deleted, we keep a copy for a little while in case it's ever needed for a safeguarding check.",
+  "Notification previews show who messaged you and the start of what they said. You can turn this off any time by muting a group.",
 ];
 
 export function openDocument(doc: "privacy" | "terms") {

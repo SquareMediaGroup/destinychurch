@@ -10,6 +10,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { D1GroupDetail, D1Me, D1Message } from "@destiny/shared";
 import { api } from "@/lib/api";
+import { readCachedConversation, writeCachedConversation } from "@/lib/messageCache";
 import { subscribeToGroup } from "@/lib/realtime";
 import { errorMessage } from "@/state/session";
 
@@ -45,6 +46,12 @@ export function useConversation(groupId: string, me: D1Me | null) {
   const lastRead = useRef(0);
   const meId = me?.id;
 
+  // Keep the on-device cache fresh so the next open of this chat is instant.
+  useEffect(() => {
+    if (!group || !messages) return;
+    writeCachedConversation(groupId, { group, messages: messages.filter((m) => m.id > 0), nextBefore });
+  }, [groupId, group, messages, nextBefore]);
+
   const loadGroup = useCallback(async () => {
     try {
       setGroup(await api.group(groupId));
@@ -70,11 +77,18 @@ export function useConversation(groupId: string, me: D1Me | null) {
     }
   }, [groupId]);
 
-  // Initial load: group + latest page, then work out where "New messages" goes.
+  // Initial load: show the cached copy at once (no spinner on a re-open),
+  // then fetch group + latest page and work out where "New messages" goes.
   useEffect(() => {
     let cancelled = false;
     setGroup(null);
     setMessages(null);
+    readCachedConversation(groupId).then((cached) => {
+      if (cancelled || !cached) return;
+      setGroup(cached.group);
+      setMessages(cached.messages);
+      setNextBefore(cached.nextBefore);
+    });
     Promise.all([api.group(groupId), api.messages(groupId, { limit: PAGE })])
       .then(([g, page]) => {
         if (cancelled) return;

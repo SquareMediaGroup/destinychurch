@@ -179,7 +179,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const userEmail = session?.user.email ?? null;
   useEffect(() => {
     if (switching || !me || !userId) return;
-    void accounts.recordAccount(activeSlot, { userId, memberId: me.id, email: userEmail, displayName: me.displayName, avatarUrl: me.avatarUrl });
+    void accounts.recordAccount(activeSlot, { userId, memberId: me.id, email: userEmail, displayName: me.displayName, avatarUrl: me.avatarUrl, isAdult: me.isAdult });
   }, [switching, me, userId, userEmail, activeSlot]);
 
   // Realtime: one hub for the member topic and every group in the chat list.
@@ -289,7 +289,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       }
       busy.current = true;
       try {
-        await accounts.recordAccount(slot, { userId: user.id, memberId: next.id, email: user.email ?? null, displayName: next.displayName, avatarUrl: next.avatarUrl });
+        await accounts.recordAccount(slot, { userId: user.id, memberId: next.id, email: user.email ?? null, displayName: next.displayName, avatarUrl: next.avatarUrl, isAdult: next.isAdult });
         await runSwitch(slot, next);
       } finally {
         busy.current = false;

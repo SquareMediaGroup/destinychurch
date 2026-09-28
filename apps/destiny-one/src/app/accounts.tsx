@@ -24,7 +24,7 @@ export default function Accounts() {
       return;
     }
     if (opening) return;
-    if (!(await confirmOwner(account.displayName))) return;
+    if (!(await confirmOwner(account.displayName, account.slot))) return;
     setOpening(account.slot);
     try {
       await switchTo(account.slot);

@@ -84,6 +84,9 @@ Under the name card, a row "Add account" opens a sheet with two choices:
   each with a checkmark if selected. The default Send tap always sends as the active account.
 - Choosing an account fires `haptic.selection()` and sends that message as that account, then
   `haptic.sent()`. It does not switch the active account and does not change which chat is open.
+- Owner ruling 2026-09-28: send-as works for member and admin accounts, never child accounts. A child
+  account (labelled child, or simply under 18) is never offered in the menu, and holding Send from a
+  child account does nothing.
 - Only accounts that are current members of this group are offered (membership checked against that
   account's own `me`/communities cache; the server still enforces it, because the message is posted with
   that account's own access token). If no other account is a member, the hold does nothing.
@@ -92,8 +95,7 @@ Under the name card, a row "Add account" opens a sheet with two choices:
   The sent message is then applied to the target account's cache (message list for that group) and shows in
   the current view as sent by that account's sender name.
 - Audit and safeguarding: authorship is the true sender account, so reports, transcripts and the 2-adult
-  rule behave exactly as if that account sent from its own phone. A sent-as message from a child account
-  is possible by a parent holding both accounts. That is a safeguarding-lead decision (see open decisions).
+  rule behave exactly as if that account sent from its own phone.
 - Not offered for polls/events/attachments in v1 (text and photo/PDF only if the existing send path takes an
   arbitrary token; otherwise text only, decided during planning by reading `useConversation`).
 
@@ -145,9 +147,7 @@ token. Documented so nobody expects a badge for an inactive account.
 
 ## Open decisions for the owner
 
-1. Send-as from a child account by a parent: allowed, or block sending as an account where `isAdult` is
-   false? Recommended: ask the safeguarding lead; default here is allowed since authorship is the true
-   account, but it is easy to restrict.
-2. Face ID grace window (60 s) versus prompting on every switch.
+1. ~~Send-as from a child account~~ Decided: not allowed; admin accounts are.
+2. ~~Face ID grace window~~ Decided: Face ID on double press, but not every time (60 s grace).
 3. Passkey relying-party domain (blocks phase 2 only).
-4. Close PR #35 in favour of this branch, or merge #35 first and rebase.
+4. ~~PR #35~~ Decided: merge #35 first (after resolving its conflicts with main), then build on it.

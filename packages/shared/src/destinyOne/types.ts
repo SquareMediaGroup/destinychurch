@@ -8,7 +8,12 @@
 // dates of birth. The app never receives another person's contact details.
 
 export type D1MemberStatus = "pending" | "active" | "suspended" | "deleted";
-export type D1LeaderRole = "group_leader" | "senior_leadership";
+/**
+ * Account-level leader roles. All three carry the same powers (create groups and
+ * communities, search the directory); they differ only in the tag shown beside
+ * the person's name in chats and on their profile.
+ */
+export type D1LeaderRole = "admin" | "cg_leader" | "senior_leader";
 export type D1MembershipRole = "admin" | "member";
 export type D1GroupKind = "announcements" | "group";
 export type D1GroupState = "active" | "frozen" | "archived";
@@ -142,6 +147,8 @@ export interface D1GroupMember {
   id: string;
   displayName: string;
   role: D1MembershipRole;
+  /** Their tag in chats: the highest of their account roles, or null for an ordinary member. */
+  tag: D1LeaderRole | null;
   joinedAt: string;
   /** Only sent to people who can manage the group, who need it to keep the 2-adult rule. */
   isAdult?: boolean;

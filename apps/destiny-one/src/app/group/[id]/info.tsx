@@ -7,7 +7,7 @@ import { router, useLocalSearchParams } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { checkComposition, type D1GroupMember } from "@destiny/shared";
 import { Icon, type IconName } from "@/components/Icon";
-import { AdminTag, Avatar, Bone, Card, CardButton, ConfirmDialog, ErrorState, FloatingBack, SectionLabel, SkeletonGroup, SkeletonRows } from "@/components/ui";
+import { MemberTag, Avatar, Bone, Card, CardButton, ConfirmDialog, ErrorState, FloatingBack, SectionLabel, SkeletonGroup, SkeletonRows } from "@/components/ui";
 import { api } from "@/lib/api";
 import { plural } from "@/lib/format";
 import { keys, removeGroupLocally, useGroup } from "@/lib/queries";
@@ -104,7 +104,7 @@ export default function GroupInfo() {
     <View style={{ flex: 1, backgroundColor: t.grouped }}>
       <ScrollView contentContainerStyle={{ paddingTop: insets.top + 56, paddingHorizontal: 16, paddingBottom: 40, gap: 20 }}>
         <View style={{ alignItems: "center", gap: 10 }}>
-          <Avatar name={group.name} size={92} announcements={isAnnouncements} />
+          <Avatar name={group.name} size={92} announcements={isAnnouncements} group />
           <View style={{ alignItems: "center", gap: 3 }}>
             <Text style={{ fontSize: 26, fontWeight: "700", letterSpacing: 0.2, color: t.text, textAlign: "center" }}>{group.name}</Text>
             <Text style={{ fontSize: 15, color: t.muted }}>{[group.department ?? community?.name, plural(group.members.length, "member")].filter(Boolean).join(" · ")}</Text>
@@ -150,7 +150,7 @@ export default function GroupInfo() {
                     {m.displayName}
                     {m.id === me?.id ? " (You)" : ""}
                   </Text>
-                  {m.role === "admin" ? <AdminTag /> : null}
+                  <MemberTag tag={m.tag} groupAdmin={m.role === "admin"} />
                   {m.isAdult !== undefined ? <Text style={{ fontSize: 13, color: m.isAdult ? t.subtle : t.tint }}>{m.isAdult ? "Adult" : "Under 18"}</Text> : null}
                 </View>
               </Pressable>

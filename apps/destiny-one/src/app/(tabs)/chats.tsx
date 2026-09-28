@@ -138,7 +138,7 @@ export default function Chats() {
   return (
     <FlatList
       style={{ flex: 1, backgroundColor: t.bg }}
-      contentContainerStyle={{ paddingBottom: 120 }}
+      contentContainerStyle={{ paddingBottom: 110 }}
       data={cards}
       keyExtractor={(x) => x.community.id}
       ListHeaderComponent={header}

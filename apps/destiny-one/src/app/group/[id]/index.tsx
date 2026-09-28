@@ -57,6 +57,7 @@ export default function GroupChat() {
   const rows = useMemo(() => (messages ? buildRows(messages, firstUnreadId).reverse() : []), [messages, firstUnreadId]);
   const byId = useMemo(() => new Map((messages ?? []).map((m) => [m.id, m])), [messages]);
   const admins = useMemo(() => new Set((group?.members ?? []).filter((m) => m.role === "admin").map((m) => m.id)), [group]);
+  const tags = useMemo(() => new Map((group?.members ?? []).map((m) => [m.id, m.tag])), [group]);
 
   // While on screen, new messages here aren't unread.
   useFocusEffect(
@@ -208,7 +209,8 @@ export default function GroupChat() {
               <MessageBubble
                 row={item}
                 replyTo={item.m.replyTo ? byId.get(item.m.replyTo) ?? null : null}
-                senderIsAdmin={!!item.m.sender && admins.has(item.m.sender.id)}
+                senderTag={(item.m.sender && tags.get(item.m.sender.id)) || null}
+                senderIsGroupAdmin={!!item.m.sender && admins.has(item.m.sender.id)}
                 canReply={!!group?.canPost && !frozen && !archived}
                 onReply={() => startReply(item.m)}
                 onLongPress={() => setActionFor(item.m)}
@@ -248,7 +250,7 @@ export default function GroupChat() {
         <Pressable accessibilityRole="button" accessibilityLabel={`${name}, group info`} onPress={() => router.push(`/group/${id}/info`)} style={{ flexShrink: 1, marginHorizontal: 8 }}>
           {({ pressed }) => (
             <GlassSurface interactive style={[{ height: 48, maxWidth: 240, borderRadius: 24, flexDirection: "row", alignItems: "center", gap: 10, paddingLeft: 6, paddingRight: 16, opacity: pressed ? 0.8 : 1 }, t.shadow]}>
-              <Avatar name={name} size={36} announcements={isAnnouncements} />
+              <Avatar name={name} size={36} announcements={isAnnouncements} group />
               <View style={{ flexShrink: 1, minWidth: 0 }}>
                 <Text numberOfLines={1} style={{ fontSize: 15, fontWeight: "600", color: t.text }}>
                   {name}

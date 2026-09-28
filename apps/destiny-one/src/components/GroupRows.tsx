@@ -53,7 +53,7 @@ export function CardGroupRow({ group, onPress, onPressIn }: { group: D1GroupSumm
       accessibilityLabel={label}
       style={({ pressed }) => ({ flexDirection: "row", alignItems: "center", gap: 12, paddingLeft: 14, backgroundColor: pressed ? t.fill : "transparent" })}
     >
-      <Avatar name={group.name} size={44} radius={14} announcements={group.kind === "announcements"} />
+      <Avatar name={group.name} size={44} radius={14} announcements={group.kind === "announcements"} group />
       <View style={{ flex: 1, minWidth: 0, gap: 1, paddingVertical: 12, paddingRight: 14 }}>
         <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
           <Text numberOfLines={1} style={{ flex: 1, fontSize: 16, fontWeight: "600", color: t.text }}>

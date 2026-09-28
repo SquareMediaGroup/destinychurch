@@ -6,6 +6,7 @@ import { ActivityIndicator, Alert, Pressable, ScrollView, Share, Text, View } fr
 import { router } from "expo-router";
 import * as ImagePicker from "expo-image-picker";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { D1_ROLE_LABELS, topRole } from "@destiny/shared";
 import Constants from "expo-constants";
 import { openDocument } from "@/components/SafetyNotice";
 import { Avatar, Card, CardButton, LargeTitle, Separator, SettingsRow } from "@/components/ui";
@@ -17,12 +18,13 @@ import { ORANGE, INK, useTheme } from "@/theme/tokens";
 export default function Profile() {
   const t = useTheme();
   const insets = useSafeAreaInsets();
-  const { me, setMe, email, isLeader, signOut, accounts } = useSession();
+  const { me, setMe, email, signOut, accounts } = useSession();
   const others = accounts.length - 1;
   const [signingOut, setSigningOut] = useState(false);
   const [avatarBusy, setAvatarBusy] = useState(false);
 
-  const role = me?.roles.includes("senior_leadership") ? "Senior leadership" : isLeader ? "Group leader" : "Member";
+  const top = me ? topRole(me.roles) : null;
+  const role = top ? D1_ROLE_LABELS[top] : "Member";
 
   async function exportData() {
     try {
@@ -63,7 +65,7 @@ export default function Profile() {
   }
 
   return (
-    <ScrollView style={{ flex: 1, backgroundColor: t.grouped }} contentContainerStyle={{ paddingTop: insets.top + 52, paddingHorizontal: 16, paddingBottom: 120, gap: 22 }}>
+    <ScrollView style={{ flex: 1, backgroundColor: t.grouped }} contentContainerStyle={{ paddingTop: insets.top + 52, paddingHorizontal: 16, paddingBottom: 110, gap: 22 }}>
       <LargeTitle style={{ paddingHorizontal: 4 }}>Profile</LargeTitle>
 
       <Card style={{ flexDirection: "row", alignItems: "center", gap: 14, padding: 16 }}>

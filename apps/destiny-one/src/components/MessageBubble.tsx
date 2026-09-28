@@ -9,10 +9,10 @@
 
 import { Image, Pressable, Text, View } from "react-native";
 import Svg, { Path } from "react-native-svg";
-import type { D1EventContent, D1Message, D1PollContent } from "@destiny/shared";
+import type { D1EventContent, D1LeaderRole, D1Message, D1PollContent } from "@destiny/shared";
 import { Icon } from "@/components/Icon";
 import { SwipeToReply } from "@/components/Swipe";
-import { AdminTag, Avatar } from "@/components/ui";
+import { Avatar, MemberTag } from "@/components/ui";
 import { clock, dayLabel, eventWhen, fileMeta, plural, sameDay } from "@/lib/format";
 import { haptic } from "@/lib/haptics";
 import type { LocalMessage } from "@/lib/useConversation";
@@ -78,7 +78,9 @@ export function Divider({ row }: { row: Exclude<Row, { kind: "msg" }> }) {
 interface BubbleProps {
   row: Extract<Row, { kind: "msg" }>;
   replyTo: D1Message | null;
-  senderIsAdmin: boolean;
+  /** The sender's account role, if any. */
+  senderTag: D1LeaderRole | null;
+  senderIsGroupAdmin: boolean;
   /** False where posting isn't allowed (announcements, paused groups). */
   canReply: boolean;
   onLongPress: () => void;
@@ -115,7 +117,7 @@ function tones(t: Theme, mine: boolean) {
     : { text: t.text, soft: t.muted, panel: t.bg, track: t.fill, bar: t.accentSoft, barMine: ORANGE, name: t.tint };
 }
 
-export function MessageBubble({ row, replyTo, senderIsAdmin, canReply, onLongPress, onReply, onOpenAttachment, onToggleReaction, onVotePoll, onRetry }: BubbleProps) {
+export function MessageBubble({ row, replyTo, senderTag, senderIsGroupAdmin, canReply, onLongPress, onReply, onOpenAttachment, onToggleReaction, onVotePoll, onRetry }: BubbleProps) {
   const t = useTheme();
   const { m } = row;
   const k = tones(t, m.mine);
@@ -216,7 +218,7 @@ export function MessageBubble({ row, replyTo, senderIsAdmin, canReply, onLongPre
           {row.showName ? (
             <View style={{ flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 12 }}>
               <Text style={{ fontSize: 12, fontWeight: "600", color: t.muted }}>{name}</Text>
-              {senderIsAdmin ? <AdminTag /> : null}
+              <MemberTag tag={senderTag} groupAdmin={senderIsGroupAdmin} />
               <Text style={{ fontSize: 12, color: t.muted }}>{clock(m.createdAt)}</Text>
             </View>
           ) : null}

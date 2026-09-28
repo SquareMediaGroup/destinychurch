@@ -7,6 +7,8 @@ import {
   REQUIRED_CONSENTS,
   adultOnFromDateOfBirth,
   canCreateCommunity,
+  topRole,
+  D1_ROLE_LABELS,
   canCreateGroup,
   canPost,
   checkComposition,
@@ -69,18 +71,29 @@ test.describe("isAdult", () => {
 });
 
 test.describe("who can do what", () => {
-  test("only active adult senior leadership can create a community", () => {
-    expect(canCreateCommunity(member({ roles: ["senior_leadership"] }))).toBe(true);
-    expect(canCreateCommunity(member({ roles: ["group_leader"] }))).toBe(false);
-    expect(canCreateCommunity(member({ roles: ["senior_leadership"], status: "suspended" }))).toBe(false);
-    expect(canCreateCommunity(member({ roles: ["senior_leadership"], isAdult: false }))).toBe(false);
+  test("any of the three leader roles can create a community, if active and adult", () => {
+    for (const role of ["admin", "cg_leader", "senior_leader"] as const) {
+      expect(canCreateCommunity(member({ roles: [role] }))).toBe(true);
+    }
+    expect(canCreateCommunity(member())).toBe(false);
+    expect(canCreateCommunity(member({ roles: ["senior_leader"], status: "suspended" }))).toBe(false);
+    expect(canCreateCommunity(member({ roles: ["senior_leader"], isAdult: false }))).toBe(false);
   });
 
-  test("group leaders and senior leadership can create groups; members can't", () => {
-    expect(canCreateGroup(member({ roles: ["group_leader"] }))).toBe(true);
-    expect(canCreateGroup(member({ roles: ["senior_leadership"] }))).toBe(true);
+  test("any of the three leader roles can create groups; members can't", () => {
+    for (const role of ["admin", "cg_leader", "senior_leader"] as const) {
+      expect(canCreateGroup(member({ roles: [role] }))).toBe(true);
+    }
     expect(canCreateGroup(member())).toBe(false);
-    expect(canCreateGroup(member({ roles: ["group_leader"], status: "pending" }))).toBe(false);
+    expect(canCreateGroup(member({ roles: ["cg_leader"], status: "pending" }))).toBe(false);
+  });
+
+  test("the tag is the highest role held: Admin, then Senior Leader, then CG Leader", () => {
+    expect(topRole([])).toBe(null);
+    expect(topRole(["cg_leader"])).toBe("cg_leader");
+    expect(topRole(["cg_leader", "senior_leader"])).toBe("senior_leader");
+    expect(topRole(["cg_leader", "admin", "senior_leader"])).toBe("admin");
+    expect(D1_ROLE_LABELS.cg_leader).toBe("CG Leader");
   });
 
   test("nobody posts in a frozen group", () => {

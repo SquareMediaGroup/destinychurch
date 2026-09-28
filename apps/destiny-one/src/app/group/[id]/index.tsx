@@ -4,7 +4,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ActivityIndicator, Alert, FlatList, KeyboardAvoidingView, Pressable, Text, TextInput, View } from "react-native";
-import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
+import { Stack, router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import * as Clipboard from "expo-clipboard";
 import * as WebBrowser from "expo-web-browser";
 import { LinearGradient } from "expo-linear-gradient";
@@ -170,6 +170,9 @@ export default function GroupChat() {
     // "padding" on Android too: apps are edge-to-edge there now, so the window
     // no longer shrinks for the keyboard and the message box would be covered.
     <KeyboardAvoidingView behavior="padding" style={{ flex: 1, backgroundColor: t.bg }}>
+      {/* Swiping right on a message replies. On iOS 26 the whole screen is also a swipe-back
+          area by default, so both fired at once. Back stays available from the left edge. */}
+      <Stack.Screen options={{ fullScreenSwipeEnabled: false }} />
       {t.wall ? <Wallpaper pattern={t.wall.def.pattern} tone={t.wall.tone} /> : null}
       {!messages ? (
         convo.error ? (

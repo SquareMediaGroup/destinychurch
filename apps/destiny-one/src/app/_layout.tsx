@@ -3,6 +3,7 @@
 // design).
 
 import { useEffect } from "react";
+import { liquidGlass } from "@/components/GlassSurface";
 import { Platform, StyleSheet, View } from "react-native";
 import { Stack, router } from "expo-router";
 import * as Notifications from "expo-notifications";
@@ -75,16 +76,30 @@ function App() {
         <Stack.Screen name="search" options={{ animation: "fade" }} />
         <Stack.Screen
           name="add-account"
-          options={{ presentation: "formSheet", sheetAllowedDetents: "fitToContents", sheetGrabberVisible: true, sheetCornerRadius: 28, contentStyle: { backgroundColor: t.grouped } }}
+          options={sheetOptions(t.grouped)}
         />
         <Stack.Screen
           name="accounts"
-          options={{ presentation: "formSheet", sheetAllowedDetents: "fitToContents", sheetGrabberVisible: true, sheetCornerRadius: 28, contentStyle: { backgroundColor: t.grouped } }}
+          options={sheetOptions(t.grouped)}
         />
       </Stack>
       <SwitchBanner />
     </SessionProvider>
   );
+}
+
+/**
+ * Bottom sheets. On iOS 26 the system draws the glass sheet with corners that
+ * follow the device's own screen radius, so we leave both to it (no fixed
+ * radius, transparent content background). Older iOS keeps a solid sheet.
+ */
+function sheetOptions(solid: string) {
+  return {
+    presentation: "formSheet" as const,
+    sheetAllowedDetents: "fitToContents" as const,
+    sheetGrabberVisible: true,
+    ...(liquidGlass ? { contentStyle: { backgroundColor: "transparent" } } : { sheetCornerRadius: 28, contentStyle: { backgroundColor: solid } }),
+  };
 }
 
 export default function RootLayout() {

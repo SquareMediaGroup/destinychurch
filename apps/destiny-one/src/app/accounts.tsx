@@ -9,6 +9,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Icon } from "@/components/Icon";
 import { Avatar, Card, Separator } from "@/components/ui";
 import { AddAccountChoices } from "@/components/AddAccountSheet";
+import { liquidGlass } from "@/components/GlassSurface";
 import { confirmOwner, type Account } from "@/lib/accounts";
 import { errorMessage, useSession } from "@/state/session";
 import { ORANGE, useTheme } from "@/theme/tokens";
@@ -48,7 +49,7 @@ export default function Accounts() {
   }
 
   return (
-    <View style={{ backgroundColor: t.grouped, paddingTop: 22, paddingHorizontal: 16, paddingBottom: Math.max(insets.bottom, 16) + 8, gap: 10 }}>
+    <View style={{ backgroundColor: liquidGlass ? "transparent" : t.grouped, paddingTop: 22, paddingHorizontal: 16, paddingBottom: Math.max(insets.bottom, 16) + 8, gap: 10 }}>
       <Text style={{ textAlign: "center", fontSize: 17, fontWeight: "600", color: t.text, marginBottom: 6 }}>Accounts</Text>
 
       <Card>

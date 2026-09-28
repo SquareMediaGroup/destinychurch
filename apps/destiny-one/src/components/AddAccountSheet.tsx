@@ -10,6 +10,7 @@ import type { AccountKind } from "@destiny/shared";
 import { Card, Separator, SettingsRow } from "@/components/ui";
 import { MAX_ACCOUNTS, beginAdd } from "@/lib/accounts";
 import { useSession } from "@/state/session";
+import { liquidGlass } from "@/components/GlassSurface";
 import { useTheme } from "@/theme/tokens";
 
 /** The two choices. Used inside the accounts sheet and on its own (below). */
@@ -47,7 +48,7 @@ export function AddAccountSheet() {
   const t = useTheme();
   const insets = useSafeAreaInsets();
   return (
-    <View style={{ backgroundColor: t.grouped, paddingTop: 22, paddingHorizontal: 16, paddingBottom: Math.max(insets.bottom, 16) + 8, gap: 10 }}>
+    <View style={{ backgroundColor: liquidGlass ? "transparent" : t.grouped, paddingTop: 22, paddingHorizontal: 16, paddingBottom: Math.max(insets.bottom, 16) + 8, gap: 10 }}>
       <Text style={{ textAlign: "center", fontSize: 17, fontWeight: "600", color: t.text, marginBottom: 6 }}>Add account</Text>
       <AddAccountChoices />
     </View>

@@ -10,7 +10,7 @@ import { Card, FloatingBack, LargeTitle, SectionLabel, TextButton } from "@/comp
 import { Wallpaper } from "@/components/Wallpaper";
 import { haptic } from "@/lib/haptics";
 import { appearance, useAppearance, type ThemeMode } from "@/state/appearance";
-import { DEFAULT_SEND_COLOUR, DEFAULT_WALLPAPER, SEND_COLOURS, WALLPAPERS } from "@/theme/appearance";
+import { DEFAULT_SEND_COLOUR, DEFAULT_WALLPAPER, PAGE_BG, SEND_COLOURS, WALLPAPERS } from "@/theme/appearance";
 import { useTheme } from "@/theme/tokens";
 
 const MODE_OPTIONS: { key: ThemeMode; label: string }[] = [
@@ -38,7 +38,7 @@ export default function AppearanceScreen() {
 
         <View style={{ gap: 8 }}>
           <SectionLabel>Theme</SectionLabel>
-          <View accessibilityRole="radiogroup" style={{ flexDirection: "row", padding: 3, borderRadius: 14, backgroundColor: t.fill2 }}>
+          <View accessibilityRole="radiogroup" style={{ flexDirection: "row", gap: 12 }}>
             {MODE_OPTIONS.map((o) => {
               const on = o.key === current.mode;
               return (
@@ -46,13 +46,23 @@ export default function AppearanceScreen() {
                   key={o.key}
                   accessibilityRole="radio"
                   accessibilityState={{ selected: on }}
+                  accessibilityLabel={o.key === "system" ? "System, matches your phone" : o.label}
                   onPress={() => {
                     if (!on) haptic.selection();
                     appearance.set({ mode: o.key });
                   }}
-                  style={{ flex: 1, minHeight: 38, borderRadius: 11, alignItems: "center", justifyContent: "center", backgroundColor: on ? t.card : "transparent", ...(on ? t.shadow : null), shadowOpacity: on ? 0.12 : 0 }}
+                  style={({ pressed }) => ({ flex: 1, gap: 6, alignItems: "center", transform: [{ scale: pressed ? 0.96 : 1 }] })}
                 >
-                  <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 15, fontWeight: on ? "600" : "400", color: t.text }}>
+                  <View style={{ width: "100%", height: 84, borderRadius: 16, overflow: "hidden", flexDirection: "row", borderWidth: on ? 3 : 1, borderColor: on ? t.tint : t.sep }}>
+                    {o.key !== "dark" ? <ModeSwatch dark={false} /> : null}
+                    {o.key !== "light" ? <ModeSwatch dark /> : null}
+                    {on ? (
+                      <View style={{ position: "absolute", right: 6, bottom: 6, width: 22, height: 22, borderRadius: 11, backgroundColor: t.tint, alignItems: "center", justifyContent: "center" }}>
+                        <Icon name="check" size={13} color={t.dark ? "#0E1013" : "#FFFFFF"} strokeWidth={3.2} />
+                      </View>
+                    ) : null}
+                  </View>
+                  <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 13, fontWeight: on ? "600" : "400", color: t.text }}>
                     {o.label}
                   </Text>
                 </Pressable>
@@ -142,6 +152,18 @@ export default function AppearanceScreen() {
         ) : null}
       </ScrollView>
       <FloatingBack background={t.grouped} />
+    </View>
+  );
+}
+
+/** Half a tile: a few bubbles in the light or dark page colours. System shows one of each side by side. */
+function ModeSwatch({ dark }: { dark: boolean }) {
+  const page = dark ? PAGE_BG.dark : PAGE_BG.light;
+  const bubble = dark ? "#33241A" : "#F3F3F4";
+  return (
+    <View style={{ flex: 1, backgroundColor: page, justifyContent: "center", gap: 5, paddingHorizontal: 8 }}>
+      <View style={{ width: "70%", height: 12, borderRadius: 6, backgroundColor: bubble }} />
+      <View style={{ width: "55%", height: 12, borderRadius: 6, backgroundColor: dark ? "#F58021" : "#BF5200", alignSelf: "flex-end" }} />
     </View>
   );
 }

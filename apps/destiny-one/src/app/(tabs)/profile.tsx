@@ -1,4 +1,4 @@
-// Settings tab (D1–D4): profile, notifications, the notices again, your data,
+// Profile tab (D1–D4): your name and picture, notifications, the notices again, your data,
 // sign out. Your name is read-only — the church office sets it.
 
 import { useState } from "react";
@@ -14,7 +14,7 @@ import { cleanImage } from "@/lib/cleanImage";
 import { errorMessage, useSession } from "@/state/session";
 import { ORANGE, INK, useTheme } from "@/theme/tokens";
 
-export default function Settings() {
+export default function Profile() {
   const t = useTheme();
   const insets = useSafeAreaInsets();
   const { me, setMe, email, isLeader, signOut } = useSession();
@@ -63,7 +63,7 @@ export default function Settings() {
 
   return (
     <ScrollView style={{ flex: 1, backgroundColor: t.grouped }} contentContainerStyle={{ paddingTop: insets.top + 52, paddingHorizontal: 16, paddingBottom: 120, gap: 22 }}>
-      <LargeTitle style={{ paddingHorizontal: 4 }}>Settings</LargeTitle>
+      <LargeTitle style={{ paddingHorizontal: 4 }}>Profile</LargeTitle>
 
       <Card style={{ flexDirection: "row", alignItems: "center", gap: 14, padding: 16 }}>
         <Pressable onPress={changeAvatar} disabled={avatarBusy} style={{ opacity: avatarBusy ? 0.5 : 1 }}>

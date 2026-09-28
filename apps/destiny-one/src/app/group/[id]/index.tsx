@@ -212,13 +212,18 @@ export default function GroupChat() {
                 canReply={!!group?.canPost && !frozen && !archived}
                 onReply={() => startReply(item.m)}
                 onLongPress={() => setActionFor(item.m)}
-                onOpenAttachment={() =>
-                  // The cached link may have expired; attachmentUrl fetches a fresh one if so.
-                  void convo.attachmentUrl(item.m).then((url) => {
+                onOpenAttachment={(url) => {
+                  // An event card carries its own web address; only files need a signed link.
+                  if (!item.m.attachment) {
                     if (url) void WebBrowser.openBrowserAsync(url);
+                    return;
+                  }
+                  // The cached link may have expired; attachmentUrl fetches a fresh one if so.
+                  void convo.attachmentUrl(item.m).then((fresh) => {
+                    if (fresh) void WebBrowser.openBrowserAsync(fresh);
                     else setToast("Couldn't open that file. Try again.");
-                  })
-                }
+                  });
+                }}
                 onToggleReaction={(emoji) => void convo.toggleReaction(item.m.id, emoji).catch((err) => setToast(errorMessage(err)))}
                 onVotePoll={(optionIds) => void convo.vote(item.m.id, optionIds).catch((err) => setToast(errorMessage(err)))}
                 onRetry={() =>

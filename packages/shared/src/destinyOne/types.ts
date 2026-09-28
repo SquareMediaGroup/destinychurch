@@ -298,12 +298,34 @@ export type D1RealtimeEvent =
   | { event: "community_left"; payload: { communityId: string } }
   | { event: "blocks_changed"; payload: { memberId: string; blocked: boolean } };
 
+/** GDPR right of access: everything Destiny One holds about the caller. */
 export interface D1Export {
   exportedAt: string;
-  profile: { id: string; displayName: string; status: D1MemberStatus; roles: D1LeaderRole[]; isAdult: boolean; createdAt: string };
+  profile: {
+    id: string;
+    displayName: string;
+    status: D1MemberStatus;
+    roles: D1LeaderRole[];
+    isAdult: boolean;
+    /** The date they turn (or turned) 18, as set by staff. The full date of birth is never stored. */
+    adultOn: string | null;
+    /** From their access request: the 18th birthday worked out from the date of birth they gave. */
+    declaredAdultOn: string | null;
+    requestNote: string | null;
+    requestSubmittedAt: string | null;
+    verifiedAt: string | null;
+    verification: "invite" | "admin" | "churchsuite" | null;
+    /** A short-lived link to their profile picture, if they set one. */
+    profilePictureUrl: string | null;
+    createdAt: string;
+  };
   consents: (D1Consent & { acceptedAt: string })[];
   communities: { id: string; name: string; role: D1MembershipRole; joinedAt: string }[];
   groups: { id: string; name: string; role: D1MembershipRole; joinedAt: string; leftAt: string | null }[];
   messages: { id: number; groupId: string; body: string | null; createdAt: string; deletedAt: string | null }[];
+  /** Files they sent (photos and PDFs), each with a short-lived download link. */
+  attachments: { id: string; groupId: string; mimeType: string; sizeBytes: number | null; createdAt: string; url: string | null }[];
+  reactions: { messageId: number; emoji: string; createdAt: string }[];
+  blocked: { id: string; displayName: string; since: string }[];
   reports: { id: number; reason: string; createdAt: string; status: string }[];
 }

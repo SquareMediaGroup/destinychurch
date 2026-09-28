@@ -20,7 +20,7 @@ export const POST = oneRoute<IdParams>(async (request, { params }) => {
   if (!canCreateGroup(caller.policy)) {
     throw new OneError("forbidden", "Only group leaders and senior leadership can create groups.");
   }
-  limit("create-group", caller.member.id, 10);
+  await limit("create-group", caller.member.id, 10);
   const input = await readBody(request, createGroupSchema);
 
   const { data, error } = await createServiceClient().rpc("d1_create_group", {

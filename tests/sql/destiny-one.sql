@@ -655,4 +655,20 @@ select pg_temp.check(
   not has_function_privilege('authenticated', 'public.d1_vote(uuid, bigint, text[])', 'execute'),
   'voting is service-role only');
 
+-- ── Shared rate limits (part 7) ─────────────────────────────────────────────
+
+select pg_temp.check(
+  public.d1_rate_limit('test:send:x', 2) and public.d1_rate_limit('test:send:x', 2),
+  'the shared rate limit allows up to the maximum in a minute');
+select pg_temp.check(
+  not public.d1_rate_limit('test:send:x', 2),
+  'the shared rate limit refuses the next one');
+select pg_temp.check(
+  public.d1_rate_limit('test:send:y', 2),
+  'each key has its own count');
+select pg_temp.check(
+  not has_function_privilege('authenticated', 'public.d1_rate_limit(text, integer)', 'execute')
+    and not has_function_privilege('anon', 'public.d1_rate_limit(text, integer)', 'execute'),
+  'the rate limit function is service-role only');
+
 \echo 'All Destiny One SQL checks passed.'

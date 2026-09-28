@@ -205,3 +205,19 @@ test.describe("appGate (forced update / maintenance)", () => {
     expect(appGate(down, "web", null)).toBe("maintenance");
   });
 });
+
+test.describe("minimum age (13, decided 2026-09-28)", () => {
+  test("the date someone turns 13", async () => {
+    const { minimumAgeOn } = await import("../../packages/shared/src/destinyOne/policy");
+    expect(minimumAgeOn("2012-03-04")).toBe("2025-03-04");
+    expect(minimumAgeOn("2012-02-29")).toBe("2025-03-01"); // leap-day birthdays turn 13 on 1 March
+    expect(minimumAgeOn("not a date")).toBeNull();
+  });
+
+  test("under 13 is refused, 13 today is allowed, no date of birth isn't judged", async () => {
+    const { isUnderMinimumAge } = await import("../../packages/shared/src/destinyOne/policy");
+    expect(isUnderMinimumAge("2014-01-01", "2026-09-28")).toBe(true);
+    expect(isUnderMinimumAge("2013-09-28", "2026-09-28")).toBe(false);
+    expect(isUnderMinimumAge(null, "2026-09-28")).toBe(false);
+  });
+});

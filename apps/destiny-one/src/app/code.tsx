@@ -66,6 +66,9 @@ export default function Code() {
         <Lead>
           Sent to <Text style={{ color: t.text, fontWeight: "500" }}>{email}</Text>
         </Lead>
+        <Text style={{ fontSize: 13, lineHeight: 18, color: t.subtle }}>
+          If this email has a Destiny One account or invite, a code is on its way. Nothing after a few minutes? Check the address, or ask your team leader or the church office for an invite.
+        </Text>
         <TextButton label="Change email" onPress={() => router.back()} style={{ alignSelf: "flex-start" }} />
       </View>
 

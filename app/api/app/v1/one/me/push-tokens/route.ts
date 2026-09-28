@@ -13,7 +13,7 @@ export const dynamic = "force-dynamic";
 
 export const POST = oneRoute(async (request) => {
   const caller = await requireMember(request, { requireConsent: false });
-  limit("push-token", caller.member.id, 10);
+  await limit("push-token", caller.member.id, 10);
   const { token, platform } = await readBody(request, pushTokenSchema);
 
   const { error } = await createServiceClient()

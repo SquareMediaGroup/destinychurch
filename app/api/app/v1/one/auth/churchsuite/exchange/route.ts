@@ -14,7 +14,7 @@ import type { Handoff } from "@/lib/destinyOne/signin.server";
 export const dynamic = "force-dynamic";
 
 export const POST = oneRoute(async (request) => {
-  limit("cs-exchange", clientIp(request), 10);
+  await limit("cs-exchange", clientIp(request), 10);
   const secret = process.env.DESTINY_ONE_SECRET;
   if (!secret) throw new OneError("unavailable", "Sign in with ChurchSuite isn't available right now.");
 

@@ -11,7 +11,7 @@ export const dynamic = "force-dynamic";
 async function react(request: Request, params: Promise<{ id: string }>, add: boolean) {
   const caller = await requireMember(request);
   const id = requireMessageId((await params).id);
-  limit("react", caller.member.id, 60);
+  await limit("react", caller.member.id, 60);
   const { emoji } = await readBody(request, reactionSchema);
 
   const { error } = await createServiceClient().rpc("d1_react", {

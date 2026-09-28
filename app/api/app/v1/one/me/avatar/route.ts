@@ -21,7 +21,7 @@ const ALLOWED = new Set(["image/jpeg", "image/png", "image/webp", "image/heic"])
 
 export const POST = oneRoute(async (request) => {
   const { member } = await requireMember(request, { requireConsent: false });
-  limit("avatar", member.id, 10);
+  await limit("avatar", member.id, 10);
 
   const form = await request.formData();
   const file = form.get("file");

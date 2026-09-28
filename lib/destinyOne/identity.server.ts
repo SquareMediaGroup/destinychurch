@@ -19,7 +19,7 @@
 // downgrades anyone.
 
 import "server-only";
-import { adultOnFromDateOfBirth, type D1AccessRequest } from "@destiny/shared";
+import { UNDER_MINIMUM_AGE_MESSAGE, adultOnFromDateOfBirth, isUnderMinimumAge, todayInLondon, type D1AccessRequest } from "@destiny/shared";
 import { createServiceClient } from "@/utils/supabase/service";
 import { type CsPerson } from "@/lib/destinyOne/churchsuite";
 import {
@@ -176,6 +176,10 @@ export async function submitAccessRequest(member: MemberRow, input: D1AccessRequ
       "forbidden",
       "Destiny One is invite-only at the moment. Ask your team leader or the church office for an invite.",
     );
+  }
+
+  if (input.dateOfBirth && isUnderMinimumAge(input.dateOfBirth, todayInLondon())) {
+    throw new OneError("invalid", UNDER_MINIMUM_AGE_MESSAGE);
   }
 
   const first = !member.request_submitted_at;

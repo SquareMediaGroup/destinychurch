@@ -50,7 +50,7 @@ export const GET = oneRoute<IdParams>(async (request, { params }) => {
 export const POST = oneRoute<IdParams>(async (request, { params }) => {
   const caller = await requireMember(request);
   const id = requireUuid((await params).id, "group");
-  limit("send", caller.member.id, 40);
+  await limit("send", caller.member.id, 40);
 
   // Checked here first only for a friendlier error; the database re-checks.
   const membership = await requireGroupMembership(caller, id);

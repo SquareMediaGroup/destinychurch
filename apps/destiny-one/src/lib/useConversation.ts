@@ -10,8 +10,8 @@
 // de-duplicated by id (messages) or ignored (our own reactions, which were
 // already applied locally).
 
-import { useCallback, useRef, useState } from "react";
-import type { D1EventRef, D1EventSummary, D1Me, D1MessageContent, D1PollDraft } from "@destiny/shared";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { signedUrlNeedsRefresh, type D1EventRef, type D1EventSummary, type D1Me, type D1MessageContent, type D1PollDraft } from "@destiny/shared";
 import { api } from "@/lib/api";
 import { keys, PAGE, updateGroupSummary, updateMessages, upsert, useGroup, useMessages, type LocalMessage, type MessagesData } from "@/lib/queries";
 import { queryClient } from "@/lib/queryClient";
@@ -25,6 +25,37 @@ type SendInput = { body?: string; replyTo?: number; attachmentId?: string; poll?
 type Pending = { input: SendInput; upload?: () => Promise<string> };
 /** Unsent messages, kept outside the screen so "tap to retry" still works after leaving and coming back. */
 const pending = new Map<number, Pending>();
+
+/** Attachment ids whose fresh links are already being fetched, so a re-render doesn't ask twice. */
+const refreshing = new Set<string>();
+
+/**
+ * Attachment links last an hour but cached messages last up to 30 days. Swap
+ * in fresh links for any that have expired (or nearly), in one request.
+ * Returns the fresh URL for each id it could refresh.
+ */
+async function refreshAttachmentUrls(groupId: string, messages: LocalMessage[]): Promise<Map<string, string>> {
+  const stale = messages
+    .filter((m) => m.attachment && !refreshing.has(m.attachment.id) && (!m.attachment.url || signedUrlNeedsRefresh(m.attachment.url)))
+    .map((m) => m.attachment!.id);
+  const fresh = new Map<string, string>();
+  if (stale.length === 0) return fresh;
+  stale.forEach((id) => refreshing.add(id));
+  try {
+    const { urls } = await api.attachmentUrls(groupId, stale);
+    for (const u of urls) if (u.url) fresh.set(u.id, u.url);
+    if (fresh.size) {
+      updateMessages(groupId, (list) =>
+        list.map((m) => (m.attachment && fresh.has(m.attachment.id) ? { ...m, attachment: { ...m.attachment, url: fresh.get(m.attachment.id)! } } : m)),
+      );
+    }
+  } catch {
+    // Offline or refused: the old link stays, and the next open tries again.
+  } finally {
+    stale.forEach((id) => refreshing.delete(id));
+  }
+  return fresh;
+}
 
 export function useConversation(groupId: string, me: D1Me | null, unreadAtOpen: number) {
   const groupQuery = useGroup(groupId);
@@ -46,6 +77,22 @@ export function useConversation(groupId: string, me: D1Me | null, unreadAtOpen: 
   const setMessages = useCallback((fn: (list: LocalMessage[]) => LocalMessage[]) => {
     queryClient.setQueryData<MessagesData>(keys.messages(groupId), (old) => ({ messages: fn(old?.messages ?? []), nextBefore: old?.nextBefore ?? null }));
   }, [groupId]);
+
+  // Cached chats outlive their attachment links: refresh expired ones whenever the list changes.
+  useEffect(() => {
+    if (messages?.some((m) => m.attachment)) void refreshAttachmentUrls(groupId, messages);
+  }, [groupId, messages]);
+
+  /** A link that works right now for this message's file (fetching a fresh one if it has expired). */
+  const attachmentUrl = useCallback(
+    async (m: LocalMessage): Promise<string | null> => {
+      if (!m.attachment) return null;
+      if (m.attachment.url && !signedUrlNeedsRefresh(m.attachment.url, Date.now(), 30_000)) return m.attachment.url;
+      const fresh = await refreshAttachmentUrls(groupId, [{ ...m, attachment: { ...m.attachment, url: null } }]);
+      return fresh.get(m.attachment.id) ?? m.attachment.url;
+    },
+    [groupId],
+  );
 
   const reload = useCallback(() => queryClient.refetchQueries({ queryKey: keys.messages(groupId) }), [groupId]);
   const reloadGroup = useCallback(() => queryClient.refetchQueries({ queryKey: keys.group(groupId) }), [groupId]);
@@ -305,5 +352,6 @@ export function useConversation(groupId: string, me: D1Me | null, unreadAtOpen: 
     discard,
     remove,
     toggleReaction,
+    attachmentUrl,
   };
 }

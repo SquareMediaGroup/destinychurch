@@ -71,7 +71,7 @@ and hold DPAs with each.
 ## 4. Retention
 
 - Messages, attachments, closed reports, resolved safeguarding events: **`D1_MESSAGE_RETENTION_DAYS`,
-  currently a placeholder of 365 days**, enforced daily by `/api/cron/destiny-one-purge`
+  1 year (365 days), agreed 2026-09-28**, enforced daily by `/api/cron/destiny-one-purge`
   (floor 30 days in SQL). ⚠️ **Must be set by the safeguarding policy (scoping doc D6)** before launch.
 - **A message under an open report is never purged**, however old, until the report is closed
   (`20260928_01_destiny_one_safeguarding.sql`).
@@ -83,7 +83,7 @@ and hold DPAs with each.
 |---|---|
 | Access (Art. 15) | `GET /api/app/v1/one/me/export` — JSON of profile, consents, memberships, own messages (incl. ones they deleted), own reports |
 | Erasure (Art. 17) | `DELETE /api/app/v1/one/me` — leaves every group, removes tokens, consents, reactions, blocks and the profile picture (row and file), anonymises, deletes the sign-in. Messages remain under "Former member" until the retention purge (safeguarding exemption — state it in the notice) |
-| Rectification (Art. 16) | Names and ages come from ChurchSuite; correct them there (synced nightly) |
+| Rectification (Art. 16) | Names and ages are set by Destiny staff (invites and approvals), so a member asks the church office, and a Destiny One Admin corrects them at `/admin/destiny-one/members`. Only members verified by Sign in with ChurchSuite (not switched on yet) are refreshed from ChurchSuite nightly. Members can change their own profile picture |
 | Object / restrict | Handled by the church office; a safeguarding admin can suspend an account |
 
 ## 6. Review access is itself controlled
@@ -95,12 +95,12 @@ should say who holds the role and how these logs are reviewed.
 
 ## 7. Before launch — checklist
 
-- [ ] DPIA completed and signed off
+- [ ] DPIA completed and signed off (draft: `docs/destiny-one-dpia-draft.md`)
 - [ ] Supabase region confirmed EU/UK; DPAs in place (Supabase, Vercel, Expo, ChurchSuite)
 - [ ] Supabase **phone auth provider disabled**
-- [ ] Retention period agreed (D6) and `D1_MESSAGE_RETENTION_DAYS` set
+- [x] Retention period agreed: 1 year (`D1_MESSAGE_RETENTION_DAYS=365`, decided 2026-09-28; confirm in the safeguarding policy)
 - [ ] Privacy notice + terms + chat-review notice written; versions match `REQUIRED_CONSENTS` in `packages/shared/src/destinyOne/policy.ts`
 - [ ] Safeguarding policy names who holds `safeguarding_admin` and how review logs are checked
-- [ ] Decide invite-only vs open to requests (`/admin/destiny-one/settings`)
+- [x] Invite-only (decided 2026-09-28; access requests switched off)
 - [ ] Decide who holds Destiny One Admin (runs the app, no message access) and Safeguarding Admin (message review) — keep the latter to as few people as possible
 - [ ] If ChurchSuite is connected at all: OAuth apps with the narrowest scopes (`addressbook.read children.read`; `user` for sign-in)

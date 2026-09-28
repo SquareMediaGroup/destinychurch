@@ -185,7 +185,13 @@ export default function GroupChat() {
                 replyTo={item.m.replyTo ? byId.get(item.m.replyTo) ?? null : null}
                 senderIsAdmin={!!item.m.sender && admins.has(item.m.sender.id)}
                 onLongPress={() => setActionFor(item.m)}
-                onOpenAttachment={(url) => void WebBrowser.openBrowserAsync(url)}
+                onOpenAttachment={() =>
+                  // The cached link may have expired; attachmentUrl fetches a fresh one if so.
+                  void convo.attachmentUrl(item.m).then((url) => {
+                    if (url) void WebBrowser.openBrowserAsync(url);
+                    else setToast("Couldn't open that file. Try again.");
+                  })
+                }
                 onToggleReaction={(emoji) => void convo.toggleReaction(item.m.id, emoji).catch((err) => setToast(errorMessage(err)))}
                 onVotePoll={(optionIds) => void convo.vote(item.m.id, optionIds).catch((err) => setToast(errorMessage(err)))}
                 onRetry={() =>

@@ -231,7 +231,7 @@ destinychurch/
 │   ├── Providers.tsx              # Client context providers
 │   ├── CookieBanner.tsx           # GDPR cookie consent
 │   ├── AnalyticsGate.tsx          # Conditional analytics loading
-│   ├── SiteBanner.tsx             # Announcement banner (from DB)
+│   ├── SiteBanner.tsx             # Announcement banner (from DB); hidden on legal pages (lib/legalPages.ts)
 │   ├── SitePopup.tsx              # Modal pop-up (from DB)
 │   ├── FloatingSmartSearch.tsx    # The floating AI Smart Search widget
 │   ├── smartSearch/               # Smart Search result cards (products, weather, maps, web)
@@ -2039,9 +2039,18 @@ minimal reliance on ChurchSuite, so identity now comes from Destiny's own staff:
 - **Safeguarding takedown.** `d1_messages.deleted_by_admin` + `d1_admin_delete_message(message,
   admin)`: a soft delete like any other (content kept for review), live `message_deleted` event.
 
+Applied to the live project on 2026-09-28. The same day, the migration history was backfilled with
+rows for parts 1 and 2 (`20260926_01`, `20260927_01`), which had been run outside it.
+
+**Part 7 — `20260928_03_destiny_one_rate_limits.sql`: rate limits every server instance shares.**
+`d1_rate_limits` (one row per key per minute, deny-all RLS) and `d1_rate_limit(key, max)`, which
+counts atomically and returns whether the hit is allowed, pruning rows older than an hour now and
+then. `limit()` in `lib/destinyOne/http.ts` checks the in-memory limiter first (free, with escalating
+cooldowns), then this; if the database can't be reached the request is let through and logged.
+
 **Tested by:** `scripts/test-sql.sh` (`npm run test:sql`, and the "Database rules" CI job) — applies
-Supabase stubs + every Destiny One migration (parts 1–6, plus the profile-picture and min-build
-migrations) to a throwaway local Postgres and runs `tests/sql/destiny-one.sql` (103 checks).
+Supabase stubs + every Destiny One migration (parts 1–7, plus the profile-picture and min-build
+migrations) to a throwaway local Postgres and runs `tests/sql/destiny-one.sql` (107 checks).
 
 **Used By:** `lib/destinyOne/*`, `app/api/app/v1/one/**`, `app/api/admin/destiny-one/**`,
 `app/api/cron/destiny-one-{sync,purge}`.
@@ -4167,7 +4176,8 @@ and filters/reveals it entirely client-side, no further network calls.
 // configured, and only for members verified BY ChurchSuite (verification_source='churchsuite') —
 // staff-verified members are never touched. Removed from ChurchSuite → `pending`, which pauses
 // any group left with < 2 adults. An outage changes nothing. Then d1_reconcile_all() re-checks
-// every live group (always runs).
+// every live group (always runs). A failed member read or re-check emails D1_OPS_ALERT_RECIPIENT
+// (sendOpsAlert, lib/destinyOne/opsAlertEmail.server.ts; job and error only, no member data).
 ```
 
 #### `GET /api/cron/destiny-one-purge`
@@ -4175,7 +4185,9 @@ and filters/reveals it entirely client-side, no further network calls.
 // Daily at 04:15. Bearer CRON_SECRET. d1_purge_expired(D1_MESSAGE_RETENTION_DAYS, default 365,
 // floor 30) deletes messages, their attachment rows, erased members with no remaining messages,
 // and closed reports / resolved events past the window; the route then removes the storage
-// objects. ⚠️ 365 is a placeholder pending the safeguarding policy decision (scoping doc D6).
+// objects. A message under an open report is kept. ⚠️ 365 is a placeholder pending the
+// safeguarding policy decision (scoping doc D6). A failed purge, or files it couldn't delete,
+// emails D1_OPS_ALERT_RECIPIENT (sendOpsAlert).
 ```
 
 #### Destiny One API (`/api/app/v1/one/*`)
@@ -4192,14 +4204,14 @@ needs at least 2 verified adults.") pass through as `rule_violation` (422). Type
 |---|---|---|
 | `config` | GET | No sign-in, no token, and the only `/one` route the CDN may cache (`s-maxage=60`): `D1AppConfig` — `minBuild { ios, android }`, `forceUpdateMessage`, `maintenanceMessage`, `storeUrl` (env `D1_IOS_STORE_URL`, default `itms-beta://` = TestFlight; `D1_ANDROID_STORE_URL`). The app's forced-update gate (`appGate()` in `@destiny/shared`, `src/lib/appGate.ts`) |
 | `auth/link` | POST | After every sign-in: accept an open invite for the email (`onboardMember`), return `D1Me` with `onboarding` |
-| `auth/check` | POST | No sign-in: `{ email }` — asked before a code is sent; 403 `not_verified` with a message when the email has no account, no open invite and access requests are off (`d1_sign_in_status`). Per-IP rate limit |
+| `auth/code` | POST | No sign-in: `{ email }`. Sends the email sign-in code only if `d1_sign_in_status` says this email can get in (member, open invite, or requests open), from `after()`, and always answers `{ sent: true }`, so neither the reply nor its timing reveals who is a member. Rate-limited per IP and per (hashed) email. Replaced `auth/check` (2026-09-28), which said "no account" outright |
 | `me/access-request` | POST | `{ name, dateOfBirth?, note? }` — ask to join; a Destiny One Admin approves |
 | `auth/churchsuite/start` → `callback` → `exchange` | GET, GET, POST | Sign in with ChurchSuite (below) |
 | `me` | GET, DELETE | DELETE = GDPR erasure (`{ "confirm": "DELETE" }`). `D1Me` includes `blocked` (people I've blocked) and `avatarUrl` (a signed link) |
 | `me/avatar` | POST, DELETE | Profile picture (multipart `file`, 5 MB). Active members only; stored privately in `d1-avatars` |
 | `members/[id]/block` | POST, DELETE | Block / unblock someone; returns `D1Me`. Hides their messages and notifications for me only; logged for safeguarding |
 | `me/consents` | POST | Current versions only (`REQUIRED_CONSENTS`) |
-| `me/export` | GET | GDPR access: profile, consents, memberships, own messages, own reports |
+| `me/export` | GET | GDPR access: profile (incl. access-request note, declared and staff-set 18th birthday, how and when verified, a link to the profile picture), consents, memberships, own messages (incl. deleted), files sent (24-hour links), reactions, blocks, own reports |
 | `me/push-tokens` | POST, DELETE | Expo tokens |
 | `communities` | GET, POST | POST: senior leadership |
 | `communities/[id]` | GET | |
@@ -4213,6 +4225,7 @@ needs at least 2 verified adults.") pass through as `rule_violation` (422). Type
 | `groups/[id]/invites` | POST | Leaders: `{ email, name, adult, note? }` — invite someone new; they become an access request for staff to approve, then join the group |
 | `search/messages` | GET | `?q=` — full-text search of your messages: groups you are in, since you joined, never deleted; newest 30 |
 | `groups/[id]/read`, `/mute`, `/attachments` | POST | Read marker, mute, signed upload URL |
+| `groups/[id]/attachments?ids=` | GET | Fresh signed links (1 hour) for cached attachments whose links expired: only files in this group, sent since you joined, not deleted, not from someone you've blocked. Up to 60 ids |
 | `messages/[id]` | DELETE | Soft delete (content kept for review) |
 | `messages/[id]/report`, `/reactions` | POST (+DELETE) | Report → safeguarding bell, and an email to every Safeguarding Admin (`lib/destinyOne/safeguardingEmail.server.ts`; no message content, names or group in it) |
 | `directory` | GET | Leaders only; names + adult flag, never contact details |
@@ -4254,7 +4267,8 @@ place message content can be read:**
 - `GET events?open=1`, `PATCH events/[id]` — the pause/report queue; mark handled.
 - `GET reports?status=`, `PATCH reports/[id]` — triage reports (resolution text redacted in the audit log).
 - `GET groups` — every group with counts, to pick one to review or pause.
-- `GET groups/[id]/transcript?reason=…&from=…&to=…` — full history incl. deleted messages and
+- `GET groups/[id]/transcript?reason=…&from=…&to=…` — **needs the Safeguarding Admin role itself;
+  super admin alone isn't enough** (`requireTranscriptReader`, decided 2026-09-28). Full history incl. deleted messages and
   membership history. **Requires a reason** and defaults to the last 30 days; every read is written
   to the audit log (`action: "view"`, section `safeguarding`) with who, which group, window and reason.
 - `POST groups/[id]/freeze` — manual pause / lift (a manual pause isn't lifted by the automatic rule).
@@ -6576,6 +6590,9 @@ VERCEL_ANALYTICS_TEAM_ID=
 #   D1_MESSAGE_RETENTION_DAYS              — default 365 (placeholder pending safeguarding sign-off)
 #   EXPO_ACCESS_TOKEN                      — optional; only if Expo push security is enabled
 #   D1_APP_STORE_URL / D1_PLAY_STORE_URL   — optional; store links in the invite email once published
+#   D1_OPS_ALERT_RECIPIENT                 — optional; who is emailed when the nightly purge or sync fails
+#                                            (lib/destinyOne/opsAlertEmail.server.ts). Falls back to
+#                                            SMART_SEARCH_ALERT_RECIPIENT
 CHURCHSUITE_CLIENT_ID=
 CHURCHSUITE_CLIENT_SECRET=
 CHURCHSUITE_OAUTH_CLIENT_ID=
@@ -6585,6 +6602,7 @@ D1_MESSAGE_RETENTION_DAYS=365
 EXPO_ACCESS_TOKEN=
 D1_APP_STORE_URL=
 D1_PLAY_STORE_URL=
+D1_OPS_ALERT_RECIPIENT=
 
 # Feature flags (also toggleable via the `service_status` DB table, e.g. 'smart_search')
 ENABLE_SMART_SEARCH=true
@@ -6968,6 +6986,10 @@ same database as the data rather than in a separate Synapse module.
   (camera, photo library, images picked as files, and the profile picture) with
   `expo-image-manipulator`, which drops EXIF metadata including GPS location; HEIC becomes JPEG, PNG
   stays PNG, and the longest side is capped at 2048 px. PDFs are sent as they are.
+- **Expired attachment links.** Signed links last an hour but cached chats last up to 30 days.
+  `useConversation` reads each link's expiry from its token (`signedUrlNeedsRefresh` in
+  `@destiny/shared`, unit-tested) and swaps in fresh links in one `api.attachmentUrls` request when the
+  chat opens or changes; tapping a file checks again first (`attachmentUrl`).
 - **Account changes mid-session.** `src/lib/api.ts` wraps the shared client: any call that fails with
   `forbidden`, `not_verified`, `access_request_needed` or `consent_required` asks the session to
   re-check `me`. `AccessGuard` (`src/state/session.tsx`, mounted in the root layout) then replaces
@@ -6978,9 +7000,13 @@ same database as the data rather than in a separate Synapse module.
   deliberate ref patterns that need re-testing on a device before being reworked.
 - **Differences from the prototype:** Settings adds Download my data and Delete my account (safeguarding policy + UK GDPR access and
   erasure). Emoji reactions are allowed as member content (confirmed 2026-09-27).
-- **Sign-in:** the email screen calls `api.checkEmail` first and shows "no account" without sending
-  a code; any other failure falls through to sending it (sign-in re-checks). "Sign in with
-  ChurchSuite" shows **Coming soon** (the flow in `lib/auth.ts` is built but not switched on).
+- **Sign-in:** the email screen calls `api.requestCode` (`POST /auth/code`); the server sends a code
+  only to someone who can get in and answers the same either way, and the code screen says what to
+  do if none arrives. "Sign in with ChurchSuite" is hidden (the flow in `lib/auth.ts` is built but not
+  switched on; App Review tends to reject "coming soon" placeholders).
+- **Minimum age 13** (decided 2026-09-28): `MIN_AGE` / `isUnderMinimumAge` in `@destiny/shared`. Staff
+  approvals, age edits and invites refuse a date of birth under 13 (`adultOnForDecision`), so do
+  access requests (`submitAccessRequest`) and the app's request form. No parent or carer step.
 - **Staff invites create the member up front** (`d1_invite_create_member`, auth_user_id null,
   active, in the invite's communities), so staff can put them in groups on the website before they
   open the app; first sign-in links the login (`d1_accept_invite`), folding in any earlier pending
@@ -7009,6 +7035,9 @@ same database as the data rather than in a separate Synapse module.
   translucent solid fallback on Android / older iOS. The one surface primitive for app chrome.
 - Checks: `npm run typecheck`, `npx expo lint`, `npx expo-doctor`, `npx expo export --platform ios --platform android`. CI runs typecheck and lint (the "Destiny One app" job).
 - GDPR notes (data map, processors, retention, erasure, review audit): `docs/destiny-one-gdpr.md`.
+- Staff guide (approvals, reports, review, takedown, suspension, blocks, settings, out of hours):
+  `docs/destiny-one-staff-guide.md`. Draft privacy-notice, terms and safeguarding-policy sections for
+  sign-off (not live): `docs/content/destiny-one-notices-draft.md`.
 
 ### Live Caption (macOS app) — `apps/live-caption/`
 A standalone **macOS app** (not part of the website deploy) that captions live audio in real time for Destiny's AVL setup (ATEM, ProPresenter, Dante, NDI). It captures from a Core Audio device or an NDI network source, transcribes locally with a Metal-accelerated [whisper.cpp](https://github.com/ggml-org/whisper.cpp) model, and shows the caption on a connected display and/or publishes it as a live NDI source. **Audio never leaves the machine** — transcription is entirely local.

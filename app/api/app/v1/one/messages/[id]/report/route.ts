@@ -18,7 +18,7 @@ export const dynamic = "force-dynamic";
 export const POST = oneRoute<IdParams>(async (request, { params }) => {
   const caller = await requireMember(request, { requireConsent: false });
   const id = requireMessageId((await params).id);
-  limit("report", caller.member.id, 10);
+  await limit("report", caller.member.id, 10);
   const { reason } = await readBody(request, reportSchema);
 
   const { error } = await createServiceClient().rpc("d1_report_message", {

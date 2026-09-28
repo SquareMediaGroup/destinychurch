@@ -1,6 +1,7 @@
-// A1 Welcome — first launch and after sign-out. Email for everyone;
-// ChurchSuite for staff and leaders (A4) shows "Coming soon" for now.
-// No phone option, by design.
+// A1 Welcome — first launch and after sign-out. Email for everyone. No phone
+// option, by design. "Sign in with ChurchSuite" (A4) is built
+// (signInWithChurchSuite in lib/auth.ts) but hidden until it's switched on:
+// App Review tends to reject "coming soon" placeholders (decided 2026-09-28).
 
 import { Text, View } from "react-native";
 import { router } from "expo-router";
@@ -14,19 +15,7 @@ export default function Welcome() {
   const t = useTheme();
   return (
     <AuthScreen
-      footer={
-        <>
-          <PrimaryButton label="Continue with email" onPress={() => router.push("/email")} />
-          {/* ChurchSuite sign-in (A4) is built (signInWithChurchSuite in lib/auth.ts) but not switched on yet. */}
-          <View accessible accessibilityRole="button" accessibilityState={{ disabled: true }} accessibilityLabel="Sign in with ChurchSuite, coming soon" style={{ marginTop: 4, height: 52, borderRadius: 999, backgroundColor: t.fill, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, opacity: 0.6 }}>
-            <Text style={{ fontSize: 17, fontWeight: "600", color: t.text }}>Sign in with ChurchSuite</Text>
-            <View style={{ paddingHorizontal: 8, paddingVertical: 2, borderRadius: 8, backgroundColor: t.accentSoft }}>
-              <Text style={{ fontSize: 12, fontWeight: "700", color: t.tint }}>Coming soon</Text>
-            </View>
-          </View>
-          <Text style={{ fontSize: 13, lineHeight: 18, color: t.subtle, textAlign: "center" }}>ChurchSuite sign-in for staff and leaders is coming soon.</Text>
-        </>
-      }
+      footer={<PrimaryButton label="Continue with email" onPress={() => router.push("/email")} />}
     >
       <View style={{ flex: 1, alignItems: "center", justifyContent: "center", gap: 22 }}>
         <View style={[{ width: 108, height: 108, borderRadius: 26, backgroundColor: t.card, alignItems: "center", justifyContent: "center", borderWidth: 0.5, borderColor: t.glassLine }, t.shadow]}>

@@ -11,6 +11,7 @@ import { NextResponse } from "next/server";
 import type { D1Envelope, D1ErrorCode } from "@destiny/shared";
 import { APP_API_VERSION } from "@/lib/appApi";
 import { checkRateLimit } from "@/lib/rateLimit";
+import { createServiceClient } from "@/utils/supabase/service";
 
 const NO_STORE = {
   "Cache-Control": "private, no-store",
@@ -120,15 +121,28 @@ export function requireMessageId(value: string): number {
   return n;
 }
 
+const RATE_LIMITED = "You're doing that a lot. Please wait a few minutes and try again.";
+
 /**
- * Per-member rate limit, namespaced so endpoints don't trip each other.
- * lib/rateLimit.ts is per-instance in-memory — a speed bump against a runaway
- * client or a spammer, not a hard guarantee.
+ * Per-member (or per-IP) rate limit, namespaced so endpoints don't trip each
+ * other: at most `max` a minute.
+ *
+ * Two layers. lib/rateLimit.ts counts in this instance's memory — free, and
+ * it adds escalating cooldowns — but on Vercel every serverless instance has
+ * its own count. So the database (d1_rate_limit, 20260928_03) keeps a count
+ * every instance shares. If the database can't be reached the request is let
+ * through and the problem logged: a rate limit must never lock people out.
  */
-export function limit(scope: string, memberOrIp: string, max: number): void {
-  if (checkRateLimit(`d1:${scope}:${memberOrIp}`, max).limited) {
-    throw new OneError("rate_limited", "You're doing that a lot. Please wait a few minutes and try again.");
+export async function limit(scope: string, memberOrIp: string, max: number): Promise<void> {
+  const key = `d1:${scope}:${memberOrIp}`;
+  if (checkRateLimit(key, max).limited) throw new OneError("rate_limited", RATE_LIMITED);
+
+  const { data, error } = await createServiceClient().rpc("d1_rate_limit", { p_key: key, p_max: max });
+  if (error) {
+    console.error("⚠️ Destiny One shared rate limit unavailable:", error.message);
+    return;
   }
+  if (data === false) throw new OneError("rate_limited", RATE_LIMITED);
 }
 
 export type IdParams = { params: Promise<{ id: string }> };

@@ -45,7 +45,7 @@ src/lib/supabase.ts      Auth + Realtime only (never data)
 src/lib/api.ts           Typed client for /api/app/v1/one (from @destiny/shared)
 src/lib/auth.ts          Email one-time code; Sign in with ChurchSuite (PKCE)
 src/lib/realtime.ts      Private d1-group:* / d1-member:* channels
-src/lib/push.ts          Content-free push; ask in context, never on launch
+src/lib/push.ts          Push (group name + "Sender: first line"); ask in context, never on launch
 ```
 
 `@destiny/shared` is linked from `../../packages/shared` (see `metro.config.js`). This app is not

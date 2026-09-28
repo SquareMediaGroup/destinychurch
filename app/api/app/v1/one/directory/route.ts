@@ -24,7 +24,7 @@ function escapeLike(s: string): string {
 
 export const GET = oneRoute(async (request) => {
   const caller = await requireMember(request);
-  limit("directory", caller.member.id, 60);
+  await limit("directory", caller.member.id, 60);
   const url = new URL(request.url);
   const q = (url.searchParams.get("q") ?? "").trim().slice(0, 60);
   const communityId = url.searchParams.get("communityId");

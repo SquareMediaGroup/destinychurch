@@ -66,6 +66,24 @@ export function adultOnFromDateOfBirth(dob: string | null | undefined): string |
   return adult.toISOString().slice(0, 10);
 }
 
+/** The youngest age that can use Destiny One (decided 2026-09-28). No parent or carer step at 13+. */
+export const MIN_AGE = 13;
+
+/** The date someone born on `dob` (YYYY-MM-DD) turns MIN_AGE, or null for anything that isn't a real date. */
+export function minimumAgeOn(dob: string | null | undefined): string | null {
+  if (!dob || !adultOnFromDateOfBirth(dob)) return null;
+  const [year, month, day] = dob.trim().slice(0, 10).split("-").map(Number);
+  return new Date(Date.UTC(year + MIN_AGE, month - 1, day)).toISOString().slice(0, 10);
+}
+
+/** True when a real date of birth makes someone younger than MIN_AGE on `today` (YYYY-MM-DD). */
+export function isUnderMinimumAge(dob: string | null | undefined, today: string): boolean {
+  const on = minimumAgeOn(dob);
+  return on !== null && on > today;
+}
+
+export const UNDER_MINIMUM_AGE_MESSAGE = `Destiny One is for people aged ${MIN_AGE} and over.`;
+
 /**
  * Today in the church's time zone, as YYYY-MM-DD. The database compares against
  * its own current_date (UTC on Supabase), so the two can disagree for an hour

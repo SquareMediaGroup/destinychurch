@@ -14,7 +14,7 @@ export const dynamic = "force-dynamic";
 
 export const POST = oneRoute(async (request) => {
   const user = await authenticate(request);
-  limit("link", user.id, 10);
+  await limit("link", user.id, 10);
   const member = await onboardMember(user);
   return oneJson(await toMe(member));
 });

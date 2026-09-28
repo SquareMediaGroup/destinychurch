@@ -15,7 +15,7 @@ export const dynamic = "force-dynamic";
 export const POST = oneRoute<IdParams>(async (request, { params }) => {
   const caller = await requireMember(request);
   const id = requireUuid((await params).id, "group");
-  limit("group-members", caller.member.id, 20);
+  await limit("group-members", caller.member.id, 20);
   const { memberIds, role } = await readBody(request, membersSchema);
 
   const { error } = await createServiceClient().rpc("d1_add_group_members", {

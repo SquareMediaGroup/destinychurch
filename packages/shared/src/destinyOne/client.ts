@@ -120,8 +120,11 @@ export function createDestinyOneClient({ baseUrl, getAccessToken, fetchImpl }: D
     // ── Account ──
     /** Links the signed-in account to its ChurchSuite record. Call after every sign-in. */
     link: () => call<D1Me>("POST", "/auth/link"),
-    /** Before sending a code: throws `not_verified` (with a message to show) if this email can't get in. */
-    checkEmail: (email: string) => call<{ canSignIn: true }>("POST", "/auth/check", { email }),
+    /**
+     * Ask for an email sign-in code. The server sends one only if this email can get in, and always
+     * answers the same, so it never reveals who is a member. Then verify with Supabase `verifyOtp`.
+     */
+    requestCode: (email: string) => call<{ sent: true }>("POST", "/auth/code", { email }, { anonymous: true }),
     /** Where to open the ChurchSuite sign-in (in an auth session browser). */
     churchSuiteStartUrl: (redirect: string, challenge: string) =>
       `${root}/auth/churchsuite/start${q({ redirect, challenge })}`,
@@ -186,6 +189,9 @@ export function createDestinyOneClient({ baseUrl, getAccessToken, fetchImpl }: D
       call<{ ok: true }>("POST", `/messages/${messageId}/reactions`, { emoji }),
     unreact: (messageId: number, emoji: string) =>
       call<{ ok: true }>("DELETE", `/messages/${messageId}/reactions`, { emoji }),
+    /** Fresh links for cached attachments whose signed URLs have expired (links last an hour). */
+    attachmentUrls: (groupId: string, attachmentIds: string[]) =>
+      call<{ urls: { id: string; url: string | null }[] }>("GET", `/groups/${groupId}/attachments${q({ ids: attachmentIds.join(",") })}`),
     requestUpload: (groupId: string, input: { mimeType: string; sizeBytes: number }) =>
       call<D1UploadTicket>("POST", `/groups/${groupId}/attachments`, input),
 

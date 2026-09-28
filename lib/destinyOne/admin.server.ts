@@ -22,21 +22,35 @@ export interface AdminCaller {
   email: string | null;
 }
 
-async function requireRole(role: AdminRole): Promise<AdminCaller | NextResponse> {
+async function requireRole(
+  role: AdminRole,
+  opts: { superAdminCounts?: boolean; forbidden?: string } = {},
+): Promise<AdminCaller | NextResponse> {
   const {
     data: { user },
   } = await createClient(await cookies()).auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const roles = await getRoles(createServiceClient(), user.id);
-  if (!roles[role] && !roles.super_admin) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  const superAdminCounts = opts.superAdminCounts ?? true;
+  if (!roles[role] && !(superAdminCounts && roles.super_admin)) {
+    return NextResponse.json({ error: opts.forbidden ?? "Forbidden" }, { status: 403 });
   }
   return { userId: user.id, email: user.email ?? null };
 }
 
 export const requireDestinyOneAdmin = () => requireRole("destiny_one_admin");
 export const requireSafeguardingAdmin = () => requireRole("safeguarding_admin");
+/**
+ * Reading a conversation (the transcript) needs the Safeguarding Admin role
+ * itself: super admin alone isn't enough (decided 2026-09-28). A super admin
+ * who genuinely needs it grants themselves the role, which the audit log shows.
+ */
+export const requireTranscriptReader = () =>
+  requireRole("safeguarding_admin", {
+    superAdminCounts: false,
+    forbidden: "Only people with the Safeguarding Admin role can open a conversation.",
+  });
 
 /**
  * Maps a Postgres error from a d1_* function to a response. The functions raise

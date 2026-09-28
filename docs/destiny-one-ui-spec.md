@@ -94,7 +94,7 @@ Invited people skip the request steps entirely. Signing in with the invited emai
 
 ### A10. Notifications permission explainer
 - **When:** in context, right after they first see a group. **Never on first launch.**
-- **Shows:** "Get a notification when there's a new message. Notifications never show the message itself." Buttons **Turn on** → `registerForPush()` and **Not now**.
+- **Shows:** "Know when your groups post. You can mute any group at any time." Buttons **Turn on** → `registerForPush()` and **Not now**. (Notifications show a preview, the sender and first line, since 2026-09-27, so the copy no longer says they don't; see ground rule 6.)
 
 ---
 

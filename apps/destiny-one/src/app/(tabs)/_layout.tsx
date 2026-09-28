@@ -9,6 +9,7 @@
 // hook. All accounts are still reachable from the Profile screen.)
 
 import { useRef } from "react";
+import { Image } from "react-native";
 import { isDoublePress } from "@destiny/shared";
 import { NativeTabs } from "expo-router/unstable-native-tabs";
 import { confirmOwner, nextAccountSlot } from "@/lib/accounts";
@@ -18,7 +19,7 @@ import { useTheme } from "@/theme/tokens";
 
 export default function TabsLayout() {
   const t = useTheme();
-  const { switchTo, accounts } = useSession();
+  const { switchTo, accounts, me } = useSession();
   const lastProfilePress = useRef<number | null>(null);
 
   /** Double press on Profile: hop to the most recently used other account (Face ID only if it's been a while). */
@@ -30,6 +31,11 @@ export default function TabsLayout() {
     haptic.selection();
     await switchTo(slot, { announce: true });
   }
+
+  // Your own picture as the Profile icon (a circle, with a tint ring when selected); the person symbol until one is set.
+  const avatar = (ring: boolean) => (
+    <Image source={{ uri: me?.avatarUrl ?? undefined }} style={{ width: 28, height: 28, borderRadius: 14, borderWidth: ring ? 2 : 0, borderColor: t.tint }} />
+  );
 
   return (
     <NativeTabs tintColor={t.tint}>
@@ -57,7 +63,11 @@ export default function TabsLayout() {
         }}
       >
         <NativeTabs.Trigger.Label hidden>Profile</NativeTabs.Trigger.Label>
-        <NativeTabs.Trigger.Icon sf={{ default: "person.crop.circle", selected: "person.crop.circle.fill" }} />
+        {me?.avatarUrl ? (
+          <NativeTabs.Trigger.Icon src={{ default: avatar(false), selected: avatar(true) }} renderingMode="original" />
+        ) : (
+          <NativeTabs.Trigger.Icon sf={{ default: "person.crop.circle", selected: "person.crop.circle.fill" }} />
+        )}
       </NativeTabs.Trigger>
     </NativeTabs>
   );

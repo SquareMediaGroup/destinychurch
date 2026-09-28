@@ -3,7 +3,7 @@
 // can post here" (announcements), or the paused card (frozen group).
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ActivityIndicator, Alert, FlatList, KeyboardAvoidingView, Platform, Pressable, Text, TextInput, View } from "react-native";
+import { ActivityIndicator, Alert, FlatList, KeyboardAvoidingView, Pressable, Text, TextInput, View } from "react-native";
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import * as Clipboard from "expo-clipboard";
 import * as WebBrowser from "expo-web-browser";
@@ -17,9 +17,12 @@ import { Divider, MessageBubble, buildRows, type Row } from "@/components/Messag
 import { NotificationPrompt } from "@/components/NotificationPrompt";
 import { Avatar, BackButton, ConfirmDialog, EmptyState, ErrorState, GlassIconButton, PrimaryButton, withAlpha } from "@/components/ui";
 import { plural } from "@/lib/format";
-import { setOpenGroup } from "@/lib/queries";
+import { api } from "@/lib/api";
+import { hideSender, setOpenGroup } from "@/lib/queries";
 import { uploadAttachment } from "@/lib/upload";
 import { useConversation, type LocalMessage } from "@/lib/useConversation";
+import { eventPick, useEventPick } from "@/state/eventPick";
+import { pollDraft, usePollDraft } from "@/state/pollDraft";
 import { errorMessage, useGroupSummary, useSession } from "@/state/session";
 import { ORANGE, useTheme } from "@/theme/tokens";
 
@@ -27,7 +30,7 @@ export default function GroupChat() {
   const t = useTheme();
   const insets = useSafeAreaInsets();
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { me } = useSession();
+  const { me, setMe } = useSession();
   const summary = useGroupSummary(id);
   // Read before the chat marks itself read, for the "New messages" divider.
   const [unreadAtOpen] = useState(() => summary?.group.unreadCount ?? 0);
@@ -39,6 +42,8 @@ export default function GroupChat() {
   const [actionFor, setActionFor] = useState<LocalMessage | null>(null);
   const [deleting, setDeleting] = useState<LocalMessage | null>(null);
   const [deleteBusy, setDeleteBusy] = useState(false);
+  const [blocking, setBlocking] = useState<{ id: string; name: string } | null>(null);
+  const [blockBusy, setBlockBusy] = useState(false);
   const [replyTo, setReplyTo] = useState<LocalMessage | null>(null);
   const [showJump, setShowJump] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
@@ -62,6 +67,23 @@ export default function GroupChat() {
     const id = setTimeout(() => setToast(null), 3500);
     return () => clearTimeout(id);
   }, [toast]);
+
+  // A poll composed, or an event chosen, on the modal screens that opened
+  // from this one's attach sheet — sent as soon as it comes back.
+  const { sendPoll, sendEvent } = convo;
+  const draft = usePollDraft();
+  useEffect(() => {
+    if (!draft) return;
+    pollDraft.clear();
+    void sendPoll(draft).catch((err) => setToast(errorMessage(err, "Couldn't send the poll. Try again.")));
+  }, [draft, sendPoll]);
+
+  const chosenEvent = useEventPick();
+  useEffect(() => {
+    if (!chosenEvent) return;
+    eventPick.clear();
+    void sendEvent(chosenEvent).catch((err) => setToast(errorMessage(err, "Couldn't share the event. Try again.")));
+  }, [chosenEvent, sendEvent]);
 
   const name = group?.name ?? summary?.group.name ?? "";
   const isAnnouncements = (group?.kind ?? summary?.group.kind) === "announcements";
@@ -116,12 +138,16 @@ export default function GroupChat() {
       onCancelReply={() => setReplyTo(null)}
       onSend={sendText}
       onAttach={sendFile}
+      onAttachPoll={() => router.push(`/group/${id}/poll`)}
+      onAttachEvent={() => router.push(`/group/${id}/event-picker`)}
       onError={setToast}
     />
   );
 
   return (
-    <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={{ flex: 1, backgroundColor: t.bg }}>
+    // "padding" on Android too: apps are edge-to-edge there now, so the window
+    // no longer shrinks for the keyboard and the message box would be covered.
+    <KeyboardAvoidingView behavior="padding" style={{ flex: 1, backgroundColor: t.bg }}>
       {!messages ? (
         convo.error ? (
           <View style={{ flex: 1, justifyContent: "center" }}>
@@ -161,8 +187,15 @@ export default function GroupChat() {
                 replyTo={item.m.replyTo ? byId.get(item.m.replyTo) ?? null : null}
                 senderIsAdmin={!!item.m.sender && admins.has(item.m.sender.id)}
                 onLongPress={() => setActionFor(item.m)}
-                onOpenAttachment={(url) => void WebBrowser.openBrowserAsync(url)}
+                onOpenAttachment={() =>
+                  // The cached link may have expired; attachmentUrl fetches a fresh one if so.
+                  void convo.attachmentUrl(item.m).then((url) => {
+                    if (url) void WebBrowser.openBrowserAsync(url);
+                    else setToast("Couldn't open that file. Try again.");
+                  })
+                }
                 onToggleReaction={(emoji) => void convo.toggleReaction(item.m.id, emoji).catch((err) => setToast(errorMessage(err)))}
+                onVotePoll={(optionIds) => void convo.vote(item.m.id, optionIds).catch((err) => setToast(errorMessage(err)))}
                 onRetry={() =>
                   Alert.alert("Message not sent", undefined, [
                     { text: "Try again", onPress: () => void convo.retry(item.m.id) },
@@ -242,9 +275,36 @@ export default function GroupChat() {
           setActionFor(null);
           if (m) router.push({ pathname: "/report", params: { messageId: String(m.id), name: m.sender?.displayName ?? "Former member", at: m.createdAt, body: m.body ?? "Attachment" } });
         }}
+        onBlock={() => {
+          const sender = actionFor?.sender;
+          setActionFor(null);
+          if (sender) setBlocking({ id: sender.id, name: sender.displayName });
+        }}
         onDelete={() => {
           setDeleting(actionFor);
           setActionFor(null);
+        }}
+      />
+
+      <ConfirmDialog
+        visible={!!blocking}
+        title={`Block ${blocking?.name ?? ""}?`}
+        body={`You won't see their messages or get notifications from them, and they won't be told. You both stay in your groups. The safeguarding team can still see everything, and can see that you blocked ${blocking?.name.split(" ")[0] ?? "them"}. If they've made you feel unsafe, report the message too.`}
+        confirmLabel="Block"
+        busy={blockBusy}
+        onCancel={() => setBlocking(null)}
+        onConfirm={async () => {
+          if (!blocking) return;
+          setBlockBusy(true);
+          try {
+            setMe(await api.block(blocking.id));
+            hideSender(blocking.id);
+            setToast(`${blocking.name} is blocked. You can unblock them in Settings.`);
+          } catch (err) {
+            setToast(errorMessage(err));
+          }
+          setBlockBusy(false);
+          setBlocking(null);
         }}
       />
 

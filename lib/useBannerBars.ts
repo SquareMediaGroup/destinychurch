@@ -4,6 +4,7 @@ import { usePathname } from "next/navigation";
 import { useBanner, type BannerData } from "@/contexts/BannerContext";
 import { useLiveStatus } from "@/contexts/LiveContext";
 import { isCourseEventType } from "@/lib/courseEvents";
+import { isLegalPagePath } from "@/lib/legalPages";
 
 const isVisible = (b: BannerData) => {
   if (!b.active) return false;
@@ -19,6 +20,8 @@ export function useBannerBars(): number {
 
   if (pathname.startsWith("/admin") || pathname.startsWith("/portal")) return 0;
   if (banner.active && banner.type === "sitewide") return 0;
+  // SiteBanner and LiveBanner both stand aside on legal pages.
+  if (isLegalPagePath(pathname)) return 0;
 
   // The live banner takes priority — other banners don't stack under it.
   if (live.live) return 1;

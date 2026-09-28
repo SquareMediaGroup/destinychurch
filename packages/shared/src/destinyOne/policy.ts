@@ -6,7 +6,7 @@
 // button rather than show one that will fail. If the two ever disagree, the
 // database wins and this file is the bug.
 
-import type { D1Consent, D1LeaderRole, D1MemberStatus, D1MembershipRole, D1GroupKind, D1GroupState } from "./types";
+import type { D1AppConfig, D1Consent, D1LeaderRole, D1MemberStatus, D1MembershipRole, D1GroupKind, D1GroupState, D1PollDraft } from "./types";
 
 /** No 1:1 chats: a "group" of two is a DM with extra steps. */
 export const MIN_GROUP_MEMBERS = 3;
@@ -65,6 +65,24 @@ export function adultOnFromDateOfBirth(dob: string | null | undefined): string |
   const adult = new Date(Date.UTC(year + 18, month - 1, day));
   return adult.toISOString().slice(0, 10);
 }
+
+/** The youngest age that can use Destiny One (decided 2026-09-28). No parent or carer step at 13+. */
+export const MIN_AGE = 13;
+
+/** The date someone born on `dob` (YYYY-MM-DD) turns MIN_AGE, or null for anything that isn't a real date. */
+export function minimumAgeOn(dob: string | null | undefined): string | null {
+  if (!dob || !adultOnFromDateOfBirth(dob)) return null;
+  const [year, month, day] = dob.trim().slice(0, 10).split("-").map(Number);
+  return new Date(Date.UTC(year + MIN_AGE, month - 1, day)).toISOString().slice(0, 10);
+}
+
+/** True when a real date of birth makes someone younger than MIN_AGE on `today` (YYYY-MM-DD). */
+export function isUnderMinimumAge(dob: string | null | undefined, today: string): boolean {
+  const on = minimumAgeOn(dob);
+  return on !== null && on > today;
+}
+
+export const UNDER_MINIMUM_AGE_MESSAGE = `Destiny One is for people aged ${MIN_AGE} and over.`;
 
 /**
  * Today in the church's time zone, as YYYY-MM-DD. The database compares against
@@ -153,6 +171,32 @@ export function validateMessageBody(body: string | null | undefined, hasAttachme
   return { ok: true };
 }
 
+// ── Polls ────────────────────────────────────────────────────────────────────
+
+export const MIN_POLL_OPTIONS = 2;
+export const MAX_POLL_OPTIONS = 6;
+export const MAX_POLL_QUESTION_LENGTH = 200;
+export const MAX_POLL_OPTION_LENGTH = 80;
+
+export function validatePoll(draft: D1PollDraft): RuleCheck {
+  const question = draft.question.trim();
+  if (!question) return { ok: false, reason: "Add a question." };
+  if (question.length > MAX_POLL_QUESTION_LENGTH) {
+    return { ok: false, reason: `Questions can be up to ${MAX_POLL_QUESTION_LENGTH} characters.` };
+  }
+  const options = draft.options.map((o) => o.trim()).filter(Boolean);
+  if (options.length < MIN_POLL_OPTIONS) {
+    return { ok: false, reason: `Add at least ${MIN_POLL_OPTIONS} options.` };
+  }
+  if (options.length > MAX_POLL_OPTIONS) {
+    return { ok: false, reason: `Polls can have up to ${MAX_POLL_OPTIONS} options.` };
+  }
+  if (options.some((o) => o.length > MAX_POLL_OPTION_LENGTH)) {
+    return { ok: false, reason: `Options can be up to ${MAX_POLL_OPTION_LENGTH} characters.` };
+  }
+  return { ok: true };
+}
+
 // ── Notifications ───────────────────────────────────────────────────────────
 
 /** How much of a message a push notification may carry. */
@@ -197,4 +241,20 @@ export function toPrefixQuery(input: string): string | null {
     .slice(0, 8);
   if (!words.length || words.join("").length < MIN_SEARCH_CHARS) return null;
   return words.map((w) => `${w}:*`).join(" & ");
+}
+
+export type D1AppGate = "ok" | "update" | "maintenance";
+
+/**
+ * Whether this build of the app may run. `build` is the native build number
+ * (null in Expo Go, dev clients without one, and on web: always allowed, so a
+ * developer is never locked out). Maintenance beats everything, since it means
+ * "nobody, whatever their build".
+ */
+export function appGate(config: D1AppConfig | null | undefined, platform: string, build: number | null): D1AppGate {
+  if (!config) return "ok";
+  if (config.maintenanceMessage) return "maintenance";
+  if (build === null || !Number.isFinite(build)) return "ok";
+  const min = platform === "ios" ? config.minBuild.ios : platform === "android" ? config.minBuild.android : 1;
+  return build < min ? "update" : "ok";
 }

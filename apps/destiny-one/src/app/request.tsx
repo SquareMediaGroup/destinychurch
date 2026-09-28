@@ -6,6 +6,7 @@ import { Text, View } from "react-native";
 import { router } from "expo-router";
 import { AuthScreen } from "@/components/AuthScreen";
 import { Field, FieldLabel, FormError, LargeTitle, Lead, PrimaryButton } from "@/components/ui";
+import { MIN_AGE, UNDER_MINIMUM_AGE_MESSAGE, isUnderMinimumAge, todayInLondon } from "@destiny/shared";
 import { api } from "@/lib/api";
 import { errorMessage, routeFor, useSession } from "@/state/session";
 import { useTheme } from "@/theme/tokens";
@@ -44,6 +45,10 @@ export default function RequestAccess() {
     const dateOfBirth = dob.trim() ? parseDob(dob) : undefined;
     if (dateOfBirth === null) {
       setError("Please enter your date of birth as DD / MM / YYYY, or leave it blank.");
+      return;
+    }
+    if (dateOfBirth && isUnderMinimumAge(dateOfBirth, todayInLondon())) {
+      setError(UNDER_MINIMUM_AGE_MESSAGE);
       return;
     }
     setBusy(true);
@@ -88,7 +93,7 @@ export default function RequestAccess() {
         <View style={{ gap: 8 }}>
           <FieldLabel optional>Date of birth</FieldLabel>
           <Field value={dob} onChangeText={(v) => setDob(maskDob(v))} placeholder="DD / MM / YYYY" keyboardType="number-pad" inputStyle={{ fontVariant: ["tabular-nums"] }} />
-          <Text style={{ paddingHorizontal: 4, fontSize: 13, lineHeight: 18, color: t.subtle }}>Staff will confirm your age. We only keep the date you turn 18.</Text>
+          <Text style={{ paddingHorizontal: 4, fontSize: 13, lineHeight: 18, color: t.subtle }}>You need to be {MIN_AGE} or over. Staff will confirm your age. We only keep the date you turn 18.</Text>
         </View>
         <View style={{ gap: 8 }}>
           <FieldLabel optional>Anything we should know?</FieldLabel>

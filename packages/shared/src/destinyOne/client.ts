@@ -5,6 +5,7 @@
 // D1ApiError carrying the server's stable error code.
 
 import type {
+  D1AppConfig,
   D1CommunitySummary,
   D1Consent,
   D1DirectoryEntry,
@@ -12,6 +13,8 @@ import type {
   D1AccessRequest,
   D1ErrorBody,
   D1ErrorCode,
+  D1EventRef,
+  D1EventSummary,
   D1Export,
   D1GroupDetail,
   D1Me,
@@ -19,6 +22,7 @@ import type {
   D1Message,
   D1MessageHit,
   D1MessagePage,
+  D1PollDraft,
   D1UploadTicket,
 } from "./types";
 
@@ -45,8 +49,8 @@ export function createDestinyOneClient({ baseUrl, getAccessToken, fetchImpl }: D
   const root = `${baseUrl.replace(/\/$/, "")}/api/app/v1/one`;
   const doFetch = fetchImpl ?? fetch;
 
-  async function call<T>(method: string, path: string, body?: unknown): Promise<T> {
-    const token = await getAccessToken();
+  async function call<T>(method: string, path: string, body?: unknown, opts: { anonymous?: boolean } = {}): Promise<T> {
+    const token = opts.anonymous ? null : await getAccessToken();
     let res: Response;
     try {
       res = await doFetch(`${root}${path}`, {
@@ -112,11 +116,18 @@ export function createDestinyOneClient({ baseUrl, getAccessToken, fetchImpl }: D
   };
 
   return {
+    // ── App ──
+    /** Minimum builds, maintenance switch. Sent without a token so it works signed out and the CDN can cache it. */
+    appConfig: () => call<D1AppConfig>("GET", "/config", undefined, { anonymous: true }),
+
     // ── Account ──
     /** Links the signed-in account to its ChurchSuite record. Call after every sign-in. */
     link: () => call<D1Me>("POST", "/auth/link"),
-    /** Before sending a code: throws `not_verified` (with a message to show) if this email can't get in. */
-    checkEmail: (email: string) => call<{ canSignIn: true }>("POST", "/auth/check", { email }),
+    /**
+     * Ask for an email sign-in code. The server sends one only if this email can get in, and always
+     * answers the same, so it never reveals who is a member. Then verify with Supabase `verifyOtp`.
+     */
+    requestCode: (email: string) => call<{ sent: true }>("POST", "/auth/code", { email }, { anonymous: true }),
     /** Where to open the ChurchSuite sign-in (in an auth session browser). */
     churchSuiteStartUrl: (redirect: string, challenge: string) =>
       `${root}/auth/churchsuite/start${q({ redirect, challenge })}`,
@@ -135,6 +146,9 @@ export function createDestinyOneClient({ baseUrl, getAccessToken, fetchImpl }: D
     /** Upload/replace my profile picture. `file` is a multipart form part (React Native's `{ uri, name, type }` shape works). */
     uploadAvatar: (file: Blob) => callForm<D1Me>("POST", "/me/avatar", file),
     removeAvatar: () => call<D1Me>("DELETE", "/me/avatar"),
+    /** Hide someone's messages and notifications for me. They stay in every group; safeguarding can still see everything. */
+    block: (memberId: string) => call<D1Me>("POST", `/members/${memberId}/block`),
+    unblock: (memberId: string) => call<D1Me>("DELETE", `/members/${memberId}/block`),
 
     // ── Communities ──
     communities: () => call<D1CommunitySummary[]>("GET", "/communities"),
@@ -169,7 +183,7 @@ export function createDestinyOneClient({ baseUrl, getAccessToken, fetchImpl }: D
     // ── Messages ──
     messages: (groupId: string, opts: { before?: number; limit?: number } = {}) =>
       call<D1MessagePage>("GET", `/groups/${groupId}/messages${q(opts)}`),
-    send: (groupId: string, input: { body?: string; replyTo?: number; attachmentId?: string }) =>
+    send: (groupId: string, input: { body?: string; replyTo?: number; attachmentId?: string; poll?: D1PollDraft; event?: D1EventRef }) =>
       call<D1Message>("POST", `/groups/${groupId}/messages`, input),
     deleteMessage: (messageId: number) => call<{ ok: true }>("DELETE", `/messages/${messageId}`),
     report: (messageId: number, reason: string) =>
@@ -178,11 +192,20 @@ export function createDestinyOneClient({ baseUrl, getAccessToken, fetchImpl }: D
       call<{ ok: true }>("POST", `/messages/${messageId}/reactions`, { emoji }),
     unreact: (messageId: number, emoji: string) =>
       call<{ ok: true }>("DELETE", `/messages/${messageId}/reactions`, { emoji }),
+    /** Cast (or clear, with an empty array) this member's vote(s) on a poll message. */
+    vote: (messageId: number, optionIds: string[]) =>
+      call<{ ok: true }>("POST", `/messages/${messageId}/vote`, { optionIds }),
+    /** Fresh links for cached attachments whose signed URLs have expired (links last an hour). */
+    attachmentUrls: (groupId: string, attachmentIds: string[]) =>
+      call<{ urls: { id: string; url: string | null }[] }>("GET", `/groups/${groupId}/attachments${q({ ids: attachmentIds.join(",") })}`),
     requestUpload: (groupId: string, input: { mimeType: string; sizeBytes: number }) =>
       call<D1UploadTicket>("POST", `/groups/${groupId}/attachments`, input),
 
     /** Search your messages (groups you're in, since you joined; never deleted ones). */
     searchMessages: (query: string) => call<D1MessageHit[]>("GET", `/search/messages${q({ q: query })}`),
+
+    /** Upcoming ChurchSuite events, for the Event attach picker. */
+    events: () => call<D1EventSummary[]>("GET", "/events"),
 
     // ── Directory (leaders) ──
     directory: (query: string, communityId?: string) =>

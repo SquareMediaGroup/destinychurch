@@ -35,6 +35,17 @@ export async function POST(request: Request) {
   const ext = file.type.split("/")[1];
   const path = `${user.id}-${Date.now()}.${ext}`;
   const supabase = createServiceClient();
+
+  // Only admin accounts have a row to attach the picture to. Checked before
+  // uploading so any other signed-in user can't leave files in the bucket.
+  const { data: existing } = await supabase
+    .from("admin_roles")
+    .select("avatar_url")
+    .eq("auth_user_id", user.id)
+    .maybeSingle();
+  if (!existing) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  const previous = existing.avatar_url as string | null | undefined;
+
   const buffer = Buffer.from(await file.arrayBuffer());
 
   const { error: uploadError } = await supabase.storage
@@ -43,13 +54,6 @@ export async function POST(request: Request) {
   if (uploadError) {
     return NextResponse.json({ error: uploadError.message }, { status: 500 });
   }
-
-  const { data: existing } = await supabase
-    .from("admin_roles")
-    .select("avatar_url")
-    .eq("auth_user_id", user.id)
-    .maybeSingle();
-  const previous = existing?.avatar_url as string | null | undefined;
 
   const { data } = supabase.storage.from(BUCKET).getPublicUrl(path);
   const { error: updateError } = await supabase

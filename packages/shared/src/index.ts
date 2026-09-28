@@ -21,3 +21,4 @@ export * from "./design/tokens";
 export * from "./destinyOne/types";
 export * from "./destinyOne/policy";
 export * from "./destinyOne/client";
+export * from "./destinyOne/signedUrls";

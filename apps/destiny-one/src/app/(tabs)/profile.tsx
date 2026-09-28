@@ -1,4 +1,4 @@
-// Settings tab (D1–D4): profile, accounts, notifications, the notices again,
+// Profile tab (D1–D4): your name and picture, accounts, notifications, the notices again,
 // your data, sign out. Your name is read-only — the church office sets it.
 
 import { useState } from "react";
@@ -10,10 +10,11 @@ import Constants from "expo-constants";
 import { openDocument } from "@/components/SafetyNotice";
 import { Avatar, Card, CardButton, LargeTitle, Separator, SettingsRow } from "@/components/ui";
 import { api } from "@/lib/api";
+import { cleanImage } from "@/lib/cleanImage";
 import { errorMessage, useSession } from "@/state/session";
 import { ORANGE, INK, useTheme } from "@/theme/tokens";
 
-export default function Settings() {
+export default function Profile() {
   const t = useTheme();
   const insets = useSafeAreaInsets();
   const { me, setMe, email, isLeader, signOut, accounts } = useSession();
@@ -50,11 +51,9 @@ export default function Settings() {
     const asset = result.assets[0];
     setAvatarBusy(true);
     try {
-      const file = {
-        uri: asset.uri,
-        name: asset.fileName ?? "avatar.jpg",
-        type: asset.mimeType ?? "image/jpeg",
-      } as unknown as Blob;
+      // A fresh copy with no hidden details (no GPS location), as for chat photos.
+      const clean = await cleanImage(asset.uri, asset.fileName ?? "avatar.jpg", asset.mimeType ?? "image/jpeg");
+      const file = { uri: clean.uri, name: clean.name, type: clean.mimeType } as unknown as Blob;
       setMe(await api.uploadAvatar(file));
     } catch (err) {
       Alert.alert("Couldn't update your picture", errorMessage(err));
@@ -65,7 +64,7 @@ export default function Settings() {
 
   return (
     <ScrollView style={{ flex: 1, backgroundColor: t.grouped }} contentContainerStyle={{ paddingTop: insets.top + 52, paddingHorizontal: 16, paddingBottom: 120, gap: 22 }}>
-      <LargeTitle style={{ paddingHorizontal: 4 }}>Settings</LargeTitle>
+      <LargeTitle style={{ paddingHorizontal: 4 }}>Profile</LargeTitle>
 
       <Card style={{ flexDirection: "row", alignItems: "center", gap: 14, padding: 16 }}>
         <Pressable onPress={changeAvatar} disabled={avatarBusy} style={{ opacity: avatarBusy ? 0.5 : 1 }}>
@@ -97,6 +96,8 @@ export default function Settings() {
 
       <Card>
         <SettingsRow icon="bell" iconBg={ORANGE} iconColor={INK} label="Notifications" onPress={() => router.push("/notifications")} />
+        <Separator inset={62} />
+        <SettingsRow icon="alertCircle" label="Blocked people" onPress={() => router.push("/blocked")} />
       </Card>
 
       <Card>

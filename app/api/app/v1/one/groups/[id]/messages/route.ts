@@ -1,11 +1,28 @@
+import { randomUUID } from "node:crypto";
 import { after } from "next/server";
-import { canPost } from "@destiny/shared";
+import { canPost, type D1MessageContent, type D1PollDraft } from "@destiny/shared";
 import { createServiceClient } from "@/utils/supabase/service";
 import { requireMember } from "@/lib/destinyOne/auth.server";
 import { getMessage, listMessages, requireGroupMembership } from "@/lib/destinyOne/chat.server";
+import { buildEventSnapshot } from "@/lib/destinyOne/events.server";
 import { pushNewMessage } from "@/lib/destinyOne/push.server";
 import { OneError, fromDbError, limit, oneJson, oneRoute, readBody, requireUuid, type IdParams } from "@/lib/destinyOne/http";
 import { sendMessageSchema } from "@/lib/destinyOne/schemas";
+
+function buildPollContent(draft: D1PollDraft): D1MessageContent {
+  return {
+    kind: "poll",
+    poll: {
+      id: randomUUID(),
+      question: draft.question.trim(),
+      options: draft.options.map((label, i) => ({ id: `o${i + 1}`, label: label.trim() })),
+      allowMultiple: draft.allowMultiple,
+      totalVoters: 0,
+      votes: [],
+      myOptionIds: [],
+    },
+  };
+}
 
 // GET  /api/app/v1/one/groups/[id]/messages?before=<id>&limit=<n>
 //        Newest page first, returned oldest→newest. Only messages from after
@@ -33,7 +50,7 @@ export const GET = oneRoute<IdParams>(async (request, { params }) => {
 export const POST = oneRoute<IdParams>(async (request, { params }) => {
   const caller = await requireMember(request);
   const id = requireUuid((await params).id, "group");
-  limit("send", caller.member.id, 40);
+  await limit("send", caller.member.id, 40);
 
   // Checked here first only for a friendlier error; the database re-checks.
   const membership = await requireGroupMembership(caller, id);
@@ -47,12 +64,19 @@ export const POST = oneRoute<IdParams>(async (request, { params }) => {
   }
 
   const input = await readBody(request, sendMessageSchema);
+  const content: D1MessageContent | null = input.poll
+    ? buildPollContent(input.poll)
+    : input.event
+      ? await buildEventSnapshot(input.event)
+      : null;
+
   const { data, error } = await createServiceClient().rpc("d1_post_message", {
     p_actor: caller.member.id,
     p_group: id,
     p_body: input.body ?? null,
     p_reply_to: input.replyTo ?? null,
     p_attachment: input.attachmentId ?? null,
+    p_content: content,
   });
   if (error) throw fromDbError(error);
 
@@ -60,7 +84,7 @@ export const POST = oneRoute<IdParams>(async (request, { params }) => {
   after(() =>
     pushNewMessage(id, caller.member.id, {
       senderName: caller.member.display_name,
-      body: input.body ?? null,
+      body: input.body ?? (content?.kind === "poll" ? `Poll: ${content.poll.question}` : content?.kind === "event" ? `Event: ${content.event.name}` : null),
       attachmentMime: message.attachment?.mimeType ?? null,
     }),
   );

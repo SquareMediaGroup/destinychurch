@@ -10,8 +10,8 @@
 // de-duplicated by id (messages) or ignored (our own reactions, which were
 // already applied locally).
 
-import { useCallback, useRef, useState } from "react";
-import type { D1Me } from "@destiny/shared";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { signedUrlNeedsRefresh, type D1EventRef, type D1EventSummary, type D1Me, type D1MessageContent, type D1PollDraft } from "@destiny/shared";
 import { api } from "@/lib/api";
 import { keys, PAGE, updateGroupSummary, updateMessages, upsert, useGroup, useMessages, type LocalMessage, type MessagesData } from "@/lib/queries";
 import { queryClient } from "@/lib/queryClient";
@@ -21,9 +21,41 @@ export type { LocalMessage };
 
 let localIds = -1;
 
-type Pending = { input: { body?: string; replyTo?: number; attachmentId?: string }; upload?: () => Promise<string> };
+type SendInput = { body?: string; replyTo?: number; attachmentId?: string; poll?: D1PollDraft; event?: D1EventRef };
+type Pending = { input: SendInput; upload?: () => Promise<string> };
 /** Unsent messages, kept outside the screen so "tap to retry" still works after leaving and coming back. */
 const pending = new Map<number, Pending>();
+
+/** Attachment ids whose fresh links are already being fetched, so a re-render doesn't ask twice. */
+const refreshing = new Set<string>();
+
+/**
+ * Attachment links last an hour but cached messages last up to 30 days. Swap
+ * in fresh links for any that have expired (or nearly), in one request.
+ * Returns the fresh URL for each id it could refresh.
+ */
+async function refreshAttachmentUrls(groupId: string, messages: LocalMessage[]): Promise<Map<string, string>> {
+  const stale = messages
+    .filter((m) => m.attachment && !refreshing.has(m.attachment.id) && (!m.attachment.url || signedUrlNeedsRefresh(m.attachment.url)))
+    .map((m) => m.attachment!.id);
+  const fresh = new Map<string, string>();
+  if (stale.length === 0) return fresh;
+  stale.forEach((id) => refreshing.add(id));
+  try {
+    const { urls } = await api.attachmentUrls(groupId, stale);
+    for (const u of urls) if (u.url) fresh.set(u.id, u.url);
+    if (fresh.size) {
+      updateMessages(groupId, (list) =>
+        list.map((m) => (m.attachment && fresh.has(m.attachment.id) ? { ...m, attachment: { ...m.attachment, url: fresh.get(m.attachment.id)! } } : m)),
+      );
+    }
+  } catch {
+    // Offline or refused: the old link stays, and the next open tries again.
+  } finally {
+    stale.forEach((id) => refreshing.delete(id));
+  }
+  return fresh;
+}
 
 export function useConversation(groupId: string, me: D1Me | null, unreadAtOpen: number) {
   const groupQuery = useGroup(groupId);
@@ -45,6 +77,22 @@ export function useConversation(groupId: string, me: D1Me | null, unreadAtOpen: 
   const setMessages = useCallback((fn: (list: LocalMessage[]) => LocalMessage[]) => {
     queryClient.setQueryData<MessagesData>(keys.messages(groupId), (old) => ({ messages: fn(old?.messages ?? []), nextBefore: old?.nextBefore ?? null }));
   }, [groupId]);
+
+  // Cached chats outlive their attachment links: refresh expired ones whenever the list changes.
+  useEffect(() => {
+    if (messages?.some((m) => m.attachment)) void refreshAttachmentUrls(groupId, messages);
+  }, [groupId, messages]);
+
+  /** A link that works right now for this message's file (fetching a fresh one if it has expired). */
+  const attachmentUrl = useCallback(
+    async (m: LocalMessage): Promise<string | null> => {
+      if (!m.attachment) return null;
+      if (m.attachment.url && !signedUrlNeedsRefresh(m.attachment.url, Date.now(), 30_000)) return m.attachment.url;
+      const fresh = await refreshAttachmentUrls(groupId, [{ ...m, attachment: { ...m.attachment, url: null } }]);
+      return fresh.get(m.attachment.id) ?? m.attachment.url;
+    },
+    [groupId],
+  );
 
   const reload = useCallback(() => queryClient.refetchQueries({ queryKey: keys.messages(groupId) }), [groupId]);
   const reloadGroup = useCallback(() => queryClient.refetchQueries({ queryKey: keys.group(groupId) }), [groupId]);
@@ -116,6 +164,7 @@ export function useConversation(groupId: string, me: D1Me | null, unreadAtOpen: 
         body: input.body ?? null,
         replyTo: input.replyTo ?? null,
         attachment: null,
+        content: null,
         reactions: [],
         createdAt: new Date().toISOString(),
         deleted: false,
@@ -142,6 +191,101 @@ export function useConversation(groupId: string, me: D1Me | null, unreadAtOpen: 
     [groupId, messages, deliver],
   );
 
+  /** A poll or event: no upload step, and the bubble shows the real content straight away. */
+  const sendContent = useCallback(
+    async (content: D1MessageContent, input: { poll?: D1PollDraft; event?: D1EventRef }) => {
+      const local: LocalMessage = {
+        id: localIds--,
+        groupId,
+        sender: me ? { id: me.id, displayName: me.displayName } : null,
+        body: null,
+        replyTo: null,
+        attachment: null,
+        content,
+        reactions: [],
+        createdAt: new Date().toISOString(),
+        deleted: false,
+        mine: true,
+        status: "sending",
+      };
+      const p: Pending = { input };
+      pending.set(local.id, p);
+      setMessages((list) => [...list, local]);
+      await deliver(local, p);
+    },
+    [groupId, me, deliver, setMessages],
+  );
+
+  const sendPoll = useCallback(
+    (draft: D1PollDraft) =>
+      sendContent(
+        {
+          kind: "poll",
+          poll: {
+            id: `local-${-localIds}`,
+            question: draft.question.trim(),
+            options: draft.options.map((label, i) => ({ id: `o${i + 1}`, label: label.trim() })),
+            allowMultiple: draft.allowMultiple,
+            totalVoters: 0,
+            votes: [],
+            myOptionIds: [],
+          },
+        },
+        { poll: draft },
+      ),
+    [sendContent],
+  );
+
+  const sendEvent = useCallback(
+    (summary: D1EventSummary) =>
+      sendContent(
+        {
+          kind: "event",
+          event: {
+            seriesKey: summary.seriesKey,
+            slug: summary.slug,
+            name: summary.name,
+            startsAt: summary.startsAt,
+            location: summary.location,
+            imageUrl: summary.thumbnailUrl,
+            webUrl: "",
+          },
+        },
+        { event: { seriesKey: summary.seriesKey, slug: summary.slug } },
+      ),
+    [sendContent],
+  );
+
+  const vote = useCallback(
+    async (messageId: number, optionIds: string[]) => {
+      const msg = messages?.find((m) => m.id === messageId);
+      if (!msg || msg.content?.kind !== "poll") return;
+      const previous = msg.content;
+      const apply = (poll: typeof previous.poll) =>
+        updateMessages(groupId, (list) => list.map((m) => (m.id === messageId ? { ...m, content: { kind: "poll", poll } } : m)));
+
+      const others = previous.poll.votes.map((v) => ({ ...v, count: v.count - (previous.poll.myOptionIds.includes(v.optionId) ? 1 : 0) }));
+      const votedBefore = previous.poll.myOptionIds.length > 0;
+      const votedAfter = optionIds.length > 0;
+      apply({
+        ...previous.poll,
+        myOptionIds: optionIds,
+        totalVoters: previous.poll.totalVoters + (votedAfter ? 1 : 0) - (votedBefore ? 1 : 0),
+        votes: previous.poll.options.map((o) => ({
+          optionId: o.id,
+          count: (others.find((v) => v.optionId === o.id)?.count ?? 0) + (optionIds.includes(o.id) ? 1 : 0),
+        })),
+      });
+      try {
+        await api.vote(messageId, optionIds);
+      } catch (err) {
+        apply(previous.poll);
+        throw err;
+      }
+    },
+    [groupId, messages],
+  );
+
   const discard = useCallback(
     (localId: number) => {
       pending.delete(localId);
@@ -153,7 +297,7 @@ export function useConversation(groupId: string, me: D1Me | null, unreadAtOpen: 
   const remove = useCallback(
     async (messageId: number) => {
       await api.deleteMessage(messageId);
-      updateMessages(groupId, (list) => list.map((m) => (m.id === messageId ? { ...m, deleted: true, body: null, attachment: null, reactions: [] } : m)));
+      updateMessages(groupId, (list) => list.map((m) => (m.id === messageId ? { ...m, deleted: true, body: null, attachment: null, content: null, reactions: [] } : m)));
     },
     [groupId],
   );
@@ -201,9 +345,13 @@ export function useConversation(groupId: string, me: D1Me | null, unreadAtOpen: 
     firstUnreadId: firstUnread.current ?? null,
     markRead,
     send,
+    sendPoll,
+    sendEvent,
+    vote,
     retry,
     discard,
     remove,
     toggleReaction,
+    attachmentUrl,
   };
 }

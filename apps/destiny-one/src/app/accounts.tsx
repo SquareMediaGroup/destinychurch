@@ -109,7 +109,7 @@ export default function Accounts() {
       </Card>
 
       <Text style={{ paddingHorizontal: 16, fontSize: 13, lineHeight: 18, color: t.subtle }}>
-        Switching asks for Face ID or your passcode. Notifications come to the account you're using. Hold an account to sign out of it.
+        Switching asks for Face ID or your passcode. Notifications come to the account you&apos;re using. Hold an account to sign out of it.
       </Text>
     </View>
   );

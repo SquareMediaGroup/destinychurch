@@ -14,7 +14,7 @@ export const dynamic = "force-dynamic";
 
 export const POST = oneRoute(async (request) => {
   const user = await authenticate(request);
-  limit("consents", user.id, 10);
+  await limit("consents", user.id, 10);
   const member = await loadMemberByAuthUser(user.id);
   if (!member) throw new OneError("not_verified", "Finish signing in first.");
 

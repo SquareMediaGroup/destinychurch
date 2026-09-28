@@ -34,3 +34,38 @@ jobs:
         run: npm run lint
       - name: Unit tests
         run: npm run test:unit -- --reporter=list
+
+  destiny-one:
+    name: Destiny One app (typecheck, lint)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: apps/destiny-one
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: apps/destiny-one/package-lock.json
+      # Its own npm project (not a root workspace), so it installs separately.
+      - name: Install dependencies
+        run: npm ci
+      - name: Typecheck
+        run: npm run typecheck
+      - name: Lint
+        run: npx expo lint
+
+  database-rules:
+    name: Database rules (SQL tests)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      # The Ubuntu runner image ships PostgreSQL; the script only needs its
+      # binaries (initdb, pg_ctl, psql) to run a throwaway local cluster.
+      - name: Find PostgreSQL
+        run: echo "PG_BIN=$(ls -d /usr/lib/postgresql/*/bin | sort -V | tail -1)" >> "$GITHUB_ENV"
+      - name: Destiny One safeguarding rules
+        run: scripts/test-sql.sh

@@ -56,6 +56,12 @@ create table if not exists storage.buckets (
   file_size_limit bigint,
   allowed_mime_types text[]
 );
+create table if not exists storage.objects (
+  id uuid primary key default gen_random_uuid(),
+  bucket_id text references storage.buckets (id),
+  name text
+);
+alter table storage.objects enable row level security;
 
 -- Tables from earlier migrations that this one extends or writes to.
 create table if not exists public.admin_roles (

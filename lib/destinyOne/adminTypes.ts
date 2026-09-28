@@ -100,6 +100,10 @@ export interface AdminOverview {
 export interface AdminSettings {
   allowAccessRequests: boolean;
   inviteExpiryDays: number;
+  minBuildIos: number;
+  minBuildAndroid: number;
+  forceUpdateMessage: string | null;
+  maintenanceMessage: string | null;
   retentionDays: number;
   churchSuiteConfigured: boolean;
 }

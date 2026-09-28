@@ -46,7 +46,7 @@ src/lib/accounts.ts      Accounts signed in on this phone; quick switching
 src/lib/api.ts           Typed client for /api/app/v1/one (from @destiny/shared)
 src/lib/auth.ts          Email one-time code; Sign in with ChurchSuite (PKCE)
 src/lib/realtime.ts      Private d1-group:* / d1-member:* channels
-src/lib/push.ts          Content-free push; ask in context, never on launch
+src/lib/push.ts          Push (group name + "Sender: first line"); ask in context, never on launch
 ```
 
 `@destiny/shared` is linked from `../../packages/shared` (see `metro.config.js`). This app is not
@@ -78,10 +78,51 @@ means a new development build is needed.
 
 The full list of screens and states to design is in `docs/destiny-one-ui-spec.md`.
 
+## Forced update and maintenance
+
+On launch and on every return to the foreground the app reads `GET /api/app/v1/one/config`
+(no token). If its native build number is below the minimum for its platform it shows the update
+screen over everything; if a maintenance message is set, everyone sees that instead. Both are set
+at `/admin/destiny-one/settings` ("App versions" and "Maintenance"), so a bad build can be retired
+without a release. The last answer is cached, so an offline launch is never blocked. Expo Go and
+web have no build number and are always let in.
+
+## Icons and splash
+
+Generated from `public/img/brand/destiny-icon.svg` by `node scripts/make-icons.mjs` (uses `sharp`
+from the repo root's `node_modules`). Re-run it when the mark changes, or replace
+`assets/icon.png` by hand with a designed 1024px icon (no transparency).
+
+## Releasing (iOS, TestFlight)
+
+Builds run on EAS in the cloud, so no local Xcode is needed.
+
+1. Create the app in App Store Connect with bundle ID `uk.destinytees.one` (needs the Apple
+   Developer account).
+2. Set the build-time variables on EAS for the `preview` and `production` environments:
+   `EXPO_PUBLIC_SUPABASE_URL`, `EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY` (and optionally
+   `EXPO_PUBLIC_API_BASE_URL`), in the Expo dashboard or with `npx eas-cli@latest env:create`.
+3. `npx eas-cli@latest build --platform ios --profile production`. EAS offers to create the
+   distribution certificate, provisioning profile and push (APNs) key; say yes.
+4. `npx eas-cli@latest submit --platform ios --latest`.
+5. In App Store Connect → TestFlight, add testers by email. Internal testers (people on the App
+   Store Connect team) get it straight away; external testers need Beta App Review, usually a day.
+
+Build numbers auto-increment on EAS (`appVersionSource: remote`). To retire a build, raise
+"Lowest iOS build allowed" in the admin above it.
+
+Before external TestFlight or the App Store:
+- Apple guideline 1.2 (user-generated content) requires reporting and blocking abusive users
+  (both built: long-press a message → Report / Block; Settings → Blocked people).
+- The privacy policy must say push notifications show a message preview.
+- Once the app is live, set `D1_IOS_STORE_URL` on Vercel to its App Store link so the Update
+  button stops pointing at TestFlight.
+
 ## Checks
 
 ```bash
 npm run typecheck
+npx expo lint
 npx expo-doctor
 npx expo export --platform ios --platform android
 ```

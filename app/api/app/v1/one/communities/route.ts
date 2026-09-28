@@ -21,7 +21,7 @@ export const POST = oneRoute(async (request) => {
   if (!canCreateCommunity(caller.policy)) {
     throw new OneError("forbidden", "Only senior leadership can create communities.");
   }
-  limit("create-community", caller.member.id, 5);
+  await limit("create-community", caller.member.id, 5);
   const input = await readBody(request, createCommunitySchema);
 
   const { data, error } = await createServiceClient().rpc("d1_create_community", {

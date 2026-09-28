@@ -286,14 +286,20 @@ select pg_temp.check(not public.d1_can_receive('d1-group:' || (select v from ids
 -- ── Grants ──────────────────────────────────────────────────────────────────
 
 select pg_temp.check(
-  not has_function_privilege('authenticated', 'public.d1_post_message(uuid, uuid, text, bigint, uuid)', 'execute')
+  not has_function_privilege('authenticated', 'public.d1_post_message(uuid, uuid, text, bigint, uuid, jsonb)', 'execute')
   and not has_function_privilege('anon', 'public.d1_create_group(uuid, uuid, text, text, text, uuid[])', 'execute')
-  and has_function_privilege('service_role', 'public.d1_post_message(uuid, uuid, text, bigint, uuid)', 'execute'),
+  and has_function_privilege('service_role', 'public.d1_post_message(uuid, uuid, text, bigint, uuid, jsonb)', 'execute'),
   'operation functions are callable by the service role only');
 
 -- ── Erasure and retention ───────────────────────────────────────────────────
 
+insert into public.d1_consents (member_id, document, version) values (:minor2::uuid, 'privacy', '2026-09');
+update public.d1_members set avatar_url = '10000000-0000-0000-0000-00000000000e-1.jpeg' where id = :minor2::uuid;
 select public.d1_erase_member(:minor2::uuid);
+select pg_temp.check(
+  not exists (select 1 from public.d1_consents where member_id = :minor2::uuid)
+    and (select avatar_url is null from public.d1_members where id = :minor2::uuid),
+  'erasure removes consent records and the profile picture reference');
 select pg_temp.check(
   (select display_name = 'Former member' and status = 'deleted' and adult_on is null
      and churchsuite_contact_id is null from public.d1_members where id = :minor2::uuid),
@@ -309,9 +315,24 @@ update public.d1_messages set created_at = now() - interval '400 days'
   where sender_id = :minor1::uuid;
 alter table public.d1_messages enable trigger d1_messages_immutable;
 
+-- One of those old messages is under an open report (Minor One reported it
+-- above, and Minor One's messages are the ones being rewound, so make sure).
+insert into public.d1_reports (message_id, group_id, reporter_id, reason)
+  select m.id, m.group_id, :lead::uuid, 'Kept as evidence'
+  from public.d1_messages m where m.sender_id = :minor1::uuid order by m.id limit 1;
+create temp table reported as
+  select message_id from public.d1_reports where reason = 'Kept as evidence';
+
+select public.d1_purge_expired(365);
+select pg_temp.check(
+  exists (select 1 from public.d1_messages where id = (select message_id from reported)),
+  'the retention purge keeps an old message while its report is open');
+
+update public.d1_reports set status = 'closed'
+  where message_id in (select m.id from public.d1_messages m where m.sender_id = :minor1::uuid);
 select pg_temp.check(
   (select messages_deleted from public.d1_purge_expired(365)) >= 1,
-  'the retention purge deletes messages past the window');
+  'the retention purge deletes messages past the window once their reports are closed');
 select pg_temp.check(
   not exists (select 1 from public.d1_messages where sender_id = :minor1::uuid)
     and exists (select 1 from public.d1_messages where sender_id = :lead::uuid),
@@ -533,5 +554,121 @@ select pg_temp.check(
 select pg_temp.check(
   not has_function_privilege('authenticated', 'public.d1_search_messages(uuid, text, integer)', 'execute'),
   'message search is service-role only');
+
+-- ── Private profile pictures (part 6) ───────────────────────────────────────
+
+select pg_temp.check(
+  (select not public from storage.buckets where id = 'd1-avatars'),
+  'the profile picture bucket is private');
+
+-- ── Blocking (part 6) ───────────────────────────────────────────────────────
+
+insert into found select 'blocked', public.d1_post_message(:adult3::uuid, (select v from ids where k = 'youth'), 'zebra crossing notice');
+select pg_temp.check(
+  (select last_id from public.d1_group_overview(:minor1::uuid, (select v from ids where k = 'youth'))) = (select v from found where k = 'blocked'),
+  'before blocking, the message is the chat list preview');
+create temp table unread_before as
+  select unread_count as v from public.d1_group_overview(:minor1::uuid, (select v from ids where k = 'youth'));
+select public.d1_set_block(:minor1::uuid, :adult3::uuid, true);
+select pg_temp.check(
+  (select last_id is distinct from (select v from found where k = 'blocked')
+     from public.d1_group_overview(:minor1::uuid, (select v from ids where k = 'youth'))),
+  'a blocked person''s message is not the chat list preview');
+select pg_temp.check(
+  (select unread_count from public.d1_group_overview(:minor1::uuid, (select v from ids where k = 'youth')))
+    < (select v from unread_before),
+  'a blocked person''s messages do not count as unread');
+select pg_temp.check(
+  not exists (select 1 from public.d1_search_messages(:minor1::uuid, 'zebra:*')),
+  'search never returns a blocked person''s messages');
+select pg_temp.check(
+  exists (select 1 from public.d1_search_messages(:lead::uuid, 'zebra:*')),
+  'blocking only hides messages for the person who blocked');
+select pg_temp.check(
+  public.d1_is_current_member((select v from ids where k = 'youth'), :adult3::uuid)
+    and (select state from public.d1_groups where id = (select v from ids where k = 'youth')) = 'active',
+  'blocking removes nobody from the group, so the 2-adult rule is untouched');
+select pg_temp.check(
+  exists (select 1 from public.d1_safeguarding_events where kind = 'block' and detail = 'Minor One blocked Third Adult.'),
+  'a block is logged for safeguarding');
+select pg_temp.check(
+  not exists (select 1 from public.notifications where kind = 'd1_block'),
+  'a block does not ring the admin bell');
+select pg_temp.expect_error(
+  format($$select public.d1_set_block(%L, %L, true)$$, :minor1, :minor1),
+  'block yourself');
+select pg_temp.check(true, 'you cannot block yourself');
+select public.d1_set_block(:minor1::uuid, :adult3::uuid, false);
+select pg_temp.check(
+  exists (select 1 from public.d1_search_messages(:minor1::uuid, 'zebra:*'))
+    and exists (select 1 from public.d1_safeguarding_events where kind = 'unblock'),
+  'unblocking shows their messages again, and is logged');
+select pg_temp.check(
+  not has_function_privilege('authenticated', 'public.d1_set_block(uuid, uuid, boolean)', 'execute'),
+  'blocking is service-role only');
+
+-- ── Safeguarding takedown (part 6) ──────────────────────────────────────────
+
+select public.d1_admin_delete_message((select v from found where k = 'blocked'), null);
+select pg_temp.check(
+  (select deleted_at is not null and body = 'zebra crossing notice' and deleted_by is null
+     from public.d1_messages where id = (select v from found where k = 'blocked')),
+  'a safeguarding takedown hides the message but keeps its content for review');
+select pg_temp.check(
+  exists (select 1 from realtime.messages where event = 'message_deleted'
+          and (payload->>'id')::bigint = (select v from found where k = 'blocked')),
+  'a safeguarding takedown removes it from members'' screens live');
+select pg_temp.check(
+  not has_function_privilege('authenticated', 'public.d1_admin_delete_message(bigint, uuid)', 'execute'),
+  'the takedown function is service-role only');
+
+-- ── Polls (part 7) ──────────────────────────────────────────────────────────
+
+insert into found select 'poll', public.d1_post_message(:adult3::uuid, (select v from ids where k = 'youth'), null, null, null,
+  '{"kind":"poll","poll":{"id":"p1","question":"Pizza or pasta?","options":[{"id":"o1","label":"Pizza"},{"id":"o2","label":"Pasta"}],"allowMultiple":false}}'::jsonb);
+select pg_temp.check(
+  (select body is null and content->>'kind' = 'poll' from public.d1_messages where id = (select v from found where k = 'poll')),
+  'a poll is a message with content and no body');
+select public.d1_vote(:minor1::uuid, (select v from found where k = 'poll'), array['o1']);
+select public.d1_vote(:minor1::uuid, (select v from found where k = 'poll'), array['o2']);
+select pg_temp.check(
+  (select array_agg(option_id) from public.d1_poll_votes where message_id = (select v from found where k = 'poll')) = array['o2'],
+  'changing a vote replaces it');
+select pg_temp.check(
+  exists (select 1 from realtime.messages where event = 'poll_vote'
+          and (payload->>'messageId')::bigint = (select v from found where k = 'poll')
+          and payload->>'groupId' = (select v from ids where k = 'youth')::text),
+  'votes are broadcast live with the group id');
+select pg_temp.expect_error(
+  format($$select public.d1_vote(%L, %L, array['o1','o2'])$$, :minor1, (select v from found where k = 'poll')),
+  'only allows one choice');
+select pg_temp.check(true, 'single-choice polls take one choice');
+select pg_temp.expect_error(
+  format($$select public.d1_vote(%L, %L, array['nope'])$$, :minor1, (select v from found where k = 'poll')),
+  'not an option');
+select pg_temp.check(true, 'you can only vote for options on the poll');
+select pg_temp.expect_error(
+  format($$select public.d1_vote(%L, %L, array['o1'])$$, :adult2, (select v from found where k = 'poll')),
+  'current members');
+select pg_temp.check(true, 'only current members can vote');
+select pg_temp.check(
+  not has_function_privilege('authenticated', 'public.d1_vote(uuid, bigint, text[])', 'execute'),
+  'voting is service-role only');
+
+-- ── Shared rate limits (part 7) ─────────────────────────────────────────────
+
+select pg_temp.check(
+  public.d1_rate_limit('test:send:x', 2) and public.d1_rate_limit('test:send:x', 2),
+  'the shared rate limit allows up to the maximum in a minute');
+select pg_temp.check(
+  not public.d1_rate_limit('test:send:x', 2),
+  'the shared rate limit refuses the next one');
+select pg_temp.check(
+  public.d1_rate_limit('test:send:y', 2),
+  'each key has its own count');
+select pg_temp.check(
+  not has_function_privilege('authenticated', 'public.d1_rate_limit(text, integer)', 'execute')
+    and not has_function_privilege('anon', 'public.d1_rate_limit(text, integer)', 'execute'),
+  'the rate limit function is service-role only');
 
 \echo 'All Destiny One SQL checks passed.'

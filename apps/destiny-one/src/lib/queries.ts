@@ -5,6 +5,7 @@
 //   ["community", id]      only when it isn't already in the chat list
 //   ["group", id]          group details (members, rules, what I can do)
 //   ["messages", groupId]  { messages, nextBefore }, oldest first
+//   ["appConfig"]          minimum builds + maintenance switch (src/lib/appGate.ts)
 //
 // applyEvent() is the "database told us something changed" path. Where the
 // event carries enough, it patches the cache directly (no request at all);
@@ -12,7 +13,7 @@
 // the background, only if something on screen is using it.
 
 import { useQuery } from "@tanstack/react-query";
-import type { D1CommunitySummary, D1GroupDetail, D1GroupSummary, D1Message, D1RealtimeEvent } from "@destiny/shared";
+import type { D1CommunitySummary, D1GroupDetail, D1GroupSummary, D1Me, D1Message, D1RealtimeEvent } from "@destiny/shared";
 import { api } from "@/lib/api";
 import { queryClient } from "@/lib/queryClient";
 
@@ -28,6 +29,7 @@ export const keys = {
   community: (id: string) => ["community", id] as const,
   group: (id: string) => ["group", id] as const,
   messages: (groupId: string) => ["messages", groupId] as const,
+  appConfig: ["appConfig"] as const,
 };
 
 export const PAGE = 40;
@@ -95,6 +97,27 @@ export function removeGroupLocally(groupId: string) {
   queryClient.removeQueries({ queryKey: keys.messages(groupId) });
 }
 
+// ── Blocking ────────────────────────────────────────────────────────────────
+
+function isBlocked(memberId: string | undefined): boolean {
+  if (!memberId) return false;
+  return !!queryClient.getQueryData<D1Me>(keys.me)?.blocked?.some((b) => b.id === memberId);
+}
+
+/** Just blocked someone: take their messages out of every cached chat at once. */
+export function hideSender(memberId: string) {
+  queryClient.setQueriesData<MessagesData>({ queryKey: ["messages"] }, (old) =>
+    old ? { ...old, messages: old.messages.filter((m) => m.sender?.id !== memberId) } : old,
+  );
+  invalidateCommunities(); // previews and unread counts come back without them
+}
+
+/** Unblocked someone: start every chat afresh so their messages come back in place. */
+export function showSendersAgain() {
+  void queryClient.resetQueries({ queryKey: ["messages"] });
+  invalidateCommunities();
+}
+
 /** Refresh the chat list in the background. Never awaited by the UI. */
 export function invalidateCommunities() {
   void queryClient.invalidateQueries({ queryKey: keys.communities });
@@ -122,13 +145,14 @@ export function applyEvent(e: D1RealtimeEvent, meId: string) {
   switch (e.event) {
     case "message": {
       const p = e.payload;
+      if (isBlocked(p.sender.id)) return; // someone I've blocked: never shown, never unread
       const mine = p.sender.id === meId;
       if (p.attachmentId) {
         // The event has no signed URL; the page fetch brings one.
         void queryClient.invalidateQueries({ queryKey: keys.messages(p.groupId) });
       } else {
         updateMessages(p.groupId, (list) =>
-          upsert(list, { id: p.id, groupId: p.groupId, sender: p.sender, body: p.body, replyTo: p.replyTo, attachment: null, reactions: [], createdAt: p.createdAt, deleted: false, mine }),
+          upsert(list, { id: p.id, groupId: p.groupId, sender: p.sender, body: p.body, replyTo: p.replyTo, attachment: null, content: p.content ?? null, reactions: [], createdAt: p.createdAt, deleted: false, mine }),
         );
       }
       updateGroupSummary(p.groupId, (g) => {
@@ -143,8 +167,18 @@ export function applyEvent(e: D1RealtimeEvent, meId: string) {
     }
     case "message_deleted": {
       const { id, groupId } = e.payload;
-      updateMessages(groupId, (list) => list.map((m) => (m.id === id ? { ...m, deleted: true, body: null, attachment: null, reactions: [] } : m)));
+      updateMessages(groupId, (list) => list.map((m) => (m.id === id ? { ...m, deleted: true, body: null, attachment: null, content: null, reactions: [] } : m)));
       updateGroupSummary(groupId, (g) => (g.lastMessage?.id === id ? { ...g, lastMessage: { ...g.lastMessage, deleted: true, preview: null } } : g));
+      return;
+    }
+    case "poll_vote": {
+      const { messageId, groupId, votes, totalVoters } = e.payload;
+      updateMessages(groupId, (list) =>
+        list.map((m) => {
+          if (m.id !== messageId || m.content?.kind !== "poll") return m;
+          return { ...m, content: { kind: "poll", poll: { ...m.content.poll, votes, totalVoters } } };
+        }),
+      );
       return;
     }
     case "reaction": {
@@ -180,6 +214,15 @@ export function applyEvent(e: D1RealtimeEvent, meId: string) {
     case "community_left":
       invalidateCommunities();
       return;
+    case "blocks_changed": {
+      // Usually our own block from this phone (already applied); this keeps
+      // other phones signed in to the same account in step.
+      const { memberId, blocked } = e.payload;
+      void queryClient.invalidateQueries({ queryKey: keys.me });
+      if (blocked) hideSender(memberId);
+      else showSendersAgain();
+      return;
+    }
   }
 }
 

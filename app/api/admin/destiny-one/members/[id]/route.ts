@@ -5,6 +5,7 @@ import { recordAudit } from "@/lib/audit.server";
 import { communityMemberships, getMember } from "@/lib/destinyOne/adminData.server";
 import { dbFailure, parseBody, requireDestinyOneAdmin } from "@/lib/destinyOne/admin.server";
 import { ChurchSuiteUnavailable, getChild, getContact } from "@/lib/destinyOne/churchsuite.server";
+import { eraseMember } from "@/lib/destinyOne/identity.server";
 import { adultOnForDecision } from "@/lib/destinyOne/onboarding";
 import { adminMemberSchema } from "@/lib/destinyOne/schemas";
 
@@ -126,7 +127,7 @@ export async function DELETE(_request: Request, { params }: Params) {
     .maybeSingle();
   if (!row) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  const { error } = await supabase.rpc("d1_erase_member", { p_member: id });
+  const error = await eraseMember(id);
   if (error) return dbFailure(error);
   if (row.auth_user_id) {
     const { error: authError } = await supabase.auth.admin.deleteUser(row.auth_user_id);

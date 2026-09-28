@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createServiceClient } from "@/utils/supabase/service";
 import { recordAudit } from "@/lib/audit.server";
 import { parseBody, requireDestinyOneAdmin } from "@/lib/destinyOne/admin.server";
+import { eraseMember } from "@/lib/destinyOne/identity.server";
 import { sendInviteEmail } from "@/lib/destinyOne/inviteEmail.server";
 import { invitePatchSchema } from "@/lib/destinyOne/schemas";
 import { getSettings } from "@/lib/destinyOne/settings.server";
@@ -40,7 +41,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     if (invite.member_id) {
       const { data: m } = await supabase.from("d1_members").select("auth_user_id").eq("id", invite.member_id).maybeSingle();
       if (m && !m.auth_user_id) {
-        const { error: eraseError } = await supabase.rpc("d1_erase_member", { p_member: invite.member_id });
+        const eraseError = await eraseMember(invite.member_id);
         if (eraseError) console.error("⚠️ Destiny One revoke: member not erased:", eraseError.message);
       }
     }

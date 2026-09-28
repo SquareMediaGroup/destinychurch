@@ -76,10 +76,10 @@ export default function Invite() {
           <Card>
             <PickRow label="Adult (18 or over)" on={adult === true} onPress={() => setAdult(true)} />
             <View style={{ height: StyleSheet.hairlineWidth, backgroundColor: t.sep, marginLeft: 16 }} />
-            <PickRow label="Under 18" on={adult === false} onPress={() => setAdult(false)} />
+            <PickRow label="13 to 17" on={adult === false} onPress={() => setAdult(false)} />
           </Card>
           <Text style={{ paddingHorizontal: 16, fontSize: 13, lineHeight: 18, color: t.subtle }}>
-            The church office confirms everyone's age before they join{summary ? ` ${summary.group.name}` : ""}. If they already use Destiny One, add them from the list instead.
+            The church office confirms everyone&apos;s age before they join{summary ? ` ${summary.group.name}` : ""}. If they already use Destiny One, add them from the list instead.
           </Text>
         </View>
         <FormError message={error} />

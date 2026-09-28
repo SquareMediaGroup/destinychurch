@@ -1,5 +1,5 @@
 // B4 Message actions — long-press sheet: quick reactions, the message itself,
-// then Reply / Copy / Report / Delete.
+// then Reply / Copy / Report / Block / Delete.
 
 import { Modal, Pressable, StyleSheet, Text, View } from "react-native";
 import { Icon, type IconName } from "@/components/Icon";
@@ -19,6 +19,7 @@ export function MessageActions({
   onReply,
   onCopy,
   onReport,
+  onBlock,
   onDelete,
 }: {
   message: LocalMessage | null;
@@ -28,6 +29,7 @@ export function MessageActions({
   onReply: () => void;
   onCopy: () => void;
   onReport: () => void;
+  onBlock: () => void;
   onDelete: () => void;
 }) {
   const t = useTheme();
@@ -64,6 +66,7 @@ export function MessageActions({
             {m.body ? <Action label="Copy" icon="copy" onPress={onCopy} /> : null}
             <View style={{ height: StyleSheet.hairlineWidth, backgroundColor: t.sep, marginVertical: 6 }} />
             {!m.mine ? <Action label="Report" icon="flag" onPress={onReport} tint /> : null}
+            {!m.mine && m.sender ? <Action label={`Block ${m.sender.displayName.split(" ")[0]}`} icon="alertCircle" onPress={onBlock} tint /> : null}
             {canDelete ? <Action label="Delete" icon="trash" onPress={onDelete} tint /> : null}
           </View>
         </View>

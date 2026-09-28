@@ -24,6 +24,7 @@ import {
   type D1GroupState,
   type D1GroupSummary,
   type D1Message,
+  type D1MessageContent,
   type D1MessagePage,
   type D1MembershipRole,
 } from "@destiny/shared";
@@ -225,6 +226,7 @@ interface MessageRow {
   body: string | null;
   reply_to: number | null;
   attachment_id: string | null;
+  content: D1MessageContent | null;
   created_at: string;
   deleted_at: string | null;
   sender: { id: string; display_name: string } | null;
@@ -232,9 +234,26 @@ interface MessageRow {
 }
 
 const MESSAGE_SELECT =
-  "id, group_id, sender_id, body, reply_to, attachment_id, created_at, deleted_at, " +
+  "id, group_id, sender_id, body, reply_to, attachment_id, content, created_at, deleted_at, " +
   "sender:d1_members!d1_messages_sender_id_fkey(id, display_name), " +
   "attachment:d1_attachments!d1_messages_attachment_id_fkey(id, storage_path, mime_type, size_bytes)";
+
+/** Overlays live tallies (and the caller's own choice) onto a poll's static definition. */
+function livePollContent(content: D1MessageContent, messageId: number, callerId: string, votes: { message_id: number; member_id: string; option_id: string }[]): D1MessageContent {
+  if (content.kind !== "poll") return content;
+  const rows = votes.filter((v) => v.message_id === messageId);
+  const counts = new Map<string, number>();
+  for (const v of rows) counts.set(v.option_id, (counts.get(v.option_id) ?? 0) + 1);
+  return {
+    kind: "poll",
+    poll: {
+      ...content.poll,
+      totalVoters: new Set(rows.map((v) => v.member_id)).size,
+      votes: content.poll.options.map((o) => ({ optionId: o.id, count: counts.get(o.id) ?? 0 })),
+      myOptionIds: rows.filter((v) => v.member_id === callerId).map((v) => v.option_id),
+    },
+  };
+}
 
 async function shape(rows: MessageRow[], callerId: string): Promise<D1Message[]> {
   if (rows.length === 0) return [];
@@ -242,7 +261,8 @@ async function shape(rows: MessageRow[], callerId: string): Promise<D1Message[]>
   const ids = rows.map((r) => r.id);
 
   const live = rows.filter((r) => !r.deleted_at && r.attachment);
-  const [{ data: reactions }, signed] = await Promise.all([
+  const pollIds = rows.filter((r) => !r.deleted_at && r.content?.kind === "poll").map((r) => r.id);
+  const [{ data: reactions }, signed, { data: votes }] = await Promise.all([
     supabase.from("d1_reactions").select("message_id, member_id, emoji").in("message_id", ids),
     live.length
       ? supabase.storage.from(MEDIA_BUCKET).createSignedUrls(
@@ -250,6 +270,9 @@ async function shape(rows: MessageRow[], callerId: string): Promise<D1Message[]>
           SIGNED_URL_TTL,
         )
       : Promise.resolve({ data: [] as { path: string | null; signedUrl: string }[] }),
+    pollIds.length
+      ? supabase.from("d1_poll_votes").select("message_id, member_id, option_id").in("message_id", pollIds)
+      : Promise.resolve({ data: [] as { message_id: number; member_id: string; option_id: string }[] }),
   ]);
 
   const urlFor = new Map((signed.data ?? []).map((s) => [s.path, s.signedUrl]));
@@ -279,6 +302,7 @@ async function shape(rows: MessageRow[], callerId: string): Promise<D1Message[]>
               url: urlFor.get(r.attachment.storage_path) ?? null,
             }
           : null,
+      content: !deleted && r.content ? livePollContent(r.content, r.id, callerId, votes ?? []) : null,
       reactions: deleted ? [] : [...byEmoji].map(([emoji, v]) => ({ emoji, ...v })),
       createdAt: r.created_at,
       deleted,
@@ -292,7 +316,7 @@ export async function listMessages(
   groupId: string,
   opts: { before?: number; limit: number },
 ): Promise<D1MessagePage> {
-  const membership = await requireGroupMembership(caller, groupId);
+  const [membership, blocked] = await Promise.all([requireGroupMembership(caller, groupId), blockedIds(caller.member.id)]);
 
   let query = createServiceClient()
     .from("d1_messages")
@@ -302,6 +326,9 @@ export async function listMessages(
     .order("id", { ascending: false })
     .limit(opts.limit + 1);
   if (opts.before) query = query.lt("id", opts.before);
+  // People I've blocked: their messages are hidden for me (never for safeguarding).
+  // (`or` keeps "Former member" messages, whose sender_id is null: NOT IN alone drops them.)
+  if (blocked.length) query = query.or(`sender_id.is.null,sender_id.not.in.(${blocked.join(",")})`);
 
   const { data, error } = await query;
   if (error) throw fromDbError(error);
@@ -313,6 +340,13 @@ export async function listMessages(
     messages: (await shape(page, caller.member.id)).reverse(),
     nextBefore: hasMore ? page[page.length - 1].id : null,
   };
+}
+
+/** Ids of the people this member has blocked (d1_blocks). */
+export async function blockedIds(memberId: string): Promise<string[]> {
+  const { data, error } = await createServiceClient().from("d1_blocks").select("blocked_id").eq("blocker_id", memberId);
+  if (error) throw fromDbError(error);
+  return (data ?? []).map((r) => r.blocked_id as string);
 }
 
 export async function getMessage(caller: Caller, messageId: number): Promise<D1Message> {

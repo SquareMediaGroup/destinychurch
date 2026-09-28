@@ -42,7 +42,7 @@ export default function DeleteAccount() {
     <AuthScreen back grouped footer={<PrimaryButton label="Delete my account" onPress={del} busy={busy} disabled={typed.trim() !== "DELETE"} />}>
       <View style={{ paddingTop: 14, paddingHorizontal: 4, gap: 8 }}>
         <LargeTitle>Delete my account</LargeTitle>
-        <Lead>Here's what happens:</Lead>
+        <Lead>Here&apos;s what happens:</Lead>
       </View>
       <View style={{ marginTop: 16, gap: 10, paddingHorizontal: 4 }}>
         {POINTS.map((p) => (

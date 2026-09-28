@@ -16,6 +16,7 @@ import { createServiceClient } from "@/utils/supabase/service";
 import { MEMBER_COLUMNS, type MemberRow } from "@/lib/destinyOne/auth.server";
 import { churchSuiteConfigured } from "@/lib/destinyOne/churchsuite.server";
 import { resyncMember } from "@/lib/destinyOne/identity.server";
+import { sendOpsAlert } from "@/lib/destinyOne/opsAlertEmail.server";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 300;
@@ -46,6 +47,7 @@ export async function GET(request: Request) {
         .range(from, from + PAGE - 1);
       if (error) {
         console.error("⚠️ Destiny One sync read failed:", error.message);
+        await sendOpsAlert("nightly sync", `Couldn't read members: ${error.message}`);
         break;
       }
       for (const member of (data ?? []) as MemberRow[]) {
@@ -60,6 +62,7 @@ export async function GET(request: Request) {
   const { data: groups, error: reconcileError } = await supabase.rpc("d1_reconcile_all");
   if (reconcileError) {
     console.error("⚠️ Destiny One reconcile failed:", reconcileError.message);
+    await sendOpsAlert("nightly rule re-check", reconcileError.message);
     return NextResponse.json({ error: reconcileError.message, members: tally }, { status: 500 });
   }
   const states = ((groups ?? []) as { state: string }[]).reduce<Record<string, number>>((acc, g) => {

@@ -39,9 +39,14 @@ export async function pushNewMessage(groupId: string, senderId: string, preview:
       .neq("member_id", senderId)
       .eq("d1_members.status", "active");
 
+    // Nobody is notified by someone they've blocked.
+    const { data: blockers } = await supabase.from("d1_blocks").select("blocker_id").eq("blocked_id", senderId);
+    const blockedBy = new Set((blockers ?? []).map((b) => b.blocker_id as string));
+
     const recipients = (members ?? [])
       .filter((m) => !m.muted_until || m.muted_until < now)
-      .map((m) => m.member_id as string);
+      .map((m) => m.member_id as string)
+      .filter((id) => !blockedBy.has(id));
     if (recipients.length === 0) return;
 
     const { data: tokens } = await supabase

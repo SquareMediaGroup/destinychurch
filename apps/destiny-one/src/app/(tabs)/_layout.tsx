@@ -1,4 +1,4 @@
-// Chats / Search / Settings, with the design's floating glass tab bar.
+// Chats / Search / Profile, with the design's floating glass tab bar.
 //
 // Switching tabs: the highlight slides to the new tab on a spring, the new
 // tab's icon gives a small bounce, and the screens cross-fade ("fade"
@@ -20,7 +20,7 @@ import { useTheme } from "@/theme/tokens";
 const TABS: Record<string, { label: string; icon: IconName }> = {
   chats: { label: "Chats", icon: "chats" },
   find: { label: "Search", icon: "search" },
-  settings: { label: "Settings", icon: "sliders" },
+  profile: { label: "Profile", icon: "person" },
 };
 
 function useReduceMotion() {
@@ -128,7 +128,7 @@ export default function TabsLayout() {
     <Tabs screenOptions={{ headerShown: false, animation: "fade" }} tabBar={(props) => <TabBar {...props} />}>
       <Tabs.Screen name="chats" />
       <Tabs.Screen name="find" />
-      <Tabs.Screen name="settings" />
+      <Tabs.Screen name="profile" />
     </Tabs>
   );
 }

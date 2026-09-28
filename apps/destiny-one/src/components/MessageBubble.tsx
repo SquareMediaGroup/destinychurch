@@ -3,10 +3,10 @@
 // orange on the right with the time underneath.
 
 import { Image, Pressable, Text, View } from "react-native";
-import type { D1Message } from "@destiny/shared";
+import type { D1EventContent, D1Message, D1PollContent } from "@destiny/shared";
 import { Icon } from "@/components/Icon";
 import { AdminTag, Avatar } from "@/components/ui";
-import { clock, dayLabel, fileMeta, sameDay } from "@/lib/format";
+import { clock, dayLabel, eventWhen, fileMeta, plural, sameDay } from "@/lib/format";
 import type { LocalMessage } from "@/lib/useConversation";
 import { INK, ORANGE, useTheme } from "@/theme/tokens";
 
@@ -59,10 +59,11 @@ interface BubbleProps {
   onLongPress: () => void;
   onOpenAttachment: (url: string) => void;
   onToggleReaction: (emoji: string) => void;
+  onVotePoll: (optionIds: string[]) => void;
   onRetry: () => void;
 }
 
-export function MessageBubble({ row, replyTo, senderIsAdmin, onLongPress, onOpenAttachment, onToggleReaction, onRetry }: BubbleProps) {
+export function MessageBubble({ row, replyTo, senderIsAdmin, onLongPress, onOpenAttachment, onToggleReaction, onVotePoll, onRetry }: BubbleProps) {
   const t = useTheme();
   const { m } = row;
   const name = m.mine ? "You" : m.sender?.displayName ?? "Former member";
@@ -91,6 +92,8 @@ export function MessageBubble({ row, replyTo, senderIsAdmin, onLongPress, onOpen
           </View>
         ) : null}
         <Attachment m={m} onOpen={onOpenAttachment} />
+        {m.content?.kind === "event" ? <EventCard content={m.content} mine={m.mine} onOpen={onOpenAttachment} /> : null}
+        {m.content?.kind === "poll" ? <PollCard content={m.content} mine={m.mine} onVote={onVotePoll} /> : null}
         {m.body ? <Text style={{ fontSize: 17, lineHeight: 22, letterSpacing: -0.2, color: m.mine ? INK : t.text }}>{m.body}</Text> : null}
       </View>
     </Pressable>
@@ -177,5 +180,83 @@ function Attachment({ m, onOpen }: { m: LocalMessage; onOpen: (url: string) => v
         <Text style={{ fontSize: 12, color: m.mine ? INK : t.subtle }}>{m.status === "sending" ? "Uploading..." : fileMeta(mime, a?.sizeBytes ?? local?.sizeBytes ?? null)}</Text>
       </View>
     </Pressable>
+  );
+}
+
+function EventCard({ content, mine, onOpen }: { content: D1EventContent; mine: boolean; onOpen: (url: string) => void }) {
+  const t = useTheme();
+  const { event } = content;
+  return (
+    <Pressable
+      disabled={!event.webUrl}
+      onPress={() => event.webUrl && onOpen(event.webUrl)}
+      accessibilityRole="button"
+      style={{ marginTop: 2, marginHorizontal: -6, borderRadius: 14, overflow: "hidden", backgroundColor: mine ? "rgba(14,16,19,0.1)" : t.bg, minWidth: 220 }}
+    >
+      {event.imageUrl ? <Image source={{ uri: event.imageUrl }} style={{ width: "100%", height: 120 }} resizeMode="cover" /> : null}
+      <View style={{ padding: 10, gap: 3 }}>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+          <Icon name="calendar" size={13} color={mine ? INK : t.tint} strokeWidth={2.2} />
+          <Text style={{ fontSize: 12, fontWeight: "600", color: mine ? INK : t.tint }}>Event</Text>
+        </View>
+        <Text numberOfLines={2} style={{ fontSize: 15, fontWeight: "600", color: mine ? INK : t.text }}>
+          {event.name}
+        </Text>
+        <Text style={{ fontSize: 13, color: mine ? INK : t.muted }}>
+          {eventWhen(event.startsAt)}
+          {event.location ? ` · ${event.location}` : ""}
+        </Text>
+      </View>
+    </Pressable>
+  );
+}
+
+function PollCard({ content, mine, onVote }: { content: D1PollContent; mine: boolean; onVote: (optionIds: string[]) => void }) {
+  const t = useTheme();
+  const { poll } = content;
+  const total = poll.totalVoters;
+
+  function tap(optionId: string) {
+    const selected = poll.myOptionIds.includes(optionId);
+    if (poll.allowMultiple) {
+      onVote(selected ? poll.myOptionIds.filter((id) => id !== optionId) : [...poll.myOptionIds, optionId]);
+    } else {
+      onVote(selected ? [] : [optionId]);
+    }
+  }
+
+  return (
+    <View style={{ marginTop: 2, marginHorizontal: -6, borderRadius: 14, backgroundColor: mine ? "rgba(14,16,19,0.1)" : t.bg, padding: 10, gap: 8, minWidth: 220 }}>
+      <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+        <Icon name="poll" size={13} color={mine ? INK : t.tint} strokeWidth={2.2} />
+        <Text style={{ fontSize: 12, fontWeight: "600", color: mine ? INK : t.tint }}>{poll.allowMultiple ? "Poll · choose any" : "Poll"}</Text>
+      </View>
+      <Text style={{ fontSize: 15, fontWeight: "600", color: mine ? INK : t.text }}>{poll.question}</Text>
+      <View style={{ gap: 6 }}>
+        {poll.options.map((o) => {
+          const count = poll.votes.find((v) => v.optionId === o.id)?.count ?? 0;
+          const pct = total > 0 ? Math.round((count / total) * 100) : 0;
+          const mineVote = poll.myOptionIds.includes(o.id);
+          return (
+            <Pressable
+              key={o.id}
+              onPress={() => tap(o.id)}
+              accessibilityRole="button"
+              accessibilityLabel={`${o.label}, ${pct}%${mineVote ? ", your choice" : ""}`}
+              style={{ borderRadius: 10, overflow: "hidden", backgroundColor: mine ? "rgba(14,16,19,0.08)" : t.fill }}
+            >
+              <View style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: `${pct}%`, backgroundColor: mineVote ? ORANGE : mine ? "rgba(14,16,19,0.12)" : t.accentSoft }} />
+              <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingVertical: 8, paddingHorizontal: 10 }}>
+                <Text numberOfLines={2} style={{ flex: 1, fontSize: 14, fontWeight: mineVote ? "700" : "400", color: mine ? INK : t.text }}>
+                  {o.label}
+                </Text>
+                <Text style={{ fontSize: 12, color: mine ? INK : t.subtle, marginLeft: 8 }}>{count > 0 ? `${pct}%` : ""}</Text>
+              </View>
+            </Pressable>
+          );
+        })}
+      </View>
+      <Text style={{ fontSize: 11, color: mine ? INK : t.subtle }}>{total === 0 ? "No votes yet" : plural(total, "vote")}</Text>
+    </View>
   );
 }

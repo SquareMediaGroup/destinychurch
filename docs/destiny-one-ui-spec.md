@@ -94,7 +94,7 @@ Invited people skip the request steps entirely. Signing in with the invited emai
 
 ### A10. Notifications permission explainer
 - **When:** in context, right after they first see a group. **Never on first launch.**
-- **Shows:** "Get a notification when there's a new message. Notifications never show the message itself." Buttons **Turn on** → `registerForPush()` and **Not now**.
+- **Shows:** "Know when your groups post. You can mute any group at any time." Buttons **Turn on** → `registerForPush()` and **Not now**. (Notifications show a preview, the sender and first line, since 2026-09-27, so the copy no longer says they don't; see ground rule 6.)
 
 ---
 
@@ -198,7 +198,7 @@ Invited people skip the request steps entirely. Signing in with the invited emai
 | E2 | Paused group banner, with reason | Group chat, Group info |
 | E3 | Generic error with **Try again** (server `message` shown) | any screen |
 | E4 | Rate limited ("You're doing that a lot — try again in a few minutes") | send, report, invites |
-| E5 | Forced update (app too old) | full screen, if we use `minSupportedBuild` |
+| E5 | Forced update (app too old) and maintenance | full screen over everything. Built: `src/components/UpdateScreen.tsx`, driven by `GET /config` (min build per platform, set in the website admin) |
 | E6 | Loading skeletons: chat list, message list | B1, B3 |
 | E7 | Empty states | B1, B3, C2 |
 

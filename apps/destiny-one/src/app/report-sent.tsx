@@ -17,7 +17,7 @@ export default function ReportSent() {
         </View>
         <Text style={{ fontSize: 28, fontWeight: "700", color: t.text }}>Report sent</Text>
         <Lead style={{ textAlign: "center", maxWidth: 300 }}>
-          Thanks. The safeguarding team will look at this. The person won't be told who reported it. If someone is in danger right now, call 999.
+          Thanks. The safeguarding team will look at this. The person won&apos;t be told who reported it. If someone is in danger right now, call 999.
         </Lead>
       </View>
     </AuthScreen>

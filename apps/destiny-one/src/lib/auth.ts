@@ -26,12 +26,13 @@ WebBrowser.maybeCompleteAuthSession();
 
 // ── Email one-time code ─────────────────────────────────────────────────────
 
+/**
+ * Asks the server to send a code. It only sends one if this email can get in
+ * (a member, an invite, or requests are open), and answers the same either
+ * way, so the app never learns (or shows) whether an email belongs to anyone.
+ */
 export async function requestEmailCode(email: string): Promise<void> {
-  const { error } = await signInClient().auth.signInWithOtp({
-    email: email.trim().toLowerCase(),
-    options: { shouldCreateUser: true },
-  });
-  if (error) throw error;
+  await api.requestCode(email.trim().toLowerCase());
 }
 
 export async function verifyEmailCode(email: string, code: string): Promise<D1Me> {

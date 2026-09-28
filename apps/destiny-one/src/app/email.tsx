@@ -6,7 +6,7 @@ import { router } from "expo-router";
 import { AuthScreen } from "@/components/AuthScreen";
 import { Icon } from "@/components/Icon";
 import { Field, FormError, LargeTitle, Lead, PrimaryButton } from "@/components/ui";
-import { api, D1ApiError } from "@/lib/api";
+import { D1ApiError } from "@/lib/api";
 import { requestEmailCode } from "@/lib/auth";
 import { useTheme } from "@/theme/tokens";
 
@@ -27,23 +27,13 @@ export default function Email() {
     setBusy(true);
     setError(null);
     try {
-      // Don't send a code to someone who can't get in (the server decides).
-      await api.checkEmail(value);
-    } catch (err) {
-      // Only a definite "no account" stops here. Anything else (offline, an
-      // older server without the check) carries on: sign-in re-checks anyway.
-      if (err instanceof D1ApiError && err.code === "not_verified") {
-        setError(err.message);
-        setBusy(false);
-        return;
-      }
-    }
-    try {
+      // The server sends a code only if this email can get in, and answers the
+      // same either way (so nobody can use this screen to find out who's a member).
       await requestEmailCode(value);
       router.push({ pathname: "/code", params: { email: value } });
     } catch (err) {
-      const status = (err as { status?: number }).status;
-      setError(status === 429 ? "Please wait a minute and try again." : "Couldn't send the code. Check your connection and try again.");
+      const limited = err instanceof D1ApiError && err.code === "rate_limited";
+      setError(limited ? "Please wait a minute and try again." : "Couldn't send the code. Check your connection and try again.");
     } finally {
       setBusy(false);
     }
@@ -53,7 +43,7 @@ export default function Email() {
     <AuthScreen back footer={<PrimaryButton label="Send code" onPress={send} busy={busy} disabled={!email.trim()} />}>
       <View style={{ paddingTop: 14, paddingHorizontal: 4, gap: 8 }}>
         <LargeTitle>Your email</LargeTitle>
-        <Lead>Use the email the church office has for you. We'll send you a 6-digit code.</Lead>
+        <Lead>Use the email the church office has for you. We&apos;ll send you a 6-digit code.</Lead>
       </View>
       <View style={{ marginTop: 28, gap: 10 }}>
         <Field

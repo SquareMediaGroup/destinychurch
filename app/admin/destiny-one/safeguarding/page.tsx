@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useState } from "react";
+import type { D1MessageContent } from "@destiny/shared";
 import {
   PageHeader,
   Badge,
@@ -24,7 +25,7 @@ const API = `${ADMIN_API}/safeguarding`;
 
 interface SafeguardingEvent {
   id: number;
-  kind: "frozen" | "unfrozen" | "report" | "manual_freeze" | "manual_unfreeze";
+  kind: "frozen" | "unfrozen" | "report" | "manual_freeze" | "manual_unfreeze" | "block" | "unblock";
   detail: string;
   adult_count: number | null;
   member_count: number | null;
@@ -40,7 +41,15 @@ interface Report {
   created_at: string;
   reporter: { id: string; display_name: string } | null;
   group: { id: string; name: string } | null;
-  message: { id: number; body: string | null; created_at: string; deleted_at: string | null; sender: { display_name: string } | null } | null;
+  message: {
+    id: number;
+    body: string | null;
+    content: D1MessageContent | null;
+    created_at: string;
+    deleted_at: string | null;
+    deleted_by_admin: string | null;
+    sender: { id: string; display_name: string } | null;
+  } | null;
 }
 
 type GroupRow = AdminGroup & { communityName: string };
@@ -51,25 +60,30 @@ const EVENT_LABEL: Record<SafeguardingEvent["kind"], string> = {
   report: "Message reported",
   manual_freeze: "Paused by safeguarding",
   manual_unfreeze: "Pause lifted",
+  block: "Blocked someone",
+  unblock: "Unblocked someone",
 };
 
 export default function SafeguardingPage() {
   const { confirm, prompt } = useDialog();
-  const [tab, setTab] = useState<"queue" | "reports" | "groups">("queue");
+  const [tab, setTab] = useState<"queue" | "reports" | "groups" | "blocks">("queue");
   const [events, setEvents] = useState<SafeguardingEvent[]>([]);
+  const [blocks, setBlocks] = useState<SafeguardingEvent[]>([]);
   const [reports, setReports] = useState<Report[]>([]);
   const [groups, setGroups] = useState<GroupRow[]>([]);
   const [reviewing, setReviewing] = useState<{ id: string; name: string } | null>(null);
 
   const load = useCallback(async () => {
-    const [e, r, g] = await Promise.all([
+    const [e, r, g, b] = await Promise.all([
       fetchAdminJson<{ events: SafeguardingEvent[] }>(`${API}/events?open=1`),
       fetchAdminJson<{ reports: Report[] }>(`${API}/reports?status=open`),
       fetchAdminArray<GroupRow>(`${API}/groups`),
+      fetchAdminJson<{ events: SafeguardingEvent[] }>(`${API}/events?kind=block`),
     ]);
     setEvents(e.events.filter((x) => x.kind === "frozen" || x.kind === "report"));
     setReports(r.reports);
     setGroups(g);
+    setBlocks(b.events);
   }, []);
   const { loading, error, setError, reload } = useAdminLoader(load);
 
@@ -88,6 +102,35 @@ export default function SafeguardingPage() {
     });
     if (resolution === null) return;
     const res = await adminSend("PATCH", `/safeguarding/reports/${id}`, { status: "closed", resolution });
+    if (!res.ok) setError(res.error);
+    reload();
+  }
+
+  async function takeDown(report: Report) {
+    if (!report.message) return;
+    const reason = await prompt({
+      title: "Remove this message for everyone",
+      message: "Members will see \"This message was deleted\". The content is kept for review until the retention period ends. The reason goes in the audit log.",
+      placeholder: `Report #${report.id}: inappropriate content`,
+      confirmLabel: "Remove message",
+    });
+    if (!reason) return;
+    const res = await adminSend("POST", `/safeguarding/messages/${report.message.id}/remove`, { reason });
+    if (!res.ok) setError(res.error);
+    reload();
+  }
+
+  async function suspendSender(report: Report) {
+    const sender = report.message?.sender;
+    if (!sender) return;
+    const reason = await prompt({
+      title: `Suspend ${sender.display_name}?`,
+      message: "They can't use Destiny One until reinstated. Any group left without 3 people including 2 adults pauses automatically. The reason goes in the audit log.",
+      placeholder: `Report #${report.id}`,
+      confirmLabel: "Suspend",
+    });
+    if (!reason) return;
+    const res = await adminSend("POST", `/safeguarding/members/${sender.id}/suspend`, { suspended: true, reason });
     if (!res.ok) setError(res.error);
     reload();
   }
@@ -117,6 +160,7 @@ export default function SafeguardingPage() {
     { key: "queue" as const, label: `Queue (${events.length})` },
     { key: "reports" as const, label: `Reports (${reports.length})` },
     { key: "groups" as const, label: "All groups" },
+    { key: "blocks" as const, label: "Blocks" },
   ];
 
   return (
@@ -176,15 +220,30 @@ export default function SafeguardingPage() {
                 {r.message && (
                   <blockquote className="rounded-xl bg-black/5 px-3 py-2 text-sm dark:bg-white/10">
                     <span className="font-bold">{r.message.sender?.display_name ?? "Former member"}:</span>{" "}
-                    {r.message.body ?? "(attachment)"}
-                    {r.message.deleted_at && <Badge tone="grey">Deleted by sender</Badge>}
+                    {r.message.body ?? (r.message.content ? contentText(r.message.content) : "(attachment)")}
+                    {r.message.deleted_at && <Badge tone="grey">{r.message.deleted_by_admin ? "Removed by safeguarding" : "Deleted"}</Badge>}
                   </blockquote>
                 )}
                 <p className="text-xs text-destiny-grey/50 dark:text-white/50">Reported by {r.reporter?.display_name ?? "a former member"}</p>
-                <div className="flex gap-2">
+                <div className="flex flex-wrap gap-2">
                   {r.group && <button className={ghostBtn} onClick={() => setReviewing({ id: r.group!.id, name: r.group!.name })}>Review conversation</button>}
+                  {r.message && !r.message.deleted_at && <button className={dangerBtn} onClick={() => takeDown(r)}>Remove message</button>}
+                  {r.message?.sender && <button className={dangerBtn} onClick={() => suspendSender(r)}>Suspend sender</button>}
                   <button className={primaryBtn} onClick={() => closeReport(r.id)}>Close report</button>
                 </div>
+              </li>
+            ))}
+          </ul>
+        )
+      ) : tab === "blocks" ? (
+        blocks.length === 0 ? (
+          <EmptyState icon="block" title="No blocks" hint="When a member blocks someone it's recorded here. Their messages are hidden for that member only; nothing is hidden from review." />
+        ) : (
+          <ul className="space-y-2">
+            {blocks.map((e) => (
+              <li key={e.id} className={`${cardClass} px-5 py-3`}>
+                <p className="font-bold">{EVENT_LABEL[e.kind]}</p>
+                <p className="text-sm text-destiny-grey/60 dark:text-white/60">{e.detail} · {formatDate(e.created_at)}</p>
               </li>
             ))}
           </ul>
@@ -220,6 +279,7 @@ interface Transcript {
   messages: {
     id: number;
     body: string | null;
+    content: D1MessageContent | null;
     created_at: string;
     deleted_at: string | null;
     sender: { display_name: string } | null;
@@ -297,6 +357,7 @@ function TranscriptModal({ group, onClose }: { group: { id: string; name: string
                     {m.deleted_at ? ` · deleted ${new Date(m.deleted_at).toLocaleString("en-GB")}` : ""}
                   </p>
                   {m.body && <p className="whitespace-pre-wrap">{m.body}</p>}
+                  {m.content && <p className="whitespace-pre-wrap italic">{contentText(m.content)}</p>}
                   {m.attachment && (
                     <p>
                       Attachment ({m.attachment.mime_type}){" "}
@@ -315,4 +376,10 @@ function TranscriptModal({ group, onClose }: { group: { id: string; name: string
       )}
     </Modal>
   );
+}
+
+/** Polls and events have no body; reviewers still need to read what was posted. */
+function contentText(content: D1MessageContent): string {
+  if (content.kind === "poll") return `Poll: ${content.poll.question} (${content.poll.options.map((o) => o.label).join(" / ")})`;
+  return `Event: ${content.event.name}`;
 }

@@ -41,6 +41,21 @@ export type D1ErrorCode =
   | "rate_limited"
   | "unavailable";
 
+/**
+ * GET /config — read before sign-in. The app shows the update screen when its
+ * native build number is below `minBuild` for its platform, and the
+ * maintenance screen whenever `maintenanceMessage` is set.
+ */
+export interface D1AppConfig {
+  minBuild: { ios: number; android: number };
+  /** Replaces the default update-screen copy. */
+  forceUpdateMessage: string | null;
+  /** When set, the app shows this instead of working. */
+  maintenanceMessage: string | null;
+  /** Where the Update button goes. */
+  storeUrl: { ios: string; android: string };
+}
+
 export interface D1Consent {
   document: D1ConsentDocument;
   version: string;
@@ -49,8 +64,10 @@ export interface D1Consent {
 export interface D1Me {
   id: string;
   displayName: string;
-  /** Self-uploaded profile picture. Unlike displayName, members can set this themselves. */
+  /** Self-uploaded profile picture as a short-lived signed link (the bucket is private). Unlike displayName, members can set this themselves. */
   avatarUrl: string | null;
+  /** People I've blocked: their messages are hidden for me and don't notify me. Never hides anything from safeguarding. */
+  blocked: { id: string; displayName: string }[];
   status: D1MemberStatus;
   roles: D1LeaderRole[];
   isAdult: boolean;
@@ -151,6 +168,75 @@ export interface D1Reaction {
   mine: boolean;
 }
 
+/**
+ * A ChurchSuite event, captured as of when it was shared into the chat. Not a
+ * live mirror of ChurchSuite — the card shows what the event looked like at
+ * send time, so a chat history doesn't retroactively change as the calendar
+ * is edited. Tapping the card always opens `webUrl`, which is live.
+ */
+export interface D1EventContent {
+  kind: "event";
+  event: {
+    seriesKey: string;
+    slug: string;
+    name: string;
+    startsAt: string;
+    location: string | null;
+    imageUrl: string | null;
+    webUrl: string;
+  };
+}
+
+export interface D1PollOption {
+  id: string;
+  label: string;
+}
+
+export interface D1PollTally {
+  optionId: string;
+  count: number;
+}
+
+export interface D1PollContent {
+  kind: "poll";
+  poll: {
+    id: string;
+    question: string;
+    options: D1PollOption[];
+    allowMultiple: boolean;
+    /** How many distinct members have voted at all. */
+    totalVoters: number;
+    votes: D1PollTally[];
+    /** This member's current choice(s). Empty if they haven't voted. */
+    myOptionIds: string[];
+  };
+}
+
+export type D1MessageContent = D1EventContent | D1PollContent;
+
+/** What the app sends to create a poll — the server mints option ids and tallies. */
+export interface D1PollDraft {
+  question: string;
+  options: string[];
+  allowMultiple: boolean;
+}
+
+/** What the app sends to attach an event — the server re-fetches and snapshots it. */
+export interface D1EventRef {
+  seriesKey: string;
+  slug: string;
+}
+
+/** A ChurchSuite event, as offered in the app's event picker. */
+export interface D1EventSummary {
+  seriesKey: string;
+  slug: string;
+  name: string;
+  startsAt: string;
+  location: string | null;
+  thumbnailUrl: string | null;
+}
+
 export interface D1Message {
   id: number;
   groupId: string;
@@ -159,6 +245,8 @@ export interface D1Message {
   body: string | null;
   replyTo: number | null;
   attachment: D1Attachment | null;
+  /** A poll or event embed. Independent of `body`/`attachment` — a message can carry just this. */
+  content: D1MessageContent | null;
   reactions: D1Reaction[];
   createdAt: string;
   deleted: boolean;
@@ -199,21 +287,45 @@ export interface D1UploadTicket {
 
 /** Realtime events on `d1-group:<id>` and `d1-member:<id>` (Broadcast). */
 export type D1RealtimeEvent =
-  | { event: "message"; payload: { id: number; groupId: string; sender: { id: string; displayName: string }; body: string | null; replyTo: number | null; attachmentId: string | null; createdAt: string } }
+  | { event: "message"; payload: { id: number; groupId: string; sender: { id: string; displayName: string }; body: string | null; replyTo: number | null; attachmentId: string | null; content: D1MessageContent | null; createdAt: string } }
   | { event: "message_deleted"; payload: { id: number; groupId: string } }
   | { event: "reaction"; payload: { messageId: number; groupId: string; memberId: string; emoji: string; added: boolean } }
+  | { event: "poll_vote"; payload: { messageId: number; groupId: string; votes: D1PollTally[]; totalVoters: number } }
   | { event: "members_changed"; payload: { groupId: string } }
   | { event: "group_state"; payload: { groupId: string; state: D1GroupState; reason: string | null } }
   | { event: "group_joined"; payload: { groupId: string } }
   | { event: "group_left"; payload: { groupId: string } }
-  | { event: "community_left"; payload: { communityId: string } };
+  | { event: "community_left"; payload: { communityId: string } }
+  | { event: "blocks_changed"; payload: { memberId: string; blocked: boolean } };
 
+/** GDPR right of access: everything Destiny One holds about the caller. */
 export interface D1Export {
   exportedAt: string;
-  profile: { id: string; displayName: string; status: D1MemberStatus; roles: D1LeaderRole[]; isAdult: boolean; createdAt: string };
+  profile: {
+    id: string;
+    displayName: string;
+    status: D1MemberStatus;
+    roles: D1LeaderRole[];
+    isAdult: boolean;
+    /** The date they turn (or turned) 18, as set by staff. The full date of birth is never stored. */
+    adultOn: string | null;
+    /** From their access request: the 18th birthday worked out from the date of birth they gave. */
+    declaredAdultOn: string | null;
+    requestNote: string | null;
+    requestSubmittedAt: string | null;
+    verifiedAt: string | null;
+    verification: "invite" | "admin" | "churchsuite" | null;
+    /** A short-lived link to their profile picture, if they set one. */
+    profilePictureUrl: string | null;
+    createdAt: string;
+  };
   consents: (D1Consent & { acceptedAt: string })[];
   communities: { id: string; name: string; role: D1MembershipRole; joinedAt: string }[];
   groups: { id: string; name: string; role: D1MembershipRole; joinedAt: string; leftAt: string | null }[];
   messages: { id: number; groupId: string; body: string | null; createdAt: string; deletedAt: string | null }[];
+  /** Files they sent (photos and PDFs), each with a short-lived download link. */
+  attachments: { id: string; groupId: string; mimeType: string; sizeBytes: number | null; createdAt: string; url: string | null }[];
+  reactions: { messageId: number; emoji: string; createdAt: string }[];
+  blocked: { id: string; displayName: string; since: string }[];
   reports: { id: number; reason: string; createdAt: string; status: string }[];
 }

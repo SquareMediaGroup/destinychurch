@@ -1,16 +1,19 @@
 // The message composer: attach (image or PDF, 20 MB) from files or the photo
-// library, take a photo with the camera, a glass text field that lights up
-// with the beam while focused, the reply bar, and the send button that swaps
-// in for the attach shortcut once there's text.
+// library, take a photo with the camera (every image is re-encoded first so no
+// location or other hidden details leave the phone: src/lib/cleanImage.ts), a
+// glass text field that lights up with the beam while focused, the reply bar,
+// and the send button that swaps in for the attach shortcut once there's text.
 
 import { forwardRef, useState } from "react";
-import { Alert, Pressable, Text, TextInput, View } from "react-native";
+import { Pressable, Text, TextInput, View } from "react-native";
 import * as DocumentPicker from "expo-document-picker";
 import * as ImagePicker from "expo-image-picker";
 import { ATTACHMENT_MIME_TYPES, MAX_ATTACHMENT_BYTES, MAX_MESSAGE_LENGTH } from "@destiny/shared";
+import { AttachSheet } from "@/components/AttachSheet";
 import { GlassSurface } from "@/components/GlassSurface";
 import { Icon } from "@/components/Icon";
 import { Beam } from "@/components/ui";
+import { cleanImage } from "@/lib/cleanImage";
 import { INK, ORANGE, useTheme } from "@/theme/tokens";
 
 export interface PickedFile {
@@ -25,18 +28,31 @@ interface Props {
   onCancelReply: () => void;
   onSend: (text: string) => void;
   onAttach: (file: PickedFile) => void;
+  onAttachPoll: () => void;
+  onAttachEvent: () => void;
   onError: (message: string) => void;
 }
 
-export const Composer = forwardRef<TextInput, Props>(function Composer({ replying, onCancelReply, onSend, onAttach, onError }, ref) {
+export const Composer = forwardRef<TextInput, Props>(function Composer({ replying, onCancelReply, onSend, onAttach, onAttachPoll, onAttachEvent, onError }, ref) {
   const t = useTheme();
   const [draft, setDraft] = useState("");
   const [focused, setFocused] = useState(false);
+  const [sheetOpen, setSheetOpen] = useState(false);
   const hasText = draft.trim().length > 0;
 
-  function acceptAsset(a: { uri: string; name: string; mimeType: string; size: number | null }) {
+  async function acceptAsset(a: { uri: string; name: string; mimeType: string; size: number | null }) {
     if (!(ATTACHMENT_MIME_TYPES as readonly string[]).includes(a.mimeType)) {
       onError("You can send photos and PDFs.");
+      return;
+    }
+    if (a.mimeType.startsWith("image/")) {
+      // A fresh copy with no hidden details (above all, no GPS location).
+      try {
+        const clean = await cleanImage(a.uri, a.name, a.mimeType);
+        onAttach({ uri: clean.uri, name: clean.name, mimeType: clean.mimeType, size: null });
+      } catch {
+        onError("Couldn't prepare that photo. Try another one.");
+      }
       return;
     }
     if (a.size != null && a.size > MAX_ATTACHMENT_BYTES) {
@@ -50,12 +66,12 @@ export const Composer = forwardRef<TextInput, Props>(function Composer({ replyin
     const res = await DocumentPicker.getDocumentAsync({ type: [...ATTACHMENT_MIME_TYPES], copyToCacheDirectory: true, multiple: false });
     if (res.canceled || !res.assets[0]) return;
     const a = res.assets[0];
-    acceptAsset({ uri: a.uri, name: a.name, mimeType: a.mimeType ?? "", size: a.size ?? null });
+    await acceptAsset({ uri: a.uri, name: a.name, mimeType: a.mimeType ?? "", size: a.size ?? null });
   }
 
   function imagePickerAsset(a: ImagePicker.ImagePickerAsset, fallbackName: string) {
     const mimeType = a.mimeType ?? (a.uri.toLowerCase().endsWith(".png") ? "image/png" : "image/jpeg");
-    acceptAsset({ uri: a.uri, name: a.fileName ?? fallbackName, mimeType, size: a.fileSize ?? null });
+    return acceptAsset({ uri: a.uri, name: a.fileName ?? fallbackName, mimeType, size: a.fileSize ?? null });
   }
 
   async function pickPhoto() {
@@ -64,9 +80,9 @@ export const Composer = forwardRef<TextInput, Props>(function Composer({ replyin
       onError("Allow photo library access to send a photo.");
       return;
     }
-    const res = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ["images"], quality: 0.9 });
+    const res = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ["images"], quality: 1 });
     if (res.canceled || !res.assets[0]) return;
-    imagePickerAsset(res.assets[0], "Photo.jpg");
+    await imagePickerAsset(res.assets[0], "Photo.jpg");
   }
 
   async function takePhoto() {
@@ -75,18 +91,9 @@ export const Composer = forwardRef<TextInput, Props>(function Composer({ replyin
       onError("Allow camera access to take a photo.");
       return;
     }
-    const res = await ImagePicker.launchCameraAsync({ quality: 0.9 });
+    const res = await ImagePicker.launchCameraAsync({ quality: 1 });
     if (res.canceled || !res.assets[0]) return;
-    imagePickerAsset(res.assets[0], "Photo.jpg");
-  }
-
-  function pick() {
-    Alert.alert("Add to message", undefined, [
-      { text: "Take Photo", onPress: () => void takePhoto() },
-      { text: "Choose Photo", onPress: () => void pickPhoto() },
-      { text: "Choose File", onPress: () => void pickFile() },
-      { text: "Cancel", style: "cancel" },
-    ]);
+    await imagePickerAsset(res.assets[0], "Photo.jpg");
   }
 
   function send() {
@@ -114,7 +121,7 @@ export const Composer = forwardRef<TextInput, Props>(function Composer({ replyin
       ) : null}
 
       <View style={{ flexDirection: "row", alignItems: "flex-end", gap: 8 }}>
-        <Pressable onPress={pick} accessibilityRole="button" accessibilityLabel="Attach a photo or PDF">
+        <Pressable onPress={() => setSheetOpen(true)} accessibilityRole="button" accessibilityLabel="Add to message">
           {({ pressed }) => (
             <GlassSurface interactive style={[{ width: 44, height: 44, borderRadius: 22, alignItems: "center", justifyContent: "center", opacity: pressed ? 0.7 : 1 }, t.shadow]}>
               <Icon name="plus" size={22} color={t.text} />
@@ -150,6 +157,31 @@ export const Composer = forwardRef<TextInput, Props>(function Composer({ replyin
           </GlassSurface>
         </Beam>
       </View>
+
+      <AttachSheet
+        visible={sheetOpen}
+        onClose={() => setSheetOpen(false)}
+        onPhotos={() => {
+          setSheetOpen(false);
+          void pickPhoto();
+        }}
+        onCamera={() => {
+          setSheetOpen(false);
+          void takePhoto();
+        }}
+        onDocument={() => {
+          setSheetOpen(false);
+          void pickFile();
+        }}
+        onPoll={() => {
+          setSheetOpen(false);
+          onAttachPoll();
+        }}
+        onEvent={() => {
+          setSheetOpen(false);
+          onAttachEvent();
+        }}
+      />
     </View>
   );
 });

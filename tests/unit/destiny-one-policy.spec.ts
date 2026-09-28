@@ -1,6 +1,7 @@
 import { test, expect } from "@playwright/test";
 import {
   toPrefixQuery,
+  appGate,
   PUSH_PREVIEW_CHARS,
   pushPreviewText,
   REQUIRED_CONSENTS,
@@ -169,5 +170,54 @@ test.describe("toPrefixQuery", () => {
   });
   test("accented letters are kept", () => {
     expect(toPrefixQuery("Café")).toBe("café:*");
+  });
+});
+
+test.describe("appGate (forced update / maintenance)", () => {
+  const config = {
+    minBuild: { ios: 5, android: 3 },
+    forceUpdateMessage: null,
+    maintenanceMessage: null,
+    storeUrl: { ios: "itms-beta://", android: "https://play.google.com/store/apps/details?id=uk.destinytees.one" },
+  };
+
+  test("no config yet (first launch offline) never blocks", () => {
+    expect(appGate(undefined, "ios", 1)).toBe("ok");
+  });
+  test("builds below the platform minimum must update", () => {
+    expect(appGate(config, "ios", 4)).toBe("update");
+    expect(appGate(config, "android", 2)).toBe("update");
+  });
+  test("builds at or above the minimum run", () => {
+    expect(appGate(config, "ios", 5)).toBe("ok");
+    expect(appGate(config, "android", 9)).toBe("ok");
+  });
+  test("each platform uses its own minimum", () => {
+    expect(appGate(config, "android", 4)).toBe("ok");
+  });
+  test("no native build number (Expo Go, web) always runs", () => {
+    expect(appGate(config, "ios", null)).toBe("ok");
+    expect(appGate(config, "web", null)).toBe("ok");
+  });
+  test("maintenance blocks every build, even with no build number", () => {
+    const down = { ...config, maintenanceMessage: "Back at 3pm." };
+    expect(appGate(down, "ios", 99)).toBe("maintenance");
+    expect(appGate(down, "web", null)).toBe("maintenance");
+  });
+});
+
+test.describe("minimum age (13, decided 2026-09-28)", () => {
+  test("the date someone turns 13", async () => {
+    const { minimumAgeOn } = await import("../../packages/shared/src/destinyOne/policy");
+    expect(minimumAgeOn("2012-03-04")).toBe("2025-03-04");
+    expect(minimumAgeOn("2012-02-29")).toBe("2025-03-01"); // leap-day birthdays turn 13 on 1 March
+    expect(minimumAgeOn("not a date")).toBeNull();
+  });
+
+  test("under 13 is refused, 13 today is allowed, no date of birth isn't judged", async () => {
+    const { isUnderMinimumAge } = await import("../../packages/shared/src/destinyOne/policy");
+    expect(isUnderMinimumAge("2014-01-01", "2026-09-28")).toBe(true);
+    expect(isUnderMinimumAge("2013-09-28", "2026-09-28")).toBe(false);
+    expect(isUnderMinimumAge(null, "2026-09-28")).toBe(false);
   });
 });

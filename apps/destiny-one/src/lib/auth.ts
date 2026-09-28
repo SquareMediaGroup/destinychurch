@@ -17,7 +17,7 @@
 import * as Crypto from "expo-crypto";
 import * as Linking from "expo-linking";
 import * as WebBrowser from "expo-web-browser";
-import type { D1Me } from "@destiny/shared";
+import { SIGN_IN_FAILED, validateNewPassword, type D1Me } from "@destiny/shared";
 import { client, signInClient } from "@/lib/accounts";
 import { api, signInApi } from "@/lib/api";
 import { unregisterPush } from "@/lib/push";
@@ -43,6 +43,28 @@ export async function verifyEmailCode(email: string, code: string): Promise<D1Me
   });
   if (error) throw error;
   return signInApi.link();
+}
+
+// ── Password ────────────────────────────────────────────────────────────────
+
+/**
+ * Password sign-in. Every failure (no such email, wrong password, an account
+ * that can't sign in) says the same thing, so the app never reveals who is a member.
+ * Approval, invite-only and suspension are still decided by api.link().
+ */
+export async function signInWithPassword(email: string, password: string): Promise<D1Me> {
+  const { error } = await signInClient().auth.signInWithPassword({ email: email.trim().toLowerCase(), password });
+  if (error) throw new Error(SIGN_IN_FAILED);
+  return signInApi.link();
+}
+
+/** Set or change the signed-in account's password. */
+export async function setPassword(password: string): Promise<void> {
+  const { data } = await client().auth.getSession();
+  const problem = validateNewPassword(password, data.session?.user.email ?? null);
+  if (problem) throw new Error(problem);
+  const { error } = await client().auth.updateUser({ password });
+  if (error) throw new Error(error.message);
 }
 
 // ── Sign in with ChurchSuite ────────────────────────────────────────────────

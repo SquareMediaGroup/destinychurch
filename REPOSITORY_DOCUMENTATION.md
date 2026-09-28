@@ -4207,7 +4207,7 @@ needs at least 2 verified adults.") pass through as `rule_violation` (422). Type
 | `auth/code` | POST | No sign-in: `{ email }`. Sends the email sign-in code only if `d1_sign_in_status` says this email can get in (member, open invite, or requests open), from `after()`, and always answers `{ sent: true }`, so neither the reply nor its timing reveals who is a member. The code comes from the Supabase admin API (`generateLink`, which doesn't email) and is sent through Resend, so sign-in doesn't hit Supabase's per-IP limit for the server's address or its capped built-in sender. Rate-limited per IP and per (hashed) email. Replaced `auth/check` (2026-09-28), which said "no account" outright |
 | `me/access-request` | POST | `{ name, dateOfBirth?, note? }` — ask to join; a Destiny One Admin approves |
 | `auth/churchsuite/start` → `callback` → `exchange` | GET, GET, POST | Sign in with ChurchSuite (below) |
-| `me` | GET, DELETE | DELETE = GDPR erasure (`{ "confirm": "DELETE" }`). `D1Me` includes `blocked` (people I've blocked) and `avatarUrl` (a signed link) |
+| `me` | GET, DELETE | DELETE = GDPR erasure (`{ "confirm": "DELETE" }`). `D1Me` includes `blocked` (people I've blocked), `avatarUrl` (a signed link) and `isStaff` (has Destiny One / Safeguarding / Super Admin access; used only to check an "Add admin account") |
 | `me/avatar` | POST, DELETE | Profile picture (multipart `file`, 5 MB). Active members only; stored privately in `d1-avatars` |
 | `members/[id]/block` | POST, DELETE | Block / unblock someone; returns `D1Me`. Hides their messages and notifications for me only; logged for safeguarding |
 | `me/consents` | POST | Current versions only (`REQUIRED_CONSENTS`) |
@@ -6936,7 +6936,7 @@ same database as the data rather than in a separate Synapse module.
   `community/[id]` (B2), `new-group` (C1, modal), `add-people` (C2; `?groupId` adds to a group,
   `?communityId` picks for New group), `notifications` (D2 + per-group mute), `search` (full-screen search opened from a chat; the
   Search tab `(tabs)/find` uses the same `SearchView` component), `report` + `report-sent` (B5), `chat-safety`,
-  `delete-account` (D3, type DELETE), `accounts` (account switcher, a fit-to-content form sheet).
+  `delete-account` (D3, type DELETE), `accounts` (account switcher, a fit-to-content form sheet), `add-account` (Profile → Add account: Add child / Add admin account, a form sheet), `password` (password sign-in) and `set-password` (Profile → Password).
 - **State:** `src/state/session.tsx` (auth session, `me`, the communities list, the Realtime hub,
   catch-up, `routeFor`, `errorMessage`); `src/state/picker.ts` (Add people selection for New group).
   `src/lib/useConversation.ts` owns a chat: paging, optimistic sends with "Not sent. Tap to retry.",
@@ -6968,7 +6968,10 @@ same database as the data rather than in a separate Synapse module.
   (`clearCache`). `gcTime` is `Infinity` on purpose: a finite 30 days overflows `setTimeout`'s
   24.8-day limit and fires at once, dropping every chat not on screen.
 - **Accounts: several on one phone, quick switching** (`src/lib/accounts.ts`, `accounts` route).
-  Hold the Settings tab, or Settings → Switch account. Each account has its own "slot": its own
+  **Double-press the Profile tab** to hop to the most recently used other account (two accounts simply
+  toggle), with a "Switched to X profile" banner (`SwitchBanner`, picture included, 2.5 s, Reduce
+  Motion fades instead of sliding); hold the Profile tab, or Profile → Switch account, for the full
+  list. Each account has its own "slot": its own
   Supabase client and session under its own Keychain key (`d1.auth.<slot>`; slot `0` keeps
   supabase-js's default key, so single-account installs carry straight over). Switching changes the
   active slot and never signs anyone out or moves tokens between clients. Only the active slot
@@ -6981,6 +6984,22 @@ same database as the data rather than in a separate Synapse module.
     the `me` id and the storage wrapper writes to that account's file. The persister throttles, so
     a write queued just before a switch can land after it; this keeps it in the right file. Data
     with no `me` is never saved. The old `d1.cache.v1` is handed to slot `0` once.
+  - **Add account** (Profile, under the name) offers **Add child** and **Add admin account**. Both are
+    ordinary sign-ins to accounts that already exist, in "add mode": the current account stays
+    active until the new one has passed `auth/link` and `checkAddedAccount` (child needs `isAdult`
+    false; admin needs `D1Me.isStaff`, computed server-side from `admin_roles`). A wrong kind is
+    dropped from this phone only (no global sign-out) and the current account is untouched. The kind
+    is a label on the saved account (`Account.kind`), never a permission.
+  - **Send as** (`Composer` hold-Send, `SendAsMenu`, `useConversation.sendAs`): holding Send (350 ms,
+    with a haptic) offers your other signed-in accounts that are in this group, and the message is
+    posted with that account's own token (`accounts.apiFor(slot)`), so authorship, membership,
+    freezes and reports are exactly as if it sent from its own phone. **Never from or as a child
+    account** (`canSendAs` / `sendAsCandidates`, which also treat any under-18 account as a child,
+    whatever its label); the hold is only wired when another account exists and the active one is
+    not a child, so a slow tap on Send still just sends.
+  - **Pure rules** live in `packages/shared/src/destinyOne/accountRules.ts` (double-press window
+    300 ms, owner-check grace 60 s, next account, add-account check, send-as, password rules, the
+    single sign-in failure message), pinned by `tests/unit/destiny-one-accounts.spec.ts`.
   - **Face ID / passcode before switching** (`confirmOwner`, `expo-local-authentication`), so a
     child handed an unlocked family phone can't walk into a parent's chats. Skipped on a device
     with no passcode. Adding an account needs its email code as normal.
@@ -7040,7 +7059,7 @@ same database as the data rather than in a separate Synapse module.
   row. Revoking before sign-in erases that member. They count toward the 2-adults rule from the
   moment they're invited.
 - **Tab bar:** the highlight slides between tabs on a spring, the new icon bounces, scenes
-  cross-fade; Reduce Motion turns the slide and bounce off. Holding Settings opens the account switcher.
+  cross-fade; Reduce Motion turns the slide and bounce off. Double-pressing Profile switches account; holding it opens the account switcher.
 - **Invite by email (leaders)** — `invite` route, opened from Add people for a group.
   `POST /groups/[id]/invites` creates a `needs_approval` invite: on sign-in the person becomes an
   access request pre-filled "Invited by X to Group (leader says: adult)", and staff approval in
@@ -7054,7 +7073,7 @@ same database as the data rather than in a separate Synapse module.
   `blockedPermissions` strips phone-state/SMS/contacts/location permissions any dependency might add.
 - `src/lib/`: `config.ts` (EXPO_PUBLIC_* — see `.env.example`), `secureStorage.ts` (Supabase session in
   Keychain/Keystore, chunked for Android's size limit), `supabase.ts` (auth + Realtime only — never
-  data; one client per account), `accounts.ts` (the accounts on this phone, switching, Face ID check), `api.ts` (the shared typed client), `auth.ts` (email OTP; ChurchSuite via
+  data; one client per account), `accounts.ts` (the accounts on this phone, switching, Face ID check), `api.ts` (the shared typed client), `auth.ts` (email OTP; password sign-in and `setPassword`; ChurchSuite via
   `expo-web-browser` auth session + app-side PKCE), `realtime.ts` (the app-wide hub over private
   `d1-group:*` / `d1-member:*` channels), `queryClient.ts` + `queries.ts` (the saved data cache, see
   above), `push.ts` (ask contextually, never on launch).

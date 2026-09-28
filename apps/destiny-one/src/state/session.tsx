@@ -288,6 +288,8 @@ export function SessionProvider({ children }: { children: ReactNode }) {
         // Wrong kind of account: forget the new sign-in on this phone, leave the current account exactly as it was.
         // Local only: a global sign-out would also end that person's own sessions on their other devices.
         await accounts.removeAccount(slot, { signOut: false });
+        // Still adding: if they go back and try another account, it must not replace the one they're on.
+        await accounts.beginAdd(kind);
         return check;
       }
       // Signed into the account they're already on: nothing to add.

@@ -47,6 +47,10 @@ update public.d1_invites
     from unnest(roles) as r)
   where roles && array['group_leader', 'senior_leadership']::text[];
 
+-- The updates above queue deferred constraint triggers; run them now, or the
+-- ALTER TABLEs below fail with "pending trigger events" on a database with data.
+set constraints all immediate;
+
 alter table public.d1_members add constraint d1_members_roles_check
   check (roles <@ array['admin', 'cg_leader', 'senior_leader']::text[]);
 alter table public.d1_invites add constraint d1_invites_roles_check

@@ -6,6 +6,7 @@
 // rounded, clipped frame, which reads the same at 1.5px.
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
+import { D1_ROLE_LABELS, type D1LeaderRole } from "@destiny/shared";
 import {
   ActivityIndicator,
   Animated,
@@ -246,13 +247,22 @@ export function CountBadge({ count, small }: { count: number; small?: boolean })
   );
 }
 
-export function AdminTag() {
+export function RoleTag({ label }: { label: string }) {
   const t = useTheme();
   return (
     <View style={{ backgroundColor: t.accentSoft, paddingHorizontal: 6, paddingVertical: 1, borderRadius: 5 }}>
-      <Text style={{ fontSize: 10, fontWeight: "700", letterSpacing: 0.3, color: t.tint }}>Admin</Text>
+      <Text style={{ fontSize: 10, fontWeight: "700", letterSpacing: 0.3, color: t.tint }}>{label}</Text>
     </View>
   );
+}
+
+/**
+ * The tag beside someone's name: their account role (Admin, Senior Leader, CG
+ * Leader) if they have one, otherwise "Group admin" when they run this group.
+ */
+export function MemberTag({ tag, groupAdmin }: { tag: D1LeaderRole | null; groupAdmin: boolean }) {
+  if (tag) return <RoleTag label={D1_ROLE_LABELS[tag]} />;
+  return groupAdmin ? <RoleTag label="Group admin" /> : null;
 }
 
 // ── Cards and lists ─────────────────────────────────────────────────────────

@@ -3,7 +3,7 @@
 // message content; only the safeguarding routes do.
 
 export type MemberStatus = "pending" | "active" | "suspended";
-export type LeaderRole = "group_leader" | "senior_leadership";
+export type LeaderRole = "admin" | "cg_leader" | "senior_leader";
 
 export interface AdminMember {
   id: string;
@@ -109,8 +109,9 @@ export interface AdminSettings {
 }
 
 export const LEADER_ROLE_LABELS: Record<LeaderRole, string> = {
-  group_leader: "Group leader",
-  senior_leadership: "Senior leadership",
+  admin: "Admin",
+  senior_leader: "Senior Leader",
+  cg_leader: "CG Leader",
 };
 
 export const ADMIN_API = "/api/admin/destiny-one";

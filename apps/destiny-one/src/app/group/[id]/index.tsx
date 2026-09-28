@@ -57,6 +57,7 @@ export default function GroupChat() {
   const rows = useMemo(() => (messages ? buildRows(messages, firstUnreadId).reverse() : []), [messages, firstUnreadId]);
   const byId = useMemo(() => new Map((messages ?? []).map((m) => [m.id, m])), [messages]);
   const admins = useMemo(() => new Set((group?.members ?? []).filter((m) => m.role === "admin").map((m) => m.id)), [group]);
+  const tags = useMemo(() => new Map((group?.members ?? []).map((m) => [m.id, m.tag])), [group]);
 
   // While on screen, new messages here aren't unread.
   useFocusEffect(
@@ -208,7 +209,8 @@ export default function GroupChat() {
               <MessageBubble
                 row={item}
                 replyTo={item.m.replyTo ? byId.get(item.m.replyTo) ?? null : null}
-                senderIsAdmin={!!item.m.sender && admins.has(item.m.sender.id)}
+                senderTag={(item.m.sender && tags.get(item.m.sender.id)) || null}
+                senderIsGroupAdmin={!!item.m.sender && admins.has(item.m.sender.id)}
                 canReply={!!group?.canPost && !frozen && !archived}
                 onReply={() => startReply(item.m)}
                 onLongPress={() => setActionFor(item.m)}

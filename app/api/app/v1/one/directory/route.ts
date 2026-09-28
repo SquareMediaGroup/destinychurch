@@ -1,4 +1,4 @@
-import { canCreateGroup, isAdult, type D1DirectoryEntry } from "@destiny/shared";
+import { canCreateGroup, isAdult, isLeaderRole, type D1DirectoryEntry } from "@destiny/shared";
 import { createServiceClient } from "@/utils/supabase/service";
 import { requireMember } from "@/lib/destinyOne/auth.server";
 import { canManageCommunity } from "@/lib/destinyOne/chat.server";
@@ -57,7 +57,7 @@ export const GET = oneRoute(async (request) => {
       .eq("community_id", communityId);
     query = query.in("id", (ids ?? []).map((r) => r.member_id as string));
   } else {
-    const senior = caller.policy.roles.includes("senior_leadership");
+    const senior = isLeaderRole(caller.policy.roles);
     const { data: adminOf } = await supabase
       .from("d1_community_members")
       .select("community_id")

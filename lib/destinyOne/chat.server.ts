@@ -18,11 +18,14 @@ import {
   MIN_GROUP_MEMBERS,
   canPost,
   isAdult,
+  isLeaderRole,
+  topRole,
   type D1CommunitySummary,
   type D1GroupDetail,
   type D1GroupKind,
   type D1GroupState,
   type D1GroupSummary,
+  type D1LeaderRole,
   type D1Message,
   type D1MessageContent,
   type D1MessagePage,
@@ -137,7 +140,7 @@ export async function listCommunities(caller: Caller, onlyId?: string): Promise<
         .in("community_id", communityIds)
     : { data: [] };
 
-  const senior = caller.policy.roles.includes("senior_leadership");
+  const senior = isLeaderRole(caller.policy.roles);
 
   return (memberships ?? []).map((m) => {
     const c = m.d1_communities as unknown as { id: string; name: string; description: string | null };
@@ -169,7 +172,7 @@ export async function getGroup(caller: Caller, groupId: string): Promise<D1Group
   const [{ data: members, error }, canManage] = await Promise.all([
     supabase
       .from("d1_group_members")
-      .select("role, joined_at, d1_members!d1_group_members_member_id_fkey!inner(id, display_name, adult_on, status)")
+      .select("role, joined_at, d1_members!d1_group_members_member_id_fkey!inner(id, display_name, adult_on, status, roles)")
       .eq("group_id", groupId)
       .is("left_at", null)
       .eq("d1_members.status", "active")
@@ -179,7 +182,7 @@ export async function getGroup(caller: Caller, groupId: string): Promise<D1Group
   if (error) throw fromDbError(error);
 
   const people = (members ?? []).map((m) => {
-    const p = m.d1_members as unknown as { id: string; display_name: string; adult_on: string | null };
+    const p = m.d1_members as unknown as { id: string; display_name: string; adult_on: string | null; roles: D1LeaderRole[] };
     return { role: m.role as D1MembershipRole, joinedAt: m.joined_at as string, ...p };
   });
   const adults = people.filter((p) => isAdult(p.adult_on)).length;
@@ -193,6 +196,7 @@ export async function getGroup(caller: Caller, groupId: string): Promise<D1Group
       id: p.id,
       displayName: p.display_name,
       role: p.role,
+      tag: topRole(p.roles),
       joinedAt: p.joinedAt,
       ...(canManage ? { isAdult: isAdult(p.adult_on) } : {}),
     })),

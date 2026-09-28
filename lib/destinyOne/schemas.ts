@@ -135,7 +135,7 @@ export const exchangeSchema = z.object({
 // ── Admin (safeguarding) ──
 
 const dob = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Dates should look like 2008-05-17.");
-const leaderRoles = z.array(z.enum(["group_leader", "senior_leadership"])).max(2);
+const leaderRoles = z.array(z.enum(["admin", "cg_leader", "senior_leader"])).max(3);
 
 /** Staff's decision on someone's age. See adultOnForDecision. */
 export const ageDecisionSchema = z.object({

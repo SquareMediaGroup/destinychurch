@@ -6,7 +6,7 @@ import { OneError, fromDbError, limit, oneJson, oneRoute, readBody } from "@/lib
 import { createCommunitySchema } from "@/lib/destinyOne/schemas";
 
 // GET  /api/app/v1/one/communities — my communities, each with the groups I'm in
-// POST /api/app/v1/one/communities — create one (senior leadership); comes with
+// POST /api/app/v1/one/communities — create one (any leader role); comes with
 //                                    its Announcements group
 
 export const dynamic = "force-dynamic";
@@ -19,7 +19,7 @@ export const GET = oneRoute(async (request) => {
 export const POST = oneRoute(async (request) => {
   const caller = await requireMember(request);
   if (!canCreateCommunity(caller.policy)) {
-    throw new OneError("forbidden", "Only senior leadership can create communities.");
+    throw new OneError("forbidden", "Only leaders can create communities.");
   }
   await limit("create-community", caller.member.id, 5);
   const input = await readBody(request, createCommunitySchema);

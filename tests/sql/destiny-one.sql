@@ -45,7 +45,7 @@ insert into auth.users (id, email, phone) values
 
 -- Everyone here was verified by staff ('admin'): activation now requires it.
 insert into public.d1_members (id, auth_user_id, display_name, adult_on, status, roles, verified_at, verification_source) values
-  ('10000000-0000-0000-0000-00000000000a', '00000000-0000-0000-0000-00000000000a', 'Lead Adult',   '1990-01-01', 'active', '{senior_leadership,group_leader}', now(), 'admin'),
+  ('10000000-0000-0000-0000-00000000000a', '00000000-0000-0000-0000-00000000000a', 'Lead Adult',   '1990-01-01', 'active', '{senior_leader,cg_leader}', now(), 'admin'),
   ('10000000-0000-0000-0000-00000000000b', '00000000-0000-0000-0000-00000000000b', 'Second Adult', '1985-06-01', 'active', '{}', now(), 'admin'),
   ('10000000-0000-0000-0000-00000000000c', '00000000-0000-0000-0000-00000000000c', 'Third Adult',  '1980-03-03', 'active', '{}', now(), 'admin'),
   ('10000000-0000-0000-0000-00000000000d', '00000000-0000-0000-0000-00000000000d', 'Minor One',    current_date + 400, 'active', '{}', now(), 'admin'),
@@ -71,9 +71,18 @@ select pg_temp.expect_error(
 select pg_temp.check(true, 'an auth user with a phone number cannot be activated');
 
 select pg_temp.expect_error(
-  $$update public.d1_members set roles = '{group_leader}' where id = '10000000-0000-0000-0000-00000000000d'$$,
+  $$update public.d1_members set roles = '{cg_leader}' where id = '10000000-0000-0000-0000-00000000000d'$$,
   'verified adults');
 select pg_temp.check(true, 'a minor cannot hold a leader role');
+
+select pg_temp.expect_error(
+  $$update public.d1_members set roles = '{group_leader}' where id = '10000000-0000-0000-0000-00000000000a'$$,
+  'roles_check');
+select pg_temp.check(true, 'the retired group_leader role is refused');
+
+select pg_temp.check(
+  public.d1_is_leader('10000000-0000-0000-0000-00000000000a'),
+  'a holder of a leader role counts as a leader');
 
 select pg_temp.check(
   not exists (
@@ -370,7 +379,7 @@ select pg_temp.check(
 
 -- Invites
 insert into public.d1_invites (email, display_name, is_adult, roles, community_ids, expires_at)
-  values ('invited@example.org', 'Invited Adult', true, '{group_leader}',
+  values ('invited@example.org', 'Invited Adult', true, '{cg_leader}',
           array[(select v from ids where k = 'community')], now() + interval '30 days');
 insert into public.d1_invites (email, display_name, is_adult, adult_on, community_ids, expires_at)
   values ('kid@example.org', 'Invited Kid', false, current_date + 900,
@@ -378,7 +387,7 @@ insert into public.d1_invites (email, display_name, is_adult, adult_on, communit
 
 select pg_temp.expect_error(
   $$insert into public.d1_invites (email, display_name, is_adult, roles, expires_at)
-    values ('x@example.org', 'X', false, '{group_leader}', now() + interval '1 day')$$,
+    values ('x@example.org', 'X', false, '{cg_leader}', now() + interval '1 day')$$,
   'd1_invites_leaders_are_adults');
 select pg_temp.check(true, 'an under-18 invite cannot carry a leader role');
 
@@ -391,7 +400,7 @@ insert into accepted select 'adult', public.d1_accept_invite('00000000-0000-0000
 insert into accepted select 'kid', public.d1_accept_invite('00000000-0000-0000-0000-000000000013', 'kid@example.org');
 
 select pg_temp.check(
-  (select status = 'active' and verification_source = 'invite' and 'group_leader' = any (roles)
+  (select status = 'active' and verification_source = 'invite' and 'cg_leader' = any (roles)
      from public.d1_members where id = (select v from accepted where k = 'adult')),
   'accepting an invite activates the member with its roles');
 select pg_temp.check(public.d1_is_adult((select v from accepted where k = 'adult')),
@@ -484,7 +493,7 @@ select pg_temp.check(
   'a leader invite joins no group or community until staff approve');
 select pg_temp.expect_error(
   $$insert into public.d1_invites (email, display_name, roles, needs_approval, expires_at)
-    values ('x@example.org', 'X', '{group_leader}', true, now() + interval '1 day')$$,
+    values ('x@example.org', 'X', '{cg_leader}', true, now() + interval '1 day')$$,
   'd1_invites_leader_invites_no_roles');
 select pg_temp.check(true, 'a leader invite cannot grant leader roles');
 

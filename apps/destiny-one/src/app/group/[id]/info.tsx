@@ -7,7 +7,7 @@ import { router, useLocalSearchParams } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { checkComposition, type D1GroupMember } from "@destiny/shared";
 import { Icon, type IconName } from "@/components/Icon";
-import { AdminTag, Avatar, Bone, Card, CardButton, ConfirmDialog, ErrorState, FloatingBack, SectionLabel, SkeletonGroup, SkeletonRows } from "@/components/ui";
+import { MemberTag, Avatar, Bone, Card, CardButton, ConfirmDialog, ErrorState, FloatingBack, SectionLabel, SkeletonGroup, SkeletonRows } from "@/components/ui";
 import { api } from "@/lib/api";
 import { plural } from "@/lib/format";
 import { keys, removeGroupLocally, useGroup } from "@/lib/queries";
@@ -150,7 +150,7 @@ export default function GroupInfo() {
                     {m.displayName}
                     {m.id === me?.id ? " (You)" : ""}
                   </Text>
-                  {m.role === "admin" ? <AdminTag /> : null}
+                  <MemberTag tag={m.tag} groupAdmin={m.role === "admin"} />
                   {m.isAdult !== undefined ? <Text style={{ fontSize: 13, color: m.isAdult ? t.subtle : t.tint }}>{m.isAdult ? "Adult" : "Under 18"}</Text> : null}
                 </View>
               </Pressable>

@@ -360,6 +360,8 @@ destinychurch/
 │       ├── 20260920_01_sermon_series.sql  # sermon_series table — playlist ids curated as sermon series
 │       ├── 20260926_01_destiny_one.sql    # Destiny One messaging (d1_* tables, safeguarding triggers,
 │       │                                  # Realtime policy) + admin_roles.safeguarding_admin — see §29
+│       ├── 20260928_04_destiny_one_role_tags.sql # Destiny One part 8: roles become admin / cg_leader /
+│       │                                  # senior_leader (identical powers, different chat tag)
 │       ├── 20260927_04_destiny_one_invite_members.sql # Destiny One part 5: staff invites create the
 │       │                                   # member up front (groups before sign-in); d1_sign_in_status
 │       ├── 20260927_03_destiny_one_message_search.sql # Destiny One part 4: message search
@@ -1949,7 +1951,7 @@ department **sub-groups**. Migration: `supabase/migrations/20260926_01_destiny_o
 
 | Table | Holds |
 |---|---|
-| `d1_members` | One row per app account. `auth_user_id` (nullable — set null when the account is deleted), `display_name` (from ChurchSuite, not editable by the member), `churchsuite_contact_id` / `churchsuite_child_id` / `churchsuite_user_id`, **`adult_on`** (the 18th birthday — the full date of birth is never stored), `status` (`pending`/`active`/`suspended`/`deleted`), `roles` (`group_leader`, `senior_leadership`) |
+| `d1_members` | One row per app account. `auth_user_id` (nullable — set null when the account is deleted), `display_name` (from ChurchSuite, not editable by the member), `churchsuite_contact_id` / `churchsuite_child_id` / `churchsuite_user_id`, **`adult_on`** (the 18th birthday — the full date of birth is never stored), `status` (`pending`/`active`/`suspended`/`deleted`), `roles` (`admin`, `cg_leader`, `senior_leader` — see part 8) |
 | `d1_consents` | Which version of `privacy` / `terms` / `chat_review_notice` a member accepted, when |
 | `d1_communities`, `d1_community_members` | Communities and who is in them (`admin`/`member`) |
 | `d1_groups` | `kind` (`announcements`/`group`), `department`, `state` (`active`/`frozen`/`archived`), `freeze_kind` (`auto`/`manual`), `frozen_reason` |
@@ -1967,8 +1969,8 @@ department **sub-groups**. Migration: `supabase/migrations/20260926_01_destiny_o
 **The rules are enforced in the database**, not the API, so no client and no route bug can get round
 them:
 1. **No 1:1 chats.** `d1_create_group` refuses fewer than 3 people.
-2. **Only leaders create groups** (`group_leader` / `senior_leadership`, adults only); only senior
-   leadership creates communities.
+2. **Only leaders create groups and communities** (any of `admin` / `cg_leader` / `senior_leader`,
+   adults only; the three have identical powers).
 3. **At least 2 verified adults in every group, always.** Checked at creation, then by a *deferred*
    constraint trigger on `d1_group_members` (and on `d1_members` status/`adult_on` changes) that calls
    `d1_evaluate_group`: below 3 members or 2 adults → `frozen` (read-only) + a `d1_safeguarding_events`
@@ -2048,8 +2050,20 @@ counts atomically and returns whether the hit is allowed, pruning rows older tha
 then. `limit()` in `lib/destinyOne/http.ts` checks the in-memory limiter first (free, with escalating
 cooldowns), then this; if the database can't be reached the request is let through and logged.
 
+**Part 8 — `20260928_04_destiny_one_role_tags.sql`: Admin, CG Leader, Senior Leader.** Replaces
+`group_leader` / `senior_leadership`. All three roles have the same powers (create groups and
+communities, search the directory); they differ only in the tag beside the person's name. Existing
+data is migrated (`group_leader` → `cg_leader`, `senior_leadership` → `senior_leader`), the check
+constraints on `d1_members.roles` and `d1_invites.roles` are replaced, and `d1_is_leader()` /
+`d1_is_senior()` both mean "holds any of the three". A person holding several roles shows the highest
+(`topRole()` in `packages/shared/src/destinyOne/policy.ts`: Admin, then Senior Leader, then CG
+Leader). `D1GroupMember.tag` carries it to the chat screen, which draws it via `MemberTag`; someone
+with no role who administers the group shows "Group admin" instead. The Profile tab shows the same
+label. **Deploy order:** old app builds only know the retired role names, so a leader on one loses
+the leader UI until they update; apply the migration when the API change ships.
+
 **Tested by:** `scripts/test-sql.sh` (`npm run test:sql`, and the "Database rules" CI job) — applies
-Supabase stubs + every Destiny One migration (parts 1–7, plus the profile-picture and min-build
+Supabase stubs + every Destiny One migration (parts 1–8, plus the profile-picture and min-build
 migrations) to a throwaway local Postgres and runs `tests/sql/destiny-one.sql` (107 checks).
 
 **Used By:** `lib/destinyOne/*`, `app/api/app/v1/one/**`, `app/api/admin/destiny-one/**`,
@@ -4213,7 +4227,7 @@ needs at least 2 verified adults.") pass through as `rule_violation` (422). Type
 | `me/consents` | POST | Current versions only (`REQUIRED_CONSENTS`) |
 | `me/export` | GET | GDPR access: profile (incl. access-request note, declared and staff-set 18th birthday, how and when verified, a link to the profile picture), consents, memberships, own messages (incl. deleted), files sent (24-hour links), reactions, blocks, own reports |
 | `me/push-tokens` | POST, DELETE | Expo tokens |
-| `communities` | GET, POST | POST: senior leadership |
+| `communities` | GET, POST | POST: any leader role |
 | `communities/[id]` | GET | |
 | `communities/[id]/members` | POST, DELETE | DELETE without `memberId` = leave |
 | `communities/[id]/groups` | POST | Create a sub-group (≥3 people, ≥2 adults) |
@@ -6228,8 +6242,8 @@ anyone else → `pending`. `D1Me.onboarding` tells the app which screen to show
 `invite_only` when `d1_settings.allow_access_requests` is off; `suspended`; `active`), with
 `onboardingMessage` copy served from the server (`lib/destinyOne/onboarding.ts`). A Destiny One
 Admin approves requests as adult or under 18 at `/admin/destiny-one/requests`. Members must also
-accept the current privacy / terms / chat-review notices. Leader roles (`group_leader`,
-`senior_leadership`) are set by a Destiny One Admin. Supabase's phone auth provider should be
+accept the current privacy / terms / chat-review notices. Leader roles (`admin`,
+`cg_leader`, `senior_leader`) are set by a Destiny One Admin. Supabase's phone auth provider should be
 **disabled**; the database refuses to activate an account with a phone number regardless.
 
 ### Session Management

@@ -115,16 +115,32 @@ export function isActive(m: PolicyMember): boolean {
   return m.status === "active";
 }
 
+/** Tag text for each account role. */
+export const D1_ROLE_LABELS: Record<D1LeaderRole, string> = {
+  admin: "Admin",
+  senior_leader: "Senior Leader",
+  cg_leader: "CG Leader",
+};
+
+/** Highest first: whoever holds several roles shows the first one that matches. */
+const ROLE_PRECEDENCE: readonly D1LeaderRole[] = ["admin", "senior_leader", "cg_leader"];
+
+/** The role shown as someone's tag, or null if they hold none. */
+export function topRole(roles: readonly D1LeaderRole[]): D1LeaderRole | null {
+  return ROLE_PRECEDENCE.find((r) => roles.includes(r)) ?? null;
+}
+
+/** Any of the three roles makes someone a leader; they all have the same powers. */
+export function isLeaderRole(roles: readonly D1LeaderRole[]): boolean {
+  return topRole(roles) !== null;
+}
+
 export function canCreateCommunity(m: PolicyMember): boolean {
-  return isActive(m) && m.isAdult && m.roles.includes("senior_leadership");
+  return isActive(m) && m.isAdult && isLeaderRole(m.roles);
 }
 
 export function canCreateGroup(m: PolicyMember): boolean {
-  return (
-    isActive(m) &&
-    m.isAdult &&
-    (m.roles.includes("group_leader") || m.roles.includes("senior_leadership"))
-  );
+  return isActive(m) && m.isAdult && isLeaderRole(m.roles);
 }
 
 export interface GroupComposition {

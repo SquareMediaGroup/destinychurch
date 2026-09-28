@@ -172,7 +172,7 @@ export default function GroupChat() {
     <KeyboardAvoidingView behavior="padding" style={{ flex: 1, backgroundColor: t.bg }}>
       {/* Swiping right on a message replies. On iOS 26 the whole screen is also a swipe-back
           area by default, so both fired at once. Back stays available from the left edge. */}
-      <Stack.Screen options={{ fullScreenSwipeEnabled: false }} />
+      <Stack.Screen options={{ fullScreenGestureEnabled: false }} />
       {t.wall ? <Wallpaper pattern={t.wall.def.pattern} tone={t.wall.tone} /> : null}
       {!messages ? (
         convo.error ? (

@@ -53,7 +53,7 @@ export default function Email() {
     <AuthScreen back footer={<PrimaryButton label="Send code" onPress={send} busy={busy} disabled={!email.trim()} />}>
       <View style={{ paddingTop: 14, paddingHorizontal: 4, gap: 8 }}>
         <LargeTitle>Your email</LargeTitle>
-        <Lead>Use the email the church office has for you. We'll send you a 6-digit code.</Lead>
+        <Lead>Use the email the church office has for you. We&apos;ll send you a 6-digit code.</Lead>
       </View>
       <View style={{ marginTop: 28, gap: 10 }}>
         <Field

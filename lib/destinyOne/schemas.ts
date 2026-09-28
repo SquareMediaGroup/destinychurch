@@ -198,6 +198,15 @@ export const adminFreezeSchema = z.object({
   reason: z.string().trim().max(500).default(""),
 });
 
+export const adminTakedownSchema = z.object({
+  reason: z.string().trim().min(3, "Say why you are removing this message.").max(500),
+});
+
+export const adminSuspendSchema = z.object({
+  suspended: z.boolean(),
+  reason: z.string().trim().min(3, "Give a short reason for the record.").max(500),
+});
+
 export const adminResolveSchema = z.object({
   status: z.enum(["reviewing", "closed"]),
   resolution: z.string().trim().max(2000).optional(),

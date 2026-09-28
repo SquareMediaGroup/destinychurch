@@ -103,8 +103,8 @@ Build numbers auto-increment on EAS (`appVersionSource: remote`). To retire a bu
 "Lowest iOS build allowed" in the admin above it.
 
 Before external TestFlight or the App Store:
-- Apple guideline 1.2 (user-generated content) requires reporting (built) **and blocking abusive
-  users (not built yet)**.
+- Apple guideline 1.2 (user-generated content) requires reporting and blocking abusive users
+  (both built: long-press a message → Report / Block; Settings → Blocked people).
 - The privacy policy must say push notifications show a message preview.
 - Once the app is live, set `D1_IOS_STORE_URL` on Vercel to its App Store link so the Update
   button stops pointing at TestFlight.
@@ -113,6 +113,7 @@ Before external TestFlight or the App Store:
 
 ```bash
 npm run typecheck
+npx expo lint
 npx expo-doctor
 npx expo export --platform ios --platform android
 ```

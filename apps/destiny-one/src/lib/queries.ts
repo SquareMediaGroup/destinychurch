@@ -13,7 +13,7 @@
 // the background, only if something on screen is using it.
 
 import { useQuery } from "@tanstack/react-query";
-import type { D1CommunitySummary, D1GroupDetail, D1GroupSummary, D1Message, D1RealtimeEvent } from "@destiny/shared";
+import type { D1CommunitySummary, D1GroupDetail, D1GroupSummary, D1Me, D1Message, D1RealtimeEvent } from "@destiny/shared";
 import { api } from "@/lib/api";
 import { queryClient } from "@/lib/queryClient";
 
@@ -97,6 +97,27 @@ export function removeGroupLocally(groupId: string) {
   queryClient.removeQueries({ queryKey: keys.messages(groupId) });
 }
 
+// ── Blocking ────────────────────────────────────────────────────────────────
+
+function isBlocked(memberId: string | undefined): boolean {
+  if (!memberId) return false;
+  return !!queryClient.getQueryData<D1Me>(keys.me)?.blocked?.some((b) => b.id === memberId);
+}
+
+/** Just blocked someone: take their messages out of every cached chat at once. */
+export function hideSender(memberId: string) {
+  queryClient.setQueriesData<MessagesData>({ queryKey: ["messages"] }, (old) =>
+    old ? { ...old, messages: old.messages.filter((m) => m.sender?.id !== memberId) } : old,
+  );
+  invalidateCommunities(); // previews and unread counts come back without them
+}
+
+/** Unblocked someone: start every chat afresh so their messages come back in place. */
+export function showSendersAgain() {
+  void queryClient.resetQueries({ queryKey: ["messages"] });
+  invalidateCommunities();
+}
+
 /** Refresh the chat list in the background. Never awaited by the UI. */
 export function invalidateCommunities() {
   void queryClient.invalidateQueries({ queryKey: keys.communities });
@@ -124,6 +145,7 @@ export function applyEvent(e: D1RealtimeEvent, meId: string) {
   switch (e.event) {
     case "message": {
       const p = e.payload;
+      if (isBlocked(p.sender.id)) return; // someone I've blocked: never shown, never unread
       const mine = p.sender.id === meId;
       if (p.attachmentId) {
         // The event has no signed URL; the page fetch brings one.
@@ -182,6 +204,15 @@ export function applyEvent(e: D1RealtimeEvent, meId: string) {
     case "community_left":
       invalidateCommunities();
       return;
+    case "blocks_changed": {
+      // Usually our own block from this phone (already applied); this keeps
+      // other phones signed in to the same account in step.
+      const { memberId, blocked } = e.payload;
+      void queryClient.invalidateQueries({ queryKey: keys.me });
+      if (blocked) hideSender(memberId);
+      else showSendersAgain();
+      return;
+    }
   }
 }
 

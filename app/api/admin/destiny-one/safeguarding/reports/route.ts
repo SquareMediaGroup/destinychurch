@@ -26,7 +26,7 @@ export async function GET(request: Request) {
       "id, reason, status, resolution, resolved_at, created_at, " +
         "reporter:d1_members!d1_reports_reporter_id_fkey(id, display_name), " +
         "group:d1_groups(id, name), " +
-        "message:d1_messages(id, body, created_at, deleted_at, sender:d1_members!d1_messages_sender_id_fkey(id, display_name))",
+        "message:d1_messages(id, body, created_at, deleted_at, deleted_by_admin, sender:d1_members!d1_messages_sender_id_fkey(id, display_name))",
     )
     .eq("status", status)
     .order("created_at", { ascending: false })

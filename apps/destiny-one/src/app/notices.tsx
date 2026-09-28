@@ -36,7 +36,7 @@ export default function Notices() {
     <AuthScreen grouped footer={<><FormError message={error} /><PrimaryButton label="I agree" onPress={agree} busy={busy} /></>}>
       <View style={{ paddingTop: 30, paddingHorizontal: 4, gap: 8 }}>
         <LargeTitle>Before you start</LargeTitle>
-        <Lead>Please read these. You'll need to agree to them to use Destiny One.</Lead>
+        <Lead>Please read these. You&apos;ll need to agree to them to use Destiny One.</Lead>
       </View>
       <Card style={{ marginTop: 24 }}>
         <DocRow icon="docLines" label="Privacy notice" onPress={() => openDocument("privacy")} />

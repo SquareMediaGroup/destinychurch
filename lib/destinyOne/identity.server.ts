@@ -28,7 +28,7 @@ import {
   getChild,
   getContact,
 } from "@/lib/destinyOne/churchsuite.server";
-import { MEMBER_COLUMNS, loadMemberByAuthUser, type AuthUser, type MemberRow } from "@/lib/destinyOne/auth.server";
+import { AVATAR_BUCKET, MEMBER_COLUMNS, loadMemberByAuthUser, type AuthUser, type MemberRow } from "@/lib/destinyOne/auth.server";
 import { OneError } from "@/lib/destinyOne/http";
 import { getSettings } from "@/lib/destinyOne/settings.server";
 import { recordNotification } from "@/lib/notify.server";
@@ -250,4 +250,24 @@ export async function resyncMember(member: MemberRow): Promise<"unchanged" | "up
     return "skipped";
   }
   return changed ? "updated" : "unchanged";
+}
+
+/**
+ * GDPR erasure (d1_erase_member) plus the profile picture file, which lives in
+ * Storage where SQL can't reach it. Returns the database error, if any, for
+ * the caller to map (fromDbError / dbFailure).
+ */
+export async function eraseMember(memberId: string): Promise<{ code?: string; message: string } | null> {
+  const supabase = createServiceClient();
+  const { data: row } = await supabase.from("d1_members").select("avatar_url").eq("id", memberId).maybeSingle();
+
+  const { error } = await supabase.rpc("d1_erase_member", { p_member: memberId });
+  if (error) return error;
+
+  const avatar = row?.avatar_url as string | null | undefined;
+  if (avatar) {
+    const { error: removeError } = await supabase.storage.from(AVATAR_BUCKET).remove([avatar]);
+    if (removeError) console.error("⚠️ Destiny One erase: avatar file removal failed:", removeError.message);
+  }
+  return null;
 }

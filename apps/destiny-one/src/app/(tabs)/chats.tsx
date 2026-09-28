@@ -139,7 +139,7 @@ function OfflineBanner() {
   return (
     <View style={{ marginHorizontal: 16, marginBottom: 8, flexDirection: "row", alignItems: "center", gap: 8, paddingVertical: 8, paddingHorizontal: 12, borderRadius: 12, backgroundColor: t.fill }}>
       <Icon name="wifiOff" size={16} color={t.muted} />
-      <Text style={{ flex: 1, fontSize: 13, color: t.muted }}>Can't connect. Showing your last update.</Text>
+      <Text style={{ flex: 1, fontSize: 13, color: t.muted }}>Can&apos;t connect. Showing your last update.</Text>
     </View>
   );
 }

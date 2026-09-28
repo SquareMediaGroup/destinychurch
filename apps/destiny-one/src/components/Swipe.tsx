@@ -14,7 +14,7 @@
 // native driver, because the drag itself sets the value every frame.
 
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { Animated, PanResponder, Pressable, Text, View } from "react-native";
+import { Animated, PanResponder, Pressable, Text, View, type GestureResponderEvent, type PanResponderGestureState } from "react-native";
 import { Icon, type IconName } from "@/components/Icon";
 import { haptic } from "@/lib/haptics";
 import { useTheme } from "@/theme/tokens";
@@ -27,6 +27,16 @@ export function project(velocity: number, decelerationRate = 0.998): number {
 /** Progressive resistance past an edge: the further you pull, the less it follows. */
 export function rubberband(overshoot: number, dimension: number, constant = 0.55): number {
   return (overshoot * dimension * constant) / (dimension + constant * Math.abs(overshoot));
+}
+
+/**
+ * Drags that start this close to the left edge are the system back gesture.
+ * PanResponder's own `x0` is only filled in once the gesture is claimed, so
+ * while deciding whether to claim it, work out where the finger started.
+ */
+const EDGE = 28;
+function startX(e: GestureResponderEvent, g: PanResponderGestureState): number {
+  return e.nativeEvent.pageX - g.dx;
 }
 
 // Critically damped (no bounce), the default for things that didn't carry momentum.
@@ -49,7 +59,7 @@ export function SwipeToReply({ children, onReply, enabled = true }: { children: 
     () =>
       PanResponder.create({
         // Mostly horizontal, and not from the very left edge (that is the back gesture).
-        onMoveShouldSetPanResponder: (_e, g) => enabled && g.dx > 8 && Math.abs(g.dx) > Math.abs(g.dy) * 1.6 && g.x0 > 32,
+        onMoveShouldSetPanResponder: (e, g) => enabled && g.dx > 8 && Math.abs(g.dx) > Math.abs(g.dy) * 1.6 && startX(e, g) > EDGE,
         onPanResponderTerminationRequest: () => false,
         onPanResponderMove: (_e, g) => {
           const d = Math.max(0, g.dx);
@@ -155,7 +165,7 @@ export function SwipeActions({ children, actions, background }: { children: Reac
   const responder = useMemo(
     () =>
       PanResponder.create({
-        onMoveShouldSetPanResponder: (_e, g) => Math.abs(g.dx) > 10 && Math.abs(g.dx) > Math.abs(g.dy) * 1.6 && g.x0 > 32,
+        onMoveShouldSetPanResponder: (e, g) => Math.abs(g.dx) > 10 && Math.abs(g.dx) > Math.abs(g.dy) * 1.6 && startX(e, g) > EDGE,
         onPanResponderGrant: () => {
           x.stopAnimation(); // grab it mid-flight: carry on from where it is on screen
           start.current = pos.current;

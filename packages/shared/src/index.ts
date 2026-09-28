@@ -20,5 +20,6 @@ export * from "./design/tokens";
 // Destiny One is TypeScript and imports these directly.
 export * from "./destinyOne/types";
 export * from "./destinyOne/policy";
+export * from "./destinyOne/accountRules";
 export * from "./destinyOne/client";
 export * from "./destinyOne/signedUrls";

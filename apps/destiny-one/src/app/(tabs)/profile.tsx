@@ -91,13 +91,21 @@ export default function Profile() {
       </Text>
 
       <Card>
-        <SettingsRow icon="people" label={others > 0 ? "Switch account" : "Add another account"} value={others > 0 ? String(accounts.length) : undefined} onPress={() => router.push("/accounts")} />
+        <SettingsRow icon="plus" label="Add account" onPress={() => router.push("/add-account")} />
+        {others > 0 ? (
+          <>
+            <Separator inset={62} />
+            <SettingsRow icon="people" label="Switch account" value={String(accounts.length)} onPress={() => router.push("/accounts")} />
+          </>
+        ) : null}
       </Card>
 
       <Card>
         <SettingsRow icon="bell" iconBg={ORANGE} iconColor={INK} label="Notifications" onPress={() => router.push("/notifications")} />
         <Separator inset={62} />
         <SettingsRow icon="sliders" label="Appearance" onPress={() => router.push("/appearance")} />
+        <Separator inset={62} />
+        <SettingsRow icon="lock" label="Password" onPress={() => router.push("/set-password")} />
         <Separator inset={62} />
         <SettingsRow icon="alertCircle" label="Blocked people" onPress={() => router.push("/blocked")} />
       </Card>

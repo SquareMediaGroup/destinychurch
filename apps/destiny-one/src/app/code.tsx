@@ -38,8 +38,14 @@ export default function Code() {
       const me = await verifyEmailCode(email, value);
       // "Add account": the new account becomes the active one. Otherwise this
       // is the only sign-in on the device.
-      if (isAdding()) await finishAdding(me);
-      else setMe(me);
+      if (isAdding()) {
+        const added = await finishAdding(me);
+        if (!added.ok) {
+          setError(added.message);
+          setCode("");
+          return;
+        }
+      } else setMe(me);
       router.dismissAll();
       router.replace(routeFor(me));
     } catch (err) {

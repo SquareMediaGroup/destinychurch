@@ -9,13 +9,16 @@
 import { useEffect, useRef, useState } from "react";
 import { AccessibilityInfo, Animated, Pressable, Text, View } from "react-native";
 import { router } from "expo-router";
+import { isDoublePress } from "@destiny/shared";
 import { Tabs, type BottomTabBarProps } from "expo-router/js-tabs";
 import { LinearGradient } from "expo-linear-gradient";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { GlassSurface } from "@/components/GlassSurface";
 import { Icon, type IconName } from "@/components/Icon";
 import { withAlpha } from "@/components/ui";
+import { confirmOwner, nextAccountSlot } from "@/lib/accounts";
 import { haptic } from "@/lib/haptics";
+import { useSession } from "@/state/session";
 import { useTheme } from "@/theme/tokens";
 
 const TABS: Record<string, { label: string; icon: IconName }> = {
@@ -67,6 +70,8 @@ function TabBar({ state, navigation }: BottomTabBarProps) {
   const t = useTheme();
   const insets = useSafeAreaInsets();
   const reduce = useReduceMotion();
+  const { switchTo, accounts } = useSession();
+  const lastProfilePress = useRef<number | null>(null);
   const bottom = Math.max(insets.bottom - 6, 12);
   const routes = state.routes.filter((r) => TABS[r.name]);
   const activeKey = state.routes[state.index]?.key;
@@ -87,6 +92,16 @@ function TabBar({ state, navigation }: BottomTabBarProps) {
       Animated.spring(x, { toValue: to, friction: 9, tension: 90, useNativeDriver: true }).start();
     }
   }, [index, tabWidth, reduce, x]);
+
+  /** Double press on Profile: hop to the most recently used other account (Face ID only if it's been a while). */
+  async function quickSwitch() {
+    const slot = nextAccountSlot();
+    const target = accounts.find((a) => a.slot === slot);
+    if (!slot || !target) return;
+    if (!(await confirmOwner(target.displayName, slot))) return;
+    haptic.selection();
+    await switchTo(slot, { announce: true });
+  }
 
   return (
     <View pointerEvents="box-none" style={{ position: "absolute", left: 0, right: 0, bottom: 0 }}>
@@ -109,9 +124,18 @@ function TabBar({ state, navigation }: BottomTabBarProps) {
                 icon={tab.icon}
                 focused={focused}
                 reduce={reduce}
-                onLongPress={route.name === "settings" ? () => router.push("/accounts") : undefined}
-                hint={route.name === "settings" ? "Hold to switch account" : undefined}
+                onLongPress={route.name === "profile" ? () => router.push("/accounts") : undefined}
+                hint={route.name === "profile" ? "Double press to switch account, hold to see all accounts" : undefined}
                 onPress={() => {
+                  if (route.name === "profile") {
+                    const now = Date.now();
+                    if (isDoublePress(lastProfilePress.current, now)) {
+                      lastProfilePress.current = null;
+                      void quickSwitch();
+                      return;
+                    }
+                    lastProfilePress.current = now;
+                  }
                   const event = navigation.emit({ type: "tabPress", target: route.key, canPreventDefault: true });
                   if (!focused && !event.defaultPrevented) {
                     haptic.selection();

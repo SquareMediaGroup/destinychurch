@@ -70,8 +70,11 @@ ChurchSuite. Sign in with ChurchSuite is an optional extra for staff.
 
 ## Several accounts
 
-More than one account can be signed in at once. Hold the Settings tab (or Settings → Switch
-account) to switch; it asks for Face ID or the passcode first. Each account has its own Supabase
+More than one account can be signed in at once. Double-press the Profile tab to switch to the
+last account you used (a banner says who), or hold it (or Profile → Switch account) for the full
+list; it asks for Face ID or the passcode unless you used that account in the last minute. Add an
+account from Profile → Add account (child or admin account). Hold Send in a chat to send as another
+of your accounts (never a child account). Sign in with a password or an emailed code. Each account has its own Supabase
 client, session and saved cache, so switching back is instant. See `src/lib/accounts.ts` and
 "Accounts" under Destiny One in `REPOSITORY_DOCUMENTATION.md`. Adding `expo-local-authentication`
 means a new development build is needed.

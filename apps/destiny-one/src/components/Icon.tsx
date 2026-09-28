@@ -18,6 +18,7 @@ const ICONS = {
   doc: { d: ["M14 3H7a2 2 0 00-2 2v14a2 2 0 002 2h10a2 2 0 002-2V8z", "M14 3v5h5"] },
   docLines: { d: ["M14 3H7a2 2 0 00-2 2v14a2 2 0 002 2h10a2 2 0 002-2V8z", "M14 3v5h5M9 13h6M9 17h4"] },
   terms: { d: ["M5 4h14v16H5zM9 8h6M9 12h6M9 16h3"] },
+  lock: { d: ["M8 11V8a4 4 0 018 0v3"], rects: [[5, 11, 14, 9.5, 2.5]] },
   shield: { d: ["M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"] },
   megaphone: { d: ["M4 10v4h3l7 4V6L7 10z", "M17.5 9a4 4 0 010 6"] },
   pause: { d: ["M9 6v12M15 6v12"] },

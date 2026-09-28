@@ -5,7 +5,7 @@ import { Text, View } from "react-native";
 import { router } from "expo-router";
 import { AuthScreen } from "@/components/AuthScreen";
 import { Icon } from "@/components/Icon";
-import { Field, FormError, LargeTitle, Lead, PrimaryButton } from "@/components/ui";
+import { Field, FormError, LargeTitle, Lead, PrimaryButton, TextButton } from "@/components/ui";
 import { D1ApiError } from "@/lib/api";
 import { requestEmailCode } from "@/lib/auth";
 import { useTheme } from "@/theme/tokens";
@@ -17,6 +17,15 @@ export default function Email() {
   const [email, setEmail] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  function usePassword() {
+    const value = email.trim();
+    if (!EMAIL.test(value)) {
+      setError("That doesn't look like an email address.");
+      return;
+    }
+    router.push({ pathname: "/password", params: { email: value } });
+  }
 
   async function send() {
     const value = email.trim();
@@ -40,10 +49,18 @@ export default function Email() {
   }
 
   return (
-    <AuthScreen back footer={<PrimaryButton label="Send code" onPress={send} busy={busy} disabled={!email.trim()} />}>
+    <AuthScreen
+      back
+      footer={
+        <View style={{ gap: 6 }}>
+          <PrimaryButton label="Use password" onPress={usePassword} disabled={!email.trim() || busy} />
+          <TextButton label="Email me a code instead" onPress={send} style={{ alignSelf: "center", paddingVertical: 8 }} />
+        </View>
+      }
+    >
       <View style={{ paddingTop: 14, paddingHorizontal: 4, gap: 8 }}>
         <LargeTitle>Your email</LargeTitle>
-        <Lead>Use the email the church office has for you. We&apos;ll send you a 6-digit code.</Lead>
+        <Lead>Use the email the church office has for you. Sign in with your password, or we&apos;ll email you a 6-digit code.</Lead>
       </View>
       <View style={{ marginTop: 28, gap: 10 }}>
         <Field
@@ -58,8 +75,8 @@ export default function Email() {
           autoCorrect={false}
           autoComplete="email"
           textContentType="emailAddress"
-          returnKeyType="send"
-          onSubmitEditing={send}
+          returnKeyType="go"
+          onSubmitEditing={usePassword}
           autoFocus
           leading={<Icon name="mail" size={20} color={t.subtle} strokeWidth={1.8} />}
           inputStyle={{ minHeight: 56 }}

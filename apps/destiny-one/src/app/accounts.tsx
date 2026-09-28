@@ -8,7 +8,8 @@ import { router } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Icon } from "@/components/Icon";
 import { Avatar, Card, Separator } from "@/components/ui";
-import { MAX_ACCOUNTS, beginAdd, confirmOwner, type Account } from "@/lib/accounts";
+import { AddAccountChoices } from "@/components/AddAccountSheet";
+import { confirmOwner, type Account } from "@/lib/accounts";
 import { errorMessage, useSession } from "@/state/session";
 import { ORANGE, useTheme } from "@/theme/tokens";
 
@@ -17,6 +18,7 @@ export default function Accounts() {
   const insets = useSafeAreaInsets();
   const { accounts, activeSlot, session, switchTo, removeAccount } = useSession();
   const [opening, setOpening] = useState<string | null>(null);
+  const [adding, setAdding] = useState(false);
 
   async function open(account: Account) {
     if (account.slot === activeSlot && session) {
@@ -24,10 +26,10 @@ export default function Accounts() {
       return;
     }
     if (opening) return;
-    if (!(await confirmOwner(account.displayName))) return;
+    if (!(await confirmOwner(account.displayName, account.slot))) return;
     setOpening(account.slot);
     try {
-      await switchTo(account.slot);
+      await switchTo(account.slot, { announce: true });
       router.dismissAll();
       router.replace("/");
     } catch (err) {
@@ -43,17 +45,6 @@ export default function Accounts() {
       { text: "Cancel", style: "cancel" },
       { text: "Sign out", style: "destructive", onPress: () => void removeAccount(account.slot) },
     ]);
-  }
-
-  async function add() {
-    if (accounts.length >= MAX_ACCOUNTS) {
-      Alert.alert("Too many accounts", `You can have up to ${MAX_ACCOUNTS} accounts on this device. Sign out of one to add another.`);
-      return;
-    }
-    // Signed out right now: this is just a normal sign-in.
-    if (session) await beginAdd();
-    router.back();
-    router.push("/email");
   }
 
   return (
@@ -97,7 +88,7 @@ export default function Accounts() {
         })}
         {accounts.length > 0 ? <Separator inset={74} /> : null}
         <Pressable
-          onPress={() => void add()}
+          onPress={() => setAdding((v) => !v)}
           accessibilityRole="button"
           style={({ pressed }) => [{ flexDirection: "row", alignItems: "center", gap: 14, paddingVertical: 12, paddingHorizontal: 16, backgroundColor: pressed ? t.fill : "transparent" }]}
         >
@@ -107,6 +98,8 @@ export default function Accounts() {
           <Text style={{ flex: 1, fontSize: 17, color: t.tint }}>Add account</Text>
         </Pressable>
       </Card>
+
+      {adding ? <AddAccountChoices /> : null}
 
       <Text style={{ paddingHorizontal: 16, fontSize: 13, lineHeight: 18, color: t.subtle }}>
         Switching asks for Face ID or your passcode. Notifications come to the account you&apos;re using. Hold an account to sign out of it.

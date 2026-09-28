@@ -186,6 +186,9 @@ export function createDestinyOneClient({ baseUrl, getAccessToken, fetchImpl }: D
       call<{ ok: true }>("POST", `/messages/${messageId}/reactions`, { emoji }),
     unreact: (messageId: number, emoji: string) =>
       call<{ ok: true }>("DELETE", `/messages/${messageId}/reactions`, { emoji }),
+    /** Fresh links for cached attachments whose signed URLs have expired (links last an hour). */
+    attachmentUrls: (groupId: string, attachmentIds: string[]) =>
+      call<{ urls: { id: string; url: string | null }[] }>("GET", `/groups/${groupId}/attachments${q({ ids: attachmentIds.join(",") })}`),
     requestUpload: (groupId: string, input: { mimeType: string; sizeBytes: number }) =>
       call<D1UploadTicket>("POST", `/groups/${groupId}/attachments`, input),
 

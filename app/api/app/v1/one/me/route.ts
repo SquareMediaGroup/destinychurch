@@ -28,7 +28,7 @@ export const GET = oneRoute(async (request) => {
 
 export const DELETE = oneRoute(async (request) => {
   const user = await authenticate(request);
-  limit("delete-account", user.id, 3);
+  await limit("delete-account", user.id, 3);
   await readBody(request, deleteAccountSchema);
 
   const supabase = createServiceClient();

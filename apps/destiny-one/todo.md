@@ -25,8 +25,8 @@
 ## 2. Safeguarding and privacy fixes (blockers)
 
 - [x] **Blocking abusive users.** Apple requires this for apps where people post content (guideline 1.2). Not built.
-- [ ] **Rewrite the privacy notice and terms to cover Destiny One.** `/privacy` and `/terms` don't mention the app, messaging, notification previews or US processors, so people are currently agreeing to notices that don't describe it. Bump the versions in `REQUIRED_CONSENTS` (`packages/shared/src/destinyOne/policy.ts`) when they change.
-- [ ] **Update the public safeguarding policy** (`app/safeguarding/page.tsx`) to cover online messaging.
+- [ ] **Rewrite the privacy notice and terms to cover Destiny One.** `/privacy` and `/terms` don't mention the app, messaging, notification previews or US processors, so people are currently agreeing to notices that don't describe it. Bump the versions in `REQUIRED_CONSENTS` (`packages/shared/src/destinyOne/policy.ts`) when they change. Draft wording ready for sign-off: `docs/content/destiny-one-notices-draft.md`.
+- [ ] **Update the public safeguarding policy** (`app/safeguarding/page.tsx`) to cover online messaging. Draft section in the same file.
 - [x] **Profile photos are publicly viewable.** The `d1-avatars` bucket is public; deleting an account doesn't remove the photo; suspended or unapproved accounts can still upload (`app/api/app/v1/one/me/avatar/route.ts` uses `authenticate`, not `requireMember`).
 - [x] **Remove photo location data before upload.** Nothing strips GPS/EXIF details, and the file-picker path sends the original file untouched (`src/components/Composer.tsx`, `src/lib/upload.ts`).
 - [x] **The nightly purge deletes messages linked to open reports**, so evidence can disappear mid-investigation (`d1_purge_expired` in `supabase/migrations/20260926_01_destiny_one.sql`).
@@ -36,7 +36,7 @@
 - [x] **Move people off the chats if they're suspended mid-session**, or when new notices need accepting. The app only re-routes at launch, and cached chats stay readable (`src/state/session.tsx`).
 - [ ] **Check on a phone** that someone removed from a group, or suspended, stops receiving live messages straight away (Realtime checks membership when a channel joins).
 - [x] **Make account deletion match what's promised.** Erasure now deletes consent records, blocks and the profile picture (row and file).
-- [ ] **Complete the data export.** `me/export` still leaves out the access-request note, declared age and files sent.
+- [x] **Complete the data export.** `me/export` still leaves out the access-request note, declared age and files sent. Done: the export now includes all of these, plus reactions, blocks and the profile picture.
 
 ## 3. App Store and Google Play
 
@@ -54,6 +54,7 @@
 - [ ] **Put the API on a custom domain before the first store build.** The address is baked into every build (`destinychurch.vercel.app`, `app.json` `extra.apiBaseUrl`) and can't be changed in copies people already have.
 - [ ] **A staging environment.** Every EAS build profile points at the live database. The unused, paused "DestinyOne" Supabase project could be the staging copy.
 - [x] Record `20260926_01_destiny_one` and `20260927_01_destiny_one_admin` in the live migration history. They were run outside it, so a fresh database can't be rebuilt reliably.
+- [ ] **Merge the polls work so the repo matches the live database.** `20260928_02_destiny_one_content` (poll votes, a `content` column, and a new `d1_post_message` with an extra optional argument) was applied to the live project on 28 September from `feature/destiny-one-restore-polls`, before being merged. When it merges, add it to `scripts/test-sql.sh` so the SQL tests cover it.
 - [ ] Clear the test data from the live database (3 members, 7 messages at the time of the audit).
 - [ ] Data processing agreements with Supabase, Vercel, Expo, Resend, Apple and Google.
 - [ ] Set `EXPO_ACCESS_TOKEN` and switch on push security in Expo.
@@ -61,7 +62,7 @@
 ## 5. Test on real phones (it has never run on one)
 
 - [ ] An iPhone and an Android build, going through every screen.
-- [ ] **Photos in older chats.** Image links expire after an hour (`SIGNED_URL_TTL` in `lib/destinyOne/chat.server.ts`) but the app keeps messages cached for up to 30 days, so older photos are likely to break.
+- [x] **Photos in older chats.** Image links expire after an hour (`SIGNED_URL_TTL` in `lib/destinyOne/chat.server.ts`) but the app keeps messages cached for up to 30 days, so older photos are likely to break. Fixed in code: the app now swaps in fresh links when they expire (still worth checking on a phone).
 - [ ] **Android keyboard covering the message box.** The chat screen only handles the keyboard on iOS (`src/app/group/[id]/index.tsx`).
 - [ ] Opening the app from a notification when it was fully closed.
 - [ ] VoiceOver/TalkBack labels, large text sizes and dark mode.
@@ -69,17 +70,17 @@
 ## 6. Reliability and housekeeping
 
 - [ ] Crash and error reporting in the app (none today).
-- [ ] Alerts when the nightly purge or rule-check jobs fail (`app/api/cron/destiny-one-*`).
-- [ ] Rate limits that actually hold on Vercel. They're per server instance today (`lib/rateLimit.ts`).
+- [x] Alerts when the nightly purge or rule-check jobs fail (`app/api/cron/destiny-one-*`). Done: failures email `D1_OPS_ALERT_RECIPIENT`.
+- [x] Rate limits that actually hold on Vercel. They're per server instance today (`lib/rateLimit.ts`). Done: counted in the database as well (`20260928_03_destiny_one_rate_limits.sql`).
 - [x] Add the app typecheck and the SQL rule tests to CI (`.github/workflows/ci.yml`), and include migrations 05 and 06 in `scripts/test-sql.sh`.
 - [x] A lint setup for the app. `expo lint` has no config and doesn't run.
 - [ ] Clear the 31 React Compiler lint warnings (refs and effects in the tab bar, `ui.tsx`, `useConversation.ts`), re-testing on a device, then turn those rules back into errors.
 - [x] Add the `.env.example` the README refers to.
 - [ ] Decide whether to encrypt the message cache stored on the phone (plain AsyncStorage today; the sign-in session is already in the secure store).
-- [ ] Bring the docs up to date: the GDPR doc still says names are corrected in ChurchSuite, and the screen spec (A10) still says notifications never show the message.
+- [x] Bring the docs up to date: the GDPR doc still says names are corrected in ChurchSuite, and the screen spec (A10) still says notifications never show the message.
 
 ## 7. Launch
 
 - [ ] Internal TestFlight, then external TestFlight and a Play closed test with a real group of adults and young people.
-- [ ] A short guide for staff: approvals, reports, pausing a group, and what to do out of hours.
+- [x] A short guide for staff: approvals, reports, pausing a group, and what to do out of hours. Draft: `docs/destiny-one-staff-guide.md`, to check against the signed-off safeguarding policy.
 - [ ] A phased release, using the forced-update switch in `/admin/destiny-one/settings` as a safety net.

@@ -18,7 +18,7 @@ export const dynamic = "force-dynamic";
 const schema = z.object({ email: z.string().trim().toLowerCase().email("That doesn't look like an email address.") });
 
 export const POST = oneRoute(async (request) => {
-  limit("auth-check", clientIp(request), 20);
+  await limit("auth-check", clientIp(request), 20);
   const { email } = await readBody(request, schema);
 
   const { data, error } = await createServiceClient().rpc("d1_sign_in_status", { p_email: email });

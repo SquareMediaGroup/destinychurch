@@ -83,7 +83,7 @@ and hold DPAs with each.
 |---|---|
 | Access (Art. 15) | `GET /api/app/v1/one/me/export` — JSON of profile, consents, memberships, own messages (incl. ones they deleted), own reports |
 | Erasure (Art. 17) | `DELETE /api/app/v1/one/me` — leaves every group, removes tokens, consents, reactions, blocks and the profile picture (row and file), anonymises, deletes the sign-in. Messages remain under "Former member" until the retention purge (safeguarding exemption — state it in the notice) |
-| Rectification (Art. 16) | Names and ages come from ChurchSuite; correct them there (synced nightly) |
+| Rectification (Art. 16) | Names and ages are set by Destiny staff (invites and approvals), so a member asks the church office, and a Destiny One Admin corrects them at `/admin/destiny-one/members`. Only members verified by Sign in with ChurchSuite (not switched on yet) are refreshed from ChurchSuite nightly. Members can change their own profile picture |
 | Object / restrict | Handled by the church office; a safeguarding admin can suspend an account |
 
 ## 6. Review access is itself controlled

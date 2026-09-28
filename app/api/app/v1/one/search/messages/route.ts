@@ -25,7 +25,7 @@ interface HitRow {
 
 export const GET = oneRoute(async (request) => {
   const caller = await requireMember(request);
-  limit("search", caller.member.id, 60);
+  await limit("search", caller.member.id, 60);
   const query = toPrefixQuery((new URL(request.url).searchParams.get("q") ?? "").slice(0, 100));
   if (!query) return oneJson([] as D1MessageHit[]);
 

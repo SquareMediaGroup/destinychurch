@@ -15,7 +15,7 @@ export const dynamic = "force-dynamic";
 async function setBlock(request: Request, { params }: IdParams, block: boolean) {
   const caller = await requireMember(request);
   const target = requireUuid((await params).id, "person");
-  limit("block", caller.member.id, 20);
+  await limit("block", caller.member.id, 20);
 
   const { error } = await createServiceClient().rpc("d1_set_block", {
     p_actor: caller.member.id,

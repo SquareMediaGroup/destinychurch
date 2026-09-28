@@ -21,7 +21,7 @@ export const dynamic = "force-dynamic";
 export const POST = oneRoute<IdParams>(async (request, { params }) => {
   const caller = await requireMember(request);
   const id = requireUuid((await params).id, "group");
-  limit("leader-invite", caller.member.id, 10);
+  await limit("leader-invite", caller.member.id, 10);
   const input = await readBody(request, leaderInviteSchema);
 
   const supabase = createServiceClient();

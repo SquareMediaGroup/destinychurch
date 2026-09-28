@@ -15,7 +15,7 @@ export const dynamic = "force-dynamic";
 
 export const POST = oneRoute(async (request) => {
   const user = await authenticate(request);
-  limit("access-request", user.id, 5);
+  await limit("access-request", user.id, 5);
   const input = await readBody(request, accessRequestSchema);
   const member = (await loadMemberByAuthUser(user.id)) ?? (await onboardMember(user));
   return oneJson(await toMe(await submitAccessRequest(member, input)));

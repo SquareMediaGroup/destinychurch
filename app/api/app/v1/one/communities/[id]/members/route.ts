@@ -19,7 +19,7 @@ export const POST = oneRoute<IdParams>(async (request, { params }) => {
   if (!(await canManageCommunity(id, caller.member.id))) {
     throw new OneError("forbidden", "You can't add people to this community.");
   }
-  limit("community-members", caller.member.id, 20);
+  await limit("community-members", caller.member.id, 20);
   const { memberIds, role } = await readBody(request, membersSchema);
 
   const { error } = await createServiceClient().rpc("d1_add_community_members", {

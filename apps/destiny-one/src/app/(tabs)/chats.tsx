@@ -7,9 +7,14 @@ import { router } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { GlassSurface } from "@/components/GlassSurface";
 import { CardGroupRow, orderedGroups } from "@/components/GroupRows";
+import { SwipeActions, type SwipeAction } from "@/components/Swipe";
 import { Icon } from "@/components/Icon";
 import { Bone, Card, EmptyState, ErrorState, LargeTitle, Separator, SkeletonGroup } from "@/components/ui";
-import { prefetchGroup } from "@/lib/queries";
+import { api } from "@/lib/api";
+import { haptic } from "@/lib/haptics";
+import { keys, prefetchGroup, updateGroupSummary } from "@/lib/queries";
+import { queryClient } from "@/lib/queryClient";
+import type { D1GroupSummary } from "@destiny/shared";
 import { useSession } from "@/state/session";
 import { ORANGE, useTheme } from "@/theme/tokens";
 
@@ -19,6 +24,40 @@ const FILTERS: { key: Filter; label: string }[] = [
   { key: "unread", label: "Unread" },
   { key: "announcements", label: "Announcements" },
 ];
+
+/** Read and Mute for one chat row, as swipe actions. Both apply at once and roll back if the server says no. */
+function rowActions(g: D1GroupSummary): SwipeAction[] {
+  const actions: SwipeAction[] = [];
+  const last = g.lastMessage;
+  if (g.unreadCount > 0 && last) {
+    actions.push({
+      key: "read",
+      label: "Read",
+      icon: "check",
+      bg: "#0B62D6",
+      onPress: () => {
+        const was = g.unreadCount;
+        updateGroupSummary(g.id, (x) => ({ ...x, unreadCount: 0 }));
+        api.markRead(g.id, last.id).catch(() => updateGroupSummary(g.id, (x) => ({ ...x, unreadCount: was })));
+      },
+    });
+  }
+  actions.push({
+    key: "mute",
+    label: g.muted ? "Unmute" : "Mute",
+    icon: g.muted ? "bell" : "bellOff",
+    bg: "#363F48",
+    onPress: () => {
+      const until = g.muted ? null : "2999-12-31T00:00:00Z"; // "Always"; the fixed choices live in Notifications
+      updateGroupSummary(g.id, (x) => ({ ...x, muted: until !== null }));
+      api
+        .mute(g.id, until)
+        .then(() => queryClient.invalidateQueries({ queryKey: keys.group(g.id) }))
+        .catch(() => updateGroupSummary(g.id, (x) => ({ ...x, muted: g.muted })));
+    },
+  });
+  return actions;
+}
 
 export default function Chats() {
   const t = useTheme();
@@ -65,10 +104,13 @@ export default function Chats() {
                 key={f.key}
                 accessibilityRole="button"
                 accessibilityState={{ selected: on }}
-                onPress={() => setFilter(f.key)}
-                style={{ height: 34, borderRadius: 17, paddingHorizontal: 15, justifyContent: "center", backgroundColor: on ? t.text : t.fill }}
+                onPress={() => {
+                  if (!on) haptic.selection();
+                  setFilter(f.key);
+                }}
+                style={({ pressed }) => ({ minHeight: 34, borderRadius: 17, paddingHorizontal: 15, justifyContent: "center", backgroundColor: on ? t.text : t.fill, transform: [{ scale: pressed ? 0.96 : 1 }] })}
               >
-                <Text style={{ fontSize: 15, fontWeight: "600", color: on ? t.bg : t.text }}>{f.label}</Text>
+                <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 15, fontWeight: "600", color: on ? t.bg : t.text }}>{f.label}</Text>
               </Pressable>
             );
           })}
@@ -114,7 +156,9 @@ export default function Chats() {
             {groups.map((g, i) => (
               <View key={g.id}>
                 {i > 0 ? <Separator inset={70} /> : null}
-                <CardGroupRow group={g} onPressIn={() => prefetchGroup(g.id)} onPress={() => router.push(`/group/${g.id}`)} />
+                <SwipeActions actions={rowActions(g)} background={t.card}>
+                  <CardGroupRow group={g} onPressIn={() => prefetchGroup(g.id)} onPress={() => router.push(`/group/${g.id}`)} />
+                </SwipeActions>
               </View>
             ))}
           </Card>

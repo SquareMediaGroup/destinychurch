@@ -10,6 +10,7 @@ import * as WebBrowser from "expo-web-browser";
 import { LinearGradient } from "expo-linear-gradient";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Composer } from "@/components/Composer";
+import { Wallpaper } from "@/components/Wallpaper";
 import { GlassSurface } from "@/components/GlassSurface";
 import { Icon } from "@/components/Icon";
 import { MessageActions } from "@/components/MessageActions";
@@ -20,6 +21,7 @@ import { canSendAs } from "@destiny/shared";
 import type { Account } from "@/lib/accounts";
 import { plural } from "@/lib/format";
 import { api } from "@/lib/api";
+import { haptic } from "@/lib/haptics";
 import { hideSender, setOpenGroup } from "@/lib/queries";
 import { uploadAttachment } from "@/lib/upload";
 import { useConversation, type LocalMessage } from "@/lib/useConversation";
@@ -68,6 +70,7 @@ export default function GroupChat() {
 
   useEffect(() => {
     if (!toast) return;
+    haptic.error();
     const id = setTimeout(() => setToast(null), 3500);
     return () => clearTimeout(id);
   }, [toast]);
@@ -110,6 +113,11 @@ export default function GroupChat() {
     await convo.sendAs(account.slot, { body: text, replyTo: reply?.id });
     setReplyTo(null);
     list.current?.scrollToOffset({ offset: 0, animated: true });
+  }
+
+  function startReply(m: LocalMessage) {
+    setReplyTo(m);
+    input.current?.focus();
   }
 
   async function sendFile(file: Parameters<typeof uploadAttachment>[1]) {
@@ -162,6 +170,7 @@ export default function GroupChat() {
     // "padding" on Android too: apps are edge-to-edge there now, so the window
     // no longer shrinks for the keyboard and the message box would be covered.
     <KeyboardAvoidingView behavior="padding" style={{ flex: 1, backgroundColor: t.bg }}>
+      {t.wall ? <Wallpaper pattern={t.wall.def.pattern} tone={t.wall.tone} /> : null}
       {!messages ? (
         convo.error ? (
           <View style={{ flex: 1, justifyContent: "center" }}>
@@ -200,6 +209,8 @@ export default function GroupChat() {
                 row={item}
                 replyTo={item.m.replyTo ? byId.get(item.m.replyTo) ?? null : null}
                 senderIsAdmin={!!item.m.sender && admins.has(item.m.sender.id)}
+                canReply={!!group?.canPost && !frozen && !archived}
+                onReply={() => startReply(item.m)}
                 onLongPress={() => setActionFor(item.m)}
                 onOpenAttachment={() =>
                   // The cached link may have expired; attachmentUrl fetches a fresh one if so.
@@ -226,7 +237,7 @@ export default function GroupChat() {
       )}
 
       {/* Header: back · group pill (opens info) · search */}
-      <LinearGradient pointerEvents="none" colors={[t.bg, withAlpha(t.bg, 0)]} locations={[0.45, 1]} style={{ position: "absolute", top: 0, left: 0, right: 0, height: insets.top + 76 }} />
+      {t.wall ? null : <LinearGradient pointerEvents="none" colors={[t.bg, withAlpha(t.bg, 0)]} locations={[0.45, 1]} style={{ position: "absolute", top: 0, left: 0, right: 0, height: insets.top + 76 }} />}
       <View style={{ position: "absolute", top: insets.top, left: 0, right: 0, height: 56, flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 16 }}>
         <BackButton />
         <Pressable accessibilityRole="button" accessibilityLabel={`${name}, group info`} onPress={() => router.push(`/group/${id}/info`)} style={{ flexShrink: 1, marginHorizontal: 8 }}>

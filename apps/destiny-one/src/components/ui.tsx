@@ -103,7 +103,7 @@ export function PrimaryButton({ label, onPress, busy, disabled, style }: { label
         accessibilityState={{ disabled: !!off, busy: !!busy }}
         disabled={off}
         onPress={onPress}
-        style={({ pressed }) => [styles.pill, { backgroundColor: t.btn, opacity: pressed ? 0.85 : 1 }]}
+        style={({ pressed }) => [styles.pill, { backgroundColor: t.btn, opacity: pressed ? 0.85 : 1, transform: [{ scale: pressed ? 0.98 : 1 }] }]}
       >
         {busy ? <ActivityIndicator color={t.onBtn} /> : <Text style={[styles.pillText, { color: t.onBtn }]}>{label}</Text>}
       </Pressable>
@@ -118,7 +118,7 @@ export function SecondaryButton({ label, onPress, busy, style }: { label: string
       accessibilityRole="button"
       disabled={busy}
       onPress={onPress}
-      style={({ pressed }) => [styles.pill, { backgroundColor: t.fill, opacity: pressed ? 0.7 : 1 }, style]}
+      style={({ pressed }) => [styles.pill, { backgroundColor: t.fill, opacity: pressed ? 0.7 : 1, transform: [{ scale: pressed ? 0.98 : 1 }] }, style]}
     >
       {busy ? <ActivityIndicator color={t.text} /> : <Text style={[styles.pillText, { color: t.text }]}>{label}</Text>}
     </Pressable>
@@ -140,7 +140,7 @@ export function GlassIconButton({ icon, label, onPress, size = 44 }: { icon: Ico
   return (
     <Pressable accessibilityRole="button" accessibilityLabel={label} onPress={onPress} hitSlop={4}>
       {({ pressed }) => (
-        <GlassSurface interactive style={[{ width: size, height: size, borderRadius: size / 2, alignItems: "center", justifyContent: "center", opacity: pressed ? 0.7 : 1 }, t.shadow]}>
+        <GlassSurface interactive style={[{ width: size, height: size, borderRadius: size / 2, alignItems: "center", justifyContent: "center", opacity: pressed ? 0.7 : 1, transform: [{ scale: pressed ? 0.94 : 1 }] }, t.shadow]}>
           <Icon name={icon} size={icon === "close" ? 16 : 22} color={t.text} strokeWidth={icon === "close" ? 2.6 : 2.2} />
         </GlassSurface>
       )}
@@ -171,7 +171,7 @@ export function Field({
       <View style={{ borderRadius: radius - 1.5, backgroundColor: background ?? t.field, paddingHorizontal: 16, flexDirection: input.multiline ? "column" : "row", alignItems: input.multiline ? "stretch" : "center", gap: 10 }}>
         {leading}
         <TextInput
-          placeholderTextColor="#6B7580"
+          placeholderTextColor={t.subtle}
           selectionColor={ORANGE}
           {...input}
           onFocus={(e) => {
@@ -241,7 +241,7 @@ export function CountBadge({ count, small }: { count: number; small?: boolean })
   const h = small ? 20 : 22;
   return (
     <View style={{ minWidth: h, height: h, borderRadius: h / 2, backgroundColor: ORANGE, alignItems: "center", justifyContent: "center", paddingHorizontal: small ? 6 : 7 }}>
-      <Text style={{ color: "#0E1013", fontSize: small ? 12 : 13, fontWeight: "600", fontVariant: ["tabular-nums"] }}>{count > 99 ? "99+" : count}</Text>
+      <Text maxFontSizeMultiplier={1.2} style={{ color: "#0E1013", fontSize: small ? 12 : 13, fontWeight: "600", fontVariant: ["tabular-nums"] }}>{count > 99 ? "99+" : count}</Text>
     </View>
   );
 }
@@ -496,6 +496,6 @@ export function PickRow({ label, on, onPress }: { label: string; on: boolean; on
 }
 
 export const styles = StyleSheet.create({
-  pill: { height: 52, borderRadius: 999, alignItems: "center", justifyContent: "center" },
+  pill: { minHeight: 52, borderRadius: 999, alignItems: "center", justifyContent: "center" },
   pillText: { fontSize: 17, fontWeight: "600", letterSpacing: -0.2 },
 });

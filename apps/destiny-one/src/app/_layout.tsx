@@ -14,6 +14,7 @@ import { useAppGate } from "@/lib/appGate";
 import { groupIdFrom } from "@/lib/push";
 import { persistOptions, queryClient } from "@/lib/queryClient";
 import { SwitchBanner } from "@/components/SwitchBanner";
+import { appearance } from "@/state/appearance";
 import { AccessGuard, SessionProvider } from "@/state/session";
 import { useTheme } from "@/theme/tokens";
 
@@ -88,6 +89,10 @@ function App() {
 
 export default function RootLayout() {
   useNotificationTaps();
+  // The person's own send colour and wallpaper, from this phone.
+  useEffect(() => {
+    void appearance.load();
+  }, []);
   return (
     <SafeAreaProvider>
       {/* Once the saved cache is back, everything in it shows at once and is

@@ -32,7 +32,7 @@ export default function Waiting() {
       footer={
         <>
           {state === "request_submitted" ? <SecondaryButton label="Edit my request" onPress={() => router.push("/request")} /> : null}
-          <TextButton label="Sign out" onPress={() => void signOut().then(() => router.replace("/welcome"))} style={{ alignSelf: "center", paddingVertical: 12 }} />
+          <TextButton label="Sign out" onPress={() => void signOut().then(() => router.replace("/"))} style={{ alignSelf: "center", paddingVertical: 12 }} />
         </>
       }
     >

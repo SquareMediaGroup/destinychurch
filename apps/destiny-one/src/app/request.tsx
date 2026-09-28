@@ -73,7 +73,7 @@ export default function RequestAccess() {
         <>
           <PrimaryButton label="Send request" onPress={send} busy={busy} disabled={!name.trim()} />
           {!canGoBack ? (
-            <Text onPress={() => void signOut().then(() => router.replace("/welcome"))} style={{ textAlign: "center", fontSize: 17, color: t.tint, paddingVertical: 12 }}>
+            <Text onPress={() => void signOut().then(() => router.replace("/"))} style={{ textAlign: "center", fontSize: 17, color: t.tint, paddingVertical: 12 }}>
               Sign out
             </Text>
           ) : null}

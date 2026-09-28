@@ -31,7 +31,7 @@ export default function DeleteAccount() {
       await api.deleteAccount();
       await signOut();
       router.dismissAll();
-      router.replace("/welcome");
+      router.replace("/");
     } catch (err) {
       setError(errorMessage(err));
       setBusy(false);

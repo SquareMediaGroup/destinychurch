@@ -6936,13 +6936,14 @@ same database as the data rather than in a separate Synapse module.
   `community/[id]` (B2), `new-group` (C1, modal), `add-people` (C2; `?groupId` adds to a group,
   `?communityId` picks for New group), `notifications` (D2 + per-group mute), `search` (full-screen search opened from a chat; the
   Search tab `(tabs)/find` uses the same `SearchView` component), `report` + `report-sent` (B5), `chat-safety`,
-  `delete-account` (D3, type DELETE).
+  `delete-account` (D3, type DELETE), `accounts` (account switcher, a fit-to-content form sheet).
 - **State:** `src/state/session.tsx` (auth session, `me`, the communities list, the Realtime hub,
   catch-up, `routeFor`, `errorMessage`); `src/state/picker.ts` (Add people selection for New group).
   `src/lib/useConversation.ts` owns a chat: paging, optimistic sends with "Not sent. Tap to retry.",
   uploads, reactions, deletes, read receipts.
 - **Data cache — instant screens, database-driven updates.** All app data lives in one TanStack
-  Query cache (`src/lib/queryClient.ts`), saved to AsyncStorage (`d1.cache.v1`) and restored at
+  Query cache (`src/lib/queryClient.ts`), saved to AsyncStorage (one file per account,
+  `d1.cache.v2:<member id>`; see Accounts below) and restored at
   launch, so the app opens straight onto the last known chat list and any chat opened before
   renders on its first frame. `staleTime: Infinity`: **nothing is re-fetched because a screen
   mounted or a tab was pressed.** Keys and hooks are in `src/lib/queries.ts` (`["me"]`,
@@ -6963,9 +6964,35 @@ same database as the data rather than in a separate Synapse module.
   3. **The app's own writes** update the cache from the server's reply or optimistically (sends,
      reactions, leave group/community, mute, edit, new group). Nothing waits on a chat-list refresh.
   Rows prefetch on touch-down (`prefetchGroup`). Only the newest 60 messages per chat are saved to
-  disk, never unsent ones. Sign-out, and a different member signing in, wipe the cache
+  disk, never unsent ones. Sign-out, and a different member signing in, wipe that account's cache
   (`clearCache`). `gcTime` is `Infinity` on purpose: a finite 30 days overflows `setTimeout`'s
   24.8-day limit and fires at once, dropping every chat not on screen.
+- **Accounts: several on one phone, quick switching** (`src/lib/accounts.ts`, `accounts` route).
+  Hold the Settings tab, or Settings → Switch account. Each account has its own "slot": its own
+  Supabase client and session under its own Keychain key (`d1.auth.<slot>`; slot `0` keeps
+  supabase-js's default key, so single-account installs carry straight over). Switching changes the
+  active slot and never signs anyone out or moves tokens between clients. Only the active slot
+  auto-refreshes and holds Realtime channels. Rules worth knowing:
+  - **Order of a switch** (`runSwitch` in `session.tsx`): save the cache now → activate the other
+    slot → cancel in-flight queries and empty memory → restore that account's file. Anything
+    fetched after activation runs as the new account; requests from the old one are cancelled
+    rather than landing in the new cache.
+  - **Cache writes are keyed by the data's owner**, not "whoever is active": `serialize` prefixes
+    the `me` id and the storage wrapper writes to that account's file. The persister throttles, so
+    a write queued just before a switch can land after it; this keeps it in the right file. Data
+    with no `me` is never saved. The old `d1.cache.v1` is handed to slot `0` once.
+  - **Face ID / passcode before switching** (`confirmOwner`, `expo-local-authentication`), so a
+    child handed an unlocked family phone can't walk into a parent's chats. Skipped on a device
+    with no passcode. Adding an account needs its email code as normal.
+  - **Push follows the active account.** After a switch the device's token is re-registered
+    (`movePushToActiveAccount`, never prompts); the server keeps one owner per token, so the
+    account you left stops getting notifications.
+  - **Add account** signs into a pending slot through `signInClient()` / `signInApi`, so the
+    current account stays active and untouched until the code checks out. Signing into an account
+    already on the phone replaces its old slot (locally; a server sign-out would end both).
+  - **Sign out** ends the active account everywhere (as before) and switches to the next account
+    on the phone, or shows Welcome if none. Holding an account in the switcher signs that one out.
+    A session revoked elsewhere is forgotten on its next use. Up to 5 accounts.
 - **UI kit:** `src/theme/tokens.ts` (the prototype's light/dark tokens), `src/components/ui.tsx`
   (the rotating orange **beam** border on primary buttons and focused fields — a spinning linear
   gradient in a clipped frame, since RN has no conic-gradient — plus buttons, fields, cards,
@@ -7013,7 +7040,7 @@ same database as the data rather than in a separate Synapse module.
   row. Revoking before sign-in erases that member. They count toward the 2-adults rule from the
   moment they're invited.
 - **Tab bar:** the highlight slides between tabs on a spring, the new icon bounces, scenes
-  cross-fade; Reduce Motion turns the slide and bounce off.
+  cross-fade; Reduce Motion turns the slide and bounce off. Holding Settings opens the account switcher.
 - **Invite by email (leaders)** — `invite` route, opened from Add people for a group.
   `POST /groups/[id]/invites` creates a `needs_approval` invite: on sign-in the person becomes an
   access request pre-filled "Invited by X to Group (leader says: adult)", and staff approval in
@@ -7027,7 +7054,7 @@ same database as the data rather than in a separate Synapse module.
   `blockedPermissions` strips phone-state/SMS/contacts/location permissions any dependency might add.
 - `src/lib/`: `config.ts` (EXPO_PUBLIC_* — see `.env.example`), `secureStorage.ts` (Supabase session in
   Keychain/Keystore, chunked for Android's size limit), `supabase.ts` (auth + Realtime only — never
-  data), `api.ts` (the shared typed client), `auth.ts` (email OTP; ChurchSuite via
+  data; one client per account), `accounts.ts` (the accounts on this phone, switching, Face ID check), `api.ts` (the shared typed client), `auth.ts` (email OTP; ChurchSuite via
   `expo-web-browser` auth session + app-side PKCE), `realtime.ts` (the app-wide hub over private
   `d1-group:*` / `d1-member:*` channels), `queryClient.ts` + `queries.ts` (the saved data cache, see
   above), `push.ts` (ask contextually, never on launch).

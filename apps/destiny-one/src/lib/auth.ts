@@ -5,7 +5,11 @@
 //                 ChurchSuite's sign-in in an auth session, and finishes with
 //                 app-side PKCE so an intercepted redirect is useless.
 //
-// After either, call api.link(): the server matches the account to the
+// Both sign into signInClient(): the active account's client, or during
+// "Add account" a new one (src/lib/accounts.ts), so the account you're on
+// stays untouched until the new one is in.
+//
+// After either, call link(): the server matches the account to the
 // church's ChurchSuite records and returns the member. A `pending` status is
 // the normal outcome when the church can't yet tell who this is — show
 // "we'll be in touch", not an error.
@@ -14,8 +18,8 @@ import * as Crypto from "expo-crypto";
 import * as Linking from "expo-linking";
 import * as WebBrowser from "expo-web-browser";
 import type { D1Me } from "@destiny/shared";
-import { api } from "@/lib/api";
-import { supabase } from "@/lib/supabase";
+import { client, signInClient } from "@/lib/accounts";
+import { api, signInApi } from "@/lib/api";
 import { unregisterPush } from "@/lib/push";
 
 WebBrowser.maybeCompleteAuthSession();
@@ -32,13 +36,13 @@ export async function requestEmailCode(email: string): Promise<void> {
 }
 
 export async function verifyEmailCode(email: string, code: string): Promise<D1Me> {
-  const { error } = await supabase.auth.verifyOtp({
+  const { error } = await signInClient().auth.verifyOtp({
     email: email.trim().toLowerCase(),
     token: code.trim(),
     type: "email",
   });
   if (error) throw error;
-  return api.link();
+  return signInApi.link();
 }
 
 // ── Sign in with ChurchSuite ────────────────────────────────────────────────
@@ -75,16 +79,17 @@ export async function signInWithChurchSuite(): Promise<ChurchSuiteResult> {
   if (!code) return { kind: "failed", reason: "no_code" };
 
   const { tokenHash, type } = await api.exchangeChurchSuiteCode(code, verifier);
-  const { error: otpError } = await supabase.auth.verifyOtp({ token_hash: tokenHash, type });
+  const { error: otpError } = await signInClient().auth.verifyOtp({ token_hash: tokenHash, type });
   if (otpError) return { kind: "failed", reason: otpError.message };
 
-  return { kind: "signed-in", me: await api.link() };
+  return { kind: "signed-in", me: await signInApi.link() };
 }
 
 // ── Sign out ────────────────────────────────────────────────────────────────
 
+/** Signs the active account out everywhere. accounts.removeAccount forgets it on this device. */
 export async function signOut(): Promise<void> {
   await unregisterPush().catch(() => undefined);
-  await supabase.removeAllChannels();
-  await supabase.auth.signOut();
+  await client().removeAllChannels();
+  await client().auth.signOut();
 }

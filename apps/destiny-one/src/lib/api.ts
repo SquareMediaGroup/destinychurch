@@ -9,7 +9,7 @@
 
 import { createDestinyOneClient, D1ApiError } from "@destiny/shared";
 import { config } from "@/lib/config";
-import { accessToken } from "@/lib/supabase";
+import { accessToken, signInClient } from "@/lib/accounts";
 
 const ACCESS_CODES = new Set(["forbidden", "not_verified", "access_request_needed", "consent_required"]);
 
@@ -33,6 +33,7 @@ function watch<T>(value: T): T {
   return value;
 }
 
+/** Calls as the active account. */
 export const api = new Proxy(client, {
   get(target, prop, receiver) {
     const value = Reflect.get(target, prop, receiver);
@@ -40,5 +41,14 @@ export const api = new Proxy(client, {
     return (...args: unknown[]) => watch((value as (...a: unknown[]) => unknown).apply(target, args));
   },
 }) as typeof client;
+
+/**
+ * Calls as whoever is signing in — during "Add account" that's the new
+ * account, while `api` (and everything on screen) is still the current one.
+ */
+export const signInApi = createDestinyOneClient({
+  baseUrl: config.apiBaseUrl,
+  getAccessToken: async () => (await signInClient().auth.getSession()).data.session?.access_token ?? null,
+});
 
 export { D1ApiError };

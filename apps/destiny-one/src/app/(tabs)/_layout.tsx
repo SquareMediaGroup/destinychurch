@@ -3,9 +3,12 @@
 // Switching tabs: the highlight slides to the new tab on a spring, the new
 // tab's icon gives a small bounce, and the screens cross-fade ("fade"
 // scene animation). Reduce Motion turns the slide and bounce off.
+//
+// Holding the Settings tab opens the account switcher.
 
 import { useEffect, useRef, useState } from "react";
 import { AccessibilityInfo, Animated, Pressable, Text, View } from "react-native";
+import { router } from "expo-router";
 import { Tabs, type BottomTabBarProps } from "expo-router/js-tabs";
 import { LinearGradient } from "expo-linear-gradient";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -30,7 +33,7 @@ function useReduceMotion() {
   return reduce;
 }
 
-function TabButton({ label, icon, focused, reduce, onPress }: { label: string; icon: IconName; focused: boolean; reduce: boolean; onPress: () => void }) {
+function TabButton({ label, icon, focused, reduce, onPress, onLongPress, hint }: { label: string; icon: IconName; focused: boolean; reduce: boolean; onPress: () => void; onLongPress?: () => void; hint?: string }) {
   const t = useTheme();
   const scale = useRef(new Animated.Value(1)).current;
   const color = focused ? t.tint : t.text;
@@ -46,7 +49,9 @@ function TabButton({ label, icon, focused, reduce, onPress }: { label: string; i
       accessibilityRole="tab"
       accessibilityState={{ selected: focused }}
       accessibilityLabel={label}
+      accessibilityHint={hint}
       onPress={onPress}
+      onLongPress={onLongPress}
       style={{ flex: 1, height: 54, alignItems: "center", justifyContent: "center", gap: 2 }}
     >
       <Animated.View style={{ transform: [{ scale }] }}>
@@ -103,6 +108,8 @@ function TabBar({ state, navigation }: BottomTabBarProps) {
                 icon={tab.icon}
                 focused={focused}
                 reduce={reduce}
+                onLongPress={route.name === "settings" ? () => router.push("/accounts") : undefined}
+                hint={route.name === "settings" ? "Hold to switch account" : undefined}
                 onPress={() => {
                   const event = navigation.emit({ type: "tabPress", target: route.key, canPreventDefault: true });
                   if (!focused && !event.defaultPrevented) navigation.navigate(route.name);

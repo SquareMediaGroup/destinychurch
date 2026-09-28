@@ -2,7 +2,8 @@
 //
 // On iOS 26 this is Apple's real Liquid Glass tab bar: it floats, shrinks as
 // you scroll and follows Reduce Transparency / Reduce Motion by itself. Screens
-// are inset for it automatically, so they don't pad for a custom bar.
+// manage their own insets (automatic content insets are off) and pad the
+// bottom to clear the bar.
 //
 // Double pressing the Profile tab hops to the most recently used other account.
 // (The old long-press on Profile is gone: the system bar has no long-press
@@ -39,17 +40,18 @@ export default function TabsLayout() {
 
   return (
     <NativeTabs tintColor={t.tint}>
-      <NativeTabs.Trigger name="chats" accessibilityLabel="Chats">
+      <NativeTabs.Trigger name="chats" accessibilityLabel="Chats" disableAutomaticContentInsets>
         <NativeTabs.Trigger.Label hidden>Chats</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon sf={{ default: "bubble.left.and.bubble.right", selected: "bubble.left.and.bubble.right.fill" }} />
       </NativeTabs.Trigger>
-      <NativeTabs.Trigger name="find" accessibilityLabel="Search">
+      <NativeTabs.Trigger name="find" accessibilityLabel="Search" disableAutomaticContentInsets>
         <NativeTabs.Trigger.Label hidden>Search</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon sf="magnifyingglass" />
       </NativeTabs.Trigger>
       <NativeTabs.Trigger
         name="profile"
         accessibilityLabel="Profile"
+        disableAutomaticContentInsets
         listeners={{
           tabPress: () => {
             const now = Date.now();

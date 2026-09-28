@@ -1954,7 +1954,8 @@ department **sub-groups**. Migration: `supabase/migrations/20260926_01_destiny_o
 | `d1_communities`, `d1_community_members` | Communities and who is in them (`admin`/`member`) |
 | `d1_groups` | `kind` (`announcements`/`group`), `department`, `state` (`active`/`frozen`/`archived`), `freeze_kind` (`auto`/`manual`), `frozen_reason` |
 | `d1_group_members` | Membership incl. history (`left_at` kept, so a review can see who was present when), `last_read_message_id`, `muted_until` |
-| `d1_messages` | `body` ≤ 4000, `reply_to`, `attachment_id`, soft-delete `deleted_at`/`deleted_by`. Immutable except the delete stamp |
+| `d1_messages` | `body` ≤ 4000, `reply_to`, `attachment_id`, `content` (jsonb: a poll, or an event snapshot taken at send time), soft-delete `deleted_at`/`deleted_by`. Immutable except the delete stamp |
+| `d1_poll_votes` | One row per (poll message, member, option). Written only by `d1_vote()`, which enforces single choice and current membership and broadcasts `poll_vote` (with `groupId`) |
 | `d1_reactions`, `d1_attachments` | Reactions; files in the private `d1-chat-media` bucket (images/PDF, 20 MB) |
 | `d1_reports`, `d1_safeguarding_events` | The safeguarding queue |
 | `d1_push_tokens` | Expo push tokens |
@@ -4218,7 +4219,9 @@ needs at least 2 verified adults.") pass through as `rule_violation` (422). Type
 | `communities/[id]/groups` | POST | Create a sub-group (≥3 people, ≥2 adults) |
 | `groups/[id]` | GET, PATCH | PATCH: rename/describe/archive (managers) |
 | `groups/[id]/members` | POST, DELETE | Leaving never blocked |
-| `groups/[id]/messages` | GET, POST | Only messages since you joined; POST pushes a notification via `after()` (group name, "Sender: first line") |
+| `groups/[id]/messages` | GET, POST | Only messages since you joined; POST takes `body`, an attachment, a `poll` draft, or an `event` ref (the event is re-fetched and snapshotted server-side) and pushes a notification via `after()` (group name, "Sender: first line", or "Poll: …" / "Event: …") |
+| `messages/[id]/vote` | POST | `{ optionIds }` — your full vote set on a poll (empty clears it) |
+| `events` | GET | Upcoming ChurchSuite events for the Event picker in the attach sheet |
 | `groups/[id]/invites` | POST | Leaders: `{ email, name, adult, note? }` — invite someone new; they become an access request for staff to approve, then join the group |
 | `search/messages` | GET | `?q=` — full-text search of your messages: groups you are in, since you joined, never deleted; newest 30 |
 | `groups/[id]/read`, `/mute`, `/attachments` | POST | Read marker, mute, signed upload URL |

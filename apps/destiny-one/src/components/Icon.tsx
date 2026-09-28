@@ -36,6 +36,9 @@ const ICONS = {
   trash: { d: ["M4 7h16M10 7V4.5h4V7M6.5 7l1 13h9l1-13"] },
   send: { d: ["M12 19V5M6 11l6-6 6 6"] },
   camera: { d: ["M4 8h3l2-2.5h6L17 8h3v11H4z"], circles: [[12, 13, 3.5]] },
+  photo: { d: ["M4 16l4.5-5 3.5 4 2.5-3L19 16"], rects: [[3, 4, 18, 16, 3]], circles: [[8, 9, 1.6]] },
+  poll: { d: ["M6 20V11M12 20V4M18 20v-6"] },
+  calendar: { d: ["M3 9.5h18M8 3v4M16 3v4"], rects: [[3, 5, 18, 16, 3]] },
   wifiOff: { d: ["M4 4l16 16M8.5 16.5a5 5 0 017 0M5 12.5a10 10 0 015-2.6M14 10a10 10 0 015 2.5M2 8.8a15 15 0 015.3-3.3M12 4.5a15 15 0 0110 4.3"], circles: [[12, 20, 0.6]] },
 } satisfies Record<string, Shape>;
 

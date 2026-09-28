@@ -6,7 +6,7 @@
 // button rather than show one that will fail. If the two ever disagree, the
 // database wins and this file is the bug.
 
-import type { D1AppConfig, D1Consent, D1LeaderRole, D1MemberStatus, D1MembershipRole, D1GroupKind, D1GroupState } from "./types";
+import type { D1AppConfig, D1Consent, D1LeaderRole, D1MemberStatus, D1MembershipRole, D1GroupKind, D1GroupState, D1PollDraft } from "./types";
 
 /** No 1:1 chats: a "group" of two is a DM with extra steps. */
 export const MIN_GROUP_MEMBERS = 3;
@@ -167,6 +167,32 @@ export function validateMessageBody(body: string | null | undefined, hasAttachme
   if (!text && !hasAttachment) return { ok: false, reason: "A message can't be empty." };
   if (text.length > MAX_MESSAGE_LENGTH) {
     return { ok: false, reason: `Messages can be up to ${MAX_MESSAGE_LENGTH} characters.` };
+  }
+  return { ok: true };
+}
+
+// ── Polls ────────────────────────────────────────────────────────────────────
+
+export const MIN_POLL_OPTIONS = 2;
+export const MAX_POLL_OPTIONS = 6;
+export const MAX_POLL_QUESTION_LENGTH = 200;
+export const MAX_POLL_OPTION_LENGTH = 80;
+
+export function validatePoll(draft: D1PollDraft): RuleCheck {
+  const question = draft.question.trim();
+  if (!question) return { ok: false, reason: "Add a question." };
+  if (question.length > MAX_POLL_QUESTION_LENGTH) {
+    return { ok: false, reason: `Questions can be up to ${MAX_POLL_QUESTION_LENGTH} characters.` };
+  }
+  const options = draft.options.map((o) => o.trim()).filter(Boolean);
+  if (options.length < MIN_POLL_OPTIONS) {
+    return { ok: false, reason: `Add at least ${MIN_POLL_OPTIONS} options.` };
+  }
+  if (options.length > MAX_POLL_OPTIONS) {
+    return { ok: false, reason: `Polls can have up to ${MAX_POLL_OPTIONS} options.` };
+  }
+  if (options.some((o) => o.length > MAX_POLL_OPTION_LENGTH)) {
+    return { ok: false, reason: `Options can be up to ${MAX_POLL_OPTION_LENGTH} characters.` };
   }
   return { ok: true };
 }

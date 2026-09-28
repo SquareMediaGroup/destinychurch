@@ -152,7 +152,7 @@ export function applyEvent(e: D1RealtimeEvent, meId: string) {
         void queryClient.invalidateQueries({ queryKey: keys.messages(p.groupId) });
       } else {
         updateMessages(p.groupId, (list) =>
-          upsert(list, { id: p.id, groupId: p.groupId, sender: p.sender, body: p.body, replyTo: p.replyTo, attachment: null, reactions: [], createdAt: p.createdAt, deleted: false, mine }),
+          upsert(list, { id: p.id, groupId: p.groupId, sender: p.sender, body: p.body, replyTo: p.replyTo, attachment: null, content: p.content ?? null, reactions: [], createdAt: p.createdAt, deleted: false, mine }),
         );
       }
       updateGroupSummary(p.groupId, (g) => {
@@ -167,8 +167,18 @@ export function applyEvent(e: D1RealtimeEvent, meId: string) {
     }
     case "message_deleted": {
       const { id, groupId } = e.payload;
-      updateMessages(groupId, (list) => list.map((m) => (m.id === id ? { ...m, deleted: true, body: null, attachment: null, reactions: [] } : m)));
+      updateMessages(groupId, (list) => list.map((m) => (m.id === id ? { ...m, deleted: true, body: null, attachment: null, content: null, reactions: [] } : m)));
       updateGroupSummary(groupId, (g) => (g.lastMessage?.id === id ? { ...g, lastMessage: { ...g.lastMessage, deleted: true, preview: null } } : g));
+      return;
+    }
+    case "poll_vote": {
+      const { messageId, groupId, votes, totalVoters } = e.payload;
+      updateMessages(groupId, (list) =>
+        list.map((m) => {
+          if (m.id !== messageId || m.content?.kind !== "poll") return m;
+          return { ...m, content: { kind: "poll", poll: { ...m.content.poll, votes, totalVoters } } };
+        }),
+      );
       return;
     }
     case "reaction": {

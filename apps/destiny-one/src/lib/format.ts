@@ -48,6 +48,12 @@ export function fileMeta(mimeType: string, sizeBytes: number | null): string {
   return `${kind} · ${size}`;
 }
 
+/** Event cards: "12 September, 18:30" */
+export function eventWhen(iso: string): string {
+  const d = new Date(iso);
+  return `${d.toLocaleDateString("en-GB", { day: "numeric", month: "long" })}, ${clock(iso)}`;
+}
+
 export function plural(n: number, one: string, many = `${one}s`): string {
   return `${n} ${n === 1 ? one : many}`;
 }

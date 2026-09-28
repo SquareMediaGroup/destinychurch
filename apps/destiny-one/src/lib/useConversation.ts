@@ -11,7 +11,7 @@
 // already applied locally).
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { signedUrlNeedsRefresh, type D1Me } from "@destiny/shared";
+import { signedUrlNeedsRefresh, type D1EventRef, type D1EventSummary, type D1Me, type D1MessageContent, type D1PollDraft } from "@destiny/shared";
 import { api } from "@/lib/api";
 import { keys, PAGE, updateGroupSummary, updateMessages, upsert, useGroup, useMessages, type LocalMessage, type MessagesData } from "@/lib/queries";
 import { queryClient } from "@/lib/queryClient";
@@ -21,7 +21,8 @@ export type { LocalMessage };
 
 let localIds = -1;
 
-type Pending = { input: { body?: string; replyTo?: number; attachmentId?: string }; upload?: () => Promise<string> };
+type SendInput = { body?: string; replyTo?: number; attachmentId?: string; poll?: D1PollDraft; event?: D1EventRef };
+type Pending = { input: SendInput; upload?: () => Promise<string> };
 /** Unsent messages, kept outside the screen so "tap to retry" still works after leaving and coming back. */
 const pending = new Map<number, Pending>();
 
@@ -163,6 +164,7 @@ export function useConversation(groupId: string, me: D1Me | null, unreadAtOpen: 
         body: input.body ?? null,
         replyTo: input.replyTo ?? null,
         attachment: null,
+        content: null,
         reactions: [],
         createdAt: new Date().toISOString(),
         deleted: false,
@@ -189,6 +191,101 @@ export function useConversation(groupId: string, me: D1Me | null, unreadAtOpen: 
     [groupId, messages, deliver],
   );
 
+  /** A poll or event: no upload step, and the bubble shows the real content straight away. */
+  const sendContent = useCallback(
+    async (content: D1MessageContent, input: { poll?: D1PollDraft; event?: D1EventRef }) => {
+      const local: LocalMessage = {
+        id: localIds--,
+        groupId,
+        sender: me ? { id: me.id, displayName: me.displayName } : null,
+        body: null,
+        replyTo: null,
+        attachment: null,
+        content,
+        reactions: [],
+        createdAt: new Date().toISOString(),
+        deleted: false,
+        mine: true,
+        status: "sending",
+      };
+      const p: Pending = { input };
+      pending.set(local.id, p);
+      setMessages((list) => [...list, local]);
+      await deliver(local, p);
+    },
+    [groupId, me, deliver, setMessages],
+  );
+
+  const sendPoll = useCallback(
+    (draft: D1PollDraft) =>
+      sendContent(
+        {
+          kind: "poll",
+          poll: {
+            id: `local-${-localIds}`,
+            question: draft.question.trim(),
+            options: draft.options.map((label, i) => ({ id: `o${i + 1}`, label: label.trim() })),
+            allowMultiple: draft.allowMultiple,
+            totalVoters: 0,
+            votes: [],
+            myOptionIds: [],
+          },
+        },
+        { poll: draft },
+      ),
+    [sendContent],
+  );
+
+  const sendEvent = useCallback(
+    (summary: D1EventSummary) =>
+      sendContent(
+        {
+          kind: "event",
+          event: {
+            seriesKey: summary.seriesKey,
+            slug: summary.slug,
+            name: summary.name,
+            startsAt: summary.startsAt,
+            location: summary.location,
+            imageUrl: summary.thumbnailUrl,
+            webUrl: "",
+          },
+        },
+        { event: { seriesKey: summary.seriesKey, slug: summary.slug } },
+      ),
+    [sendContent],
+  );
+
+  const vote = useCallback(
+    async (messageId: number, optionIds: string[]) => {
+      const msg = messages?.find((m) => m.id === messageId);
+      if (!msg || msg.content?.kind !== "poll") return;
+      const previous = msg.content;
+      const apply = (poll: typeof previous.poll) =>
+        updateMessages(groupId, (list) => list.map((m) => (m.id === messageId ? { ...m, content: { kind: "poll", poll } } : m)));
+
+      const others = previous.poll.votes.map((v) => ({ ...v, count: v.count - (previous.poll.myOptionIds.includes(v.optionId) ? 1 : 0) }));
+      const votedBefore = previous.poll.myOptionIds.length > 0;
+      const votedAfter = optionIds.length > 0;
+      apply({
+        ...previous.poll,
+        myOptionIds: optionIds,
+        totalVoters: previous.poll.totalVoters + (votedAfter ? 1 : 0) - (votedBefore ? 1 : 0),
+        votes: previous.poll.options.map((o) => ({
+          optionId: o.id,
+          count: (others.find((v) => v.optionId === o.id)?.count ?? 0) + (optionIds.includes(o.id) ? 1 : 0),
+        })),
+      });
+      try {
+        await api.vote(messageId, optionIds);
+      } catch (err) {
+        apply(previous.poll);
+        throw err;
+      }
+    },
+    [groupId, messages],
+  );
+
   const discard = useCallback(
     (localId: number) => {
       pending.delete(localId);
@@ -200,7 +297,7 @@ export function useConversation(groupId: string, me: D1Me | null, unreadAtOpen: 
   const remove = useCallback(
     async (messageId: number) => {
       await api.deleteMessage(messageId);
-      updateMessages(groupId, (list) => list.map((m) => (m.id === messageId ? { ...m, deleted: true, body: null, attachment: null, reactions: [] } : m)));
+      updateMessages(groupId, (list) => list.map((m) => (m.id === messageId ? { ...m, deleted: true, body: null, attachment: null, content: null, reactions: [] } : m)));
     },
     [groupId],
   );
@@ -248,6 +345,9 @@ export function useConversation(groupId: string, me: D1Me | null, unreadAtOpen: 
     firstUnreadId: firstUnread.current ?? null,
     markRead,
     send,
+    sendPoll,
+    sendEvent,
+    vote,
     retry,
     discard,
     remove,

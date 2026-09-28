@@ -13,6 +13,7 @@ import { UpdateScreen } from "@/components/UpdateScreen";
 import { useAppGate } from "@/lib/appGate";
 import { groupIdFrom } from "@/lib/push";
 import { persistOptions, queryClient } from "@/lib/queryClient";
+import { SwitchBanner } from "@/components/SwitchBanner";
 import { AccessGuard, SessionProvider } from "@/state/session";
 import { useTheme } from "@/theme/tokens";
 
@@ -80,6 +81,7 @@ function App() {
           options={{ presentation: "formSheet", sheetAllowedDetents: "fitToContents", sheetGrabberVisible: true, sheetCornerRadius: 28, contentStyle: { backgroundColor: t.grouped } }}
         />
       </Stack>
+      <SwitchBanner />
     </SessionProvider>
   );
 }

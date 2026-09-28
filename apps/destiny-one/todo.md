@@ -2,7 +2,7 @@
 
 **Target:** production by November 2026. **Audited:** 28 September 2026 (code, database rules, admin pages, nightly jobs, and a read-only look at the live Supabase project).
 
-**Progress:** the items ticked below were done on 28 September 2026 (migration `supabase/migrations/20260928_01_destiny_one_safeguarding.sql`, which must be applied to Supabase before the website deploy that uses it). Report alert emails go to everyone with the Safeguarding Admin role, and there are none yet, so add at least one. React Compiler lint rules are warnings for now (see `apps/destiny-one/eslint.config.js`).
+**Progress:** the items ticked below were done on 28 September 2026 (migration `supabase/migrations/20260928_01_destiny_one_safeguarding.sql`, applied to the live Supabase project on 28 September 2026; the website code that uses it is in PR #38). Report alert emails go to everyone with the Safeguarding Admin role, and there are none yet, so add at least one. React Compiler lint rules are warnings for now (see `apps/destiny-one/eslint.config.js`).
 
 **Already in good shape:** the safeguarding rules (no one-to-one chats, at least 2 adults per group, leaders-only group creation, deleted messages kept for review) are enforced in the database itself. App and website typecheck, the 69 Destiny One unit tests, the SQL rule tests and `expo-doctor` all pass. Data is stored in the EU (Ireland).
 
@@ -53,7 +53,7 @@
 - [ ] Confirm the phone sign-in provider is switched off in Supabase Auth.
 - [ ] **Put the API on a custom domain before the first store build.** The address is baked into every build (`destinychurch.vercel.app`, `app.json` `extra.apiBaseUrl`) and can't be changed in copies people already have.
 - [ ] **A staging environment.** Every EAS build profile points at the live database. The unused, paused "DestinyOne" Supabase project could be the staging copy.
-- [ ] Record `20260926_01_destiny_one` and `20260927_01_destiny_one_admin` in the live migration history. They were run outside it, so a fresh database can't be rebuilt reliably.
+- [x] Record `20260926_01_destiny_one` and `20260927_01_destiny_one_admin` in the live migration history. They were run outside it, so a fresh database can't be rebuilt reliably.
 - [ ] Clear the test data from the live database (3 members, 7 messages at the time of the audit).
 - [ ] Data processing agreements with Supabase, Vercel, Expo, Resend, Apple and Google.
 - [ ] Set `EXPO_ACCESS_TOKEN` and switch on push security in Expo.

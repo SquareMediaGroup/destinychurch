@@ -9,9 +9,15 @@ import { Tail } from "@/components/MessageBubble";
 import { Card, FloatingBack, LargeTitle, SectionLabel, TextButton } from "@/components/ui";
 import { Wallpaper } from "@/components/Wallpaper";
 import { haptic } from "@/lib/haptics";
-import { appearance, useAppearance } from "@/state/appearance";
-import { DEFAULT_SEND_COLOUR, DEFAULT_WALLPAPER, SEND_COLOURS, WALLPAPERS, contrast, sendColour } from "@/theme/appearance";
+import { appearance, useAppearance, type ThemeMode } from "@/state/appearance";
+import { DEFAULT_SEND_COLOUR, DEFAULT_WALLPAPER, SEND_COLOURS, WALLPAPERS } from "@/theme/appearance";
 import { useTheme } from "@/theme/tokens";
+
+const MODE_OPTIONS: { key: ThemeMode; label: string }[] = [
+  { key: "system", label: "System" },
+  { key: "light", label: "Light" },
+  { key: "dark", label: "Dark" },
+];
 
 const THUMB_W = 96;
 const THUMB_H = 150;
@@ -21,9 +27,7 @@ export default function AppearanceScreen() {
   const insets = useSafeAreaInsets();
   const scheme = useColorScheme() === "dark" ? "dark" : "light";
   const current = useAppearance();
-  const chosen = sendColour(current.sendColour);
-  const tone = chosen[scheme];
-  const isDefault = current.sendColour === DEFAULT_SEND_COLOUR && current.wallpaper === DEFAULT_WALLPAPER;
+  const isDefault = current.mode === "system" && current.sendColour === DEFAULT_SEND_COLOUR && current.wallpaper === DEFAULT_WALLPAPER;
 
   return (
     <View style={{ flex: 1, backgroundColor: t.grouped }}>
@@ -31,6 +35,31 @@ export default function AppearanceScreen() {
         <LargeTitle style={{ paddingHorizontal: 4 }}>Appearance</LargeTitle>
 
         <Preview />
+
+        <View style={{ gap: 8 }}>
+          <SectionLabel>Theme</SectionLabel>
+          <View accessibilityRole="radiogroup" style={{ flexDirection: "row", padding: 3, borderRadius: 14, backgroundColor: t.fill2 }}>
+            {MODE_OPTIONS.map((o) => {
+              const on = o.key === current.mode;
+              return (
+                <Pressable
+                  key={o.key}
+                  accessibilityRole="radio"
+                  accessibilityState={{ selected: on }}
+                  onPress={() => {
+                    if (!on) haptic.selection();
+                    appearance.set({ mode: o.key });
+                  }}
+                  style={{ flex: 1, minHeight: 38, borderRadius: 11, alignItems: "center", justifyContent: "center", backgroundColor: on ? t.card : "transparent", ...(on ? t.shadow : null), shadowOpacity: on ? 0.12 : 0 }}
+                >
+                  <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 15, fontWeight: on ? "600" : "400", color: t.text }}>
+                    {o.label}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
+        </View>
 
         <View style={{ gap: 8 }}>
           <SectionLabel>Your message colour</SectionLabel>
@@ -57,9 +86,6 @@ export default function AppearanceScreen() {
                 );
               })}
             </View>
-            <Text style={{ fontSize: 13, lineHeight: 18, color: t.muted }}>
-              {chosen.label}. Text on it has {contrast(tone.bg, tone.fg).toFixed(1)} to 1 contrast, so it stays easy to read. Only you see your messages in this colour.
-            </Text>
           </Card>
         </View>
 

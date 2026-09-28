@@ -3,22 +3,32 @@
 // screen re-renders the moment it changes, including the live preview.
 
 import { useSyncExternalStore } from "react";
+import { Appearance as SystemAppearance } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { DEFAULT_SEND_COLOUR, DEFAULT_WALLPAPER, SEND_COLOURS, WALLPAPERS } from "@/theme/appearance";
 
+export type ThemeMode = "system" | "light" | "dark";
+const MODES: readonly ThemeMode[] = ["system", "light", "dark"];
+
 export interface Appearance {
+  mode: ThemeMode;
   sendColour: string;
   wallpaper: string;
 }
 
 const KEY = "d1.appearance.v1";
-const DEFAULTS: Appearance = { sendColour: DEFAULT_SEND_COLOUR, wallpaper: DEFAULT_WALLPAPER };
+const DEFAULTS: Appearance = { mode: "system", sendColour: DEFAULT_SEND_COLOUR, wallpaper: DEFAULT_WALLPAPER };
 
 let current: Appearance = DEFAULTS;
 const listeners = new Set<() => void>();
 
 function emit() {
   for (const l of listeners) l();
+}
+
+/** Light or dark for the whole app, including native pieces (glass, keyboard, alerts). "system" follows the phone. */
+function applyMode() {
+  SystemAppearance.setColorScheme(current.mode === "system" ? "unspecified" : current.mode);
 }
 
 function save() {
@@ -29,6 +39,7 @@ function save() {
 function sanitise(raw: unknown): Appearance {
   const r = (raw ?? {}) as Partial<Appearance>;
   return {
+    mode: MODES.includes(r.mode as ThemeMode) ? (r.mode as ThemeMode) : DEFAULTS.mode,
     sendColour: SEND_COLOURS.some((c) => c.id === r.sendColour) ? (r.sendColour as string) : DEFAULTS.sendColour,
     wallpaper: WALLPAPERS.some((w) => w.id === r.wallpaper) ? (r.wallpaper as string) : DEFAULTS.wallpaper,
   };
@@ -38,11 +49,13 @@ export const appearance = {
   get: () => current,
   set(patch: Partial<Appearance>) {
     current = sanitise({ ...current, ...patch });
+    applyMode();
     emit();
     save();
   },
   reset() {
     current = DEFAULTS;
+    applyMode();
     emit();
     save();
   },
@@ -52,6 +65,7 @@ export const appearance = {
       const raw = await AsyncStorage.getItem(KEY);
       if (raw) {
         current = sanitise(JSON.parse(raw));
+        applyMode();
         emit();
       }
     } catch {

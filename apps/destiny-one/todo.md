@@ -70,7 +70,7 @@ Decided with the product owner on 28 September 2026:
 
 - [ ] An iPhone and an Android build, going through every screen.
 - [x] **Photos in older chats.** Image links expire after an hour (`SIGNED_URL_TTL` in `lib/destinyOne/chat.server.ts`) but the app keeps messages cached for up to 30 days, so older photos are likely to break. Fixed in code: the app now swaps in fresh links when they expire (still worth checking on a phone).
-- [ ] **Android keyboard covering the message box.** The chat screen only handles the keyboard on iOS (`src/app/group/[id]/index.tsx`).
+- [x] **Android keyboard covering the message box.** The chat screen only handles the keyboard on iOS (`src/app/group/[id]/index.tsx`). Fixed in code: it pads for the keyboard on Android too (still check on an Android phone).
 - [ ] Opening the app from a notification when it was fully closed.
 - [ ] VoiceOver/TalkBack labels, large text sizes and dark mode.
 

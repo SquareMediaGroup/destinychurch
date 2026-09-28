@@ -58,6 +58,9 @@ export async function PATCH(request: Request) {
   if (!name) {
     return NextResponse.json({ error: "Please enter your name." }, { status: 400 });
   }
+  if (name.length > 100) {
+    return NextResponse.json({ error: "Please keep your name under 100 characters." }, { status: 400 });
+  }
 
   const service = createServiceClient();
   const { data: before } = await service
@@ -65,7 +68,9 @@ export async function PATCH(request: Request) {
     .select("name")
     .eq("auth_user_id", user.id)
     .maybeSingle();
-  await service.from("admin_roles").update({ name }).eq("auth_user_id", user.id);
+  if (!before) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  const { error } = await service.from("admin_roles").update({ name }).eq("auth_user_id", user.id);
+  if (error) return NextResponse.json({ error: "Could not save your name." }, { status: 500 });
 
   await recordAudit({
     action: "update",

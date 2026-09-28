@@ -15,6 +15,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { GlassSurface } from "@/components/GlassSurface";
 import { Icon, type IconName } from "@/components/Icon";
 import { withAlpha } from "@/components/ui";
+import { haptic } from "@/lib/haptics";
 import { useTheme } from "@/theme/tokens";
 
 const TABS: Record<string, { label: string; icon: IconName }> = {
@@ -52,12 +53,12 @@ function TabButton({ label, icon, focused, reduce, onPress, onLongPress, hint }:
       accessibilityHint={hint}
       onPress={onPress}
       onLongPress={onLongPress}
-      style={{ flex: 1, height: 54, alignItems: "center", justifyContent: "center", gap: 2 }}
+      style={({ pressed }) => ({ flex: 1, height: 54, alignItems: "center", justifyContent: "center", gap: 2, opacity: pressed && !focused ? 0.6 : 1 })}
     >
       <Animated.View style={{ transform: [{ scale }] }}>
         <Icon name={icon} size={24} color={color} strokeWidth={1.9} />
       </Animated.View>
-      <Text style={{ fontSize: 10, fontWeight: "600", color }}>{label}</Text>
+      <Text maxFontSizeMultiplier={1.3} numberOfLines={1} style={{ fontSize: 11, fontWeight: "600", letterSpacing: 0.1, color }}>{label}</Text>
     </Pressable>
   );
 }
@@ -112,7 +113,10 @@ function TabBar({ state, navigation }: BottomTabBarProps) {
                 hint={route.name === "settings" ? "Hold to switch account" : undefined}
                 onPress={() => {
                   const event = navigation.emit({ type: "tabPress", target: route.key, canPreventDefault: true });
-                  if (!focused && !event.defaultPrevented) navigation.navigate(route.name);
+                  if (!focused && !event.defaultPrevented) {
+                    haptic.selection();
+                    navigation.navigate(route.name);
+                  }
                 }}
               />
             );

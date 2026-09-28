@@ -97,6 +97,8 @@ export default function Profile() {
       <Card>
         <SettingsRow icon="bell" iconBg={ORANGE} iconColor={INK} label="Notifications" onPress={() => router.push("/notifications")} />
         <Separator inset={62} />
+        <SettingsRow icon="sliders" label="Appearance" onPress={() => router.push("/appearance")} />
+        <Separator inset={62} />
         <SettingsRow icon="alertCircle" label="Blocked people" onPress={() => router.push("/blocked")} />
       </Card>
 

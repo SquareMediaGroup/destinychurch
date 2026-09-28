@@ -5891,6 +5891,44 @@ fresh URL per click.
 
 ---
 
+### Destiny One app — look and feel (`apps/destiny-one/src`)
+
+Polished to Apple's Human Interface Guidelines. The pieces, and why they exist:
+
+- **Personal appearance** (Profile → Appearance, `src/app/appearance.tsx`). Each person picks the
+  colour of the messages *they send* and a conversation wallpaper. Kept on the phone only
+  (`src/state/appearance.ts`, AsyncStorage, `d1.appearance.v1`), so it changes nothing for anyone
+  else. `useTheme()` (`src/theme/tokens.ts`) folds the choice in as `t.send`, `t.onSend`,
+  `t.onSendCard` and `t.wall`, so bubbles, the send button, poll bars and the message-actions
+  preview all follow it.
+- **The choices are a curated list, not a colour picker** (`src/theme/appearance.ts`, pure data, no
+  React Native). A free picker can't promise legibility. Every send colour is chosen so its text is
+  at least 4.5:1 and the bubble is at least 3:1 against the page and every wallpaper, in light and
+  dark; every wallpaper keeps body text at 7:1 and timestamps at 4.5:1. `tests/unit/destiny-one-appearance.spec.ts`
+  checks every combination, so adding a colour or wallpaper that fails turns the tests red. The
+  default light send colour is a deeper orange (`#BF5200`, white text) because the brand orange
+  (`#F58021`) is only 2.6:1 against white; dark mode keeps the brand orange with dark text.
+- **Wallpapers** (`src/components/Wallpaper.tsx`) are drawn in code with `react-native-svg`
+  (gradient, hills, dots, contours, sunburst, waves), not shipped as photos: sharp at any size,
+  near-zero weight, and each has light and dark colours. Applied to conversations only; list and
+  settings screens stay plain so text is always on a known background.
+- **Dark mode is a warm tint of the brand orange** (`#1A110A` page, `#26190F` cards), not pure black.
+- **Bubbles** (`MessageBubble.tsx`) join in runs (the corner facing the sender flattens between
+  neighbours) and the last one in a run gets a small curved tail. The time shows once per run.
+- **Gestures** (`src/components/Swipe.tsx`): swipe a message right to reply (`SwipeToReply`);
+  swipe a chat row left for Read and Mute (`SwipeActions`). Both track the finger 1:1, rubber-band
+  at the edge, and spring on from the release velocity; `SwipeActions` snaps using where the flick
+  was heading (`project()`), and only one row is open at a time. Plain `PanResponder` + `Animated`,
+  no extra native module. The reply swipe ignores drags that start at the left edge (the back
+  gesture). Long-press still opens the actions sheet, which springs up from the message's side.
+- **Haptics** (`src/lib/haptics.ts`, `expo-haptics`), used only for meaningful moments: tab and
+  filter changes, sending, reacting, poll votes, a gesture reaching its threshold, opening the
+  message menu, errors. Never on scroll or every tap.
+- **Text size**: chrome text (tab labels, chips, badges, reactions) caps its scaling with
+  `maxFontSizeMultiplier` and controls use `minHeight`, so large Dynamic Type sizes grow the
+  layout instead of clipping it. Body text scales freely.
+- **Pressed states** respond on touch-down with a small scale, not just an opacity change.
+
 ### `lib/destinyOne/*` — Destiny One backend
 
 Part 2 additions: `onboarding.ts` (pure: `onboardingState`, `ONBOARDING_MESSAGES`,

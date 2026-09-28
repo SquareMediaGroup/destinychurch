@@ -231,7 +231,7 @@ destinychurch/
 │   ├── Providers.tsx              # Client context providers
 │   ├── CookieBanner.tsx           # GDPR cookie consent
 │   ├── AnalyticsGate.tsx          # Conditional analytics loading
-│   ├── SiteBanner.tsx             # Announcement banner (from DB)
+│   ├── SiteBanner.tsx             # Announcement banner (from DB); hidden on legal pages (lib/legalPages.ts)
 │   ├── SitePopup.tsx              # Modal pop-up (from DB)
 │   ├── FloatingSmartSearch.tsx    # The floating AI Smart Search widget
 │   ├── smartSearch/               # Smart Search result cards (products, weather, maps, web)

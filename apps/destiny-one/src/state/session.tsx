@@ -23,7 +23,7 @@ import { AppState } from "react-native";
 import { useIsRestoring, useQuery } from "@tanstack/react-query";
 import type { Session } from "@supabase/supabase-js";
 import type { D1CommunitySummary, D1Me } from "@destiny/shared";
-import { canCreateGroup } from "@destiny/shared";
+import { canCreateGroup, checkAddedAccount } from "@destiny/shared";
 import { router, useSegments } from "expo-router";
 import * as accounts from "@/lib/accounts";
 import type { Account } from "@/lib/accounts";
@@ -72,9 +72,9 @@ interface SessionValue {
   accounts: Account[];
   activeSlot: string;
   switching: boolean;
-  switchTo: (slot: string) => Promise<void>;
+  switchTo: (slot: string, opts?: { announce?: boolean }) => Promise<void>;
   /** After "Add account" signs in: make the new account the active one. */
-  finishAdding: (me: D1Me) => Promise<void>;
+  finishAdding: (me: D1Me) => Promise<{ ok: true } | { ok: false; message: string }>;
   /** Sign another (not the active) account out and forget it on this device. */
   removeAccount: (slot: string) => Promise<void>;
 }
@@ -244,11 +244,11 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   // in-memory cache is emptied, so anything fetched from here on is fetched
   // as the new account; and in-flight requests from the old one are
   // cancelled rather than landing in the new account's cache.
-  const runSwitch = useCallback(async (slot: string, knownMe?: D1Me) => {
+  const runSwitch = useCallback(async (slot: string, knownMe?: D1Me, announce = false) => {
     setSwitching(true);
     try {
       await saveCacheNow();
-      await accounts.activate(slot);
+      await accounts.activate(slot, { announce });
       await swapInActiveCache();
       if (knownMe) queryClient.setQueryData(keys.me, knownMe);
       const { data } = await accounts.client().auth.getSession().catch(() => ({ data: { session: null } }));
@@ -264,11 +264,11 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const switchTo = useCallback(
-    async (slot: string) => {
+    async (slot: string, opts?: { announce?: boolean }) => {
       if (slot === accounts.activeSlot() || busy.current) return;
       busy.current = true;
       try {
-        await runSwitch(slot);
+        await runSwitch(slot, undefined, opts?.announce ?? false);
       } finally {
         busy.current = false;
       }
@@ -277,23 +277,32 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   );
 
   const finishAdding = useCallback(
-    async (next: D1Me) => {
+    async (next: D1Me): Promise<{ ok: true } | { ok: false; message: string }> => {
       const { data } = await accounts.signInClient().auth.getSession();
       const user = data.session?.user;
+      const kind = accounts.pendingKind();
       const slot = accounts.finishAdd();
-      if (!slot || !user) return;
+      if (!slot || !user) return { ok: true };
+      const check = checkAddedAccount(kind, next);
+      if (!check.ok) {
+        // Wrong kind of account: forget the new sign-in on this phone, leave the current account exactly as it was.
+        // Local only: a global sign-out would also end that person's own sessions on their other devices.
+        await accounts.removeAccount(slot, { signOut: false });
+        return check;
+      }
       // Signed into the account they're already on: nothing to add.
       if (next.id === meRef.current?.id) {
         await accounts.removeAccount(slot, { signOut: false });
-        return;
+        return { ok: true };
       }
       busy.current = true;
       try {
-        await accounts.recordAccount(slot, { userId: user.id, memberId: next.id, email: user.email ?? null, displayName: next.displayName, avatarUrl: next.avatarUrl, isAdult: next.isAdult });
-        await runSwitch(slot, next);
+        await accounts.recordAccount(slot, { userId: user.id, memberId: next.id, email: user.email ?? null, displayName: next.displayName, avatarUrl: next.avatarUrl, isAdult: next.isAdult, kind });
+        await runSwitch(slot, next, true);
       } finally {
         busy.current = false;
       }
+      return { ok: true };
     },
     [runSwitch],
   );

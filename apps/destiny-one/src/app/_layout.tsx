@@ -72,6 +72,10 @@ function App() {
         <Stack.Screen name="report-sent" options={{ presentation: "modal", gestureEnabled: false }} />
         <Stack.Screen name="search" options={{ animation: "fade" }} />
         <Stack.Screen
+          name="add-account"
+          options={{ presentation: "formSheet", sheetAllowedDetents: "fitToContents", sheetGrabberVisible: true, sheetCornerRadius: 28, contentStyle: { backgroundColor: t.grouped } }}
+        />
+        <Stack.Screen
           name="accounts"
           options={{ presentation: "formSheet", sheetAllowedDetents: "fitToContents", sheetGrabberVisible: true, sheetCornerRadius: 28, contentStyle: { backgroundColor: t.grouped } }}
         />

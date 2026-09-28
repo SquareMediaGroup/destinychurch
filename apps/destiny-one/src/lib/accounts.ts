@@ -61,6 +61,7 @@ export const LEGACY_CACHE_KEY = "d1.cache.v1";
 let saved: Saved = { active: FIRST_SLOT, accounts: [] };
 /** A slot being signed into from "Add account". Not active until the code checks out. */
 let pending: string | null = null;
+let pendingKindValue: AccountKind = "member";
 const clients = new Map<string, SupabaseClient>();
 const listeners = new Set<() => void>();
 
@@ -198,9 +199,15 @@ export async function accessToken(): Promise<string | null> {
 // ── Adding ──────────────────────────────────────────────────────────────────
 
 /** Start signing into another account. The current one stays active until it succeeds. */
-export async function beginAdd(): Promise<void> {
+export async function beginAdd(kind: AccountKind = "member"): Promise<void> {
   await cancelAdd();
   pending = Crypto.randomUUID();
+  pendingKindValue = kind;
+}
+
+/** What the person said they were adding (child, admin, or plain), for the account being signed into. */
+export function pendingKind(): AccountKind {
+  return pendingKindValue;
 }
 
 /** Abandon an unfinished "Add account" (leaves the active account as it was). */

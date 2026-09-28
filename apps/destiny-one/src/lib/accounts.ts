@@ -20,6 +20,8 @@ import { AppState } from "react-native";
 import * as Crypto from "expo-crypto";
 import * as LocalAuthentication from "expo-local-authentication";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { createDestinyOneClient, needsOwnerCheck, nextSlot, switchedNoticeText, type AccountKind } from "@destiny/shared";
+import { config } from "@/lib/config";
 import { makeClient } from "@/lib/supabase";
 import { secureStorage } from "@/lib/secureStorage";
 
@@ -32,6 +34,12 @@ export interface Account {
   email: string | null;
   displayName: string;
   avatarUrl: string | null;
+  /** A label for the switcher, never a permission. */
+  kind: AccountKind;
+  /** When this account was last the active one (epoch ms). */
+  lastUsedAt: number;
+  /** From the server at sign-in. Saved so "send as" can refuse child accounts without a network call. Unknown (old saves) counts as not adult. */
+  isAdult: boolean;
 }
 
 interface Saved {
@@ -83,7 +91,9 @@ export function loadAccounts(): Promise<void> {
     const raw = await AsyncStorage.getItem(KEY).catch(() => null);
     if (raw) {
       try {
-        saved = JSON.parse(raw) as Saved;
+        const parsed = JSON.parse(raw) as Saved;
+        // Accounts saved before kinds existed load as plain members, last used "never".
+        saved = { ...parsed, accounts: parsed.accounts.map((a) => ({ kind: "member" as const, lastUsedAt: 0, isAdult: false, ...a })) };
       } catch {
         // Unreadable: start again from the first slot, which is where a
         // single-account build kept its session anyway.
@@ -99,6 +109,27 @@ AppState.addEventListener("change", (state) => {
   if (state === "active") void client().auth.startAutoRefresh();
   else void client().auth.stopAutoRefresh();
 });
+
+// ── Switch notice ("Switched to X profile") ─────────────────────────────────
+
+export interface SwitchNotice {
+  id: number;
+  text: string;
+  avatarUrl: string | null;
+  name: string;
+}
+let notice: SwitchNotice | null = null;
+let noticeId = 0;
+
+export function switchNotice(): SwitchNotice | null {
+  return notice;
+}
+
+export function clearSwitchNotice() {
+  if (!notice) return;
+  notice = null;
+  emit();
+}
 
 // ── Reading ─────────────────────────────────────────────────────────────────
 
@@ -138,6 +169,27 @@ export function subscribe(listener: () => void): () => void {
   return () => listeners.delete(listener);
 }
 
+const slotApis = new Map<string, ReturnType<typeof createDestinyOneClient>>();
+
+/** The API as another signed-in account, without switching to it (used to send as them). */
+export function apiFor(slot: string) {
+  let api = slotApis.get(slot);
+  if (!api) {
+    api = createDestinyOneClient({
+      baseUrl: config.apiBaseUrl,
+      // getSession() refreshes an expired token on the way out, even when this slot isn't active.
+      getAccessToken: async () => (await clientFor(slot).auth.getSession()).data.session?.access_token ?? null,
+    });
+    slotApis.set(slot, api);
+  }
+  return api;
+}
+
+/** Where a double press on Profile goes: the most recently used other account. */
+export function nextAccountSlot(): string | null {
+  return nextSlot(saved.accounts, saved.active);
+}
+
 export async function accessToken(): Promise<string | null> {
   const { data } = await client().auth.getSession();
   return data.session?.access_token ?? null;
@@ -168,13 +220,19 @@ export function finishAdd(): string | null {
 // ── Recording, switching, removing ──────────────────────────────────────────
 
 /** Remember (or refresh) who's signed into a slot. */
-export async function recordAccount(slot: string, account: Omit<Account, "slot">): Promise<void> {
+export async function recordAccount(slot: string, account: Omit<Account, "slot" | "lastUsedAt" | "kind"> & { kind?: AccountKind }): Promise<void> {
   // The same person signed in again in a new slot: the new session wins, and
   // the old slot is dropped locally (a server sign-out would end both).
   const duplicate = saved.accounts.find((a) => a.userId === account.userId && a.slot !== slot);
   if (duplicate) await dropSlot(duplicate.slot);
 
-  const next: Account = { slot, ...account };
+  const existing = saved.accounts.find((a) => a.slot === slot);
+  const next: Account = {
+    slot,
+    ...account,
+    kind: account.kind ?? existing?.kind ?? duplicate?.kind ?? "member",
+    lastUsedAt: existing?.lastUsedAt ?? duplicate?.lastUsedAt ?? Date.now(),
+  };
   const list = saved.accounts.filter((a) => a !== duplicate);
   const index = list.findIndex((a) => a.slot === slot);
   if (index >= 0) {
@@ -189,17 +247,25 @@ export async function recordAccount(slot: string, account: Omit<Account, "slot">
 }
 
 /** Make another slot the active one. The caller (SessionProvider) swaps the cache around this. */
-export async function activate(slot: string): Promise<void> {
+export async function activate(slot: string, { announce = false }: { announce?: boolean } = {}): Promise<void> {
   if (slot === saved.active) return;
   const previousSlot = saved.active;
   const previous = client();
   void previous.auth.stopAutoRefresh();
   await previous.removeAllChannels();
-  saved = { ...saved, active: slot };
+  const now = Date.now();
+  saved = {
+    ...saved,
+    active: slot,
+    // The account we're leaving was in use until now; the one we're entering is in use from now.
+    accounts: saved.accounts.map((a) => (a.slot === previousSlot || a.slot === slot ? { ...a, lastUsedAt: now } : a)),
+  };
   // Left an empty slot behind (signed out, nobody in it): close it.
   if (!saved.accounts.some((a) => a.slot === previousSlot)) clients.delete(previousSlot);
   await persist();
   if (AppState.currentState === "active") void client().auth.startAutoRefresh();
+  const entered = saved.accounts.find((a) => a.slot === slot);
+  if (announce && entered) notice = { id: ++noticeId, text: switchedNoticeText(entered.displayName), avatarUrl: entered.avatarUrl, name: entered.displayName };
   emit();
 }
 
@@ -222,6 +288,7 @@ export async function removeAccount(slot: string, { signOut }: { signOut: boolea
 
 /** Close a slot's client and delete its saved session, without telling the server. */
 async function dropSlot(slot: string) {
+  slotApis.delete(slot);
   const c = clients.get(slot);
   if (c) {
     void c.auth.stopAutoRefresh();
@@ -250,10 +317,11 @@ function defaultStorageKey(): string {
  * another person's chats. Devices with no passcode set skip it: there's
  * nothing to check against.
  */
-export async function confirmOwner(name: string): Promise<boolean> {
+export async function confirmOwner(name: string, slot?: string): Promise<boolean> {
   try {
     const level = await LocalAuthentication.getEnrolledLevelAsync();
-    if (level === LocalAuthentication.SecurityLevel.NONE) return true;
+    const lastUsedAt = slot ? saved.accounts.find((a) => a.slot === slot)?.lastUsedAt : undefined;
+    if (!needsOwnerCheck({ enrolled: level !== LocalAuthentication.SecurityLevel.NONE, lastUsedAt, now: Date.now() })) return true;
     const result = await LocalAuthentication.authenticateAsync({ promptMessage: `Switch to ${name}`, disableDeviceFallback: false });
     return result.success;
   } catch {

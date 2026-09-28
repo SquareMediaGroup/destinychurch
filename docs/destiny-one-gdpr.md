@@ -81,9 +81,9 @@ and hold DPAs with each.
 
 | Right | How |
 |---|---|
-| Access (Art. 15) | `GET /api/app/v1/one/me/export` — JSON of profile, consents, memberships, own messages (incl. ones they deleted), own reports |
+| Access (Art. 15) | `GET /api/app/v1/one/me/export` — JSON of profile (incl. email and a link to their profile picture), what they sent with an access request (note, declared age), consents, memberships, own messages (incl. ones they deleted), the files they sent (download links valid for an hour), own reports, and who they have blocked |
 | Erasure (Art. 17) | `DELETE /api/app/v1/one/me` — leaves every group, removes tokens, consents, reactions, blocks and the profile picture (row and file), anonymises, deletes the sign-in. Messages remain under "Former member" until the retention purge (safeguarding exemption — state it in the notice) |
-| Rectification (Art. 16) | Names and ages come from ChurchSuite; correct them there (synced nightly) |
+| Rectification (Art. 16) | Names and ages are set by staff (invite or approval) and corrected by staff in `/admin/destiny-one`. Only members who signed in with ChurchSuite get them from ChurchSuite, where corrections sync nightly |
 | Object / restrict | Handled by the church office; a safeguarding admin can suspend an account |
 
 ## 6. Review access is itself controlled

@@ -3,7 +3,7 @@
 // can post here" (announcements), or the paused card (frozen group).
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ActivityIndicator, Alert, FlatList, KeyboardAvoidingView, Platform, Pressable, Text, TextInput, View } from "react-native";
+import { ActivityIndicator, Alert, FlatList, KeyboardAvoidingView, Pressable, Text, TextInput, View } from "react-native";
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import * as Clipboard from "expo-clipboard";
 import * as WebBrowser from "expo-web-browser";
@@ -124,7 +124,9 @@ export default function GroupChat() {
   );
 
   return (
-    <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={{ flex: 1, backgroundColor: t.bg }}>
+    // "padding" on Android too: apps are edge-to-edge there now, so the window
+    // no longer shrinks for the keyboard and the message box would be covered.
+    <KeyboardAvoidingView behavior="padding" style={{ flex: 1, backgroundColor: t.bg }}>
       {!messages ? (
         convo.error ? (
           <View style={{ flex: 1, justifyContent: "center" }}>

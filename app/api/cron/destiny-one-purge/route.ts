@@ -16,6 +16,7 @@
 import { NextResponse } from "next/server";
 import { createServiceClient } from "@/utils/supabase/service";
 import { MEDIA_BUCKET } from "@/lib/destinyOne/chat.server";
+import { alertJobFailed } from "@/lib/destinyOne/jobAlert.server";
 
 export const dynamic = "force-dynamic";
 
@@ -38,6 +39,7 @@ export async function GET(request: Request) {
   const { data, error } = await supabase.rpc("d1_purge_expired", { p_retain_days: retainDays });
   if (error) {
     console.error("⚠️ Destiny One purge failed:", error.message);
+    await alertJobFailed("message purge", error.message);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
@@ -50,7 +52,10 @@ export async function GET(request: Request) {
   const paths = result?.attachment_paths ?? [];
   for (let i = 0; i < paths.length; i += 100) {
     const { error: removeError } = await supabase.storage.from(MEDIA_BUCKET).remove(paths.slice(i, i + 100));
-    if (removeError) console.error("⚠️ Destiny One media removal failed:", removeError.message);
+    if (removeError) {
+      console.error("⚠️ Destiny One media removal failed:", removeError.message);
+      await alertJobFailed("message purge (removing files)", removeError.message);
+    }
   }
 
   console.log("🧹 Destiny One purge:", { retainDays, ...result, attachment_paths: paths.length });

@@ -6,6 +6,7 @@ import { Pressable, Text, TextInput, View } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { AuthScreen } from "@/components/AuthScreen";
 import { Beam, FormError, LargeTitle, Lead, PrimaryButton, TextButton } from "@/components/ui";
+import { D1ApiError } from "@/lib/api";
 import { requestEmailCode, verifyEmailCode } from "@/lib/auth";
 import { routeFor, useSession } from "@/state/session";
 import { ORANGE, useTheme } from "@/theme/tokens";
@@ -52,8 +53,8 @@ export default function Code() {
     setWait(RESEND_AFTER);
     try {
       await requestEmailCode(email);
-    } catch {
-      setError("Please wait a minute and try again.");
+    } catch (err) {
+      setError(err instanceof D1ApiError && err.code !== "rate_limited" ? "Couldn't send the code. Check your connection and try again." : "Please wait a few minutes and try again.");
     }
   }
 
@@ -64,8 +65,11 @@ export default function Code() {
       <View style={{ paddingTop: 14, paddingHorizontal: 4, gap: 8 }}>
         <LargeTitle>Enter code</LargeTitle>
         <Lead>
-          Sent to <Text style={{ color: t.text, fontWeight: "500" }}>{email}</Text>
+          If <Text style={{ color: t.text, fontWeight: "500" }}>{email}</Text> has a Destiny One account or invite, a code is on its way.
         </Lead>
+        <Text style={{ paddingHorizontal: 4, fontSize: 13, lineHeight: 18, color: t.subtle }}>
+          Nothing after a few minutes? Check your junk folder, or ask your team leader or the church office for an invite.
+        </Text>
         <TextButton label="Change email" onPress={() => router.back()} style={{ alignSelf: "flex-start" }} />
       </View>
 

@@ -6,7 +6,7 @@ import { router } from "expo-router";
 import { AuthScreen } from "@/components/AuthScreen";
 import { Icon } from "@/components/Icon";
 import { Field, FormError, LargeTitle, Lead, PrimaryButton } from "@/components/ui";
-import { api, D1ApiError } from "@/lib/api";
+import { D1ApiError } from "@/lib/api";
 import { requestEmailCode } from "@/lib/auth";
 import { useTheme } from "@/theme/tokens";
 
@@ -27,23 +27,14 @@ export default function Email() {
     setBusy(true);
     setError(null);
     try {
-      // Don't send a code to someone who can't get in (the server decides).
-      await api.checkEmail(value);
-    } catch (err) {
-      // Only a definite "no account" stops here. Anything else (offline, an
-      // older server without the check) carries on: sign-in re-checks anyway.
-      if (err instanceof D1ApiError && err.code === "not_verified") {
-        setError(err.message);
-        setBusy(false);
-        return;
-      }
-    }
-    try {
+      // The server only emails a code if this address can get in, and answers
+      // the same either way (so the app can't be used to test emails).
       await requestEmailCode(value);
       router.push({ pathname: "/code", params: { email: value } });
     } catch (err) {
-      const status = (err as { status?: number }).status;
-      setError(status === 429 ? "Please wait a minute and try again." : "Couldn't send the code. Check your connection and try again.");
+      if (err instanceof D1ApiError && err.code === "rate_limited") setError("Please wait a few minutes and try again.");
+      else if (err instanceof D1ApiError && err.code === "invalid") setError(err.message);
+      else setError("Couldn't send the code. Check your connection and try again.");
     } finally {
       setBusy(false);
     }

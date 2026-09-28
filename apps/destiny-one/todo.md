@@ -32,11 +32,11 @@
 - [x] **The nightly purge deletes messages linked to open reports**, so evidence can disappear mid-investigation (`d1_purge_expired` in `supabase/migrations/20260926_01_destiny_one.sql`).
 - [x] **Email the Safeguarding Lead when a report comes in.** Today a report only shows in the website admin bell.
 - [x] **Give safeguarding admins tools to act.** They can pause a group but can't take down a message or suspend the sender (suspending is only in the Destiny One Admin area).
-- [ ] **Stop the email check revealing who's a member.** `POST /api/app/v1/one/auth/check` tells anyone whether an email belongs to a member, including children.
+- [x] **Stop the email check revealing who's a member.** Replaced by `POST /auth/email-code`: the server sends the code itself (through Resend, so this also stops sign-in depending on Supabase's built-in sender) and always answers the same.
 - [x] **Move people off the chats if they're suspended mid-session**, or when new notices need accepting. The app only re-routes at launch, and cached chats stay readable (`src/state/session.tsx`).
 - [ ] **Check on a phone** that someone removed from a group, or suspended, stops receiving live messages straight away (Realtime checks membership when a channel joins).
 - [x] **Make account deletion match what's promised.** Erasure now deletes consent records, blocks and the profile picture (row and file).
-- [ ] **Complete the data export.** `me/export` still leaves out the access-request note, declared age and files sent.
+- [x] **Complete the data export.** `me/export` still leaves out the access-request note, declared age and files sent.
 
 ## 3. App Store and Google Play
 
@@ -61,22 +61,22 @@
 ## 5. Test on real phones (it has never run on one)
 
 - [ ] An iPhone and an Android build, going through every screen.
-- [ ] **Photos in older chats.** Image links expire after an hour (`SIGNED_URL_TTL` in `lib/destinyOne/chat.server.ts`) but the app keeps messages cached for up to 30 days, so older photos are likely to break.
-- [ ] **Android keyboard covering the message box.** The chat screen only handles the keyboard on iOS (`src/app/group/[id]/index.tsx`).
+- [x] **Photos in older chats.** (fixed in code: an expired link asks `GET /messages/:id/attachment` for a fresh one; still check on a phone) Image links expire after an hour (`SIGNED_URL_TTL` in `lib/destinyOne/chat.server.ts`) but the app keeps messages cached for up to 30 days, so older photos are likely to break.
+- [x] **Android keyboard covering the message box.** (fixed in code; still check on an Android phone) The chat screen only handles the keyboard on iOS (`src/app/group/[id]/index.tsx`).
 - [ ] Opening the app from a notification when it was fully closed.
 - [ ] VoiceOver/TalkBack labels, large text sizes and dark mode.
 
 ## 6. Reliability and housekeeping
 
 - [ ] Crash and error reporting in the app (none today).
-- [ ] Alerts when the nightly purge or rule-check jobs fail (`app/api/cron/destiny-one-*`).
+- [x] Alerts when the nightly purge or rule-check jobs fail (`app/api/cron/destiny-one-*`): emails Destiny One and Super Admins. A job that never runs at all is not caught.
 - [ ] Rate limits that actually hold on Vercel. They're per server instance today (`lib/rateLimit.ts`).
 - [x] Add the app typecheck and the SQL rule tests to CI (`.github/workflows/ci.yml`), and include migrations 05 and 06 in `scripts/test-sql.sh`.
 - [x] A lint setup for the app. `expo lint` has no config and doesn't run.
 - [ ] Clear the 31 React Compiler lint warnings (refs and effects in the tab bar, `ui.tsx`, `useConversation.ts`), re-testing on a device, then turn those rules back into errors.
 - [x] Add the `.env.example` the README refers to.
 - [ ] Decide whether to encrypt the message cache stored on the phone (plain AsyncStorage today; the sign-in session is already in the secure store).
-- [ ] Bring the docs up to date: the GDPR doc still says names are corrected in ChurchSuite, and the screen spec (A10) still says notifications never show the message.
+- [x] Bring the docs up to date: the GDPR doc still says names are corrected in ChurchSuite, and the screen spec (A10) still says notifications never show the message.
 
 ## 7. Launch
 

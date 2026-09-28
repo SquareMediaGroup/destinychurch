@@ -55,7 +55,7 @@ Invited people skip the request steps entirely. Signing in with the invited emai
 
 ### A2. Email entry
 - **Shows:** email field and a short privacy line.
-- **Action:** **Send code** → `requestEmailCode(email)` (in `src/lib/auth.ts`) → A3.
+- **Action:** **Send code** → `requestEmailCode(email)` (in `src/lib/auth.ts`, which calls `POST /auth/email-code`) → A3. The server only emails a code if the address can get in, and always answers the same, so this screen never says whether an email has an account; A3 says "If … has a Destiny One account or invite, a code is on its way."
 - **States:** invalid email; sending; rate-limited ("Please wait a minute and try again").
 
 ### A3. Code entry
@@ -94,7 +94,7 @@ Invited people skip the request steps entirely. Signing in with the invited emai
 
 ### A10. Notifications permission explainer
 - **When:** in context, right after they first see a group. **Never on first launch.**
-- **Shows:** "Get a notification when there's a new message. Notifications never show the message itself." Buttons **Turn on** → `registerForPush()` and **Not now**.
+- **Shows:** "Turn on notifications" / "Know when your groups post. You can mute any group at any time." Buttons **Turn on** → `registerForPush()` and **Not now**. Notifications show the group name and "Sender: first line" (decided 2026-09-27; see `pushPreviewText`).
 
 ---
 

@@ -2,10 +2,12 @@
 // the LAST message of each run and their name above the FIRST. Mine are
 // orange on the right with the time underneath.
 
+import { useState } from "react";
 import { Image, Pressable, Text, View } from "react-native";
 import type { D1Message } from "@destiny/shared";
 import { Icon } from "@/components/Icon";
 import { AdminTag, Avatar } from "@/components/ui";
+import { api } from "@/lib/api";
 import { clock, dayLabel, fileMeta, sameDay } from "@/lib/format";
 import type { LocalMessage } from "@/lib/useConversation";
 import { INK, ORANGE, useTheme } from "@/theme/tokens";
@@ -145,16 +147,36 @@ export function MessageBubble({ row, replyTo, senderIsAdmin, onLongPress, onOpen
 
 function Attachment({ m, onOpen }: { m: LocalMessage; onOpen: (url: string) => void }) {
   const t = useTheme();
+  // Links in the message list last an hour, but chats stay cached for weeks:
+  // when one has run out, ask for a fresh one (once).
+  const [fresh, setFresh] = useState<string | null>(null);
+  const [refreshed, setRefreshed] = useState(false);
   const a = m.attachment;
   const local = m.localAttachment;
   if (!a && !local) return null;
   const mime = a?.mimeType ?? local?.mimeType ?? "";
-  const url = a?.url ?? null;
+  const url = fresh ?? a?.url ?? null;
+  const refresh = async (): Promise<string | null> => {
+    if (m.id < 0) return null;
+    setRefreshed(true);
+    try {
+      const next = (await api.attachmentUrl(m.id)).url;
+      setFresh(next);
+      return next;
+    } catch {
+      return null;
+    }
+  };
 
   if (mime.startsWith("image/") && url) {
     return (
       <Pressable onPress={() => onOpen(url)} accessibilityRole="imagebutton" accessibilityLabel="Photo. Opens full screen." style={{ marginTop: 2, marginHorizontal: -8 }}>
-        <Image source={{ uri: url }} style={{ width: 220, height: 220, borderRadius: 14, backgroundColor: t.fill }} resizeMode="cover" />
+        <Image
+          source={{ uri: url }}
+          onError={() => !refreshed && void refresh()}
+          style={{ width: 220, height: 220, borderRadius: 14, backgroundColor: t.fill }}
+          resizeMode="cover"
+        />
       </Pressable>
     );
   }
@@ -163,7 +185,11 @@ function Attachment({ m, onOpen }: { m: LocalMessage; onOpen: (url: string) => v
   return (
     <Pressable
       disabled={!url}
-      onPress={() => url && onOpen(url)}
+      // Files open in the browser, so get a link that's sure to still work.
+      onPress={async () => {
+        const next = m.id > 0 ? await refresh() : null;
+        if (next ?? url) onOpen((next ?? url) as string);
+      }}
       accessibilityRole="button"
       style={{ marginTop: 2, marginHorizontal: -6, padding: 8, borderRadius: 13, backgroundColor: m.mine ? "rgba(14,16,19,0.1)" : t.bg, flexDirection: "row", alignItems: "center", gap: 10, minWidth: 210 }}
     >

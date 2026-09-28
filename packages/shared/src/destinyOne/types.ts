@@ -228,10 +228,18 @@ export type D1RealtimeEvent =
 
 export interface D1Export {
   exportedAt: string;
-  profile: { id: string; displayName: string; status: D1MemberStatus; roles: D1LeaderRole[]; isAdult: boolean; createdAt: string };
+  profile: { id: string; displayName: string; email: string | null; status: D1MemberStatus; roles: D1LeaderRole[]; isAdult: boolean; createdAt: string };
+  /** Profile picture: a download link valid for an hour, or null. */
+  profilePicture: string | null;
+  /** What was sent with an access request, if there was one. */
+  accessRequest: { note: string | null; declaredAdultOn: string | null; submittedAt: string } | null;
   consents: (D1Consent & { acceptedAt: string })[];
   communities: { id: string; name: string; role: D1MembershipRole; joinedAt: string }[];
   groups: { id: string; name: string; role: D1MembershipRole; joinedAt: string; leftAt: string | null }[];
-  messages: { id: number; groupId: string; body: string | null; createdAt: string; deletedAt: string | null }[];
+  messages: { id: number; groupId: string; body: string | null; attachmentId: string | null; createdAt: string; deletedAt: string | null }[];
+  /** Files the member sent, each with a download link valid for an hour (null once the file has gone). */
+  files: { id: string; groupId: string; mimeType: string; sizeBytes: number | null; createdAt: string; downloadUrl: string | null }[];
   reports: { id: number; reason: string; createdAt: string; status: string }[];
+  /** People this member has blocked (display names only). */
+  blocked: { displayName: string; blockedAt: string }[];
 }

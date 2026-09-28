@@ -32,7 +32,7 @@ import { OneError, fromDbError } from "@/lib/destinyOne/http";
 import type { Caller } from "@/lib/destinyOne/auth.server";
 
 export const MEDIA_BUCKET = "d1-chat-media";
-const SIGNED_URL_TTL = 60 * 60;
+export const SIGNED_URL_TTL = 60 * 60;
 const PREVIEW_LENGTH = 140;
 
 interface OverviewRow {

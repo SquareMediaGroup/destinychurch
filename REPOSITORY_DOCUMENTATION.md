@@ -4166,7 +4166,8 @@ and filters/reveals it entirely client-side, no further network calls.
 // configured, and only for members verified BY ChurchSuite (verification_source='churchsuite') —
 // staff-verified members are never touched. Removed from ChurchSuite → `pending`, which pauses
 // any group left with < 2 adults. An outage changes nothing. Then d1_reconcile_all() re-checks
-// every live group (always runs).
+// every live group (always runs). A reconcile failure emails every Destiny One Admin and Super
+// Admin (lib/destinyOne/jobAlert.server.ts).
 ```
 
 #### `GET /api/cron/destiny-one-purge`
@@ -4175,6 +4176,7 @@ and filters/reveals it entirely client-side, no further network calls.
 // floor 30) deletes messages, their attachment rows, erased members with no remaining messages,
 // and closed reports / resolved events past the window; the route then removes the storage
 // objects. ⚠️ 365 is a placeholder pending the safeguarding policy decision (scoping doc D6).
+// A failed purge or file removal emails every Destiny One Admin and Super Admin (jobAlert.server.ts).
 ```
 
 #### Destiny One API (`/api/app/v1/one/*`)
@@ -4191,14 +4193,14 @@ needs at least 2 verified adults.") pass through as `rule_violation` (422). Type
 |---|---|---|
 | `config` | GET | No sign-in, no token, and the only `/one` route the CDN may cache (`s-maxage=60`): `D1AppConfig` — `minBuild { ios, android }`, `forceUpdateMessage`, `maintenanceMessage`, `storeUrl` (env `D1_IOS_STORE_URL`, default `itms-beta://` = TestFlight; `D1_ANDROID_STORE_URL`). The app's forced-update gate (`appGate()` in `@destiny/shared`, `src/lib/appGate.ts`) |
 | `auth/link` | POST | After every sign-in: accept an open invite for the email (`onboardMember`), return `D1Me` with `onboarding` |
-| `auth/check` | POST | No sign-in: `{ email }` — asked before a code is sent; 403 `not_verified` with a message when the email has no account, no open invite and access requests are off (`d1_sign_in_status`). Per-IP rate limit |
+| `auth/email-code` | POST | No sign-in: `{ email }` — emails a 6-digit code (Supabase admin `generateLink` + Resend) only if the email can get in (`d1_sign_in_status`); always answers `{ sent: true }`, with the lookup and send in `after()`, so neither the reply nor its timing reveals membership. Rate-limited per IP and per address. Replaced `auth/check` |
 | `me/access-request` | POST | `{ name, dateOfBirth?, note? }` — ask to join; a Destiny One Admin approves |
 | `auth/churchsuite/start` → `callback` → `exchange` | GET, GET, POST | Sign in with ChurchSuite (below) |
 | `me` | GET, DELETE | DELETE = GDPR erasure (`{ "confirm": "DELETE" }`). `D1Me` includes `blocked` (people I've blocked) and `avatarUrl` (a signed link) |
 | `me/avatar` | POST, DELETE | Profile picture (multipart `file`, 5 MB). Active members only; stored privately in `d1-avatars` |
 | `members/[id]/block` | POST, DELETE | Block / unblock someone; returns `D1Me`. Hides their messages and notifications for me only; logged for safeguarding |
 | `me/consents` | POST | Current versions only (`REQUIRED_CONSENTS`) |
-| `me/export` | GET | GDPR access: profile, consents, memberships, own messages, own reports |
+| `me/export` | GET | GDPR access: profile (email, profile picture link), access-request note and declared age, consents, memberships, own messages, files sent (1-hour links), own reports, blocks |
 | `me/push-tokens` | POST, DELETE | Expo tokens |
 | `communities` | GET, POST | POST: senior leadership |
 | `communities/[id]` | GET | |
@@ -4211,6 +4213,7 @@ needs at least 2 verified adults.") pass through as `rule_violation` (422). Type
 | `search/messages` | GET | `?q=` — full-text search of your messages: groups you are in, since you joined, never deleted; newest 30 |
 | `groups/[id]/read`, `/mute`, `/attachments` | POST | Read marker, mute, signed upload URL |
 | `messages/[id]` | DELETE | Soft delete (content kept for review) |
+| `messages/[id]/attachment` | GET | A fresh 1-hour link for a message's file (same access rules as the chat). The app asks when a cached link has expired |
 | `messages/[id]/report`, `/reactions` | POST (+DELETE) | Report → safeguarding bell, and an email to every Safeguarding Admin (`lib/destinyOne/safeguardingEmail.server.ts`; no message content, names or group in it) |
 | `directory` | GET | Leaders only; names + adult flag, never contact details |
 
@@ -6975,8 +6978,9 @@ same database as the data rather than in a separate Synapse module.
   deliberate ref patterns that need re-testing on a device before being reworked.
 - **Differences from the prototype:** Settings adds Download my data and Delete my account (safeguarding policy + UK GDPR access and
   erasure). Emoji reactions are allowed as member content (confirmed 2026-09-27).
-- **Sign-in:** the email screen calls `api.checkEmail` first and shows "no account" without sending
-  a code; any other failure falls through to sending it (sign-in re-checks). "Sign in with
+- **Sign-in:** the email screen calls `api.sendEmailCode` (`POST /auth/email-code`), which only
+  emails a code to someone who can get in and answers the same either way, so the app never says
+  whether an email has an account (the code screen says "If … has an account or invite"). "Sign in with
   ChurchSuite" shows **Coming soon** (the flow in `lib/auth.ts` is built but not switched on).
 - **Staff invites create the member up front** (`d1_invite_create_member`, auth_user_id null,
   active, in the invite's communities), so staff can put them in groups on the website before they

@@ -120,8 +120,11 @@ export function createDestinyOneClient({ baseUrl, getAccessToken, fetchImpl }: D
     // ── Account ──
     /** Links the signed-in account to its ChurchSuite record. Call after every sign-in. */
     link: () => call<D1Me>("POST", "/auth/link"),
-    /** Before sending a code: throws `not_verified` (with a message to show) if this email can't get in. */
-    checkEmail: (email: string) => call<{ canSignIn: true }>("POST", "/auth/check", { email }),
+    /**
+     * Emails a 6-digit sign-in code if this email can get in. Always answers the
+     * same way, so it never reveals whether an email belongs to Destiny One.
+     */
+    sendEmailCode: (email: string) => call<{ sent: true }>("POST", "/auth/email-code", { email }, { anonymous: true }),
     /** Where to open the ChurchSuite sign-in (in an auth session browser). */
     churchSuiteStartUrl: (redirect: string, challenge: string) =>
       `${root}/auth/churchsuite/start${q({ redirect, challenge })}`,
@@ -179,6 +182,8 @@ export function createDestinyOneClient({ baseUrl, getAccessToken, fetchImpl }: D
       call<D1MessagePage>("GET", `/groups/${groupId}/messages${q(opts)}`),
     send: (groupId: string, input: { body?: string; replyTo?: number; attachmentId?: string }) =>
       call<D1Message>("POST", `/groups/${groupId}/messages`, input),
+    /** A fresh link for a message's file (the ones in the message list expire after an hour). */
+    attachmentUrl: (messageId: number) => call<{ url: string }>("GET", `/messages/${messageId}/attachment`),
     deleteMessage: (messageId: number) => call<{ ok: true }>("DELETE", `/messages/${messageId}`),
     report: (messageId: number, reason: string) =>
       call<{ ok: true }>("POST", `/messages/${messageId}/report`, { reason }),

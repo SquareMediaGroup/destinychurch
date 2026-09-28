@@ -1,6 +1,7 @@
 // Signing in. Two ways, and no phone number in either (safeguarding rule):
 //
-//   Email      — Supabase sends a one-time code; the member types it in.
+//   Email      — the server emails a one-time code (only if this email can
+//                 get in); the member types it in.
 //   ChurchSuite — for staff and leaders with a ChurchSuite login. Opens
 //                 ChurchSuite's sign-in in an auth session, and finishes with
 //                 app-side PKCE so an intercepted redirect is useless.
@@ -23,11 +24,7 @@ WebBrowser.maybeCompleteAuthSession();
 // ── Email one-time code ─────────────────────────────────────────────────────
 
 export async function requestEmailCode(email: string): Promise<void> {
-  const { error } = await supabase.auth.signInWithOtp({
-    email: email.trim().toLowerCase(),
-    options: { shouldCreateUser: true },
-  });
-  if (error) throw error;
+  await api.sendEmailCode(email.trim().toLowerCase());
 }
 
 export async function verifyEmailCode(email: string, code: string): Promise<D1Me> {

@@ -33,16 +33,17 @@ export default function TabsLayout() {
 
   return (
     <NativeTabs tintColor={t.tint}>
-      <NativeTabs.Trigger name="chats">
-        <NativeTabs.Trigger.Label>Chats</NativeTabs.Trigger.Label>
+      <NativeTabs.Trigger name="chats" accessibilityLabel="Chats">
+        <NativeTabs.Trigger.Label hidden>Chats</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon sf={{ default: "bubble.left.and.bubble.right", selected: "bubble.left.and.bubble.right.fill" }} />
       </NativeTabs.Trigger>
-      <NativeTabs.Trigger name="find">
-        <NativeTabs.Trigger.Label>Search</NativeTabs.Trigger.Label>
+      <NativeTabs.Trigger name="find" accessibilityLabel="Search">
+        <NativeTabs.Trigger.Label hidden>Search</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon sf="magnifyingglass" />
       </NativeTabs.Trigger>
       <NativeTabs.Trigger
         name="profile"
+        accessibilityLabel="Profile"
         listeners={{
           tabPress: () => {
             const now = Date.now();
@@ -55,7 +56,7 @@ export default function TabsLayout() {
           },
         }}
       >
-        <NativeTabs.Trigger.Label>Profile</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Label hidden>Profile</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon sf={{ default: "person.crop.circle", selected: "person.crop.circle.fill" }} />
       </NativeTabs.Trigger>
     </NativeTabs>

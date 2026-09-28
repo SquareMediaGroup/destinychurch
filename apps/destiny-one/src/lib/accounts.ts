@@ -93,7 +93,7 @@ export function loadAccounts(): Promise<void> {
       try {
         const parsed = JSON.parse(raw) as Saved;
         // Accounts saved before kinds existed load as plain members, last used "never".
-        saved = { ...parsed, accounts: parsed.accounts.map((a) => ({ kind: "member" as const, lastUsedAt: 0, isAdult: false, ...a })) };
+        saved = { ...parsed, accounts: (parsed.accounts as Partial<Account>[]).map((a) => ({ ...a, kind: a.kind ?? "member", lastUsedAt: a.lastUsedAt ?? 0, isAdult: a.isAdult ?? false }) as Account) };
       } catch {
         // Unreadable: start again from the first slot, which is where a
         // single-account build kept its session anyway.

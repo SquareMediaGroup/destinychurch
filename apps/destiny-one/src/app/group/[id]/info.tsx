@@ -162,7 +162,7 @@ export default function GroupInfo() {
         <View style={{ flexDirection: "row", gap: 10, alignItems: "flex-start", paddingHorizontal: 16 }}>
           <Icon name="shield" size={15} color={t.subtle} />
           <Text style={{ flex: 1, fontSize: 13, lineHeight: 18, color: t.subtle }}>
-            Chats in this group aren't end-to-end encrypted. The safeguarding team can review them if a concern is raised.
+            Chats in this group aren&apos;t end-to-end encrypted. The safeguarding team can review them if a concern is raised.
           </Text>
         </View>
 

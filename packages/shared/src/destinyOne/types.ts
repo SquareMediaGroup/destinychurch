@@ -64,8 +64,10 @@ export interface D1Consent {
 export interface D1Me {
   id: string;
   displayName: string;
-  /** Self-uploaded profile picture. Unlike displayName, members can set this themselves. */
+  /** Self-uploaded profile picture as a short-lived signed link (the bucket is private). Unlike displayName, members can set this themselves. */
   avatarUrl: string | null;
+  /** People I've blocked: their messages are hidden for me and don't notify me. Never hides anything from safeguarding. */
+  blocked: { id: string; displayName: string }[];
   status: D1MemberStatus;
   roles: D1LeaderRole[];
   isAdult: boolean;
@@ -221,7 +223,8 @@ export type D1RealtimeEvent =
   | { event: "group_state"; payload: { groupId: string; state: D1GroupState; reason: string | null } }
   | { event: "group_joined"; payload: { groupId: string } }
   | { event: "group_left"; payload: { groupId: string } }
-  | { event: "community_left"; payload: { communityId: string } };
+  | { event: "community_left"; payload: { communityId: string } }
+  | { event: "blocks_changed"; payload: { memberId: string; blocked: boolean } };
 
 export interface D1Export {
   exportedAt: string;

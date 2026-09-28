@@ -17,7 +17,8 @@ import { Divider, MessageBubble, buildRows, type Row } from "@/components/Messag
 import { NotificationPrompt } from "@/components/NotificationPrompt";
 import { Avatar, BackButton, ConfirmDialog, EmptyState, ErrorState, GlassIconButton, PrimaryButton, withAlpha } from "@/components/ui";
 import { plural } from "@/lib/format";
-import { setOpenGroup } from "@/lib/queries";
+import { api } from "@/lib/api";
+import { hideSender, setOpenGroup } from "@/lib/queries";
 import { uploadAttachment } from "@/lib/upload";
 import { useConversation, type LocalMessage } from "@/lib/useConversation";
 import { errorMessage, useGroupSummary, useSession } from "@/state/session";
@@ -27,7 +28,7 @@ export default function GroupChat() {
   const t = useTheme();
   const insets = useSafeAreaInsets();
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { me } = useSession();
+  const { me, setMe } = useSession();
   const summary = useGroupSummary(id);
   // Read before the chat marks itself read, for the "New messages" divider.
   const [unreadAtOpen] = useState(() => summary?.group.unreadCount ?? 0);
@@ -39,6 +40,8 @@ export default function GroupChat() {
   const [actionFor, setActionFor] = useState<LocalMessage | null>(null);
   const [deleting, setDeleting] = useState<LocalMessage | null>(null);
   const [deleteBusy, setDeleteBusy] = useState(false);
+  const [blocking, setBlocking] = useState<{ id: string; name: string } | null>(null);
+  const [blockBusy, setBlockBusy] = useState(false);
   const [replyTo, setReplyTo] = useState<LocalMessage | null>(null);
   const [showJump, setShowJump] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
@@ -242,9 +245,36 @@ export default function GroupChat() {
           setActionFor(null);
           if (m) router.push({ pathname: "/report", params: { messageId: String(m.id), name: m.sender?.displayName ?? "Former member", at: m.createdAt, body: m.body ?? "Attachment" } });
         }}
+        onBlock={() => {
+          const sender = actionFor?.sender;
+          setActionFor(null);
+          if (sender) setBlocking({ id: sender.id, name: sender.displayName });
+        }}
         onDelete={() => {
           setDeleting(actionFor);
           setActionFor(null);
+        }}
+      />
+
+      <ConfirmDialog
+        visible={!!blocking}
+        title={`Block ${blocking?.name ?? ""}?`}
+        body={`You won't see their messages or get notifications from them, and they won't be told. You both stay in your groups. The safeguarding team can still see everything, and can see that you blocked ${blocking?.name.split(" ")[0] ?? "them"}. If they've made you feel unsafe, report the message too.`}
+        confirmLabel="Block"
+        busy={blockBusy}
+        onCancel={() => setBlocking(null)}
+        onConfirm={async () => {
+          if (!blocking) return;
+          setBlockBusy(true);
+          try {
+            setMe(await api.block(blocking.id));
+            hideSender(blocking.id);
+            setToast(`${blocking.name} is blocked. You can unblock them in Settings.`);
+          } catch (err) {
+            setToast(errorMessage(err));
+          }
+          setBlockBusy(false);
+          setBlocking(null);
         }}
       />
 

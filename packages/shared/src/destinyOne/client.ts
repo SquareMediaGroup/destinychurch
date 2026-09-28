@@ -140,6 +140,9 @@ export function createDestinyOneClient({ baseUrl, getAccessToken, fetchImpl }: D
     /** Upload/replace my profile picture. `file` is a multipart form part (React Native's `{ uri, name, type }` shape works). */
     uploadAvatar: (file: Blob) => callForm<D1Me>("POST", "/me/avatar", file),
     removeAvatar: () => call<D1Me>("DELETE", "/me/avatar"),
+    /** Hide someone's messages and notifications for me. They stay in every group; safeguarding can still see everything. */
+    block: (memberId: string) => call<D1Me>("POST", `/members/${memberId}/block`),
+    unblock: (memberId: string) => call<D1Me>("DELETE", `/members/${memberId}/block`),
 
     // ── Communities ──
     communities: () => call<D1CommunitySummary[]>("GET", "/communities"),

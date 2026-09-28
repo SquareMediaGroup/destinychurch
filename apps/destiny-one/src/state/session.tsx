@@ -20,7 +20,8 @@ import { useIsRestoring, useQuery } from "@tanstack/react-query";
 import type { Session } from "@supabase/supabase-js";
 import type { D1CommunitySummary, D1Me } from "@destiny/shared";
 import { canCreateGroup } from "@destiny/shared";
-import { api, D1ApiError } from "@/lib/api";
+import { router, useSegments } from "expo-router";
+import { api, D1ApiError, setAccessChangedHandler } from "@/lib/api";
 import { signOut as authSignOut } from "@/lib/auth";
 import { applyEvent, keys } from "@/lib/queries";
 import { clearCache, queryClient } from "@/lib/queryClient";
@@ -74,6 +75,14 @@ async function fetchMe(): Promise<D1Me | null> {
     }
     throw err;
   }
+}
+
+/** Screens you can be on without an active, consented account. Everything else is "in the app". */
+const OUTSIDE_APP = new Set(["", "index", "welcome", "email", "code", "request", "waiting", "notices"]);
+
+/** Chats, groups and messages: dropped from the device when someone loses access. */
+function forgetChats() {
+  for (const key of ["communities", "community", "group", "messages"]) queryClient.removeQueries({ queryKey: [key] });
 }
 
 /** Every cached entry goes stale; whatever is on screen re-fetches in the background. */
@@ -149,6 +158,27 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     hub.current?.setGroups(groupIds ? groupIds.split(",") : []);
   }, [groupIds, active, meId]);
 
+  // Mid-session account changes (suspended, un-verified, new notices): any API
+  // call that comes back with one of those errors re-checks `me` once.
+  useEffect(() => {
+    let pending = false;
+    setAccessChangedHandler(() => {
+      if (pending || !meRef.current) return;
+      pending = true;
+      void refreshMe().finally(() => {
+        pending = false;
+      });
+    });
+    return () => setAccessChangedHandler(null);
+  }, [refreshMe]);
+
+  // Lost access (suspended, or waiting on staff again): nothing of the
+  // chats may stay readable on the device.
+  const onboarding = me?.onboarding;
+  useEffect(() => {
+    if (onboarding && onboarding !== "active") forgetChats();
+  }, [onboarding]);
+
   // Coming back to the app: waiting members re-check approval (A6); active
   // members catch up on anything missed while the socket was asleep.
   useEffect(() => {
@@ -194,6 +224,26 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   );
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
+}
+
+/**
+ * Moves someone out of the app screens as soon as the server says they no
+ * longer belong there (suspended, new notices to accept, …). Mounted once,
+ * inside the navigator.
+ */
+export function AccessGuard() {
+  const { ready, session, me } = useSession();
+  const segments = useSegments();
+  const first = (segments[0] as string | undefined) ?? "";
+  const inApp = !OUTSIDE_APP.has(first);
+  const target = session && me ? routeFor(me) : null;
+
+  useEffect(() => {
+    if (!ready || !inApp || !target || target === "/chats") return;
+    router.replace(target);
+  }, [ready, inApp, target]);
+
+  return null;
 }
 
 export function useSession(): SessionValue {

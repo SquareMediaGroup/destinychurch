@@ -127,7 +127,7 @@ export default function AddPeople() {
             </View>
             <View style={{ flex: 1, gap: 1 }}>
               <Text style={{ fontSize: 17, color: t.tint }}>Invite by email</Text>
-              <Text style={{ fontSize: 13, color: t.muted }}>For someone who isn't on Destiny One yet</Text>
+              <Text style={{ fontSize: 13, color: t.muted }}>For someone who isn&apos;t on Destiny One yet</Text>
             </View>
           </Pressable>
         </Card>

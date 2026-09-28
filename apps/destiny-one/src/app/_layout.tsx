@@ -13,7 +13,7 @@ import { UpdateScreen } from "@/components/UpdateScreen";
 import { useAppGate } from "@/lib/appGate";
 import { groupIdFrom } from "@/lib/push";
 import { persistOptions, queryClient } from "@/lib/queryClient";
-import { SessionProvider } from "@/state/session";
+import { AccessGuard, SessionProvider } from "@/state/session";
 import { useTheme } from "@/theme/tokens";
 
 /** Tapping a "New message" notification opens that group. */
@@ -61,6 +61,7 @@ function App() {
   return (
     <SessionProvider>
       <StatusBar style="auto" />
+      <AccessGuard />
       <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: t.bg } }}>
         <Stack.Screen name="(tabs)" options={{ animation: "fade" }} />
         <Stack.Screen name="welcome" options={{ animation: "fade" }} />

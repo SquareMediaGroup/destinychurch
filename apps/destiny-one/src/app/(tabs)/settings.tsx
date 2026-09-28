@@ -10,6 +10,7 @@ import Constants from "expo-constants";
 import { openDocument } from "@/components/SafetyNotice";
 import { Avatar, Card, CardButton, LargeTitle, Separator, SettingsRow } from "@/components/ui";
 import { api } from "@/lib/api";
+import { cleanImage } from "@/lib/cleanImage";
 import { errorMessage, useSession } from "@/state/session";
 import { ORANGE, INK, useTheme } from "@/theme/tokens";
 
@@ -49,11 +50,9 @@ export default function Settings() {
     const asset = result.assets[0];
     setAvatarBusy(true);
     try {
-      const file = {
-        uri: asset.uri,
-        name: asset.fileName ?? "avatar.jpg",
-        type: asset.mimeType ?? "image/jpeg",
-      } as unknown as Blob;
+      // A fresh copy with no hidden details (no GPS location), as for chat photos.
+      const clean = await cleanImage(asset.uri, asset.fileName ?? "avatar.jpg", asset.mimeType ?? "image/jpeg");
+      const file = { uri: clean.uri, name: clean.name, type: clean.mimeType } as unknown as Blob;
       setMe(await api.uploadAvatar(file));
     } catch (err) {
       Alert.alert("Couldn't update your picture", errorMessage(err));
@@ -92,6 +91,8 @@ export default function Settings() {
 
       <Card>
         <SettingsRow icon="bell" iconBg={ORANGE} iconColor={INK} label="Notifications" onPress={() => router.push("/notifications")} />
+        <Separator inset={62} />
+        <SettingsRow icon="alertCircle" label="Blocked people" onPress={() => router.push("/blocked")} />
       </Card>
 
       <Card>

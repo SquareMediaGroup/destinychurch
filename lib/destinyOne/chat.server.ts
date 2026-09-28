@@ -292,7 +292,7 @@ export async function listMessages(
   groupId: string,
   opts: { before?: number; limit: number },
 ): Promise<D1MessagePage> {
-  const membership = await requireGroupMembership(caller, groupId);
+  const [membership, blocked] = await Promise.all([requireGroupMembership(caller, groupId), blockedIds(caller.member.id)]);
 
   let query = createServiceClient()
     .from("d1_messages")
@@ -302,6 +302,9 @@ export async function listMessages(
     .order("id", { ascending: false })
     .limit(opts.limit + 1);
   if (opts.before) query = query.lt("id", opts.before);
+  // People I've blocked: their messages are hidden for me (never for safeguarding).
+  // (`or` keeps "Former member" messages, whose sender_id is null: NOT IN alone drops them.)
+  if (blocked.length) query = query.or(`sender_id.is.null,sender_id.not.in.(${blocked.join(",")})`);
 
   const { data, error } = await query;
   if (error) throw fromDbError(error);
@@ -313,6 +316,13 @@ export async function listMessages(
     messages: (await shape(page, caller.member.id)).reverse(),
     nextBefore: hasMore ? page[page.length - 1].id : null,
   };
+}
+
+/** Ids of the people this member has blocked (d1_blocks). */
+export async function blockedIds(memberId: string): Promise<string[]> {
+  const { data, error } = await createServiceClient().from("d1_blocks").select("blocked_id").eq("blocker_id", memberId);
+  if (error) throw fromDbError(error);
+  return (data ?? []).map((r) => r.blocked_id as string);
 }
 
 export async function getMessage(caller: Caller, messageId: number): Promise<D1Message> {

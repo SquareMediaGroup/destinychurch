@@ -137,14 +137,44 @@ export async function requireMember(
   return { user, member, policy: toPolicy(member) };
 }
 
+export const AVATAR_BUCKET = "d1-avatars";
+/** Profile pictures are private; the app re-fetches `me` on every cold start, well inside this. */
+const AVATAR_URL_TTL = 7 * 24 * 60 * 60;
+
+/** A signed link to a profile picture, from its storage path in the private bucket. */
+export async function avatarUrl(path: string | null): Promise<string | null> {
+  if (!path) return null;
+  const { data } = await createServiceClient().storage.from(AVATAR_BUCKET).createSignedUrl(path, AVATAR_URL_TTL);
+  return data?.signedUrl ?? null;
+}
+
+/** The people this member has blocked, for D1Me and for filtering reads. */
+export async function loadBlocked(memberId: string): Promise<{ id: string; displayName: string }[]> {
+  const { data } = await createServiceClient()
+    .from("d1_blocks")
+    .select("blocked:d1_members!d1_blocks_blocked_id_fkey(id, display_name)")
+    .eq("blocker_id", memberId)
+    .order("created_at", { ascending: true });
+  return (data ?? []).map((row) => {
+    const b = row.blocked as unknown as { id: string; display_name: string };
+    return { id: b.id, displayName: b.display_name };
+  });
+}
+
 /** The D1Me payload for a member row (any status). */
 export async function toMe(member: MemberRow): Promise<D1Me> {
-  const [consents, settings] = await Promise.all([loadConsents(member.id), getSettings()]);
+  const [consents, settings, blocked, avatar] = await Promise.all([
+    loadConsents(member.id),
+    getSettings(),
+    loadBlocked(member.id),
+    avatarUrl(member.avatar_url),
+  ]);
   const state = onboardingState(member, settings);
   return {
     id: member.id,
     displayName: member.display_name,
-    avatarUrl: member.avatar_url,
+    avatarUrl: avatar,
+    blocked,
     status: member.status,
     roles: member.roles ?? [],
     isAdult: isAdult(member.adult_on),

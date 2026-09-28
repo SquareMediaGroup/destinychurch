@@ -45,7 +45,7 @@ export default function Community() {
           <Card>
             {orderedGroups(c).map((g) => (
               <Pressable key={g.id} onPressIn={() => prefetchGroup(g.id)} onPress={() => router.push(`/group/${g.id}`)} style={({ pressed }) => ({ flexDirection: "row", alignItems: "center", gap: 12, paddingLeft: 16, backgroundColor: pressed ? t.fill : "transparent" })}>
-                <Avatar name={g.name} size={40} announcements={g.kind === "announcements"} group />
+                <Avatar name={g.name} size={40} announcements={g.kind === "announcements"} uri={g.iconUrl} />
                 <View style={{ flex: 1, minWidth: 0, flexDirection: "row", alignItems: "center", gap: 8, paddingVertical: 12, paddingRight: 16, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: t.sep }}>
                   <View style={{ flex: 1, minWidth: 0, gap: 1 }}>
                     <Text numberOfLines={1} style={{ fontSize: 17, color: t.text }}>

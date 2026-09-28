@@ -4233,6 +4233,7 @@ needs at least 2 verified adults.") pass through as `rule_violation` (422). Type
 | `communities/[id]/groups` | POST | Create a sub-group (≥3 people, ≥2 adults) |
 | `groups/[id]` | GET, PATCH | PATCH: rename/describe/archive (managers) |
 | `groups/[id]/members` | POST, DELETE | Leaving never blocked |
+| `groups/[id]/icon` | POST, DELETE | Group icon (multipart `file`, 5 MB). Any current member can change it, not just admins; not for Announcements or paused groups. Stored in `d1-avatars` as `d1_groups.icon_path`; `iconUrl` on group summaries is a signed link. The app asks people to avoid the church logo |
 | `groups/[id]/messages` | GET, POST | Only messages since you joined; POST takes `body`, an attachment, a `poll` draft, or an `event` ref (the event is re-fetched and snapshotted server-side) and pushes a notification via `after()` (group name, "Sender: first line", or "Poll: …" / "Event: …") |
 | `messages/[id]/vote` | POST | `{ optionIds }` — your full vote set on a poll (empty clears it) |
 | `events` | GET | Upcoming ChurchSuite events for the Event picker in the attach sheet |

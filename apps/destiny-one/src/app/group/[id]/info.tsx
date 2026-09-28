@@ -4,13 +4,15 @@
 import { useState } from "react";
 import { ActionSheetIOS, Alert, Platform, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
+import * as ImagePicker from "expo-image-picker";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { checkComposition, type D1GroupMember } from "@destiny/shared";
 import { Icon, type IconName } from "@/components/Icon";
 import { MemberTag, Avatar, Bone, Card, CardButton, ConfirmDialog, ErrorState, FloatingBack, SectionLabel, SkeletonGroup, SkeletonRows } from "@/components/ui";
 import { api } from "@/lib/api";
+import { cleanImage } from "@/lib/cleanImage";
 import { plural } from "@/lib/format";
-import { keys, removeGroupLocally, useGroup } from "@/lib/queries";
+import { keys, removeGroupLocally, setGroup, updateGroupSummary, useGroup } from "@/lib/queries";
 import { queryClient } from "@/lib/queryClient";
 import { errorMessage, useSession } from "@/state/session";
 import { INK, ORANGE, useTheme } from "@/theme/tokens";
@@ -25,6 +27,7 @@ export default function GroupInfo() {
   const error = groupQuery.error ? errorMessage(groupQuery.error) : null;
   const [leaving, setLeaving] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [iconBusy, setIconBusy] = useState(false);
 
   // Also used after a leader changes a member, so the list updates without waiting for the Realtime event.
   const load = () => void queryClient.refetchQueries({ queryKey: keys.group(id) });
@@ -57,6 +60,60 @@ export default function GroupInfo() {
   }
 
   const community = communities?.find((c) => c.id === group.communityId);
+
+  function applyIcon(updated: Awaited<ReturnType<typeof api.group>>) {
+    setGroup(updated);
+    updateGroupSummary(id, (g) => ({ ...g, iconUrl: updated.iconUrl }));
+  }
+
+  // Anyone in the group can change it. The first alert is where we ask people
+  // not to use the church logo, so a chat list isn't a wall of identical icons.
+  function changeIcon() {
+    Alert.alert("Change group icon", "Please avoid using the Destiny Church logo, so groups are easy to tell apart.", [
+      { text: "Cancel", style: "cancel" },
+      ...(group?.iconUrl
+        ? [
+            {
+              text: "Remove icon",
+              style: "destructive" as const,
+              onPress: async () => {
+                setIconBusy(true);
+                try {
+                  applyIcon(await api.removeGroupIcon(id));
+                } catch (err) {
+                  Alert.alert("Couldn't remove the icon", errorMessage(err));
+                } finally {
+                  setIconBusy(false);
+                }
+              },
+            },
+          ]
+        : []),
+      { text: "Choose photo", onPress: () => void pickIcon() },
+    ]);
+  }
+
+  async function pickIcon() {
+    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permission.granted) {
+      Alert.alert("Photo access needed", "Allow photo access in Settings to change the icon.");
+      return;
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ["images"], allowsMultipleSelection: false, quality: 0.8, allowsEditing: true, aspect: [1, 1] });
+    if (result.canceled || !result.assets[0]) return;
+    const asset = result.assets[0];
+    setIconBusy(true);
+    try {
+      // Re-encoded on the phone first (drops GPS location), as for chat photos and profile pictures.
+      const clean = await cleanImage(asset.uri, asset.fileName ?? "icon.jpg", asset.mimeType ?? "image/jpeg");
+      const file = { uri: clean.uri, name: clean.name, type: clean.mimeType } as unknown as Blob;
+      applyIcon(await api.uploadGroupIcon(id, file));
+    } catch (err) {
+      Alert.alert("Couldn't update the icon", errorMessage(err));
+    } finally {
+      setIconBusy(false);
+    }
+  }
   const isAnnouncements = group.kind === "announcements";
   const rules = group.rules;
   const ruleOk = rules ? checkComposition(rules).ok : true;
@@ -104,7 +161,20 @@ export default function GroupInfo() {
     <View style={{ flex: 1, backgroundColor: t.grouped }}>
       <ScrollView contentContainerStyle={{ paddingTop: insets.top + 56, paddingHorizontal: 16, paddingBottom: 40, gap: 20 }}>
         <View style={{ alignItems: "center", gap: 10 }}>
-          <Avatar name={group.name} size={92} announcements={isAnnouncements} group />
+          <Pressable
+            disabled={isAnnouncements || group.state !== "active" || iconBusy}
+            onPress={changeIcon}
+            accessibilityRole="button"
+            accessibilityLabel="Change group icon"
+            style={{ opacity: iconBusy ? 0.5 : 1 }}
+          >
+            <Avatar name={group.name} size={92} announcements={isAnnouncements} uri={group.iconUrl} />
+          </Pressable>
+          {!isAnnouncements && group.state === "active" ? (
+            <Pressable onPress={changeIcon} disabled={iconBusy} accessibilityRole="button" hitSlop={8}>
+              <Text style={{ fontSize: 14, fontWeight: "600", color: t.tint }}>{iconBusy ? "Saving…" : "Change icon"}</Text>
+            </Pressable>
+          ) : null}
           <View style={{ alignItems: "center", gap: 3 }}>
             <Text style={{ fontSize: 26, fontWeight: "700", letterSpacing: 0.2, color: t.text, textAlign: "center" }}>{group.name}</Text>
             <Text style={{ fontSize: 15, color: t.muted }}>{[group.department ?? community?.name, plural(group.members.length, "member")].filter(Boolean).join(" · ")}</Text>

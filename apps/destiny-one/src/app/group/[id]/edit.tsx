@@ -1,7 +1,7 @@
 // C4 Edit / archive group (leaders and group admins).
 
 import { useEffect, useRef, useState } from "react";
-import { ScrollView, View } from "react-native";
+import { ScrollView, Text, View } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Bone, CardButton, ConfirmDialog, Field, FieldLabel, FormError, ModalHeader, PrimaryButton, SkeletonGroup } from "@/components/ui";
@@ -84,6 +84,9 @@ export default function EditGroup() {
             <FieldLabel optional>Description</FieldLabel>
             <Field value={description} onChangeText={setDescription} placeholder="What's this group for?" multiline background={t.card} />
           </View>
+          <Text style={{ fontSize: 13, lineHeight: 18, color: t.muted, paddingHorizontal: 4 }}>
+            Groups show the Destiny logo as their icon for now. When custom icons are available, please avoid using the logo, so the chat list isn't full of identical icons.
+          </Text>
           <FormError message={error} />
           {group ? <CardButton label="Archive group" onPress={() => setArchiving(true)} /> : null}
         </ScrollView>

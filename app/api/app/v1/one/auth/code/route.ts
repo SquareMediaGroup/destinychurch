@@ -3,6 +3,7 @@ import { after } from "next/server";
 import { z } from "zod";
 import { createServiceClient } from "@/utils/supabase/service";
 import { clientIp } from "@/lib/rateLimit";
+import { sendEmailCard } from "@/lib/emailCard";
 import { limit, oneJson, oneRoute, readBody } from "@/lib/destinyOne/http";
 
 // POST /api/app/v1/one/auth/code  { email }   (no sign-in needed)
@@ -17,6 +18,12 @@ import { limit, oneJson, oneRoute, readBody } from "@/lib/destinyOne/http";
 // /auth/check, which said so outright (decided 2026-09-28). Someone who can't
 // get in simply never receives a code; the app tells them what to do if none
 // arrives.
+//
+// The code comes from the Supabase admin API (generateLink, which never emails
+// by itself) and goes out through Resend. Calling signInWithOtp from here
+// would put every sign-in behind Supabase's per-IP limit for our server's
+// address and its capped built-in sender. The app still verifies with
+// supabase.auth.verifyOtp({ type: "email" }), for new and existing users.
 
 export const dynamic = "force-dynamic";
 
@@ -39,8 +46,22 @@ export const POST = oneRoute(async (request) => {
     }
     if (status === "none") return; // can't get in: send nothing, say nothing
 
-    const { error: otpError } = await supabase.auth.signInWithOtp({ email, options: { shouldCreateUser: true } });
-    if (otpError) console.error("⚠️ Destiny One sign-in code not sent:", otpError.message);
+    try {
+      const { data, error: linkError } = await supabase.auth.admin.generateLink({ type: "magiclink", email });
+      if (linkError) throw linkError;
+      const code = data.properties?.email_otp;
+      if (!code) throw new Error("generateLink returned no email code");
+      await sendEmailCard({
+        to: email,
+        subject: "Your Destiny One sign-in code",
+        badge: "Destiny One",
+        heading: "Your sign-in code",
+        intro: "Type this code into the Destiny One app to sign in. It works once and expires soon. If you didn't ask for it, you can ignore this email.",
+        rows: [["Code", code]],
+      });
+    } catch (err) {
+      console.error("⚠️ Destiny One sign-in code not sent:", err);
+    }
   });
 
   return oneJson({ sent: true as const });

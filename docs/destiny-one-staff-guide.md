@@ -15,7 +15,7 @@
 | **Destiny One Admin** | Approve people, send invites, set names and ages, make leaders, build communities and groups, change app settings | Read any message |
 | **Safeguarding Admin** | See reports, pauses and blocks, open a conversation (with a reason, recorded), remove a message, suspend or reinstate someone, pause a group | Nothing more: keep this role to as few people as possible |
 
-A super admin can do both. Every action is written to the audit log (`/admin/audit`).
+A super admin can do everything a Destiny One Admin can, but **can't open a conversation without the Safeguarding Admin role itself**. Every action is written to the audit log (`/admin/audit`).
 
 ## 2. The rules the app enforces for you
 
@@ -35,7 +35,9 @@ You don't have to police these. The app won't let anyone break them.
 
 **Leader invites from the app**: a leader can invite someone by email from a group. That person becomes an access request marked "Invited by …". You still confirm their age before they join the group.
 
-**Invite-only or open**: `App settings → Let people ask to join`. Off means only invited people can get in.
+**Invite-only or open**: `App settings → Let people ask to join`. Off means only invited people can get in. **Destiny One is invite-only** (decided 28 September 2026), so this is off.
+
+**Minimum age: 13.** The app won't let staff approve or invite anyone younger when a date of birth is given, but always check age when you approve someone.
 
 ## 4. Communities and groups (Destiny One Admin)
 

@@ -4203,7 +4203,7 @@ needs at least 2 verified adults.") pass through as `rule_violation` (422). Type
 |---|---|---|
 | `config` | GET | No sign-in, no token, and the only `/one` route the CDN may cache (`s-maxage=60`): `D1AppConfig` — `minBuild { ios, android }`, `forceUpdateMessage`, `maintenanceMessage`, `storeUrl` (env `D1_IOS_STORE_URL`, default `itms-beta://` = TestFlight; `D1_ANDROID_STORE_URL`). The app's forced-update gate (`appGate()` in `@destiny/shared`, `src/lib/appGate.ts`) |
 | `auth/link` | POST | After every sign-in: accept an open invite for the email (`onboardMember`), return `D1Me` with `onboarding` |
-| `auth/check` | POST | No sign-in: `{ email }` — asked before a code is sent; 403 `not_verified` with a message when the email has no account, no open invite and access requests are off (`d1_sign_in_status`). Per-IP rate limit |
+| `auth/code` | POST | No sign-in: `{ email }`. Sends the email sign-in code only if `d1_sign_in_status` says this email can get in (member, open invite, or requests open), from `after()`, and always answers `{ sent: true }`, so neither the reply nor its timing reveals who is a member. Rate-limited per IP and per (hashed) email. Replaced `auth/check` (2026-09-28), which said "no account" outright |
 | `me/access-request` | POST | `{ name, dateOfBirth?, note? }` — ask to join; a Destiny One Admin approves |
 | `auth/churchsuite/start` → `callback` → `exchange` | GET, GET, POST | Sign in with ChurchSuite (below) |
 | `me` | GET, DELETE | DELETE = GDPR erasure (`{ "confirm": "DELETE" }`). `D1Me` includes `blocked` (people I've blocked) and `avatarUrl` (a signed link) |
@@ -4264,7 +4264,8 @@ place message content can be read:**
 - `GET events?open=1`, `PATCH events/[id]` — the pause/report queue; mark handled.
 - `GET reports?status=`, `PATCH reports/[id]` — triage reports (resolution text redacted in the audit log).
 - `GET groups` — every group with counts, to pick one to review or pause.
-- `GET groups/[id]/transcript?reason=…&from=…&to=…` — full history incl. deleted messages and
+- `GET groups/[id]/transcript?reason=…&from=…&to=…` — **needs the Safeguarding Admin role itself;
+  super admin alone isn't enough** (`requireTranscriptReader`, decided 2026-09-28). Full history incl. deleted messages and
   membership history. **Requires a reason** and defaults to the last 30 days; every read is written
   to the audit log (`action: "view"`, section `safeguarding`) with who, which group, window and reason.
 - `POST groups/[id]/freeze` — manual pause / lift (a manual pause isn't lifted by the automatic rule).
@@ -6996,9 +6997,13 @@ same database as the data rather than in a separate Synapse module.
   deliberate ref patterns that need re-testing on a device before being reworked.
 - **Differences from the prototype:** Settings adds Download my data and Delete my account (safeguarding policy + UK GDPR access and
   erasure). Emoji reactions are allowed as member content (confirmed 2026-09-27).
-- **Sign-in:** the email screen calls `api.checkEmail` first and shows "no account" without sending
-  a code; any other failure falls through to sending it (sign-in re-checks). "Sign in with
-  ChurchSuite" shows **Coming soon** (the flow in `lib/auth.ts` is built but not switched on).
+- **Sign-in:** the email screen calls `api.requestCode` (`POST /auth/code`); the server sends a code
+  only to someone who can get in and answers the same either way, and the code screen says what to
+  do if none arrives. "Sign in with ChurchSuite" is hidden (the flow in `lib/auth.ts` is built but not
+  switched on; App Review tends to reject "coming soon" placeholders).
+- **Minimum age 13** (decided 2026-09-28): `MIN_AGE` / `isUnderMinimumAge` in `@destiny/shared`. Staff
+  approvals, age edits and invites refuse a date of birth under 13 (`adultOnForDecision`), so do
+  access requests (`submitAccessRequest`) and the app's request form. No parent or carer step.
 - **Staff invites create the member up front** (`d1_invite_create_member`, auth_user_id null,
   active, in the invite's communities), so staff can put them in groups on the website before they
   open the app; first sign-in links the login (`d1_accept_invite`), folding in any earlier pending

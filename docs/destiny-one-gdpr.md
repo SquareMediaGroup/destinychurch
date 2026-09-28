@@ -71,7 +71,7 @@ and hold DPAs with each.
 ## 4. Retention
 
 - Messages, attachments, closed reports, resolved safeguarding events: **`D1_MESSAGE_RETENTION_DAYS`,
-  currently a placeholder of 365 days**, enforced daily by `/api/cron/destiny-one-purge`
+  1 year (365 days), agreed 2026-09-28**, enforced daily by `/api/cron/destiny-one-purge`
   (floor 30 days in SQL). ⚠️ **Must be set by the safeguarding policy (scoping doc D6)** before launch.
 - **A message under an open report is never purged**, however old, until the report is closed
   (`20260928_01_destiny_one_safeguarding.sql`).
@@ -95,12 +95,12 @@ should say who holds the role and how these logs are reviewed.
 
 ## 7. Before launch — checklist
 
-- [ ] DPIA completed and signed off
+- [ ] DPIA completed and signed off (draft: `docs/destiny-one-dpia-draft.md`)
 - [ ] Supabase region confirmed EU/UK; DPAs in place (Supabase, Vercel, Expo, ChurchSuite)
 - [ ] Supabase **phone auth provider disabled**
-- [ ] Retention period agreed (D6) and `D1_MESSAGE_RETENTION_DAYS` set
+- [x] Retention period agreed: 1 year (`D1_MESSAGE_RETENTION_DAYS=365`, decided 2026-09-28; confirm in the safeguarding policy)
 - [ ] Privacy notice + terms + chat-review notice written; versions match `REQUIRED_CONSENTS` in `packages/shared/src/destinyOne/policy.ts`
 - [ ] Safeguarding policy names who holds `safeguarding_admin` and how review logs are checked
-- [ ] Decide invite-only vs open to requests (`/admin/destiny-one/settings`)
+- [x] Invite-only (decided 2026-09-28; access requests switched off)
 - [ ] Decide who holds Destiny One Admin (runs the app, no message access) and Safeguarding Admin (message review) — keep the latter to as few people as possible
 - [ ] If ChurchSuite is connected at all: OAuth apps with the narrowest scopes (`addressbook.read children.read`; `user` for sign-in)

@@ -69,6 +69,11 @@ test.describe("adultOnForDecision", () => {
   test("nonsense dates are refused, not guessed", () => {
     expect(decide(true, "2008-02-30")).toMatchObject({ ok: false });
   });
+
+  test("staff can't approve or invite anyone under 13 (the minimum age)", () => {
+    expect(decide(false, "2014-01-01")).toMatchObject({ ok: false, error: expect.stringContaining("13 and over") });
+    expect(decide(false, "2013-09-27")).toEqual({ ok: true, adultOn: "2031-09-27" }); // 13 today
+  });
 });
 
 test.describe("request and invite validation", () => {

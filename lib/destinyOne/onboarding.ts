@@ -4,7 +4,7 @@
 // Verification is done by Destiny's own staff (invite or approval), not by
 // ChurchSuite — see supabase/migrations/20260927_01_destiny_one_admin.sql.
 
-import type { D1MemberStatus } from "@destiny/shared";
+import { UNDER_MINIMUM_AGE_MESSAGE, isUnderMinimumAge, type D1MemberStatus } from "@destiny/shared";
 
 export type OnboardingState =
   /** Verified and allowed in. */
@@ -54,6 +54,9 @@ export function adultOnForDecision(
   if (!input.dateOfBirth) return { ok: true, adultOn: input.adult ? today : null };
   const adultOn = adultOnFromDob(input.dateOfBirth);
   if (!adultOn) return { ok: false, error: "That date of birth isn't a real date." };
+  if (isUnderMinimumAge(input.dateOfBirth, today)) {
+    return { ok: false, error: `${UNDER_MINIMUM_AGE_MESSAGE} That date of birth makes them younger.` };
+  }
   if (input.adult && adultOn > today) {
     return { ok: false, error: "That date of birth makes them under 18. Choose under-18 instead." };
   }

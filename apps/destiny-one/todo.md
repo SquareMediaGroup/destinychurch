@@ -12,15 +12,22 @@
 
 ## 1. Decisions only Destiny can make (leadership and safeguarding lead)
 
-- [ ] **Minimum age and parental consent.** There is no minimum age and no parent step. The website's safeguarding policy promises parental consent before children are photographed, yet children can send photos and set a profile picture.
-- [ ] **How long messages are kept.** 365 days is a placeholder (`D1_MESSAGE_RETENTION_DAYS`).
-- [ ] **Should adults count toward the 2-adult rule before they've signed in?** Staff-invited adults count as soon as the invite is sent, so a group can meet the rule on paper with only one real adult actually present.
-- [ ] **Who reads chats.** The live database has 0 safeguarding admins and 4 super admins, and super admins can open chat transcripts. Name the safeguarding admins and decide whether super admins should keep that access.
-- [ ] **Should children's notifications show a message preview?** The UK children's privacy code (ICO Children's Code) expects the most private setting by default.
-- [ ] **Invite-only, or open to access requests?** (`/admin/destiny-one/settings`)
-- [ ] **Keep profile pictures in Destiny One?** If yes, they must be private (see section 2).
-- [ ] **Remove "Sign in with ChurchSuite — Coming soon"** from the store build (`src/app/welcome.tsx`). Apple tends to reject placeholder features.
-- [ ] **Data protection impact assessment (DPIA)** completed and signed off. Legally required before launch (`docs/destiny-one-gdpr.md`).
+Decided with the product owner on 28 September 2026:
+
+- [x] **Minimum age:** 13 and over, no parent or carer step. The app and server refuse anyone under 13.
+- [x] **How long messages are kept:** 1 year (`D1_MESSAGE_RETENTION_DAYS=365`, the default). A message under an open report is kept until the report is closed.
+- [x] **Adults count toward the 2-adult rule from the invite** (as now), so staff can set groups up before people sign in.
+- [x] **Who reads chats:** Safeguarding Admins only. Super admins can no longer open transcripts without the role.
+- [ ] **Give the Safeguarding Admin role to the right people** at `/admin/users` (there are none yet, so report emails go to nobody). The product owner is arranging this.
+- [x] **Children's notifications keep the message preview**, like adults'. Revisit if the safeguarding lead or the DPIA says otherwise.
+- [x] **Invite-only:** access requests are switched off.
+- [x] **Profile pictures stay**, stored privately.
+- [x] **"Sign in with ChurchSuite" is hidden** for the store build (the code stays, to switch on later).
+- [x] **Email check fixed:** the app no longer reveals whether an email belongs to a member.
+- [x] **API address stays `destinychurch.vercel.app`** in store builds.
+- [x] **No separate staging database:** test builds use the live one, so clear test data before launch.
+- [x] **Saved messages on the phone stay protected by the phone's own encryption** (as most chat apps do), and are wiped on sign-out.
+- [ ] **Data protection impact assessment (DPIA):** draft written (`docs/destiny-one-dpia-draft.md`); needs review and sign-off by the church's data protection lead.
 
 ## 2. Safeguarding and privacy fixes (blockers)
 
@@ -32,7 +39,7 @@
 - [x] **The nightly purge deletes messages linked to open reports**, so evidence can disappear mid-investigation (`d1_purge_expired` in `supabase/migrations/20260926_01_destiny_one.sql`).
 - [x] **Email the Safeguarding Lead when a report comes in.** Today a report only shows in the website admin bell.
 - [x] **Give safeguarding admins tools to act.** They can pause a group but can't take down a message or suspend the sender (suspending is only in the Destiny One Admin area).
-- [ ] **Stop the email check revealing who's a member.** `POST /api/app/v1/one/auth/check` tells anyone whether an email belongs to a member, including children.
+- [x] **Stop the email check revealing who's a member.** `POST /api/app/v1/one/auth/check` tells anyone whether an email belongs to a member, including children. Done: the server sends the code and always gives the same answer.
 - [x] **Move people off the chats if they're suspended mid-session**, or when new notices need accepting. The app only re-routes at launch, and cached chats stay readable (`src/state/session.tsx`).
 - [ ] **Check on a phone** that someone removed from a group, or suspended, stops receiving live messages straight away (Realtime checks membership when a channel joins).
 - [x] **Make account deletion match what's promised.** Erasure now deletes consent records, blocks and the profile picture (row and file).
@@ -51,8 +58,8 @@
 
 - [ ] **Confirm Supabase sends sign-in emails through your own provider** (for example Resend). Supabase's built-in sender is heavily restricted, and the code is the only way to sign in. Not checked (not visible from here).
 - [ ] Confirm the phone sign-in provider is switched off in Supabase Auth.
-- [ ] **Put the API on a custom domain before the first store build.** The address is baked into every build (`destinychurch.vercel.app`, `app.json` `extra.apiBaseUrl`) and can't be changed in copies people already have.
-- [ ] **A staging environment.** Every EAS build profile points at the live database. The unused, paused "DestinyOne" Supabase project could be the staging copy.
+- [x] **Put the API on a custom domain before the first store build.** The address is baked into every build (`destinychurch.vercel.app`, `app.json` `extra.apiBaseUrl`) and can't be changed in copies people already have. Decided: keep `destinychurch.vercel.app`.
+- [x] **A staging environment.** Every EAS build profile points at the live database. The unused, paused "DestinyOne" Supabase project could be the staging copy. Decided: no staging copy; clear test data before launch.
 - [x] Record `20260926_01_destiny_one` and `20260927_01_destiny_one_admin` in the live migration history. They were run outside it, so a fresh database can't be rebuilt reliably.
 - [ ] **Merge the polls work so the repo matches the live database.** `20260928_02_destiny_one_content` (poll votes, a `content` column, and a new `d1_post_message` with an extra optional argument) was applied to the live project on 28 September from `feature/destiny-one-restore-polls`, before being merged. When it merges, add it to `scripts/test-sql.sh` so the SQL tests cover it.
 - [ ] Clear the test data from the live database (3 members, 7 messages at the time of the audit).
@@ -76,7 +83,7 @@
 - [x] A lint setup for the app. `expo lint` has no config and doesn't run.
 - [ ] Clear the 31 React Compiler lint warnings (refs and effects in the tab bar, `ui.tsx`, `useConversation.ts`), re-testing on a device, then turn those rules back into errors.
 - [x] Add the `.env.example` the README refers to.
-- [ ] Decide whether to encrypt the message cache stored on the phone (plain AsyncStorage today; the sign-in session is already in the secure store).
+- [x] Decide whether to encrypt the message cache stored on the phone (plain AsyncStorage today; the sign-in session is already in the secure store). Decided: leave it to the phone's own encryption.
 - [x] Bring the docs up to date: the GDPR doc still says names are corrected in ChurchSuite, and the screen spec (A10) still says notifications never show the message.
 
 ## 7. Launch

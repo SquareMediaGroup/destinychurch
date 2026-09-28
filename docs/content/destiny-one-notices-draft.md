@@ -3,7 +3,7 @@
 **Status: DRAFT for review. Not legal advice, and not live.** Written from what the app actually does (`docs/destiny-one-gdpr.md`), so Destiny's leadership, safeguarding lead and data protection adviser have a starting point. Nothing here is published until they sign it off.
 
 **Before any of this goes live:**
-- Fill in every `[bracketed]` item. The retention period and who holds the safeguarding role come from the safeguarding policy review (scoping doc D6). The lawful bases come from the DPIA.
+- Fill in every `[bracketed]` item. Who holds the safeguarding role comes from the safeguarding policy review (scoping doc D6); the lawful bases come from the DPIA. The minimum age (13) and retention (1 year) were decided on 28 September 2026.
 - Add sections A and B to `/privacy` and `/terms` (`app/privacy/page.tsx`, `app/terms/page.tsx`) and the reference copies here (`privacy-policy.txt`, `terms-of-use.txt`). Add section C to `/safeguarding`.
 - **Change the notice versions in `REQUIRED_CONSENTS`** (`packages/shared/src/destinyOne/policy.ts`, currently `2026-09`) whenever the published wording changes, so everyone is asked to agree to the new version.
 - Check section D, the plain-words version, with a few young people and parents.
@@ -12,7 +12,7 @@
 
 ## A. Privacy notice: new section "The Destiny One app"
 
-**What Destiny One is.** Destiny One is Destiny Church Tees Valley's app for our teams and groups to message each other. It is only for people the church has invited or approved. Destiny Church is the data controller.
+**What Destiny One is.** Destiny One is Destiny Church Tees Valley's app for our teams and groups to message each other. It is only for people aged 13 and over whom the church has invited. Destiny Church is the data controller.
 
 **What we hold about you**
 - Your **real name**, as the church office has it. You can't change it yourself; ask the church office.
@@ -49,22 +49,22 @@
 We have data processing agreements with each, and transfers to the USA are covered by `[the UK International Data Transfer Addendum / UK Extension to the EU–US Data Privacy Framework — confirm per company]`.
 
 **How long we keep things**
-- Messages, photos and files, including ones you delete: **`[X days/months]`**, then deleted automatically. Deleted messages are hidden from everyone straight away, but we keep them for this time in case they're needed for a safeguarding concern.
+- Messages, photos and files, including ones you delete: **1 year**, then deleted automatically. Deleted messages are hidden from everyone straight away, but we keep them for this time in case they're needed for a safeguarding concern.
 - A message that has been reported is kept until the report is dealt with, even if that's longer.
-- Closed reports and resolved safeguarding records: `[X]`.
+- Closed reports and resolved safeguarding records: 1 year.
 - Records of who reviewed a chat: `[365 days, the audit log's retention]`.
 
 **If you delete your account** (in the app: Settings → Delete my account): you leave every group, your name, age, email, profile picture, consents, blocks and device tokens are removed, and your sign-in is deleted. **Your messages stay**, shown as "Former member", until the retention period ends, because they may be needed for safeguarding. Then they're deleted too.
 
 **Your rights.** You can see a copy of everything we hold about you in the app (Settings → Download my data). You can ask us to correct your name or age (ask the church office), delete your account, or object to how we use your data, by contacting `[admin@destinytees.uk]`. You can also complain to the Information Commissioner's Office (ico.org.uk).
 
-**Children.** Young people can use Destiny One if `[minimum age, and whether a parent or carer must agree]`. Under-18s are only ever in groups with at least 2 adults, can only be added by adult leaders, and there's no way to find or message a young person outside a group.
+**Children.** Young people can use Destiny One from age 13. Under-18s are only ever in groups with at least 2 adults, can only be added by adult leaders, and there's no way to find or message a young person outside a group.
 
 ---
 
 ## B. Terms of use: new section "Destiny One"
 
-1. **Who can use it.** Destiny One is for people the church has invited or approved `[minimum age]`. Use your real name. One account per person.
+1. **Who can use it.** Destiny One is for people aged 13 and over whom the church has invited. Use your real name. One account per person.
 2. **Group chats only.** There are no private one-to-one chats. Every group has at least 3 people, including at least 2 adults. If a group stops meeting that rule, it pauses (you can read, but not post) until it does again.
 3. **No phone numbers.** Don't share phone numbers, addresses, or other ways to contact people outside the app, especially with young people.
 4. **Be kind and appropriate.** No bullying, harassment, hateful content, sexual content, or anything that puts someone at risk. Don't share photos of other people without their permission, or photos of children without their parent's or carer's permission.
@@ -83,7 +83,7 @@ Destiny One is the church's only approved way for staff and volunteers to messag
 - **No one-to-one messaging with anyone**, adult or child. Every group has at least 3 people, including at least 2 verified adults, at all times. A group that stops meeting this pauses automatically, and the safeguarding team is told.
 - **Only approved leaders create groups**, and only adults can be leaders or group admins. **Staff confirm every member's identity and age** before they can use the app.
 - **No phone numbers or other contact details** are collected or shown.
-- **Messages are reviewable.** They aren't end-to-end encrypted, deleted messages are kept for `[retention period]`, and a reported message is kept until the report is closed.
+- **Messages are reviewable.** They aren't end-to-end encrypted, deleted messages are kept for 1 year, and a reported message is kept until the report is closed.
 - **Reviewing messages is itself controlled.** Only `[named Safeguarding Admins]` can read a group's messages. Each review needs a written reason and is recorded in an audit log, which `[who]` checks `[how often]`.
 - **Reports** go to the Safeguarding Admins by email and in the website admin. They are handled within `[time]` in normal working hours, following the procedure in this policy for any concern. The app is not monitored out of hours; urgent concerns go through the usual emergency routes.
 - **Staff and volunteers must not** use personal phone numbers, social media or other apps to message young people from church groups. `[Align with the church's social media and communications policy.]`

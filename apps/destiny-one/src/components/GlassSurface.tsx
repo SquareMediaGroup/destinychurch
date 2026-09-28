@@ -10,7 +10,7 @@ import type { ReactNode } from "react";
 import { Platform, StyleSheet, View, useColorScheme, type StyleProp, type ViewStyle } from "react-native";
 import { GlassView, isLiquidGlassAvailable } from "expo-glass-effect";
 
-const liquidGlass = Platform.OS === "ios" && isLiquidGlassAvailable();
+export const liquidGlass = Platform.OS === "ios" && isLiquidGlassAvailable();
 
 export interface GlassSurfaceProps {
   children?: ReactNode;

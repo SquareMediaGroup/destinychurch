@@ -33,7 +33,7 @@ import {
 } from "@destiny/shared";
 import { createServiceClient } from "@/utils/supabase/service";
 import { OneError, fromDbError } from "@/lib/destinyOne/http";
-import type { Caller } from "@/lib/destinyOne/auth.server";
+import { avatarUrl, type Caller } from "@/lib/destinyOne/auth.server";
 
 export const MEDIA_BUCKET = "d1-chat-media";
 const SIGNED_URL_TTL = 60 * 60;
@@ -73,6 +73,7 @@ function toSummary(row: OverviewRow): D1GroupSummary {
     kind: row.kind,
     name: row.name,
     department: row.department,
+    iconUrl: null,
     state: row.state,
     frozenReason: row.state === "frozen" ? row.frozen_reason : null,
     myRole: row.my_role,
@@ -90,6 +91,20 @@ function toSummary(row: OverviewRow): D1GroupSummary {
             createdAt: row.last_created_at as string,
           },
   };
+}
+
+/** Signed links for the groups that have an icon, keyed by group id. */
+async function iconUrls(groupIds: string[]): Promise<Map<string, string>> {
+  const urls = new Map<string, string>();
+  if (!groupIds.length) return urls;
+  const { data } = await createServiceClient().from("d1_groups").select("id, icon_path").in("id", groupIds).not("icon_path", "is", null);
+  await Promise.all(
+    (data ?? []).map(async (g) => {
+      const url = await avatarUrl(g.icon_path as string);
+      if (url) urls.set(g.id as string, url);
+    }),
+  );
+  return urls;
 }
 
 async function overview(memberId: string, groupId?: string): Promise<OverviewRow[]> {
@@ -128,6 +143,7 @@ export async function listCommunities(caller: Caller, onlyId?: string): Promise<
 
   const [{ data: memberships, error }, groups] = await Promise.all([query, overview(caller.member.id)]);
   if (error) throw fromDbError(error);
+  const icons = await iconUrls(groups.map((g) => g.group_id));
 
   const communityIds = (memberships ?? []).map(
     (m) => (m.d1_communities as unknown as { id: string }).id,
@@ -151,7 +167,7 @@ export async function listCommunities(caller: Caller, onlyId?: string): Promise<
       myRole: m.role as D1MembershipRole,
       canManage: senior || m.role === "admin",
       announcementsGroupId: (announcements ?? []).find((a) => a.community_id === c.id)?.id ?? null,
-      groups: groups.filter((g) => g.community_id === c.id).map(toSummary),
+      groups: groups.filter((g) => g.community_id === c.id).map((g) => ({ ...toSummary(g), iconUrl: icons.get(g.group_id) ?? null })),
     };
   });
 }
@@ -169,7 +185,7 @@ export async function getGroup(caller: Caller, groupId: string): Promise<D1Group
   if (!row) throw new OneError("not_found", "That group doesn't exist, or you're not in it.");
 
   const supabase = createServiceClient();
-  const [{ data: members, error }, canManage] = await Promise.all([
+  const [{ data: members, error }, canManage, icons] = await Promise.all([
     supabase
       .from("d1_group_members")
       .select("role, joined_at, d1_members!d1_group_members_member_id_fkey!inner(id, display_name, adult_on, status, roles)")
@@ -178,6 +194,7 @@ export async function getGroup(caller: Caller, groupId: string): Promise<D1Group
       .eq("d1_members.status", "active")
       .order("joined_at", { ascending: true }),
     canManageGroup(groupId, caller.member.id),
+    iconUrls([groupId]),
   ]);
   if (error) throw fromDbError(error);
 
@@ -189,6 +206,7 @@ export async function getGroup(caller: Caller, groupId: string): Promise<D1Group
 
   return {
     ...toSummary(row),
+    iconUrl: icons.get(groupId) ?? null,
     description: row.description,
     canManage,
     canPost: canPost({ member: caller.policy, groupKind: row.kind, groupState: row.state, myRole: row.my_role }),

@@ -123,6 +123,8 @@ export interface D1GroupSummary {
   kind: D1GroupKind;
   name: string;
   department: string | null;
+  /** Short-lived signed link to the group's picture, or null when it hasn't set one. */
+  iconUrl: string | null;
   state: D1GroupState;
   /** Why it's frozen, in plain words. Null unless state is "frozen". */
   frozenReason: string | null;

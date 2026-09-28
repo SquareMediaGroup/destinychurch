@@ -250,7 +250,7 @@ export default function GroupChat() {
         <Pressable accessibilityRole="button" accessibilityLabel={`${name}, group info`} onPress={() => router.push(`/group/${id}/info`)} style={{ flexShrink: 1, marginHorizontal: 8 }}>
           {({ pressed }) => (
             <GlassSurface interactive style={[{ height: 48, maxWidth: 240, borderRadius: 24, flexDirection: "row", alignItems: "center", gap: 10, paddingLeft: 6, paddingRight: 16, opacity: pressed ? 0.8 : 1 }, t.shadow]}>
-              <Avatar name={name} size={36} announcements={isAnnouncements} group />
+              <Avatar name={name} size={36} announcements={isAnnouncements} uri={group?.iconUrl ?? summary?.group.iconUrl} />
               <View style={{ flexShrink: 1, minWidth: 0 }}>
                 <Text numberOfLines={1} style={{ fontSize: 15, fontWeight: "600", color: t.text }}>
                   {name}

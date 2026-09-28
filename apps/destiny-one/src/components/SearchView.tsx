@@ -145,7 +145,7 @@ export function SearchView({ mode }: { mode: "tab" | "modal" }) {
             const { g, c } = item.hit;
             return (
               <Pressable onPressIn={() => prefetchGroup(g.id)} onPress={() => open(`/group/${g.id}`)} style={({ pressed }) => ({ flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 8, paddingHorizontal: 20, backgroundColor: pressed ? t.fill : "transparent" })}>
-                <Avatar name={g.name} size={40} announcements={g.kind === "announcements"} group />
+                <Avatar name={g.name} size={40} announcements={g.kind === "announcements"} uri={g.iconUrl} />
                 <View style={{ flex: 1, gap: 1 }}>
                   <Text style={{ fontSize: 17, fontWeight: "600", color: t.text }}>{g.name}</Text>
                   <Text style={{ fontSize: 14, color: t.muted }}>{[g.department, c.name].filter(Boolean).join(" · ")}</Text>

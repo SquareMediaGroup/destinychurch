@@ -167,6 +167,9 @@ export function createDestinyOneClient({ baseUrl, getAccessToken, fetchImpl }: D
 
     // ── Groups ──
     group: (id: string) => call<D1GroupDetail>("GET", `/groups/${id}`),
+    /** Set/replace a group's icon. Any member can; `file` is a multipart form part like `uploadAvatar`. */
+    uploadGroupIcon: (id: string, file: Blob) => callForm<D1GroupDetail>("POST", `/groups/${id}/icon`, file),
+    removeGroupIcon: (id: string) => call<D1GroupDetail>("DELETE", `/groups/${id}/icon`),
     updateGroup: (id: string, input: { name?: string; department?: string | null; description?: string | null; archived?: boolean }) =>
       call<D1GroupDetail>("PATCH", `/groups/${id}`, input),
     addGroupMembers: (id: string, memberIds: string[], role: D1MembershipRole = "member") =>

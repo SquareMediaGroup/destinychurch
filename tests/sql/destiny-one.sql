@@ -286,9 +286,9 @@ select pg_temp.check(not public.d1_can_receive('d1-group:' || (select v from ids
 -- ── Grants ──────────────────────────────────────────────────────────────────
 
 select pg_temp.check(
-  not has_function_privilege('authenticated', 'public.d1_post_message(uuid, uuid, text, bigint, uuid)', 'execute')
+  not has_function_privilege('authenticated', 'public.d1_post_message(uuid, uuid, text, bigint, uuid, jsonb)', 'execute')
   and not has_function_privilege('anon', 'public.d1_create_group(uuid, uuid, text, text, text, uuid[])', 'execute')
-  and has_function_privilege('service_role', 'public.d1_post_message(uuid, uuid, text, bigint, uuid)', 'execute'),
+  and has_function_privilege('service_role', 'public.d1_post_message(uuid, uuid, text, bigint, uuid, jsonb)', 'execute'),
   'operation functions are callable by the service role only');
 
 -- ── Erasure and retention ───────────────────────────────────────────────────

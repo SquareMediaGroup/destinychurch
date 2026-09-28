@@ -104,7 +104,7 @@ export default function GroupInfo() {
     <View style={{ flex: 1, backgroundColor: t.grouped }}>
       <ScrollView contentContainerStyle={{ paddingTop: insets.top + 56, paddingHorizontal: 16, paddingBottom: 40, gap: 20 }}>
         <View style={{ alignItems: "center", gap: 10 }}>
-          <Avatar name={group.name} size={92} announcements={isAnnouncements} />
+          <Avatar name={group.name} size={92} announcements={isAnnouncements} group />
           <View style={{ alignItems: "center", gap: 3 }}>
             <Text style={{ fontSize: 26, fontWeight: "700", letterSpacing: 0.2, color: t.text, textAlign: "center" }}>{group.name}</Text>
             <Text style={{ fontSize: 15, color: t.muted }}>{[group.department ?? community?.name, plural(group.members.length, "member")].filter(Boolean).join(" · ")}</Text>

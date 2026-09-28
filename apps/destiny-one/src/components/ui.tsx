@@ -27,7 +27,9 @@ import {
 import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { SvgXml } from "react-native-svg";
 import { GlassSurface } from "@/components/GlassSurface";
+import { LOGO_XML } from "@/components/logoXml";
 import { Icon, type IconName } from "@/components/Icon";
 import { ORANGE, ORANGE_LIGHT, useTheme, type Theme } from "@/theme/tokens";
 
@@ -213,13 +215,25 @@ export function initials(name: string | null | undefined): string {
     .toUpperCase();
 }
 
-export function Avatar({ name, size, radius, announcements, uri }: { name: string; size: number; radius?: number; announcements?: boolean; uri?: string | null }) {
+/**
+ * `group` marks a group chat's icon: the Destiny logo until groups can set
+ * their own picture (`uri` wins once they can). Announcements keep the
+ * megaphone so the read-only channel stays recognisable in a list.
+ */
+export function Avatar({ name, size, radius, announcements, group, uri }: { name: string; size: number; radius?: number; announcements?: boolean; group?: boolean; uri?: string | null }) {
   const t = useTheme();
   const r = radius ?? size / 2;
   if (announcements) {
     return (
       <View style={{ width: size, height: size, borderRadius: r, backgroundColor: t.accentSoft, alignItems: "center", justifyContent: "center" }}>
         <Icon name="megaphone" size={Math.round(size * 0.46)} color={t.tint} strokeWidth={1.9} />
+      </View>
+    );
+  }
+  if (group && !uri) {
+    return (
+      <View style={{ width: size, height: size, borderRadius: r, backgroundColor: t.accentSoft, alignItems: "center", justifyContent: "center" }}>
+        <SvgXml xml={LOGO_XML} width={Math.round(size * 0.62)} height={Math.round(size * 0.62)} accessibilityLabel="Destiny Church" />
       </View>
     );
   }

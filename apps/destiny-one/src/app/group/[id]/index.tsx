@@ -16,6 +16,8 @@ import { MessageActions } from "@/components/MessageActions";
 import { Divider, MessageBubble, buildRows, type Row } from "@/components/MessageBubble";
 import { NotificationPrompt } from "@/components/NotificationPrompt";
 import { Avatar, BackButton, ConfirmDialog, EmptyState, ErrorState, GlassIconButton, PrimaryButton, withAlpha } from "@/components/ui";
+import { canSendAs } from "@destiny/shared";
+import type { Account } from "@/lib/accounts";
 import { plural } from "@/lib/format";
 import { api } from "@/lib/api";
 import { hideSender, setOpenGroup } from "@/lib/queries";
@@ -30,7 +32,9 @@ export default function GroupChat() {
   const t = useTheme();
   const insets = useSafeAreaInsets();
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { me, setMe } = useSession();
+  const { me, setMe, accounts, activeSlot } = useSession();
+  // Only when there's another account on this phone, and never from a child account (then a slow tap must still just send).
+  const sendAsEnabled = accounts.length > 1 && canSendAs(accounts.find((a) => a.slot === activeSlot));
   const summary = useGroupSummary(id);
   // Read before the chat marks itself read, for the "New messages" divider.
   const [unreadAtOpen] = useState(() => summary?.group.unreadCount ?? 0);
@@ -100,6 +104,14 @@ export default function GroupChat() {
     await convo.send({ body: text, replyTo: reply?.id }).catch((err) => setToast(errorMessage(err)));
   }
 
+  /** Holding Send: the other signed-in account sends this text (replies included). */
+  async function sendTextAs(account: Account, text: string) {
+    const reply = replyTo;
+    await convo.sendAs(account.slot, { body: text, replyTo: reply?.id });
+    setReplyTo(null);
+    list.current?.scrollToOffset({ offset: 0, animated: true });
+  }
+
   async function sendFile(file: Parameters<typeof uploadAttachment>[1]) {
     const reply = replyTo;
     setReplyTo(null);
@@ -137,6 +149,8 @@ export default function GroupChat() {
       replying={replyTo ? { name: replyTo.mine ? "yourself" : replyTo.sender?.displayName ?? "Former member", text: replyTo.body ?? "Attachment" } : null}
       onCancelReply={() => setReplyTo(null)}
       onSend={sendText}
+      loadSendAsOptions={sendAsEnabled ? convo.sendAsOptions : undefined}
+      onSendAs={sendAsEnabled ? sendTextAs : undefined}
       onAttach={sendFile}
       onAttachPoll={() => router.push(`/group/${id}/poll`)}
       onAttachEvent={() => router.push(`/group/${id}/event-picker`)}

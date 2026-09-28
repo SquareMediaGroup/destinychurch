@@ -11,7 +11,8 @@
 // already applied locally).
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { signedUrlNeedsRefresh, type D1EventRef, type D1EventSummary, type D1Me, type D1MessageContent, type D1PollDraft } from "@destiny/shared";
+import { canSendAs, sendAsCandidates, signedUrlNeedsRefresh, type D1EventRef, type D1EventSummary, type D1Me, type D1MessageContent, type D1PollDraft } from "@destiny/shared";
+import * as accounts from "@/lib/accounts";
 import { api } from "@/lib/api";
 import { keys, PAGE, updateGroupSummary, updateMessages, upsert, useGroup, useMessages, type LocalMessage, type MessagesData } from "@/lib/queries";
 import { queryClient } from "@/lib/queryClient";
@@ -331,6 +332,45 @@ export function useConversation(groupId: string, me: D1Me | null, unreadAtOpen: 
     [groupId, messages],
   );
 
+  /**
+   * Other signed-in accounts that could send into this group in place of the
+   * active one: never from or as a child account, and only accounts that are
+   * in this group. Each account answers as itself; the server has the final say.
+   */
+  const sendAsOptions = useCallback(async (): Promise<accounts.Account[]> => {
+    const all = accounts.accounts();
+    const active = all.find((a) => a.slot === accounts.activeSlot());
+    if (!canSendAs(active)) return [];
+    const others = all.filter((a) => a.slot !== accounts.activeSlot());
+    const memberSlots = new Set<string>();
+    await Promise.all(
+      others.map(async (a) => {
+        try {
+          const list = await accounts.apiFor(a.slot).communities();
+          if (list.some((c) => c.groups.some((g) => g.id === groupId))) memberSlots.add(a.slot);
+        } catch {
+          // Expired session or offline: that account isn't offered.
+        }
+      }),
+    );
+    return sendAsCandidates(others, accounts.activeSlot(), memberSlots);
+  }, [groupId]);
+
+  /**
+   * Sends as another signed-in account (holding Send). The message is posted
+   * with THAT account's own token, so the server sees an ordinary send by that
+   * member: membership, freezes and reports all apply to them. The active
+   * account isn't switched and shows no optimistic bubble; the message arrives
+   * through Realtime, and a reload makes sure it's there.
+   */
+  const sendAs = useCallback(
+    async (slot: string, input: { body: string; replyTo?: number }) => {
+      await accounts.apiFor(slot).send(groupId, input);
+      void reload();
+    },
+    [groupId, reload],
+  );
+
   const failed = messagesQuery.error ?? groupQuery.error;
   return {
     group,
@@ -345,6 +385,8 @@ export function useConversation(groupId: string, me: D1Me | null, unreadAtOpen: 
     firstUnreadId: firstUnread.current ?? null,
     markRead,
     send,
+    sendAs,
+    sendAsOptions,
     sendPoll,
     sendEvent,
     vote,

@@ -12,8 +12,11 @@ import { ATTACHMENT_MIME_TYPES, MAX_ATTACHMENT_BYTES, MAX_MESSAGE_LENGTH } from 
 import { AttachSheet } from "@/components/AttachSheet";
 import { GlassSurface } from "@/components/GlassSurface";
 import { Icon } from "@/components/Icon";
+import { SendAsMenu } from "@/components/SendAsMenu";
 import { Beam } from "@/components/ui";
+import type { Account } from "@/lib/accounts";
 import { cleanImage } from "@/lib/cleanImage";
+import { haptic } from "@/lib/haptics";
 import { INK, ORANGE, useTheme } from "@/theme/tokens";
 
 export interface PickedFile {
@@ -31,13 +34,18 @@ interface Props {
   onAttachPoll: () => void;
   onAttachEvent: () => void;
   onError: (message: string) => void;
+  /** Holding Send: which other signed-in accounts could send this instead. Omit to turn the hold off. */
+  loadSendAsOptions?: () => Promise<Account[]>;
+  /** The chosen account sends `text`. Resolves once sent, or throws. */
+  onSendAs?: (account: Account, text: string) => Promise<void>;
 }
 
-export const Composer = forwardRef<TextInput, Props>(function Composer({ replying, onCancelReply, onSend, onAttach, onAttachPoll, onAttachEvent, onError }, ref) {
+export const Composer = forwardRef<TextInput, Props>(function Composer({ replying, onCancelReply, onSend, onAttach, onAttachPoll, onAttachEvent, onError, loadSendAsOptions, onSendAs }, ref) {
   const t = useTheme();
   const [draft, setDraft] = useState("");
   const [focused, setFocused] = useState(false);
   const [sheetOpen, setSheetOpen] = useState(false);
+  const [sendAsMenu, setSendAsMenu] = useState<{ text: string; options: Account[]; checking: boolean } | null>(null);
   const hasText = draft.trim().length > 0;
 
   async function acceptAsset(a: { uri: string; name: string; mimeType: string; size: number | null }) {
@@ -96,6 +104,31 @@ export const Composer = forwardRef<TextInput, Props>(function Composer({ replyin
     await imagePickerAsset(res.assets[0], "Photo.jpg");
   }
 
+  /** Holding Send: offer the other signed-in accounts that can send this message. */
+  async function openSendAs() {
+    const text = draft.trim();
+    if (!text || !loadSendAsOptions || !onSendAs) return;
+    haptic.press();
+    setSendAsMenu({ text, options: [], checking: true });
+    const options = await loadSendAsOptions().catch(() => []);
+    setSendAsMenu((menu) => (menu && menu.text === text ? { text, options, checking: false } : menu));
+  }
+
+  async function pickSendAs(account: Account) {
+    const text = sendAsMenu?.text;
+    setSendAsMenu(null);
+    if (!text || !onSendAs) return;
+    haptic.selection();
+    try {
+      await onSendAs(account, text);
+      setDraft("");
+      haptic.sent();
+    } catch (err) {
+      haptic.error();
+      onError(`Couldn't send as ${account.displayName}. ${err instanceof Error ? err.message : ""}`.trim());
+    }
+  }
+
   function send() {
     const text = draft.trim();
     if (!text) return;
@@ -146,7 +179,7 @@ export const Composer = forwardRef<TextInput, Props>(function Composer({ replyin
               style={{ flex: 1, minHeight: 33, maxHeight: 120, fontSize: 17, color: t.text, paddingTop: 7, paddingBottom: 7 }}
             />
             {hasText ? (
-              <Pressable onPress={send} accessibilityRole="button" accessibilityLabel="Send" style={({ pressed }) => ({ width: 33, height: 33, borderRadius: 17, backgroundColor: ORANGE, alignItems: "center", justifyContent: "center", transform: [{ scale: pressed ? 0.92 : 1 }] })}>
+              <Pressable onPress={send} onLongPress={loadSendAsOptions && onSendAs ? () => void openSendAs() : undefined} delayLongPress={350} accessibilityRole="button" accessibilityLabel="Send" accessibilityHint={loadSendAsOptions ? "Hold to send as another account" : undefined} style={({ pressed }) => ({ width: 33, height: 33, borderRadius: 17, backgroundColor: ORANGE, alignItems: "center", justifyContent: "center", transform: [{ scale: pressed ? 0.92 : 1 }] })}>
                 <Icon name="send" size={17} color={INK} strokeWidth={2.8} />
               </Pressable>
             ) : (
@@ -157,6 +190,8 @@ export const Composer = forwardRef<TextInput, Props>(function Composer({ replyin
           </GlassSurface>
         </Beam>
       </View>
+
+      {sendAsMenu ? <SendAsMenu options={sendAsMenu.options} checking={sendAsMenu.checking} onPick={(a) => void pickSendAs(a)} onClose={() => setSendAsMenu(null)} /> : null}
 
       <AttachSheet
         visible={sheetOpen}

@@ -14,6 +14,7 @@
 
 import "server-only";
 import {
+  hasStaffAccess,
   isAdult,
   outstandingConsents,
   type D1Consent,
@@ -161,13 +162,25 @@ export async function loadBlocked(memberId: string): Promise<{ id: string; displ
   });
 }
 
+/** The account's admin roles, if it has any (service-only table). Null for no row or no sign-in. */
+async function loadStaffRoles(authUserId: string | null) {
+  if (!authUserId) return null;
+  const { data } = await createServiceClient()
+    .from("admin_roles")
+    .select("destiny_one_admin, safeguarding_admin, super_admin")
+    .eq("auth_user_id", authUserId)
+    .maybeSingle();
+  return data;
+}
+
 /** The D1Me payload for a member row (any status). */
 export async function toMe(member: MemberRow): Promise<D1Me> {
-  const [consents, settings, blocked, avatar] = await Promise.all([
+  const [consents, settings, blocked, avatar, staff] = await Promise.all([
     loadConsents(member.id),
     getSettings(),
     loadBlocked(member.id),
     avatarUrl(member.avatar_url),
+    loadStaffRoles(member.auth_user_id),
   ]);
   const state = onboardingState(member, settings);
   return {
@@ -178,6 +191,7 @@ export async function toMe(member: MemberRow): Promise<D1Me> {
     status: member.status,
     roles: member.roles ?? [],
     isAdult: isAdult(member.adult_on),
+    isStaff: hasStaffAccess(staff),
     consents,
     outstandingConsents: outstandingConsents(consents),
     verified: Boolean(member.verified_at),

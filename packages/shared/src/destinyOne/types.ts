@@ -71,6 +71,8 @@ export interface D1Me {
   status: D1MemberStatus;
   roles: D1LeaderRole[];
   isAdult: boolean;
+  /** Has staff access to the admin side (Destiny One or Safeguarding Admin, or Super Admin). Only used to check an "Add admin account". */
+  isStaff: boolean;
   /** Notices accepted so far. */
   consents: (D1Consent & { acceptedAt: string })[];
   /** Notices still to accept before chat unlocks. Empty when all done. */

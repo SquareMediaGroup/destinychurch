@@ -6930,7 +6930,7 @@ same database as the data rather than in a separate Synapse module.
   the dev Mac, so it has only been checked with `expo export` and a web preview on mock data.
 - **Routes (`src/app/`):** `index` (launch gate → `routeFor(me)`), `welcome` (A1), `email` (A2),
   `code` (A3), `request` (A5), `waiting` (A6–A8, copy from `me.onboardingMessage`), `notices` (A9),
-  `(tabs)/{chats,find,settings}` with a floating glass tab bar (Chats / Search / Settings; there's no
+  `(tabs)/{chats,find,profile}` with a floating glass tab bar (Chats / Search / Profile; there's no
   Groups tab, since Chats already shows every community and "See all" opens `community/[id]`), `group/[id]` (B3 conversation),
   `group/[id]/info` (B6; leaders: rules panel, make admin / remove), `group/[id]/edit` (C4),
   `community/[id]` (B2), `new-group` (C1, modal), `add-people` (C2; `?groupId` adds to a group,

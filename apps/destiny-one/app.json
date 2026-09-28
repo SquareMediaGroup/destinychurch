@@ -64,6 +64,12 @@
             "backgroundColor": "#1A110A"
           }
         }
+      ],
+      [
+        "expo-local-authentication",
+        {
+          "faceIDPermission": "Destiny One uses Face ID to check it's you before switching to another account."
+        }
       ]
     ],
     "experiments": {

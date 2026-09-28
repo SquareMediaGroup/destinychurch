@@ -45,10 +45,34 @@ export async function registerForPush(): Promise<PushResult> {
   return "registered";
 }
 
+/** This device's token, without asking for permission. Null if not allowed (yet). */
+async function currentToken(): Promise<string | null> {
+  if (registeredToken) return registeredToken;
+  if (!Device.isDevice || !config.easProjectId) return null;
+  const { status } = await Notifications.getPermissionsAsync();
+  if (status !== "granted") return null;
+  const { data } = await Notifications.getExpoPushTokenAsync({ projectId: config.easProjectId });
+  return data;
+}
+
 export async function unregisterPush(): Promise<void> {
-  if (!registeredToken) return;
-  await api.unregisterPushToken(registeredToken);
+  const token = await currentToken();
+  if (!token) return;
+  await api.unregisterPushToken(token);
   registeredToken = null;
+}
+
+/**
+ * After switching accounts: point this device's notifications at the account
+ * now open. Registering moves the token over (one owner per token on the
+ * server), so the account you left stops getting them. Never asks for
+ * permission; if it hasn't been given, there's nothing to move.
+ */
+export async function movePushToActiveAccount(): Promise<void> {
+  const token = await currentToken();
+  if (!token) return;
+  await api.registerPushToken(token, Platform.OS === "ios" ? "ios" : "android");
+  registeredToken = token;
 }
 
 /** The group a tapped notification refers to, if any. */

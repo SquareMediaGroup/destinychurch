@@ -41,7 +41,8 @@ src/state/               session (me, routing, shared chat list), picker (Add pe
 src/lib/useConversation  One chat: paging, realtime, optimistic send/retry, uploads, reactions
 src/lib/config.ts        EXPO_PUBLIC_* config
 src/lib/secureStorage.ts Supabase session in Keychain/Keystore
-src/lib/supabase.ts      Auth + Realtime only (never data)
+src/lib/supabase.ts      Auth + Realtime only (never data); one client per account
+src/lib/accounts.ts      Accounts signed in on this phone; quick switching
 src/lib/api.ts           Typed client for /api/app/v1/one (from @destiny/shared)
 src/lib/auth.ts          Email one-time code; Sign in with ChurchSuite (PKCE)
 src/lib/realtime.ts      Private d1-group:* / d1-member:* channels
@@ -66,6 +67,14 @@ a root npm workspace, on purpose: the website's build never installs React Nativ
 
 People are verified by Destiny staff (invites and approvals in the website admin), not by
 ChurchSuite. Sign in with ChurchSuite is an optional extra for staff.
+
+## Several accounts
+
+More than one account can be signed in at once. Hold the Settings tab (or Settings → Switch
+account) to switch; it asks for Face ID or the passcode first. Each account has its own Supabase
+client, session and saved cache, so switching back is instant. See `src/lib/accounts.ts` and
+"Accounts" under Destiny One in `REPOSITORY_DOCUMENTATION.md`. Adding `expo-local-authentication`
+means a new development build is needed.
 
 The full list of screens and states to design is in `docs/destiny-one-ui-spec.md`.
 

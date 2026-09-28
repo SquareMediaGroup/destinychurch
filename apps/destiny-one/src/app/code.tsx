@@ -6,6 +6,7 @@ import { Pressable, Text, TextInput, View } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { AuthScreen } from "@/components/AuthScreen";
 import { Beam, FormError, LargeTitle, Lead, PrimaryButton, TextButton } from "@/components/ui";
+import { isAdding } from "@/lib/accounts";
 import { requestEmailCode, verifyEmailCode } from "@/lib/auth";
 import { routeFor, useSession } from "@/state/session";
 import { ORANGE, useTheme } from "@/theme/tokens";
@@ -15,7 +16,7 @@ const RESEND_AFTER = 60;
 export default function Code() {
   const t = useTheme();
   const { email = "" } = useLocalSearchParams<{ email: string }>();
-  const { setMe } = useSession();
+  const { setMe, finishAdding } = useSession();
   const input = useRef<TextInput>(null);
   const [code, setCode] = useState("");
   const [focused, setFocused] = useState(true);
@@ -35,7 +36,10 @@ export default function Code() {
     setError(null);
     try {
       const me = await verifyEmailCode(email, value);
-      setMe(me);
+      // "Add account": the new account becomes the active one. Otherwise this
+      // is the only sign-in on the device.
+      if (isAdding()) await finishAdding(me);
+      else setMe(me);
       router.dismissAll();
       router.replace(routeFor(me));
     } catch (err) {

@@ -39,5 +39,5 @@ export function GlassSurface({ children, style, variant = "regular", interactive
 const styles = StyleSheet.create({
   fallback: { overflow: "hidden" },
   light: { backgroundColor: "rgba(255,255,255,0.92)", borderColor: "rgba(0,0,0,0.08)", borderWidth: StyleSheet.hairlineWidth },
-  dark: { backgroundColor: "rgba(28,28,30,0.92)", borderColor: "rgba(255,255,255,0.12)", borderWidth: StyleSheet.hairlineWidth },
+  dark: { backgroundColor: "rgba(38,25,15,0.92)", borderColor: "rgba(255,214,170,0.14)", borderWidth: StyleSheet.hairlineWidth },
 });

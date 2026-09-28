@@ -1,7 +1,7 @@
 // The message composer: attach (image or PDF, 20 MB) from files or the photo
 // library, take a photo with the camera (every image is re-encoded first so no
 // location or other hidden details leave the phone: src/lib/cleanImage.ts), a
-// glass text field that lights up with the beam while focused, the reply bar,
+// glass text field, the reply bar,
 // and the send button that swaps in for the attach shortcut once there's text.
 
 import { forwardRef, useState } from "react";
@@ -12,9 +12,9 @@ import { ATTACHMENT_MIME_TYPES, MAX_ATTACHMENT_BYTES, MAX_MESSAGE_LENGTH } from 
 import { AttachSheet } from "@/components/AttachSheet";
 import { GlassSurface } from "@/components/GlassSurface";
 import { Icon } from "@/components/Icon";
-import { Beam } from "@/components/ui";
 import { cleanImage } from "@/lib/cleanImage";
-import { INK, ORANGE, useTheme } from "@/theme/tokens";
+import { haptic } from "@/lib/haptics";
+import { ORANGE, useTheme } from "@/theme/tokens";
 
 export interface PickedFile {
   uri: string;
@@ -36,7 +36,6 @@ interface Props {
 export const Composer = forwardRef<TextInput, Props>(function Composer({ replying, onCancelReply, onSend, onAttach, onAttachPoll, onAttachEvent, onError }, ref) {
   const t = useTheme();
   const [draft, setDraft] = useState("");
-  const [focused, setFocused] = useState(false);
   const [sheetOpen, setSheetOpen] = useState(false);
   const hasText = draft.trim().length > 0;
 
@@ -99,6 +98,7 @@ export const Composer = forwardRef<TextInput, Props>(function Composer({ replyin
   function send() {
     const text = draft.trim();
     if (!text) return;
+    haptic.sent();
     onSend(text);
     setDraft("");
   }
@@ -121,7 +121,14 @@ export const Composer = forwardRef<TextInput, Props>(function Composer({ replyin
       ) : null}
 
       <View style={{ flexDirection: "row", alignItems: "flex-end", gap: 8 }}>
-        <Pressable onPress={() => setSheetOpen(true)} accessibilityRole="button" accessibilityLabel="Add to message">
+        <Pressable
+          onPress={() => {
+            haptic.selection();
+            setSheetOpen(true);
+          }}
+          accessibilityRole="button"
+          accessibilityLabel="Add to message"
+        >
           {({ pressed }) => (
             <GlassSurface interactive style={[{ width: 44, height: 44, borderRadius: 22, alignItems: "center", justifyContent: "center", opacity: pressed ? 0.7 : 1 }, t.shadow]}>
               <Icon name="plus" size={22} color={t.text} />
@@ -129,25 +136,24 @@ export const Composer = forwardRef<TextInput, Props>(function Composer({ replyin
           )}
         </Pressable>
 
-        <Beam radius={23} active={focused} dim="rgba(245,128,33,0.25)" style={{ flex: 1 }}>
+        <View style={{ flex: 1 }}>
           <GlassSurface style={{ minHeight: 41, borderRadius: 21.5, flexDirection: "row", alignItems: "flex-end", gap: 6, paddingLeft: 16, paddingRight: 4, paddingVertical: 4 }}>
             <TextInput
               ref={ref}
               value={draft}
               onChangeText={(v) => setDraft(v.slice(0, MAX_MESSAGE_LENGTH))}
-              onFocus={() => setFocused(true)}
-              onBlur={() => setFocused(false)}
               placeholder="Message"
-              placeholderTextColor="#6B7580"
+              placeholderTextColor={t.subtle}
               selectionColor={ORANGE}
               multiline
               maxLength={MAX_MESSAGE_LENGTH}
               accessibilityLabel="Message"
-              style={{ flex: 1, minHeight: 33, maxHeight: 120, fontSize: 17, color: t.text, paddingTop: 7, paddingBottom: 7 }}
+              maxFontSizeMultiplier={1.6}
+              style={{ flex: 1, minHeight: 33, maxHeight: 140, fontSize: 17, color: t.text, paddingTop: 7, paddingBottom: 7 }}
             />
             {hasText ? (
-              <Pressable onPress={send} accessibilityRole="button" accessibilityLabel="Send" style={({ pressed }) => ({ width: 33, height: 33, borderRadius: 17, backgroundColor: ORANGE, alignItems: "center", justifyContent: "center", transform: [{ scale: pressed ? 0.92 : 1 }] })}>
-                <Icon name="send" size={17} color={INK} strokeWidth={2.8} />
+              <Pressable onPress={send} hitSlop={6} accessibilityRole="button" accessibilityLabel="Send" style={({ pressed }) => ({ width: 33, height: 33, borderRadius: 17, backgroundColor: t.send, alignItems: "center", justifyContent: "center", transform: [{ scale: pressed ? 0.92 : 1 }] })}>
+                <Icon name="send" size={17} color={t.onSend} strokeWidth={2.8} />
               </Pressable>
             ) : (
               <Pressable onPress={() => void takePhoto()} accessibilityRole="button" accessibilityLabel="Take a photo" style={{ width: 33, height: 33, alignItems: "center", justifyContent: "center" }}>
@@ -155,7 +161,7 @@ export const Composer = forwardRef<TextInput, Props>(function Composer({ replyin
               </Pressable>
             )}
           </GlassSurface>
-        </Beam>
+        </View>
       </View>
 
       <AttachSheet

@@ -5929,12 +5929,11 @@ Polished to Apple's Human Interface Guidelines. The pieces, and why they exist:
 - **Dark mode is a warm tint of the brand orange** (`#1A110A` page, `#26190F` cards), not pure black.
 - **Bubbles** (`MessageBubble.tsx`) join in runs (the corner facing the sender flattens between
   neighbours) and the last one in a run gets a small curved tail. The time shows once per run.
-- **Gestures** (`src/components/Swipe.tsx`): swipe a message right to reply (`SwipeToReply`);
+- **Gestures** (`src/components/Swipe.tsx`): swipe a message left to reply (`SwipeToReply`, left as in Telegram so it can never clash with swipe-back);
   swipe a chat row left for Read and Mute (`SwipeActions`). Both track the finger 1:1, rubber-band
   at the edge, and spring on from the release velocity; `SwipeActions` snaps using where the flick
   was heading (`project()`), and only one row is open at a time. Plain `PanResponder` + `Animated`,
-  no extra native module. The reply swipe ignores drags that start at the left edge (the back
-  gesture). Long-press still opens the actions sheet, which springs up from the message's side.
+  no extra native module. Long-press still opens the actions sheet, which springs up from the message's side.
 - **Haptics** (`src/lib/haptics.ts`, `expo-haptics`), used only for meaningful moments: tab and
   filter changes, sending, reacting, poll votes, a gesture reaching its threshold, opening the
   message menu, errors. Never on scroll or every tap.

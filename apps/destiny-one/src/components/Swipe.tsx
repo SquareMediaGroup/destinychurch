@@ -4,14 +4,19 @@
 // is no seam between the drag and the animation. Both can be grabbed
 // mid-flight.
 //
-//   SwipeToReply  drag a message right; at the threshold a tick plays and
-//                 letting go replies. It never moves the message far.
+//   SwipeToReply  drag a message LEFT (as in Telegram); at the threshold a tick
+//                 plays and letting go replies. It never moves the message far.
+//                 Left, not right, so it can never clash with swipe-back.
 //   SwipeActions  drag a chat row left to reveal buttons (Read, Mute). It
 //                 snaps open or shut using where the flick was heading, not
 //                 just where the finger let go.
 //
 // Plain PanResponder + Animated (no extra native module). Not run on the
 // native driver, because the drag itself sets the value every frame.
+//
+// Both claim the touch in the *capture* phase once the movement is clearly
+// horizontal. Bubbles, buttons and the list are all touchable children, and a
+// parent can only take a touch from them by capturing it.
 
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Animated, PanResponder, Pressable, Text, View, type GestureResponderEvent, type PanResponderGestureState } from "react-native";
@@ -30,7 +35,7 @@ export function rubberband(overshoot: number, dimension: number, constant = 0.55
 }
 
 /**
- * Drags that start this close to the left edge are the system back gesture.
+ * A rightward drag that starts this close to the left edge is the system back gesture.
  * PanResponder's own `x0` is only filled in once the gesture is claimed, so
  * while deciding whether to claim it, work out where the finger started.
  */
@@ -42,7 +47,7 @@ function startX(e: GestureResponderEvent, g: PanResponderGestureState): number {
 // Critically damped (no bounce), the default for things that didn't carry momentum.
 const SETTLE = { stiffness: 320, damping: 36, mass: 1, useNativeDriver: false } as const;
 
-// ── Swipe a message right to reply ──────────────────────────────────────────
+// ── Swipe a message left to reply ───────────────────────────────────────────
 
 const REPLY_THRESHOLD = 56;
 
@@ -58,13 +63,13 @@ export function SwipeToReply({ children, onReply, enabled = true }: { children: 
   const responder = useMemo(
     () =>
       PanResponder.create({
-        // Mostly horizontal, and not from the very left edge (that is the back gesture).
-        onMoveShouldSetPanResponder: (e, g) => enabled && g.dx > 8 && Math.abs(g.dx) > Math.abs(g.dy) * 1.6 && startX(e, g) > EDGE,
+        // Leftward and mostly horizontal.
+        onMoveShouldSetPanResponderCapture: (_e, g) => enabled && g.dx < -8 && Math.abs(g.dx) > Math.abs(g.dy) * 1.6,
         onPanResponderTerminationRequest: () => false,
         onPanResponderMove: (_e, g) => {
-          const d = Math.max(0, g.dx);
+          const d = Math.max(0, -g.dx);
           const shown = d <= REPLY_THRESHOLD ? d : REPLY_THRESHOLD + rubberband(d - REPLY_THRESHOLD, 80);
-          x.setValue(shown);
+          x.setValue(-shown);
           if (!crossed.current && d >= REPLY_THRESHOLD) {
             crossed.current = true;
             haptic.tick();
@@ -86,14 +91,14 @@ export function SwipeToReply({ children, onReply, enabled = true }: { children: 
     [enabled, x],
   );
 
-  const iconOpacity = x.interpolate({ inputRange: [8, REPLY_THRESHOLD], outputRange: [0, 1], extrapolate: "clamp" });
-  const iconScale = x.interpolate({ inputRange: [8, REPLY_THRESHOLD, REPLY_THRESHOLD + 30], outputRange: [0.5, 1, 1.12], extrapolate: "clamp" });
+  const iconOpacity = x.interpolate({ inputRange: [-REPLY_THRESHOLD, -8], outputRange: [1, 0], extrapolate: "clamp" });
+  const iconScale = x.interpolate({ inputRange: [-REPLY_THRESHOLD - 30, -REPLY_THRESHOLD, -8], outputRange: [1.12, 1, 0.5], extrapolate: "clamp" });
 
   return (
     <View {...responder.panHandlers}>
       <Animated.View
         pointerEvents="none"
-        style={{ position: "absolute", left: 12, top: 0, bottom: 0, width: 32, alignItems: "center", justifyContent: "center", opacity: iconOpacity, transform: [{ scale: iconScale }] }}
+        style={{ position: "absolute", right: 12, top: 0, bottom: 0, width: 32, alignItems: "center", justifyContent: "center", opacity: iconOpacity, transform: [{ scale: iconScale }] }}
       >
         <View style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: t.fill2, alignItems: "center", justifyContent: "center" }}>
           <Icon name="reply" size={16} color={t.text} strokeWidth={2.2} />
@@ -165,7 +170,7 @@ export function SwipeActions({ children, actions, background }: { children: Reac
   const responder = useMemo(
     () =>
       PanResponder.create({
-        onMoveShouldSetPanResponder: (e, g) => Math.abs(g.dx) > 10 && Math.abs(g.dx) > Math.abs(g.dy) * 1.6 && startX(e, g) > EDGE,
+        onMoveShouldSetPanResponderCapture: (e, g) => Math.abs(g.dx) > 10 && Math.abs(g.dx) > Math.abs(g.dy) * 1.6 && (g.dx < 0 || startX(e, g) > EDGE),
         onPanResponderGrant: () => {
           x.stopAnimation(); // grab it mid-flight: carry on from where it is on screen
           start.current = pos.current;

@@ -428,19 +428,19 @@ select pg_temp.check(
   public.d1_accept_invite('00000000-0000-0000-0000-000000000012', 'invited@example.org') is null,
   'an invite can only be used once');
 
--- Admin-path operations still obey every rule.
-select pg_temp.expect_error(
-  format($$select public.d1_admin_create_group(%L, 'x', null, null, array[%L, %L]::uuid[])$$,
-    (select v from ids where k = 'community'), :lead, :adult3),
-  'at least 3 people');
-select pg_temp.check(true, 'an admin-created group still needs 3 people');
+-- Admin-path operations: small groups are created paused, other rules hold.
+insert into ids select 'adminsmall', public.d1_admin_create_group(
+  (select v from ids where k = 'community'), 'Admin small', null, null, '{}'::uuid[]);
+select pg_temp.check(
+  (select state from public.d1_groups where id = (select v from ids where k = 'adminsmall')) = 'frozen',
+  'an admin-created group with nobody in it is paused');
 
-select pg_temp.expect_error(
-  format($$select public.d1_admin_create_group(%L, 'x', null, null, array[%L, %L, %L]::uuid[])$$,
-    (select v from ids where k = 'community'), :lead,
-    (select v from accepted where k = 'kid'), :minor1),
-  'at least 2 verified adults');
-select pg_temp.check(true, 'an admin-created group still needs 2 adults');
+insert into ids select 'adminoneadult', public.d1_admin_create_group(
+  (select v from ids where k = 'community'), 'Admin one adult', null, null,
+  array[:lead, (select v from accepted where k = 'kid'), :minor1]::uuid[]);
+select pg_temp.check(
+  (select state from public.d1_groups where id = (select v from ids where k = 'adminoneadult')) = 'frozen',
+  'an admin-created group with one adult is paused');
 
 select pg_temp.expect_error(
   format($$select public.d1_admin_create_group(%L, 'x', null, null, array[%L, %L, %L]::uuid[], array[%L]::uuid[])$$,

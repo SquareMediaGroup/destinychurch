@@ -1975,7 +1975,7 @@ department **sub-groups**. Migration: `supabase/migrations/20260926_01_destiny_o
 **The rules are enforced in the database**, not the API, so no client and no route bug can get round
 them:
 1. **No 1:1 chats.** A group with fewer than 3 people is paused (read-only), never usable. `d1_create_group` still
-   accepts any size (even just the creator, migration `20260929_05`): it inserts the group already `frozen`/`auto`
+   accepts any size (even just the creator, migration `20260929_05`; `d1_admin_create_group` likewise, `_06`): it inserts the group already `frozen`/`auto`
    with no safeguarding event, and it opens itself once it has 3 people including 2 adults.
 2. **Only leaders create groups and communities** (any of `admin` / `cg_leader` / `senior_leader`,
    adults only; the three have identical powers).

@@ -47,10 +47,13 @@ export function SearchView({ mode }: { mode: "tab" | "modal" }) {
   const insets = useSafeAreaInsets();
   const { communities } = useSession();
   const [query, setQuery] = useState("");
-  const [messages, setMessages] = useState<D1MessageHit[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [result, setResult] = useState<{ q: string; messages: D1MessageHit[]; error: string | null } | null>(null);
   const q = query.trim();
+  // The last results stay on screen while the next search runs.
+  const searching = q.length >= MIN_SEARCH_CHARS;
+  const messages = searching ? (result?.messages ?? []) : [];
+  const loading = searching && result?.q !== q;
+  const error = searching && result?.q === q ? result.error : null;
 
   const groups = useMemo(() => {
     const lq = q.toLowerCase();
@@ -63,23 +66,13 @@ export function SearchView({ mode }: { mode: "tab" | "modal" }) {
 
   // Debounced message search.
   useEffect(() => {
-    if (q.length < MIN_SEARCH_CHARS) {
-      setMessages([]);
-      setLoading(false);
-      return;
-    }
+    if (q.length < MIN_SEARCH_CHARS) return;
     let cancelled = false;
-    setLoading(true);
     const id = setTimeout(() => {
-      api
-        .searchMessages(q)
-        .then((r) => {
-          if (cancelled) return;
-          setMessages(r);
-          setError(null);
-        })
-        .catch((err) => !cancelled && setError(errorMessage(err)))
-        .finally(() => !cancelled && setLoading(false));
+      api.searchMessages(q).then(
+        (r) => !cancelled && setResult({ q, messages: r, error: null }),
+        (err) => !cancelled && setResult((prev) => ({ q, messages: prev?.messages ?? [], error: errorMessage(err) })),
+      );
     }, 300);
     return () => {
       cancelled = true;

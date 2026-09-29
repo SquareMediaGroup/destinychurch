@@ -36,8 +36,10 @@ export default function NotificationSettings() {
   const { communities } = useSession();
   const focus = useGroupSummary(groupId);
   const [allowed, setAllowed] = useState<boolean | null>(null);
-  const [chosen, setChosen] = useState<MuteLabel | null>(null);
-  useEffect(() => setChosen(null), [groupId]);
+  // The choice belongs to the group it was made for, so it resets when groupId changes.
+  const [choice, setChoice] = useState<{ groupId?: string; label: MuteLabel | null }>({ groupId, label: null });
+  const chosen = choice.groupId === groupId ? choice.label : null;
+  const setChosen = (label: MuteLabel | null) => setChoice({ groupId, label });
 
   const checkPermission = useCallback(() => {
     Notifications.getPermissionsAsync().then((p) => setAllowed(p.granted), () => setAllowed(false));

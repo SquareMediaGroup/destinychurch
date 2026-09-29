@@ -126,7 +126,9 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const meQuery = useQuery({ queryKey: keys.me, queryFn: fetchMe, enabled: !!session && !restoring && !switching });
   const me = session ? (meQuery.data ?? null) : null;
   const meRef = useRef<D1Me | null>(null);
-  meRef.current = me;
+  useEffect(() => {
+    meRef.current = me;
+  }, [me]);
 
   const active = me?.onboarding === "active" && me.outstandingConsents.length === 0;
 
@@ -387,10 +389,12 @@ export function useSession(): SessionValue {
 /** Look up a group summary (and its community) from the cached chat list. */
 export function useGroupSummary(groupId: string | undefined) {
   const { communities } = useSession();
-  return useMemo(() => {
-    for (const c of communities ?? []) for (const g of c.groups) if (g.id === groupId) return { group: g, community: c };
-    return null;
-  }, [communities, groupId]);
+  return useMemo(() => findGroupSummary(communities, groupId), [communities, groupId]);
+}
+
+function findGroupSummary(communities: D1CommunitySummary[] | null, groupId: string | undefined) {
+  for (const c of communities ?? []) for (const g of c.groups) if (g.id === groupId) return { group: g, community: c };
+  return null;
 }
 
 export function errorMessage(err: unknown, fallback = "Something went wrong. Please try again."): string {

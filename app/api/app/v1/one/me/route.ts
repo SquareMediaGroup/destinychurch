@@ -1,3 +1,4 @@
+import { nameChangeAllowance } from "@destiny/shared";
 import { createServiceClient } from "@/utils/supabase/service";
 import { authenticate, loadMemberByAuthUser, requireMember, toMe, MEMBER_COLUMNS, type MemberRow } from "@/lib/destinyOne/auth.server";
 import { eraseMember } from "@/lib/destinyOne/identity.server";
@@ -32,10 +33,20 @@ export const PATCH = oneRoute(async (request) => {
   await limit("rename", member.id, 5);
   const input = await readBody(request, updateNameSchema);
 
+  // Two changes in any 30 days. Saving the name as it already is doesn't use one.
+  if (input.firstName === member.first_name && input.lastName === member.last_name) return oneJson(await toMe(member));
+  const allowance = nameChangeAllowance(member.name_change_log);
+  if (allowance.left === 0) {
+    const when = new Date(allowance.nextAt as string).toLocaleDateString("en-GB", { day: "numeric", month: "long", timeZone: "Europe/London" });
+    throw new OneError("rule_violation", `You can only change your name twice a month. You can change it again on ${when}.`);
+  }
+
   // display_name follows from first/last via the d1_members_sync_names trigger.
+  const now = new Date();
+  const recent = (member.name_change_log ?? []).filter((t) => now.getTime() - new Date(t).getTime() < 30 * 24 * 60 * 60 * 1000);
   const { data, error } = await createServiceClient()
     .from("d1_members")
-    .update({ first_name: input.firstName, last_name: input.lastName, name_edited_at: new Date().toISOString() })
+    .update({ first_name: input.firstName, last_name: input.lastName, name_edited_at: now.toISOString(), name_change_log: [...recent, now.toISOString()] })
     .eq("id", member.id)
     .select(MEMBER_COLUMNS)
     .single();

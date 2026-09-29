@@ -72,6 +72,10 @@ export interface D1Me {
   /** displayName is "firstName lastName". Members can change both themselves (PATCH /me). */
   firstName: string;
   lastName: string;
+  /** Name changes still allowed in the current 30 days (2 in any 30 days). */
+  nameChangesLeft: number;
+  /** When the next name change is allowed; null while any are left. */
+  nextNameChangeAt: string | null;
   /** Self-uploaded profile picture as a short-lived signed link (the bucket is private). Unlike displayName, members can set this themselves. */
   avatarUrl: string | null;
   /** People I've blocked: their messages are hidden for me and don't notify me. Never hides anything from safeguarding. */

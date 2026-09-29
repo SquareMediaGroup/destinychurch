@@ -50,6 +50,11 @@ export const emailChangeConfirmSchema = z.object({
   code: z.string().trim().regex(/^\d{6}$/, "The code is 6 digits."),
 });
 
+export const passwordChangeSchema = z.object({
+  password: z.string().min(1).max(200),
+  current: z.string().max(200).optional(),
+});
+
 export const pushTokenSchema = z.object({
   token: z
     .string()

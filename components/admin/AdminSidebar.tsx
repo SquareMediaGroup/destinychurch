@@ -19,7 +19,7 @@ import { usePathname } from "next/navigation";
 import { useCallback, useState, useSyncExternalStore } from "react";
 import { motion, useReducedMotion } from "motion/react";
 import type { AdminNavGroup, AdminNavItem } from "@/lib/adminNav";
-import { breadcrumbsFor, isActive, visibleGroups } from "@/lib/adminNav";
+import { breadcrumbsFor, groupLanding, isActive, visibleGroups } from "@/lib/adminNav";
 import { useAdminSession } from "@/lib/useAdminSession";
 import { CommandTrigger, CommandTriggerIcon } from "@/components/admin/AdminCommandPalette";
 import { AdminThemeToggle } from "@/components/admin/AdminThemeToggle";
@@ -144,32 +144,65 @@ function NavDropdown({
   const groupActive = group.items.some((i) => isActive(i, pathname));
   // Being inside the group always wins; otherwise honour the remembered state.
   const open = groupActive || (openGroups[label] ?? false);
+  // A group with its own overview page (Destiny One, HR): the heading is the
+  // link to it, rather than the same name repeated as the first child.
+  const landing = groupLanding(group);
+  const children = landing ? group.items.filter((i) => i !== landing) : group.items;
+
+  const headingClass = `flex w-full items-center gap-3 rounded-xl text-sm font-bold transition ${
+    groupActive
+      ? "bg-destiny-orange/10 text-destiny-orange"
+      : "text-destiny-grey/60 hover:bg-[#f5f7fa] hover:text-destiny-grey dark:text-white/60 dark:hover:bg-white/5 dark:hover:text-white"
+  }`;
+  const icon = (
+    <span className={`material-symbols-rounded text-xl ${groupActive ? "text-destiny-orange" : ""}`}>
+      {group.icon}
+    </span>
+  );
+  const chevron = (
+    <span className="material-symbols-rounded text-base opacity-50" aria-hidden="true">
+      {open ? "expand_less" : "expand_more"}
+    </span>
+  );
 
   return (
     <div>
-      <button
-        type="button"
-        onClick={() => onToggle(label)}
-        aria-expanded={open}
-        className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-bold transition ${
-          groupActive
-            ? "bg-destiny-orange/10 text-destiny-orange"
-            : "text-destiny-grey/60 hover:bg-[#f5f7fa] hover:text-destiny-grey dark:text-white/60 dark:hover:bg-white/5 dark:hover:text-white"
-        }`}
-      >
-        <span
-          className={`material-symbols-rounded text-xl ${groupActive ? "text-destiny-orange" : ""}`}
+      {landing ? (
+        <div className={headingClass}>
+          <Link
+            href={landing.href}
+            onClick={onNavigate}
+            aria-current={pathname === landing.href ? "page" : undefined}
+            className="flex min-w-0 flex-1 items-center gap-3 py-2.5 pl-3"
+          >
+            {icon}
+            <span className="flex-1 text-left">{label}</span>
+          </Link>
+          <button
+            type="button"
+            onClick={() => onToggle(label)}
+            aria-expanded={open}
+            aria-label={`${open ? "Hide" : "Show"} ${label} pages`}
+            className="flex items-center self-stretch px-3"
+          >
+            {chevron}
+          </button>
+        </div>
+      ) : (
+        <button
+          type="button"
+          onClick={() => onToggle(label)}
+          aria-expanded={open}
+          className={`${headingClass} px-3 py-2.5`}
         >
-          {group.icon}
-        </span>
-        <span className="flex-1 text-left">{label}</span>
-        <span className="material-symbols-rounded text-base opacity-50" aria-hidden="true">
-          {open ? "expand_less" : "expand_more"}
-        </span>
-      </button>
+          {icon}
+          <span className="flex-1 text-left">{label}</span>
+          {chevron}
+        </button>
+      )}
       {open && (
         <div className="ml-9 mt-0.5 flex flex-col gap-0.5">
-          {group.items.map((item) => {
+          {children.map((item) => {
             const active = isActive(item, pathname);
             return (
               <Link

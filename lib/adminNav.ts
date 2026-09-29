@@ -582,6 +582,17 @@ export function visibleGroups(
   })).filter((group) => group.items.length > 0);
 }
 
+/**
+ * A group's own landing page — the item named the same as the group (Destiny
+ * One's and HR's overviews). The sidebar makes the group heading itself the
+ * link to it instead of repeating the name as the first child, and the mobile
+ * sheet calls it "Overview". Undefined when the group has none, or when the
+ * viewer's roles filtered it out.
+ */
+export function groupLanding(group: AdminNavGroup): AdminNavItem | undefined {
+  return group.label === null ? undefined : group.items.find((i) => i.label === group.label);
+}
+
 /* ── Mobile tab bar ────────────────────────────────────────────────────────
  * Phones get a bottom tab bar instead of the sidebar's hamburger drawer, and
  * a tab is a *group* rather than a page: a super admin can see ~35 pages,

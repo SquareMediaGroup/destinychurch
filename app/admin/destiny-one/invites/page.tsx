@@ -121,7 +121,7 @@ export default function InvitesPage() {
           <ul className="space-y-2">
             {list.visible.map((i) => (
               <li key={i.id} className={`${cardClass} flex flex-wrap items-center gap-3 px-5 py-4`}>
-                <div className="min-w-0 flex-1">
+                <div className="min-w-0 flex-1 basis-64 [overflow-wrap:anywhere]">
                   <p className="font-bold text-destiny-grey dark:text-white">{i.displayName}</p>
                   <p className="text-sm text-destiny-grey/55 dark:text-white/55">
                     {i.email} · {i.isAdult ? "Adult" : "Under 18"}

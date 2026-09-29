@@ -27,6 +27,17 @@ const THEME_EVENT = "dc-admin-theme-change";
 
 const DEFAULT_THEME: AdminTheme = "system";
 
+/**
+ * Dark mode is switched off until it's finished — too many admin surfaces
+ * (Destiny One's pages especially) were never checked against it, so it read as
+ * broken rather than dark. While this is false every caller gets light, whatever
+ * is stored or the OS prefers, and AdminThemeToggle renders nothing. The
+ * `dark:` classes across the admin are left in place, dormant (no `.dark`
+ * ancestor ever exists), so turning this back on is a one-line change once each
+ * page has been checked in dark.
+ */
+export const ADMIN_DARK_MODE_ENABLED = false;
+
 let cache: AdminTheme | null = null;
 
 function isTheme(value: unknown): value is AdminTheme {
@@ -102,8 +113,13 @@ export function useAdminTheme(): AdminThemeState {
   // hydrates in instead of one cascading render later.
   const systemDark = useMediaQuery(DARK_SCHEME_QUERY);
 
-  const resolvedTheme: "light" | "dark" =
-    theme === "system" ? (systemDark ? "dark" : "light") : theme;
+  const resolvedTheme: "light" | "dark" = !ADMIN_DARK_MODE_ENABLED
+    ? "light"
+    : theme === "system"
+      ? systemDark
+        ? "dark"
+        : "light"
+      : theme;
 
   const setTheme = useCallback((next: AdminTheme) => writeTheme(next), []);
 

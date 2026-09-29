@@ -55,7 +55,7 @@ export default async function SermonsAdminPage() {
   );
 
   return (
-    <div className="mx-auto max-w-3xl">
+    <div className="mx-auto max-w-3xl px-5 py-10">
       <PageHeader
         title="Sermons"
         subtitle="Publish sermon audio to the podcast feed. Video keeps going to YouTube as normal."

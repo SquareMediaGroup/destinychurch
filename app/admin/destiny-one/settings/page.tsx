@@ -59,11 +59,15 @@ export default function DestinyOneSettingsPage() {
       {settings && (
         <div className="space-y-4">
           <section className={`${cardClass} p-6`}>
-            <Toggle
-              checked={settings.allowAccessRequests}
-              onChange={(next) => save({ allowAccessRequests: next })}
-              label="Let people ask to join"
-            />
+            {/* Toggle's label is only its aria-label — it needs a visible one beside it. */}
+            <div className="flex items-center justify-between gap-4">
+              <p className="font-bold text-destiny-grey dark:text-white">Let people ask to join</p>
+              <Toggle
+                checked={settings.allowAccessRequests}
+                onChange={(next) => save({ allowAccessRequests: next })}
+                label="Let people ask to join"
+              />
+            </div>
             <p className="mt-2 text-sm text-destiny-grey/60 dark:text-white/60">
               On: anyone who signs in without an invite can send a request for you to approve. Off: Destiny One is invite-only, and
               people without an invite are told to ask for one.

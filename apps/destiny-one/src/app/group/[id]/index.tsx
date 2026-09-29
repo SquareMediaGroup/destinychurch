@@ -4,7 +4,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ActivityIndicator, Alert, FlatList, KeyboardAvoidingView, Pressable, Text, TextInput, View } from "react-native";
-import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
+import { router, useFocusEffect, useIsPreview, useLocalSearchParams } from "expo-router";
 import * as Clipboard from "expo-clipboard";
 import * as WebBrowser from "expo-web-browser";
 import { LinearGradient } from "expo-linear-gradient";
@@ -14,6 +14,7 @@ import { Wallpaper } from "@/components/Wallpaper";
 import { GlassSurface } from "@/components/GlassSurface";
 import { Icon } from "@/components/Icon";
 import { MessageActions } from "@/components/MessageActions";
+import { Appear, PressableScale } from "@/components/Motion";
 import { Divider, MessageBubble, buildRows, type Row } from "@/components/MessageBubble";
 import { NotificationPrompt } from "@/components/NotificationPrompt";
 import { Avatar, BackButton, ConfirmDialog, EmptyState, ErrorState, GlassIconButton, PrimaryButton, withAlpha } from "@/components/ui";
@@ -32,7 +33,11 @@ import { ORANGE, useTheme } from "@/theme/tokens";
 
 export default function GroupChat() {
   const t = useTheme();
-  const insets = useSafeAreaInsets();
+  // Pressing and holding a chat in the list peeks at it here: read-only, and
+  // it doesn't count as reading it (no receipts, the badge stays).
+  const preview = useIsPreview();
+  const safe = useSafeAreaInsets();
+  const insets = preview ? { top: 8, bottom: 0, left: 0, right: 0 } : safe;
   const { id } = useLocalSearchParams<{ id: string }>();
   const { me, setMe, accounts, activeSlot } = useSession();
   // Only when there's another account on this phone, and never from a child account (then a slow tap must still just send).
@@ -55,6 +60,21 @@ export default function GroupChat() {
   const [toast, setToast] = useState<string | null>(null);
 
   const rows = useMemo(() => (messages ? buildRows(messages, firstUnreadId).reverse() : []), [messages, firstUnreadId]);
+
+  // Messages that turn up while the chat is open (sent here, or arriving live)
+  // spring in; everything already there, or loaded from further back, doesn't.
+  const [openedAt] = useState(() => Date.now());
+  const arriving = (m: LocalMessage) => m.id < 0 || (!m.mine && Date.parse(m.createdAt) > openedAt);
+
+  // A light tap when someone else's message lands while you're reading.
+  const newestSeen = useRef(0);
+  useEffect(() => {
+    const newest = messages?.[messages.length - 1];
+    if (!newest || newest.id <= newestSeen.current) return;
+    const fresh = newestSeen.current > 0 && !newest.mine && Date.parse(newest.createdAt) > openedAt;
+    newestSeen.current = newest.id;
+    if (fresh && !preview) haptic.tick();
+  }, [messages, openedAt, preview]);
   const byId = useMemo(() => new Map((messages ?? []).map((m) => [m.id, m])), [messages]);
   const admins = useMemo(() => new Set((group?.members ?? []).filter((m) => m.role === "admin").map((m) => m.id)), [group]);
   const tags = useMemo(() => new Map((group?.members ?? []).map((m) => [m.id, m.tag])), [group]);
@@ -62,12 +82,17 @@ export default function GroupChat() {
   // While on screen, new messages here aren't unread.
   useFocusEffect(
     useCallback(() => {
+      if (preview) return;
       setOpenGroup(id);
       return () => setOpenGroup(null);
-    }, [id]),
+    }, [id, preview]),
   );
   // Read receipts while the chat is on screen.
-  useFocusEffect(useCallback(() => markRead(), [markRead]));
+  useFocusEffect(
+    useCallback(() => {
+      if (!preview) markRead();
+    }, [markRead, preview]),
+  );
 
   useEffect(() => {
     if (!toast) return;
@@ -132,7 +157,7 @@ export default function GroupChat() {
     }
   }
 
-  const footer = !group ? null : frozen || archived ? (
+  const footer = !group || preview ? null : frozen || archived ? (
     <View style={[{ borderRadius: 28, backgroundColor: t.card, borderWidth: 0.5, borderColor: t.glassLine, padding: 18, paddingBottom: 16, gap: 12 }, t.shadow]}>
       <View style={{ flexDirection: "row", gap: 12, alignItems: "flex-start" }}>
         <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: t.fill, alignItems: "center", justifyContent: "center" }}>
@@ -212,6 +237,7 @@ export default function GroupChat() {
                 senderTag={(item.m.sender && tags.get(item.m.sender.id)) || null}
                 senderIsGroupAdmin={!!item.m.sender && admins.has(item.m.sender.id)}
                 canReply={!!group?.canPost && !frozen && !archived}
+                arriving={arriving(item.m)}
                 onReply={() => startReply(item.m)}
                 onLongPress={() => setActionFor(item.m)}
                 onOpenAttachment={(url) => {
@@ -246,7 +272,7 @@ export default function GroupChat() {
       {/* Header: back · group pill (opens info) · search */}
       {t.wall ? null : <LinearGradient pointerEvents="none" colors={[t.bg, withAlpha(t.bg, 0)]} locations={[0.45, 1]} style={{ position: "absolute", top: 0, left: 0, right: 0, height: insets.top + 76 }} />}
       <View style={{ position: "absolute", top: insets.top, left: 0, right: 0, height: 56, flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 16 }}>
-        <BackButton />
+        {preview ? <View style={{ width: 44 }} /> : <BackButton />}
         <Pressable accessibilityRole="button" accessibilityLabel={`${name}, group info`} onPress={() => router.push(`/group/${id}/info`)} style={{ flexShrink: 1, marginHorizontal: 8 }}>
           {({ pressed }) => (
             <GlassSurface interactive style={[{ height: 48, maxWidth: 240, borderRadius: 24, flexDirection: "row", alignItems: "center", gap: 10, paddingLeft: 6, paddingRight: 16, opacity: pressed ? 0.8 : 1 }, t.shadow]}>
@@ -262,24 +288,33 @@ export default function GroupChat() {
             </GlassSurface>
           )}
         </Pressable>
-        <GlassIconButton icon="search" label="Search" onPress={() => router.push("/search")} />
+        {preview ? <View style={{ width: 44 }} /> : <GlassIconButton icon="search" label="Search" onPress={() => router.push("/search")} />}
       </View>
 
       {/* Footer */}
       <View style={{ paddingHorizontal: 12, paddingTop: 6, paddingBottom: Math.max(insets.bottom, 12) }}>
         {toast ? (
-          <View style={{ alignItems: "center", marginBottom: 8 }}>
+          <Appear key={toast} from={{ y: 14, scale: 0.9 }} style={{ alignItems: "center", marginBottom: 8 }}>
             <GlassSurface style={{ borderRadius: 16, paddingVertical: 8, paddingHorizontal: 14 }}>
               <Text style={{ fontSize: 14, color: t.text }}>{toast}</Text>
             </GlassSurface>
-          </View>
+          </Appear>
         ) : null}
         {showJump ? (
-          <Pressable accessibilityLabel="Jump to latest" onPress={() => list.current?.scrollToOffset({ offset: 0, animated: true })} style={{ position: "absolute", right: 16, top: -52 }}>
-            <GlassSurface interactive style={[{ width: 44, height: 44, borderRadius: 22, alignItems: "center", justifyContent: "center" }, t.shadow]}>
-              <Icon name="chevronDown" size={20} color={t.text} strokeWidth={2.4} />
-            </GlassSurface>
-          </Pressable>
+          <Appear from={{ y: 10, scale: 0.5 }} style={{ position: "absolute", right: 16, top: -52 }}>
+            <PressableScale
+              accessibilityLabel="Jump to latest"
+              scaleTo={0.88}
+              onPress={() => {
+                haptic.tick();
+                list.current?.scrollToOffset({ offset: 0, animated: true });
+              }}
+            >
+              <GlassSurface interactive style={[{ width: 44, height: 44, borderRadius: 22, alignItems: "center", justifyContent: "center" }, t.shadow]}>
+                <Icon name="chevronDown" size={20} color={t.text} strokeWidth={2.4} />
+              </GlassSurface>
+            </PressableScale>
+          </Appear>
         ) : null}
         {footer}
       </View>
@@ -360,7 +395,7 @@ export default function GroupChat() {
         }}
       />
 
-      <NotificationPrompt enabled={!!group} />
+      <NotificationPrompt enabled={!!group && !preview} />
     </KeyboardAvoidingView>
   );
 }

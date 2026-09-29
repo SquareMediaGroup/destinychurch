@@ -76,7 +76,7 @@ export default function Poll() {
           </Card>
         </View>
 
-        <FormError message={!check.ok && (question || options.some(Boolean)) ? check.reason : null} />
+        <FormError live message={!check.ok && (question || options.some(Boolean)) ? check.reason : null} />
       </ScrollView>
       <PrimaryButton label="Send" onPress={send} disabled={!check.ok} style={{ marginTop: 14 }} />
     </View>

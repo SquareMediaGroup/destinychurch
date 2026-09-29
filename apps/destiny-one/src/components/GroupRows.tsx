@@ -1,7 +1,7 @@
 // Shared pieces for listing groups: ordering, the preview line, and the
 // 1B card chat row.
 
-import { Pressable, Text, View } from "react-native";
+import { Pressable, Text, View, type PressableProps } from "react-native";
 import type { D1CommunitySummary, D1GroupSummary } from "@destiny/shared";
 import { Icon } from "@/components/Icon";
 import { Avatar, CountBadge } from "@/components/ui";
@@ -29,7 +29,8 @@ export function previewParts(g: D1GroupSummary): { who: string; line: string; it
 }
 
 /** 1B "Cards" row: rounded-square avatar, count badge, one-line preview. */
-export function CardGroupRow({ group, onPress, onPressIn }: { group: D1GroupSummary; onPress: () => void; onPressIn?: () => void }) {
+// onPress is optional: inside a <Link asChild> the link supplies it.
+export function CardGroupRow({ group, onPress, onPressIn, ...linkProps }: { group: D1GroupSummary; onPress?: () => void; onPressIn?: () => void } & Omit<PressableProps, "children" | "style">) {
   const t = useTheme();
   const unread = group.unreadCount > 0;
   const frozen = group.state === "frozen";
@@ -47,6 +48,7 @@ export function CardGroupRow({ group, onPress, onPressIn }: { group: D1GroupSumm
 
   return (
     <Pressable
+      {...linkProps}
       onPress={onPress}
       onPressIn={onPressIn}
       accessibilityRole="button"

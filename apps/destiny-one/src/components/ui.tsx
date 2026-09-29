@@ -29,6 +29,8 @@ import { router } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { GlassSurface } from "@/components/GlassSurface";
 import { Icon, type IconName } from "@/components/Icon";
+import { Appear, Pop, PressableScale, Shake, reduceMotion, springs } from "@/components/Motion";
+import { haptic } from "@/lib/haptics";
 import { ORANGE, ORANGE_LIGHT, useTheme, type Theme } from "@/theme/tokens";
 
 // ── Beam ────────────────────────────────────────────────────────────────────
@@ -98,31 +100,30 @@ export function PrimaryButton({ label, onPress, busy, disabled, style }: { label
   const t = useTheme();
   const off = disabled || busy;
   return (
-    <Beam radius={999} active={!disabled} style={[{ opacity: disabled ? 0.4 : 1 }, style]}>
-      <Pressable
-        accessibilityRole="button"
-        accessibilityState={{ disabled: !!off, busy: !!busy }}
-        disabled={off}
-        onPress={onPress}
-        style={({ pressed }) => [styles.pill, { backgroundColor: t.btn, opacity: pressed ? 0.85 : 1, transform: [{ scale: pressed ? 0.98 : 1 }] }]}
-      >
-        {busy ? <ActivityIndicator color={t.onBtn} /> : <Text style={[styles.pillText, { color: t.onBtn }]}>{label}</Text>}
-      </Pressable>
-    </Beam>
+    <PressableScale accessibilityRole="button" accessibilityState={{ disabled: !!off, busy: !!busy }} disabled={off} onPress={onPress} feedback="tick" scaleTo={0.97} wrapStyle={style}>
+      {({ pressed }) => (
+        <Beam radius={999} active={!disabled} style={{ opacity: disabled ? 0.4 : 1 }}>
+          <View style={[styles.pill, { backgroundColor: t.btn, opacity: pressed ? 0.88 : 1 }]}>
+            {busy ? <ActivityIndicator color={t.onBtn} /> : <Text style={[styles.pillText, { color: t.onBtn }]}>{label}</Text>}
+          </View>
+        </Beam>
+      )}
+    </PressableScale>
   );
 }
 
 export function SecondaryButton({ label, onPress, busy, style }: { label: string; onPress: () => void; busy?: boolean; style?: StyleProp<ViewStyle> }) {
   const t = useTheme();
   return (
-    <Pressable
+    <PressableScale
       accessibilityRole="button"
       disabled={busy}
       onPress={onPress}
-      style={({ pressed }) => [styles.pill, { backgroundColor: t.fill, opacity: pressed ? 0.7 : 1, transform: [{ scale: pressed ? 0.98 : 1 }] }, style]}
+      scaleTo={0.97}
+      style={({ pressed }) => [styles.pill, { backgroundColor: t.fill, opacity: pressed ? 0.75 : 1 }, style]}
     >
       {busy ? <ActivityIndicator color={t.text} /> : <Text style={[styles.pillText, { color: t.text }]}>{label}</Text>}
-    </Pressable>
+    </PressableScale>
   );
 }
 
@@ -139,13 +140,13 @@ export function TextButton({ label, onPress, color, style }: { label: string; on
 export function GlassIconButton({ icon, label, onPress, size = 44 }: { icon: IconName; label: string; onPress: () => void; size?: number }) {
   const t = useTheme();
   return (
-    <Pressable accessibilityRole="button" accessibilityLabel={label} onPress={onPress} hitSlop={4}>
+    <PressableScale accessibilityRole="button" accessibilityLabel={label} onPress={onPress} hitSlop={4} scaleTo={0.9}>
       {({ pressed }) => (
-        <GlassSurface interactive style={[{ width: size, height: size, borderRadius: size / 2, alignItems: "center", justifyContent: "center", opacity: pressed ? 0.7 : 1, transform: [{ scale: pressed ? 0.94 : 1 }] }, t.shadow]}>
+        <GlassSurface interactive style={[{ width: size, height: size, borderRadius: size / 2, alignItems: "center", justifyContent: "center", opacity: pressed ? 0.75 : 1 }, t.shadow]}>
           <Icon name={icon} size={icon === "close" ? 16 : 22} color={t.text} strokeWidth={icon === "close" ? 2.6 : 2.2} />
         </GlassSurface>
       )}
-    </Pressable>
+    </PressableScale>
   );
 }
 
@@ -243,9 +244,11 @@ export function Avatar({ name, size, radius, announcements, uri }: { name: strin
 export function CountBadge({ count, small }: { count: number; small?: boolean }) {
   const h = small ? 20 : 22;
   return (
-    <View style={{ minWidth: h, height: h, borderRadius: h / 2, backgroundColor: ORANGE, alignItems: "center", justifyContent: "center", paddingHorizontal: small ? 6 : 7 }}>
-      <Text maxFontSizeMultiplier={1.2} style={{ color: "#0E1013", fontSize: small ? 12 : 13, fontWeight: "600", fontVariant: ["tabular-nums"] }}>{count > 99 ? "99+" : count}</Text>
-    </View>
+    <Appear from={{ scale: 0.4 }}>
+      <Pop value={count} style={{ minWidth: h, height: h, borderRadius: h / 2, backgroundColor: ORANGE, alignItems: "center", justifyContent: "center", paddingHorizontal: small ? 6 : 7 }}>
+        <Text maxFontSizeMultiplier={1.2} style={{ color: "#0E1013", fontSize: small ? 12 : 13, fontWeight: "600", fontVariant: ["tabular-nums"] }}>{count > 99 ? "99+" : count}</Text>
+      </Pop>
+    </Appear>
   );
 }
 
@@ -304,9 +307,9 @@ export function SettingsRow({ icon, iconBg, iconColor, label, value, onPress, ch
 export function CardButton({ label, onPress, busy }: { label: string; onPress: () => void; busy?: boolean }) {
   const t = useTheme();
   return (
-    <Pressable onPress={onPress} disabled={busy} style={({ pressed }) => [{ height: 50, borderRadius: 22, backgroundColor: pressed ? t.fill : t.card, borderWidth: StyleSheet.hairlineWidth, borderColor: t.glassLine, alignItems: "center", justifyContent: "center" }]}>
+    <PressableScale onPress={onPress} disabled={busy} scaleTo={0.98} style={({ pressed }) => [{ height: 50, borderRadius: 22, backgroundColor: pressed ? t.fill : t.card, borderWidth: StyleSheet.hairlineWidth, borderColor: t.glassLine, alignItems: "center", justifyContent: "center" }]}>
       {busy ? <ActivityIndicator color={t.tint} /> : <Text style={{ fontSize: 17, color: t.tint }}>{label}</Text>}
-    </Pressable>
+    </PressableScale>
   );
 }
 
@@ -361,10 +364,10 @@ export function Centered({ children }: { children: ReactNode }) {
 export function EmptyState({ title, body }: { title: string; body?: string }) {
   const t = useTheme();
   return (
-    <View style={{ paddingVertical: 80, paddingHorizontal: 40, alignItems: "center", gap: 6 }}>
+    <Appear from={{ y: 16, scale: 0.97 }} style={{ paddingVertical: 80, paddingHorizontal: 40, alignItems: "center", gap: 6 }}>
       <Text style={{ fontSize: 20, fontWeight: "600", color: t.text, textAlign: "center" }}>{title}</Text>
       {body ? <Text style={{ fontSize: 15, lineHeight: 20, color: t.muted, textAlign: "center" }}>{body}</Text> : null}
-    </View>
+    </Appear>
   );
 }
 
@@ -424,22 +427,28 @@ export function SkeletonRows({ count, avatar = 40 }: { count: number; avatar?: n
 export function ErrorState({ message, onRetry }: { message: string; onRetry: () => void }) {
   const t = useTheme();
   return (
-    <View style={{ paddingVertical: 60, paddingHorizontal: 32, alignItems: "center", gap: 14 }}>
+    <Appear from={{ y: 16 }} style={{ paddingVertical: 60, paddingHorizontal: 32, alignItems: "center", gap: 14 }}>
       <Text style={{ fontSize: 15, lineHeight: 20, color: t.muted, textAlign: "center" }}>{message}</Text>
       <SecondaryButton label="Try again" onPress={onRetry} style={{ paddingHorizontal: 28 }} />
-    </View>
+    </Appear>
   );
 }
 
-/** Inline error line under a form. */
-export function FormError({ message }: { message: string | null }) {
+/**
+ * Inline error line under a form. A new error shakes in with an error haptic;
+ * `live` (validation that updates as you type) just shows, without either.
+ */
+export function FormError({ message, live }: { message: string | null; live?: boolean }) {
   const t = useTheme();
+  useEffect(() => {
+    if (message && !live) haptic.error();
+  }, [message, live]);
   if (!message) return null;
   return (
-    <View style={{ flexDirection: "row", gap: 8, alignItems: "flex-start", paddingHorizontal: 4 }}>
+    <Shake trigger={live ? null : message} style={{ flexDirection: "row", gap: 8, alignItems: "flex-start", paddingHorizontal: 4 }}>
       <Icon name="alertCircle" size={15} color={t.tint} strokeWidth={2.2} />
       <Text style={{ flex: 1, fontSize: 13, lineHeight: 18, color: t.tint }}>{message}</Text>
-    </View>
+    </Shake>
   );
 }
 
@@ -466,11 +475,24 @@ export function ConfirmDialog({
   children?: ReactNode;
 }) {
   const t = useTheme();
+  const [p] = useState(() => new Animated.Value(0));
+  useEffect(() => {
+    if (!visible) return;
+    haptic.warning();
+    p.setValue(reduceMotion() ? 1 : 0);
+    Animated.spring(p, { toValue: 1, ...springs.enter, stiffness: 320, useNativeDriver: true }).start();
+  }, [visible, p]);
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onCancel}>
       <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
         <Pressable accessibilityLabel="Cancel" onPress={onCancel} style={[StyleSheet.absoluteFill, { backgroundColor: t.scrim }]} />
-        <View style={[{ width: 300, borderRadius: 32, backgroundColor: t.sheet, paddingTop: 22, paddingHorizontal: 18, paddingBottom: 16, gap: 18 }, t.shadow]}>
+        <Animated.View
+          style={[
+            { width: 300, borderRadius: 32, backgroundColor: t.sheet, paddingTop: 22, paddingHorizontal: 18, paddingBottom: 16, gap: 18 },
+            t.shadow,
+            { transform: [{ scale: p.interpolate({ inputRange: [0, 1], outputRange: [0.86, 1] }) }, { translateY: p.interpolate({ inputRange: [0, 1], outputRange: [24, 0] }) }] },
+          ]}
+        >
           <View style={{ gap: 6 }}>
             <Text style={{ fontSize: 17, fontWeight: "600", color: t.text, textAlign: "center" }}>{title}</Text>
             <Text style={{ fontSize: 15, lineHeight: 20, color: t.muted, textAlign: "center" }}>{body}</Text>
@@ -480,7 +502,7 @@ export function ConfirmDialog({
             <DialogButton t={t} label="Cancel" onPress={onCancel} />
             <DialogButton t={t} label={confirmLabel} onPress={onConfirm} primary busy={busy} />
           </View>
-        </View>
+        </Animated.View>
       </View>
     </Modal>
   );
@@ -488,9 +510,9 @@ export function ConfirmDialog({
 
 function DialogButton({ t, label, onPress, primary, busy }: { t: Theme; label: string; onPress: () => void; primary?: boolean; busy?: boolean }) {
   return (
-    <Pressable onPress={onPress} disabled={busy} style={({ pressed }) => [{ flex: 1, height: 48, borderRadius: 24, alignItems: "center", justifyContent: "center", backgroundColor: primary ? ORANGE : t.fill, opacity: pressed ? 0.8 : 1 }]}>
+    <PressableScale onPress={onPress} disabled={busy} feedback={primary ? "press" : undefined} wrapStyle={{ flex: 1 }} style={({ pressed }) => [{ height: 48, borderRadius: 24, alignItems: "center", justifyContent: "center", backgroundColor: primary ? ORANGE : t.fill, opacity: pressed ? 0.85 : 1 }]}>
       {busy ? <ActivityIndicator color="#0E1013" /> : <Text style={{ fontSize: 17, fontWeight: "600", color: primary ? "#0E1013" : t.text }}>{label}</Text>}
-    </Pressable>
+    </PressableScale>
   );
 }
 
@@ -498,10 +520,21 @@ function DialogButton({ t, label, onPress, primary, busy }: { t: Theme; label: s
 export function PickRow({ label, on, onPress }: { label: string; on: boolean; onPress: () => void }) {
   const t = useTheme();
   return (
-    <Pressable accessibilityRole="radio" accessibilityState={{ selected: on }} onPress={onPress} style={({ pressed }) => [{ flexDirection: "row", alignItems: "center", paddingLeft: 16, backgroundColor: pressed ? t.fill : "transparent" }]}>
+    <Pressable
+      accessibilityRole="radio"
+      accessibilityState={{ selected: on }}
+      onPress={() => {
+        if (!on) haptic.selection();
+        onPress();
+      }}
+      style={({ pressed }) => [{ flexDirection: "row", alignItems: "center", paddingLeft: 16, backgroundColor: pressed ? t.fill : "transparent" }]}>
       <View style={{ flex: 1, flexDirection: "row", alignItems: "center", paddingVertical: 13, paddingRight: 16 }}>
         <Text style={{ flex: 1, fontSize: 17, color: t.text }}>{label}</Text>
-        {on ? <Icon name="check" size={18} color={t.tint} strokeWidth={2.8} /> : null}
+        {on ? (
+          <Appear from={{ scale: 0.3 }}>
+            <Icon name="check" size={18} color={t.tint} strokeWidth={2.8} />
+          </Appear>
+        ) : null}
       </View>
     </Pressable>
   );

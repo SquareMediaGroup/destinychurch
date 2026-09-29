@@ -10,6 +10,7 @@ import { isAdding } from "@/lib/accounts";
 import { requestEmailCode, verifyEmailCode } from "@/lib/auth";
 import { routeFor, useSession } from "@/state/session";
 import { useTheme } from "@/theme/tokens";
+import { haptic } from "@/lib/haptics";
 
 const RESEND_AFTER = 60;
 
@@ -44,6 +45,7 @@ export default function Code() {
           return;
         }
       } else setMe(me);
+      haptic.success();
       router.dismissAll();
       router.replace(routeFor(me));
     } catch (err) {
@@ -80,6 +82,7 @@ export default function Code() {
 
       <CodeBoxes
         code={code}
+        error={error}
         onChange={(digits) => {
           setCode(digits);
           setError(null);

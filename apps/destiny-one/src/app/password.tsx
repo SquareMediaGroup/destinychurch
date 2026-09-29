@@ -11,6 +11,7 @@ import { Field, FormError, LargeTitle, Lead, PrimaryButton, TextButton } from "@
 import { isAdding } from "@/lib/accounts";
 import { requestEmailCode, signInWithPassword } from "@/lib/auth";
 import { routeFor, useSession } from "@/state/session";
+import { haptic } from "@/lib/haptics";
 
 export default function Password() {
   const { email = "" } = useLocalSearchParams<{ email: string }>();
@@ -32,6 +33,7 @@ export default function Password() {
           return;
         }
       } else setMe(me);
+      haptic.success();
       router.dismissAll();
       router.replace(routeFor(me));
       if (leaked && me.onboarding === "active") offerPasswordChange();

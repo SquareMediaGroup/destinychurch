@@ -10,6 +10,7 @@ import { MIN_AGE, UNDER_MINIMUM_AGE_MESSAGE, isUnderMinimumAge, todayInLondon } 
 import { api } from "@/lib/api";
 import { errorMessage, routeFor, useSession } from "@/state/session";
 import { useTheme } from "@/theme/tokens";
+import { haptic } from "@/lib/haptics";
 
 /** "DD / MM / YYYY" as typed → YYYY-MM-DD, or null if it isn't a real date. */
 function parseDob(text: string): string | null {
@@ -56,6 +57,7 @@ export default function RequestAccess() {
     try {
       const next = await api.requestAccess({ name: name.trim(), dateOfBirth, note: note.trim() || undefined });
       setMe(next);
+      haptic.success();
       router.replace(routeFor(next));
     } catch (err) {
       setError(errorMessage(err));

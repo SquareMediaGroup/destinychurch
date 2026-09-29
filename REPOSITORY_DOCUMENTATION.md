@@ -4236,6 +4236,7 @@ needs at least 2 verified adults.") pass through as `rule_violation` (422). Type
 | `auth/churchsuite/start` → `callback` → `exchange` | GET, GET, POST | Sign in with ChurchSuite (below) |
 | `me` | GET, PATCH, DELETE | PATCH `{ firstName, lastName }` changes my own name (5/min; Profile tab → Change name, `edit-name.tsx`). DELETE = GDPR erasure (`{ "confirm": "DELETE" }`). `D1Me` includes `firstName`, `lastName`, `blocked` (people I've blocked), `avatarUrl` (a signed link) and `isStaff` (has Destiny One / Safeguarding / Super Admin access; used only to check an "Add admin account") |
 | `me/avatar` | POST, DELETE | Profile picture (multipart `file`, 5 MB). Active members only; stored privately in `d1-avatars` |
+| `me/email` → `me/email/confirm` | POST, POST | Change my own sign-in email (Profile → Email, `src/app/change-email.tsx`). `{ email }` emails a 6-digit code to the new address through Resend and returns a sealed `ticket` (`lib/destinyOne/emailChange.ts`: account + address + code hash, 15 minutes); `{ ticket, code }` then sets the auth email with the admin API (`email_confirm: true`) and emails a notice to the old address. "Already has an account" is only said after the code checks out, so it never reveals who has one. Doesn't use `auth.updateUser({ email })`: Supabase's project-wide "Change email" template is link-based (the portal uses it) and secure email change would also need a code from the old inbox. Active members only; rate-limited per account. The app refreshes its Supabase session afterwards |
 | `members/[id]/block` | POST, DELETE | Block / unblock someone; returns `D1Me`. Hides their messages and notifications for me only; logged for safeguarding |
 | `me/consents` | POST | Current versions only (`REQUIRED_CONSENTS`) |
 | `me/export` | GET | GDPR access: profile (incl. access-request note, declared and staff-set 18th birthday, how and when verified, a link to the profile picture), consents, memberships, own messages (incl. deleted), files sent (24-hour links), reactions, blocks, own reports, feedback sent |
@@ -5983,6 +5984,7 @@ and a ChurchSuite-only `resyncMember`.
 - `churchsuite.server.ts` — ChurchSuite API v2: client-credentials token (cached), contact/child
   lookups, auth-code exchange, current user. Throws `ChurchSuiteUnavailable` on outage so callers treat
   it as "no change".
+- `emailChange.ts` / `emailChange.server.ts` — changing your own sign-in email: the sealed code ticket (pure, unit-tested in `tests/unit/destiny-one-email-change.spec.ts`; sealed with `DESTINY_ONE_SECRET`, falling back to the Supabase secret key) and the send / confirm steps behind `me/email`.
 - `identity.server.ts` — `onboardMember` (invite → active; optional ChurchSuite sign-in → verified; else `pending`), `submitAccessRequest`, `resyncMember` (ChurchSuite-verified members only; outages never downgrade).
 - `chat.server.ts` — reads shaped into `@destiny/shared` types: community list, group detail (adult flags
   only for managers), message pages with signed attachment URLs; deleted messages returned without body.

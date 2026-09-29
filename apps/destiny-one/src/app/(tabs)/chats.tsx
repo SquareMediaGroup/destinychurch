@@ -1,9 +1,13 @@
 // B1 Chats — variant 1B "Cards and filters": All / Unread / Announcements
 // chips, then one card per community with "See all" to the community page.
+//
+// Press and hold a chat to peek at it (as in WhatsApp): the system context
+// menu shows the conversation, read-only and without marking it read, with
+// Mark as read / Mute / Group info underneath. Tapping the preview opens it.
 
 import { useMemo, useState } from "react";
 import { FlatList, Pressable, RefreshControl, ScrollView, Text, View } from "react-native";
-import { router } from "expo-router";
+import { Link, router } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { GlassSurface } from "@/components/GlassSurface";
 import { CardGroupRow, orderedGroups } from "@/components/GroupRows";
@@ -26,38 +30,55 @@ const FILTERS: { key: Filter; label: string }[] = [
   { key: "announcements", label: "Announcements" },
 ];
 
-/** Read and Mute for one chat row, as swipe actions. Both apply at once and roll back if the server says no. */
+// Read and Mute apply at once and roll back if the server says no.
+function markChatRead(g: D1GroupSummary) {
+  const last = g.lastMessage;
+  if (!last || g.unreadCount === 0) return;
+  const was = g.unreadCount;
+  updateGroupSummary(g.id, (x) => ({ ...x, unreadCount: 0 }));
+  api.markRead(g.id, last.id).catch(() => updateGroupSummary(g.id, (x) => ({ ...x, unreadCount: was })));
+}
+
+function toggleChatMute(g: D1GroupSummary) {
+  const until = g.muted ? null : "2999-12-31T00:00:00Z"; // "Always"; the fixed choices live in Notifications
+  updateGroupSummary(g.id, (x) => ({ ...x, muted: until !== null }));
+  api
+    .mute(g.id, until)
+    .then(() => queryClient.invalidateQueries({ queryKey: keys.group(g.id) }))
+    .catch(() => updateGroupSummary(g.id, (x) => ({ ...x, muted: g.muted })));
+}
+
+/** Read and Mute for one chat row, as swipe actions. */
 function rowActions(g: D1GroupSummary): SwipeAction[] {
   const actions: SwipeAction[] = [];
-  const last = g.lastMessage;
-  if (g.unreadCount > 0 && last) {
-    actions.push({
-      key: "read",
-      label: "Read",
-      icon: "check",
-      bg: "#0B62D6",
-      onPress: () => {
-        const was = g.unreadCount;
-        updateGroupSummary(g.id, (x) => ({ ...x, unreadCount: 0 }));
-        api.markRead(g.id, last.id).catch(() => updateGroupSummary(g.id, (x) => ({ ...x, unreadCount: was })));
-      },
-    });
-  }
-  actions.push({
-    key: "mute",
-    label: g.muted ? "Unmute" : "Mute",
-    icon: g.muted ? "bell" : "bellOff",
-    bg: "#363F48",
-    onPress: () => {
-      const until = g.muted ? null : "2999-12-31T00:00:00Z"; // "Always"; the fixed choices live in Notifications
-      updateGroupSummary(g.id, (x) => ({ ...x, muted: until !== null }));
-      api
-        .mute(g.id, until)
-        .then(() => queryClient.invalidateQueries({ queryKey: keys.group(g.id) }))
-        .catch(() => updateGroupSummary(g.id, (x) => ({ ...x, muted: g.muted })));
-    },
-  });
+  if (g.unreadCount > 0 && g.lastMessage) actions.push({ key: "read", label: "Read", icon: "check", bg: "#0B62D6", onPress: () => markChatRead(g) });
+  actions.push({ key: "mute", label: g.muted ? "Unmute" : "Mute", icon: g.muted ? "bell" : "bellOff", bg: "#363F48", onPress: () => toggleChatMute(g) });
   return actions;
+}
+
+/** A chat row that opens on tap and peeks on press and hold. */
+function ChatRow({ group: g }: { group: D1GroupSummary }) {
+  return (
+    <Link href={`/group/${g.id}`} asChild>
+      <Link.Trigger>
+        <CardGroupRow group={g} onPressIn={() => prefetchGroup(g.id)} />
+      </Link.Trigger>
+      <Link.Preview />
+      <Link.Menu>
+        {g.unreadCount > 0 && g.lastMessage ? (
+          <Link.MenuAction icon="checkmark.message" onPress={() => markChatRead(g)}>
+            Mark as read
+          </Link.MenuAction>
+        ) : null}
+        <Link.MenuAction icon={g.muted ? "bell" : "bell.slash"} onPress={() => toggleChatMute(g)}>
+          {g.muted ? "Unmute" : "Mute"}
+        </Link.MenuAction>
+        <Link.MenuAction icon="info.circle" onPress={() => router.push(`/group/${g.id}/info`)}>
+          Group info
+        </Link.MenuAction>
+      </Link.Menu>
+    </Link>
+  );
 }
 
 export default function Chats() {
@@ -163,7 +184,7 @@ export default function Chats() {
               <View key={g.id}>
                 {i > 0 ? <Separator inset={70} /> : null}
                 <SwipeActions actions={rowActions(g)} background={t.card}>
-                  <CardGroupRow group={g} onPressIn={() => prefetchGroup(g.id)} onPress={() => router.push(`/group/${g.id}`)} />
+                  <ChatRow group={g} />
                 </SwipeActions>
               </View>
             ))}

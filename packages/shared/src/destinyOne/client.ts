@@ -142,6 +142,10 @@ export function createDestinyOneClient({ baseUrl, getAccessToken, fetchImpl }: D
     requestAccess: (input: D1AccessRequest) => call<D1Me>("POST", "/me/access-request", input),
     acceptConsents: (consents: D1Consent[]) => call<D1Me>("POST", "/me/consents", { consents }),
     exportMyData: () => call<D1Export>("GET", "/me/export"),
+    /** Change my sign-in email, step 1: emails a code to the new address. Send the ticket back with it. */
+    startEmailChange: (email: string) => call<{ ticket: string }>("POST", "/me/email", { email }),
+    /** Step 2: the code from that email. Refresh the Supabase session afterwards to pick up the new address. */
+    confirmEmailChange: (ticket: string, code: string) => call<{ email: string }>("POST", "/me/email/confirm", { ticket, code }),
     /** "Report a problem" and "Send feedback". Goes to the Destiny One Admins, not the safeguarding team. */
     sendFeedback: (input: D1FeedbackInput) => call<{ ok: true }>("POST", "/feedback", input),
     deleteAccount: () => call<{ deleted: true }>("DELETE", "/me", { confirm: "DELETE" }),

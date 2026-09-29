@@ -107,6 +107,8 @@ export default function Profile() {
         <Separator inset={62} />
         <SettingsRow icon="sliders" label="Appearance" onPress={() => router.push("/appearance")} />
         <Separator inset={62} />
+        <SettingsRow icon="mail" label="Email" onPress={() => router.push("/change-email")} />
+        <Separator inset={62} />
         <SettingsRow icon="lock" label="Password" onPress={() => router.push("/set-password")} />
         <Separator inset={62} />
         <SettingsRow icon="alertCircle" label="Blocked people" onPress={() => router.push("/blocked")} />

@@ -5,7 +5,7 @@
 import { useSyncExternalStore } from "react";
 import { Appearance as SystemAppearance } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { DEFAULT_SEND_COLOUR, DEFAULT_WALLPAPER, SEND_COLOURS, WALLPAPERS } from "@/theme/appearance";
+import { CUSTOM_WALLPAPER, DEFAULT_BLUR, DEFAULT_DIM, DEFAULT_SEND_COLOUR, DEFAULT_WALLPAPER, MAX_DIM, PHOTO_WALLPAPERS, SEND_COLOURS, WALLPAPERS, unit } from "@/theme/appearance";
 
 export type ThemeMode = "system" | "light" | "dark";
 const MODES: readonly ThemeMode[] = ["system", "light", "dark"];
@@ -13,11 +13,18 @@ const MODES: readonly ThemeMode[] = ["system", "light", "dark"];
 export interface Appearance {
   mode: ThemeMode;
   sendColour: string;
+  /** A pattern id, `photo:<key>`, or "custom" (the person's own photo, see `customFile`). */
   wallpaper: string;
+  /** How far a photo wallpaper is dimmed (faded toward the page colour), 0 to MAX_DIM. */
+  dim: number;
+  /** How blurred a photo wallpaper is, 0 to 1. */
+  blur: number;
+  /** File name of the person's own wallpaper photo in the app's documents folder. */
+  customFile: string | null;
 }
 
 const KEY = "d1.appearance.v1";
-const DEFAULTS: Appearance = { mode: "system", sendColour: DEFAULT_SEND_COLOUR, wallpaper: DEFAULT_WALLPAPER };
+const DEFAULTS: Appearance = { mode: "system", sendColour: DEFAULT_SEND_COLOUR, wallpaper: DEFAULT_WALLPAPER, dim: DEFAULT_DIM, blur: DEFAULT_BLUR, customFile: null };
 
 let current: Appearance = DEFAULTS;
 const listeners = new Set<() => void>();
@@ -38,10 +45,15 @@ function save() {
 /** Only ids we still ship: a removed option falls back to the default. */
 function sanitise(raw: unknown): Appearance {
   const r = (raw ?? {}) as Partial<Appearance>;
+  const customFile = typeof r.customFile === "string" && /^wallpaper-\d+\.jpg$/.test(r.customFile) ? r.customFile : null;
+  const known = WALLPAPERS.some((w) => w.id === r.wallpaper) || PHOTO_WALLPAPERS.some((p) => p.id === r.wallpaper) || (r.wallpaper === CUSTOM_WALLPAPER && customFile !== null);
   return {
     mode: MODES.includes(r.mode as ThemeMode) ? (r.mode as ThemeMode) : DEFAULTS.mode,
     sendColour: SEND_COLOURS.some((c) => c.id === r.sendColour) ? (r.sendColour as string) : DEFAULTS.sendColour,
-    wallpaper: WALLPAPERS.some((w) => w.id === r.wallpaper) ? (r.wallpaper as string) : DEFAULTS.wallpaper,
+    wallpaper: known ? (r.wallpaper as string) : DEFAULTS.wallpaper,
+    dim: unit(r.dim, DEFAULTS.dim, MAX_DIM),
+    blur: unit(r.blur, DEFAULTS.blur),
+    customFile,
   };
 }
 

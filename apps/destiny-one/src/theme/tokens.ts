@@ -3,14 +3,22 @@
 // packages/shared/src/design/tokens.ts.
 
 import { useMemo } from "react";
-import { useColorScheme } from "react-native";
+import { useColorScheme, type ImageSourcePropType } from "react-native";
 import { colors } from "@destiny/shared";
 import { useAppearance } from "@/state/appearance";
 import { INK, PAGE_BG, sendColour, wallpaper, type Wallpaper, type WallpaperTone } from "@/theme/appearance";
+import { photoSource } from "@/theme/photoWallpapers";
 
 export const ORANGE = colors.orange; // #F58021
 export const ORANGE_LIGHT = "#FAC397";
 export { INK };
+
+/** A photo behind the conversation. `dim` is the opacity of the page-coloured layer over it; `blur` is 0 to 1 of the maximum blur radius. */
+export interface PhotoBackdrop {
+  source: ImageSourcePropType;
+  dim: number;
+  blur: number;
+}
 
 export interface Theme {
   dark: boolean;
@@ -45,6 +53,8 @@ export interface Theme {
   onSendCard: string;
   /** Selected wallpaper, or null for plain. */
   wall: { def: Wallpaper; tone: WallpaperTone } | null;
+  /** Selected photo wallpaper, or null. Never set together with `wall`. */
+  photo: PhotoBackdrop | null;
   shadow: { shadowColor: string; shadowOpacity: number; shadowRadius: number; shadowOffset: { width: number; height: number }; elevation: number };
 }
 
@@ -76,6 +86,7 @@ const light: Theme = {
   onSend: "#FFFFFF",
   onSendCard: "rgba(0,0,0,0.18)",
   wall: null,
+  photo: null,
   shadow: { shadowColor: INK, shadowOpacity: 0.1, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 4 },
 };
 
@@ -110,27 +121,30 @@ const dark: Theme = {
   onSend: INK,
   onSendCard: "rgba(255,255,255,0.28)",
   wall: null,
+  photo: null,
   shadow: { shadowColor: "#000", shadowOpacity: 0.6, shadowRadius: 14, shadowOffset: { width: 0, height: 8 }, elevation: 6 },
 };
 
 /** The theme for the current light/dark setting, with this person's send colour and wallpaper applied. */
 export function useTheme(): Theme {
   const isDark = useColorScheme() === "dark";
-  const { sendColour: sendId, wallpaper: wallId } = useAppearance();
+  const { sendColour: sendId, wallpaper: wallId, dim, blur, customFile } = useAppearance();
   const base = isDark ? dark : light;
   const tone = sendColour(sendId)[isDark ? "dark" : "light"];
   return useMemo(() => {
     const wall = wallpaper(wallId);
+    const source = photoSource(wallId, customFile);
     return {
       ...base,
       // Over a light wallpaper an incoming bubble is white, so it stays visible.
-      bubbleIn: wall.pattern !== "none" && !isDark ? "#FFFFFF" : base.bubbleIn,
+      bubbleIn: (wall.pattern !== "none" || source) && !isDark ? "#FFFFFF" : base.bubbleIn,
       send: tone.bg,
       onSend: tone.fg,
       onSendCard: tone.fg === INK ? "rgba(255,255,255,0.28)" : "rgba(0,0,0,0.18)",
-      wall: wall.pattern === "none" ? null : { def: wall, tone: isDark ? wall.dark : wall.light },
+      wall: source || wall.pattern === "none" ? null : { def: wall, tone: isDark ? wall.dark : wall.light },
+      photo: source ? { source, dim, blur } : null,
     };
-  }, [base, tone, wallId, isDark]);
+  }, [base, tone, wallId, dim, blur, customFile, isDark]);
 }
 
 /** iOS large-title and body sizes used throughout the design. */

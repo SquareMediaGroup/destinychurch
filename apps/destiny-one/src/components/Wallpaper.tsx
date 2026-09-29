@@ -6,9 +6,10 @@
 // on the darkest and lightest part of every one.
 
 import { useId, useMemo } from "react";
-import { StyleSheet, type StyleProp, type ViewStyle } from "react-native";
+import { Image, StyleSheet, View, type ImageSourcePropType, type StyleProp, type ViewStyle } from "react-native";
 import Svg, { Circle, Defs, G, LinearGradient, Path, Pattern, Rect, Stop } from "react-native-svg";
-import type { WallpaperPattern, WallpaperTone } from "@/theme/appearance";
+import { MAX_BLUR_RADIUS, type WallpaperPattern, type WallpaperTone } from "@/theme/appearance";
+import { useTheme } from "@/theme/tokens";
 
 const W = 390;
 const H = 844;
@@ -121,4 +122,35 @@ export function Wallpaper({ pattern, tone, style }: { pattern: WallpaperPattern;
       <Shapes pattern={pattern} ink={tone.ink} uid={uid} />
     </Svg>
   );
+}
+
+/**
+ * A photo behind the chat. The layer over it is the page colour, so in dark mode
+ * "dim" darkens it and in light mode it fades it toward white: either way the
+ * text that sits on it stays on a background of the colours it was designed for.
+ */
+export function PhotoWallpaper({ source, dim, blur, style }: { source: ImageSourcePropType; dim: number; blur: number; style?: StyleProp<ViewStyle> }) {
+  const t = useTheme();
+  const radius = Math.round(blur * MAX_BLUR_RADIUS);
+  return (
+    <View pointerEvents="none" style={[StyleSheet.absoluteFill, { overflow: "hidden", backgroundColor: t.bg }, style]}>
+      {/* Blurring fades the picture's own edges, so it's drawn slightly larger to keep them off screen. */}
+      <Image
+        source={source}
+        blurRadius={radius}
+        resizeMode="cover"
+        accessible={false}
+        style={[StyleSheet.absoluteFill, { transform: [{ scale: 1 + Math.min(radius, 24) / 120 }] }]}
+      />
+      <View style={[StyleSheet.absoluteFill, { backgroundColor: t.bg, opacity: dim }]} />
+    </View>
+  );
+}
+
+/** Whatever wallpaper the person has chosen (pattern or photo), or nothing for plain. */
+export function Backdrop({ style }: { style?: StyleProp<ViewStyle> }) {
+  const t = useTheme();
+  if (t.photo) return <PhotoWallpaper source={t.photo.source} dim={t.photo.dim} blur={t.photo.blur} style={style} />;
+  if (t.wall) return <Wallpaper pattern={t.wall.def.pattern} tone={t.wall.tone} style={style} />;
+  return null;
 }

@@ -41,7 +41,7 @@
         "expo-image-picker",
         {
           "cameraPermission": "Destiny One uses the camera so you can take a photo to send in a chat.",
-          "photosPermission": "Destiny One uses your photos so you can send one in a chat."
+          "photosPermission": "Destiny One uses your photos so you can send one in a chat or use one as your chat wallpaper."
         }
       ],
       [

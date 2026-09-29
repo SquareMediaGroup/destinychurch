@@ -2,6 +2,8 @@
 // native headers (every screen draws its own floating glass header, as in the
 // design).
 
+// First, so crash reporting is running before anything else loads.
+import { withErrorReporting } from "@/lib/sentry";
 import { useEffect } from "react";
 import { liquidGlass } from "@/components/GlassSurface";
 import { Platform, StyleSheet, View } from "react-native";
@@ -73,6 +75,7 @@ function App() {
         <Stack.Screen name="new-group" options={{ presentation: "modal", contentStyle: { backgroundColor: t.grouped } }} />
         <Stack.Screen name="report" options={{ presentation: "modal", contentStyle: { backgroundColor: t.grouped } }} />
         <Stack.Screen name="report-sent" options={{ presentation: "modal", gestureEnabled: false }} />
+        <Stack.Screen name="feedback" options={{ presentation: "modal", contentStyle: { backgroundColor: t.grouped } }} />
         <Stack.Screen name="search" options={{ animation: "fade" }} />
         <Stack.Screen
           name="add-account"
@@ -102,7 +105,7 @@ function sheetOptions(solid: string) {
   };
 }
 
-export default function RootLayout() {
+function RootLayout() {
   useNotificationTaps();
   // The person's own send colour and wallpaper, from this phone.
   useEffect(() => {
@@ -119,3 +122,5 @@ export default function RootLayout() {
     </SafeAreaProvider>
   );
 }
+
+export default withErrorReporting(RootLayout);

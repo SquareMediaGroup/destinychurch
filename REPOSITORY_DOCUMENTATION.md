@@ -2062,9 +2062,17 @@ with no role who administers the group shows "Group admin" instead. The Profile 
 label. **Deploy order:** old app builds only know the retired role names, so a leader on one loses
 the leader UI until they update; apply the migration when the API change ships.
 
+**Part 9 — `20260929_01_destiny_one_feedback.sql`: "Report a problem" and "Send feedback".**
+`d1_feedback` (member, `kind` problem/idea, `body` up to 2000, optional app version / platform / OS
+version / phone model / crash-report id, `status` new/done; deny-all RLS). Kept in the database, not
+as GitHub issues, because the repository is public and many members are young people. An insert rings
+the Destiny One Admin bell (`d1_feedback_notify`; the notification never includes the text).
+`d1_erase_member` deletes a member's feedback and `d1_purge_expired` removes feedback older than the
+retention period. Staff read it at `/admin/destiny-one/feedback`.
+
 **Tested by:** `scripts/test-sql.sh` (`npm run test:sql`, and the "Database rules" CI job) — applies
-Supabase stubs + every Destiny One migration (parts 1–8, plus the profile-picture and min-build
-migrations) to a throwaway local Postgres and runs `tests/sql/destiny-one.sql` (107 checks).
+Supabase stubs + every Destiny One migration (parts 1–9, plus the profile-picture, min-build and
+group-icon migrations) to a throwaway local Postgres and runs `tests/sql/destiny-one.sql`.
 
 **Used By:** `lib/destinyOne/*`, `app/api/app/v1/one/**`, `app/api/admin/destiny-one/**`,
 `app/api/cron/destiny-one-{sync,purge}`.
@@ -2538,6 +2546,7 @@ Each section requires a specific access-level role (see
 | `/admin/destiny-one/members` | `app/admin/destiny-one/members/page.tsx` | Everyone with an account; panel to fix name, age, leader roles, suspend, delete (Destiny One Admin) |
 | `/admin/destiny-one/communities` (+ `/[id]`) | `app/admin/destiny-one/communities/**` | Communities, their Announcements and department groups with live people/adult counts and pause reasons; add/remove people, roles, create/archive groups with a live rule check. No message content (Destiny One Admin) |
 | `/admin/destiny-one/safeguarding` | `app/admin/destiny-one/safeguarding/page.tsx` | Queue, reports, all groups, manual pause, and the reason-gated, audited transcript viewer (Safeguarding Admin) |
+| `/admin/destiny-one/feedback` | `app/admin/destiny-one/feedback/page.tsx` | "Report a problem" and "Send feedback" from the app: New / Done / All, the text, who sent it, phone and app version, crash-report id; mark done or reopen (Destiny One Admin) |
 | `/admin/destiny-one/settings` | `app/admin/destiny-one/settings/page.tsx` | Invite-only vs open to requests, invite expiry, minimum app builds per platform + update message, maintenance switch; retention and ChurchSuite status read-only (Destiny One Admin) |
 | `/admin/sermons` | `app/admin/sermons/page.tsx` | Publish sermon audio to Buzzsprout (video keeps going to YouTube separately); add/remove YouTube playlists as sermon series; run the AI speaker review or manually search-and-correct any sermon's speaker; a read-only recent-episodes list showing pairing status (Sermon Admin) |
 | `/admin/design` | `app/admin/design/page.tsx` | Design ticket queue — search, status/priority/mine filters, inline Claim. Defaults to "Needs someone" rather than everything (Design Admin) |
@@ -4225,7 +4234,7 @@ needs at least 2 verified adults.") pass through as `rule_violation` (422). Type
 | `me/avatar` | POST, DELETE | Profile picture (multipart `file`, 5 MB). Active members only; stored privately in `d1-avatars` |
 | `members/[id]/block` | POST, DELETE | Block / unblock someone; returns `D1Me`. Hides their messages and notifications for me only; logged for safeguarding |
 | `me/consents` | POST | Current versions only (`REQUIRED_CONSENTS`) |
-| `me/export` | GET | GDPR access: profile (incl. access-request note, declared and staff-set 18th birthday, how and when verified, a link to the profile picture), consents, memberships, own messages (incl. deleted), files sent (24-hour links), reactions, blocks, own reports |
+| `me/export` | GET | GDPR access: profile (incl. access-request note, declared and staff-set 18th birthday, how and when verified, a link to the profile picture), consents, memberships, own messages (incl. deleted), files sent (24-hour links), reactions, blocks, own reports, feedback sent |
 | `me/push-tokens` | POST, DELETE | Expo tokens |
 | `communities` | GET, POST | POST: any leader role |
 | `communities/[id]` | GET | |
@@ -4244,6 +4253,7 @@ needs at least 2 verified adults.") pass through as `rule_violation` (422). Type
 | `messages/[id]` | DELETE | Soft delete (content kept for review) |
 | `messages/[id]/report`, `/reactions` | POST (+DELETE) | Report → safeguarding bell, and an email to every Safeguarding Admin (`lib/destinyOne/safeguardingEmail.server.ts`; no message content, names or group in it) |
 | `directory` | GET | Leaders only; names + adult flag, never contact details |
+| `feedback` | POST | `{ kind: "problem" \| "idea", body, appVersion?, platform?, osVersion?, device?, errorId? }` — Profile → Report a problem / Send feedback. Saved to `d1_feedback` for Destiny One Admins (bell, no text in it). Skips the consent gate, like reporting. 5 a minute |
 
 **Sign in with ChurchSuite.** ChurchSuite's OAuth (authorisation code, scope `user`,
 `GET /account/users/current`) identifies ChurchSuite **users** — staff and leaders with a login — not
@@ -4275,6 +4285,8 @@ so the broader one can't swallow it) and re-checked in every route by `requireDe
   `POST communities/[id]/groups`, `GET/PATCH groups/[id]` (archive/restore), `POST/PATCH/DELETE
   groups/[id]/members` — all through the `d1_admin_*` SQL functions, so the rules hold.
 - `GET/PATCH settings` — access requests on/off, invite expiry; retention shown read-only.
+- `GET feedback`, `PATCH feedback/[id]` (`{ status: "new" | "done" }`) — app feedback. This is the
+  one place these routes read something members wrote, and it's what they chose to send to staff.
 - `GET churchsuite?q=` — OPTIONAL lookup on the approval screen; 404 when ChurchSuite isn't configured.
 
 **Safeguarding Admin (`safeguarding_admin`) — `/api/admin/destiny-one/safeguarding/*`, the only
@@ -6987,7 +6999,8 @@ same database as the data rather than in a separate Synapse module.
   `group/[id]/info` (B6; leaders: rules panel, make admin / remove), `group/[id]/edit` (C4),
   `community/[id]` (B2), `new-group` (C1, modal), `add-people` (C2; `?groupId` adds to a group,
   `?communityId` picks for New group), `notifications` (D2 + per-group mute), `search` (full-screen search opened from a chat; the
-  Search tab `(tabs)/find` uses the same `SearchView` component), `report` + `report-sent` (B5), `chat-safety`,
+  Search tab `(tabs)/find` uses the same `SearchView` component), `report` + `report-sent` (B5), `feedback` (D5, Profile → Report a problem /
+  Send feedback, `?kind=problem|idea`), `chat-safety`,
   `delete-account` (D3, type DELETE), `accounts` (account switcher, a fit-to-content form sheet), `add-account` (Profile → Add account: Add child / Add admin account, a form sheet), `password` (password sign-in) and `set-password` (Profile → Password).
 - **State:** `src/state/session.tsx` (auth session, `me`, the communities list, the Realtime hub,
   catch-up, `routeFor`, `errorMessage`); `src/state/picker.ts` (Add people selection for New group).
@@ -7093,6 +7106,15 @@ same database as the data rather than in a separate Synapse module.
   re-check `me`. `AccessGuard` (`src/state/session.tsx`, mounted in the root layout) then replaces
   any in-app screen with `routeFor(me)` (waiting, notices, …), and a member who is no longer active
   has their chats, groups and messages removed from the device cache.
+- **Crash reporting:** Sentry (`@sentry/react-native`, EU region), set up in `src/lib/sentry.ts` and
+  imported first in the root layout. Off unless `EXPO_PUBLIC_SENTRY_DSN` is set at build time. It
+  sends as little as possible: the member's internal id only (`setReportingMember`, no name, email or
+  IP), no screenshots, screen recordings or performance tracing, and only network, navigation and
+  app-lifecycle breadcrumbs (console output and taps, which could carry chat text, are dropped; route
+  params and query strings are stripped). "Report a problem" attaches the last error's id
+  (`lastErrorId`) so staff can match the two. Source maps upload during EAS builds when
+  `SENTRY_AUTH_TOKEN`, `SENTRY_ORG` and `SENTRY_PROJECT` are set; `SENTRY_ALLOW_FAILURE=true` in
+  `eas.json` keeps builds working until they are.
 - **Lint:** `eslint.config.js` (`eslint-config-expo`). The React Compiler rules (`react-hooks/refs`,
   `set-state-in-effect`, `preserve-manual-memoization`) are errors. The only exceptions are the two
   PanResponder handlers in `Swipe.tsx`, whose refs are read in touch handlers rather than during render

@@ -33,6 +33,7 @@ import { movePushToActiveAccount } from "@/lib/push";
 import { applyEvent, keys } from "@/lib/queries";
 import { clearCache, queryClient, saveCacheNow, swapInActiveCache } from "@/lib/queryClient";
 import { startHub, type Hub } from "@/lib/realtime";
+import { setReportingMember } from "@/lib/sentry";
 
 type Href = "/welcome" | "/request" | "/waiting" | "/notices" | "/chats";
 
@@ -129,6 +130,8 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     meRef.current = me;
   }, [me]);
+  // Crash reports carry the member's internal id only.
+  useEffect(() => setReportingMember(me?.id ?? null), [me?.id]);
 
   const active = me?.onboarding === "active" && me.outstandingConsents.length === 0;
 

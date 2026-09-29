@@ -70,6 +70,12 @@
         {
           "faceIDPermission": "Destiny One uses Face ID to check it's you before switching to another account."
         }
+      ],
+      [
+        "@sentry/react-native",
+        {
+          "url": "https://de.sentry.io/"
+        }
       ]
     ],
     "experiments": {

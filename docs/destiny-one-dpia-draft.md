@@ -39,7 +39,7 @@ Destiny One processes **children's personal data** (members aged 13 to 17), **pr
 - Destiny One Admins run the app (approvals, groups, settings) and **cannot read messages**.
 - **Safeguarding Admins only** can read a group's messages (decided 28 September 2026: super admins can't, unless given the role). Each review needs a written reason and is recorded.
 
-**Processors:** Supabase (database, sign-in, files; EU, Ireland), Vercel (runs the API; `[region]`), Resend (sign-in and invite emails; `[region]`), Expo, Apple and Google (deliver notifications; USA). ChurchSuite only if staff sign-in is switched on later (UK).
+**Processors:** Supabase (database, sign-in, files; EU, Ireland), Vercel (runs the API; `[region]`), Resend (sign-in and invite emails; `[region]`), Sentry (crash reports, no names, emails or message text; EU, Germany), Expo, Apple and Google (deliver notifications; USA). ChurchSuite only if staff sign-in is switched on later (UK).
 
 **Retention.** Messages and files: **1 year** (decided 28 September 2026), deleted automatically each night; a message under an open report is kept until the report is closed. Closed reports and resolved safeguarding records: 1 year. Review audit log: `[365 days]`. Deleted accounts: anonymised to "Former member" at once; their messages follow the 1-year rule.
 
@@ -60,7 +60,7 @@ Destiny One processes **children's personal data** (members aged 13 to 17), **pr
 - The Designated Safeguarding Lead and trustees (safeguarding policy, who holds the Safeguarding Admin role, how review logs are checked).
 - A sample of parents and young people (the notices, especially "How your chats are kept safe").
 - Group leaders who will run groups.
-- Processors' data processing agreements (Supabase, Vercel, Resend, Expo).
+- Processors' data processing agreements (Supabase, Vercel, Resend, Sentry, Expo).
 
 ## Step 5: Necessity and proportionality
 

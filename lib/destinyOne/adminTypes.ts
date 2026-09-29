@@ -115,3 +115,21 @@ export const LEADER_ROLE_LABELS: Record<LeaderRole, string> = {
 };
 
 export const ADMIN_API = "/api/admin/destiny-one";
+
+/** "Report a problem" / "Send feedback" from the app (d1_feedback). */
+export interface AdminFeedback {
+  id: string;
+  kind: "problem" | "idea";
+  body: string;
+  status: "new" | "done";
+  memberId: string;
+  memberName: string;
+  appVersion: string | null;
+  platform: string | null;
+  osVersion: string | null;
+  device: string | null;
+  /** The matching crash-reporting (Sentry) event, if the app had one. */
+  errorId: string | null;
+  createdAt: string;
+  doneAt: string | null;
+}

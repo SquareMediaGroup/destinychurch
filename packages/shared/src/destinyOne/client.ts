@@ -16,6 +16,7 @@ import type {
   D1EventRef,
   D1EventSummary,
   D1Export,
+  D1FeedbackInput,
   D1GroupDetail,
   D1Me,
   D1MembershipRole,
@@ -139,6 +140,8 @@ export function createDestinyOneClient({ baseUrl, getAccessToken, fetchImpl }: D
     requestAccess: (input: D1AccessRequest) => call<D1Me>("POST", "/me/access-request", input),
     acceptConsents: (consents: D1Consent[]) => call<D1Me>("POST", "/me/consents", { consents }),
     exportMyData: () => call<D1Export>("GET", "/me/export"),
+    /** "Report a problem" and "Send feedback". Goes to the Destiny One Admins, not the safeguarding team. */
+    sendFeedback: (input: D1FeedbackInput) => call<{ ok: true }>("POST", "/feedback", input),
     deleteAccount: () => call<{ deleted: true }>("DELETE", "/me", { confirm: "DELETE" }),
     registerPushToken: (token: string, platform: "ios" | "android") =>
       call<{ ok: true }>("POST", "/me/push-tokens", { token, platform }),

@@ -46,6 +46,24 @@ export interface DestinyOneClientOptions {
   fetchImpl?: typeof fetch;
 }
 
+function xhrSend(method: string, url: string, headers: Record<string, string>, body: FormData) {
+  return new Promise<{ ok: boolean; status: number; json: () => Promise<unknown> }>((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open(method, url);
+    for (const [k, v] of Object.entries(headers)) xhr.setRequestHeader(k, v);
+    xhr.timeout = 60_000;
+    xhr.onload = () =>
+      resolve({
+        ok: xhr.status >= 200 && xhr.status < 300,
+        status: xhr.status,
+        json: async () => JSON.parse(xhr.responseText),
+      });
+    xhr.onerror = () => reject(new Error("Network request failed"));
+    xhr.ontimeout = () => reject(new Error("Network request timed out"));
+    xhr.send(body);
+  });
+}
+
 export function createDestinyOneClient({ baseUrl, getAccessToken, fetchImpl }: DestinyOneClientOptions) {
   const root = `${baseUrl.replace(/\/$/, "")}/api/app/v1/one`;
   const doFetch = fetchImpl ?? fetch;
@@ -85,16 +103,20 @@ export function createDestinyOneClient({ baseUrl, getAccessToken, fetchImpl }: D
     const body = new FormData();
     body.append("file", file);
 
-    let res: Response;
+    // React Native's file part ({ uri, name, type }) is refused by Expo's fetch
+    // ("unsupported form data per implementation"), which used to surface as a
+    // bogus "you're offline". XMLHttpRequest streams it from disk natively.
+    const isNativeFilePart = typeof (file as unknown as { uri?: unknown }).uri === "string" && !(file instanceof Blob);
+    let res: { ok: boolean; status: number; json: () => Promise<unknown> };
     try {
-      res = await doFetch(`${root}${path}`, {
-        method,
-        headers: {
-          Accept: "application/json",
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-        body,
-      });
+      const headers: Record<string, string> = {
+        Accept: "application/json",
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      };
+      res =
+        isNativeFilePart && typeof XMLHttpRequest !== "undefined"
+          ? await xhrSend(method, `${root}${path}`, headers, body)
+          : await doFetch(`${root}${path}`, { method, headers, body });
     } catch (err) {
       throw new D1ApiError("network", err instanceof Error ? err.message : "Network error", 0);
     }

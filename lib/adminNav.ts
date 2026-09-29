@@ -59,21 +59,70 @@ export const ADMIN_GROUPS: AdminNavGroup[] = [
         keywords: ["home", "overview", "start"],
         exact: true,
       },
+    ],
+  },
+  {
+    // The Destiny One members' app (apps/destiny-one). Two roles: Destiny One
+    // Admin runs it and never sees messages; Safeguarding Admin is the only
+    // role that can read them, and every read is audited.
+    label: "Destiny One",
+    icon: "forum",
+    items: [
       {
-        href: "/admin/posts",
-        label: "Posts",
-        icon: "article",
-        role: "site_admin",
-        description: "Standalone pages — campaigns, temporary pages and one-off content.",
-        keywords: ["pages", "content", "articles", "blog", "landing page"],
+        href: "/admin/destiny-one",
+        label: "Destiny One",
+        icon: "forum",
+        role: "destiny_one_admin",
+        description: "The members' app: who's in, communities and groups.",
+        keywords: ["app", "chat", "messaging", "whatsapp", "groups", "mobile"],
       },
       {
-        href: "/admin/training",
-        label: "Training",
-        icon: "school",
-        role: "training_admin",
-        description: "Team training categories, sub-groups and posts.",
-        keywords: ["team", "volunteers", "courses", "sound", "production", "av"],
+        href: "/admin/destiny-one/requests",
+        label: "Access requests",
+        icon: "how_to_reg",
+        role: "destiny_one_admin",
+        description: "Approve people who asked to join, as an adult or under 18.",
+        keywords: ["approve", "pending", "verify", "sign up", "join"],
+      },
+      {
+        href: "/admin/destiny-one/invites",
+        label: "Invites",
+        icon: "outgoing_mail",
+        role: "destiny_one_admin",
+        description: "Invite people by email so they're in as soon as they sign in.",
+        keywords: ["invite", "email", "add people", "onboard"],
+      },
+      {
+        href: "/admin/destiny-one/members",
+        label: "App members",
+        icon: "group",
+        role: "destiny_one_admin",
+        description: "Everyone with an account: names, ages, leader roles, suspensions.",
+        keywords: ["users", "people", "leaders", "suspend", "age"],
+      },
+      {
+        href: "/admin/destiny-one/communities",
+        label: "Communities & groups",
+        icon: "diversity_3",
+        role: "destiny_one_admin",
+        description: "Communities, their department groups, and who's in them.",
+        keywords: ["departments", "teams", "announcements", "paused", "frozen"],
+      },
+      {
+        href: "/admin/destiny-one/safeguarding",
+        label: "Safeguarding",
+        icon: "shield",
+        role: "safeguarding_admin",
+        description: "Reports, paused groups and audited conversation review.",
+        keywords: ["reports", "review", "transcript", "freeze", "concern"],
+      },
+      {
+        href: "/admin/destiny-one/settings",
+        label: "App settings",
+        icon: "tune",
+        role: "destiny_one_admin",
+        description: "Invite-only or open to requests, invite expiry, retention.",
+        keywords: ["invite only", "requests", "retention", "configuration"],
       },
     ],
   },
@@ -178,6 +227,27 @@ export const ADMIN_GROUPS: AdminNavGroup[] = [
     ],
   },
   {
+    label: null,
+    items: [
+      {
+        href: "/admin/posts",
+        label: "Posts",
+        icon: "article",
+        role: "site_admin",
+        description: "Standalone pages — campaigns, temporary pages and one-off content.",
+        keywords: ["pages", "content", "articles", "blog", "landing page"],
+      },
+      {
+        href: "/admin/training",
+        label: "Training",
+        icon: "school",
+        role: "training_admin",
+        description: "Team training categories, sub-groups and posts.",
+        keywords: ["team", "volunteers", "courses", "sound", "production", "av"],
+      },
+    ],
+  },
+  {
     label: "Store",
     icon: "storefront",
     items: [
@@ -204,6 +274,109 @@ export const ADMIN_GROUPS: AdminNavGroup[] = [
         role: "store_admin",
         description: "Rotating hero slides at the top of the shop.",
         keywords: ["shop", "slides", "carousel", "banner"],
+      },
+    ],
+  },
+  {
+    label: "Sermons",
+    icon: "mic",
+    items: [
+      {
+        href: "/admin/sermons",
+        label: "Sermons",
+        icon: "mic",
+        role: "sermon_admin",
+        description: "Publish sermon audio to the podcast feed.",
+        keywords: ["buzzsprout", "audio", "podcast", "upload", "preacher", "speaker"],
+      },
+    ],
+  },
+  {
+    // The design request queue. Requests arrive from the staff-only
+    // /portal/design/request page; designers claim them here and deliver the files.
+    label: "Design",
+    icon: "draw",
+    items: [
+      {
+        href: "/admin/design",
+        label: "Design tickets",
+        icon: "draw",
+        role: "design_admin",
+        description: "Claim design requests, deliver files and handle revisions.",
+        keywords: [
+          "graphics",
+          "artwork",
+          "request",
+          "ticket",
+          "poster",
+          "flyer",
+          "brief",
+          "queue",
+        ],
+      },
+    ],
+  },
+  {
+    // Launched 2026-08-25 — was unlisted (built but hidden) since it shipped.
+    // Gated to hr_admin (super_admin still gets it, as with every section).
+    label: "HR",
+    icon: "badge",
+    items: [
+      {
+        href: "/admin/hr",
+        label: "HR",
+        icon: "badge",
+        role: "hr_admin",
+        description: "People, leave, documents and reviews.",
+      },
+      {
+        href: "/admin/hr/staff",
+        label: "Staff directory",
+        icon: "groups",
+        role: "hr_admin",
+        description: "Everyone on the team and their key details.",
+      },
+      {
+        href: "/admin/hr/leave",
+        label: "Leave & time-off",
+        icon: "event_busy",
+        role: "hr_admin",
+        description: "Approve requests and track holiday balances.",
+      },
+      {
+        href: "/admin/hr/jobs",
+        label: "Jobs & internships",
+        icon: "work",
+        role: "hr_admin",
+        description: "Roles published on the public /jobs page.",
+      },
+      {
+        href: "/admin/hr/applications",
+        label: "Applications",
+        icon: "inbox",
+        role: "hr_admin",
+        description: "Candidates who applied through /jobs.",
+      },
+      {
+        href: "/admin/hr/documents",
+        label: "Documents",
+        icon: "folder_open",
+        role: "hr_admin",
+        description: "Contracts, policies and staff files.",
+      },
+      {
+        href: "/admin/hr/reviews",
+        label: "Reviews & 1-to-1s",
+        icon: "rate_review",
+        role: "hr_admin",
+        description: "Appraisals, catch-ups and what's coming up.",
+      },
+      {
+        href: "/admin/hr/checklists",
+        label: "Checklists",
+        icon: "checklist",
+        role: "hr_admin",
+        description: "Onboarding and offboarding templates.",
       },
     ],
   },
@@ -289,174 +462,6 @@ export const ADMIN_GROUPS: AdminNavGroup[] = [
           "accountability",
           "tracking",
         ],
-      },
-    ],
-  },
-  {
-    // Launched 2026-08-25 — was unlisted (built but hidden) since it shipped.
-    // Gated to hr_admin (super_admin still gets it, as with every section).
-    label: "HR",
-    icon: "badge",
-    items: [
-      {
-        href: "/admin/hr",
-        label: "HR",
-        icon: "badge",
-        role: "hr_admin",
-        description: "People, leave, documents and reviews.",
-      },
-      {
-        href: "/admin/hr/staff",
-        label: "Staff directory",
-        icon: "groups",
-        role: "hr_admin",
-        description: "Everyone on the team and their key details.",
-      },
-      {
-        href: "/admin/hr/leave",
-        label: "Leave & time-off",
-        icon: "event_busy",
-        role: "hr_admin",
-        description: "Approve requests and track holiday balances.",
-      },
-      {
-        href: "/admin/hr/jobs",
-        label: "Jobs & internships",
-        icon: "work",
-        role: "hr_admin",
-        description: "Roles published on the public /jobs page.",
-      },
-      {
-        href: "/admin/hr/applications",
-        label: "Applications",
-        icon: "inbox",
-        role: "hr_admin",
-        description: "Candidates who applied through /jobs.",
-      },
-      {
-        href: "/admin/hr/documents",
-        label: "Documents",
-        icon: "folder_open",
-        role: "hr_admin",
-        description: "Contracts, policies and staff files.",
-      },
-      {
-        href: "/admin/hr/reviews",
-        label: "Reviews & 1-to-1s",
-        icon: "rate_review",
-        role: "hr_admin",
-        description: "Appraisals, catch-ups and what's coming up.",
-      },
-      {
-        href: "/admin/hr/checklists",
-        label: "Checklists",
-        icon: "checklist",
-        role: "hr_admin",
-        description: "Onboarding and offboarding templates.",
-      },
-    ],
-  },
-  {
-    // The design request queue. Requests arrive from the staff-only
-    // /portal/design/request page; designers claim them here and deliver the files.
-    label: "Design",
-    icon: "draw",
-    items: [
-      {
-        href: "/admin/design",
-        label: "Design tickets",
-        icon: "draw",
-        role: "design_admin",
-        description: "Claim design requests, deliver files and handle revisions.",
-        keywords: [
-          "graphics",
-          "artwork",
-          "request",
-          "ticket",
-          "poster",
-          "flyer",
-          "brief",
-          "queue",
-        ],
-      },
-    ],
-  },
-  {
-    label: "Sermons",
-    icon: "mic",
-    items: [
-      {
-        href: "/admin/sermons",
-        label: "Sermons",
-        icon: "mic",
-        role: "sermon_admin",
-        description: "Publish sermon audio to the podcast feed.",
-        keywords: ["buzzsprout", "audio", "podcast", "upload", "preacher", "speaker"],
-      },
-    ],
-  },
-  {
-    // The Destiny One members' app (apps/destiny-one). Two roles: Destiny One
-    // Admin runs it and never sees messages; Safeguarding Admin is the only
-    // role that can read them, and every read is audited.
-    label: "Destiny One",
-    icon: "forum",
-    items: [
-      {
-        href: "/admin/destiny-one",
-        label: "Destiny One",
-        icon: "forum",
-        role: "destiny_one_admin",
-        description: "The members' app: who's in, communities and groups.",
-        keywords: ["app", "chat", "messaging", "whatsapp", "groups", "mobile"],
-      },
-      {
-        href: "/admin/destiny-one/requests",
-        label: "Access requests",
-        icon: "how_to_reg",
-        role: "destiny_one_admin",
-        description: "Approve people who asked to join, as an adult or under 18.",
-        keywords: ["approve", "pending", "verify", "sign up", "join"],
-      },
-      {
-        href: "/admin/destiny-one/invites",
-        label: "Invites",
-        icon: "outgoing_mail",
-        role: "destiny_one_admin",
-        description: "Invite people by email so they're in as soon as they sign in.",
-        keywords: ["invite", "email", "add people", "onboard"],
-      },
-      {
-        href: "/admin/destiny-one/members",
-        label: "App members",
-        icon: "group",
-        role: "destiny_one_admin",
-        description: "Everyone with an account: names, ages, leader roles, suspensions.",
-        keywords: ["users", "people", "leaders", "suspend", "age"],
-      },
-      {
-        href: "/admin/destiny-one/communities",
-        label: "Communities & groups",
-        icon: "diversity_3",
-        role: "destiny_one_admin",
-        description: "Communities, their department groups, and who's in them.",
-        keywords: ["departments", "teams", "announcements", "paused", "frozen"],
-      },
-      {
-        href: "/admin/destiny-one/safeguarding",
-        label: "Safeguarding",
-        icon: "shield",
-        role: "safeguarding_admin",
-        description: "Reports, paused groups and audited conversation review.",
-        keywords: ["reports", "review", "transcript", "freeze", "concern"],
-      },
-      {
-        href: "/admin/destiny-one/settings",
-        label: "App settings",
-        icon: "tune",
-        role: "destiny_one_admin",
-        description: "Invite-only or open to requests, invite expiry, retention.",
-        keywords: ["invite only", "requests", "retention", "configuration"],
       },
     ],
   },
@@ -580,6 +585,17 @@ export function visibleGroups(
       (item) => (includeUnlisted || !item.unlisted) && canSee(roles, item.role),
     ),
   })).filter((group) => group.items.length > 0);
+}
+
+/**
+ * A group's own landing page — the item named the same as the group (Destiny
+ * One's and HR's overviews). The sidebar makes the group heading itself the
+ * link to it instead of repeating the name as the first child, and the mobile
+ * sheet calls it "Overview". Undefined when the group has none, or when the
+ * viewer's roles filtered it out.
+ */
+export function groupLanding(group: AdminNavGroup): AdminNavItem | undefined {
+  return group.label === null ? undefined : group.items.find((i) => i.label === group.label);
 }
 
 /* ── Mobile tab bar ────────────────────────────────────────────────────────

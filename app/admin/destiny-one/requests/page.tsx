@@ -83,7 +83,7 @@ export default function AccessRequestsPage() {
         <ul className="space-y-3">
           {submitted.map((m) => (
             <li key={m.id} className={`${cardClass} flex flex-wrap items-center gap-4 p-5`}>
-              <div className="min-w-0 flex-1">
+              <div className="min-w-0 flex-1 basis-64 [overflow-wrap:anywhere]">
                 <p className="font-bold text-destiny-grey dark:text-white">{m.displayName}</p>
                 <p className="text-sm text-destiny-grey/55 dark:text-white/55">
                   {m.email ?? "No email"} · asked {formatDate(m.requestSubmittedAt)}

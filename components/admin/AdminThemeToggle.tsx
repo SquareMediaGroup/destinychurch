@@ -9,7 +9,7 @@
 // existing icon-button visual language in AdminHeader.tsx (the keyboard-
 // shortcuts button) rather than introducing a new control style.
 
-import { useAdminTheme, type AdminTheme } from "@/lib/adminTheme";
+import { ADMIN_DARK_MODE_ENABLED, useAdminTheme, type AdminTheme } from "@/lib/adminTheme";
 
 const NEXT: Record<AdminTheme, AdminTheme> = {
   light: "dark",
@@ -31,6 +31,9 @@ const LABEL: Record<AdminTheme, string> = {
 
 export function AdminThemeToggle({ className = "" }: { className?: string }) {
   const { theme, setTheme } = useAdminTheme();
+
+  // Hidden while dark mode is switched off (see lib/adminTheme.ts).
+  if (!ADMIN_DARK_MODE_ENABLED) return null;
 
   return (
     <button

@@ -102,7 +102,10 @@ export default function AdminTabBar() {
         >
           <ul className="flex flex-col p-2">
             {openTab.items.map((item) => {
-              const current = isActive(item, pathname);
+              // The group's landing page is a prefix of every page in the
+              // group, so isActive would light it up alongside the real one.
+              const landing = item.label === openTab.label;
+              const current = landing ? pathname === item.href : isActive(item, pathname);
               return (
                 <li key={item.href}>
                   <Link
@@ -119,7 +122,11 @@ export default function AdminTabBar() {
                       {item.icon}
                     </span>
                     <span className="min-w-0">
-                      <span className="block text-sm font-bold">{item.label}</span>
+                      {/* The group's own landing page (see groupLanding in lib/adminNav.ts)
+                          would just repeat the sheet's title. */}
+                      <span className="block text-sm font-bold">
+                        {landing ? "Overview" : item.label}
+                      </span>
                       <span
                         className={`block text-xs ${
                           current

@@ -12,6 +12,7 @@ import { Animated, Image, Pressable, Text, View } from "react-native";
 import Svg, { Path } from "react-native-svg";
 import type { D1EventContent, D1LeaderRole, D1Message, D1PollContent } from "@destiny/shared";
 import { Icon } from "@/components/Icon";
+import { MessageMenu, type MessageMenuActions } from "@/components/MessageMenu";
 import { Appear, Pop, PressableScale, reduceMotion, springs } from "@/components/Motion";
 import { SwipeToReply } from "@/components/Swipe";
 import { Avatar, MemberTag } from "@/components/ui";
@@ -87,7 +88,8 @@ interface BubbleProps {
   canReply: boolean;
   /** Just sent or just received while the chat is open: it springs in instead of simply being there. */
   arriving?: boolean;
-  onLongPress: () => void;
+  /** What the press-and-hold menu does. Not shown for unsent or deleted messages. */
+  menu: MessageMenuActions;
   onReply: () => void;
   onOpenAttachment: (url: string) => void;
   onToggleReaction: (emoji: string) => void;
@@ -121,7 +123,7 @@ function tones(t: Theme, mine: boolean) {
     : { text: t.text, soft: t.muted, panel: t.bg, track: t.fill, bar: t.accentSoft, barMine: ORANGE, name: t.tint };
 }
 
-export function MessageBubble({ row, replyTo, senderTag, senderIsGroupAdmin, canReply, arriving, onLongPress, onReply, onOpenAttachment, onToggleReaction, onVotePoll, onRetry }: BubbleProps) {
+export function MessageBubble({ row, replyTo, senderTag, senderIsGroupAdmin, canReply, arriving, menu, onReply, onOpenAttachment, onToggleReaction, onVotePoll, onRetry }: BubbleProps) {
   const t = useTheme();
   const { m } = row;
   const k = tones(t, m.mine);
@@ -143,20 +145,8 @@ export function MessageBubble({ row, replyTo, senderTag, senderIsGroupAdmin, can
       <Text style={{ fontSize: 15, fontStyle: "italic", color: t.muted }}>This message was deleted</Text>
     </View>
   ) : (
-    // Holding squeezes the bubble over the long-press delay, so it visibly
-    // builds towards the menu opening; letting go springs it back.
     <PressableScale
-      onLongPress={
-        m.id > 0
-          ? () => {
-              haptic.press();
-              onLongPress();
-            }
-          : undefined
-      }
       onPress={m.status === "failed" ? onRetry : undefined}
-      delayLongPress={300}
-      holdMs={m.id > 0 ? 320 : undefined}
       scaleTo={0.94}
       accessibilityHint={m.id > 0 ? "Long press for reply, react, copy and report" : undefined}
       wrapStyle={{ maxWidth: "100%" }}
@@ -179,6 +169,9 @@ export function MessageBubble({ row, replyTo, senderTag, senderIsGroupAdmin, can
       {tail ? <Tail color={m.mine ? t.send : t.bubbleIn} mine={m.mine} /> : null}
     </PressableScale>
   );
+
+  // Sent messages get the system press-and-hold menu; unsent and deleted ones have nothing to act on.
+  const shown = !m.deleted && m.id > 0 ? <MessageMenu message={m} actions={menu}>{body}</MessageMenu> : body;
 
   const reactions =
     !m.deleted && m.reactions.length ? (
@@ -220,7 +213,7 @@ export function MessageBubble({ row, replyTo, senderTag, senderIsGroupAdmin, can
     return enter(
       <SwipeToReply enabled={swipeable} onReply={onReply}>
         <View style={{ alignItems: "flex-end", gap: 3, paddingTop: row.gapTop, paddingRight: 14, paddingLeft: 64 }}>
-          {body}
+          {shown}
           {reactions}
           {/* The time only shows under the last bubble of a run, like Messages. */}
           {!row.joinBelow || m.status ? (
@@ -245,7 +238,7 @@ export function MessageBubble({ row, replyTo, senderTag, senderIsGroupAdmin, can
               <Text style={{ fontSize: 12, color: t.muted }}>{clock(m.createdAt)}</Text>
             </View>
           ) : null}
-          {body}
+          {shown}
           {reactions}
         </View>
       </View>

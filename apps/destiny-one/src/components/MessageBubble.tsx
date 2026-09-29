@@ -7,10 +7,12 @@
 // neighbours, and the last one in the run gets a small tail, as in Apple's
 // Messages. Swipe a message right to reply; press and hold for the menu.
 
-import { Image, Pressable, Text, View } from "react-native";
+import { useEffect, useState, type ReactNode } from "react";
+import { Animated, Image, Pressable, Text, View } from "react-native";
 import Svg, { Path } from "react-native-svg";
 import type { D1EventContent, D1LeaderRole, D1Message, D1PollContent } from "@destiny/shared";
 import { Icon } from "@/components/Icon";
+import { Appear, Pop, PressableScale, reduceMotion, springs } from "@/components/Motion";
 import { SwipeToReply } from "@/components/Swipe";
 import { Avatar, MemberTag } from "@/components/ui";
 import { clock, dayLabel, eventWhen, fileMeta, plural, sameDay } from "@/lib/format";
@@ -83,6 +85,8 @@ interface BubbleProps {
   senderIsGroupAdmin: boolean;
   /** False where posting isn't allowed (announcements, paused groups). */
   canReply: boolean;
+  /** Just sent or just received while the chat is open: it springs in instead of simply being there. */
+  arriving?: boolean;
   onLongPress: () => void;
   onReply: () => void;
   onOpenAttachment: (url: string) => void;
@@ -117,7 +121,7 @@ function tones(t: Theme, mine: boolean) {
     : { text: t.text, soft: t.muted, panel: t.bg, track: t.fill, bar: t.accentSoft, barMine: ORANGE, name: t.tint };
 }
 
-export function MessageBubble({ row, replyTo, senderTag, senderIsGroupAdmin, canReply, onLongPress, onReply, onOpenAttachment, onToggleReaction, onVotePoll, onRetry }: BubbleProps) {
+export function MessageBubble({ row, replyTo, senderTag, senderIsGroupAdmin, canReply, arriving, onLongPress, onReply, onOpenAttachment, onToggleReaction, onVotePoll, onRetry }: BubbleProps) {
   const t = useTheme();
   const { m } = row;
   const k = tones(t, m.mine);
@@ -139,7 +143,9 @@ export function MessageBubble({ row, replyTo, senderTag, senderIsGroupAdmin, can
       <Text style={{ fontSize: 15, fontStyle: "italic", color: t.muted }}>This message was deleted</Text>
     </View>
   ) : (
-    <Pressable
+    // Holding squeezes the bubble over the long-press delay, so it visibly
+    // builds towards the menu opening; letting go springs it back.
+    <PressableScale
       onLongPress={
         m.id > 0
           ? () => {
@@ -150,8 +156,11 @@ export function MessageBubble({ row, replyTo, senderTag, senderIsGroupAdmin, can
       }
       onPress={m.status === "failed" ? onRetry : undefined}
       delayLongPress={300}
+      holdMs={m.id > 0 ? 320 : undefined}
+      scaleTo={0.94}
       accessibilityHint={m.id > 0 ? "Long press for reply, react, copy and report" : undefined}
-      style={({ pressed }) => ({ maxWidth: "100%", opacity: m.status === "sending" ? 0.6 : 1, transform: [{ scale: pressed ? 0.98 : 1 }] })}
+      wrapStyle={{ maxWidth: "100%" }}
+      style={{ opacity: m.status === "sending" ? 0.6 : 1 }}
     >
       <View style={{ ...corners, backgroundColor: m.mine ? t.send : t.bubbleIn, paddingTop: 8, paddingBottom: 9, paddingHorizontal: 14, gap: 6 }}>
         {replyTo ? (
@@ -168,33 +177,47 @@ export function MessageBubble({ row, replyTo, senderTag, senderIsGroupAdmin, can
         {m.body ? <Text style={{ fontSize: 17, lineHeight: 22, letterSpacing: -0.2, color: k.text }}>{m.body}</Text> : null}
       </View>
       {tail ? <Tail color={m.mine ? t.send : t.bubbleIn} mine={m.mine} /> : null}
-    </Pressable>
+    </PressableScale>
   );
 
   const reactions =
     !m.deleted && m.reactions.length ? (
       <View style={{ flexDirection: "row", gap: 4, marginTop: -8, [m.mine ? "marginRight" : "marginLeft"]: 10 }}>
         {m.reactions.map((r) => (
-          <Pressable
-            key={r.emoji}
-            onPress={() => {
-              haptic.selection();
-              onToggleReaction(r.emoji);
-            }}
-            accessibilityLabel={`${r.emoji} ${r.count}${r.mine ? ", including you" : ""}`}
-            style={({ pressed }) => ({ minHeight: 26, borderRadius: 13, flexDirection: "row", alignItems: "center", gap: 3, paddingHorizontal: 8, backgroundColor: r.mine ? t.accentSoft : t.card, borderWidth: 1, borderColor: r.mine ? ORANGE : t.glassLine, transform: [{ scale: pressed ? 0.94 : 1 }] })}
-          >
-            <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 14 }}>{r.emoji}</Text>
-            <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 13, fontWeight: "600", color: t.text }}>{r.count}</Text>
-          </Pressable>
+          <Appear key={r.emoji} from={{ scale: 0.3 }}>
+            <Pop value={r.count}>
+              <PressableScale
+                onPress={() => {
+                  haptic.selection();
+                  onToggleReaction(r.emoji);
+                }}
+                scaleTo={0.85}
+                accessibilityLabel={`${r.emoji} ${r.count}${r.mine ? ", including you" : ""}`}
+                style={{ minHeight: 26, borderRadius: 13, flexDirection: "row", alignItems: "center", gap: 3, paddingHorizontal: 8, backgroundColor: r.mine ? t.accentSoft : t.card, borderWidth: 1, borderColor: r.mine ? ORANGE : t.glassLine }}
+              >
+                <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 14 }}>{r.emoji}</Text>
+                <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 13, fontWeight: "600", color: t.text }}>{r.count}</Text>
+              </PressableScale>
+            </Pop>
+          </Appear>
         ))}
       </View>
     ) : null;
 
   const swipeable = canReply && m.id > 0 && !m.deleted;
 
+  // Sent bubbles rise from the composer; received ones slide in from their sender's side.
+  const enter = (content: ReactNode) =>
+    arriving ? (
+      <Appear once={`msg:${m.groupId}:${m.id}`} from={m.mine ? { y: 36, x: 10, scale: 0.9 } : { x: -18, y: 10, scale: 0.92 }}>
+        {content}
+      </Appear>
+    ) : (
+      content
+    );
+
   if (m.mine) {
-    return (
+    return enter(
       <SwipeToReply enabled={swipeable} onReply={onReply}>
         <View style={{ alignItems: "flex-end", gap: 3, paddingTop: row.gapTop, paddingRight: 14, paddingLeft: 64 }}>
           {body}
@@ -206,11 +229,11 @@ export function MessageBubble({ row, replyTo, senderTag, senderIsGroupAdmin, can
             </Text>
           ) : null}
         </View>
-      </SwipeToReply>
+      </SwipeToReply>,
     );
   }
 
-  return (
+  return enter(
     <SwipeToReply enabled={swipeable} onReply={onReply}>
       <View style={{ flexDirection: "row", alignItems: "flex-end", gap: 12, paddingTop: row.gapTop, paddingRight: 56, paddingLeft: 12 }}>
         <View style={{ width: 30, marginBottom: 2 }}>{row.showAvatar ? <Avatar name={name} size={30} /> : null}</View>
@@ -226,7 +249,7 @@ export function MessageBubble({ row, replyTo, senderTag, senderIsGroupAdmin, can
           {reactions}
         </View>
       </View>
-    </SwipeToReply>
+    </SwipeToReply>,
   );
 }
 
@@ -241,9 +264,9 @@ function Attachment({ m, onOpen }: { m: LocalMessage; onOpen: (url: string) => v
 
   if (mime.startsWith("image/") && url) {
     return (
-      <Pressable onPress={() => onOpen(url)} accessibilityRole="imagebutton" accessibilityLabel="Photo. Opens full screen." style={({ pressed }) => ({ marginTop: 2, marginHorizontal: -8, transform: [{ scale: pressed ? 0.98 : 1 }] })}>
+      <PressableScale onPress={() => onOpen(url)} accessibilityRole="imagebutton" accessibilityLabel="Photo. Opens full screen." scaleTo={0.97} wrapStyle={{ marginTop: 2, marginHorizontal: -8 }}>
         <Image source={{ uri: url }} style={{ width: 220, height: 220, borderRadius: 14, backgroundColor: t.fill }} resizeMode="cover" />
-      </Pressable>
+      </PressableScale>
     );
   }
 
@@ -326,25 +349,38 @@ function PollCard({ content, mine, onVote }: { content: D1PollContent; mine: boo
           const pct = total > 0 ? Math.round((count / total) * 100) : 0;
           const mineVote = poll.myOptionIds.includes(o.id);
           return (
-            <Pressable
+            <PressableScale
               key={o.id}
               onPress={() => tap(o.id)}
               accessibilityRole="button"
               accessibilityLabel={`${o.label}, ${pct}%${mineVote ? ", your choice" : ""}`}
-              style={({ pressed }) => ({ borderRadius: 10, overflow: "hidden", backgroundColor: k.track, transform: [{ scale: pressed ? 0.98 : 1 }] })}
+              scaleTo={0.97}
+              style={{ borderRadius: 10, overflow: "hidden", backgroundColor: k.track }}
             >
-              <View style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: `${pct}%`, backgroundColor: mineVote ? k.barMine : k.bar }} />
+              <PollBar pct={pct} color={mineVote ? k.barMine : k.bar} />
               <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingVertical: 8, paddingHorizontal: 10 }}>
                 <Text numberOfLines={2} style={{ flex: 1, fontSize: 14, fontWeight: mineVote ? "700" : "400", color: k.text }}>
                   {o.label}
                 </Text>
                 <Text style={{ fontSize: 12, color: k.soft, marginLeft: 8 }}>{count > 0 ? `${pct}%` : ""}</Text>
               </View>
-            </Pressable>
+            </PressableScale>
           );
         })}
       </View>
       <Text style={{ fontSize: 11, color: k.soft }}>{total === 0 ? "No votes yet" : plural(total, "vote")}</Text>
     </View>
   );
+}
+
+/** A poll option's fill, springing to its new share when the votes change. */
+function PollBar({ pct, color }: { pct: number; color: string }) {
+  const [w] = useState(() => new Animated.Value(pct));
+  useEffect(() => {
+    if (reduceMotion()) w.setValue(pct);
+    // Width can't run on the native driver; it's one small bar, so that's fine.
+    else Animated.spring(w, { toValue: pct, ...springs.enter, useNativeDriver: false }).start();
+  }, [pct, w]);
+  const width = w.interpolate({ inputRange: [0, 100], outputRange: ["0%", "100%"], extrapolate: "clamp" });
+  return <Animated.View style={{ position: "absolute", left: 0, top: 0, bottom: 0, width, backgroundColor: color }} />;
 }

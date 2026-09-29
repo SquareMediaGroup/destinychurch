@@ -19,6 +19,7 @@ import { lastErrorId } from "@/lib/sentry";
 import { errorMessage } from "@/state/session";
 import { shakeToReport, useShakeToReport } from "@/state/shakeToReport";
 import { ORANGE, useTheme } from "@/theme/tokens";
+import { haptic } from "@/lib/haptics";
 
 const KINDS: { kind: D1FeedbackKind; label: string }[] = [
   { kind: "problem", label: "Something isn't working" },
@@ -53,6 +54,7 @@ export default function Feedback() {
     try {
       const errorId = kind === "problem" ? (lastErrorId() ?? undefined) : undefined;
       await api.sendFeedback({ kind, body: body.trim(), ...deviceDetails(), errorId });
+      haptic.success();
       setSent(true);
     } catch (err) {
       setError(errorMessage(err));

@@ -15,6 +15,7 @@ import { queryClient } from "@/lib/queryClient";
 import { picker, usePicked } from "@/state/picker";
 import { errorMessage, useSession } from "@/state/session";
 import { useTheme } from "@/theme/tokens";
+import { haptic } from "@/lib/haptics";
 
 export default function NewGroup() {
   const t = useTheme();
@@ -68,6 +69,7 @@ export default function NewGroup() {
         old?.map((c) => (c.id === g.communityId && !c.groups.some((x) => x.id === g.id) ? { ...c, groups: [...c.groups, g] } : c)),
       );
       invalidateCommunities();
+      haptic.success();
       router.dismiss();
       router.push(`/group/${g.id}`);
     } catch (err) {

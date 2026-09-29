@@ -9,6 +9,7 @@ import { GlassSurface } from "@/components/GlassSurface";
 import { CardGroupRow, orderedGroups } from "@/components/GroupRows";
 import { SwipeActions, type SwipeAction } from "@/components/Swipe";
 import { Icon } from "@/components/Icon";
+import { Appear, PressableScale, animateLayout } from "@/components/Motion";
 import { Bone, Card, EmptyState, ErrorState, LargeTitle, Separator, SkeletonGroup } from "@/components/ui";
 import { api } from "@/lib/api";
 import { haptic } from "@/lib/haptics";
@@ -79,6 +80,7 @@ export default function Chats() {
   );
 
   const onRefresh = async () => {
+    haptic.tick();
     setRefreshing(true);
     await refreshCommunities();
     setRefreshing(false);
@@ -100,18 +102,21 @@ export default function Chats() {
           {FILTERS.map((f) => {
             const on = f.key === filter;
             return (
-              <Pressable
+              <PressableScale
                 key={f.key}
                 accessibilityRole="button"
                 accessibilityState={{ selected: on }}
+                scaleTo={0.92}
                 onPress={() => {
-                  if (!on) haptic.selection();
+                  if (on) return;
+                  haptic.selection();
+                  animateLayout();
                   setFilter(f.key);
                 }}
-                style={({ pressed }) => ({ minHeight: 34, borderRadius: 17, paddingHorizontal: 15, justifyContent: "center", backgroundColor: on ? t.text : t.fill, transform: [{ scale: pressed ? 0.96 : 1 }] })}
+                style={{ minHeight: 34, borderRadius: 17, paddingHorizontal: 15, justifyContent: "center", backgroundColor: on ? t.text : t.fill }}
               >
                 <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 15, fontWeight: "600", color: on ? t.bg : t.text }}>{f.label}</Text>
-              </Pressable>
+              </PressableScale>
             );
           })}
         </ScrollView>
@@ -144,8 +149,9 @@ export default function Chats() {
       ListHeaderComponent={header}
       ListEmptyComponent={empty}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={ORANGE} />}
-      renderItem={({ item: { community: c, groups } }) => (
-        <View style={{ paddingTop: 18, paddingHorizontal: 16 }}>
+      renderItem={({ item: { community: c, groups }, index }) => (
+        // Cards cascade in the first time the list shows, then stay put.
+        <Appear once={`chats:${c.id}`} delay={Math.min(index, 5) * 55} from={{ y: 22, scale: 0.98 }} style={{ paddingTop: 18, paddingHorizontal: 16 }}>
           <View style={{ flexDirection: "row", alignItems: "baseline", justifyContent: "space-between", paddingHorizontal: 4, paddingBottom: 8 }}>
             <Text numberOfLines={1} style={{ flex: 1, fontSize: 15, fontWeight: "600", color: t.muted }}>{c.name}</Text>
             <Pressable accessibilityRole="button" accessibilityLabel={`See all in ${c.name}`} onPress={() => router.push(`/community/${c.id}`)} hitSlop={8}>
@@ -162,7 +168,7 @@ export default function Chats() {
               </View>
             ))}
           </Card>
-        </View>
+        </Appear>
       )}
     />
   );
@@ -171,9 +177,9 @@ export default function Chats() {
 function HeaderIcon({ icon, label, onPress }: { icon: "plus"; label: string; onPress: () => void }) {
   const t = useTheme();
   return (
-    <Pressable accessibilityRole="button" accessibilityLabel={label} onPress={onPress} style={({ pressed }) => ({ width: 40, height: 40, alignItems: "center", justifyContent: "center", opacity: pressed ? 0.5 : 1 })}>
+    <PressableScale accessibilityRole="button" accessibilityLabel={label} onPress={onPress} scaleTo={0.85} style={({ pressed }) => ({ width: 40, height: 40, alignItems: "center", justifyContent: "center", opacity: pressed ? 0.6 : 1 })}>
       <Icon name={icon} size={21} color={t.text} />
-    </Pressable>
+    </PressableScale>
   );
 }
 

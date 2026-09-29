@@ -17,7 +17,8 @@
 import * as Crypto from "expo-crypto";
 import * as Linking from "expo-linking";
 import * as WebBrowser from "expo-web-browser";
-import { SIGN_IN_FAILED, validateNewPassword, type D1Me } from "@destiny/shared";
+import { isAuthWeakPasswordError } from "@supabase/supabase-js";
+import { SIGN_IN_FAILED, passwordRejection, validateNewPassword, type D1Me, type PasswordRejection } from "@destiny/shared";
 import { client, signInClient } from "@/lib/accounts";
 import { api, signInApi } from "@/lib/api";
 import { unregisterPush } from "@/lib/push";
@@ -52,10 +53,21 @@ export async function verifyEmailCode(email: string, code: string): Promise<D1Me
  * that can't sign in) says the same thing, so the app never reveals who is a member.
  * Approval, invite-only and suspension are still decided by api.link().
  */
-export async function signInWithPassword(email: string, password: string): Promise<D1Me> {
-  const { error } = await signInClient().auth.signInWithPassword({ email: email.trim().toLowerCase(), password });
+export async function signInWithPassword(email: string, password: string): Promise<{ me: D1Me; leaked: boolean }> {
+  const { data, error } = await signInClient().auth.signInWithPassword({ email: email.trim().toLowerCase(), password });
   if (error) throw new Error(SIGN_IN_FAILED);
-  return signInApi.link();
+  // With leaked password protection on, Supabase still lets an existing password
+  // sign in but flags it if it has since turned up in a data breach.
+  const leaked = !!data.weakPassword?.reasons.includes("pwned");
+  return { me: await signInApi.link(), leaked };
+}
+
+/** Supabase refused the new password: too weak, or found in a data breach (leaked password protection). */
+export class PasswordRejectedError extends Error {
+  constructor(readonly rejection: PasswordRejection) {
+    super(rejection.title);
+    this.name = "PasswordRejectedError";
+  }
 }
 
 /** Set or change the signed-in account's password. */
@@ -64,6 +76,7 @@ export async function setPassword(password: string): Promise<void> {
   const problem = validateNewPassword(password, data.session?.user.email ?? null);
   if (problem) throw new Error(problem);
   const { error } = await client().auth.updateUser({ password });
+  if (isAuthWeakPasswordError(error)) throw new PasswordRejectedError(passwordRejection(error.reasons));
   if (error) throw new Error(error.message);
 }
 

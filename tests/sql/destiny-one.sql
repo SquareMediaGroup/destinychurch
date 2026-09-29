@@ -680,4 +680,27 @@ select pg_temp.check(
     and not has_function_privilege('anon', 'public.d1_rate_limit(text, integer)', 'execute'),
   'the rate limit function is service-role only');
 
+-- ── Feedback (part 9) ───────────────────────────────────────────────────────
+
+insert into public.d1_feedback (member_id, kind, body, app_version, platform)
+  values (:minor1::uuid, 'problem', 'The chat list is blank', '1.0.0', 'ios');
+select pg_temp.check(
+  exists (select 1 from public.notifications where kind = 'd1_feedback'
+          and roles = array['destiny_one_admin'] and summary not like '%blank%'),
+  'feedback rings the Destiny One Admin bell without what was written');
+select pg_temp.expect_error(
+  format($$insert into public.d1_feedback (member_id, kind, body) values (%L, 'rant', 'x')$$, :minor1),
+  'd1_feedback_kind_check');
+select pg_temp.check(true, 'feedback is either a problem or an idea');
+update public.d1_feedback set created_at = now() - interval '400 days' where member_id = :minor1::uuid;
+select public.d1_purge_expired(365);
+select pg_temp.check(
+  not exists (select 1 from public.d1_feedback where member_id = :minor1::uuid),
+  'feedback older than the retention period is purged');
+insert into public.d1_feedback (member_id, kind, body) values (:minor1::uuid, 'idea', 'Dark mode please');
+select public.d1_erase_member(:minor1::uuid);
+select pg_temp.check(
+  not exists (select 1 from public.d1_feedback where member_id = :minor1::uuid),
+  'deleting an account deletes its feedback');
+
 \echo 'All Destiny One SQL checks passed.'

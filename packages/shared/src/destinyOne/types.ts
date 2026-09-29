@@ -342,4 +342,24 @@ export interface D1Export {
   reactions: { messageId: number; emoji: string; createdAt: string }[];
   blocked: { id: string; displayName: string; since: string }[];
   reports: { id: number; reason: string; createdAt: string; status: string }[];
+  /** What they sent through "Report a problem" and "Send feedback". */
+  feedback: { id: string; kind: D1FeedbackKind; body: string; createdAt: string; status: D1FeedbackStatus }[];
+}
+
+// ── Feedback ────────────────────────────────────────────────────────────────
+
+/** "problem": something isn't working. "idea": a suggestion or other feedback. */
+export type D1FeedbackKind = "problem" | "idea";
+export type D1FeedbackStatus = "new" | "done";
+
+/** POST /feedback. Everything but kind and body is filled in by the app, for staff fixing a problem. */
+export interface D1FeedbackInput {
+  kind: D1FeedbackKind;
+  body: string;
+  appVersion?: string;
+  platform?: string;
+  osVersion?: string;
+  device?: string;
+  /** The last error the app sent to crash reporting, so staff can match the two. */
+  errorId?: string;
 }

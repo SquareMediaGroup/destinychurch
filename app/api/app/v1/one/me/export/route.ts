@@ -1,4 +1,4 @@
-import type { D1Export } from "@destiny/shared";
+import type { D1Export, D1FeedbackKind, D1FeedbackStatus } from "@destiny/shared";
 import { isAdult } from "@destiny/shared";
 import { createServiceClient } from "@/utils/supabase/service";
 import { authenticate, avatarUrl, loadConsents, loadMemberByAuthUser } from "@/lib/destinyOne/auth.server";
@@ -11,7 +11,8 @@ import { OneError, limit, oneJson, oneRoute } from "@/lib/destinyOne/http";
 // JSON — profile (including what they said in an access request and how they
 // were verified), consents, memberships, their own messages (including ones
 // they deleted, since we still hold those), the files they sent, their
-// reactions, the people they've blocked and the reports they made. Other
+// reactions, the people they've blocked, the reports they made and the
+// problems and feedback they sent. Other
 // people's messages are not "their" data and are not included. Files and the
 // profile picture come as short-lived links rather than inline.
 
@@ -27,7 +28,7 @@ export const GET = oneRoute(async (request) => {
   if (!member) throw new OneError("not_found", "We don't hold any Destiny One data for this account.");
 
   const supabase = createServiceClient();
-  const [consents, extra, communities, groups, messages, attachments, reactions, blocks, reports, picture] = await Promise.all([
+  const [consents, extra, communities, groups, messages, attachments, reactions, blocks, reports, feedback, picture] = await Promise.all([
     loadConsents(member.id),
     supabase
       .from("d1_members")
@@ -65,6 +66,11 @@ export const GET = oneRoute(async (request) => {
       .from("d1_reports")
       .select("id, reason, created_at, status")
       .eq("reporter_id", member.id),
+    supabase
+      .from("d1_feedback")
+      .select("id, kind, body, created_at, status")
+      .eq("member_id", member.id)
+      .order("created_at", { ascending: true }),
     avatarUrl(member.avatar_url),
   ]);
 
@@ -132,6 +138,13 @@ export const GET = oneRoute(async (request) => {
       reason: r.reason,
       createdAt: r.created_at,
       status: r.status,
+    })),
+    feedback: (feedback.data ?? []).map((f) => ({
+      id: f.id as string,
+      kind: f.kind as D1FeedbackKind,
+      body: f.body as string,
+      createdAt: f.created_at as string,
+      status: f.status as D1FeedbackStatus,
     })),
   };
 

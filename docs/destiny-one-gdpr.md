@@ -28,6 +28,8 @@ This document is the technical input for it.
 | Profile picture (optional) | `d1_members.avatar_url` (a path) + private `d1-avatars` bucket; only ever served as a short-lived signed link. Re-encoded on the phone before upload, so no location or other metadata is kept | Self-chosen picture | Until they remove it or delete the account (deleted with the account) |
 | Blocks | `d1_blocks`, plus a `block`/`unblock` row in `d1_safeguarding_events` | Hide someone's messages and notifications for the blocker; a signal for safeguarding | Until unblocked or either account is deleted; the event row follows the safeguarding retention window |
 | Reports, safeguarding events | `d1_reports`, `d1_safeguarding_events` | Safeguarding | Retention window once closed |
+| Feedback | `d1_feedback`: what they wrote in Report a problem / Send feedback, app version, platform, OS version, phone model, crash-report id | Fixing problems, improving the app. Read by Destiny One Admins | Retention window (§4); deleted with the account; in the data export |
+| Crash reports | Sentry (EU): the error and stack trace, phone model, OS and app version, the screens and requests before it (no query strings), internal member id. No name, email, IP, message text, screenshots or recordings | Fixing crashes | Sentry's retention for the plan (check before launch) |
 | Transcript access log | `audit_log` (section `safeguarding`) | Accountability for reviews | Audit-log retention (`AUDIT_RETENTION_DAYS`, default 365) |
 
 **Never collected:** phone numbers (no column exists; phone sign-in off; accounts with a phone
@@ -57,6 +59,7 @@ ChurchSuite client by an allow-list — `lib/destinyOne/churchsuite.ts` `toPerso
 | Vercel | Runs the API | Transient (requests) | Confirm function region |
 | ChurchSuite (optional) | Only if connected: staff sign-in and the approval lookup | Name, email, DOB (read-only by us; DOB reduced to the 18th birthday) | UK |
 | Resend | Sends invite emails | Invitee's email and first name | Confirm region / DPA |
+| Sentry | Crash reporting (only when `EXPO_PUBLIC_SENTRY_DSN` is set) | See "Crash reports" in §1 | EU (Germany); needs a DPA |
 | Expo (push service) | Relays notifications | Push token, group id and name, **sender's name and the first line of the message** (up to 100 characters) | US |
 | Apple APNs / Google FCM | Deliver notifications | As above | US |
 

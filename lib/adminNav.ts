@@ -117,6 +117,14 @@ export const ADMIN_GROUPS: AdminNavGroup[] = [
         keywords: ["reports", "review", "transcript", "freeze", "concern"],
       },
       {
+        href: "/admin/destiny-one/feedback",
+        label: "App feedback",
+        icon: "feedback",
+        role: "destiny_one_admin",
+        description: "Problems and ideas people sent from the app's Profile tab.",
+        keywords: ["bug", "problem", "report a problem", "suggestion", "ideas", "support"],
+      },
+      {
         href: "/admin/destiny-one/settings",
         label: "App settings",
         icon: "tune",

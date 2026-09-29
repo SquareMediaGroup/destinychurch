@@ -8,7 +8,7 @@
 // Messages. Swipe a message right to reply; press and hold for the menu.
 
 import { useEffect, useState, type ReactNode } from "react";
-import { Animated, Image, Pressable, Text, View } from "react-native";
+import { Animated, Image, Pressable, Text, useWindowDimensions, View } from "react-native";
 import Svg, { Path } from "react-native-svg";
 import type { D1EventContent, D1LeaderRole, D1Message, D1PollContent } from "@destiny/shared";
 import { Icon } from "@/components/Icon";
@@ -135,8 +135,15 @@ function tones(t: Theme, mine: boolean) {
 
 export function MessageBubble({ row, replyTo, senderTag, senderIsGroupAdmin, canReply, arriving, menu, onReply, onOpenAttachment, onToggleReaction, onVotePoll, onRetry }: BubbleProps) {
   const t = useTheme();
+  const { width: screenW } = useWindowDimensions();
   const { m } = row;
   const k = tones(t, m.mine);
+  // The press-and-hold menu hosts the bubble in SwiftUI, where a percentage
+  // max width has no parent to resolve against, so text lays out at the wrong
+  // width and the row reports the wrong height (rows and reactions overlap).
+  // Give it the width the row would have given it, in points. Rows pad 78pt
+  // on mine, 110pt on theirs (avatar column and gutters).
+  const maxBubbleW = Math.max(120, screenW - (m.mine ? 78 : 110));
   const name = m.mine ? "You" : m.sender?.displayName ?? "Former member";
   const replyName = replyTo ? (replyTo.mine ? "You" : replyTo.sender?.displayName ?? "Former member") : "";
   const replyText = replyTo ? (replyTo.deleted ? "Message deleted" : replyTo.body ?? "Attachment") : "";
@@ -159,7 +166,7 @@ export function MessageBubble({ row, replyTo, senderTag, senderIsGroupAdmin, can
       onPress={m.status === "failed" ? onRetry : undefined}
       scaleTo={0.94}
       accessibilityHint={m.id > 0 ? "Long press for reply, react, copy and report" : undefined}
-      wrapStyle={{ maxWidth: "100%" }}
+      wrapStyle={{ maxWidth: maxBubbleW }}
       style={{ opacity: m.status === "sending" ? 0.6 : 1 }}
     >
       <View style={{ ...corners, backgroundColor: m.mine ? t.send : t.bubbleIn, paddingTop: 8, paddingBottom: 9, paddingHorizontal: 14, gap: 6 }}>

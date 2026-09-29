@@ -67,6 +67,23 @@ export async function setPassword(password: string): Promise<void> {
   if (error) throw new Error(error.message);
 }
 
+// ── Changing your email ─────────────────────────────────────────────────────
+
+/** Emails a code to the new address. Returns the ticket confirmEmailChange needs. */
+export async function startEmailChange(email: string): Promise<string> {
+  const { ticket } = await api.startEmailChange(email.trim().toLowerCase());
+  return ticket;
+}
+
+/**
+ * Checks the code and changes the sign-in email on the server, then refreshes
+ * the session so the new address shows here (and in the account switcher).
+ */
+export async function confirmEmailChange(ticket: string, code: string): Promise<void> {
+  await api.confirmEmailChange(ticket, code.trim());
+  await client().auth.refreshSession().catch(() => undefined);
+}
+
 // ── Sign in with ChurchSuite ────────────────────────────────────────────────
 
 const BASE64URL = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";

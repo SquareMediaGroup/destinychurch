@@ -36,6 +36,15 @@ export const deleteAccountSchema = z.object({
   confirm: z.literal("DELETE", { errorMap: () => ({ message: 'Send { "confirm": "DELETE" } to delete your account.' }) }),
 });
 
+export const emailChangeSchema = z.object({
+  email: z.string().trim().toLowerCase().max(254).email("That doesn't look like an email address."),
+});
+
+export const emailChangeConfirmSchema = z.object({
+  ticket: z.string().min(1).max(1000),
+  code: z.string().trim().regex(/^\d{6}$/, "The code is 6 digits."),
+});
+
 export const pushTokenSchema = z.object({
   token: z
     .string()

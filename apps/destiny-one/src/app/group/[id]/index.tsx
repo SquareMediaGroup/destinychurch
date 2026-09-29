@@ -321,7 +321,7 @@ export default function GroupChat() {
       <ConfirmDialog
         visible={!!blocking}
         title={`Block ${blocking?.name ?? ""}?`}
-        body={`You won't see their messages or get notifications from them, and they won't be told. You both stay in your groups. The safeguarding team can still see everything, and can see that you blocked ${blocking?.name.split(" ")[0] ?? "them"}. If they've made you feel unsafe, report the message too.`}
+        body={`You won't see their messages or get notifications from them, and they won't be told. You both stay in your groups. Leaders can still see the chats, including that you blocked ${blocking?.name.split(" ")[0] ?? "them"}. If they've made you feel unsafe, report the message too.`}
         confirmLabel="Block"
         busy={blockBusy}
         onCancel={() => setBlocking(null)}
@@ -343,7 +343,7 @@ export default function GroupChat() {
       <ConfirmDialog
         visible={!!deleting}
         title="Delete for everyone?"
-        body="It will be removed for everyone. A copy is kept for a time in case safeguarding needs it."
+        body="It will be removed for everyone. We keep a copy for a while in case we need to look into something."
         confirmLabel="Delete"
         busy={deleteBusy}
         onCancel={() => setDeleting(null)}

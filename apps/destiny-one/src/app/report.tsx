@@ -69,13 +69,13 @@ export default function Report() {
           <Field
             value={note}
             onChangeText={(v) => setNote(v.slice(0, MAX))}
-            placeholder="Tell the safeguarding team what happened"
+            placeholder="Tell us what happened"
             multiline
             maxLength={MAX}
             background={t.card}
             footer={<Text style={{ alignSelf: "flex-end", paddingBottom: 10, fontSize: 12, color: t.subtle, fontVariant: ["tabular-nums"] }}>{note.length} / {MAX}</Text>}
           />
-          <Text style={{ paddingHorizontal: 16, fontSize: 13, lineHeight: 18, color: t.subtle }}>Only the safeguarding team sees reports. The sender isn&apos;t told who reported them.</Text>
+          <Text style={{ paddingHorizontal: 16, fontSize: 13, lineHeight: 18, color: t.subtle }}>Only our safeguarding team sees reports. The other person isn&apos;t told it was you.</Text>
         </View>
         <FormError message={error} />
       </ScrollView>

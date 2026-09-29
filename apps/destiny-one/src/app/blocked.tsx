@@ -63,7 +63,7 @@ export default function Blocked() {
           </View>
         )}
         <Text style={{ paddingHorizontal: 16, fontSize: 13, lineHeight: 18, color: t.subtle }}>
-          You won&apos;t see messages from people you block, and they won&apos;t notify you. You both stay in your groups. The safeguarding team can still see everything.
+          You won&apos;t see messages from people you block, and they won&apos;t notify you. You both stay in your groups. Leaders can still see the chats.
         </Text>
       </ScrollView>
       <FloatingBack background={t.grouped} />

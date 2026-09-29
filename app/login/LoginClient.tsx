@@ -54,7 +54,7 @@ export default function LoginClient({
 
 function UnassignedPanel() {
   return (
-    <div className="relative flex min-h-screen w-full items-center justify-center overflow-hidden bg-destiny-grey px-4">
+    <div className="relative flex h-screen w-full items-center justify-center overflow-hidden bg-destiny-grey px-4">
       <div
         className="absolute inset-0 bg-cover bg-center bg-no-repeat"
         style={{ backgroundImage: "url('/img/photos/Hero%20BKG.webp')" }}
@@ -121,7 +121,7 @@ function SignInScreen({
   }
 
   return (
-    <div className="relative flex min-h-screen w-full overflow-hidden bg-destiny-grey">
+    <div className="relative flex h-screen w-full overflow-hidden bg-destiny-grey">
       {/* Background */}
       <div
         className="absolute inset-0 bg-cover bg-center bg-no-repeat"
@@ -130,7 +130,7 @@ function SignInScreen({
       <div className="absolute inset-0 bg-gradient-to-br from-black/85 via-black/65 to-destiny-grey/90" />
 
       {/* Content */}
-      <div className="relative z-10 flex w-full flex-col items-center justify-center px-4 py-20">
+      <div className="relative z-10 flex h-full w-full flex-col items-center justify-center overflow-y-auto px-4 py-20">
         <div className="w-full max-w-md">
           {/* Logo */}
           <div className="mb-10 flex justify-center">

@@ -172,12 +172,12 @@ export default function SafeguardingPage() {
       />
       <ErrorNote>{error}</ErrorNote>
 
-      <div className="mb-5 flex gap-2">
+      <div className="mb-5 flex flex-wrap gap-2">
         {tabs.map((t) => (
           <button
             key={t.key}
             onClick={() => setTab(t.key)}
-            className={`rounded-lg px-3 py-1.5 text-sm font-bold ${tab === t.key ? "bg-destiny-grey text-white dark:bg-white dark:text-destiny-grey" : "bg-black/5 dark:bg-white/10"}`}
+            className={`whitespace-nowrap rounded-lg px-3 py-1.5 text-sm font-bold ${tab === t.key ? "bg-destiny-grey text-white dark:bg-white dark:text-destiny-grey" : "bg-black/5 dark:bg-white/10"}`}
           >
             {t.label}
           </button>
@@ -193,7 +193,7 @@ export default function SafeguardingPage() {
           <ul className="space-y-2">
             {events.map((e) => (
               <li key={e.id} className={`${cardClass} flex flex-wrap items-center gap-3 px-5 py-4`}>
-                <div className="min-w-0 flex-1">
+                <div className="min-w-0 flex-1 basis-64 [overflow-wrap:anywhere]">
                   <p className="font-bold">{EVENT_LABEL[e.kind]}{e.group ? ` — ${e.group.name}` : ""}</p>
                   <p className="text-sm text-destiny-grey/60 dark:text-white/60">{e.detail} · {formatDate(e.created_at)}</p>
                 </div>
@@ -252,7 +252,7 @@ export default function SafeguardingPage() {
         <ul className="space-y-2">
           {groups.map((g) => (
             <li key={g.id} className={`${cardClass} flex flex-wrap items-center gap-3 px-5 py-3`}>
-              <div className="min-w-0 flex-1">
+              <div className="min-w-0 flex-1 basis-64 [overflow-wrap:anywhere]">
                 <p className="font-bold">{g.kind === "announcements" ? `${g.communityName} Announcements` : g.name}</p>
                 <p className="text-sm text-destiny-grey/55 dark:text-white/55">{g.communityName} · {g.memberCount} people, {g.adultCount} adults</p>
               </div>

@@ -5,7 +5,7 @@
 // React Native has none, so here a large linear gradient spins behind a
 // rounded, clipped frame, which reads the same at 1.5px.
 
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode, type Ref } from "react";
 import { D1_ROLE_LABELS, type D1LeaderRole } from "@destiny/shared";
 import {
   ActivityIndicator,
@@ -163,8 +163,9 @@ export function Field({
   footer,
   inputStyle,
   containerStyle,
+  ref,
   ...input
-}: TextInputProps & { radius?: number; background?: string; leading?: ReactNode; footer?: ReactNode; inputStyle?: StyleProp<TextStyle>; containerStyle?: StyleProp<ViewStyle> }) {
+}: TextInputProps & { ref?: Ref<TextInput>; radius?: number; background?: string; leading?: ReactNode; footer?: ReactNode; inputStyle?: StyleProp<TextStyle>; containerStyle?: StyleProp<ViewStyle> }) {
   const t = useTheme();
   const [focused, setFocused] = useState(false);
   return (
@@ -172,6 +173,7 @@ export function Field({
       <View style={{ borderRadius: radius - 1.5, backgroundColor: background ?? t.field, paddingHorizontal: 16, flexDirection: input.multiline ? "column" : "row", alignItems: input.multiline ? "stretch" : "center", gap: 10 }}>
         {leading}
         <TextInput
+          ref={ref}
           placeholderTextColor={t.subtle}
           selectionColor={ORANGE}
           {...input}

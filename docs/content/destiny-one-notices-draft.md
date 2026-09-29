@@ -24,6 +24,8 @@
 - A **profile picture**, if you choose to add one.
 - The notices you've agreed to, and when.
 - People you've **blocked**, and reports you've made.
+- **Problems and feedback** you send us from the Profile tab, with your app version and phone model.
+- **Crash reports**: if the app goes wrong, what went wrong in the app, your phone model and app version, and your member number (not your name or email). Never your messages.
 - A **device token** so we can send you notifications.
 
 **What we never collect:** phone numbers, your address, your location, your contacts, or medical information. Photos are re-saved on your phone before they're uploaded, which removes location and other hidden details.
@@ -43,6 +45,7 @@
 | Supabase | Stores the app's data, sign-in and files | EU (Ireland) |
 | Vercel | Runs the app's server | `[confirm region]` |
 | Resend | Sends sign-in codes and invites by email | `[confirm region]` |
+| Sentry | Crash reports, so we can fix problems (no names, emails or messages) | EU (Germany) |
 | Expo, Apple, Google | Deliver notifications (with a message preview) | USA |
 | ChurchSuite (only if it's switched on for you) | Staff sign-in | UK |
 

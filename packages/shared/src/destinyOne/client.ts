@@ -16,6 +16,7 @@ import type {
   D1EventRef,
   D1EventSummary,
   D1Export,
+  D1FeedbackInput,
   D1GroupDetail,
   D1Me,
   D1MembershipRole,
@@ -135,14 +136,21 @@ export function createDestinyOneClient({ baseUrl, getAccessToken, fetchImpl }: D
     exchangeChurchSuiteCode: (code: string, verifier: string) =>
       call<{ tokenHash: string; type: "magiclink" }>("POST", "/auth/churchsuite/exchange", { code, verifier }),
     me: () => call<D1Me>("GET", "/me"),
+    /** Change my own name. */
+    updateName: (firstName: string, lastName: string) => call<D1Me>("PATCH", "/me", { firstName, lastName }),
     /** For `onboarding: "request_needed"` — ask the church team for access. */
     requestAccess: (input: D1AccessRequest) => call<D1Me>("POST", "/me/access-request", input),
     acceptConsents: (consents: D1Consent[]) => call<D1Me>("POST", "/me/consents", { consents }),
     exportMyData: () => call<D1Export>("GET", "/me/export"),
+<<<<<<< HEAD
     /** Change my sign-in email, step 1: emails a code to the new address. Send the ticket back with it. */
     startEmailChange: (email: string) => call<{ ticket: string }>("POST", "/me/email", { email }),
     /** Step 2: the code from that email. Refresh the Supabase session afterwards to pick up the new address. */
     confirmEmailChange: (ticket: string, code: string) => call<{ email: string }>("POST", "/me/email/confirm", { ticket, code }),
+=======
+    /** "Report a problem" and "Send feedback". Goes to the Destiny One Admins, not the safeguarding team. */
+    sendFeedback: (input: D1FeedbackInput) => call<{ ok: true }>("POST", "/feedback", input),
+>>>>>>> origin/main
     deleteAccount: () => call<{ deleted: true }>("DELETE", "/me", { confirm: "DELETE" }),
     registerPushToken: (token: string, platform: "ios" | "android") =>
       call<{ ok: true }>("POST", "/me/push-tokens", { token, platform }),

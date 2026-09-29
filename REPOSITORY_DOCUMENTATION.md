@@ -1951,7 +1951,7 @@ department **sub-groups**. Migration: `supabase/migrations/20260926_01_destiny_o
 
 | Table | Holds |
 |---|---|
-| `d1_members` | One row per app account. `auth_user_id` (nullable — set null when the account is deleted), `display_name` (from ChurchSuite, not editable by the member), `churchsuite_contact_id` / `churchsuite_child_id` / `churchsuite_user_id`, **`adult_on`** (the 18th birthday — the full date of birth is never stored), `status` (`pending`/`active`/`suspended`/`deleted`), `roles` (`admin`, `cg_leader`, `senior_leader` — see part 8) |
+| `d1_members` | One row per app account. `auth_user_id` (nullable — set null when the account is deleted), `first_name` / `last_name` (the member can change these themselves via `PATCH /me`; `name_edited_at` records that) and `display_name` (always `first last` — the `d1_members_sync_names` trigger derives it from first/last, or splits it into first/last when older code such as the ChurchSuite sync, invites, erasure or staff edits write only `display_name`). Once a member edits their name, the ChurchSuite re-sync no longer overwrites it, `churchsuite_contact_id` / `churchsuite_child_id` / `churchsuite_user_id`, **`adult_on`** (the 18th birthday — the full date of birth is never stored), `status` (`pending`/`active`/`suspended`/`deleted`), `roles` (`admin`, `cg_leader`, `senior_leader` — see part 8) |
 | `d1_consents` | Which version of `privacy` / `terms` / `chat_review_notice` a member accepted, when |
 | `d1_communities`, `d1_community_members` | Communities and who is in them (`admin`/`member`) |
 | `d1_groups` | `kind` (`announcements`/`group`), `department`, `state` (`active`/`frozen`/`archived`), `freeze_kind` (`auto`/`manual`), `frozen_reason` |
@@ -2062,9 +2062,20 @@ with no role who administers the group shows "Group admin" instead. The Profile 
 label. **Deploy order:** old app builds only know the retired role names, so a leader on one loses
 the leader UI until they update; apply the migration when the API change ships.
 
+**Part 9 — `20260929_01_destiny_one_feedback.sql`: "Report a problem" and "Send feedback".**
+`d1_feedback` (member, `kind` problem/idea, `body` up to 2000, optional app version / platform / OS
+version / phone model / crash-report id, `status` new/done; deny-all RLS). Kept in the database, not
+as GitHub issues, because the repository is public and many members are young people. An insert rings
+the Destiny One Admin bell (`d1_feedback_notify`; the notification never includes the text).
+`d1_erase_member` deletes a member's feedback and `d1_purge_expired` removes feedback older than the
+retention period. Staff read it at `/admin/destiny-one/feedback`. Applied to the live project on
+2026-09-29, together with `20260922_02_notifications.sql` (the admin bell's tables), which had never
+been applied there. Until then, every Destiny One report and group pause would have failed at its bell
+notification.
+
 **Tested by:** `scripts/test-sql.sh` (`npm run test:sql`, and the "Database rules" CI job) — applies
-Supabase stubs + every Destiny One migration (parts 1–8, plus the profile-picture and min-build
-migrations) to a throwaway local Postgres and runs `tests/sql/destiny-one.sql` (107 checks).
+Supabase stubs + every Destiny One migration (parts 1–9, plus the profile-picture, min-build and
+group-icon migrations) to a throwaway local Postgres and runs `tests/sql/destiny-one.sql`.
 
 **Used By:** `lib/destinyOne/*`, `app/api/app/v1/one/**`, `app/api/admin/destiny-one/**`,
 `app/api/cron/destiny-one-{sync,purge}`.
@@ -2495,7 +2506,7 @@ Each section requires a specific access-level role (see
 |-------|------|---------|
 | `/login` | `app/login/page.tsx` | Staff sign-in. On success (or on revisiting while already signed in), shows a "choose a system" screen — Admin (`/admin`) and Portal (`/portal`) cards, greyed out for whichever the account can't open (`getSystemAccess` in `lib/staffPortalAuth.ts`) |
 | `/admin/forgot-password` | `app/admin/forgot-password/page.tsx` | Password reset request |
-| `/admin/reset-password` | `app/admin/reset-password/page.tsx` | Password reset form |
+| `/admin/reset-password` | `app/admin/reset-password/page.tsx` | Password reset form. A password Supabase refuses (found in a data breach, or too weak) gets an explanation panel from `passwordRejection()` instead of a raw error |
 | `/admin` | `app/admin/page.tsx` | Admin dashboard home |
 | `/admin/banner` | `app/admin/banner/page.tsx` | Manage site banners |
 | `/admin/popup` | `app/admin/popup/page.tsx` | Manage pop-ups |
@@ -2538,6 +2549,7 @@ Each section requires a specific access-level role (see
 | `/admin/destiny-one/members` | `app/admin/destiny-one/members/page.tsx` | Everyone with an account; panel to fix name, age, leader roles, suspend, delete (Destiny One Admin) |
 | `/admin/destiny-one/communities` (+ `/[id]`) | `app/admin/destiny-one/communities/**` | Communities, their Announcements and department groups with live people/adult counts and pause reasons; add/remove people, roles, create/archive groups with a live rule check. No message content (Destiny One Admin) |
 | `/admin/destiny-one/safeguarding` | `app/admin/destiny-one/safeguarding/page.tsx` | Queue, reports, all groups, manual pause, and the reason-gated, audited transcript viewer (Safeguarding Admin) |
+| `/admin/destiny-one/feedback` | `app/admin/destiny-one/feedback/page.tsx` | "Report a problem" and "Send feedback" from the app: New / Done / All, the text, who sent it, phone and app version, crash-report id; mark done or reopen (Destiny One Admin) |
 | `/admin/destiny-one/settings` | `app/admin/destiny-one/settings/page.tsx` | Invite-only vs open to requests, invite expiry, minimum app builds per platform + update message, maintenance switch; retention and ChurchSuite status read-only (Destiny One Admin) |
 | `/admin/sermons` | `app/admin/sermons/page.tsx` | Publish sermon audio to Buzzsprout (video keeps going to YouTube separately); add/remove YouTube playlists as sermon series; run the AI speaker review or manually search-and-correct any sermon's speaker; a read-only recent-episodes list showing pairing status (Sermon Admin) |
 | `/admin/design` | `app/admin/design/page.tsx` | Design ticket queue — search, status/priority/mine filters, inline Claim. Defaults to "Needs someone" rather than everything (Design Admin) |
@@ -3118,8 +3130,8 @@ to keep.
   presentation only — middleware still knows they're a super admin.
 
 #### Admin Components (`components/admin/*`)
-- `AdminSidebar.tsx` — Admin navigation. At `md`+ the full sidebar; below `md` only a slim top bar (logo, breadcrumbs, ⌘K, theme toggle, account sheet), with navigation itself handed to `AdminTabBar`
-- `AdminTabBar.tsx` — The mobile bottom tab bar: a scrolling row of Liquid Glass group tabs derived from `tabsFor()`, with a `Sheet` for multi-page groups and a view-transitioned active pill. See "Admin navigation, search and keyboard shortcuts"
+- `AdminSidebar.tsx` — Admin navigation. A group with its own overview page (Destiny One, HR — `groupLanding()` in `lib/adminNav.ts`, the item named the same as the group) makes the group heading the link to it, with the chevron beside it as the expand/collapse control, instead of repeating the name as the first child. At `md`+ the full sidebar; below `md` only a slim top bar (logo, breadcrumbs, ⌘K, theme toggle, account sheet), with navigation itself handed to `AdminTabBar`
+- `AdminTabBar.tsx` — The mobile bottom tab bar: a scrolling row of Liquid Glass group tabs derived from `tabsFor()`, with a `Sheet` for multi-page groups (where a group's own landing page is listed as "Overview", highlighted only on that exact page) and a view-transitioned active pill. See "Admin navigation, search and keyboard shortcuts"
 - `AdminHeader.tsx` — Sticky desktop header for the admin shell (`md`+ only); shows the full breadcrumb trail from `breadcrumbsFor(pathname)` — every level above the current page a link — plus ⌘K, the notification bell (`AdminNotificationBell`), the theme toggle, shortcut help and a "View live site" button
 - `AdminNotificationBell.tsx` — The notification bell: an unread badge and a dropdown of the most recent notifications for whatever roles the signed-in admin holds. Data and Realtime delivery both come from `lib/useNotifications.ts` (initial `GET /api/admin/notifications`, then a private Broadcast channel per held role); marking one or all read is optimistic and reconciled on the next refresh. See the `notifications` table in Database Schema for the delivery model.
 - `RichTextEditor.tsx` — Shared TipTap rich-text editor (HTML output); used by posts, training posts, HR job descriptions, and (since `a22301b`) shop product descriptions. Optional `blocks` / `onEditor` props admit [content blocks](#content-blocks) — schema and drop handling only; the blocks UI is a separate surface owned by the parent, deliberately **not** part of this toolbar.
@@ -3129,6 +3141,7 @@ to keep.
 - `CourseAdminPage.tsx` — **Client.** The single implementation behind `/admin/alpha`, `/admin/recovery`, `/admin/bible-course` and `/admin/cap-money`. See below.
 - `AdminThemeToggle.tsx` — **Client.** The light/dark/system cycle button. One `useAdminTheme()`
   call (`lib/adminTheme.ts`); mounted in `AdminHeader.tsx` and the mobile bar in `AdminSidebar.tsx`.
+  Renders nothing while `ADMIN_DARK_MODE_ENABLED` is `false` (dark mode is currently off).
 - `AdminCharts.tsx` — **Client.** The admin's data-visualisation kit, deliberately separate from
   `AdminUI.tsx` (that file is controls/layout; this is the other half). No charting library — the
   only genuine time series in the admin (the weekly audit reports' stats, and a day-bucketed count
@@ -4221,12 +4234,12 @@ needs at least 2 verified adults.") pass through as `rule_violation` (422). Type
 | `auth/code` | POST | No sign-in: `{ email }`. Sends the email sign-in code only if `d1_sign_in_status` says this email can get in (member, open invite, or requests open), from `after()`, and always answers `{ sent: true }`, so neither the reply nor its timing reveals who is a member. The code comes from the Supabase admin API (`generateLink`, which doesn't email) and is sent through Resend, so sign-in doesn't hit Supabase's per-IP limit for the server's address or its capped built-in sender. Rate-limited per IP and per (hashed) email. Replaced `auth/check` (2026-09-28), which said "no account" outright |
 | `me/access-request` | POST | `{ name, dateOfBirth?, note? }` — ask to join; a Destiny One Admin approves |
 | `auth/churchsuite/start` → `callback` → `exchange` | GET, GET, POST | Sign in with ChurchSuite (below) |
-| `me` | GET, DELETE | DELETE = GDPR erasure (`{ "confirm": "DELETE" }`). `D1Me` includes `blocked` (people I've blocked), `avatarUrl` (a signed link) and `isStaff` (has Destiny One / Safeguarding / Super Admin access; used only to check an "Add admin account") |
+| `me` | GET, PATCH, DELETE | PATCH `{ firstName, lastName }` changes my own name (5/min; Profile tab → Change name, `edit-name.tsx`). DELETE = GDPR erasure (`{ "confirm": "DELETE" }`). `D1Me` includes `firstName`, `lastName`, `blocked` (people I've blocked), `avatarUrl` (a signed link) and `isStaff` (has Destiny One / Safeguarding / Super Admin access; used only to check an "Add admin account") |
 | `me/avatar` | POST, DELETE | Profile picture (multipart `file`, 5 MB). Active members only; stored privately in `d1-avatars` |
 | `me/email` → `me/email/confirm` | POST, POST | Change my own sign-in email (Profile → Email, `src/app/change-email.tsx`). `{ email }` emails a 6-digit code to the new address through Resend and returns a sealed `ticket` (`lib/destinyOne/emailChange.ts`: account + address + code hash, 15 minutes); `{ ticket, code }` then sets the auth email with the admin API (`email_confirm: true`) and emails a notice to the old address. "Already has an account" is only said after the code checks out, so it never reveals who has one. Doesn't use `auth.updateUser({ email })`: Supabase's project-wide "Change email" template is link-based (the portal uses it) and secure email change would also need a code from the old inbox. Active members only; rate-limited per account. The app refreshes its Supabase session afterwards |
 | `members/[id]/block` | POST, DELETE | Block / unblock someone; returns `D1Me`. Hides their messages and notifications for me only; logged for safeguarding |
 | `me/consents` | POST | Current versions only (`REQUIRED_CONSENTS`) |
-| `me/export` | GET | GDPR access: profile (incl. access-request note, declared and staff-set 18th birthday, how and when verified, a link to the profile picture), consents, memberships, own messages (incl. deleted), files sent (24-hour links), reactions, blocks, own reports |
+| `me/export` | GET | GDPR access: profile (incl. access-request note, declared and staff-set 18th birthday, how and when verified, a link to the profile picture), consents, memberships, own messages (incl. deleted), files sent (24-hour links), reactions, blocks, own reports, feedback sent |
 | `me/push-tokens` | POST, DELETE | Expo tokens |
 | `communities` | GET, POST | POST: any leader role |
 | `communities/[id]` | GET | |
@@ -4245,6 +4258,7 @@ needs at least 2 verified adults.") pass through as `rule_violation` (422). Type
 | `messages/[id]` | DELETE | Soft delete (content kept for review) |
 | `messages/[id]/report`, `/reactions` | POST (+DELETE) | Report → safeguarding bell, and an email to every Safeguarding Admin (`lib/destinyOne/safeguardingEmail.server.ts`; no message content, names or group in it) |
 | `directory` | GET | Leaders only; names + adult flag, never contact details |
+| `feedback` | POST | `{ kind: "problem" \| "idea", body, appVersion?, platform?, osVersion?, device?, errorId? }` — Profile → Report a problem / Send feedback. Saved to `d1_feedback` for Destiny One Admins (bell, no text in it). Skips the consent gate, like reporting. 5 a minute |
 
 **Sign in with ChurchSuite.** ChurchSuite's OAuth (authorisation code, scope `user`,
 `GET /account/users/current`) identifies ChurchSuite **users** — staff and leaders with a login — not
@@ -4276,6 +4290,8 @@ so the broader one can't swallow it) and re-checked in every route by `requireDe
   `POST communities/[id]/groups`, `GET/PATCH groups/[id]` (archive/restore), `POST/PATCH/DELETE
   groups/[id]/members` — all through the `d1_admin_*` SQL functions, so the rules hold.
 - `GET/PATCH settings` — access requests on/off, invite expiry; retention shown read-only.
+- `GET feedback`, `PATCH feedback/[id]` (`{ status: "new" | "done" }`) — app feedback. This is the
+  one place these routes read something members wrote, and it's what they chose to send to staff.
 - `GET churchsuite?q=` — OPTIONAL lookup on the approval screen; 404 when ChurchSuite isn't configured.
 
 **Safeguarding Admin (`safeguarding_admin`) — `/api/admin/destiny-one/safeguarding/*`, the only
@@ -4748,7 +4764,8 @@ to open their editor straight away.
 
 ### `lib/adminTheme.ts`
 
-The admin's light/dark/system theme store — see "Dark mode — `/admin` only"
+The admin's light/dark/system theme store (dark mode currently switched off via
+`ADMIN_DARK_MODE_ENABLED`) — see "Dark mode — `/admin` only"
 under [Styling](#styling-tailwind-v4-no-tailwindconfigts) for the full
 mechanism (`@custom-variant dark`, why the `.dark` class lives on
 `/admin/layout.tsx`'s own wrapper rather than `document.documentElement`, and
@@ -6447,6 +6464,14 @@ means adopting the others.
 
 #### Dark mode — `/admin` only
 
+> **Currently switched off (September 2026).** Destiny One's admin pages were
+> never checked in dark and it read as broken rather than dark, so
+> `ADMIN_DARK_MODE_ENABLED` in `lib/adminTheme.ts` is `false`: `useAdminTheme()`
+> always resolves to light (whatever is stored or the OS prefers) and
+> `AdminThemeToggle` renders nothing. Everything below still describes how it
+> works — the `dark:` classes are left in place, dormant — so re-enabling it is
+> flipping that constant once each admin page has been checked in dark.
+
 Tailwind v4's default `dark:` variant follows `prefers-color-scheme`, which
 would flip the whole *site* dark the moment a visitor's OS is set to dark —
 wrong for a public church site whose brand is deliberately light. `globals.css`
@@ -6989,8 +7014,17 @@ same database as the data rather than in a separate Synapse module.
   `group/[id]/info` (B6; leaders: rules panel, make admin / remove), `group/[id]/edit` (C4),
   `community/[id]` (B2), `new-group` (C1, modal), `add-people` (C2; `?groupId` adds to a group,
   `?communityId` picks for New group), `notifications` (D2 + per-group mute), `search` (full-screen search opened from a chat; the
-  Search tab `(tabs)/find` uses the same `SearchView` component), `report` + `report-sent` (B5), `chat-safety`,
+  Search tab `(tabs)/find` uses the same `SearchView` component), `report` + `report-sent` (B5), `feedback` (D5, Profile → Report a problem /
+  Send feedback, `?kind=problem|idea`; also reached by shaking the phone, see below), `chat-safety`,
   `delete-account` (D3, type DELETE), `accounts` (account switcher, a fit-to-content form sheet), `add-account` (Profile → Add account: Add child / Add admin account, a form sheet), `password` (password sign-in) and `set-password` (Profile → Password).
+- **Leaked passwords.** With Supabase's leaked password protection on (Auth settings, Pro plan), a
+  new password found in a known data breach is refused with `AuthWeakPasswordError` (reason `pwned`).
+  `setPassword` (`src/lib/auth.ts`) turns that into `PasswordRejectedError`, and `set-password` shows a
+  card saying the password has been leaked, clears the field and asks for a different one. Signing
+  in with an existing password that has since leaked still works, but Supabase flags it
+  (`weakPassword`), so `password` offers "Change password", which opens `set-password?leaked=1` with
+  the same card. The wording is `passwordRejection()` in `@destiny/shared` (unit-tested), shared with
+  the website's `/admin/reset-password`.
 - **State:** `src/state/session.tsx` (auth session, `me`, the communities list, the Realtime hub,
   catch-up, `routeFor`, `errorMessage`); `src/state/picker.ts` (Add people selection for New group).
   `src/lib/useConversation.ts` owns a chat: paging, optimistic sends with "Not sent. Tap to retry.",
@@ -7095,6 +7129,24 @@ same database as the data rather than in a separate Synapse module.
   re-check `me`. `AccessGuard` (`src/state/session.tsx`, mounted in the root layout) then replaces
   any in-app screen with `routeFor(me)` (waiting, notices, …), and a member who is no longer active
   has their chats, groups and messages removed from the device cache.
+- **Shake to report a problem.** `useShakeToReportListener` (`src/lib/useShakeToReport.ts`, mounted
+  in the root layout) reads the accelerometer (`expo-sensors`, 10 times a second) while the app is
+  open and an active member is signed in. `createShakeDetector` (`src/lib/shake.ts`, pure and
+  unit-tested in `tests/unit/destiny-one-shake.spec.ts`) needs three jolts over 1.8 g within a
+  second, so a knock or a drop doesn't count, then waits 3 seconds. A shake asks first ("Report a
+  problem?" / Not now / Turn off shake to report), and never on the feedback screen itself. On by
+  default; the switch is on the feedback screen and is kept on the phone (`src/state/shakeToReport.ts`).
+  Nothing about movement is stored or sent. `app.json` gives iOS a motion purpose string anyway, as
+  App Review can ask for one when the sensors library is linked.
+- **Crash reporting:** Sentry (`@sentry/react-native`, EU region), set up in `src/lib/sentry.ts` and
+  imported first in the root layout. Off unless `EXPO_PUBLIC_SENTRY_DSN` is set at build time. It
+  sends as little as possible: the member's internal id only (`setReportingMember`, no name, email or
+  IP), no screenshots, screen recordings or performance tracing, and only network, navigation and
+  app-lifecycle breadcrumbs (console output and taps, which could carry chat text, are dropped; route
+  params and query strings are stripped). "Report a problem" attaches the last error's id
+  (`lastErrorId`) so staff can match the two. Source maps upload during EAS builds when
+  `SENTRY_AUTH_TOKEN`, `SENTRY_ORG` and `SENTRY_PROJECT` are set; `SENTRY_ALLOW_FAILURE=true` in
+  `eas.json` keeps builds working until they are.
 - **Lint:** `eslint.config.js` (`eslint-config-expo`). The React Compiler rules (`react-hooks/refs`,
   `set-state-in-effect`, `preserve-manual-memoization`) are errors. The only exceptions are the two
   PanResponder handlers in `Swipe.tsx`, whose refs are read in touch handlers rather than during render

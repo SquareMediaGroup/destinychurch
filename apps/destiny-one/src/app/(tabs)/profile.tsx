@@ -1,5 +1,5 @@
-// Profile tab (D1–D4): your name and picture, accounts, notifications, the notices again,
-// your data, sign out. Your name is read-only — the church office sets it.
+// Profile tab (D1–D5): your name and picture, accounts, notifications, problems and
+// feedback, the notices again, your data, sign out. Tap your name to change it.
 
 import { useState } from "react";
 import { ActivityIndicator, Alert, Pressable, ScrollView, Share, Text, View } from "react-native";
@@ -88,9 +88,9 @@ export default function Profile() {
           </Pressable>
         </View>
       </Card>
-      <Text style={{ marginTop: -14, paddingHorizontal: 16, fontSize: 13, lineHeight: 18, color: t.subtle }}>
-        Ask the church office to change your name.
-      </Text>
+      <Card>
+        <SettingsRow label="Change name" value={me?.displayName} onPress={() => router.push("/edit-name")} />
+      </Card>
 
       <Card>
         <SettingsRow icon="plus" label="Add account" onPress={() => router.push("/add-account")} />
@@ -112,6 +112,12 @@ export default function Profile() {
         <SettingsRow icon="lock" label="Password" onPress={() => router.push("/set-password")} />
         <Separator inset={62} />
         <SettingsRow icon="alertCircle" label="Blocked people" onPress={() => router.push("/blocked")} />
+      </Card>
+
+      <Card>
+        <SettingsRow icon="flag" label="Report a problem" onPress={() => router.push({ pathname: "/feedback", params: { kind: "problem" } })} />
+        <Separator inset={62} />
+        <SettingsRow icon="megaphone" label="Send feedback" onPress={() => router.push({ pathname: "/feedback", params: { kind: "idea" } })} />
       </Card>
 
       <Card>

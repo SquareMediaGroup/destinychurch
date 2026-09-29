@@ -13,6 +13,8 @@ export const MIN_GROUP_MEMBERS = 3;
 /** Safeguarding: never fewer than two verified adults in any group. */
 export const MIN_GROUP_ADULTS = 2;
 export const MAX_MESSAGE_LENGTH = 4000;
+/** "Report a problem" / "Send feedback" text (d1_feedback.body). */
+export const MAX_FEEDBACK_LENGTH = 2000;
 export const MAX_ATTACHMENT_BYTES = 20 * 1024 * 1024;
 export const ATTACHMENT_MIME_TYPES = [
   "image/jpeg",

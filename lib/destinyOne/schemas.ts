@@ -5,7 +5,7 @@
 // the database reports in its own words).
 
 import { z } from "zod";
-import { ATTACHMENT_MIME_TYPES, MAX_ATTACHMENT_BYTES, MAX_MESSAGE_LENGTH, MAX_POLL_OPTIONS, MAX_POLL_OPTION_LENGTH, MAX_POLL_QUESTION_LENGTH, MIN_POLL_OPTIONS } from "@destiny/shared";
+import { ATTACHMENT_MIME_TYPES, MAX_ATTACHMENT_BYTES, MAX_FEEDBACK_LENGTH, MAX_MESSAGE_LENGTH, MAX_POLL_OPTIONS, MAX_POLL_OPTION_LENGTH, MAX_POLL_QUESTION_LENGTH, MIN_POLL_OPTIONS } from "@destiny/shared";
 
 const uuid = z.string().uuid("That id isn't valid.").transform((s) => s.toLowerCase());
 const name = z.string().trim().min(1, "A name is required.").max(80, "Names can be up to 80 characters.");
@@ -21,6 +21,11 @@ export const consentsSchema = z.object({
     )
     .min(1)
     .max(10),
+});
+
+export const updateNameSchema = z.object({
+  firstName: name,
+  lastName: name,
 });
 
 export const accessRequestSchema = z.object({
@@ -242,4 +247,22 @@ export const adminSuspendSchema = z.object({
 export const adminResolveSchema = z.object({
   status: z.enum(["reviewing", "closed"]),
   resolution: z.string().trim().max(2000).optional(),
+});
+
+// Device details are optional and only ever filled in by the app; each is capped
+// to its column so a bad value is dropped rather than refusing the feedback.
+const detail = (max: number) => z.string().trim().max(max).optional().catch(undefined);
+
+export const feedbackSchema = z.object({
+  kind: z.enum(["problem", "idea"], { message: "Choose a problem or feedback." }),
+  body: z.string().trim().min(1, "Please tell us a bit more.").max(MAX_FEEDBACK_LENGTH, `Please keep it under ${MAX_FEEDBACK_LENGTH} characters.`),
+  appVersion: detail(40),
+  platform: detail(20),
+  osVersion: detail(40),
+  device: detail(80),
+  errorId: detail(64),
+});
+
+export const feedbackStatusSchema = z.object({
+  status: z.enum(["new", "done"]),
 });

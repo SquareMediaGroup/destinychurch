@@ -71,6 +71,48 @@ export function validateNewPassword(password: string, email: string | null): str
   return null;
 }
 
+/** What Supabase Auth says was wrong with a new password (AuthWeakPasswordError.reasons). */
+export type PasswordRejectionReason = "length" | "characters" | "pwned" | (string & {});
+
+export interface PasswordRejection {
+  /** Found in a known data breach (Supabase's leaked password protection, via Have I Been Pwned). */
+  breached: boolean;
+  title: string;
+  body: string;
+}
+
+/**
+ * Plain words for a password Supabase Auth refused, shared by the app's
+ * Password screen and the website's admin password reset.
+ *
+ * The breach check never sends the password: Supabase looks up only the first
+ * few characters of its SHA-1 hash (Have I Been Pwned's k-anonymity range
+ * search), which is what the "checked without being shared" line means.
+ * `minLength` is the caller's own minimum, for the too-short message.
+ */
+export function passwordRejection(reasons: readonly PasswordRejectionReason[], minLength = MIN_PASSWORD_LENGTH): PasswordRejection {
+  if (reasons.includes("pwned")) {
+    return {
+      breached: true,
+      title: "This password has been leaked",
+      body:
+        "It appears in a list of passwords exposed in data breaches on other websites, so it's one of the first that people trying to get into accounts will guess. Please choose a different one, ideally one you don't use anywhere else. Your password was checked without being shared.",
+    };
+  }
+  if (reasons.includes("characters")) {
+    return {
+      breached: false,
+      title: "Add a few different kinds of character",
+      body: "Mix letters with numbers or symbols, or use a longer phrase.",
+    };
+  }
+  return {
+    breached: false,
+    title: "Choose a longer password",
+    body: `Use at least ${minLength} characters. A few random words together are long and easy to remember.`,
+  };
+}
+
 /** Staff access to the admin side, for labelling an added "admin account". */
 export function hasStaffAccess(
   row: { destiny_one_admin?: boolean | null; safeguarding_admin?: boolean | null; super_admin?: boolean | null } | null | undefined,

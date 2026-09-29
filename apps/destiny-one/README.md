@@ -121,6 +121,26 @@ Before external TestFlight or the App Store:
 - Once the app is live, set `D1_IOS_STORE_URL` on Vercel to its App Store link so the Update
   button stops pointing at TestFlight.
 
+## Crash reporting (Sentry)
+
+Off until it's configured, so nothing is reported from local or test builds by default. To switch it
+on:
+
+1. Create a Sentry account in the **EU** region (the region can't be changed later) and a React
+   Native project.
+2. On EAS, for each environment that should report (`npx eas-cli@latest env:create`):
+   - `EXPO_PUBLIC_SENTRY_DSN`: the project's DSN (plain text is fine; it only lets the app send
+     reports).
+   - `SENTRY_AUTH_TOKEN` (secret), `SENTRY_ORG` and `SENTRY_PROJECT`: let builds upload source maps
+     so crashes show the real file and line.
+3. Once uploads work, consider removing `SENTRY_ALLOW_FAILURE` from `eas.json`, so a failed upload
+   fails the build instead of passing silently.
+4. After `eas update`, upload that update's source maps too:
+   `npx eas-cli@latest update --branch <branch> && npx sentry-expo-upload-sourcemaps dist`.
+
+What it sends, and what it deliberately doesn't, is described in `src/lib/sentry.ts`. Sentry is a
+data processor: it needs a data processing agreement and a line in the privacy notice.
+
 ## Checks
 
 ```bash

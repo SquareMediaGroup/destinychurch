@@ -62,8 +62,12 @@ Decided with the product owner on 28 September 2026:
 - [x] **A staging environment.** Every EAS build profile points at the live database. The unused, paused "DestinyOne" Supabase project could be the staging copy. Decided: no staging copy; clear test data before launch.
 - [x] Record `20260926_01_destiny_one` and `20260927_01_destiny_one_admin` in the live migration history. They were run outside it, so a fresh database can't be rebuilt reliably.
 - [x] **Merge the polls work so the repo matches the live database.** `20260928_02_destiny_one_content` (poll votes, a `content` column, and a new `d1_post_message` with an extra optional argument) was applied to the live project on 28 September from `feature/destiny-one-restore-polls`, before being merged. Done: merged in #39 and covered by `scripts/test-sql.sh`.
+- [x] **The admin notifications tables were missing from the live database** (`20260922_02_notifications` was never applied), so reporting a message or a group being paused would have failed. Applied on 29 September 2026, with the emit and purge functions limited to the server.
+- [x] Other repo migrations not yet on the live database. Applied on 29 September 2026: `20260902_remove_media_boards`, `20260922_hr_review_reviewer_scoping`, `20260927_04_posts_page_settings` (already there, now recorded) and `20260927_04_remove_live_chat`. `20260514_studio_v2_schema` is obsolete (the page builder it changes was removed) and was skipped.
+- [ ] Empty and delete the `media-photos` storage bucket in the Supabase dashboard (22 files; it's public, so they can still be opened by link). SQL can't remove a bucket with files in it.
+- [ ] **Leaked password protection** (Supabase → Authentication → Providers → Email → "Prevent use of leaked passwords"). Needs the Pro plan; the organisation is on Free. The app and the website admin reset already explain a refused password.
 - [ ] Clear the test data from the live database (3 members, 7 messages at the time of the audit).
-- [ ] Data processing agreements with Supabase, Vercel, Expo, Resend, Apple and Google.
+- [ ] Data processing agreements with Supabase, Vercel, Expo, Resend, Sentry, Apple and Google.
 - [ ] Set `EXPO_ACCESS_TOKEN` and switch on push security in Expo.
 
 ## 5. Test on real phones (it has never run on one)
@@ -76,7 +80,8 @@ Decided with the product owner on 28 September 2026:
 
 ## 6. Reliability and housekeeping
 
-- [ ] Crash and error reporting in the app (none today).
+- [ ] Crash and error reporting in the app (none today). Done in code: Sentry, off until `EXPO_PUBLIC_SENTRY_DSN` is set (setup steps in `apps/destiny-one/README.md`). Still to do: create the Sentry account (EU region) and add the EAS variables.
+- [x] A way for people to report problems and send feedback from the app. Done: Profile → Report a problem / Send feedback, read by Destiny One Admins at `/admin/destiny-one/feedback` (bell notification). Kept in the database, not GitHub (the repo is public), and included in data export and account deletion. Migration applied to the live project on 29 September 2026. Shaking the phone offers it too (asks first; can be switched off on the same screen). Still to check on a device: how firm a shake it needs.
 - [x] Alerts when the nightly purge or rule-check jobs fail (`app/api/cron/destiny-one-*`). Done: failures email `D1_OPS_ALERT_RECIPIENT`.
 - [x] Rate limits that actually hold on Vercel. They're per server instance today (`lib/rateLimit.ts`). Done: counted in the database as well (`20260928_03_destiny_one_rate_limits.sql`).
 - [x] Add the app typecheck and the SQL rule tests to CI (`.github/workflows/ci.yml`), and include migrations 05 and 06 in `scripts/test-sql.sh`.

@@ -20,4 +20,6 @@ export const config = {
     process.env.EXPO_PUBLIC_EAS_PROJECT_ID ??
     (Constants.expoConfig?.extra?.eas?.projectId as string | undefined) ??
     null,
+  /** Crash reporting (src/lib/sentry.ts). Unset = off. A DSN only lets the app send reports, so it's fine in the bundle. */
+  sentryDsn: process.env.EXPO_PUBLIC_SENTRY_DSN || null,
 } as const;

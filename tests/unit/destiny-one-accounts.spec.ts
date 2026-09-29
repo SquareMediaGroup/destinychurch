@@ -9,6 +9,7 @@ import {
   isDoublePress,
   needsOwnerCheck,
   nextSlot,
+  passwordRejection,
   sendAsCandidates,
   switchedNoticeText,
   validateNewPassword,
@@ -125,5 +126,28 @@ test.describe("staff access", () => {
   test("no row, or no roles, does not", () => {
     expect(hasStaffAccess(null)).toBe(false);
     expect(hasStaffAccess({ destiny_one_admin: false, safeguarding_admin: null })).toBe(false);
+  });
+});
+
+test.describe("rejected passwords (Supabase leaked password protection)", () => {
+  test("a breached password says so, and asks for a different one", () => {
+    const r = passwordRejection(["pwned"]);
+    expect(r.breached).toBe(true);
+    expect(r.title).toBe("This password has been leaked");
+    expect(r.body).toContain("choose a different one");
+  });
+
+  test("breached wins when Supabase gives several reasons", () => {
+    expect(passwordRejection(["length", "pwned"]).breached).toBe(true);
+  });
+
+  test("weak but not breached gets advice, not a breach warning", () => {
+    expect(passwordRejection(["characters"]).breached).toBe(false);
+    expect(passwordRejection(["length"]).body).toContain("at least 10 characters");
+    expect(passwordRejection(["length"], 8).body).toContain("at least 8 characters");
+  });
+
+  test("an unknown reason still gets a readable message", () => {
+    expect(passwordRejection(["something-new"]).title).toBeTruthy();
   });
 });

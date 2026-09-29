@@ -2,6 +2,8 @@
 // native headers (every screen draws its own floating glass header, as in the
 // design).
 
+// First, so crash reporting is running before anything else loads.
+import { withErrorReporting } from "@/lib/sentry";
 import { useEffect } from "react";
 import { liquidGlass } from "@/components/GlassSurface";
 import { Platform, StyleSheet, View } from "react-native";
@@ -16,7 +18,8 @@ import { groupIdFrom } from "@/lib/push";
 import { persistOptions, queryClient } from "@/lib/queryClient";
 import { SwitchBanner } from "@/components/SwitchBanner";
 import { appearance } from "@/state/appearance";
-import { AccessGuard, SessionProvider } from "@/state/session";
+import { useShakeToReportListener } from "@/lib/useShakeToReport";
+import { AccessGuard, SessionProvider, useSession } from "@/state/session";
 import { useTheme } from "@/theme/tokens";
 
 /** Tapping a "New message" notification opens that group. */
@@ -59,12 +62,20 @@ function Gated() {
   );
 }
 
+/** Shake the phone to report a problem, for signed-in members. */
+function ShakeToReport() {
+  const { me } = useSession();
+  useShakeToReportListener(me?.onboarding === "active");
+  return null;
+}
+
 function App() {
   const t = useTheme();
   return (
     <SessionProvider>
       <StatusBar style="auto" />
       <AccessGuard />
+      <ShakeToReport />
       <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: t.bg } }}>
         <Stack.Screen name="(tabs)" options={{ animation: "fade" }} />
         <Stack.Screen name="welcome" options={{ animation: "fade" }} />
@@ -73,6 +84,7 @@ function App() {
         <Stack.Screen name="new-group" options={{ presentation: "modal", contentStyle: { backgroundColor: t.grouped } }} />
         <Stack.Screen name="report" options={{ presentation: "modal", contentStyle: { backgroundColor: t.grouped } }} />
         <Stack.Screen name="report-sent" options={{ presentation: "modal", gestureEnabled: false }} />
+        <Stack.Screen name="feedback" options={{ presentation: "modal", contentStyle: { backgroundColor: t.grouped } }} />
         <Stack.Screen name="search" options={{ animation: "fade" }} />
         <Stack.Screen
           name="add-account"
@@ -102,7 +114,7 @@ function sheetOptions(solid: string) {
   };
 }
 
-export default function RootLayout() {
+function RootLayout() {
   useNotificationTaps();
   // The person's own send colour and wallpaper, from this phone.
   useEffect(() => {
@@ -119,3 +131,5 @@ export default function RootLayout() {
     </SafeAreaProvider>
   );
 }
+
+export default withErrorReporting(RootLayout);

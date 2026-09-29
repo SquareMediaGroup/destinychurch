@@ -72,6 +72,12 @@
         }
       ],
       [
+        "expo-sensors",
+        {
+          "motionPermission": "Destiny One notices when you shake your phone, so you can report a problem. Nothing about your movement is stored or sent."
+        }
+      ],
+      [
         "@sentry/react-native",
         {
           "url": "https://de.sentry.io/"

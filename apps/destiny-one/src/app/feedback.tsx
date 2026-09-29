@@ -1,10 +1,11 @@
 // D5 Report a problem / Send feedback, from the Profile tab. Goes to the
 // Destiny One Admins at church (/admin/destiny-one/feedback), not the
 // safeguarding team, so the screen points worries about people elsewhere.
-// The app version and phone model go with it, to help fix problems.
+// The app version and phone model go with it, to help fix problems. Also
+// reached by shaking the phone (src/lib/useShakeToReport.ts), switched off here.
 
 import { useState } from "react";
-import { Platform, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Platform, ScrollView, StyleSheet, Switch, Text, View } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import * as Application from "expo-application";
 import Constants from "expo-constants";
@@ -16,7 +17,8 @@ import { Card, Field, FieldLabel, FormError, Lead, ModalHeader, PickRow, Primary
 import { api } from "@/lib/api";
 import { lastErrorId } from "@/lib/sentry";
 import { errorMessage } from "@/state/session";
-import { useTheme } from "@/theme/tokens";
+import { shakeToReport, useShakeToReport } from "@/state/shakeToReport";
+import { ORANGE, useTheme } from "@/theme/tokens";
 
 const KINDS: { kind: D1FeedbackKind; label: string }[] = [
   { kind: "problem", label: "Something isn't working" },
@@ -43,6 +45,7 @@ export default function Feedback() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [sent, setSent] = useState(false);
+  const shakeOn = useShakeToReport();
 
   async function send() {
     setBusy(true);
@@ -119,6 +122,16 @@ export default function Feedback() {
             Worried about a message or someone&apos;s safety? Use Report on the message, or talk to a leader. If someone is in danger right now, call 999.
           </Text>
         </Card>
+
+        <View style={{ gap: 8 }}>
+          <Card style={{ flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 10, paddingHorizontal: 16 }}>
+            <Text style={{ flex: 1, fontSize: 17, color: t.text }}>Shake to report a problem</Text>
+            <Switch value={shakeOn} onValueChange={shakeToReport.set} trackColor={{ true: ORANGE, false: t.fill2 }} accessibilityLabel="Shake to report a problem" />
+          </Card>
+          <Text style={{ paddingHorizontal: 16, fontSize: 13, lineHeight: 18, color: t.subtle }}>
+            Shake your phone anywhere in the app to come here. It asks first.
+          </Text>
+        </View>
         <FormError message={error} />
       </ScrollView>
       <PrimaryButton label="Send" onPress={send} busy={busy} disabled={!body.trim()} style={{ marginTop: 14 }} />

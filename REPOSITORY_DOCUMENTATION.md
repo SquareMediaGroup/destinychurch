@@ -7000,7 +7000,7 @@ same database as the data rather than in a separate Synapse module.
   `community/[id]` (B2), `new-group` (C1, modal), `add-people` (C2; `?groupId` adds to a group,
   `?communityId` picks for New group), `notifications` (D2 + per-group mute), `search` (full-screen search opened from a chat; the
   Search tab `(tabs)/find` uses the same `SearchView` component), `report` + `report-sent` (B5), `feedback` (D5, Profile → Report a problem /
-  Send feedback, `?kind=problem|idea`), `chat-safety`,
+  Send feedback, `?kind=problem|idea`; also reached by shaking the phone, see below), `chat-safety`,
   `delete-account` (D3, type DELETE), `accounts` (account switcher, a fit-to-content form sheet), `add-account` (Profile → Add account: Add child / Add admin account, a form sheet), `password` (password sign-in) and `set-password` (Profile → Password).
 - **State:** `src/state/session.tsx` (auth session, `me`, the communities list, the Realtime hub,
   catch-up, `routeFor`, `errorMessage`); `src/state/picker.ts` (Add people selection for New group).
@@ -7106,6 +7106,15 @@ same database as the data rather than in a separate Synapse module.
   re-check `me`. `AccessGuard` (`src/state/session.tsx`, mounted in the root layout) then replaces
   any in-app screen with `routeFor(me)` (waiting, notices, …), and a member who is no longer active
   has their chats, groups and messages removed from the device cache.
+- **Shake to report a problem.** `useShakeToReportListener` (`src/lib/useShakeToReport.ts`, mounted
+  in the root layout) reads the accelerometer (`expo-sensors`, 10 times a second) while the app is
+  open and an active member is signed in. `createShakeDetector` (`src/lib/shake.ts`, pure and
+  unit-tested in `tests/unit/destiny-one-shake.spec.ts`) needs three jolts over 1.8 g within a
+  second, so a knock or a drop doesn't count, then waits 3 seconds. A shake asks first ("Report a
+  problem?" / Not now / Turn off shake to report), and never on the feedback screen itself. On by
+  default; the switch is on the feedback screen and is kept on the phone (`src/state/shakeToReport.ts`).
+  Nothing about movement is stored or sent. `app.json` gives iOS a motion purpose string anyway, as
+  App Review can ask for one when the sensors library is linked.
 - **Crash reporting:** Sentry (`@sentry/react-native`, EU region), set up in `src/lib/sentry.ts` and
   imported first in the root layout. Off unless `EXPO_PUBLIC_SENTRY_DSN` is set at build time. It
   sends as little as possible: the member's internal id only (`setReportingMember`, no name, email or

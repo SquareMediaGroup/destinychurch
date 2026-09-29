@@ -77,7 +77,7 @@ Decided with the product owner on 28 September 2026:
 ## 6. Reliability and housekeeping
 
 - [ ] Crash and error reporting in the app (none today). Done in code: Sentry, off until `EXPO_PUBLIC_SENTRY_DSN` is set (setup steps in `apps/destiny-one/README.md`). Still to do: create the Sentry account (EU region) and add the EAS variables.
-- [x] A way for people to report problems and send feedback from the app. Done: Profile → Report a problem / Send feedback, read by Destiny One Admins at `/admin/destiny-one/feedback` (bell notification). Kept in the database, not GitHub (the repo is public), and included in data export and account deletion.
+- [x] A way for people to report problems and send feedback from the app. Done: Profile → Report a problem / Send feedback, read by Destiny One Admins at `/admin/destiny-one/feedback` (bell notification). Kept in the database, not GitHub (the repo is public), and included in data export and account deletion. Shaking the phone offers it too (asks first; can be switched off on the same screen). Still to check on a device: how firm a shake it needs.
 - [x] Alerts when the nightly purge or rule-check jobs fail (`app/api/cron/destiny-one-*`). Done: failures email `D1_OPS_ALERT_RECIPIENT`.
 - [x] Rate limits that actually hold on Vercel. They're per server instance today (`lib/rateLimit.ts`). Done: counted in the database as well (`20260928_03_destiny_one_rate_limits.sql`).
 - [x] Add the app typecheck and the SQL rule tests to CI (`.github/workflows/ci.yml`), and include migrations 05 and 06 in `scripts/test-sql.sh`.

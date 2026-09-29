@@ -15,9 +15,9 @@
 // "we'll be in touch", not an error.
 
 import * as Crypto from "expo-crypto";
+import * as LocalAuthentication from "expo-local-authentication";
 import * as Linking from "expo-linking";
 import * as WebBrowser from "expo-web-browser";
-import { isAuthWeakPasswordError } from "@supabase/supabase-js";
 import { SIGN_IN_FAILED, passwordRejection, validateNewPassword, type D1Me, type PasswordRejection } from "@destiny/shared";
 import { client, signInClient } from "@/lib/accounts";
 import { api, signInApi } from "@/lib/api";
@@ -70,14 +70,42 @@ export class PasswordRejectedError extends Error {
   }
 }
 
-/** Set or change the signed-in account's password. */
-export async function setPassword(password: string): Promise<void> {
+/** Whether the signed-in account already has a password (so changing it needs the current one). */
+export async function hasPassword(): Promise<boolean> {
+  return (await api.hasPassword()).hasPassword;
+}
+
+/**
+ * Face ID / Touch ID / passcode, for setting a first password. An account that
+ * signs in by emailed code has no password to prove it's you, so the phone
+ * has to. Unlike confirmOwner (account switching) this does not wave people
+ * through when the device has no lock: setting a password on an unlocked
+ * phone is exactly what this is here to stop.
+ */
+export async function confirmDeviceOwner(): Promise<"ok" | "cancelled" | "no-lock"> {
+  const level = await LocalAuthentication.getEnrolledLevelAsync().catch(() => LocalAuthentication.SecurityLevel.NONE);
+  if (level === LocalAuthentication.SecurityLevel.NONE) return "no-lock";
+  const result = await LocalAuthentication.authenticateAsync({ promptMessage: "Confirm it's you to set a password", disableDeviceFallback: false });
+  return result.success ? "ok" : "cancelled";
+}
+
+/**
+ * Set or change the signed-in account's password. `current` is required when
+ * the account already has one; the server checks it (it can't be skipped here).
+ */
+export async function setPassword(password: string, current?: string): Promise<void> {
   const { data } = await client().auth.getSession();
   const problem = validateNewPassword(password, data.session?.user.email ?? null);
   if (problem) throw new Error(problem);
-  const { error } = await client().auth.updateUser({ password });
-  if (isAuthWeakPasswordError(error)) throw new PasswordRejectedError(passwordRejection(error.reasons));
-  if (error) throw new Error(error.message);
+  try {
+    await api.changePassword(password, current);
+  } catch (err) {
+    const match = err instanceof Error ? /^password_rejected:(.*)$/.exec(err.message) : null;
+    if (match) throw new PasswordRejectedError(passwordRejection(match[1].split(",").filter(Boolean)));
+    throw err;
+  }
+  // The server changed it; refresh so this session carries on with the new credentials.
+  await client().auth.refreshSession().catch(() => undefined);
 }
 
 // ── Changing your email ─────────────────────────────────────────────────────

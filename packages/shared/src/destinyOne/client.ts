@@ -146,6 +146,10 @@ export function createDestinyOneClient({ baseUrl, getAccessToken, fetchImpl }: D
     startEmailChange: (email: string) => call<{ ticket: string }>("POST", "/me/email", { email }),
     /** Step 2: the code from that email. Refresh the Supabase session afterwards to pick up the new address. */
     confirmEmailChange: (ticket: string, code: string) => call<{ email: string }>("POST", "/me/email/confirm", { ticket, code }),
+    /** Whether I already have a password (decides if changing it needs the current one). */
+    hasPassword: () => call<{ hasPassword: boolean }>("GET", "/me/password"),
+    /** Set or change my password. `current` is required when I already have one. */
+    changePassword: (password: string, current?: string) => call<{ ok: true }>("POST", "/me/password", { password, current }),
     /** "Report a problem" and "Send feedback". Goes to the Destiny One Admins, not the safeguarding team. */
     sendFeedback: (input: D1FeedbackInput) => call<{ ok: true }>("POST", "/feedback", input),
     deleteAccount: () => call<{ deleted: true }>("DELETE", "/me", { confirm: "DELETE" }),

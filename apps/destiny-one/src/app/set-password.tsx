@@ -7,14 +7,14 @@
 // cleared and focused, ready for a new one. The same card greets someone sent
 // here after signing in with a password that has since leaked (password.tsx).
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { AccessibilityInfo, Text, View, type TextInput } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { passwordRejection, type PasswordRejection } from "@destiny/shared";
 import { AuthScreen } from "@/components/AuthScreen";
 import { Icon } from "@/components/Icon";
 import { Card, Field, FormError, LargeTitle, Lead, PrimaryButton } from "@/components/ui";
-import { PasswordRejectedError, setPassword } from "@/lib/auth";
+import { PasswordRejectedError, confirmDeviceOwner, hasPassword, setPassword } from "@/lib/auth";
 import { haptic } from "@/lib/haptics";
 import { errorMessage } from "@/state/session";
 import { useTheme } from "@/theme/tokens";
@@ -29,6 +29,12 @@ export default function SetPassword() {
     leaked === "1" ? { ...passwordRejection(["pwned"]), title: "Your current password has been leaked" } : null,
   );
   const input = useRef<TextInput>(null);
+  // null while we ask the server whether there is a password to change.
+  const [existing, setExisting] = useState<boolean | null>(null);
+  const [current, setCurrent] = useState("");
+  useEffect(() => {
+    hasPassword().then(setExisting, () => setError("Couldn't load your account. Go back and try again."));
+  }, []);
 
   async function save() {
     if (busy) return;
@@ -36,7 +42,16 @@ export default function SetPassword() {
     setError(null);
     setRejection(null);
     try {
-      await setPassword(password);
+      if (existing === false) {
+        // No password yet: the phone has to prove it's you.
+        const owner = await confirmDeviceOwner();
+        if (owner === "no-lock") {
+          setError("Set a passcode on this phone first (Settings, Face ID & Passcode), then come back to set a password.");
+          return;
+        }
+        if (owner === "cancelled") return;
+      }
+      await setPassword(password, existing ? current : undefined);
       haptic.success();
       router.back();
     } catch (err) {
@@ -56,12 +71,34 @@ export default function SetPassword() {
   }
 
   return (
-    <AuthScreen back footer={<PrimaryButton label="Save password" onPress={save} busy={busy} disabled={!password} />}>
+    <AuthScreen back footer={<PrimaryButton label="Save password" onPress={save} busy={busy} disabled={!password || existing === null || (existing && !current)} />}>
       <View style={{ paddingTop: 14, paddingHorizontal: 4, gap: 8 }}>
         <LargeTitle>Password</LargeTitle>
-        <Lead>Use at least 10 characters. You can still sign in with an emailed code.</Lead>
+        <Lead>
+          {existing ? "Enter your current password, then choose a new one." : "Use at least 10 characters. You can still sign in with an emailed code."}
+          {existing === false ? " We'll ask for Face ID to check it's you." : ""}
+        </Lead>
       </View>
       <View style={{ marginTop: 28, gap: 10 }}>
+        {existing ? (
+          <Field
+            value={current}
+            onChangeText={(v) => {
+              setCurrent(v);
+              setError(null);
+            }}
+            placeholder="Current password"
+            secureTextEntry
+            autoCapitalize="none"
+            autoCorrect={false}
+            autoComplete="current-password"
+            textContentType="password"
+            returnKeyType="next"
+            onSubmitEditing={() => input.current?.focus()}
+            autoFocus
+            inputStyle={{ minHeight: 56 }}
+          />
+        ) : null}
         <Field
           ref={input}
           value={password}
@@ -77,7 +114,7 @@ export default function SetPassword() {
           textContentType="newPassword"
           returnKeyType="done"
           onSubmitEditing={save}
-          autoFocus
+          autoFocus={!existing}
           inputStyle={{ minHeight: 56 }}
         />
         <FormError message={error} />

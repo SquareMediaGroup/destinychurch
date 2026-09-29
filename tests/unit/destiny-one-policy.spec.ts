@@ -13,6 +13,7 @@ import {
   canPost,
   checkComposition,
   isAdult,
+  nameChangeAllowance,
   outstandingConsents,
   validateMessageBody,
   type PolicyMember,
@@ -232,5 +233,22 @@ test.describe("minimum age (13, decided 2026-09-28)", () => {
     expect(isUnderMinimumAge("2014-01-01", "2026-09-28")).toBe(true);
     expect(isUnderMinimumAge("2013-09-28", "2026-09-28")).toBe(false);
     expect(isUnderMinimumAge(null, "2026-09-28")).toBe(false);
+  });
+});
+
+test.describe("name changes", () => {
+  const now = new Date("2026-09-29T12:00:00Z");
+  const daysAgo = (d: number) => new Date(now.getTime() - d * 86400000).toISOString();
+  test("two are allowed in 30 days", () => {
+    expect(nameChangeAllowance([], now)).toEqual({ left: 2, nextAt: null });
+    expect(nameChangeAllowance([daysAgo(3)], now)).toEqual({ left: 1, nextAt: null });
+  });
+  test("the third is refused until the oldest ages out", () => {
+    const r = nameChangeAllowance([daysAgo(3), daysAgo(10)], now);
+    expect(r.left).toBe(0);
+    expect(r.nextAt).toBe(new Date(now.getTime() + 20 * 86400000).toISOString());
+  });
+  test("changes older than 30 days don't count", () => {
+    expect(nameChangeAllowance([daysAgo(31), daysAgo(45)], now).left).toBe(2);
   });
 });

@@ -276,3 +276,20 @@ export function appGate(config: D1AppConfig | null | undefined, platform: string
   const min = platform === "ios" ? config.minBuild.ios : platform === "android" ? config.minBuild.android : 1;
   return build < min ? "update" : "ok";
 }
+
+/** A member may change their own name this many times in any rolling 30 days. */
+export const NAME_CHANGES_PER_MONTH = 2;
+const NAME_CHANGE_WINDOW_MS = 30 * 24 * 60 * 60 * 1000;
+
+/**
+ * Where a member stands on changing their name. `log` is every time they've
+ * changed it (ISO timestamps, any order). Only the last 30 days count; when
+ * the allowance is used up, `nextAt` is when the oldest counted change ages out.
+ */
+export function nameChangeAllowance(log: readonly string[] | null | undefined, now: Date = new Date()): { left: number; nextAt: string | null } {
+  const since = now.getTime() - NAME_CHANGE_WINDOW_MS;
+  const recent = (log ?? []).map((t) => new Date(t).getTime()).filter((t) => Number.isFinite(t) && t > since).sort((a, b) => a - b);
+  const left = Math.max(0, NAME_CHANGES_PER_MONTH - recent.length);
+  if (left > 0) return { left, nextAt: null };
+  return { left: 0, nextAt: new Date(recent[recent.length - NAME_CHANGES_PER_MONTH] + NAME_CHANGE_WINDOW_MS).toISOString() };
+}

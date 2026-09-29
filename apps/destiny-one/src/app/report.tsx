@@ -10,6 +10,7 @@ import { api } from "@/lib/api";
 import { clock } from "@/lib/format";
 import { errorMessage } from "@/state/session";
 import { useTheme } from "@/theme/tokens";
+import { haptic } from "@/lib/haptics";
 
 const REASONS = ["Inappropriate", "Bullying or harassment", "Makes me feel unsafe", "Spam", "Something else"];
 const MAX = 1000;
@@ -30,6 +31,7 @@ export default function Report() {
     setError(null);
     try {
       await api.report(Number(messageId), text.slice(0, MAX));
+      haptic.success();
       router.replace("/report-sent");
     } catch (err) {
       setError(errorMessage(err));

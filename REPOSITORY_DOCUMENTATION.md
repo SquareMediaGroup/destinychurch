@@ -5994,13 +5994,24 @@ Polished to Apple's Human Interface Guidelines. The pieces, and why they exist:
   at the edge, and spring on from the release velocity; `SwipeActions` snaps using where the flick
   was heading (`project()`), and only one row is open at a time. Plain `PanResponder` + `Animated`,
   no extra native module. Long-press still opens the actions sheet, which springs up from the message's side.
-- **Haptics** (`src/lib/haptics.ts`, `expo-haptics`), used only for meaningful moments: tab and
-  filter changes, sending, reacting, poll votes, a gesture reaching its threshold, opening the
-  message menu, errors. Never on scroll or every tap.
+- **Haptics** (`src/lib/haptics.ts`, `expo-haptics`), always tied to an action: tab and filter
+  changes, primary buttons, each code digit, sending, a message arriving while the chat is open,
+  reacting, poll votes, a gesture reaching its threshold, opening the message menu, pull to
+  refresh, a warning when a destructive confirm dialog opens, success when a form goes through,
+  and an error with every new `FormError`. Never on scroll.
+- **Motion** (`src/components/Motion.tsx`): shared spring primitives on RN `Animated` with the
+  native driver (no Reanimated, so no new binary). `PressableScale` shrinks under the finger and
+  springs back (`holdMs` makes a long-press target squeeze over the delay, used by bubbles);
+  `Appear` springs content in on mount (`once` keys stop recycled list cells from re-entering);
+  `Pop` bounces on a value change (unread badges, reaction counts, code digits); `Shake` for a
+  "no" (form errors, a wrong code); `animateLayout()` for filter changes. Bubbles that arrive
+  while the chat is open spring in (sent ones rise from the composer, received ones from the
+  sender's side); poll bars spring to their new share; confirm dialogs spring in. All of it
+  drops the movement under Reduce Motion.
 - **Text size**: chrome text (tab labels, chips, badges, reactions) caps its scaling with
   `maxFontSizeMultiplier` and controls use `minHeight`, so large Dynamic Type sizes grow the
   layout instead of clipping it. Body text scales freely.
-- **Pressed states** respond on touch-down with a small scale, not just an opacity change.
+- **Pressed states** respond on touch-down with a small spring scale (`PressableScale`), not just an opacity change.
 
 ### `lib/destinyOne/*` — Destiny One backend
 

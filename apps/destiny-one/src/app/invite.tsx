@@ -11,6 +11,7 @@ import { Card, Field, FieldLabel, FormError, ModalHeader, PickRow, PrimaryButton
 import { api } from "@/lib/api";
 import { errorMessage, useGroupSummary } from "@/state/session";
 import { useTheme } from "@/theme/tokens";
+import { haptic } from "@/lib/haptics";
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -34,6 +35,7 @@ export default function Invite() {
     setError(null);
     try {
       await api.inviteToGroup(groupId, { name: name.trim(), email: email.trim(), adult });
+      haptic.success();
       setSent(true);
     } catch (err) {
       setError(errorMessage(err));

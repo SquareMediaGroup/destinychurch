@@ -38,13 +38,16 @@ export default function TabsLayout() {
     <Image source={{ uri: me?.avatarUrl ?? undefined }} style={{ width: 28, height: 28, borderRadius: 14, borderWidth: ring ? 2 : 0, borderColor: t.tint }} />
   );
 
+  // A selection tick as you move between tabs.
+  const tabTick = { tabPress: () => haptic.selection() };
+
   return (
     <NativeTabs tintColor={t.tint}>
-      <NativeTabs.Trigger name="chats" accessibilityLabel="Chats" disableAutomaticContentInsets>
+      <NativeTabs.Trigger name="chats" accessibilityLabel="Chats" disableAutomaticContentInsets listeners={tabTick}>
         <NativeTabs.Trigger.Label hidden>Chats</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon sf={{ default: "bubble.left.and.bubble.right", selected: "bubble.left.and.bubble.right.fill" }} />
       </NativeTabs.Trigger>
-      <NativeTabs.Trigger name="find" accessibilityLabel="Search" disableAutomaticContentInsets>
+      <NativeTabs.Trigger name="find" accessibilityLabel="Search" disableAutomaticContentInsets listeners={tabTick}>
         <NativeTabs.Trigger.Label hidden>Search</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon sf="magnifyingglass" />
       </NativeTabs.Trigger>
@@ -54,6 +57,7 @@ export default function TabsLayout() {
         disableAutomaticContentInsets
         listeners={{
           tabPress: () => {
+            haptic.selection();
             const now = Date.now();
             if (isDoublePress(lastProfilePress.current, now)) {
               lastProfilePress.current = null;

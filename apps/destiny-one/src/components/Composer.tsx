@@ -5,13 +5,14 @@
 // and the send button that swaps in for the attach shortcut once there's text.
 
 import { forwardRef, useState } from "react";
-import { Pressable, Text, TextInput, View } from "react-native";
+import { Text, TextInput, View } from "react-native";
 import * as DocumentPicker from "expo-document-picker";
 import * as ImagePicker from "expo-image-picker";
 import { ATTACHMENT_MIME_TYPES, MAX_ATTACHMENT_BYTES, MAX_MESSAGE_LENGTH } from "@destiny/shared";
 import { AttachSheet } from "@/components/AttachSheet";
 import { GlassSurface } from "@/components/GlassSurface";
 import { Icon } from "@/components/Icon";
+import { Appear, PressableScale } from "@/components/Motion";
 import { SendAsMenu } from "@/components/SendAsMenu";
 import type { Account } from "@/lib/accounts";
 import { cleanImage } from "@/lib/cleanImage";
@@ -138,6 +139,7 @@ export const Composer = forwardRef<TextInput, Props>(function Composer({ replyin
   return (
     <View style={{ gap: 8 }}>
       {replying ? (
+        <Appear key={`${replying.name}:${replying.text}`} from={{ y: 16, scale: 0.96 }}>
         <GlassSurface style={{ marginLeft: 52, flexDirection: "row", alignItems: "center", gap: 10, paddingVertical: 8, paddingLeft: 14, paddingRight: 8, borderRadius: 18 }}>
           <Icon name="reply" size={16} color={t.tint} strokeWidth={2.2} />
           <View style={{ flex: 1, minWidth: 0 }}>
@@ -146,27 +148,29 @@ export const Composer = forwardRef<TextInput, Props>(function Composer({ replyin
               {replying.text}
             </Text>
           </View>
-          <Pressable onPress={onCancelReply} accessibilityLabel="Cancel reply" style={{ width: 30, height: 30, borderRadius: 15, backgroundColor: t.fill, alignItems: "center", justifyContent: "center" }}>
+          <PressableScale onPress={onCancelReply} accessibilityLabel="Cancel reply" scaleTo={0.85} style={{ width: 30, height: 30, borderRadius: 15, backgroundColor: t.fill, alignItems: "center", justifyContent: "center" }}>
             <Icon name="close" size={12} color={t.muted} strokeWidth={3} />
-          </Pressable>
+          </PressableScale>
         </GlassSurface>
+        </Appear>
       ) : null}
 
       <View style={{ flexDirection: "row", alignItems: "flex-end", gap: 8 }}>
-        <Pressable
+        <PressableScale
           onPress={() => {
             haptic.selection();
             setSheetOpen(true);
           }}
+          scaleTo={0.88}
           accessibilityRole="button"
           accessibilityLabel="Add to message"
         >
           {({ pressed }) => (
-            <GlassSurface interactive style={[{ width: 44, height: 44, borderRadius: 22, alignItems: "center", justifyContent: "center", opacity: pressed ? 0.7 : 1 }, t.shadow]}>
+            <GlassSurface interactive style={[{ width: 44, height: 44, borderRadius: 22, alignItems: "center", justifyContent: "center", opacity: pressed ? 0.75 : 1 }, t.shadow]}>
               <Icon name="plus" size={22} color={t.text} />
             </GlassSurface>
           )}
-        </Pressable>
+        </PressableScale>
 
         <View style={{ flex: 1 }}>
           <GlassSurface style={{ minHeight: 41, borderRadius: 21.5, flexDirection: "row", alignItems: "flex-end", gap: 6, paddingLeft: 16, paddingRight: 4, paddingVertical: 4 }}>
@@ -183,14 +187,19 @@ export const Composer = forwardRef<TextInput, Props>(function Composer({ replyin
               maxFontSizeMultiplier={1.6}
               style={{ flex: 1, minHeight: 33, maxHeight: 140, fontSize: 17, color: t.text, paddingTop: 7, paddingBottom: 7 }}
             />
+            {/* Send and camera trade places with a pop as the draft fills or empties. */}
             {hasText ? (
-              <Pressable onPress={send} onLongPress={loadSendAsOptions && onSendAs ? () => void openSendAs() : undefined} delayLongPress={350} hitSlop={6} accessibilityRole="button" accessibilityLabel="Send" accessibilityHint={loadSendAsOptions ? "Hold to send as another account" : undefined} style={({ pressed }) => ({ width: 33, height: 33, borderRadius: 17, backgroundColor: t.send, alignItems: "center", justifyContent: "center", transform: [{ scale: pressed ? 0.92 : 1 }] })}>
-                <Icon name="send" size={17} color={t.onSend} strokeWidth={2.8} />
-              </Pressable>
+              <Appear key="send" from={{ scale: 0.3 }}>
+                <PressableScale onPress={send} onLongPress={loadSendAsOptions && onSendAs ? () => void openSendAs() : undefined} delayLongPress={350} hitSlop={6} scaleTo={0.82} accessibilityRole="button" accessibilityLabel="Send" accessibilityHint={loadSendAsOptions ? "Hold to send as another account" : undefined} style={{ width: 33, height: 33, borderRadius: 17, backgroundColor: t.send, alignItems: "center", justifyContent: "center" }}>
+                  <Icon name="send" size={17} color={t.onSend} strokeWidth={2.8} />
+                </PressableScale>
+              </Appear>
             ) : (
-              <Pressable onPress={() => void takePhoto()} accessibilityRole="button" accessibilityLabel="Take a photo" style={{ width: 33, height: 33, alignItems: "center", justifyContent: "center" }}>
-                <Icon name="camera" size={21} color={t.subtle} strokeWidth={1.9} />
-              </Pressable>
+              <Appear key="camera" from={{ scale: 0.5 }}>
+                <PressableScale onPress={() => void takePhoto()} scaleTo={0.85} accessibilityRole="button" accessibilityLabel="Take a photo" style={{ width: 33, height: 33, alignItems: "center", justifyContent: "center" }}>
+                  <Icon name="camera" size={21} color={t.subtle} strokeWidth={1.9} />
+                </PressableScale>
+              </Appear>
             )}
           </GlassSurface>
         </View>

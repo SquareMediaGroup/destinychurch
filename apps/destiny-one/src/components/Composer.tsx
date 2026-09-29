@@ -82,11 +82,7 @@ export const Composer = forwardRef<TextInput, Props>(function Composer({ replyin
   }
 
   async function pickPhoto() {
-    const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!perm.granted) {
-      onError("Allow photo library access to send a photo.");
-      return;
-    }
+    // No permission request: the system photo picker runs out of process and needs none.
     const res = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ["images"], quality: 1 });
     if (res.canceled || !res.assets[0]) return;
     await imagePickerAsset(res.assets[0], "Photo.jpg");

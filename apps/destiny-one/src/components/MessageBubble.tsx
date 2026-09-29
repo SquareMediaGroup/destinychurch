@@ -7,8 +7,8 @@
 // neighbours, and the last one in the run gets a small tail, as in Apple's
 // Messages. Swipe a message right to reply; press and hold for the menu.
 
-import { useEffect, useState, type ReactNode } from "react";
-import { Animated, Image, Pressable, Text, useWindowDimensions, View } from "react-native";
+import { useEffect, useRef, useState, type ReactNode } from "react";
+import { Animated, Image, Pressable, Text, View } from "react-native";
 import Svg, { Path } from "react-native-svg";
 import type { D1EventContent, D1LeaderRole, D1Message, D1PollContent } from "@destiny/shared";
 import { Icon } from "@/components/Icon";
@@ -18,6 +18,7 @@ import { SwipeToReply } from "@/components/Swipe";
 import { Avatar, MemberTag, withAlpha } from "@/components/ui";
 import { clock, dayLabel, eventWhen, fileMeta, plural, sameDay } from "@/lib/format";
 import { haptic } from "@/lib/haptics";
+import type { Rect } from "@/lib/menuLayout";
 import type { LocalMessage } from "@/lib/useConversation";
 import { PHOTO_CHIP_ALPHA } from "@/theme/appearance";
 import { ORANGE, useTheme, type Theme } from "@/theme/tokens";
@@ -135,15 +136,18 @@ function tones(t: Theme, mine: boolean) {
 
 export function MessageBubble({ row, replyTo, senderTag, senderIsGroupAdmin, canReply, arriving, menu, onReply, onOpenAttachment, onToggleReaction, onVotePoll, onRetry }: BubbleProps) {
   const t = useTheme();
-  const { width: screenW } = useWindowDimensions();
   const { m } = row;
   const k = tones(t, m.mine);
-  // The press-and-hold menu hosts the bubble in SwiftUI, where a percentage
-  // max width has no parent to resolve against, so text lays out at the wrong
-  // width and the row reports the wrong height (rows and reactions overlap).
-  // Give it the width the row would have given it, in points. Rows pad 78pt
-  // on mine, 110pt on theirs (avatar column and gutters).
-  const maxBubbleW = Math.max(120, screenW - (m.mine ? 78 : 110));
+  // Press and hold: where the bubble is on screen while its menu is open.
+  const anchor = useRef<View>(null);
+  const [menuAt, setMenuAt] = useState<Rect | null>(null);
+  const hasMenu = !m.deleted && m.id > 0;
+  function openMenu() {
+    anchor.current?.measureInWindow((x, y, w, h) => {
+      haptic.press();
+      setMenuAt({ x, y, w, h });
+    });
+  }
   const name = m.mine ? "You" : m.sender?.displayName ?? "Former member";
   const replyName = replyTo ? (replyTo.mine ? "You" : replyTo.sender?.displayName ?? "Former member") : "";
   const replyText = replyTo ? (replyTo.deleted ? "Message deleted" : replyTo.body ?? "Attachment") : "";
@@ -162,11 +166,20 @@ export function MessageBubble({ row, replyTo, senderTag, senderIsGroupAdmin, can
       <Text style={{ fontSize: 15, fontStyle: "italic", color: t.muted }}>This message was deleted</Text>
     </View>
   ) : (
+    // Holding squeezes the bubble over the long-press delay, so it visibly
+    // builds towards the menu opening; letting go springs it back.
     <PressableScale
       onPress={m.status === "failed" ? onRetry : undefined}
+      onLongPress={hasMenu ? openMenu : undefined}
+      delayLongPress={300}
+      holdMs={hasMenu ? 320 : undefined}
       scaleTo={0.94}
-      accessibilityHint={m.id > 0 ? "Long press for reply, react, copy and report" : undefined}
-      wrapStyle={{ maxWidth: maxBubbleW }}
+      accessibilityHint={hasMenu ? "Long press for reply, react, copy and report" : undefined}
+      accessibilityActions={hasMenu ? [{ name: "longpress", label: "Reply, react, copy and report" }] : undefined}
+      onAccessibilityAction={(e) => {
+        if (e.nativeEvent.actionName === "longpress") openMenu();
+      }}
+      wrapStyle={{ maxWidth: "100%" }}
       style={{ opacity: m.status === "sending" ? 0.6 : 1 }}
     >
       <View style={{ ...corners, backgroundColor: m.mine ? t.send : t.bubbleIn, paddingTop: 8, paddingBottom: 9, paddingHorizontal: 14, gap: 6 }}>
@@ -187,8 +200,20 @@ export function MessageBubble({ row, replyTo, senderTag, senderIsGroupAdmin, can
     </PressableScale>
   );
 
-  // Sent messages get the system press-and-hold menu; unsent and deleted ones have nothing to act on.
-  const shown = !m.deleted && m.id > 0 ? <MessageMenu message={m} actions={menu}>{body}</MessageMenu> : body;
+  // Sent messages get the press-and-hold menu; unsent and deleted ones have nothing to act on.
+  // While it's open the bubble is drawn in the menu instead, lifted, so it's hidden here.
+  const shown = hasMenu ? (
+    <View ref={anchor} collapsable={false} style={{ maxWidth: "100%" }}>
+      <View style={{ opacity: menuAt ? 0 : 1 }}>{body}</View>
+      {menuAt ? (
+        <MessageMenu message={m} actions={menu} anchor={menuAt} onClose={() => setMenuAt(null)}>
+          {body}
+        </MessageMenu>
+      ) : null}
+    </View>
+  ) : (
+    body
+  );
 
   const reactions =
     !m.deleted && m.reactions.length ? (

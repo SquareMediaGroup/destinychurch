@@ -7189,7 +7189,7 @@ same database as the data rather than in a separate Synapse module.
   gradient in a clipped frame, since RN has no conic-gradient — plus buttons, fields, cards,
   dialogs, and pulsing loading skeletons — `SkeletonGroup`, `Bone`, `SkeletonRows` — used by
   Chats, Community, Group info and Edit group while data loads), `Icon.tsx` (the design's line icons via `react-native-svg`), `MessageBubble.tsx`,
-  `MessageMenu.tsx` (system press-and-hold context menu with reactions row, via @expo/ui), `Composer.tsx`, `NotificationPrompt.tsx` (A10, asked once
+  `MessageMenu.tsx` (press-and-hold menu drawn in React Native, WhatsApp-style: the message lifts over a dimmed chat, a glass bar of six quick reactions plus "+" for a full emoji grid sits above it, and a glass card of Reply / Copy / Report / Block / Delete sits below; placed by the pure `lib/menuLayout.ts` so it always fits on screen, tested in `tests/unit/destiny-one-message-menu.spec.ts`. It replaced the SwiftUI context menu, whose hosted bubbles reported the wrong height and made messages and reactions overlap), `Composer.tsx`, `NotificationPrompt.tsx` (A10, asked once
   on first group open), `SafetyNotice.tsx`.
 - **Search** (`search` route): groups from the cached list, plus messages via `GET /search/messages`
   (`d1_search_messages`: groups you're in, since you joined, never deleted; stored tsvector + GIN,

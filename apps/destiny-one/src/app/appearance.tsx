@@ -15,7 +15,7 @@ import { Backdrop, Wallpaper } from "@/components/Wallpaper";
 import { customWallpaperUri, deleteCustomWallpaper, pickCustomWallpaper } from "@/lib/customWallpaper";
 import { haptic } from "@/lib/haptics";
 import { appearance, useAppearance, type ThemeMode } from "@/state/appearance";
-import { CUSTOM_WALLPAPER, DEFAULT_SEND_COLOUR, DEFAULT_WALLPAPER, MAX_DIM, PAGE_BG, PHOTO_WALLPAPERS, SEND_COLOURS, WALLPAPERS, isPhotoWallpaper } from "@/theme/appearance";
+import { CUSTOM_WALLPAPER, DEFAULT_SEND_COLOUR, DEFAULT_WALLPAPER, MAX_DIM, PAGE_BG, PHOTO_WALLPAPERS, SEND_COLOURS, WALLPAPERS, isPhotoWallpaper, type LookKey } from "@/theme/appearance";
 import { photoFiles } from "@/theme/photoWallpapers";
 import { useTheme } from "@/theme/tokens";
 
@@ -23,6 +23,7 @@ const MODE_OPTIONS: { key: ThemeMode; label: string }[] = [
   { key: "system", label: "System" },
   { key: "light", label: "Light" },
   { key: "dark", label: "Dark" },
+  { key: "black", label: "True dark" },
 ];
 
 const THUMB_W = 96;
@@ -31,8 +32,10 @@ const THUMB_H = 150;
 export default function AppearanceScreen() {
   const t = useTheme();
   const insets = useSafeAreaInsets();
-  const scheme = useColorScheme() === "dark" ? "dark" : "light";
   const current = useAppearance();
+  const systemDark = useColorScheme() === "dark";
+  // Which of the three looks is showing right now: True dark only when chosen.
+  const scheme: LookKey = !systemDark ? "light" : current.mode === "black" ? "black" : "dark";
   const isDefault = current.mode === "system" && current.sendColour === DEFAULT_SEND_COLOUR && current.wallpaper === DEFAULT_WALLPAPER;
   const [busy, setBusy] = useState(false);
   const ownPhoto = customWallpaperUri(current.customFile);
@@ -87,8 +90,9 @@ export default function AppearanceScreen() {
                   style={({ pressed }) => ({ flex: 1, gap: 6, alignItems: "center", transform: [{ scale: pressed ? 0.96 : 1 }] })}
                 >
                   <View style={{ width: "100%", height: 84, borderRadius: 16, overflow: "hidden", flexDirection: "row", borderWidth: on ? 3 : 1, borderColor: on ? t.tint : t.sep }}>
-                    {o.key !== "dark" ? <ModeSwatch dark={false} /> : null}
-                    {o.key !== "light" ? <ModeSwatch dark /> : null}
+                    {o.key === "system" || o.key === "light" ? <ModeSwatch look="light" /> : null}
+                    {o.key === "system" || o.key === "dark" ? <ModeSwatch look="dark" /> : null}
+                    {o.key === "black" ? <ModeSwatch look="black" /> : null}
                     {on ? (
                       <View style={{ position: "absolute", right: 6, bottom: 6, width: 22, height: 22, borderRadius: 11, backgroundColor: t.tint, alignItems: "center", justifyContent: "center" }}>
                         <Icon name="check" size={13} color={t.dark ? "#0E1013" : "#FFFFFF"} strokeWidth={3.2} />
@@ -182,14 +186,14 @@ export default function AppearanceScreen() {
           {onPhoto ? (
             <Card style={{ padding: 16, gap: 4, marginTop: 6 }}>
               <Slider
-                label={scheme === "dark" ? "Dim" : "Fade"}
+                label={scheme !== "light" ? "Dim" : "Fade"}
                 value={current.dim / MAX_DIM}
                 onChange={(v) => appearance.set({ dim: v * MAX_DIM })}
                 valueText={`${Math.round(current.dim * 100)}%`}
               />
               <Slider label="Blur" value={current.blur} onChange={(v) => appearance.set({ blur: v })} valueText={`${Math.round(current.blur * 100)}%`} />
               <Text style={{ fontSize: 13, lineHeight: 18, color: t.subtle, paddingTop: 4 }}>
-                {scheme === "dark" ? "Dimming" : "Fading"} and blurring make messages easier to read over a busy photo.
+                {scheme !== "light" ? "Dimming" : "Fading"} and blurring make messages easier to read over a busy photo.
               </Text>
             </Card>
           ) : null}
@@ -266,13 +270,13 @@ function Tile({ label, accessibilityLabel, on, onPress, background, children }: 
   );
 }
 
-/** Half a tile: a few bubbles in the light or dark page colours. System shows one of each side by side. */
-function ModeSwatch({ dark }: { dark: boolean }) {
-  const page = dark ? PAGE_BG.dark : PAGE_BG.light;
-  const bubble = dark ? "#212125" : "#F3F3F4";
+/** Half a tile: a few bubbles in one look's page colours. System shows light and dark side by side. */
+const SWATCH_BUBBLE = { light: "#F3F3F4", dark: "#33241A", black: "#212125" } as const;
+function ModeSwatch({ look }: { look: LookKey }) {
+  const dark = look !== "light";
   return (
-    <View style={{ flex: 1, backgroundColor: page, justifyContent: "center", gap: 5, paddingHorizontal: 8 }}>
-      <View style={{ width: "70%", height: 12, borderRadius: 6, backgroundColor: bubble }} />
+    <View style={{ flex: 1, backgroundColor: PAGE_BG[look], justifyContent: "center", gap: 5, paddingHorizontal: 8 }}>
+      <View style={{ width: "70%", height: 12, borderRadius: 6, backgroundColor: SWATCH_BUBBLE[look] }} />
       <View style={{ width: "55%", height: 12, borderRadius: 6, backgroundColor: dark ? "#F58021" : "#BF5200", alignSelf: "flex-end" }} />
     </View>
   );

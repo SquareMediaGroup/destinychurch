@@ -3130,8 +3130,8 @@ to keep.
   presentation only — middleware still knows they're a super admin.
 
 #### Admin Components (`components/admin/*`)
-- `AdminSidebar.tsx` — Admin navigation. At `md`+ the full sidebar; below `md` only a slim top bar (logo, breadcrumbs, ⌘K, theme toggle, account sheet), with navigation itself handed to `AdminTabBar`
-- `AdminTabBar.tsx` — The mobile bottom tab bar: a scrolling row of Liquid Glass group tabs derived from `tabsFor()`, with a `Sheet` for multi-page groups and a view-transitioned active pill. See "Admin navigation, search and keyboard shortcuts"
+- `AdminSidebar.tsx` — Admin navigation. A group with its own overview page (Destiny One, HR — `groupLanding()` in `lib/adminNav.ts`, the item named the same as the group) makes the group heading the link to it, with the chevron beside it as the expand/collapse control, instead of repeating the name as the first child. At `md`+ the full sidebar; below `md` only a slim top bar (logo, breadcrumbs, ⌘K, theme toggle, account sheet), with navigation itself handed to `AdminTabBar`
+- `AdminTabBar.tsx` — The mobile bottom tab bar: a scrolling row of Liquid Glass group tabs derived from `tabsFor()`, with a `Sheet` for multi-page groups (where a group's own landing page is listed as "Overview", highlighted only on that exact page) and a view-transitioned active pill. See "Admin navigation, search and keyboard shortcuts"
 - `AdminHeader.tsx` — Sticky desktop header for the admin shell (`md`+ only); shows the full breadcrumb trail from `breadcrumbsFor(pathname)` — every level above the current page a link — plus ⌘K, the notification bell (`AdminNotificationBell`), the theme toggle, shortcut help and a "View live site" button
 - `AdminNotificationBell.tsx` — The notification bell: an unread badge and a dropdown of the most recent notifications for whatever roles the signed-in admin holds. Data and Realtime delivery both come from `lib/useNotifications.ts` (initial `GET /api/admin/notifications`, then a private Broadcast channel per held role); marking one or all read is optimistic and reconciled on the next refresh. See the `notifications` table in Database Schema for the delivery model.
 - `RichTextEditor.tsx` — Shared TipTap rich-text editor (HTML output); used by posts, training posts, HR job descriptions, and (since `a22301b`) shop product descriptions. Optional `blocks` / `onEditor` props admit [content blocks](#content-blocks) — schema and drop handling only; the blocks UI is a separate surface owned by the parent, deliberately **not** part of this toolbar.
@@ -3141,6 +3141,7 @@ to keep.
 - `CourseAdminPage.tsx` — **Client.** The single implementation behind `/admin/alpha`, `/admin/recovery`, `/admin/bible-course` and `/admin/cap-money`. See below.
 - `AdminThemeToggle.tsx` — **Client.** The light/dark/system cycle button. One `useAdminTheme()`
   call (`lib/adminTheme.ts`); mounted in `AdminHeader.tsx` and the mobile bar in `AdminSidebar.tsx`.
+  Renders nothing while `ADMIN_DARK_MODE_ENABLED` is `false` (dark mode is currently off).
 - `AdminCharts.tsx` — **Client.** The admin's data-visualisation kit, deliberately separate from
   `AdminUI.tsx` (that file is controls/layout; this is the other half). No charting library — the
   only genuine time series in the admin (the weekly audit reports' stats, and a day-bucketed count
@@ -4762,7 +4763,8 @@ to open their editor straight away.
 
 ### `lib/adminTheme.ts`
 
-The admin's light/dark/system theme store — see "Dark mode — `/admin` only"
+The admin's light/dark/system theme store (dark mode currently switched off via
+`ADMIN_DARK_MODE_ENABLED`) — see "Dark mode — `/admin` only"
 under [Styling](#styling-tailwind-v4-no-tailwindconfigts) for the full
 mechanism (`@custom-variant dark`, why the `.dark` class lives on
 `/admin/layout.tsx`'s own wrapper rather than `document.documentElement`, and
@@ -6459,6 +6461,14 @@ Components, above) are the primitives built on these; adopting one usually
 means adopting the others.
 
 #### Dark mode — `/admin` only
+
+> **Currently switched off (September 2026).** Destiny One's admin pages were
+> never checked in dark and it read as broken rather than dark, so
+> `ADMIN_DARK_MODE_ENABLED` in `lib/adminTheme.ts` is `false`: `useAdminTheme()`
+> always resolves to light (whatever is stored or the OS prefers) and
+> `AdminThemeToggle` renders nothing. Everything below still describes how it
+> works — the `dark:` classes are left in place, dormant — so re-enabling it is
+> flipping that constant once each admin page has been checked in dark.
 
 Tailwind v4's default `dark:` variant follows `prefers-color-scheme`, which
 would flip the whole *site* dark the moment a visitor's OS is set to dark —

@@ -107,7 +107,7 @@ export default function MembersPage() {
                   className={`${cardClass} flex w-full flex-wrap items-center gap-3 px-5 py-4 text-left transition hover:shadow-md`}
                   onClick={() => setOpen(m)}
                 >
-                  <span className="min-w-0 flex-1">
+                  <span className="min-w-0 flex-1 basis-64 [overflow-wrap:anywhere]">
                     <span className="block font-bold text-destiny-grey dark:text-white">{m.displayName}</span>
                     <span className="block text-sm text-destiny-grey/55 dark:text-white/55">
                       {m.email ?? "No email"} · {m.groupCount} {m.groupCount === 1 ? "group" : "groups"}
@@ -224,7 +224,7 @@ function MemberPanel({ memberId, onClose, onChanged }: { memberId: string; onClo
         <p className="text-sm text-destiny-grey/60 dark:text-white/60">{loadError || error || "Loading..."}</p>
       ) : (
         <div className="space-y-5">
-          <dl className="grid grid-cols-2 gap-3 text-sm">
+          <dl className="grid grid-cols-2 gap-3 text-sm [&>div]:min-w-0 [&_dd]:[overflow-wrap:anywhere]">
             <div><dt className="text-destiny-grey/50 dark:text-white/50">Email</dt><dd>{m.email ?? "—"}</dd></div>
             <div><dt className="text-destiny-grey/50 dark:text-white/50">Status</dt><dd><Badge tone={STATUS_TONE[m.status]}>{m.status}</Badge></dd></div>
             <div><dt className="text-destiny-grey/50 dark:text-white/50">Age</dt><dd>{m.isAdult ? "Adult" : m.adultOn ? `Under 18 (adult from ${formatDate(m.adultOn)})` : "Under 18"}</dd></div>

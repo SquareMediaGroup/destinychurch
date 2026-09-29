@@ -66,7 +66,7 @@ export default function AppFeedbackPage() {
         <ul className="space-y-3">
           {shown.map((f) => (
             <li key={f.id} className={`${cardClass} flex flex-wrap items-start gap-4 p-5`}>
-              <div className="min-w-0 flex-1">
+              <div className="min-w-0 flex-1 basis-64 [overflow-wrap:anywhere]">
                 <div className="flex flex-wrap items-center gap-2">
                   <Badge tone={f.kind === "problem" ? "red" : "blue"}>{f.kind === "problem" ? "Problem" : "Idea"}</Badge>
                   {f.status === "done" && <Badge tone="green">Done</Badge>}

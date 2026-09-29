@@ -69,6 +69,9 @@ export interface D1Consent {
 export interface D1Me {
   id: string;
   displayName: string;
+  /** displayName is "firstName lastName". Members can change both themselves (PATCH /me). */
+  firstName: string;
+  lastName: string;
   /** Self-uploaded profile picture as a short-lived signed link (the bucket is private). Unlike displayName, members can set this themselves. */
   avatarUrl: string | null;
   /** People I've blocked: their messages are hidden for me and don't notify me. Never hides anything from safeguarding. */

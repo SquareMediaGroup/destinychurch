@@ -23,6 +23,11 @@ export const consentsSchema = z.object({
     .max(10),
 });
 
+export const updateNameSchema = z.object({
+  firstName: name,
+  lastName: name,
+});
+
 export const accessRequestSchema = z.object({
   name: z.string().trim().min(2, "Please enter your full name.").max(120),
   dateOfBirth: z

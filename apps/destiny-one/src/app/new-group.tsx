@@ -1,5 +1,6 @@
-// C1 New group (leaders). Live rule check counts you in: at least 3 people
-// including 2 adults. The server re-checks and its message is shown as-is.
+// C1 New group (leaders). A group can be created with any number of people;
+// until it has at least 3 including 2 adults it is paused (read-only) and opens
+// itself once the rule holds. The live note counts you in.
 
 import { useEffect, useMemo, useState } from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
@@ -136,13 +137,13 @@ export default function NewGroup() {
               <Text style={{ fontWeight: "600", color: t.text }}>
                 {plural(members, "person", "people")}, {plural(adults, "adult")}
               </Text>{" "}
-              including you. {rule.ok ? "Meets the rules." : `Groups need at least ${MIN_GROUP_MEMBERS} people including ${MIN_GROUP_ADULTS} adults.`}
+              including you. {rule.ok ? "Meets the rules." : `Groups need at least ${MIN_GROUP_MEMBERS} people including ${MIN_GROUP_ADULTS} adults. You can create it now, but it will be paused until then.`}
             </Text>
           </View>
         </View>
         <FormError message={error} />
       </ScrollView>
-      <PrimaryButton label="Create group" onPress={create} busy={busy} disabled={!community || !name.trim() || !rule.ok} style={{ marginTop: 14 }} />
+      <PrimaryButton label={rule.ok ? "Create group" : "Create paused group"} onPress={create} busy={busy} disabled={!community || !name.trim()} style={{ marginTop: 14 }} />
     </View>
   );
 }

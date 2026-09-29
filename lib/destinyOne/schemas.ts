@@ -82,7 +82,7 @@ export const createGroupSchema = z.object({
   name,
   department: optionalText(80),
   description: optionalText(500),
-  memberIds: z.array(uuid).min(2, "A group needs at least 3 people, including you.").max(500),
+  memberIds: z.array(uuid).max(500),
 });
 
 export const updateGroupSchema = z

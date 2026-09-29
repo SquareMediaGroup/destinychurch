@@ -135,17 +135,29 @@ select pg_temp.expect_error(
   'Only group leaders');
 select pg_temp.check(true, 'a non-leader cannot create a group');
 
-select pg_temp.expect_error(
-  format($$select public.d1_create_group(%L, %L, 'x', null, null, array[%L]::uuid[])$$,
-    :lead, (select v from ids where k = 'community'), :adult2),
-  'at least 3 people');
-select pg_temp.check(true, 'a two-person group (a 1:1 in disguise) is rejected');
+-- Too few people (even just the creator) is allowed; the group starts paused.
+insert into ids select 'tiny', public.d1_create_group(:lead::uuid, (select v from ids where k = 'community'),
+  'Tiny', null, null, '{}'::uuid[]);
+select pg_temp.check(
+  (select state from public.d1_groups where id = (select v from ids where k = 'tiny')) = 'frozen'
+  and (select freeze_kind from public.d1_groups where id = (select v from ids where k = 'tiny')) = 'auto',
+  'a group created with only its creator is paused');
 
-select pg_temp.expect_error(
-  format($$select public.d1_create_group(%L, %L, 'x', null, null, array[%L, %L]::uuid[])$$,
-    :lead, (select v from ids where k = 'community'), :minor1, :minor2),
-  'at least 2 verified adults');
-select pg_temp.check(true, 'a group with only one adult is rejected');
+insert into ids select 'oneadult', public.d1_create_group(:lead::uuid, (select v from ids where k = 'community'),
+  'One adult', null, null, array[:minor1, :minor2]::uuid[]);
+select pg_temp.check(
+  (select state from public.d1_groups where id = (select v from ids where k = 'oneadult')) = 'frozen',
+  'a group with only one adult is paused');
+
+select pg_temp.check(
+  not exists (select 1 from public.d1_safeguarding_events
+              where group_id in ((select v from ids where k = 'tiny'), (select v from ids where k = 'oneadult'))),
+  'pausing at creation raises no safeguarding event');
+
+select public.d1_add_group_members(:lead::uuid, (select v from ids where k = 'tiny'), array[:adult2, :minor1]::uuid[]);
+select pg_temp.check(
+  (select state from public.d1_groups where id = (select v from ids where k = 'tiny')) = 'active',
+  'a paused group opens itself once it has 3 people including 2 adults');
 
 insert into ids select 'youth', public.d1_create_group(:lead::uuid, (select v from ids where k = 'community'),
   'Youth Team', 'Youth', null, array[:adult2, :minor1, :minor2]::uuid[]);

@@ -8,8 +8,9 @@ import { adminGroupSchema } from "@/lib/destinyOne/schemas";
 //   { name, department?, description?, memberIds, adminIds? }
 //
 // A department sub-group. Everyone must already be in the community. The
-// database refuses fewer than 3 people or 2 verified adults, and minor admins,
-// with a message that's shown to the admin as-is.
+// database creates it paused if it has fewer than 3 people or 2 verified adults
+// (any size is allowed) and refuses minor admins, with a message that's shown to
+// the admin as-is.
 
 export const dynamic = "force-dynamic";
 

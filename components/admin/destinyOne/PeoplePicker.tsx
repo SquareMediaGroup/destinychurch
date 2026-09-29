@@ -2,7 +2,7 @@
 
 // Pick people for a Destiny One community or group. Shows each person's
 // verified adult / under-18 status, because the person picking is the one
-// keeping the "3 people, 2 adults" rule — and shows that rule live.
+// keeping the "3 people, 2 adults" rule (unmet = paused) — and shows that rule live.
 
 import { useMemo, useState } from "react";
 import { Badge, inputClass } from "@/components/admin/AdminUI";
@@ -77,7 +77,7 @@ export function RuleCheck({ people, selected }: { people: PickablePerson[]; sele
       className={`mt-3 rounded-xl px-3 py-2 text-sm font-medium ${ok ? "bg-success/10 text-success" : "bg-warning/15 text-warning"}`}
     >
       {chosen.length} {chosen.length === 1 ? "person" : "people"}, {adults} {adults === 1 ? "adult" : "adults"} chosen.{" "}
-      {ok ? "Meets the rules." : "Groups need at least 3 people, including 2 verified adults."}
+      {ok ? "Meets the rules." : "Groups need at least 3 people, including 2 verified adults. It will be created paused until then."}
     </p>
   );
 }

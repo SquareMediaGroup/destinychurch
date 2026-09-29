@@ -1974,10 +1974,12 @@ department **sub-groups**. Migration: `supabase/migrations/20260926_01_destiny_o
 
 **The rules are enforced in the database**, not the API, so no client and no route bug can get round
 them:
-1. **No 1:1 chats.** `d1_create_group` refuses fewer than 3 people.
+1. **No 1:1 chats.** A group with fewer than 3 people is paused (read-only), never usable. `d1_create_group` still
+   accepts any size (even just the creator, migration `20260929_05`; `d1_admin_create_group` likewise, `_06`): it inserts the group already `frozen`/`auto`
+   with no safeguarding event, and it opens itself once it has 3 people including 2 adults.
 2. **Only leaders create groups and communities** (any of `admin` / `cg_leader` / `senior_leader`,
    adults only; the three have identical powers).
-3. **At least 2 verified adults in every group, always.** Checked at creation, then by a *deferred*
+3. **At least 2 verified adults in every group, always.** Evaluated at creation (paused if unmet), then by a *deferred*
    constraint trigger on `d1_group_members` (and on `d1_members` status/`adult_on` changes) that calls
    `d1_evaluate_group`: below 3 members or 2 adults → `frozen` (read-only) + a `d1_safeguarding_events`
    row; back above → unfrozen automatically. Leaving is never blocked (scoping doc D1: freeze + notify).
@@ -2021,7 +2023,7 @@ minimal reliance on ChurchSuite, so identity now comes from Destiny's own staff:
 - **Admin-path functions** with no acting member (website staff may have no app account):
   `d1_admin_create_community`, `_add_community_members`, `_set_community_role`,
   `_remove_community_member`, `_create_group`, `_add_group_members`, `_remove_group_member`,
-  `_set_group_role`, sharing `d1__check_composition` (≥3 people, ≥2 adults). Every part-1 trigger
+  `_set_group_role`, (group creation no longer uses `d1__check_composition`; small groups are created paused). Every part-1 trigger
   still applies. Plus reads `d1_admin_members` (joins the sign-in email from `auth.users` in one
   query) and `d1_admin_groups` (live counts).
 - **Notifications re-routed:** an automatic pause → `destiny_one_admin` + `safeguarding_admin`; a
@@ -4253,7 +4255,7 @@ needs at least 2 verified adults.") pass through as `rule_violation` (422). Type
 | `communities` | GET, POST | POST: any leader role |
 | `communities/[id]` | GET | |
 | `communities/[id]/members` | POST, DELETE | DELETE without `memberId` = leave |
-| `communities/[id]/groups` | POST | Create a sub-group (≥3 people, ≥2 adults) |
+| `communities/[id]/groups` | POST | Create a sub-group (any size; paused until ≥3 people, ≥2 adults) |
 | `groups/[id]` | GET, PATCH | PATCH: rename/describe/archive (managers) |
 | `groups/[id]/members` | POST, DELETE | Leaving never blocked |
 | `groups/[id]/icon` | POST, DELETE | Group icon (multipart `file`, 5 MB). Any current member can change it, not just admins; not for Announcements or paused groups. Stored in `d1-avatars` as `d1_groups.icon_path`; `iconUrl` on group summaries is a signed link. The app asks people to avoid the church logo |

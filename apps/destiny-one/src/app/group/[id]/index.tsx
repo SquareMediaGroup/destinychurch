@@ -10,7 +10,7 @@ import * as WebBrowser from "expo-web-browser";
 import { LinearGradient } from "expo-linear-gradient";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Composer } from "@/components/Composer";
-import { Wallpaper } from "@/components/Wallpaper";
+import { Backdrop } from "@/components/Wallpaper";
 import { GlassSurface } from "@/components/GlassSurface";
 import { Icon } from "@/components/Icon";
 import { MessageActions } from "@/components/MessageActions";
@@ -29,6 +29,7 @@ import { useConversation, type LocalMessage } from "@/lib/useConversation";
 import { eventPick, useEventPick } from "@/state/eventPick";
 import { pollDraft, usePollDraft } from "@/state/pollDraft";
 import { errorMessage, useGroupSummary, useSession } from "@/state/session";
+import { PHOTO_CHIP_ALPHA } from "@/theme/appearance";
 import { ORANGE, useTheme } from "@/theme/tokens";
 
 export default function GroupChat() {
@@ -196,7 +197,7 @@ export default function GroupChat() {
     // "padding" on Android too: apps are edge-to-edge there now, so the window
     // no longer shrinks for the keyboard and the message box would be covered.
     <KeyboardAvoidingView behavior="padding" style={{ flex: 1, backgroundColor: t.bg }}>
-      {t.wall ? <Wallpaper pattern={t.wall.def.pattern} tone={t.wall.tone} /> : null}
+      <Backdrop />
       {!messages ? (
         convo.error ? (
           <View style={{ flex: 1, justifyContent: "center" }}>
@@ -225,7 +226,7 @@ export default function GroupChat() {
           scrollEventThrottle={100}
           ListFooterComponent={convo.loadingOlder ? <ActivityIndicator color={ORANGE} style={{ paddingVertical: 16 }} /> : null}
           ListEmptyComponent={
-            <View style={{ transform: [{ scaleY: -1 }] }}>
+            <View style={[{ transform: [{ scaleY: -1 }] }, t.photo ? { alignSelf: "center", marginHorizontal: 24, borderRadius: 24, backgroundColor: withAlpha(t.bg, PHOTO_CHIP_ALPHA) } : null]}>
               <EmptyState title="No messages yet" body={group?.canPost ? "Say hello." : undefined} />
             </View>
           }
@@ -270,7 +271,7 @@ export default function GroupChat() {
       )}
 
       {/* Header: back · group pill (opens info) · search */}
-      {t.wall ? null : <LinearGradient pointerEvents="none" colors={[t.bg, withAlpha(t.bg, 0)]} locations={[0.45, 1]} style={{ position: "absolute", top: 0, left: 0, right: 0, height: insets.top + 76 }} />}
+      {t.wall || t.photo ? null : <LinearGradient pointerEvents="none" colors={[t.bg, withAlpha(t.bg, 0)]} locations={[0.45, 1]} style={{ position: "absolute", top: 0, left: 0, right: 0, height: insets.top + 76 }} />}
       <View style={{ position: "absolute", top: insets.top, left: 0, right: 0, height: 56, flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 16 }}>
         {preview ? <View style={{ width: 44 }} /> : <BackButton />}
         <Pressable accessibilityRole="button" accessibilityLabel={`${name}, group info`} onPress={() => router.push(`/group/${id}/info`)} style={{ flexShrink: 1, marginHorizontal: 8 }}>

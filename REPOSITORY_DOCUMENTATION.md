@@ -5970,8 +5970,9 @@ fresh URL per click.
 Polished to Apple's Human Interface Guidelines. The pieces, and why they exist:
 
 - **Personal appearance** (Profile → Appearance, `src/app/appearance.tsx`). Each person picks the
-  colour of the messages *they send* and a conversation wallpaper. Kept on the phone only
-  (`src/state/appearance.ts`, AsyncStorage, `d1.appearance.v1`), so it changes nothing for anyone
+  colour of the messages *they send* and a conversation wallpaper (a pattern, a stock photo, or
+  their own photo). Kept on the phone only (`src/state/appearance.ts`, AsyncStorage,
+  `d1.appearance.v1`: `wallpaper`, `dim`, `blur`, `customFile`), so it changes nothing for anyone
   else. `useTheme()` (`src/theme/tokens.ts`) folds the choice in as `t.send`, `t.onSend`,
   `t.onSendCard` and `t.wall`, so bubbles, the send button, poll bars and the message-actions
   preview all follow it.
@@ -5986,6 +5987,27 @@ Polished to Apple's Human Interface Guidelines. The pieces, and why they exist:
   (gradient, hills, dots, contours, sunburst, waves), not shipped as photos: sharp at any size,
   near-zero weight, and each has light and dark colours. Applied to conversations only; list and
   settings screens stay plain so text is always on a known background.
+- **Photo wallpapers** are never uploaded and never touch Supabase. Two sources: ten stock photos
+  shipped in `assets/wallpapers/` (Unsplash licence, free to use, no credit required; 900x1800
+  crops with a 240x480 `-thumb` each so the picker doesn't decode ten full-size images; about
+  3.3 MB added to the app; wired up in `src/theme/photoWallpapers.ts`, ids are `photo:<key>`), and
+  the person's own photo (`src/lib/customWallpaper.ts`): picked with `expo-image-picker`,
+  re-encoded with `expo-image-manipulator` (shorter side 1200 px, JPEG 0.75, which also strips GPS
+  and other metadata), then copied into the app's documents folder with `expo-file-system` as
+  `wallpaper-<timestamp>.jpg`. Only that file *name* is remembered, because iOS can move the
+  app's folder between updates; the path is rebuilt from `Paths.document` each time, and a missing
+  file falls back to plain. Nothing to moderate, so none of the Apple 1.2 user-generated-content
+  duties apply (sharing a wallpaper with other members would change that).
+  A photo can't be contrast-checked like a gradient, so it is made safe two ways. The **Dim** slider
+  (0 to 90%, labelled **Fade** in light mode) lays the page colour over the photo, so in dark mode it
+  darkens and in light mode it lightens; the **Blur** slider (`Image.blurRadius`, up to 24) softens
+  detail. And everything that would sit bare on a photo (times, sender names, the day and "New
+  messages" dividers, "This message was deleted", the empty state) goes on a chip in the page colour
+  at 90% opacity (`photoChip()` in `MessageBubble.tsx`, `PHOTO_CHIP_ALPHA`). The unit tests check
+  that chip against pure black and pure white behind it in both modes (7:1 body, 4.5:1 muted).
+  The sliders (`src/components/Slider.tsx`) are `PanResponder` + Views (no native module) and
+  expose the standard "adjustable" role to screen readers. `Backdrop` (`Wallpaper.tsx`) draws
+  whichever wallpaper is active and is used by the chat and the live preview.
 - **Dark mode is a warm tint of the brand orange** (`#1A110A` page, `#26190F` cards), not pure black.
 - **Bubbles** (`MessageBubble.tsx`) join in runs (the corner facing the sender flattens between
   neighbours) and the last one in a run gets a small curved tail. The time shows once per run.

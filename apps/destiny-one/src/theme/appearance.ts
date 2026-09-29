@@ -6,7 +6,9 @@
 // Only the send colour and wallpaper are personal. They are stored on the
 // phone (src/state/appearance.ts) and change nothing for anyone else: each
 // person sees their own messages in their own colour and everyone else's in
-// the neutral incoming colour.
+// the neutral incoming colour. A wallpaper can also be a photo, one of the
+// stock ones shipped in the app or the person's own. Neither ever leaves the
+// phone, and nothing about a photo wallpaper is sent to the server.
 //
 // Every send colour is chosen so that the text on it passes AA (4.5:1) and
 // the bubble stands out from the page at 3:1 or better, in light and dark.
@@ -121,3 +123,61 @@ export const DEFAULT_WALLPAPER = "none";
 export function wallpaper(id: string | null | undefined): Wallpaper {
   return WALLPAPERS.find((w) => w.id === id) ?? WALLPAPERS[0];
 }
+
+// ── Photo wallpapers ────────────────────────────────────────────────────────
+//
+// A photo can't be checked for contrast the way a gradient can, so a photo
+// wallpaper is made safe differently: the person can dim (or, in light mode,
+// fade) and blur it, and everything that would otherwise sit bare on the photo
+// (times, names, day dividers) gets a near-opaque chip. The tests check that
+// chip against the harshest possible photo pixel, pure black and pure white.
+
+export interface PhotoWallpaper {
+  /** Stored value, `photo:<key>`. The key names the files in assets/wallpapers. */
+  id: string;
+  key: string;
+  label: string;
+}
+
+const photo = (key: string, label: string): PhotoWallpaper => ({ id: `photo:${key}`, key, label });
+
+/** Stock photos bundled with the app (Unsplash licence: free to use, no credit required). */
+export const PHOTO_WALLPAPERS: readonly PhotoWallpaper[] = [
+  photo("woodland", "Woodland"),
+  photo("alpine", "Alpine"),
+  photo("valley", "Valley"),
+  photo("meadow", "Meadow"),
+  photo("dusk", "Dusk"),
+  photo("sunrise", "Sunrise"),
+  photo("lake", "Lake"),
+  photo("clouds", "Clouds"),
+  photo("shoreline", "Shoreline"),
+  photo("stars", "Night sky"),
+];
+
+/** The person's own photo, kept in the app's private storage on this phone. */
+export const CUSTOM_WALLPAPER = "custom";
+
+export function photoWallpaper(id: string | null | undefined): PhotoWallpaper | undefined {
+  return PHOTO_WALLPAPERS.find((p) => p.id === id);
+}
+
+/** True for a stock photo or the person's own. */
+export function isPhotoWallpaper(id: string | null | undefined): boolean {
+  return id === CUSTOM_WALLPAPER || photoWallpaper(id) !== undefined;
+}
+
+/** How far a photo is dimmed to start with, and the most it can be (so it never disappears entirely). */
+export const DEFAULT_DIM = 0.4;
+export const MAX_DIM = 0.9;
+export const DEFAULT_BLUR = 0;
+/** Image blur radius at the top of the slider. */
+export const MAX_BLUR_RADIUS = 24;
+
+/** Both sliders are stored as 0 to 1; anything else (a corrupt file) becomes `fallback`. */
+export function unit(value: unknown, fallback: number, max = 1): number {
+  return typeof value === "number" && Number.isFinite(value) ? Math.min(max, Math.max(0, value)) : fallback;
+}
+
+/** Opacity of the chip behind text that sits directly on a photo (page colour at this alpha). */
+export const PHOTO_CHIP_ALPHA = 0.9;

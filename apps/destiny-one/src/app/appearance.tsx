@@ -1,16 +1,22 @@
 // D5 Appearance — pick the colour of the messages you send and a wallpaper
-// for your conversations. Personal to this phone; nobody else sees either.
-// A live preview at the top updates as you choose.
+// for your conversations: a pattern, one of the stock photos, or your own photo
+// (dimmed and blurred to taste). Personal to this phone; nobody else sees any
+// of it, and no photo is ever uploaded. A live preview at the top updates as
+// you choose.
 
-import { Pressable, ScrollView, Text, View, useColorScheme } from "react-native";
+import { useState, type ReactNode } from "react";
+import { Alert, Image, Pressable, ScrollView, Text, View, useColorScheme } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Icon } from "@/components/Icon";
-import { Tail } from "@/components/MessageBubble";
+import { Tail, photoChip } from "@/components/MessageBubble";
+import { Slider } from "@/components/Slider";
 import { Card, FloatingBack, LargeTitle, SectionLabel, TextButton } from "@/components/ui";
-import { Wallpaper } from "@/components/Wallpaper";
+import { Backdrop, Wallpaper } from "@/components/Wallpaper";
+import { customWallpaperUri, deleteCustomWallpaper, pickCustomWallpaper } from "@/lib/customWallpaper";
 import { haptic } from "@/lib/haptics";
 import { appearance, useAppearance, type ThemeMode } from "@/state/appearance";
-import { DEFAULT_SEND_COLOUR, DEFAULT_WALLPAPER, PAGE_BG, SEND_COLOURS, WALLPAPERS } from "@/theme/appearance";
+import { CUSTOM_WALLPAPER, DEFAULT_SEND_COLOUR, DEFAULT_WALLPAPER, MAX_DIM, PAGE_BG, PHOTO_WALLPAPERS, SEND_COLOURS, WALLPAPERS, isPhotoWallpaper } from "@/theme/appearance";
+import { photoFiles } from "@/theme/photoWallpapers";
 import { useTheme } from "@/theme/tokens";
 
 const MODE_OPTIONS: { key: ThemeMode; label: string }[] = [
@@ -28,6 +34,33 @@ export default function AppearanceScreen() {
   const scheme = useColorScheme() === "dark" ? "dark" : "light";
   const current = useAppearance();
   const isDefault = current.mode === "system" && current.sendColour === DEFAULT_SEND_COLOUR && current.wallpaper === DEFAULT_WALLPAPER;
+  const [busy, setBusy] = useState(false);
+  const ownPhoto = customWallpaperUri(current.customFile);
+  // "Your photo" is only in use while its file is still there.
+  const onPhoto = isPhotoWallpaper(current.wallpaper) && (current.wallpaper !== CUSTOM_WALLPAPER || ownPhoto !== null);
+
+  /** Choose (or replace) your own photo and switch to it. The old file is deleted once the new one is in place. */
+  async function choosePhoto() {
+    if (busy) return;
+    setBusy(true);
+    try {
+      const name = await pickCustomWallpaper();
+      if (name) {
+        const previous = appearance.get().customFile;
+        appearance.set({ wallpaper: CUSTOM_WALLPAPER, customFile: name });
+        deleteCustomWallpaper(previous);
+        haptic.tick();
+      }
+    } catch {
+      Alert.alert("Couldn't use that photo", "Try a different one.");
+    }
+    setBusy(false);
+  }
+
+  function removePhoto() {
+    deleteCustomWallpaper(current.customFile);
+    appearance.set({ customFile: null, ...(current.wallpaper === CUSTOM_WALLPAPER ? { wallpaper: DEFAULT_WALLPAPER } : {}) });
+  }
 
   return (
     <View style={{ flex: 1, backgroundColor: t.grouped }}>
@@ -101,39 +134,89 @@ export default function AppearanceScreen() {
 
         <View style={{ gap: 8 }}>
           <SectionLabel>Chat wallpaper</SectionLabel>
+          <Text style={{ paddingHorizontal: 16, fontSize: 13, color: t.subtle }}>Photos</Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 12, paddingHorizontal: 4, paddingVertical: 4 }} accessibilityRole="radiogroup">
+            <Tile
+              label="Your photo"
+              accessibilityLabel={ownPhoto ? "Your own photo wallpaper" : "Choose your own photo for a wallpaper"}
+              on={current.wallpaper === CUSTOM_WALLPAPER && ownPhoto !== null}
+              onPress={() => {
+                if (!ownPhoto) return void choosePhoto();
+                if (current.wallpaper !== CUSTOM_WALLPAPER) haptic.selection();
+                appearance.set({ wallpaper: CUSTOM_WALLPAPER });
+              }}
+            >
+              {ownPhoto ? (
+                <Image source={{ uri: ownPhoto }} resizeMode="cover" accessible={false} style={{ width: "100%", height: "100%" }} />
+              ) : (
+                <View style={{ flex: 1, alignItems: "center", justifyContent: "center", gap: 6, backgroundColor: t.fill }}>
+                  <Icon name={busy ? "photo" : "plus"} size={22} color={t.tint} strokeWidth={2.4} />
+                  <Text style={{ fontSize: 12, color: t.muted }}>{busy ? "Working..." : "Choose"}</Text>
+                </View>
+              )}
+            </Tile>
+            {PHOTO_WALLPAPERS.map((p) => (
+              <Tile
+                key={p.id}
+                label={p.label}
+                accessibilityLabel={`${p.label} photo wallpaper`}
+                on={p.id === current.wallpaper}
+                onPress={() => {
+                  if (p.id !== current.wallpaper) haptic.selection();
+                  appearance.set({ wallpaper: p.id });
+                }}
+              >
+                <Image source={photoFiles(p.key)?.thumb} resizeMode="cover" accessible={false} style={{ width: "100%", height: "100%" }} />
+              </Tile>
+            ))}
+          </ScrollView>
+          <Text style={{ paddingHorizontal: 16, fontSize: 12, color: t.subtle }}>Photos from Unsplash. They stay on this phone.</Text>
+
+          {ownPhoto ? (
+            <View style={{ flexDirection: "row", gap: 24, paddingHorizontal: 16, paddingTop: 2 }}>
+              <TextButton label={busy ? "Working..." : "Choose a different photo"} onPress={() => void choosePhoto()} />
+              <TextButton label="Remove" color={t.dark ? "#FF8A80" : "#C62828"} onPress={removePhoto} />
+            </View>
+          ) : null}
+
+          {onPhoto ? (
+            <Card style={{ padding: 16, gap: 4, marginTop: 6 }}>
+              <Slider
+                label={scheme === "dark" ? "Dim" : "Fade"}
+                value={current.dim / MAX_DIM}
+                onChange={(v) => appearance.set({ dim: v * MAX_DIM })}
+                valueText={`${Math.round(current.dim * 100)}%`}
+              />
+              <Slider label="Blur" value={current.blur} onChange={(v) => appearance.set({ blur: v })} valueText={`${Math.round(current.blur * 100)}%`} />
+              <Text style={{ fontSize: 13, lineHeight: 18, color: t.subtle, paddingTop: 4 }}>
+                {scheme === "dark" ? "Dimming" : "Fading"} and blurring make messages easier to read over a busy photo.
+              </Text>
+            </Card>
+          ) : null}
+
+          <Text style={{ paddingHorizontal: 16, paddingTop: 8, fontSize: 13, color: t.subtle }}>Patterns</Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 12, paddingHorizontal: 4, paddingVertical: 4 }} accessibilityRole="radiogroup">
             {WALLPAPERS.map((w) => {
-              const on = w.id === current.wallpaper;
               const wt = w[scheme];
               return (
-                <Pressable
+                <Tile
                   key={w.id}
-                  accessibilityRole="radio"
-                  accessibilityState={{ selected: on }}
+                  label={w.label}
                   accessibilityLabel={`${w.label} wallpaper`}
+                  on={w.id === current.wallpaper}
                   onPress={() => {
-                    if (!on) haptic.selection();
+                    if (w.id !== current.wallpaper) haptic.selection();
                     appearance.set({ wallpaper: w.id });
                   }}
-                  style={({ pressed }) => ({ gap: 6, alignItems: "center", transform: [{ scale: pressed ? 0.96 : 1 }] })}
+                  background={wt.stops[0]}
                 >
-                  <View style={{ width: THUMB_W, height: THUMB_H, borderRadius: 16, overflow: "hidden", borderWidth: on ? 3 : 1, borderColor: on ? t.tint : t.sep, backgroundColor: wt.stops[0] }}>
-                    <Wallpaper pattern={w.pattern} tone={wt} />
-                    {w.pattern === "none" ? (
-                      <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
-                        <Text style={{ fontSize: 13, color: t.muted }}>None</Text>
-                      </View>
-                    ) : null}
-                    {on ? (
-                      <View style={{ position: "absolute", right: 6, bottom: 6, width: 22, height: 22, borderRadius: 11, backgroundColor: t.tint, alignItems: "center", justifyContent: "center" }}>
-                        <Icon name="check" size={13} color={t.dark ? "#0E1013" : "#FFFFFF"} strokeWidth={3.2} />
-                      </View>
-                    ) : null}
-                  </View>
-                  <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 13, fontWeight: on ? "600" : "400", color: t.text }}>
-                    {w.label}
-                  </Text>
-                </Pressable>
+                  <Wallpaper pattern={w.pattern} tone={wt} />
+                  {w.pattern === "none" ? (
+                    <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
+                      <Text style={{ fontSize: 13, color: t.muted }}>None</Text>
+                    </View>
+                  ) : null}
+                </Tile>
               );
             })}
           </ScrollView>
@@ -145,6 +228,7 @@ export default function AppearanceScreen() {
               label="Reset to default"
               onPress={() => {
                 haptic.tick();
+                deleteCustomWallpaper(current.customFile);
                 appearance.reset();
               }}
             />
@@ -153,6 +237,32 @@ export default function AppearanceScreen() {
       </ScrollView>
       <FloatingBack background={t.grouped} />
     </View>
+  );
+}
+
+/** One wallpaper choice: a portrait thumbnail with a caption and a tick when selected. */
+function Tile({ label, accessibilityLabel, on, onPress, background, children }: { label: string; accessibilityLabel: string; on: boolean; onPress: () => void; background?: string; children: ReactNode }) {
+  const t = useTheme();
+  return (
+    <Pressable
+      accessibilityRole="radio"
+      accessibilityState={{ selected: on }}
+      accessibilityLabel={accessibilityLabel}
+      onPress={onPress}
+      style={({ pressed }) => ({ gap: 6, alignItems: "center", transform: [{ scale: pressed ? 0.96 : 1 }] })}
+    >
+      <View style={{ width: THUMB_W, height: THUMB_H, borderRadius: 16, overflow: "hidden", borderWidth: on ? 3 : 1, borderColor: on ? t.tint : t.sep, backgroundColor: background ?? t.fill }}>
+        {children}
+        {on ? (
+          <View style={{ position: "absolute", right: 6, bottom: 6, width: 22, height: 22, borderRadius: 11, backgroundColor: t.tint, alignItems: "center", justifyContent: "center" }}>
+            <Icon name="check" size={13} color={t.dark ? "#0E1013" : "#FFFFFF"} strokeWidth={3.2} />
+          </View>
+        ) : null}
+      </View>
+      <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 13, fontWeight: on ? "600" : "400", color: t.text }}>
+        {label}
+      </Text>
+    </Pressable>
   );
 }
 
@@ -173,7 +283,7 @@ function Preview() {
   const t = useTheme();
   return (
     <View accessible accessibilityLabel="Preview of a conversation" style={{ height: 250, borderRadius: 24, overflow: "hidden", backgroundColor: t.bg, borderWidth: 1, borderColor: t.sep }}>
-      {t.wall ? <Wallpaper pattern={t.wall.def.pattern} tone={t.wall.tone} /> : null}
+      <Backdrop />
       <View style={{ flex: 1, justifyContent: "center", gap: 6, paddingHorizontal: 18 }}>
         <View style={{ alignItems: "flex-start" }}>
           <View style={{ borderRadius: 20, borderBottomLeftRadius: 0, backgroundColor: t.bubbleIn, paddingVertical: 8, paddingHorizontal: 14, marginLeft: 10 }}>
@@ -191,7 +301,7 @@ function Preview() {
             <Text style={{ fontSize: 17, lineHeight: 22, letterSpacing: -0.2, color: t.onSend }}>I&apos;ll bring the coffee</Text>
             <Tail color={t.send} mine />
           </View>
-          <Text style={{ paddingHorizontal: 16, paddingTop: 3, fontSize: 11, color: t.muted }}>10:42</Text>
+          <Text style={[{ paddingHorizontal: 16, paddingTop: 3, fontSize: 11, color: t.muted }, photoChip(t)]}>10:42</Text>
         </View>
       </View>
     </View>

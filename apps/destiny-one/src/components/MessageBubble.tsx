@@ -14,16 +14,26 @@ import type { D1EventContent, D1LeaderRole, D1Message, D1PollContent } from "@de
 import { Icon } from "@/components/Icon";
 import { Appear, Pop, PressableScale, reduceMotion, springs } from "@/components/Motion";
 import { SwipeToReply } from "@/components/Swipe";
-import { Avatar, MemberTag } from "@/components/ui";
+import { Avatar, MemberTag, withAlpha } from "@/components/ui";
 import { clock, dayLabel, eventWhen, fileMeta, plural, sameDay } from "@/lib/format";
 import { haptic } from "@/lib/haptics";
 import type { LocalMessage } from "@/lib/useConversation";
+import { PHOTO_CHIP_ALPHA } from "@/theme/appearance";
 import { ORANGE, useTheme, type Theme } from "@/theme/tokens";
 
 const RADIUS = 20;
 const JOINED = 6;
 const TAIL_W = 12;
 const TAIL_H = 19;
+
+/**
+ * Text that sits straight on a photo wallpaper (times, names, dividers) goes on
+ * a near-opaque chip in the page colour, so it stays readable over any photo.
+ * The tests check that chip against pure black and pure white behind it.
+ */
+export function photoChip(t: Theme) {
+  return t.photo ? ({ overflow: "hidden", borderRadius: 10, paddingVertical: 1, paddingHorizontal: 6, backgroundColor: withAlpha(t.bg, PHOTO_CHIP_ALPHA) } as const) : null;
+}
 
 export type Row =
   | { kind: "day"; key: string; label: string }
@@ -64,14 +74,14 @@ export function Divider({ row }: { row: Exclude<Row, { kind: "msg" }> }) {
     // A small chip, so the label stays readable over a wallpaper.
     return (
       <View style={{ alignItems: "center", paddingTop: 14, paddingBottom: 4 }}>
-        <Text style={{ overflow: "hidden", borderRadius: 11, paddingVertical: 3, paddingHorizontal: 10, fontSize: 12, fontWeight: "600", color: t.muted, backgroundColor: t.wall ? t.glass : "transparent" }}>{row.label}</Text>
+        <Text style={{ overflow: "hidden", borderRadius: 11, paddingVertical: 3, paddingHorizontal: 10, fontSize: 12, fontWeight: "600", color: t.muted, backgroundColor: t.photo ? withAlpha(t.bg, PHOTO_CHIP_ALPHA) : t.wall ? t.glass : "transparent" }}>{row.label}</Text>
       </View>
     );
   }
   return (
     <View style={{ flexDirection: "row", alignItems: "center", gap: 10, paddingTop: 16, paddingHorizontal: 16 }}>
       <View style={{ flex: 1, height: 0.5, backgroundColor: ORANGE, opacity: 0.6 }} />
-      <Text style={{ fontSize: 12, fontWeight: "600", color: t.tint }}>New messages</Text>
+      <Text style={[{ fontSize: 12, fontWeight: "600", color: t.tint }, photoChip(t)]}>New messages</Text>
       <View style={{ flex: 1, height: 0.5, backgroundColor: ORANGE, opacity: 0.6 }} />
     </View>
   );
@@ -139,7 +149,7 @@ export function MessageBubble({ row, replyTo, senderTag, senderIsGroupAdmin, can
   };
 
   const body = m.deleted ? (
-    <View style={{ borderRadius: 20, borderWidth: 1, borderStyle: "dashed", borderColor: t.sep, paddingVertical: 7, paddingHorizontal: 14, backgroundColor: t.wall ? t.glass : "transparent" }}>
+    <View style={{ borderRadius: 20, borderWidth: 1, borderStyle: "dashed", borderColor: t.sep, paddingVertical: 7, paddingHorizontal: 14, backgroundColor: t.photo ? withAlpha(t.bg, PHOTO_CHIP_ALPHA) : t.wall ? t.glass : "transparent" }}>
       <Text style={{ fontSize: 15, fontStyle: "italic", color: t.muted }}>This message was deleted</Text>
     </View>
   ) : (
@@ -224,7 +234,7 @@ export function MessageBubble({ row, replyTo, senderTag, senderIsGroupAdmin, can
           {reactions}
           {/* The time only shows under the last bubble of a run, like Messages. */}
           {!row.joinBelow || m.status ? (
-            <Text style={{ paddingHorizontal: 6, fontSize: 11, color: m.status === "failed" ? t.tint : t.muted }}>
+            <Text style={[{ paddingHorizontal: 6, fontSize: 11, color: m.status === "failed" ? t.tint : t.muted }, photoChip(t)]}>
               {m.status === "sending" ? "Sending..." : m.status === "failed" ? "Not sent. Tap to retry." : clock(m.createdAt)}
             </Text>
           ) : null}
@@ -239,7 +249,7 @@ export function MessageBubble({ row, replyTo, senderTag, senderIsGroupAdmin, can
         <View style={{ width: 30, marginBottom: 2 }}>{row.showAvatar ? <Avatar name={name} size={30} /> : null}</View>
         <View style={{ flexShrink: 1, alignItems: "flex-start", gap: 3, minWidth: 0 }}>
           {row.showName ? (
-            <View style={{ flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 12 }}>
+            <View style={[{ flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 12 }, photoChip(t)]}>
               <Text style={{ fontSize: 12, fontWeight: "600", color: t.muted }}>{name}</Text>
               <MemberTag tag={senderTag} groupAdmin={senderIsGroupAdmin} />
               <Text style={{ fontSize: 12, color: t.muted }}>{clock(m.createdAt)}</Text>

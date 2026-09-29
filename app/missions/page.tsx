@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import AnimateIn from "@/components/AnimateIn";
 import MediaEmbed from "@/components/missions/MediaEmbed";
 import WorshipWithUsSection from "@/components/home/WorshipWithUsSection";
+import Button from "@/components/ui/Button";
 
 export const metadata: Metadata = {
   title: "Missions",
@@ -143,15 +143,10 @@ export default function MissionsPage() {
                     {para}
                   </p>
                 ))}
-                <Link
-                  href={partner.cta.href}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="mt-2 inline-flex items-center gap-2 rounded-full bg-destiny-orange px-6 py-3 text-sm font-bold text-white shadow-lg shadow-destiny-orange/20 transition hover:brightness-110"
-                >
+                <Button href={partner.cta.href} size="md" className="mt-2">
                   {partner.cta.label}
                   <span className="material-symbols-rounded text-base" aria-hidden="true">open_in_new</span>
-                </Link>
+                </Button>
               </AnimateIn>
 
               {/* Video */}

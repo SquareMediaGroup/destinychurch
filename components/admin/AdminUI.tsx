@@ -268,7 +268,7 @@ export function SearchInput({
   }, []);
 
   return (
-    <div data-tour="list-search" className={`relative min-w-0 flex-1 sm:max-w-xs ${className}`}>
+    <div data-tour="list-search" className={`relative min-w-0 flex-1 basis-56 sm:max-w-xs ${className}`}>
       <span className="material-symbols-rounded pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-lg text-destiny-grey/35 dark:text-white/35" aria-hidden="true">
         search
       </span>
@@ -598,8 +598,11 @@ export function MetricCard({
         <span className="material-symbols-rounded text-2xl" aria-hidden="true">{icon}</span>
       </span>
 
-      <div className="mt-5 flex items-end justify-between gap-2">
-        <div className="min-w-0">
+      {/* flex-wrap, not a squeezed single row: in the two-up grid on a phone the
+          chip used to take the label's room ("Wa…") or spill out of the card.
+          Now the chip drops under the label when both don't fit. */}
+      <div className="mt-5 flex flex-wrap items-end justify-between gap-2">
+        <div className="min-w-0 max-w-full">
           {loading ? (
             <>
               <div className="mb-1.5 h-8 w-16 animate-pulse rounded-lg bg-black/5 dark:bg-white/10" />
@@ -608,7 +611,7 @@ export function MetricCard({
           ) : (
             <>
               <p className={`text-3xl font-black leading-none ${valueClass}`}>{value}</p>
-              <p className="mt-1.5 truncate text-sm font-medium text-destiny-grey/50 dark:text-white/50">
+              <p className="mt-1.5 text-sm font-medium leading-snug text-destiny-grey/50 dark:text-white/50">
                 {label}
               </p>
             </>
@@ -617,7 +620,7 @@ export function MetricCard({
         {!loading && chip && (
           <span
             title={chip.title}
-            className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] font-bold ${chipTone}`}
+            className={`max-w-full rounded-full px-2 py-0.5 text-[11px] font-bold ${chipTone}`}
           >
             {chip.text}
           </span>

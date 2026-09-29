@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import AnimateIn from "@/components/AnimateIn";
+import Button from "@/components/ui/Button";
 import { CHANNEL_URL, type YTVideo, formatDate } from "@/lib/youtube";
 
 /**
@@ -30,7 +31,12 @@ export default function LatestSermonSection({
     : `/sermons/${video.id}`;
   const allHref = quotaExceeded ? CHANNEL_URL : "/sermons";
   const allLabel = quotaExceeded ? "Watch on YouTube" : "See All Sermons";
-  const external = quotaExceeded
+  // The thumbnail below links to the same place as "Watch Now" but stays a
+  // plain Link rather than a Button, so it needs the new-tab treatment Button
+  // applies for itself once `watchHref` points at YouTube. Deliberately not
+  // named `external`: the DOM lib declares a global of that name, so a stale
+  // reference to one still type-checks and fails only at runtime.
+  const externalLinkProps = quotaExceeded
     ? { target: "_blank", rel: "noopener noreferrer" }
     : {};
 
@@ -91,21 +97,13 @@ export default function LatestSermonSection({
 
             <AnimateIn delay={230}>
               <div className="mt-8 flex flex-wrap gap-3">
-                <Link
-                  href={watchHref}
-                  {...external}
-                  className="inline-flex items-center gap-2 rounded-full bg-destiny-orange px-6 py-3 text-sm font-bold text-white shadow-lg shadow-destiny-orange/25 transition hover:brightness-110"
-                >
+                <Button href={watchHref} size="md">
                   <span className="material-symbols-rounded text-base" aria-hidden="true">play_arrow</span>
                   Watch Now
-                </Link>
-                <Link
-                  href={allHref}
-                  {...external}
-                  className="inline-flex items-center gap-2 rounded-full border-2 border-white/40 px-6 py-3 text-sm font-bold text-white backdrop-blur transition hover:border-white/70 hover:bg-white/10"
-                >
+                </Button>
+                <Button href={allHref} variant="onDark" size="md">
                   {allLabel}
-                </Link>
+                </Button>
               </div>
             </AnimateIn>
           </div>
@@ -114,7 +112,7 @@ export default function LatestSermonSection({
           <AnimateIn delay={150} className="w-full md:w-1/2">
             <Link
               href={watchHref}
-              {...external}
+              {...externalLinkProps}
               aria-label={`Watch: ${title}`}
               className="group relative block overflow-hidden rounded-2xl shadow-2xl ring-1 ring-white/10"
               style={{ aspectRatio: "16 / 9" }}

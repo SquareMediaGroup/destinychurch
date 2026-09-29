@@ -12,6 +12,7 @@ import Image from "next/image";
 import type { PodcastEpisode } from "@/lib/podcast";
 import { formatClock } from "@/lib/podcast";
 import { useScrollLock } from "@/lib/useScrollLock";
+import Button from "@/components/ui/Button";
 
 interface PlayerState {
   current: PodcastEpisode | null;
@@ -334,15 +335,15 @@ export function PodcastPlayerProvider({
                   replay
                 </span>
               </button>
-              <button
+              <Button
                 onClick={() => current && toggle(current)}
-                className="flex h-11 w-11 items-center justify-center rounded-full bg-destiny-orange text-white shadow-lg shadow-destiny-orange/30 transition hover:brightness-110"
+                size="icon"
                 aria-label={isPlaying ? "Pause" : "Play"}
               >
                 <span className="material-symbols-rounded text-2xl" style={{ fontVariationSettings: '"FILL" 1' }}>
                   {isPlaying ? "pause" : "play_arrow"}
                 </span>
-              </button>
+              </Button>
               <button
                 onClick={() => seekBy(30)}
                 className="hidden h-9 w-9 items-center justify-center rounded-full text-on-dark-muted transition hover:bg-white/10 hover:text-white sm:flex"

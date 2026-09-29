@@ -29,6 +29,8 @@ export type PreviewRole = OnboardedRole;
 export interface AdminSession {
   email: string | null;
   id: string | null;
+  name: string | null;
+  avatarUrl: string | null;
   /** What the UI should act on — the preview role's flags while previewing. */
   roles: RoleFlags;
   /** What the user really is. Always the truth. */
@@ -43,6 +45,8 @@ const PREVIEW_KEY = "dc-admin-role-preview";
 const EMPTY: AdminSession = {
   email: null,
   id: null,
+  name: null,
+  avatarUrl: null,
   roles: NO_ROLES,
   actualRoles: NO_ROLES,
   previewRole: null,
@@ -52,6 +56,8 @@ const EMPTY: AdminSession = {
 interface Fetched {
   email: string | null;
   id: string | null;
+  name: string | null;
+  avatarUrl: string | null;
   roles: RoleFlags;
 }
 
@@ -99,14 +105,16 @@ function fetchSession(): Promise<Fetched> {
         ? {
             email: data.email ?? null,
             id: data.id ?? null,
+            name: data.name ?? null,
+            avatarUrl: data.avatar_url ?? null,
             roles: { ...NO_ROLES, ...(data.roles ?? {}) } as RoleFlags,
           }
-        : { email: null, id: null, roles: NO_ROLES },
+        : { email: null, id: null, name: null, avatarUrl: null, roles: NO_ROLES },
     )
     .catch(() => {
       // Let the next mount retry rather than caching a network blip forever.
       cached = null;
-      return { email: null, id: null, roles: NO_ROLES };
+      return { email: null, id: null, name: null, avatarUrl: null, roles: NO_ROLES };
     });
   return cached;
 }
@@ -142,6 +150,8 @@ export function useAdminSession(): AdminSession {
   return {
     email: fetched.email,
     id: fetched.id,
+    name: fetched.name,
+    avatarUrl: fetched.avatarUrl,
     roles: previewing ? rolesForPreview(previewing) : fetched.roles,
     actualRoles: fetched.roles,
     previewRole: previewing,

@@ -48,8 +48,6 @@ const SINGLETONS = new Set([
   "/api/admin/featured-event",
   "/api/admin/featured-event/popup",
   "/api/admin/featured-course",
-  "/api/admin/simulated-live",
-  "/api/admin/live-chat/session",
 ]);
 
 /**

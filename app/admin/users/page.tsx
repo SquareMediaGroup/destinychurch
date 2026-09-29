@@ -25,10 +25,11 @@ const ROLE_HINTS: Record<AdminRole, string> = {
   event_admin: "Courses + announcements (not the sitewide banner).",
   store_admin: "Store: products, orders, hero.",
   site_admin: "Posts and redirects.",
-  host: "Moderates the live chat, and can sign in on /live itself.",
   hr_admin: "Staff directory, leave, jobs, applications, documents and reviews.",
   design_admin: "Design ticket queue: claim, deliver and close requests.",
   sermon_admin: "Publishes sermon audio to Buzzsprout.",
+  safeguarding_admin: "Destiny One: reports, paused groups and audited chat review. The only role that can read messages.",
+  destiny_one_admin: "Destiny One app: invites, approvals, members, communities and groups. Cannot read messages.",
   super_admin: "Full access, including the sitewide banner, cache and users.",
 };
 

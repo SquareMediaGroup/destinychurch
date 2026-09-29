@@ -91,6 +91,13 @@ Everything in the safeguarding model depends on knowing **who a user is and whet
 
 ## 4. Group chat — self-hosted Matrix
 
+> **Update (September 2026):** chat was built as **Destiny One** on Supabase (Postgres triggers +
+> Realtime Broadcast) rather than Matrix, because it was needed urgently and runs without a new
+> server to host, patch and back up. The rules below are unchanged and are enforced in the
+> database instead of a Synapse module: no 1:1 for anyone, leaders-only group creation, ≥2
+> verified adults (freeze + notify, D1), no E2EE with audited review, real names, no phone
+> numbers. See `REPOSITORY_DOCUMENTATION.md` §29 and `docs/destiny-one-gdpr.md`.
+
 ### 4.1 Homeserver choice: Synapse
 
 **Recommendation: Synapse**, not Dendrite or Conduit, because every safeguarding rule below is enforced server-side via **Synapse's module API** (spam-checker / third-party-rules callbacks), which Dendrite and Conduit do not offer in mature form. Dendrite/Conduit would force enforcement into a proxy layer in front of the homeserver — more moving parts, weaker guarantees. Synapse is the reference implementation, battle-tested, and fine at church scale (hundreds of users) on a single modest server with PostgreSQL.

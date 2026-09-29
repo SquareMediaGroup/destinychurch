@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import { loadStripe, type Stripe, type Appearance } from "@stripe/stripe-js";
@@ -9,6 +8,7 @@ import { useCart, cartSubtotal } from "@/lib/cart-store";
 import { formatPrice } from "@/lib/shop";
 import CheckoutForm from "@/components/shop/CheckoutForm";
 import { useHydrated } from "@/lib/useHydrated";
+import Button from "@/components/ui/Button";
 
 // Load Stripe once. Missing key → null (we surface a friendly message).
 const pubKey = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY;
@@ -154,12 +154,9 @@ export default function CheckoutPage() {
         <h1 className="font-[family-name:var(--font-heading)] text-3xl font-black text-destiny-grey">
           Your basket is empty
         </h1>
-        <Link
-          href="/shop"
-          className="mt-6 inline-flex items-center gap-2 rounded-full bg-destiny-orange px-7 py-3.5 text-sm font-bold text-white transition hover:bg-destiny-orange-dark"
-        >
+        <Button href="/shop" size="xl" className="mt-6">
           Browse the store
-        </Link>
+        </Button>
       </div>
     );
   }
@@ -264,14 +261,10 @@ export default function CheckoutPage() {
                   </div>
                 )}
 
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="flex w-full items-center justify-center gap-2 rounded-full bg-destiny-orange px-7 py-4 text-sm font-bold text-white transition hover:bg-destiny-orange-dark disabled:bg-destiny-grey/30"
-                >
+                <Button type="submit" size="cta" fullWidth loading={loading}>
                   {loading ? "Starting…" : "Continue to payment"}
                   <span className="material-symbols-rounded text-lg" aria-hidden="true">arrow_forward</span>
-                </button>
+                </Button>
               </form>
             ) : stripePromise ? (
               /* Step 2 — payment */

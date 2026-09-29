@@ -2,6 +2,7 @@
 
 import { useState, useRef } from "react";
 import { submitHireEnquiry } from "./actions";
+import Button from "@/components/ui/Button";
 
 const SPACES = [
   "Main Auditorium",
@@ -219,13 +220,15 @@ export default function HireForm() {
         <p className="rounded-2xl bg-red-50 px-4 py-3 text-sm text-red-600">{errorMsg}</p>
       )}
 
-      <button
+      <Button
         type="submit"
-        disabled={status === "loading" || !!dateError}
-        className="w-full rounded-full bg-destiny-orange py-3.5 text-sm font-bold text-white shadow-lg shadow-destiny-orange/25 transition hover:brightness-110 disabled:opacity-60"
+        disabled={!!dateError}
+        loading={status === "loading"}
+        size="xl"
+        fullWidth
       >
         {status === "loading" ? "Sending enquiry…" : "Send Hire Enquiry"}
-      </button>
+      </Button>
 
       <p className="text-center text-xs text-subtle">
         We aim to respond within 2 working days. For urgent enquiries call{" "}

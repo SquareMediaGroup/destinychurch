@@ -6,6 +6,7 @@ import Link from "next/link";
 import EmbedLoadingOverlay from "@/components/ui/EmbedLoadingOverlay";
 import { useCookieConsent } from "@/lib/cookieConsent";
 import { useHydrated } from "@/lib/useHydrated";
+import Button from "@/components/ui/Button";
 
 interface Props {
   src: string;
@@ -39,12 +40,9 @@ export default function MediaEmbed({ src, title, thumbnail }: Props) {
             <p className="mt-1 max-w-xs text-sm text-on-dark-subtle">Accept cookies to watch this video.</p>
           </div>
           <div className="flex flex-wrap justify-center gap-3">
-            <button
-              onClick={allowAll}
-              className="rounded-full bg-destiny-orange px-5 py-2.5 text-sm font-bold text-white transition hover:brightness-110"
-            >
+            <Button onClick={allowAll} size="sm">
               Accept all cookies
-            </button>
+            </Button>
             <button
               onClick={() => savePreferences({ media: true, analytics: false })}
               className="rounded-full border border-white/20 px-5 py-2.5 text-sm font-medium text-on-dark-muted transition hover:border-white/40 hover:text-white"

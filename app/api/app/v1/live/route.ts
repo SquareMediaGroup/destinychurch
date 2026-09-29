@@ -43,14 +43,11 @@ export async function GET(request: Request) {
       title: status.title ?? null,
       startedAt: status.startedAt ?? null,
       scheduledFor: status.scheduledFor ?? null,
-      // Simulated live: a pre-uploaded video played as a broadcast. The app
-      // needs `simulated` to know the playhead is fixed (seek to
-      // `serverTime - startedAt`, no scrubbing) and `serverTime` to correct the
-      // device clock before doing that arithmetic. Until the app ships support,
-      // ignoring both fields simply plays the video from the start.
-      simulated: status.simulated ?? false,
-      endsAt: status.endsAt ?? null,
-      notice: status.notice ?? null,
+      // Simulated live was retired along with the /live page. The fields stay
+      // in the payload, fixed off, so shipped app builds keep decoding it.
+      simulated: false,
+      endsAt: null,
+      notice: null,
       serverTime: status.serverTime ?? status.checkedAt,
       checkedAt: status.checkedAt,
       nextService: {
@@ -60,10 +57,7 @@ export async function GET(request: Request) {
       latestReplay: latest ? serializeSermon(latest) : null,
     },
     {
-      // A simulated broadcast ships the server clock the app syncs its playhead
-      // against, so it must not be held at the edge — 30 seconds of cache is
-      // 30 seconds of desync. See app/api/youtube/live/route.ts.
-      cacheControl: status.simulated ? "no-store" : CACHE,
+      cacheControl: CACHE,
     },
   );
 }

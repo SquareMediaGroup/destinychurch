@@ -6,6 +6,7 @@ import SplitSection from "@/components/ministry/SplitSection";
 import ImageMosaic from "@/components/ministry/ImageMosaic";
 import FeatureGrid from "@/components/ministry/FeatureGrid";
 import WorshipWithUsSection from "@/components/home/WorshipWithUsSection";
+import Button from "@/components/ui/Button";
 
 export const metadata: Metadata = {
   title: "Young Adults",
@@ -93,12 +94,9 @@ export default function YoungAdultsPage() {
           Keep an eye on our What&apos;s On page for upcoming events, or follow us on social media so you never miss what&apos;s next.
         </p>
         <div className="flex flex-wrap gap-3 pt-2">
-          <Link
-            href="/whats-on"
-            className="rounded-full bg-destiny-orange px-7 py-3 text-sm font-bold text-white shadow-lg shadow-destiny-orange/25 transition hover:brightness-110"
-          >
+          <Button href="/whats-on" size="lg">
             See What&apos;s On
-          </Link>
+          </Button>
           <Link
             href="/connect"
             className="rounded-full border-2 border-destiny-grey/20 px-7 py-3 text-sm font-bold text-destiny-grey transition hover:border-destiny-orange hover:text-destiny-orange"
@@ -135,12 +133,9 @@ export default function YoungAdultsPage() {
             <p className="mb-8 text-base leading-relaxed text-on-dark-muted">
               The best way to be part of Young Adults is to join one of our Connect Groups. It&apos;s where the real community happens — weekly catch-ups, prayer, and doing life together.
             </p>
-            <Link
-              href="/connect"
-              className="inline-flex items-center rounded-full bg-destiny-orange px-8 py-3 text-sm font-bold text-white shadow-lg shadow-destiny-orange/25 transition hover:brightness-110"
-            >
+            <Button href="/connect" size="lg">
               Find a Connect Group
-            </Link>
+            </Button>
           </AnimateIn>
         </div>
       </section>

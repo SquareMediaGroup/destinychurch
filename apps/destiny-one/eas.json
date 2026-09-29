@@ -1,0 +1,33 @@
+{
+  "cli": {
+    "version": ">= 16.0.0",
+    "appVersionSource": "remote"
+  },
+  "build": {
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal",
+      "environment": "development",
+      "env": {
+        "SENTRY_ALLOW_FAILURE": "true"
+      }
+    },
+    "preview": {
+      "distribution": "internal",
+      "environment": "preview",
+      "env": {
+        "SENTRY_ALLOW_FAILURE": "true"
+      }
+    },
+    "production": {
+      "autoIncrement": true,
+      "environment": "production",
+      "env": {
+        "SENTRY_ALLOW_FAILURE": "true"
+      }
+    }
+  },
+  "submit": {
+    "production": {}
+  }
+}

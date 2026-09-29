@@ -1,0 +1,99 @@
+{
+  "expo": {
+    "name": "Destiny One",
+    "slug": "destiny-one",
+    "scheme": "destinyone",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "automatic",
+    "ios": {
+      "bundleIdentifier": "uk.destinytees.one",
+      "supportsTablet": false,
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
+    },
+    "android": {
+      "package": "uk.destinytees.one",
+      "adaptiveIcon": {
+        "backgroundColor": "#FFFFFF",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "blockedPermissions": [
+        "android.permission.READ_PHONE_STATE",
+        "android.permission.READ_PHONE_NUMBERS",
+        "android.permission.READ_SMS",
+        "android.permission.RECEIVE_SMS",
+        "android.permission.READ_CONTACTS",
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.ACCESS_COARSE_LOCATION"
+      ],
+      "predictiveBackGestureEnabled": false
+    },
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      "expo-web-browser",
+      [
+        "expo-image-picker",
+        {
+          "cameraPermission": "Destiny One uses the camera so you can take a photo to send in a chat.",
+          "photosPermission": "Destiny One uses your photos so you can send one in a chat."
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "defaultChannel": "messages",
+          "icon": "./assets/notification-icon.png",
+          "color": "#4F6FEE"
+        }
+      ],
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 160,
+          "resizeMode": "contain",
+          "backgroundColor": "#FFFFFF",
+          "dark": {
+            "image": "./assets/splash-icon.png",
+            "backgroundColor": "#1A110A"
+          }
+        }
+      ],
+      [
+        "expo-local-authentication",
+        {
+          "faceIDPermission": "Destiny One uses Face ID to check it's you before switching to another account."
+        }
+      ],
+      [
+        "expo-sensors",
+        {
+          "motionPermission": "Destiny One notices when you shake your phone, so you can report a problem. Nothing about your movement is stored or sent."
+        }
+      ],
+      [
+        "@sentry/react-native",
+        {
+          "url": "https://de.sentry.io/"
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true
+    },
+    "extra": {
+      "apiBaseUrl": "https://destinychurch.vercel.app",
+      "router": {},
+      "eas": {
+        "projectId": "f64f36cf-9df5-4e2a-bd80-4a658a7c523a"
+      }
+    },
+    "owner": "squaremedia"
+  }
+}

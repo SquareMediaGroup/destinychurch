@@ -7,6 +7,7 @@ import {
   type CourseDef,
   type CourseId,
 } from "@/lib/courses";
+import Button from "@/components/ui/Button";
 
 export default function CoursesSection({
   featuredId = "bible_course",
@@ -75,18 +76,12 @@ export default function CoursesSection({
                 </p>
               </div>
               <div className="relative flex shrink-0 flex-col gap-3">
-                <Link
-                  href="/contact"
-                  className="rounded-full bg-destiny-orange px-8 py-3 text-center text-sm font-bold text-white shadow-lg transition hover:brightness-110"
-                >
+                <Button href="/contact" size="lg">
                   Register Interest
-                </Link>
-                <Link
-                  href="/contact"
-                  className="rounded-full border-2 border-white/30 px-8 py-3 text-center text-sm font-bold text-white transition hover:border-white/60 hover:bg-white/10"
-                >
+                </Button>
+                <Button href="/contact" variant="onDark" size="lg">
                   Contact Pastoral Team
-                </Link>
+                </Button>
               </div>
             </div>
           </div>

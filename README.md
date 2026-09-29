@@ -11,8 +11,6 @@ Designed, engineered, and deployed by [Square Media Group](mailto:hello@squareme
 ## Features
 
 - Sermon streaming and full-archive browsing — speaker, month, and guest-speaker filters with fuzzy search, a Watch/Listen switch on any paired sermon (podcast audio that keeps playing as you navigate the site), and a live-stream banner
-- Live chat on `/live` — public chat with a host backstage channel, moderation, and prayer requests (Supabase Realtime)
-- Simulated live — play a pre-recorded video on `/live` as a self-synchronising broadcast, with on-page host broadcast controls
 - Events and "What's On" listings — unified event cards, on-site event pages, a swappable featured event/course, ICS calendar downloads, and on-site ChurchSuite signup
 - Ministry pages (Kids/DC Kids, Youth, Young Adults, Missions, Connect groups)
 - The Bible Course and Alpha journeys, including Alpha signup and event management
@@ -31,6 +29,7 @@ Designed, engineered, and deployed by [Square Media Group](mailto:hello@squareme
 - Click analytics — a privacy-respecting `/admin/analytics` dashboard for short-link, QR-code, and NFC-tile engagement (with VPN/Tor/datacenter/Private-Relay tagging) alongside whole-site traffic
 - Protected admin dashboard (sermons, pages/posts, redirects, banner, popup, shop, training, HR, Alpha, recovery, analytics, audit log)
 - Companion native SwiftUI iOS app (Home/Sermons/Events/Give/More tabs) rendering a dedicated, versioned `/api/app/v1` backend-for-frontend
+- Destiny One — a members' group-messaging app (Expo / React Native, iOS + Android) styled after WhatsApp Communities, with department sub-groups, built-in child-safeguarding rules, invite/approval onboarding, on-device caching for instant screens, message search, polls and events in chat, multi-account quick switching, in-app feedback/crash reporting, data export, a forced-update/maintenance gate, and an admin section at `/admin/destiny-one`. Its backend is the versioned `/api/app/v1/one` API over Supabase (Postgres + triggers + Realtime); it is a separate app from the SwiftUI content app in `mobile/`
 - Live Caption — a companion macOS app (`apps/live-caption`) that captions live audio in real time with a local, Metal-accelerated whisper.cpp model and publishes it to a display or an NDI source for the church's AVL setup (audio never leaves the machine)
 - Mobile-first, fully responsive, accessibility-focused
 
@@ -41,7 +40,8 @@ Designed, engineered, and deployed by [Square Media Group](mailto:hello@squareme
 | Layer | Technology |
 |---|---|
 | Framework | Next.js 16 (App Router), React 19 |
-| Mobile | Native iOS — SwiftUI, Swift 6 (XcodeGen project) |
+| Mobile (content) | Native iOS — SwiftUI, Swift 6 (XcodeGen project) |
+| Mobile (members) | Destiny One — Expo SDK 57 / React Native, Expo Router, TypeScript (iOS + Android) |
 | Desktop | Native macOS — SwiftUI, Swift 6 (Live Caption app) |
 | On-device speech | whisper.cpp (Metal), NDI (live captions) |
 | Language | TypeScript |
@@ -147,7 +147,6 @@ app/
 ├── jobs/             # Job board & applications
 ├── kids/             # Kids ministry
 ├── links/            # Link hub
-├── live/             # Live stream
 ├── missions/         # Missions & outreach
 ├── new-here/         # First-time visitor guide
 ├── nfc/              # "Digital back of seats" — NFC/QR tap-to-open service page
@@ -169,11 +168,12 @@ components/           # Shared UI components (incl. smartSearch, admin, shop, tr
 lib/                  # Server actions, data access, Stripe, Smart Search, HR, training utilities
 supabase/
 └── migrations/       # Database schema migrations
-mobile/               # Native SwiftUI iOS app (Home/Sermons/Events/Give/More tabs)
+mobile/               # Native SwiftUI iOS content app (Home/Sermons/Events/Give/More tabs)
 apps/
+├── destiny-one/      # Destiny One — members' group-messaging app (Expo / React Native, iOS + Android)
 └── live-caption/     # Native SwiftUI macOS app — real-time captions (whisper.cpp + NDI)
-packages/shared/      # @destiny/shared — types & logic shared by the web app & app BFF
-app/api/app/v1/       # App BFF — versioned, mobile-facing endpoints (config/home/events/…)
+packages/shared/      # @destiny/shared — types & logic shared by the web app, app BFF & Destiny One
+app/api/app/v1/       # App BFF — versioned, mobile-facing endpoints (config/home/events/… + one/* for Destiny One)
 ```
 
 ---
@@ -187,9 +187,8 @@ The `/admin` area is protected by Supabase Auth. Log in at `/login` to manage:
 - **Training** — courses, modules, and featured course
 - **HR & Jobs** — job listings, applications, staff directory (every record linked to a backend login), leave, documents, reviews, onboarding/offboarding checklists (HR Admin access level)
 - **Design** — the design request queue: claim tickets, message the requester, upload deliverables, and move each ticket through its workflow (Design Admin access level)
+- **Destiny One** — run the members' messaging app without seeing message content: approve access requests, invite members, manage communities and department groups, safeguarding queue and audited transcript viewer, and app settings (minimum builds, forced-update/maintenance switch) (Destiny One Admin / Safeguarding Admin access levels)
 - **Alpha & Recovery** — signups and events
-- **Live Chat** — host console for the `/live` chat: room state, moderation queue, muted guests, and prayer requests
-- **Simulated Live** — configure the pre-recorded broadcast shown on `/live` (video and start time)
 - **Redirects** — configure URL redirects
 - **Banner & Popup** — control the site-wide announcement banner and popups
 - **NFC** — manage the tiles shown on the `/nfc` "digital back of seats" page

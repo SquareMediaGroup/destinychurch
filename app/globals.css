@@ -8,7 +8,7 @@
  * light. Redefining the variant to key off an ancestor `.dark` class instead
  * means `dark:` utilities do nothing anywhere a `.dark` class doesn't exist,
  * and the only place that class is ever applied is the /admin shell
- * (components/admin/AdminShell.tsx, driven by lib/adminTheme.ts). The public site is
+ * (app/admin/layout.tsx, driven by lib/adminTheme.ts). The public site is
  * therefore structurally untouched — there is no code path that can put
  * `.dark` on anything outside /admin.
  */

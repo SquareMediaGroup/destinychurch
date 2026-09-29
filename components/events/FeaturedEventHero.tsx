@@ -9,6 +9,7 @@ import Image from "next/image";
 import Link from "next/link";
 import AnimateIn from "@/components/AnimateIn";
 import type { ResolvedFeaturedEvent } from "@/lib/events.server";
+import Button from "@/components/ui/Button";
 
 export default function FeaturedEventHero({
   featured,
@@ -17,7 +18,6 @@ export default function FeaturedEventHero({
 }) {
   if (!featured) return null;
 
-  const external = /^https?:\/\//i.test(featured.ctaLink);
   const meta = [featured.dateLine, featured.locationName]
     .filter(Boolean)
     .join(" · ");
@@ -62,23 +62,9 @@ export default function FeaturedEventHero({
               )}
 
               <div className="mt-7 flex flex-wrap items-center gap-4">
-                {external ? (
-                  <a
-                    href={featured.ctaLink}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center justify-center rounded-full bg-destiny-orange px-7 py-3 text-sm font-bold text-white shadow-sm shadow-destiny-orange/20 transition hover:brightness-110"
-                  >
-                    {featured.ctaText}
-                  </a>
-                ) : (
-                  <Link
-                    href={featured.ctaLink}
-                    className="inline-flex items-center justify-center rounded-full bg-destiny-orange px-7 py-3 text-sm font-bold text-white shadow-sm shadow-destiny-orange/20 transition hover:brightness-110"
-                  >
-                    {featured.ctaText}
-                  </Link>
-                )}
+                <Button href={featured.ctaLink} size="lg">
+                  {featured.ctaText}
+                </Button>
                 {/* Always offer the on-site page, even when the CTA points at
                     ChurchSuite signup. */}
                 {featured.slug && (

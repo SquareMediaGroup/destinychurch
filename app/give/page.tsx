@@ -1,11 +1,11 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import AnimateIn from "@/components/AnimateIn";
 import WorshipWithUsSection from "@/components/home/WorshipWithUsSection";
 import GiveCTA from "@/components/give/GiveCTA";
 import TextToGiveCTA from "@/components/give/TextToGiveCTA";
 import ChurchSuiteEmbed from "@/components/ChurchSuiteEmbed";
 import { createServiceClient } from "@/utils/supabase/service";
+import Button from "@/components/ui/Button";
 
 export const revalidate = 60;
 
@@ -277,15 +277,13 @@ export default async function GivePage() {
                 to your name and address, so we can ensure that no further claims are made against
                 your donations.
               </p>
-              <Link
+              <Button
                 href="https://www.gov.uk/government/publications/charities-detailed-guidance-notes/chapter-3-gift-aid"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 rounded-full bg-destiny-orange px-6 py-2.5 text-sm font-bold text-white transition hover:brightness-110"
+                size="sm"
               >
                 Find out more here
                 <span className="material-symbols-rounded text-base" aria-hidden="true">open_in_new</span>
-              </Link>
+              </Button>
             </div>
           </AnimateIn>
         </div>

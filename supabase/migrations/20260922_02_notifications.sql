@@ -142,3 +142,13 @@ $$;
 
 comment on function public.purge_old_notifications() is
   'Deletes notifications (and, via cascade, notification_reads) older than 60 days. Called from the weekly audit cron.';
+
+-- Only the server (service key) may emit or purge. Without this, Supabase's
+-- default grants would let any signed-in or anonymous user broadcast fake
+-- admin notifications. Added 2026-09-29, when this migration was first
+-- applied to the live project; admin_has_role() was left at the newer
+-- definition from 20260927_01_destiny_one_admin.sql.
+revoke all on function public.admin_notify_emit(text, text, jsonb) from public, anon, authenticated;
+grant execute on function public.admin_notify_emit(text, text, jsonb) to service_role;
+revoke all on function public.purge_old_notifications() from public, anon, authenticated;
+grant execute on function public.purge_old_notifications() to service_role;

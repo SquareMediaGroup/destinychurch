@@ -1,4 +1,4 @@
-import Link from "next/link";
+import Button from "@/components/ui/Button";
 
 /**
  * The ChurchSuite feed is forward-only — a finished event simply stops being
@@ -24,12 +24,9 @@ export default function EventNotFound() {
           It may have already taken place, or been renamed in our calendar.
           Have a look at what&apos;s coming up instead.
         </p>
-        <Link
-          href="/whats-on#events"
-          className="mt-7 inline-flex items-center justify-center rounded-full bg-destiny-orange px-7 py-3 text-sm font-bold text-white shadow-sm shadow-destiny-orange/20 transition hover:brightness-110"
-        >
+        <Button href="/whats-on#events" size="lg" className="mt-7">
           See what&apos;s on
-        </Link>
+        </Button>
       </div>
     </div>
   );

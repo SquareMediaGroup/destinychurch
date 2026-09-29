@@ -5,6 +5,7 @@ import Link from "next/link";
 import EmbedLoadingOverlay from "@/components/ui/EmbedLoadingOverlay";
 import { useCookieConsent } from "@/lib/cookieConsent";
 import { useHydrated } from "@/lib/useHydrated";
+import Button from "@/components/ui/Button";
 
 interface Props {
   src: string;
@@ -55,12 +56,9 @@ export default function ChurchSuiteEmbed({
           </p>
         </div>
         <div className="flex flex-wrap justify-center gap-3">
-          <button
-            onClick={allowAll}
-            className="rounded-full bg-destiny-orange px-5 py-2.5 text-sm font-bold text-white transition hover:brightness-110"
-          >
+          <Button onClick={allowAll} size="sm">
             Accept all cookies
-          </button>
+          </Button>
           <button
             onClick={() => savePreferences({ media: true, analytics: false })}
             className="rounded-full border border-destiny-grey/20 px-5 py-2.5 text-sm font-medium text-muted transition hover:border-destiny-grey/40 hover:text-destiny-grey"

@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 import { createClient } from "@/utils/supabase/server";
 import { createServiceClient } from "@/utils/supabase/service";
 import { getRoles } from "@/lib/adminRoles";
+import { recordAudit } from "@/lib/audit.server";
 
 // Who is signed in, plus their roles, in one request.
 //
@@ -26,11 +27,61 @@ export async function GET() {
 
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const roles = await getRoles(createServiceClient(), user.id);
+  const service = createServiceClient();
+  const roles = await getRoles(service, user.id);
+  const { data: profile } = await service
+    .from("admin_roles")
+    .select("name, avatar_url")
+    .eq("auth_user_id", user.id)
+    .maybeSingle();
 
   return NextResponse.json({
     email: user.email ?? null,
     id: user.id,
     roles,
+    name: profile?.name ?? null,
+    avatar_url: profile?.avatar_url ?? null,
   });
+}
+
+// Self-service name change. No auth-side counterpart, so it's a plain
+// admin_roles update scoped to the caller's own auth_user_id.
+export async function PATCH(request: Request) {
+  const cookieStore = await cookies();
+  const {
+    data: { user },
+  } = await createClient(cookieStore).auth.getUser();
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const body = await request.json().catch(() => null);
+  const name = body?.name?.toString().trim();
+  if (!name) {
+    return NextResponse.json({ error: "Please enter your name." }, { status: 400 });
+  }
+  if (name.length > 100) {
+    return NextResponse.json({ error: "Please keep your name under 100 characters." }, { status: 400 });
+  }
+
+  const service = createServiceClient();
+  const { data: before } = await service
+    .from("admin_roles")
+    .select("name")
+    .eq("auth_user_id", user.id)
+    .maybeSingle();
+  if (!before) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  const { error } = await service.from("admin_roles").update({ name }).eq("auth_user_id", user.id);
+  if (error) return NextResponse.json({ error: "Could not save your name." }, { status: 500 });
+
+  await recordAudit({
+    action: "update",
+    section: "account",
+    entity: "profile",
+    entityId: user.id,
+    entityLabel: name,
+    summary: `${user.email ?? "An admin"} updated their name`,
+    before: before ?? null,
+    after: { name },
+  });
+
+  return NextResponse.json({ success: true });
 }

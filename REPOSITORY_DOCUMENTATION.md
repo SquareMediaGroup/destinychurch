@@ -150,7 +150,6 @@ destinychurch/
 │   ├── help/                      # Help centre / FAQ
 │   ├── kids/                      # Kids ministry
 │   ├── links/                     # "Next Steps" link-in-bio style page
-│   ├── live/                      # Livestream page (real broadcast or simulated live)
 │   ├── login/                     # Staff sign-in
 │   ├── youth/                     # Youth ministry
 │   ├── young-adults/              # Young adults ministry
@@ -211,11 +210,10 @@ destinychurch/
 │   │   │   ├── onboarding/        # Per-admin tour progress
 │   │   │   ├── posts/, training/, alpha-events/, featured-course/, hr/, store/, shop-hero/
 │   │   │   │                      #   hr/ includes checklists/ + checklist-templates/
-│   │   │   ├── simulated-live/    # Simulated live config + YouTube link lookup (Host)
 │   │   │   └── ...
 │   │   ├── portal/                # Staff self-service API — me/, reviews/, checklists/, team/, leave/, documents/, design/ (linked hr_staff)
 │   │   ├── design-request/        # Public, share-token-scoped: [token]/ + deliverable downloads/confirm
-│   │   ├── cron/                  # Vercel Cron — live-chat-purge/, hr-review-reminders/, design-deliverables-purge/, … (Bearer CRON_SECRET)
+│   │   ├── cron/                  # Vercel Cron — hr-review-reminders/, design-deliverables-purge/, … (Bearer CRON_SECRET)
 │   │   ├── chat/                  # POST /api/chat — Smart Search tool-calling chat
 │   │   ├── youtube/                # videos/, thumbnail/[id]/, status/, live/
 │   │   ├── alpha-ask/, alpha-events/ # Public Alpha info endpoints
@@ -233,7 +231,7 @@ destinychurch/
 │   ├── Providers.tsx              # Client context providers
 │   ├── CookieBanner.tsx           # GDPR cookie consent
 │   ├── AnalyticsGate.tsx          # Conditional analytics loading
-│   ├── SiteBanner.tsx             # Announcement banner (from DB)
+│   ├── SiteBanner.tsx             # Announcement banner (from DB); hidden on legal pages (lib/legalPages.ts)
 │   ├── SitePopup.tsx              # Modal pop-up (from DB)
 │   ├── FloatingSmartSearch.tsx    # The floating AI Smart Search widget
 │   ├── smartSearch/               # Smart Search result cards (products, weather, maps, web)
@@ -275,7 +273,7 @@ destinychurch/
 │   ├── smartSearch/tools.ts       # Smart Search tool-calling tools (products, sermons, weather, maps, web)
 │   ├── embedLoading.ts            # Stage timings for the embed loading overlay
 │   ├── pageContent.ts             # Dynamic page editing
-│   ├── posts.ts                   # Dynamic posts/pages
+│   ├── posts.ts                   # Post types + hero styles (postTemplates.ts: starter layouts; postPreview.server.ts: signed draft previews)
 │   ├── training.ts                # Training courses
 │   ├── jobs.ts / jobs.server.ts   # Job listing & applications
 │   ├── hr.ts                      # HR staff operations, types, leave/review label maps
@@ -346,8 +344,6 @@ destinychurch/
 │       ├── 20260712_02_featured_course.sql # Featured course (What's On)
 │       ├── 20260728_featured_event.sql   # Featured ChurchSuite event + its popup
 │       ├── 20260807_alpha_events_cap_type.sql # CAP Money Course
-│       ├── 20260817_live_chat.sql, 20260817_02_host_role.sql # /live chat rooms/messages + `host` admin role
-│       ├── 20260818_simulated_live.sql # Pre-recorded broadcast config for /live
 │       ├── 20260821_admin_onboarding.sql # Per-admin onboarding/tour progress (admin_onboarding)
 │       ├── 20260822_hr_admin_role.sql  # `hr_admin` access level on admin_roles
 │       ├── 20260824_hr_review_reminders.sql # hr_reviews.reminder_sent_at for the daily digest
@@ -362,7 +358,17 @@ destinychurch/
 │       ├── 20260912_01_sermon_admin_role.sql # `sermon_admin` access level on admin_roles (/admin/sermons)
 │       ├── 20260912_02_speaker_overrides.sql # speaker_overrides table — AI/human speaker corrections for the sermon archive
 │       ├── 20260920_01_sermon_series.sql  # sermon_series table — playlist ids curated as sermon series
-│       └── 20260922_02_live_chat_rpc_grants.sql # Revoke anon/authenticated EXECUTE on live chat definer fns; host check → `private`
+│       ├── 20260926_01_destiny_one.sql    # Destiny One messaging (d1_* tables, safeguarding triggers,
+│       │                                  # Realtime policy) + admin_roles.safeguarding_admin — see §29
+│       ├── 20260928_04_destiny_one_role_tags.sql # Destiny One part 8: roles become admin / cg_leader /
+│       │                                  # senior_leader (identical powers, different chat tag)
+│       ├── 20260927_04_destiny_one_invite_members.sql # Destiny One part 5: staff invites create the
+│       │                                   # member up front (groups before sign-in); d1_sign_in_status
+│       ├── 20260927_03_destiny_one_message_search.sql # Destiny One part 4: message search
+│       ├── 20260927_02_destiny_one_leader_invites.sql # Destiny One part 3: leader invites
+│       │                                   # (needs_approval → access request; groups joined on approval)
+│       ├── 20260927_01_destiny_one_admin.sql # Destiny One part 2: staff verification, d1_invites,
+│       │                                  # d1_settings, d1_admin_* functions, destiny_one_admin role
 │
 ├── utils/                         # Utility modules
 │   ├── supabase/                  # Supabase client factories
@@ -375,6 +381,12 @@ destinychurch/
 │   └── content/                   # Source copy for policy/partner text — the live pages render
 │                                   # an edited subset, so these are the fuller source. See its README.
 ├── apps/                          # Standalone companion apps that live in this repo but ship
+│   ├── destiny-one/               # Destiny One — the members' messaging app (Expo SDK 57, React
+│   │                               # Native, iOS + Android, Liquid Glass via expo-glass-effect).
+│   │                               # Its own npm project (NOT a root workspace, so the website build
+│   │                               # never installs React Native); imports @destiny/shared through a
+│   │                               # file: link + metro.config.js. Backend: /api/app/v1/one/*.
+│   │                               # Every screen built (design variants 1B + 1F). See "Destiny One" below.
 │   └── live-caption/              # separately from the website. Currently:
 │                                   # Live Caption — a macOS app (SwiftUI, Swift 6, XcodeGen) that
 │                                   # captions live audio in real time with a local whisper.cpp model
@@ -392,7 +404,9 @@ destinychurch/
 │   └── shared/                    # @destiny/shared — framework-agnostic types/logic shared by the web
 │                                   # app and the app BFF (the Swift app can't import TS). Ships raw TS
 │                                   # (Next transpiles it via `transpilePackages`). Modules under src/:
-│                                   # churchsuite/{events,dates,series,sanitize,ics} and design/tokens.ts
+│                                   # churchsuite/{events,dates,series,sanitize,ics}, design/tokens.ts,
+│                                   # and destinyOne/{types,policy,client} (Destiny One wire types,
+│                                   # safeguarding rules and the typed API client)
 │                                   # (canonical DC brand palette/typography matching app/globals.css).
 ├── tests/                         # Playwright E2E specs (contact, cookies, give,
 │                                   # navigation, sermons) — run via `npx playwright test`
@@ -607,7 +621,9 @@ CREATE TABLE alpha_events (
 >
 > **Adding a course is now three steps:** the migration, a `COURSE_EVENT_META` entry, and a
 > `COURSE_ADMIN_PAGES` entry plus a four-line route file. See *Course admin pages* under
-> Components.
+> Components. Its public landing page reuses `CourseEventCard` and `useCourseEvents` (see
+> *Course pages* under Components) for the "when and where" card and the event fetch, but
+> is otherwise its own page — see that section for why it isn't a fifth thin wrapper.
 
 ---
 
@@ -924,7 +940,7 @@ simply never grow a row since `toursFor()` returns nothing for them. See
 ---
 
 #### 10c. **admin_roles**
-**Purpose:** Access levels for `/admin` — nine independent booleans per admin login, checked by `middleware.ts` on every `/admin/*` and `/api/admin/*` request
+**Purpose:** Access levels for `/admin` — eleven independent booleans per admin login, checked by `middleware.ts` on every `/admin/*` and `/api/admin/*` request
 
 ```sql
 CREATE TABLE admin_roles (
@@ -934,10 +950,11 @@ CREATE TABLE admin_roles (
   event_admin boolean NOT NULL DEFAULT false,
   store_admin boolean NOT NULL DEFAULT false,
   site_admin boolean NOT NULL DEFAULT false,
-  host boolean NOT NULL DEFAULT false,      -- live chat: /admin/live-chat + moderating on /live
   hr_admin boolean NOT NULL DEFAULT false,  -- /admin/hr
   design_admin boolean NOT NULL DEFAULT false,  -- /admin/design — the design ticket queue
   sermon_admin boolean NOT NULL DEFAULT false,  -- /admin/sermons — publishing audio to Buzzsprout
+  safeguarding_admin boolean NOT NULL DEFAULT false,  -- /admin/destiny-one/safeguarding — reports, paused groups, audited transcripts
+  destiny_one_admin boolean NOT NULL DEFAULT false,   -- /admin/destiny-one — invites, approvals, members, communities (no messages)
   super_admin boolean NOT NULL DEFAULT false,
   created_at timestamptz NOT NULL DEFAULT now(),
   updated_at timestamptz NOT NULL DEFAULT now()
@@ -1208,6 +1225,13 @@ CREATE TABLE posts (
   slug text UNIQUE NOT NULL,
   body text,
   is_published boolean NOT NULL DEFAULT false,
+  -- Page settings (20260927_04_posts_page_settings.sql)
+  hero_style text NOT NULL DEFAULT 'plain',   -- plain | image | banner (CHECK)
+  hero_image_url text,
+  subtitle text,
+  description text,                            -- meta description + social card
+  og_image_url text,                           -- share image; falls back to hero_image_url
+  show_rails boolean NOT NULL DEFAULT true,    -- promo rails beside the page at 1600px+
   created_at timestamptz DEFAULT now(),
   updated_at timestamptz DEFAULT now()
 );
@@ -1215,8 +1239,15 @@ CREATE TABLE posts (
 -- RLS: Service role only; public read happens server-side via lib/posts.server.ts
 ```
 
+**Why presets, not styling:** the page settings are deliberately page-level choices (how the page
+opens, what it says when shared, whether the rails show) rather than per-element colours, spacing
+or layout. That's what keeps the Posts editor a page builder that non-designers can use without
+producing off-brand pages. Columns/sections, per-block styling, revisions and scheduling were
+considered and left out on purpose. `lib/posts-fields.ts` validates these fields for both the
+POST and PATCH routes.
+
 **Used By:**
-- `lib/posts.server.ts` (`getPublishedPostBySlug`) for the public `/[slug]` catch-all
+- `lib/posts.server.ts` (`getPostForView`) for the public `/[slug]` catch-all
 - `app/api/admin/posts` CRUD, admin dashboard to write pages
 
 ---
@@ -1404,186 +1435,8 @@ All tables have RLS enabled. Access rules:
 | shop_hero_slides | - | - | Yes | Editable /shop hero (public read via server components) |
 | sermons / sermon_transcripts / sermon_link_suggestions / ai_reports / auth_users / admin_users | - | - | Yes | Base-schema legacy tables (deny-all "service only"; not read by the app) |
 | studio_assets / studio_components | - | - | Yes | Orphaned Studio-builder tables (never dropped; unused) |
-| live_chat_sessions / live_chat_messages / live_chat_prayer_requests / live_chat_blocks | - | - | Yes | Live chat on /live (deny-all "service only"; delivery is Realtime Broadcast, not table reads) |
-| simulated_live | - | - | Yes | Simulated live broadcast on /live (deny-all "service only"; singleton) |
 | engagement_events | - | - | Yes | Click analytics across shortlinks / nfc / links (deny-all "service only"; read via `security definer` rollup RPCs) |
 | ip_reputation_ranges | - | - | Yes | VPN/Tor/datacenter/Apple-Private-Relay CIDR ranges (deny-all "service only"; read only by the `before insert` trigger on `engagement_events`) |
-
-#### 21. **live_chat_sessions / live_chat_messages / live_chat_prayer_requests / live_chat_blocks**
-
-**Purpose:** The live chat on `/live` — public chat, a host backstage channel,
-host↔guest direct threads and prayer requests.
-
-```sql
--- One row per broadcast. `state` gates the room: the panel follows the YouTube
--- live status, but a Host can open early, pause mid-service, or close it.
-create table live_chat_sessions (
-  id uuid primary key default gen_random_uuid(),
-  video_id text,                    -- unique where not null: one room per broadcast
-  title text,
-  state text not null default 'closed'   -- closed | open | paused
-    check (state in ('closed','open','paused')),
-  opened_at timestamptz,
-  closed_at timestamptz,
-  created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now()
-);
-
--- status: visible | held | hidden. `held` is the auto-hold queue — the message
--- is stored and shown to its author and to Hosts, and to nobody else, until a
--- Host approves it. Held/hidden rows are kept rather than deleted so there is
--- something to review after an incident.
-create table live_chat_messages (
-  id uuid primary key default gen_random_uuid(),
-  session_id uuid not null references live_chat_sessions (id) on delete cascade,
-  channel text not null check (channel in ('public','backstage','direct')),
-  thread_key text,                  -- the guest id, for `direct` threads only
-  author_kind text not null check (author_kind in ('guest','host')),
-  author_guest_id text,             -- guests: the signed-cookie id
-  author_user_id uuid references auth.users (id) on delete set null,  -- hosts
-  display_name text not null,
-  body text not null check (char_length(body) between 1 and 500),
-  status text not null default 'visible'
-    check (status in ('visible','held','hidden')),
-  held_reason text,
-  moderated_by uuid references auth.users (id) on delete set null,
-  moderated_at timestamptz,
-  created_at timestamptz not null default now()
-);
-
--- A separate table, not a fourth channel: these must never be reachable by the
--- code paths that publish to the public channel, and a table boundary makes
--- that impossible rather than merely unlikely.
-create table live_chat_prayer_requests (
-  id uuid primary key default gen_random_uuid(),
-  session_id uuid references live_chat_sessions (id) on delete cascade,
-  guest_id text,
-  display_name text not null,
-  body text not null check (char_length(body) between 1 and 1000),
-  status text not null default 'new' check (status in ('new','praying','done')),
-  claimed_by uuid references auth.users (id) on delete set null,
-  claimed_at timestamptz,
-  created_at timestamptz not null default now()
-);
-
--- scope='session' mutes for one service; scope='global' carries across them.
-create table live_chat_blocks (
-  id uuid primary key default gen_random_uuid(),
-  session_id uuid references live_chat_sessions (id) on delete cascade,
-  guest_id text not null,
-  scope text not null default 'session' check (scope in ('session','global')),
-  reason text,
-  blocked_by uuid references auth.users (id) on delete set null,
-  created_at timestamptz not null default now(),
-  expires_at timestamptz
-);
-
--- RLS: deny-all "service only" on all four, like every other table here. The
--- browser never reads these — see the Realtime note below.
-```
-
-**Realtime.** This is the repo's first use of Supabase Realtime. Delivery is
-**Broadcast**, not Postgres Changes: Postgres Changes would have meant opening
-`anon` SELECT on `live_chat_messages`, which contradicts the deny-all convention
-and would have shipped held messages to the very people they were held from.
-Instead the API moderates a message, stores it, and calls `live_chat_emit()` —
-which pushes it onto a private topic. Topics are:
-
-| Topic | Audience |
-|-------|----------|
-| `live-chat:<session>:public` | anyone, including signed-out guests |
-| `live-chat:<session>:host` | Hosts only (backstage, held queue, prayer queue) |
-| `live-chat:<session>:dm:<dm key>` | one guest's direct thread |
-
-Authorization is RLS on `realtime.messages` with **anchored regex** topic
-patterns (so the three cannot overlap). Clients get SELECT (receive) and
-deliberately **no broadcast INSERT** — a client holding the anon key can never
-put a message, least of all one wearing a HOST badge, onto a channel. The one
-INSERT policy is scoped to `extension = 'presence'`, which is what powers the
-"N here now" count. Host checks go through `private.is_live_chat_host()`, which is
-`SECURITY DEFINER` because `admin_roles` is itself deny-all.
-
-**Function grants** (`20260922_02_live_chat_rpc_grants.sql`). All three live chat
-functions are `SECURITY DEFINER`, so who can EXECUTE them matters:
-
-| Function | EXECUTE | Why |
-|----------|---------|-----|
-| `public.live_chat_emit()` | `service_role` only | Called by `emit()` in `lib/liveChat.server.ts` via `createServiceClient()`. Open to anon, it would be the broadcast INSERT the policies above deliberately withhold. |
-| `public.live_chat_purge()` | `service_role` only | Called by the cron route via `createServiceClient()`. Open to anon, anyone could wipe the history. |
-| `private.is_live_chat_host()` | `authenticated`, `service_role` | Realtime evaluates the `live_chat_host_receive` policy *as the subscriber*, so `authenticated` must be able to run it. It lives in the non-exposed `private` schema so it isn't callable via `/rest/v1/rpc`. Anon never reaches that policy. |
-
-Postgres grants EXECUTE to `PUBLIC` on every new function, so the original
-migration left all three callable by anyone holding the anon key until this
-migration locked them down.
-
-**Retention:** `live_chat_purge(retain_days default 7)` deletes messages, prayer
-requests and closed sessions older than 7 days. Called daily at 04:00 by
-`/api/cron/live-chat-purge` (see `vercel.json`).
-
-**Used By:**
-- `components/live/chat/*` — the panel on `/live`
-- `app/api/live-chat/*` — public routes (self-authorising; outside the middleware matcher)
-- `app/api/admin/live-chat/*` — Host console routes (gated by `middleware.ts`)
-- `app/admin/live-chat/page.tsx` — the Host console
-- `lib/liveChat.server.ts`, `lib/liveChatGuest.ts`, `lib/liveChatModeration.ts`, `lib/liveChatAuth.ts`
-
-#### 22. **simulated_live**
-
-**Purpose:** Playing a pre-uploaded YouTube video on `/live` as though it were a
-broadcast — our version of Church Online Platform's simulated live. The entire
-feature is one row and one idea: a video id plus the instant the "broadcast"
-starts. Everyone loads the same video seeked to `now - starts_at`, so a viewer who
-opens the page twenty minutes in joins twenty minutes in.
-
-```sql
-create table simulated_live (
-  id integer primary key default 1 check (id = 1),   -- singleton
-
-  active           boolean not null default false,   -- admin intent, not "on air"
-  video_id         text,                             -- 11-char id; public or unlisted
-  title            text,                             -- heading above the player
-  starts_at        timestamptz,                      -- the playhead origin
-  duration_seconds integer,                          -- resolved from contentDetails
-  notice           text,                             -- optional line under the player
-
-  created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now(),
-
-  -- A draft can be saved half-filled; it can never be switched on half-filled.
-  constraint simulated_live_ready_when_active check (
-    not active
-    or (video_id is not null and starts_at is not null and duration_seconds is not null)
-  ),
-  constraint simulated_live_video_id_format
-    check (video_id is null or video_id ~ '^[A-Za-z0-9_-]{11}$'),
-  constraint simulated_live_duration_positive
-    check (duration_seconds is null or (duration_seconds > 0 and duration_seconds <= 86400))
-);
-```
-
-**Why a singleton rather than a schedule table.** `/live` shows one thing at a
-time, and a list of scheduled simulcasts would need conflict rules, overlap
-resolution and a "which one is on air right now" picker — all to express something
-the church currently does once a week. If recurring simulated services are wanted
-later, this row becomes the resolved *current* broadcast and a
-`simulated_live_schedule` table feeds it.
-
-**`active` is intent, not state.** Whether it is on air is `active` **plus the
-clock**: before `starts_at` it is scheduled, after `starts_at + duration_seconds`
-it is finished, and `/live` returns to the off-air card on its own without anyone
-switching anything off.
-
-**A real broadcast always wins.** `lib/liveStatus.server.ts` checks YouTube first
-and only falls through to this row when the channel genuinely isn't streaming, so
-a simulated event left switched on cannot hide an actual service.
-
-**Used By:**
-- `lib/simulatedLive.server.ts` (the only reader) → `lib/liveStatus.server.ts`
-- `app/api/admin/simulated-live/*` — save and link lookup (Host)
-- `app/admin/live/page.tsx` — the admin console
-- `lib/simulatedLive.ts` — the shared arithmetic, also used client-side
-
----
 
 #### 23. **audit_log / audit_reports**
 
@@ -2062,10 +1915,9 @@ CREATE TABLE notification_reads (             -- per-admin read state (several a
 source tables, so "read" is a fact about `(notification, viewer)`, which is why it
 lives in its own `notification_reads` table rather than a column on `notifications`.
 
-**Delivery follows the live-chat Broadcast precedent, not Postgres Changes.**
+**Delivery uses Realtime Broadcast, not Postgres Changes.**
 Opening Postgres Changes on `notifications` would need an authenticated SELECT
-policy straight on the table — exactly the class of mistake the live-chat
-migration warns against. Instead the service-role insert path calls
+policy straight on the table — exactly the class of mistake to avoid. Instead the service-role insert path calls
 `admin_notify_emit(topic, event, payload)` (a `SECURITY DEFINER` wrapper over
 `realtime.send`) to push the row onto a **private Broadcast topic** named
 `admin-notifications:<role>`, one per `AdminRole`. A notification for
@@ -2087,9 +1939,146 @@ never throws), `lib/useNotifications.ts` (the client Realtime hook),
 `components/admin/AdminNotificationBell.tsx` (the bell in `AdminHeader`),
 `app/api/admin/notifications` + `/[id]/read` + `/read-all` (feed and read state).
 Call sites: new order (`lib/checkout.server.ts`), job application (`app/jobs/actions.ts`),
-design ticket (`app/portal/design/request/actions.ts`), prayer request
-(`app/api/live-chat/prayer`), contact message (`app/contact/actions.ts`), leave
+design ticket (`app/portal/design/request/actions.ts`), contact message (`app/contact/actions.ts`), leave
 request (`app/api/portal/leave`).
+
+---
+
+#### 29. **d1_*** (Destiny One — members' group messaging)
+**Purpose:** The data behind Destiny One, the Expo app (`apps/destiny-one`): WhatsApp-Communities-style
+messaging — a **community** holds an **Announcements** group everyone is in (admins post) plus
+department **sub-groups**. Migration: `supabase/migrations/20260926_01_destiny_one.sql`.
+
+| Table | Holds |
+|---|---|
+| `d1_members` | One row per app account. `auth_user_id` (nullable — set null when the account is deleted), `first_name` / `last_name` (the member can change these themselves via `PATCH /me`; `name_edited_at` records that) and `display_name` (always `first last` — the `d1_members_sync_names` trigger derives it from first/last, or splits it into first/last when older code such as the ChurchSuite sync, invites, erasure or staff edits write only `display_name`). Once a member edits their name, the ChurchSuite re-sync no longer overwrites it, `churchsuite_contact_id` / `churchsuite_child_id` / `churchsuite_user_id`, **`adult_on`** (the 18th birthday — the full date of birth is never stored), `status` (`pending`/`active`/`suspended`/`deleted`), `roles` (`admin`, `cg_leader`, `senior_leader` — see part 8) |
+| `d1_consents` | Which version of `privacy` / `terms` / `chat_review_notice` a member accepted, when |
+| `d1_communities`, `d1_community_members` | Communities and who is in them (`admin`/`member`) |
+| `d1_groups` | `kind` (`announcements`/`group`), `department`, `state` (`active`/`frozen`/`archived`), `freeze_kind` (`auto`/`manual`), `frozen_reason` |
+| `d1_group_members` | Membership incl. history (`left_at` kept, so a review can see who was present when), `last_read_message_id`, `muted_until` |
+| `d1_messages` | `body` ≤ 4000, `reply_to`, `attachment_id`, `content` (jsonb: a poll, or an event snapshot taken at send time), soft-delete `deleted_at`/`deleted_by`. Immutable except the delete stamp |
+| `d1_poll_votes` | One row per (poll message, member, option). Written only by `d1_vote()`, which enforces single choice and current membership and broadcasts `poll_vote` (with `groupId`) |
+| `d1_reactions`, `d1_attachments` | Reactions; files in the private `d1-chat-media` bucket (images/PDF, 20 MB) |
+| `d1_reports`, `d1_safeguarding_events` | The safeguarding queue |
+| `d1_push_tokens` | Expo push tokens |
+| `d1_blocks` | Who has blocked whom (part 6). Hides the blocked person's messages and notifications for the blocker only |
+
+**There is no phone column anywhere, by rule** (the safeguarding policy forbids phone numbers), and
+`tests/sql/destiny-one.sql` fails if one is ever added.
+
+**The rules are enforced in the database**, not the API, so no client and no route bug can get round
+them:
+1. **No 1:1 chats.** `d1_create_group` refuses fewer than 3 people.
+2. **Only leaders create groups and communities** (any of `admin` / `cg_leader` / `senior_leader`,
+   adults only; the three have identical powers).
+3. **At least 2 verified adults in every group, always.** Checked at creation, then by a *deferred*
+   constraint trigger on `d1_group_members` (and on `d1_members` status/`adult_on` changes) that calls
+   `d1_evaluate_group`: below 3 members or 2 adults → `frozen` (read-only) + a `d1_safeguarding_events`
+   row; back above → unfrozen automatically. Leaving is never blocked (scoping doc D1: freeze + notify).
+   "Adult" is `adult_on <= current_date`, so turning 18 needs no job; no `adult_on` = minor (fail safe).
+   Group/community admins and leader roles must be adults.
+4. **No E2EE, reviewable.** Deleted messages keep their body until the retention purge; messages
+   can't be edited in place.
+5. An account whose `auth.users.phone` is set can't be made `active`.
+
+Safeguarding events are written into `notifications` for the `safeguarding_admin` role by a trigger and
+broadcast on `admin-notifications:safeguarding_admin`, so they ring the existing admin bell.
+
+**Functions** (all `SECURITY DEFINER`, `EXECUTE` revoked from `anon`/`authenticated` — service role
+only; each takes the acting member explicitly): `d1_create_community`, `d1_add_community_members`,
+`d1_remove_community_member`, `d1_create_group`, `d1_add_group_members`, `d1_remove_group_member`,
+`d1_post_message`, `d1_delete_message`, `d1_react`, `d1_report_message`, `d1_set_manual_freeze`,
+`d1_erase_member` (GDPR erasure: leave everything, anonymise to "Former member"), `d1_purge_expired`,
+`d1_reconcile_all`, `d1_group_overview` (the chat list with unread counts in one query), plus
+`d1_emit` (wraps `realtime.send`). Writes emit on private Broadcast topics `d1-group:<id>` and
+`d1-member:<id>`; the `d1_receive` policy on `realtime.messages` (via `d1_can_receive`, the only
+functions granted to `authenticated`) lets only current, active members receive them.
+
+Also adds `admin_roles.safeguarding_admin` and redefines `admin_has_role()` to know it.
+
+**Part 2 — `20260927_01_destiny_one_admin.sql`: staff verify people, not ChurchSuite.** Destiny wants
+minimal reliance on ChurchSuite, so identity now comes from Destiny's own staff:
+- **`d1_members`** gains `verified_at`, `verified_by`, `verification_source` (`invite` / `admin` /
+  `churchsuite`), `declared_adult_on`, `request_note`, `request_submitted_at`. **New rule: nobody
+  becomes `active` without a verification record.** `adult_on` is still the one field the 2-adult
+  rule reads; staff set it — adult without a DOB → the verification date; under-18 with a DOB →
+  their 18th birthday; under-18 without → null. `declared_adult_on` is what a person said about
+  themselves in an access request: shown to the reviewer, **never read by any rule**.
+- **`d1_invites`** — email, name, `is_adult`, optional `adult_on`, leader `roles`, `community_ids`,
+  `status` (`pending`/`accepted`/`revoked`/`expired`), `expires_at`. One open invite per email.
+  `d1_accept_invite(auth_user, email)` activates the member on sign-in with that email (the email
+  one-time code proves ownership — no invite token) and joins the listed communities.
+- **`d1_settings`** (one row) — `allow_access_requests` (off = invite-only), `invite_expiry_days`,
+  `min_build_ios` / `min_build_android` (builds below see the app's "update" screen),
+  `force_update_message`, `maintenance_message` (set = the whole app shows it instead of working).
+  The last four are served publicly by `GET /api/app/v1/one/config`.
+- **Admin-path functions** with no acting member (website staff may have no app account):
+  `d1_admin_create_community`, `_add_community_members`, `_set_community_role`,
+  `_remove_community_member`, `_create_group`, `_add_group_members`, `_remove_group_member`,
+  `_set_group_role`, sharing `d1__check_composition` (≥3 people, ≥2 adults). Every part-1 trigger
+  still applies. Plus reads `d1_admin_members` (joins the sign-in email from `auth.users` in one
+  query) and `d1_admin_groups` (live counts).
+- **Notifications re-routed:** an automatic pause → `destiny_one_admin` + `safeguarding_admin`; a
+  report → `safeguarding_admin` only.
+- **`admin_roles.destiny_one_admin`**, and `admin_has_role()` redefined to include it.
+
+**Part 6 — `20260928_01_destiny_one_safeguarding.sql`: fixes from the production readiness audit**
+(`apps/destiny-one/todo.md`):
+- **Retention keeps evidence.** `d1_purge_expired` never deletes a message (or its attachment) that
+  is linked to a report whose status isn't `closed`, however old it is.
+- **Complete erasure.** `d1_erase_member` also deletes `d1_consents`, the member's `d1_blocks` rows
+  and the `avatar_url` reference; `eraseMember()` (`lib/destinyOne/identity.server.ts`) deletes the
+  picture file from Storage, which SQL can't reach. All three erase paths use it (self-delete,
+  admin delete, revoking an unused invite).
+- **Private profile pictures.** The `d1-avatars` bucket is no longer public and its public-read
+  policy is dropped. `d1_members.avatar_url` now holds the storage path; `toMe()` returns a 7-day
+  signed URL (the app re-fetches `me` on every cold start).
+- **Blocking.** `d1_blocks` + `d1_set_block(actor, target, block)` (no self-blocks). Nobody leaves a
+  group, so the 2-adult rule is untouched. `d1_group_overview` (preview, unread count) and
+  `d1_search_messages` ignore blocked senders; the API filters message pages and push. Each block /
+  unblock writes a `d1_safeguarding_events` row (new kinds `block`, `unblock`, created resolved so
+  they don't queue or ring the bell) and emits `blocks_changed` on `d1-member:<blocker>`.
+- **Safeguarding takedown.** `d1_messages.deleted_by_admin` + `d1_admin_delete_message(message,
+  admin)`: a soft delete like any other (content kept for review), live `message_deleted` event.
+
+Applied to the live project on 2026-09-28. The same day, the migration history was backfilled with
+rows for parts 1 and 2 (`20260926_01`, `20260927_01`), which had been run outside it.
+
+**Part 7 — `20260928_03_destiny_one_rate_limits.sql`: rate limits every server instance shares.**
+`d1_rate_limits` (one row per key per minute, deny-all RLS) and `d1_rate_limit(key, max)`, which
+counts atomically and returns whether the hit is allowed, pruning rows older than an hour now and
+then. `limit()` in `lib/destinyOne/http.ts` checks the in-memory limiter first (free, with escalating
+cooldowns), then this; if the database can't be reached the request is let through and logged.
+
+**Part 8 — `20260928_04_destiny_one_role_tags.sql`: Admin, CG Leader, Senior Leader.** Replaces
+`group_leader` / `senior_leadership`. All three roles have the same powers (create groups and
+communities, search the directory); they differ only in the tag beside the person's name. Existing
+data is migrated (`group_leader` → `cg_leader`, `senior_leadership` → `senior_leader`), the check
+constraints on `d1_members.roles` and `d1_invites.roles` are replaced, and `d1_is_leader()` /
+`d1_is_senior()` both mean "holds any of the three". A person holding several roles shows the highest
+(`topRole()` in `packages/shared/src/destinyOne/policy.ts`: Admin, then Senior Leader, then CG
+Leader). `D1GroupMember.tag` carries it to the chat screen, which draws it via `MemberTag`; someone
+with no role who administers the group shows "Group admin" instead. The Profile tab shows the same
+label. **Deploy order:** old app builds only know the retired role names, so a leader on one loses
+the leader UI until they update; apply the migration when the API change ships.
+
+**Part 9 — `20260929_01_destiny_one_feedback.sql`: "Report a problem" and "Send feedback".**
+`d1_feedback` (member, `kind` problem/idea, `body` up to 2000, optional app version / platform / OS
+version / phone model / crash-report id, `status` new/done; deny-all RLS). Kept in the database, not
+as GitHub issues, because the repository is public and many members are young people. An insert rings
+the Destiny One Admin bell (`d1_feedback_notify`; the notification never includes the text).
+`d1_erase_member` deletes a member's feedback and `d1_purge_expired` removes feedback older than the
+retention period. Staff read it at `/admin/destiny-one/feedback`. Applied to the live project on
+2026-09-29, together with `20260922_02_notifications.sql` (the admin bell's tables), which had never
+been applied there. Until then, every Destiny One report and group pause would have failed at its bell
+notification.
+
+**Tested by:** `scripts/test-sql.sh` (`npm run test:sql`, and the "Database rules" CI job) — applies
+Supabase stubs + every Destiny One migration (parts 1–9, plus the profile-picture, min-build and
+group-icon migrations) to a throwaway local Postgres and runs `tests/sql/destiny-one.sql`.
+
+**Used By:** `lib/destinyOne/*`, `app/api/app/v1/one/**`, `app/api/admin/destiny-one/**`,
+`app/api/cron/destiny-one-{sync,purge}`.
 
 ---
 
@@ -2099,7 +2088,8 @@ role key — this gives finer control and better error messages. Two authenticat
 SELECT policies now exist as **defense-in-depth** alongside that model (they are
 not the primary boundary): `hr_reviews`' "reviewer can read own reviews"
 (`reviewer_auth_user_id = auth.uid()`) and the `realtime.messages`
-`admin_notifications_receive` policy for the notification Broadcast topics. Every
+`admin_notifications_receive` policy for the notification Broadcast topics, and
+`d1_receive` for Destiny One's `d1-group:*` / `d1-member:*` topics. Every
 base data table is still deny-all to the anon/authenticated roles.
 
 ---
@@ -2111,7 +2101,7 @@ base data table is still deny-all to the anon/authenticated roles.
 The root layout wraps every page in the application. It:
 
 1. **Defines metadata & SEO** — Title templates, description, Open Graph images for social share
-2. **Fetches server data** — Banner, pop-up, event popup, Smart Search flag and live status, each through `unstable_cache` with a tag from `lib/siteCache.server.ts` (see [Caching Strategy](#caching-strategy) — these reads decide whether *any* page can be cached)
+2. **Fetches server data** — Banner, pop-up, feature flags (called on every request)
 3. **Renders custom SVG filter** — A sophisticated glass refraction effect used for visual polish
 4. **Wraps in providers** — Context providers for auth, theme, analytics
 5. **Loads fonts** — Roboto, Anton, Playfair Display from Google Fonts
@@ -2397,11 +2387,17 @@ higher-traffic public surface, no conversational context to extract filters
 from beyond the query text itself.
 
 #### `/app/[slug]/page.tsx` — Dynamic Catchall
-- Looks up `slug` via `getPublishedPostBySlug()` (`lib/posts.server.ts`) against the `posts`
-  table — there is no separate `dynamic_pages` table. Renders the post's `body` through
-  `RichContent` (upgrades embedded content blocks into real components; falls back to the
-  equivalent of raw HTML for a post with none), with the promo rails from
-  `components/posts/PostRails.tsx`.
+- Looks up `slug` via `getPostForView()` (`lib/posts.server.ts`) against the `posts`
+  table — there is no separate `dynamic_pages` table. Renders the post's hero (`PostHero`, from
+  `hero_style`), then its `body` through `RichContent` (upgrades embedded content blocks into
+  real components; falls back to the equivalent of raw HTML for a post with none), with the
+  promo rails from `components/posts/PostRails.tsx` unless the post turns them off.
+  `generateMetadata` emits the post's description and Open Graph image.
+- **Draft previews:** `?preview=<token>` shows an unpublished post when the token is a valid
+  signature for that post's id (`lib/postPreview.server.ts` — `<expiry>.<hmac>`, one hour, signed
+  with the Supabase secret key like the training unlock cookies). Tokens come from
+  `GET /api/admin/posts/[id]/preview`. The page shows a "Preview" bar and is `noindex`. Without a
+  valid token a draft 404s exactly as before.
 - If no post matches, falls back to an active `redirects` row for the same slug (see Database
   Schema §1) and `redirect()`s there. A hit is recorded via `after()` — read `headers()` during
   render (an `after()` callback in a Server Component can't call it), close over the values, and
@@ -2450,7 +2446,6 @@ without an auth check, so they must never be reachable on the live site.
 | `/beliefs` | `app/beliefs/page.tsx` | Statement of faith, doctrine |
 | `/sermons` | `app/sermons/page.tsx` | Latest message as video (with an audio switch), series/month filters, a guest-speakers toggle and free-text search over the full archive |
 | `/sermons/[id]` | `app/sermons/[id]/page.tsx` | Individual sermon — a **Watch/Listen** switch (`components/sermons/SermonWatchListen.tsx`, the same `ModeSwitch`/`ListenPane` the featured card uses) when a confident audio pairing exists, otherwise the plain YouTube embed; plus skip-to-sermon and next steps. Title/meta rows stay server-rendered (no CLS); only the player area switches |
-| `/live` | `app/live/page.tsx` | Livestream page — standard hero + section rhythm, with a client island that swaps between the custom glass player and an off-air card. On air for a real YouTube broadcast, or for a **simulated** one (a pre-recorded video played from a fixed start time; see `lib/simulatedLive.ts`). Signed-in Hosts also get the **broadcast controls** inline at the top of the page (`LiveHostBar`), so starting, editing or removing a service never means leaving `/live` |
 | `/contact` | `app/contact/page.tsx` | Contact form, address, hours |
 | `/portal/design/request` | `app/portal/design/request/page.tsx` | Ask the design team for something. Staff-only — gated by the `/portal` middleware, which requires a linked `hr_staff` row. Name and email default from the staff record; every request is fast-tracked |
 | `/design-request/[token]` | `app/design-request/[token]/page.tsx` | The requester's own tracker, reached by share token rather than a login — status, the brief as submitted, every revision's files, and buttons to ask for changes or close it. `robots: noindex` |
@@ -2511,7 +2506,7 @@ Each section requires a specific access-level role (see
 |-------|------|---------|
 | `/login` | `app/login/page.tsx` | Staff sign-in. On success (or on revisiting while already signed in), shows a "choose a system" screen — Admin (`/admin`) and Portal (`/portal`) cards, greyed out for whichever the account can't open (`getSystemAccess` in `lib/staffPortalAuth.ts`) |
 | `/admin/forgot-password` | `app/admin/forgot-password/page.tsx` | Password reset request |
-| `/admin/reset-password` | `app/admin/reset-password/page.tsx` | Password reset form |
+| `/admin/reset-password` | `app/admin/reset-password/page.tsx` | Password reset form. A password Supabase refuses (found in a data breach, or too weak) gets an explanation panel from `passwordRejection()` instead of a raw error |
 | `/admin` | `app/admin/page.tsx` | Admin dashboard home |
 | `/admin/banner` | `app/admin/banner/page.tsx` | Manage site banners |
 | `/admin/popup` | `app/admin/popup/page.tsx` | Manage pop-ups |
@@ -2548,6 +2543,14 @@ Each section requires a specific access-level role (see
 | `/portal/leave` | `app/portal/leave/page.tsx` | Staff self-service — request and withdraw own leave |
 | `/portal/documents` | `app/portal/documents/page.tsx` | Staff self-service — download own + org-wide documents |
 | `/portal/design` | `app/portal/design/page.tsx` | Staff self-service — own design requests, plus a link to `/portal/design/request` to file a new one. Matched by staff link *and* by email, so requests filed before this page existed still appear |
+| `/admin/destiny-one` | `app/admin/destiny-one/page.tsx` | Destiny One overview: requests waiting, active members, open invites, paused groups (Destiny One Admin) |
+| `/admin/destiny-one/requests` | `app/admin/destiny-one/requests/page.tsx` | Approve access requests as adult or under 18 (optional DOB, name fix, communities), or decline; optional ChurchSuite lookup (Destiny One Admin) |
+| `/admin/destiny-one/invites` | `app/admin/destiny-one/invites/page.tsx` | Invite one or many people by email with age, leader role and communities; resend, revoke (Destiny One Admin) |
+| `/admin/destiny-one/members` | `app/admin/destiny-one/members/page.tsx` | Everyone with an account; panel to fix name, age, leader roles, suspend, delete (Destiny One Admin) |
+| `/admin/destiny-one/communities` (+ `/[id]`) | `app/admin/destiny-one/communities/**` | Communities, their Announcements and department groups with live people/adult counts and pause reasons; add/remove people, roles, create/archive groups with a live rule check. No message content (Destiny One Admin) |
+| `/admin/destiny-one/safeguarding` | `app/admin/destiny-one/safeguarding/page.tsx` | Queue, reports, all groups, manual pause, and the reason-gated, audited transcript viewer (Safeguarding Admin) |
+| `/admin/destiny-one/feedback` | `app/admin/destiny-one/feedback/page.tsx` | "Report a problem" and "Send feedback" from the app: New / Done / All, the text, who sent it, phone and app version, crash-report id; mark done or reopen (Destiny One Admin) |
+| `/admin/destiny-one/settings` | `app/admin/destiny-one/settings/page.tsx` | Invite-only vs open to requests, invite expiry, minimum app builds per platform + update message, maintenance switch; retention and ChurchSuite status read-only (Destiny One Admin) |
 | `/admin/sermons` | `app/admin/sermons/page.tsx` | Publish sermon audio to Buzzsprout (video keeps going to YouTube separately); add/remove YouTube playlists as sermon series; run the AI speaker review or manually search-and-correct any sermon's speaker; a read-only recent-episodes list showing pairing status (Sermon Admin) |
 | `/admin/design` | `app/admin/design/page.tsx` | Design ticket queue — search, status/priority/mine filters, inline Claim. Defaults to "Needs someone" rather than everything (Design Admin) |
 | `/admin/design/[id]` | `app/admin/design/[id]/page.tsx` | Ticket detail — brief, requester, the thread, the deliverable uploader, and only the transition buttons `canTransition` allows from here (Design Admin) |
@@ -2560,8 +2563,6 @@ Each section requires a specific access-level role (see
 | `/admin/users` | `app/admin/users/page.tsx` | Manage admin logins and their access-level roles (Super Admin only) |
 | `/admin/onboarding` | `app/admin/onboarding/page.tsx` | What each access level is taught on first sign-in, and the admin previewed from their side (Super Admin only) |
 | `/admin/audit` | `app/admin/audit/page.tsx` | Audit log — everything anyone does in the admin. Ask it in plain English ("who added the Faith Hoodie to the store?") or read it: search, filter by person/area/kind/date, open any entry for the field-by-field before and after. Second tab holds the weekly AI reports (Super Admin only) |
-| `/admin/live` | `app/admin/live/page.tsx` | Simulated Live — schedule a pre-recorded video to play on `/live` as though it were a broadcast. Paste a link (preview resolves title, thumbnail and runtime), pick a start time or press **Start now**, and a once-a-second status strip reports scheduled / on air with the exact position / finished (Host). A thin wrapper over `SimulatedLiveControls`, the same component the Host bar on `/live` mounts — the on-page version is the one that gets used on a Sunday; this is the admin-shell entry point the sidebar and ⌘K palette land on |
-| `/admin/live-chat` | `app/admin/live-chat/page.tsx` | Live chat console — room state, held queue, muted guests, prayer queue, direct threads, history (Host) |
 
 #### Admin navigation, search and keyboard shortcuts
 
@@ -2576,7 +2577,7 @@ viewport — the shape phones actually use, and one tap per section instead of t
 hamburger drawer's two or three. A tab is a *group*, not a page: a super admin
 can see around forty pages but only eleven groups, so `tabsFor(roles)`
 projects `ADMIN_GROUPS` down to one tab per top-level entry. Ungrouped items
-(Dashboard, Posts, Training, Simulated Live, Live Chat) are their own tabs, a
+(Dashboard, Posts, Training) are their own tabs, a
 group left with one visible item collapses to a plain link, and a group with
 several opens a bottom `Sheet` listing its pages with their descriptions.
 
@@ -2757,7 +2758,7 @@ focus to whatever opened it, and locks body scroll — restoring the *previous*
 `.dc-modal-backdrop` / `.dc-modal-panel` in `globals.css`, with a
 `prefers-reduced-motion` block.
 
-> Written for the Host sign-in popup on `/live`. Before it there were six one-off
+> Before it there were six one-off
 > modals and only `NfcTileModal` had real dialog semantics — its own header
 > comment notes the others have "no role, no focus management and no trap". New
 > modals should use this; the existing six can migrate when next touched.
@@ -2914,58 +2915,20 @@ through the site's normal nav and the "New Here?" page/link, which were never pa
 #### `LiveBanner.tsx`
 - **What:** "WE ARE LIVE" banner bar, styled like `SiteBanner.tsx`'s bars
 - **Data:** `LiveContext` (server-seeded in root layout via `getLiveStatus()`, then polled client-side every 30s)
-- **Behavior:** Renders at the top banner slot whenever the channel is live; hidden on `/live`, `/admin/*`, and `/portal/*`. CTA links to `/live`. The live bar **takes priority over the DB banners** — while it shows, the sitewide/alpha/recovery banners are hidden rather than stacked beneath it (`lib/useBannerBars.ts` returns `1` when live off `/live`), so there is only ever one bar to notice during a service.
+- **Behavior:** Renders at the top banner slot whenever the channel is live; hidden on `/admin/*` and `/portal/*`. CTA opens the broadcast on YouTube in a new tab (`youtubeWatchUrl()` in `lib/youtubeId.ts`); the old `/live` URL redirects to the channel's live tab (`next.config.ts`). The live bar **takes priority over the DB banners** — while it shows, the sitewide/alpha/recovery banners are hidden rather than stacked beneath it (`lib/useBannerBars.ts` returns `1` when live off `/live`), so there is only ever one bar to notice during a service.
 
 #### `contexts/LiveContext.tsx`
-- **What:** The single client-side source of live state, consumed by the banner and every part of `/live`
+- **What:** The single client-side source of live state, consumed by the banner and the homepage status line
 - **Seeding:** The root layout passes `getLiveStatus()` straight in, so the first paint is already correct — polling only ever corrects it afterwards
 - **Polling:** `/api/youtube/live` every 30s, plus an immediate poll on mount and on `visibilitychange` / `focus` / `online`. The mount poll matters: the server render can be a minute stale, and "we went live 40 seconds ago" is exactly when someone opens the page.
 - **Grace period:** `live` does not drop to false until **two consecutive** negative polls (`OFFLINE_GRACE`), so one flaky request doesn't pull a running service off someone's screen. The streak is counted per poll — an earlier version counted it in an effect keyed on `live`, which only re-runs when the boolean flips, so it could never reach two.
-- **`markOffline()`:** lets the player tear the live view down immediately on its ENDED/error event, well before YouTube's own pages agree
-- **Clock skew:** every payload carries `serverTime`; the provider stores `serverTime - Date.now()` on each poll and exposes `getPositionSeconds()`, the shared playhead for a simulated broadcast (`now + skew - startedAt`). Derived from the origin rather than from a number the server sent, so a payload that took a moment to arrive is still right.
-- **`synced`:** true once any poll has landed (including a failed one — an offline device must not leave a player permanently unmounted waiting for a clock). A *simulated* player waits for it before mounting; a real one never does. Costs a fraction of a second, against dropping everyone into the service at a point derived from an unchecked device clock.
-- **Gotcha:** `startedAtRef` is written from inside the poll, not from an effect on `state`. Child effects run before parent ones, so the player's mount effect — which reads the position to decide where to start — would otherwise see the *previous* broadcast's origin on the very render that put it on screen.
-
-#### `/live` components (`components/live/*`)
-The page itself is a server component carrying the site's normal hero + alternating
-`bg-white` / `bg-[#f5f7fa]` sections (`AnimateIn` reveals, `font-black` headings,
-orange eyebrows, `WatchOnYouTubeBand`, `WorshipWithUsSection`). Only the parts that
-change with the broadcast are client islands:
-
-- **`LiveStage.tsx`** — the player when we're on air, an off-air card the rest of the week. Live: red "On air now" eyebrow, the broadcast title (splitting the `Title || Ps Speaker` upload convention), start time, and an "Open on YouTube" escape hatch. Off air: next-service countdown, links to `/sermons` and `/visit`, and the latest message as a thumbnail card. **During a simulated broadcast both YouTube links are dropped** — sending someone to YouTube mid-simulcast hands them a scrubbable video with a view count, which is a worse experience *and* gives the game away. An optional `notice` renders under the player.
-- **`LiveHeroStatus.tsx`** — the hero eyebrow. A red pulsing "Live now" pill while streaming, the site's standard orange eyebrow otherwise.
-- **`useLiveNow.ts`** — the one place the "are we live?" rule is derived, so the hero badge and the player can't disagree. A simulated broadcast is live in exactly the same sense; only the *player* has the extra `playerReady` condition (below).
-- **`NextServiceCountdown.tsx`** — "Sunday 14 September, 11:00am · in 2 days 4 hours". The date renders on the server too (it's identical either side of hydration); the relative half waits for the client, since a countdown computed server-side is wrong by however long the response sat in a cache. An optional `startsAt` overrides the standing Sunday rhythm with a scheduled simulated broadcast — which may well be a Wednesday evening, so the time comes from the value rather than being assumed to be 11:00am. A `startsAt` already in the past is ignored, which covers the half-minute between a broadcast starting and the next poll noticing.
-- **`LivePlayer.tsx`** — YouTube IFrame API player with `controls=0` and a fully custom glass control bar (play/pause, mute, volume, fullscreen, live-edge seek). See `lib/youtubeIframe.ts` for the shared API loader (also used by `SermonPlayer.tsx`). `onEnded` is held in a ref so the mount effect stays keyed on the video id alone, and `onError` is treated as an ending too — a pulled or privated broadcast otherwise leaves the player wedged on a black rectangle.
-
-  **Simulated mode** is switched on by the presence of a `getTargetTime` prop — a *getter*, not a number, because a number would change every second and re-key the effect that owns the iframe, tearing the player down mid-service. In that mode:
-  - It joins at `playerVars.start`, not by seeking after `onReady`, so YouTube buffers from the right place and nobody sees the opening seconds flash past.
-  - **There is no DVR.** A drift check every 10s pulls the playhead back if it is more than 5s out (buffering, a phone locking, a throttled background tab), and pressing play after a pause rejoins where the service *is* — the same thing pressing play on a real live stream does. Drift is only corrected while the player reports `PLAYING`; yanking a deliberately paused player forward would be a jump-scare rather than a sync.
-  - The **LIVE** pill seeks to the shared position rather than `getDuration()`. For a real stream the live edge is the end of the buffer; for a simulated one the end of the file is where the broadcast *finishes*, and seeking there would skip the rest of the service.
-  - Running past the end of the video ends the broadcast even if `ENDED` never fires — it doesn't when the tab was asleep.
-
-- **`LiveHostBar.tsx`** — the broadcast controls, on `/live` itself. A Host starts and stops a service *during* one, usually on a phone, while watching the page the congregation is watching; sending them to `/admin/live` means leaving the thing they are trying to check at the moment they can least afford to. So the controls come to the page.
-  - **Visibility is decided on the server.** `app/live/page.tsx` calls `readHost()` and passes the answer down. A visitor pays no request for it, there is no flash of admin UI while a fetch resolves, and the client cannot promote itself — `/api/live-control` re-checks with `requireHost()` regardless of what the component believes. Anonymous visitors cost nothing either: with no auth cookie `getUser()` answers null without a network call, and the page is already `force-dynamic` so nothing is cached across viewers.
-  - **Signing in when you aren't:** `/live#host` reveals a prompt that opens the same `HostLoginModal` the chat panel uses. That escape hatch exists because the chat panel — the only other way in — renders nothing while off air, which is exactly when someone needs to schedule next Sunday.
-  - `SimulatedLiveControls` is loaded with `next/dynamic` (`ssr: false`) so its bundle only downloads when a Host actually opens the panel.
-- **`SimulatedLiveControls.tsx`** — the form itself, written once and mounted in two places: this bar and `/admin/live`. They differ only in the `endpoint` prop, because the route hanging off the public page has to authorise itself while the admin one is covered by middleware. Holds the link preview, the runtime fallback, the start time, the once-a-second status strip, **Start now**, **Take off air**, and **Remove this service** (a two-tap confirm, since it clears every field).
-
-#### Live chat (`components/live/chat/*`)
-The chat beside the player, and our own version of the Church Online Platform.
-Mounts only when a room exists, and a room only exists while we're on air — an
-always-present chat box under an offline player is an empty room someone
-eventually wanders into alone, and a moderated space nobody is moderating.
-
-- **`LiveChatPanel.tsx`** — the shell. Holds session state, both subscriptions, and every action. Renders `null` when off air, so the offline card keeps the full width of the section.
-- **`useLiveChat.ts`** — the one place the codebase opens a websocket. Subscribes to a private Broadcast topic with `setAuth()` + `{ config: { private: true } }`, plus Presence for the viewer count. **Must use the memoised `getSupabaseBrowserClient()`** — it is the only browser client in the codebase precisely because a per-call factory means a new client, and a new client means a new socket per mount. Receive-only by design: sending goes over HTTP to `/api/live-chat/messages`, gets moderated, and comes back down the channel.
-- **`ChatMessageList.tsx`** — the transcript. Follows the bottom only while you're already at the bottom, with a "jump to latest" button otherwise, so reading back doesn't get yanked. Host rows carry inline approve/delete/mute controls.
-- **`ChatComposer.tsx`** — message box with the guest name field inline above it, rather than a modal demanding a name before the chat is readable. Enter sends, Shift+Enter breaks the line.
-- **`HostLoginModal.tsx`** — Host sign-in without leaving the service. Same rate limit and Supabase checks as `/login` (it's the same server-action core), but returns instead of redirecting — a Host opens this mid-service and being thrown to `/admin` is the one thing that must not happen.
-- **`PrayerRequestModal.tsx`** — prayer requests. Never touches the public channel; states plainly above the box who reads it.
-
----
 
 ### Page-Specific Components
+
+#### Destiny One admin (`components/admin/destinyOne/PeoplePicker.tsx`)
+- `PeoplePicker` — searchable multi-select of people with an Adult / Under 18 badge each.
+- `RuleCheck` — the live "N people, M adults — meets the rules / needs 3 people including 2 adults"
+  line under the picker, so whoever builds a group sees the rule before the server enforces it.
 
 #### Ministry pages (`components/ministry/*`)
 
@@ -3004,6 +2967,35 @@ not been brought onto the shared vocabulary yet.
 
 - `KidsCampHero.tsx`, `KidsCampDetails.tsx`, `KidsCampTeam.tsx` (safeguarding leads),
   `KidsCampVideo.tsx`, `KidsCampForm.tsx`, `KidsCampFAQ.tsx` (client-side accordion)
+
+#### Course pages (`app/alpha`, `app/bible-course`, `app/twelvetwo`, `app/cap-money`)
+
+Alpha, The Bible Course, Destiny 12:2 and CAP Money each hand-rolled the same ~150-line
+"when and where" ticket-stub event card and the same ~35-line fetch/filter/loading
+boilerplate against `/api/alpha-events` — identical structure, differing only in each
+course's brand accent colour and which event `type` it filters for. That exact
+duplication (not the whole page — see below) is now shared:
+
+- **`components/courses/CourseEventCard.tsx`** — the event card. Takes `accentColor`
+  (each course's own brand colour — pull it from `COURSE_ADMIN_PAGES` in
+  `lib/courseEvents.ts` rather than re-hardcoding a hex) and an optional `label`, Alpha's
+  one real variation: it runs Alpha and Youth Alpha through the same feed, so when more
+  than one event is showing it needs a header saying which is which.
+- **`lib/useCourseEvents.ts`** — `useCourseEvents(matchesType)` for the fetch (each page
+  passes its own type filter, e.g. `(e) => e.type === "cap"`), and
+  `summarizeCourseSession(event)` for the "Starting/Next session &lt;date&gt;" line every
+  course's `ChurchSuiteModal` subtitle shows.
+
+This did **not** become one monolithic `CourseLanding` template covering the whole page.
+Past the event card, each page has genuinely different content — Alpha's video modal and
+Youth Alpha cross-promo, Bible Course's 8-session/4-feature grids, Destiny 12:2's Life
+Recovery Bible cross-sell and pastor contact card, CAP Money's stats row and debt-help
+CTA — and a template flexible enough to cover all of that would need an "arbitrary
+sections" escape hatch, which reduces duplication less than it looks like. Each page also
+keeps its own brand-coloured hero and CTA buttons rather than going through
+`components/ui/Button` — that component's variants are fixed Tailwind classes, not
+arbitrary hex colours, and each course's colour is a deliberate, already-coordinated brand
+decision (matched to `COURSE_ADMIN_PAGES`'s admin-side accent), not drift to converge.
 
 #### Governance (`components/governance/*`)
 
@@ -3111,7 +3103,7 @@ Role-based guided tours for `/admin`. See
 for the registry and the "nothing is saved" guarantee this whole surface exists
 to keep.
 
-- `OnboardingProvider.tsx` — **Client.** Mounted in `components/admin/AdminShell.tsx`
+- `OnboardingProvider.tsx` — **Client.** Mounted in `app/admin/layout.tsx`
   inside `AdminCommandProvider`. Owns the state machine: which section a step
   belongs to, navigating to a step's route, polling for its `data-tour` anchor
   (the page it lands on is usually still fetching), and switching demo mode on
@@ -3140,8 +3132,8 @@ to keep.
   presentation only — middleware still knows they're a super admin.
 
 #### Admin Components (`components/admin/*`)
-- `AdminSidebar.tsx` — Admin navigation. At `md`+ the full sidebar; below `md` only a slim top bar (logo, breadcrumbs, ⌘K, theme toggle, account sheet), with navigation itself handed to `AdminTabBar`
-- `AdminTabBar.tsx` — The mobile bottom tab bar: a scrolling row of Liquid Glass group tabs derived from `tabsFor()`, with a `Sheet` for multi-page groups and a view-transitioned active pill. See "Admin navigation, search and keyboard shortcuts"
+- `AdminSidebar.tsx` — Admin navigation. A group with its own overview page (Destiny One, HR — `groupLanding()` in `lib/adminNav.ts`, the item named the same as the group) makes the group heading the link to it, with the chevron beside it as the expand/collapse control, instead of repeating the name as the first child. At `md`+ the full sidebar; below `md` only a slim top bar (logo, breadcrumbs, ⌘K, theme toggle, account sheet), with navigation itself handed to `AdminTabBar`
+- `AdminTabBar.tsx` — The mobile bottom tab bar: a scrolling row of Liquid Glass group tabs derived from `tabsFor()`, with a `Sheet` for multi-page groups (where a group's own landing page is listed as "Overview", highlighted only on that exact page) and a view-transitioned active pill. See "Admin navigation, search and keyboard shortcuts"
 - `AdminHeader.tsx` — Sticky desktop header for the admin shell (`md`+ only); shows the full breadcrumb trail from `breadcrumbsFor(pathname)` — every level above the current page a link — plus ⌘K, the notification bell (`AdminNotificationBell`), the theme toggle, shortcut help and a "View live site" button
 - `AdminNotificationBell.tsx` — The notification bell: an unread badge and a dropdown of the most recent notifications for whatever roles the signed-in admin holds. Data and Realtime delivery both come from `lib/useNotifications.ts` (initial `GET /api/admin/notifications`, then a private Broadcast channel per held role); marking one or all read is optimistic and reconciled on the next refresh. See the `notifications` table in Database Schema for the delivery model.
 - `RichTextEditor.tsx` — Shared TipTap rich-text editor (HTML output); used by posts, training posts, HR job descriptions, and (since `a22301b`) shop product descriptions. Optional `blocks` / `onEditor` props admit [content blocks](#content-blocks) — schema and drop handling only; the blocks UI is a separate surface owned by the parent, deliberately **not** part of this toolbar.
@@ -3151,6 +3143,7 @@ to keep.
 - `CourseAdminPage.tsx` — **Client.** The single implementation behind `/admin/alpha`, `/admin/recovery`, `/admin/bible-course` and `/admin/cap-money`. See below.
 - `AdminThemeToggle.tsx` — **Client.** The light/dark/system cycle button. One `useAdminTheme()`
   call (`lib/adminTheme.ts`); mounted in `AdminHeader.tsx` and the mobile bar in `AdminSidebar.tsx`.
+  Renders nothing while `ADMIN_DARK_MODE_ENABLED` is `false` (dark mode is currently off).
 - `AdminCharts.tsx` — **Client.** The admin's data-visualisation kit, deliberately separate from
   `AdminUI.tsx` (that file is controls/layout; this is the other half). No charting library — the
   only genuine time series in the admin (the weekly audit reports' stats, and a day-bucketed count
@@ -3262,12 +3255,25 @@ The member-facing pieces of the `/training` resource library.
 - `useTrainingProgress.ts` — Per-browser completion store in `localStorage` (no per-user accounts; trainees share a group password). Exposes `useCompletedSet()` and `toggleCompleted()`; starts empty on first render to avoid hydration mismatch, then fills in after mount and stays reactive across tabs via a custom event + the `storage` event.
 
 #### Admin Content/Training/HR Components (`components/admin/{posts,training,hr}/*`)
-- `posts/PostEditor.tsx` — Standalone page editor (uses `RichTextEditor`). Full-screen at **both** breakpoints; only the panel placement differs. Desktop gets the permanent Blocks and Settings sidebars; mobile edits the title in the header, puts the slug and published switch behind a "Page settings" sheet, and gives the rest of the screen to the editor. It was previously a `Modal` on mobile — the whole form inside a scrolling popup, with the editor capped at 420px and scrolling separately inside that, so the page content got about a third of the screen and a newly added block was immediately pushed out of sight.
+- `posts/PostEditor.tsx` — Standalone page editor (uses `RichTextEditor`). Full-screen at **both** breakpoints; only the panel placement differs. Desktop gets the permanent Blocks and Settings sidebars; mobile edits the title in the header, puts the slug and published switch behind a "Page settings" sheet, and gives the rest of the screen to the editor. It was previously a `Modal` on mobile — the whole form inside a scrolling popup, with the editor capped at 420px and scrolling separately inside that, so the page content got about a third of the screen and a newly added block was immediately pushed out of sight. The desktop right sidebar has **Page** and **Block** tabs: Page holds the URL and `PageSettings`, Block the `BlockInspector`; selecting a block switches to Block and deselecting returns to Page (derived from the selection, not synced by an effect). Tracks unsaved changes (closing, Escape and tab close ask first), saves on Ctrl/Cmd+S, and has a **Preview** button that saves then opens a signed preview link. New posts start from a template (`lib/postTemplates.ts`).
+- `posts/PageSettings.tsx` — Page-level settings shared by the desktop sidebar and the mobile sheet: header style picker (Plain / Image / Banner thumbnails), header image, subtitle, description with a 160-character counter, share image and the promo-rails toggle. Reuses the block inspector's field components (`ImageField`, `TextField`, …) so uploads go through the same `post-media` route.
 - `training/PostEditor.tsx` — Training post editor (uses `RichTextEditor`). Still a `Modal` on mobile: its body is one field among many rather than the whole point of the screen, and it inherits the mobile block sheets and toolbar from `BlockTools` either way.
 - `training/CategoryModal.tsx`, `SubgroupModal.tsx`, `FolderModal.tsx`, `IconPicker.tsx` — Training tree CRUD modals
 - `hr/HrUI.tsx` — Staff directory, leave requests, documents (main HR dashboard shell)
 - `hr/JobModal.tsx` — Create/edit job listing (uses `RichTextEditor`)
 - `hr/modals.tsx` — Remaining HR CRUD modals (staff, leave, reviews, applications)
+
+#### Post Hero (`components/posts/PostHero.tsx`)
+**Server.** `PostHero` renders the page header for the `image` (full-bleed photo, title over a
+scrim) and `banner` (solid brand-orange band) styles; `PostPlainTitle` is the in-column title for
+`plain`. An `image` post with no image falls back to plain rather than an empty dark box.
+
+#### Post Templates (`lib/postTemplates.ts`)
+Starter layouts shown when creating a post: Blank, Event, Campaign, Info + FAQ. Each is ordinary
+body HTML plus page settings. Blocks are serialised from each block's own `defaults` via
+`encodeProps`, so a template can't drift from a block's schema — `tests/unit/post-templates.spec.ts`
+parses every template block against the wire format and its schema. The admin list also has a
+**Duplicate** action (a draft copy at `<slug>-copy`), an Edited column and thumbnails.
 
 #### Post Promo Rails (`components/posts/*`)
 Desktop-only internal advertising in the empty margins of a post page. Added 2026-07-26.
@@ -3639,13 +3645,8 @@ export async function applyForJob(jobId: string, formData: ApplicationData) {
 // adminSignIn(prev, fd) — signInCore, then redirect(resolvePostLoginPath(...))
 //                         → /admin for an admin, /portal for a linked staff
 //                         member, else an "account not set up" error
-// hostSignIn(prev, fd)  — signInCore, then returns { success } and stays put
 // adminSignOut()        — signOut + delete sb-remember
 ```
-Split because `redirect()` throws to unwind the request, which works for a
-full-page form and not at all for the Host popup on `/live`, which has to stay
-where it is and re-render. `hostSignIn` does **not** check the host role — it
-establishes who you are; `lib/liveChatAuth.ts` decides what that lets you do.
 `adminSignIn` sends admins to `/admin` and non-admin staff (a linked `hr_staff`
 row) to `/portal`; admin roles take priority, so someone who is both lands on
 `/admin` and can still reach `/portal` by URL.
@@ -3965,8 +3966,7 @@ drifting copy of the RBAC table.
 // Partial update of the popup_* columns only. A full-row upsert from the
 // event-popup admin page would blank every hero override.
 // Rejects popup_active when no event is featured, with a readable message.
-// Expires the layout's `featured-event` cache tag (lib/siteCache.server.ts),
-// so the change is live on the next request.
+// No revalidatePath — app/layout.tsx reads the popup with noStore().
 ```
 
 #### `POST /api/admin/popup/upload`
@@ -4006,57 +4006,6 @@ drifting copy of the RBAC table.
 // No revalidatePath — getNfcTiles() reads with noStore().
 ```
 
-#### Simulated live admin routes (`/api/admin/simulated-live/*`)
-```typescript
-// Host role (ROUTE_RULES in lib/adminRoles.ts) — the same people who run the
-// chat on a Sunday are the ones who start the broadcast.
-
-GET    /api/admin/simulated-live          // the row + derived { phase, endsAt, serverTime }
-PUT    /api/admin/simulated-live          // { active, video, title, notice, startsAt, durationSeconds }
-DELETE /api/admin/simulated-live          // blank the row entirely — "remove this service"
-GET    /api/admin/simulated-live/lookup   // ?url= → { videoId, title, durationSeconds, thumbnail }
-
-// Thin wrappers. The logic is in lib/simulatedLiveControl.server.ts and is
-// shared with /api/live-control (the same controls, mounted on /live). Two
-// surfaces editing one row must not be able to disagree about what a valid
-// broadcast is, and one implementation is how that is guaranteed rather than
-// hoped for.
-//
-// DELETE is deliberately distinct from `active: false`. Taking something off
-// air is a thing you do mid-service and might undo; removing it is "we're not
-// doing this", and leaving a half-remembered video id and last week's start
-// time in the form is how someone accidentally re-broadcasts it.
-
-// PUT re-resolves the runtime from YouTube rather than trusting the form: an
-// admin who edits the start time after pasting the link must not be able to
-// leave a stale duration behind. The submitted value is the fallback for when
-// YouTube can't be reached (no API key, exhausted quota) — which is exactly when
-// the admin page shows the manual runtime field.
-//
-// PUT calls clearSimulatedLiveCache() on the way out; without it "Start now"
-// appears to do nothing for up to ten seconds on that instance.
-//
-// lookup returns 200 with `unreadable: true` for a well-formed id YouTube won't
-// describe. An unlisted video that the API declines to describe will usually
-// still *play*, so the id is handed back and the runtime typed in by hand.
-```
-
-#### Live chat admin routes (`/api/admin/live-chat/*`)
-```typescript
-// Auth comes free: middleware.ts matches /api/admin/:path*, and lib/adminRoles.ts
-// maps these to the `host` role. Route bodies contain no auth code.
-
-GET  /api/admin/live-chat/session    // current room + last 20 sessions
-POST /api/admin/live-chat/session    // { session, state: open|paused|closed }
-GET  /api/admin/live-chat/moderate   // ?session= → { held[], blocks[] }
-POST /api/admin/live-chat/moderate   // { action: approve|hide|mute|unmute, message|blockId }
-GET  /api/admin/live-chat/prayer     // ?session= → the prayer queue
-POST /api/admin/live-chat/prayer     // { id, status: new|praying|done } — claims/releases
-GET  /api/admin/live-chat/threads    // ?session= → open direct threads
-```
-Moderation actions name a **message**, never a guest: the server resolves the
-author from the row, which is why no guest id is ever broadcast to the room.
-
 #### `POST /api/admin/revalidate`
 ```typescript
 // Manually trigger ISR for a path
@@ -4065,6 +4014,13 @@ author from the row, which is why no guest id is ever broadcast to the room.
 // 1. Check auth
 // 2. Call revalidatePath(path) or revalidateTag(tag)
 // 3. Return success
+```
+
+#### `GET /api/admin/posts/[id]/preview`
+```typescript
+// Signed preview URL for a (possibly unpublished) post
+// Returns: { url: "/<slug>?preview=<expiry>.<hmac>" } — valid for one hour
+// See lib/postPreview.server.ts and the /[slug] catch-all
 ```
 
 #### `GET /api/admin/posts/check-slug`
@@ -4182,75 +4138,16 @@ and filters/reveals it entirely client-side, no further network calls.
 ```typescript
 // Livestream status, polled client-side every 30s by LiveContext.
 // Response: { live, videoId, title?, startedAt?, scheduledFor?,
-//             simulated?, endsAt?, notice?, serverTime?, checkedAt }
+//             serverTime?, checkedAt }
 // dynamic = "force-dynamic"; Cache-Control: s-maxage=30, stale-while-revalidate=30
 //
 // ?debug=1 additionally returns `source` — which detection layer answered
-// (channel-page | videos.list | simulated | simulated-scheduled |
+// (channel-page | videos.list |
 // confirmed-offline | no-signal | disabled | no-channel | error) — and sets
 // no-store. That is the fastest way to work out why the banner is or isn't
 // showing in production without a redeploy.
 
 // Backed by lib/liveStatus.server.ts getLiveStatus() — see Libraries & Utilities.
-```
-
-**Why the cache header is conditional.** When `simulated` is set (a simulated
-broadcast airing *or* scheduled) the response switches to `no-store`. The payload
-carries `serverTime`, which the browser subtracts from its own clock to work out
-how far into the video to be; a response held at the edge for 30 seconds would
-hand every viewer a 30-second-old clock and put them 30 seconds behind the room.
-Nothing in a real broadcast's payload is time-sensitive to the second, so those
-still cache normally.
-
-#### Broadcast control from /live (`/api/live-control/*`)
-```typescript
-// ⚠️ NOT covered by middleware.ts (its matcher is /admin/* and /api/admin/*).
-// These hang off the public /live page, exactly like /api/live-chat/*, so every
-// handler authorises itself with requireHost() from lib/liveChatAuth.ts as its
-// first statement — before reading a body, a query string or the database.
-
-GET    /api/live-control          // current config + { phase, endsAt, serverTime }
-PUT    /api/live-control          // save (same body as the admin route)
-DELETE /api/live-control          // blank the row — "remove this service"
-GET    /api/live-control/lookup   // ?url= → video title, runtime, thumbnail
-
-// 401 when signed out, 403 when signed in without the `host` role.
-//
-// The lookup route is gated too, not just the writes: it spends YouTube API
-// quota, so it must not be callable by anyone who finds the path.
-//
-// tests/unit/live-control-auth.spec.ts reads this folder's source and fails if
-// a handler is added without requireHost(), or with it after something that
-// touches caller input. The failure mode otherwise is silent — an unguarded
-// route works perfectly for whoever is testing it, because they are signed in.
-```
-
-#### Live chat public routes (`/api/live-chat/*`)
-```typescript
-// ⚠️ NOT covered by middleware.ts (its matcher is /admin/* and /api/admin/*).
-// Every route here authorises itself via lib/liveChatAuth.ts — readGuest() or
-// requireHost(). A handler that reads a body before establishing the caller is
-// a bug.
-
-GET  /api/live-chat/me         // { guest, host, isHost } — derived server-side
-GET  /api/live-chat/session    // current room + the topics this caller may join
-POST /api/live-chat/identity   // { name } → sets the signed dc_live_guest cookie
-GET  /api/live-chat/messages   // ?session=&channel=[&thread=] — history
-POST /api/live-chat/messages   // { session, channel, body } — the moderated path
-POST /api/live-chat/prayer     // { session, name, body } — never public
-```
-
-`POST /messages` runs its checks in a deliberate order — room open? → who is
-asking? → muted? → rate limited? → what did they say? — so nothing the caller
-typed is read before the caller is established, and a flooder can't use the word
-filter as a CPU sink. Verdicts are `allow` / `hold` / `reject`; a held message is
-returned to its own author marked as waiting, so they don't retype it.
-
-#### `GET /api/cron/live-chat-purge`
-```typescript
-// Daily at 04:00 (vercel.json). Bearer CRON_SECRET — fails closed with 503 if
-// the secret is unset, since an open "delete the chat history" endpoint is worse
-// than the cron not running. Calls live_chat_purge(7).
 ```
 
 #### `GET /api/cron/hr-review-reminders`
@@ -4268,7 +4165,7 @@ returned to its own author marked as waiting, so they don't retype it.
 
 #### `GET /api/cron/analytics-anonymise`
 ```typescript
-// Daily at 03:00 (vercel.json, ahead of the 04:00 live-chat purge). Bearer
+// Daily at 03:00 (vercel.json). Bearer
 // CRON_SECRET — fails closed with 503 if unset. Calls
 // engagement_anonymise_ips(ANALYTICS_IP_RETENTION_DAYS ?? 90), which blanks
 // `ip` on old engagement_events rows and returns how many it touched.
@@ -4301,6 +4198,119 @@ returned to its own author marked as waiting, so they don't retype it.
 // once a day, the real-world floor is 48-72h, not exactly 48. Per-row try/catch:
 // one file that won't delete is logged and skipped, not a whole failed run.
 ```
+
+#### `GET /api/cron/destiny-one-sync`
+```typescript
+// Daily at 03:30. Bearer CRON_SECRET (fails closed). OPTIONAL ChurchSuite part: only when
+// configured, and only for members verified BY ChurchSuite (verification_source='churchsuite') —
+// staff-verified members are never touched. Removed from ChurchSuite → `pending`, which pauses
+// any group left with < 2 adults. An outage changes nothing. Then d1_reconcile_all() re-checks
+// every live group (always runs). A failed member read or re-check emails D1_OPS_ALERT_RECIPIENT
+// (sendOpsAlert, lib/destinyOne/opsAlertEmail.server.ts; job and error only, no member data).
+```
+
+#### `GET /api/cron/destiny-one-purge`
+```typescript
+// Daily at 04:15. Bearer CRON_SECRET. d1_purge_expired(D1_MESSAGE_RETENTION_DAYS, default 365,
+// floor 30) deletes messages, their attachment rows, erased members with no remaining messages,
+// and closed reports / resolved events past the window; the route then removes the storage
+// objects. A message under an open report is kept. ⚠️ 365 is a placeholder pending the
+// safeguarding policy decision (scoping doc D6). A failed purge, or files it couldn't delete,
+// emails D1_OPS_ALERT_RECIPIENT (sendOpsAlert).
+```
+
+#### Destiny One API (`/api/app/v1/one/*`)
+The backend for the Expo app. Every route: `Authorization: Bearer <Supabase access token>` (no
+cookies, so `middleware.ts` doesn't see these), resolved by `lib/destinyOne/auth.server.ts`, which
+applies three gates — signed in → `active`, staff-verified member (`access_request_needed` / `not_verified` / `forbidden` otherwise, per `onboardingState`) →
+current notices accepted (`consent_required`). Responses use the app envelope with
+`Cache-Control: private, no-store`; errors are `{ error: { code, message } }` with a stable `code`
+and a message the app can show. Writes call the `d1_*` SQL functions, whose own errors (e.g. "A group
+needs at least 2 verified adults.") pass through as `rule_violation` (422). Typed client:
+`createDestinyOneClient` in `@destiny/shared`.
+
+| Route | Methods | Notes |
+|---|---|---|
+| `config` | GET | No sign-in, no token, and the only `/one` route the CDN may cache (`s-maxage=60`): `D1AppConfig` — `minBuild { ios, android }`, `forceUpdateMessage`, `maintenanceMessage`, `storeUrl` (env `D1_IOS_STORE_URL`, default `itms-beta://` = TestFlight; `D1_ANDROID_STORE_URL`). The app's forced-update gate (`appGate()` in `@destiny/shared`, `src/lib/appGate.ts`) |
+| `auth/link` | POST | After every sign-in: accept an open invite for the email (`onboardMember`), return `D1Me` with `onboarding` |
+| `auth/code` | POST | No sign-in: `{ email }`. Sends the email sign-in code only if `d1_sign_in_status` says this email can get in (member, open invite, or requests open), from `after()`, and always answers `{ sent: true }`, so neither the reply nor its timing reveals who is a member. The code comes from the Supabase admin API (`generateLink`, which doesn't email) and is sent through Resend, so sign-in doesn't hit Supabase's per-IP limit for the server's address or its capped built-in sender. Rate-limited per IP and per (hashed) email. Replaced `auth/check` (2026-09-28), which said "no account" outright |
+| `me/access-request` | POST | `{ name, dateOfBirth?, note? }` — ask to join; a Destiny One Admin approves |
+| `auth/churchsuite/start` → `callback` → `exchange` | GET, GET, POST | Sign in with ChurchSuite (below) |
+| `me` | GET, PATCH, DELETE | PATCH `{ firstName, lastName }` changes my own name (5/min; Profile tab → Change name, `edit-name.tsx`). DELETE = GDPR erasure (`{ "confirm": "DELETE" }`). `D1Me` includes `firstName`, `lastName`, `blocked` (people I've blocked), `avatarUrl` (a signed link) and `isStaff` (has Destiny One / Safeguarding / Super Admin access; used only to check an "Add admin account") |
+| `me/avatar` | POST, DELETE | Profile picture (multipart `file`, 5 MB). Active members only; stored privately in `d1-avatars` |
+| `members/[id]/block` | POST, DELETE | Block / unblock someone; returns `D1Me`. Hides their messages and notifications for me only; logged for safeguarding |
+| `me/consents` | POST | Current versions only (`REQUIRED_CONSENTS`) |
+| `me/export` | GET | GDPR access: profile (incl. access-request note, declared and staff-set 18th birthday, how and when verified, a link to the profile picture), consents, memberships, own messages (incl. deleted), files sent (24-hour links), reactions, blocks, own reports, feedback sent |
+| `me/push-tokens` | POST, DELETE | Expo tokens |
+| `communities` | GET, POST | POST: any leader role |
+| `communities/[id]` | GET | |
+| `communities/[id]/members` | POST, DELETE | DELETE without `memberId` = leave |
+| `communities/[id]/groups` | POST | Create a sub-group (≥3 people, ≥2 adults) |
+| `groups/[id]` | GET, PATCH | PATCH: rename/describe/archive (managers) |
+| `groups/[id]/members` | POST, DELETE | Leaving never blocked |
+| `groups/[id]/icon` | POST, DELETE | Group icon (multipart `file`, 5 MB). Any current member can change it, not just admins; not for Announcements or paused groups. Stored in `d1-avatars` as `d1_groups.icon_path`; `iconUrl` on group summaries is a signed link. The app asks people to avoid the church logo |
+| `groups/[id]/messages` | GET, POST | Only messages since you joined; POST takes `body`, an attachment, a `poll` draft, or an `event` ref (the event is re-fetched and snapshotted server-side) and pushes a notification via `after()` (group name, "Sender: first line", or "Poll: …" / "Event: …") |
+| `messages/[id]/vote` | POST | `{ optionIds }` — your full vote set on a poll (empty clears it) |
+| `events` | GET | Upcoming ChurchSuite events for the Event picker in the attach sheet |
+| `groups/[id]/invites` | POST | Leaders: `{ email, name, adult, note? }` — invite someone new; they become an access request for staff to approve, then join the group |
+| `search/messages` | GET | `?q=` — full-text search of your messages: groups you are in, since you joined, never deleted; newest 30 |
+| `groups/[id]/read`, `/mute`, `/attachments` | POST | Read marker, mute, signed upload URL |
+| `groups/[id]/attachments?ids=` | GET | Fresh signed links (1 hour) for cached attachments whose links expired: only files in this group, sent since you joined, not deleted, not from someone you've blocked. Up to 60 ids |
+| `messages/[id]` | DELETE | Soft delete (content kept for review) |
+| `messages/[id]/report`, `/reactions` | POST (+DELETE) | Report → safeguarding bell, and an email to every Safeguarding Admin (`lib/destinyOne/safeguardingEmail.server.ts`; no message content, names or group in it) |
+| `directory` | GET | Leaders only; names + adult flag, never contact details |
+| `feedback` | POST | `{ kind: "problem" \| "idea", body, appVersion?, platform?, osVersion?, device?, errorId? }` — Profile → Report a problem / Send feedback. Saved to `d1_feedback` for Destiny One Admins (bell, no text in it). Skips the consent gate, like reporting. 5 a minute |
+
+**Sign in with ChurchSuite.** ChurchSuite's OAuth (authorisation code, scope `user`,
+`GET /account/users/current`) identifies ChurchSuite **users** — staff and leaders with a login — not
+every member, so members sign in with a Supabase email one-time code instead. `start` takes the app's
+redirect (`destinyone://…` only; `exp://` in development) and the **app's** PKCE challenge, and keeps
+our own PKCE verifier + state in a sealed HttpOnly cookie (`DESTINY_ONE_SECRET`, AES-256-GCM).
+`callback` exchanges the code, ensures a confirmed Supabase user for the ChurchSuite email, links it,
+mints a magic-link token hash — and redirects with a sealed 2-minute code, **not** the token. The app
+redeems that at `exchange` with its verifier, then `verifyOtp({ token_hash })`. An app that hijacks the
+`destinyone://` scheme on Android gets a code it can't use.
+
+#### Destiny One admin API (`/api/admin/destiny-one/*`)
+Two roles, split by path in `lib/adminRoles.ts` ROUTE_RULES (the safeguarding rule is listed first
+so the broader one can't swallow it) and re-checked in every route by `requireDestinyOneAdmin` /
+`requireSafeguardingAdmin` (`lib/destinyOne/admin.server.ts`). Every mutation calls `recordAudit`
+(section `destiny_one` or `safeguarding`).
+
+**Destiny One Admin (`destiny_one_admin`) — runs the app, never sees message content:**
+- `GET overview` — counts for the landing page.
+- `GET members?status=`, `GET/PATCH/DELETE members/[id]` — name, age decision (`age: { adult,
+  dateOfBirth? }` → `adultOnForDecision`), leader roles, suspend/reinstate, optional ChurchSuite
+  reference link, GDPR erasure.
+- `POST members/[id]/approve` (`{ adult, dateOfBirth?, displayName?, communityIds? }`),
+  `POST members/[id]/decline` (suspends, so they don't re-queue).
+- `GET/POST invites` (one or up to 100; per-invite errors returned), `PATCH invites/[id]` (resend
+  restarts expiry / revoke). Invite email: `lib/destinyOne/inviteEmail.server.ts` — the invitee's
+  name only, no community names.
+- `GET/POST communities`, `GET/PATCH communities/[id]`, `POST/PATCH/DELETE communities/[id]/members`,
+  `POST communities/[id]/groups`, `GET/PATCH groups/[id]` (archive/restore), `POST/PATCH/DELETE
+  groups/[id]/members` — all through the `d1_admin_*` SQL functions, so the rules hold.
+- `GET/PATCH settings` — access requests on/off, invite expiry; retention shown read-only.
+- `GET feedback`, `PATCH feedback/[id]` (`{ status: "new" | "done" }`) — app feedback. This is the
+  one place these routes read something members wrote, and it's what they chose to send to staff.
+- `GET churchsuite?q=` — OPTIONAL lookup on the approval screen; 404 when ChurchSuite isn't configured.
+
+**Safeguarding Admin (`safeguarding_admin`) — `/api/admin/destiny-one/safeguarding/*`, the only
+place message content can be read:**
+- `GET events?open=1`, `PATCH events/[id]` — the pause/report queue; mark handled.
+- `GET reports?status=`, `PATCH reports/[id]` — triage reports (resolution text redacted in the audit log).
+- `GET groups` — every group with counts, to pick one to review or pause.
+- `GET groups/[id]/transcript?reason=…&from=…&to=…` — **needs the Safeguarding Admin role itself;
+  super admin alone isn't enough** (`requireTranscriptReader`, decided 2026-09-28). Full history incl. deleted messages and
+  membership history. **Requires a reason** and defaults to the last 30 days; every read is written
+  to the audit log (`action: "view"`, section `safeguarding`) with who, which group, window and reason.
+- `POST groups/[id]/freeze` — manual pause / lift (a manual pause isn't lifted by the automatic rule).
+- `POST messages/[id]/remove` `{ reason }` — take a (reported) message down for everyone via
+  `d1_admin_delete_message`; content kept for review; audited.
+- `POST members/[id]/suspend` `{ suspended, reason }` — suspend a sender (groups that drop below the
+  rules pause as usual) or reinstate someone who is suspended (never a way round the approval queue);
+  audited. Lets the safeguarding team act without the Destiny One Admin role.
+- `GET events?kind=block` — the log of members blocking / unblocking each other (the "Blocks" tab).
 
 > There is no `/api/webhooks/vercel` or GitHub webhook route, and no `youtube-sync`
 > cron/cache job — `app/api/webhooks/` currently only contains `stripe/` (see Shop
@@ -4693,6 +4703,10 @@ needs credentials belongs in the e2e projects instead. `next build` is
 deliberately not in CI because page-data collection needs live Supabase env vars;
 Vercel's preview build covers that. The browser suite stays in `playwright.yml`,
 manual-trigger only, because it needs a running site to point at.
+Two more jobs, also secret-free: **Destiny One app** (`npm ci`, typecheck and
+`expo lint` inside `apps/destiny-one`, which is its own npm project) and
+**Database rules** (`scripts/test-sql.sh` against the PostgreSQL that ships on
+the Ubuntu runner, so the safeguarding SQL checks run on every PR).
 
 `tsconfig.json` and `eslint.config.mjs` both exclude `.claude/`: agent worktrees
 under `.claude/worktrees/` are gitignored full copies of the app, and without the
@@ -4702,12 +4716,6 @@ reports the stale copy's errors as yours.
 ---
 
 ## Libraries & Utilities
-
-### `lib/siteCache.server.ts`
-
-Cache tags for the root layout's reads and `expireSiteCache(...tags)`, which
-expires them immediately. Why this exists, and which route expires which tag, is
-under [Caching Strategy](#caching-strategy).
 
 ### `lib/adminNav.ts`
 
@@ -4757,7 +4765,8 @@ to open their editor straight away.
 
 ### `lib/adminTheme.ts`
 
-The admin's light/dark/system theme store — see "Dark mode — `/admin` only"
+The admin's light/dark/system theme store (dark mode currently switched off via
+`ADMIN_DARK_MODE_ENABLED`) — see "Dark mode — `/admin` only"
 under [Styling](#styling-tailwind-v4-no-tailwindconfigts) for the full
 mechanism (`@custom-variant dark`, why the `.dark` class lives on
 `/admin/layout.tsx`'s own wrapper rather than `document.documentElement`, and
@@ -4940,7 +4949,7 @@ hardcoded BST/GMT switchover dates to go stale.
 - `formatServiceDay(date)` — "Sunday 14 September" in London's calendar.
 - `formatCountdown(target, from?)` — "2 days 4 hours" → "18 minutes"; null once the target has passed.
 
-Used by `components/live/NextServiceCountdown.tsx`. Covered by
+Covered by
 `tests/unit/service-times.spec.ts`, which pins both DST boundaries and the
 mid-service behaviour.
 
@@ -5042,6 +5051,31 @@ that happens to match today) and — deliberately — asserts the support email 
 Consumed by `app/layout.tsx`'s JSON-LD, `app/contact/page.tsx`,
 `app/help/page.tsx`'s two schedule/location FAQ answers, `components/ChurchFooter.tsx`,
 `components/home/ServiceTimesBar.tsx`, and `app/visit/page.tsx`.
+
+---
+
+### `lib/useCourseEvents.ts`
+
+Client-side polling for `/api/alpha-events`, factored out of Alpha, The Bible
+Course, Destiny 12:2 and CAP Money — each page previously carried its own copy
+of the same fetch/filter/loading-state effect, differing only in which event
+`type` it kept.
+
+`useCourseEvents(matchesType)` fetches once on mount, keeps rows where
+`matchesType(event) && event.active !== false`, and returns `{ events, loading }`.
+A page passes its own filter, e.g. `(e) => e.type === "cap"`, or — Alpha's one
+real variation, since it runs Alpha and Youth Alpha through the same feed —
+`(e) => e.type === "alpha" || e.type === "youth_alpha"`.
+
+`summarizeCourseSession(event)` wraps `lib/alphaSession.ts`'s
+`getNextAlphaSession` into the `subtitle` string every course's
+`ChurchSuiteModal` shows ("Starting 12 January 2026" / "Next session 19 January
+2026"), so that formatting lives in one place instead of four.
+
+Paired with `components/courses/CourseEventCard.tsx` for the "when and where"
+card each of the four pages renders per event — see *Course pages* under
+Components for why the rest of each page stayed separate rather than becoming
+one shared template.
 
 ---
 
@@ -5161,8 +5195,7 @@ export async function getLatestVideo(): Promise<YTVideo | null> {
 
 // Livestream detection — the *real broadcast* half. Zero-quota on the happy
 // path; escalates only when scraping is inconclusive. Callers want
-// getLiveStatus() from lib/liveStatus.server.ts, which layers simulated live
-// underneath this.
+// getLiveStatus() from lib/liveStatus.server.ts, which stamps serverTime on it.
 export async function getYouTubeLiveStatus(): Promise<LiveStatus> { /* ... */ }
 ```
 
@@ -5226,84 +5259,16 @@ export async function reviewSermonSpeakers(opts?: { force?: boolean }): Promise<
 
 ### `lib/liveStatus.server.ts` — the composed "are we live?"
 
-**The one function the site should ask.** Two different things can put `/live` on
-air, and nothing downstream — the banner, the player, the live-chat guard, the
-mobile app's BFF — should have to know which:
+**The one function the site should ask.** A thin wrapper over
+`getYouTubeLiveStatus()` that stamps `serverTime` on the answer. The banner, the
+homepage status line and the mobile app's BFF all read it.
 
 ```typescript
 export async function getLiveStatus(): Promise<LiveStatus>
 ```
 
-1. **A real YouTube broadcast** — `getYouTubeLiveStatus()` from `lib/youtube.ts`.
-2. **A simulated one** — the `simulated_live` row, played as a broadcast.
-
-**The real broadcast is checked first and always wins.** That ordering is the
-safety property, not an optimisation: a simulated event someone forgot to switch
-off can never take an actual Sunday stream off the page. It costs nothing either
-way, since the YouTube check is memoised in-process regardless.
-
-Every answer now carries `serverTime`. A simulated answer additionally carries
-`simulated: true`, `endsAt` and `notice`, and its `startedAt` is the instant the
-simulated broadcast began — the origin every viewer's playhead is measured from.
-A simulated broadcast that hasn't started yet returns off-air *plus*
-`scheduledFor`, so the off-air card counts down to a real time instead of the
-standing "next Sunday, 11am" guess.
-
-`simulated` is set on exactly the airing and the scheduled answers, which makes
-it the flag the routes check before allowing a CDN cache.
-
----
-
-### `lib/simulatedLive.ts` / `lib/simulatedLive.server.ts` — simulated live
-
-**What it is.** Playing a pre-uploaded YouTube video on `/live` as though it were
-a broadcast — our version of what Church Online Platform does. Paste a link, set a
-start time, and everyone watching is at the same moment; someone who opens the
-page twenty minutes in joins twenty minutes in and can't rewind to the beginning.
-
-**The whole idea is one subtraction.** Nothing is streamed and nothing is pushed.
-Every viewer loads the same video seeked to `now - startsAt`:
-
-```
-before startsAt                        → scheduled  (off air, counting down)
-startsAt … startsAt + durationSeconds  → airing at that many seconds in
-after that                             → finished   (off air, on its own)
-```
-
-Because the position is *derived* rather than stored or broadcast, viewers stay in
-sync with no coordination, and a response that sat in a cache for ten seconds is
-still correct — `now - startsAt` doesn't go stale the way a "you are at 00:14:32"
-number would.
-
-**Split across two files for bundling reasons.** `lib/simulatedLive.ts` is pure
-arithmetic (`simulatedPhase`, `simulatedPosition`, `simulatedEndsAt`,
-`parseYouTubeId`, `parseIsoDurationSeconds`, `formatTimecode`) and is imported by
-the admin page as well as the server. `lib/simulatedLive.server.ts` holds the
-service-role read of the singleton row and is `server-only`, memoised for 10
-seconds (shorter than the YouTube path's 30 — this is the row an admin has just
-pressed "Start now" on while watching `/live` in another tab), with
-`clearSimulatedLiveCache()` called after an admin write.
-
-**Clock skew is handled, because it has to be.** Each viewer computes their own
-position, so a device whose clock is two minutes fast would watch two minutes
-ahead of the chat it is reading. Every live-status payload carries `serverTime`;
-`LiveContext` stores `serverTime - Date.now()` on each poll and adds it before
-subtracting `startedAt`. It re-measures every 30s, so it also self-corrects if the
-device clock is adjusted mid-service.
-
-**Runtime is resolved, not trusted.** `duration_seconds` comes from
-`contentDetails.duration` when the link is saved (`parseIsoDurationSeconds`), and
-is re-resolved on every save so editing the start time can't leave a stale one
-behind. It is *stored* rather than fetched per request because it is the only
-thing that says when to go off air, and it must keep working if the YouTube API
-key is missing or out of quota — which is exactly when the admin page offers a
-manual runtime field instead.
-
-**What `parseYouTubeId` has to get right.** Watch URLs, `youtu.be`, `/live/`,
-`/embed/`, `/shorts/`, bare ids, and — the case a loose regex fails — *channel*
-links. `youtube.com/@DestinyOnlineChurch` contains eleven plausible characters and
-must come back null rather than scheduling a broadcast of nothing. Pinned by
-`tests/unit/simulated-live.spec.ts`.
+(Before the on-site `/live` page and chat were retired this also layered a
+"simulated" broadcast underneath the real one; that is gone.)
 
 ---
 
@@ -5401,7 +5366,6 @@ export const PAGE_INTENTS = [
   { href: "/give", cta: "Give Now", intent: "giving, donations, bank details..." },
   { href: "/visit", cta: "Plan Your Visit", intent: "visiting, first time..." },
   { href: "/sermons", cta: "Watch Sermons", intent: "sermons, messages..." },
-  { href: "/live", cta: "Watch Live", intent: "livestream, live service, Sundays at 11am" },
   { href: "/shop", cta: "Browse Merch", intent: "shop, apparel, merch, buy" },
   { href: "/help", cta: "Help Centre", intent: "help, FAQ, questions" },
   // ... 17 more pages (kids, youth, Alpha, serve, connect, missions, etc.)
@@ -5864,8 +5828,7 @@ maps used by both the admin UI and the notification emails.
 `lib/adminRoles.ts`. A portal user's identity is "does this auth user have a
 linked `hr_staff` row", **not** an access-level boolean, and must never become
 one: conflating it with `admin_roles` would let "can see my own payslip" leak
-into "can manage HR". This mirrors `lib/liveChatAuth.ts`'s `readHost()` — the
-other place the app authorises an authenticated user outside `admin_roles`.
+into "can manage HR".
 
 - `isLinkedToStaff(supabase, authUserId)` — cheap boolean for `middleware.ts`.
 - `readPortalUser()` — returns `{ userId, staff }` or `null`; every `/api/portal/*`
@@ -5994,6 +5957,76 @@ fresh URL per click.
 
 ---
 
+### Destiny One app — look and feel (`apps/destiny-one/src`)
+
+Polished to Apple's Human Interface Guidelines. The pieces, and why they exist:
+
+- **Personal appearance** (Profile → Appearance, `src/app/appearance.tsx`). Each person picks the
+  colour of the messages *they send* and a conversation wallpaper. Kept on the phone only
+  (`src/state/appearance.ts`, AsyncStorage, `d1.appearance.v1`), so it changes nothing for anyone
+  else. `useTheme()` (`src/theme/tokens.ts`) folds the choice in as `t.send`, `t.onSend`,
+  `t.onSendCard` and `t.wall`, so bubbles, the send button, poll bars and the message-actions
+  preview all follow it.
+- **The choices are a curated list, not a colour picker** (`src/theme/appearance.ts`, pure data, no
+  React Native). A free picker can't promise legibility. Every send colour is chosen so its text is
+  at least 4.5:1 and the bubble is at least 3:1 against the page and every wallpaper, in light and
+  dark; every wallpaper keeps body text at 7:1 and timestamps at 4.5:1. `tests/unit/destiny-one-appearance.spec.ts`
+  checks every combination, so adding a colour or wallpaper that fails turns the tests red. The
+  default light send colour is a deeper orange (`#BF5200`, white text) because the brand orange
+  (`#F58021`) is only 2.6:1 against white; dark mode keeps the brand orange with dark text.
+- **Wallpapers** (`src/components/Wallpaper.tsx`) are drawn in code with `react-native-svg`
+  (gradient, hills, dots, contours, sunburst, waves), not shipped as photos: sharp at any size,
+  near-zero weight, and each has light and dark colours. Applied to conversations only; list and
+  settings screens stay plain so text is always on a known background.
+- **Dark mode is a warm tint of the brand orange** (`#1A110A` page, `#26190F` cards), not pure black.
+- **Bubbles** (`MessageBubble.tsx`) join in runs (the corner facing the sender flattens between
+  neighbours) and the last one in a run gets a small curved tail. The time shows once per run.
+- **Gestures** (`src/components/Swipe.tsx`): swipe a message left to reply (`SwipeToReply`, left as in Telegram so it can never clash with swipe-back);
+  swipe a chat row left for Read and Mute (`SwipeActions`). Both track the finger 1:1, rubber-band
+  at the edge, and spring on from the release velocity; `SwipeActions` snaps using where the flick
+  was heading (`project()`), and only one row is open at a time. Plain `PanResponder` + `Animated`,
+  no extra native module. Long-press still opens the actions sheet, which springs up from the message's side.
+- **Haptics** (`src/lib/haptics.ts`, `expo-haptics`), used only for meaningful moments: tab and
+  filter changes, sending, reacting, poll votes, a gesture reaching its threshold, opening the
+  message menu, errors. Never on scroll or every tap.
+- **Text size**: chrome text (tab labels, chips, badges, reactions) caps its scaling with
+  `maxFontSizeMultiplier` and controls use `minHeight`, so large Dynamic Type sizes grow the
+  layout instead of clipping it. Body text scales freely.
+- **Pressed states** respond on touch-down with a small scale, not just an opacity change.
+
+### `lib/destinyOne/*` — Destiny One backend
+
+Part 2 additions: `onboarding.ts` (pure: `onboardingState`, `ONBOARDING_MESSAGES`,
+`adultOnForDecision` — turns an admin's adult/under-18 choice + optional DOB into `adult_on`, and
+refuses a mismatch), `settings.server.ts` (`getSettings`, `retentionDays`), `adminData.server.ts`
+(admin reads: members with email, groups with counts, community/group people, invites),
+`adminTypes.ts` + `adminClient.ts` (client-safe shapes and `adminSend` for the admin pages),
+`inviteEmail.server.ts`. `identity.server.ts` now exports `onboardMember`, `submitAccessRequest`
+and a ChurchSuite-only `resyncMember`.
+
+- `http.ts` — `oneJson`/`oneError`/`OneError`, `oneRoute` (turns a thrown `OneError` into the error
+  response), `fromDbError` (maps the SQL functions' SQLSTATEs: `P0001` → 422 `rule_violation`, `42501` →
+  403, `P0002` → 404; anything else is logged and reported generically), `readBody` (zod), `limit`
+  (per-member `lib/rateLimit.ts` wrapper).
+- `auth.server.ts` — `authenticate` (Bearer → Supabase user), `requireMember` (the three gates), `toMe`.
+- `churchsuite.ts` (pure, unit-tested) — `toPerson`, the **data-minimisation allow-list**: a ChurchSuite
+  record becomes `{ kind, id, displayName, email, adultOn, status }` and nothing else — no phone,
+  address, medical notes or DOB ever leave it. Children-module records are always minors.
+  `pickByEmail` (exact, active, and *ambiguous* on a shared family email → stays pending). PKCE,
+  `seal`/`unseal` (AES-256-GCM with expiry), `isAllowedAppRedirect`.
+- `churchsuite.server.ts` — ChurchSuite API v2: client-credentials token (cached), contact/child
+  lookups, auth-code exchange, current user. Throws `ChurchSuiteUnavailable` on outage so callers treat
+  it as "no change".
+- `identity.server.ts` — `onboardMember` (invite → active; optional ChurchSuite sign-in → verified; else `pending`), `submitAccessRequest`, `resyncMember` (ChurchSuite-verified members only; outages never downgrade).
+- `chat.server.ts` — reads shaped into `@destiny/shared` types: community list, group detail (adult flags
+  only for managers), message pages with signed attachment URLs; deleted messages returned without body.
+- `push.server.ts` — Expo push: title = group name, body = `pushPreviewText()` ("Sender: first line", 100 chars, from `@destiny/shared`), `data.groupId`; prunes dead tokens. Previews pass through Expo/APNs/FCM — see docs/destiny-one-gdpr.md §3.
+- `schemas.ts` — zod request schemas (limits mirror the SQL CHECKs). `admin.server.ts` —
+  `requireSafeguardingAdmin`. `signin.server.ts` — ChurchSuite hand-off constants.
+- `packages/shared/src/destinyOne/policy.ts` — the rules as pure functions (`adultOnFromDateOfBirth`,
+  `canCreateGroup`, `checkComposition`, `canPost`, `REQUIRED_CONSENTS`, …) for early refusals in the
+  API and button-hiding in the app. The database is the authority; this is a copy.
+
 ## Authentication & Authorization
 
 ### Supabase Auth Flow
@@ -6043,13 +6076,13 @@ remembered, so existing sessions aren't unexpectedly downgraded.
 
 ### Authorization Layers
 
-Access levels live in `lib/adminRoles.ts` + the `admin_roles` table — nine
+Access levels live in `lib/adminRoles.ts` + the `admin_roles` table — eleven
 independent per-user booleans (`training_admin`, `event_admin`, `store_admin`,
-`site_admin`, `host`, `hr_admin`, `design_admin`, `sermon_admin`, `super_admin`; see [admin_roles](#10b-admin_roles)). Auth *and*
+`site_admin`, `hr_admin`, `design_admin`, `sermon_admin`, `safeguarding_admin`,
+`destiny_one_admin`, `super_admin`; see [admin_roles](#10b-admin_roles)). Auth *and*
 role enforcement both happen centrally in `middleware.ts`, not in
-`app/admin/layout.tsx` (a server wrapper that only marks the segment dynamic)
-or `components/admin/AdminShell.tsx` (the client sidebar/header shell); neither
-checks auth or roles itself.
+`app/admin/layout.tsx` (which is a client component purely responsible for the
+sidebar/header shell; it does not check auth or roles itself).
 
 **Route → role mapping** (`ROUTE_RULES` in `lib/adminRoles.ts`; `super_admin`
 always passes and isn't repeated per rule; anything under `/admin` or
@@ -6061,7 +6094,6 @@ always passes and isn't repeated per rule; anything under `/admin` or
 | `event_admin` | Courses (`alpha`, `recovery`, `bible-course`, `cap-money`, `featured-course`) + Announcements except Banner (`popup`, `featured-event`, `event-popup`, `nfc`) | `/api/admin/{alpha-events,events,featured-course,featured-event,popup,nfc}` |
 | `store_admin` | `/admin/store/**` | `/api/admin/{store,shop-hero}/**` |
 | `site_admin` | `/admin/posts`, `/admin/redirects`, `/admin/analytics` | `/api/admin/{posts,redirects,analytics}/**` |
-| `host` | `/admin/live-chat`, `/admin/live` | `/api/admin/live-chat/**`, `/api/admin/simulated-live/**` |
 | `hr_admin` | `/admin/hr/**` (staff, leave, jobs, applications, documents, reviews, checklists) | `/api/admin/hr/**` |
 | `design_admin` | `/admin/design/**` (the design ticket queue) | `/api/admin/design/**` |
 | `super_admin` | Everything, plus Banner, Clear Cache, `/admin/users` and `/admin/audit` | `/api/admin/{banner,revalidate,users,audit}/**` |
@@ -6147,11 +6179,6 @@ Reading it is Super Admin only, by omission from `ROUTE_RULES` rather than by a
 rule: the log spans every section, so any narrower grant would leak one team's
 activity to another. See [audit_log / audit_reports](#23-audit_log--audit_reports).
 
-> The `host` level is the first one that also governs a **public** page. `/live`
-> is not matched by `middleware.ts`, so the chat routes under `/api/live-chat`
-> authorise themselves via `lib/liveChatAuth.ts`; `ROUTE_RULES` only covers the
-> `/admin/live-chat` console. See [Live chat identity](#live-chat-identity-live).
-
 ##### The staff portal — a second auth boundary
 
 `/portal` and `/api/portal/*` (staff self-service — own profile, leave,
@@ -6162,8 +6189,7 @@ checked independently of `hasAccess()`. A signed-in admin with no staff record
 cannot reach the portal, and a staff member with no admin role cannot reach
 `/admin` — the two boundaries are deliberately orthogonal. Every `/api/portal/*`
 handler re-derives identity with `readPortalUser()` and scopes queries to that
-staff id, so the portal never trusts request state it can't verify itself. This
-is the same "authorise outside `admin_roles`" pattern as the Host on `/live`.
+staff id, so the portal never trusts request state it can't verify itself.
 
 #### Layer 1: Middleware (`middleware.ts`)
 ```typescript
@@ -6220,11 +6246,10 @@ grant execute on function public.my_fn(...) to service_role;
 ```
 
 A helper that an RLS policy calls runs as the querying role, so that role needs
-EXECUTE. Put it in the non-exposed `private` schema instead of `public` (see
-`private.is_live_chat_host()`). Trigger functions don't need the caller to hold
+EXECUTE. Put it in the non-exposed `private` schema instead of `public` . Trigger functions don't need the caller to hold
 EXECUTE. Run `get_advisors` (security) after any migration that adds a function:
 lints 0028/0029 flag definer functions that anon or authenticated can reach.
-Current examples: `decrement_variant_stock`, `live_chat_emit`, `live_chat_purge`.
+Current example: `decrement_variant_stock`.
 
 **Why two layers?**
 - **Defense in depth** — the middleware gate is the single source of truth for "is this
@@ -6253,37 +6278,24 @@ server-side limits instead:
 
 ---
 
-### Live chat identity (`/live`)
+### Destiny One member identity (`/api/app/v1/one`)
 
-Two different things sign in on the live page, and only one of them is an account.
+Separate from admin auth: app members are Supabase Auth users with **no admin_roles row** and
+**no cookies** — the Expo app keeps its session in the iOS Keychain / Android Keystore
+(`expo-secure-store`) and sends a Bearer token. Two sign-in methods, neither with a phone number:
+email one-time code (Supabase OTP) and Sign in with ChurchSuite (optional, for staff/leaders).
 
-**Guests have no account at all.** A display name goes into `dc_live_guest`, an
-HMAC-signed HTTP-only cookie (`lib/liveChatGuest.ts`, same construction as
-`lib/trainingAccess.ts`). No email, no password, no `auth.users` row. It is
-*signed* for two reasons: a mute is applied to the guest id, so an unsigned
-cookie would just be edited to shed it; and the server needs an id it can trust
-to rate-limit on. Renaming keeps the id, so a mute survives a name change — the
-obvious first thing someone tries.
-
-The direct-message channel key is **derived**, not stored:
-`dmKeyFor(id) = HMAC(secret, "dm:" + id)`. The topic name is therefore itself the
-capability — unguessable without the server secret — and the key never appears in
-anything sent to another client.
-
-**Hosts are staff logins** with the `host` access level, signing in through
-`HostLoginModal` on the page itself rather than being redirected to `/login`.
-Same rate limit and Supabase password checks (`signInCore` in
-`app/login/actions.ts`).
-
-> The `host` role gates `/admin/live-chat` and `/admin/live` (Simulated Live)
-> through the normal `ROUTE_RULES`
-> table, but Hosts also act on `/live`, which is public and unmatched by
-> middleware. Those routes — `/api/live-chat/*` for moderation and
-> `/api/live-control/*` for running the broadcast — call `requireHost()` in
-> `lib/liveChatAuth.ts`, the single place that decides who someone is on the
-> public side.
-
----
+**Staff verify people, not ChurchSuite.** After sign-in, `onboardMember` (`identity.server.ts`):
+existing member → as is; an open invite for the email → active with the invite's name, age, roles
+and communities; Sign in with ChurchSuite (if configured) → verified from the linked contact;
+anyone else → `pending`. `D1Me.onboarding` tells the app which screen to show
+(`request_needed` → the access request form, `POST /me/access-request`; `request_submitted`;
+`invite_only` when `d1_settings.allow_access_requests` is off; `suspended`; `active`), with
+`onboardingMessage` copy served from the server (`lib/destinyOne/onboarding.ts`). A Destiny One
+Admin approves requests as adult or under 18 at `/admin/destiny-one/requests`. Members must also
+accept the current privacy / terms / chat-review notices. Leader roles (`admin`,
+`cg_leader`, `senior_leader`) are set by a Destiny One Admin. Supabase's phone auth provider should be
+**disabled**; the database refuses to activate an account with a phone number regardless.
 
 ### Session Management
 
@@ -6484,6 +6496,14 @@ means adopting the others.
 
 #### Dark mode — `/admin` only
 
+> **Currently switched off (September 2026).** Destiny One's admin pages were
+> never checked in dark and it read as broken rather than dark, so
+> `ADMIN_DARK_MODE_ENABLED` in `lib/adminTheme.ts` is `false`: `useAdminTheme()`
+> always resolves to light (whatever is stored or the OS prefers) and
+> `AdminThemeToggle` renders nothing. Everything below still describes how it
+> works — the `dark:` classes are left in place, dormant — so re-enabling it is
+> flipping that constant once each admin page has been checked in dark.
+
 Tailwind v4's default `dark:` variant follows `prefers-color-scheme`, which
 would flip the whole *site* dark the moment a visitor's OS is set to dark —
 wrong for a public church site whose brand is deliberately light. `globals.css`
@@ -6495,7 +6515,7 @@ redefines the variant instead:
 
 so `dark:` utilities do nothing anywhere a `.dark` class doesn't exist. The
 only place that class is ever applied is the `/admin` shell's own wrapper div
-(`components/admin/AdminShell.tsx`, rendered by `app/admin/layout.tsx`), driven by `lib/adminTheme.ts`'s `useAdminTheme()`
+(`app/admin/layout.tsx`), driven by `lib/adminTheme.ts`'s `useAdminTheme()`
 hook — so the public site is structurally unaffected; there is no code path
 that can put `.dark` on anything outside `/admin`.
 
@@ -6585,7 +6605,7 @@ YOUTUBE_API_KEY=AIza...
 YOUTUBE_CHANNEL_ID=UCxx...
 YOUTUBE_CHANNEL_HANDLE=DestinyOnlineChurch       # optional; overrides the CHANNEL_HANDLE constant (the @ name) for live detection
 YOUTUBE_CHANNEL_VANITY=destinychurchteesvalley   # optional; overrides the CHANNEL_VANITY constant (the custom URL)
-LIVE_DISABLED=                              # set to 1 to force the /live page and banner off air
+LIVE_DISABLED=                              # set to 1 to force the live banner off air
 
 # Buzzsprout (sermon podcast audio)
 BUZZSPROUT_API_TOKEN=<token from the Buzzsprout account's My Account page>   # /admin/sermons upload flow only — reading the feed needs no key
@@ -6629,7 +6649,6 @@ GITHUB_TOKEN=ghp_...
 
 # Cron bearer token — gates the jobs declared in vercel.json:
 #   /api/cron/analytics-anonymise    (daily 03:00) — anonymises engagement_events IPs
-#   /api/cron/live-chat-purge        (daily 04:00) — deletes chat history older than 7 days
 #   /api/cron/hr-review-reminders    (daily 06:00) — HR review digest to HR_NOTIFICATIONS_EMAIL
 #   /api/cron/audit-weekly-report    (Sun 20:00)   — AI admin-activity report to every Super
 #                                                    Admin, then the audit-log retention purge
@@ -6670,6 +6689,32 @@ VERCEL_API_TOKEN=
 VERCEL_ANALYTICS_PROJECT_ID=
 VERCEL_ANALYTICS_TEAM_ID=
 
+# Destiny One (the Expo messaging app's backend, /api/app/v1/one)
+#   ChurchSuite is OPTIONAL for Destiny One (staff verify people via invites/approvals). Leave these
+#   unset to run without it; set them to enable Sign in with ChurchSuite and the approval lookup.
+#   CHURCHSUITE_CLIENT_ID / _SECRET        — OAuth app, client credentials; scopes addressbook.read
+#                                            children.read (override with CHURCHSUITE_SCOPES)
+#   CHURCHSUITE_OAUTH_CLIENT_ID / _SECRET  — "Sign in with ChurchSuite" app (auth code + PKCE, scope
+#                                            user). Falls back to the pair above.
+#   DESTINY_ONE_SECRET                     — 32+ random chars; seals the OAuth state cookie and the
+#                                            one-time sign-in hand-off code
+#   D1_MESSAGE_RETENTION_DAYS              — default 365 (placeholder pending safeguarding sign-off)
+#   EXPO_ACCESS_TOKEN                      — optional; only if Expo push security is enabled
+#   D1_APP_STORE_URL / D1_PLAY_STORE_URL   — optional; store links in the invite email once published
+#   D1_OPS_ALERT_RECIPIENT                 — optional; who is emailed when the nightly purge or sync fails
+#                                            (lib/destinyOne/opsAlertEmail.server.ts). Falls back to
+#                                            SMART_SEARCH_ALERT_RECIPIENT
+CHURCHSUITE_CLIENT_ID=
+CHURCHSUITE_CLIENT_SECRET=
+CHURCHSUITE_OAUTH_CLIENT_ID=
+CHURCHSUITE_OAUTH_CLIENT_SECRET=
+DESTINY_ONE_SECRET=
+D1_MESSAGE_RETENTION_DAYS=365
+EXPO_ACCESS_TOKEN=
+D1_APP_STORE_URL=
+D1_PLAY_STORE_URL=
+D1_OPS_ALERT_RECIPIENT=
+
 # Feature flags (also toggleable via the `service_status` DB table, e.g. 'smart_search')
 ENABLE_SMART_SEARCH=true
 ```
@@ -6689,61 +6734,12 @@ ENABLE_SMART_SEARCH=true
 
 ### Caching Strategy
 
-**The root layout decides whether any page is cached.** Every page renders
-`app/layout.tsx`, so one uncached read there makes the whole site dynamic. Until
-2026-09 that is exactly what happened: the banner and popup reads called
-`noStore()`, the event popup called it too, and the live-status check makes
-`no-store` fetches to YouTube. Every public page went out as
-`cache-control: private, no-store` with a ~1s server render in front of it, and
-every page's own `revalidate` export was ignored.
-
-The layout's five reads are now each cached with `unstable_cache` under a tag
-from `lib/siteCache.server.ts` — the banner, popup and live status in the layout
-itself, the featured-event row in `lib/events.server.ts` and the Smart Search
-flag in `lib/serviceStatus.ts`, because those two have other readers (the
-homepage and `/whats-on` read the featured event; `app/not-found.tsx` reads the
-flag) that need the same cache. Inside an `unstable_cache` scope Next treats
-`noStore()` as a no-op and inner fetches as uncached network calls, but neither
-makes the *page* dynamic. While a page is prerendered, each cached read also
-lowers the page's revalidate period to its own and adds its tags to the page,
-so expiring a tag rebuilds every page that showed that data.
-
-**Anything the root layout or `app/not-found.tsx` reads must be cached.** The
-root not-found boundary is rendered as part of every page's prerender, so an
-uncached read there is exactly as site-wide as one in the layout — that is how
-`not-found.tsx`'s Smart Search check kept most pages dynamic even after the
-layout was fixed. To see why a route is still dynamic, run `npx next build --debug`
-and look for `Static generation failed due to dynamic usage on …, reason: …`.
-
-`app/admin/layout.tsx` is a small server component that declares
-`dynamic = "force-dynamic"` and renders the client chrome in
-`components/admin/AdminShell.tsx`. Admin pages were always rendered per request
-(because the whole site was); once they no longer were, their `useSearchParams()`
-list filters failed the static prerender, and there is nothing in an admin page
-worth prerendering anyway.
-
-| Read | Tag | Backstop | Expired by |
-|---|---|---|---|
-| Site/course banner | `site-banner` | 5 min | `PUT /api/admin/banner`, every `alpha-events` write (course banners resolve against those rows) |
-| First-visit popup | `site-popup` | 5 min | `PUT /api/admin/popup` |
-| Featured event row (event popup, homepage, `/whats-on`) | `featured-event` | 5 min | `PUT /api/admin/featured-event`, `PUT …/featured-event/popup` |
-| Smart Search enabled | `service-status` | 5 min | `setSmartSearchStatus()` |
-| Live status (first paint only) | `live-status` | 60 s | `writeSimulatedLive()` / `clearSimulatedLive()` |
-
-`expireSiteCache()` calls `revalidateTag(tag, { expire: 0 })` rather than the
-default `"max"` profile, so the next request rebuilds instead of being served the
-stale copy once more. A new route that writes one of these tables must call it,
-or the edit looks unsaved until the backstop runs out. The 60-second live-status
-cache is safe because `LiveContext` polls `/api/youtube/live` as soon as it mounts;
-it also caps every page's cache lifetime at a minute, which is still a CDN hit for
-all but one request a minute.
-
 | Content | Strategy | TTL | Invalidation |
 |---------|----------|-----|--------------|
 | Static assets (`/img`, `/fonts`) | Immutable | 1 year | Filename change |
-| Public pages | ISR | ≤ 60 s (layout's live-status backstop) or the page's own `revalidate`, whichever is shorter | Layout tags above; page-specific `revalidatePath` |
-| Still dynamic by design | `/[slug]` posts, `/live`, `/login`, `/sermons/[id]`, `/shop/[slug]`, `/training/*`, `/admin/*`, `/portal/*` | - | - |
-| Still dynamic, could be cached | `/hire`, `/nfc` — `lib/pageContent.ts` and `getNfcTiles()` call `noStore()` | - | - |
+| Home page | ISR | 1 hour | `revalidatePath("/")` |
+| Sermon archive | ISR | 4 hours | `revalidatePath("/sermons")` |
+| Dynamic pages (`/[slug]`) | ISR | 24 hours | `revalidatePath("/[slug]")` |
 | Redirects | Edge | Infinite | Deploy |
 | API responses | None | - | Fresh on every request |
 | Images | Browser cache | 30 days | `next/image` optimization |
@@ -6830,7 +6826,6 @@ all but one request a minute.
 - `app/page.tsx` — Home (hero, latest sermon, CTAs)
 - `app/sermons/page.tsx` — Sermons (video-first featured message, video archive grid)
 - `app/sermons/[id]/page.tsx` — Sermon detail (video, next steps)
-- `app/live/page.tsx` — Livestream (hero + sections, with a client island for the glass player / off-air card)
 - `app/about/page.tsx` — About church
 - `app/beliefs/page.tsx` — Statement of faith
 - `app/kids/page.tsx` — Kids ministry
@@ -6867,6 +6862,7 @@ all but one request a minute.
 ### Admin Pages
 - `app/login/page.tsx` — Staff sign-in (there is no `app/admin/login`; that path is a stale-bookmark redirect to `/admin`)
 - `app/admin/page.tsx` — Admin home (dashboard)
+- `app/admin/destiny-one/**` — Destiny One: overview, access requests, invites, app members, communities & groups (Destiny One Admin), safeguarding (Safeguarding Admin), app settings
 - `app/admin/banner/page.tsx` — Banner management
 - `app/admin/popup/page.tsx` — Pop-up management
 - `app/admin/redirects/page.tsx` — Redirect management
@@ -6879,7 +6875,6 @@ all but one request a minute.
 - `app/admin/store/orders/page.tsx` — Orders list
 - `app/admin/store/orders/[id]/page.tsx` — Order detail (fulfillment)
 - `app/admin/store/hero/page.tsx` — Shop hero slides (add/edit/reorder rotating hero)
-- `app/admin/live/page.tsx` — Simulated Live (schedule a pre-recorded video to play on `/live` as a broadcast)
 - `app/admin/sermons/page.tsx` — Publish sermon audio to Buzzsprout; manage playlist-backed series; AI or manual speaker correction (Sermon Admin)
 - `app/admin/users/page.tsx` — Admin logins and access-level roles (Super Admin only)
 - `app/admin/audit/page.tsx` — Audit log: ask it in plain English, or search/filter and read the field-by-field detail. Second tab holds the weekly AI reports (Super Admin only)
@@ -6915,8 +6910,7 @@ all but one request a minute.
     `auditEmail.ts` (the weekly report email)
   - Notification center: `notify.server.ts` (`recordNotification()`, the one
     writer — writes the row then Broadcasts it, never throws), `useNotifications.ts`
-    (the client bell hook — fetch + per-role Realtime subscription, mirroring
-    `useLiveChat.ts`)
+    (the client bell hook — fetch + per-role Realtime subscription)
   - Click analytics (`/admin/analytics`): `engagement.ts` (vocabulary + wire
     format), `engagement.server.ts` (`recordEngagement()`), `botDetect.ts`
     (crawler/device/OS/browser detection), `track.ts` (client `sendBeacon`),
@@ -6925,14 +6919,14 @@ all but one request a minute.
     `useEngagementRollup.ts` (the fetch hook the page's tabs share)
 
 ### API Routes (`app/api/`)
-- **Admin endpoints:** Banners, redirects, pop-ups, cache revalidation, posts, training, alpha-events, featured-course, HR, store management, simulated live,
+- **Admin endpoints:** Banners, redirects, pop-ups, cache revalidation, posts, training, alpha-events, featured-course, HR, store management,
   plus `me` (signed-in identity + roles), `search` (role-filtered cross-section record search behind the ⌘K palette),
   `notifications` (the notification bell's feed: `GET` for the role-filtered list with the caller's read state folded in,
   `/[id]/read` and `/read-all` to mark read — every admin may call it and it narrows the rows itself, like `search`),
   `audit` (the audit log: list, `ask` for the plain-English answer, `reports` for the weekly ones — Super Admin only)
   and `analytics` (`engagement_rollup` for Short links/In person, `analytics/site` for the Vercel panel — Site Admin or Super Admin)
 - **Cron endpoints (`/api/cron/*`, `CRON_SECRET`-gated, scheduled in `vercel.json`):** `analytics-anonymise` (daily,
-  nulls old `engagement_events` IPs), `live-chat-purge` (daily), `hr-review-reminders` (daily),
+  nulls old `engagement_events` IPs), `hr-review-reminders` (daily),
   `audit-weekly-report` (Sunday evening — writes and emails the week's admin-activity report, then
   runs the audit-log retention purge and `purge_old_notifications()`), `ip-reputation-refresh` (weekly — refreshes the VPN/Tor/
   datacenter/Private-Relay range lists behind `engagement_events.ip_category`), `design-deliverables-purge`
@@ -7029,8 +7023,206 @@ feed normalisation of its own, because the BFF already does all of it.
   constraints (adult/minor boundary via ChurchSuite DOB data), ChurchSuite API integration, and
   payments/sermon-feed reuse. It now also includes **Appendix A (ChurchSuite API v2 technical
   reference)** and **Appendix B (Apple Human Interface Guidelines considerations)**. Phase 1
-  (the native SwiftUI tab shell over the `/api/app/v1` BFF) is now built; later phases (chat, payments,
-  push) are still planning-only.
+  (the native SwiftUI tab shell over the `/api/app/v1` BFF) is now built. **Chat has since moved
+  off Matrix** — see Destiny One below.
+
+### Destiny One (Expo, iOS + Android) — `apps/destiny-one/`
+The members' messaging app — "WhatsApp Communities" with department sub-groups, under the
+safeguarding rules in the `d1_*` schema (§29). **Separate from the Swift app in `mobile/`**, which
+remains the content app (sermons/events/give). Chat was scoped on a self-hosted Matrix homeserver;
+it was built on Supabase instead (Postgres + triggers + Realtime Broadcast) because it needed
+shipping urgently, needs no new server to run and patch, and the safeguarding rules sit in the
+same database as the data rather than in a separate Synapse module.
+- **Status: every screen built on the complete backend.** Built from the Claude Design prototype
+  (`DestinyOne.dc.html`, project "Destiny One") and `docs/destiny-one-ui-spec.md`. Chosen variants:
+  **1B "Cards and filters" chat list** (All / Unread / Announcements chips, one rounded card per
+  community with "See all", count badges) and **1F "Avatars" conversation** (bubbles; the sender's avatar beside the last
+  message of a run and their name above the first). Not yet run on a device: there's no Xcode on
+  the dev Mac, so it has only been checked with `expo export` and a web preview on mock data.
+- **Routes (`src/app/`):** `index` (launch gate → `routeFor(me)`), `welcome` (A1), `email` (A2),
+  `code` (A3), `request` (A5), `waiting` (A6–A8, copy from `me.onboardingMessage`), `notices` (A9),
+  `(tabs)/{chats,find,profile}` with a floating glass tab bar (Chats / Search / Profile; there's no
+  Groups tab, since Chats already shows every community and "See all" opens `community/[id]`), `group/[id]` (B3 conversation),
+  `group/[id]/info` (B6; leaders: rules panel, make admin / remove), `group/[id]/edit` (C4),
+  `community/[id]` (B2), `new-group` (C1, modal), `add-people` (C2; `?groupId` adds to a group,
+  `?communityId` picks for New group), `notifications` (D2 + per-group mute), `search` (full-screen search opened from a chat; the
+  Search tab `(tabs)/find` uses the same `SearchView` component), `report` + `report-sent` (B5), `feedback` (D5, Profile → Report a problem /
+  Send feedback, `?kind=problem|idea`; also reached by shaking the phone, see below), `chat-safety`,
+  `delete-account` (D3, type DELETE), `accounts` (account switcher, a fit-to-content form sheet), `add-account` (Profile → Add account: Add child / Add admin account, a form sheet), `password` (password sign-in) and `set-password` (Profile → Password).
+- **Leaked passwords.** With Supabase's leaked password protection on (Auth settings, Pro plan), a
+  new password found in a known data breach is refused with `AuthWeakPasswordError` (reason `pwned`).
+  `setPassword` (`src/lib/auth.ts`) turns that into `PasswordRejectedError`, and `set-password` shows a
+  card saying the password has been leaked, clears the field and asks for a different one. Signing
+  in with an existing password that has since leaked still works, but Supabase flags it
+  (`weakPassword`), so `password` offers "Change password", which opens `set-password?leaked=1` with
+  the same card. The wording is `passwordRejection()` in `@destiny/shared` (unit-tested), shared with
+  the website's `/admin/reset-password`.
+- **State:** `src/state/session.tsx` (auth session, `me`, the communities list, the Realtime hub,
+  catch-up, `routeFor`, `errorMessage`); `src/state/picker.ts` (Add people selection for New group).
+  `src/lib/useConversation.ts` owns a chat: paging, optimistic sends with "Not sent. Tap to retry.",
+  uploads, reactions, deletes, read receipts.
+- **Data cache — instant screens, database-driven updates.** All app data lives in one TanStack
+  Query cache (`src/lib/queryClient.ts`), saved to AsyncStorage (one file per account,
+  `d1.cache.v2:<member id>`; see Accounts below) and restored at
+  launch, so the app opens straight onto the last known chat list and any chat opened before
+  renders on its first frame. `staleTime: Infinity`: **nothing is re-fetched because a screen
+  mounted or a tab was pressed.** Keys and hooks are in `src/lib/queries.ts` (`["me"]`,
+  `["communities"]`, `["community", id]`, `["group", id]`, `["messages", groupId]`; directory
+  searches are memory-only). Data changes reach the app in three ways:
+  1. **Realtime events** — `src/lib/realtime.ts` runs one hub that joins `d1-member:<me>` and
+     `d1-group:<id>` for *every* group in the chat list (not just the open chat). `applyEvent()`
+     patches the cache straight from the payload: a new message updates that chat's messages, the
+     row's last message, and its unread count (not for my own messages or the chat on screen);
+     deletes, reactions and pause state patch in place; member changes and joins/leaves mark the
+     affected entries stale so they re-fetch in the background. No database change was needed:
+     `d1_emit` already sent everything.
+  2. **Catch-up** — Broadcast doesn't replay, so the whole cache is marked stale (on-screen entries
+     re-fetch quietly, others when next opened) on cold start, on returning after more than 30s
+     in the background, and when the member channel re-joins after a socket drop. A re-fetched
+     message page is **merged** by id; if it doesn't overlap the cached messages the old copy is
+     replaced, so a long absence can't leave a silent gap.
+  3. **The app's own writes** update the cache from the server's reply or optimistically (sends,
+     reactions, leave group/community, mute, edit, new group). Nothing waits on a chat-list refresh.
+  Rows prefetch on touch-down (`prefetchGroup`). Only the newest 60 messages per chat are saved to
+  disk, never unsent ones. Sign-out, and a different member signing in, wipe that account's cache
+  (`clearCache`). `gcTime` is `Infinity` on purpose: a finite 30 days overflows `setTimeout`'s
+  24.8-day limit and fires at once, dropping every chat not on screen.
+- **Accounts: several on one phone, quick switching** (`src/lib/accounts.ts`, `accounts` route).
+  **Double-press the Profile tab** to hop to the most recently used other account (two accounts simply
+  toggle), with a "Switched to X profile" banner (`SwitchBanner`, picture included, 2.5 s, Reduce
+  Motion fades instead of sliding); hold the Profile tab, or Profile → Switch account, for the full
+  list. Each account has its own "slot": its own
+  Supabase client and session under its own Keychain key (`d1.auth.<slot>`; slot `0` keeps
+  supabase-js's default key, so single-account installs carry straight over). Switching changes the
+  active slot and never signs anyone out or moves tokens between clients. Only the active slot
+  auto-refreshes and holds Realtime channels. Rules worth knowing:
+  - **Order of a switch** (`runSwitch` in `session.tsx`): save the cache now → activate the other
+    slot → cancel in-flight queries and empty memory → restore that account's file. Anything
+    fetched after activation runs as the new account; requests from the old one are cancelled
+    rather than landing in the new cache.
+  - **Cache writes are keyed by the data's owner**, not "whoever is active": `serialize` prefixes
+    the `me` id and the storage wrapper writes to that account's file. The persister throttles, so
+    a write queued just before a switch can land after it; this keeps it in the right file. Data
+    with no `me` is never saved. The old `d1.cache.v1` is handed to slot `0` once.
+  - **Add account** (Profile, under the name) offers **Add child** and **Add admin account**. Both are
+    ordinary sign-ins to accounts that already exist, in "add mode": the current account stays
+    active until the new one has passed `auth/link` and `checkAddedAccount` (child needs `isAdult`
+    false; admin needs `D1Me.isStaff`, computed server-side from `admin_roles`). A wrong kind is
+    dropped from this phone only (no global sign-out) and the current account is untouched. The kind
+    is a label on the saved account (`Account.kind`), never a permission.
+  - **Send as** (`Composer` hold-Send, `SendAsMenu`, `useConversation.sendAs`): holding Send (350 ms,
+    with a haptic) offers your other signed-in accounts that are in this group, and the message is
+    posted with that account's own token (`accounts.apiFor(slot)`), so authorship, membership,
+    freezes and reports are exactly as if it sent from its own phone. **Never from or as a child
+    account** (`canSendAs` / `sendAsCandidates`, which also treat any under-18 account as a child,
+    whatever its label); the hold is only wired when another account exists and the active one is
+    not a child, so a slow tap on Send still just sends.
+  - **Pure rules** live in `packages/shared/src/destinyOne/accountRules.ts` (double-press window
+    300 ms, owner-check grace 60 s, next account, add-account check, send-as, password rules, the
+    single sign-in failure message), pinned by `tests/unit/destiny-one-accounts.spec.ts`.
+  - **Face ID / passcode before switching** (`confirmOwner`, `expo-local-authentication`), so a
+    child handed an unlocked family phone can't walk into a parent's chats. Skipped on a device
+    with no passcode. Adding an account needs its email code as normal.
+  - **Push follows the active account.** After a switch the device's token is re-registered
+    (`movePushToActiveAccount`, never prompts); the server keeps one owner per token, so the
+    account you left stops getting notifications.
+  - **Add account** signs into a pending slot through `signInClient()` / `signInApi`, so the
+    current account stays active and untouched until the code checks out. Signing into an account
+    already on the phone replaces its old slot (locally; a server sign-out would end both).
+  - **Sign out** ends the active account everywhere (as before) and switches to the next account
+    on the phone, or shows Welcome if none. Holding an account in the switcher signs that one out.
+    A session revoked elsewhere is forgotten on its next use. Up to 5 accounts.
+- **UI kit:** `src/theme/tokens.ts` (the prototype's light/dark tokens), `src/components/ui.tsx`
+  (the rotating orange **beam** border on primary buttons and focused fields — a spinning linear
+  gradient in a clipped frame, since RN has no conic-gradient — plus buttons, fields, cards,
+  dialogs, and pulsing loading skeletons — `SkeletonGroup`, `Bone`, `SkeletonRows` — used by
+  Chats, Community, Group info and Edit group while data loads), `Icon.tsx` (the design's line icons via `react-native-svg`), `MessageBubble.tsx`,
+  `MessageActions.tsx` (long-press sheet), `Composer.tsx`, `NotificationPrompt.tsx` (A10, asked once
+  on first group open), `SafetyNotice.tsx`.
+- **Search** (`search` route): groups from the cached list, plus messages via `GET /search/messages`
+  (`d1_search_messages`: groups you're in, since you joined, never deleted; stored tsvector + GIN,
+  prefix query built by `toPrefixQuery` in `@destiny/shared`). Migration
+  `20260927_03_destiny_one_message_search.sql`. Tapping a hit opens the group (not the exact message yet).
+- **Blocking** (Apple guideline 1.2): long-press a message → "Block {name}" (confirm), which calls
+  `api.block`, then `hideSender()` in `src/lib/queries.ts` drops their messages from every cached chat;
+  `applyEvent` ignores live messages from anyone in `me.blocked`. Settings → "Blocked people"
+  (`blocked` route) unblocks, and `showSendersAgain()` resets the message caches so their messages
+  come back in place.
+- **Photos lose their hidden details before upload.** `src/lib/cleanImage.ts` re-encodes every image
+  (camera, photo library, images picked as files, and the profile picture) with
+  `expo-image-manipulator`, which drops EXIF metadata including GPS location; HEIC becomes JPEG, PNG
+  stays PNG, and the longest side is capped at 2048 px. PDFs are sent as they are.
+- **Expired attachment links.** Signed links last an hour but cached chats last up to 30 days.
+  `useConversation` reads each link's expiry from its token (`signedUrlNeedsRefresh` in
+  `@destiny/shared`, unit-tested) and swaps in fresh links in one `api.attachmentUrls` request when the
+  chat opens or changes; tapping a file checks again first (`attachmentUrl`).
+- **Account changes mid-session.** `src/lib/api.ts` wraps the shared client: any call that fails with
+  `forbidden`, `not_verified`, `access_request_needed` or `consent_required` asks the session to
+  re-check `me`. `AccessGuard` (`src/state/session.tsx`, mounted in the root layout) then replaces
+  any in-app screen with `routeFor(me)` (waiting, notices, …), and a member who is no longer active
+  has their chats, groups and messages removed from the device cache.
+- **Shake to report a problem.** `useShakeToReportListener` (`src/lib/useShakeToReport.ts`, mounted
+  in the root layout) reads the accelerometer (`expo-sensors`, 10 times a second) while the app is
+  open and an active member is signed in. `createShakeDetector` (`src/lib/shake.ts`, pure and
+  unit-tested in `tests/unit/destiny-one-shake.spec.ts`) needs three jolts over 1.8 g within a
+  second, so a knock or a drop doesn't count, then waits 3 seconds. A shake asks first ("Report a
+  problem?" / Not now / Turn off shake to report), and never on the feedback screen itself. On by
+  default; the switch is on the feedback screen and is kept on the phone (`src/state/shakeToReport.ts`).
+  Nothing about movement is stored or sent. `app.json` gives iOS a motion purpose string anyway, as
+  App Review can ask for one when the sensors library is linked.
+- **Crash reporting:** Sentry (`@sentry/react-native`, EU region), set up in `src/lib/sentry.ts` and
+  imported first in the root layout. Off unless `EXPO_PUBLIC_SENTRY_DSN` is set at build time. It
+  sends as little as possible: the member's internal id only (`setReportingMember`, no name, email or
+  IP), no screenshots, screen recordings or performance tracing, and only network, navigation and
+  app-lifecycle breadcrumbs (console output and taps, which could carry chat text, are dropped; route
+  params and query strings are stripped). "Report a problem" attaches the last error's id
+  (`lastErrorId`) so staff can match the two. Source maps upload during EAS builds when
+  `SENTRY_AUTH_TOKEN`, `SENTRY_ORG` and `SENTRY_PROJECT` are set; `SENTRY_ALLOW_FAILURE=true` in
+  `eas.json` keeps builds working until they are.
+- **Lint:** `eslint.config.js` (`eslint-config-expo`). The React Compiler rules (`react-hooks/refs`,
+  `set-state-in-effect`, `preserve-manual-memoization`) are errors. The only exceptions are the two
+  PanResponder handlers in `Swipe.tsx`, whose refs are read in touch handlers rather than during render
+  (marked with a reasoned `eslint-disable-next-line`).
+- **Differences from the prototype:** Settings adds Download my data and Delete my account (safeguarding policy + UK GDPR access and
+  erasure). Emoji reactions are allowed as member content (confirmed 2026-09-27).
+- **Sign-in:** the email screen calls `api.requestCode` (`POST /auth/code`); the server sends a code
+  only to someone who can get in and answers the same either way, and the code screen says what to
+  do if none arrives. "Sign in with ChurchSuite" is hidden (the flow in `lib/auth.ts` is built but not
+  switched on; App Review tends to reject "coming soon" placeholders).
+- **Minimum age 13** (decided 2026-09-28): `MIN_AGE` / `isUnderMinimumAge` in `@destiny/shared`. Staff
+  approvals, age edits and invites refuse a date of birth under 13 (`adultOnForDecision`), so do
+  access requests (`submitAccessRequest`) and the app's request form. No parent or carer step.
+- **Staff invites create the member up front** (`d1_invite_create_member`, auth_user_id null,
+  active, in the invite's communities), so staff can put them in groups on the website before they
+  open the app; first sign-in links the login (`d1_accept_invite`), folding in any earlier pending
+  row. Revoking before sign-in erases that member. They count toward the 2-adults rule from the
+  moment they're invited.
+- **Tab bar:** the highlight slides between tabs on a spring, the new icon bounces, scenes
+  cross-fade; Reduce Motion turns the slide and bounce off. Double-pressing Profile switches account; holding it opens the account switcher.
+- **Invite by email (leaders)** — `invite` route, opened from Add people for a group.
+  `POST /groups/[id]/invites` creates a `needs_approval` invite: on sign-in the person becomes an
+  access request pre-filled "Invited by X to Group (leader says: adult)", and staff approval in
+  `/admin/destiny-one/requests` confirms their age and joins them to the group
+  (`request_group_ids`). Migration `20260927_02_destiny_one_leader_invites.sql`.
+- Expo SDK 57, Expo Router (`src/app/`), TypeScript. Its own npm project with its own lockfile —
+  deliberately **not** a root workspace so Vercel never installs React Native. It imports
+  `@destiny/shared` via `"file:../../packages/shared"`; `metro.config.js` watches that folder.
+  Excluded from the root `tsconfig.json` and `eslint.config.mjs`.
+- `app.json`: name "Destiny One", scheme `destinyone`, bundle/package id `uk.destinytees.one`, Android
+  `blockedPermissions` strips phone-state/SMS/contacts/location permissions any dependency might add.
+- `src/lib/`: `config.ts` (EXPO_PUBLIC_* — see `.env.example`), `secureStorage.ts` (Supabase session in
+  Keychain/Keystore, chunked for Android's size limit), `supabase.ts` (auth + Realtime only — never
+  data; one client per account), `accounts.ts` (the accounts on this phone, switching, Face ID check), `api.ts` (the shared typed client), `auth.ts` (email OTP; password sign-in and `setPassword`; ChurchSuite via
+  `expo-web-browser` auth session + app-side PKCE), `realtime.ts` (the app-wide hub over private
+  `d1-group:*` / `d1-member:*` channels), `queryClient.ts` + `queries.ts` (the saved data cache, see
+  above), `push.ts` (ask contextually, never on launch).
+- `src/components/GlassSurface.tsx` — Liquid Glass (`expo-glass-effect` `GlassView`) on iOS 26+, a
+  translucent solid fallback on Android / older iOS. The one surface primitive for app chrome.
+- Checks: `npm run typecheck`, `npx expo lint`, `npx expo-doctor`, `npx expo export --platform ios --platform android`. CI runs typecheck and lint (the "Destiny One app" job).
+- GDPR notes (data map, processors, retention, erasure, review audit): `docs/destiny-one-gdpr.md`.
+- Staff guide (approvals, reports, review, takedown, suspension, blocks, settings, out of hours):
+  `docs/destiny-one-staff-guide.md`. Draft privacy-notice, terms and safeguarding-policy sections for
+  sign-off (not live): `docs/content/destiny-one-notices-draft.md`.
 
 ### Live Caption (macOS app) — `apps/live-caption/`
 A standalone **macOS app** (not part of the website deploy) that captions live audio in real time for Destiny's AVL setup (ATEM, ProPresenter, Dante, NDI). It captures from a Core Audio device or an NDI network source, transcribes locally with a Metal-accelerated [whisper.cpp](https://github.com/ggml-org/whisper.cpp) model, and shows the caption on a connected display and/or publishes it as a live NDI source. **Audio never leaves the machine** — transcription is entirely local.
@@ -7057,7 +7249,6 @@ A standalone **macOS app** (not part of the website deploy) that captions live a
   - Training resource library, standalone posts
   - Shop (products, variants, orders, hero slides) and RLS/security hardening passes
   - NFC tiles (the `/nfc` "digital back of seats" page, incl. event mode) and admin roles
-  - Live chat (sessions, messages, prayer requests, blocks) and simulated live
   - The admin audit log (`audit_log`) and its weekly AI reports (`audit_reports`)
   - Click analytics (`engagement_events`) — storage layer for shortlink / nfc /
     links engagement, with `security definer` rollup and IP-anonymise functions

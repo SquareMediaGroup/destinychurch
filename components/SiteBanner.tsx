@@ -9,6 +9,7 @@ import { getNextAlphaSession } from "@/lib/alphaSession";
 import { COURSE_EVENT_META, isCourseEventType } from "@/lib/courseEvents";
 import { useScrollLock } from "@/lib/useScrollLock";
 import { isLinksPagePath } from "@/lib/linkPages/paths";
+import { isLegalPagePath } from "@/lib/legalPages";
 
 export default function SiteBanner() {
   const banner = useBanner();
@@ -53,10 +54,12 @@ export default function SiteBanner() {
   // Links pages are chrome-free — no promo banners. (The maintenance block
   // above still applies: if the site is down, so are they.)
   if (isLinksPagePath(pathname)) return null;
+  // Legal/policy pages stay plain documents — no promo bars either.
+  if (isLegalPagePath(pathname)) return null;
   if (!banner.active) return null;
 
   // The live banner takes priority — don't stack other banners under it.
-  const liveVisible = live && pathname !== "/live";
+  const liveVisible = live;
   if (liveVisible) return null;
 
   const primary = renderBanner(banner, 0);

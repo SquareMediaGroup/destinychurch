@@ -13,6 +13,7 @@ import {
   type DesignTicketStatus,
   type RequesterTicketView,
 } from "@/lib/designTickets";
+import Button from "@/components/ui/Button";
 
 const STATUS_COLOR: Record<DesignTicketStatus, string> = {
   open: "bg-blue-100 text-blue-700",
@@ -284,14 +285,15 @@ export default function TicketTracker({
                 className="w-full resize-none rounded-2xl border border-black/10 bg-[#f5f7fa] px-4 py-3 text-sm text-destiny-grey outline-none transition focus:border-destiny-orange focus:ring-2 focus:ring-destiny-orange/20"
               />
               <div className="flex gap-3">
-                <button
+                <Button
                   type="button"
-                  disabled={busy || !changeNote.trim()}
+                  disabled={!changeNote.trim()}
+                  loading={busy}
                   onClick={() => move("changes_requested", changeNote)}
-                  className="rounded-full bg-destiny-orange px-6 py-2.5 text-sm font-bold text-white transition hover:brightness-110 disabled:opacity-50"
+                  size="sm"
                 >
                   {busy ? "Sending…" : "Send these changes"}
-                </button>
+                </Button>
                 <button
                   type="button"
                   onClick={() => setShowChangeBox(false)}
@@ -304,14 +306,9 @@ export default function TicketTracker({
           ) : (
             <div className="flex flex-wrap gap-3">
               {canClose ? (
-                <button
-                  type="button"
-                  disabled={busy}
-                  onClick={() => move("closed")}
-                  className="rounded-full bg-destiny-orange px-6 py-2.5 text-sm font-bold text-white transition hover:brightness-110 disabled:opacity-50"
-                >
+                <Button type="button" loading={busy} onClick={() => move("closed")} size="sm">
                   This is perfect, close it
-                </button>
+                </Button>
               ) : null}
               {canRequestChanges ? (
                 <button

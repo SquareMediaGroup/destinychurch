@@ -11,7 +11,6 @@ import { NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
 import { createServiceClient } from "@/utils/supabase/service";
 import { readForAudit, recordAudit } from "@/lib/audit.server";
-import { expireSiteCache, SITE_CACHE_TAGS } from "@/lib/siteCache.server";
 
 const BUCKET = "popup-images";
 
@@ -100,9 +99,8 @@ export async function PUT(request: Request) {
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
-  // The layout's cached event popup is tagged; the /whats-on hero and the
-  // homepage carousel are cached routes of their own and are revalidated by path.
-  expireSiteCache(SITE_CACHE_TAGS.featuredEvent);
+  // The layout reads the popup with noStore(), but the /whats-on hero and the
+  // homepage carousel are cached routes — they need explicit invalidation.
   revalidatePath("/whats-on");
   revalidatePath("/");
 

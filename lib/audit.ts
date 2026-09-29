@@ -51,6 +51,7 @@ export const AUDIT_ACTIONS = {
   reject: { label: "Declined", icon: "cancel", tone: "red" },
   moderate: { label: "Moderated", icon: "gavel", tone: "orange" },
   revalidate: { label: "Cache", icon: "refresh", tone: "grey" },
+  view: { label: "Viewed", icon: "visibility", tone: "orange" },
   login: { label: "Signed in", icon: "login", tone: "grey" },
   logout: { label: "Signed out", icon: "logout", tone: "grey" },
 } as const;
@@ -77,6 +78,8 @@ export const AUDIT_SECTIONS = {
   hr: { label: "HR", icon: "badge" },
   design: { label: "Design", icon: "draw" },
   sermons: { label: "Sermons", icon: "mic" },
+  safeguarding: { label: "Safeguarding", icon: "shield" },
+  destiny_one: { label: "Destiny One", icon: "forum" },
   media: { label: "Media", icon: "photo_library" },
   users: { label: "Users & access", icon: "group" },
   account: { label: "Account", icon: "key" },

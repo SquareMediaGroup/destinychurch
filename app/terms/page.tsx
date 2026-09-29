@@ -1,9 +1,6 @@
 import AnimateIn from "@/components/AnimateIn";
 
-export const metadata = {
-  title: "Terms of Use",
-  alternates: { canonical: "/terms" },
-};
+export const metadata = { title: "Terms of Use" };
 
 export default function TermsPage() {
   return (

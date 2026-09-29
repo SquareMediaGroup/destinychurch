@@ -3,8 +3,7 @@
 // Called from public-facing submission routes (new order, new application,
 // new design ticket, ...) right alongside their existing insert/email logic,
 // never in place of it. Writes the row, then pushes it onto a
-// admin-notifications:<role> Realtime topic per lib/liveChat.server.ts's
-// emit() precedent — Broadcast, not Postgres Changes, so notifications stays
+// admin-notifications:<role> Realtime topic — Broadcast, not Postgres Changes, so notifications stays
 // deny-all like every other admin table.
 //
 // Like recordAudit(), it never throws: a notification failing to write or

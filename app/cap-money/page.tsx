@@ -1,37 +1,24 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import AnimateIn from "@/components/AnimateIn";
 import ChurchSuiteModal from "@/components/ui/ChurchSuiteModal";
 import WorshipWithUsSection from "@/components/home/WorshipWithUsSection";
-import { getNextAlphaSession } from "@/lib/alphaSession";
+import CourseEventCard from "@/components/courses/CourseEventCard";
+import { useCourseEvents, summarizeCourseSession } from "@/lib/useCourseEvents";
+import { COURSE_ADMIN_PAGES } from "@/lib/courseEvents";
 
 // CAP brand palette. Their green (#78be20) is too light to carry white text,
 // so ACCENT is a darkened version for buttons/text and CAP_GREEN is kept for
 // tints and icon fills only.
-const ACCENT = "#4e7d14";
+const ACCENT = COURSE_ADMIN_PAGES["cap-money"].accent;
 const CAP_GREEN = "#78be20";
 const ACCENT_DARK = "#363f48";
 const ACCENT_TINT = "#f2f8ea";
 
 const CAP_URL = "https://capuk.org/i-want-help/cap-money-course/introduction";
-
-interface CapEvent {
-  id: string;
-  type: string;
-  start_date: string;
-  signup_url: string;
-  location: string | null;
-  format?: "in_person" | "online";
-  meeting_platform?: "zoom" | "google_meet" | null;
-  meeting_url?: string | null;
-  meeting_id?: string | null;
-  frequency?: string | null;
-  custom_interval_days?: number | null;
-  active?: boolean;
-}
 
 const features = [
   {
@@ -84,45 +71,10 @@ const audience = [
 
 export default function CapMoneyPage() {
   const [signupOpen, setSignupOpen] = useState(false);
-  const [events, setEvents] = useState<CapEvent[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    async function fetchEvents() {
-      try {
-        const res = await fetch("/api/alpha-events");
-        const data = await res.json();
-        const active = Array.isArray(data)
-          ? data.filter(
-              (e: CapEvent) => e.type === "cap" && e.active !== false
-            )
-          : [];
-        setEvents(active);
-      } catch (err) {
-        console.error("Failed to fetch CAP Money events:", err);
-      } finally {
-        setLoading(false);
-      }
-    }
-    fetchEvents();
-  }, []);
+  const { events, loading } = useCourseEvents((e) => e.type === "cap");
 
   const primaryEvent = events[0] ?? null;
-  const sessionInfo = primaryEvent
-    ? getNextAlphaSession(
-        primaryEvent.start_date,
-        primaryEvent.frequency,
-        primaryEvent.custom_interval_days
-      )
-    : null;
-  const startDateFormatted = sessionInfo
-    ? sessionInfo.date.toLocaleDateString("en-GB", {
-        year: "numeric",
-        month: "long",
-        day: "numeric",
-      })
-    : null;
-  const sessionLeadIn = sessionInfo?.isFirst ? "Starting" : "Next session";
+  const { subtitle: signupSubtitle } = summarizeCourseSession(primaryEvent);
 
   return (
     <>
@@ -214,151 +166,10 @@ export default function CapMoneyPage() {
 
       {/* Event card(s) */}
       {events.length > 0 && (
-        <div
-          className={`mx-auto max-w-5xl px-4 pb-14 lg:px-8 ${
-            events.length > 1 ? "space-y-6" : ""
-          }`}
-        >
-          {events.map((event) => {
-            const session = getNextAlphaSession(
-              event.start_date,
-              event.frequency,
-              event.custom_interval_days
-            );
-            const d = session.date;
-            const weekday = d.toLocaleDateString("en-GB", { weekday: "long" });
-            const day = d.toLocaleDateString("en-GB", { day: "numeric" });
-            const month = d.toLocaleDateString("en-GB", { month: "long" });
-            const year = d.toLocaleDateString("en-GB", { year: "numeric" });
-            const cadenceLabel = session.isFirst ? "Starting" : "Next session";
-            const isOnline = event.format === "online";
-            const platformLabel =
-              event.meeting_platform === "zoom"
-                ? "Zoom"
-                : event.meeting_platform === "google_meet"
-                ? "Google Meet"
-                : "Online";
-
-            return (
-              <AnimateIn key={event.id}>
-                <div
-                  className="relative overflow-hidden rounded-3xl bg-white ring-1 ring-black/5"
-                  style={{ boxShadow: "0 30px 60px -30px rgba(78,125,20,0.35)" }}
-                >
-                  <span
-                    aria-hidden="true"
-                    className="absolute left-0 top-1/2 h-6 w-6 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#f5f7fa]"
-                  />
-                  <span
-                    aria-hidden="true"
-                    className="absolute right-0 top-1/2 h-6 w-6 translate-x-1/2 -translate-y-1/2 rounded-full bg-[#f5f7fa]"
-                  />
-                  <div className="grid grid-cols-1 md:grid-cols-2">
-                    <div className="border-b border-dashed border-destiny-grey/15 px-8 py-7 md:border-b-0 md:border-r md:px-10">
-                      <div
-                        className="mb-3 flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.28em]"
-                        style={{ color: ACCENT }}
-                      >
-                        <span className="material-symbols-rounded text-sm leading-none" aria-hidden="true">
-                          event
-                        </span>
-                        {cadenceLabel}
-                      </div>
-                      <div className="text-[11px] uppercase tracking-[0.2em] text-subtle">
-                        {weekday}
-                      </div>
-                      <div className="mt-1 flex items-baseline gap-3">
-                        <span
-                          className="text-5xl font-normal italic leading-none text-destiny-grey md:text-6xl"
-                          style={{
-                            fontFamily: "var(--font-playfair), Georgia, serif",
-                          }}
-                        >
-                          {day}
-                        </span>
-                        <span className="text-lg font-black uppercase tracking-wide text-destiny-grey md:text-xl">
-                          {month}{" "}
-                          <span className="text-subtle">{year}</span>
-                        </span>
-                      </div>
-                    </div>
-                    {isOnline ? (
-                      <div className="px-8 py-7 md:px-10">
-                        <div
-                          className="mb-3 flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.28em]"
-                          style={{ color: ACCENT }}
-                        >
-                          <span className="material-symbols-rounded text-sm leading-none" aria-hidden="true">
-                            videocam
-                          </span>
-                          Online
-                        </div>
-                        <div className="text-[11px] uppercase tracking-[0.2em] text-subtle">
-                          Join via
-                        </div>
-                        <div className="mt-1 text-2xl font-black leading-tight text-destiny-grey md:text-3xl">
-                          {platformLabel}
-                        </div>
-                        {event.meeting_url && (
-                          <a
-                            href={event.meeting_url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="mt-3 inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-[11px] font-bold uppercase tracking-wide text-white transition hover:brightness-110"
-                            style={{ backgroundColor: ACCENT }}
-                          >
-                            <span className="material-symbols-rounded text-[14px] leading-none" aria-hidden="true">
-                              open_in_new
-                            </span>
-                            Join meeting
-                          </a>
-                        )}
-                      </div>
-                    ) : (
-                      <div className="px-8 py-7 md:px-10">
-                        <div
-                          className="mb-3 flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.28em]"
-                          style={{ color: ACCENT }}
-                        >
-                          <span className="material-symbols-rounded text-sm leading-none" aria-hidden="true">
-                            place
-                          </span>
-                          Where
-                        </div>
-                        {event.location ? (
-                          <>
-                            <div className="text-[11px] uppercase tracking-[0.2em] text-subtle">
-                              Join us at
-                            </div>
-                            <div className="mt-1 text-2xl font-black leading-tight text-destiny-grey md:text-3xl">
-                              {event.location}
-                            </div>
-                          </>
-                        ) : (
-                          <>
-                            <div className="text-[11px] uppercase tracking-[0.2em] text-subtle">
-                              Venue
-                            </div>
-                            <div className="mt-1 flex items-baseline gap-2">
-                              <span
-                                className="text-5xl font-normal italic leading-none text-subtle md:text-6xl"
-                                style={{
-                                  fontFamily:
-                                    "var(--font-playfair), Georgia, serif",
-                                }}
-                              >
-                                tba
-                              </span>
-                            </div>
-                          </>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </AnimateIn>
-            );
-          })}
+        <div className={`mx-auto max-w-5xl px-4 pb-14 lg:px-8 ${events.length > 1 ? "space-y-6" : ""}`}>
+          {events.map((event) => (
+            <CourseEventCard key={event.id} event={event} accentColor={ACCENT} />
+          ))}
         </div>
       )}
 
@@ -654,11 +465,7 @@ export default function CapMoneyPage() {
           onClose={() => setSignupOpen(false)}
           src={primaryEvent.signup_url}
           title="Sign up for the CAP Money Course"
-          subtitle={
-            startDateFormatted
-              ? `${sessionLeadIn} ${startDateFormatted}`
-              : undefined
-          }
+          subtitle={signupSubtitle}
         />
       )}
     </>

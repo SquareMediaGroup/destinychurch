@@ -2,10 +2,6 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "crons": [
     {
-      "path": "/api/cron/live-chat-purge",
-      "schedule": "0 4 * * *"
-    },
-    {
       "path": "/api/cron/hr-review-reminders",
       "schedule": "0 6 * * *"
     },
@@ -24,6 +20,14 @@
     {
       "path": "/api/cron/design-deliverables-purge",
       "schedule": "0 4 * * *"
+    },
+    {
+      "path": "/api/cron/destiny-one-sync",
+      "schedule": "30 3 * * *"
+    },
+    {
+      "path": "/api/cron/destiny-one-purge",
+      "schedule": "15 4 * * *"
     }
   ]
 }

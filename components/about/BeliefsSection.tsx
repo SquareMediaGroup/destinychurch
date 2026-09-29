@@ -1,5 +1,5 @@
-import Link from "next/link";
 import AnimateIn from "@/components/AnimateIn";
+import Button from "@/components/ui/Button";
 
 export default function BeliefsSection() {
   return (
@@ -13,12 +13,9 @@ export default function BeliefsSection() {
             <p className="mb-5 text-sm text-subtle">
               Learn more about what we as a church believe
             </p>
-            <Link
-              href="/beliefs"
-              className="rounded-full bg-destiny-orange px-6 py-2.5 text-sm font-bold text-white transition hover:brightness-110"
-            >
+            <Button href="/beliefs" size="sm">
               Our Beliefs
-            </Link>
+            </Button>
           </div>
         </AnimateIn>
 

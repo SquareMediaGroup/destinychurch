@@ -1,9 +1,9 @@
 "use client";
 
-import Link from "next/link";
 import { Suspense, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import { useCart } from "@/lib/cart-store";
+import Button from "@/components/ui/Button";
 
 function SuccessInner() {
   const params = useSearchParams();
@@ -31,12 +31,9 @@ function SuccessInner() {
         <p className="mt-2 text-sm text-muted">
           Your payment didn&apos;t go through. Your basket is still saved.
         </p>
-        <Link
-          href="/shop/checkout"
-          className="mt-6 inline-flex items-center gap-2 rounded-full bg-destiny-orange px-7 py-3.5 text-sm font-bold text-white transition hover:bg-destiny-orange-dark"
-        >
+        <Button href="/shop/checkout" size="xl" className="mt-6">
           Try again
-        </Link>
+        </Button>
       </div>
     );
   }
@@ -67,13 +64,10 @@ function SuccessInner() {
           let you know as soon as your order is ready to collect at church.
         </p>
       </div>
-      <Link
-        href="/shop"
-        className="mt-8 inline-flex items-center gap-2 rounded-full bg-destiny-orange px-7 py-3.5 text-sm font-bold text-white transition hover:bg-destiny-orange-dark"
-      >
+      <Button href="/shop" size="xl" className="mt-8">
         Continue shopping
         <span className="material-symbols-rounded text-lg" aria-hidden="true">arrow_forward</span>
-      </Link>
+      </Button>
     </div>
   );
 }

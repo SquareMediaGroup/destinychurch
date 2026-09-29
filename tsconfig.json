@@ -30,5 +30,5 @@
     ".next/dev/types/**/*.ts",
     "**/*.mts"
   ],
-  "exclude": ["node_modules", "mobile", ".claude"]
+  "exclude": ["node_modules", "mobile", "apps/destiny-one", ".claude"]
 }

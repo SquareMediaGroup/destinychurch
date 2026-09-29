@@ -3,6 +3,7 @@ import Link from "next/link";
 import AccessibilityPreferences from "./AccessibilityPreferences";
 import Container from "@/components/ui/Container";
 import Icon from "@/components/ui/Icon";
+import Button from "@/components/ui/Button";
 
 /**
  * Accessibility statement and display preferences.
@@ -141,19 +142,13 @@ export default function AccessibilityPage() {
           can to put it right and to get you what you need another way.
         </p>
         <div className="mt-5 flex flex-wrap gap-3">
-          <Link
-            href="/contact"
-            className="inline-flex items-center gap-2 rounded-full bg-destiny-orange px-7 py-3 text-sm font-bold text-white shadow-lg shadow-destiny-orange/25 transition hover:brightness-110"
-          >
+          <Button href="/contact" size="lg">
             Contact us
-          </Link>
-          <a
-            href="tel:01642559797"
-            className="inline-flex items-center gap-2 rounded-full border border-divider px-7 py-3 text-sm font-bold text-destiny-grey transition hover:bg-black/[0.03]"
-          >
+          </Button>
+          <Button href="tel:01642559797" variant="outline" size="lg">
             <Icon name="call" size="sm" />
             01642 559797
-          </a>
+          </Button>
         </div>
 
         <h2 className="mb-2 mt-14 text-2xl font-black text-destiny-grey">

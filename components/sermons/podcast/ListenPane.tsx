@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import type { PodcastEpisode } from "@/lib/podcast";
+import Button from "@/components/ui/Button";
 
 // Extracted from FeaturedSermon.tsx so the sermon detail page can offer the
 // same audio pane when a confident video↔episode pairing exists
@@ -58,11 +59,7 @@ export default function ListenPane({
             {episode.summary}
           </p>
         )}
-        <button
-          type="button"
-          onClick={onToggle}
-          className="mt-5 inline-flex items-center justify-center gap-2 rounded-full bg-destiny-orange px-7 py-3 text-sm font-bold text-white shadow-lg shadow-destiny-orange/25 transition hover:brightness-110"
-        >
+        <Button type="button" onClick={onToggle} size="lg" className="mt-5">
           <span
             className="material-symbols-rounded text-xl"
             style={{ fontVariationSettings: '"FILL" 1' }}
@@ -70,7 +67,7 @@ export default function ListenPane({
             {playing ? "pause" : "play_arrow"}
           </span>
           {playing ? "Playing" : "Listen now"}
-        </button>
+        </Button>
       </div>
     </div>
   );

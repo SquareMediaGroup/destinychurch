@@ -7,6 +7,7 @@ import ApplyForm from "../ApplyForm";
 import { getJobBySlug, getPublishedJobs } from "@/lib/jobs.server";
 import { EMPLOYMENT_LABELS, KIND_LABELS, isClosed } from "@/lib/jobs";
 import RichContent from "@/components/content/RichContent";
+import Button, { buttonClasses } from "@/components/ui/Button";
 
 export const revalidate = 300;
 
@@ -146,10 +147,7 @@ export default async function JobDetailPage({
               </p>
             )}
             {!closed && (
-              <a
-                href="#apply"
-                className="mt-8 inline-flex rounded-full bg-destiny-orange px-7 py-3 text-sm font-bold text-white shadow-lg shadow-destiny-orange/30 transition hover:brightness-110"
-              >
+              <a href="#apply" className={buttonClasses({ size: "lg", className: "mt-8" })}>
                 Apply for this role
               </a>
             )}
@@ -195,7 +193,7 @@ export default async function JobDetailPage({
               {!closed && (
                 <a
                   href="#apply"
-                  className="mt-6 block rounded-full bg-destiny-orange px-5 py-3 text-center text-sm font-bold text-white transition hover:brightness-110"
+                  className={buttonClasses({ size: "md", fullWidth: true, className: "mt-6" })}
                 >
                   Apply now
                 </a>
@@ -217,12 +215,9 @@ export default async function JobDetailPage({
                 The closing date for this role has passed. Take a look at our other
                 opportunities — the right one may be waiting.
               </p>
-              <Link
-                href="/jobs"
-                className="mt-6 inline-flex rounded-full bg-destiny-orange px-6 py-2.5 text-sm font-bold text-white transition hover:brightness-110"
-              >
+              <Button href="/jobs" size="sm" className="mt-6">
                 View open roles
-              </Link>
+              </Button>
             </div>
           ) : (
             <>

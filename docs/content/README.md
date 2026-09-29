@@ -12,3 +12,4 @@ policy or partner wording.
 | `terms-of-use.txt` | `/terms` |
 | `compassion.txt` | `/missions` — partner description |
 | `safe-families.txt` | `/missions` — partner description |
+| `destiny-one-notices-draft.md` | Not live. Draft Destiny One sections for `/privacy`, `/terms` and `/safeguarding`, for sign-off |

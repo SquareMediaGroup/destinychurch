@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { submitApplication } from "./actions";
+import Button from "@/components/ui/Button";
 
 const inputClass =
   "w-full rounded-xl border border-black/10 bg-white px-4 py-3 text-sm text-destiny-grey outline-none transition placeholder:text-destiny-grey/35 focus:border-destiny-orange/50 focus:ring-2 focus:ring-destiny-orange/15";
@@ -126,13 +127,9 @@ export default function ApplyForm({
         </p>
       )}
 
-      <button
-        type="submit"
-        disabled={status === "saving"}
-        className="mt-1 inline-flex items-center justify-center gap-2 rounded-full bg-destiny-orange px-7 py-3.5 text-sm font-bold text-white shadow-lg shadow-destiny-orange/30 transition hover:brightness-110 disabled:opacity-60"
-      >
+      <Button type="submit" size="xl" loading={status === "saving"} className="mt-1">
         {status === "saving" ? "Sending…" : "Submit application"}
-      </button>
+      </Button>
     </form>
   );
 }

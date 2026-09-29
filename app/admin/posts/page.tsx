@@ -13,19 +13,25 @@ import {
   SortHeader,
   TableSkeleton,
   BulkBar,
+  Modal,
   primaryBtn,
 } from "@/components/admin/AdminUI";
+import { useToast } from "@/components/ToastProvider";
+import { relativeTime } from "@/lib/audit";
+import { POST_TEMPLATES, type PostTemplate } from "@/lib/postTemplates";
 import { useAdminList, useRowSelection } from "@/lib/useAdminList";
 import { PostEditor } from "@/components/admin/posts/PostEditor";
 import { useDialog } from "@/components/DialogProvider";
 
 export default function AdminPostsPage() {
   const { confirm } = useDialog();
+  const toast = useToast();
   const searchParams = useSearchParams();
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [editing, setEditing] = useState<Post | "new" | null>(null);
+  const [editing, setEditing] = useState<Post | { template: PostTemplate } | null>(null);
+  const [choosingTemplate, setChoosingTemplate] = useState(false);
   const [working, setWorking] = useState(false);
 
   const load = useCallback(async () => {
@@ -47,7 +53,7 @@ export default function AdminPostsPage() {
   const openId = searchParams.get("open");
   const wantsNew = searchParams.get("new") === "1";
   useEffect(() => {
-    if (wantsNew) setEditing("new");
+    if (wantsNew) setChoosingTemplate(true);
   }, [wantsNew]);
   useEffect(() => {
     if (!openId || posts.length === 0) return;
@@ -76,6 +82,7 @@ export default function AdminPostsPage() {
       title: (a, b) => a.title.localeCompare(b.title),
       slug: (a, b) => a.slug.localeCompare(b.slug),
       status: (a, b) => Number(a.is_published) - Number(b.is_published),
+      updated: (a, b) => a.updated_at.localeCompare(b.updated_at),
     },
   });
 
@@ -95,6 +102,28 @@ export default function AdminPostsPage() {
       return;
     }
     load();
+  }
+
+  /** A draft copy at "<slug>-copy" (or -copy-2, …), opened straight in the editor. */
+  async function duplicate(post: Post) {
+    setError("");
+    const taken = new Set(posts.map((p) => p.slug));
+    let slug = `${post.slug}-copy`;
+    for (let n = 2; taken.has(slug); n++) slug = `${post.slug}-copy-${n}`;
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { id, created_at, updated_at, ...fields } = post;
+    const res = await fetch(API, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ...fields, title: `${post.title} (copy)`, slug, is_published: false }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      setError(data.error || "Could not duplicate.");
+      return;
+    }
+    await load();
+    setEditing(data as Post);
   }
 
   async function remove(post: Post) {
@@ -187,7 +216,7 @@ export default function AdminPostsPage() {
         subtitle="Standalone pages — campaigns, temporary pages and one-off content."
         back={{ href: "/admin", label: "Dashboard" }}
         action={
-          <button className={primaryBtn} onClick={() => setEditing("new")}>
+          <button className={primaryBtn} onClick={() => setChoosingTemplate(true)}>
             <span className="material-symbols-rounded text-lg" aria-hidden="true">add</span>
             New post
           </button>
@@ -197,14 +226,14 @@ export default function AdminPostsPage() {
       <ErrorNote>{error}</ErrorNote>
 
       {loading ? (
-        <TableSkeleton columns={4} />
+        <TableSkeleton columns={5} />
       ) : posts.length === 0 ? (
         <EmptyState
           icon="article"
           title="No posts yet"
-          hint="Create a post to publish a standalone page at its own URL."
+          hint="Start from a template to publish a standalone page at its own URL."
           action={
-            <button className={primaryBtn} onClick={() => setEditing("new")}>
+            <button className={primaryBtn} onClick={() => setChoosingTemplate(true)}>
               <span className="material-symbols-rounded text-lg" aria-hidden="true">add</span>
               New post
             </button>
@@ -302,6 +331,13 @@ export default function AdminPostsPage() {
                       direction={list.sortDirection}
                       onSort={list.toggleSort}
                     />
+                    <SortHeader
+                      label="Edited"
+                      field="updated"
+                      active={list.sortField === "updated"}
+                      direction={list.sortDirection}
+                      onSort={list.toggleSort}
+                    />
                     <th className="px-5 py-3.5 text-right">Actions</th>
                   </tr>
                 </thead>
@@ -324,9 +360,12 @@ export default function AdminPostsPage() {
                         />
                       </td>
                       <td className="px-5 py-3.5">
-                        <p className="font-bold text-destiny-grey dark:text-white transition group-hover:text-destiny-orange">
-                          {p.title}
-                        </p>
+                        <div className="flex items-center gap-3">
+                          <PostThumb post={p} />
+                          <p className="font-bold text-destiny-grey dark:text-white transition group-hover:text-destiny-orange">
+                            {p.title}
+                          </p>
+                        </div>
                       </td>
                       <td className="px-5 py-3.5">
                         <span className="font-mono text-xs text-destiny-grey/50 dark:text-white/50">
@@ -345,6 +384,11 @@ export default function AdminPostsPage() {
                             {p.is_published ? "Published" : "Draft"}
                           </Badge>
                         </button>
+                      </td>
+                      <td className="whitespace-nowrap px-5 py-3.5 text-xs text-destiny-grey/50 dark:text-white/50">
+                        <time dateTime={p.updated_at} title={new Date(p.updated_at).toLocaleString()}>
+                          {relativeTime(p.updated_at)}
+                        </time>
                       </td>
                       <td className="px-5 py-3.5">
                         <div className="flex items-center justify-end gap-3">
@@ -375,6 +419,17 @@ export default function AdminPostsPage() {
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
+                              duplicate(p);
+                            }}
+                            className="text-destiny-grey/40 dark:text-white/40 transition hover:text-destiny-orange"
+                            aria-label={`Duplicate ${p.title}`}
+                            title="Duplicate"
+                          >
+                            <span className="material-symbols-rounded text-xl" aria-hidden="true">content_copy</span>
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
                               remove(p);
                             }}
                             className="text-destiny-grey/40 dark:text-white/40 transition hover:text-destiny-red"
@@ -393,18 +448,74 @@ export default function AdminPostsPage() {
         </>
       )}
 
+      {choosingTemplate && (
+        <Modal title="New post" onClose={() => setChoosingTemplate(false)}>
+          <p className="mb-4 text-sm text-destiny-grey/60 dark:text-white/60">
+            Pick a starting point. Everything in it can be changed or removed.
+          </p>
+          <div className="grid gap-3 sm:grid-cols-2">
+            {POST_TEMPLATES.map((t) => (
+              <button
+                key={t.id}
+                type="button"
+                onClick={() => {
+                  setChoosingTemplate(false);
+                  setEditing({ template: t });
+                }}
+                className="flex items-start gap-3 rounded-2xl border border-black/10 p-4 text-left transition hover:border-destiny-orange/50 hover:bg-destiny-orange/5 dark:border-white/10"
+              >
+                <span className="material-symbols-rounded text-2xl text-destiny-orange" aria-hidden="true">
+                  {t.icon}
+                </span>
+                <span>
+                  <span className="block font-bold text-destiny-grey dark:text-white">{t.label}</span>
+                  <span className="mt-0.5 block text-xs text-destiny-grey/55 dark:text-white/55">
+                    {t.description}
+                  </span>
+                </span>
+              </button>
+            ))}
+          </div>
+        </Modal>
+      )}
+
       {editing && (
         <PostEditor
-          post={editing === "new" ? null : editing}
+          // A duplicate swaps one open editor for another; the key remounts it.
+          key={"id" in editing ? editing.id : "new"}
+          post={"id" in editing ? editing : null}
+          template={"template" in editing ? editing.template : undefined}
           onClose={() => setEditing(null)}
           onSaved={() => {
             setEditing(null);
             setError("");
             load();
           }}
-          onError={setError}
+          // The editor covers the page, so its errors can't go in the ErrorNote.
+          onError={(msg) => toast.error(msg)}
         />
       )}
     </div>
   );
 }
+
+function PostThumb({ post }: { post: Post }) {
+  const src = post.hero_image_url || post.og_image_url;
+  if (src) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element -- admin-uploaded URL from Supabase Storage
+      <img src={src} alt="" className="h-10 w-14 shrink-0 rounded-lg object-cover" />
+    );
+  }
+  return (
+    <span
+      aria-hidden
+      className={`flex h-10 w-14 shrink-0 items-center justify-center rounded-lg ${
+        post.hero_style === "banner" ? "bg-destiny-orange/15 text-destiny-orange" : "bg-black/5 text-destiny-grey/30 dark:bg-white/5 dark:text-white/30"
+      }`}
+    >
+      <span className="material-symbols-rounded text-lg">article</span>
+    </span>
+  );
+}
+

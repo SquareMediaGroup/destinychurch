@@ -7,6 +7,7 @@
 // rendering entirely. Use glassEffectStyle's own animation instead.
 
 import type { ReactNode } from "react";
+import { useAppearance } from "@/state/appearance";
 import { Platform, StyleSheet, View, useColorScheme, type StyleProp, type ViewStyle } from "react-native";
 import { GlassView, isLiquidGlassAvailable } from "expo-glass-effect";
 
@@ -24,6 +25,7 @@ export interface GlassSurfaceProps {
 
 export function GlassSurface({ children, style, variant = "regular", interactive = false, tintColor }: GlassSurfaceProps) {
   const dark = useColorScheme() === "dark";
+  const black = useAppearance().mode === "black";
 
   if (liquidGlass) {
     return (
@@ -33,11 +35,12 @@ export function GlassSurface({ children, style, variant = "regular", interactive
     );
   }
 
-  return <View style={[styles.fallback, dark ? styles.dark : styles.light, style]}>{children}</View>;
+  return <View style={[styles.fallback, dark ? (black ? styles.black : styles.dark) : styles.light, style]}>{children}</View>;
 }
 
 const styles = StyleSheet.create({
   fallback: { overflow: "hidden" },
   light: { backgroundColor: "rgba(255,255,255,0.92)", borderColor: "rgba(0,0,0,0.08)", borderWidth: StyleSheet.hairlineWidth },
-  dark: { backgroundColor: "rgba(21,21,23,0.92)", borderColor: "rgba(255,255,255,0.12)", borderWidth: StyleSheet.hairlineWidth },
+  dark: { backgroundColor: "rgba(38,25,15,0.92)", borderColor: "rgba(255,214,170,0.14)", borderWidth: StyleSheet.hairlineWidth },
+  black: { backgroundColor: "rgba(21,21,23,0.92)", borderColor: "rgba(255,255,255,0.12)", borderWidth: StyleSheet.hairlineWidth },
 });

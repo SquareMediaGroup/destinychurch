@@ -7,8 +7,9 @@ import { Appearance as SystemAppearance } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { CUSTOM_WALLPAPER, DEFAULT_BLUR, DEFAULT_DIM, DEFAULT_SEND_COLOUR, DEFAULT_WALLPAPER, MAX_DIM, PHOTO_WALLPAPERS, SEND_COLOURS, WALLPAPERS, unit } from "@/theme/appearance";
 
-export type ThemeMode = "system" | "light" | "dark";
-const MODES: readonly ThemeMode[] = ["system", "light", "dark"];
+/** "black" is True dark: the near-black look. It is a dark scheme as far as the phone is concerned. */
+export type ThemeMode = "system" | "light" | "dark" | "black";
+const MODES: readonly ThemeMode[] = ["system", "light", "dark", "black"];
 
 export interface Appearance {
   mode: ThemeMode;
@@ -35,7 +36,7 @@ function emit() {
 
 /** Light or dark for the whole app, including native pieces (glass, keyboard, alerts). "system" follows the phone. */
 function applyMode() {
-  SystemAppearance.setColorScheme(current.mode === "system" ? "unspecified" : current.mode);
+  SystemAppearance.setColorScheme(current.mode === "system" ? "unspecified" : current.mode === "black" ? "dark" : current.mode);
 }
 
 function save() {

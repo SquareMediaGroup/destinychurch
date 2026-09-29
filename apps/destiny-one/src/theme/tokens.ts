@@ -6,7 +6,7 @@ import { useMemo } from "react";
 import { useColorScheme, type ImageSourcePropType } from "react-native";
 import { colors } from "@destiny/shared";
 import { useAppearance } from "@/state/appearance";
-import { INK, PAGE_BG, sendColour, wallpaper, type Wallpaper, type WallpaperTone } from "@/theme/appearance";
+import { INK, PAGE_BG, sendColour, wallpaper, type LookKey, type Wallpaper, type WallpaperTone } from "@/theme/appearance";
 import { photoSource } from "@/theme/photoWallpapers";
 
 export const ORANGE = colors.orange; // #F58021
@@ -90,17 +90,16 @@ const light: Theme = {
   shadow: { shadowColor: INK, shadowOpacity: 0.1, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 4 },
 };
 
-// Dark mode is near-black and neutral, not pure #000 (which is harsh against
-// bright text and smears on OLED scroll) and not tinted. Surfaces step up in
-// small, even lightness steps so cards, fields and bubbles stay distinguishable.
+// Dark mode uses a deep, warm tint of the brand orange, so it feels like
+// Destiny rather than a generic dark theme.
 const dark: Theme = {
   dark: true,
   bg: PAGE_BG.dark,
   grouped: PAGE_BG.dark,
-  card: "#151517",
-  fill: "#1C1C1F",
-  fill2: "#28282C",
-  sep: "rgba(255,255,255,0.12)",
+  card: "#26190F",
+  fill: "#312215",
+  fill2: "#3D2C1E",
+  sep: "rgba(255,214,170,0.14)",
   text: "#FFFFFF",
   muted: "rgba(255,255,255,0.82)",
   subtle: "rgba(255,255,255,0.72)",
@@ -108,6 +107,35 @@ const dark: Theme = {
   accent: ORANGE,
   onAccent: INK,
   accentSoft: "rgba(245,128,33,0.2)",
+  bubbleIn: "#33241A",
+  glass: "rgba(49,34,21,0.66)",
+  glassLine: "rgba(255,214,170,0.14)",
+  avatar: "#4A3524",
+  scrim: "rgba(10,5,0,0.6)",
+  field: "#26190F",
+  btn: "#3D2C1E",
+  onBtn: "#FFFFFF",
+  sheet: "#26190F",
+  send: "#F58021",
+  onSend: INK,
+  onSendCard: "rgba(255,255,255,0.28)",
+  wall: null,
+  photo: null,
+  shadow: { shadowColor: "#000", shadowOpacity: 0.55, shadowRadius: 14, shadowOffset: { width: 0, height: 8 }, elevation: 6 },
+};
+
+// True dark (the "black" mode) is near-black and neutral: not pure #000, which
+// is harsh against bright text and smears on OLED scroll, and not tinted.
+// Surfaces step up in small, even lightness steps so cards, fields and bubbles
+// stay distinguishable.
+const trueDark: Theme = {
+  ...dark,
+  bg: PAGE_BG.black,
+  grouped: PAGE_BG.black,
+  card: "#151517",
+  fill: "#1C1C1F",
+  fill2: "#28282C",
+  sep: "rgba(255,255,255,0.12)",
   bubbleIn: "#212125",
   glass: "rgba(28,28,31,0.66)",
   glassLine: "rgba(255,255,255,0.12)",
@@ -115,22 +143,17 @@ const dark: Theme = {
   scrim: "rgba(0,0,0,0.6)",
   field: "#151517",
   btn: "#28282C",
-  onBtn: "#FFFFFF",
   sheet: "#151517",
-  send: "#F58021",
-  onSend: INK,
-  onSendCard: "rgba(255,255,255,0.28)",
-  wall: null,
-  photo: null,
-  shadow: { shadowColor: "#000", shadowOpacity: 0.6, shadowRadius: 14, shadowOffset: { width: 0, height: 8 }, elevation: 6 },
+  shadow: { ...dark.shadow, shadowOpacity: 0.6 },
 };
 
 /** The theme for the current light/dark setting, with this person's send colour and wallpaper applied. */
 export function useTheme(): Theme {
   const isDark = useColorScheme() === "dark";
-  const { sendColour: sendId, wallpaper: wallId, dim, blur, customFile } = useAppearance();
-  const base = isDark ? dark : light;
-  const tone = sendColour(sendId)[isDark ? "dark" : "light"];
+  const { mode, sendColour: sendId, wallpaper: wallId, dim, blur, customFile } = useAppearance();
+  const look: LookKey = !isDark ? "light" : mode === "black" ? "black" : "dark";
+  const base = look === "light" ? light : look === "black" ? trueDark : dark;
+  const tone = sendColour(sendId)[look];
   return useMemo(() => {
     const wall = wallpaper(wallId);
     const source = photoSource(wallId, customFile);
@@ -141,10 +164,10 @@ export function useTheme(): Theme {
       send: tone.bg,
       onSend: tone.fg,
       onSendCard: tone.fg === INK ? "rgba(255,255,255,0.28)" : "rgba(0,0,0,0.18)",
-      wall: source || wall.pattern === "none" ? null : { def: wall, tone: isDark ? wall.dark : wall.light },
+      wall: source || wall.pattern === "none" ? null : { def: wall, tone: wall[look] },
       photo: source ? { source, dim, blur } : null,
     };
-  }, [base, tone, wallId, dim, blur, customFile, isDark]);
+  }, [base, tone, wallId, dim, blur, customFile, isDark, look]);
 }
 
 /** iOS large-title and body sizes used throughout the design. */

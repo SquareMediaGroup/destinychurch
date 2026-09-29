@@ -31,7 +31,7 @@ import {
  * and this file goes red.
  */
 
-const MODES = ["light", "dark"] as const;
+const MODES = ["light", "dark", "black"] as const;
 
 test.describe("contrast helper", () => {
   test("matches known WCAG values", () => {

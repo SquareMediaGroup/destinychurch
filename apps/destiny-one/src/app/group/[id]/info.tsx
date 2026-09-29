@@ -94,18 +94,14 @@ export default function GroupInfo() {
   }
 
   async function pickIcon() {
-    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!permission.granted) {
-      Alert.alert("Photo access needed", "Allow photo access in Settings to change the icon.");
-      return;
-    }
-    const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ["images"], allowsMultipleSelection: false, quality: 0.8, allowsEditing: true, aspect: [1, 1] });
+    // No permission request and no allowsEditing: both slow the picker down. The square crop happens in cleanImage.
+    const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ["images"], allowsMultipleSelection: false });
     if (result.canceled || !result.assets[0]) return;
     const asset = result.assets[0];
     setIconBusy(true);
     try {
       // Re-encoded on the phone first (drops GPS location), as for chat photos and profile pictures.
-      const clean = await cleanImage(asset.uri, asset.fileName ?? "icon.jpg", asset.mimeType ?? "image/jpeg");
+      const clean = await cleanImage(asset.uri, asset.fileName ?? "icon.jpg", asset.mimeType ?? "image/jpeg", { square: true });
       const file = { uri: clean.uri, name: clean.name, type: clean.mimeType } as unknown as Blob;
       applyIcon(await api.uploadGroupIcon(id, file));
     } catch (err) {

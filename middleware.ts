@@ -41,6 +41,25 @@ function withActorHeaders(
   return response;
 }
 
+// Roles are looked up on every /admin page and API call, and a dashboard load
+// makes several at once. Each lookup is a database round trip, so keep the
+// answer per server instance for a few seconds. The cost is that a role
+// change can take up to ROLES_TTL_MS to bite on an instance that has already
+// seen this user; the tradeoff is deliberate and the window is short.
+const ROLES_TTL_MS = 15_000;
+const rolesCache = new Map<string, { roles: RoleFlags; expires: number }>();
+
+async function getRolesCached(userId: string): Promise<RoleFlags> {
+  const now = Date.now();
+  const hit = rolesCache.get(userId);
+  if (hit && hit.expires > now) return hit.roles;
+
+  const roles = await getRoles(createServiceClient(), userId);
+  if (rolesCache.size > 500) rolesCache.clear();
+  rolesCache.set(userId, { roles, expires: now + ROLES_TTL_MS });
+  return roles;
+}
+
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
@@ -133,7 +152,7 @@ export async function middleware(request: NextRequest) {
 
   // Access levels — each admin section requires a specific role (or
   // super_admin); see lib/adminRoles.ts for the route → role mapping.
-  const roles = await getRoles(createServiceClient(), user.id);
+  const roles = await getRolesCached(user.id);
   if (!hasAccess(roles, pathname)) {
     if (pathname.startsWith("/api/admin")) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });

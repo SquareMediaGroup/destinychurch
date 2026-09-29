@@ -169,6 +169,9 @@ const OPEN_PATHS = [
   // /api/admin/me itself.
   /^\/api\/admin\/me\/avatar$/,
   /^\/api\/admin\/search$/,
+  // The dashboard's summary numbers — the route only queries the sections the
+  // caller's roles cover, same as search.
+  /^\/api\/admin\/dashboard$/,
   // Everyone's own onboarding progress — the route only ever reads and writes
   // the caller's row, keyed off their cookie session.
   /^\/api\/admin\/onboarding$/,

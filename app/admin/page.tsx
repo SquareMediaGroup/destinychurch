@@ -27,13 +27,8 @@ import {
 } from "@/lib/adminNav";
 import { useAdminSession, clearAdminSessionCache } from "@/lib/useAdminSession";
 import { useAdminRecents } from "@/lib/adminRecents";
-import { totalStock, type ProductWithVariants, type Order } from "@/lib/shop";
-import type { Post } from "@/lib/posts";
 import { CommandTrigger } from "@/components/admin/AdminCommandPalette";
 import { MetricCard } from "@/components/admin/AdminUI";
-
-/** A variant at or below this many units is called out before it sells out. */
-const LOW_STOCK_THRESHOLD = 3;
 
 const gbp = new Intl.NumberFormat("en-GB", {
   style: "currency",
@@ -134,8 +129,6 @@ function writeLastSoldPennies(soldThisYearPennies: number) {
   }
 }
 
-const asArray = <T,>(value: unknown): T[] => (Array.isArray(value) ? (value as T[]) : []);
-
 export default function AdminDashboard() {
   const { roles, loaded } = useAdminSession();
   const { recents } = useAdminRecents();
@@ -150,94 +143,21 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     if (!loaded) return;
-    const su = roles.super_admin;
-    const may = {
-      site: su || roles.site_admin,
-      events: su || roles.event_admin,
-      store: su || roles.store_admin,
-    };
-
     let cancelled = false;
 
     (async () => {
-      const [redirects, courses, banner, popup, posts, products, orders] =
-        await Promise.all([
-          may.site ? getJson<unknown>("/api/admin/redirects") : null,
-          may.events ? getJson<unknown>("/api/admin/alpha-events") : null,
-          su ? getJson<{ active?: boolean; message?: string }>("/api/admin/banner") : null,
-          may.events ? getJson<{ active?: boolean; title?: string }>("/api/admin/popup") : null,
-          may.site ? getJson<unknown>("/api/admin/posts") : null,
-          may.store ? getJson<unknown>("/api/admin/store/products") : null,
-          may.store ? getJson<unknown>("/api/admin/store/orders") : null,
-        ]);
-
+      const data = await getJson<Snapshot>("/api/admin/dashboard");
       if (cancelled) return;
 
-      const now = new Date();
-      const year = now.getFullYear();
-
-      const redirectRows = asArray<{ active: boolean }>(redirects);
-      const courseRows = asArray<{ start_date: string }>(courses);
-      const postRows = asArray<Post>(posts);
-      const productRows = asArray<ProductWithVariants>(products);
-      const orderRows = asArray<Order>(orders);
-
-      const lowStock = productRows
-        .filter((p) => p.is_published)
-        .map((p) => ({ id: p.id, name: p.name, units: totalStock(p) }))
-        .filter((p) => p.units <= LOW_STOCK_THRESHOLD)
-        .sort((a, b) => a.units - b.units)
-        .slice(0, 5);
-
-      const soldThisYearPennies = orderRows
-        .filter((o) => {
-          if (o.status !== "paid" && o.status !== "fulfilled") return false;
-          return new Date(o.paid_at ?? o.created_at).getFullYear() === year;
-        })
-        .reduce((sum, o) => sum + (o.total_pennies ?? 0), 0);
-
-      if (orders && may.store) {
+      const next: Snapshot = data ?? EMPTY;
+      if (next.shop) {
         const lastSold = readLastSoldPennies();
-        setSoldDeltaPennies(lastSold === null ? null : soldThisYearPennies - lastSold);
-        writeLastSoldPennies(soldThisYearPennies);
+        setSoldDeltaPennies(
+          lastSold === null ? null : next.shop.soldThisYearPennies - lastSold,
+        );
+        writeLastSoldPennies(next.shop.soldThisYearPennies);
       }
-
-      setSnapshot({
-        redirects: redirects
-          ? {
-              total: redirectRows.length,
-              active: redirectRows.filter((r) => r.active).length,
-            }
-          : null,
-        courses: courses
-          ? {
-              total: courseRows.length,
-              upcoming: courseRows.filter((e) => new Date(e.start_date) >= now).length,
-            }
-          : null,
-        banner: banner
-          ? { active: Boolean(banner.active), message: banner.message ?? "" }
-          : null,
-        popup: popup ? { active: Boolean(popup.active), title: popup.title ?? "" } : null,
-        posts: posts
-          ? {
-              total: postRows.length,
-              drafts: postRows.filter((p) => !p.is_published).length,
-            }
-          : null,
-        shop:
-          products || orders
-            ? {
-                totalProducts: productRows.length,
-                drafts: productRows.filter((p) => !p.is_published).length,
-                totalStock: productRows.reduce((sum, p) => sum + totalStock(p), 0),
-                lowStock,
-                soldThisYearPennies,
-                pendingOrders: orderRows.filter((o) => o.status === "pending").length,
-                paidUnfulfilled: orderRows.filter((o) => o.status === "paid").length,
-              }
-            : null,
-      });
+      setSnapshot(next);
       setLoading(false);
     })();
 

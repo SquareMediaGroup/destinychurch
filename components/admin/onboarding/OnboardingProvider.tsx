@@ -36,10 +36,11 @@ import {
 import { clearDemoCookie, enterDemoMode, exitDemoMode } from "@/lib/demoMode";
 import { useOnboarding } from "@/lib/onboardingProgress";
 import { useAdminSession, type PreviewRole } from "@/lib/useAdminSession";
+import dynamic from "next/dynamic";
 import OnboardingChecklist from "./OnboardingChecklist";
 import RolePreviewBar from "./RolePreviewBar";
-import TourSpotlight from "./TourSpotlight";
-import WelcomeGate from "./WelcomeGate";
+const TourSpotlight = dynamic(() => import("./TourSpotlight"));
+const WelcomeGate = dynamic(() => import("./WelcomeGate"));
 
 /** How long to wait for a step's anchor before showing the card unanchored. */
 const ANCHOR_TIMEOUT_MS = 2500;

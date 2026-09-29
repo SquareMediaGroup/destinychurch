@@ -1,11 +1,13 @@
 // Destiny One — reads for the website admin, shaped into lib/destinyOne/adminTypes.
 // Server-only. Never selects message content: that's safeguarding's alone.
+// (Feedback people send from the app is theirs to share, so it is read here.)
 
 import "server-only";
 import { isAdult } from "@destiny/shared";
 import { createServiceClient } from "@/utils/supabase/service";
 import type {
   AdminCommunity,
+  AdminFeedback,
   AdminGroup,
   AdminInvite,
   AdminMember,
@@ -194,6 +196,44 @@ export function toAdminInvite(r: InviteRow): AdminInvite {
     lastSentAt: r.last_sent_at,
     acceptedAt: r.accepted_at,
     createdAt: r.created_at,
+  };
+}
+
+interface FeedbackRow {
+  id: string;
+  kind: AdminFeedback["kind"];
+  body: string;
+  status: AdminFeedback["status"];
+  member_id: string;
+  app_version: string | null;
+  platform: string | null;
+  os_version: string | null;
+  device: string | null;
+  error_id: string | null;
+  created_at: string;
+  done_at: string | null;
+  // A single row at runtime (many-to-one); supabase-js types embeds as arrays.
+  member: { display_name: string } | { display_name: string }[] | null;
+}
+
+export const FEEDBACK_COLUMNS =
+  "id, kind, body, status, member_id, app_version, platform, os_version, device, error_id, created_at, done_at, member:d1_members!d1_feedback_member_id_fkey(display_name)";
+
+export function toAdminFeedback(r: FeedbackRow): AdminFeedback {
+  return {
+    id: r.id,
+    kind: r.kind,
+    body: r.body,
+    status: r.status,
+    memberId: r.member_id,
+    memberName: (Array.isArray(r.member) ? r.member[0] : r.member)?.display_name ?? "Former member",
+    appVersion: r.app_version,
+    platform: r.platform,
+    osVersion: r.os_version,
+    device: r.device,
+    errorId: r.error_id,
+    createdAt: r.created_at,
+    doneAt: r.done_at,
   };
 }
 

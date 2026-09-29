@@ -3,7 +3,7 @@
 // is the only sign-in on the device.
 
 import { useState } from "react";
-import { View } from "react-native";
+import { Alert, View } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { SIGN_IN_FAILED } from "@destiny/shared";
 import { AuthScreen } from "@/components/AuthScreen";
@@ -24,7 +24,7 @@ export default function Password() {
     setBusy(true);
     setError(null);
     try {
-      const me = await signInWithPassword(email, password);
+      const { me, leaked } = await signInWithPassword(email, password);
       if (isAdding()) {
         const added = await finishAdding(me);
         if (!added.ok) {
@@ -34,6 +34,7 @@ export default function Password() {
       } else setMe(me);
       router.dismissAll();
       router.replace(routeFor(me));
+      if (leaked && me.onboarding === "active") offerPasswordChange();
     } catch {
       // Whatever went wrong, it looks the same from here (see signInWithPassword).
       setError(SIGN_IN_FAILED);
@@ -79,5 +80,17 @@ export default function Password() {
         <TextButton label="Forgot it? Email me a code" onPress={emailCode} style={{ alignSelf: "flex-start" }} />
       </View>
     </AuthScreen>
+  );
+}
+
+/** Signed in, but the password has since turned up in a data breach: offer to change it now. */
+function offerPasswordChange() {
+  Alert.alert(
+    "Change your password",
+    "Your password appears in a list of passwords leaked from other websites, so it's easy for someone else to guess. Choose a new one to keep your account safe.",
+    [
+      { text: "Later", style: "cancel" },
+      { text: "Change password", isPreferred: true, onPress: () => router.push({ pathname: "/set-password", params: { leaked: "1" } }) },
+    ],
   );
 }

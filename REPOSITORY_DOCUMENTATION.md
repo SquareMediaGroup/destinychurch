@@ -5994,6 +5994,11 @@ Polished to Apple's Human Interface Guidelines. The pieces, and why they exist:
   at the edge, and spring on from the release velocity; `SwipeActions` snaps using where the flick
   was heading (`project()`), and only one row is open at a time. Plain `PanResponder` + `Animated`,
   no extra native module. Long-press still opens the actions sheet, which springs up from the message's side.
+- **Chat peek** (`(tabs)/chats.tsx` `ChatRow`): press and hold a chat in the list to preview it,
+  as in WhatsApp. It uses expo-router's native `Link.Preview` / `Link.Menu` (a UIKit context menu)
+  with Mark as read / Mute / Group info underneath; tapping the preview opens the chat. The
+  conversation screen checks `useIsPreview()` and renders read-only in the peek: no read receipt,
+  no `setOpenGroup`, no composer or header buttons, no receive haptic, no notification prompt.
 - **Haptics** (`src/lib/haptics.ts`, `expo-haptics`), always tied to an action: tab and filter
   changes, primary buttons, each code digit, sending, a message arriving while the chat is open,
   reacting, poll votes, a gesture reaching its threshold, opening the message menu, pull to

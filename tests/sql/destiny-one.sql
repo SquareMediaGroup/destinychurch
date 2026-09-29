@@ -144,17 +144,17 @@ select pg_temp.check(
   'a group created with only its creator is paused');
 
 insert into ids select 'oneadult', public.d1_create_group(:lead::uuid, (select v from ids where k = 'community'),
-  'One adult', null, null, array[:minor1, :minor2]::uuid[]);
+  'Two people', null, null, array[:adult2]::uuid[]);
 select pg_temp.check(
   (select state from public.d1_groups where id = (select v from ids where k = 'oneadult')) = 'frozen',
-  'a group with only one adult is paused');
+  'a group with only two people is paused');
 
 select pg_temp.check(
   not exists (select 1 from public.d1_safeguarding_events
               where group_id in ((select v from ids where k = 'tiny'), (select v from ids where k = 'oneadult'))),
   'pausing at creation raises no safeguarding event');
 
-select public.d1_add_group_members(:lead::uuid, (select v from ids where k = 'tiny'), array[:adult2, :minor1]::uuid[]);
+select public.d1_add_group_members(:lead::uuid, (select v from ids where k = 'tiny'), array[:adult2, :adult3]::uuid[]);
 select pg_temp.check(
   (select state from public.d1_groups where id = (select v from ids where k = 'tiny')) = 'active',
   'a paused group opens itself once it has 3 people including 2 adults');
@@ -437,10 +437,10 @@ select pg_temp.check(
 
 insert into ids select 'adminoneadult', public.d1_admin_create_group(
   (select v from ids where k = 'community'), 'Admin one adult', null, null,
-  array[:lead, (select v from accepted where k = 'kid'), :minor1]::uuid[]);
+  array[:lead, :adult3]::uuid[]);
 select pg_temp.check(
   (select state from public.d1_groups where id = (select v from ids where k = 'adminoneadult')) = 'frozen',
-  'an admin-created group with one adult is paused');
+  'an admin-created group with two people is paused');
 
 select pg_temp.expect_error(
   format($$select public.d1_admin_create_group(%L, 'x', null, null, array[%L, %L, %L]::uuid[], array[%L]::uuid[])$$,

@@ -63,7 +63,9 @@ Decided with the product owner on 28 September 2026:
 - [x] Record `20260926_01_destiny_one` and `20260927_01_destiny_one_admin` in the live migration history. They were run outside it, so a fresh database can't be rebuilt reliably.
 - [x] **Merge the polls work so the repo matches the live database.** `20260928_02_destiny_one_content` (poll votes, a `content` column, and a new `d1_post_message` with an extra optional argument) was applied to the live project on 28 September from `feature/destiny-one-restore-polls`, before being merged. Done: merged in #39 and covered by `scripts/test-sql.sh`.
 - [x] **The admin notifications tables were missing from the live database** (`20260922_02_notifications` was never applied), so reporting a message or a group being paused would have failed. Applied on 29 September 2026, with the emit and purge functions limited to the server.
-- [ ] Other repo migrations not yet on the live database: `20260927_04_posts_page_settings`, `20260927_04_remove_live_chat` and `20260902_remove_media_boards` (the last two delete tables). Check whether each is still wanted before applying.
+- [x] Other repo migrations not yet on the live database. Applied on 29 September 2026: `20260902_remove_media_boards`, `20260922_hr_review_reviewer_scoping`, `20260927_04_posts_page_settings` (already there, now recorded) and `20260927_04_remove_live_chat`. `20260514_studio_v2_schema` is obsolete (the page builder it changes was removed) and was skipped.
+- [ ] Empty and delete the `media-photos` storage bucket in the Supabase dashboard (22 files; it's public, so they can still be opened by link). SQL can't remove a bucket with files in it.
+- [ ] **Leaked password protection** (Supabase → Authentication → Providers → Email → "Prevent use of leaked passwords"). Needs the Pro plan; the organisation is on Free. The app and the website admin reset already explain a refused password.
 - [ ] Clear the test data from the live database (3 members, 7 messages at the time of the audit).
 - [ ] Data processing agreements with Supabase, Vercel, Expo, Resend, Sentry, Apple and Google.
 - [ ] Set `EXPO_ACCESS_TOKEN` and switch on push security in Expo.

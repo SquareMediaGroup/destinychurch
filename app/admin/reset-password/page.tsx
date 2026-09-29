@@ -3,9 +3,9 @@
 import { useActionState, useEffect } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { resetPassword } from "./actions";
+import { resetPassword, type ResetPasswordState } from "./actions";
 
-const initialState = { success: false, error: undefined as string | undefined };
+const initialState: ResetPasswordState = { success: false };
 
 export default function ResetPasswordPage() {
   const router = useRouter();
@@ -86,6 +86,23 @@ export default function ResetPasswordPage() {
                   className="w-full rounded-2xl border border-white/10 bg-white/5 px-5 py-3.5 text-sm text-white placeholder:text-white/20 transition focus:border-destiny-orange/50 focus:outline-none focus:ring-2 focus:ring-destiny-orange/20"
                 />
               </div>
+
+              {state.rejection && (
+                <div role="alert" className="flex gap-3 rounded-2xl border border-destiny-orange/30 bg-destiny-orange/10 px-4 py-4 text-sm">
+                  <span className="material-symbols-rounded text-xl text-destiny-orange" aria-hidden="true">
+                    {state.rejection.breached ? "shield" : "error"}
+                  </span>
+                  <div className="flex-1">
+                    <p className="font-bold text-white">{state.rejection.title}</p>
+                    <p className="mt-1 leading-relaxed text-white/70">{state.rejection.body}</p>
+                    {state.rejection.breached && (
+                      <p className="mt-2 leading-relaxed text-white/70">
+                        Tip: three or four random words together make a password that&apos;s long and easy to remember.
+                      </p>
+                    )}
+                  </div>
+                </div>
+              )}
 
               {state.error && (
                 <div className="flex items-center gap-3 rounded-2xl bg-red-500/10 px-4 py-3 text-sm text-red-400">

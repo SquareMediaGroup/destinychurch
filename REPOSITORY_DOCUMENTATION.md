@@ -2506,7 +2506,7 @@ Each section requires a specific access-level role (see
 |-------|------|---------|
 | `/login` | `app/login/page.tsx` | Staff sign-in. On success (or on revisiting while already signed in), shows a "choose a system" screen — Admin (`/admin`) and Portal (`/portal`) cards, greyed out for whichever the account can't open (`getSystemAccess` in `lib/staffPortalAuth.ts`) |
 | `/admin/forgot-password` | `app/admin/forgot-password/page.tsx` | Password reset request |
-| `/admin/reset-password` | `app/admin/reset-password/page.tsx` | Password reset form |
+| `/admin/reset-password` | `app/admin/reset-password/page.tsx` | Password reset form. A password Supabase refuses (found in a data breach, or too weak) gets an explanation panel from `passwordRejection()` instead of a raw error |
 | `/admin` | `app/admin/page.tsx` | Admin dashboard home |
 | `/admin/banner` | `app/admin/banner/page.tsx` | Manage site banners |
 | `/admin/popup` | `app/admin/popup/page.tsx` | Manage pop-ups |
@@ -7005,6 +7005,14 @@ same database as the data rather than in a separate Synapse module.
   Search tab `(tabs)/find` uses the same `SearchView` component), `report` + `report-sent` (B5), `feedback` (D5, Profile → Report a problem /
   Send feedback, `?kind=problem|idea`; also reached by shaking the phone, see below), `chat-safety`,
   `delete-account` (D3, type DELETE), `accounts` (account switcher, a fit-to-content form sheet), `add-account` (Profile → Add account: Add child / Add admin account, a form sheet), `password` (password sign-in) and `set-password` (Profile → Password).
+- **Leaked passwords.** With Supabase's leaked password protection on (Auth settings, Pro plan), a
+  new password found in a known data breach is refused with `AuthWeakPasswordError` (reason `pwned`).
+  `setPassword` (`src/lib/auth.ts`) turns that into `PasswordRejectedError`, and `set-password` shows a
+  card saying the password has been leaked, clears the field and asks for a different one. Signing
+  in with an existing password that has since leaked still works, but Supabase flags it
+  (`weakPassword`), so `password` offers "Change password", which opens `set-password?leaked=1` with
+  the same card. The wording is `passwordRejection()` in `@destiny/shared` (unit-tested), shared with
+  the website's `/admin/reset-password`.
 - **State:** `src/state/session.tsx` (auth session, `me`, the communities list, the Realtime hub,
   catch-up, `routeFor`, `errorMessage`); `src/state/picker.ts` (Add people selection for New group).
   `src/lib/useConversation.ts` owns a chat: paging, optimistic sends with "Not sent. Tap to retry.",

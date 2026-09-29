@@ -13,8 +13,8 @@ import { Composer } from "@/components/Composer";
 import { Wallpaper } from "@/components/Wallpaper";
 import { GlassSurface } from "@/components/GlassSurface";
 import { Icon } from "@/components/Icon";
-import { MessageActions } from "@/components/MessageActions";
 import { Appear, PressableScale } from "@/components/Motion";
+import type { MessageMenuActions } from "@/components/MessageMenu";
 import { Divider, MessageBubble, buildRows, type Row } from "@/components/MessageBubble";
 import { NotificationPrompt } from "@/components/NotificationPrompt";
 import { Avatar, BackButton, ConfirmDialog, EmptyState, ErrorState, GlassIconButton, PrimaryButton, withAlpha } from "@/components/ui";
@@ -50,7 +50,6 @@ export default function GroupChat() {
 
   const list = useRef<FlatList<Row>>(null);
   const input = useRef<TextInput>(null);
-  const [actionFor, setActionFor] = useState<LocalMessage | null>(null);
   const [deleting, setDeleting] = useState<LocalMessage | null>(null);
   const [deleteBusy, setDeleteBusy] = useState(false);
   const [blocking, setBlocking] = useState<{ id: string; name: string } | null>(null);
@@ -125,6 +124,21 @@ export default function GroupChat() {
   const department = group?.department ?? summary?.group.department;
   const sub = group ? [department, plural(group.members.length, "member")].filter(Boolean).join(" · ") : department ?? "";
   const canDelete = (m: LocalMessage) => m.mine || group?.myRole === "admin" || !!group?.canManage;
+
+  // What the system press-and-hold menu does for one message.
+  const menuFor = (m: LocalMessage): MessageMenuActions => ({
+    canDelete: canDelete(m),
+    onReact: (emoji) => void convo.toggleReaction(m.id, emoji).catch((err) => setToast(errorMessage(err))),
+    onReply: group?.canPost && !frozen && !archived ? () => startReply(m) : null,
+    onCopy: () => {
+      if (m.body) void Clipboard.setStringAsync(m.body);
+    },
+    onReport: () => router.push({ pathname: "/report", params: { messageId: String(m.id), name: m.sender?.displayName ?? "Former member", at: m.createdAt, body: m.body ?? "Attachment" } }),
+    onBlock: () => {
+      if (m.sender) setBlocking({ id: m.sender.id, name: m.sender.displayName });
+    },
+    onDelete: () => setDeleting(m),
+  });
 
   async function sendText(text: string) {
     const reply = replyTo;
@@ -239,7 +253,7 @@ export default function GroupChat() {
                 canReply={!!group?.canPost && !frozen && !archived}
                 arriving={arriving(item.m)}
                 onReply={() => startReply(item.m)}
-                onLongPress={() => setActionFor(item.m)}
+                menu={menuFor(item.m)}
                 onOpenAttachment={(url) => {
                   // An event card carries its own web address; only files need a signed link.
                   if (!item.m.attachment) {
@@ -318,40 +332,6 @@ export default function GroupChat() {
         ) : null}
         {footer}
       </View>
-
-      <MessageActions
-        message={actionFor}
-        canDelete={!!actionFor && canDelete(actionFor)}
-        onClose={() => setActionFor(null)}
-        onReact={(emoji) => {
-          const m = actionFor;
-          setActionFor(null);
-          if (m) void convo.toggleReaction(m.id, emoji).catch((err) => setToast(errorMessage(err)));
-        }}
-        onReply={() => {
-          setReplyTo(actionFor);
-          setActionFor(null);
-          setTimeout(() => input.current?.focus(), 250);
-        }}
-        onCopy={() => {
-          if (actionFor?.body) void Clipboard.setStringAsync(actionFor.body);
-          setActionFor(null);
-        }}
-        onReport={() => {
-          const m = actionFor;
-          setActionFor(null);
-          if (m) router.push({ pathname: "/report", params: { messageId: String(m.id), name: m.sender?.displayName ?? "Former member", at: m.createdAt, body: m.body ?? "Attachment" } });
-        }}
-        onBlock={() => {
-          const sender = actionFor?.sender;
-          setActionFor(null);
-          if (sender) setBlocking({ id: sender.id, name: sender.displayName });
-        }}
-        onDelete={() => {
-          setDeleting(actionFor);
-          setActionFor(null);
-        }}
-      />
 
       <ConfirmDialog
         visible={!!blocking}

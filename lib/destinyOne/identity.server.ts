@@ -121,8 +121,9 @@ async function verifyFromChurchSuite(existing: MemberRow | null, authUserId: str
     return null;
   }
 
+  // A name the member changed themselves is theirs; ChurchSuite doesn't overwrite it.
   const fields = {
-    display_name: person.displayName,
+    ...(existing?.name_edited_at ? {} : { display_name: person.displayName }),
     adult_on: person.adultOn,
     churchsuite_contact_id: person.id,
     churchsuite_user_id: hint.churchsuiteUserId,
@@ -244,10 +245,16 @@ export async function resyncMember(member: MemberRow): Promise<"unchanged" | "up
     return "gone";
   }
 
-  const changed = person.displayName !== member.display_name || person.adultOn !== member.adult_on;
+  // A name the member changed themselves is theirs; ChurchSuite doesn't overwrite it.
+  const syncName = !member.name_edited_at;
+  const changed = (syncName && person.displayName !== member.display_name) || person.adultOn !== member.adult_on;
   const { error } = await supabase
     .from("d1_members")
-    .update({ display_name: person.displayName, adult_on: person.adultOn, last_synced_at: new Date().toISOString() })
+    .update({
+      ...(syncName ? { display_name: person.displayName } : {}),
+      adult_on: person.adultOn,
+      last_synced_at: new Date().toISOString(),
+    })
     .eq("id", member.id);
   if (error) {
     console.error(`⚠️ Destiny One resync refused for ${member.id}:`, error.message);

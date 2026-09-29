@@ -974,6 +974,12 @@ and `lib/adminRoles.ts` for the enforcement logic.
 - `/admin/users` + `app/api/admin/users/**` — role management UI
 - `app/api/admin/me` — the caller's own email + role flags, shared by the sidebar, header and
   ⌘K palette via `lib/useAdminSession.ts`; `app/api/admin/me/roles` remains for existing callers
+- `app/api/admin/dashboard` — the admin home's summary numbers in one request (counts done in the
+  database, not by downloading whole tables). Open to any admin; each section is only queried if the
+  caller's roles (from the `x-dc-actor-roles` header middleware sets) cover it
+- Performance: `vercel.json` pins functions to `lhr1` (next to Supabase `eu-west-1`), and
+  `middleware.ts` caches each user's roles for 15s per instance, so a role change can take up to
+  15s to take effect
 - `app/api/admin/search` — cross-section record search for the ⌘K palette. Open to any signed-in
   admin, but it re-reads the caller's roles and only queries the sections that role can open
 

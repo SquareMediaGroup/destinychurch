@@ -36,25 +36,15 @@ export default function Profile() {
   }
 
   async function changeAvatar() {
-    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!permission.granted) {
-      Alert.alert("Photo access needed", "Allow photo access in Settings to change your picture.");
-      return;
-    }
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ["images"],
-      allowsMultipleSelection: false,
-      quality: 0.8,
-      allowsEditing: true,
-      aspect: [1, 1],
-    });
+    // No permission request and no allowsEditing: both slow the picker down. The square crop happens in cleanImage.
+    const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ["images"], allowsMultipleSelection: false });
     if (result.canceled || !result.assets[0]) return;
 
     const asset = result.assets[0];
     setAvatarBusy(true);
     try {
       // A fresh copy with no hidden details (no GPS location), as for chat photos.
-      const clean = await cleanImage(asset.uri, asset.fileName ?? "avatar.jpg", asset.mimeType ?? "image/jpeg");
+      const clean = await cleanImage(asset.uri, asset.fileName ?? "avatar.jpg", asset.mimeType ?? "image/jpeg", { square: true });
       const file = { uri: clean.uri, name: clean.name, type: clean.mimeType } as unknown as Blob;
       setMe(await api.uploadAvatar(file));
     } catch (err) {

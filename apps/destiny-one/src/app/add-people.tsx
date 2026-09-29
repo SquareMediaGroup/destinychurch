@@ -50,12 +50,13 @@ export default function AddPeople() {
   }, [query]);
   const directory = useQuery({
     queryKey: ["directory", communityId ?? "", term],
-    queryFn: () => api.directory(term, communityId).catch(() => [] as D1DirectoryEntry[]),
+    queryFn: () => api.directory(term, communityId),
+    retry: false,
     staleTime: 5 * 60_000,
     gcTime: 10 * 60_000,
     placeholderData: keepPreviousData,
   });
-  const results = directory.data ?? null;
+  const results = directory.data ?? (directory.isError ? [] : null);
   const loading = directory.isFetching || term !== query.trim();
 
   const visible = (results ?? []).filter((p) => p.id !== me?.id && !existing.has(p.id));
@@ -143,7 +144,15 @@ export default function AddPeople() {
             keyExtractor={(p) => p.id}
             keyboardShouldPersistTaps="handled"
             style={{ borderRadius: 22, backgroundColor: t.card, flexGrow: 0 }}
-            ListEmptyComponent={loading ? null : <EmptyState title="No one found" body={query ? "Try a different name." : undefined} />}
+            ListEmptyComponent={
+              loading ? null : directory.isError ? (
+                <EmptyState title="Couldn't load people" body={errorMessage(directory.error)} />
+              ) : !communityId && term.length < 2 ? (
+                <EmptyState title="Search for someone" body="Type at least 2 letters of their name." />
+              ) : (
+                <EmptyState title="No one found" body={query ? "Try a different name." : undefined} />
+              )
+            }
             renderItem={({ item }) => {
               const on = isOn(item);
               return (

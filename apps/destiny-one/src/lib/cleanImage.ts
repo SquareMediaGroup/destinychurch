@@ -21,13 +21,18 @@ export interface CleanImage {
 }
 
 /** A fresh copy of the image at `uri` with no metadata. PNGs stay PNG (screenshots stay sharp); everything else becomes JPEG. */
-export async function cleanImage(uri: string, name: string, mimeType: string): Promise<CleanImage> {
-  const original = await ImageManipulator.manipulate(uri).renderAsync();
-  let image = original;
-  const longest = Math.max(original.width, original.height);
-  if (longest > MAX_SIDE) {
-    const context = ImageManipulator.manipulate(original);
-    context.resize(original.width >= original.height ? { width: MAX_SIDE } : { height: MAX_SIDE });
+export async function cleanImage(uri: string, name: string, mimeType: string, options: { square?: boolean } = {}): Promise<CleanImage> {
+  let image = await ImageManipulator.manipulate(uri).renderAsync();
+  if (options.square && image.width !== image.height) {
+    // Centre crop, for avatars and icons.
+    const side = Math.min(image.width, image.height);
+    const context = ImageManipulator.manipulate(image);
+    context.crop({ originX: Math.round((image.width - side) / 2), originY: Math.round((image.height - side) / 2), width: side, height: side });
+    image = await context.renderAsync();
+  }
+  if (Math.max(image.width, image.height) > MAX_SIDE) {
+    const context = ImageManipulator.manipulate(image);
+    context.resize(image.width >= image.height ? { width: MAX_SIDE } : { height: MAX_SIDE });
     image = await context.renderAsync();
   }
 

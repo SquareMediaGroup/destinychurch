@@ -90,16 +90,17 @@ const light: Theme = {
   shadow: { shadowColor: INK, shadowOpacity: 0.1, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 4 },
 };
 
-// Dark mode uses a deep, warm tint of the brand orange instead of pure black,
-// so it feels like Destiny rather than a generic dark theme.
+// Dark mode is near-black and neutral, not pure #000 (which is harsh against
+// bright text and smears on OLED scroll) and not tinted. Surfaces step up in
+// small, even lightness steps so cards, fields and bubbles stay distinguishable.
 const dark: Theme = {
   dark: true,
   bg: PAGE_BG.dark,
   grouped: PAGE_BG.dark,
-  card: "#26190F",
-  fill: "#312215",
-  fill2: "#3D2C1E",
-  sep: "rgba(255,214,170,0.14)",
+  card: "#151517",
+  fill: "#1C1C1F",
+  fill2: "#28282C",
+  sep: "rgba(255,255,255,0.12)",
   text: "#FFFFFF",
   muted: "rgba(255,255,255,0.82)",
   subtle: "rgba(255,255,255,0.72)",
@@ -107,21 +108,21 @@ const dark: Theme = {
   accent: ORANGE,
   onAccent: INK,
   accentSoft: "rgba(245,128,33,0.2)",
-  bubbleIn: "#33241A",
-  glass: "rgba(49,34,21,0.66)",
-  glassLine: "rgba(255,214,170,0.14)",
-  avatar: "#4A3524",
-  scrim: "rgba(10,5,0,0.6)",
-  field: "#26190F",
-  btn: "#3D2C1E",
+  bubbleIn: "#212125",
+  glass: "rgba(28,28,31,0.66)",
+  glassLine: "rgba(255,255,255,0.12)",
+  avatar: "#3A3A40",
+  scrim: "rgba(0,0,0,0.6)",
+  field: "#151517",
+  btn: "#28282C",
   onBtn: "#FFFFFF",
-  sheet: "#26190F",
+  sheet: "#151517",
   send: "#F58021",
   onSend: INK,
   onSendCard: "rgba(255,255,255,0.28)",
   wall: null,
   photo: null,
-  shadow: { shadowColor: "#000", shadowOpacity: 0.55, shadowRadius: 14, shadowOffset: { width: 0, height: 8 }, elevation: 6 },
+  shadow: { shadowColor: "#000", shadowOpacity: 0.6, shadowRadius: 14, shadowOffset: { width: 0, height: 8 }, elevation: 6 },
 };
 
 /** The theme for the current light/dark setting, with this person's send colour and wallpaper applied. */

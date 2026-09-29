@@ -269,7 +269,7 @@ function Tile({ label, accessibilityLabel, on, onPress, background, children }: 
 /** Half a tile: a few bubbles in the light or dark page colours. System shows one of each side by side. */
 function ModeSwatch({ dark }: { dark: boolean }) {
   const page = dark ? PAGE_BG.dark : PAGE_BG.light;
-  const bubble = dark ? "#33241A" : "#F3F3F4";
+  const bubble = dark ? "#212125" : "#F3F3F4";
   return (
     <View style={{ flex: 1, backgroundColor: page, justifyContent: "center", gap: 5, paddingHorizontal: 8 }}>
       <View style={{ width: "70%", height: 12, borderRadius: 6, backgroundColor: bubble }} />

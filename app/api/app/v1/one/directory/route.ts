@@ -12,7 +12,7 @@ import { OneError, UUID_RE, limit, oneJson, oneRoute } from "@/lib/destinyOne/ht
 // have no directory at all; there's no way to go looking for someone to
 // message privately, because there is no private messaging.
 //
-// With communityId: only people already in that community (for adding to a
+// With communityId (q optional): only people already in that community (for adding to a
 // sub-group). Without: every active member (for adding to a community), which
 // needs senior leadership or a community admin role somewhere.
 
@@ -28,16 +28,18 @@ export const GET = oneRoute(async (request) => {
   const url = new URL(request.url);
   const q = (url.searchParams.get("q") ?? "").trim().slice(0, 60);
   const communityId = url.searchParams.get("communityId");
-  if (q.length < 2) return oneJson<D1DirectoryEntry[]>([]);
+  // A community can be browsed without typing (its members are already a short
+  // list); searching everyone still needs a real search term.
+  if (q.length < 2 && !(q.length === 0 && communityId)) return oneJson<D1DirectoryEntry[]>([]);
 
   const supabase = createServiceClient();
   let query = supabase
     .from("d1_members")
     .select("id, display_name, adult_on")
     .eq("status", "active")
-    .ilike("display_name", `%${escapeLike(q)}%`)
     .order("display_name")
     .limit(25);
+  if (q) query = query.ilike("display_name", `%${escapeLike(q)}%`);
 
   if (communityId) {
     if (!UUID_RE.test(communityId)) throw new OneError("not_found", "That community doesn't exist.");

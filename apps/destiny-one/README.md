@@ -35,7 +35,7 @@ rather than Expo Go for full behaviour: `npx expo run:ios` / `run:android`, or
 ```
 src/app/                 Expo Router routes — one per screen in docs/destiny-one-ui-spec.md
 src/components/          UI kit (ui.tsx: beam, buttons, fields, cards, dialogs), Icon, GlassSurface,
-                         MessageBubble (1F), MessageActions, Composer, GroupRows (1B)
+                         MessageBubble (1F), MessageMenu, Composer, GroupRows (1B)
 src/theme/tokens.ts      Light/dark colour tokens from the Claude Design prototype
 src/state/               session (me, routing, shared chat list), picker (Add people selection)
 src/lib/useConversation  One chat: paging, realtime, optimistic send/retry, uploads, reactions

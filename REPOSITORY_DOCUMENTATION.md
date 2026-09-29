@@ -1974,10 +1974,12 @@ department **sub-groups**. Migration: `supabase/migrations/20260926_01_destiny_o
 
 **The rules are enforced in the database**, not the API, so no client and no route bug can get round
 them:
-1. **No 1:1 chats.** `d1_create_group` refuses fewer than 3 people.
+1. **No 1:1 chats.** A group with fewer than 3 people is paused (read-only), never usable. `d1_create_group` still
+   accepts any size (even just the creator, migration `20260929_05`; `d1_admin_create_group` likewise, `_06`): it inserts the group already `frozen`/`auto`
+   with no safeguarding event, and it opens itself once it has 3 people including 2 adults.
 2. **Only leaders create groups and communities** (any of `admin` / `cg_leader` / `senior_leader`,
    adults only; the three have identical powers).
-3. **At least 2 verified adults in every group, always.** Checked at creation, then by a *deferred*
+3. **At least 2 verified adults in every group, always.** Evaluated at creation (paused if unmet), then by a *deferred*
    constraint trigger on `d1_group_members` (and on `d1_members` status/`adult_on` changes) that calls
    `d1_evaluate_group`: below 3 members or 2 adults → `frozen` (read-only) + a `d1_safeguarding_events`
    row; back above → unfrozen automatically. Leaving is never blocked (scoping doc D1: freeze + notify).
@@ -2021,7 +2023,7 @@ minimal reliance on ChurchSuite, so identity now comes from Destiny's own staff:
 - **Admin-path functions** with no acting member (website staff may have no app account):
   `d1_admin_create_community`, `_add_community_members`, `_set_community_role`,
   `_remove_community_member`, `_create_group`, `_add_group_members`, `_remove_group_member`,
-  `_set_group_role`, sharing `d1__check_composition` (≥3 people, ≥2 adults). Every part-1 trigger
+  `_set_group_role`, (group creation no longer uses `d1__check_composition`; small groups are created paused). Every part-1 trigger
   still applies. Plus reads `d1_admin_members` (joins the sign-in email from `auth.users` in one
   query) and `d1_admin_groups` (live counts).
 - **Notifications re-routed:** an automatic pause → `destiny_one_admin` + `safeguarding_admin`; a
@@ -4253,7 +4255,7 @@ needs at least 2 verified adults.") pass through as `rule_violation` (422). Type
 | `communities` | GET, POST | POST: any leader role |
 | `communities/[id]` | GET | |
 | `communities/[id]/members` | POST, DELETE | DELETE without `memberId` = leave |
-| `communities/[id]/groups` | POST | Create a sub-group (≥3 people, ≥2 adults) |
+| `communities/[id]/groups` | POST | Create a sub-group (any size; paused until ≥3 people, ≥2 adults) |
 | `groups/[id]` | GET, PATCH | PATCH: rename/describe/archive (managers) |
 | `groups/[id]/members` | POST, DELETE | Leaving never blocked |
 | `groups/[id]/icon` | POST, DELETE | Group icon (multipart `file`, 5 MB). Any current member can change it, not just admins; not for Announcements or paused groups. Stored in `d1-avatars` as `d1_groups.icon_path`; `iconUrl` on group summaries is a signed link. The app asks people to avoid the church logo |
@@ -6008,7 +6010,7 @@ Polished to Apple's Human Interface Guidelines. The pieces, and why they exist:
   The sliders (`src/components/Slider.tsx`) are `PanResponder` + Views (no native module) and
   expose the standard "adjustable" role to screen readers. `Backdrop` (`Wallpaper.tsx`) draws
   whichever wallpaper is active and is used by the chat and the live preview.
-- **Dark mode is a warm tint of the brand orange** (`#1A110A` page, `#26190F` cards), not pure black.
+- **Dark mode is near-black and neutral** (`#0B0B0C` page, `#151517` cards, `#1C1C1F`/`#28282C` fills), not pure `#000` (harsh against white text) and not tinted. Surfaces step up in small even lightness steps so cards, fields and bubbles stay distinct. The page colour lives in `PAGE_BG` (`theme/appearance.ts`); the splash dark background in `app.json` must match it.
 - **Bubbles** (`MessageBubble.tsx`) join in runs (the corner facing the sender flattens between
   neighbours) and the last one in a run gets a small curved tail. The time shows once per run.
 - **Gestures** (`src/components/Swipe.tsx`): swipe a message left to reply (`SwipeToReply`, left as in Telegram so it can never clash with swipe-back);
@@ -7187,7 +7189,7 @@ same database as the data rather than in a separate Synapse module.
   gradient in a clipped frame, since RN has no conic-gradient — plus buttons, fields, cards,
   dialogs, and pulsing loading skeletons — `SkeletonGroup`, `Bone`, `SkeletonRows` — used by
   Chats, Community, Group info and Edit group while data loads), `Icon.tsx` (the design's line icons via `react-native-svg`), `MessageBubble.tsx`,
-  `MessageActions.tsx` (long-press sheet), `Composer.tsx`, `NotificationPrompt.tsx` (A10, asked once
+  `MessageMenu.tsx` (system press-and-hold context menu with reactions row, via @expo/ui), `Composer.tsx`, `NotificationPrompt.tsx` (A10, asked once
   on first group open), `SafetyNotice.tsx`.
 - **Search** (`search` route): groups from the cached list, plus messages via `GET /search/messages`
   (`d1_search_messages`: groups you're in, since you joined, never deleted; stored tsvector + GIN,

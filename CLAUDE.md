@@ -6,6 +6,16 @@
 - Push the feature branch and open a pull request for every change.
 - PRs must be reviewed and approved before merging — do not self-merge without approval.
 
+## Keeping the local checkout current (Destiny One / Expo)
+
+Expo and the Next dev server serve whatever is on disk in the checkout they were started from, so a stale local `main` means the simulator silently shows old code. This has caused "my change didn't reach the app" reports.
+
+- Before starting or restarting a dev server, or telling the user a change is ready to try on the simulator: run `git fetch origin` and check `git status -sb`. If the checkout is behind `origin/main`, fast-forward it (`git pull --ff-only origin main`) or say it is behind.
+- After a PR merges, update the local `main` checkout the dev server runs from, and re-run `npm install` in `apps/destiny-one` if its `package.json` changed.
+- After pulling, restart Expo with a cleared cache: `npx expo start -c`.
+- When the user says a change is missing on the simulator, check first: which checkout/branch is Expo serving (`lsof -a -p <expo pid> -d cwd`), is it behind `origin/main`, and is the PR actually merged. Only then look at the code.
+- Say clearly if a feature lives in an unmerged PR or needs an unapplied Supabase migration, so it is not mistaken for a stale build.
+
 ## Documentation
 
 - **Keep REPOSITORY_DOCUMENTATION.md in sync** — This is the single source of truth for the codebase

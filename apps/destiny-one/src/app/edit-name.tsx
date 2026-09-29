@@ -39,8 +39,9 @@ export default function EditName() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const left = me?.nameChangesLeft ?? 0;
-  const locked = left === 0;
+  // An API without the limit yet sends no count: don't lock anyone out on a missing value.
+  const left = me?.nameChangesLeft;
+  const locked = left === 0 && !!me?.nextNameChangeAt;
   const unchanged = firstName.trim() === me?.firstName && lastName.trim() === me?.lastName;
   const ready = !locked && !unchanged && firstName.trim().length > 0 && lastName.trim().length > 0;
   const nextDate = me?.nextNameChangeAt ? new Date(me.nextNameChangeAt).toLocaleDateString("en-GB", { day: "numeric", month: "long" }) : null;
@@ -105,7 +106,9 @@ export default function EditName() {
         <Text style={{ fontSize: 13, lineHeight: 18, color: t.muted, paddingHorizontal: 4 }}>
           {locked
             ? `You have used both name changes for this month. You can change your name again on ${nextDate}.`
-            : `You can change your name twice a month. You have ${left} ${left === 1 ? "change" : "changes"} left.`}
+            : left === undefined
+              ? "You can change your name twice a month."
+              : `You can change your name twice a month. You have ${left} ${left === 1 ? "change" : "changes"} left.`}
         </Text>
       </View>
       <View style={{ marginTop: 24 }}>

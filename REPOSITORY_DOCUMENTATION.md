@@ -2068,7 +2068,10 @@ version / phone model / crash-report id, `status` new/done; deny-all RLS). Kept 
 as GitHub issues, because the repository is public and many members are young people. An insert rings
 the Destiny One Admin bell (`d1_feedback_notify`; the notification never includes the text).
 `d1_erase_member` deletes a member's feedback and `d1_purge_expired` removes feedback older than the
-retention period. Staff read it at `/admin/destiny-one/feedback`.
+retention period. Staff read it at `/admin/destiny-one/feedback`. Applied to the live project on
+2026-09-29, together with `20260922_02_notifications.sql` (the admin bell's tables), which had never
+been applied there. Until then, every Destiny One report and group pause would have failed at its bell
+notification.
 
 **Tested by:** `scripts/test-sql.sh` (`npm run test:sql`, and the "Database rules" CI job) — applies
 Supabase stubs + every Destiny One migration (parts 1–9, plus the profile-picture, min-build and

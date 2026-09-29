@@ -13,7 +13,7 @@ import { useTheme } from "@/theme/tokens";
 
 const POINTS = [
   "You'll leave every group and community.",
-  "Your messages stay, shown as \"Former member\", for the safeguarding retention period. Then they're deleted.",
+  "Your messages stay, shown as \"Former member\", for a little while. Then they're deleted.",
   "This can't be undone.",
 ];
 

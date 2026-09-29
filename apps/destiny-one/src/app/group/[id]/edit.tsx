@@ -91,7 +91,7 @@ export default function EditGroup() {
       <ConfirmDialog
         visible={archiving}
         title="Archive this group?"
-        body="Hides it for everyone. Messages are kept for safeguarding."
+        body="Hides it for everyone. Messages are kept for a while in case they're needed."
         confirmLabel="Archive"
         busy={busy}
         onCancel={() => setArchiving(false)}

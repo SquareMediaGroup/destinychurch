@@ -1,6 +1,6 @@
 # Destiny Church Tees Valley
 
-The official website for Destiny Church Tees Valley — a multi-cultural church based in Stockton-on-Tees. The platform covers the full church digital presence: sermon streaming and archive, events, ministries, a merchandise shop, staff training, an HR/jobs system, member engagement, venue hire, AI Smart Search, and a protected admin dashboard.
+The official website for Destiny Church Tees Valley — a multi-cultural church based in Stockton-on-Tees. The platform covers the full church digital presence: sermon streaming and archive, events, ministries, a merchandise shop, staff training, an HR/jobs system, a safeguarded members' messaging app (Destiny One), member engagement, venue hire, AI Smart Search, and a protected admin dashboard.
 
 Designed, engineered, and deployed by [Square Media Group](mailto:hello@squaremediagroup.org) as part of Square's mission to equip churches with world-class digital tools.
 
@@ -28,6 +28,7 @@ Designed, engineered, and deployed by [Square Media Group](mailto:hello@squareme
 - AI Smart Search — OpenAI tool-calling chat with product cards, weather, maps/directions, and live web search
 - Click analytics — a privacy-respecting `/admin/analytics` dashboard for short-link, QR-code, and NFC-tile engagement (with VPN/Tor/datacenter/Private-Relay tagging) alongside whole-site traffic
 - Protected admin dashboard (sermons, pages/posts, redirects, banner, popup, shop, training, HR, Alpha, recovery, analytics, audit log)
+- Destiny One — a safeguarding-first members' messaging app for iOS and Android (Expo / React Native): group communities with department sub-groups, no one-to-one chats, at least two verified adults per group, real names only, and no phone numbers anywhere; chats are reviewable by the safeguarding team (and the app says so, with no false "encrypted" badges). Multiple accounts per phone with quick switching and send-as, push notifications, forced-update and maintenance gates, in-app "report a problem"/"send feedback" (shake-to-report), and Sentry crash reporting — served by its own versioned `/api/app/v1/one` backend and managed from `/admin/destiny-one`
 - Companion native SwiftUI iOS app (Home/Sermons/Events/Give/More tabs) rendering a dedicated, versioned `/api/app/v1` backend-for-frontend
 - Live Caption — a companion macOS app (`apps/live-caption`) that captions live audio in real time with a local, Metal-accelerated whisper.cpp model and publishes it to a display or an NDI source for the church's AVL setup (audio never leaves the machine)
 - Mobile-first, fully responsive, accessibility-focused
@@ -39,8 +40,10 @@ Designed, engineered, and deployed by [Square Media Group](mailto:hello@squareme
 | Layer | Technology |
 |---|---|
 | Framework | Next.js 16 (App Router), React 19 |
+| Members' app | Destiny One — Expo (SDK 57) / React Native, iOS + Android |
 | Mobile | Native iOS — SwiftUI, Swift 6 (XcodeGen project) |
 | Desktop | Native macOS — SwiftUI, Swift 6 (Live Caption app) |
+| Crash reporting | Sentry (Destiny One) |
 | On-device speech | whisper.cpp (Metal), NDI (live captions) |
 | Language | TypeScript |
 | Styling | Tailwind CSS v4 |
@@ -168,9 +171,10 @@ supabase/
 └── migrations/       # Database schema migrations
 mobile/               # Native SwiftUI iOS app (Home/Sermons/Events/Give/More tabs)
 apps/
+├── destiny-one/      # Destiny One — members' messaging app (Expo / React Native, iOS + Android)
 └── live-caption/     # Native SwiftUI macOS app — real-time captions (whisper.cpp + NDI)
-packages/shared/      # @destiny/shared — types & logic shared by the web app & app BFF
-app/api/app/v1/       # App BFF — versioned, mobile-facing endpoints (config/home/events/…)
+packages/shared/      # @destiny/shared — types & logic shared by the web app & both app BFFs
+app/api/app/v1/       # App BFF — versioned, mobile-facing endpoints (config/home/events/…; one/ backs Destiny One)
 ```
 
 ---
@@ -188,6 +192,7 @@ The `/admin` area is protected by Supabase Auth. Log in at `/login` to manage:
 - **Redirects** — configure URL redirects
 - **Banner & Popup** — control the site-wide announcement banner and popups
 - **NFC** — manage the tiles shown on the `/nfc` "digital back of seats" page
+- **Destiny One** — the members' app: communities and department sub-groups, member invites and access requests, a safeguarding queue, app feedback ("report a problem"), and app version/maintenance controls (Destiny One Admin)
 - **Analytics** — which short links, QR codes, and NFC tiles people actually use, plus whole-site traffic, in one place (Site Admin)
 - **Audit Log** — a searchable record of every admin change, an AI you can ask in plain English, and a weekly AI activity report (Super Admin)
 - **Cache** — trigger on-demand revalidation

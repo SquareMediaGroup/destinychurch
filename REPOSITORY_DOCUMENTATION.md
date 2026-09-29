@@ -2023,7 +2023,7 @@ minimal reliance on ChurchSuite, so identity now comes from Destiny's own staff:
 - **Admin-path functions** with no acting member (website staff may have no app account):
   `d1_admin_create_community`, `_add_community_members`, `_set_community_role`,
   `_remove_community_member`, `_create_group`, `_add_group_members`, `_remove_group_member`,
-  `_set_group_role`, sharing `d1__check_composition` (≥3 people, ≥2 adults). Every part-1 trigger
+  `_set_group_role`, (group creation no longer uses `d1__check_composition`; small groups are created paused). Every part-1 trigger
   still applies. Plus reads `d1_admin_members` (joins the sign-in email from `auth.users` in one
   query) and `d1_admin_groups` (live counts).
 - **Notifications re-routed:** an automatic pause → `destiny_one_admin` + `safeguarding_admin`; a

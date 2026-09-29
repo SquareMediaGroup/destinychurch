@@ -8,14 +8,12 @@ module.exports = defineConfig([
   globalIgnores(["dist/*", ".expo/*"]),
   expoConfig,
   {
-    // React Compiler rules. The app doesn't use the React Compiler, and the
-    // existing hits are deliberate patterns (animation and "latest value"
-    // refs in the tab bar, ui.tsx and useConversation). Warnings, not errors,
-    // until those are reworked and re-tested on a device.
+    // React Compiler rules. The app doesn't use the React Compiler, but these
+    // catch real render bugs, so they stay errors.
     rules: {
-      "react-hooks/refs": "warn",
-      "react-hooks/set-state-in-effect": "warn",
-      "react-hooks/preserve-manual-memoization": "warn",
+      "react-hooks/refs": "error",
+      "react-hooks/set-state-in-effect": "error",
+      "react-hooks/preserve-manual-memoization": "error",
     },
   },
 ]);

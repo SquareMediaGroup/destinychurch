@@ -2,7 +2,7 @@
 
 **Target:** production by November 2026. **Audited:** 28 September 2026 (code, database rules, admin pages, nightly jobs, and a read-only look at the live Supabase project).
 
-**Progress:** the items ticked below were done on 28 September 2026 (migration `supabase/migrations/20260928_01_destiny_one_safeguarding.sql`, applied to the live Supabase project on 28 September 2026; the website code that uses it is in PR #38). Report alert emails go to everyone with the Safeguarding Admin role, and there are none yet, so add at least one. React Compiler lint rules are warnings for now (see `apps/destiny-one/eslint.config.js`).
+**Progress:** the items ticked below were done on 28 September 2026 (migration `supabase/migrations/20260928_01_destiny_one_safeguarding.sql`, applied to the live Supabase project on 28 September 2026; the website code that uses it is in PR #38). Report alert emails go to everyone with the Safeguarding Admin role, and there are none yet, so add at least one.
 
 **Already in good shape:** the safeguarding rules (no one-to-one chats, at least 2 adults per group, leaders-only group creation, deleted messages kept for review) are enforced in the database itself. App and website typecheck, the 69 Destiny One unit tests, the SQL rule tests and `expo-doctor` all pass. Data is stored in the EU (Ireland).
 
@@ -61,7 +61,7 @@ Decided with the product owner on 28 September 2026:
 - [x] **Put the API on a custom domain before the first store build.** The address is baked into every build (`destinychurch.vercel.app`, `app.json` `extra.apiBaseUrl`) and can't be changed in copies people already have. Decided: keep `destinychurch.vercel.app`.
 - [x] **A staging environment.** Every EAS build profile points at the live database. The unused, paused "DestinyOne" Supabase project could be the staging copy. Decided: no staging copy; clear test data before launch.
 - [x] Record `20260926_01_destiny_one` and `20260927_01_destiny_one_admin` in the live migration history. They were run outside it, so a fresh database can't be rebuilt reliably.
-- [ ] **Merge the polls work so the repo matches the live database.** `20260928_02_destiny_one_content` (poll votes, a `content` column, and a new `d1_post_message` with an extra optional argument) was applied to the live project on 28 September from `feature/destiny-one-restore-polls`, before being merged. When it merges, add it to `scripts/test-sql.sh` so the SQL tests cover it.
+- [x] **Merge the polls work so the repo matches the live database.** `20260928_02_destiny_one_content` (poll votes, a `content` column, and a new `d1_post_message` with an extra optional argument) was applied to the live project on 28 September from `feature/destiny-one-restore-polls`, before being merged. Done: merged in #39 and covered by `scripts/test-sql.sh`.
 - [ ] Clear the test data from the live database (3 members, 7 messages at the time of the audit).
 - [ ] Data processing agreements with Supabase, Vercel, Expo, Resend, Apple and Google.
 - [ ] Set `EXPO_ACCESS_TOKEN` and switch on push security in Expo.
@@ -81,7 +81,7 @@ Decided with the product owner on 28 September 2026:
 - [x] Rate limits that actually hold on Vercel. They're per server instance today (`lib/rateLimit.ts`). Done: counted in the database as well (`20260928_03_destiny_one_rate_limits.sql`).
 - [x] Add the app typecheck and the SQL rule tests to CI (`.github/workflows/ci.yml`), and include migrations 05 and 06 in `scripts/test-sql.sh`.
 - [x] A lint setup for the app. `expo lint` has no config and doesn't run.
-- [ ] Clear the 31 React Compiler lint warnings (refs and effects in the tab bar, `ui.tsx`, `useConversation.ts`), re-testing on a device, then turn those rules back into errors.
+- [x] Clear the 31 React Compiler lint warnings (refs and effects in the tab bar, `ui.tsx`, `useConversation.ts`), re-testing on a device, then turn those rules back into errors. Done in code: the rules are errors again. Also fixed the account-switch banner staying on screen for good if tapped. Still to check on a device: search results, the account-switch banner, the "New messages" divider, notification mute choices and the edit-group screen.
 - [x] Add the `.env.example` the README refers to.
 - [x] Decide whether to encrypt the message cache stored on the phone (plain AsyncStorage today; the sign-in session is already in the secure store). Decided: leave it to the phone's own encryption.
 - [x] Bring the docs up to date: the GDPR doc still says names are corrected in ChurchSuite, and the screen spec (A10) still says notifications never show the message.

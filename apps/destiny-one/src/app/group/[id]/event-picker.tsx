@@ -21,12 +21,15 @@ export default function EventPicker() {
   const [events, setEvents] = useState<D1EventSummary[] | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const load = () => {
+  const fetchEvents = () => api.events().then(setEvents, (err) => setError(errorMessage(err)));
+  useEffect(() => {
+    void fetchEvents();
+  }, []);
+  const retry = () => {
     setError(null);
     setEvents(null);
-    api.events().then(setEvents, (err) => setError(errorMessage(err)));
+    void fetchEvents();
   };
-  useEffect(load, []);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -46,7 +49,7 @@ export default function EventPicker() {
         <Field value={query} onChangeText={setQuery} placeholder="Search events" background={t.card} autoCapitalize="none" leading={<Icon name="search" size={16} color={t.subtle} />} />
       </View>
       {error ? (
-        <ErrorState message={error} onRetry={load} />
+        <ErrorState message={error} onRetry={retry} />
       ) : !filtered ? (
         <SkeletonRows count={5} avatar={44} />
       ) : filtered.length === 0 ? (

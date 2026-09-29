@@ -69,10 +69,10 @@ export function useConversation(groupId: string, me: D1Me | null, unreadAtOpen: 
 
   // Where the "New messages" divider goes: worked out once, from the unread
   // count the chat list had when this chat was opened.
-  const firstUnread = useRef<number | null | undefined>(undefined);
-  if (firstUnread.current === undefined && messages) {
+  const [firstUnread, setFirstUnread] = useState<number | null | undefined>(undefined);
+  if (firstUnread === undefined && messages) {
     const others = messages.filter((m) => !m.mine && m.id > 0);
-    firstUnread.current = unreadAtOpen > 0 && others.length ? others[Math.max(0, others.length - unreadAtOpen)].id : null;
+    setFirstUnread(unreadAtOpen > 0 && others.length ? others[Math.max(0, others.length - unreadAtOpen)].id : null);
   }
 
   const setMessages = useCallback((fn: (list: LocalMessage[]) => LocalMessage[]) => {
@@ -382,7 +382,7 @@ export function useConversation(groupId: string, me: D1Me | null, unreadAtOpen: 
     loadOlder,
     hasOlder: !!nextBefore,
     loadingOlder,
-    firstUnreadId: firstUnread.current ?? null,
+    firstUnreadId: firstUnread ?? null,
     markRead,
     send,
     sendAs,

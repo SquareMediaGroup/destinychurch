@@ -2,7 +2,7 @@
 // screen (state/pollDraft.ts) once this screen hands back a valid draft.
 
 import { useState } from "react";
-import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { router } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { MAX_POLL_OPTIONS, MIN_POLL_OPTIONS, validatePoll } from "@destiny/shared";

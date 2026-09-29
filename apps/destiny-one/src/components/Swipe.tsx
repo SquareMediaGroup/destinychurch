@@ -62,6 +62,7 @@ export function SwipeToReply({ children, onReply, enabled = true }: { children: 
 
   const responder = useMemo(
     () =>
+      // eslint-disable-next-line react-hooks/refs -- the refs are only read in the touch handlers, never during render
       PanResponder.create({
         // Leftward and mostly horizontal.
         onMoveShouldSetPanResponderCapture: (_e, g) => enabled && g.dx < -8 && Math.abs(g.dx) > Math.abs(g.dy) * 1.6,
@@ -169,6 +170,7 @@ export function SwipeActions({ children, actions, background }: { children: Reac
 
   const responder = useMemo(
     () =>
+      // eslint-disable-next-line react-hooks/refs -- the refs are only read in the touch handlers, never during render
       PanResponder.create({
         onMoveShouldSetPanResponderCapture: (e, g) => Math.abs(g.dx) > 10 && Math.abs(g.dx) > Math.abs(g.dy) * 1.6 && (g.dx < 0 || startX(e, g) > EDGE),
         onPanResponderGrant: () => {

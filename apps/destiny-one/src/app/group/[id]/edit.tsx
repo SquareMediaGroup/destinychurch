@@ -33,9 +33,8 @@ export default function EditGroup() {
       setDescription(group.description ?? "");
     }
   }, [group]);
-  useEffect(() => {
-    if (groupQuery.error && !group) setError(errorMessage(groupQuery.error));
-  }, [groupQuery.error, group]);
+  // A failed load shows until the group arrives; save errors take priority.
+  const shownError = error ?? (groupQuery.error && !group ? errorMessage(groupQuery.error) : null);
 
   async function save(archived?: boolean) {
     setBusy(true);
@@ -61,7 +60,7 @@ export default function EditGroup() {
   return (
     <View style={{ flex: 1, backgroundColor: t.grouped, paddingTop: insets.top, paddingHorizontal: 16, paddingBottom: Math.max(insets.bottom, 16) }}>
       <ModalHeader title="Edit group" icon="back" />
-      {!group && !error ? (
+      {!group && !shownError ? (
         <SkeletonGroup label="Loading group" style={{ gap: 20, paddingTop: 14, flex: 1 }}>
           {[52, 52, 80].map((h, i) => (
             <View key={i} style={{ gap: 8 }}>
@@ -84,7 +83,7 @@ export default function EditGroup() {
             <FieldLabel optional>Description</FieldLabel>
             <Field value={description} onChangeText={setDescription} placeholder="What's this group for?" multiline background={t.card} />
           </View>
-          <FormError message={error} />
+          <FormError message={shownError} />
           {group ? <CardButton label="Archive group" onPress={() => setArchiving(true)} /> : null}
         </ScrollView>
       )}

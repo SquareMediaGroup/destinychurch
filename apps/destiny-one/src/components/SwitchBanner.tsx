@@ -2,7 +2,7 @@
 // profile" with their picture. Mounted once in the root layout; driven by the
 // notice accounts.activate raises. Reduce Motion fades instead of sliding.
 
-import { useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import { AccessibilityInfo, Animated, Pressable, Text } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Avatar } from "@/components/ui";
@@ -15,8 +15,10 @@ export function SwitchBanner() {
   const t = useTheme();
   const insets = useSafeAreaInsets();
   const notice = useSyncExternalStore(subscribe, switchNotice);
+  // Kept after the notice clears, so the banner can finish fading out.
   const [shown, setShown] = useState<SwitchNotice | null>(null);
-  const progress = useRef(new Animated.Value(0)).current;
+  if (notice && notice !== shown) setShown(notice);
+  const [progress] = useState(() => new Animated.Value(0));
   const [reduce, setReduce] = useState(false);
 
   useEffect(() => {
@@ -24,17 +26,15 @@ export function SwitchBanner() {
   }, []);
 
   useEffect(() => {
-    if (!notice) return;
-    setShown(notice);
+    if (!notice) {
+      // Timed out or tapped away: fade out, unless a new notice took over mid-fade.
+      Animated.timing(progress, { toValue: 0, duration: 200, useNativeDriver: true }).start(({ finished }) => finished && setShown(null));
+      return;
+    }
     progress.setValue(0);
     AccessibilityInfo.announceForAccessibility(notice.text);
     Animated.spring(progress, { toValue: 1, useNativeDriver: true, damping: 18, stiffness: 220, mass: 0.8 }).start();
-    const id = setTimeout(() => {
-      Animated.timing(progress, { toValue: 0, duration: 200, useNativeDriver: true }).start(() => {
-        setShown(null);
-        clearSwitchNotice();
-      });
-    }, SHOW_MS);
+    const id = setTimeout(clearSwitchNotice, SHOW_MS);
     return () => clearTimeout(id);
   }, [notice, progress]);
 

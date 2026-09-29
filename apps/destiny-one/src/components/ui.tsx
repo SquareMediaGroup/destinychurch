@@ -5,7 +5,7 @@
 // React Native has none, so here a large linear gradient spins behind a
 // rounded, clipped frame, which reads the same at 1.5px.
 
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { D1_ROLE_LABELS, type D1LeaderRole } from "@destiny/shared";
 import {
   ActivityIndicator,
@@ -34,7 +34,7 @@ import { ORANGE, ORANGE_LIGHT, useTheme, type Theme } from "@/theme/tokens";
 // ── Beam ────────────────────────────────────────────────────────────────────
 
 function useSpin(active: boolean, durationMs = 3200) {
-  const v = useRef(new Animated.Value(0)).current;
+  const [v] = useState(() => new Animated.Value(0));
   useEffect(() => {
     if (!active) return;
     const loop = Animated.loop(Animated.timing(v, { toValue: 1, duration: durationMs, easing: Easing.linear, useNativeDriver: true }));
@@ -370,7 +370,7 @@ export function EmptyState({ title, body }: { title: string; body?: string }) {
 
 /** Shared pulse so every placeholder on screen breathes in step. */
 function usePulse() {
-  const v = useRef(new Animated.Value(0.55)).current;
+  const [v] = useState(() => new Animated.Value(0.55));
   useEffect(() => {
     const loop = Animated.loop(
       Animated.sequence([

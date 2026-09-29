@@ -7094,8 +7094,9 @@ same database as the data rather than in a separate Synapse module.
   any in-app screen with `routeFor(me)` (waiting, notices, …), and a member who is no longer active
   has their chats, groups and messages removed from the device cache.
 - **Lint:** `eslint.config.js` (`eslint-config-expo`). The React Compiler rules (`react-hooks/refs`,
-  `set-state-in-effect`, `preserve-manual-memoization`) are warnings for now: the existing hits are
-  deliberate ref patterns that need re-testing on a device before being reworked.
+  `set-state-in-effect`, `preserve-manual-memoization`) are errors. The only exceptions are the two
+  PanResponder handlers in `Swipe.tsx`, whose refs are read in touch handlers rather than during render
+  (marked with a reasoned `eslint-disable-next-line`).
 - **Differences from the prototype:** Settings adds Download my data and Delete my account (safeguarding policy + UK GDPR access and
   erasure). Emoji reactions are allowed as member content (confirmed 2026-09-27).
 - **Sign-in:** the email screen calls `api.requestCode` (`POST /auth/code`); the server sends a code

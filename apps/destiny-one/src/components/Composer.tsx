@@ -13,7 +13,6 @@ import { AttachSheet } from "@/components/AttachSheet";
 import { GlassSurface } from "@/components/GlassSurface";
 import { Icon } from "@/components/Icon";
 import { SendAsMenu } from "@/components/SendAsMenu";
-import { Beam } from "@/components/ui";
 import type { Account } from "@/lib/accounts";
 import { cleanImage } from "@/lib/cleanImage";
 import { haptic } from "@/lib/haptics";

@@ -57,6 +57,23 @@ export async function updateLogin(
   return error ? { status: 500, message: error.message } : null;
 }
 
+// Change the sign-in email of an existing auth user. Confirmed immediately so
+// the new address works without a verification round-trip.
+export async function updateLoginEmail(
+  supabase: ServiceClient,
+  authUserId: string,
+  email: string,
+): Promise<LoginError | null> {
+  const { error } = await supabase.auth.admin.updateUserById(authUserId, {
+    email,
+    email_confirm: true,
+  });
+  if (!error) return null;
+  return duplicateEmail(error.message)
+    ? { status: 409, message: "An account with that email already exists." }
+    : { status: 500, message: error.message };
+}
+
 // Remove an auth user (revoking their login). Ignores "not found".
 export async function deleteLogin(
   supabase: ServiceClient,

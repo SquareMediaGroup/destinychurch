@@ -6116,7 +6116,10 @@ records are the most sensitive in the admin (staff records, leave reasons,
 applicant CVs), so they don't belong in a fuzzy search box regardless of role.
 
 `/admin/users` (Super Admin only, `app/api/admin/users/**`) is where roles are
-assigned — a tickbox per role per user. `GET /api/admin/me` (and the older
+assigned — a tickbox per role per user — and where a user's email can be changed
+(`PATCH /api/admin/users/[id]` updates the auth login and `admin_roles.email`
+together, confirmed immediately, and audits the old and new address; passwords
+are untouched). `GET /api/admin/me` (and the older
 `/me/roles`) lets the sidebar, header and palette know which sections to show;
 that's a UI convenience only, not an authorization boundary. What a user is
 *shown* comes from `lib/adminNav.ts`, which must stay in step with the table

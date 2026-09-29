@@ -205,7 +205,7 @@ export default function AdminUsersPage() {
                           <button
                             onClick={() => setEditing(u)}
                             className="text-destiny-grey/40 dark:text-white/40 transition hover:text-destiny-orange"
-                            aria-label={`Edit access for ${u.email}`}
+                            aria-label={`Edit ${u.email}`}
                           >
                             <span className="material-symbols-rounded text-xl" aria-hidden="true">edit</span>
                           </button>
@@ -277,7 +277,7 @@ function UserModal({
         ? await fetch(`/api/admin/users/${user.auth_user_id}`, {
             method: "PATCH",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(roles),
+            body: JSON.stringify({ email, ...roles }),
           })
         : await fetch("/api/admin/users", {
             method: "POST",
@@ -299,24 +299,28 @@ function UserModal({
   const noAccess = ADMIN_ROLES.every((role) => !roles[role]);
 
   return (
-    <Modal title={user ? `Edit access — ${user.email}` : "Add user"} onClose={onClose}>
+    <Modal title={user ? `Edit user — ${user.email}` : "Add user"} onClose={onClose}>
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+        <div>
+          <label className={labelClass} htmlFor="user-email">
+            Email
+          </label>
+          <input
+            id="user-email"
+            type="email"
+            required
+            autoComplete="off"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className={inputClass}
+          />
+          {user && (
+            <p className="mt-1.5 text-xs text-destiny-grey/45 dark:text-white/45">
+              This is also their sign-in email. Their password stays the same.
+            </p>
+          )}
+        </div>
         {!user && (
-          <>
-            <div>
-              <label className={labelClass} htmlFor="user-email">
-                Email
-              </label>
-              <input
-                id="user-email"
-                type="email"
-                required
-                autoComplete="off"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className={inputClass}
-              />
-            </div>
             <div>
               <label className={labelClass} htmlFor="user-password">
                 Temporary password
@@ -335,7 +339,6 @@ function UserModal({
                 At least 8 characters. They can change it from the sign-in page.
               </p>
             </div>
-          </>
         )}
 
         <div>

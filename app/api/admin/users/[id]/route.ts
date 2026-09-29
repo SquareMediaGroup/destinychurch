@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { createClient } from "@/utils/supabase/server";
 import { createServiceClient } from "@/utils/supabase/service";
-import { deleteLogin } from "@/lib/staffLogins";
+import { deleteLogin, updateLoginEmail } from "@/lib/staffLogins";
 import { ADMIN_ROLES, roleList, type AdminRole } from "@/lib/adminRoles";
 import { readForAudit, recordAudit } from "@/lib/audit.server";
 
@@ -53,9 +53,26 @@ export async function PATCH(
 
   const before = await readForAudit("admin_roles", id, "*", "auth_user_id");
 
+  // Email is optional so role-only saves keep working. The auth login is
+  // changed first: if it fails (e.g. address taken) admin_roles stays in step.
+  const nextEmail = typeof body.email === "string" ? body.email.trim() : "";
+  const emailChanged =
+    nextEmail !== "" && nextEmail.toLowerCase() !== String(before?.email ?? "").toLowerCase();
+  if (emailChanged) {
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(nextEmail)) {
+      return NextResponse.json({ error: "Enter a valid email address." }, { status: 400 });
+    }
+    const failure = await updateLoginEmail(supabase, id, nextEmail);
+    if (failure) return NextResponse.json({ error: failure.message }, { status: failure.status });
+  }
+
   const { data, error } = await supabase
     .from("admin_roles")
-    .update({ ...nextRoles, updated_at: new Date().toISOString() })
+    .update({
+      ...nextRoles,
+      ...(emailChanged ? { email: nextEmail } : {}),
+      updated_at: new Date().toISOString(),
+    })
     .eq("auth_user_id", id)
     .select()
     .single();
@@ -72,6 +89,7 @@ export async function PATCH(
   const gained = ADMIN_ROLES.filter((role) => nextRoles[role] && !before?.[role]);
   const lost = ADMIN_ROLES.filter((role) => !nextRoles[role] && before?.[role]);
   const parts = [
+    emailChanged ? `changed email from ${before?.email ?? "none"} to ${nextEmail}` : "",
     gained.length ? `granted ${roleList(gained)}` : "",
     lost.length ? `removed ${roleList(lost)}` : "",
   ].filter(Boolean);
@@ -83,8 +101,8 @@ export async function PATCH(
     entityId: id,
     entityLabel: data.email,
     summary: parts.length
-      ? `Changed access for ${data.email}: ${parts.join(" and ")}`
-      : `Saved access for ${data.email} with no change`,
+      ? `Updated ${data.email}: ${parts.join(" and ")}`
+      : `Saved ${data.email} with no change`,
     before,
     after: data,
     metadata: {

@@ -206,7 +206,6 @@ export default function SongRequestsClient() {
                 className="w-full rounded-full border-[3px] border-[#1a0b2e] bg-white py-4 pl-14 pr-5 text-lg font-bold shadow-[6px_6px_0_#1a0b2e] placeholder:font-semibold placeholder:text-[#1a0b2e]/40 focus:outline-none focus:ring-4 focus:ring-[#3ddcff]"
               />
             </div>
-            <p className="mt-4 text-center text-sm font-bold text-white/90">Clean songs only, so keep it family friendly.</p>
 
             <div role="status" aria-live="polite" className="mt-3 min-h-7 text-center">
               {notice && (

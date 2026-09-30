@@ -6024,7 +6024,9 @@ Polished to Apple's Human Interface Guidelines. The pieces, and why they exist:
   dark; every wallpaper keeps body text at 7:1 and timestamps at 4.5:1. `tests/unit/destiny-one-appearance.spec.ts`
   checks every combination, so adding a colour or wallpaper that fails turns the tests red. The
   default light send colour is a deeper orange (`#BF5200`, white text) because the brand orange
-  (`#F58021`) is only 2.6:1 against white; dark mode keeps the brand orange with dark text.
+  (`#F58021`) is only 2.6:1 against white. Dark mode also uses white text, on a deep orange
+  (`#C25400`, 4.6:1); the Contours and Waves dark line colours were darkened a touch so that bubble
+  still clears 3:1 against every wallpaper.
 - **Wallpapers** (`src/components/Wallpaper.tsx`) are drawn in code with `react-native-svg`
   (gradient, hills, dots, contours, sunburst, waves), not shipped as photos: sharp at any size,
   near-zero weight, and each has light and dark colours. Applied to conversations only; list and

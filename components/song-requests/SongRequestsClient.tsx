@@ -152,6 +152,14 @@ export default function SongRequestsClient() {
       <style>{CSS}</style>
       <div className="relative mx-auto max-w-xl">
         <header className="text-center">
+          <Image
+            src="/img/brand/destiny-logo-white.svg"
+            alt="Destiny Church"
+            width={4920}
+            height={1080}
+            priority
+            className="mx-auto mb-7 h-auto w-44 sm:w-52"
+          />
           <span className="inline-block -rotate-3 rounded-full border-[3px] border-[#1a0b2e] bg-[#ffd23f] px-4 py-1.5 text-sm font-black uppercase tracking-wider shadow-[4px_4px_0_#1a0b2e]">
             {state?.eventName ?? "Song requests"}
           </span>
@@ -296,6 +304,7 @@ export default function SongRequestsClient() {
 // Motion is switched off for anyone who has asked for less of it.
 const CSS = `
 .song-bg{background-color:#ff7a1a;background-image:radial-gradient(at 12% 8%,#ffb347 0,transparent 50%),radial-gradient(at 88% 12%,#ff5a00 0,transparent 48%),radial-gradient(at 70% 45%,#ff9a3c 0,transparent 55%),radial-gradient(at 8% 60%,#ff6a00 0,transparent 50%),radial-gradient(at 50% 100%,#ffc46b 0,transparent 55%),radial-gradient(at 95% 88%,#ff7a1a 0,transparent 50%)}
+.song-bg::before{content:"";position:absolute;inset:0;background:rgba(0,0,0,.4);pointer-events:none}
 .song-stripes{background:repeating-linear-gradient(45deg,#ffd23f 0 8px,#ff3d81 8px 16px)}
 @keyframes song-bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
 @keyframes song-spin{to{transform:rotate(360deg)}}

@@ -273,9 +273,9 @@ export default function SongRequestsClient() {
             </div>
           ) : (
             <ol className="flex flex-col gap-3">
-              {[...upNext].reverse().map((r, i) => (
+              {upNext.map((r, i) => (
                 <li
-                  key={r.id}
+                  key={`${r.id}-${i}`}
                   className={`${sticker} flex items-center gap-3 p-2.5`}
                   style={{ transform: `rotate(${i % 2 === 0 ? -1 : 1}deg)` }}
                 >

@@ -196,6 +196,29 @@ export async function currentlyPlaying(): Promise<{ id: string; title: string; a
   }
 }
 
+/**
+ * What is playing and what is queued on the church account, straight from
+ * Spotify, so songs added in the Spotify app show up too. Null when Spotify
+ * can't answer (not connected, no active player).
+ */
+export async function getQueue(): Promise<{ playing: SpotifyTrack | null; queue: SpotifyTrack[] } | null> {
+  try {
+    const token = await getUserToken();
+    const res = await fetch(`${API}/me/player/queue`, {
+      headers: { Authorization: `Bearer ${token}` },
+      cache: "no-store",
+    });
+    if (!res.ok) return null;
+    const json = await res.json();
+    return {
+      playing: toTrack(json.currently_playing),
+      queue: ((json.queue ?? []) as unknown[]).map(toTrack).filter((t): t is SpotifyTrack => t !== null),
+    };
+  } catch {
+    return null;
+  }
+}
+
 export async function activeDevice(): Promise<string | null> {
   try {
     const token = await getUserToken();

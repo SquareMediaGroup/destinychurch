@@ -186,6 +186,14 @@ export const ADMIN_GROUPS: AdminNavGroup[] = [
         description: "Linktree-style pages at /links — blocks, themes, forms and stats.",
         keywords: ["linktree", "link in bio", "next steps", "instagram", "qr", "bio"],
       },
+      {
+        href: "/admin/song-requests",
+        label: "Song Requests",
+        icon: "queue_music",
+        role: "event_admin",
+        description: "Let guests request songs at an event, straight into the Spotify queue.",
+        keywords: ["spotify", "music", "dj", "party", "playlist", "new year"],
+      },
     ],
   },
   {

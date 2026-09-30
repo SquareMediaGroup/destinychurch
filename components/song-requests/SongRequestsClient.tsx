@@ -53,17 +53,6 @@ function Art({ src, size, className = "" }: { src: string | null; size: number; 
   );
 }
 
-// Decorative confetti. Positions are fixed so the server and client agree.
-const CONFETTI = [
-  { l: "6%", t: "12%", c: "#ffd23f", s: 14, r: 20, d: "0s" },
-  { l: "88%", t: "8%", c: "#3ddcff", s: 18, r: -30, d: "0.6s" },
-  { l: "14%", t: "46%", c: "#b8f233", s: 12, r: 45, d: "1.1s" },
-  { l: "93%", t: "40%", c: "#7c3aed", s: 16, r: 10, d: "0.3s" },
-  { l: "4%", t: "78%", c: "#3ddcff", s: 16, r: -15, d: "1.6s" },
-  { l: "90%", t: "74%", c: "#ffd23f", s: 12, r: 60, d: "0.9s" },
-  { l: "50%", t: "4%", c: "#b8f233", s: 10, r: 30, d: "1.3s" },
-];
-
 function Equalizer() {
   return (
     <span className="song-eq flex h-6 items-end gap-[3px]" aria-hidden="true">
@@ -161,15 +150,6 @@ export default function SongRequestsClient() {
   return (
     <>
       <style>{CSS}</style>
-      {CONFETTI.map((c, i) => (
-        <span
-          key={i}
-          aria-hidden="true"
-          className="song-float pointer-events-none absolute rounded-[3px]"
-          style={{ left: c.l, top: c.t, width: c.s, height: c.s, background: c.c, transform: `rotate(${c.r}deg)`, animationDelay: c.d }}
-        />
-      ))}
-
       <div className="relative mx-auto max-w-xl">
         <header className="text-center">
           <span className="inline-block -rotate-3 rounded-full border-[3px] border-[#1a0b2e] bg-[#ffd23f] px-4 py-1.5 text-sm font-black uppercase tracking-wider shadow-[4px_4px_0_#1a0b2e]">
@@ -317,12 +297,10 @@ export default function SongRequestsClient() {
 const CSS = `
 .song-bg{background-color:#ff7a1a;background-image:radial-gradient(at 12% 8%,#ffb347 0,transparent 50%),radial-gradient(at 88% 12%,#ff5a00 0,transparent 48%),radial-gradient(at 70% 45%,#ff9a3c 0,transparent 55%),radial-gradient(at 8% 60%,#ff6a00 0,transparent 50%),radial-gradient(at 50% 100%,#ffc46b 0,transparent 55%),radial-gradient(at 95% 88%,#ff7a1a 0,transparent 50%)}
 .song-stripes{background:repeating-linear-gradient(45deg,#ffd23f 0 8px,#ff3d81 8px 16px)}
-@keyframes song-float{0%,100%{translate:0 0}50%{translate:0 -14px}}
 @keyframes song-bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
 @keyframes song-spin{to{transform:rotate(360deg)}}
 @keyframes song-pop{0%{opacity:0;transform:scale(.92) translateY(8px)}100%{opacity:1;transform:none}}
 @keyframes song-eq{0%,100%{height:20%}50%{height:100%}}
-.song-float{animation:song-float 4s ease-in-out infinite}
 .song-bounce{display:inline-block;animation:song-bounce 1.6s ease-in-out infinite}
 .song-spin{animation:song-spin 6s linear infinite}
 .song-pop{animation:song-pop .35s ease-out both}
@@ -330,5 +308,5 @@ const CSS = `
 .song-btn{transition:transform .12s,box-shadow .12s}
 .song-btn:hover{transform:translate(-1px,-1px) rotate(-2deg)}
 .song-btn:active{transform:translate(3px,3px);box-shadow:0 0 0 #1a0b2e}
-@media (prefers-reduced-motion:reduce){.song-float,.song-bounce,.song-spin,.song-pop,.song-eq span{animation:none}.song-eq span{height:60%}}
+@media (prefers-reduced-motion:reduce){.song-bounce,.song-spin,.song-pop,.song-eq span{animation:none}.song-eq span{height:60%}}
 `;

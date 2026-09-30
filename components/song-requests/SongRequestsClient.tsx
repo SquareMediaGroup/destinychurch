@@ -44,6 +44,8 @@ function getDeviceId() {
 }
 
 const INK = "#1a0b2e";
+// Mirrors COOLDOWN_SECONDS in lib/songRequests.server.ts (server-only, so not imported).
+const COOLDOWN_SECONDS = 300;
 
 function Art({ src, size, className = "" }: { src: string | null; size: number; className?: string }) {
   const style = { width: size, height: size };
@@ -219,24 +221,46 @@ export default function SongRequestsClient() {
               />
             </div>
 
-            <div
-              className={`mt-5 flex items-center justify-center gap-3 rounded-2xl border-[3px] border-[#1a0b2e] px-4 py-3 text-center shadow-[4px_4px_0_#1a0b2e] ${
-                cooling ? "bg-[#ffd23f]" : "bg-white"
-              }`}
-            >
-              <span className="material-symbols-rounded text-3xl text-[#7c3aed]" aria-hidden="true">timer</span>
-              {cooling ? (
-                <p className="text-left font-black leading-tight">
-                  Next request in <span className="tabular-nums text-2xl">{clock}</span>
-                  <span className="block text-xs font-bold text-[#1a0b2e]/70">One song every 5 minutes per person</span>
-                </p>
-              ) : (
+            {cooling ? (
+              <div
+                role="timer"
+                aria-label={`Next request in ${clock}`}
+                className="song-pop mt-5 flex items-center gap-4 rounded-3xl border-[3px] border-[#1a0b2e] bg-[#ffd23f] p-4 shadow-[6px_6px_0_#1a0b2e]"
+              >
+                <div className="relative h-24 w-24 shrink-0">
+                  <svg viewBox="0 0 100 100" className="h-full w-full -rotate-90" aria-hidden="true">
+                    <circle cx="50" cy="50" r="42" fill="#fff" stroke="#1a0b2e" strokeOpacity="0.15" strokeWidth="10" />
+                    <circle
+                      cx="50"
+                      cy="50"
+                      r="42"
+                      fill="none"
+                      stroke="#7c3aed"
+                      strokeWidth="10"
+                      strokeLinecap="round"
+                      strokeDasharray={2 * Math.PI * 42}
+                      strokeDashoffset={2 * Math.PI * 42 * (1 - secondsLeft / COOLDOWN_SECONDS)}
+                      style={{ transition: "stroke-dashoffset 1s linear" }}
+                    />
+                  </svg>
+                  <span className="absolute inset-0 flex items-center justify-center text-2xl font-black tabular-nums">{clock}</span>
+                </div>
+                <div className="min-w-0 text-left">
+                  <p className="text-xl font-black leading-tight">Nice pick! Hang tight</p>
+                  <p className="mt-1 text-sm font-bold text-[#1a0b2e]/75">
+                    You can request again when the ring fills up. It&apos;s one song every 5 minutes per person.
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <div className="mt-5 flex items-center justify-center gap-3 rounded-2xl border-[3px] border-[#1a0b2e] bg-white px-4 py-3 shadow-[4px_4px_0_#1a0b2e]">
+                <span className="material-symbols-rounded text-3xl text-[#7c3aed]" aria-hidden="true">timer</span>
                 <p className="text-left font-black leading-tight">
                   One song every 5 minutes
                   <span className="block text-xs font-bold text-[#1a0b2e]/70">Pick a good one!</span>
                 </p>
-              )}
-            </div>
+              </div>
+            )}
 
             <div role="status" aria-live="polite" className="mt-3 min-h-7 text-center">
               {notice && (

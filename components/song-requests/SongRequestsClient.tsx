@@ -315,7 +315,7 @@ export default function SongRequestsClient() {
 // Keyframes and the page background live here so the page stays one component.
 // Motion is switched off for anyone who has asked for less of it.
 const CSS = `
-.song-bg{background:radial-gradient(circle at 15% 10%,#ff8a00 0,transparent 45%),radial-gradient(circle at 90% 30%,#7c3aed 0,transparent 50%),linear-gradient(160deg,#ff3d81,#ff6a3d 55%,#ffb703)}
+.song-bg{background-color:#ff7a1a;background-image:radial-gradient(at 12% 8%,#ffb347 0,transparent 50%),radial-gradient(at 88% 12%,#ff5a00 0,transparent 48%),radial-gradient(at 70% 45%,#ff9a3c 0,transparent 55%),radial-gradient(at 8% 60%,#ff6a00 0,transparent 50%),radial-gradient(at 50% 100%,#ffc46b 0,transparent 55%),radial-gradient(at 95% 88%,#ff7a1a 0,transparent 50%)}
 .song-stripes{background:repeating-linear-gradient(45deg,#ffd23f 0 8px,#ff3d81 8px 16px)}
 @keyframes song-float{0%,100%{translate:0 0}50%{translate:0 -14px}}
 @keyframes song-bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}

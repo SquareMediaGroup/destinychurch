@@ -25,6 +25,7 @@ Designed, engineered, and deployed by [Square Media Group](mailto:hello@squareme
 - Giving, volunteer, and serve pages
 - `/governance` transparency page — charity and company registration, trustees/directors, charitable objects, and five-year financial and filing history, drawn live from the Charity Commission and Companies House registers
 - `/nfc` "digital back of seats" — a standalone page an NFC tag or QR code on a seat opens during a service, with admin-managed tiles
+- Event song requests — guests search Spotify for clean tracks at `/song-requests` and add them to the queue during an event (with now-playing and up-next), subject to per-device and queue limits; an Event Admin runs it from `/admin/song-requests`, connecting the church Spotify account, opening/closing requests, naming the event, and moderating the queue
 - AI Smart Search — OpenAI tool-calling chat with product cards, weather, maps/directions, and live web search
 - Click analytics — a privacy-respecting `/admin/analytics` dashboard for short-link, QR-code, and NFC-tile engagement (with VPN/Tor/datacenter/Private-Relay tagging) alongside whole-site traffic
 - Protected admin dashboard (sermons, pages/posts, redirects, banner, popup, shop, training, HR, Alpha, recovery, analytics, audit log)
@@ -155,6 +156,7 @@ app/
 ├── sermons/          # Sermon archive & individual pages
 ├── serve/            # Volunteer opportunities
 ├── shop/             # Merchandise shop (Stripe checkout)
+├── song-requests/    # Event song requests — guests queue clean Spotify tracks
 ├── training/         # Staff training courses
 ├── twelvetwo/        # Destiny 12:2 recovery ministry
 ├── visit/            # Plan a visit
@@ -192,6 +194,7 @@ The `/admin` area is protected by Supabase Auth. Log in at `/login` to manage:
 - **Redirects** — configure URL redirects
 - **Banner & Popup** — control the site-wide announcement banner and popups
 - **NFC** — manage the tiles shown on the `/nfc` "digital back of seats" page
+- **Song Requests** — connect the church Spotify account, open/close event song requests, name the event, set per-device and queue limits, and moderate the queue (Event Admin)
 - **Analytics** — which short links, QR codes, and NFC tiles people actually use, plus whole-site traffic, in one place (Site Admin)
 - **Audit Log** — a searchable record of every admin change, an AI you can ask in plain English, and a weekly AI activity report (Super Admin)
 - **Cache** — trigger on-demand revalidation

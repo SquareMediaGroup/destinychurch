@@ -1,12 +1,16 @@
 // B4 Message actions: press and hold a message. The chat dims, the message
-// lifts out where it was, a glass bar of quick reactions sits above it (with
-// "+" for more) and a glass card of actions sits below: Reply, Copy, Report,
+// lifts out where it was, a bar of quick reactions sits above it (with "+"
+// for more) and a card of actions sits below: Reply, Copy, Report,
 // Block, Delete. Laid out by lib/menuLayout, so it always fits on screen and
 // never covers the message.
 //
 // Drawn in React Native rather than as the system context menu: hosting each
 // bubble in SwiftUI (to be the menu's preview) gave rows the wrong height, so
 // messages and their reactions overlapped in the list.
+//
+// The bar and card are solid sheets in the app's own colours, not Liquid
+// Glass: the menu looks the same on every phone, and the chat behind never
+// shows through the labels.
 //
 // The bar and card spring out of the message's corner; with Reduce Motion on
 // they fade. Tapping outside closes it at any point, and an action runs once
@@ -15,7 +19,6 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { Animated, Easing, Modal, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { GlassSurface, liquidGlass } from "@/components/GlassSurface";
 import { Icon, type IconName } from "@/components/Icon";
 import { reduceMotion, springs } from "@/components/Motion";
 import { haptic } from "@/lib/haptics";
@@ -104,8 +107,7 @@ export function MessageMenu({
   const [closing, setClosing] = useState(false);
   const [p] = useState(() => new Animated.Value(0));
   const red = t.dark ? RED.dark : RED.light;
-  // Without Liquid Glass (Android, older iOS) the surface is solid, so the chat behind doesn't show through the text.
-  const solid = liquidGlass ? null : { backgroundColor: t.sheet };
+  const surface = { overflow: "hidden", backgroundColor: t.sheet, borderWidth: StyleSheet.hairlineWidth, borderColor: t.sep } as const;
 
   const groups = items(m, actions);
   const rows = groups.reduce((n, g) => n + g.length, 0);
@@ -172,7 +174,7 @@ export function MessageMenu({
 
       {/* Quick reactions */}
       <Animated.View style={[{ position: "absolute", left: layout.bar.x, top: layout.bar.y, borderRadius: bar.h / 2 }, t.shadow, pop("bottom")]}>
-        <GlassSurface style={[{ width: bar.w, height: bar.h, borderRadius: bar.h / 2, flexDirection: "row", alignItems: "center", paddingHorizontal: BAR_PAD }, solid]}>
+        <View style={[surface, { width: bar.w, height: bar.h, borderRadius: bar.h / 2, flexDirection: "row", alignItems: "center", paddingHorizontal: BAR_PAD }]}>
           {QUICK_REACTIONS.map((e) => (
             <Pressable
               key={e}
@@ -198,12 +200,12 @@ export function MessageMenu({
           >
             <Icon name={picking ? "close" : "plus"} size={20} color={t.text} strokeWidth={2.2} />
           </Pressable>
-        </GlassSurface>
+        </View>
       </Animated.View>
 
       {/* Actions, or every reaction after "+" */}
       <Animated.View key={picking ? "picker" : "actions"} style={[{ position: "absolute", left: layout.card.x, top: layout.card.y, borderRadius: 26 }, t.shadow, pop("top")]}>
-        <GlassSurface style={[{ width: card.w, height: card.h, borderRadius: 26, paddingVertical: CARD_PAD }, solid]}>
+        <View style={[surface, { width: card.w, height: card.h, borderRadius: 26, paddingVertical: CARD_PAD }]}>
           {picking ? (
             <ScrollView contentContainerStyle={{ flexDirection: "row", flexWrap: "wrap", paddingHorizontal: CARD_PAD + 4 }} showsVerticalScrollIndicator={false}>
               {MORE_REACTIONS.map((e) => (
@@ -243,7 +245,7 @@ export function MessageMenu({
               </View>
             ))
           )}
-        </GlassSurface>
+        </View>
       </Animated.View>
     </Modal>
   );

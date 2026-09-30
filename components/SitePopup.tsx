@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import PopupShell from "@/components/PopupShell";
-import { isLinksPagePath } from "@/lib/linkPages/paths";
+import { isLinksPagePath, isSongRequestsPath } from "@/lib/linkPages/paths";
 
 interface PopupData {
   active: boolean;
@@ -34,7 +34,7 @@ export default function SitePopup({ popup }: { popup: PopupData | null }) {
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
   const excluded =
-    pathname.startsWith("/nfc") || isLinksPagePath(pathname) || pathname.startsWith("/admin");
+    pathname.startsWith("/nfc") || isLinksPagePath(pathname) || isSongRequestsPath(pathname) || pathname.startsWith("/admin");
 
   useEffect(() => {
     if (excluded) return;

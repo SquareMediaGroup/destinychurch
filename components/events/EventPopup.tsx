@@ -23,7 +23,7 @@ import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import PopupShell from "@/components/PopupShell";
 import type { ResolvedEventPopup } from "@/lib/events.server";
-import { isLinksPagePath } from "@/lib/linkPages/paths";
+import { isLinksPagePath, isSongRequestsPath } from "@/lib/linkPages/paths";
 
 const STORAGE_KEY = "dc-event-popup-seen";
 
@@ -34,7 +34,7 @@ function isExcluded(pathname: string, eventSlug: string): boolean {
     // The in-service NFC page is chrome-free and already a grid of popups.
     path === "/nfc" ||
     // Links pages already list events as blocks, and are chrome-free.
-    isLinksPagePath(path) ||
+    isLinksPagePath(path) || isSongRequestsPath(path) ||
     // Admin pages should never show popups to staff.
     path.startsWith("/admin") ||
     (Boolean(eventSlug) && path === `/whats-on/${eventSlug}`)

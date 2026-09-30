@@ -3,7 +3,7 @@
 
 import { createHash } from "crypto";
 import { createServiceClient } from "@/utils/supabase/service";
-import { addToQueue, currentlyPlaying, getTrack, SpotifyError } from "@/lib/spotify.server";
+import { addToQueue, getQueue, getTrack, SpotifyError } from "@/lib/spotify.server";
 
 export interface SongSettings {
   open: boolean;
@@ -50,22 +50,49 @@ export async function listRequests(limit = 30): Promise<SongRequestRow[]> {
   return (data ?? []) as SongRequestRow[];
 }
 
+// A request is given this long to show up in Spotify's queue before its
+// absence is read as "already played".
+const QUEUE_GRACE_MS = 60_000;
+
 /**
- * Reads the queue for the public page. Whatever is playing right now has
- * obviously been picked up, so a queued request for that track becomes
- * "played"; requests are never resurrected.
+ * Reads the queue for the public page. Spotify is the source of truth, so
+ * songs added in the Spotify app appear alongside guest requests. Our own rows
+ * are only bookkeeping: one that has left Spotify's queue (or is playing now)
+ * is marked played. If Spotify can't answer, fall back to our own list.
  */
 export async function getQueueView() {
-  const [settings, playing] = await Promise.all([getSettings(), currentlyPlaying()]);
-  if (playing) {
-    await createServiceClient()
-      .from("song_requests")
-      .update({ status: "played" })
-      .eq("spotify_track_id", playing.id)
-      .eq("status", "queued");
-  }
+  const [settings, live] = await Promise.all([getSettings(), getQueue()]);
+  const supabase = createServiceClient();
   const requests = await listRequests();
-  return { settings, playing, requests };
+
+  if (!live) {
+    return { settings, playing: null, requests: [...requests].reverse() };
+  }
+
+  const inSpotify = new Set(live.queue.map((t) => t.id));
+  if (live.playing) inSpotify.add(live.playing.id);
+  const gone = requests
+    .filter((r) => r.status === "queued")
+    .filter((r) => !inSpotify.has(r.spotify_track_id) || r.spotify_track_id === live.playing?.id)
+    .filter((r) => r.spotify_track_id === live.playing?.id || Date.now() - Date.parse(r.created_at) > QUEUE_GRACE_MS)
+    .map((r) => r.id);
+  if (gone.length) await supabase.from("song_requests").update({ status: "played" }).in("id", gone);
+
+  return {
+    settings,
+    playing: live.playing
+      ? { id: live.playing.id, title: live.playing.title, artist: live.playing.artist, artwork: live.playing.artwork }
+      : null,
+    requests: live.queue.slice(0, 20).map((t) => ({
+      id: t.id,
+      spotify_track_id: t.id,
+      title: t.title,
+      artist: t.artist,
+      artwork_url: t.artwork,
+      status: "queued" as const,
+      created_at: "",
+    })),
+  };
 }
 
 export type RequestOutcome =

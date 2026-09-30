@@ -23,12 +23,18 @@ const track = (id: string, explicit: boolean | undefined) => ({
 });
 
 const realFetch = globalThis.fetch;
+const searchUrls: string[] = [];
 function mockSpotify(routes: { search?: unknown[]; track?: unknown; trackStatus?: number }) {
   globalThis.fetch = (async (input: RequestInfo | URL) => {
     const url = String(input);
     const json = (body: unknown, status = 200) =>
       new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json" } });
     if (url.includes("/api/token")) return json({ access_token: "t", expires_in: 3600 });
+    if (url.includes("/search")) {
+      searchUrls.push(url);
+      // Spotify rejects anything over 10 per page.
+      if (Number(new URL(url).searchParams.get("limit")) > 10) return json({ error: "Invalid limit" }, 400);
+    }
     if (url.includes("/search")) return json({ tracks: { items: routes.search ?? [] } });
     if (url.includes("/tracks/")) return json(routes.track ?? {}, routes.trackStatus ?? 200);
     return json({}, 404);
@@ -60,4 +66,12 @@ test("device and ip hashes are stable and do not contain the input", () => {
   expect(hashValue("abc")).toBe(hashValue("abc"));
   expect(hashValue("abc")).not.toBe(hashValue("abd"));
   expect(hashValue("1.2.3.4")).not.toContain("1.2.3.4");
+});
+
+test("search pages stay within Spotify's limit of 10 and never repeat a track", async () => {
+  searchUrls.length = 0;
+  mockSpotify({ search: [track("clean1", false)] });
+  const out = await searchTracks("abba");
+  expect(searchUrls.length).toBe(2);
+  expect(out.map((t) => t.id)).toEqual(["clean1"]);
 });

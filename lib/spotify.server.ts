@@ -128,18 +128,29 @@ function toTrack(t: any): SpotifyTrack | null {
   };
 }
 
+// Spotify caps a search page at 10 results. Explicit tracks are dropped after,
+// so two pages are read to leave a useful list.
+const SEARCH_PAGE = 10;
+
+async function searchPage(query: string, token: string, offset: number): Promise<unknown[]> {
+  const res = await fetch(
+    `${API}/search?${new URLSearchParams({ q: query, type: "track", limit: String(SEARCH_PAGE), offset: String(offset) })}`,
+    { headers: { Authorization: `Bearer ${token}` }, cache: "no-store" },
+  );
+  if (!res.ok) throw new SpotifyError(`Spotify search failed (${res.status})`, "failed");
+  const json = await res.json();
+  return json.tracks?.items ?? [];
+}
+
 /** Search results with explicit tracks removed. */
 export async function searchTracks(query: string): Promise<SpotifyTrack[]> {
   const token = await getAppToken();
-  const res = await fetch(`${API}/search?${new URLSearchParams({ q: query, type: "track", limit: "20" })}`, {
-    headers: { Authorization: `Bearer ${token}` },
-    cache: "no-store",
-  });
-  if (!res.ok) throw new SpotifyError(`Spotify search failed (${res.status})`, "failed");
-  const json = await res.json();
-  return ((json.tracks?.items ?? []) as unknown[])
+  const pages = await Promise.all([0, SEARCH_PAGE].map((o) => searchPage(query, token, o)));
+  const seen = new Set<string>();
+  return pages
+    .flat()
     .map(toTrack)
-    .filter((t): t is SpotifyTrack => t !== null && !t.explicit)
+    .filter((t): t is SpotifyTrack => t !== null && !t.explicit && !seen.has(t.id) && !!seen.add(t.id))
     .slice(0, 12);
 }
 

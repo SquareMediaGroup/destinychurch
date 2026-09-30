@@ -197,8 +197,8 @@ export default function SongRequestsClient() {
         {state && !state.open ? (
           <div className={`${sticker} mt-10 rotate-1 p-7 text-center`}>
             <span className="material-symbols-rounded song-bounce text-6xl text-[#7c3aed]" aria-hidden="true">bedtime</span>
-            <p className="mt-2 text-2xl font-black">The DJ is warming up</p>
-            <p className="mt-1 font-medium text-[#1a0b2e]/70">Song requests aren&apos;t open right now. Come back when the party starts.</p>
+            <p className="mt-2 text-2xl font-black">Requests are paused</p>
+            <p className="mt-1 font-medium text-[#1a0b2e]/70">Song requests aren&apos;t open right now. Keep this page open to see when they reopen.</p>
           </div>
         ) : (
           <>

@@ -4,6 +4,7 @@
   "main": "expo-router/entry",
   "dependencies": {
     "@destiny/shared": "file:../../packages/shared",
+    "@expo/metro-runtime": "~57.0.16",
     "@expo/ui": "~57.0.21",
     "@react-native-async-storage/async-storage": "2.2.0",
     "@sentry/react-native": "~7.11.0",
@@ -12,14 +13,14 @@
     "@tanstack/react-query": "^5.104.0",
     "@tanstack/react-query-persist-client": "^5.104.0",
     "eslint-config-expo": "~57.0.2",
-    "expo": "~57.0.25",
+    "expo": "~57.0.26",
     "expo-application": "~57.0.3",
     "expo-clipboard": "~57.0.2",
     "expo-constants": "~57.0.19",
     "expo-crypto": "~57.0.3",
     "expo-dev-client": "~57.0.19",
     "expo-device": "~57.0.2",
-    "expo-document-picker": "~57.0.2",
+    "expo-document-picker": "~57.0.3",
     "expo-file-system": "~57.0.7",
     "expo-glass-effect": "~57.0.4",
     "expo-haptics": "~57.0.3",
@@ -29,7 +30,7 @@
     "expo-linking": "~57.0.11",
     "expo-local-authentication": "~57.0.3",
     "expo-notifications": "~57.0.21",
-    "expo-router": "~57.0.23",
+    "expo-router": "~57.0.24",
     "expo-secure-store": "~57.0.4",
     "expo-sensors": "~57.0.3",
     "expo-splash-screen": "~57.0.9",
@@ -40,7 +41,8 @@
     "react-native": "0.86.3",
     "react-native-safe-area-context": "~5.7.0",
     "react-native-screens": "~4.26.0",
-    "react-native-svg": "15.15.4"
+    "react-native-svg": "15.15.4",
+    "react-native-web": "^0.21.2"
   },
   "devDependencies": {
     "@types/react": "~19.2.2",

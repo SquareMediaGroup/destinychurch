@@ -1,7 +1,7 @@
 // The composer's "+" sheet: a grid of icon tiles sliding up from the bottom,
 // replacing a plain OS action sheet so it matches the rest of the app.
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { Animated, Easing, Modal, Pressable, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Icon, type IconName } from "@/components/Icon";
@@ -23,10 +23,11 @@ export function AttachSheet({ visible, onClose, onPhotos, onCamera, onDocument, 
   // The native "slide" animation would drag the scrim down with the sheet, so
   // the Modal itself is not animated: the scrim fades and the sheet slides.
   const [mounted, setMounted] = useState(visible);
-  const progress = useRef(new Animated.Value(0)).current;
+  const [progress] = useState(() => new Animated.Value(0));
+  // Mount as soon as it's asked for; unmount only once the slide-out has finished.
+  if (visible && !mounted) setMounted(true);
 
   useEffect(() => {
-    if (visible) setMounted(true);
     Animated.timing(progress, {
       toValue: visible ? 1 : 0,
       duration: visible ? 280 : 220,

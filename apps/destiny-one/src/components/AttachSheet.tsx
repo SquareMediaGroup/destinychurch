@@ -24,7 +24,7 @@ export function AttachSheet({ visible, onClose, onPhotos, onCamera, onDocument, 
   // the Modal itself is not animated: the scrim fades and the sheet slides.
   const [mounted, setMounted] = useState(visible);
   const [progress] = useState(() => new Animated.Value(0));
-  // Mount as soon as it's asked to show; unmount only once the close animation ends.
+  // Mount as soon as it's asked for; unmount only once the slide-out has finished.
   if (visible && !mounted) setMounted(true);
 
   useEffect(() => {

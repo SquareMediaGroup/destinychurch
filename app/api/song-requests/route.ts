@@ -4,15 +4,20 @@
 
 import { NextResponse } from "next/server";
 import { checkRateLimit, clientIp } from "@/lib/rateLimit";
-import { getQueueView, requestTrack } from "@/lib/songRequests.server";
+import { cooldownRemaining, getQueueView, requestTrack } from "@/lib/songRequests.server";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(request: Request) {
   if (checkRateLimit(`songreq-read:${clientIp(request)}`, 60).limited)
     return NextResponse.json({ error: "Too many requests." }, { status: 429 });
-  const { settings, playing, requests } = await getQueueView();
+  const device = new URL(request.url).searchParams.get("device");
+  const [{ settings, playing, requests }, cooldown] = await Promise.all([
+    getQueueView(),
+    cooldownRemaining(device),
+  ]);
   return NextResponse.json({
+    cooldown,
     open: settings.open,
     eventName: settings.event_name,
     playing,
@@ -43,6 +48,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: true });
 
   const outcome = await requestTrack({ trackId: body.trackId, deviceId: body.deviceId, ip });
-  if (!outcome.ok) return NextResponse.json({ error: outcome.error }, { status: outcome.status });
-  return NextResponse.json({ ok: true });
+  if (!outcome.ok)
+    return NextResponse.json({ error: outcome.error, cooldown: outcome.cooldown ?? 0 }, { status: outcome.status });
+  return NextResponse.json({ ok: true, cooldown: outcome.cooldown });
 }

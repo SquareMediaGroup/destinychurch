@@ -3867,11 +3867,11 @@ GET  /api/admin/analytics/site  // the "Whole site" tab's data
 
 #### `/api/song-requests` — public song requests
 ```typescript
-// GET  /api/song-requests          → { open, eventName, playing, requests[] }  (polled every 10s by the page)
+// GET  /api/song-requests[?device=] → { open, eventName, playing, requests[], cooldown }  (polled every 10s; queue is Spotify's own, cooldown = seconds until this device may request again)
 // GET  /api/song-requests/search?q= → { tracks[] }  explicit tracks already removed; empty while closed
 // POST /api/song-requests          { trackId, deviceId, website } → { ok } | { error }
 //      honeypot `website`; per-IP rate limit; 403 closed, 422 explicit, 409 already queued,
-//      429 queue full / device limit, 503 Spotify unavailable or no active device
+//      429 cooldown (one request per device per 5 min, returns `cooldown` seconds) / queue full / device limit, 503 Spotify unavailable or no active device
 ```
 
 #### `/api/admin/song-requests/*` — song requests (Event Admin)

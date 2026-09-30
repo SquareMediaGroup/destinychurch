@@ -22,6 +22,9 @@ export interface SongRequestRow {
   created_at: string;
 }
 
+/** One request per device every 5 minutes, whatever happened to the last one. */
+export const COOLDOWN_SECONDS = 300;
+
 const DEVICE_RE = /^[A-Za-z0-9_-]{16,64}$/;
 const TRACK_RE = /^[A-Za-z0-9]{10,40}$/;
 
@@ -95,9 +98,24 @@ export async function getQueueView() {
   };
 }
 
+/** Seconds until this device may request again (0 when it may now). */
+export async function cooldownRemaining(deviceId: unknown): Promise<number> {
+  if (typeof deviceId !== "string" || !DEVICE_RE.test(deviceId)) return 0;
+  const { data } = await createServiceClient()
+    .from("song_requests")
+    .select("created_at")
+    .eq("device_hash", hashValue(deviceId))
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (!data) return 0;
+  const left = COOLDOWN_SECONDS - (Date.now() - Date.parse(data.created_at)) / 1000;
+  return left > 0 ? Math.ceil(left) : 0;
+}
+
 export type RequestOutcome =
-  | { ok: true; request: SongRequestRow }
-  | { ok: false; status: number; error: string };
+  | { ok: true; request: SongRequestRow; cooldown: number }
+  | { ok: false; status: number; error: string; cooldown?: number };
 
 export async function requestTrack(input: {
   trackId: unknown;
@@ -113,6 +131,10 @@ export async function requestTrack(input: {
 
   const settings = await getSettings();
   if (!settings.open) return fail(403, "Song requests aren't open right now.");
+
+  const wait = await cooldownRemaining(input.deviceId);
+  if (wait > 0)
+    return { ok: false, status: 429, error: "You can only request one song every 5 minutes.", cooldown: wait };
 
   const supabase = createServiceClient();
   const deviceHash = hashValue(input.deviceId);
@@ -171,5 +193,5 @@ export async function requestTrack(input: {
     return fail(503, msg);
   }
 
-  return { ok: true, request: row as SongRequestRow };
+  return { ok: true, request: row as SongRequestRow, cooldown: COOLDOWN_SECONDS };
 }

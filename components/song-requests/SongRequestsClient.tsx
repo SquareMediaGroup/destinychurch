@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import Image from "next/image";
+import Link from "next/link";
 
 interface Track {
   id: string;
@@ -74,12 +75,34 @@ export default function SongRequestsClient() {
   const [searchError, setSearchError] = useState("");
   const [pending, setPending] = useState<string | null>(null);
   const [notice, setNotice] = useState<{ kind: "ok" | "error"; text: string } | null>(null);
+  const [cooldownEnd, setCooldownEnd] = useState(0);
+  const [now, setNow] = useState(() => Date.now());
   const deviceId = useRef("");
+
+  const secondsLeft = Math.max(0, Math.ceil((cooldownEnd - now) / 1000));
+  const cooling = secondsLeft > 0;
+  const clock = `${Math.floor(secondsLeft / 60)}:${String(secondsLeft % 60).padStart(2, "0")}`;
+
+  // Tick once a second, only while a countdown is running.
+  useEffect(() => {
+    if (cooldownEnd <= Date.now()) return;
+    const t = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(t);
+  }, [cooldownEnd]);
+
+  function startCooldown(seconds: number) {
+    setNow(Date.now());
+    setCooldownEnd(seconds > 0 ? Date.now() + seconds * 1000 : 0);
+  }
 
   const refresh = useCallback(async () => {
     try {
-      const res = await fetch("/api/song-requests", { cache: "no-store" });
-      if (res.ok) setState(await res.json());
+      const res = await fetch(`/api/song-requests?device=${encodeURIComponent(deviceId.current)}`, { cache: "no-store" });
+      if (res.ok) {
+        const data = await res.json();
+        setState(data);
+        startCooldown(Number(data.cooldown) || 0);
+      }
     } catch {
       /* keep the last good state */
     }
@@ -133,6 +156,7 @@ export default function SongRequestsClient() {
         body: JSON.stringify({ trackId: track.id, deviceId: deviceId.current, website: "" }),
       });
       const data = await res.json().catch(() => ({}));
+      if (typeof data.cooldown === "number") startCooldown(data.cooldown);
       if (!res.ok) throw new Error(data.error ?? "Couldn't send your request.");
       setNotice({ kind: "ok", text: `Added "${track.title}" to the queue.` });
       setQuery("");
@@ -195,6 +219,25 @@ export default function SongRequestsClient() {
               />
             </div>
 
+            <div
+              className={`mt-5 flex items-center justify-center gap-3 rounded-2xl border-[3px] border-[#1a0b2e] px-4 py-3 text-center shadow-[4px_4px_0_#1a0b2e] ${
+                cooling ? "bg-[#ffd23f]" : "bg-white"
+              }`}
+            >
+              <span className="material-symbols-rounded text-3xl text-[#7c3aed]" aria-hidden="true">timer</span>
+              {cooling ? (
+                <p className="text-left font-black leading-tight">
+                  Next request in <span className="tabular-nums text-2xl">{clock}</span>
+                  <span className="block text-xs font-bold text-[#1a0b2e]/70">One song every 5 minutes per person</span>
+                </p>
+              ) : (
+                <p className="text-left font-black leading-tight">
+                  One song every 5 minutes
+                  <span className="block text-xs font-bold text-[#1a0b2e]/70">Pick a good one!</span>
+                </p>
+              )}
+            </div>
+
             <div role="status" aria-live="polite" className="mt-3 min-h-7 text-center">
               {notice && (
                 <p
@@ -224,13 +267,13 @@ export default function SongRequestsClient() {
                     <button
                       type="button"
                       onClick={() => request(t)}
-                      disabled={pending !== null}
+                      disabled={pending !== null || cooling}
                       className="song-btn inline-flex shrink-0 items-center gap-1 rounded-full border-[3px] border-[#1a0b2e] bg-[#b8f233] px-4 py-2 text-sm font-black shadow-[3px_3px_0_#1a0b2e] disabled:opacity-60"
                     >
                       <span className="material-symbols-rounded text-xl" aria-hidden="true">
-                        {pending === t.id ? "hourglass_top" : "add"}
+                        {pending === t.id || cooling ? "hourglass_top" : "add"}
                       </span>
-                      {pending === t.id ? "Adding" : "Request"}
+                      {pending === t.id ? "Adding" : cooling ? clock : "Request"}
                     </button>
                   </li>
                 ))}
@@ -295,6 +338,12 @@ export default function SongRequestsClient() {
             </ol>
           )}
         </section>
+
+        <footer className="mt-12 text-center text-xs font-semibold text-white/80">
+          By using this service you agree to our{" "}
+          <Link href="/terms" className="underline underline-offset-2 hover:text-white">Terms of Use</Link> and{" "}
+          <Link href="/privacy" className="underline underline-offset-2 hover:text-white">Privacy Policy</Link>.
+        </footer>
       </div>
     </>
   );

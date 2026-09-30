@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import Image from "next/image";
+import Link from "next/link";
 
 interface Track {
   id: string;
@@ -43,6 +44,8 @@ function getDeviceId() {
 }
 
 const INK = "#1a0b2e";
+// Mirrors COOLDOWN_SECONDS in lib/songRequests.server.ts (server-only, so not imported).
+const COOLDOWN_SECONDS = 300;
 
 function Art({ src, size, className = "" }: { src: string | null; size: number; className?: string }) {
   const style = { width: size, height: size };
@@ -74,12 +77,34 @@ export default function SongRequestsClient() {
   const [searchError, setSearchError] = useState("");
   const [pending, setPending] = useState<string | null>(null);
   const [notice, setNotice] = useState<{ kind: "ok" | "error"; text: string } | null>(null);
+  const [cooldownEnd, setCooldownEnd] = useState(0);
+  const [now, setNow] = useState(() => Date.now());
   const deviceId = useRef("");
+
+  const secondsLeft = Math.max(0, Math.ceil((cooldownEnd - now) / 1000));
+  const cooling = secondsLeft > 0;
+  const clock = `${Math.floor(secondsLeft / 60)}:${String(secondsLeft % 60).padStart(2, "0")}`;
+
+  // Tick once a second, only while a countdown is running.
+  useEffect(() => {
+    if (cooldownEnd <= Date.now()) return;
+    const t = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(t);
+  }, [cooldownEnd]);
+
+  function startCooldown(seconds: number) {
+    setNow(Date.now());
+    setCooldownEnd(seconds > 0 ? Date.now() + seconds * 1000 : 0);
+  }
 
   const refresh = useCallback(async () => {
     try {
-      const res = await fetch("/api/song-requests", { cache: "no-store" });
-      if (res.ok) setState(await res.json());
+      const res = await fetch(`/api/song-requests?device=${encodeURIComponent(deviceId.current)}`, { cache: "no-store" });
+      if (res.ok) {
+        const data = await res.json();
+        setState(data);
+        startCooldown(Number(data.cooldown) || 0);
+      }
     } catch {
       /* keep the last good state */
     }
@@ -133,6 +158,7 @@ export default function SongRequestsClient() {
         body: JSON.stringify({ trackId: track.id, deviceId: deviceId.current, website: "" }),
       });
       const data = await res.json().catch(() => ({}));
+      if (typeof data.cooldown === "number") startCooldown(data.cooldown);
       if (!res.ok) throw new Error(data.error ?? "Couldn't send your request.");
       setNotice({ kind: "ok", text: `Added "${track.title}" to the queue.` });
       setQuery("");
@@ -173,8 +199,8 @@ export default function SongRequestsClient() {
         {state && !state.open ? (
           <div className={`${sticker} mt-10 rotate-1 p-7 text-center`}>
             <span className="material-symbols-rounded song-bounce text-6xl text-[#7c3aed]" aria-hidden="true">bedtime</span>
-            <p className="mt-2 text-2xl font-black">The DJ is warming up</p>
-            <p className="mt-1 font-medium text-[#1a0b2e]/70">Song requests aren&apos;t open right now. Come back when the party starts.</p>
+            <p className="mt-2 text-2xl font-black">Requests are paused</p>
+            <p className="mt-1 font-medium text-[#1a0b2e]/70">Song requests aren&apos;t open right now. Keep this page open to see when they reopen.</p>
           </div>
         ) : (
           <>
@@ -194,6 +220,47 @@ export default function SongRequestsClient() {
                 className="w-full rounded-full border-[3px] border-[#1a0b2e] bg-white py-4 pl-14 pr-5 text-lg font-bold shadow-[6px_6px_0_#1a0b2e] placeholder:font-semibold placeholder:text-[#1a0b2e]/40 focus:outline-none focus:ring-4 focus:ring-[#3ddcff]"
               />
             </div>
+
+            {cooling ? (
+              <div
+                role="timer"
+                aria-label={`Next request in ${clock}`}
+                className="song-pop mt-5 flex items-center gap-4 rounded-3xl border-[3px] border-[#1a0b2e] bg-[#ffd23f] p-4 shadow-[6px_6px_0_#1a0b2e]"
+              >
+                <div className="relative h-24 w-24 shrink-0">
+                  <svg viewBox="0 0 100 100" className="h-full w-full -rotate-90" aria-hidden="true">
+                    <circle cx="50" cy="50" r="42" fill="#fff" stroke="#1a0b2e" strokeOpacity="0.15" strokeWidth="10" />
+                    <circle
+                      cx="50"
+                      cy="50"
+                      r="42"
+                      fill="none"
+                      stroke="#7c3aed"
+                      strokeWidth="10"
+                      strokeLinecap="round"
+                      strokeDasharray={2 * Math.PI * 42}
+                      strokeDashoffset={2 * Math.PI * 42 * (1 - secondsLeft / COOLDOWN_SECONDS)}
+                      style={{ transition: "stroke-dashoffset 1s linear" }}
+                    />
+                  </svg>
+                  <span className="absolute inset-0 flex items-center justify-center text-2xl font-black tabular-nums">{clock}</span>
+                </div>
+                <div className="min-w-0 text-left">
+                  <p className="text-xl font-black leading-tight">Nice pick! Hang tight</p>
+                  <p className="mt-1 text-sm font-bold text-[#1a0b2e]/75">
+                    You can request again when the ring fills up. It&apos;s one song every 5 minutes per person.
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <div className="mt-5 flex items-center justify-center gap-3 rounded-2xl border-[3px] border-[#1a0b2e] bg-white px-4 py-3 shadow-[4px_4px_0_#1a0b2e]">
+                <span className="material-symbols-rounded text-3xl text-[#7c3aed]" aria-hidden="true">timer</span>
+                <p className="text-left font-black leading-tight">
+                  One song every 5 minutes
+                  <span className="block text-xs font-bold text-[#1a0b2e]/70">Pick a good one!</span>
+                </p>
+              </div>
+            )}
 
             <div role="status" aria-live="polite" className="mt-3 min-h-7 text-center">
               {notice && (
@@ -224,13 +291,13 @@ export default function SongRequestsClient() {
                     <button
                       type="button"
                       onClick={() => request(t)}
-                      disabled={pending !== null}
+                      disabled={pending !== null || cooling}
                       className="song-btn inline-flex shrink-0 items-center gap-1 rounded-full border-[3px] border-[#1a0b2e] bg-[#b8f233] px-4 py-2 text-sm font-black shadow-[3px_3px_0_#1a0b2e] disabled:opacity-60"
                     >
                       <span className="material-symbols-rounded text-xl" aria-hidden="true">
-                        {pending === t.id ? "hourglass_top" : "add"}
+                        {pending === t.id || cooling ? "hourglass_top" : "add"}
                       </span>
-                      {pending === t.id ? "Adding" : "Request"}
+                      {pending === t.id ? "Adding" : cooling ? clock : "Request"}
                     </button>
                   </li>
                 ))}
@@ -273,9 +340,9 @@ export default function SongRequestsClient() {
             </div>
           ) : (
             <ol className="flex flex-col gap-3">
-              {[...upNext].reverse().map((r, i) => (
+              {upNext.map((r, i) => (
                 <li
-                  key={r.id}
+                  key={`${r.id}-${i}`}
                   className={`${sticker} flex items-center gap-3 p-2.5`}
                   style={{ transform: `rotate(${i % 2 === 0 ? -1 : 1}deg)` }}
                 >
@@ -295,6 +362,12 @@ export default function SongRequestsClient() {
             </ol>
           )}
         </section>
+
+        <footer className="mt-12 text-center text-xs font-semibold text-white/80">
+          By using this service you agree to our{" "}
+          <Link href="/terms" className="underline underline-offset-2 hover:text-white">Terms of Use</Link> and{" "}
+          <Link href="/privacy" className="underline underline-offset-2 hover:text-white">Privacy Policy</Link>.
+        </footer>
       </div>
     </>
   );

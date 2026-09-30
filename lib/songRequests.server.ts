@@ -3,7 +3,7 @@
 
 import { createHash } from "crypto";
 import { createServiceClient } from "@/utils/supabase/service";
-import { addToQueue, currentlyPlaying, getTrack, SpotifyError } from "@/lib/spotify.server";
+import { addToQueue, getQueue, getTrack, SpotifyError } from "@/lib/spotify.server";
 
 export interface SongSettings {
   open: boolean;
@@ -21,6 +21,9 @@ export interface SongRequestRow {
   status: "queued" | "played" | "removed";
   created_at: string;
 }
+
+/** One request per device every 5 minutes, whatever happened to the last one. */
+export const COOLDOWN_SECONDS = 300;
 
 const DEVICE_RE = /^[A-Za-z0-9_-]{16,64}$/;
 const TRACK_RE = /^[A-Za-z0-9]{10,40}$/;
@@ -50,27 +53,69 @@ export async function listRequests(limit = 30): Promise<SongRequestRow[]> {
   return (data ?? []) as SongRequestRow[];
 }
 
+// A request is given this long to show up in Spotify's queue before its
+// absence is read as "already played".
+const QUEUE_GRACE_MS = 60_000;
+
 /**
- * Reads the queue for the public page. Whatever is playing right now has
- * obviously been picked up, so a queued request for that track becomes
- * "played"; requests are never resurrected.
+ * Reads the queue for the public page. Spotify is the source of truth, so
+ * songs added in the Spotify app appear alongside guest requests. Our own rows
+ * are only bookkeeping: one that has left Spotify's queue (or is playing now)
+ * is marked played. If Spotify can't answer, fall back to our own list.
  */
 export async function getQueueView() {
-  const [settings, playing] = await Promise.all([getSettings(), currentlyPlaying()]);
-  if (playing) {
-    await createServiceClient()
-      .from("song_requests")
-      .update({ status: "played" })
-      .eq("spotify_track_id", playing.id)
-      .eq("status", "queued");
-  }
+  const [settings, live] = await Promise.all([getSettings(), getQueue()]);
+  const supabase = createServiceClient();
   const requests = await listRequests();
-  return { settings, playing, requests };
+
+  if (!live) {
+    return { settings, playing: null, requests: [...requests].reverse() };
+  }
+
+  const inSpotify = new Set(live.queue.map((t) => t.id));
+  if (live.playing) inSpotify.add(live.playing.id);
+  const gone = requests
+    .filter((r) => r.status === "queued")
+    .filter((r) => !inSpotify.has(r.spotify_track_id) || r.spotify_track_id === live.playing?.id)
+    .filter((r) => r.spotify_track_id === live.playing?.id || Date.now() - Date.parse(r.created_at) > QUEUE_GRACE_MS)
+    .map((r) => r.id);
+  if (gone.length) await supabase.from("song_requests").update({ status: "played" }).in("id", gone);
+
+  return {
+    settings,
+    playing: live.playing
+      ? { id: live.playing.id, title: live.playing.title, artist: live.playing.artist, artwork: live.playing.artwork }
+      : null,
+    requests: live.queue.slice(0, 20).map((t) => ({
+      id: t.id,
+      spotify_track_id: t.id,
+      title: t.title,
+      artist: t.artist,
+      artwork_url: t.artwork,
+      status: "queued" as const,
+      created_at: "",
+    })),
+  };
+}
+
+/** Seconds until this device may request again (0 when it may now). */
+export async function cooldownRemaining(deviceId: unknown): Promise<number> {
+  if (typeof deviceId !== "string" || !DEVICE_RE.test(deviceId)) return 0;
+  const { data } = await createServiceClient()
+    .from("song_requests")
+    .select("created_at")
+    .eq("device_hash", hashValue(deviceId))
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (!data) return 0;
+  const left = COOLDOWN_SECONDS - (Date.now() - Date.parse(data.created_at)) / 1000;
+  return left > 0 ? Math.ceil(left) : 0;
 }
 
 export type RequestOutcome =
-  | { ok: true; request: SongRequestRow }
-  | { ok: false; status: number; error: string };
+  | { ok: true; request: SongRequestRow; cooldown: number }
+  | { ok: false; status: number; error: string; cooldown?: number };
 
 export async function requestTrack(input: {
   trackId: unknown;
@@ -86,6 +131,10 @@ export async function requestTrack(input: {
 
   const settings = await getSettings();
   if (!settings.open) return fail(403, "Song requests aren't open right now.");
+
+  const wait = await cooldownRemaining(input.deviceId);
+  if (wait > 0)
+    return { ok: false, status: 429, error: "You can only request one song every 5 minutes.", cooldown: wait };
 
   const supabase = createServiceClient();
   const deviceHash = hashValue(input.deviceId);
@@ -144,5 +193,5 @@ export async function requestTrack(input: {
     return fail(503, msg);
   }
 
-  return { ok: true, request: row as SongRequestRow };
+  return { ok: true, request: row as SongRequestRow, cooldown: COOLDOWN_SECONDS };
 }

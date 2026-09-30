@@ -2088,6 +2088,16 @@ group-icon migrations) to a throwaway local Postgres and runs `tests/sql/destiny
 **Used By:** `lib/destinyOne/*`, `app/api/app/v1/one/**`, `app/api/admin/destiny-one/**`,
 `app/api/cron/destiny-one-{sync,purge}`.
 
+#### 30. **song_request_settings / song_request_spotify / song_requests** (Event song requests)
+**Purpose:** `/song-requests`. Migration: `supabase/migrations/20260930_01_song_requests.sql`. All three are
+RLS-on with a deny-all policy; every read/write goes through API routes using the service client.
+
+| Table | Holds |
+|---|---|
+| `song_request_settings` | One row: `open`, `event_name`, `max_queue`, `per_device_limit` |
+| `song_request_spotify` | One row: the church account's `refresh_token` (never sent to a client), `account_name` |
+| `song_requests` | `spotify_track_id`, `title`, `artist`, `artwork_url`, `status` (`queued`/`played`/`removed`), `device_hash`, `ip_hash` (hashed, not raw). Unique index: a track can be queued once at a time |
+
 ---
 
 **Key Point:** Member-facing features use API proxy routes that enforce
@@ -2476,6 +2486,7 @@ without an auth check, so they must never be reachable on the live site.
 | `/alpha` | `app/alpha/page.tsx` | Alpha course info, next event |
 | `/bible-course` | `app/bible-course/page.tsx` | The Bible Course (Bible Society), next event |
 | `/cap-money` | `app/cap-money/page.tsx` | CAP Money Course (Christians Against Poverty), next event. CTAs fall back to `/contact` when nothing is scheduled |
+| `/song-requests` | `app/song-requests/page.tsx` | Guests search Spotify and request clean songs at an event; shows now playing and up next. Not indexed. `components/song-requests/SongRequestsClient.tsx` |
 | `/whats-on` | `app/whats-on/page.tsx` | Events listing — featured-event banner, then upcoming events grouped by month |
 | `/whats-on/[slug]` | `app/whats-on/[slug]/page.tsx` | On-site event page — one per ChurchSuite *series*, with all upcoming sessions, sanitised description, map link, signup and .ics |
 | `/connect-card` | `app/connect-card/page.tsx` | Prayer requests, connection form |
@@ -2535,6 +2546,7 @@ Each section requires a specific access-level role (see
 | `/admin/nfc` | `app/admin/nfc/page.tsx` | Tiles on the `/nfc` page — add/edit/reorder/hide. A ChurchSuite form embed, artwork + copy + CTA, or an event picked from the live calendar (events without a framable signup are shown disabled with the reason) |
 | `/admin/links` | `app/admin/links/page.tsx` | Links pages list — 30-day views/clicks per page, create from a theme preset or as a copy, delete (not `main`) (Event Admin) |
 | `/admin/links/[id]` | `app/admin/links/[id]/page.tsx` | The links page editor (`components/admin/links/LinksEditor.tsx`): Blocks, Appearance, Profile, Settings, Responses and Stats tabs beside a live phone preview. `?tab=` deep-links a tab (Event Admin) |
+| `/admin/song-requests` | `app/admin/song-requests/page.tsx` | Connect the church Spotify account, open/close requests, name the event, set limits, remove requests (Event Admin) |
 | `/admin/hr` | `app/admin/hr/page.tsx` | HR dashboard (staff, leave, jobs, documents, reviews, checklists) (HR Admin) |
 | `/admin/hr/staff` | `app/admin/hr/staff/page.tsx` | Staff directory — searchable list of every staff record, filterable by employment type and status (HR Admin) |
 | `/admin/hr/staff/[id]` | `app/admin/hr/staff/[id]/page.tsx` | Staff record — profile, leave, reviews, documents, live checklists (HR Admin) |
@@ -3853,6 +3865,24 @@ GET  /api/admin/analytics/site  // the "Whole site" tab's data
 // Vercel's API must never hold up the click-log numbers on the other tabs.
 ```
 
+#### `/api/song-requests` — public song requests
+```typescript
+// GET  /api/song-requests          → { open, eventName, playing, requests[] }  (polled every 10s by the page)
+// GET  /api/song-requests/search?q= → { tracks[] }  explicit tracks already removed; empty while closed
+// POST /api/song-requests          { trackId, deviceId, website } → { ok } | { error }
+//      honeypot `website`; per-IP rate limit; 403 closed, 422 explicit, 409 already queued,
+//      429 queue full / device limit, 503 Spotify unavailable or no active device
+```
+
+#### `/api/admin/song-requests/*` — song requests (Event Admin)
+```typescript
+// GET    /api/admin/song-requests          → { configured, connection, device, settings, requests }
+// PUT    /api/admin/song-requests          { open?, eventName?, maxQueue?, perDeviceLimit? } (audited)
+// DELETE /api/admin/song-requests/[id]     hide from the public list (Spotify cannot dequeue) (audited)
+// GET    /api/admin/song-requests/spotify/connect   → redirect to Spotify (state cookie)
+// GET    /api/admin/song-requests/spotify/callback  → stores refresh token, back to the admin page
+```
+
 #### `POST /api/links/submit` — public form-block submissions
 ```typescript
 // Body: { blockId, values: { [fieldId]: string | boolean }, website }.
@@ -4726,6 +4756,16 @@ reports the stale copy's errors as yours.
 ---
 
 ## Libraries & Utilities
+
+### `lib/spotify.server.ts` and `lib/songRequests.server.ts`
+
+Event song requests. `spotify.server.ts` wraps the Spotify Web API: an app token (Client Credentials) for
+search and track lookup, and the church account's refresh token for adding to the live queue, reading what is
+playing and listing devices. Explicit tracks are dropped from search, and a track with no `explicit` flag counts
+as explicit. `songRequests.server.ts` holds the request rules: open/closed, queue and per-device limits, a fresh
+Spotify lookup (the browser's flag is never trusted), duplicate refusal via a unique partial index, then queue-add
+(the row is removed again if Spotify refuses). Covered by `tests/unit/song-requests.spec.ts`.
+
 
 ### `lib/adminNav.ts`
 
@@ -6359,6 +6399,14 @@ accept the current privacy / terms / chat-review notices. Leader roles (`admin`,
 ---
 
 ## Configuration
+
+### Song requests (Spotify)
+
+`SPOTIFY_CLIENT_ID` and `SPOTIFY_CLIENT_SECRET` (from a Spotify developer app). Optional `SPOTIFY_REDIRECT_URI`
+(defaults to `<origin>/api/admin/song-requests/spotify/callback`; register it in the Spotify app) and
+`SONG_REQUEST_SALT` (salts the stored device/IP hashes). The church Premium account authorises once from
+`/admin/song-requests`; its refresh token lives in `song_request_spotify` (service-only).
+
 
 ### `next.config.ts`
 

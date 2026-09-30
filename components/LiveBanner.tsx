@@ -2,7 +2,7 @@
 
 import { usePathname } from "next/navigation";
 import { useLiveStatus } from "@/contexts/LiveContext";
-import { isLinksPagePath } from "@/lib/linkPages/paths";
+import { isLinksPagePath, isSongRequestsPath } from "@/lib/linkPages/paths";
 import { isLegalPagePath } from "@/lib/legalPages";
 import { youtubeWatchUrl } from "@/lib/youtubeId";
 
@@ -14,7 +14,7 @@ export default function LiveBanner() {
   if (pathname.startsWith("/admin")) return null;
   if (pathname.startsWith("/portal")) return null;
   if (pathname === "/login") return null;
-  if (isLinksPagePath(pathname)) return null;
+  if (isLinksPagePath(pathname) || isSongRequestsPath(pathname)) return null;
   if (isLegalPagePath(pathname)) return null;
 
   return (

@@ -5,3 +5,10 @@ export function isLinksPagePath(pathname: string | null | undefined): boolean {
   if (!pathname) return false;
   return pathname === "/links" || pathname.startsWith("/links/");
 }
+
+// /song-requests is the same kind of page: a phone-first party tool reached by
+// QR code, so the site chrome stands aside for it too.
+export function isSongRequestsPath(pathname: string | null | undefined): boolean {
+  if (!pathname) return false;
+  return pathname === "/song-requests" || pathname.startsWith("/song-requests/");
+}

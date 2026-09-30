@@ -8,7 +8,7 @@ import { useBannerBars } from "@/lib/useBannerBars";
 import { useHydrated } from "@/lib/useHydrated";
 import CartButton from "@/components/shop/CartButton";
 import Button from "@/components/ui/Button";
-import { isLinksPagePath } from "@/lib/linkPages/paths";
+import { isLinksPagePath, isSongRequestsPath } from "@/lib/linkPages/paths";
 
 const aboutDropdown = [
   { href: "/about", label: "Our Mission" },
@@ -253,7 +253,7 @@ export default function ChurchHeader() {
   if (
     pathname.startsWith("/admin") ||
     pathname.startsWith("/nfc") ||
-    isLinksPagePath(pathname) ||
+    isLinksPagePath(pathname) || isSongRequestsPath(pathname) ||
     pathname.startsWith("/portal") ||
     pathname === "/login"
   )

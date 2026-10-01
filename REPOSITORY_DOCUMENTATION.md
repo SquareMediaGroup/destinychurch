@@ -1,7 +1,7 @@
 # Destiny Church Tees Valley — Complete Repository Documentation
 
-**Version:** 1.0.17  
-**Last Updated:** September 23, 2026  
+**Version:** 1.0.18  
+**Last Updated:** October 1, 2026  
 **Repository:** Square Media Group — destinychurch  
 
 This document provides a comprehensive explanation of every major component, line of code purpose, architecture decisions, and how the system works from end-to-end.
@@ -369,6 +369,10 @@ destinychurch/
 │       │                                   # (needs_approval → access request; groups joined on approval)
 │       ├── 20260927_01_destiny_one_admin.sql # Destiny One part 2: staff verification, d1_invites,
 │       │                                  # d1_settings, d1_admin_* functions, destiny_one_admin role
+│       │                                  # (parts 5–9 and the Destiny One polish migrations through
+│       │                                  # 20260929_06 follow; see §29 for the full list)
+│       ├── 20260930_01_song_requests.sql # Event song requests: song_request_settings /
+│       │                                  # song_request_spotify / song_requests + Event Admin — see §30
 │
 ├── utils/                         # Utility modules
 │   ├── supabase/                  # Supabase client factories
@@ -7342,7 +7346,7 @@ A standalone **macOS app** (not part of the website deploy) that captions live a
 - `apps/.gitkeep` keeps the `apps/` directory (for future standalone companion apps) tracked. See `apps/live-caption/README.md` for the full setup and operating guide.
 
 ### Database Migrations
-- **52 migration files** defining schema for:
+- **95 migration files** defining schema for:
   - URL redirects, hidden videos (removed), site content (banners, pop-ups, page_content)
   - Event management (Alpha course, Bible Course, CAP Money, Recovery, featured course, featured event)
   - HR management (staff, leave, documents, reviews)
@@ -7358,6 +7362,15 @@ A standalone **macOS app** (not part of the website deploy) that captions live a
     `design_ticket_events`) and the `design_admin` access level
   - The `sermon_admin` access level (`/admin/sermons`) and `speaker_overrides`
     (AI/human speaker corrections for the sermon archive)
+  - Sermon series (`sermon_series`), link-hub pages (`link_pages`), the admin
+    notifications feed (`notifications`), and per-post page settings
+  - Destiny One (`d1_*` tables, safeguarding triggers, Realtime policies, the
+    `destiny_one_admin`/`safeguarding_admin` access levels), built up across parts
+    1–9 — admin, leader/member invites, message search, role tags, safeguarding,
+    poll/event message content, rate limits, group icons, member names, name-change
+    limits, password/avatar flags, and paused groups
+  - Event song requests (`song_requests`, `song_request_settings`,
+    `song_request_spotify`) — the `/song-requests` Spotify feature and Event Admin role
 
 ---
 

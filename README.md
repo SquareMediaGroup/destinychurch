@@ -25,6 +25,7 @@ Designed, engineered, and deployed by [Square Media Group](mailto:hello@squareme
 - Giving, volunteer, and serve pages
 - `/governance` transparency page — charity and company registration, trustees/directors, charitable objects, and five-year financial and filing history, drawn live from the Charity Commission and Companies House registers
 - `/nfc` "digital back of seats" — a standalone page an NFC tag or QR code on a seat opens during a service, with admin-managed tiles
+- Event song requests — at an event, guests open `/song-requests` to search Spotify and request clean songs; the page shows "now playing" and "up next" straight from the church's connected Spotify account, rate-limited to one request per device every five minutes. Staff connect Spotify, open/close requests, name the event, set queue/per-device limits, and remove songs at `/admin/song-requests` (Event Admin). The page is not indexed
 - AI Smart Search — OpenAI tool-calling chat with product cards, weather, maps/directions, and live web search
 - Click analytics — a privacy-respecting `/admin/analytics` dashboard for short-link, QR-code, and NFC-tile engagement (with VPN/Tor/datacenter/Private-Relay tagging) alongside whole-site traffic
 - Protected admin dashboard (sermons, pages/posts, redirects, banner, popup, shop, training, HR, Alpha, recovery, analytics, audit log)
@@ -155,6 +156,7 @@ app/
 ├── sermons/          # Sermon archive & individual pages
 ├── serve/            # Volunteer opportunities
 ├── shop/             # Merchandise shop (Stripe checkout)
+├── song-requests/    # Event song requests — guests request clean songs via Spotify (not indexed)
 ├── training/         # Staff training courses
 ├── twelvetwo/        # Destiny 12:2 recovery ministry
 ├── visit/            # Plan a visit
@@ -188,6 +190,7 @@ The `/admin` area is protected by Supabase Auth. Log in at `/login` to manage:
 - **HR & Jobs** — job listings, applications, staff directory (every record linked to a backend login), leave, documents, reviews, onboarding/offboarding checklists (HR Admin access level)
 - **Design** — the design request queue: claim tickets, message the requester, upload deliverables, and move each ticket through its workflow (Design Admin access level)
 - **Destiny One** — run the members' messaging app without seeing message content: approve access requests, invite members, manage communities and department groups, safeguarding queue and audited transcript viewer, and app settings (minimum builds, forced-update/maintenance switch) (Destiny One Admin / Safeguarding Admin access levels)
+- **Song Requests** — connect the church Spotify account, open/close requests, name the event, set queue and per-device limits, and remove songs for the `/song-requests` page (Event Admin access level)
 - **Alpha & Recovery** — signups and events
 - **Redirects** — configure URL redirects
 - **Banner & Popup** — control the site-wide announcement banner and popups

@@ -179,7 +179,7 @@ export default function GroupInfo() {
         </View>
 
         <View style={{ flexDirection: "row", gap: 10 }}>
-          <Tile icon="search" label="Search" onPress={() => router.push("/search")} />
+          <Tile icon="search" label="Search" onPress={() => router.push({ pathname: "/search", params: { groupId: group.id } })} />
           <Tile icon="bell" label={group.muted ? "Muted" : "Mute"} onPress={() => router.push({ pathname: "/notifications", params: { groupId: group.id } })} />
           {group.canManage ? <Tile icon="addPerson" label="Add people" onPress={() => router.push({ pathname: "/add-people", params: { groupId: group.id } })} /> : null}
         </View>

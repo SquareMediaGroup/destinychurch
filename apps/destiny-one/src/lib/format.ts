@@ -1,4 +1,7 @@
-// Dates, times and sizes as the design shows them (UK style, 24-hour clock).
+// Dates, times and sizes as the design shows them (UK style, 24-hour clock),
+// and the one-line summary of a message.
+
+import { contentPreview, type D1Message } from "@destiny/shared";
 
 const DAY = 86_400_000;
 
@@ -56,4 +59,19 @@ export function eventWhen(iso: string): string {
 
 export function plural(n: number, one: string, many = `${one}s`): string {
   return `${n} ${n === 1 ? one : many}`;
+}
+
+/**
+ * A message in one line, for reply quotes and reports: its text, else what it
+ * carries ("Poll: …", "Event: …", "Photo", "PDF").
+ */
+export function messageSummary(m: Pick<D1Message, "body" | "content" | "attachment" | "deleted"> & { localAttachment?: { mimeType: string } }): string {
+  if (m.deleted) return "Message deleted";
+  if (m.body) return m.body;
+  const content = contentPreview(m.content);
+  if (content) return content;
+  const mime = m.attachment?.mimeType ?? m.localAttachment?.mimeType ?? "";
+  if (mime.startsWith("image/")) return "Photo";
+  if (mime === "application/pdf") return "PDF";
+  return "Attachment";
 }

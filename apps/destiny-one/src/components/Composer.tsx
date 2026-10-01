@@ -38,11 +38,19 @@ interface Props {
   loadSendAsOptions?: () => Promise<Account[]>;
   /** The chosen account sends `text`. Resolves once sent, or throws. */
   onSendAs?: (account: Account, text: string) => Promise<void>;
+  /** What's in the box when it opens (a saved draft). */
+  initialText?: string;
+  /** Every change to the text, so it can be kept as a draft. */
+  onTextChange?: (text: string) => void;
 }
 
-export const Composer = forwardRef<TextInput, Props>(function Composer({ replying, onCancelReply, onSend, onAttach, onAttachPoll, onAttachEvent, onError, loadSendAsOptions, onSendAs }, ref) {
+export const Composer = forwardRef<TextInput, Props>(function Composer({ replying, onCancelReply, onSend, onAttach, onAttachPoll, onAttachEvent, onError, loadSendAsOptions, onSendAs, initialText, onTextChange }, ref) {
   const t = useTheme();
-  const [draft, setDraft] = useState("");
+  const [draft, setDraftState] = useState(initialText ?? "");
+  const setDraft = (text: string) => {
+    setDraftState(text);
+    onTextChange?.(text);
+  };
   const [sheetOpen, setSheetOpen] = useState(false);
   const [sendAsMenu, setSendAsMenu] = useState<{ text: string; options: Account[]; checking: boolean } | null>(null);
   const hasText = draft.trim().length > 0;

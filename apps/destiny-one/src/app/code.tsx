@@ -1,14 +1,16 @@
 // A3 Code — the emailed 6-digit code (CodeBoxes).
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Text, View } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
+import { isAuthRetryableFetchError } from "@supabase/supabase-js";
 import { AuthScreen } from "@/components/AuthScreen";
 import { CodeBoxes } from "@/components/CodeBoxes";
 import { FormError, LargeTitle, Lead, PrimaryButton, TextButton } from "@/components/ui";
 import { isAdding } from "@/lib/accounts";
-import { requestEmailCode, verifyEmailCode } from "@/lib/auth";
-import { routeFor, useSession } from "@/state/session";
+import { D1ApiError } from "@/lib/api";
+import { checkEmailCode, finishSignIn, requestEmailCode } from "@/lib/auth";
+import { errorMessage, routeFor, useSession } from "@/state/session";
 import { useTheme } from "@/theme/tokens";
 import { haptic } from "@/lib/haptics";
 
@@ -22,6 +24,9 @@ export default function Code() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [wait, setWait] = useState(RESEND_AFTER);
+  // The code was accepted but the next step failed: retrying must not send the
+  // (now used) code again, only finish signing in.
+  const accepted = useRef(false);
 
   useEffect(() => {
     if (wait <= 0) return;
@@ -30,16 +35,22 @@ export default function Code() {
   }, [wait]);
 
   async function verify(value = code) {
-    if (value.length !== 6 || busy) return;
+    if ((value.length !== 6 && !accepted.current) || busy) return;
     setBusy(true);
     setError(null);
     try {
-      const me = await verifyEmailCode(email, value);
+      if (!accepted.current) {
+        await checkEmailCode(email, value);
+        accepted.current = true;
+      }
+      const me = await finishSignIn();
       // "Add account": the new account becomes the active one. Otherwise this
       // is the only sign-in on the device.
       if (isAdding()) {
         const added = await finishAdding(me);
         if (!added.ok) {
+          // That sign-in has been dropped; another account needs a fresh code.
+          accepted.current = false;
           setError(added.message);
           setCode("");
           return;
@@ -49,15 +60,23 @@ export default function Code() {
       router.dismissAll();
       router.replace(routeFor(me));
     } catch (err) {
-      const msg = err instanceof Error ? err.message.toLowerCase() : "";
-      setError(msg.includes("expired") ? "That code has expired. Send a new one." : "That code isn't right. Check it and try again.");
-      setCode("");
+      if (err instanceof D1ApiError) {
+        // The code was fine; Destiny One couldn't be reached. Verify tries that step again.
+        setError(errorMessage(err, "Couldn't finish signing in. Try again."));
+      } else if (isAuthRetryableFetchError(err)) {
+        setError("You're offline. Check your connection and try again.");
+      } else {
+        const msg = err instanceof Error ? err.message.toLowerCase() : "";
+        setError(msg.includes("expired") ? "That code has expired. Send a new one." : "That code isn't right. Check it and try again.");
+        setCode("");
+      }
     } finally {
       setBusy(false);
     }
   }
 
   async function resend() {
+    accepted.current = false;
     setError(null);
     setWait(RESEND_AFTER);
     try {

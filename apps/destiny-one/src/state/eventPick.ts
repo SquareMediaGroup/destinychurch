@@ -1,11 +1,12 @@
 // A ChurchSuite event chosen on the Event picker screen, read back by the
 // group chat screen that opened it. Same tiny-external-store pattern as
-// state/picker.ts and state/pollDraft.ts.
+// state/picker.ts and state/pollDraft.ts, and like a poll draft it's addressed
+// to one group, so a second chat further down the stack doesn't send it too.
 
 import { useSyncExternalStore } from "react";
 import type { D1EventSummary } from "@destiny/shared";
 
-let picked: D1EventSummary | null = null;
+let picked: { groupId: string; event: D1EventSummary } | null = null;
 const listeners = new Set<() => void>();
 
 function emit() {
@@ -13,9 +14,8 @@ function emit() {
 }
 
 export const eventPick = {
-  get: () => picked,
-  set(next: D1EventSummary) {
-    picked = next;
+  set(groupId: string, event: D1EventSummary) {
+    picked = { groupId, event };
     emit();
   },
   clear() {
@@ -24,12 +24,12 @@ export const eventPick = {
   },
 };
 
-export function useEventPick(): D1EventSummary | null {
-  return useSyncExternalStore(
-    (l) => {
-      listeners.add(l);
-      return () => listeners.delete(l);
-    },
-    () => picked,
-  );
+const subscribe = (l: () => void) => {
+  listeners.add(l);
+  return () => listeners.delete(l);
+};
+
+/** The event waiting to be shared into this group, if any. */
+export function useEventPick(groupId: string): D1EventSummary | null {
+  return useSyncExternalStore(subscribe, () => (picked?.groupId === groupId ? picked.event : null));
 }

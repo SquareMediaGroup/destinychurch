@@ -7,7 +7,7 @@ import { withErrorReporting } from "@/lib/sentry";
 import { useEffect } from "react";
 import { liquidGlass } from "@/components/GlassSurface";
 import { Platform, StyleSheet, View } from "react-native";
-import { Stack, router } from "expo-router";
+import { Stack, router, useSegments } from "expo-router";
 import * as Notifications from "expo-notifications";
 import { StatusBar } from "expo-status-bar";
 import { SafeAreaProvider } from "react-native-safe-area-context";
@@ -15,28 +15,73 @@ import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client
 import { UpdateScreen } from "@/components/UpdateScreen";
 import { useAppGate } from "@/lib/appGate";
 import { groupIdFrom } from "@/lib/push";
+import { currentOpenGroup } from "@/lib/queries";
 import { persistOptions, queryClient } from "@/lib/queryClient";
 import { SwitchBanner } from "@/components/SwitchBanner";
 import { appearance } from "@/state/appearance";
 import { useShakeToReportListener } from "@/lib/useShakeToReport";
-import { AccessGuard, SessionProvider, useSession } from "@/state/session";
+import { notificationTap, usePendingNotificationGroup } from "@/state/notificationTap";
+import { AccessGuard, SessionProvider, isInApp, useSession } from "@/state/session";
 import { useTheme } from "@/theme/tokens";
 
-/** Tapping a "New message" notification opens that group. */
+/**
+ * Tapping a "New message" notification opens that group. The tap is only
+ * noted here (OpenFromNotification opens it once the app is ready). A tap that
+ * launched the app can arrive both as the last response and through the
+ * listener, so each notification is handled once, and the last response is
+ * cleared so a later remount doesn't open it again.
+ */
 function useNotificationTaps() {
   useEffect(() => {
-    const open = (r: Notifications.NotificationResponse | null) => {
-      const id = r ? groupIdFrom(r) : null;
-      if (id) router.push(`/group/${id}`);
+    const handled = new Set<string>();
+    const take = (r: Notifications.NotificationResponse | null) => {
+      if (!r) return;
+      const key = r.notification.request.identifier;
+      if (handled.has(key)) return;
+      handled.add(key);
+      const id = groupIdFrom(r);
+      if (id) notificationTap.set(id);
+      try {
+        Notifications.clearLastNotificationResponse();
+      } catch {
+        // Not available (e.g. web).
+      }
     };
     try {
-      open(Notifications.getLastNotificationResponse());
+      take(Notifications.getLastNotificationResponse());
     } catch {
       // Not available (e.g. web). Nothing to open.
     }
-    const sub = Notifications.addNotificationResponseReceivedListener(open);
+    const sub = Notifications.addNotificationResponseReceivedListener(take);
     return () => sub.remove();
   }, []);
+}
+
+/**
+ * Opens the chat from a tapped notification once someone is signed in, has
+ * accepted the notices and is past the launch screen, so the chat lands on top
+ * of the chat list rather than under it. Already looking at that chat: stays put.
+ */
+function OpenFromNotification() {
+  const { ready, session, me } = useSession();
+  const pending = usePendingNotificationGroup();
+  const segments = useSegments();
+  const inApp = isInApp(segments[0] as string | undefined);
+  const active = ready && me?.onboarding === "active" && me.outstandingConsents.length === 0;
+
+  useEffect(() => {
+    if (!pending) return;
+    // Signed out: it was for someone who isn't here any more.
+    if (ready && !session) {
+      notificationTap.clear();
+      return;
+    }
+    if (!active || !inApp) return;
+    notificationTap.clear();
+    if (currentOpenGroup() !== pending) router.push(`/group/${pending}`);
+  }, [pending, ready, session, active, inApp]);
+
+  return null;
 }
 
 /**
@@ -75,6 +120,7 @@ function App() {
     <SessionProvider>
       <StatusBar style="auto" />
       <AccessGuard />
+      <OpenFromNotification />
       <ShakeToReport />
       <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: t.bg } }}>
         <Stack.Screen name="(tabs)" options={{ animation: "fade" }} />

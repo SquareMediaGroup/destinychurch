@@ -3,7 +3,9 @@
 // joined, never deleted messages).
 //
 // Two homes: the Search tab ("tab") and the full-screen search opened from
-// inside a chat ("modal", with Cancel and the keyboard already up).
+// inside a chat ("modal", with Cancel and the keyboard already up). Opened
+// from a chat it searches that chat first ("In <group>"), with "All chats"
+// one tap away. Tapping a message opens its chat scrolled to it.
 
 import { useEffect, useMemo, useState } from "react";
 import { ActivityIndicator, Pressable, SectionList, StyleSheet, Text, View } from "react-native";
@@ -15,6 +17,7 @@ import { Avatar, EmptyState, Field, LargeTitle, TextButton } from "@/components/
 import { api } from "@/lib/api";
 import { listTime } from "@/lib/format";
 import { prefetchGroup } from "@/lib/queries";
+import { jumpTo } from "@/state/jump";
 import { errorMessage, useSession } from "@/state/session";
 import { ORANGE, useTheme } from "@/theme/tokens";
 
@@ -39,46 +42,65 @@ function snippet(body: string, query: string): { pre: string; hit: string; post:
   return { pre: (start > 0 ? "…" : "") + body.slice(start, at), hit: body.slice(at, at + len), post: body.slice(at + len) };
 }
 
-export function SearchView({ mode }: { mode: "tab" | "modal" }) {
+/** `groupId`: the chat this search was opened from (modal only). */
+export function SearchView({ mode, groupId }: { mode: "tab" | "modal"; groupId?: string }) {
   const isTab = mode === "tab";
-  // From the tab, results open on top of it; from a chat, they replace the search.
-  const open = (href: `/group/${string}`) => (isTab ? router.push(href) : router.replace(href));
   const t = useTheme();
   const insets = useSafeAreaInsets();
   const { communities } = useSession();
   const [query, setQuery] = useState("");
-  const [result, setResult] = useState<{ q: string; messages: D1MessageHit[]; error: string | null } | null>(null);
+  const [allChats, setAllChats] = useState(false);
+  const scope = groupId && !allChats ? groupId : undefined;
+  const scopeName = useMemo(() => {
+    for (const c of communities ?? []) for (const g of c.groups) if (g.id === groupId) return g.name;
+    return null;
+  }, [communities, groupId]);
+  const [result, setResult] = useState<{ q: string; scope?: string; messages: D1MessageHit[]; error: string | null } | null>(null);
   const q = query.trim();
   // The last results stay on screen while the next search runs.
   const searching = q.length >= MIN_SEARCH_CHARS;
   const messages = searching ? (result?.messages ?? []) : [];
-  const loading = searching && result?.q !== q;
-  const error = searching && result?.q === q ? result.error : null;
+  const current = result?.q === q && result?.scope === scope;
+  const loading = searching && !current;
+  const error = searching && current ? result.error : null;
+
+  // From the tab, results open on top of it. From a chat, its own messages go
+  // back to it (past Group info, if that's where search was opened); other
+  // chats replace the search.
+  const open = (id: string) => {
+    if (isTab) router.push(`/group/${id}`);
+    else if (id === groupId) router.dismissTo(`/group/${id}`);
+    else router.replace(`/group/${id}`);
+  };
+  const openMessage = (hit: D1MessageHit) => {
+    jumpTo.set(hit.groupId, hit.id);
+    open(hit.groupId);
+  };
 
   const groups = useMemo(() => {
     const lq = q.toLowerCase();
-    if (!lq) return [];
+    if (!lq || scope) return [];
     const out: GroupHit[] = [];
     for (const c of communities ?? [])
       for (const g of c.groups) if ([g.name, g.department ?? "", c.name].some((s) => s.toLowerCase().includes(lq))) out.push({ g, c });
     return out;
-  }, [communities, q]);
+  }, [communities, q, scope]);
 
   // Debounced message search.
   useEffect(() => {
     if (q.length < MIN_SEARCH_CHARS) return;
     let cancelled = false;
     const id = setTimeout(() => {
-      api.searchMessages(q).then(
-        (r) => !cancelled && setResult({ q, messages: r, error: null }),
-        (err) => !cancelled && setResult((prev) => ({ q, messages: prev?.messages ?? [], error: errorMessage(err) })),
+      api.searchMessages(q, scope).then(
+        (r) => !cancelled && setResult({ q, scope, messages: r, error: null }),
+        (err) => !cancelled && setResult((prev) => ({ q, scope, messages: prev?.messages ?? [], error: errorMessage(err) })),
       );
     }, 300);
     return () => {
       cancelled = true;
       clearTimeout(id);
     };
-  }, [q]);
+  }, [q, scope]);
 
   const sections = [
     ...(groups.length ? [{ title: "Groups", data: groups.map((hit): Item => ({ kind: "group", hit })) }] : []),
@@ -92,7 +114,7 @@ export function SearchView({ mode }: { mode: "tab" | "modal" }) {
         <Field
           value={query}
           onChangeText={setQuery}
-          placeholder="Search messages and groups"
+          placeholder={scope && scopeName ? `Search in ${scopeName}` : "Search messages and groups"}
           autoFocus={!isTab}
           autoCorrect={false}
           returnKeyType="search"
@@ -111,6 +133,27 @@ export function SearchView({ mode }: { mode: "tab" | "modal" }) {
         />
         {isTab ? null : <TextButton label="Cancel" onPress={() => router.back()} />}
       </View>
+
+      {groupId && scopeName ? (
+        <View style={{ flexDirection: "row", gap: 8, paddingHorizontal: 16, paddingTop: 12 }}>
+          {[
+            { label: `In ${scopeName}`, on: !allChats, set: false },
+            { label: "All chats", on: allChats, set: true },
+          ].map((chip) => (
+            <Pressable
+              key={chip.label}
+              accessibilityRole="button"
+              accessibilityState={{ selected: chip.on }}
+              onPress={() => setAllChats(chip.set)}
+              style={{ maxWidth: "60%", minHeight: 32, borderRadius: 16, paddingHorizontal: 14, justifyContent: "center", backgroundColor: chip.on ? t.text : t.fill }}
+            >
+              <Text numberOfLines={1} maxFontSizeMultiplier={1.4} style={{ fontSize: 14, fontWeight: "600", color: chip.on ? t.bg : t.text }}>
+                {chip.label}
+              </Text>
+            </Pressable>
+          ))}
+        </View>
+      ) : null}
 
       <SectionList
         sections={sections}
@@ -137,7 +180,7 @@ export function SearchView({ mode }: { mode: "tab" | "modal" }) {
           if (item.kind === "group") {
             const { g, c } = item.hit;
             return (
-              <Pressable onPressIn={() => prefetchGroup(g.id)} onPress={() => open(`/group/${g.id}`)} style={({ pressed }) => ({ flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 8, paddingHorizontal: 20, backgroundColor: pressed ? t.fill : "transparent" })}>
+              <Pressable onPressIn={() => prefetchGroup(g.id)} onPress={() => open(g.id)} style={({ pressed }) => ({ flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 8, paddingHorizontal: 20, backgroundColor: pressed ? t.fill : "transparent" })}>
                 <Avatar name={g.name} size={40} announcements={g.kind === "announcements"} uri={g.iconUrl} />
                 <View style={{ flex: 1, gap: 1 }}>
                   <Text style={{ fontSize: 17, fontWeight: "600", color: t.text }}>{g.name}</Text>
@@ -150,14 +193,15 @@ export function SearchView({ mode }: { mode: "tab" | "modal" }) {
           const who = m.mine ? "You" : m.sender?.displayName ?? "Former member";
           const s = snippet(m.body, q);
           return (
-            <Pressable onPress={() => open(`/group/${m.groupId}`)} style={({ pressed }) => ({ flexDirection: "row", alignItems: "flex-start", gap: 12, paddingLeft: 20, backgroundColor: pressed ? t.fill : "transparent" })}>
+            <Pressable onPressIn={() => prefetchGroup(m.groupId)} onPress={() => openMessage(m)} style={({ pressed }) => ({ flexDirection: "row", alignItems: "flex-start", gap: 12, paddingLeft: 20, backgroundColor: pressed ? t.fill : "transparent" })}>
               <View style={{ marginTop: 10 }}>
                 <Avatar name={m.sender?.displayName ?? "Former member"} size={40} />
               </View>
               <View style={{ flex: 1, minWidth: 0, gap: 2, paddingTop: 10, paddingBottom: 12, paddingRight: 20, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: t.sep }}>
                 <View style={{ flexDirection: "row", alignItems: "baseline", gap: 8 }}>
                   <Text numberOfLines={1} style={{ flex: 1, fontSize: 16, fontWeight: "600", color: t.text }}>
-                    {who} <Text style={{ fontWeight: "400", color: t.muted }}>in {m.groupName}</Text>
+                    {who}
+                    {scope ? null : <Text style={{ fontWeight: "400", color: t.muted }}> in {m.groupName}</Text>}
                   </Text>
                   <Text style={{ fontSize: 14, color: t.subtle }}>{listTime(m.createdAt)}</Text>
                 </View>

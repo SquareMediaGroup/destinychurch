@@ -6,6 +6,7 @@ import type { D1CommunitySummary, D1GroupSummary } from "@destiny/shared";
 import { Icon } from "@/components/Icon";
 import { Avatar, CountBadge } from "@/components/ui";
 import { listTime } from "@/lib/format";
+import { useChatDraft } from "@/state/drafts";
 import { useTheme } from "@/theme/tokens";
 
 /** Announcements first, then the rest by latest activity. */
@@ -35,13 +36,15 @@ export function CardGroupRow({ group, onPress, onPressIn, ...linkProps }: { grou
   const unread = group.unreadCount > 0;
   const frozen = group.state === "frozen";
   const { who, line, italic } = previewParts(group);
+  // Something half-written here takes the preview line's place, as in WhatsApp.
+  const draft = useChatDraft(group.id).trim().split("\n", 1)[0];
   const label = [
     group.name,
     group.kind === "announcements" ? "announcements" : null,
     frozen ? "paused" : null,
     group.muted ? "muted" : null,
     unread ? `${group.unreadCount} unread` : null,
-    `${who}${line}`,
+    draft ? `Draft: ${draft}` : `${who}${line}`,
   ]
     .filter(Boolean)
     .join(", ");
@@ -66,8 +69,17 @@ export function CardGroupRow({ group, onPress, onPressIn, ...linkProps }: { grou
         <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
           <Text numberOfLines={1} style={{ flex: 1, fontSize: 14, lineHeight: 19, color: t.muted }}>
             {frozen ? <Text style={{ color: t.text, fontWeight: "600" }}>Paused · </Text> : null}
-            {who}
-            <Text style={{ fontStyle: italic ? "italic" : "normal" }}>{line}</Text>
+            {draft ? (
+              <>
+                <Text style={{ color: t.tint, fontWeight: "600" }}>Draft: </Text>
+                {draft}
+              </>
+            ) : (
+              <>
+                {who}
+                <Text style={{ fontStyle: italic ? "italic" : "normal" }}>{line}</Text>
+              </>
+            )}
           </Text>
           {group.muted ? <Icon name="bellOff" size={15} color={t.subtle} /> : null}
           {unread ? <CountBadge count={group.unreadCount} small /> : null}

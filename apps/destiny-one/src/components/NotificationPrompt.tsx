@@ -1,8 +1,11 @@
 // A10 Notifications explainer — asked in context, the first time someone
-// opens a group. Never on first launch. Asked once per device.
+// opens a group. Never on first launch. Asked once per device, and only while
+// the system can still ask: not when notifications are already on (say, from
+// Profile → Notifications), nor once they've been refused for good.
 
 import { useEffect, useState } from "react";
 import { Modal, Pressable, StyleSheet, Text, View } from "react-native";
+import * as Notifications from "expo-notifications";
 import * as SecureStore from "expo-secure-store";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Icon } from "@/components/Icon";
@@ -21,9 +24,9 @@ export function NotificationPrompt({ enabled }: { enabled: boolean }) {
   useEffect(() => {
     if (!enabled) return;
     let timer: ReturnType<typeof setTimeout> | undefined;
-    SecureStore.getItemAsync(ASKED_KEY)
-      .then((asked) => {
-        if (!asked) timer = setTimeout(() => setVisible(true), 900);
+    Promise.all([SecureStore.getItemAsync(ASKED_KEY), Notifications.getPermissionsAsync()])
+      .then(([asked, permission]) => {
+        if (!asked && !permission.granted && permission.canAskAgain) timer = setTimeout(() => setVisible(true), 900);
       })
       .catch(() => undefined);
     return () => clearTimeout(timer);

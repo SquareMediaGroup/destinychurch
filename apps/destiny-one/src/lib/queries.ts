@@ -13,7 +13,7 @@
 // the background, only if something on screen is using it.
 
 import { useQuery } from "@tanstack/react-query";
-import type { D1CommunitySummary, D1GroupDetail, D1GroupSummary, D1Me, D1Message, D1RealtimeEvent } from "@destiny/shared";
+import { contentPreview, type D1CommunitySummary, type D1GroupDetail, type D1GroupSummary, type D1Me, type D1Message, type D1RealtimeEvent } from "@destiny/shared";
 import { api } from "@/lib/api";
 import { queryClient } from "@/lib/queryClient";
 
@@ -133,6 +133,10 @@ function previewOf(body: string | null): string | null {
 // ── The chat that's on screen ───────────────────────────────────────────────
 
 let openGroupId: string | null = null;
+/** The chat on screen right now, if any. */
+export function currentOpenGroup(): string | null {
+  return openGroupId;
+}
 /** The chat screen calls this on focus / blur, so messages there don't count as unread. */
 export function setOpenGroup(groupId: string | null) {
   openGroupId = groupId;
@@ -160,7 +164,7 @@ export function applyEvent(e: D1RealtimeEvent, meId: string) {
         return {
           ...g,
           unreadCount: mine || openGroupId === p.groupId ? g.unreadCount : g.unreadCount + 1,
-          lastMessage: { id: p.id, senderName: p.sender.displayName, preview: previewOf(p.body), hasAttachment: !!p.attachmentId, deleted: false, createdAt: p.createdAt },
+          lastMessage: { id: p.id, senderName: p.sender.displayName, preview: previewOf(p.body) ?? previewOf(contentPreview(p.content)), hasAttachment: !!p.attachmentId, deleted: false, createdAt: p.createdAt },
         };
       });
       return;
@@ -205,6 +209,11 @@ export function applyEvent(e: D1RealtimeEvent, meId: string) {
     }
     case "members_changed":
       void queryClient.invalidateQueries({ queryKey: keys.group(e.payload.groupId) });
+      return;
+    case "group_updated":
+      // Renamed, re-described or a new icon (signed icon links only come with a fetch).
+      void queryClient.invalidateQueries({ queryKey: keys.group(e.payload.groupId) });
+      invalidateCommunities();
       return;
     case "group_left":
       removeGroupLocally(e.payload.groupId);

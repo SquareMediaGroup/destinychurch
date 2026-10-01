@@ -35,7 +35,53 @@ export default function Profile() {
     }
   }
 
-  async function changeAvatar() {
+  /** With a picture set: choose a new one or remove it. Without: straight to the photo picker. */
+  function changeAvatar() {
+    if (!me?.avatarUrl) {
+      void pickAvatar();
+      return;
+    }
+    Alert.alert("Profile picture", undefined, [
+      { text: "Choose photo", onPress: () => void pickAvatar() },
+      { text: "Remove picture", style: "destructive", onPress: () => void removeAvatar() },
+      { text: "Cancel", style: "cancel" },
+    ]);
+  }
+
+  async function removeAvatar() {
+    setAvatarBusy(true);
+    try {
+      setMe(await api.removeAvatar());
+    } catch (err) {
+      Alert.alert("Couldn't remove your picture", errorMessage(err));
+    } finally {
+      setAvatarBusy(false);
+    }
+  }
+
+  function confirmSignOut() {
+    Alert.alert(
+      "Sign out?",
+      others > 0 ? "You'll switch to your other account on this phone." : "You can sign back in with your email at any time.",
+      [
+        { text: "Cancel", style: "cancel" },
+        { text: "Sign out", style: "destructive", onPress: () => void doSignOut() },
+      ],
+    );
+  }
+
+  async function doSignOut() {
+    setSigningOut(true);
+    try {
+      await signOut();
+    } finally {
+      setSigningOut(false);
+    }
+    // Another account signed in on this phone takes over; otherwise, the welcome screen.
+    router.replace("/");
+  }
+
+  async function pickAvatar() {
     // No permission request and no allowsEditing: both slow the picker down. The square crop happens in cleanImage.
     const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ["images"], allowsMultipleSelection: false });
     if (result.canceled || !result.assets[0]) return;
@@ -59,7 +105,7 @@ export default function Profile() {
       <LargeTitle style={{ paddingHorizontal: 4 }}>Profile</LargeTitle>
 
       <Card style={{ flexDirection: "row", alignItems: "center", gap: 14, padding: 16 }}>
-        <Pressable onPress={changeAvatar} disabled={avatarBusy} style={{ opacity: avatarBusy ? 0.5 : 1 }}>
+        <Pressable onPress={changeAvatar} disabled={avatarBusy} accessibilityRole="button" accessibilityLabel={me?.avatarUrl ? "Change or remove your picture" : "Add a picture"} style={{ opacity: avatarBusy ? 0.5 : 1 }}>
           <Avatar name={me?.displayName ?? ""} uri={me?.avatarUrl} size={60} />
           {avatarBusy && (
             <View style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, alignItems: "center", justifyContent: "center" }}>
@@ -73,8 +119,8 @@ export default function Profile() {
             {role}
             {email ? ` · ${email}` : ""}
           </Text>
-          <Pressable onPress={changeAvatar} disabled={avatarBusy}>
-            <Text style={{ fontSize: 14, fontWeight: "600", color: ORANGE, marginTop: 2 }}>Change picture</Text>
+          <Pressable onPress={changeAvatar} disabled={avatarBusy} accessibilityRole="button" hitSlop={6}>
+            <Text style={{ fontSize: 14, fontWeight: "600", color: ORANGE, marginTop: 2 }}>{me?.avatarUrl ? "Change picture" : "Add picture"}</Text>
           </Pressable>
         </View>
       </Card>
@@ -124,16 +170,7 @@ export default function Profile() {
         <SettingsRow label="Delete my account" onPress={() => router.push("/delete-account")} />
       </Card>
 
-      <CardButton
-        label="Sign out"
-        busy={signingOut}
-        onPress={async () => {
-          setSigningOut(true);
-          await signOut();
-          // Another account signed in on this phone takes over; otherwise, the welcome screen.
-          router.replace("/");
-        }}
-      />
+      <CardButton label="Sign out" busy={signingOut} onPress={confirmSignOut} />
       <Text style={{ textAlign: "center", fontSize: 13, color: t.subtle }}>Destiny One {Constants.expoConfig?.version ?? ""}</Text>
     </ScrollView>
   );

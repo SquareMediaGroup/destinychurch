@@ -37,12 +37,25 @@ export async function requestEmailCode(email: string): Promise<void> {
 }
 
 export async function verifyEmailCode(email: string, code: string): Promise<D1Me> {
+  await checkEmailCode(email, code);
+  return finishSignIn();
+}
+
+/** Step 1 of verifyEmailCode: the code itself. Once this succeeds the code is used up. */
+export async function checkEmailCode(email: string, code: string): Promise<void> {
   const { error } = await signInClient().auth.verifyOtp({
     email: email.trim().toLowerCase(),
     token: code.trim(),
     type: "email",
   });
   if (error) throw error;
+}
+
+/**
+ * Step 2: tell the server who signed in. If this fails (offline, say) after
+ * the code was accepted, call it again on its own: the code can't be reused.
+ */
+export function finishSignIn(): Promise<D1Me> {
   return signInApi.link();
 }
 

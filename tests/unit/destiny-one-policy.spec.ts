@@ -2,6 +2,7 @@ import { test, expect } from "@playwright/test";
 import {
   toPrefixQuery,
   appGate,
+  contentPreview,
   PUSH_PREVIEW_CHARS,
   pushPreviewText,
   REQUIRED_CONSENTS,
@@ -167,6 +168,23 @@ test.describe("pushPreviewText", () => {
   test("attachment-only messages", () => {
     expect(pushPreviewText({ senderName: "Sam", body: null, attachmentMime: "image/jpeg" })).toBe("Sam: Photo");
     expect(pushPreviewText({ senderName: "Sam", body: "  ", attachmentMime: "application/pdf" })).toBe("Sam: File");
+  });
+});
+
+test.describe("contentPreview", () => {
+  const poll = { kind: "poll" as const, poll: { id: "p1", question: "Pizza or curry?", options: [{ id: "o1", label: "Pizza" }, { id: "o2", label: "Curry" }], allowMultiple: false, totalVoters: 0, votes: [], myOptionIds: [] } };
+  const event = { kind: "event" as const, event: { seriesKey: "s", slug: "youth-night", name: "Youth Night", startsAt: "2026-10-09T18:30:00Z", location: null, imageUrl: null, webUrl: "https://example.com" } };
+
+  test("a poll reads as its question, an event as its name", () => {
+    expect(contentPreview(poll)).toBe("Poll: Pizza or curry?");
+    expect(contentPreview(event)).toBe("Event: Youth Night");
+  });
+  test("nothing to show for an ordinary message", () => {
+    expect(contentPreview(null)).toBeNull();
+    expect(contentPreview(undefined)).toBeNull();
+  });
+  test("a poll's notification says what it's about rather than 'New message'", () => {
+    expect(pushPreviewText({ senderName: "Sam", body: contentPreview(poll), attachmentMime: null })).toBe("Sam: Poll: Pizza or curry?");
   });
 });
 

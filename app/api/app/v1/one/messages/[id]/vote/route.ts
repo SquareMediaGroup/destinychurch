@@ -15,7 +15,7 @@ export const dynamic = "force-dynamic";
 export const POST = oneRoute<IdParams>(async (request, { params }) => {
   const caller = await requireMember(request);
   const id = requireMessageId((await params).id);
-  limit("vote", caller.member.id, 60);
+  await limit("vote", caller.member.id, 60);
   const { optionIds } = await readBody(request, voteSchema);
 
   const { error } = await createServiceClient().rpc("d1_vote", {

@@ -9,7 +9,7 @@
 
 import { createServiceClient } from "@/utils/supabase/service";
 import { AVATAR_BUCKET, requireMember } from "@/lib/destinyOne/auth.server";
-import { getGroup, requireGroupMembership } from "@/lib/destinyOne/chat.server";
+import { announceGroupUpdated, getGroup, requireGroupMembership } from "@/lib/destinyOne/chat.server";
 import { OneError, fromDbError, limit, oneJson, oneRoute, requireUuid, type IdParams } from "@/lib/destinyOne/http";
 
 export const dynamic = "force-dynamic";
@@ -70,6 +70,7 @@ export const POST = oneRoute<IdParams>(async (request, { params }) => {
   // Best-effort: a failure leaves an orphaned file, not a broken group.
   if (previous) await supabase.storage.from(AVATAR_BUCKET).remove([previous]);
 
+  await announceGroupUpdated(id);
   return oneJson(await getGroup(caller, id));
 });
 
@@ -84,6 +85,7 @@ export const DELETE = oneRoute<IdParams>(async (request, { params }) => {
       .eq("id", id);
     if (error) throw fromDbError(error);
     await supabase.storage.from(AVATAR_BUCKET).remove([previous]);
+    await announceGroupUpdated(id);
   }
   return oneJson(await getGroup(caller, id));
 });

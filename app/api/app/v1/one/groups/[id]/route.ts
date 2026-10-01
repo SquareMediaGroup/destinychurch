@@ -1,6 +1,6 @@
 import { createServiceClient } from "@/utils/supabase/service";
 import { requireMember } from "@/lib/destinyOne/auth.server";
-import { canManageGroup, getGroup, requireGroupMembership } from "@/lib/destinyOne/chat.server";
+import { announceGroupUpdated, canManageGroup, getGroup, requireGroupMembership } from "@/lib/destinyOne/chat.server";
 import { OneError, fromDbError, oneJson, oneRoute, readBody, requireUuid, type IdParams } from "@/lib/destinyOne/http";
 import { updateGroupSchema } from "@/lib/destinyOne/schemas";
 
@@ -52,5 +52,6 @@ export const PATCH = oneRoute<IdParams>(async (request, { params }) => {
     });
     return oneJson({ archived: true as const });
   }
+  await announceGroupUpdated(id);
   return oneJson(await getGroup(caller, id));
 });

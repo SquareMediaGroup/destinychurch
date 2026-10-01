@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { after } from "next/server";
-import { canPost, type D1MessageContent, type D1PollDraft } from "@destiny/shared";
+import { canPost, contentPreview, type D1MessageContent, type D1PollDraft } from "@destiny/shared";
 import { createServiceClient } from "@/utils/supabase/service";
 import { requireMember } from "@/lib/destinyOne/auth.server";
 import { getMessage, listMessages, requireGroupMembership } from "@/lib/destinyOne/chat.server";
@@ -84,7 +84,7 @@ export const POST = oneRoute<IdParams>(async (request, { params }) => {
   after(() =>
     pushNewMessage(id, caller.member.id, {
       senderName: caller.member.display_name,
-      body: input.body ?? (content?.kind === "poll" ? `Poll: ${content.poll.question}` : content?.kind === "event" ? `Event: ${content.event.name}` : null),
+      body: input.body ?? contentPreview(content),
       attachmentMime: message.attachment?.mimeType ?? null,
     }),
   );

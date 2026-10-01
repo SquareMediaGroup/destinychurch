@@ -239,8 +239,8 @@ export function createDestinyOneClient({ baseUrl, getAccessToken, fetchImpl }: D
     requestUpload: (groupId: string, input: { mimeType: string; sizeBytes: number }) =>
       call<D1UploadTicket>("POST", `/groups/${groupId}/attachments`, input),
 
-    /** Search your messages (groups you're in, since you joined; never deleted ones). */
-    searchMessages: (query: string) => call<D1MessageHit[]>("GET", `/search/messages${q({ q: query })}`),
+    /** Search your messages (groups you're in, since you joined; never deleted ones). Pass `groupId` to search one group. */
+    searchMessages: (query: string, groupId?: string) => call<D1MessageHit[]>("GET", `/search/messages${q({ q: query, groupId })}`),
 
     /** Upcoming ChurchSuite events, for the Event attach picker. */
     events: () => call<D1EventSummary[]>("GET", "/events"),

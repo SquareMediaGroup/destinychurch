@@ -3,7 +3,8 @@ import { after } from "next/server";
 import { canPost, contentPreview, type D1MessageContent, type D1PollDraft } from "@destiny/shared";
 import { createServiceClient } from "@/utils/supabase/service";
 import { requireMember } from "@/lib/destinyOne/auth.server";
-import { getMessage, listMessages, requireGroupMembership } from "@/lib/destinyOne/chat.server";
+import { broadcastNewMessage, getMessage, listMessages, requireGroupMembership } from "@/lib/destinyOne/chat.server";
+import { messageTerms, sealBody, sealContent } from "@/lib/destinyOne/crypto.server";
 import { buildEventSnapshot } from "@/lib/destinyOne/events.server";
 import { pushNewMessage } from "@/lib/destinyOne/push.server";
 import { OneError, fromDbError, limit, oneJson, oneRoute, readBody, requireUuid, type IdParams } from "@/lib/destinyOne/http";
@@ -29,9 +30,9 @@ function buildPollContent(draft: D1PollDraft): D1MessageContent {
 //        you joined. Deleted messages come back without their content.
 // POST /api/app/v1/one/groups/[id]/messages  { body?, replyTo?, attachmentId? }
 //        Send. The database refuses frozen groups, non-members, and
-//        non-admins in Announcements. Everyone else in the group receives it
-//        on the d1-group:<id> Realtime topic; a content-free push goes out
-//        afterwards.
+//        non-admins in Announcements. The text is stored sealed (encrypted at
+//        rest). Everyone in the group receives it on the d1-group:<id>
+//        Realtime topic, then a push goes out.
 
 export const dynamic = "force-dynamic";
 
@@ -70,23 +71,30 @@ export const POST = oneRoute<IdParams>(async (request, { params }) => {
       ? await buildEventSnapshot(input.event)
       : null;
 
+  // Text is sealed here, before it reaches the database (crypto.server.ts),
+  // with the search terms for it stored alongside in the same transaction.
+  const body = input.body?.trim() || null;
   const { data, error } = await createServiceClient().rpc("d1_post_message", {
     p_actor: caller.member.id,
     p_group: id,
-    p_body: input.body ?? null,
+    p_body: sealBody(body, id),
     p_reply_to: input.replyTo ?? null,
     p_attachment: input.attachmentId ?? null,
-    p_content: content,
+    p_content: sealContent(content, id),
+    p_terms: messageTerms(body, id),
   });
   if (error) throw fromDbError(error);
 
   const message = await getMessage(caller, data as number);
   after(() =>
-    pushNewMessage(id, caller.member.id, {
-      senderName: caller.member.display_name,
-      body: input.body ?? contentPreview(content),
-      attachmentMime: message.attachment?.mimeType ?? null,
-    }),
+    Promise.all([
+      broadcastNewMessage(message),
+      pushNewMessage(id, caller.member.id, {
+        senderName: caller.member.display_name,
+        body: body ?? contentPreview(content),
+        attachmentMime: message.attachment?.mimeType ?? null,
+      }),
+    ]),
   );
   return oneJson(message, 201);
 });

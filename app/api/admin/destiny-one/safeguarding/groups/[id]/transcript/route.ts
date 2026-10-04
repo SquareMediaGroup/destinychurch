@@ -1,9 +1,10 @@
 import { NextResponse } from "next/server";
-import { isAdult } from "@destiny/shared";
+import { isAdult, type D1MessageContent } from "@destiny/shared";
 import { createServiceClient } from "@/utils/supabase/service";
 import { recordAudit } from "@/lib/audit.server";
 import { requireTranscriptReader } from "@/lib/destinyOne/admin.server";
 import { MEDIA_BUCKET } from "@/lib/destinyOne/chat.server";
+import { openBody, openContent } from "@/lib/destinyOne/crypto.server";
 
 // GET /api/admin/destiny-one/safeguarding/groups/[id]/transcript?reason=…&from=…&to=…
 //
@@ -75,7 +76,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
     return NextResponse.json({ error: (members.error ?? messages.error)?.message }, { status: 500 });
   }
 
-  type Row = { attachment: { storage_path: string } | null };
+  type Row = { body: string | null; content: D1MessageContent | null; attachment: { storage_path: string } | null };
   const rows = (messages.data ?? []) as unknown as Row[];
   const paths = rows.map((m) => m.attachment?.storage_path).filter((p): p is string => Boolean(p));
   const signed = paths.length
@@ -110,6 +111,9 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
     }),
     messages: rows.map((m) => ({
       ...m,
+      // Encrypted at rest: opened here, for the audited reviewer only.
+      body: openBody(m.body, groupId),
+      content: openContent(m.content, groupId),
       attachment: m.attachment ? { ...m.attachment, url: urlFor.get(m.attachment.storage_path) ?? null } : null,
     })),
   });

@@ -364,6 +364,10 @@ destinychurch/
 │       │                                  # senior_leader (identical powers, different chat tag)
 │       ├── 20260927_04_destiny_one_invite_members.sql # Destiny One part 5: staff invites create the
 │       │                                   # member up front (groups before sign-in); d1_sign_in_status
+│       ├── 20261004_01_destiny_one_message_encryption.sql # Destiny One part 10: message text
+│       │                                   # encrypted at rest; blind search index (d1_message_terms)
+│       ├── 20261004_02_destiny_one_message_encryption_required.sql # part 10b: refuse plaintext
+│       │                                   # (apply after scripts/destiny-one/encrypt-messages.ts)
 │       ├── 20260927_03_destiny_one_message_search.sql # Destiny One part 4: message search
 │       ├── 20260927_02_destiny_one_leader_invites.sql # Destiny One part 3: leader invites
 │       │                                   # (needs_approval → access request; groups joined on approval)
@@ -1962,7 +1966,8 @@ department **sub-groups**. Migration: `supabase/migrations/20260926_01_destiny_o
 | `d1_communities`, `d1_community_members` | Communities and who is in them (`admin`/`member`) |
 | `d1_groups` | `kind` (`announcements`/`group`), `department`, `state` (`active`/`frozen`/`archived`), `freeze_kind` (`auto`/`manual`), `frozen_reason` |
 | `d1_group_members` | Membership incl. history (`left_at` kept, so a review can see who was present when), `last_read_message_id`, `muted_until` |
-| `d1_messages` | `body` ≤ 4000, `reply_to`, `attachment_id`, `content` (jsonb: a poll, or an event snapshot taken at send time), soft-delete `deleted_at`/`deleted_by`. Immutable except the delete stamp |
+| `d1_messages` | `body` (sealed ciphertext, see part 10; 4000 characters before sealing), `reply_to`, `attachment_id`, `content` (jsonb: a poll, whose question and option labels are sealed, or an event snapshot taken at send time), soft-delete `deleted_at`/`deleted_by`. Immutable except the delete stamp |
+| `d1_message_terms` | The blind search index (part 10): keyed hashes of every prefix of every word in a body, per group. No plaintext |
 | `d1_poll_votes` | One row per (poll message, member, option). Written only by `d1_vote()`, which enforces single choice and current membership and broadcasts `poll_vote` (with `groupId`) |
 | `d1_reactions`, `d1_attachments` | Reactions; files in the private `d1-chat-media` bucket (images/PDF, 20 MB) |
 | `d1_reports`, `d1_safeguarding_events` | The safeguarding queue |
@@ -2081,9 +2086,24 @@ retention period. Staff read it at `/admin/destiny-one/feedback`. Applied to the
 been applied there. Until then, every Destiny One report and group pause would have failed at its bell
 notification.
 
+**Part 10 — `20261004_01_destiny_one_message_encryption.sql` (+ `_02`): message text encrypted at rest.**
+See "Message encryption" under `lib/destinyOne/*` for the design and threat model. In the database:
+`d1_messages.search` (the tsvector) is dropped and search moves to `d1_message_terms` (group, term,
+message; deny-all RLS, service role only), matched by `d1_search_messages(actor, terms jsonb, limit)`
+with the same visibility rules as before. `d1_post_message` gains `p_terms text[]` and **no longer
+broadcasts**: `realtime.send` keeps every payload in `realtime.messages` for three days, which would
+have kept a readable copy, so the API broadcasts the opened message over Realtime's REST endpoint
+instead, which stores nothing (the stored copies are deleted). Length checks are widened for
+ciphertext (the API enforces 4000 / 1000). `d1_messages_immutable` allows exactly one change: a
+plaintext body to its sealed form, for the backfill. `_02` then adds `d1_messages_body_sealed`,
+`d1_messages_poll_sealed` and `d1_reports_reason_sealed`, so the database refuses plaintext from then
+on (and the backfill exception can never fire again).
+
 **Tested by:** `scripts/test-sql.sh` (`npm run test:sql`, and the "Database rules" CI job) — applies
 Supabase stubs + every Destiny One migration (parts 1–9, plus the profile-picture, min-build and
-group-icon migrations) to a throwaway local Postgres and runs `tests/sql/destiny-one.sql`.
+group-icon migrations) to a throwaway local Postgres and runs `tests/sql/destiny-one.sql`. A second
+suite, `destiny-one-encryption`, adds part 10 and runs `tests/sql/destiny-one-encryption.sql`
+(plaintext refused, search on terms, no realtime copy, privileges).
 
 **Used By:** `lib/destinyOne/*`, `app/api/app/v1/one/**`, `app/api/admin/destiny-one/**`,
 `app/api/cron/destiny-one-{sync,purge}`.
@@ -4293,7 +4313,7 @@ needs at least 2 verified adults.") pass through as `rule_violation` (422). Type
 | `messages/[id]/vote` | POST | `{ optionIds }` — your full vote set on a poll (empty clears it). 60 a minute |
 | `events` | GET | Upcoming ChurchSuite events for the Event picker in the attach sheet |
 | `groups/[id]/invites` | POST | Leaders: `{ email, name, adult, note? }` — invite someone new; they become an access request for staff to approve, then join the group |
-| `search/messages` | GET | `?q=` — full-text search of your messages: groups you are in, since you joined, never deleted; newest 30. `&groupId=` searches one group (search opened from a chat): same rules, applied in the route against the stored `search` tsvector, plus your blocks; not found if you aren't in it, nothing for an archived group |
+| `search/messages` | GET | `?q=` — search of your messages: groups you are in, since you joined, never deleted, never from people you've blocked; newest 30. Each word matches as a prefix, on the blind index (text is encrypted at rest, see "Message encryption"). `&groupId=` searches one group (search opened from a chat): same rules; not found if you aren't in it, nothing for an archived group |
 | `groups/[id]/read`, `/mute`, `/attachments` | POST | Read marker, mute, signed upload URL |
 | `groups/[id]/attachments?ids=` | GET | Fresh signed links (1 hour) for cached attachments whose links expired: only files in this group, sent since you joined, not deleted, not from someone you've blocked. Up to 60 ids |
 | `messages/[id]` | DELETE | Soft delete (content kept for review) |
@@ -6099,6 +6119,34 @@ and a ChurchSuite-only `resyncMember`.
   403, `P0002` → 404; anything else is logged and reported generically), `readBody` (zod), `limit`
   (per-member `lib/rateLimit.ts` wrapper).
 - `auth.server.ts` — `authenticate` (Bearer → Supabase user), `requireMember` (the three gates), `toMe`.
+- **Message encryption** — `sealing.ts` (pure, unit-tested in `tests/unit/destiny-one-sealing.spec.ts`)
+  and `crypto.server.ts` (loads the keys, knows which fields are sealed). Message bodies, poll
+  questions and option labels, and report reasons are sealed by the API before they reach Supabase and
+  opened on the way out, so a database dump, a backup or PITR snapshot, SQL access, or a leaked
+  service key on its own shows only ciphertext. **Not end-to-end encryption**: the API holds the key,
+  which is what keeps safeguarding review (transcripts, reports, takedowns), search and push previews
+  working. Anyone with Vercel env access, or code running in the API, can read everything; push
+  previews still pass through Expo and Apple in plain text. Attachments are not encrypted yet (private
+  bucket + signed links, as before).
+  - Format: `d1e:<keyId>:<iv>.<ciphertext+tag>` (base64url), AES-256-GCM, fresh 12-byte IV, AAD
+    `"<msg|report>:<groupId>"`, so a value only opens in its own group and as its own kind of thing.
+    `open` passes unsealed values through (only rows from before the backfill); one that won't open
+    is logged and shown as "This message couldn't be decrypted." rather than failing the whole page.
+  - Keys (env, all three required, no plaintext fallback): `D1_MSG_KEYS` (`v1:<base64 32 bytes>`,
+    comma-separated during a rotation), `D1_MSG_KEY_CURRENT`, `D1_SEARCH_KEY` (HMAC only). Production,
+    Preview and local dev must share the same values, because they share one Supabase project. **Losing
+    the keys loses every message**, so keep a copy in the password manager. Rotation: add `v2` to
+    `D1_MSG_KEYS`, set `D1_MSG_KEY_CURRENT=v2`; old values keep opening with `v1` until it is removed
+    (which needs a re-seal pass first).
+  - Search: a blind index. Each word's prefixes (1–24 characters) become an HMAC under a per-group key
+    derived from `D1_SEARCH_KEY`, stored in `d1_message_terms`; a query hashes each typed word the
+    same way, for each group searched, and a message must have them all. Prefix matching survives
+    ("pra" finds "prayer"); English stemming and stop words from the old tsvector do not. Bodies only,
+    as before.
+  - Live delivery: `broadcastNewMessage` in `chat.server.ts` sends the opened message on
+    `d1-group:<id>` through Realtime's REST broadcast (private), which does not store it.
+  - One-off backfill for rows from before: `scripts/destiny-one/encrypt-messages.ts` (`--dry-run`
+    first), then migration `20261004_02`.
 - `churchsuite.ts` (pure, unit-tested) — `toPerson`, the **data-minimisation allow-list**: a ChurchSuite
   record becomes `{ kind, id, displayName, email, adultOn, status }` and nothing else — no phone,
   address, medical notes or DOB ever leave it. Children-module records are always minors.
@@ -6812,6 +6860,14 @@ CHURCHSUITE_OAUTH_CLIENT_ID=
 CHURCHSUITE_OAUTH_CLIENT_SECRET=
 DESTINY_ONE_SECRET=
 D1_MESSAGE_RETENTION_DAYS=365
+#   D1_MSG_KEYS / D1_MSG_KEY_CURRENT / D1_SEARCH_KEY — REQUIRED: message encryption at rest
+#                                            (lib/destinyOne/crypto.server.ts). Generate each key with
+#                                            `openssl rand -base64 32`; D1_MSG_KEYS="v1:<key>",
+#                                            D1_MSG_KEY_CURRENT=v1. Same values in every environment
+#                                            that talks to the same Supabase project. Back them up.
+D1_MSG_KEYS=
+D1_MSG_KEY_CURRENT=
+D1_SEARCH_KEY=
 EXPO_ACCESS_TOKEN=
 D1_APP_STORE_URL=
 D1_PLAY_STORE_URL=
@@ -7253,9 +7309,9 @@ same database as the data rather than in a separate Synapse module.
   `MessageMenu.tsx` (press-and-hold menu drawn in React Native, WhatsApp-style: the message lifts over a dimmed chat, a bar of six quick reactions plus "+" for a full emoji grid sits above it, and a card of Reply / Copy / Report / Block / Delete sits below, both solid sheets in the app's colours rather than Liquid Glass; placed by the pure `lib/menuLayout.ts` so it always fits on screen, tested in `tests/unit/destiny-one-message-menu.spec.ts`. It replaced the SwiftUI context menu, whose hosted bubbles reported the wrong height and made messages and reactions overlap), `Composer.tsx`, `NotificationPrompt.tsx` (A10, asked once
   on first group open), `SafetyNotice.tsx`.
 - **Search** (`search` route): groups from the cached list, plus messages via `GET /search/messages`
-  (`d1_search_messages`: groups you're in, since you joined, never deleted; stored tsvector + GIN,
-  prefix query built by `toPrefixQuery` in `@destiny/shared`). Migration
-  `20260927_03_destiny_one_message_search.sql`. Opened from a chat (its search button, or the Search
+  (`d1_search_messages`: groups you're in, since you joined, never deleted; since part 10 a blind
+  index of hashed word prefixes, because message text is encrypted at rest). Migrations
+  `20260927_03_destiny_one_message_search.sql`, `20261004_01_destiny_one_message_encryption.sql`. Opened from a chat (its search button, or the Search
   tile in Group info) it searches that chat (`?groupId=`), with an "All chats" chip to widen it.
   Tapping a message opens its chat scrolled to that message, highlighted for a moment: the chat loads
   older pages until it's there (up to 10 pages of 40), and a message from the chat the search was

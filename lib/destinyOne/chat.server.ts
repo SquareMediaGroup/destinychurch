@@ -35,6 +35,7 @@ import {
 import { createServiceClient } from "@/utils/supabase/service";
 import { OneError, fromDbError } from "@/lib/destinyOne/http";
 import { avatarUrl, type Caller } from "@/lib/destinyOne/auth.server";
+import { openBody, openContent } from "@/lib/destinyOne/crypto.server";
 
 export const MEDIA_BUCKET = "d1-chat-media";
 const SIGNED_URL_TTL = 60 * 60;
@@ -88,7 +89,7 @@ function toSummary(row: OverviewRow): D1GroupSummary {
         : {
             id: row.last_id,
             senderName: row.last_sender,
-            preview: preview(row.last_body) ?? preview(contentPreview(row.last_content)),
+            preview: preview(openBody(row.last_body, row.group_id)) ?? preview(contentPreview(openContent(row.last_content, row.group_id))),
             hasAttachment: Boolean(row.last_has_attachment),
             deleted: Boolean(row.last_deleted),
             createdAt: row.last_created_at as string,
@@ -253,6 +254,39 @@ export async function announceGroupUpdated(groupId: string): Promise<void> {
   if (error) console.error("⚠️ Destiny One group_updated broadcast failed:", error.message);
 }
 
+/**
+ * Sends a new message to everyone in the group over Realtime's REST broadcast.
+ * Not d1_emit: a broadcast from the database is stored in realtime.messages
+ * for three days, and this payload carries the opened (plaintext) message.
+ * The REST path delivers it without writing it anywhere. Best-effort: anyone
+ * who misses it gets the message on their next catch-up.
+ */
+export async function broadcastNewMessage(message: D1Message): Promise<void> {
+  const url = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!url || !key) return;
+  const payload = {
+    id: message.id,
+    groupId: message.groupId,
+    sender: message.sender,
+    body: message.body,
+    replyTo: message.replyTo,
+    attachmentId: message.attachment?.id ?? null,
+    content: message.content,
+    createdAt: message.createdAt,
+  };
+  try {
+    const res = await fetch(`${url}/realtime/v1/api/broadcast`, {
+      method: "POST",
+      headers: { apikey: key, Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ messages: [{ topic: `d1-group:${message.groupId}`, event: "message", payload, private: true }] }),
+    });
+    if (!res.ok) console.error(`⚠️ Destiny One message broadcast failed: ${res.status} ${await res.text()}`);
+  } catch (err) {
+    console.error("⚠️ Destiny One message broadcast failed:", (err as Error).message);
+  }
+}
+
 /** The caller's live membership row, or not_found. Used before any group read or write. */
 export async function requireGroupMembership(caller: Caller, groupId: string) {
   const { data, error } = await createServiceClient()
@@ -342,7 +376,7 @@ async function shape(rows: MessageRow[], callerId: string): Promise<D1Message[]>
       id: r.id,
       groupId: r.group_id,
       sender: r.sender ? { id: r.sender.id, displayName: r.sender.display_name } : null,
-      body: deleted ? null : r.body,
+      body: deleted ? null : openBody(r.body, r.group_id),
       replyTo: r.reply_to,
       attachment:
         !deleted && r.attachment
@@ -353,7 +387,7 @@ async function shape(rows: MessageRow[], callerId: string): Promise<D1Message[]>
               url: urlFor.get(r.attachment.storage_path) ?? null,
             }
           : null,
-      content: !deleted && r.content ? livePollContent(r.content, r.id, callerId, votes ?? []) : null,
+      content: !deleted && r.content ? livePollContent(openContent(r.content, r.group_id)!, r.id, callerId, votes ?? []) : null,
       reactions: deleted ? [] : [...byEmoji].map(([emoji, v]) => ({ emoji, ...v })),
       createdAt: r.created_at,
       deleted,

@@ -3,6 +3,7 @@ import { isAdult } from "@destiny/shared";
 import { createServiceClient } from "@/utils/supabase/service";
 import { authenticate, avatarUrl, loadConsents, loadMemberByAuthUser } from "@/lib/destinyOne/auth.server";
 import { MEDIA_BUCKET } from "@/lib/destinyOne/chat.server";
+import { openBody, openReason } from "@/lib/destinyOne/crypto.server";
 import { OneError, limit, oneJson, oneRoute } from "@/lib/destinyOne/http";
 
 // GET /api/app/v1/one/me/export
@@ -64,7 +65,7 @@ export const GET = oneRoute(async (request) => {
       .eq("blocker_id", member.id),
     supabase
       .from("d1_reports")
-      .select("id, reason, created_at, status")
+      .select("id, group_id, reason, created_at, status")
       .eq("reporter_id", member.id),
     supabase
       .from("d1_feedback")
@@ -112,7 +113,7 @@ export const GET = oneRoute(async (request) => {
     messages: (messages.data ?? []).map((m) => ({
       id: m.id,
       groupId: m.group_id,
-      body: m.body,
+      body: openBody(m.body, m.group_id),
       createdAt: m.created_at,
       deletedAt: m.deleted_at,
     })),
@@ -135,7 +136,7 @@ export const GET = oneRoute(async (request) => {
     }),
     reports: (reports.data ?? []).map((r) => ({
       id: r.id,
-      reason: r.reason,
+      reason: openReason(r.reason, r.group_id) ?? "",
       createdAt: r.created_at,
       status: r.status,
     })),

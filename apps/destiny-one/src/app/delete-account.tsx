@@ -29,7 +29,8 @@ export default function DeleteAccount() {
     setError(null);
     try {
       await api.deleteAccount();
-      await signOut();
+      // The account is gone; tidying up this phone mustn't turn that into an error.
+      await signOut().catch(() => undefined);
       router.dismissAll();
       router.replace("/");
     } catch (err) {

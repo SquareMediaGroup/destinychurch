@@ -16,7 +16,7 @@ import { MessageMenu, type MessageMenuActions } from "@/components/MessageMenu";
 import { Appear, Pop, PressableScale, reduceMotion, springs } from "@/components/Motion";
 import { SwipeToReply } from "@/components/Swipe";
 import { Avatar, MemberTag, withAlpha } from "@/components/ui";
-import { clock, dayLabel, eventWhen, fileMeta, plural, sameDay } from "@/lib/format";
+import { clock, dayLabel, eventWhen, fileMeta, messageSummary, plural, sameDay } from "@/lib/format";
 import { haptic } from "@/lib/haptics";
 import type { Rect } from "@/lib/menuLayout";
 import type { LocalMessage } from "@/lib/useConversation";
@@ -150,7 +150,7 @@ export function MessageBubble({ row, replyTo, senderTag, senderIsGroupAdmin, can
   }
   const name = m.mine ? "You" : m.sender?.displayName ?? "Former member";
   const replyName = replyTo ? (replyTo.mine ? "You" : replyTo.sender?.displayName ?? "Former member") : "";
-  const replyText = replyTo ? (replyTo.deleted ? "Message deleted" : replyTo.body ?? "Attachment") : "";
+  const replyText = replyTo ? messageSummary(replyTo) : "";
 
   // Joined runs flatten the corner facing the sender; the last bubble gets a tail instead.
   const tail = !m.deleted && !row.joinBelow && (m.mine || row.showAvatar);
@@ -193,7 +193,7 @@ export function MessageBubble({ row, replyTo, senderTag, senderIsGroupAdmin, can
         ) : null}
         <Attachment m={m} onOpen={onOpenAttachment} />
         {m.content?.kind === "event" ? <EventCard content={m.content} mine={m.mine} onOpen={onOpenAttachment} /> : null}
-        {m.content?.kind === "poll" ? <PollCard content={m.content} mine={m.mine} onVote={onVotePoll} /> : null}
+        {m.content?.kind === "poll" ? <PollCard content={m.content} mine={m.mine} sending={m.id < 0} onVote={onVotePoll} /> : null}
         {m.body ? <Text style={{ fontSize: 17, lineHeight: 22, letterSpacing: -0.2, color: k.text }}>{m.body}</Text> : null}
       </View>
       {tail ? <Tail color={m.mine ? t.send : t.bubbleIn} mine={m.mine} /> : null}
@@ -355,13 +355,15 @@ function EventCard({ content, mine, onOpen }: { content: D1EventContent; mine: b
   );
 }
 
-function PollCard({ content, mine, onVote }: { content: D1PollContent; mine: boolean; onVote: (optionIds: string[]) => void }) {
+/** `sending`: not on the server yet, so there's nothing to vote on until it is. */
+function PollCard({ content, mine, sending, onVote }: { content: D1PollContent; mine: boolean; sending: boolean; onVote: (optionIds: string[]) => void }) {
   const t = useTheme();
   const k = tones(t, mine);
   const { poll } = content;
   const total = poll.totalVoters;
 
   function tap(optionId: string) {
+    if (sending) return;
     haptic.selection();
     const selected = poll.myOptionIds.includes(optionId);
     if (poll.allowMultiple) {
@@ -387,7 +389,9 @@ function PollCard({ content, mine, onVote }: { content: D1PollContent; mine: boo
             <PressableScale
               key={o.id}
               onPress={() => tap(o.id)}
+              disabled={sending}
               accessibilityRole="button"
+              accessibilityState={{ disabled: sending, selected: mineVote }}
               accessibilityLabel={`${o.label}, ${pct}%${mineVote ? ", your choice" : ""}`}
               scaleTo={0.97}
               style={{ borderRadius: 10, overflow: "hidden", backgroundColor: k.track }}

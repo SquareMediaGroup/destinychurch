@@ -3,7 +3,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { FlatList, Image, Pressable, Text, View } from "react-native";
-import { router } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import type { D1EventSummary } from "@destiny/shared";
 import { Icon } from "@/components/Icon";
@@ -17,6 +17,7 @@ import { useTheme } from "@/theme/tokens";
 export default function EventPicker() {
   const t = useTheme();
   const insets = useSafeAreaInsets();
+  const { id } = useLocalSearchParams<{ id: string }>();
   const [query, setQuery] = useState("");
   const [events, setEvents] = useState<D1EventSummary[] | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -38,7 +39,7 @@ export default function EventPicker() {
   }, [events, query]);
 
   function choose(e: D1EventSummary) {
-    eventPick.set(e);
+    eventPick.set(id, e);
     router.back();
   }
 

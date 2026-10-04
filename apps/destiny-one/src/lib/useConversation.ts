@@ -260,7 +260,8 @@ export function useConversation(groupId: string, me: D1Me | null, unreadAtOpen: 
   const vote = useCallback(
     async (messageId: number, optionIds: string[]) => {
       const msg = messages?.find((m) => m.id === messageId);
-      if (!msg || msg.content?.kind !== "poll") return;
+      // A poll still sending (negative id) isn't on the server yet: nothing to vote on.
+      if (!msg || messageId < 0 || msg.content?.kind !== "poll") return;
       const previous = msg.content;
       const apply = (poll: typeof previous.poll) =>
         updateMessages(groupId, (list) => list.map((m) => (m.id === messageId ? { ...m, content: { kind: "poll", poll } } : m)));

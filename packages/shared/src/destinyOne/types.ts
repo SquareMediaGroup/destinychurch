@@ -311,6 +311,8 @@ export type D1RealtimeEvent =
   | { event: "poll_vote"; payload: { messageId: number; groupId: string; votes: D1PollTally[]; totalVoters: number } }
   | { event: "members_changed"; payload: { groupId: string } }
   | { event: "group_state"; payload: { groupId: string; state: D1GroupState; reason: string | null } }
+  /** Renamed, re-described or a new icon: re-fetch the group and the chat list. */
+  | { event: "group_updated"; payload: { groupId: string } }
   | { event: "group_joined"; payload: { groupId: string } }
   | { event: "group_left"; payload: { groupId: string } }
   | { event: "community_left"; payload: { communityId: string } }

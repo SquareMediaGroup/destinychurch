@@ -6,7 +6,7 @@
 // button rather than show one that will fail. If the two ever disagree, the
 // database wins and this file is the bug.
 
-import type { D1AppConfig, D1Consent, D1LeaderRole, D1MemberStatus, D1MembershipRole, D1GroupKind, D1GroupState, D1PollDraft } from "./types";
+import type { D1AppConfig, D1Consent, D1LeaderRole, D1MemberStatus, D1MembershipRole, D1GroupKind, D1GroupState, D1MessageContent, D1PollDraft } from "./types";
 
 /** No 1:1 chats: a "group" of two is a DM with extra steps. */
 export const MIN_GROUP_MEMBERS = 3;
@@ -224,6 +224,18 @@ export interface PushPreview {
   senderName: string;
   body: string | null;
   attachmentMime: string | null;
+}
+
+/**
+ * What stands in for the text of a poll or a shared event, which have no body
+ * of their own: "Poll: Pizza or curry?", "Event: Youth Night". Used wherever a
+ * message is summarised in one line (chat list, notifications, reply quotes).
+ * Null for anything else.
+ */
+export function contentPreview(content: D1MessageContent | null | undefined): string | null {
+  if (content?.kind === "poll") return `Poll: ${content.poll.question}`;
+  if (content?.kind === "event") return `Event: ${content.event.name}`;
+  return null;
 }
 
 /** "Leah Simmons: Thanks Jonathan" — the first line only, cut to PUSH_PREVIEW_CHARS. */

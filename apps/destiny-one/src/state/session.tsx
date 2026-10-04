@@ -34,6 +34,7 @@ import { applyEvent, keys } from "@/lib/queries";
 import { clearCache, queryClient, saveCacheNow, swapInActiveCache } from "@/lib/queryClient";
 import { startHub, type Hub } from "@/lib/realtime";
 import { setReportingMember } from "@/lib/sentry";
+import { chatDrafts } from "@/state/drafts";
 
 type Href = "/welcome" | "/request" | "/waiting" | "/notices" | "/chats";
 
@@ -97,6 +98,11 @@ async function fetchMe(): Promise<D1Me | null> {
 
 /** Screens you can be on without an active, consented account. Everything else is "in the app". */
 const OUTSIDE_APP = new Set(["", "index", "welcome", "email", "code", "request", "waiting", "notices"]);
+
+/** Whether the first route segment is one of the app's own screens (not launch or sign-in). */
+export function isInApp(segment: string | undefined): boolean {
+  return !OUTSIDE_APP.has(segment ?? "");
+}
 
 /** Chats, groups and messages: dropped from the device when someone loses access. */
 function forgetChats() {
@@ -171,7 +177,10 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       setSession(next);
       // Signed out from elsewhere (session revoked, account deleted): forget
       // this account here too. Our own sign-out and switching tidy up themselves.
-      if (event === "SIGNED_OUT" && !busy.current) void clearCache().then(() => accounts.removeAccount(activeSlot, { signOut: false }));
+      if (event === "SIGNED_OUT" && !busy.current) {
+        if (meRef.current) chatDrafts.forget(meRef.current.id);
+        void clearCache().then(() => accounts.removeAccount(activeSlot, { signOut: false }));
+      }
     });
     return () => {
       cancelled = true;
@@ -198,6 +207,13 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       h.stop();
       hub.current = null;
     };
+  }, [active, meId]);
+
+  // Once per signed-in session: if notifications are already allowed, (re)register
+  // this phone's token. Covers a first registration that failed offline, a token
+  // the system has rotated, and keeps the server's last-seen date fresh. Never asks.
+  useEffect(() => {
+    if (active && meId) void movePushToActiveAccount().catch(() => undefined);
   }, [active, meId]);
 
   const groupIds = useMemo(() => (communities ?? []).flatMap((c) => c.groups.map((g) => g.id)).sort().join(","), [communities]);
@@ -318,11 +334,16 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     busy.current = true;
     try {
       const slot = accounts.activeSlot();
-      await authSignOut();
+      const memberId = meRef.current?.id;
+      // Ending the session on the server can fail (offline, say). This phone
+      // forgets the account whatever happens: chats, drafts and the saved session.
+      await authSignOut().catch(() => undefined);
       await clearCache();
+      if (memberId) chatDrafts.forget(memberId);
       await accounts.removeAccount(slot, { signOut: false });
       const next = accounts.accounts()[0];
       if (next) await runSwitch(next.slot);
+      else setSession(null);
     } finally {
       busy.current = false;
     }
@@ -371,8 +392,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
 export function AccessGuard() {
   const { ready, session, me } = useSession();
   const segments = useSegments();
-  const first = (segments[0] as string | undefined) ?? "";
-  const inApp = !OUTSIDE_APP.has(first);
+  const inApp = isInApp(segments[0] as string | undefined);
   const target = session && me ? routeFor(me) : null;
 
   useEffect(() => {

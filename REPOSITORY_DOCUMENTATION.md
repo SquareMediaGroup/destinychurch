@@ -4275,25 +4275,25 @@ needs at least 2 verified adults.") pass through as `rule_violation` (422). Type
 | `me/access-request` | POST | `{ name, dateOfBirth?, note? }` — ask to join; a Destiny One Admin approves |
 | `auth/churchsuite/start` → `callback` → `exchange` | GET, GET, POST | Sign in with ChurchSuite (below) |
 | `me` | GET, PATCH, DELETE | PATCH `{ firstName, lastName }` changes my own name (5/min; at most 2 changes in any 30 days, else `rule_violation` with the date it reopens; Profile tab → Change name, `edit-name.tsx`, which shows a live preview of a message from you). `D1Me.nameChangesLeft` / `nextNameChangeAt` carry the allowance. DELETE = GDPR erasure (`{ "confirm": "DELETE" }`). `D1Me` includes `firstName`, `lastName`, `blocked` (people I've blocked), `avatarUrl` (a signed link) and `isStaff` (has Destiny One / Safeguarding / Super Admin access; used only to check an "Add admin account") |
-| `me/avatar` | POST, DELETE | Profile picture (multipart `file`, 5 MB). Active members only; stored privately in `d1-avatars` |
+| `me/avatar` | POST, DELETE | Profile picture (multipart `file`, 5 MB). Active members only; stored privately in `d1-avatars`. In the app, tapping your picture on Profile offers Choose photo / Remove picture |
 | `me/email` → `me/email/confirm` | POST, POST | Change my own sign-in email (Profile → Email, `src/app/change-email.tsx`). `{ email }` emails a 6-digit code to the new address through Resend and returns a sealed `ticket` (`lib/destinyOne/emailChange.ts`: account + address + code hash, 15 minutes); `{ ticket, code }` then sets the auth email with the admin API (`email_confirm: true`) and emails a notice to the old address. "Already has an account" is only said after the code checks out, so it never reveals who has one. Doesn't use `auth.updateUser({ email })`: Supabase's project-wide "Change email" template is link-based (the portal uses it) and secure email change would also need a code from the old inbox. Active members only; rate-limited per account. The app refreshes its Supabase session afterwards |
 | `me/password` | GET, POST | Set or change my password (Profile → Password, `src/app/set-password.tsx`). `GET` returns `{ hasPassword }` (`d1_has_password`, service role only, migration `20260929_04`). `POST { password, current? }`: if the account already has a password, `current` is required and checked server-side against Supabase with a throwaway client; then the password is set with the admin API. Accounts with no password yet are gated on the phone instead (Face ID / passcode via `confirmDeviceOwner`, refusing devices with no lock). Supabase weak/leaked refusals come back as `invalid` with message `password_rejected:<reasons>`. Rate-limited per account |
 | `members/[id]/block` | POST, DELETE | Block / unblock someone; returns `D1Me`. Hides their messages and notifications for me only; logged for safeguarding |
 | `me/consents` | POST | Current versions only (`REQUIRED_CONSENTS`) |
 | `me/export` | GET | GDPR access: profile (incl. access-request note, declared and staff-set 18th birthday, how and when verified, a link to the profile picture), consents, memberships, own messages (incl. deleted), files sent (24-hour links), reactions, blocks, own reports, feedback sent |
 | `me/push-tokens` | POST, DELETE | Expo tokens |
-| `communities` | GET, POST | POST: any leader role |
+| `communities` | GET, POST | POST: any leader role. Each group's `lastMessage.preview` is the first line of its text; a poll or a shared event (no text) reads "Poll: …" / "Event: …" (`contentPreview` in `@destiny/shared`, filled in by `overview()` in `lib/destinyOne/chat.server.ts` with one extra query, no SQL change) |
 | `communities/[id]` | GET | |
 | `communities/[id]/members` | POST, DELETE | DELETE without `memberId` = leave |
 | `communities/[id]/groups` | POST | Create a sub-group (any size; paused until ≥3 people, ≥2 adults) |
-| `groups/[id]` | GET, PATCH | PATCH: rename/describe/archive (managers) |
+| `groups/[id]` | GET, PATCH | PATCH: rename/describe/archive (managers). A rename or new description sends `group_updated` on `d1-group:<id>` (`announceGroupUpdated`), so every member's chat list updates straight away |
 | `groups/[id]/members` | POST, DELETE | Leaving never blocked |
-| `groups/[id]/icon` | POST, DELETE | Group icon (multipart `file`, 5 MB). Any current member can change it, not just admins; not for Announcements or paused groups. Stored in `d1-avatars` as `d1_groups.icon_path`; `iconUrl` on group summaries is a signed link. The app asks people to avoid the church logo |
+| `groups/[id]/icon` | POST, DELETE | Group icon (multipart `file`, 5 MB). Any current member can change it, not just admins; not for Announcements or paused groups. Stored in `d1-avatars` as `d1_groups.icon_path`; `iconUrl` on group summaries is a signed link. Sends `group_updated` like a rename. The app asks people to avoid the church logo |
 | `groups/[id]/messages` | GET, POST | Only messages since you joined; POST takes `body`, an attachment, a `poll` draft, or an `event` ref (the event is re-fetched and snapshotted server-side) and pushes a notification via `after()` (group name, "Sender: first line", or "Poll: …" / "Event: …") |
-| `messages/[id]/vote` | POST | `{ optionIds }` — your full vote set on a poll (empty clears it) |
+| `messages/[id]/vote` | POST | `{ optionIds }` — your full vote set on a poll (empty clears it). 60 a minute |
 | `events` | GET | Upcoming ChurchSuite events for the Event picker in the attach sheet |
 | `groups/[id]/invites` | POST | Leaders: `{ email, name, adult, note? }` — invite someone new; they become an access request for staff to approve, then join the group |
-| `search/messages` | GET | `?q=` — full-text search of your messages: groups you are in, since you joined, never deleted; newest 30 |
+| `search/messages` | GET | `?q=` — full-text search of your messages: groups you are in, since you joined, never deleted; newest 30. `&groupId=` searches one group (search opened from a chat): same rules, applied in the route against the stored `search` tsvector, plus your blocks; not found if you aren't in it, nothing for an archived group |
 | `groups/[id]/read`, `/mute`, `/attachments` | POST | Read marker, mute, signed upload URL |
 | `groups/[id]/attachments?ids=` | GET | Fresh signed links (1 hour) for cached attachments whose links expired: only files in this group, sent since you joined, not deleted, not from someone you've blocked. Up to 60 ids |
 | `messages/[id]` | DELETE | Soft delete (content kept for review) |
@@ -7161,6 +7161,15 @@ same database as the data rather than in a separate Synapse module.
   the website's `/admin/reset-password`.
 - **State:** `src/state/session.tsx` (auth session, `me`, the communities list, the Realtime hub,
   catch-up, `routeFor`, `errorMessage`); `src/state/picker.ts` (Add people selection for New group).
+  Small external stores hand things between screens: `pollDraft.ts` and `eventPick.ts` (a poll or
+  event composed on its own screen, sent by the chat that opened it), `jump.ts` (a search result
+  asking its chat to show one message) and `notificationTap.ts` (a tapped notification waiting for
+  the app to be ready). Each is addressed to one group id, because more than one chat can be mounted
+  at once (chat A → info → search → chat B) and each would otherwise act on it.
+- **Drafts** (`src/state/drafts.ts`): leave a chat half-way through a message and the text is still
+  in the box when you come back, and the chat list shows "Draft: …" on that chat. Memory only (nothing
+  typed is written to the phone), keyed by member and group, forgotten on sign-out. The composer saves
+  on every keystroke silently; the list hears about it once, when the chat closes.
   `src/lib/useConversation.ts` owns a chat: paging, optimistic sends with "Not sent. Tap to retry.",
   uploads, reactions, deletes, read receipts.
 - **Data cache — instant screens, database-driven updates.** All app data lives in one TanStack
@@ -7175,9 +7184,9 @@ same database as the data rather than in a separate Synapse module.
      `d1-group:<id>` for *every* group in the chat list (not just the open chat). `applyEvent()`
      patches the cache straight from the payload: a new message updates that chat's messages, the
      row's last message, and its unread count (not for my own messages or the chat on screen);
-     deletes, reactions and pause state patch in place; member changes and joins/leaves mark the
-     affected entries stale so they re-fetch in the background. No database change was needed:
-     `d1_emit` already sent everything.
+     deletes, reactions and pause state patch in place; member changes, joins/leaves and
+     `group_updated` (rename, description, icon) mark the affected entries stale so they re-fetch in
+     the background. No database change was needed: everything goes through `d1_emit`.
   2. **Catch-up** — Broadcast doesn't replay, so the whole cache is marked stale (on-screen entries
      re-fetch quietly, others when next opened) on cold start, on returning after more than 30s
      in the background, and when the member channel re-joins after a socket drop. A re-fetched
@@ -7231,8 +7240,10 @@ same database as the data rather than in a separate Synapse module.
   - **Add account** signs into a pending slot through `signInClient()` / `signInApi`, so the
     current account stays active and untouched until the code checks out. Signing into an account
     already on the phone replaces its old slot (locally; a server sign-out would end both).
-  - **Sign out** ends the active account everywhere (as before) and switches to the next account
-    on the phone, or shows Welcome if none. Holding an account in the switcher signs that one out.
+  - **Sign out** (Profile, after a confirmation) ends the active account everywhere (as before) and
+    switches to the next account on the phone, or shows Welcome if none. If the server can't be
+    reached the phone still forgets the account (cache, drafts, saved session). Holding an account in
+    the switcher signs that one out.
     A session revoked elsewhere is forgotten on its next use. Up to 5 accounts.
 - **UI kit:** `src/theme/tokens.ts` (the prototype's light/dark tokens), `src/components/ui.tsx`
   (the rotating orange **beam** border on primary buttons and focused fields — a spinning linear
@@ -7244,7 +7255,21 @@ same database as the data rather than in a separate Synapse module.
 - **Search** (`search` route): groups from the cached list, plus messages via `GET /search/messages`
   (`d1_search_messages`: groups you're in, since you joined, never deleted; stored tsvector + GIN,
   prefix query built by `toPrefixQuery` in `@destiny/shared`). Migration
-  `20260927_03_destiny_one_message_search.sql`. Tapping a hit opens the group (not the exact message yet).
+  `20260927_03_destiny_one_message_search.sql`. Opened from a chat (its search button, or the Search
+  tile in Group info) it searches that chat (`?groupId=`), with an "All chats" chip to widen it.
+  Tapping a message opens its chat scrolled to that message, highlighted for a moment: the chat loads
+  older pages until it's there (up to 10 pages of 40), and a message from the chat the search was
+  opened from goes back to that chat (`router.dismissTo`) rather than opening a second copy.
+- **Chats tab badge:** the number of chats with unread messages (muted ones don't count), on the
+  native tab bar (`NativeTabs.Trigger.Badge`).
+- **Notifications:** a tap is noted (`notificationTap.ts`) and the chat opened by `OpenFromNotification`
+  in the root layout once someone is signed in, has accepted the notices and is past the launch screen,
+  so on a cold start it lands on top of the chat list. Each notification is handled once (the launch tap
+  can arrive both as the last response and through the listener) and the last response is cleared; a
+  tap for the chat already on screen does nothing. While notifications are allowed, the device token
+  is re-registered once per signed-in session (`movePushToActiveAccount`, never prompts), so a failed
+  first registration or a rotated token heals itself. The A10 prompt is skipped when notifications are
+  already on or the system can no longer ask.
 - **Blocking** (Apple guideline 1.2): long-press a message → "Block {name}" (confirm), which calls
   `api.block`, then `hideSender()` in `src/lib/queries.ts` drops their messages from every cached chat;
   `applyEvent` ignores live messages from anyone in `me.blocked`. Settings → "Blocked people"

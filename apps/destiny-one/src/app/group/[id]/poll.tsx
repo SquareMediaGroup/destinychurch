@@ -3,7 +3,7 @@
 
 import { useState } from "react";
 import { Pressable, ScrollView, StyleSheet, View } from "react-native";
-import { router } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { MAX_POLL_OPTIONS, MIN_POLL_OPTIONS, validatePoll } from "@destiny/shared";
 import { Icon } from "@/components/Icon";
@@ -14,6 +14,7 @@ import { useTheme } from "@/theme/tokens";
 export default function Poll() {
   const t = useTheme();
   const insets = useSafeAreaInsets();
+  const { id } = useLocalSearchParams<{ id: string }>();
   const [question, setQuestion] = useState("");
   const [options, setOptions] = useState(["", ""]);
   const [allowMultiple, setAllowMultiple] = useState(false);
@@ -31,7 +32,7 @@ export default function Poll() {
 
   function send() {
     if (!check.ok) return;
-    pollDraft.set(draft);
+    pollDraft.set(id, draft);
     router.back();
   }
 

@@ -17,6 +17,7 @@ import {
   MIN_GROUP_ADULTS,
   MIN_GROUP_MEMBERS,
   canPost,
+  contentPreview,
   isAdult,
   isLeaderRole,
   topRole,
@@ -58,6 +59,8 @@ interface OverviewRow {
   last_has_attachment: boolean | null;
   last_deleted: boolean | null;
   last_created_at: string | null;
+  /** Not from the SQL: filled in by overview() for a last message that is only a poll or an event. */
+  last_content?: D1MessageContent | null;
 }
 
 function preview(body: string | null): string | null {
@@ -85,7 +88,7 @@ function toSummary(row: OverviewRow): D1GroupSummary {
         : {
             id: row.last_id,
             senderName: row.last_sender,
-            preview: preview(row.last_body),
+            preview: preview(row.last_body) ?? preview(contentPreview(row.last_content)),
             hasAttachment: Boolean(row.last_has_attachment),
             deleted: Boolean(row.last_deleted),
             createdAt: row.last_created_at as string,
@@ -108,12 +111,24 @@ async function iconUrls(groupIds: string[]): Promise<Map<string, string>> {
 }
 
 async function overview(memberId: string, groupId?: string): Promise<OverviewRow[]> {
-  const { data, error } = await createServiceClient().rpc("d1_group_overview", {
+  const supabase = createServiceClient();
+  const { data, error } = await supabase.rpc("d1_group_overview", {
     p_member: memberId,
     p_group: groupId ?? null,
   });
   if (error) throw fromDbError(error);
-  return (data ?? []) as OverviewRow[];
+  const rows = (data ?? []) as OverviewRow[];
+
+  // A poll or a shared event has no body, so the SQL gives no preview for it.
+  // Fetch just those messages' content (one query) so the chat list can say
+  // "Poll: …" / "Event: …" instead of a blank line.
+  const contentOnly = rows.filter((r) => r.last_id !== null && !r.last_body && !r.last_deleted && !r.last_has_attachment).map((r) => r.last_id as number);
+  if (contentOnly.length) {
+    const { data: messages } = await supabase.from("d1_messages").select("id, content").in("id", contentOnly);
+    const contentFor = new Map((messages ?? []).map((m) => [m.id as number, m.content as D1MessageContent | null]));
+    for (const r of rows) if (r.last_id !== null && contentFor.has(r.last_id)) r.last_content = contentFor.get(r.last_id);
+  }
+  return rows;
 }
 
 async function rpcBool(fn: string, args: Record<string, unknown>): Promise<boolean> {
@@ -222,6 +237,20 @@ export async function getGroup(caller: Caller, groupId: string): Promise<D1Group
       ? { rules: { members: people.length, adults, minMembers: MIN_GROUP_MEMBERS, minAdults: MIN_GROUP_ADULTS } }
       : {}),
   };
+}
+
+/**
+ * Tells everyone in the group that its name, description or icon changed, so
+ * their chat lists update now rather than on their next catch-up. Best-effort:
+ * the change itself has already been saved.
+ */
+export async function announceGroupUpdated(groupId: string): Promise<void> {
+  const { error } = await createServiceClient().rpc("d1_emit", {
+    topic: `d1-group:${groupId}`,
+    event: "group_updated",
+    payload: { groupId },
+  });
+  if (error) console.error("⚠️ Destiny One group_updated broadcast failed:", error.message);
 }
 
 /** The caller's live membership row, or not_found. Used before any group read or write. */

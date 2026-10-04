@@ -20,17 +20,22 @@ import { NotificationPrompt } from "@/components/NotificationPrompt";
 import { Avatar, BackButton, ConfirmDialog, EmptyState, ErrorState, GlassIconButton, PrimaryButton, withAlpha } from "@/components/ui";
 import { canSendAs } from "@destiny/shared";
 import type { Account } from "@/lib/accounts";
-import { plural } from "@/lib/format";
+import { messageSummary, plural } from "@/lib/format";
 import { api } from "@/lib/api";
 import { haptic } from "@/lib/haptics";
 import { hideSender, setOpenGroup } from "@/lib/queries";
 import { uploadAttachment } from "@/lib/upload";
 import { useConversation, type LocalMessage } from "@/lib/useConversation";
+import { chatDrafts } from "@/state/drafts";
 import { eventPick, useEventPick } from "@/state/eventPick";
+import { jumpTo, useJumpTarget } from "@/state/jump";
 import { pollDraft, usePollDraft } from "@/state/pollDraft";
 import { errorMessage, useGroupSummary, useSession } from "@/state/session";
 import { PHOTO_CHIP_ALPHA } from "@/theme/appearance";
 import { ORANGE, useTheme } from "@/theme/tokens";
+
+/** How far back (pages of 40) a search result will go to find its message. */
+const MAX_JUMP_PAGES = 10;
 
 export default function GroupChat() {
   const t = useTheme();
@@ -94,6 +99,9 @@ export default function GroupChat() {
     }, [markRead, preview]),
   );
 
+  // Leaving the chat: the chat list picks up its draft (or that it's gone).
+  useEffect(() => () => chatDrafts.flush(), []);
+
   useEffect(() => {
     if (!toast) return;
     haptic.error();
@@ -101,17 +109,64 @@ export default function GroupChat() {
     return () => clearTimeout(id);
   }, [toast]);
 
+  // A search result asked to see one message: load back to it if need be,
+  // scroll it into view and highlight it for a moment.
+  const jumpTarget = useJumpTarget(id);
+  const [highlightId, setHighlightId] = useState<number | null>(null);
+  const jumpPages = useRef(0);
+  const jumpReloaded = useRef(false);
+  const { hasOlder, loadingOlder, loadOlder, reload } = convo;
+  useEffect(() => {
+    if (!jumpTarget || !messages || preview) return;
+    const index = rows.findIndex((r) => r.key === `m${jumpTarget}`);
+    if (index >= 0) {
+      jumpTo.clear();
+      jumpPages.current = 0;
+      jumpReloaded.current = false;
+      requestAnimationFrame(() => {
+        setHighlightId(jumpTarget);
+        list.current?.scrollToIndex({ index, animated: true, viewPosition: 0.5 });
+      });
+      return;
+    }
+    // Newer than anything cached: it's in the latest page, not further back.
+    const newest = messages.reduce((n, m) => Math.max(n, m.id), 0);
+    if (jumpTarget > newest) {
+      if (!jumpReloaded.current) {
+        jumpReloaded.current = true;
+        void reload();
+      }
+      return;
+    }
+    if (hasOlder && jumpPages.current < MAX_JUMP_PAGES) {
+      if (!loadingOlder) {
+        jumpPages.current += 1;
+        void loadOlder();
+      }
+      return;
+    }
+    jumpTo.clear();
+    jumpPages.current = 0;
+    jumpReloaded.current = false;
+    requestAnimationFrame(() => setToast("Couldn't find that message. It may be too far back."));
+  }, [jumpTarget, messages, rows, preview, hasOlder, loadingOlder, loadOlder, reload]);
+  useEffect(() => {
+    if (highlightId === null) return;
+    const timer = setTimeout(() => setHighlightId(null), 2500);
+    return () => clearTimeout(timer);
+  }, [highlightId]);
+
   // A poll composed, or an event chosen, on the modal screens that opened
   // from this one's attach sheet — sent as soon as it comes back.
   const { sendPoll, sendEvent } = convo;
-  const draft = usePollDraft();
+  const draft = usePollDraft(id);
   useEffect(() => {
     if (!draft) return;
     pollDraft.clear();
     void sendPoll(draft).catch((err) => setToast(errorMessage(err, "Couldn't send the poll. Try again.")));
   }, [draft, sendPoll]);
 
-  const chosenEvent = useEventPick();
+  const chosenEvent = useEventPick(id);
   useEffect(() => {
     if (!chosenEvent) return;
     eventPick.clear();
@@ -134,7 +189,7 @@ export default function GroupChat() {
     onCopy: () => {
       if (m.body) void Clipboard.setStringAsync(m.body);
     },
-    onReport: () => router.push({ pathname: "/report", params: { messageId: String(m.id), name: m.sender?.displayName ?? "Former member", at: m.createdAt, body: m.body ?? "Attachment" } }),
+    onReport: () => router.push({ pathname: "/report", params: { messageId: String(m.id), name: m.sender?.displayName ?? "Former member", at: m.createdAt, body: messageSummary(m) } }),
     onBlock: () => {
       if (m.sender) setBlocking({ id: m.sender.id, name: m.sender.displayName });
     },
@@ -195,7 +250,7 @@ export default function GroupChat() {
   ) : (
     <Composer
       ref={input}
-      replying={replyTo ? { name: replyTo.mine ? "yourself" : replyTo.sender?.displayName ?? "Former member", text: replyTo.body ?? "Attachment" } : null}
+      replying={replyTo ? { name: replyTo.mine ? "yourself" : replyTo.sender?.displayName ?? "Former member", text: messageSummary(replyTo) } : null}
       onCancelReply={() => setReplyTo(null)}
       onSend={sendText}
       loadSendAsOptions={sendAsEnabled ? convo.sendAsOptions : undefined}
@@ -204,6 +259,8 @@ export default function GroupChat() {
       onAttachPoll={() => router.push(`/group/${id}/poll`)}
       onAttachEvent={() => router.push(`/group/${id}/event-picker`)}
       onError={setToast}
+      initialText={chatDrafts.get(id)}
+      onTextChange={(text) => chatDrafts.set(id, text)}
     />
   );
 
@@ -230,7 +287,13 @@ export default function GroupChat() {
           ref={list}
           inverted
           data={rows}
+          extraData={highlightId}
           keyExtractor={(r) => r.key}
+          onScrollToIndexFailed={(info) => {
+            // Rows aren't measured yet: get close, then try again once they are.
+            list.current?.scrollToOffset({ offset: info.averageItemLength * info.index, animated: false });
+            setTimeout(() => list.current?.scrollToIndex({ index: info.index, animated: true, viewPosition: 0.5 }), 120);
+          }}
           contentContainerStyle={{ paddingTop: 24, paddingBottom: insets.top + 70 }}
           keyboardDismissMode="interactive"
           keyboardShouldPersistTaps="handled"
@@ -246,6 +309,7 @@ export default function GroupChat() {
           }
           renderItem={({ item }) =>
             item.kind === "msg" ? (
+              <View style={item.m.id === highlightId ? { backgroundColor: withAlpha(ORANGE, 0.16) } : undefined}>
               <MessageBubble
                 row={item}
                 replyTo={item.m.replyTo ? byId.get(item.m.replyTo) ?? null : null}
@@ -277,6 +341,7 @@ export default function GroupChat() {
                   ])
                 }
               />
+              </View>
             ) : (
               <Divider row={item} />
             )
@@ -303,7 +368,7 @@ export default function GroupChat() {
             </GlassSurface>
           )}
         </Pressable>
-        {preview ? <View style={{ width: 44 }} /> : <GlassIconButton icon="search" label="Search" onPress={() => router.push("/search")} />}
+        {preview ? <View style={{ width: 44 }} /> : <GlassIconButton icon="search" label={name ? `Search in ${name}` : "Search in this chat"} onPress={() => router.push({ pathname: "/search", params: { groupId: id } })} />}
       </View>
 
       {/* Footer */}

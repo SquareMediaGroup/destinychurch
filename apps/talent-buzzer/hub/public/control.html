@@ -60,7 +60,7 @@
       <h2>Screen and lighting</h2>
       <div class="row"><span class="dot" id="dispDot"></span><span class="name">LED display page</span><span class="pill" id="dispTxt"></span></div>
       <div class="row"><span class="dot" id="soundDot"></span><span class="name">Display sound</span><span class="pill" id="soundTxt"></span>
-        <button data-sound="x">Test X</button><button data-sound="golden">Test gold</button></div>
+        <button data-sound="x">Test X</button><button data-sound="all-x">Test all out</button><button data-sound="golden">Test gold</button></div>
       <div class="row"><span class="dot" id="agentDot"></span><span class="name">Lighting link</span><span class="pill" id="agentTxt"></span></div>
       <div class="row"><span class="dot" id="titanDot"></span><span class="name">Avolites Titan</span><span class="pill" id="titanTxt"></span></div>
     </section>
@@ -128,6 +128,7 @@
         tests.append(b);
       };
       judges.forEach((j) => addTest(`X ${j.name}`, cues.x && cues.x[j.seat]));
+      addTest('All X', cues.allX);
       addTest('Golden', cues.golden);
       addTest('Reset', cues.reset);
 

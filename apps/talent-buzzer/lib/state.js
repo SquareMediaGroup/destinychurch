@@ -52,6 +52,10 @@ class ShowState {
     return null;
   }
 
+  allX() {
+    return this.seats.every((s) => this.xs[s]);
+  }
+
   snapshot() {
     return { xs: { ...this.xs }, golden: this.golden, locked: this.locked };
   }

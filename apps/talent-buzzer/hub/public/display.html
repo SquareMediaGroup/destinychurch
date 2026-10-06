@@ -10,19 +10,49 @@
     html, body { margin: 0; height: 100%; overflow: hidden; background: #000; color: #fff; cursor: none;
       font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
     body.transparent { background: transparent; }
-    #xs { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; gap: 3vw; padding: 0 4vw; }
-    .slot { flex: 1; max-width: 22vw; aspect-ratio: 1; position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-    .slot svg { width: 100%; height: 100%; overflow: visible; }
-    .slot .ghost { stroke: rgba(255,255,255,0.10); }
-    body.transparent .slot .ghost, body.hide-empty .slot .ghost { stroke: transparent; }
-    .slot .mark { stroke: var(--red); opacity: 0; transform-origin: 50% 50%; filter: drop-shadow(0 0 1.5vw var(--red)) drop-shadow(0 0 4vw rgba(255,31,58,0.6)); }
-    .slot.on .mark { opacity: 1; animation: slam 420ms cubic-bezier(.2,1.6,.4,1) both; }
-    .slot.on.static .mark { animation: none; }
-    .slot .label { position: absolute; bottom: -4vw; font-size: 1.6vw; letter-spacing: 0.15em; text-transform: uppercase; opacity: 0.0; }
-    body.labels .slot .label { opacity: 0.6; }
-    @keyframes slam { 0% { transform: scale(3) rotate(-20deg); opacity: 0; } 60% { opacity: 1; } 100% { transform: scale(1) rotate(0); opacity: 1; } }
+    #xs { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; gap: 3vw; padding: 0 4vw 4vw; }
+    body.shake #xs { animation: shake 320ms linear; }
+    @keyframes shake { 20% { transform: translate(-0.6vw, 0.3vw); } 40% { transform: translate(0.5vw, -0.4vw); } 60% { transform: translate(-0.4vw, -0.2vw); } 80% { transform: translate(0.3vw, 0.3vw); } }
+    .slot { flex: 1; max-width: 22vw; aspect-ratio: 1; position: relative; perspective: 90vw; }
+    .slot .layer { position: absolute; inset: 0; }
+    .slot svg { width: 100%; height: 100%; overflow: visible; display: block; }
+    .slot .ghost use { fill: none; stroke: rgba(255,255,255,0.16); stroke-width: 1.2; stroke-linejoin: miter; }
+    body.transparent .slot .ghost, body.hide-empty .slot .ghost { display: none; }
+
+    /* The X: sharp polygon, extruded depth behind a gradient face, tilted
+       towards the audience so it reads as popping out of the screen. */
+    .slot .mark { opacity: 0; transform-style: preserve-3d; transform-origin: 50% 50%;
+      filter: drop-shadow(0 1.6vw 1.4vw rgba(0,0,0,0.85)) drop-shadow(0 0 2.5vw rgba(255,31,58,0.55)); }
+    .slot.on .mark { opacity: 1; transform: rotateX(10deg) rotateY(-12deg) translateZ(2vw);
+      animation: pop3d 520ms cubic-bezier(.18,1.4,.4,1) both, float 3.2s ease-in-out 520ms infinite alternate; }
+    .slot.on.static .mark { animation: float 3.2s ease-in-out infinite alternate; }
+    @keyframes pop3d {
+      0% { opacity: 0; transform: rotateX(45deg) rotateY(-40deg) translateZ(40vw) scale(1.6); }
+      55% { opacity: 1; }
+      100% { opacity: 1; transform: rotateX(10deg) rotateY(-12deg) translateZ(2vw) scale(1); } }
+    @keyframes float {
+      from { transform: rotateX(10deg) rotateY(-12deg) translateZ(2vw); }
+      to { transform: rotateX(6deg) rotateY(-6deg) translateZ(3vw); } }
+
+    .slot .label { position: absolute; left: -2vw; right: -2vw; top: 100%; margin-top: 1.6vw; text-align: center;
+      font-size: 2.2vw; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: rgba(255,255,255,0.45);
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis; transition: color 250ms, text-shadow 250ms; }
+    .slot.on .label { color: #fff; text-shadow: 0 0 1.2vw rgba(255,31,58,0.9); }
+    body.no-labels .slot .label { display: none; }
+
     body.flash::after { content: ""; position: absolute; inset: 0; background: rgba(255,31,58,0.35); animation: flash 350ms ease-out forwards; pointer-events: none; }
     @keyframes flash { to { opacity: 0; } }
+
+    /* All four judges buzzed: hard red strobe, then a slow pulsing red until reset. */
+    #alarm { position: absolute; inset: 0; pointer-events: none; opacity: 0; }
+    body.all-out #alarm { opacity: 1; background: radial-gradient(ellipse at center, rgba(255,0,30,0) 35%, rgba(255,0,30,0.55) 100%);
+      animation: alarm-pulse 1.1s ease-in-out infinite alternate; }
+    body.all-out-strobe #alarm { background: #ff0020; animation: strobe 2.6s steps(1, end) both; }
+    @keyframes strobe { 0%, 16%, 33%, 50%, 66%, 83% { opacity: 0.9; } 8%, 25%, 41%, 58%, 75%, 91%, 100% { opacity: 0; } }
+    @keyframes alarm-pulse { from { opacity: 0.35; } to { opacity: 1; } }
+    body.all-out-strobe .slot.on .mark { animation: throb 433ms ease-in-out 6; }
+    @keyframes throb { 0% { transform: rotateX(10deg) rotateY(-12deg) translateZ(2vw) scale(1); } 50% { transform: rotateX(10deg) rotateY(-12deg) translateZ(6vw) scale(1.12); } 100% { transform: rotateX(10deg) rotateY(-12deg) translateZ(2vw) scale(1); } }
+    body.all-out .slot .label { color: #fff; }
 
     #golden { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; opacity: 0; pointer-events: none;
       background: radial-gradient(circle at 50% 50%, #fff6d0 0%, #f5c542 35%, #b8860b 75%, #4a3300 100%); transition: opacity 250ms; }
@@ -45,6 +75,17 @@
   </style>
 </head>
 <body class="offline">
+  <svg width="0" height="0" style="position: absolute" aria-hidden="true">
+    <defs>
+      <polygon id="xshape" points="8,22 22,8 50,36 78,8 92,22 64,50 92,78 78,92 50,64 22,92 8,78 36,50"/>
+      <linearGradient id="xface" x1="0" y1="0" x2="0.35" y2="1">
+        <stop offset="0" stop-color="#ff6a7a"/>
+        <stop offset="0.45" stop-color="#ff1f3a"/>
+        <stop offset="1" stop-color="#c00a22"/>
+      </linearGradient>
+    </defs>
+  </svg>
+  <div id="alarm"></div>
   <div id="xs"></div>
   <div id="golden"><h1>GOLDEN<br>BUZZER</h1></div>
   <canvas id="confetti"></canvas>
@@ -57,11 +98,11 @@
   <script src="common.js"></script>
   <script>
     // URL options: ?bg=transparent (for keying as a browser source), ?audio=off,
-    // ?labels=1 (judge names under each X), ?ghost=0 (hide the faint empty X's).
+    // ?labels=0 (hide judge names), ?ghost=0 (hide the faint empty X's).
     const params = new URLSearchParams(location.search);
     const body = document.body;
     if (params.get('bg') === 'transparent') body.classList.add('transparent');
-    if (params.get('labels') === '1') body.classList.add('labels');
+    if (params.get('labels') === '0') body.classList.add('no-labels');
     if (params.get('ghost') === '0') body.classList.add('hide-empty');
     const audioEnabled = params.get('audio') !== 'off';
 
@@ -70,9 +111,20 @@
     let show = { xs: {}, golden: false };
     let hub;
 
-    const X_SVG = `<svg viewBox="0 0 100 100" fill="none" stroke-width="16" stroke-linecap="round">
-      <path class="ghost" d="M18 18 L82 82 M82 18 L18 82"/>
-      <path class="mark" d="M18 18 L82 82 M82 18 L18 82"/></svg>`;
+    // Extrusion: stacked copies of the X stepping down-right, dark at the back,
+    // so the face looks like it sits on a solid block.
+    const DEPTH = 9;
+    const extrusion = Array.from({ length: DEPTH }, (_, i) => {
+      const k = DEPTH - i; // back layer first
+      const shade = Math.round(70 + (110 * i) / DEPTH);
+      return `<use href="#xshape" transform="translate(${(k * 0.55).toFixed(2)} ${(k * 0.8).toFixed(2)})" fill="rgb(${shade},4,16)"/>`;
+    }).join('');
+    const X_SVG = `
+      <div class="layer ghost"><svg viewBox="0 0 100 100"><use href="#xshape"/></svg></div>
+      <div class="layer mark"><svg viewBox="0 0 100 100">${extrusion}
+        <use href="#xshape" fill="url(#xface)"/>
+        <use href="#xshape" fill="none" stroke="rgba(255,210,215,0.55)" stroke-width="0.8" stroke-linejoin="miter"/>
+      </svg></div>`;
 
     function buildSlots(judges) {
       xsEl.innerHTML = '';
@@ -95,6 +147,9 @@
         if (on && !el.classList.contains('on')) el.classList.add('on', 'static');
         if (!on) el.classList.remove('on', 'static');
       }
+      const allOut = Object.keys(slots).length > 0 && Object.keys(slots).every((seat) => s.xs[seat]);
+      if (allOut) body.classList.add('all-out');
+      else body.classList.remove('all-out', 'all-out-strobe');
       if (s.golden && !body.classList.contains('is-golden')) body.classList.add('is-golden');
       if (!s.golden && body.classList.contains('is-golden')) stopGolden();
     }
@@ -105,10 +160,21 @@
       el.classList.remove('on', 'static');
       void el.offsetWidth; // restart animation
       el.classList.add('on');
-      body.classList.remove('flash');
+      body.classList.remove('flash', 'shake');
       void body.offsetWidth;
-      body.classList.add('flash');
+      body.classList.add('flash', 'shake');
       play('x');
+    }
+
+    let strobeTimer = null;
+    function allOut() {
+      body.classList.remove('all-out-strobe');
+      void body.offsetWidth;
+      body.classList.add('all-out', 'all-out-strobe');
+      clearTimeout(strobeTimer);
+      strobeTimer = setTimeout(() => body.classList.remove('all-out-strobe'), 2600);
+      // Let the fourth X's own buzz land first.
+      setTimeout(() => play('all-x'), 450);
     }
 
     // ---------- audio ----------
@@ -140,6 +206,32 @@
       lp.frequency.value = 2200;
       lp.connect(gain).connect(off.destination);
       for (const [type, f] of [['sawtooth', 110], ['sawtooth', 116.5], ['square', 55]]) {
+        const o = off.createOscillator();
+        o.type = type;
+        o.frequency.value = f;
+        o.connect(lp);
+        o.start(0);
+      }
+      return off.startRendering();
+    }
+
+    // Three short blasts and a long one - the "everyone said no" alarm.
+    function synthAllOut() {
+      const sr = 44100, dur = 2.6;
+      const off = new OfflineAudioContext(1, sr * dur, sr);
+      const gain = off.createGain();
+      gain.gain.setValueAtTime(0, 0);
+      for (const [t0, t1] of [[0, 0.3], [0.42, 0.72], [0.84, 1.14], [1.26, 2.5]]) {
+        gain.gain.setValueAtTime(0, t0);
+        gain.gain.linearRampToValueAtTime(0.5, t0 + 0.015);
+        gain.gain.setValueAtTime(0.5, t1 - 0.03);
+        gain.gain.linearRampToValueAtTime(0, t1);
+      }
+      const lp = off.createBiquadFilter();
+      lp.type = 'lowpass';
+      lp.frequency.value = 2600;
+      lp.connect(gain).connect(off.destination);
+      for (const [type, f] of [['sawtooth', 92], ['sawtooth', 97.5], ['square', 46]]) {
         const o = off.createOscillator();
         o.type = type;
         o.frequency.value = f;
@@ -200,7 +292,8 @@
       if (!audioEnabled) return true;
       ctx = ctx || new AudioContext({ latencyHint: 'interactive' });
       await ctx.resume();
-      await Promise.all([loadSound('x', 'buzzer.mp3', synthBuzzer), loadSound('golden', 'golden.mp3', synthGolden)]);
+      await Promise.all([loadSound('x', 'buzzer.mp3', synthBuzzer), loadSound('golden', 'golden.mp3', synthGolden),
+        loadSound('all-x', 'all-out.mp3', synthAllOut)]);
       return ctx.state === 'running';
     }
 
@@ -283,6 +376,7 @@
           applyState(msg.show);
         } else if (msg.type === 'event') {
           if (msg.kind === 'x') slamX(msg.seat);
+          else if (msg.kind === 'all-x') allOut();
           else if (msg.kind === 'golden') startGolden();
           else if (msg.kind === 'reset') { stopGolden(); applyState({ xs: {}, golden: false }); }
         } else if (msg.type === 'test-sound') {

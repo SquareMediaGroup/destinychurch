@@ -214,7 +214,7 @@ function handleMessage(client, msg) {
       log('🔄', 'Reset');
       broadcast({ type: 'event', kind: 'reset' });
       if (config.cues.releaseOnReset) {
-        for (const n of new Set([...Object.values(config.cues.x ?? {}), config.cues.golden].filter((n) => n != null))) {
+        for (const n of new Set([...Object.values(config.cues.x ?? {}), config.cues.golden, config.cues.allX].filter((n) => n != null))) {
           fireLighting(n, 'Release', 'release');
         }
       }
@@ -237,7 +237,7 @@ function handleMessage(client, msg) {
     }
     case 'test-sound': {
       if (client.role !== 'control') return;
-      broadcast({ type: 'test-sound', kind: msg.kind === 'golden' ? 'golden' : 'x' }, ['display']);
+      broadcast({ type: 'test-sound', kind: ['golden', 'all-x'].includes(msg.kind) ? msg.kind : 'x' }, ['display']);
       break;
     }
   }
@@ -253,6 +253,11 @@ function judgePress(seat, source) {
   broadcast({ type: 'event', kind: 'x', seat, at: Date.now() });
   const cue = config.cues.x?.[seat];
   if (cue != null) fireLighting(cue, `X judge ${seat}`);
+  if (state.allX()) {
+    log('🚨', 'All judges have buzzed');
+    broadcast({ type: 'event', kind: 'all-x', at: Date.now() });
+    if (config.cues.allX != null) fireLighting(config.cues.allX, 'All X');
+  }
   pushState();
 }
 

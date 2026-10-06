@@ -48,6 +48,16 @@ test('lock ignores every press and leaves state alone', () => {
   assert.equal(s.press('1', 5000).accepted, true);
 });
 
+test('allX is true only once every judge has buzzed', () => {
+  const s = make();
+  ['1', '2', '3'].forEach((seat, i) => s.press(seat, i));
+  assert.equal(s.allX(), false);
+  s.press('4', 10);
+  assert.equal(s.allX(), true);
+  s.reset();
+  assert.equal(s.allX(), false);
+});
+
 test('unknown seat is rejected', () => {
   assert.deepEqual(make().press('9', 0), { accepted: false, reason: 'unknown-seat' });
 });

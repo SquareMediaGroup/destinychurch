@@ -12,6 +12,7 @@
   "cues": {
     "x": { "1": 101, "2": 102, "3": 103, "4": 104 },
     "golden": 110,
+    "allX": null,
     "reset": null,
     "releaseOnReset": true
   },

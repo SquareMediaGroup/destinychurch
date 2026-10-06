@@ -262,10 +262,7 @@ export async function announceGroupUpdated(groupId: string): Promise<void> {
  * who misses it gets the message on their next catch-up.
  */
 export async function broadcastNewMessage(message: D1Message): Promise<void> {
-  const url = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key = process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!url || !key) return;
-  const payload = {
+  await broadcastToGroup(message.groupId, "message", {
     id: message.id,
     groupId: message.groupId,
     sender: message.sender,
@@ -274,16 +271,33 @@ export async function broadcastNewMessage(message: D1Message): Promise<void> {
     attachmentId: message.attachment?.id ?? null,
     content: message.content,
     createdAt: message.createdAt,
-  };
+  });
+}
+
+/** An edited message's new text, to everyone in the group. Same REST path as new messages (it carries plaintext). */
+export async function broadcastMessageEdited(message: D1Message): Promise<void> {
+  if (!message.body || !message.editedAt) return;
+  await broadcastToGroup(message.groupId, "message_edited", { id: message.id, groupId: message.groupId, body: message.body, editedAt: message.editedAt });
+}
+
+/**
+ * One event on d1-group:<id> through Realtime's REST broadcast, which stores
+ * nothing (d1_emit from SQL keeps a copy in realtime.messages for three days).
+ * Use this for anything that carries message text. Best-effort.
+ */
+export async function broadcastToGroup(groupId: string, event: string, payload: Record<string, unknown>): Promise<void> {
+  const url = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!url || !key) return;
   try {
     const res = await fetch(`${url}/realtime/v1/api/broadcast`, {
       method: "POST",
       headers: { apikey: key, Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ messages: [{ topic: `d1-group:${message.groupId}`, event: "message", payload, private: true }] }),
+      body: JSON.stringify({ messages: [{ topic: `d1-group:${groupId}`, event, payload, private: true }] }),
     });
-    if (!res.ok) console.error(`⚠️ Destiny One message broadcast failed: ${res.status} ${await res.text()}`);
+    if (!res.ok) console.error(`⚠️ Destiny One ${event} broadcast failed: ${res.status} ${await res.text()}`);
   } catch (err) {
-    console.error("⚠️ Destiny One message broadcast failed:", (err as Error).message);
+    console.error(`⚠️ Destiny One ${event} broadcast failed:`, (err as Error).message);
   }
 }
 
@@ -313,13 +327,14 @@ interface MessageRow {
   attachment_id: string | null;
   content: D1MessageContent | null;
   created_at: string;
+  edited_at: string | null;
   deleted_at: string | null;
   sender: { id: string; display_name: string } | null;
   attachment: { id: string; storage_path: string; mime_type: string; size_bytes: number | null } | null;
 }
 
 const MESSAGE_SELECT =
-  "id, group_id, sender_id, body, reply_to, attachment_id, content, created_at, deleted_at, " +
+  "id, group_id, sender_id, body, reply_to, attachment_id, content, created_at, edited_at, deleted_at, " +
   "sender:d1_members!d1_messages_sender_id_fkey(id, display_name), " +
   "attachment:d1_attachments!d1_messages_attachment_id_fkey(id, storage_path, mime_type, size_bytes)";
 
@@ -390,6 +405,7 @@ async function shape(rows: MessageRow[], callerId: string): Promise<D1Message[]>
       content: !deleted && r.content ? livePollContent(openContent(r.content, r.group_id)!, r.id, callerId, votes ?? []) : null,
       reactions: deleted ? [] : [...byEmoji].map(([emoji, v]) => ({ emoji, ...v })),
       createdAt: r.created_at,
+      editedAt: deleted ? null : r.edited_at,
       deleted,
       mine: r.sender_id === callerId,
     };

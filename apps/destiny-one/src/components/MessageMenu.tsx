@@ -1,6 +1,6 @@
 // B4 Message actions: press and hold a message. The chat dims, the message
 // lifts out where it was, a bar of quick reactions sits above it (with "+"
-// for more) and a card of actions sits below: Reply, Copy, Share, Report,
+// for more) and a card of actions sits below: Reply, Copy, Edit, Share, Report,
 // Block, Delete. Laid out by lib/menuLayout, so it always fits on screen and
 // never covers the message.
 //
@@ -46,6 +46,8 @@ export interface MessageMenuActions {
   onReact: (emoji: string) => void;
   onReply: (() => void) | null;
   onCopy: () => void;
+  /** My own text, still inside the edit window. */
+  onEdit: (() => void) | null;
   /** Photos and files: share the file itself (save, AirDrop, another app). */
   onShare: (() => void) | null;
   onReport: () => void;
@@ -66,6 +68,7 @@ function items(m: LocalMessage, a: MessageMenuActions): Item[][] {
   const everyday: Item[] = [];
   if (a.onReply) everyday.push({ label: "Reply", icon: "reply", run: a.onReply });
   if (m.body) everyday.push({ label: "Copy", icon: "copy", run: a.onCopy });
+  if (a.onEdit) everyday.push({ label: "Edit", icon: "pencil", run: a.onEdit });
   if (a.onShare && m.attachment) everyday.push({ label: "Share", icon: "share", run: a.onShare });
   const serious: Item[] = [];
   if (theirs) serious.push({ label: "Report", icon: "flag", run: a.onReport, destructive: true });

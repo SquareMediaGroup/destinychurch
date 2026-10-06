@@ -8,6 +8,8 @@ import {
   REQUIRED_CONSENTS,
   adultOnFromDateOfBirth,
   canCreateCommunity,
+  canEditMessage,
+  EDIT_WINDOW_MINUTES,
   topRole,
   D1_ROLE_LABELS,
   canCreateGroup,
@@ -268,5 +270,23 @@ test.describe("name changes", () => {
   });
   test("changes older than 30 days don't count", () => {
     expect(nameChangeAllowance([daysAgo(31), daysAgo(45)], now).left).toBe(2);
+  });
+});
+
+test.describe("canEditMessage", () => {
+  const now = Date.parse("2026-10-06T12:00:00Z");
+  const ago = (min: number) => new Date(now - min * 60_000).toISOString();
+  const base = { mine: true, deleted: false, body: "Hello", id: 5, createdAt: ago(1) };
+  test("my own sent text, inside the window", () => {
+    expect(canEditMessage(base, now)).toBe(true);
+  });
+  test("closes after the window", () => {
+    expect(canEditMessage({ ...base, createdAt: ago(EDIT_WINDOW_MINUTES) }, now)).toBe(false);
+  });
+  test("never someone else's, a deleted one, one without text, or one still sending", () => {
+    expect(canEditMessage({ ...base, mine: false }, now)).toBe(false);
+    expect(canEditMessage({ ...base, deleted: true }, now)).toBe(false);
+    expect(canEditMessage({ ...base, body: null }, now)).toBe(false);
+    expect(canEditMessage({ ...base, id: -3 }, now)).toBe(false);
   });
 });

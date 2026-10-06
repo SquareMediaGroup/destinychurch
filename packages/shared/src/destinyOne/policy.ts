@@ -191,6 +191,16 @@ export function validateMessageBody(body: string | null | undefined, hasAttachme
 
 // ── Polls ────────────────────────────────────────────────────────────────────
 
+/** How long after sending a message its text can still be edited (d1_edit_message enforces the same). */
+export const EDIT_WINDOW_MINUTES = 15;
+/** How many times one message can be edited. */
+export const MAX_EDITS = 10;
+
+/** Whether the app should offer Edit: your own sent text, not deleted, still inside the window. */
+export function canEditMessage(m: { mine: boolean; deleted: boolean; body: string | null; id: number; createdAt: string }, now: number = Date.now()): boolean {
+  return m.mine && !m.deleted && m.id > 0 && !!m.body && now - Date.parse(m.createdAt) < EDIT_WINDOW_MINUTES * 60_000;
+}
+
 export const MIN_POLL_OPTIONS = 2;
 export const MAX_POLL_OPTIONS = 6;
 export const MAX_POLL_QUESTION_LENGTH = 200;

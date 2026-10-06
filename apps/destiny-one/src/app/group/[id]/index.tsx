@@ -18,7 +18,7 @@ import type { MessageMenuActions } from "@/components/MessageMenu";
 import { Divider, MessageBubble, buildRows, type Row } from "@/components/MessageBubble";
 import { NotificationPrompt } from "@/components/NotificationPrompt";
 import { Avatar, BackButton, ConfirmDialog, EmptyState, ErrorState, GlassIconButton, PrimaryButton, withAlpha } from "@/components/ui";
-import { canSendAs } from "@destiny/shared";
+import { canEditMessage, canSendAs } from "@destiny/shared";
 import type { Account } from "@/lib/accounts";
 import { messageSummary, plural } from "@/lib/format";
 import { api } from "@/lib/api";
@@ -62,6 +62,7 @@ export default function GroupChat() {
   const [blocking, setBlocking] = useState<{ id: string; name: string } | null>(null);
   const [blockBusy, setBlockBusy] = useState(false);
   const [replyTo, setReplyTo] = useState<LocalMessage | null>(null);
+  const [editing, setEditing] = useState<LocalMessage | null>(null);
   const [showJump, setShowJump] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
 
@@ -190,6 +191,7 @@ export default function GroupChat() {
     onCopy: () => {
       if (m.body) void Clipboard.setStringAsync(m.body);
     },
+    onEdit: group?.canPost && !frozen && !archived && canEditMessage(m) ? () => startEdit(m) : null,
     onShare: m.attachment ? () => void shareAttachment(m) : null,
     onReport: () => router.push({ pathname: "/report", params: { messageId: String(m.id), name: m.sender?.displayName ?? "Former member", at: m.createdAt, body: messageSummary(m) } }),
     onBlock: () => {
@@ -212,7 +214,20 @@ export default function GroupChat() {
     }
   }
 
+  function startEdit(m: LocalMessage) {
+    setReplyTo(null);
+    setEditing(m);
+    // The composer remounts holding the message's text; focus it once it has.
+    requestAnimationFrame(() => input.current?.focus());
+  }
+
   async function sendText(text: string) {
+    if (editing) {
+      const target = editing;
+      setEditing(null);
+      await convo.edit(target.id, text).catch((err) => setToast(errorMessage(err, "Couldn't save the edit. Try again.")));
+      return;
+    }
     const reply = replyTo;
     setReplyTo(null);
     list.current?.scrollToOffset({ offset: 0, animated: true });
@@ -265,7 +280,11 @@ export default function GroupChat() {
     </View>
   ) : (
     <Composer
+      // Editing swaps the box's text for the message's; leaving it brings the draft back.
+      key={editing ? `edit-${editing.id}` : "compose"}
       ref={input}
+      editing={editing?.body ? { text: editing.body } : null}
+      onCancelEdit={() => setEditing(null)}
       replying={replyTo ? { name: replyTo.mine ? "yourself" : replyTo.sender?.displayName ?? "Former member", text: messageSummary(replyTo) } : null}
       onCancelReply={() => setReplyTo(null)}
       onSend={sendText}
@@ -275,8 +294,8 @@ export default function GroupChat() {
       onAttachPoll={() => router.push(`/group/${id}/poll`)}
       onAttachEvent={() => router.push(`/group/${id}/event-picker`)}
       onError={setToast}
-      initialText={chatDrafts.get(id)}
-      onTextChange={(text) => chatDrafts.set(id, text)}
+      initialText={editing?.body ?? chatDrafts.get(id)}
+      onTextChange={editing ? undefined : (text) => chatDrafts.set(id, text)}
     />
   );
 

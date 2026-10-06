@@ -170,6 +170,7 @@ export function useConversation(groupId: string, me: D1Me | null, unreadAtOpen: 
         content: null,
         reactions: [],
         createdAt: new Date().toISOString(),
+        editedAt: null,
         deleted: false,
         mine: true,
         status: "sending",
@@ -207,6 +208,7 @@ export function useConversation(groupId: string, me: D1Me | null, unreadAtOpen: 
         content,
         reactions: [],
         createdAt: new Date().toISOString(),
+        editedAt: null,
         deleted: false,
         mine: true,
         status: "sending",
@@ -306,6 +308,23 @@ export function useConversation(groupId: string, me: D1Me | null, unreadAtOpen: 
     [groupId],
   );
 
+  /** New text for one of my messages. Shows at once; goes back to the old text if the server refuses. */
+  const edit = useCallback(
+    async (messageId: number, body: string) => {
+      const before = messages?.find((m) => m.id === messageId);
+      if (!before) return;
+      updateMessages(groupId, (list) => list.map((m) => (m.id === messageId ? { ...m, body, editedAt: new Date().toISOString() } : m)));
+      try {
+        const saved = await api.editMessage(messageId, body);
+        setMessages((list) => upsert(list, saved));
+      } catch (err) {
+        updateMessages(groupId, (list) => list.map((m) => (m.id === messageId ? { ...m, body: before.body, editedAt: before.editedAt } : m)));
+        throw err;
+      }
+    },
+    [groupId, messages, setMessages],
+  );
+
   const toggleReaction = useCallback(
     async (messageId: number, emoji: string) => {
       const msg = messages?.find((m) => m.id === messageId);
@@ -396,6 +415,7 @@ export function useConversation(groupId: string, me: D1Me | null, unreadAtOpen: 
     retry,
     discard,
     remove,
+    edit,
     toggleReaction,
     attachmentUrl,
   };

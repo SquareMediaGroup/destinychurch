@@ -7,6 +7,7 @@ import { broadcastNewMessage, getMessage, listMessages, requireGroupMembership }
 import { messageTerms, sealBody, sealContent } from "@/lib/destinyOne/crypto.server";
 import { buildEventSnapshot } from "@/lib/destinyOne/events.server";
 import { pushNewMessage } from "@/lib/destinyOne/push.server";
+import { attachLinkPreview } from "@/lib/destinyOne/linkPreview.server";
 import { OneError, fromDbError, limit, oneJson, oneRoute, readBody, requireUuid, type IdParams } from "@/lib/destinyOne/http";
 import { sendMessageSchema } from "@/lib/destinyOne/schemas";
 
@@ -101,6 +102,8 @@ export const POST = oneRoute<IdParams>(async (request, { params }) => {
         },
         message.mentions,
       ),
+      // A link's preview follows a moment later, so sending never waits on another website.
+      attachLinkPreview(message.id, id, body),
     ]),
   );
   return oneJson(message, 201);

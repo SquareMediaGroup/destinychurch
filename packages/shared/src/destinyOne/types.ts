@@ -285,6 +285,8 @@ export interface D1Message {
   editedAt: string | null;
   /** Member ids "@mentioned" in the text (only current members of the group). */
   mentions: string[];
+  /** A copy of a message from another chat. Who wrote the original isn't carried across. */
+  forwarded: boolean;
   /** The first link's preview. Arrives a moment after the message (a `link_preview` event). */
   linkPreview: D1LinkPreview | null;
   deleted: boolean;
@@ -333,7 +335,7 @@ export interface D1UploadTicket {
 
 /** Realtime events on `d1-group:<id>` and `d1-member:<id>` (Broadcast). */
 export type D1RealtimeEvent =
-  | { event: "message"; payload: { id: number; groupId: string; sender: { id: string; displayName: string }; body: string | null; replyTo: number | null; attachmentId: string | null; content: D1MessageContent | null; mentions: string[]; createdAt: string } }
+  | { event: "message"; payload: { id: number; groupId: string; sender: { id: string; displayName: string }; body: string | null; replyTo: number | null; attachmentId: string | null; content: D1MessageContent | null; mentions: string[]; forwarded?: boolean; createdAt: string } }
   | { event: "message_deleted"; payload: { id: number; groupId: string } }
   | { event: "message_edited"; payload: { id: number; groupId: string; body: string; editedAt: string; mentions: string[] } }
   | { event: "reaction"; payload: { messageId: number; groupId: string; memberId: string; emoji: string; added: boolean } }

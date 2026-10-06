@@ -1,6 +1,6 @@
 // B4 Message actions: press and hold a message. The chat dims, the message
 // lifts out where it was, a bar of quick reactions sits above it (with "+"
-// for more) and a card of actions sits below: Reply, Copy, Edit, Share, Pin, Info, Report,
+// for more) and a card of actions sits below: Reply, Copy, Edit, Forward, Share, Pin, Info, Report,
 // Block, Delete. Laid out by lib/menuLayout, so it always fits on screen and
 // never covers the message.
 //
@@ -46,6 +46,8 @@ export interface MessageMenuActions {
   onReact: (emoji: string) => void;
   onReply: (() => void) | null;
   onCopy: () => void;
+  /** Copy it into other chats I can post in (never polls). */
+  onForward: (() => void) | null;
   /** "Seen by": my own messages, or any in a group I manage. */
   onInfo: (() => void) | null;
   /** Group managers: pin or unpin this message. */
@@ -73,6 +75,7 @@ function items(m: LocalMessage, a: MessageMenuActions): Item[][] {
   if (a.onReply) everyday.push({ label: "Reply", icon: "reply", run: a.onReply });
   if (m.body) everyday.push({ label: "Copy", icon: "copy", run: a.onCopy });
   if (a.onEdit) everyday.push({ label: "Edit", icon: "pencil", run: a.onEdit });
+  if (a.onForward) everyday.push({ label: "Forward", icon: "forward", run: a.onForward });
   if (a.onShare && m.attachment) everyday.push({ label: "Share", icon: "share", run: a.onShare });
   if (a.pin) everyday.push({ label: a.pin.pinned ? "Unpin" : "Pin", icon: "pin", run: a.pin.run });
   if (a.onInfo) everyday.push({ label: "Info", icon: "info", run: a.onInfo });

@@ -233,6 +233,8 @@ export function createDestinyOneClient({ baseUrl, getAccessToken, fetchImpl }: D
     send: (groupId: string, input: { body?: string; replyTo?: number; attachmentId?: string; poll?: D1PollDraft; event?: D1EventRef; mentions?: string[] }) =>
       call<D1Message>("POST", `/groups/${groupId}/messages`, input),
     deleteMessage: (messageId: number) => call<{ ok: true }>("DELETE", `/messages/${messageId}`),
+    /** Send a copy of a message to up to 5 other chats I can post in (not polls). */
+    forward: (messageId: number, groupIds: string[]) => call<{ messages: D1Message[] }>("POST", `/messages/${messageId}/forward`, { groupIds }),
     /** "Seen by" for one message: my own messages, or any message in a group I manage. */
     receipts: (messageId: number) => call<D1ReadReceipts>("GET", `/messages/${messageId}/receipts`),
     /** Group managers: pin (up to 3; a fourth unpins the oldest) or unpin a message. */

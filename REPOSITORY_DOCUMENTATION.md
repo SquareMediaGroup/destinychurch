@@ -375,6 +375,8 @@ destinychurch/
 │       ├── 20261006_04_destiny_one_read_receipts.sql # part 14 (v0.8): "Seen by" (d1_members.read_receipts,
 │       │                                   # d1_read_receipts)
 │       ├── 20261006_05_destiny_one_link_previews.sql # part 15 (v0.8): sealed link previews
+│       ├── 20261006_06_destiny_one_forwarding.sql # part 16 (v0.8): forwarded_from; d1_post_message gains
+│       │                                   # p_forwarded_from (refuses messages you can't see)
 │       │                                   # (apply after scripts/destiny-one/encrypt-messages.ts)
 │       ├── 20260927_03_destiny_one_message_search.sql # Destiny One part 4: message search
 │       ├── 20260927_02_destiny_one_leader_invites.sql # Destiny One part 3: leader invites
@@ -2167,6 +2169,14 @@ link-local/cloud-metadata, CGNAT, multicast and their IPv6 forms). Parsing (`fir
 is in `lib/destinyOne/linkPreview.ts`, unit-tested. An edit that changes the link rebuilds or clears the
 preview. In the app, links in message text are underlined and open in the in-app browser, and the
 preview shows as a card under the text.
+
+**Part 16 — `20261006_06_destiny_one_forwarding.sql`: forwarding.** `d1_messages.forwarded_from` links a
+copy to its original (shown as "forwarded from message #…" in the safeguarding transcript). Members only see
+"Forwarded"; the original author isn't carried across. `d1_post_message` gains `p_forwarded_from` (the
+8-argument version is dropped) and refuses it unless the forwarder is in the original's group now, was
+when it was sent, and it isn't deleted. `POST messages/[id]/forward { groupIds }` (up to 5, 20 a minute,
+never polls) opens the text and seals it again for each target group, copies any photo or PDF into that
+group's own folder with its own `d1_attachments` row, then posts, broadcasts and pushes like any message.
 
 **Tested by:** `scripts/test-sql.sh` (`npm run test:sql`, and the "Database rules" CI job) — applies
 Supabase stubs + every Destiny One migration (parts 1–9, plus the profile-picture, min-build and
@@ -4383,6 +4393,7 @@ needs at least 2 verified adults.") pass through as `rule_violation` (422). Type
 | `messages/[id]` | PATCH | `{ body }` — edit my own message's text (15 minutes, 10 times; `d1_edit_message`). Sealed with new search terms; `message_edited` goes to the group over the REST broadcast (it carries text). 20 a minute, no push |
 | `messages/[id]/pin` | POST, DELETE | Pin or unpin (group managers; at most 3, a fourth unpins the oldest). 30 a minute |
 | `messages/[id]/receipts` | GET | "Seen by": `{ read, notYet, hidden }` for the sender or a group manager, while their own read receipts are on (`d1_read_receipts`). 60 a minute |
+| `messages/[id]/forward` | POST | `{ groupIds }` (1–5): a copy into other chats I can post in, marked Forwarded, file copied per group, re-sealed per group. Not polls. 20 a minute |
 | `me/settings` | PATCH | `{ readReceipts? }` — account settings that change what others see. `D1Me.readReceipts` |
 | `events` | GET | Upcoming ChurchSuite events for the Event picker in the attach sheet |
 | `groups/[id]/invites` | POST | Leaders: `{ email, name, adult, note? }` — invite someone new; they become an access request for staff to approve, then join the group |

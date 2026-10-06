@@ -135,6 +135,10 @@ export const editMessageSchema = z.object({
   mentions: z.array(uuid).max(50).optional(),
 });
 
+export const forwardSchema = z.object({
+  groupIds: z.array(uuid).min(1, "Choose a chat to forward to.").max(5, "Forward to up to 5 chats at a time."),
+});
+
 export const voteSchema = z.object({
   optionIds: z.array(z.string().trim().min(1).max(40)).max(20),
 });

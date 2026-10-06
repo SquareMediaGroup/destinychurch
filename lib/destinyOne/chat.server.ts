@@ -274,6 +274,7 @@ export async function broadcastNewMessage(message: D1Message): Promise<void> {
     attachmentId: message.attachment?.id ?? null,
     content: message.content,
     mentions: message.mentions,
+    forwarded: message.forwarded,
     createdAt: message.createdAt,
   });
 }
@@ -335,12 +336,13 @@ interface MessageRow {
   deleted_at: string | null;
   mentions: string[] | null;
   link_preview: string | null;
+  forwarded_from: number | null;
   sender: { id: string; display_name: string } | null;
   attachment: { id: string; storage_path: string; mime_type: string; size_bytes: number | null } | null;
 }
 
 const MESSAGE_SELECT =
-  "id, group_id, sender_id, body, reply_to, attachment_id, content, created_at, edited_at, deleted_at, mentions, link_preview, " +
+  "id, group_id, sender_id, body, reply_to, attachment_id, content, created_at, edited_at, deleted_at, mentions, link_preview, forwarded_from, " +
   "sender:d1_members!d1_messages_sender_id_fkey(id, display_name), " +
   "attachment:d1_attachments!d1_messages_attachment_id_fkey(id, storage_path, mime_type, size_bytes)";
 
@@ -425,6 +427,7 @@ async function shape(rows: MessageRow[], callerId: string): Promise<D1Message[]>
       editedAt: deleted ? null : r.edited_at,
       mentions: deleted ? [] : r.mentions ?? [],
       linkPreview: deleted ? null : openLinkPreview(r.link_preview, r.group_id),
+      forwarded: r.forwarded_from !== null,
       deleted,
       mine: r.sender_id === callerId,
     };

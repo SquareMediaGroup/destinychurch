@@ -187,6 +187,12 @@ export function MessageBubble({ row, replyTo, senderTag, senderIsGroupAdmin, can
       style={{ opacity: m.status === "sending" ? 0.6 : 1 }}
     >
       <View style={{ ...corners, backgroundColor: m.mine ? t.send : t.bubbleIn, paddingTop: 8, paddingBottom: 9, paddingHorizontal: 14, gap: 6 }}>
+        {m.forwarded ? (
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+            <Icon name="forward" size={12} color={k.soft} strokeWidth={2.2} />
+            <Text style={{ fontSize: 12, fontStyle: "italic", color: k.soft }}>Forwarded</Text>
+          </View>
+        ) : null}
         {replyTo ? (
           <View style={{ marginTop: 2, marginHorizontal: -6, paddingVertical: 7, paddingHorizontal: 10, borderRadius: 13, backgroundColor: k.panel, gap: 1 }}>
             <Text style={{ fontSize: 13, fontWeight: "600", color: k.name }}>{replyName}</Text>

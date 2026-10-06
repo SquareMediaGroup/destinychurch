@@ -176,10 +176,10 @@ select pg_temp.expect_error(
 select pg_temp.check(true, 'mentions cannot be changed outside an edit');
 
 select pg_temp.check(
-  not exists (select 1 from pg_proc where proname = 'd1_post_message' and pronargs <> 8)
-  and not has_function_privilege('authenticated', 'public.d1_post_message(uuid, uuid, text, bigint, uuid, jsonb, text[], uuid[])', 'execute')
+  not exists (select 1 from pg_proc where proname = 'd1_post_message' and pronargs <> 9)
+  and not has_function_privilege('authenticated', 'public.d1_post_message(uuid, uuid, text, bigint, uuid, jsonb, text[], uuid[], bigint)', 'execute')
   and not has_function_privilege('authenticated', 'public.d1_valid_mentions(uuid, uuid, uuid[])', 'execute'),
-  'one d1_post_message (with mentions), service-role only');
+  'one d1_post_message (with mentions and forwarding), service-role only');
 
 -- ── Pins (20261006_03) ──────────────────────────────────────────────────────
 
@@ -277,3 +277,28 @@ select pg_temp.check(true, 'a preview cannot be changed outside d1_set_link_prev
 select pg_temp.check(
   not has_function_privilege('authenticated', 'public.d1_set_link_preview(bigint, text)', 'execute'),
   'setting previews is service-role only');
+
+-- ── Forwarding (20261006_06) ────────────────────────────────────────────────
+
+-- A second group in the same community for the lead and adult2 (+ a third adult for the rules).
+insert into ids select 'team', public.d1_create_group(:lead::uuid, (select v from ids where k = 'community'), 'Team', null, null,
+  array[:adult2::uuid, '10000000-0000-0000-0000-00000000000c'::uuid]);
+
+insert into found select 'src', public.d1_post_message(:lead::uuid, (select v from ids where k = 'announce'), 'd1e:v1:original');
+insert into found select 'fwd', public.d1_post_message(:lead::uuid, (select v from ids where k = 'team'), 'd1e:v1:copy', null, null, null, null, null, (select v from found where k = 'src'));
+select pg_temp.check(
+  (select forwarded_from from public.d1_messages where id = (select v from found where k = 'fwd')) = (select v from found where k = 'src'),
+  'a forward remembers the original');
+
+select pg_temp.expect_error(
+  format($$select public.d1_post_message('10000000-0000-0000-0000-0000000000ff', %L, 'd1e:v1:x', null, null, null, null, null, %s)$$,
+    (select v from ids where k = 'team'), (select v from found where k = 'src')),
+  'only forward messages you can see');
+select pg_temp.check(true, 'someone outside the original group cannot forward it');
+
+select public.d1_delete_message(:lead::uuid, (select v from found where k = 'src'));
+select pg_temp.expect_error(
+  format($$select public.d1_post_message(%L, %L, 'd1e:v1:x', null, null, null, null, null, %s)$$,
+    :lead, (select v from ids where k = 'team'), (select v from found where k = 'src')),
+  'only forward messages you can see');
+select pg_temp.check(true, 'a deleted message cannot be forwarded');

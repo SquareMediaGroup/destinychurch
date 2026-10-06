@@ -62,7 +62,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
     supabase
       .from("d1_messages")
       .select(
-        "id, body, content, reply_to, created_at, edited_at, deleted_at, " +
+        "id, body, content, reply_to, created_at, edited_at, deleted_at, forwarded_from, " +
           "sender:d1_members!d1_messages_sender_id_fkey(id, display_name), " +
           "deleted_by_member:d1_members!d1_messages_deleted_by_fkey(id, display_name), " +
           "attachment:d1_attachments!d1_messages_attachment_id_fkey(id, storage_path, mime_type, size_bytes)",

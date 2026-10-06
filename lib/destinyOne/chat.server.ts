@@ -201,7 +201,7 @@ export async function getGroup(caller: Caller, groupId: string): Promise<D1Group
   if (!row) throw new OneError("not_found", "That group doesn't exist, or you're not in it.");
 
   const supabase = createServiceClient();
-  const [{ data: members, error }, canManage, icons] = await Promise.all([
+  const [{ data: members, error }, canManage, icons, pinned] = await Promise.all([
     supabase
       .from("d1_group_members")
       .select("role, joined_at, d1_members!d1_group_members_member_id_fkey!inner(id, display_name, adult_on, status, roles)")
@@ -211,6 +211,7 @@ export async function getGroup(caller: Caller, groupId: string): Promise<D1Group
       .order("joined_at", { ascending: true }),
     canManageGroup(groupId, caller.member.id),
     iconUrls([groupId]),
+    pinnedMessages(caller, groupId, row.joined_at),
   ]);
   if (error) throw fromDbError(error);
 
@@ -226,6 +227,7 @@ export async function getGroup(caller: Caller, groupId: string): Promise<D1Group
     description: row.description,
     canManage,
     canPost: canPost({ member: caller.policy, groupKind: row.kind, groupState: row.state, myRole: row.my_role }),
+    pinned,
     members: people.map((p) => ({
       id: p.id,
       displayName: p.display_name,
@@ -270,6 +272,7 @@ export async function broadcastNewMessage(message: D1Message): Promise<void> {
     replyTo: message.replyTo,
     attachmentId: message.attachment?.id ?? null,
     content: message.content,
+    mentions: message.mentions,
     createdAt: message.createdAt,
   });
 }
@@ -277,7 +280,7 @@ export async function broadcastNewMessage(message: D1Message): Promise<void> {
 /** An edited message's new text, to everyone in the group. Same REST path as new messages (it carries plaintext). */
 export async function broadcastMessageEdited(message: D1Message): Promise<void> {
   if (!message.body || !message.editedAt) return;
-  await broadcastToGroup(message.groupId, "message_edited", { id: message.id, groupId: message.groupId, body: message.body, editedAt: message.editedAt });
+  await broadcastToGroup(message.groupId, "message_edited", { id: message.id, groupId: message.groupId, body: message.body, editedAt: message.editedAt, mentions: message.mentions });
 }
 
 /**
@@ -329,12 +332,13 @@ interface MessageRow {
   created_at: string;
   edited_at: string | null;
   deleted_at: string | null;
+  mentions: string[] | null;
   sender: { id: string; display_name: string } | null;
   attachment: { id: string; storage_path: string; mime_type: string; size_bytes: number | null } | null;
 }
 
 const MESSAGE_SELECT =
-  "id, group_id, sender_id, body, reply_to, attachment_id, content, created_at, edited_at, deleted_at, " +
+  "id, group_id, sender_id, body, reply_to, attachment_id, content, created_at, edited_at, deleted_at, mentions, " +
   "sender:d1_members!d1_messages_sender_id_fkey(id, display_name), " +
   "attachment:d1_attachments!d1_messages_attachment_id_fkey(id, storage_path, mime_type, size_bytes)";
 
@@ -406,6 +410,7 @@ async function shape(rows: MessageRow[], callerId: string): Promise<D1Message[]>
       reactions: deleted ? [] : [...byEmoji].map(([emoji, v]) => ({ emoji, ...v })),
       createdAt: r.created_at,
       editedAt: deleted ? null : r.edited_at,
+      mentions: deleted ? [] : r.mentions ?? [],
       deleted,
       mine: r.sender_id === callerId,
     };
@@ -443,6 +448,26 @@ export async function listMessages(
     messages: (await shape(page, caller.member.id)).reverse(),
     nextBefore: hasMore ? page[page.length - 1].id : null,
   };
+}
+
+/**
+ * The group's pinned messages the caller can see: sent since they joined, not
+ * deleted, not from someone they've blocked. Newest pin first.
+ */
+async function pinnedMessages(caller: Caller, groupId: string, joinedAt: string): Promise<D1Message[]> {
+  const supabase = createServiceClient();
+  const { data: pins, error } = await supabase.from("d1_pins").select("message_id").eq("group_id", groupId).order("pinned_at", { ascending: false });
+  if (error) throw fromDbError(error);
+  const ids = (pins ?? []).map((p) => p.message_id as number);
+  if (!ids.length) return [];
+  const [{ data, error: msgError }, blocked] = await Promise.all([
+    supabase.from("d1_messages").select(MESSAGE_SELECT).in("id", ids).gte("created_at", joinedAt).is("deleted_at", null),
+    blockedIds(caller.member.id),
+  ]);
+  if (msgError) throw fromDbError(msgError);
+  const rows = ((data ?? []) as unknown as MessageRow[]).filter((r) => !r.sender_id || !blocked.includes(r.sender_id));
+  const shaped = await shape(rows, caller.member.id);
+  return ids.map((id) => shaped.find((m) => m.id === id)).filter((m): m is D1Message => !!m);
 }
 
 /** Ids of the people this member has blocked (d1_blocks). */

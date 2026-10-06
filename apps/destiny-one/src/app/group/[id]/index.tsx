@@ -18,7 +18,7 @@ import type { MessageMenuActions } from "@/components/MessageMenu";
 import { Divider, MessageBubble, buildRows, type Row } from "@/components/MessageBubble";
 import { NotificationPrompt } from "@/components/NotificationPrompt";
 import { Avatar, BackButton, ConfirmDialog, EmptyState, ErrorState, GlassIconButton, PrimaryButton, withAlpha } from "@/components/ui";
-import { canEditMessage, canSendAs } from "@destiny/shared";
+import { canEditMessage, canSendAs, findMentions } from "@destiny/shared";
 import type { Account } from "@/lib/accounts";
 import { messageSummary, plural } from "@/lib/format";
 import { api } from "@/lib/api";
@@ -85,6 +85,9 @@ export default function GroupChat() {
   const byId = useMemo(() => new Map((messages ?? []).map((m) => [m.id, m])), [messages]);
   const admins = useMemo(() => new Set((group?.members ?? []).filter((m) => m.role === "admin").map((m) => m.id)), [group]);
   const tags = useMemo(() => new Map((group?.members ?? []).map((m) => [m.id, m.tag])), [group]);
+  // Everyone in the group, for drawing "@Name"; everyone but me, for the composer's suggestions.
+  const people = useMemo(() => (group?.members ?? []).map((m) => ({ id: m.id, displayName: m.displayName })), [group]);
+  const mentionables = useMemo(() => people.filter((p) => p.id !== me?.id), [people, me?.id]);
 
   // While on screen, new messages here aren't unread.
   useFocusEffect(
@@ -182,6 +185,20 @@ export default function GroupChat() {
   const department = group?.department ?? summary?.group.department;
   const sub = group ? [department, plural(group.members.length, "member")].filter(Boolean).join(" · ") : department ?? "";
   const canDelete = (m: LocalMessage) => m.mine || group?.myRole === "admin" || !!group?.canManage;
+  // Pinned messages (newest pin first). Older cached copies of the group may not have the field yet.
+  const pinned = group?.pinned ?? [];
+  const [pinIndex, setPinIndex] = useState(0);
+  const shownPin = pinned.length ? pinned[pinIndex % pinned.length] : null;
+
+  async function togglePin(m: LocalMessage, on: boolean) {
+    try {
+      await (on ? api.pin(m.id) : api.unpin(m.id));
+      haptic.success();
+      void convo.reloadGroup();
+    } catch (err) {
+      setToast(errorMessage(err));
+    }
+  }
 
   // What the system press-and-hold menu does for one message.
   const menuFor = (m: LocalMessage): MessageMenuActions => ({
@@ -193,6 +210,8 @@ export default function GroupChat() {
     },
     onEdit: group?.canPost && !frozen && !archived && canEditMessage(m) ? () => startEdit(m) : null,
     onShare: m.attachment ? () => void shareAttachment(m) : null,
+    onInfo: m.mine || group?.canManage ? () => router.push({ pathname: "/message-info", params: { groupId: id, messageId: String(m.id) } }) : null,
+    pin: group?.canManage && !frozen && !archived ? { pinned: pinned.some((p) => p.id === m.id), run: () => void togglePin(m, !pinned.some((p) => p.id === m.id)) } : null,
     onReport: () => router.push({ pathname: "/report", params: { messageId: String(m.id), name: m.sender?.displayName ?? "Former member", at: m.createdAt, body: messageSummary(m) } }),
     onBlock: () => {
       if (m.sender) setBlocking({ id: m.sender.id, name: m.sender.displayName });
@@ -225,19 +244,20 @@ export default function GroupChat() {
     if (editing) {
       const target = editing;
       setEditing(null);
-      await convo.edit(target.id, text).catch((err) => setToast(errorMessage(err, "Couldn't save the edit. Try again.")));
+      await convo.edit(target.id, text, findMentions(text, mentionables)).catch((err) => setToast(errorMessage(err, "Couldn't save the edit. Try again.")));
       return;
     }
     const reply = replyTo;
     setReplyTo(null);
     list.current?.scrollToOffset({ offset: 0, animated: true });
-    await convo.send({ body: text, replyTo: reply?.id }).catch((err) => setToast(errorMessage(err)));
+    await convo.send({ body: text, replyTo: reply?.id, mentions: findMentions(text, mentionables) }).catch((err) => setToast(errorMessage(err)));
   }
 
   /** Holding Send: the other signed-in account sends this text (replies included). */
   async function sendTextAs(account: Account, text: string) {
     const reply = replyTo;
-    await convo.sendAs(account.slot, { body: text, replyTo: reply?.id });
+    // The other account can mention anyone but itself; the server drops anyone else not in the group.
+    await convo.sendAs(account.slot, { body: text, replyTo: reply?.id, mentions: findMentions(text, people) });
     setReplyTo(null);
     list.current?.scrollToOffset({ offset: 0, animated: true });
   }
@@ -296,6 +316,7 @@ export default function GroupChat() {
       onError={setToast}
       initialText={editing?.body ?? chatDrafts.get(id)}
       onTextChange={editing ? undefined : (text) => chatDrafts.set(id, text)}
+      mentionables={mentionables}
     />
   );
 
@@ -329,7 +350,7 @@ export default function GroupChat() {
             list.current?.scrollToOffset({ offset: info.averageItemLength * info.index, animated: false });
             setTimeout(() => list.current?.scrollToIndex({ index: info.index, animated: true, viewPosition: 0.5 }), 120);
           }}
-          contentContainerStyle={{ paddingTop: 24, paddingBottom: insets.top + 70 }}
+          contentContainerStyle={{ paddingTop: 24, paddingBottom: insets.top + 70 + (shownPin ? 58 : 0) }}
           keyboardDismissMode="interactive"
           keyboardShouldPersistTaps="handled"
           onEndReached={() => void convo.loadOlder()}
@@ -371,6 +392,8 @@ export default function GroupChat() {
                     else setToast("Couldn't open that file. Try again.");
                   });
                 }}
+                people={people}
+                meId={me?.id}
                 onToggleReaction={(emoji) => void convo.toggleReaction(item.m.id, emoji).catch((err) => setToast(errorMessage(err)))}
                 onVotePoll={(optionIds) => void convo.vote(item.m.id, optionIds).catch((err) => setToast(errorMessage(err)))}
                 onRetry={() =>
@@ -410,6 +433,39 @@ export default function GroupChat() {
         </Pressable>
         {preview ? <View style={{ width: 44 }} /> : <GlassIconButton icon="search" label={name ? `Search in ${name}` : "Search in this chat"} onPress={() => router.push({ pathname: "/search", params: { groupId: id } })} />}
       </View>
+
+      {/* Pinned: the newest pin; tapping shows it in the chat and moves on to the next. */}
+      {shownPin && !preview ? (
+        <View style={{ position: "absolute", top: insets.top + 62, left: 16, right: 16 }}>
+          <PressableScale
+            accessibilityRole="button"
+            accessibilityLabel={`Pinned message${pinned.length > 1 ? ` ${(pinIndex % pinned.length) + 1} of ${pinned.length}` : ""}: ${messageSummary(shownPin)}. Shows it in the chat.`}
+            scaleTo={0.98}
+            onPress={() => {
+              haptic.selection();
+              jumpTo.set(id, shownPin.id);
+              setPinIndex((i) => i + 1);
+            }}
+          >
+            <GlassSurface interactive style={[{ minHeight: 48, borderRadius: 18, flexDirection: "row", alignItems: "center", gap: 10, paddingVertical: 7, paddingHorizontal: 14 }, t.shadow]}>
+              {pinned.length > 1 ? (
+                <View style={{ gap: 2 }}>
+                  {pinned.map((p, i) => (
+                    <View key={p.id} style={{ width: 3, height: Math.max(6, 30 / pinned.length - 2), borderRadius: 1.5, backgroundColor: i === pinIndex % pinned.length ? t.tint : t.sep }} />
+                  ))}
+                </View>
+              ) : null}
+              <Icon name="pin" size={16} color={t.tint} strokeWidth={2.2} />
+              <View style={{ flex: 1, minWidth: 0 }}>
+                <Text style={{ fontSize: 12, fontWeight: "600", color: t.tint }}>Pinned</Text>
+                <Text numberOfLines={1} style={{ fontSize: 14, color: t.text }}>
+                  {messageSummary(shownPin)}
+                </Text>
+              </View>
+            </GlassSurface>
+          </PressableScale>
+        </View>
+      ) : null}
 
       {/* Footer */}
       <View style={{ paddingHorizontal: 12, paddingTop: 6, paddingBottom: Math.max(insets.bottom, 12) }}>

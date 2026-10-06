@@ -28,6 +28,10 @@ export const updateNameSchema = z.object({
   lastName: name,
 });
 
+export const settingsSchema = z.object({
+  readReceipts: z.boolean().optional(),
+});
+
 export const accessRequestSchema = z.object({
   name: z.string().trim().min(2, "Please enter your full name.").max(120),
   dateOfBirth: z
@@ -115,6 +119,7 @@ export const sendMessageSchema = z
     attachmentId: uuid.optional(),
     poll: pollDraftSchema.optional(),
     event: eventRefSchema.optional(),
+    mentions: z.array(uuid).max(50).optional(),
   })
   .refine(
     (v) => Boolean(v.body?.trim()) || Boolean(v.attachmentId) || Boolean(v.poll) || Boolean(v.event),
@@ -127,6 +132,7 @@ export const editMessageSchema = z.object({
     .trim()
     .min(1, "A message can't be edited to say nothing. Delete it instead.")
     .max(MAX_MESSAGE_LENGTH, `Messages can be up to ${MAX_MESSAGE_LENGTH} characters.`),
+  mentions: z.array(uuid).max(50).optional(),
 });
 
 export const voteSchema = z.object({

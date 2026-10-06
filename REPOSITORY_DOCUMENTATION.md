@@ -369,6 +369,11 @@ destinychurch/
 │       ├── 20261004_02_destiny_one_message_encryption_required.sql # part 10b: refuse plaintext
 │       ├── 20261006_01_destiny_one_message_edits.sql # part 11 (v0.8): edit your own message for 15
 │       │                                   # minutes; old text kept in d1_message_edits for review
+│       ├── 20261006_02_destiny_one_mentions.sql # part 12 (v0.8): @mentions (d1_messages.mentions,
+│       │                                   # d1_valid_mentions; d1_post_message gains p_mentions)
+│       ├── 20261006_03_destiny_one_pins.sql # part 13 (v0.8): pinned messages (d1_pins, up to 3)
+│       ├── 20261006_04_destiny_one_read_receipts.sql # part 14 (v0.8): "Seen by" (d1_members.read_receipts,
+│       │                                   # d1_read_receipts)
 │       │                                   # (apply after scripts/destiny-one/encrypt-messages.ts)
 │       ├── 20260927_03_destiny_one_message_search.sql # Destiny One part 4: message search
 │       ├── 20260927_02_destiny_one_leader_invites.sql # Destiny One part 3: leader invites
@@ -1975,6 +1980,7 @@ department **sub-groups**. Migration: `supabase/migrations/20260926_01_destiny_o
 | `d1_messages` | `body` (sealed ciphertext, see part 10; 4000 characters before sealing), `reply_to`, `attachment_id`, `content` (jsonb: a poll, whose question and option labels are sealed, or an event snapshot taken at send time), soft-delete `deleted_at`/`deleted_by`. Immutable except the delete stamp |
 | `d1_message_terms` | The blind search index (part 10): keyed hashes of every prefix of every word in a body, per group. No plaintext |
 | `d1_message_edits` | Part 11: the text an edit replaced (sealed), one row per edit, for the safeguarding transcript. Deny-all RLS; removed with its message by the purge |
+| `d1_pins` | Part 13: pinned messages per group (who pinned, when). At most 3; deny-all RLS |
 | `d1_poll_votes` | One row per (poll message, member, option). Written only by `d1_vote()`, which enforces single choice and current membership and broadcasts `poll_vote` (with `groupId`) |
 | `d1_reactions`, `d1_attachments` | Reactions; files in the private `d1-chat-media` bucket (images/PDF, 20 MB) |
 | `d1_reports`, `d1_safeguarding_events` | The safeguarding queue |
@@ -2115,6 +2121,36 @@ terms. `d1_messages_immutable` lets the body and `edited_at` change only while `
 which `d1_edit_message` does for its own transaction (`set_config(..., true)`), so a direct UPDATE is
 still refused. Members see only the latest text, marked "Edited"; the safeguarding transcript shows
 every version.
+
+**Part 12 — `20261006_02_destiny_one_mentions.sql`: @mentions.** `d1_messages.mentions uuid[]` (up to
+50) holds who a message "@names". The text stays sealed; the ids are plain because the server needs them
+to notify people, and they say no more than the member list does. `d1_valid_mentions(group, actor, ids)`
+keeps only current members of the group, never the sender, so a mention can't reach anyone outside it.
+`d1_post_message` gains `p_mentions` (the 7-argument version is dropped), `d1_edit_message` gains
+`p_mentions` (null leaves them alone), and the immutability trigger lets `mentions` change only during an
+edit. Push (`lib/destinyOne/push.server.ts`): a mentioned member gets "Sender mentioned you: …", even if
+they muted the group; blocking still wins. The app parses "@Name" with `findMentions` /
+`mentionSegments` / `mentionQuery` / `mentionSuggestions` in `@destiny/shared` (longest name first, never
+inside an email address); the composer suggests members as you type "@", and bubbles draw mentions in
+bold, highlighting your own name.
+
+**Part 13 — `20261006_03_destiny_one_pins.sql`: pinned messages.** `d1_pins (group, message, pinned_by,
+pinned_at)`. `d1_pin_message(actor, message, pin)` is for people who manage the group
+(`d1_can_manage_group`) and are in it; a deleted message can't be pinned, and pinning a fourth unpins the
+oldest. It emits `pins_changed` (no text, so `d1_emit` is fine). `GET groups/[id]` returns `pinned`:
+the pinned messages the caller can see (since they joined, not deleted, not from someone they've blocked),
+newest pin first. In the app a glass bar under the chat header shows the newest pin; tapping it scrolls to
+that message (`jumpTo`) and moves on to the next, with a small indicator when there are several. Pin /
+Unpin is in the message menu for managers.
+
+**Part 14 — `20261006_04_destiny_one_read_receipts.sql`: "Seen by".** Read state used to be private; now
+`d1_read_receipts(actor, message)` lists who (of the members who were there when it was sent) has read a
+message, from the existing `last_read_message_id`. No read time exists or is shown. Only the sender, or
+someone who manages the group, can ask. `d1_members.read_receipts` (default on) is reciprocal as in
+WhatsApp: off means you show as hidden (counted, not named) and you can't see anyone's. The API reads that
+column on its own (`loadReadReceipts`), not through `MEMBER_COLUMNS`, so an API deployed before the
+migration still works. The peek preview never moves the read marker. The draft notice in
+`docs/content/destiny-one-notices-draft.md` has a Read receipts paragraph to publish with it.
 
 **Tested by:** `scripts/test-sql.sh` (`npm run test:sql`, and the "Database rules" CI job) — applies
 Supabase stubs + every Destiny One migration (parts 1–9, plus the profile-picture, min-build and
@@ -4329,6 +4365,9 @@ needs at least 2 verified adults.") pass through as `rule_violation` (422). Type
 | `groups/[id]/messages` | GET, POST | Only messages since you joined; POST takes `body`, an attachment, a `poll` draft, or an `event` ref (the event is re-fetched and snapshotted server-side) and pushes a notification via `after()` (group name, "Sender: first line", or "Poll: …" / "Event: …") |
 | `messages/[id]/vote` | POST | `{ optionIds }` — your full vote set on a poll (empty clears it). 60 a minute |
 | `messages/[id]` | PATCH | `{ body }` — edit my own message's text (15 minutes, 10 times; `d1_edit_message`). Sealed with new search terms; `message_edited` goes to the group over the REST broadcast (it carries text). 20 a minute, no push |
+| `messages/[id]/pin` | POST, DELETE | Pin or unpin (group managers; at most 3, a fourth unpins the oldest). 30 a minute |
+| `messages/[id]/receipts` | GET | "Seen by": `{ read, notYet, hidden }` for the sender or a group manager, while their own read receipts are on (`d1_read_receipts`). 60 a minute |
+| `me/settings` | PATCH | `{ readReceipts? }` — account settings that change what others see. `D1Me.readReceipts` |
 | `events` | GET | Upcoming ChurchSuite events for the Event picker in the attach sheet |
 | `groups/[id]/invites` | POST | Leaders: `{ email, name, adult, note? }` — invite someone new; they become an access request for staff to approve, then join the group |
 | `search/messages` | GET | `?q=` — search of your messages: groups you are in, since you joined, never deleted, never from people you've blocked; newest 30. Each word matches as a prefix, on the blind index (text is encrypted at rest, see "Message encryption"). `&groupId=` searches one group (search opened from a chat): same rules; not found if you aren't in it, nothing for an archived group |

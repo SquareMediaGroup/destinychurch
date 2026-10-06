@@ -10,7 +10,7 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Animated, Image, Pressable, Text, View } from "react-native";
 import Svg, { Path } from "react-native-svg";
-import type { D1EventContent, D1LeaderRole, D1Message, D1PollContent } from "@destiny/shared";
+import { mentionSegments, type D1EventContent, type D1LeaderRole, type D1Message, type D1PollContent, type Mentionable } from "@destiny/shared";
 import { Icon } from "@/components/Icon";
 import { MessageMenu, type MessageMenuActions } from "@/components/MessageMenu";
 import { Appear, Pop, PressableScale, reduceMotion, springs } from "@/components/Motion";
@@ -106,6 +106,9 @@ interface BubbleProps {
   onToggleReaction: (emoji: string) => void;
   onVotePoll: (optionIds: string[]) => void;
   onRetry: () => void;
+  /** The group's members, to draw "@Name" mentions; mentions of me are highlighted. */
+  people?: Mentionable[];
+  meId?: string;
 }
 
 /** The little curl at the bottom of the last bubble in a run. Same fill as the bubble, drawn outside its corner. */
@@ -134,7 +137,7 @@ function tones(t: Theme, mine: boolean) {
     : { text: t.text, soft: t.muted, panel: t.bg, track: t.fill, bar: t.accentSoft, barMine: ORANGE, name: t.tint };
 }
 
-export function MessageBubble({ row, replyTo, senderTag, senderIsGroupAdmin, canReply, arriving, menu, onReply, onOpenAttachment, onToggleReaction, onVotePoll, onRetry }: BubbleProps) {
+export function MessageBubble({ row, replyTo, senderTag, senderIsGroupAdmin, canReply, arriving, menu, onReply, onOpenAttachment, onToggleReaction, onVotePoll, onRetry, people, meId }: BubbleProps) {
   const t = useTheme();
   const { m } = row;
   const k = tones(t, m.mine);
@@ -194,7 +197,7 @@ export function MessageBubble({ row, replyTo, senderTag, senderIsGroupAdmin, can
         <Attachment m={m} onOpen={onOpenAttachment} />
         {m.content?.kind === "event" ? <EventCard content={m.content} mine={m.mine} onOpen={onOpenAttachment} /> : null}
         {m.content?.kind === "poll" ? <PollCard content={m.content} mine={m.mine} sending={m.id < 0} onVote={onVotePoll} /> : null}
-        {m.body ? <Text style={{ fontSize: 17, lineHeight: 22, letterSpacing: -0.2, color: k.text }}>{m.body}</Text> : null}
+        {m.body ? <Text style={{ fontSize: 17, lineHeight: 22, letterSpacing: -0.2, color: k.text }}>{m.mentions?.length && people ? <Mentions text={m.body} ids={m.mentions} people={people} meId={meId} mine={m.mine} /> : m.body}</Text> : null}
         {/* Edited messages say so, inside the bubble, so it shows whether or not the time does. */}
         {m.editedAt ? (
           <Text accessibilityLabel="Edited" style={{ marginTop: -4, alignSelf: "flex-end", fontSize: 11, color: k.soft, opacity: 0.8 }}>
@@ -291,6 +294,26 @@ export function MessageBubble({ row, replyTo, senderTag, senderIsGroupAdmin, can
         </View>
       </View>
     </SwipeToReply>,
+  );
+}
+
+/** The body with each "@Name" it mentions in bold; a mention of me gets a highlight too. */
+function Mentions({ text, ids, people, meId, mine }: { text: string; ids: string[]; people: Mentionable[]; meId?: string; mine: boolean }) {
+  const t = useTheme();
+  const k = tones(t, mine);
+  const named = people.filter((p) => ids.includes(p.id));
+  return (
+    <>
+      {mentionSegments(text, named).map((s, i) =>
+        s.mention ? (
+          <Text key={i} style={{ fontWeight: "700", color: mine ? k.text : t.tint, backgroundColor: s.mention.id === meId ? withAlpha(ORANGE, 0.2) : undefined }}>
+            {s.text}
+          </Text>
+        ) : (
+          s.text
+        ),
+      )}
+    </>
   );
 }
 

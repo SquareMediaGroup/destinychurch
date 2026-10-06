@@ -5,8 +5,9 @@ import { readSchema } from "@/lib/destinyOne/schemas";
 
 // POST /api/app/v1/one/groups/[id]/read  { messageId }
 //
-// Moves my read marker forward (never back). Read state is private to me —
-// there are no read receipts shown to others.
+// Moves my read marker forward (never back). It drives my unread counts and,
+// if I share read receipts (on by default), the "Seen by" list on messages
+// (d1_read_receipts, 20261006_04). The chat list's peek never calls this.
 
 export const dynamic = "force-dynamic";
 

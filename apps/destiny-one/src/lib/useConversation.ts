@@ -22,7 +22,7 @@ export type { LocalMessage };
 
 let localIds = -1;
 
-type SendInput = { body?: string; replyTo?: number; attachmentId?: string; poll?: D1PollDraft; event?: D1EventRef };
+type SendInput = { body?: string; replyTo?: number; attachmentId?: string; poll?: D1PollDraft; event?: D1EventRef; mentions?: string[] };
 type Pending = { input: SendInput; upload?: () => Promise<string> };
 /** Unsent messages, kept outside the screen so "tap to retry" still works after leaving and coming back. */
 const pending = new Map<number, Pending>();
@@ -159,7 +159,7 @@ export function useConversation(groupId: string, me: D1Me | null, unreadAtOpen: 
   );
 
   const send = useCallback(
-    async (input: { body?: string; replyTo?: number }, attach?: { file: NonNullable<LocalMessage["localAttachment"]>; upload: () => Promise<string> }) => {
+    async (input: { body?: string; replyTo?: number; mentions?: string[] }, attach?: { file: NonNullable<LocalMessage["localAttachment"]>; upload: () => Promise<string> }) => {
       const local: LocalMessage = {
         id: localIds--,
         groupId,
@@ -171,6 +171,7 @@ export function useConversation(groupId: string, me: D1Me | null, unreadAtOpen: 
         reactions: [],
         createdAt: new Date().toISOString(),
         editedAt: null,
+        mentions: input.mentions ?? [],
         deleted: false,
         mine: true,
         status: "sending",
@@ -209,6 +210,7 @@ export function useConversation(groupId: string, me: D1Me | null, unreadAtOpen: 
         reactions: [],
         createdAt: new Date().toISOString(),
         editedAt: null,
+        mentions: [],
         deleted: false,
         mine: true,
         status: "sending",
@@ -310,15 +312,15 @@ export function useConversation(groupId: string, me: D1Me | null, unreadAtOpen: 
 
   /** New text for one of my messages. Shows at once; goes back to the old text if the server refuses. */
   const edit = useCallback(
-    async (messageId: number, body: string) => {
+    async (messageId: number, body: string, mentions: string[]) => {
       const before = messages?.find((m) => m.id === messageId);
       if (!before) return;
-      updateMessages(groupId, (list) => list.map((m) => (m.id === messageId ? { ...m, body, editedAt: new Date().toISOString() } : m)));
+      updateMessages(groupId, (list) => list.map((m) => (m.id === messageId ? { ...m, body, mentions, editedAt: new Date().toISOString() } : m)));
       try {
-        const saved = await api.editMessage(messageId, body);
+        const saved = await api.editMessage(messageId, body, mentions);
         setMessages((list) => upsert(list, saved));
       } catch (err) {
-        updateMessages(groupId, (list) => list.map((m) => (m.id === messageId ? { ...m, body: before.body, editedAt: before.editedAt } : m)));
+        updateMessages(groupId, (list) => list.map((m) => (m.id === messageId ? { ...m, body: before.body, mentions: before.mentions, editedAt: before.editedAt } : m)));
         throw err;
       }
     },
@@ -386,7 +388,7 @@ export function useConversation(groupId: string, me: D1Me | null, unreadAtOpen: 
    * through Realtime, and a reload makes sure it's there.
    */
   const sendAs = useCallback(
-    async (slot: string, input: { body: string; replyTo?: number }) => {
+    async (slot: string, input: { body: string; replyTo?: number; mentions?: string[] }) => {
       await accounts.apiFor(slot).send(groupId, input);
       void reload();
     },

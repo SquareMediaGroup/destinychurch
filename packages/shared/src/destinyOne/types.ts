@@ -80,6 +80,8 @@ export interface D1Me {
   avatarUrl: string | null;
   /** People I've blocked: their messages are hidden for me and don't notify me. Never hides anything from safeguarding. */
   blocked: { id: string; displayName: string }[];
+  /** Shares read receipts, and so sees other people's (Profile → Privacy and safety). On by default. */
+  readReceipts: boolean;
   status: D1MemberStatus;
   roles: D1LeaderRole[];
   isAdult: boolean;
@@ -168,6 +170,8 @@ export interface D1GroupDetail extends D1GroupSummary {
   members: D1GroupMember[];
   canManage: boolean;
   canPost: boolean;
+  /** Pinned messages, newest pin first (at most 3). Only ones the caller can see. */
+  pinned: D1Message[];
   /** Current counts against the rules, for leaders. */
   rules?: { members: number; adults: number; minMembers: number; minAdults: number };
 }
@@ -269,8 +273,18 @@ export interface D1Message {
   createdAt: string;
   /** Set when the sender edited the text (shown as "Edited"). Earlier versions are kept for safeguarding review only. */
   editedAt: string | null;
+  /** Member ids "@mentioned" in the text (only current members of the group). */
+  mentions: string[];
   deleted: boolean;
   mine: boolean;
+}
+
+/** Who has read one message ("Seen by"): for its sender, and for the group's managers. */
+export interface D1ReadReceipts {
+  read: { id: string; displayName: string }[];
+  notYet: { id: string; displayName: string }[];
+  /** People who have read receipts turned off: not shown either way. */
+  hidden: number;
 }
 
 export interface D1MessagePage {
@@ -307,12 +321,14 @@ export interface D1UploadTicket {
 
 /** Realtime events on `d1-group:<id>` and `d1-member:<id>` (Broadcast). */
 export type D1RealtimeEvent =
-  | { event: "message"; payload: { id: number; groupId: string; sender: { id: string; displayName: string }; body: string | null; replyTo: number | null; attachmentId: string | null; content: D1MessageContent | null; createdAt: string } }
+  | { event: "message"; payload: { id: number; groupId: string; sender: { id: string; displayName: string }; body: string | null; replyTo: number | null; attachmentId: string | null; content: D1MessageContent | null; mentions: string[]; createdAt: string } }
   | { event: "message_deleted"; payload: { id: number; groupId: string } }
-  | { event: "message_edited"; payload: { id: number; groupId: string; body: string; editedAt: string } }
+  | { event: "message_edited"; payload: { id: number; groupId: string; body: string; editedAt: string; mentions: string[] } }
   | { event: "reaction"; payload: { messageId: number; groupId: string; memberId: string; emoji: string; added: boolean } }
   | { event: "poll_vote"; payload: { messageId: number; groupId: string; votes: D1PollTally[]; totalVoters: number } }
   | { event: "members_changed"; payload: { groupId: string } }
+  /** Something was pinned or unpinned: re-fetch the group (it carries the pins). */
+  | { event: "pins_changed"; payload: { groupId: string } }
   | { event: "group_state"; payload: { groupId: string; state: D1GroupState; reason: string | null } }
   /** Renamed, re-described or a new icon: re-fetch the group and the chat list. */
   | { event: "group_updated"; payload: { groupId: string } }

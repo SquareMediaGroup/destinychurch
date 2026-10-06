@@ -5,6 +5,7 @@
 - Never push directly to `main`. Work on a feature branch (branch off `main`, e.g. `feature/short-description`).
 - Push the feature branch and open a pull request for every change.
 - PRs must be reviewed and approved before merging — do not self-merge without approval.
+- Exception: if the user explicitly tells you to push to `main` (e.g. "push this to main"), do so directly — no feature branch or PR needed for that change. The instruction applies only to the change it was given for.
 
 ## Keeping the local checkout current (Destiny One / Expo)
 

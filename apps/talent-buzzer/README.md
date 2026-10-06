@@ -4,7 +4,7 @@ Judge buzzers for the Destiny talent show. Five Android tablets act as buzzers:
 four red **X** buzzers and one dedicated **golden buzzer**. A press:
 
 - fires a lighting cue on the Avolites (Titan Web API),
-- slams a big red X onto the LED screen (or the gold takeover for the golden buzzer),
+- pops a big 3D red X out of the LED screen above that judge's name (or the gold takeover for the golden buzzer),
 - plays the buzzer sound (or golden fanfare) from the LED screen machine.
 
 Everything runs on the venue network. No internet, accounts or cloud services
@@ -27,6 +27,7 @@ are involved, so it keeps working if the building connection drops.
 ## Rules during the show
 
 - Each judge's X **stays on** until the operator presses **Reset buzzers**. Pressing again does nothing.
+- When **all four judges** have buzzed, the screen strobes red with an alarm sound, then keeps pulsing red until reset (and fires the optional `allX` lighting cue).
 - The golden buzzer fires **once** until reset.
 - **Lock buzzers** ignores every press (use it between acts so nobody fires a cue by accident).
 - Reset clears the screen and, with `releaseOnReset`, kills the X and golden playbacks on Titan.
@@ -52,7 +53,7 @@ source at the display link. Options you can add to the URL:
 | --- | --- |
 | `bg=transparent` | Transparent background for keying over video |
 | `ghost=0` | Hide the faint empty X outlines |
-| `labels=1` | Show judge names under each X |
+| `labels=0` | Hide the judge names under each X |
 | `audio=off` | No sound from this copy of the page (e.g. a second display) |
 
 ### 2. Avolites Titan PC (agent)
@@ -74,18 +75,28 @@ from the LED machine first.
 
 ### 3. Lighting cues on Titan
 
-Record one playback per cue and note its **user number**:
+How a press reaches the lights:
 
-- one X cue per judge (or the same number for all four, if you want one look),
-- a golden buzzer cue,
-- optionally a reset cue (e.g. back to the stage state).
+1. A judge presses their tablet. The tablet tells the hub on the LED machine over Wi-Fi.
+2. The hub looks up that buzzer's playback number in `config.json` (e.g. judge 1 = 101) and sends
+   "fire playback 101" to the agent on the Titan PC.
+3. The agent calls Titan's built-in Web API on that same PC:
+   `http://localhost:4430/titan/script/2/Playbacks/FirePlaybackAtLevel?handle_userNumber=101&level_level=1`.
+4. Titan fires playback 101 at full, exactly as if someone had pushed its button. It shows on the
+   console like any other playback, and the operator can still override it by hand.
+5. On **Reset**, the hub sends "kill playback" for each buzzer cue (`KillPlayback`), so the looks drop out.
 
-Put those numbers in `config.json` → `cues`. Cues are fired at full
-(`FirePlaybackAtLevel`, level 1). With `releaseOnReset: true`, Reset kills the X and golden
-playbacks (`KillPlayback`) so they drop out. If you'd rather the cues time out by themselves,
-build them that way in Titan and set `releaseOnReset` to `false`.
+What the lighting operator does:
 
-Use the **Test lighting cues** buttons on the control page to fire each playback on its own.
+- Record one playback per look and give each a **user number**:
+  - one X look per judge (or the same number for all four, if you want one look),
+  - an "all four out" look (e.g. red strobe), optional,
+  - a golden buzzer look,
+  - optionally a reset look (e.g. back to the stage state).
+- Put those numbers in `config.json` -> `cues` (`x`, `allX`, `golden`, `reset`).
+- If you'd rather the looks time out by themselves, build them that way in Titan and set
+  `releaseOnReset` to `false`.
+- Use the **Test lighting cues** buttons on the control page to fire each playback on its own.
 
 ### 4. Tablets
 
@@ -108,8 +119,8 @@ or **Not connected - reconnecting...**. Tablets reconnect on their own.
 ### Sounds
 
 Without sound files the display page synthesises a game-show buzzer and a golden fanfare.
-To use your own, drop `buzzer.mp3` and `golden.mp3` into `hub/public/sounds/` and refresh the
-display page. Use **Test X** / **Test gold** on the control page to check levels.
+To use your own, drop `buzzer.mp3`, `all-out.mp3` and `golden.mp3` into `hub/public/sounds/` and refresh the
+display page. Use **Test X** / **Test all out** / **Test gold** on the control page to check levels.
 
 ## Config
 
@@ -123,9 +134,10 @@ display page. Use **Test X** / **Test gold** on the control page to check levels
 | `judges` | Seats and names shown on the tablets, control page and display labels |
 | `golden.name` | Name for the golden tablet |
 | `cues.x` | Titan playback user number per seat |
+| `cues.allX` | Playback fired when all four judges have buzzed, or `null` |
 | `cues.golden` | Golden buzzer playback |
 | `cues.reset` | Playback fired on Reset, or `null` |
-| `cues.releaseOnReset` | Kill X/golden playbacks on Reset |
+| `cues.releaseOnReset` | Kill X / all-X / golden playbacks on Reset |
 | `lighting.mode` | `agent` (default), `direct` (hub calls Titan itself), or `off` |
 | `titan.*` | Titan Web API host/port/timeout and URL templates (`{userNumber}` is filled in) |
 

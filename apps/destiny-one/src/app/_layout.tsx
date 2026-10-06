@@ -145,6 +145,7 @@ function App() {
         <Stack.Screen name="report-sent" options={{ presentation: "modal", gestureEnabled: false }} />
         <Stack.Screen name="feedback" options={{ presentation: "modal", contentStyle: { backgroundColor: t.grouped } }} />
         <Stack.Screen name="message-info" options={{ presentation: "modal", contentStyle: { backgroundColor: t.grouped } }} />
+        <Stack.Screen name="share" options={{ presentation: "modal", gestureEnabled: false, contentStyle: { backgroundColor: t.grouped } }} />
         <Stack.Screen name="search" options={{ animation: "fade" }} />
         <Stack.Screen name="viewer" options={{ presentation: "transparentModal", animation: "fade", contentStyle: { backgroundColor: "transparent" } }} />
         <Stack.Screen

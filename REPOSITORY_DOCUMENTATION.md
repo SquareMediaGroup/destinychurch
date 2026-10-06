@@ -7295,6 +7295,13 @@ same database as the data rather than in a separate Synapse module.
   account's own API client (`apiFor`). iOS delivers the response to the listener in `_layout.tsx`;
   Android to a background task (`expo-task-manager`, `registerTaskAsync`). A reply that fails posts a
   local "Your reply wasn't sent" notification rather than vanishing.
+- **Share into Destiny One** (`share.tsx`, `+native-intent.ts`): `expo-sharing` adds an iOS share
+  extension (target `expo-sharing-extension`, app group `group.uk.destinytees.one`; EAS provisions both)
+  and Android share intents. Text, one link, up to 5 photos or one PDF. The extension opens the app on
+  an `expo-sharing://` link, which `+native-intent.ts` sends to `/share`: a preview of what's coming in,
+  then every chat you can post in (active, and Announcements only where you're an admin). Pick one and
+  it's sent, then that chat opens. Photos go through `cleanImage` like any other; anything else is
+  refused with a reason. Signed out: "Sign in first".
 - **Typing** (`src/state/typing.ts`): a memory-only store fed by the `typing` event (never me, never
   someone I've blocked). Each event shows that person for 6 seconds; their message arriving clears them.
   The chat header's subtitle swaps the member count for "Leah is typing…" / "Leah and Sam are typing…" /

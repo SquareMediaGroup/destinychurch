@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { createServiceClient } from "@/utils/supabase/service";
 import { requireSafeguardingAdmin } from "@/lib/destinyOne/admin.server";
-import { openBody, openContent, openReason } from "@/lib/destinyOne/crypto.server";
+import { loadMessageKeyring, openBody, openContent, openReason } from "@/lib/destinyOne/crypto.server";
 import type { D1MessageContent } from "@destiny/shared";
 
 // GET /api/admin/destiny-one/safeguarding/reports?status=open|reviewing|closed
@@ -16,6 +16,7 @@ export const dynamic = "force-dynamic";
 export async function GET(request: Request) {
   const admin = await requireSafeguardingAdmin();
   if (admin instanceof NextResponse) return admin;
+  await loadMessageKeyring();
 
   const status = new URL(request.url).searchParams.get("status") ?? "open";
   if (!["open", "reviewing", "closed"].includes(status)) {

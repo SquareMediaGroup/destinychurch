@@ -35,7 +35,7 @@ const refreshing = new Set<string>();
  * in fresh links for any that have expired (or nearly), in one request.
  * Returns the fresh URL for each id it could refresh.
  */
-async function refreshAttachmentUrls(groupId: string, messages: LocalMessage[]): Promise<Map<string, string>> {
+export async function refreshAttachmentUrls(groupId: string, messages: LocalMessage[]): Promise<Map<string, string>> {
   const stale = messages
     .filter((m) => m.attachment && !refreshing.has(m.attachment.id) && (!m.attachment.url || signedUrlNeedsRefresh(m.attachment.url)))
     .map((m) => m.attachment!.id);

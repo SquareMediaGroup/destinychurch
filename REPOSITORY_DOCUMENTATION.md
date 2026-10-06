@@ -7217,6 +7217,15 @@ same database as the data rather than in a separate Synapse module.
   (blocked people, chat safety, privacy notice, terms), Support (help, report a problem, send
   feedback) and Your data. Download my data saves a dated `.json` file to the cache folder and opens
   the share sheet on it (iOS); Android's share sheet can't take a file URL, so it still shares the text.
+- **Photo viewer** (`viewer.tsx`, a transparent full-screen modal): tapping a photo in a chat opens it
+  on black. Pinch or double-tap to zoom (the native scroll view's zoom), swipe sideways through every
+  photo the chat has cached, swipe down to close, tap to hide the bars. Save to Photos asks for add-only
+  access on iOS (`expo-media-library`, `savePhotosPermission`; it can't read the library); Android
+  opens the share sheet instead, so the app never needs Google Play's photo-access permission
+  (`granularPermissions: []`, and `READ_MEDIA_VISUAL_USER_SELECTED` / `WRITE_EXTERNAL_STORAGE` are in
+  `blockedPermissions`). Share downloads the file to the cache folder first (`src/lib/media.ts`),
+  since attachment links are private and short-lived. The message menu has Share for any photo or
+  file. PDFs still open in the in-app browser.
 - **Leaked passwords.** With Supabase's leaked password protection on (Auth settings, Pro plan), a
   new password found in a known data breach is refused with `AuthWeakPasswordError` (reason `pwned`).
   `setPassword` (`src/lib/auth.ts`) turns that into `PasswordRejectedError`, and `set-password` shows a

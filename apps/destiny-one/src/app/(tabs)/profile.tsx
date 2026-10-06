@@ -216,6 +216,8 @@ export default function Profile() {
       <Section title="Support">
         <SettingsRow icon="help" label="Help" onPress={() => router.push("/help")} />
         <Separator inset={62} />
+        <SettingsRow icon="sparkle" label="What's new" onPress={() => router.push("/whats-new")} />
+        <Separator inset={62} />
         <SettingsRow icon="flag" label="Report a problem" onPress={() => router.push({ pathname: "/feedback", params: { kind: "problem" } })} />
         <Separator inset={62} />
         <SettingsRow icon="megaphone" label="Send feedback" onPress={() => router.push({ pathname: "/feedback", params: { kind: "idea" } })} />
@@ -228,7 +230,9 @@ export default function Profile() {
       </Section>
 
       <CardButton label="Sign out" busy={signingOut} onPress={confirmSignOut} />
-      <Text style={{ textAlign: "center", fontSize: 13, color: t.subtle }}>Destiny One {Constants.expoConfig?.version ?? ""}</Text>
+      <Pressable onPress={() => router.push("/whats-new")} accessibilityRole="button" accessibilityLabel={`Destiny One ${Constants.expoConfig?.version ?? ""}. What's new`} hitSlop={8}>
+        <Text style={{ textAlign: "center", fontSize: 13, color: t.subtle }}>Destiny One {Constants.expoConfig?.version ?? ""}</Text>
+      </Pressable>
     </ScrollView>
   );
 }

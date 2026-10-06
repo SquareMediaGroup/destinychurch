@@ -3,7 +3,7 @@
     "name": "Destiny One",
     "slug": "destiny-one",
     "scheme": "destinyone",
-    "version": "0.1.0",
+    "version": "0.8.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",

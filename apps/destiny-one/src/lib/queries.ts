@@ -5,6 +5,7 @@
 //   ["community", id]      only when it isn't already in the chat list
 //   ["group", id]          group details (members, rules, what I can do)
 //   ["messages", groupId]  { messages, nextBefore }, oldest first
+//   ["media", groupId]     Group info → Photos and files: the same shape, only messages with a file
 //   ["appConfig"]          minimum builds + maintenance switch (src/lib/appGate.ts)
 //
 // applyEvent() is the "database told us something changed" path. Where the
@@ -29,6 +30,7 @@ export const keys = {
   community: (id: string) => ["community", id] as const,
   group: (id: string) => ["group", id] as const,
   messages: (groupId: string) => ["messages", groupId] as const,
+  media: (groupId: string) => ["media", groupId] as const,
   appConfig: ["appConfig"] as const,
 };
 
@@ -95,6 +97,7 @@ export function removeGroupLocally(groupId: string) {
   queryClient.setQueryData<D1CommunitySummary[]>(keys.communities, (old) => old?.map((c) => ({ ...c, groups: c.groups.filter((g) => g.id !== groupId) })));
   queryClient.removeQueries({ queryKey: keys.group(groupId) });
   queryClient.removeQueries({ queryKey: keys.messages(groupId) });
+  queryClient.removeQueries({ queryKey: keys.media(groupId) });
 }
 
 // ── Blocking ────────────────────────────────────────────────────────────────
@@ -106,15 +109,18 @@ function isBlocked(memberId: string | undefined): boolean {
 
 /** Just blocked someone: take their messages out of every cached chat at once. */
 export function hideSender(memberId: string) {
-  queryClient.setQueriesData<MessagesData>({ queryKey: ["messages"] }, (old) =>
-    old ? { ...old, messages: old.messages.filter((m) => m.sender?.id !== memberId) } : old,
-  );
+  for (const key of ["messages", "media"]) {
+    queryClient.setQueriesData<MessagesData>({ queryKey: [key] }, (old) =>
+      old ? { ...old, messages: old.messages.filter((m) => m.sender?.id !== memberId) } : old,
+    );
+  }
   invalidateCommunities(); // previews and unread counts come back without them
 }
 
 /** Unblocked someone: start every chat afresh so their messages come back in place. */
 export function showSendersAgain() {
   void queryClient.resetQueries({ queryKey: ["messages"] });
+  void queryClient.resetQueries({ queryKey: ["media"] });
   invalidateCommunities();
 }
 
@@ -154,6 +160,7 @@ export function applyEvent(e: D1RealtimeEvent, meId: string) {
       if (p.attachmentId) {
         // The event has no signed URL; the page fetch brings one.
         void queryClient.invalidateQueries({ queryKey: keys.messages(p.groupId) });
+        void queryClient.invalidateQueries({ queryKey: keys.media(p.groupId) });
       } else {
         updateMessages(p.groupId, (list) =>
           upsert(list, { id: p.id, groupId: p.groupId, sender: p.sender, body: p.body, replyTo: p.replyTo, attachment: null, content: p.content ?? null, reactions: [], createdAt: p.createdAt, deleted: false, mine }),
@@ -172,6 +179,7 @@ export function applyEvent(e: D1RealtimeEvent, meId: string) {
     case "message_deleted": {
       const { id, groupId } = e.payload;
       updateMessages(groupId, (list) => list.map((m) => (m.id === id ? { ...m, deleted: true, body: null, attachment: null, content: null, reactions: [] } : m)));
+      queryClient.setQueryData<MessagesData>(keys.media(groupId), (old) => (old ? { ...old, messages: old.messages.filter((m) => m.id !== id) } : old));
       updateGroupSummary(groupId, (g) => (g.lastMessage?.id === id ? { ...g, lastMessage: { ...g.lastMessage, deleted: true, preview: null } } : g));
       return;
     }
@@ -243,6 +251,11 @@ export function useGroup(id: string | undefined) {
 
 export function useMessages(groupId: string) {
   return useQuery({ queryKey: keys.messages(groupId), queryFn: () => fetchLatestMessages(groupId), enabled: !!groupId });
+}
+
+/** Group info → Photos and files (newest page; older pages are added by the screen). `fetch: false` only reads the cache. */
+export function useGroupMedia(groupId: string, opts: { fetch?: boolean } = {}) {
+  return useQuery({ queryKey: keys.media(groupId), queryFn: () => api.groupMedia(groupId, { limit: 60 }), enabled: !!groupId && opts.fetch !== false });
 }
 
 /** A community page: straight from the chat list when it's there (it's the same data), otherwise fetched. */

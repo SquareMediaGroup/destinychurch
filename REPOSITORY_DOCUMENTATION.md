@@ -4320,6 +4320,7 @@ needs at least 2 verified adults.") pass through as `rule_violation` (422). Type
 | `search/messages` | GET | `?q=` — search of your messages: groups you are in, since you joined, never deleted, never from people you've blocked; newest 30. Each word matches as a prefix, on the blind index (text is encrypted at rest, see "Message encryption"). `&groupId=` searches one group (search opened from a chat): same rules; not found if you aren't in it, nothing for an archived group |
 | `groups/[id]/read`, `/mute`, `/attachments` | POST | Read marker, mute, signed upload URL |
 | `groups/[id]/attachments?ids=` | GET | Fresh signed links (1 hour) for cached attachments whose links expired: only files in this group, sent since you joined, not deleted, not from someone you've blocked. Up to 60 ids |
+| `groups/[id]/media?before=&limit=` | GET | Group info → Photos and files: messages that carry a photo or file, paged like `messages` (60 a page, up to 100). Same visibility as the chat (since you joined, not deleted, not blocked senders), with fresh signed links |
 | `messages/[id]` | DELETE | Soft delete (content kept for review) |
 | `messages/[id]/report`, `/reactions` | POST (+DELETE) | Report → safeguarding bell, and an email to every Safeguarding Admin (`lib/destinyOne/safeguardingEmail.server.ts`; no message content, names or group in it) |
 | `directory` | GET | Leaders only; names + adult flag, never contact details |
@@ -7205,7 +7206,7 @@ same database as the data rather than in a separate Synapse module.
   `code` (A3), `request` (A5), `waiting` (A6–A8, copy from `me.onboardingMessage`), `notices` (A9),
   `(tabs)/{chats,find,profile}` with a floating glass tab bar (Chats / Search / Profile; there's no
   Groups tab, since Chats already shows every community and "See all" opens `community/[id]`), `group/[id]` (B3 conversation),
-  `group/[id]/info` (B6; leaders: rules panel, make admin / remove), `group/[id]/edit` (C4),
+  `group/[id]/info` (B6; leaders: rules panel, make admin / remove), `group/[id]/media` (Photos and files: a photo grid that opens the viewer and a file list, newest first, older pages on scroll; cached as `["media", groupId]`, kept current by the same Realtime events as the chat), `group/[id]/edit` (C4),
   `community/[id]` (B2), `new-group` (C1, modal), `add-people` (C2; `?groupId` adds to a group,
   `?communityId` picks for New group), `notifications` (D2 + per-group mute), `search` (full-screen search opened from a chat; the
   Search tab `(tabs)/find` uses the same `SearchView` component), `report` + `report-sent` (B5), `feedback` (D5, Profile → Report a problem /

@@ -46,9 +46,11 @@ export async function refreshAttachmentUrls(groupId: string, messages: LocalMess
     const { urls } = await api.attachmentUrls(groupId, stale);
     for (const u of urls) if (u.url) fresh.set(u.id, u.url);
     if (fresh.size) {
-      updateMessages(groupId, (list) =>
-        list.map((m) => (m.attachment && fresh.has(m.attachment.id) ? { ...m, attachment: { ...m.attachment, url: fresh.get(m.attachment.id)! } } : m)),
-      );
+      const swap = (list: LocalMessage[]) =>
+        list.map((m) => (m.attachment && fresh.has(m.attachment.id) ? { ...m, attachment: { ...m.attachment, url: fresh.get(m.attachment.id)! } } : m));
+      updateMessages(groupId, swap);
+      // The same files may be cached for Group info → Photos and files too.
+      queryClient.setQueryData<MessagesData>(keys.media(groupId), (old) => (old ? { ...old, messages: swap(old.messages) } : old));
     }
   } catch {
     // Offline or refused: the old link stays, and the next open tries again.

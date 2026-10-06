@@ -221,6 +221,9 @@ export function createDestinyOneClient({ baseUrl, getAccessToken, fetchImpl }: D
     // ── Messages ──
     messages: (groupId: string, opts: { before?: number; limit?: number } = {}) =>
       call<D1MessagePage>("GET", `/groups/${groupId}/messages${q(opts)}`),
+    /** Group info → Photos and files: messages with a photo or file, paged like `messages`. */
+    groupMedia: (groupId: string, opts: { before?: number; limit?: number } = {}) =>
+      call<D1MessagePage>("GET", `/groups/${groupId}/media${q(opts)}`),
     send: (groupId: string, input: { body?: string; replyTo?: number; attachmentId?: string; poll?: D1PollDraft; event?: D1EventRef }) =>
       call<D1Message>("POST", `/groups/${groupId}/messages`, input),
     deleteMessage: (messageId: number) => call<{ ok: true }>("DELETE", `/messages/${messageId}`),

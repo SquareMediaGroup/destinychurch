@@ -63,7 +63,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
     supabase
       .from("d1_messages")
       .select(
-        "id, body, content, reply_to, created_at, deleted_at, " +
+        "id, body, content, reply_to, created_at, edited_at, deleted_at, " +
           "sender:d1_members!d1_messages_sender_id_fkey(id, display_name), " +
           "deleted_by_member:d1_members!d1_messages_deleted_by_fkey(id, display_name), " +
           "attachment:d1_attachments!d1_messages_attachment_id_fkey(id, storage_path, mime_type, size_bytes)",
@@ -77,8 +77,15 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
     return NextResponse.json({ error: (members.error ?? messages.error)?.message }, { status: 500 });
   }
 
-  type Row = { body: string | null; content: D1MessageContent | null; attachment: { storage_path: string } | null };
+  type Row = { id: number; body: string | null; content: D1MessageContent | null; edited_at: string | null; attachment: { storage_path: string } | null };
   const rows = (messages.data ?? []) as unknown as Row[];
+
+  // Every earlier version of an edited message: members only see the latest.
+  const editedIds = rows.filter((m) => m.edited_at).map((m) => m.id);
+  const { data: edits, error: editsError } = editedIds.length
+    ? await supabase.from("d1_message_edits").select("message_id, previous_body, edited_at").in("message_id", editedIds).order("id")
+    : { data: [] as { message_id: number; previous_body: string; edited_at: string }[], error: null };
+  if (editsError) return NextResponse.json({ error: editsError.message }, { status: 500 });
   const paths = rows.map((m) => m.attachment?.storage_path).filter((p): p is string => Boolean(p));
   const signed = paths.length
     ? await supabase.storage.from(MEDIA_BUCKET).createSignedUrls(paths, ATTACHMENT_URL_TTL)
@@ -115,6 +122,9 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
       // Encrypted at rest: opened here, for the audited reviewer only.
       body: openBody(m.body, groupId),
       content: openContent(m.content, groupId),
+      edits: (edits ?? [])
+        .filter((e) => e.message_id === m.id)
+        .map((e) => ({ body: openBody(e.previous_body as string, groupId), replacedAt: e.edited_at as string })),
       attachment: m.attachment ? { ...m.attachment, url: urlFor.get(m.attachment.storage_path) ?? null } : null,
     })),
   });

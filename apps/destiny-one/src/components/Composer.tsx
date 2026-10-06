@@ -29,6 +29,13 @@ export interface PickedFile {
 interface Props {
   replying: { name: string; text: string } | null;
   onCancelReply: () => void;
+  /**
+   * Editing one of my messages: the box holds its text, Send becomes a tick
+   * that saves it, and attaching is off. The parent remounts the composer
+   * (a new `key`) going into and out of this, with `initialText` to match.
+   */
+  editing?: { text: string } | null;
+  onCancelEdit?: () => void;
   onSend: (text: string) => void;
   onAttach: (file: PickedFile) => void;
   onAttachPoll: () => void;
@@ -44,7 +51,7 @@ interface Props {
   onTextChange?: (text: string) => void;
 }
 
-export const Composer = forwardRef<TextInput, Props>(function Composer({ replying, onCancelReply, onSend, onAttach, onAttachPoll, onAttachEvent, onError, loadSendAsOptions, onSendAs, initialText, onTextChange }, ref) {
+export const Composer = forwardRef<TextInput, Props>(function Composer({ replying, onCancelReply, editing, onCancelEdit, onSend, onAttach, onAttachPoll, onAttachEvent, onError, loadSendAsOptions, onSendAs, initialText, onTextChange }, ref) {
   const t = useTheme();
   const [draft, setDraftState] = useState(initialText ?? "");
   const setDraft = (text: string) => {
@@ -54,6 +61,8 @@ export const Composer = forwardRef<TextInput, Props>(function Composer({ replyin
   const [sheetOpen, setSheetOpen] = useState(false);
   const [sendAsMenu, setSendAsMenu] = useState<{ text: string; options: Account[]; checking: boolean } | null>(null);
   const hasText = draft.trim().length > 0;
+  // While editing, Save only lights up once the text actually differs.
+  const canSend = hasText && (!editing || draft.trim() !== editing.text.trim());
 
   async function acceptAsset(a: { uri: string; name: string; mimeType: string; size: number | null }) {
     if (!(ATTACHMENT_MIME_TYPES as readonly string[]).includes(a.mimeType)) {
@@ -134,7 +143,7 @@ export const Composer = forwardRef<TextInput, Props>(function Composer({ replyin
 
   function send() {
     const text = draft.trim();
-    if (!text) return;
+    if (!text || !canSend) return;
     haptic.sent();
     onSend(text);
     setDraft("");
@@ -158,6 +167,22 @@ export const Composer = forwardRef<TextInput, Props>(function Composer({ replyin
         </GlassSurface>
         </Appear>
       ) : null}
+      {editing ? (
+        <Appear key="editing" from={{ y: 16, scale: 0.96 }}>
+          <GlassSurface style={{ marginLeft: 52, flexDirection: "row", alignItems: "center", gap: 10, paddingVertical: 8, paddingLeft: 14, paddingRight: 8, borderRadius: 18 }}>
+            <Icon name="pencil" size={16} color={t.tint} strokeWidth={2.2} />
+            <View style={{ flex: 1, minWidth: 0 }}>
+              <Text style={{ fontSize: 13, fontWeight: "600", color: t.tint }}>Editing message</Text>
+              <Text numberOfLines={1} style={{ fontSize: 14, color: t.muted }}>
+                {editing.text}
+              </Text>
+            </View>
+            <PressableScale onPress={onCancelEdit} accessibilityLabel="Cancel editing" scaleTo={0.85} style={{ width: 30, height: 30, borderRadius: 15, backgroundColor: t.fill, alignItems: "center", justifyContent: "center" }}>
+              <Icon name="close" size={12} color={t.muted} strokeWidth={3} />
+            </PressableScale>
+          </GlassSurface>
+        </Appear>
+      ) : null}
 
       <View style={{ flexDirection: "row", alignItems: "flex-end", gap: 8 }}>
         <PressableScale
@@ -165,9 +190,12 @@ export const Composer = forwardRef<TextInput, Props>(function Composer({ replyin
             haptic.selection();
             setSheetOpen(true);
           }}
+          disabled={!!editing}
+          style={{ opacity: editing ? 0.35 : 1 }}
           scaleTo={0.88}
           accessibilityRole="button"
           accessibilityLabel="Add to message"
+          accessibilityState={{ disabled: !!editing }}
         >
           {({ pressed }) => (
             <GlassSurface interactive style={[{ width: 44, height: 44, borderRadius: 22, alignItems: "center", justifyContent: "center", opacity: pressed ? 0.75 : 1 }, t.shadow]}>
@@ -192,7 +220,13 @@ export const Composer = forwardRef<TextInput, Props>(function Composer({ replyin
               style={{ flex: 1, minHeight: 33, maxHeight: 140, fontSize: 17, color: t.text, paddingTop: 7, paddingBottom: 7 }}
             />
             {/* Send and camera trade places with a pop as the draft fills or empties. */}
-            {hasText ? (
+            {editing ? (
+              <Appear key="save" from={{ scale: 0.3 }}>
+                <PressableScale onPress={send} disabled={!canSend} hitSlop={6} scaleTo={0.82} accessibilityRole="button" accessibilityLabel="Save edit" accessibilityState={{ disabled: !canSend }} style={{ width: 33, height: 33, borderRadius: 17, backgroundColor: canSend ? t.send : t.fill, alignItems: "center", justifyContent: "center" }}>
+                  <Icon name="check" size={17} color={canSend ? t.onSend : t.subtle} strokeWidth={2.8} />
+                </PressableScale>
+              </Appear>
+            ) : hasText ? (
               <Appear key="send" from={{ scale: 0.3 }}>
                 <PressableScale onPress={send} onLongPress={loadSendAsOptions && onSendAs ? () => void openSendAs() : undefined} delayLongPress={350} hitSlop={6} scaleTo={0.82} accessibilityRole="button" accessibilityLabel="Send" accessibilityHint={loadSendAsOptions ? "Hold to send as another account" : undefined} style={{ width: 33, height: 33, borderRadius: 17, backgroundColor: t.send, alignItems: "center", justifyContent: "center" }}>
                   <Icon name="send" size={17} color={t.onSend} strokeWidth={2.8} />

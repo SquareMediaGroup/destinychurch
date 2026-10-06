@@ -227,6 +227,8 @@ export function createDestinyOneClient({ baseUrl, getAccessToken, fetchImpl }: D
     send: (groupId: string, input: { body?: string; replyTo?: number; attachmentId?: string; poll?: D1PollDraft; event?: D1EventRef }) =>
       call<D1Message>("POST", `/groups/${groupId}/messages`, input),
     deleteMessage: (messageId: number) => call<{ ok: true }>("DELETE", `/messages/${messageId}`),
+    /** Change the text of my own message (within EDIT_WINDOW_MINUTES of sending). */
+    editMessage: (messageId: number, body: string) => call<D1Message>("PATCH", `/messages/${messageId}`, { body }),
     report: (messageId: number, reason: string) =>
       call<{ ok: true }>("POST", `/messages/${messageId}/report`, { reason }),
     react: (messageId: number, emoji: string) =>

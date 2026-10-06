@@ -367,6 +367,8 @@ destinychurch/
 │       ├── 20261004_01_destiny_one_message_encryption.sql # Destiny One part 10: message text
 │       │                                   # encrypted at rest; blind search index (d1_message_terms)
 │       ├── 20261004_02_destiny_one_message_encryption_required.sql # part 10b: refuse plaintext
+│       ├── 20261006_01_destiny_one_message_edits.sql # part 11 (v0.8): edit your own message for 15
+│       │                                   # minutes; old text kept in d1_message_edits for review
 │       │                                   # (apply after scripts/destiny-one/encrypt-messages.ts)
 │       ├── 20260927_03_destiny_one_message_search.sql # Destiny One part 4: message search
 │       ├── 20260927_02_destiny_one_leader_invites.sql # Destiny One part 3: leader invites
@@ -1972,6 +1974,7 @@ department **sub-groups**. Migration: `supabase/migrations/20260926_01_destiny_o
 | `d1_group_members` | Membership incl. history (`left_at` kept, so a review can see who was present when), `last_read_message_id`, `muted_until` |
 | `d1_messages` | `body` (sealed ciphertext, see part 10; 4000 characters before sealing), `reply_to`, `attachment_id`, `content` (jsonb: a poll, whose question and option labels are sealed, or an event snapshot taken at send time), soft-delete `deleted_at`/`deleted_by`. Immutable except the delete stamp |
 | `d1_message_terms` | The blind search index (part 10): keyed hashes of every prefix of every word in a body, per group. No plaintext |
+| `d1_message_edits` | Part 11: the text an edit replaced (sealed), one row per edit, for the safeguarding transcript. Deny-all RLS; removed with its message by the purge |
 | `d1_poll_votes` | One row per (poll message, member, option). Written only by `d1_vote()`, which enforces single choice and current membership and broadcasts `poll_vote` (with `groupId`) |
 | `d1_reactions`, `d1_attachments` | Reactions; files in the private `d1-chat-media` bucket (images/PDF, 20 MB) |
 | `d1_reports`, `d1_safeguarding_events` | The safeguarding queue |
@@ -2102,6 +2105,16 @@ ciphertext (the API enforces 4000 / 1000). `d1_messages_immutable` allows exactl
 plaintext body to its sealed form, for the backfill. `_02` then adds `d1_messages_body_sealed`,
 `d1_messages_poll_sealed` and `d1_reports_reason_sealed`, so the database refuses plaintext from then
 on (and the backfill exception can never fire again).
+
+**Part 11 — `20261006_01_destiny_one_message_edits.sql`: editing (D1 v0.8).** `d1_messages.edited_at`
+and `d1_message_edits` (message, group, the replaced body still sealed, when). `d1_edit_message(actor,
+message, body, terms)` only lets the sender edit a message that has text and isn't deleted, within
+15 minutes of sending, at most 10 times, while they're a current member of an active group. It saves
+the old text first, then swaps the body (still sealed: `_02`'s check applies) and replaces the search
+terms. `d1_messages_immutable` lets the body and `edited_at` change only while `d1.editing` is set,
+which `d1_edit_message` does for its own transaction (`set_config(..., true)`), so a direct UPDATE is
+still refused. Members see only the latest text, marked "Edited"; the safeguarding transcript shows
+every version.
 
 **Tested by:** `scripts/test-sql.sh` (`npm run test:sql`, and the "Database rules" CI job) — applies
 Supabase stubs + every Destiny One migration (parts 1–9, plus the profile-picture, min-build and
@@ -4315,6 +4328,7 @@ needs at least 2 verified adults.") pass through as `rule_violation` (422). Type
 | `groups/[id]/icon` | POST, DELETE | Group icon (multipart `file`, 5 MB). Any current member can change it, not just admins; not for Announcements or paused groups. Stored in `d1-avatars` as `d1_groups.icon_path`; `iconUrl` on group summaries is a signed link. Sends `group_updated` like a rename. The app asks people to avoid the church logo |
 | `groups/[id]/messages` | GET, POST | Only messages since you joined; POST takes `body`, an attachment, a `poll` draft, or an `event` ref (the event is re-fetched and snapshotted server-side) and pushes a notification via `after()` (group name, "Sender: first line", or "Poll: …" / "Event: …") |
 | `messages/[id]/vote` | POST | `{ optionIds }` — your full vote set on a poll (empty clears it). 60 a minute |
+| `messages/[id]` | PATCH | `{ body }` — edit my own message's text (15 minutes, 10 times; `d1_edit_message`). Sealed with new search terms; `message_edited` goes to the group over the REST broadcast (it carries text). 20 a minute, no push |
 | `events` | GET | Upcoming ChurchSuite events for the Event picker in the attach sheet |
 | `groups/[id]/invites` | POST | Leaders: `{ email, name, adult, note? }` — invite someone new; they become an access request for staff to approve, then join the group |
 | `search/messages` | GET | `?q=` — search of your messages: groups you are in, since you joined, never deleted, never from people you've blocked; newest 30. Each word matches as a prefix, on the blind index (text is encrypted at rest, see "Message encryption"). `&groupId=` searches one group (search opened from a chat): same rules; not found if you aren't in it, nothing for an archived group |

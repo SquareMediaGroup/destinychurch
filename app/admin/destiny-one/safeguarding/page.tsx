@@ -281,9 +281,12 @@ interface Transcript {
     body: string | null;
     content: D1MessageContent | null;
     created_at: string;
+    edited_at: string | null;
     deleted_at: string | null;
     sender: { display_name: string } | null;
     attachment: { mime_type: string; url: string | null } | null;
+    /** Earlier versions of an edited message, oldest first. */
+    edits: { body: string | null; replacedAt: string }[];
   }[];
 }
 
@@ -354,9 +357,16 @@ function TranscriptModal({ group, onClose }: { group: { id: string; name: string
                 <li key={m.id} className="rounded-xl bg-black/5 px-3 py-2 text-sm dark:bg-white/10">
                   <p className="text-xs text-destiny-grey/55 dark:text-white/55">
                     {m.sender?.display_name ?? "Former member"} · {new Date(m.created_at).toLocaleString("en-GB")}
+                    {m.edited_at ? ` · edited ${new Date(m.edited_at).toLocaleString("en-GB")}` : ""}
                     {m.deleted_at ? ` · deleted ${new Date(m.deleted_at).toLocaleString("en-GB")}` : ""}
                   </p>
-                  {m.body && <p className="whitespace-pre-wrap">{m.body}</p>}
+                  {m.edits?.map((e, i) => (
+                    <p key={i} className="whitespace-pre-wrap text-destiny-grey/60 line-through decoration-destiny-grey/40 dark:text-white/50">
+                      <span className="mr-1 text-xs no-underline">Version {i + 1}, replaced {new Date(e.replacedAt).toLocaleString("en-GB")}:</span>
+                      {e.body}
+                    </p>
+                  ))}
+                  {m.body && <p className="whitespace-pre-wrap">{m.edits?.length ? <span className="mr-1 text-xs text-destiny-grey/55">Now:</span> : null}{m.body}</p>}
                   {m.content && <p className="whitespace-pre-wrap italic">{contentText(m.content)}</p>}
                   {m.attachment && (
                     <p>

@@ -121,6 +121,14 @@ export const sendMessageSchema = z
     "A message can't be empty.",
   );
 
+export const editMessageSchema = z.object({
+  body: z
+    .string()
+    .trim()
+    .min(1, "A message can't be edited to say nothing. Delete it instead.")
+    .max(MAX_MESSAGE_LENGTH, `Messages can be up to ${MAX_MESSAGE_LENGTH} characters.`),
+});
+
 export const voteSchema = z.object({
   optionIds: z.array(z.string().trim().min(1).max(40)).max(20),
 });

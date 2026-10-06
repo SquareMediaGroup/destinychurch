@@ -195,6 +195,12 @@ export function MessageBubble({ row, replyTo, senderTag, senderIsGroupAdmin, can
         {m.content?.kind === "event" ? <EventCard content={m.content} mine={m.mine} onOpen={onOpenAttachment} /> : null}
         {m.content?.kind === "poll" ? <PollCard content={m.content} mine={m.mine} sending={m.id < 0} onVote={onVotePoll} /> : null}
         {m.body ? <Text style={{ fontSize: 17, lineHeight: 22, letterSpacing: -0.2, color: k.text }}>{m.body}</Text> : null}
+        {/* Edited messages say so, inside the bubble, so it shows whether or not the time does. */}
+        {m.editedAt ? (
+          <Text accessibilityLabel="Edited" style={{ marginTop: -4, alignSelf: "flex-end", fontSize: 11, color: k.soft, opacity: 0.8 }}>
+            Edited
+          </Text>
+        ) : null}
       </View>
       {tail ? <Tail color={m.mine ? t.send : t.bubbleIn} mine={m.mine} /> : null}
     </PressableScale>

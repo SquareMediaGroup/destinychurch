@@ -38,7 +38,7 @@ const TOPICS: { title: string; questions: Question[] }[] = [
       },
       {
         q: "Can I edit or delete a message?",
-        a: "Press and hold your message. Delete removes it for everyone. We keep a copy for a while in case we ever need to check something.",
+        a: "Press and hold your message. Edit changes the text for 15 minutes after you send it, and the message then says Edited. Delete removes it for everyone. We keep a copy of earlier versions and deleted messages for a while in case we ever need to check something.",
       },
       {
         q: "How do I find an old message?",

@@ -7313,6 +7313,13 @@ same database as the data rather than in a separate Synapse module.
   then every chat you can post in (active, and Announcements only where you're an admin). Pick one and
   it's sent, then that chat opens. Photos go through `cleanImage` like any other; anything else is
   refused with a reason. Signed out: "Sign in first".
+- **Upcoming events** (`events.tsx`, `send-event.tsx`, `src/lib/events.ts`): the Search tab's empty state
+  shows "Coming up" (the next 3 church events) with See all → `events` (the whole calendar, searchable,
+  pull to refresh). Tapping an event offers Share to a chat (`send-event`: pick a chat, the server
+  snapshots the event as for the composer's Event button, then that chat opens) or View details (its
+  What's On page; `D1EventSummary.webUrl`). Cached as `["events"]`, the one query that goes stale on a
+  timer (30 minutes), because the calendar isn't on Realtime. `EventRow` is shared with the composer's
+  event picker.
 - **Typing** (`src/state/typing.ts`): a memory-only store fed by the `typing` event (never me, never
   someone I've blocked). Each event shows that person for 6 seconds; their message arriving clears them.
   The chat header's subtitle swaps the member count for "Leah is typing…" / "Leah and Sam are typing…" /

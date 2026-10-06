@@ -13,10 +13,12 @@ import { router } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { MIN_SEARCH_CHARS, type D1CommunitySummary, type D1GroupSummary, type D1MessageHit } from "@destiny/shared";
 import { Icon } from "@/components/Icon";
+import { EventRow } from "@/components/EventRow";
 import { Avatar, EmptyState, Field, LargeTitle, TextButton } from "@/components/ui";
 import { api } from "@/lib/api";
 import { listTime } from "@/lib/format";
-import { prefetchGroup } from "@/lib/queries";
+import { prefetchGroup, useEvents } from "@/lib/queries";
+import { eventActions } from "@/lib/events";
 import { jumpTo } from "@/state/jump";
 import { errorMessage, useSession } from "@/state/session";
 import { ORANGE, useTheme } from "@/theme/tokens";
@@ -173,7 +175,7 @@ export function SearchView({ mode, groupId }: { mode: "tab" | "modal"; groupId?:
           ) : q ? (
             <EmptyState title="No results" body="Try a different word or name." />
           ) : isTab ? (
-            <EmptyState title="Search your chats" body="Find a group by name, or a message by what it said." />
+            <ComingUp />
           ) : null
         }
         renderItem={({ item }) => {
@@ -215,6 +217,32 @@ export function SearchView({ mode, groupId }: { mode: "tab" | "modal"; groupId?:
           );
         }}
       />
+    </View>
+  );
+}
+
+/**
+ * The Search tab before anything's typed: the next few church events, with
+ * "See all" for the rest. Says what Search does too, so it isn't just events.
+ */
+function ComingUp() {
+  const t = useTheme();
+  const { data: events } = useEvents();
+  const next = [...(events ?? [])].sort((a, b) => a.startsAt.localeCompare(b.startsAt)).slice(0, 3);
+  return (
+    <View style={{ paddingHorizontal: 16, gap: 10 }}>
+      <Text style={{ paddingHorizontal: 4, fontSize: 15, color: t.muted }}>Find a group by name, or a message by what it said.</Text>
+      {next.length ? (
+        <>
+          <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 4, paddingTop: 14 }}>
+            <Text style={{ fontSize: 20, fontWeight: "700", color: t.text }}>Coming up</Text>
+            <TextButton label="See all" onPress={() => router.push("/events")} />
+          </View>
+          {next.map((e) => (
+            <EventRow key={e.seriesKey} event={e} onPress={() => eventActions(e)} />
+          ))}
+        </>
+      ) : null}
     </View>
   );
 }

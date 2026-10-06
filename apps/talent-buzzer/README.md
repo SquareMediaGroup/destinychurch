@@ -1,194 +1,379 @@
 # Talent Show Buzzers
 
-Judge buzzers for the Destiny talent show. Five Android tablets act as buzzers:
-four red **X** buzzers and one dedicated **golden buzzer**. A press:
+Judges press a buzzer on a tablet, and three things happen at once:
 
-- fires a lighting cue on the Avolites (Titan Web API),
-- pops a big 3D red X out of the LED screen above that judge's name (or the gold takeover for the golden buzzer),
-- plays the buzzer sound (or golden fanfare) from the LED screen machine.
+1. A big red **X** pops up on the LED screen above that judge's name.
+2. A **buzzer sound** plays through the speakers.
+3. The **stage lights** change.
 
-Everything runs on the venue network. No internet, accounts or cloud services
-are involved, so it keeps working if the building connection drops.
+There is also one **golden buzzer**. When it's pressed, the whole screen turns gold, gold confetti
+falls, a fanfare plays, and the lights do something special.
+
+If **all four judges** buzz, the screen flashes red and an alarm sounds.
+
+![Two judges have buzzed](docs/images/display-xs.jpg)
+
+---
+
+## How it fits together
 
 ```
- 4 red tablets ─┐                      ┌─> /display  (fullscreen on the LED output: X's, gold, sound)
- 1 gold tablet ─┼─ Wi-Fi/LAN ─> HUB ───┼─> /control  (operator: reset, lock, test, status)
-                │  (LED machine)       └─> Avolites agent ──> Titan Web API (localhost:4430)
+   4 red tablets  ─┐
+                   ├── Wi-Fi ──>  LED SCREEN COMPUTER  ──>  big screen + speakers
+   1 gold tablet  ─┘                    │
+                                        └── network ──>  AVOLITES COMPUTER  ──>  stage lights
 ```
 
-The **same app** goes on both machines. When it starts, a setup page asks which machine it is
-and runs the right part:
+- The **tablets** are the buttons.
+- The **LED screen computer** is the brain. It shows the X's and plays the sounds.
+- The **Avolites computer** (the lighting desk computer) changes the lights when the brain tells it to.
 
-| Piece | Runs on | What it does |
-| --- | --- | --- |
-| Hub (`hub/server.js`) | LED screen machine | Serves all the pages, holds the show state, relays presses |
-| Display page (`/display`) | LED screen machine, fullscreen on the LED output | Shows the X's / golden takeover and plays the sounds |
-| Control page (`/control`) | Any laptop/phone (operator) | Reset, lock, test cues and sounds, see what is connected |
-| Avolites agent (`agent/avolites-agent.js`) | Titan PC | Receives cues from the hub, fires them on Titan |
-| Tablet page (`/tablet?seat=1`) | Each Android tablet | The buzzer |
+You put the **same app** on both computers. When it starts, it asks which computer it's on.
 
-## Rules during the show
+---
 
-- Each judge's X **stays on** until the operator presses **Reset buzzers**. Pressing again does nothing.
-- When **all four judges** have buzzed, the screen strobes red with an alarm sound, then keeps pulsing red until reset (and fires the optional `allX` lighting cue).
-- The golden buzzer fires **once** until reset.
-- **Lock buzzers** ignores every press (use it between acts so nobody fires a cue by accident).
-- Reset clears the screen and, with `releaseOnReset`, kills the X and golden playbacks on Titan.
-- If a tablet dies, the **Trigger** button next to it on the control page fires that buzzer exactly as if it was pressed.
+## What you need
 
-## Setup
+Tick these off before you start:
 
-### 1. Install on both machines (LED screen machine and Avolites PC)
+- [ ] The **LED screen computer** (Windows), plugged into the big screen and the speakers
+- [ ] The **Avolites computer** (Windows, running Titan)
+- [ ] **5 Android tablets**, charged, with their chargers
+- [ ] All of them on the **same Wi-Fi / network**
+- [ ] The **`talent-buzzer` folder** (see Part 1, step 2)
+- [ ] **Internet** on both computers for the first setup (only needed once)
+- [ ] About **30 minutes**, plus 5 minutes with whoever runs the lights
 
-1. Install [Node.js](https://nodejs.org) 20 or newer (LTS installer, default options).
-2. Copy this `talent-buzzer` folder onto the machine.
-3. Double-click `start.bat` (or run `npm install` then `npm start`). The first run installs
-   what it needs, then opens the **setup page** (`http://localhost:8090`) in the browser.
-4. Pick **LED screen machine** or **Avolites machine** and press **Start**. The choice is remembered
-   in `machine.json`, so next time `start.bat` goes straight into that role. Use **Change** on the
-   setup page to switch.
-5. Allow Node through Windows Firewall when asked (**Private networks**). On the LED machine this
-   lets the tablets connect; on the Avolites PC it lets the app hear the LED machine announcing itself.
+> **Tip:** Do the setup the day before the show, not five minutes before doors open.
 
-Leave the `start.bat` window open during the show. If the app crashes, it restarts itself.
+---
 
-### 2. LED screen machine
+## Part 1: Set up the LED screen computer
 
-1. Copy `config.example.json` to `config.json` and edit it (judge names, cue numbers, see [Config](#config)).
-   Restart `start.bat` after editing.
-2. The setup page lists the **device links** (Control, Display and one per tablet) with this machine's IP address.
-3. Open the **Display** link in Chrome or Edge, drag it onto the LED output, **click once**
-   (this unlocks sound, because browsers block audio until a click), then press **F11** for fullscreen.
+Do this on the computer that is plugged into the big LED screen.
 
-Using the display as a source in Resolume / ProPresenter / OBS instead? Point a browser
-source at the display link. Options you can add to the URL:
+**1. Install Node.js** (the engine the app runs on)
 
-| Option | Effect |
+1. Open a web browser and go to **https://nodejs.org**
+2. Click the big green button that says **LTS**. A file downloads.
+3. Open the downloaded file. Click **Next**, **Next**, **Next**, then **Install**, then **Finish**.
+   You don't need to change anything.
+
+**2. Get the `talent-buzzer` folder**
+
+1. Go to the church code on GitHub. Click the green **Code** button, then **Download ZIP**.
+   (If you can't see it, ask whoever looks after the church website code to send you the folder.)
+2. Find the ZIP in your Downloads. Right-click it and choose **Extract All**, then **Extract**.
+3. Open the new folder, then **apps**. Inside is a folder called **`talent-buzzer`**.
+4. Copy the **`talent-buzzer`** folder to the **Desktop**.
+
+**3. Start the app**
+
+1. Open the `talent-buzzer` folder on the Desktop.
+2. Double-click **`start.bat`**.
+   - If a blue box says *"Windows protected your PC"*, click **More info**, then **Run anyway**.
+3. A black window opens. The first time, it downloads a few bits, which needs internet.
+   **Leave this black window open**, because closing it stops the buzzers.
+4. If a box says *"Windows Defender Firewall has blocked some features"*:
+   tick **Private networks**, then click **Allow access**.
+   This is important: without it the tablets can't connect.
+
+**4. Tell it which computer this is**
+
+A page opens in the web browser by itself:
+
+![Which machine is this?](docs/images/setup-choose.jpg)
+
+1. Click **LED screen machine**.
+2. Click **Start**.
+
+**You should see** green dots and a list of **Device links**:
+
+![LED screen machine running](docs/images/setup-led.jpg)
+
+Keep this page open. You'll need these links for the screen, the tablets and the control page.
+
+> **Next time**, just double-click `start.bat`. It remembers that this is the LED screen computer.
+
+---
+
+## Part 2: Put the X's on the big screen
+
+On the LED screen computer:
+
+1. On the setup page, click the **Display** link. It opens in a new tab.
+2. Drag that browser window onto the **big LED screen**.
+3. **Click once anywhere on it.** This switches the sound on, because browsers won't play sound
+   until you click.
+4. Press **F11** on the keyboard so it fills the whole screen.
+
+**You should see** four faint X outlines with the judges' names underneath:
+
+![The screen waiting for the first buzz](docs/images/display-empty.jpg)
+
+---
+
+## Part 3: Set up the Avolites computer
+
+On the lighting computer (the one running Titan):
+
+1. **Check the lighting desk can be controlled.** Open a web browser and type this into the address bar exactly:
+
+   ```
+   http://localhost:4430/titan/get/System/SoftwareVersion
+   ```
+
+   **You should see** a version number, like `"15.0"`. If you see an error, ask the lighting person
+   to make sure Titan is open and running.
+2. Do **Part 1, steps 1–3** on this computer too (install Node.js, copy the folder, double-click `start.bat`,
+   allow the firewall with **Private networks** ticked).
+3. When the setup page opens, click **Avolites machine**, then **Start**.
+   Leave the boxes empty, because it finds the LED screen computer by itself.
+
+**You should see** three green dots:
+
+![Avolites machine connected](docs/images/setup-avolites.jpg)
+
+| Dot | What it means |
 | --- | --- |
-| `bg=transparent` | Transparent background for keying over video |
-| `ghost=0` | Hide the faint empty X outlines |
-| `labels=0` | Hide the judge names under each X |
-| `audio=off` | No sound from this copy of the page (e.g. a second display) |
+| LED screen machine: **Found** | It found the LED screen computer on the network |
+| Connection: **Connected** | The two computers are talking |
+| Avolites Titan: **OK** | It can control the lights |
 
-### Avolites PC
+---
 
-1. First check Titan's web control: on the Titan PC, open
-   `http://localhost:4430/titan/get/System/SoftwareVersion` in a browser. You should see the Titan version.
-2. Pick **Avolites machine** on the setup page. Leave the address blank: it finds the LED screen
-   machine on the network by itself (both must be on the same network). If it can't, type the LED
-   machine's IP address (shown on that machine's setup page).
-3. The setup page should show **LED screen machine: Found**, **Connection: Connected** and
-   **Avolites Titan: OK**. The control page shows the same.
+## Part 4: Set up the 5 tablets
 
-All the show settings (cue numbers, names) live in `config.json` on the LED machine. The Avolites
-PC needs no config.
+Do this on **each** tablet.
 
-**Hardware console (Arena, Quartz, Tiger Touch, Diamond) or can't install software on the
-lighting PC?** Only install on the LED machine, and set `"lighting": { "mode": "direct" }` and
-`"titan": { "host": "<console IP>" }` in its `config.json`. The LED machine then calls the
-Titan Web API over the network itself. Check `http://<console IP>:4430/titan/get/System/SoftwareVersion`
-from the LED machine first.
+1. Connect the tablet to the **same Wi-Fi** as the computers.
+2. Open **Chrome**.
+3. Type the tablet's link into the address bar. Copy it **exactly** from the **Device links** list on the
+   LED screen computer, for example:
 
-### 3. Lighting cues on Titan
+   | Tablet | Link (yours will have different numbers) |
+   | --- | --- |
+   | Judge 1 | `http://192.168.1.50:8080/tablet?seat=1` |
+   | Judge 2 | `http://192.168.1.50:8080/tablet?seat=2` |
+   | Judge 3 | `http://192.168.1.50:8080/tablet?seat=3` |
+   | Judge 4 | `http://192.168.1.50:8080/tablet?seat=4` |
+   | Golden | `http://192.168.1.50:8080/tablet?seat=gold` |
 
-How a press reaches the lights:
+   > **Shortcut:** type just `http://192.168.1.50:8080/tablet` (with your numbers) and tap the judge's name from the list.
 
-1. A judge presses their tablet. The tablet tells the hub on the LED machine over Wi-Fi.
-2. The hub looks up that buzzer's playback number in `config.json` (e.g. judge 1 = 101) and sends
-   "fire playback 101" to the agent on the Titan PC.
-3. The agent calls Titan's built-in Web API on that same PC:
-   `http://localhost:4430/titan/script/2/Playbacks/FirePlaybackAtLevel?handle_userNumber=101&level_level=1`.
-4. Titan fires playback 101 at full, exactly as if someone had pushed its button. It shows on the
-   console like any other playback, and the operator can still override it by hand.
-5. On **Reset**, the hub sends "kill playback" for each buzzer cue (`KillPlayback`), so the looks drop out.
+4. Tap the **⋮** menu (top right), then **Add to Home screen**, then **Add**.
+   Close Chrome and open the new icon. Now there's no address bar in the way.
+5. **Stop the screen going to sleep:** Settings → Display → **Screen timeout** → pick the longest time.
+6. *(Optional)* **Pin the screen** so judges can't leave the buzzer by accident:
+   Settings → Security → **App pinning** → On.
 
-What the lighting operator does:
+**You should see** a big button with **Ready** underneath:
 
-- Record one playback per look and give each a **user number**:
-  - one X look per judge (or the same number for all four, if you want one look),
-  - an "all four out" look (e.g. red strobe), optional,
-  - a golden buzzer look,
-  - optionally a reset look (e.g. back to the stage state).
-- Put those numbers in `config.json` -> `cues` (`x`, `allX`, `golden`, `reset`).
-- If you'd rather the looks time out by themselves, build them that way in Titan and set
-  `releaseOnReset` to `false`.
-- Use the **Test lighting cues** buttons on the control page to fire each playback on its own.
+| Red judge tablet | Golden tablet | After pressing |
+| --- | --- | --- |
+| ![Red buzzer](docs/images/tablet-red.jpg) | ![Golden buzzer](docs/images/tablet-gold.jpg) | ![Buzzed](docs/images/tablet-buzzed.jpg) |
 
-### 4. Tablets
+> **Stick a label on the back of each tablet** ("Judge 1", "Judge 2", ... "GOLDEN") so they don't get mixed up.
 
-On each tablet:
+---
 
-1. Join the same Wi-Fi network as the LED machine.
-2. Open Chrome and go to the tablet link from the hub window, e.g.
-   `http://192.168.1.50:8080/tablet?seat=1` (seats `1`–`4`, golden is `seat=gold`).
-   Or open `http://192.168.1.50:8080/tablet` and pick the seat from the list.
-3. Chrome menu → **Add to Home screen**, then open it from the home screen (full screen, no address bar).
-4. Keep the screen on: Settings → Display → Screen timeout → longest, or Developer options →
-   **Stay awake** while charging. (The page asks for a wake lock too, but browsers only
-   allow that over HTTPS.)
-5. Optional: Settings → Security → **App pinning** so judges can't leave the page.
-6. Turn the volume / vibration on if you want the buzz feel on the tablet.
+## Part 5: Ask the lighting person
 
-The status under the button reads **Ready**, **Buzzed - waiting for reset**, **Locked**,
-or **Not connected - reconnecting...**. Tablets reconnect on their own.
+The lighting person needs to make the "looks" for each buzzer. Show them this part.
 
-### Sounds
+> **For the lighting person:** record each look as a **playback** in Titan and give it a **user number**.
+> When a buzzer is pressed, the app fires that playback at full, as if you'd pressed it. You can still
+> take over by hand. When **Reset** is pressed, the app turns those playbacks off again.
 
-Without sound files the display page synthesises a game-show buzzer and a golden fanfare.
-To use your own, drop `buzzer.mp3`, `all-out.mp3` and `golden.mp3` into `hub/public/sounds/` and refresh the
-display page. Use **Test X** / **Test all out** / **Test gold** on the control page to check levels.
+| Look | Example user number |
+| --- | --- |
+| Judge 1 buzzes | 101 |
+| Judge 2 buzzes | 102 |
+| Judge 3 buzzes | 103 |
+| Judge 4 buzzes | 104 |
+| All four have buzzed (e.g. red strobe), optional | 120 |
+| Golden buzzer | 110 |
 
-## Config
+If they use **different numbers**, change them on the **LED screen computer**:
 
-`config.json` (copy from `config.example.json`):
+1. In the `talent-buzzer` folder, copy **`config.example.json`** and paste it.
+   Rename the copy to **`config.json`**.
+2. Right-click `config.json` → **Open with** → **Notepad**.
+3. Find this part and change **only the numbers**:
+
+   ```json
+   "cues": {
+     "x": { "1": 101, "2": 102, "3": 103, "4": 104 },
+     "golden": 110,
+     "allX": null,
+   ```
+
+   - To use an "all four" look, change `null` to its number, e.g. `"allX": 120,`
+   - Near the top you can change the judges' names too: `{ "seat": "1", "name": "Pastor Dave" }`
+4. **Save** (Ctrl + S) and close Notepad.
+5. Close the black `start.bat` window and double-click `start.bat` again.
+
+> **Careful:** keep every `"`, `:` and `,` exactly where it is. Only change the numbers and names.
+> If the app won't start after editing, delete `config.json` and try again.
+
+---
+
+## Part 6: Test everything (5 minutes)
+
+On the LED screen computer, click the **Control** link on the setup page. This is the operator's page.
+You can also open it on a laptop or phone that's on the same Wi-Fi.
+
+![The control page](docs/images/control.jpg)
+
+Go through this list:
+
+1. [ ] **Tablets:** five green dots. (A red dot means that tablet isn't connected.)
+2. [ ] **LED display page:** green. **Display sound** says **Armed**.
+   If it says *"Click the display page once"*, click the big screen.
+3. [ ] **Lighting link** and **Avolites Titan:** both green.
+4. [ ] Click **Test X sound**, **Test all out** and **Test gold**. You hear them through the speakers.
+5. [ ] Click each **Test lighting cue** button. The right look comes up each time.
+6. [ ] Press each tablet once. Check the X appears, the sound plays and the lights change.
+7. [ ] Click **Reset buzzers**.
+8. [ ] Click **Lock buzzers** until the first act starts.
+
+All done? **You're ready for the show!**
+
+---
+
+## During the show
+
+| Button (on the control page) | What it does |
+| --- | --- |
+| **Reset buzzers** | Clears all the X's and the gold screen, and turns the buzzer lights off. **Press it between every act.** |
+| **Lock buzzers** | Tablets stop working until you press **Unlock**. Use it between acts so nobody presses by accident. |
+| **Trigger** | Presses that judge's buzzer for them, in case a tablet dies. |
+
+What the audience sees:
+
+| What happens | On the screen |
+| --- | --- |
+| A judge buzzes | Their X pops out of the screen with a buzz. It stays until Reset. Pressing again does nothing. |
+| All four judges buzz | The screen flashes red with an alarm, then glows red until Reset. |
+| Golden buzzer | Gold screen, falling confetti, fanfare. Works once until Reset. |
+
+![All four judges buzzed](docs/images/display-all-out.jpg)
+![Golden buzzer](docs/images/display-golden.jpg)
+
+**The order for each act:**
+1. **Unlock** buzzers when the act starts.
+2. Judges buzz (or not!).
+3. **Reset**, then **Lock** when the act finishes.
+
+---
+
+## Uh oh! Something's wrong
+
+| Problem | Try this |
+| --- | --- |
+| Tablet says **"Not connected - reconnecting..."** | Is the tablet on the same Wi-Fi as the computers? Is the black `start.bat` window still open on the LED screen computer? Is the link typed exactly right? |
+| **No tablets can connect at all** | On the LED screen computer, Windows Firewall is probably blocking it. Search the Start menu for **"Allow an app through Windows Firewall"**, find **Node.js**, and tick **Private**. |
+| **No sound** | Click once on the big screen. Check the computer's volume and that sound goes to the right speakers. Use **Test X sound** on the control page. |
+| **Avolites page stuck on "Looking on the network..."** | Both computers must be on the same network. Allow Node.js through the firewall (see above) on the **Avolites** computer too. Or click **Change**, type the LED screen computer's address (shown as **Network address** on its setup page), then **Start**. |
+| **Avolites Titan: Not reachable** | Titan isn't open, or step 1 of Part 3 didn't work. Ask the lighting person. |
+| **Lights don't change but the screen does** | Look at the **Lighting log** on the control page. It says what went wrong. |
+| **The wrong light look comes up** | The numbers in `config.json` don't match Titan. See Part 5. |
+| **The big screen went back to a small window** | Click it and press **F11** again. |
+| **Something is really stuck** | Close the black `start.bat` window and double-click `start.bat` again. The tablets and the screen reconnect by themselves within a few seconds. |
+| **"Wrong access key"** | Someone set a key in `config.json`. See "For techies". |
+
+---
+
+## Words you might not know
+
+| Word | What it means |
+| --- | --- |
+| **Node.js** | Free software the app needs to run, a bit like an engine. |
+| **`start.bat`** | The file you double-click to start the app. |
+| **Setup page** | The page that opens in the browser when the app starts. It only works on that computer. |
+| **Control page** | The operator's page with Reset, Lock and all the test buttons. |
+| **Display page** | The page that goes on the big screen. |
+| **Network address / IP address** | The computer's "house number" on the network, like `192.168.1.50`. |
+| **Titan** | The Avolites lighting software. |
+| **Playback** | A saved lighting look in Titan. |
+| **User number** | The number Titan gives each playback. The app uses it to pick the look. |
+| **Firewall** | Windows' security guard that decides which apps can talk over the network. |
+| **F11** | The keyboard key that makes a browser fill the whole screen. |
+
+---
+
+## For techies
+
+### How it works
+
+- `start.bat` runs `app.js`. That serves the **setup page** on `http://localhost:8090` (only this machine, Host-header checked).
+  The chosen role is saved in `machine.json`, and the app runs `hub/server.js` (LED screen) or
+  `agent/avolites-agent.js` (Avolites) as a child process, restarting it if it crashes.
+- The **hub** serves the tablet, display and control pages on port **8080** and talks to them over WebSockets (`/ws`).
+  It sends a UDP broadcast on port **8099** every 2 seconds (`lib/discovery.js`, no key inside) so the Avolites agent can find it.
+- The **agent** connects *out* to the hub and fires playbacks with Titan's built-in Web API on the same PC:
+  `http://localhost:4430/titan/script/2/Playbacks/FirePlaybackAtLevel?handle_userNumber=<N>&level_level=1&alwaysRefire=true`.
+  On reset it calls `.../Playbacks/KillPlayback?handle_userNumber=<N>`. These URLs are templates in `config.json`
+  (`titan.*`), so they can be changed without code if a Titan version names things differently.
+  **They haven't been tested on a real console yet, so check them during your first rehearsal.**
+- Everything runs on the local network. No internet or accounts are needed once `npm install` has run.
+
+### Show rules
+
+- Each judge's X latches until Reset; re-presses are ignored, and presses within `debounceMs` are ignored too.
+- When all four judges have buzzed, an `all-x` event goes out and the optional `cues.allX` playback fires.
+- Golden fires once until Reset.
+- While locked, every press is ignored.
+
+### Config (`config.json`, copy from `config.example.json`, LED screen computer only)
 
 | Key | Meaning |
 | --- | --- |
 | `hubPort` | Port the hub listens on (default 8080) |
-| `key` | Optional access key. If set, every link needs `?key=...` (the hub prints the right links). Set this if the tablets are on a Wi-Fi the audience can join. |
+| `key` | Optional access key. If set, every link needs `?key=...` (the setup page shows the right links), and the Avolites setup page needs the same key. Set this if the audience can join the tablets' Wi-Fi. |
 | `debounceMs` | Ignore a second press on the same buzzer within this many ms |
-| `judges` | Seats and names shown on the tablets, control page and display labels |
+| `judges` | Seats and names shown on the tablets, control page and display |
 | `golden.name` | Name for the golden tablet |
 | `cues.x` | Titan playback user number per seat |
 | `cues.allX` | Playback fired when all four judges have buzzed, or `null` |
 | `cues.golden` | Golden buzzer playback |
 | `cues.reset` | Playback fired on Reset, or `null` |
-| `cues.releaseOnReset` | Kill X / all-X / golden playbacks on Reset |
+| `cues.releaseOnReset` | Kill X / all-X / golden playbacks on Reset (set `false` if the looks time out by themselves) |
 | `lighting.mode` | `agent` (default), `direct` (hub calls Titan itself), or `off` |
 | `titan.*` | Titan Web API host/port/timeout and URL templates (`{userNumber}` is filled in) |
 
-## Rehearsing without the console
+### Hardware console instead of a Titan PC
+
+Arena, Quartz, Tiger Touch or Diamond (you can't install the app on a console)? Install only on the LED screen
+computer and set `"lighting": { "mode": "direct" }` and `"titan": { "host": "<console IP>" }` in its
+`config.json`. The hub then calls the console over the network. First check
+`http://<console IP>:4430/titan/get/System/SoftwareVersion` from the LED screen computer.
+
+### Display page options
+
+Add these to the display link, e.g. `/display?bg=transparent&labels=0`. They're also handy when using the page as a
+browser source in Resolume, ProPresenter or OBS.
+
+| Option | Effect |
+| --- | --- |
+| `bg=transparent` | Transparent background for keying over video |
+| `ghost=0` | Hide the faint empty X outlines |
+| `labels=0` | Hide the judge names |
+| `audio=off` | No sound from this copy of the page |
+
+### Your own sounds
+
+Put `buzzer.mp3`, `all-out.mp3` and `golden.mp3` in `hub/public/sounds/` and refresh the display page.
+Without them, the page makes its own buzzer, alarm and fanfare.
+
+### Rehearsing without the lighting desk
 
 ```bash
 npm install
-npm run fake-titan          # pretends to be Titan on port 4430, logs every playback
-npm run hub                 # the LED screen machine part
+npm run fake-titan          # pretends to be Titan on port 4430 and prints every playback
+npm start                   # setup page; pick "LED screen machine"
 npm run agent               # the Avolites part (finds the hub by itself)
 ```
 
-Or run the full app twice on one computer, each with its own setup page:
-`node app.js --dir=./a` and `node app.js --dir=./b --setup-port=8091`.
-
-Open `/control`, `/display` and a few `/tablet?seat=N` tabs in a browser and press away.
-`npm test` runs the show-logic unit tests.
-
-## Show-day checklist (5 minutes)
-
-1. `start.bat` running on the LED machine; display page open, clicked once, fullscreen.
-2. `start.bat` running on the Titan PC (or `direct` mode). The control page shows Titan **OK**.
-3. All five tablets show a green dot on the control page (amber means two devices claim one seat).
-4. Control page → **Test X** and **Test gold**: sound comes out of the PA.
-5. Control page → each **Test lighting cue** button: the right look fires.
-6. Press each tablet once, check the screen + lights, then **Reset buzzers**.
-7. **Lock buzzers** until the first act starts.
-
-## Troubleshooting
-
-| Symptom | Check |
-| --- | --- |
-| Tablet says "Not connected" | Same Wi-Fi as the LED machine? Windows Firewall allowing Node on Private networks? Correct IP? |
-| No sound | Control page shows "Click the display page once" → click it. Check Windows output device. |
-| Lights don't fire | Lighting log on the control page shows the error. "Agent not connected" → start `start.bat` on the Titan PC and check its setup page. "Not reachable" → Titan not running, or the Web API URL is wrong for your Titan version (`titan.*` in config). |
-| Avolites setup page stuck on "Looking on the network..." | Both machines on the same network? Allow Node through Windows Firewall (Private) on the Titan PC, or type the LED machine's IP on the setup page. |
-| Wrong look fires | Playback user numbers in `cues` don't match Titan. |
-| "Wrong access key" | The link is missing `?key=...`, or it doesn't match `key` in config. |
+Or run the whole app twice on one computer: `node app.js --dir=./a` and `node app.js --dir=./b --setup-port=8091`.
+`npm test` runs the unit tests.

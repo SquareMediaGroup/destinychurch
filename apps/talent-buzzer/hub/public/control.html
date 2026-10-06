@@ -21,7 +21,7 @@
     .dot.ok { background: var(--ok); } .dot.warn { background: var(--warn); }
     .pill { font-size: 12px; padding: 2px 8px; border-radius: 99px; background: #262930; color: var(--muted); }
     .pill.x { background: var(--red); color: #fff; } .pill.gold { background: var(--gold); color: #2a1f00; }
-    button { font: inherit; color: var(--text); background: #262930; border: 1px solid #3a3e48; border-radius: 8px; padding: 7px 12px; cursor: pointer; }
+    button { white-space: nowrap; font: inherit; color: var(--text); background: #262930; border: 1px solid #3a3e48; border-radius: 8px; padding: 7px 12px; cursor: pointer; }
     button:hover { background: #2f333b; }
     button.big { font-size: 17px; padding: 12px 18px; font-weight: 600; }
     button.primary { background: #3b5bdb; border-color: #4c6ef5; }
@@ -59,8 +59,8 @@
     <section>
       <h2>Screen and lighting</h2>
       <div class="row"><span class="dot" id="dispDot"></span><span class="name">LED display page</span><span class="pill" id="dispTxt"></span></div>
-      <div class="row"><span class="dot" id="soundDot"></span><span class="name">Display sound</span><span class="pill" id="soundTxt"></span>
-        <button data-sound="x">Test X</button><button data-sound="all-x">Test all out</button><button data-sound="golden">Test gold</button></div>
+      <div class="row"><span class="dot" id="soundDot"></span><span class="name">Display sound</span><span class="pill" id="soundTxt"></span></div>
+      <div class="actions" style="padding: 2px 0 8px 20px"><button data-sound="x">Test X sound</button><button data-sound="all-x">Test all out</button><button data-sound="golden">Test gold</button></div>
       <div class="row"><span class="dot" id="agentDot"></span><span class="name">Lighting link</span><span class="pill" id="agentTxt"></span></div>
       <div class="row"><span class="dot" id="titanDot"></span><span class="name">Avolites Titan</span><span class="pill" id="titanTxt"></span></div>
     </section>

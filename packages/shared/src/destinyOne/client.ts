@@ -224,11 +224,12 @@ export function createDestinyOneClient({ baseUrl, getAccessToken, fetchImpl }: D
     /** Group info → Photos and files: messages with a photo or file, paged like `messages`. */
     groupMedia: (groupId: string, opts: { before?: number; limit?: number } = {}) =>
       call<D1MessagePage>("GET", `/groups/${groupId}/media${q(opts)}`),
-    send: (groupId: string, input: { body?: string; replyTo?: number; attachmentId?: string; poll?: D1PollDraft; event?: D1EventRef }) =>
+    /** `mentions`: ids of the group members "@named" in `body` (findMentions). */
+    send: (groupId: string, input: { body?: string; replyTo?: number; attachmentId?: string; poll?: D1PollDraft; event?: D1EventRef; mentions?: string[] }) =>
       call<D1Message>("POST", `/groups/${groupId}/messages`, input),
     deleteMessage: (messageId: number) => call<{ ok: true }>("DELETE", `/messages/${messageId}`),
     /** Change the text of my own message (within EDIT_WINDOW_MINUTES of sending). */
-    editMessage: (messageId: number, body: string) => call<D1Message>("PATCH", `/messages/${messageId}`, { body }),
+    editMessage: (messageId: number, body: string, mentions?: string[]) => call<D1Message>("PATCH", `/messages/${messageId}`, { body, mentions }),
     report: (messageId: number, reason: string) =>
       call<{ ok: true }>("POST", `/messages/${messageId}/report`, { reason }),
     react: (messageId: number, emoji: string) =>

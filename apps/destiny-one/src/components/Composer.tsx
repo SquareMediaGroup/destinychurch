@@ -5,15 +5,16 @@
 // and the send button that swaps in for the attach shortcut once there's text.
 
 import { forwardRef, useState } from "react";
-import { Text, TextInput, View } from "react-native";
+import { Pressable, Text, TextInput, View } from "react-native";
 import * as DocumentPicker from "expo-document-picker";
 import * as ImagePicker from "expo-image-picker";
-import { ATTACHMENT_MIME_TYPES, MAX_ATTACHMENT_BYTES, MAX_MESSAGE_LENGTH } from "@destiny/shared";
+import { ATTACHMENT_MIME_TYPES, MAX_ATTACHMENT_BYTES, MAX_MESSAGE_LENGTH, mentionQuery, mentionSuggestions, type Mentionable } from "@destiny/shared";
 import { AttachSheet } from "@/components/AttachSheet";
 import { GlassSurface } from "@/components/GlassSurface";
 import { Icon } from "@/components/Icon";
 import { Appear, PressableScale } from "@/components/Motion";
 import { SendAsMenu } from "@/components/SendAsMenu";
+import { Avatar } from "@/components/ui";
 import type { Account } from "@/lib/accounts";
 import { cleanImage } from "@/lib/cleanImage";
 import { haptic } from "@/lib/haptics";
@@ -49,9 +50,11 @@ interface Props {
   initialText?: string;
   /** Every change to the text, so it can be kept as a draft. */
   onTextChange?: (text: string) => void;
+  /** People who can be @mentioned (the group's other members). Typing "@" suggests them. */
+  mentionables?: Mentionable[];
 }
 
-export const Composer = forwardRef<TextInput, Props>(function Composer({ replying, onCancelReply, editing, onCancelEdit, onSend, onAttach, onAttachPoll, onAttachEvent, onError, loadSendAsOptions, onSendAs, initialText, onTextChange }, ref) {
+export const Composer = forwardRef<TextInput, Props>(function Composer({ replying, onCancelReply, editing, onCancelEdit, onSend, onAttach, onAttachPoll, onAttachEvent, onError, loadSendAsOptions, onSendAs, initialText, onTextChange, mentionables }, ref) {
   const t = useTheme();
   const [draft, setDraftState] = useState(initialText ?? "");
   const setDraft = (text: string) => {
@@ -59,6 +62,20 @@ export const Composer = forwardRef<TextInput, Props>(function Composer({ replyin
     onTextChange?.(text);
   };
   const [sheetOpen, setSheetOpen] = useState(false);
+  // Where the cursor is, to spot an "@name" being typed.
+  const [cursor, setCursor] = useState(draft.length);
+  const typing = mentionables?.length ? mentionQuery(draft, cursor) : null;
+  const suggestions = typing ? mentionSuggestions(typing.query, mentionables ?? []) : [];
+
+  /** Swap the "@par" being typed for the whole "@Name " and carry on. */
+  function pickMention(person: Mentionable) {
+    if (!typing) return;
+    haptic.selection();
+    const insert = `@${person.displayName} `;
+    const next = (draft.slice(0, typing.start) + insert + draft.slice(cursor)).slice(0, MAX_MESSAGE_LENGTH);
+    setDraft(next);
+    setCursor(typing.start + insert.length);
+  }
   const [sendAsMenu, setSendAsMenu] = useState<{ text: string; options: Account[]; checking: boolean } | null>(null);
   const hasText = draft.trim().length > 0;
   // While editing, Save only lights up once the text actually differs.
@@ -184,6 +201,25 @@ export const Composer = forwardRef<TextInput, Props>(function Composer({ replyin
         </Appear>
       ) : null}
 
+      {suggestions.length ? (
+        <Appear key="mentions" from={{ y: 12, scale: 0.97 }}>
+          <GlassSurface style={{ marginLeft: 52, borderRadius: 18, paddingVertical: 4, overflow: "hidden" }}>
+            {suggestions.map((p) => (
+              <Pressable
+                key={p.id}
+                onPress={() => pickMention(p)}
+                accessibilityRole="button"
+                accessibilityLabel={`Mention ${p.displayName}`}
+                style={({ pressed }) => ({ flexDirection: "row", alignItems: "center", gap: 10, paddingVertical: 7, paddingHorizontal: 12, backgroundColor: pressed ? t.fill : "transparent" })}
+              >
+                <Avatar name={p.displayName} size={28} />
+                <Text numberOfLines={1} style={{ flex: 1, fontSize: 16, color: t.text }}>{p.displayName}</Text>
+              </Pressable>
+            ))}
+          </GlassSurface>
+        </Appear>
+      ) : null}
+
       <View style={{ flexDirection: "row", alignItems: "flex-end", gap: 8 }}>
         <PressableScale
           onPress={() => {
@@ -210,6 +246,7 @@ export const Composer = forwardRef<TextInput, Props>(function Composer({ replyin
               ref={ref}
               value={draft}
               onChangeText={(v) => setDraft(v.slice(0, MAX_MESSAGE_LENGTH))}
+              onSelectionChange={(e) => setCursor(e.nativeEvent.selection.end)}
               placeholder="Message"
               placeholderTextColor={t.subtle}
               selectionColor={ORANGE}

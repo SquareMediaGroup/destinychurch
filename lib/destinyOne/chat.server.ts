@@ -270,6 +270,7 @@ export async function broadcastNewMessage(message: D1Message): Promise<void> {
     replyTo: message.replyTo,
     attachmentId: message.attachment?.id ?? null,
     content: message.content,
+    mentions: message.mentions,
     createdAt: message.createdAt,
   });
 }
@@ -277,7 +278,7 @@ export async function broadcastNewMessage(message: D1Message): Promise<void> {
 /** An edited message's new text, to everyone in the group. Same REST path as new messages (it carries plaintext). */
 export async function broadcastMessageEdited(message: D1Message): Promise<void> {
   if (!message.body || !message.editedAt) return;
-  await broadcastToGroup(message.groupId, "message_edited", { id: message.id, groupId: message.groupId, body: message.body, editedAt: message.editedAt });
+  await broadcastToGroup(message.groupId, "message_edited", { id: message.id, groupId: message.groupId, body: message.body, editedAt: message.editedAt, mentions: message.mentions });
 }
 
 /**
@@ -329,12 +330,13 @@ interface MessageRow {
   created_at: string;
   edited_at: string | null;
   deleted_at: string | null;
+  mentions: string[] | null;
   sender: { id: string; display_name: string } | null;
   attachment: { id: string; storage_path: string; mime_type: string; size_bytes: number | null } | null;
 }
 
 const MESSAGE_SELECT =
-  "id, group_id, sender_id, body, reply_to, attachment_id, content, created_at, edited_at, deleted_at, " +
+  "id, group_id, sender_id, body, reply_to, attachment_id, content, created_at, edited_at, deleted_at, mentions, " +
   "sender:d1_members!d1_messages_sender_id_fkey(id, display_name), " +
   "attachment:d1_attachments!d1_messages_attachment_id_fkey(id, storage_path, mime_type, size_bytes)";
 
@@ -406,6 +408,7 @@ async function shape(rows: MessageRow[], callerId: string): Promise<D1Message[]>
       reactions: deleted ? [] : [...byEmoji].map(([emoji, v]) => ({ emoji, ...v })),
       createdAt: r.created_at,
       editedAt: deleted ? null : r.edited_at,
+      mentions: deleted ? [] : r.mentions ?? [],
       deleted,
       mine: r.sender_id === callerId,
     };

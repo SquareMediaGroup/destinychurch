@@ -163,7 +163,7 @@ export function applyEvent(e: D1RealtimeEvent, meId: string) {
         void queryClient.invalidateQueries({ queryKey: keys.media(p.groupId) });
       } else {
         updateMessages(p.groupId, (list) =>
-          upsert(list, { id: p.id, groupId: p.groupId, sender: p.sender, body: p.body, replyTo: p.replyTo, attachment: null, content: p.content ?? null, reactions: [], createdAt: p.createdAt, editedAt: null, deleted: false, mine }),
+          upsert(list, { id: p.id, groupId: p.groupId, sender: p.sender, body: p.body, replyTo: p.replyTo, attachment: null, content: p.content ?? null, reactions: [], createdAt: p.createdAt, editedAt: null, mentions: p.mentions ?? [], deleted: false, mine }),
         );
       }
       updateGroupSummary(p.groupId, (g) => {
@@ -184,8 +184,8 @@ export function applyEvent(e: D1RealtimeEvent, meId: string) {
       return;
     }
     case "message_edited": {
-      const { id, groupId, body, editedAt } = e.payload;
-      updateMessages(groupId, (list) => list.map((m) => (m.id === id ? { ...m, body, editedAt } : m)));
+      const { id, groupId, body, editedAt, mentions } = e.payload;
+      updateMessages(groupId, (list) => list.map((m) => (m.id === id ? { ...m, body, editedAt, mentions: mentions ?? m.mentions } : m)));
       updateGroupSummary(groupId, (g) => (g.lastMessage?.id === id ? { ...g, lastMessage: { ...g.lastMessage, preview: previewOf(body) } } : g));
       return;
     }

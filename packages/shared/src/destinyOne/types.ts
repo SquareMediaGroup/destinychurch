@@ -269,6 +269,8 @@ export interface D1Message {
   createdAt: string;
   /** Set when the sender edited the text (shown as "Edited"). Earlier versions are kept for safeguarding review only. */
   editedAt: string | null;
+  /** Member ids "@mentioned" in the text (only current members of the group). */
+  mentions: string[];
   deleted: boolean;
   mine: boolean;
 }
@@ -307,9 +309,9 @@ export interface D1UploadTicket {
 
 /** Realtime events on `d1-group:<id>` and `d1-member:<id>` (Broadcast). */
 export type D1RealtimeEvent =
-  | { event: "message"; payload: { id: number; groupId: string; sender: { id: string; displayName: string }; body: string | null; replyTo: number | null; attachmentId: string | null; content: D1MessageContent | null; createdAt: string } }
+  | { event: "message"; payload: { id: number; groupId: string; sender: { id: string; displayName: string }; body: string | null; replyTo: number | null; attachmentId: string | null; content: D1MessageContent | null; mentions: string[]; createdAt: string } }
   | { event: "message_deleted"; payload: { id: number; groupId: string } }
-  | { event: "message_edited"; payload: { id: number; groupId: string; body: string; editedAt: string } }
+  | { event: "message_edited"; payload: { id: number; groupId: string; body: string; editedAt: string; mentions: string[] } }
   | { event: "reaction"; payload: { messageId: number; groupId: string; memberId: string; emoji: string; added: boolean } }
   | { event: "poll_vote"; payload: { messageId: number; groupId: string; votes: D1PollTally[]; totalVoters: number } }
   | { event: "members_changed"; payload: { groupId: string } }

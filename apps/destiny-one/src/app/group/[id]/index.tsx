@@ -18,7 +18,7 @@ import type { MessageMenuActions } from "@/components/MessageMenu";
 import { Divider, MessageBubble, buildRows, type Row } from "@/components/MessageBubble";
 import { NotificationPrompt } from "@/components/NotificationPrompt";
 import { Avatar, BackButton, ConfirmDialog, EmptyState, ErrorState, GlassIconButton, PrimaryButton, withAlpha } from "@/components/ui";
-import { canEditMessage, canSendAs } from "@destiny/shared";
+import { canEditMessage, canSendAs, findMentions } from "@destiny/shared";
 import type { Account } from "@/lib/accounts";
 import { messageSummary, plural } from "@/lib/format";
 import { api } from "@/lib/api";
@@ -85,6 +85,9 @@ export default function GroupChat() {
   const byId = useMemo(() => new Map((messages ?? []).map((m) => [m.id, m])), [messages]);
   const admins = useMemo(() => new Set((group?.members ?? []).filter((m) => m.role === "admin").map((m) => m.id)), [group]);
   const tags = useMemo(() => new Map((group?.members ?? []).map((m) => [m.id, m.tag])), [group]);
+  // Everyone in the group, for drawing "@Name"; everyone but me, for the composer's suggestions.
+  const people = useMemo(() => (group?.members ?? []).map((m) => ({ id: m.id, displayName: m.displayName })), [group]);
+  const mentionables = useMemo(() => people.filter((p) => p.id !== me?.id), [people, me?.id]);
 
   // While on screen, new messages here aren't unread.
   useFocusEffect(
@@ -225,19 +228,20 @@ export default function GroupChat() {
     if (editing) {
       const target = editing;
       setEditing(null);
-      await convo.edit(target.id, text).catch((err) => setToast(errorMessage(err, "Couldn't save the edit. Try again.")));
+      await convo.edit(target.id, text, findMentions(text, mentionables)).catch((err) => setToast(errorMessage(err, "Couldn't save the edit. Try again.")));
       return;
     }
     const reply = replyTo;
     setReplyTo(null);
     list.current?.scrollToOffset({ offset: 0, animated: true });
-    await convo.send({ body: text, replyTo: reply?.id }).catch((err) => setToast(errorMessage(err)));
+    await convo.send({ body: text, replyTo: reply?.id, mentions: findMentions(text, mentionables) }).catch((err) => setToast(errorMessage(err)));
   }
 
   /** Holding Send: the other signed-in account sends this text (replies included). */
   async function sendTextAs(account: Account, text: string) {
     const reply = replyTo;
-    await convo.sendAs(account.slot, { body: text, replyTo: reply?.id });
+    // The other account can mention anyone but itself; the server drops anyone else not in the group.
+    await convo.sendAs(account.slot, { body: text, replyTo: reply?.id, mentions: findMentions(text, people) });
     setReplyTo(null);
     list.current?.scrollToOffset({ offset: 0, animated: true });
   }
@@ -296,6 +300,7 @@ export default function GroupChat() {
       onError={setToast}
       initialText={editing?.body ?? chatDrafts.get(id)}
       onTextChange={editing ? undefined : (text) => chatDrafts.set(id, text)}
+      mentionables={mentionables}
     />
   );
 
@@ -371,6 +376,8 @@ export default function GroupChat() {
                     else setToast("Couldn't open that file. Try again.");
                   });
                 }}
+                people={people}
+                meId={me?.id}
                 onToggleReaction={(emoji) => void convo.toggleReaction(item.m.id, emoji).catch((err) => setToast(errorMessage(err)))}
                 onVotePoll={(optionIds) => void convo.vote(item.m.id, optionIds).catch((err) => setToast(errorMessage(err)))}
                 onRetry={() =>

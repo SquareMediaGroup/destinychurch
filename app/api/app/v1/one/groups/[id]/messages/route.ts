@@ -28,7 +28,7 @@ function buildPollContent(draft: D1PollDraft): D1MessageContent {
 // GET  /api/app/v1/one/groups/[id]/messages?before=<id>&limit=<n>
 //        Newest page first, returned oldest→newest. Only messages from after
 //        you joined. Deleted messages come back without their content.
-// POST /api/app/v1/one/groups/[id]/messages  { body?, replyTo?, attachmentId? }
+// POST /api/app/v1/one/groups/[id]/messages  { body?, replyTo?, attachmentId?, poll?, event?, mentions? }
 //        Send. The database refuses frozen groups, non-members, and
 //        non-admins in Announcements. The text is stored sealed (encrypted at
 //        rest). Everyone in the group receives it on the d1-group:<id>
@@ -82,6 +82,8 @@ export const POST = oneRoute<IdParams>(async (request, { params }) => {
     p_attachment: input.attachmentId ?? null,
     p_content: sealContent(content, id),
     p_terms: messageTerms(body, id),
+    // Only ids that are current members are kept (d1_valid_mentions).
+    p_mentions: body ? input.mentions ?? null : null,
   });
   if (error) throw fromDbError(error);
 
@@ -89,11 +91,16 @@ export const POST = oneRoute<IdParams>(async (request, { params }) => {
   after(() =>
     Promise.all([
       broadcastNewMessage(message),
-      pushNewMessage(id, caller.member.id, {
-        senderName: caller.member.display_name,
-        body: body ?? contentPreview(content),
-        attachmentMime: message.attachment?.mimeType ?? null,
-      }),
+      pushNewMessage(
+        id,
+        caller.member.id,
+        {
+          senderName: caller.member.display_name,
+          body: body ?? contentPreview(content),
+          attachmentMime: message.attachment?.mimeType ?? null,
+        },
+        message.mentions,
+      ),
     ]),
   );
   return oneJson(message, 201);

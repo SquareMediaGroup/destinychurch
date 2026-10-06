@@ -142,8 +142,8 @@ select pg_temp.expect_error(
 select pg_temp.check(true, 'a message can be edited at most 10 times');
 
 select pg_temp.check(
-  not has_function_privilege('authenticated', 'public.d1_edit_message(uuid, bigint, text, text[])', 'execute')
-  and has_function_privilege('service_role', 'public.d1_edit_message(uuid, bigint, text, text[])', 'execute')
+  not has_function_privilege('authenticated', 'public.d1_edit_message(uuid, bigint, text, text[], uuid[])', 'execute')
+  and has_function_privilege('service_role', 'public.d1_edit_message(uuid, bigint, text, text[], uuid[])', 'execute')
   and not has_table_privilege('authenticated', 'public.d1_message_edits', 'select'),
   'editing and the edit history are service-role only');
 
@@ -151,3 +151,32 @@ delete from public.d1_messages where id = (select v from found where k = 'mine')
 select pg_temp.check(
   not exists (select 1 from public.d1_message_edits where message_id = (select v from found where k = 'mine')),
   'the retention purge removes the edit history with the message');
+
+-- ── Mentions (20261006_02) ──────────────────────────────────────────────────
+
+insert into found select 'mention', public.d1_post_message(:lead::uuid, (select v from ids where k = 'announce'),
+  'd1e:v1:hi.adult2', null, null, null, null,
+  array[:adult2::uuid, :adult2::uuid, :lead::uuid, '10000000-0000-0000-0000-0000000000ff'::uuid]);
+select pg_temp.check(
+  (select mentions from public.d1_messages where id = (select v from found where k = 'mention')) = array[:adult2::uuid],
+  'mentions keep only current members, once each, never the sender or an outsider');
+
+select public.d1_edit_message(:lead::uuid, (select v from found where k = 'mention'), 'd1e:v1:hi.minor', null, array[:minor1::uuid]);
+select pg_temp.check(
+  (select mentions from public.d1_messages where id = (select v from found where k = 'mention')) = array[:minor1::uuid],
+  'an edit can change who is mentioned');
+select public.d1_edit_message(:lead::uuid, (select v from found where k = 'mention'), 'd1e:v1:hi.again');
+select pg_temp.check(
+  (select mentions from public.d1_messages where id = (select v from found where k = 'mention')) = array[:minor1::uuid],
+  'an edit without mentions leaves them as they were');
+
+select pg_temp.expect_error(
+  format($$update public.d1_messages set mentions = '{}' where id = %s$$, (select v from found where k = 'mention')),
+  'cannot be edited');
+select pg_temp.check(true, 'mentions cannot be changed outside an edit');
+
+select pg_temp.check(
+  not exists (select 1 from pg_proc where proname = 'd1_post_message' and pronargs <> 8)
+  and not has_function_privilege('authenticated', 'public.d1_post_message(uuid, uuid, text, bigint, uuid, jsonb, text[], uuid[])', 'execute')
+  and not has_function_privilege('authenticated', 'public.d1_valid_mentions(uuid, uuid, uuid[])', 'execute'),
+  'one d1_post_message (with mentions), service-role only');

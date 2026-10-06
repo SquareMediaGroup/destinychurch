@@ -28,7 +28,7 @@ export const PATCH = oneRoute<IdParams>(async (request, { params }) => {
   const caller = await requireMember(request);
   const id = requireMessageId((await params).id);
   await limit("edit", caller.member.id, 20);
-  const { body } = await readBody(request, editMessageSchema);
+  const { body, mentions } = await readBody(request, editMessageSchema);
 
   // The group decides the key and the search terms, so look it up first.
   // Anyone else's message (or one that doesn't exist) fails the same way in SQL.
@@ -42,6 +42,7 @@ export const PATCH = oneRoute<IdParams>(async (request, { params }) => {
     p_message: id,
     p_body: sealBody(body, groupId),
     p_terms: messageTerms(body, groupId),
+    p_mentions: mentions ?? null,
   });
   if (error) throw fromDbError(error);
 

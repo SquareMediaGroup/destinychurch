@@ -369,6 +369,8 @@ destinychurch/
 │       ├── 20261004_02_destiny_one_message_encryption_required.sql # part 10b: refuse plaintext
 │       ├── 20261006_01_destiny_one_message_edits.sql # part 11 (v0.8): edit your own message for 15
 │       │                                   # minutes; old text kept in d1_message_edits for review
+│       ├── 20261006_02_destiny_one_mentions.sql # part 12 (v0.8): @mentions (d1_messages.mentions,
+│       │                                   # d1_valid_mentions; d1_post_message gains p_mentions)
 │       │                                   # (apply after scripts/destiny-one/encrypt-messages.ts)
 │       ├── 20260927_03_destiny_one_message_search.sql # Destiny One part 4: message search
 │       ├── 20260927_02_destiny_one_leader_invites.sql # Destiny One part 3: leader invites
@@ -2115,6 +2117,18 @@ terms. `d1_messages_immutable` lets the body and `edited_at` change only while `
 which `d1_edit_message` does for its own transaction (`set_config(..., true)`), so a direct UPDATE is
 still refused. Members see only the latest text, marked "Edited"; the safeguarding transcript shows
 every version.
+
+**Part 12 — `20261006_02_destiny_one_mentions.sql`: @mentions.** `d1_messages.mentions uuid[]` (up to
+50) holds who a message "@names". The text stays sealed; the ids are plain because the server needs them
+to notify people, and they say no more than the member list does. `d1_valid_mentions(group, actor, ids)`
+keeps only current members of the group, never the sender, so a mention can't reach anyone outside it.
+`d1_post_message` gains `p_mentions` (the 7-argument version is dropped), `d1_edit_message` gains
+`p_mentions` (null leaves them alone), and the immutability trigger lets `mentions` change only during an
+edit. Push (`lib/destinyOne/push.server.ts`): a mentioned member gets "Sender mentioned you: …", even if
+they muted the group; blocking still wins. The app parses "@Name" with `findMentions` /
+`mentionSegments` / `mentionQuery` / `mentionSuggestions` in `@destiny/shared` (longest name first, never
+inside an email address); the composer suggests members as you type "@", and bubbles draw mentions in
+bold, highlighting your own name.
 
 **Tested by:** `scripts/test-sql.sh` (`npm run test:sql`, and the "Database rules" CI job) — applies
 Supabase stubs + every Destiny One migration (parts 1–9, plus the profile-picture, min-build and

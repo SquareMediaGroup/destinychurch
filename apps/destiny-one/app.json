@@ -29,7 +29,9 @@
         "android.permission.RECEIVE_SMS",
         "android.permission.READ_CONTACTS",
         "android.permission.ACCESS_FINE_LOCATION",
-        "android.permission.ACCESS_COARSE_LOCATION"
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.READ_MEDIA_VISUAL_USER_SELECTED",
+        "android.permission.WRITE_EXTERNAL_STORAGE"
       ],
       "predictiveBackGestureEnabled": false
     },
@@ -42,6 +44,13 @@
         {
           "cameraPermission": "Destiny One uses the camera so you can take a photo to send in a chat.",
           "photosPermission": "Destiny One uses your photos so you can send one in a chat or use one as your chat wallpaper."
+        }
+      ],
+      [
+        "expo-media-library",
+        {
+          "savePhotosPermission": "Destiny One adds photos from your chats to your library when you tap Save. It can't see your other photos.",
+          "granularPermissions": []
         }
       ],
       [

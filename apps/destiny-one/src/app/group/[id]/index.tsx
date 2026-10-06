@@ -22,6 +22,7 @@ import { canSendAs } from "@destiny/shared";
 import type { Account } from "@/lib/accounts";
 import { messageSummary, plural } from "@/lib/format";
 import { api } from "@/lib/api";
+import { downloadAttachment, isPhoto, shareFile } from "@/lib/media";
 import { haptic } from "@/lib/haptics";
 import { hideSender, setOpenGroup } from "@/lib/queries";
 import { uploadAttachment } from "@/lib/upload";
@@ -189,12 +190,27 @@ export default function GroupChat() {
     onCopy: () => {
       if (m.body) void Clipboard.setStringAsync(m.body);
     },
+    onShare: m.attachment ? () => void shareAttachment(m) : null,
     onReport: () => router.push({ pathname: "/report", params: { messageId: String(m.id), name: m.sender?.displayName ?? "Former member", at: m.createdAt, body: messageSummary(m) } }),
     onBlock: () => {
       if (m.sender) setBlocking({ id: m.sender.id, name: m.sender.displayName });
     },
     onDelete: () => setDeleting(m),
   });
+
+  /** Downloads the file (links are private and short-lived) and opens the share sheet on it. */
+  async function shareAttachment(m: LocalMessage) {
+    const url = await convo.attachmentUrl(m);
+    if (!url || !m.attachment) {
+      setToast("Couldn't get that file. Try again.");
+      return;
+    }
+    try {
+      await shareFile(await downloadAttachment(url, m.attachment.id, m.attachment.mimeType), m.attachment.mimeType);
+    } catch (err) {
+      setToast(errorMessage(err, "Couldn't share that file. Try again."));
+    }
+  }
 
   async function sendText(text: string) {
     const reply = replyTo;
@@ -325,7 +341,12 @@ export default function GroupChat() {
                     if (url) void WebBrowser.openBrowserAsync(url);
                     return;
                   }
-                  // The cached link may have expired; attachmentUrl fetches a fresh one if so.
+                  // Photos open in the viewer, which pages through every photo in this chat.
+                  if (isPhoto(item.m)) {
+                    router.push({ pathname: "/viewer", params: { groupId: id, messageId: String(item.m.id) } });
+                    return;
+                  }
+                  // Files (PDFs): the cached link may have expired; attachmentUrl fetches a fresh one if so.
                   void convo.attachmentUrl(item.m).then((fresh) => {
                     if (fresh) void WebBrowser.openBrowserAsync(fresh);
                     else setToast("Couldn't open that file. Try again.");

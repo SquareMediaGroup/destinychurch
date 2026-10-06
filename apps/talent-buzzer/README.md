@@ -16,6 +16,9 @@ are involved, so it keeps working if the building connection drops.
                 │  (LED machine)       └─> Avolites agent ──> Titan Web API (localhost:4430)
 ```
 
+The **same app** goes on both machines. When it starts, a setup page asks which machine it is
+and runs the right part:
+
 | Piece | Runs on | What it does |
 | --- | --- | --- |
 | Hub (`hub/server.js`) | LED screen machine | Serves all the pages, holds the show state, relays presses |
@@ -35,16 +38,27 @@ are involved, so it keeps working if the building connection drops.
 
 ## Setup
 
-### 1. LED screen machine (hub + display)
+### 1. Install on both machines (LED screen machine and Avolites PC)
 
 1. Install [Node.js](https://nodejs.org) 20 or newer (LTS installer, default options).
 2. Copy this `talent-buzzer` folder onto the machine.
-3. Copy `config.example.json` to `config.json` and edit it (see [Config](#config)).
-4. Double-click `start-hub.bat` (or run `npm install` then `npm run hub`).
-   The window lists the links for every device, using this machine's IP address.
-   Allow Node through Windows Firewall when asked (Private networks).
-5. Open the **Display** link in Chrome or Edge, drag it onto the LED output, **click once**
-   (this unlocks sound — browsers block audio until a click), then press **F11** for fullscreen.
+3. Double-click `start.bat` (or run `npm install` then `npm start`). The first run installs
+   what it needs, then opens the **setup page** (`http://localhost:8090`) in the browser.
+4. Pick **LED screen machine** or **Avolites machine** and press **Start**. The choice is remembered
+   in `machine.json`, so next time `start.bat` goes straight into that role. Use **Change** on the
+   setup page to switch.
+5. Allow Node through Windows Firewall when asked (**Private networks**). On the LED machine this
+   lets the tablets connect; on the Avolites PC it lets the app hear the LED machine announcing itself.
+
+Leave the `start.bat` window open during the show. If the app crashes, it restarts itself.
+
+### 2. LED screen machine
+
+1. Copy `config.example.json` to `config.json` and edit it (judge names, cue numbers, see [Config](#config)).
+   Restart `start.bat` after editing.
+2. The setup page lists the **device links** (Control, Display and one per tablet) with this machine's IP address.
+3. Open the **Display** link in Chrome or Edge, drag it onto the LED output, **click once**
+   (this unlocks sound, because browsers block audio until a click), then press **F11** for fullscreen.
 
 Using the display as a source in Resolume / ProPresenter / OBS instead? Point a browser
 source at the display link. Options you can add to the URL:
@@ -56,20 +70,22 @@ source at the display link. Options you can add to the URL:
 | `labels=0` | Hide the judge names under each X |
 | `audio=off` | No sound from this copy of the page (e.g. a second display) |
 
-### 2. Avolites Titan PC (agent)
+### Avolites PC
 
-1. On the Titan PC, open `http://localhost:4430/titan/get/System/SoftwareVersion` in a browser.
-   You should see the Titan version. If you do, the Web API is available.
-2. Install Node.js 20+ and copy this folder over.
-3. Edit `start-agent.bat`: set `HUB=` to the LED machine's IP and port (shown in the hub window).
-4. Double-click `start-agent.bat`. The control page should show **Lighting link: Agent connected**
-   and **Avolites Titan: OK**.
+1. First check Titan's web control: on the Titan PC, open
+   `http://localhost:4430/titan/get/System/SoftwareVersion` in a browser. You should see the Titan version.
+2. Pick **Avolites machine** on the setup page. Leave the address blank: it finds the LED screen
+   machine on the network by itself (both must be on the same network). If it can't, type the LED
+   machine's IP address (shown on that machine's setup page).
+3. The setup page should show **LED screen machine: Found**, **Connection: Connected** and
+   **Avolites Titan: OK**. The control page shows the same.
 
-The agent connects **out** to the hub, so nothing needs opening in the lighting PC's firewall.
+All the show settings (cue numbers, names) live in `config.json` on the LED machine. The Avolites
+PC needs no config.
 
 **Hardware console (Arena, Quartz, Tiger Touch, Diamond) or can't install software on the
-lighting PC?** Skip the agent and set `"lighting": { "mode": "direct" }` and
-`"titan": { "host": "<console IP>" }` in the hub's `config.json`. The hub then calls the
+lighting PC?** Only install on the LED machine, and set `"lighting": { "mode": "direct" }` and
+`"titan": { "host": "<console IP>" }` in its `config.json`. The LED machine then calls the
 Titan Web API over the network itself. Check `http://<console IP>:4430/titan/get/System/SoftwareVersion`
 from the LED machine first.
 
@@ -146,17 +162,20 @@ display page. Use **Test X** / **Test all out** / **Test gold** on the control p
 ```bash
 npm install
 npm run fake-titan          # pretends to be Titan on port 4430, logs every playback
-npm run hub
-npm run agent -- localhost:8080
+npm run hub                 # the LED screen machine part
+npm run agent               # the Avolites part (finds the hub by itself)
 ```
+
+Or run the full app twice on one computer, each with its own setup page:
+`node app.js --dir=./a` and `node app.js --dir=./b --setup-port=8091`.
 
 Open `/control`, `/display` and a few `/tablet?seat=N` tabs in a browser and press away.
 `npm test` runs the show-logic unit tests.
 
 ## Show-day checklist (5 minutes)
 
-1. Hub running on the LED machine; display page open, clicked once, fullscreen.
-2. Agent running on the Titan PC (or `direct` mode) — control page shows Titan **OK**.
+1. `start.bat` running on the LED machine; display page open, clicked once, fullscreen.
+2. `start.bat` running on the Titan PC (or `direct` mode). The control page shows Titan **OK**.
 3. All five tablets show a green dot on the control page (amber means two devices claim one seat).
 4. Control page → **Test X** and **Test gold**: sound comes out of the PA.
 5. Control page → each **Test lighting cue** button: the right look fires.
@@ -169,6 +188,7 @@ Open `/control`, `/display` and a few `/tablet?seat=N` tabs in a browser and pre
 | --- | --- |
 | Tablet says "Not connected" | Same Wi-Fi as the LED machine? Windows Firewall allowing Node on Private networks? Correct IP? |
 | No sound | Control page shows "Click the display page once" → click it. Check Windows output device. |
-| Lights don't fire | Lighting log on the control page shows the error. "Agent not connected" → start the agent. "Not reachable" → Titan not running, or the Web API URL is wrong for your Titan version (`titan.*` in config). |
+| Lights don't fire | Lighting log on the control page shows the error. "Agent not connected" → start `start.bat` on the Titan PC and check its setup page. "Not reachable" → Titan not running, or the Web API URL is wrong for your Titan version (`titan.*` in config). |
+| Avolites setup page stuck on "Looking on the network..." | Both machines on the same network? Allow Node through Windows Firewall (Private) on the Titan PC, or type the LED machine's IP on the setup page. |
 | Wrong look fires | Playback user numbers in `cues` don't match Titan. |
 | "Wrong access key" | The link is missing `?key=...`, or it doesn't match `key` in config. |

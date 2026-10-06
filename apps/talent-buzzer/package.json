@@ -8,6 +8,7 @@
     "node": ">=20"
   },
   "scripts": {
+    "start": "node app.js",
     "hub": "node hub/server.js",
     "agent": "node agent/avolites-agent.js",
     "fake-titan": "node tools/fake-titan.js",

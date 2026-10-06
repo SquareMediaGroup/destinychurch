@@ -12,6 +12,7 @@ const path = require('node:path');
 const { WebSocketServer } = require('ws');
 const { ShowState } = require('../lib/state');
 const titanApi = require('../lib/titan');
+const discovery = require('../lib/discovery');
 
 const APP_DIR = path.join(__dirname, '..');
 const PUBLIC_DIR = path.join(__dirname, 'public');
@@ -339,9 +340,32 @@ function lanAddresses() {
     .map((i) => i.address);
 }
 
+server.on('error', (err) => {
+  log('🔥', err.code === 'EADDRINUSE' ? `Port ${config.hubPort} is already in use - is the hub already running?` : err.message);
+  process.exit(1);
+});
+
 server.listen(config.hubPort, () => {
   const k = config.key ? `key=${encodeURIComponent(config.key)}` : '';
   const q = (extra) => [extra, k].filter(Boolean).join('&');
+  // Tell the Avolites machine where we are.
+  if (lightingMode === 'agent') discovery.announce(config.hubPort);
+  // When started from app.js, hand it the device links for the setup page.
+  if (process.send) {
+    const ips = lanAddresses();
+    const base = `http://${ips[0] ?? 'localhost'}:${config.hubPort}`;
+    process.send({
+      type: 'hub-ready',
+      lightingMode,
+      addresses: ips,
+      links: [
+        { name: 'Control', url: `${base}/control${k ? `?${k}` : ''}` },
+        { name: 'Display', url: `${base}/display${k ? `?${k}` : ''}` },
+        ...config.judges.map((j) => ({ name: j.name, url: `${base}/tablet?${q(`seat=${j.seat}`)}` })),
+        { name: config.golden?.name ?? 'Golden Buzzer', url: `${base}/tablet?${q('seat=gold')}` },
+      ],
+    });
+  }
   log('🎤', `Talent buzzer hub running (config: ${path.relative(process.cwd(), configFile) || configFile})`);
   log('💡', `Lighting mode: ${lightingMode}${lightingMode === 'direct' ? ` -> Titan at ${config.titan.host}:${config.titan.port}` : ''}`);
   for (const ip of lanAddresses().length ? lanAddresses() : ['localhost']) {
@@ -350,7 +374,6 @@ server.listen(config.hubPort, () => {
     console.log(`  Display:  ${base}/display${k ? `?${k}` : ''}`);
     for (const s of seats) console.log(`  Judge ${s}:  ${base}/tablet?${q(`seat=${s}`)}`);
     console.log(`  Golden:   ${base}/tablet?${q('seat=gold')}`);
-    if (lightingMode === 'agent') console.log(`  Agent:    node agent/avolites-agent.js ${ip}:${config.hubPort}${config.key ? ` --key=${config.key}` : ''}`);
   }
   console.log('');
 });

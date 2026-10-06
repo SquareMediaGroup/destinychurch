@@ -70,3 +70,11 @@ test('titan fire URL is filled from the template', () => {
   );
   assert.equal(url, 'http://localhost:4430/titan/script/2/Playbacks/FirePlaybackAtLevel?handle_userNumber=110&level_level=1&alwaysRefire=true');
 });
+
+test('discovery only accepts our own announcements', () => {
+  const { encode, parse } = require('../lib/discovery');
+  assert.equal(parse(encode(8080)), 8080);
+  assert.equal(parse(Buffer.from('{"app":"something-else","port":8080}')), null);
+  assert.equal(parse(Buffer.from('{"app":"talent-buzzer","port":"8080"}')), null);
+  assert.equal(parse(Buffer.from('not json')), null);
+});

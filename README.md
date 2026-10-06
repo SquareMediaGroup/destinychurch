@@ -32,6 +32,7 @@ Designed, engineered, and deployed by [Square Media Group](mailto:hello@squareme
 - Companion native SwiftUI iOS app (Home/Sermons/Events/Give/More tabs) rendering a dedicated, versioned `/api/app/v1` backend-for-frontend
 - Destiny One — a members' group-messaging app (Expo / React Native, iOS + Android) styled after WhatsApp Communities, with department sub-groups, built-in child-safeguarding rules, invite/approval onboarding, on-device caching for instant screens, message search, polls and events in chat, multi-account quick switching, in-app feedback/crash reporting, data export, a forced-update/maintenance gate, and an admin section at `/admin/destiny-one`. Its backend is the versioned `/api/app/v1/one` API over Supabase (Postgres + triggers + Realtime); it is a separate app from the SwiftUI content app in `mobile/`
 - Live Caption — a companion macOS app (`apps/live-caption`) that captions live audio in real time with a local, Metal-accelerated whisper.cpp model and publishes it to a display or an NDI source for the church's AVL setup (audio never leaves the machine)
+- Talent Show Buzzers — a standalone LAN-only Node app (`apps/talent-buzzer`) for live talent-show nights: four Android tablets act as red "X" judge buzzers plus one golden buzzer, and a press shows the X (or a gold confetti takeover) on the LED screen, plays the buzzer/fanfare audio, and fires the matching Avolites Titan lighting cue. One app runs on both the LED-screen and lighting machines (it asks which on first launch); no internet, Supabase, or accounts, so it keeps working if the building's connection drops
 - Mobile-first, fully responsive, accessibility-focused
 
 ---
@@ -173,7 +174,8 @@ supabase/
 mobile/               # Native SwiftUI iOS content app (Home/Sermons/Events/Give/More tabs)
 apps/
 ├── destiny-one/      # Destiny One — members' group-messaging app (Expo / React Native, iOS + Android)
-└── live-caption/     # Native SwiftUI macOS app — real-time captions (whisper.cpp + NDI)
+├── live-caption/     # Native SwiftUI macOS app — real-time captions (whisper.cpp + NDI)
+└── talent-buzzer/    # Talent-show judge buzzers (LAN Node app) — tablets → LED screen X + Avolites cues
 packages/shared/      # @destiny/shared — types & logic shared by the web app, app BFF & Destiny One
 app/api/app/v1/       # App BFF — versioned, mobile-facing endpoints (config/home/events/… + one/* for Destiny One)
 ```

@@ -1,6 +1,6 @@
 // Destiny One — encryption at rest for chat text, wired to the real keys.
 // The mechanics (and the why) are in sealing.ts; this file loads the keyring
-// from env and knows which fields of a message are sealed:
+// and knows which fields of a message are sealed:
 //
 //   • d1_messages.body                       purpose "msg"
 //   • d1_messages.content poll question and option labels (ids stay plain:
@@ -10,18 +10,68 @@
 //
 // Everything is keyed to the group the row belongs to.
 
+//
+// Where the keys live: Supabase Vault (decided 2026-10-06, replacing Vercel
+// env variables). They were generated inside the database and are only ever
+// handed out by d1_message_keyring(), which only the service role can call
+// (migration 20261006_00). The trade-off, accepted: a dump or backup on its
+// own still shows only ciphertext, but someone with full SQL access or the
+// service key could fetch the keys too.
+//
+// The env variables D1_MSG_KEYS / D1_MSG_KEY_CURRENT / D1_SEARCH_KEY are only
+// a fallback for local development against a database without the Vault
+// secrets. Vault always wins, so every server seals with the same keys.
+
 import "server-only";
 import type { D1MessageContent } from "@destiny/shared";
+import { createServiceClient } from "@/utils/supabase/service";
 import { indexTerms, open, parseKeyring, seal, type Keyring, type SealPurpose } from "@/lib/destinyOne/sealing";
 
+/** Re-read the keys this often, so a rotation reaches every running server. */
+const KEYRING_TTL_MS = 10 * 60 * 1000;
+
 let ring: Keyring | null = null;
+let loadedAt = 0;
+let loading: Promise<Keyring> | null = null;
+
+async function fetchKeyring(): Promise<Keyring> {
+  const { data, error } = await createServiceClient().rpc("d1_message_keyring");
+  const vault = (data ?? null) as { keys?: string | null; current?: string | null; search?: string | null } | null;
+  if (!error && vault?.keys) {
+    return parseKeyring({ keys: vault.keys ?? undefined, current: vault.current ?? undefined, search: vault.search ?? undefined });
+  }
+  if (process.env.D1_MSG_KEYS) {
+    return parseKeyring({ keys: process.env.D1_MSG_KEYS, current: process.env.D1_MSG_KEY_CURRENT, search: process.env.D1_SEARCH_KEY });
+  }
+  throw new Error(`Destiny One message encryption keys are unavailable (${error?.message ?? "no Vault secrets"}).`);
+}
+
+/**
+ * Loads (or refreshes) the keyring. Every Destiny One route awaits this before
+ * it runs (oneRoute, and the safeguarding routes), so the sync helpers below
+ * can rely on it. Cheap after the first call.
+ */
+export async function loadMessageKeyring(): Promise<Keyring> {
+  if (ring && Date.now() - loadedAt < KEYRING_TTL_MS) return ring;
+  loading ??= fetchKeyring()
+    .then((r) => {
+      ring = r;
+      loadedAt = Date.now();
+      return r;
+    })
+    .finally(() => {
+      loading = null;
+    });
+  // A stale keyring keeps working while the refresh runs; only the first load waits.
+  if (ring) {
+    loading.catch((err) => console.error("🔐 Destiny One keyring refresh failed:", (err as Error).message));
+    return ring;
+  }
+  return loading;
+}
 
 function keyring(): Keyring {
-  ring ??= parseKeyring({
-    keys: process.env.D1_MSG_KEYS,
-    current: process.env.D1_MSG_KEY_CURRENT,
-    search: process.env.D1_SEARCH_KEY,
-  });
+  if (!ring) throw new Error("Destiny One message keys aren't loaded yet: await loadMessageKeyring() first.");
   return ring;
 }
 

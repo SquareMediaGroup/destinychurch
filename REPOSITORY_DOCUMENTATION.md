@@ -6126,22 +6126,29 @@ and a ChurchSuite-only `resyncMember`.
 - **Message encryption** — `sealing.ts` (pure, unit-tested in `tests/unit/destiny-one-sealing.spec.ts`)
   and `crypto.server.ts` (loads the keys, knows which fields are sealed). Message bodies, poll
   questions and option labels, and report reasons are sealed by the API before they reach Supabase and
-  opened on the way out, so a database dump, a backup or PITR snapshot, SQL access, or a leaked
-  service key on its own shows only ciphertext. **Not end-to-end encryption**: the API holds the key,
-  which is what keeps safeguarding review (transcripts, reports, takedowns), search and push previews
-  working. Anyone with Vercel env access, or code running in the API, can read everything; push
+  opened on the way out, so a database dump or a backup / PITR snapshot on its own shows only
+  ciphertext. **Not end-to-end encryption**: the API holds the key, which is what keeps safeguarding
+  review (transcripts, reports, takedowns), search and push previews working. Since 2026-10-06 the keys
+  live in **Supabase Vault**, not Vercel: anyone with full SQL access or the service key can fetch them
+  (`d1_message_keyring()`), as can code running in the API, so they can read everything. Push
   previews still pass through Expo and Apple in plain text. Attachments are not encrypted yet (private
   bucket + signed links, as before).
   - Format: `d1e:<keyId>:<iv>.<ciphertext+tag>` (base64url), AES-256-GCM, fresh 12-byte IV, AAD
     `"<msg|report>:<groupId>"`, so a value only opens in its own group and as its own kind of thing.
     `open` passes unsealed values through (only rows from before the backfill); one that won't open
     is logged and shown as "This message couldn't be decrypted." rather than failing the whole page.
-  - Keys (env, all three required, no plaintext fallback): `D1_MSG_KEYS` (`v1:<base64 32 bytes>`,
-    comma-separated during a rotation), `D1_MSG_KEY_CURRENT`, `D1_SEARCH_KEY` (HMAC only). Production,
-    Preview and local dev must share the same values, because they share one Supabase project. **Losing
-    the keys loses every message**, so keep a copy in the password manager. Rotation: add `v2` to
-    `D1_MSG_KEYS`, set `D1_MSG_KEY_CURRENT=v2`; old values keep opening with `v1` until it is removed
-    (which needs a re-seal pass first).
+  - Keys: three Vault secrets, `d1_msg_keys` (`v1:<base64 32 bytes>`, comma-separated during a
+    rotation), `d1_msg_key_current`, `d1_search_key` (HMAC only). They were generated inside the database
+    by migration `20261006_00_destiny_one_keys_in_vault.sql`, so they've never been on a laptop. The API
+    reads them through `d1_message_keyring()` (service role only): `loadMessageKeyring()` once per server,
+    refreshed every 10 minutes, awaited by `oneRoute` and the safeguarding routes before anything is
+    sealed or opened. Every environment shares them automatically, because they share one Supabase
+    project. The `D1_MSG_KEYS` / `D1_MSG_KEY_CURRENT` / `D1_SEARCH_KEY` env variables are only a fallback
+    when Vault has no keys (local dev against another database). **Losing the keys loses every message**:
+    Vault is backed up with the project, but consider an offline copy too. Rotation: append `,v2:<key>`
+    to `d1_msg_keys` and set `d1_msg_key_current` to `v2` (`vault.update_secret`); servers pick it up
+    within 10 minutes. Old values keep opening with `v1` until it is removed, which needs a re-seal pass
+    first.
   - Search: a blind index. Each word's prefixes (1–24 characters) become an HMAC under a per-group key
     derived from `D1_SEARCH_KEY`, stored in `d1_message_terms`; a query hashes each typed word the
     same way, for each group searched, and a message must have them all. Prefix matching survives
@@ -6864,11 +6871,9 @@ CHURCHSUITE_OAUTH_CLIENT_ID=
 CHURCHSUITE_OAUTH_CLIENT_SECRET=
 DESTINY_ONE_SECRET=
 D1_MESSAGE_RETENTION_DAYS=365
-#   D1_MSG_KEYS / D1_MSG_KEY_CURRENT / D1_SEARCH_KEY — REQUIRED: message encryption at rest
-#                                            (lib/destinyOne/crypto.server.ts). Generate each key with
-#                                            `openssl rand -base64 32`; D1_MSG_KEYS="v1:<key>",
-#                                            D1_MSG_KEY_CURRENT=v1. Same values in every environment
-#                                            that talks to the same Supabase project. Back them up.
+#   D1_MSG_KEYS / D1_MSG_KEY_CURRENT / D1_SEARCH_KEY — NOT NEEDED: the message encryption keys live in
+#                                            Supabase Vault (lib/destinyOne/crypto.server.ts). Only a
+#                                            fallback for local dev against a database without them.
 D1_MSG_KEYS=
 D1_MSG_KEY_CURRENT=
 D1_SEARCH_KEY=

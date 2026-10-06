@@ -7,10 +7,11 @@
 //   npx tsx --env-file=.env.local scripts/destiny-one/encrypt-messages.ts --dry-run
 //   npx tsx --env-file=.env.local scripts/destiny-one/encrypt-messages.ts
 //
-// Needs the same keys as the API (D1_MSG_KEYS, D1_MSG_KEY_CURRENT,
-// D1_SEARCH_KEY): text sealed with any other key can never be read by the app.
-// Also SUPABASE_URL (or NEXT_PUBLIC_SUPABASE_URL) and SUPABASE_SECRET_KEY (or
-// SUPABASE_SERVICE_ROLE_KEY).
+// Uses the same keys as the API: from Supabase Vault (d1_message_keyring(),
+// migration 20261006_00), so nothing secret needs to be on this machine
+// beyond SUPABASE_URL (or NEXT_PUBLIC_SUPABASE_URL) and SUPABASE_SECRET_KEY
+// (or SUPABASE_SERVICE_ROLE_KEY). D1_MSG_KEYS / D1_MSG_KEY_CURRENT /
+// D1_SEARCH_KEY are only used if Vault has no keys.
 //
 // For each message: the body and any poll wording are sealed, and the search
 // terms are written for the body. For each report: the reason is sealed.
@@ -22,15 +23,16 @@ import { indexTerms, isSealed, parseKeyring, seal } from "../../lib/destinyOne/s
 const dryRun = process.argv.includes("--dry-run");
 const PAGE = 500;
 
-const ring = parseKeyring({
-  keys: process.env.D1_MSG_KEYS,
-  current: process.env.D1_MSG_KEY_CURRENT,
-  search: process.env.D1_SEARCH_KEY,
-});
 const url = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
 const key = process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY;
 if (!url || !key) throw new Error("Missing SUPABASE_URL / SUPABASE_SECRET_KEY.");
 const supabase = createClient(url, key, { auth: { autoRefreshToken: false, persistSession: false } });
+
+const vault = (await supabase.rpc("d1_message_keyring")).data as { keys?: string; current?: string; search?: string } | null;
+const ring = vault?.keys
+  ? parseKeyring({ keys: vault.keys, current: vault.current, search: vault.search })
+  : parseKeyring({ keys: process.env.D1_MSG_KEYS, current: process.env.D1_MSG_KEY_CURRENT, search: process.env.D1_SEARCH_KEY });
+console.log(`🔐 Using keys from ${vault?.keys ? "Supabase Vault" : "the environment"} (sealing with ${ring.current})`);
 
 function sealPoll(content: D1MessageContent | null, groupId: string): D1MessageContent | null {
   if (content?.kind !== "poll") return content;

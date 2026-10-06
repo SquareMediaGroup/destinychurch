@@ -14,6 +14,7 @@ import { GlassSurface } from "@/components/GlassSurface";
 import { Icon } from "@/components/Icon";
 import { Appear, PressableScale } from "@/components/Motion";
 import { SendAsMenu } from "@/components/SendAsMenu";
+import { VoiceRecorder } from "@/components/VoiceNote";
 import { Avatar } from "@/components/ui";
 import type { Account } from "@/lib/accounts";
 import { cleanImage } from "@/lib/cleanImage";
@@ -25,6 +26,8 @@ export interface PickedFile {
   name: string;
   mimeType: string;
   size: number | null;
+  /** Voice notes: the length in milliseconds. */
+  durationMs?: number;
 }
 
 interface Props {
@@ -62,6 +65,7 @@ export const Composer = forwardRef<TextInput, Props>(function Composer({ replyin
     onTextChange?.(text);
   };
   const [sheetOpen, setSheetOpen] = useState(false);
+  const [recording, setRecording] = useState(false);
   // Where the cursor is, to spot an "@name" being typed.
   const [cursor, setCursor] = useState(draft.length);
   const typing = mentionables?.length ? mentionQuery(draft, cursor) : null;
@@ -240,6 +244,14 @@ export const Composer = forwardRef<TextInput, Props>(function Composer({ replyin
           )}
         </PressableScale>
 
+        {recording ? (
+          <VoiceRecorder
+            onDone={(voice) => {
+              setRecording(false);
+              if (voice) onAttach(voice);
+            }}
+          />
+        ) : (
         <View style={{ flex: 1 }}>
           <GlassSurface style={{ minHeight: 41, borderRadius: 21.5, flexDirection: "row", alignItems: "flex-end", gap: 6, paddingLeft: 16, paddingRight: 4, paddingVertical: 4 }}>
             <TextInput
@@ -270,14 +282,27 @@ export const Composer = forwardRef<TextInput, Props>(function Composer({ replyin
                 </PressableScale>
               </Appear>
             ) : (
-              <Appear key="camera" from={{ scale: 0.5 }}>
+              <Appear key="camera" from={{ scale: 0.5 }} style={{ flexDirection: "row" }}>
                 <PressableScale onPress={() => void takePhoto()} scaleTo={0.85} accessibilityRole="button" accessibilityLabel="Take a photo" style={{ width: 33, height: 33, alignItems: "center", justifyContent: "center" }}>
                   <Icon name="camera" size={21} color={t.subtle} strokeWidth={1.9} />
+                </PressableScale>
+                <PressableScale
+                  onPress={() => {
+                    haptic.selection();
+                    setRecording(true);
+                  }}
+                  scaleTo={0.85}
+                  accessibilityRole="button"
+                  accessibilityLabel="Record a voice message"
+                  style={{ width: 33, height: 33, alignItems: "center", justifyContent: "center" }}
+                >
+                  <Icon name="mic" size={21} color={t.subtle} strokeWidth={1.9} />
                 </PressableScale>
               </Appear>
             )}
           </GlassSurface>
         </View>
+        )}
       </View>
 
       {sendAsMenu ? <SendAsMenu options={sendAsMenu.options} checking={sendAsMenu.checking} onPick={(a) => void pickSendAs(a)} onClose={() => setSendAsMenu(null)} /> : null}

@@ -45,7 +45,7 @@ export function sameDay(a: string, b: string): boolean {
 
 /** "PDF · 1.2 MB" */
 export function fileMeta(mimeType: string, sizeBytes: number | null): string {
-  const kind = mimeType === "application/pdf" ? "PDF" : mimeType.startsWith("image/") ? "Image" : "File";
+  const kind = mimeType === "application/pdf" ? "PDF" : mimeType.startsWith("image/") ? "Image" : mimeType.startsWith("audio/") ? "Voice message" : "File";
   if (sizeBytes == null) return kind;
   const size = sizeBytes >= 1024 * 1024 ? `${(sizeBytes / 1024 / 1024).toFixed(1)} MB` : `${Math.max(1, Math.round(sizeBytes / 1024))} KB`;
   return `${kind} · ${size}`;
@@ -73,5 +73,6 @@ export function messageSummary(m: Pick<D1Message, "body" | "content" | "attachme
   const mime = m.attachment?.mimeType ?? m.localAttachment?.mimeType ?? "";
   if (mime.startsWith("image/")) return "Photo";
   if (mime === "application/pdf") return "PDF";
+  if (mime.startsWith("audio/")) return "Voice message";
   return "Attachment";
 }

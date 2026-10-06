@@ -179,6 +179,7 @@ export function applyEvent(e: D1RealtimeEvent, meId: string) {
     case "message_deleted": {
       const { id, groupId } = e.payload;
       updateMessages(groupId, (list) => list.map((m) => (m.id === id ? { ...m, deleted: true, body: null, attachment: null, content: null, reactions: [] } : m)));
+      queryClient.setQueryData<D1GroupDetail>(keys.group(groupId), (g) => (g?.pinned?.some((p) => p.id === id) ? { ...g, pinned: g.pinned.filter((p) => p.id !== id) } : g));
       queryClient.setQueryData<MessagesData>(keys.media(groupId), (old) => (old ? { ...old, messages: old.messages.filter((m) => m.id !== id) } : old));
       updateGroupSummary(groupId, (g) => (g.lastMessage?.id === id ? { ...g, lastMessage: { ...g.lastMessage, deleted: true, preview: null } } : g));
       return;
@@ -186,6 +187,9 @@ export function applyEvent(e: D1RealtimeEvent, meId: string) {
     case "message_edited": {
       const { id, groupId, body, editedAt, mentions } = e.payload;
       updateMessages(groupId, (list) => list.map((m) => (m.id === id ? { ...m, body, editedAt, mentions: mentions ?? m.mentions } : m)));
+      queryClient.setQueryData<D1GroupDetail>(keys.group(groupId), (g) =>
+        g?.pinned?.some((p) => p.id === id) ? { ...g, pinned: g.pinned.map((p) => (p.id === id ? { ...p, body, editedAt, mentions: mentions ?? p.mentions } : p)) } : g,
+      );
       updateGroupSummary(groupId, (g) => (g.lastMessage?.id === id ? { ...g, lastMessage: { ...g.lastMessage, preview: previewOf(body) } } : g));
       return;
     }
@@ -221,6 +225,7 @@ export function applyEvent(e: D1RealtimeEvent, meId: string) {
       void queryClient.invalidateQueries({ queryKey: keys.group(groupId) });
       return;
     }
+    case "pins_changed":
     case "members_changed":
       void queryClient.invalidateQueries({ queryKey: keys.group(e.payload.groupId) });
       return;

@@ -80,6 +80,8 @@ export interface D1Me {
   avatarUrl: string | null;
   /** People I've blocked: their messages are hidden for me and don't notify me. Never hides anything from safeguarding. */
   blocked: { id: string; displayName: string }[];
+  /** Shares read receipts, and so sees other people's (Profile → Privacy and safety). On by default. */
+  readReceipts: boolean;
   status: D1MemberStatus;
   roles: D1LeaderRole[];
   isAdult: boolean;
@@ -168,6 +170,8 @@ export interface D1GroupDetail extends D1GroupSummary {
   members: D1GroupMember[];
   canManage: boolean;
   canPost: boolean;
+  /** Pinned messages, newest pin first (at most 3). Only ones the caller can see. */
+  pinned: D1Message[];
   /** Current counts against the rules, for leaders. */
   rules?: { members: number; adults: number; minMembers: number; minAdults: number };
 }
@@ -275,6 +279,14 @@ export interface D1Message {
   mine: boolean;
 }
 
+/** Who has read one message ("Seen by"): for its sender, and for the group's managers. */
+export interface D1ReadReceipts {
+  read: { id: string; displayName: string }[];
+  notYet: { id: string; displayName: string }[];
+  /** People who have read receipts turned off: not shown either way. */
+  hidden: number;
+}
+
 export interface D1MessagePage {
   messages: D1Message[];
   /** Pass as `before` to load older messages. Null when there are no more. */
@@ -315,6 +327,8 @@ export type D1RealtimeEvent =
   | { event: "reaction"; payload: { messageId: number; groupId: string; memberId: string; emoji: string; added: boolean } }
   | { event: "poll_vote"; payload: { messageId: number; groupId: string; votes: D1PollTally[]; totalVoters: number } }
   | { event: "members_changed"; payload: { groupId: string } }
+  /** Something was pinned or unpinned: re-fetch the group (it carries the pins). */
+  | { event: "pins_changed"; payload: { groupId: string } }
   | { event: "group_state"; payload: { groupId: string; state: D1GroupState; reason: string | null } }
   /** Renamed, re-described or a new icon: re-fetch the group and the chat list. */
   | { event: "group_updated"; payload: { groupId: string } }

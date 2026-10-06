@@ -7215,7 +7215,13 @@ same database as the data rather than in a separate Synapse module.
   `?communityId` picks for New group), `notifications` (D2 + per-group mute), `search` (full-screen search opened from a chat; the
   Search tab `(tabs)/find` uses the same `SearchView` component), `report` + `report-sent` (B5), `feedback` (D5, Profile → Report a problem /
   Send feedback, `?kind=problem|idea`; also reached by shaking the phone, see below), `chat-safety`,
-  `delete-account` (D3, type DELETE), `accounts` (account switcher, a fit-to-content form sheet), `add-account` (Profile → Add account: Add child / Add admin account, a form sheet), `password` (password sign-in) and `set-password` (Profile → Password).
+  `help` (Profile → Help: short answers grouped by topic, one open at a time, with Report a problem underneath), `delete-account` (D3, type DELETE), `accounts` (account switcher, a fit-to-content form sheet), `add-account` (Profile → Add account: Add child / Add admin account, a form sheet), `password` (password sign-in) and `set-password` (Profile → Password).
+- **Profile tab** (`(tabs)/profile.tsx`) is grouped like iOS Settings: the name card (tap the
+  picture to change it, the name to open `edit-name`), then headed sections Account (email,
+  password, add/switch account), Preferences (notifications, appearance), Privacy and safety
+  (blocked people, chat safety, privacy notice, terms), Support (help, report a problem, send
+  feedback) and Your data. Download my data saves a dated `.json` file to the cache folder and opens
+  the share sheet on it (iOS); Android's share sheet can't take a file URL, so it still shares the text.
 - **Leaked passwords.** With Supabase's leaked password protection on (Auth settings, Pro plan), a
   new password found in a known data breach is refused with `AuthWeakPasswordError` (reason `pwned`).
   `setPassword` (`src/lib/auth.ts`) turns that into `PasswordRejectedError`, and `set-password` shows a

@@ -1,15 +1,19 @@
-// Profile tab (D1–D5): your name and picture, accounts, notifications, problems and
-// feedback, the notices again, your data, sign out. Tap your name to change it.
+// Profile tab (D1–D5), grouped the way iOS Settings is: your name and picture
+// at the top (tap the name to change it, the picture to change that), then
+// Account, Preferences, Privacy and safety, Support and Your data, each under a
+// heading. Sign out and the version at the bottom.
 
-import { useState } from "react";
-import { ActivityIndicator, Alert, Pressable, ScrollView, Share, Text, View } from "react-native";
+import { useState, type ReactNode } from "react";
+import { ActivityIndicator, Alert, Platform, Pressable, ScrollView, Share, Text, View } from "react-native";
 import { router } from "expo-router";
 import * as ImagePicker from "expo-image-picker";
+import { File, Paths } from "expo-file-system";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { D1_ROLE_LABELS, topRole } from "@destiny/shared";
 import Constants from "expo-constants";
 import { openDocument } from "@/components/SafetyNotice";
-import { Avatar, Card, CardButton, LargeTitle, Separator, SettingsRow } from "@/components/ui";
+import { Icon } from "@/components/Icon";
+import { Avatar, Card, CardButton, LargeTitle, SectionLabel, Separator, SettingsRow } from "@/components/ui";
 import { api } from "@/lib/api";
 import { cleanImage } from "@/lib/cleanImage";
 import { errorMessage, useSession } from "@/state/session";
@@ -26,12 +30,33 @@ export default function Profile() {
   const top = me ? topRole(me.roles) : null;
   const role = top ? D1_ROLE_LABELS[top] : "Member";
 
+  const [exporting, setExporting] = useState(false);
+
+  /**
+   * Saves everything we hold as a .json file and opens the share sheet on it,
+   * so it can go to Files, AirDrop or email as a proper file. (It used to be
+   * pasted into the share sheet as one enormous message.) Android's share
+   * sheet can't take a file this way, so it still gets the text there.
+   */
   async function exportData() {
+    if (exporting) return;
+    setExporting(true);
     try {
       const data = await api.exportMyData();
-      await Share.share({ title: "My Destiny One data", message: JSON.stringify(data, null, 2) });
+      const json = JSON.stringify(data, null, 2);
+      if (Platform.OS === "ios") {
+        const file = new File(Paths.cache, `destiny-one-data-${data.exportedAt.slice(0, 10)}.json`);
+        if (file.exists) file.delete();
+        file.create();
+        file.write(json);
+        await Share.share({ url: file.uri, title: "My Destiny One data" });
+      } else {
+        await Share.share({ title: "My Destiny One data", message: json });
+      }
     } catch (err) {
       Alert.alert("Couldn't download your data", errorMessage(err));
+    } finally {
+      setExporting(false);
     }
   }
 
@@ -104,7 +129,7 @@ export default function Profile() {
     <ScrollView style={{ flex: 1, backgroundColor: t.grouped }} contentContainerStyle={{ paddingTop: insets.top + 52, paddingHorizontal: 16, paddingBottom: 110, gap: 22 }}>
       <LargeTitle style={{ paddingHorizontal: 4 }}>Profile</LargeTitle>
 
-      <Card style={{ flexDirection: "row", alignItems: "center", gap: 14, padding: 16 }}>
+      <Card style={{ flexDirection: "row", alignItems: "center", gap: 14, paddingVertical: 16, paddingLeft: 16 }}>
         <Pressable onPress={changeAvatar} disabled={avatarBusy} accessibilityRole="button" accessibilityLabel={me?.avatarUrl ? "Change or remove your picture" : "Add a picture"} style={{ opacity: avatarBusy ? 0.5 : 1 }}>
           <Avatar name={me?.displayName ?? ""} uri={me?.avatarUrl} size={60} />
           {avatarBusy && (
@@ -113,22 +138,30 @@ export default function Profile() {
             </View>
           )}
         </Pressable>
-        <View style={{ flex: 1, minWidth: 0, gap: 2 }}>
-          <Text style={{ fontSize: 20, fontWeight: "600", color: t.text }}>{me?.displayName}</Text>
-          <Text numberOfLines={1} style={{ fontSize: 15, color: t.muted }}>
-            {role}
-            {email ? ` · ${email}` : ""}
-          </Text>
-          <Pressable onPress={changeAvatar} disabled={avatarBusy} accessibilityRole="button" hitSlop={6}>
-            <Text style={{ fontSize: 14, fontWeight: "600", color: ORANGE, marginTop: 2 }}>{me?.avatarUrl ? "Change picture" : "Add picture"}</Text>
-          </Pressable>
-        </View>
-      </Card>
-      <Card>
-        <SettingsRow label="Change name" value={me?.displayName} onPress={() => router.push("/edit-name")} />
+        {/* The name side of the card is the way to change your name, as in iOS Settings. */}
+        <Pressable
+          onPress={() => router.push("/edit-name")}
+          accessibilityRole="button"
+          accessibilityLabel={`${me?.displayName ?? "Your name"}, ${role}. Change name`}
+          style={({ pressed }) => ({ flex: 1, minWidth: 0, flexDirection: "row", alignItems: "center", gap: 8, paddingRight: 16, alignSelf: "stretch", opacity: pressed ? 0.6 : 1 })}
+        >
+          <View style={{ flex: 1, minWidth: 0, gap: 2 }}>
+            <Text numberOfLines={1} style={{ fontSize: 20, fontWeight: "600", color: t.text }}>{me?.displayName}</Text>
+            <Text numberOfLines={1} style={{ fontSize: 15, color: t.muted }}>
+              {role}
+              {email ? ` · ${email}` : ""}
+            </Text>
+            <Text style={{ fontSize: 14, color: t.subtle, marginTop: 2 }}>Change name</Text>
+          </View>
+          <Icon name="chevronRight" size={14} color={t.subtle} strokeWidth={2.4} />
+        </Pressable>
       </Card>
 
-      <Card>
+      <Section title="Account">
+        <SettingsRow icon="mail" label="Email" onPress={() => router.push("/change-email")} />
+        <Separator inset={62} />
+        <SettingsRow icon="lock" label="Password" onPress={() => router.push("/set-password")} />
+        <Separator inset={62} />
         <SettingsRow icon="plus" label="Add account" onPress={() => router.push("/add-account")} />
         {others > 0 ? (
           <>
@@ -136,42 +169,50 @@ export default function Profile() {
             <SettingsRow icon="people" label="Switch account" value={String(accounts.length)} onPress={() => router.push("/accounts")} />
           </>
         ) : null}
-      </Card>
+      </Section>
 
-      <Card>
+      <Section title="Preferences">
         <SettingsRow icon="bell" iconBg={ORANGE} iconColor={INK} label="Notifications" onPress={() => router.push("/notifications")} />
         <Separator inset={62} />
         <SettingsRow icon="sliders" label="Appearance" onPress={() => router.push("/appearance")} />
-        <Separator inset={62} />
-        <SettingsRow icon="mail" label="Email" onPress={() => router.push("/change-email")} />
-        <Separator inset={62} />
-        <SettingsRow icon="lock" label="Password" onPress={() => router.push("/set-password")} />
-        <Separator inset={62} />
-        <SettingsRow icon="alertCircle" label="Blocked people" onPress={() => router.push("/blocked")} />
-      </Card>
+      </Section>
 
-      <Card>
-        <SettingsRow icon="flag" label="Report a problem" onPress={() => router.push({ pathname: "/feedback", params: { kind: "problem" } })} />
+      <Section title="Privacy and safety">
+        <SettingsRow icon="block" label="Blocked people" value={me?.blocked.length ? String(me.blocked.length) : undefined} onPress={() => router.push("/blocked")} />
         <Separator inset={62} />
-        <SettingsRow icon="megaphone" label="Send feedback" onPress={() => router.push({ pathname: "/feedback", params: { kind: "idea" } })} />
-      </Card>
-
-      <Card>
         <SettingsRow icon="shield" label="How your chats are kept safe" onPress={() => router.push("/chat-safety")} />
         <Separator inset={62} />
         <SettingsRow icon="doc" label="Privacy notice" onPress={() => openDocument("privacy")} />
         <Separator inset={62} />
         <SettingsRow icon="terms" label="Terms" onPress={() => openDocument("terms")} />
-      </Card>
+      </Section>
 
-      <Card>
-        <SettingsRow label="Download my data" onPress={exportData} />
-        <Separator />
-        <SettingsRow label="Delete my account" onPress={() => router.push("/delete-account")} />
-      </Card>
+      <Section title="Support">
+        <SettingsRow icon="help" label="Help" onPress={() => router.push("/help")} />
+        <Separator inset={62} />
+        <SettingsRow icon="flag" label="Report a problem" onPress={() => router.push({ pathname: "/feedback", params: { kind: "problem" } })} />
+        <Separator inset={62} />
+        <SettingsRow icon="megaphone" label="Send feedback" onPress={() => router.push({ pathname: "/feedback", params: { kind: "idea" } })} />
+      </Section>
+
+      <Section title="Your data">
+        <SettingsRow icon="download" label={exporting ? "Preparing your data..." : "Download my data"} onPress={exporting ? undefined : () => void exportData()} />
+        <Separator inset={62} />
+        <SettingsRow icon="trash" iconBg="#D93A2B" label="Delete my account" onPress={() => router.push("/delete-account")} />
+      </Section>
 
       <CardButton label="Sign out" busy={signingOut} onPress={confirmSignOut} />
       <Text style={{ textAlign: "center", fontSize: 13, color: t.subtle }}>Destiny One {Constants.expoConfig?.version ?? ""}</Text>
     </ScrollView>
+  );
+}
+
+/** A heading over a card of rows, as in iOS Settings. */
+function Section({ title, children }: { title: string; children: ReactNode }) {
+  return (
+    <View style={{ gap: 7 }}>
+      <SectionLabel>{title}</SectionLabel>
+      <Card>{children}</Card>
+    </View>
   );
 }

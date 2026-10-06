@@ -260,7 +260,7 @@ export function createDestinyOneClient({ baseUrl, getAccessToken, fetchImpl }: D
     /** Search your messages (groups you're in, since you joined; never deleted ones). Pass `groupId` to search one group. */
     searchMessages: (query: string, groupId?: string) => call<D1MessageHit[]>("GET", `/search/messages${q({ q: query, groupId })}`),
 
-    /** Upcoming ChurchSuite events, for the Event attach picker. */
+    /** Upcoming ChurchSuite events, for the Event attach picker and Upcoming events. */
     events: () => call<D1EventSummary[]>("GET", "/events"),
 
     // ── Directory (leaders) ──

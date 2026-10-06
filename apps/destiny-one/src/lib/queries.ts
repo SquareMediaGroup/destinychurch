@@ -7,6 +7,7 @@
 //   ["messages", groupId]  { messages, nextBefore }, oldest first
 //   ["media", groupId]     Group info → Photos and files: the same shape, only messages with a file
 //   ["appConfig"]          minimum builds + maintenance switch (src/lib/appGate.ts)
+//   ["events"]             upcoming church events (the one entry that goes stale on a timer: the calendar changes)
 //
 // applyEvent() is the "database told us something changed" path. Where the
 // event carries enough, it patches the cache directly (no request at all);
@@ -33,6 +34,7 @@ export const keys = {
   messages: (groupId: string) => ["messages", groupId] as const,
   media: (groupId: string) => ["media", groupId] as const,
   appConfig: ["appConfig"] as const,
+  events: ["events"] as const,
 };
 
 export const PAGE = 40;
@@ -279,6 +281,11 @@ export function useMessages(groupId: string) {
 /** Group info → Photos and files (newest page; older pages are added by the screen). `fetch: false` only reads the cache. */
 export function useGroupMedia(groupId: string, opts: { fetch?: boolean } = {}) {
   return useQuery({ queryKey: keys.media(groupId), queryFn: () => api.groupMedia(groupId, { limit: 60 }), enabled: !!groupId && opts.fetch !== false });
+}
+
+/** Upcoming church events, refreshed after half an hour (the calendar isn't on Realtime). */
+export function useEvents() {
+  return useQuery({ queryKey: keys.events, queryFn: () => api.events(), staleTime: 30 * 60_000 });
 }
 
 /** A community page: straight from the chat list when it's there (it's the same data), otherwise fetched. */

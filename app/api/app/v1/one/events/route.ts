@@ -3,7 +3,7 @@ import { listUpcomingEvents } from "@/lib/destinyOne/events.server";
 import { oneJson, oneRoute } from "@/lib/destinyOne/http";
 
 // GET /api/app/v1/one/events — upcoming ChurchSuite events, for the Event
-// attach picker in the composer. Any signed-in member may browse; actually
+// attach picker in the composer and the Upcoming events list (Search tab). Any signed-in member may browse; actually
 // sending one into a group still requires being a current member of that
 // group, checked when the message posts.
 

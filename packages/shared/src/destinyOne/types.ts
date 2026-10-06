@@ -267,6 +267,8 @@ export interface D1EventSummary {
   startsAt: string;
   location: string | null;
   thumbnailUrl: string | null;
+  /** The event's page on the website (What's On). */
+  webUrl: string;
 }
 
 export interface D1Message {

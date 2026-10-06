@@ -165,7 +165,7 @@ export function applyEvent(e: D1RealtimeEvent, meId: string) {
         void queryClient.invalidateQueries({ queryKey: keys.media(p.groupId) });
       } else {
         updateMessages(p.groupId, (list) =>
-          upsert(list, { id: p.id, groupId: p.groupId, sender: p.sender, body: p.body, replyTo: p.replyTo, attachment: null, content: p.content ?? null, reactions: [], createdAt: p.createdAt, editedAt: null, mentions: p.mentions ?? [], deleted: false, mine }),
+          upsert(list, { id: p.id, groupId: p.groupId, sender: p.sender, body: p.body, replyTo: p.replyTo, attachment: null, content: p.content ?? null, reactions: [], createdAt: p.createdAt, editedAt: null, mentions: p.mentions ?? [], linkPreview: null, deleted: false, mine }),
         );
       }
       updateGroupSummary(p.groupId, (g) => {
@@ -225,6 +225,11 @@ export function applyEvent(e: D1RealtimeEvent, meId: string) {
       if (state === "archived") invalidateCommunities(); // archived groups leave the chat list
       else updateGroupSummary(groupId, (g) => ({ ...g, state, frozenReason: state === "frozen" ? reason : null }));
       void queryClient.invalidateQueries({ queryKey: keys.group(groupId) });
+      return;
+    }
+    case "link_preview": {
+      const { id, groupId, preview } = e.payload;
+      updateMessages(groupId, (list) => list.map((m) => (m.id === id ? { ...m, linkPreview: preview } : m)));
       return;
     }
     case "typing": {

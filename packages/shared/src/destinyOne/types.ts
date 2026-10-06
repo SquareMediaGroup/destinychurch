@@ -184,6 +184,16 @@ export interface D1Attachment {
   url: string | null;
 }
 
+/** A link's preview, fetched once by the server after sending (the phone never contacts the site for it). */
+export interface D1LinkPreview {
+  url: string;
+  title: string;
+  description: string | null;
+  siteName: string | null;
+  /** https only. The one thing the phone loads from the site. */
+  imageUrl: string | null;
+}
+
 export interface D1Reaction {
   emoji: string;
   count: number;
@@ -275,6 +285,8 @@ export interface D1Message {
   editedAt: string | null;
   /** Member ids "@mentioned" in the text (only current members of the group). */
   mentions: string[];
+  /** The first link's preview. Arrives a moment after the message (a `link_preview` event). */
+  linkPreview: D1LinkPreview | null;
   deleted: boolean;
   mine: boolean;
 }
@@ -327,6 +339,8 @@ export type D1RealtimeEvent =
   | { event: "reaction"; payload: { messageId: number; groupId: string; memberId: string; emoji: string; added: boolean } }
   | { event: "poll_vote"; payload: { messageId: number; groupId: string; votes: D1PollTally[]; totalVoters: number } }
   | { event: "members_changed"; payload: { groupId: string } }
+  /** A message's link preview is ready (or was removed by an edit). */
+  | { event: "link_preview"; payload: { id: number; groupId: string; preview: D1LinkPreview | null } }
   /** Someone is writing a message (sent every few seconds while they type; show it briefly). */
   | { event: "typing"; payload: { groupId: string; memberId: string; name: string } }
   /** Something was pinned or unpinned: re-fetch the group (it carries the pins). */

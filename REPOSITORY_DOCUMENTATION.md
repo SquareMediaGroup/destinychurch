@@ -374,6 +374,7 @@ destinychurch/
 │       ├── 20261006_03_destiny_one_pins.sql # part 13 (v0.8): pinned messages (d1_pins, up to 3)
 │       ├── 20261006_04_destiny_one_read_receipts.sql # part 14 (v0.8): "Seen by" (d1_members.read_receipts,
 │       │                                   # d1_read_receipts)
+│       ├── 20261006_05_destiny_one_link_previews.sql # part 15 (v0.8): sealed link previews
 │       │                                   # (apply after scripts/destiny-one/encrypt-messages.ts)
 │       ├── 20260927_03_destiny_one_message_search.sql # Destiny One part 4: message search
 │       ├── 20260927_02_destiny_one_leader_invites.sql # Destiny One part 3: leader invites
@@ -2151,6 +2152,21 @@ WhatsApp: off means you show as hidden (counted, not named) and you can't see an
 column on its own (`loadReadReceipts`), not through `MEMBER_COLUMNS`, so an API deployed before the
 migration still works. The peek preview never moves the read marker. The draft notice in
 `docs/content/destiny-one-notices-draft.md` has a Read receipts paragraph to publish with it.
+
+**Part 15 — `20261006_05_destiny_one_link_previews.sql`: link previews.** `d1_messages.link_preview` holds
+the first link's preview as sealed JSON (`D1LinkPreview`: url, title, description, siteName, https
+imageUrl), written only by `d1_set_link_preview` (the immutability trigger allows it only while that runs,
+via `d1.previewing`). The API builds it **after** sending, in `after()`
+(`lib/destinyOne/linkPreview.server.ts`), and broadcasts `link_preview` over the REST broadcast. So sending
+never waits for another website, and members' phones never contact the site to build it (only the
+preview picture is loaded by the phone, https only). The fetch is locked down against SSRF: http(s) on
+ports 80/443, at most 3 redirects, 5 s, 512 KB, HTML only, and every connection must reach a public
+address. The check runs inside the connection's own DNS lookup, so there's no rebinding gap, and bare
+IP links, which skip DNS, are checked before connecting (`isPublicAddress` refuses loopback, private,
+link-local/cloud-metadata, CGNAT, multicast and their IPv6 forms). Parsing (`firstUrl`, `parsePreview`)
+is in `lib/destinyOne/linkPreview.ts`, unit-tested. An edit that changes the link rebuilds or clears the
+preview. In the app, links in message text are underlined and open in the in-app browser, and the
+preview shows as a card under the text.
 
 **Tested by:** `scripts/test-sql.sh` (`npm run test:sql`, and the "Database rules" CI job) — applies
 Supabase stubs + every Destiny One migration (parts 1–9, plus the profile-picture, min-build and

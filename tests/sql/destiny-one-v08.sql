@@ -258,3 +258,22 @@ update public.d1_members set read_receipts = true where id = :lead::uuid;
 select pg_temp.check(
   not has_function_privilege('authenticated', 'public.d1_read_receipts(uuid, bigint)', 'execute'),
   'read receipts are service-role only');
+
+-- ── Link previews (20261006_05) ─────────────────────────────────────────────
+
+insert into found select 'link', public.d1_post_message(:lead::uuid, (select v from ids where k = 'announce'), 'd1e:v1:has.a.link');
+select public.d1_set_link_preview((select v from found where k = 'link'), 'd1e:v1:preview.json');
+select pg_temp.check(
+  (select link_preview from public.d1_messages where id = (select v from found where k = 'link')) = 'd1e:v1:preview.json',
+  'the API can attach a sealed preview');
+select pg_temp.expect_error(
+  format($$select public.d1_set_link_preview(%s, '{"title":"plain"}')$$, (select v from found where k = 'link')),
+  'd1_messages_link_preview_sealed');
+select pg_temp.check(true, 'a plaintext preview is refused');
+select pg_temp.expect_error(
+  format($$update public.d1_messages set link_preview = null where id = %s$$, (select v from found where k = 'link')),
+  'cannot be edited');
+select pg_temp.check(true, 'a preview cannot be changed outside d1_set_link_preview');
+select pg_temp.check(
+  not has_function_privilege('authenticated', 'public.d1_set_link_preview(bigint, text)', 'execute'),
+  'setting previews is service-role only');

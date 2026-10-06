@@ -26,6 +26,7 @@ import {
   type D1GroupKind,
   type D1GroupState,
   type D1GroupSummary,
+  type D1LinkPreview,
   type D1LeaderRole,
   type D1Message,
   type D1MessageContent,
@@ -35,7 +36,7 @@ import {
 import { createServiceClient } from "@/utils/supabase/service";
 import { OneError, fromDbError } from "@/lib/destinyOne/http";
 import { avatarUrl, type Caller } from "@/lib/destinyOne/auth.server";
-import { openBody, openContent } from "@/lib/destinyOne/crypto.server";
+import { openBody, openContent, UNREADABLE } from "@/lib/destinyOne/crypto.server";
 
 export const MEDIA_BUCKET = "d1-chat-media";
 const SIGNED_URL_TTL = 60 * 60;
@@ -333,14 +334,26 @@ interface MessageRow {
   edited_at: string | null;
   deleted_at: string | null;
   mentions: string[] | null;
+  link_preview: string | null;
   sender: { id: string; display_name: string } | null;
   attachment: { id: string; storage_path: string; mime_type: string; size_bytes: number | null } | null;
 }
 
 const MESSAGE_SELECT =
-  "id, group_id, sender_id, body, reply_to, attachment_id, content, created_at, edited_at, deleted_at, mentions, " +
+  "id, group_id, sender_id, body, reply_to, attachment_id, content, created_at, edited_at, deleted_at, mentions, link_preview, " +
   "sender:d1_members!d1_messages_sender_id_fkey(id, display_name), " +
   "attachment:d1_attachments!d1_messages_attachment_id_fkey(id, storage_path, mime_type, size_bytes)";
+
+/** A stored (sealed) link preview, opened. A bad one is dropped rather than breaking the chat. */
+function openLinkPreview(sealed: string | null, groupId: string): D1LinkPreview | null {
+  const json = openBody(sealed, groupId);
+  if (!json || json === UNREADABLE) return null;
+  try {
+    return JSON.parse(json) as D1LinkPreview;
+  } catch {
+    return null;
+  }
+}
 
 /** Overlays live tallies (and the caller's own choice) onto a poll's static definition. */
 function livePollContent(content: D1MessageContent, messageId: number, callerId: string, votes: { message_id: number; member_id: string; option_id: string }[]): D1MessageContent {
@@ -411,6 +424,7 @@ async function shape(rows: MessageRow[], callerId: string): Promise<D1Message[]>
       createdAt: r.created_at,
       editedAt: deleted ? null : r.edited_at,
       mentions: deleted ? [] : r.mentions ?? [],
+      linkPreview: deleted ? null : openLinkPreview(r.link_preview, r.group_id),
       deleted,
       mine: r.sender_id === callerId,
     };

@@ -9,8 +9,9 @@
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Animated, Image, Pressable, Text, View } from "react-native";
+import * as WebBrowser from "expo-web-browser";
 import Svg, { Path } from "react-native-svg";
-import { mentionSegments, type D1EventContent, type D1LeaderRole, type D1Message, type D1PollContent, type Mentionable } from "@destiny/shared";
+import { mentionSegments, type D1EventContent, type D1LinkPreview, type D1LeaderRole, type D1Message, type D1PollContent, type Mentionable } from "@destiny/shared";
 import { Icon } from "@/components/Icon";
 import { MessageMenu, type MessageMenuActions } from "@/components/MessageMenu";
 import { Appear, Pop, PressableScale, reduceMotion, springs } from "@/components/Motion";
@@ -197,7 +198,12 @@ export function MessageBubble({ row, replyTo, senderTag, senderIsGroupAdmin, can
         <Attachment m={m} onOpen={onOpenAttachment} />
         {m.content?.kind === "event" ? <EventCard content={m.content} mine={m.mine} onOpen={onOpenAttachment} /> : null}
         {m.content?.kind === "poll" ? <PollCard content={m.content} mine={m.mine} sending={m.id < 0} onVote={onVotePoll} /> : null}
-        {m.body ? <Text style={{ fontSize: 17, lineHeight: 22, letterSpacing: -0.2, color: k.text }}>{m.mentions?.length && people ? <Mentions text={m.body} ids={m.mentions} people={people} meId={meId} mine={m.mine} /> : m.body}</Text> : null}
+        {m.body ? (
+          <Text style={{ fontSize: 17, lineHeight: 22, letterSpacing: -0.2, color: k.text }}>
+            <Mentions text={m.body} ids={m.mentions ?? []} people={people ?? []} meId={meId} mine={m.mine} />
+          </Text>
+        ) : null}
+        {m.linkPreview ? <LinkCard preview={m.linkPreview} mine={m.mine} /> : null}
         {/* Edited messages say so, inside the bubble, so it shows whether or not the time does. */}
         {m.editedAt ? (
           <Text accessibilityLabel="Edited" style={{ marginTop: -4, alignSelf: "flex-end", fontSize: 11, color: k.soft, opacity: 0.8 }}>
@@ -297,7 +303,10 @@ export function MessageBubble({ row, replyTo, senderTag, senderIsGroupAdmin, can
   );
 }
 
-/** The body with each "@Name" it mentions in bold; a mention of me gets a highlight too. */
+/**
+ * The body with each "@Name" it mentions in bold (a mention of me gets a
+ * highlight too) and each web link underlined and tappable.
+ */
 function Mentions({ text, ids, people, meId, mine }: { text: string; ids: string[]; people: Mentionable[]; meId?: string; mine: boolean }) {
   const t = useTheme();
   const k = tones(t, mine);
@@ -310,10 +319,70 @@ function Mentions({ text, ids, people, meId, mine }: { text: string; ids: string
             {s.text}
           </Text>
         ) : (
-          s.text
+          <Links key={i} text={s.text} color={mine ? k.text : t.tint} />
         ),
       )}
     </>
+  );
+}
+
+const LINK_RE = /\bhttps?:\/\/[^\s<>"'`]+/gi;
+
+/** Plain text with its http(s) links underlined; tapping one opens it in the in-app browser. */
+function Links({ text, color }: { text: string; color: string }) {
+  const parts: { text: string; url: string | null }[] = [];
+  let at = 0;
+  for (const m of text.matchAll(LINK_RE)) {
+    const url = m[0].replace(/[.,;:!?)\]}'"]+$/, "");
+    const start = m.index ?? 0;
+    if (start > at) parts.push({ text: text.slice(at, start), url: null });
+    parts.push({ text: url, url });
+    at = start + url.length;
+  }
+  if (at < text.length) parts.push({ text: text.slice(at), url: null });
+  return (
+    <>
+      {parts.map((p, i) =>
+        p.url ? (
+          <Text key={i} accessibilityRole="link" onPress={() => void WebBrowser.openBrowserAsync(p.url!)} style={{ color, textDecorationLine: "underline" }}>
+            {p.text}
+          </Text>
+        ) : (
+          p.text
+        ),
+      )}
+    </>
+  );
+}
+
+/** The preview the server made for the message's first link: picture, site, title, a line of description. */
+function LinkCard({ preview, mine }: { preview: D1LinkPreview; mine: boolean }) {
+  const t = useTheme();
+  const k = tones(t, mine);
+  return (
+    <Pressable
+      onPress={() => void WebBrowser.openBrowserAsync(preview.url)}
+      accessibilityRole="link"
+      accessibilityLabel={`${preview.title}${preview.siteName ? `, ${preview.siteName}` : ""}. Opens the link.`}
+      style={({ pressed }) => ({ marginTop: 2, marginHorizontal: -6, borderRadius: 14, overflow: "hidden", backgroundColor: k.panel, minWidth: 220, maxWidth: 280, opacity: pressed ? 0.8 : 1 })}
+    >
+      {preview.imageUrl ? <Image source={{ uri: preview.imageUrl }} style={{ width: "100%", height: 130, backgroundColor: t.fill }} resizeMode="cover" /> : null}
+      <View style={{ padding: 10, gap: 2 }}>
+        {preview.siteName ? (
+          <Text numberOfLines={1} style={{ fontSize: 12, fontWeight: "600", color: k.name }}>
+            {preview.siteName}
+          </Text>
+        ) : null}
+        <Text numberOfLines={2} style={{ fontSize: 15, fontWeight: "600", color: k.text }}>
+          {preview.title}
+        </Text>
+        {preview.description ? (
+          <Text numberOfLines={2} style={{ fontSize: 13, color: k.soft }}>
+            {preview.description}
+          </Text>
+        ) : null}
+      </View>
+    </Pressable>
   );
 }
 

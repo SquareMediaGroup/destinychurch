@@ -2,6 +2,8 @@ import { after } from "next/server";
 import { createServiceClient } from "@/utils/supabase/service";
 import { requireMember } from "@/lib/destinyOne/auth.server";
 import { broadcastMessageEdited, getMessage } from "@/lib/destinyOne/chat.server";
+import { firstUrl } from "@/lib/destinyOne/linkPreview";
+import { attachLinkPreview } from "@/lib/destinyOne/linkPreview.server";
 import { messageTerms, sealBody } from "@/lib/destinyOne/crypto.server";
 import { OneError, fromDbError, limit, oneJson, oneRoute, readBody, requireMessageId, type IdParams } from "@/lib/destinyOne/http";
 import { editMessageSchema } from "@/lib/destinyOne/schemas";
@@ -47,7 +49,11 @@ export const PATCH = oneRoute<IdParams>(async (request, { params }) => {
   if (error) throw fromDbError(error);
 
   const message = await getMessage(caller, id);
-  after(() => broadcastMessageEdited(message));
+  after(async () => {
+    await broadcastMessageEdited(message);
+    // The link changed (or went): the preview follows the new text.
+    if (firstUrl(body) !== message.linkPreview?.url) await attachLinkPreview(id, groupId, body, { clearIfNone: true });
+  });
   return oneJson(message);
 });
 

@@ -1,4 +1,4 @@
-Always push your feature branch after a change and open/update its pull request. Never push directly to `main` — see the Git section in the root CLAUDE.md.
+Always push your feature branch after a change and open/update its pull request. Never push directly to `main` unless the user explicitly tells you to — see the Git section in the root CLAUDE.md.
 Assume you have permission for 99% of things
 
 ## Secrets & testing credentials

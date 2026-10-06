@@ -391,6 +391,10 @@ destinychurch/
 │   │                               # never installs React Native); imports @destiny/shared through a
 │   │                               # file: link + metro.config.js. Backend: /api/app/v1/one/*.
 │   │                               # Every screen built (design variants 1B + 1F). See "Destiny One" below.
+│   ├── talent-buzzer/             # Talent show judge buzzers — one app on both machines: hub (LED) / Avolites
+│   │                               # agent (Titan PC). Android tablets press -> Titan Web API cue +
+│   │                               # X / golden takeover + sound on the LED screen. LAN only, own
+│   │                               # package.json (dep: ws). See "Talent Show Buzzers" below.
 │   └── live-caption/              # separately from the website. Currently:
 │                                   # Live Caption — a macOS app (SwiftUI, Swift 6, XcodeGen) that
 │                                   # captions live audio in real time with a local whisper.cpp model
@@ -7420,6 +7424,14 @@ A standalone **macOS app** (not part of the website deploy) that captions live a
   - `App/` — `LiveCaptionApp` entry point and `AppState`; `Settings/Preferences.swift`; `About/`.
   - `LiveCaptionTests/` — unit tests for the resampler, stabiliser, frame renderer, NDI publisher, and vocabulary prompt.
   - `Scripts/BenchmarkRTF/` — a standalone real-time-factor/latency harness; the documented exit criterion is a model sustaining RTF ≤ 0.5–0.6 on the target **Apple M2 Max** with no latency growth across a full service. `large-v3-turbo` is the starting model, `medium` the fallback.
+### Talent Show Buzzers — `apps/talent-buzzer/`
+A standalone **Node app** (not part of the website deploy) for the Destiny talent show. Four Android tablets are red X buzzers and one is a dedicated golden buzzer. A press fires an Avolites lighting cue, shows an X (or a gold takeover with confetti) on the LED screen, and plays a buzzer/fanfare from the LED screen machine. **LAN only** — no internet, Supabase or accounts, so it survives the building connection dropping.
+- **One app, two roles** (`app.js`, launched by `start.bat` on both machines): a local-only setup page (`setup/setup.html`, `127.0.0.1:8090`, Host-header checked) asks whether this is the LED screen or Avolites machine, saves it to gitignored `machine.json`, and forks `hub/server.js` or `agent/avolites-agent.js` as a child process (restarted on crash; status flows back over IPC). The hub announces itself by UDP broadcast on port 8099 (`lib/discovery.js`, no key in the packet) so the agent finds it without typing IPs.
+- **Hub** (`hub/server.js`, runs on the LED machine): plain `http` static server + `ws` WebSocket at `/ws`. Clients say `hello` with a role (`tablet` + seat, `display`, `control`, `agent`). Show rules live in `lib/state.js` (pure, unit tested): each X latches until Reset, golden fires once until Reset, per-buzzer debounce, Lock ignores all presses. When the last judge buzzes the hub also broadcasts an `all-x` event (display strobes red, optional `cues.allX` playback). Only `control` clients can reset/lock/trigger/test. Optional shared `key` gates every WebSocket for audience-accessible Wi-Fi.
+- **Pages** (`hub/public/`): `tablet.html` (fires on `pointerdown` for latency, auto-reconnect, seat picker when no `?seat=`), `display.html` (sharp extruded 3D SVG X per judge with names underneath, all-out red strobe, gold takeover, Web Audio playback of `sounds/buzzer.mp3`/`golden.mp3` with synthesised fallbacks; a one-time click arms audio because of browser autoplay rules; `?bg=transparent` for keying), `control.html` (presence per seat, audio-armed state, lighting status + log, Reset/Lock, per-seat Trigger backup, test cue/sound buttons).
+- **Lighting**: `lib/titan.js` calls the Titan Web API (port 4430; URL templates in config, `{userNumber}` filled in; retries once). Default `agent` mode runs `agent/avolites-agent.js` on the Titan PC, which connects *out* to the hub so the lighting PC needs no inbound firewall rule; `direct` mode has the hub call a console's IP itself (hardware consoles). Reset can `KillPlayback` the X/golden cues (`releaseOnReset`).
+- `tools/fake-titan.js` stands in for the console when rehearsing; `npm test` runs the state tests. Setup, tablet kiosk tips, show-day checklist: `apps/talent-buzzer/README.md`.
+
 - `apps/.gitkeep` keeps the `apps/` directory (for future standalone companion apps) tracked. See `apps/live-caption/README.md` for the full setup and operating guide.
 
 ### Database Migrations

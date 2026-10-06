@@ -1,0 +1,390 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Buzzer Display</title>
+  <style>
+    :root { --red: #ff1f3a; --gold: #f5c542; }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; height: 100%; overflow: hidden; background: #000; color: #fff; cursor: none;
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+    body.transparent { background: transparent; }
+    #xs { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; gap: 3vw; padding: 0 4vw 4vw; }
+    body.shake #xs { animation: shake 320ms linear; }
+    @keyframes shake { 20% { transform: translate(-0.6vw, 0.3vw); } 40% { transform: translate(0.5vw, -0.4vw); } 60% { transform: translate(-0.4vw, -0.2vw); } 80% { transform: translate(0.3vw, 0.3vw); } }
+    .slot { flex: 1; max-width: 22vw; aspect-ratio: 1; position: relative; perspective: 90vw; }
+    .slot .layer { position: absolute; inset: 0; }
+    .slot svg { width: 100%; height: 100%; overflow: visible; display: block; }
+    .slot .ghost use { fill: none; stroke: rgba(255,255,255,0.16); stroke-width: 1.2; stroke-linejoin: miter; }
+    body.transparent .slot .ghost, body.hide-empty .slot .ghost { display: none; }
+
+    /* The X: sharp polygon, extruded depth behind a gradient face, tilted
+       towards the audience so it reads as popping out of the screen. */
+    .slot .mark { opacity: 0; transform-style: preserve-3d; transform-origin: 50% 50%;
+      filter: drop-shadow(0 1.6vw 1.4vw rgba(0,0,0,0.85)) drop-shadow(0 0 2.5vw rgba(255,31,58,0.55)); }
+    .slot.on .mark { opacity: 1; transform: rotateX(10deg) rotateY(-12deg) translateZ(2vw);
+      animation: pop3d 520ms cubic-bezier(.18,1.4,.4,1) both, float 3.2s ease-in-out 520ms infinite alternate; }
+    .slot.on.static .mark { animation: float 3.2s ease-in-out infinite alternate; }
+    @keyframes pop3d {
+      0% { opacity: 0; transform: rotateX(45deg) rotateY(-40deg) translateZ(40vw) scale(1.6); }
+      55% { opacity: 1; }
+      100% { opacity: 1; transform: rotateX(10deg) rotateY(-12deg) translateZ(2vw) scale(1); } }
+    @keyframes float {
+      from { transform: rotateX(10deg) rotateY(-12deg) translateZ(2vw); }
+      to { transform: rotateX(6deg) rotateY(-6deg) translateZ(3vw); } }
+
+    .slot .label { position: absolute; left: -2vw; right: -2vw; top: 100%; margin-top: 1.6vw; text-align: center;
+      font-size: 2.2vw; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: rgba(255,255,255,0.45);
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis; transition: color 250ms, text-shadow 250ms; }
+    .slot.on .label { color: #fff; text-shadow: 0 0 1.2vw rgba(255,31,58,0.9); }
+    body.no-labels .slot .label { display: none; }
+
+    body.flash::after { content: ""; position: absolute; inset: 0; background: rgba(255,31,58,0.35); animation: flash 350ms ease-out forwards; pointer-events: none; }
+    @keyframes flash { to { opacity: 0; } }
+
+    /* All four judges buzzed: hard red strobe, then a slow pulsing red until reset. */
+    #alarm { position: absolute; inset: 0; pointer-events: none; opacity: 0; }
+    body.all-out #alarm { opacity: 1; background: radial-gradient(ellipse at center, rgba(255,0,30,0) 35%, rgba(255,0,30,0.55) 100%);
+      animation: alarm-pulse 1.1s ease-in-out infinite alternate; }
+    body.all-out-strobe #alarm { background: #ff0020; animation: strobe 2.6s steps(1, end) both; }
+    @keyframes strobe { 0%, 16%, 33%, 50%, 66%, 83% { opacity: 0.9; } 8%, 25%, 41%, 58%, 75%, 91%, 100% { opacity: 0; } }
+    @keyframes alarm-pulse { from { opacity: 0.35; } to { opacity: 1; } }
+    body.all-out-strobe .slot.on .mark { animation: throb 433ms ease-in-out 6; }
+    @keyframes throb { 0% { transform: rotateX(10deg) rotateY(-12deg) translateZ(2vw) scale(1); } 50% { transform: rotateX(10deg) rotateY(-12deg) translateZ(6vw) scale(1.12); } 100% { transform: rotateX(10deg) rotateY(-12deg) translateZ(2vw) scale(1); } }
+    body.all-out .slot .label { color: #fff; }
+
+    #golden { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; opacity: 0; pointer-events: none;
+      background: radial-gradient(circle at 50% 50%, #fff6d0 0%, #f5c542 35%, #b8860b 75%, #4a3300 100%); transition: opacity 250ms; }
+    body.is-golden #golden { opacity: 1; }
+    body.is-golden #xs { opacity: 0; }
+    #golden h1 { margin: 0; font-size: 11vw; font-weight: 900; line-height: 0.95; text-align: center; color: #fff; letter-spacing: 0.02em;
+      text-shadow: 0 0.4vw 0 #8a6410, 0 0 3vw rgba(255,255,255,0.9), 0 0 8vw rgba(255,220,120,0.9); }
+    body.is-golden #golden h1 { animation: pop 700ms cubic-bezier(.2,1.5,.4,1) both, shimmer 1.6s ease-in-out 700ms infinite alternate; }
+    @keyframes pop { from { transform: scale(0.2); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+    @keyframes shimmer { from { transform: scale(1); } to { transform: scale(1.04); } }
+    #confetti { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+
+    #arm { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1.5vw;
+      background: rgba(0,0,0,0.92); cursor: pointer; z-index: 10; text-align: center; }
+    #arm h2 { margin: 0; font-size: 3vw; }
+    #arm p { margin: 0; font-size: 1.4vw; opacity: 0.7; max-width: 60vw; }
+    body.armed #arm { display: none; }
+    #conn { position: absolute; top: 1vw; right: 1vw; width: 1vw; height: 1vw; border-radius: 50%; background: #c00; display: none; z-index: 11; }
+    body.offline #conn { display: block; }
+  </style>
+</head>
+<body class="offline">
+  <svg width="0" height="0" style="position: absolute" aria-hidden="true">
+    <defs>
+      <polygon id="xshape" points="8,22 22,8 50,36 78,8 92,22 64,50 92,78 78,92 50,64 22,92 8,78 36,50"/>
+      <linearGradient id="xface" x1="0" y1="0" x2="0.35" y2="1">
+        <stop offset="0" stop-color="#ff6a7a"/>
+        <stop offset="0.45" stop-color="#ff1f3a"/>
+        <stop offset="1" stop-color="#c00a22"/>
+      </linearGradient>
+    </defs>
+  </svg>
+  <div id="alarm"></div>
+  <div id="xs"></div>
+  <div id="golden"><h1>GOLDEN<br>BUZZER</h1></div>
+  <canvas id="confetti"></canvas>
+  <div id="arm">
+    <h2>Click to enable sound</h2>
+    <p>Browsers block audio until the page is clicked once. Click here, then press F11 for fullscreen. The control page shows whether sound is armed.</p>
+  </div>
+  <div id="conn" title="Not connected to hub"></div>
+
+  <script src="common.js"></script>
+  <script>
+    // URL options: ?bg=transparent (for keying as a browser source), ?audio=off,
+    // ?labels=0 (hide judge names), ?ghost=0 (hide the faint empty X's).
+    const params = new URLSearchParams(location.search);
+    const body = document.body;
+    if (params.get('bg') === 'transparent') body.classList.add('transparent');
+    if (params.get('labels') === '0') body.classList.add('no-labels');
+    if (params.get('ghost') === '0') body.classList.add('hide-empty');
+    const audioEnabled = params.get('audio') !== 'off';
+
+    const xsEl = document.getElementById('xs');
+    const slots = {};
+    let show = { xs: {}, golden: false };
+    let hub;
+
+    // Extrusion: stacked copies of the X stepping down-right, dark at the back,
+    // so the face looks like it sits on a solid block.
+    const DEPTH = 9;
+    const extrusion = Array.from({ length: DEPTH }, (_, i) => {
+      const k = DEPTH - i; // back layer first
+      const shade = Math.round(70 + (110 * i) / DEPTH);
+      return `<use href="#xshape" transform="translate(${(k * 0.55).toFixed(2)} ${(k * 0.8).toFixed(2)})" fill="rgb(${shade},4,16)"/>`;
+    }).join('');
+    const X_SVG = `
+      <div class="layer ghost"><svg viewBox="0 0 100 100"><use href="#xshape"/></svg></div>
+      <div class="layer mark"><svg viewBox="0 0 100 100">${extrusion}
+        <use href="#xshape" fill="url(#xface)"/>
+        <use href="#xshape" fill="none" stroke="rgba(255,210,215,0.55)" stroke-width="0.8" stroke-linejoin="miter"/>
+      </svg></div>`;
+
+    function buildSlots(judges) {
+      xsEl.innerHTML = '';
+      for (const j of judges) {
+        const el = document.createElement('div');
+        el.className = 'slot';
+        el.innerHTML = `${X_SVG}<div class="label"></div>`;
+        el.querySelector('.label').textContent = j.name;
+        xsEl.append(el);
+        slots[j.seat] = el;
+      }
+    }
+
+    // Applies state without animating (reconnect / page load), so a refresh
+    // mid-act doesn't re-slam every X.
+    function applyState(s) {
+      show = s;
+      for (const [seat, el] of Object.entries(slots)) {
+        const on = Boolean(s.xs[seat]);
+        if (on && !el.classList.contains('on')) el.classList.add('on', 'static');
+        if (!on) el.classList.remove('on', 'static');
+      }
+      const allOut = Object.keys(slots).length > 0 && Object.keys(slots).every((seat) => s.xs[seat]);
+      if (allOut) body.classList.add('all-out');
+      else body.classList.remove('all-out', 'all-out-strobe');
+      if (s.golden && !body.classList.contains('is-golden')) body.classList.add('is-golden');
+      if (!s.golden && body.classList.contains('is-golden')) stopGolden();
+    }
+
+    function slamX(seat) {
+      const el = slots[seat];
+      if (!el) return;
+      el.classList.remove('on', 'static');
+      void el.offsetWidth; // restart animation
+      el.classList.add('on');
+      body.classList.remove('flash', 'shake');
+      void body.offsetWidth;
+      body.classList.add('flash', 'shake');
+      play('x');
+    }
+
+    let strobeTimer = null;
+    function allOut() {
+      body.classList.remove('all-out-strobe');
+      void body.offsetWidth;
+      body.classList.add('all-out', 'all-out-strobe');
+      clearTimeout(strobeTimer);
+      strobeTimer = setTimeout(() => body.classList.remove('all-out-strobe'), 2600);
+      // Let the fourth X's own buzz land first.
+      setTimeout(() => play('all-x'), 450);
+    }
+
+    // ---------- audio ----------
+    // Uses sounds/buzzer.mp3 and sounds/golden.mp3 if present, otherwise a
+    // synthesised buzzer / fanfare so it works out of the box.
+    let ctx = null;
+    const buffers = {};
+
+    async function loadSound(name, file, synth) {
+      try {
+        const res = await fetch(`sounds/${file}`, { cache: 'no-cache' });
+        if (!res.ok) throw new Error(res.status);
+        buffers[name] = await ctx.decodeAudioData(await res.arrayBuffer());
+      } catch {
+        buffers[name] = await synth();
+      }
+    }
+
+    function synthBuzzer() {
+      const sr = 44100, dur = 1.3;
+      const off = new OfflineAudioContext(1, sr * dur, sr);
+      const gain = off.createGain();
+      gain.gain.setValueAtTime(0, 0);
+      gain.gain.linearRampToValueAtTime(0.5, 0.02);
+      gain.gain.setValueAtTime(0.5, dur - 0.15);
+      gain.gain.linearRampToValueAtTime(0, dur);
+      const lp = off.createBiquadFilter();
+      lp.type = 'lowpass';
+      lp.frequency.value = 2200;
+      lp.connect(gain).connect(off.destination);
+      for (const [type, f] of [['sawtooth', 110], ['sawtooth', 116.5], ['square', 55]]) {
+        const o = off.createOscillator();
+        o.type = type;
+        o.frequency.value = f;
+        o.connect(lp);
+        o.start(0);
+      }
+      return off.startRendering();
+    }
+
+    // Three short blasts and a long one - the "everyone said no" alarm.
+    function synthAllOut() {
+      const sr = 44100, dur = 2.6;
+      const off = new OfflineAudioContext(1, sr * dur, sr);
+      const gain = off.createGain();
+      gain.gain.setValueAtTime(0, 0);
+      for (const [t0, t1] of [[0, 0.3], [0.42, 0.72], [0.84, 1.14], [1.26, 2.5]]) {
+        gain.gain.setValueAtTime(0, t0);
+        gain.gain.linearRampToValueAtTime(0.5, t0 + 0.015);
+        gain.gain.setValueAtTime(0.5, t1 - 0.03);
+        gain.gain.linearRampToValueAtTime(0, t1);
+      }
+      const lp = off.createBiquadFilter();
+      lp.type = 'lowpass';
+      lp.frequency.value = 2600;
+      lp.connect(gain).connect(off.destination);
+      for (const [type, f] of [['sawtooth', 92], ['sawtooth', 97.5], ['square', 46]]) {
+        const o = off.createOscillator();
+        o.type = type;
+        o.frequency.value = f;
+        o.connect(lp);
+        o.start(0);
+      }
+      return off.startRendering();
+    }
+
+    function synthGolden() {
+      const sr = 44100, dur = 3.5;
+      const off = new OfflineAudioContext(2, sr * dur, sr);
+      const master = off.createGain();
+      master.gain.value = 0.35;
+      master.connect(off.destination);
+      // rising arpeggio then a held major chord with shimmer
+      const notes = [523.25, 659.25, 783.99, 1046.5, 1318.5];
+      notes.forEach((f, i) => {
+        const t = i * 0.09;
+        const o = off.createOscillator();
+        const g = off.createGain();
+        o.type = 'triangle';
+        o.frequency.value = f;
+        g.gain.setValueAtTime(0, t);
+        g.gain.linearRampToValueAtTime(0.6, t + 0.02);
+        g.gain.exponentialRampToValueAtTime(0.001, dur);
+        o.connect(g).connect(master);
+        o.start(t);
+      });
+      for (const f of [261.63, 329.63, 392.0, 523.25]) {
+        const o = off.createOscillator();
+        const g = off.createGain();
+        o.type = 'sawtooth';
+        o.frequency.value = f;
+        g.gain.setValueAtTime(0, 0.45);
+        g.gain.linearRampToValueAtTime(0.12, 0.6);
+        g.gain.exponentialRampToValueAtTime(0.001, dur);
+        o.connect(g).connect(master);
+        o.start(0.45);
+      }
+      for (let i = 0; i < 40; i++) {
+        const t = 0.4 + Math.random() * 2.2;
+        const o = off.createOscillator();
+        const g = off.createGain();
+        o.type = 'sine';
+        o.frequency.value = 2000 + Math.random() * 3000;
+        g.gain.setValueAtTime(0, t);
+        g.gain.linearRampToValueAtTime(0.15, t + 0.005);
+        g.gain.exponentialRampToValueAtTime(0.001, t + 0.25);
+        o.connect(g).connect(master);
+        o.start(t);
+        o.stop(t + 0.3);
+      }
+      return off.startRendering();
+    }
+
+    async function armAudio() {
+      if (!audioEnabled) return true;
+      ctx = ctx || new AudioContext({ latencyHint: 'interactive' });
+      await ctx.resume();
+      await Promise.all([loadSound('x', 'buzzer.mp3', synthBuzzer), loadSound('golden', 'golden.mp3', synthGolden),
+        loadSound('all-x', 'all-out.mp3', synthAllOut)]);
+      return ctx.state === 'running';
+    }
+
+    function play(name) {
+      if (!ctx || !buffers[name]) return;
+      const src = ctx.createBufferSource();
+      src.buffer = buffers[name];
+      src.connect(ctx.destination);
+      src.start();
+    }
+
+    function reportArmed() {
+      hub && hub.send({ type: 'display-status', audioArmed: !audioEnabled || (ctx && ctx.state === 'running') });
+    }
+
+    document.getElementById('arm').addEventListener('click', async () => {
+      const ok = await armAudio();
+      if (ok) body.classList.add('armed');
+      reportArmed();
+    });
+    // OBS / Resolume browser sources often allow autoplay - try straight away.
+    if (!audioEnabled) body.classList.add('armed');
+    else armAudio().then((ok) => { if (ok) body.classList.add('armed'); reportArmed(); }).catch(() => {});
+
+    // ---------- golden confetti ----------
+    const canvas = document.getElementById('confetti');
+    const c2d = canvas.getContext('2d');
+    let pieces = [];
+    let raf = null;
+
+    function startGolden() {
+      body.classList.add('is-golden');
+      play('golden');
+      canvas.width = innerWidth * devicePixelRatio;
+      canvas.height = innerHeight * devicePixelRatio;
+      const W = canvas.width, H = canvas.height;
+      const colors = ['#fff6d0', '#f5c542', '#ffd966', '#d4a017', '#ffffff', '#ffe9a0'];
+      pieces = Array.from({ length: 450 }, () => ({
+        x: Math.random() * W, y: -Math.random() * H * 1.2,
+        w: (6 + Math.random() * 10) * devicePixelRatio, h: (10 + Math.random() * 16) * devicePixelRatio,
+        vy: (2 + Math.random() * 4) * devicePixelRatio, vx: (Math.random() - 0.5) * 2 * devicePixelRatio,
+        rot: Math.random() * Math.PI, vr: (Math.random() - 0.5) * 0.2, color: colors[(Math.random() * colors.length) | 0],
+      }));
+      if (!raf) tick();
+    }
+
+    function tick() {
+      const W = canvas.width, H = canvas.height;
+      c2d.clearRect(0, 0, W, H);
+      for (const p of pieces) {
+        p.y += p.vy; p.x += p.vx + Math.sin(p.y / 60) * 0.8; p.rot += p.vr;
+        if (p.y > H + 20) { p.y = -20; p.x = Math.random() * W; }
+        c2d.save();
+        c2d.translate(p.x, p.y);
+        c2d.rotate(p.rot);
+        c2d.fillStyle = p.color;
+        c2d.fillRect(-p.w / 2, -p.h / 2, p.w, p.h * Math.abs(Math.cos(p.rot * 2)));
+        c2d.restore();
+      }
+      raf = requestAnimationFrame(tick);
+    }
+
+    function stopGolden() {
+      body.classList.remove('is-golden');
+      if (raf) cancelAnimationFrame(raf);
+      raf = null;
+      pieces = [];
+      c2d.clearRect(0, 0, canvas.width, canvas.height);
+    }
+
+    // ---------- hub ----------
+    hub = connectHub(
+      { type: 'hello', role: 'display' },
+      (msg) => {
+        if (msg.type === 'welcome') {
+          buildSlots(msg.judges);
+          applyState(show);
+          reportArmed();
+        } else if (msg.type === 'state') {
+          applyState(msg.show);
+        } else if (msg.type === 'event') {
+          if (msg.kind === 'x') slamX(msg.seat);
+          else if (msg.kind === 'all-x') allOut();
+          else if (msg.kind === 'golden') startGolden();
+          else if (msg.kind === 'reset') { stopGolden(); applyState({ xs: {}, golden: false }); }
+        } else if (msg.type === 'test-sound') {
+          play(msg.kind);
+        }
+      },
+      (ok) => body.classList.toggle('offline', !ok),
+    );
+  </script>
+</body>
+</html>

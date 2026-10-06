@@ -168,6 +168,8 @@ export interface D1GroupDetail extends D1GroupSummary {
   members: D1GroupMember[];
   canManage: boolean;
   canPost: boolean;
+  /** Pinned messages, newest pin first (at most 3). Only ones the caller can see. */
+  pinned: D1Message[];
   /** Current counts against the rules, for leaders. */
   rules?: { members: number; adults: number; minMembers: number; minAdults: number };
 }
@@ -315,6 +317,8 @@ export type D1RealtimeEvent =
   | { event: "reaction"; payload: { messageId: number; groupId: string; memberId: string; emoji: string; added: boolean } }
   | { event: "poll_vote"; payload: { messageId: number; groupId: string; votes: D1PollTally[]; totalVoters: number } }
   | { event: "members_changed"; payload: { groupId: string } }
+  /** Something was pinned or unpinned: re-fetch the group (it carries the pins). */
+  | { event: "pins_changed"; payload: { groupId: string } }
   | { event: "group_state"; payload: { groupId: string; state: D1GroupState; reason: string | null } }
   /** Renamed, re-described or a new icon: re-fetch the group and the chat list. */
   | { event: "group_updated"; payload: { groupId: string } }

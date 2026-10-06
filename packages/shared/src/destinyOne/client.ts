@@ -228,6 +228,9 @@ export function createDestinyOneClient({ baseUrl, getAccessToken, fetchImpl }: D
     send: (groupId: string, input: { body?: string; replyTo?: number; attachmentId?: string; poll?: D1PollDraft; event?: D1EventRef; mentions?: string[] }) =>
       call<D1Message>("POST", `/groups/${groupId}/messages`, input),
     deleteMessage: (messageId: number) => call<{ ok: true }>("DELETE", `/messages/${messageId}`),
+    /** Group managers: pin (up to 3; a fourth unpins the oldest) or unpin a message. */
+    pin: (messageId: number) => call<{ ok: true }>("POST", `/messages/${messageId}/pin`),
+    unpin: (messageId: number) => call<{ ok: true }>("DELETE", `/messages/${messageId}/pin`),
     /** Change the text of my own message (within EDIT_WINDOW_MINUTES of sending). */
     editMessage: (messageId: number, body: string, mentions?: string[]) => call<D1Message>("PATCH", `/messages/${messageId}`, { body, mentions }),
     report: (messageId: number, reason: string) =>

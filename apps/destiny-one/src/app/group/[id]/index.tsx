@@ -185,6 +185,20 @@ export default function GroupChat() {
   const department = group?.department ?? summary?.group.department;
   const sub = group ? [department, plural(group.members.length, "member")].filter(Boolean).join(" · ") : department ?? "";
   const canDelete = (m: LocalMessage) => m.mine || group?.myRole === "admin" || !!group?.canManage;
+  // Pinned messages (newest pin first). Older cached copies of the group may not have the field yet.
+  const pinned = group?.pinned ?? [];
+  const [pinIndex, setPinIndex] = useState(0);
+  const shownPin = pinned.length ? pinned[pinIndex % pinned.length] : null;
+
+  async function togglePin(m: LocalMessage, on: boolean) {
+    try {
+      await (on ? api.pin(m.id) : api.unpin(m.id));
+      haptic.success();
+      void convo.reloadGroup();
+    } catch (err) {
+      setToast(errorMessage(err));
+    }
+  }
 
   // What the system press-and-hold menu does for one message.
   const menuFor = (m: LocalMessage): MessageMenuActions => ({
@@ -196,6 +210,7 @@ export default function GroupChat() {
     },
     onEdit: group?.canPost && !frozen && !archived && canEditMessage(m) ? () => startEdit(m) : null,
     onShare: m.attachment ? () => void shareAttachment(m) : null,
+    pin: group?.canManage && !frozen && !archived ? { pinned: pinned.some((p) => p.id === m.id), run: () => void togglePin(m, !pinned.some((p) => p.id === m.id)) } : null,
     onReport: () => router.push({ pathname: "/report", params: { messageId: String(m.id), name: m.sender?.displayName ?? "Former member", at: m.createdAt, body: messageSummary(m) } }),
     onBlock: () => {
       if (m.sender) setBlocking({ id: m.sender.id, name: m.sender.displayName });
@@ -334,7 +349,7 @@ export default function GroupChat() {
             list.current?.scrollToOffset({ offset: info.averageItemLength * info.index, animated: false });
             setTimeout(() => list.current?.scrollToIndex({ index: info.index, animated: true, viewPosition: 0.5 }), 120);
           }}
-          contentContainerStyle={{ paddingTop: 24, paddingBottom: insets.top + 70 }}
+          contentContainerStyle={{ paddingTop: 24, paddingBottom: insets.top + 70 + (shownPin ? 58 : 0) }}
           keyboardDismissMode="interactive"
           keyboardShouldPersistTaps="handled"
           onEndReached={() => void convo.loadOlder()}
@@ -417,6 +432,39 @@ export default function GroupChat() {
         </Pressable>
         {preview ? <View style={{ width: 44 }} /> : <GlassIconButton icon="search" label={name ? `Search in ${name}` : "Search in this chat"} onPress={() => router.push({ pathname: "/search", params: { groupId: id } })} />}
       </View>
+
+      {/* Pinned: the newest pin; tapping shows it in the chat and moves on to the next. */}
+      {shownPin && !preview ? (
+        <View style={{ position: "absolute", top: insets.top + 62, left: 16, right: 16 }}>
+          <PressableScale
+            accessibilityRole="button"
+            accessibilityLabel={`Pinned message${pinned.length > 1 ? ` ${(pinIndex % pinned.length) + 1} of ${pinned.length}` : ""}: ${messageSummary(shownPin)}. Shows it in the chat.`}
+            scaleTo={0.98}
+            onPress={() => {
+              haptic.selection();
+              jumpTo.set(id, shownPin.id);
+              setPinIndex((i) => i + 1);
+            }}
+          >
+            <GlassSurface interactive style={[{ minHeight: 48, borderRadius: 18, flexDirection: "row", alignItems: "center", gap: 10, paddingVertical: 7, paddingHorizontal: 14 }, t.shadow]}>
+              {pinned.length > 1 ? (
+                <View style={{ gap: 2 }}>
+                  {pinned.map((p, i) => (
+                    <View key={p.id} style={{ width: 3, height: Math.max(6, 30 / pinned.length - 2), borderRadius: 1.5, backgroundColor: i === pinIndex % pinned.length ? t.tint : t.sep }} />
+                  ))}
+                </View>
+              ) : null}
+              <Icon name="pin" size={16} color={t.tint} strokeWidth={2.2} />
+              <View style={{ flex: 1, minWidth: 0 }}>
+                <Text style={{ fontSize: 12, fontWeight: "600", color: t.tint }}>Pinned</Text>
+                <Text numberOfLines={1} style={{ fontSize: 14, color: t.text }}>
+                  {messageSummary(shownPin)}
+                </Text>
+              </View>
+            </GlassSurface>
+          </PressableScale>
+        </View>
+      ) : null}
 
       {/* Footer */}
       <View style={{ paddingHorizontal: 12, paddingTop: 6, paddingBottom: Math.max(insets.bottom, 12) }}>

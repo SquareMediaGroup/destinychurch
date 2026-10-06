@@ -1,6 +1,6 @@
 // B4 Message actions: press and hold a message. The chat dims, the message
 // lifts out where it was, a bar of quick reactions sits above it (with "+"
-// for more) and a card of actions sits below: Reply, Copy, Edit, Share, Pin, Report,
+// for more) and a card of actions sits below: Reply, Copy, Edit, Share, Pin, Info, Report,
 // Block, Delete. Laid out by lib/menuLayout, so it always fits on screen and
 // never covers the message.
 //
@@ -46,6 +46,8 @@ export interface MessageMenuActions {
   onReact: (emoji: string) => void;
   onReply: (() => void) | null;
   onCopy: () => void;
+  /** "Seen by": my own messages, or any in a group I manage. */
+  onInfo: (() => void) | null;
   /** Group managers: pin or unpin this message. */
   pin: { pinned: boolean; run: () => void } | null;
   /** My own text, still inside the edit window. */
@@ -73,6 +75,7 @@ function items(m: LocalMessage, a: MessageMenuActions): Item[][] {
   if (a.onEdit) everyday.push({ label: "Edit", icon: "pencil", run: a.onEdit });
   if (a.onShare && m.attachment) everyday.push({ label: "Share", icon: "share", run: a.onShare });
   if (a.pin) everyday.push({ label: a.pin.pinned ? "Unpin" : "Pin", icon: "pin", run: a.pin.run });
+  if (a.onInfo) everyday.push({ label: "Info", icon: "info", run: a.onInfo });
   const serious: Item[] = [];
   if (theirs) serious.push({ label: "Report", icon: "flag", run: a.onReport, destructive: true });
   if (theirs && m.sender) serious.push({ label: `Block ${m.sender.displayName.split(" ")[0]}`, icon: "block", run: a.onBlock, destructive: true });

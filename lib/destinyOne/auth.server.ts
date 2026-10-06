@@ -167,6 +167,17 @@ export async function loadBlocked(memberId: string): Promise<{ id: string; displ
   });
 }
 
+/**
+ * Whether this member shares read receipts (20261006_04). Read on its own, not
+ * via MEMBER_COLUMNS, so an API deployed before that migration still serves
+ * every other request; until then it reads as on.
+ */
+async function loadReadReceipts(memberId: string): Promise<boolean> {
+  const { data, error } = await createServiceClient().from("d1_members").select("read_receipts").eq("id", memberId).maybeSingle();
+  if (error || !data) return true;
+  return (data as { read_receipts: boolean }).read_receipts !== false;
+}
+
 /** The account's admin roles, if it has any (service-only table). Null for no row or no sign-in. */
 async function loadStaffRoles(authUserId: string | null) {
   if (!authUserId) return null;
@@ -180,12 +191,13 @@ async function loadStaffRoles(authUserId: string | null) {
 
 /** The D1Me payload for a member row (any status). */
 export async function toMe(member: MemberRow): Promise<D1Me> {
-  const [consents, settings, blocked, avatar, staff] = await Promise.all([
+  const [consents, settings, blocked, avatar, staff, readReceipts] = await Promise.all([
     loadConsents(member.id),
     getSettings(),
     loadBlocked(member.id),
     avatarUrl(member.avatar_url),
     loadStaffRoles(member.auth_user_id),
+    loadReadReceipts(member.id),
   ]);
   const state = onboardingState(member, settings);
   const allowance = nameChangeAllowance(member.name_change_log);
@@ -198,6 +210,7 @@ export async function toMe(member: MemberRow): Promise<D1Me> {
     nextNameChangeAt: allowance.nextAt,
     avatarUrl: avatar,
     blocked,
+    readReceipts,
     status: member.status,
     roles: member.roles ?? [],
     isAdult: isAdult(member.adult_on),

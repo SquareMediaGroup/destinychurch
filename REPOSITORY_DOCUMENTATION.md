@@ -372,6 +372,8 @@ destinychurch/
 │       ├── 20261006_02_destiny_one_mentions.sql # part 12 (v0.8): @mentions (d1_messages.mentions,
 │       │                                   # d1_valid_mentions; d1_post_message gains p_mentions)
 │       ├── 20261006_03_destiny_one_pins.sql # part 13 (v0.8): pinned messages (d1_pins, up to 3)
+│       ├── 20261006_04_destiny_one_read_receipts.sql # part 14 (v0.8): "Seen by" (d1_members.read_receipts,
+│       │                                   # d1_read_receipts)
 │       │                                   # (apply after scripts/destiny-one/encrypt-messages.ts)
 │       ├── 20260927_03_destiny_one_message_search.sql # Destiny One part 4: message search
 │       ├── 20260927_02_destiny_one_leader_invites.sql # Destiny One part 3: leader invites
@@ -2140,6 +2142,15 @@ the pinned messages the caller can see (since they joined, not deleted, not from
 newest pin first. In the app a glass bar under the chat header shows the newest pin; tapping it scrolls to
 that message (`jumpTo`) and moves on to the next, with a small indicator when there are several. Pin /
 Unpin is in the message menu for managers.
+
+**Part 14 — `20261006_04_destiny_one_read_receipts.sql`: "Seen by".** Read state used to be private; now
+`d1_read_receipts(actor, message)` lists who (of the members who were there when it was sent) has read a
+message, from the existing `last_read_message_id`. No read time exists or is shown. Only the sender, or
+someone who manages the group, can ask. `d1_members.read_receipts` (default on) is reciprocal as in
+WhatsApp: off means you show as hidden (counted, not named) and you can't see anyone's. The API reads that
+column on its own (`loadReadReceipts`), not through `MEMBER_COLUMNS`, so an API deployed before the
+migration still works. The peek preview never moves the read marker. The draft notice in
+`docs/content/destiny-one-notices-draft.md` has a Read receipts paragraph to publish with it.
 
 **Tested by:** `scripts/test-sql.sh` (`npm run test:sql`, and the "Database rules" CI job) — applies
 Supabase stubs + every Destiny One migration (parts 1–9, plus the profile-picture, min-build and
@@ -4355,6 +4366,8 @@ needs at least 2 verified adults.") pass through as `rule_violation` (422). Type
 | `messages/[id]/vote` | POST | `{ optionIds }` — your full vote set on a poll (empty clears it). 60 a minute |
 | `messages/[id]` | PATCH | `{ body }` — edit my own message's text (15 minutes, 10 times; `d1_edit_message`). Sealed with new search terms; `message_edited` goes to the group over the REST broadcast (it carries text). 20 a minute, no push |
 | `messages/[id]/pin` | POST, DELETE | Pin or unpin (group managers; at most 3, a fourth unpins the oldest). 30 a minute |
+| `messages/[id]/receipts` | GET | "Seen by": `{ read, notYet, hidden }` for the sender or a group manager, while their own read receipts are on (`d1_read_receipts`). 60 a minute |
+| `me/settings` | PATCH | `{ readReceipts? }` — account settings that change what others see. `D1Me.readReceipts` |
 | `events` | GET | Upcoming ChurchSuite events for the Event picker in the attach sheet |
 | `groups/[id]/invites` | POST | Leaders: `{ email, name, adult, note? }` — invite someone new; they become an access request for staff to approve, then join the group |
 | `search/messages` | GET | `?q=` — search of your messages: groups you are in, since you joined, never deleted, never from people you've blocked; newest 30. Each word matches as a prefix, on the blind index (text is encrypted at rest, see "Message encryption"). `&groupId=` searches one group (search opened from a chat): same rules; not found if you aren't in it, nothing for an archived group |

@@ -210,6 +210,7 @@ export default function GroupChat() {
     },
     onEdit: group?.canPost && !frozen && !archived && canEditMessage(m) ? () => startEdit(m) : null,
     onShare: m.attachment ? () => void shareAttachment(m) : null,
+    onInfo: m.mine || group?.canManage ? () => router.push({ pathname: "/message-info", params: { groupId: id, messageId: String(m.id) } }) : null,
     pin: group?.canManage && !frozen && !archived ? { pinned: pinned.some((p) => p.id === m.id), run: () => void togglePin(m, !pinned.some((p) => p.id === m.id)) } : null,
     onReport: () => router.push({ pathname: "/report", params: { messageId: String(m.id), name: m.sender?.displayName ?? "Former member", at: m.createdAt, body: messageSummary(m) } }),
     onBlock: () => {

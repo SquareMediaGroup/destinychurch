@@ -223,3 +223,38 @@ select pg_temp.check(
   not has_function_privilege('authenticated', 'public.d1_pin_message(uuid, bigint, boolean)', 'execute')
   and not has_table_privilege('authenticated', 'public.d1_pins', 'select'),
   'pins are service-role only');
+
+-- ── Read receipts (20261006_04) ─────────────────────────────────────────────
+
+insert into found select 'rr', public.d1_post_message(:lead::uuid, (select v from ids where k = 'announce'), 'd1e:v1:rr');
+update public.d1_group_members set last_read_message_id = (select v from found where k = 'rr')
+  where group_id = (select v from ids where k = 'announce') and member_id = :adult2::uuid;
+update public.d1_members set read_receipts = false where id = :minor1::uuid;
+
+create temp table rr as select * from public.d1_read_receipts(:lead::uuid, (select v from found where k = 'rr'));
+select pg_temp.check(
+  (select status from rr where member_id = :adult2::uuid) = 'read'
+  and (select status from rr where member_id = '10000000-0000-0000-0000-00000000000c'::uuid) = 'unread',
+  'the sender sees who has and has not read it');
+select pg_temp.check(
+  (select status from rr where member_id = :minor1::uuid) = 'hidden',
+  'someone with read receipts off shows as hidden');
+select pg_temp.check(
+  not exists (select 1 from rr where member_id = :lead::uuid),
+  'the sender is not in their own list');
+
+select pg_temp.expect_error(
+  format($$select * from public.d1_read_receipts(%L, %s)$$, :adult2, (select v from found where k = 'rr')),
+  'your own messages');
+select pg_temp.check(true, 'an ordinary member cannot see receipts on someone else''s message');
+
+update public.d1_members set read_receipts = false where id = :lead::uuid;
+select pg_temp.expect_error(
+  format($$select * from public.d1_read_receipts(%L, %s)$$, :lead, (select v from found where k = 'rr')),
+  'Turn on read receipts');
+select pg_temp.check(true, 'with read receipts off you see no one''s (reciprocal)');
+update public.d1_members set read_receipts = true where id = :lead::uuid;
+
+select pg_temp.check(
+  not has_function_privilege('authenticated', 'public.d1_read_receipts(uuid, bigint)', 'execute'),
+  'read receipts are service-role only');

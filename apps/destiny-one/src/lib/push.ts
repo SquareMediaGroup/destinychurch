@@ -11,6 +11,7 @@ import * as Device from "expo-device";
 import * as Notifications from "expo-notifications";
 import { api } from "@/lib/api";
 import { config } from "@/lib/config";
+import { registerMessageCategory } from "@/lib/notificationActions";
 
 let registeredToken: string | null = null;
 
@@ -38,6 +39,7 @@ export async function registerForPush(): Promise<PushResult> {
   let { status } = await Notifications.getPermissionsAsync();
   if (status !== "granted") ({ status } = await Notifications.requestPermissionsAsync());
   if (status !== "granted") return "denied";
+  await registerMessageCategory();
 
   const { data: token } = await Notifications.getExpoPushTokenAsync({ projectId: config.easProjectId });
   await api.registerPushToken(token, Platform.OS === "ios" ? "ios" : "android");

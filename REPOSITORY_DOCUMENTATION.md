@@ -7288,6 +7288,13 @@ same database as the data rather than in a separate Synapse module.
   (blocked people, chat safety, privacy notice, terms), Support (help, report a problem, send
   feedback) and Your data. Download my data saves a dated `.json` file to the cache folder and opens
   the share sheet on it (iOS); Android's share sheet can't take a file URL, so it still shares the text.
+- **Notification actions** (`src/lib/notificationActions.ts`): message pushes carry `categoryId:
+  "message"`, so they offer **Reply** (a text field; needs the phone unlocked, `isAuthenticationRequired`)
+  and **Mark as read**, neither of which opens the app. The push's `data` has `groupId`, `messageId` and
+  `memberId` (which account it's for). A notification for another account on the phone uses that
+  account's own API client (`apiFor`). iOS delivers the response to the listener in `_layout.tsx`;
+  Android to a background task (`expo-task-manager`, `registerTaskAsync`). A reply that fails posts a
+  local "Your reply wasn't sent" notification rather than vanishing.
 - **Typing** (`src/state/typing.ts`): a memory-only store fed by the `typing` event (never me, never
   someone I've blocked). Each event shows that person for 6 seconds; their message arriving clears them.
   The chat header's subtitle swaps the member count for "Leah is typing…" / "Leah and Sam are typing…" /

@@ -25,7 +25,7 @@ interface ExpoTicket {
   details?: { error?: string };
 }
 
-export async function pushNewMessage(groupId: string, senderId: string, preview: PushPreview, mentions: readonly string[] = []): Promise<void> {
+export async function pushNewMessage(groupId: string, senderId: string, preview: PushPreview, mentions: readonly string[] = [], messageId: number | null = null): Promise<void> {
   try {
     const supabase = createServiceClient();
     const now = new Date().toISOString();
@@ -56,28 +56,36 @@ export async function pushNewMessage(groupId: string, senderId: string, preview:
       .from("d1_push_tokens")
       .select("token, member_id")
       .in("member_id", [...everyone, ...named]);
-    const tokensFor = (ids: string[]) => (tokens ?? []).filter((t) => ids.includes(t.member_id as string)).map((t) => t.token as string);
+    const tokensFor = (ids: string[]) => (tokens ?? []).filter((t) => ids.includes(t.member_id as string)).map((t) => ({ token: t.token as string, memberId: t.member_id as string }));
 
-    const batches: [string[], string][] = [
+    const batches: [{ token: string; memberId: string }[], string][] = [
       [tokensFor(everyone), body],
       [tokensFor(named), pushPreviewText({ ...preview, senderName: `${preview.senderName} mentioned you` })],
     ];
     for (const [list, text] of batches) {
-      for (let i = 0; i < list.length; i += CHUNK) await send(list.slice(i, i + CHUNK), groupId, title, text);
+      for (let i = 0; i < list.length; i += CHUNK) await send(list.slice(i, i + CHUNK), groupId, messageId, title, text);
     }
   } catch (err) {
     console.error("⚠️ Destiny One push failed:", err);
   }
 }
 
-async function send(tokens: string[], groupId: string, title: string, body: string): Promise<void> {
-  const messages = tokens.map((to) => ({
-    to,
+/**
+ * One batch to Expo. `categoryId: "message"` gives the notification its Reply
+ * and Mark as read buttons (apps/destiny-one/src/lib/notificationActions.ts);
+ * `memberId` says which account on the phone it's for, and `messageId` what
+ * Mark as read marks.
+ */
+async function send(recipients: { token: string; memberId: string }[], groupId: string, messageId: number | null, title: string, body: string): Promise<void> {
+  const tokens = recipients.map((r) => r.token);
+  const messages = recipients.map((r) => ({
+    to: r.token,
     title,
     body,
     sound: "default",
     channelId: "messages",
-    data: { type: "message", groupId },
+    categoryId: "message",
+    data: { type: "message", groupId, messageId, memberId: r.memberId },
   }));
 
   const res = await fetch(EXPO_PUSH_URL, {

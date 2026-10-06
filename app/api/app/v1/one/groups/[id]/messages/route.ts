@@ -101,6 +101,7 @@ export const POST = oneRoute<IdParams>(async (request, { params }) => {
           attachmentMime: message.attachment?.mimeType ?? null,
         },
         message.mentions,
+        message.id,
       ),
       // A link's preview follows a moment later, so sending never waits on another website.
       attachLinkPreview(message.id, id, body),

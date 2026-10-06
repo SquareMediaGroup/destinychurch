@@ -15,6 +15,7 @@ import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client
 import { UpdateScreen } from "@/components/UpdateScreen";
 import { useAppGate } from "@/lib/appGate";
 import { groupIdFrom } from "@/lib/push";
+import { handleNotificationAction, registerMessageCategory, registerNotificationTask } from "@/lib/notificationActions";
 import { currentOpenGroup } from "@/lib/queries";
 import { persistOptions, queryClient } from "@/lib/queryClient";
 import { SwitchBanner } from "@/components/SwitchBanner";
@@ -33,9 +34,21 @@ import { useTheme } from "@/theme/tokens";
  */
 function useNotificationTaps() {
   useEffect(() => {
+    registerMessageCategory();
+    registerNotificationTask();
     const handled = new Set<string>();
     const take = (r: Notifications.NotificationResponse | null) => {
       if (!r) return;
+      // Reply / Mark as read run without opening anything.
+      if (r.actionIdentifier !== Notifications.DEFAULT_ACTION_IDENTIFIER) {
+        void handleNotificationAction(r);
+        try {
+          Notifications.clearLastNotificationResponse();
+        } catch {
+          // Not available (e.g. web).
+        }
+        return;
+      }
       const key = r.notification.request.identifier;
       if (handled.has(key)) return;
       handled.add(key);

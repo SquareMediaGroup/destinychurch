@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="theme-color" content="#000000">
+  <title>Buzzer</title>
+  <style>
+    :root { --red: #e0182d; --red-dark: #7a0a16; --gold: #f5c542; --gold-dark: #8a6410; }
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; user-select: none; -webkit-user-select: none; }
+    html, body { margin: 0; height: 100%; background: #000; color: #fff; overflow: hidden;
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; touch-action: none; }
+    body { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4vmin; }
+    #name { font-size: 6vmin; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; opacity: 0.85; }
+    #buzzer {
+      width: 72vmin; height: 72vmin; border-radius: 50%; border: none; cursor: pointer; color: #fff;
+      font: 900 30vmin/1 system-ui, sans-serif;
+      background: radial-gradient(circle at 35% 30%, #ff6b78 0%, var(--red) 45%, var(--red-dark) 100%);
+      box-shadow: 0 2.5vmin 0 #4a0610, 0 3vmin 6vmin rgba(0,0,0,0.8), inset 0 -2vmin 4vmin rgba(0,0,0,0.35);
+      transition: transform 60ms, box-shadow 60ms, filter 200ms;
+    }
+    body.gold #buzzer {
+      font-size: 9vmin; letter-spacing: 0.04em; line-height: 1.05;
+      background: radial-gradient(circle at 35% 30%, #fff3c4 0%, var(--gold) 45%, var(--gold-dark) 100%);
+      box-shadow: 0 2.5vmin 0 #5a420a, 0 3vmin 6vmin rgba(0,0,0,0.8), inset 0 -2vmin 4vmin rgba(0,0,0,0.3);
+      color: #3a2a00;
+    }
+    #buzzer:active, #buzzer.down { transform: translateY(2vmin); box-shadow: 0 0.5vmin 0 #4a0610, 0 1vmin 3vmin rgba(0,0,0,0.8); }
+    body.buzzed #buzzer { filter: brightness(1.25) saturate(1.2); animation: glow 1.2s ease-in-out infinite alternate; }
+    body.gold.buzzed #buzzer { animation-name: glow-gold; }
+    body.locked #buzzer, body.offline #buzzer { filter: grayscale(1) brightness(0.45); animation: none; }
+    @keyframes glow { from { box-shadow: 0 2.5vmin 0 #4a0610, 0 0 6vmin var(--red); } to { box-shadow: 0 2.5vmin 0 #4a0610, 0 0 18vmin var(--red); } }
+    @keyframes glow-gold { from { box-shadow: 0 2.5vmin 0 #5a420a, 0 0 6vmin var(--gold); } to { box-shadow: 0 2.5vmin 0 #5a420a, 0 0 18vmin var(--gold); } }
+    #status { font-size: 3.2vmin; min-height: 1.4em; opacity: 0.8; }
+    body.offline #status { color: #ff8a8a; opacity: 1; }
+    #pick { display: none; flex-direction: column; gap: 3vmin; align-items: center; }
+    #pick a { color: #fff; font-size: 5vmin; padding: 2vmin 6vmin; border: 2px solid #555; border-radius: 2vmin; text-decoration: none; min-width: 50vmin; text-align: center; }
+    body.picking #pick { display: flex; }
+    body.picking #buzzer, body.picking #name, body.picking #status { display: none; }
+  </style>
+</head>
+<body class="offline">
+  <div id="name"></div>
+  <button id="buzzer" aria-label="Buzzer">X</button>
+  <div id="status">Connecting...</div>
+  <div id="pick"></div>
+
+  <script src="common.js"></script>
+  <script>
+    const params = new URLSearchParams(location.search);
+    const seat = params.get('seat') ?? params.get('judge');
+    const isGold = seat === 'gold';
+    const body = document.body;
+    const buzzer = document.getElementById('buzzer');
+    const statusEl = document.getElementById('status');
+    const nameEl = document.getElementById('name');
+    let show = { xs: {}, golden: false, locked: false };
+    let online = false;
+
+    if (isGold) {
+      body.classList.add('gold');
+      buzzer.innerHTML = 'GOLDEN<br>BUZZER';
+    }
+
+    function render() {
+      const buzzed = isGold ? show.golden : Boolean(show.xs[seat]);
+      body.classList.toggle('buzzed', buzzed);
+      body.classList.toggle('locked', show.locked);
+      body.classList.toggle('offline', !online);
+      if (!online) return;
+      statusEl.textContent = show.locked ? 'Locked' : buzzed ? 'Buzzed - waiting for reset' : 'Ready';
+    }
+
+    // Wake lock needs HTTPS, so on a plain LAN address this usually isn't
+    // available; the README covers keeping the screen on via Android settings.
+    let wakeLock = null;
+    async function keepAwake() {
+      try {
+        if ('wakeLock' in navigator && !wakeLock) {
+          wakeLock = await navigator.wakeLock.request('screen');
+          wakeLock.addEventListener('release', () => (wakeLock = null));
+        }
+      } catch {}
+    }
+    document.addEventListener('visibilitychange', () => document.visibilityState === 'visible' && keepAwake());
+
+    function goFullscreen() {
+      if (!document.fullscreenElement && document.documentElement.requestFullscreen) {
+        document.documentElement.requestFullscreen({ navigationUI: 'hide' }).catch(() => {});
+      }
+    }
+
+    if (!seat) {
+      body.classList.add('picking');
+    } else {
+      const hub = connectHub(
+        { type: 'hello', role: 'tablet', seat },
+        (msg) => {
+          if (msg.type === 'welcome') {
+            const judge = msg.judges.find((j) => j.seat === seat);
+            nameEl.textContent = isGold ? '' : judge ? judge.name : `Unknown seat "${seat}"`;
+          } else if (msg.type === 'state') {
+            show = msg.show;
+            render();
+          }
+        },
+        (ok, reason) => {
+          online = ok;
+          if (!ok) statusEl.textContent = reason ?? 'Not connected - reconnecting...';
+          render();
+        },
+      );
+
+      // pointerdown, not click: fires the instant a finger lands.
+      buzzer.addEventListener('pointerdown', (e) => {
+        e.preventDefault();
+        buzzer.classList.add('down');
+        goFullscreen();
+        keepAwake();
+        if (!online || show.locked) return;
+        if (hub.send({ type: 'press' }) && navigator.vibrate) navigator.vibrate(isGold ? [80, 40, 80, 40, 200] : 150);
+      });
+      const up = () => buzzer.classList.remove('down');
+      buzzer.addEventListener('pointerup', up);
+      buzzer.addEventListener('pointercancel', up);
+      buzzer.addEventListener('contextmenu', (e) => e.preventDefault());
+    }
+
+    // No seat in the URL: show a picker so setting up a tablet is one tap.
+    if (!seat) {
+      const pick = document.getElementById('pick');
+      const key = params.get('key');
+      const make = (s, label) => {
+        const a = document.createElement('a');
+        const q = new URLSearchParams({ seat: s });
+        if (key) q.set('key', key);
+        a.href = `?${q}`;
+        a.textContent = label;
+        pick.append(a);
+      };
+      const h = document.createElement('div');
+      h.textContent = 'Which buzzer is this tablet?';
+      h.style.fontSize = '5vmin';
+      pick.append(h);
+      connectHub({ type: 'hello', role: 'picker' }, (msg) => {
+        if (msg.type !== 'welcome' || pick.querySelector('a')) return;
+        msg.judges.forEach((j) => make(j.seat, j.name));
+        make('gold', msg.golden.name);
+      }, () => {});
+    }
+  </script>
+</body>
+</html>

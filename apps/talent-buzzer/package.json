@@ -1,0 +1,19 @@
+{
+  "name": "talent-buzzer",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Talent show judge buzzers: Android tablets -> Avolites Titan cues + LED screen X and audio",
+  "license": "UNLICENSED",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "hub": "node hub/server.js",
+    "agent": "node agent/avolites-agent.js",
+    "fake-titan": "node tools/fake-titan.js",
+    "test": "node --test test/*.test.js"
+  },
+  "dependencies": {
+    "ws": "^8.18.0"
+  }
+}

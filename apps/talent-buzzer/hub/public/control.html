@@ -1,0 +1,210 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Buzzer Control</title>
+  <style>
+    :root { color-scheme: dark; --bg: #0e0f12; --panel: #17191e; --line: #2a2d35; --text: #e8e9ec; --muted: #8b8f99;
+      --ok: #2fbf71; --bad: #e5484d; --warn: #f5a524; --red: #e0182d; --gold: #f5c542; }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.4 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+    header { display: flex; align-items: center; gap: 12px; padding: 14px 20px; border-bottom: 1px solid var(--line); }
+    header h1 { font-size: 18px; margin: 0; flex: 1; }
+    main { display: grid; gap: 16px; padding: 16px 20px 40px; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); max-width: 1200px; }
+    section { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; }
+    section h2 { font-size: 13px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); margin: 0 0 10px; }
+    .row { display: flex; align-items: center; gap: 10px; padding: 7px 0; border-top: 1px solid var(--line); }
+    .row:first-of-type { border-top: none; }
+    .row .name { flex: 1; }
+    .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--bad); flex: none; }
+    .dot.ok { background: var(--ok); } .dot.warn { background: var(--warn); }
+    .pill { font-size: 12px; padding: 2px 8px; border-radius: 99px; background: #262930; color: var(--muted); }
+    .pill.x { background: var(--red); color: #fff; } .pill.gold { background: var(--gold); color: #2a1f00; }
+    button { font: inherit; color: var(--text); background: #262930; border: 1px solid #3a3e48; border-radius: 8px; padding: 7px 12px; cursor: pointer; }
+    button:hover { background: #2f333b; }
+    button.big { font-size: 17px; padding: 12px 18px; font-weight: 600; }
+    button.primary { background: #3b5bdb; border-color: #4c6ef5; }
+    button.danger { background: #5c1a1d; border-color: #7a2328; }
+    button.on { background: var(--warn); color: #241600; border-color: var(--warn); }
+    .actions { display: flex; gap: 10px; flex-wrap: wrap; }
+    .muted { color: var(--muted); font-size: 13px; }
+    #conn { font-size: 13px; }
+    #log { font: 12px/1.5 ui-monospace, Menlo, Consolas, monospace; max-height: 220px; overflow: auto; margin: 0; padding: 0; list-style: none; }
+    #log li.fail { color: var(--bad); }
+    .links a { color: #9db4ff; word-break: break-all; }
+    .links div { padding: 3px 0; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Talent Show Buzzers</h1>
+    <span class="dot" id="connDot"></span><span id="conn">Connecting...</span>
+  </header>
+  <main>
+    <section>
+      <h2>Show</h2>
+      <div class="actions" style="margin-bottom: 12px">
+        <button class="big primary" id="reset">Reset buzzers</button>
+        <button class="big" id="lock">Lock buzzers</button>
+      </div>
+      <p class="muted" style="margin: 0">Reset clears every X and the golden buzzer for the next act. Lock ignores all presses (use between acts).</p>
+    </section>
+
+    <section>
+      <h2>Tablets</h2>
+      <div id="tablets"></div>
+    </section>
+
+    <section>
+      <h2>Screen and lighting</h2>
+      <div class="row"><span class="dot" id="dispDot"></span><span class="name">LED display page</span><span class="pill" id="dispTxt"></span></div>
+      <div class="row"><span class="dot" id="soundDot"></span><span class="name">Display sound</span><span class="pill" id="soundTxt"></span>
+        <button data-sound="x">Test X</button><button data-sound="golden">Test gold</button></div>
+      <div class="row"><span class="dot" id="agentDot"></span><span class="name">Lighting link</span><span class="pill" id="agentTxt"></span></div>
+      <div class="row"><span class="dot" id="titanDot"></span><span class="name">Avolites Titan</span><span class="pill" id="titanTxt"></span></div>
+    </section>
+
+    <section>
+      <h2>Test lighting cues</h2>
+      <p class="muted" style="margin-top: 0">Fires the playback only. The screen and show state are not touched.</p>
+      <div class="actions" id="cueTests"></div>
+    </section>
+
+    <section>
+      <h2>Lighting log</h2>
+      <ul id="log"></ul>
+    </section>
+
+    <section class="links">
+      <h2>Device links</h2>
+      <div id="links"></div>
+    </section>
+  </main>
+
+  <script src="common.js"></script>
+  <script>
+    const $ = (id) => document.getElementById(id);
+    const params = new URLSearchParams(location.search);
+    const key = params.get('key');
+    let judges = [];
+    let golden = { name: 'Golden Buzzer' };
+    let cues = {};
+    let last = null;
+
+    const hub = connectHub(
+      { type: 'hello', role: 'control' },
+      (msg) => {
+        if (msg.type === 'welcome') {
+          judges = msg.judges;
+          golden = msg.golden;
+          cues = msg.cues;
+          buildStatic();
+        } else if (msg.type === 'state') {
+          last = msg;
+          render();
+        }
+      },
+      (ok, reason) => {
+        $('connDot').className = `dot ${ok ? 'ok' : ''}`;
+        $('conn').textContent = ok ? 'Hub connected' : reason ?? 'Hub not connected - reconnecting...';
+      },
+    );
+
+    $('reset').onclick = () => hub.send({ type: 'reset' });
+    $('lock').onclick = () => hub.send({ type: 'lock', locked: !(last && last.show.locked) });
+    document.querySelectorAll('[data-sound]').forEach((b) => (b.onclick = () => hub.send({ type: 'test-sound', kind: b.dataset.sound })));
+
+    function setDot(id, level) { $(id).className = `dot ${level === true ? 'ok' : level === 'warn' ? 'warn' : ''}`; }
+
+    function buildStatic() {
+      const tests = $('cueTests');
+      tests.innerHTML = '';
+      const addTest = (label, n) => {
+        if (n == null) return;
+        const b = document.createElement('button');
+        b.textContent = `${label} (PB ${n})`;
+        b.onclick = () => hub.send({ type: 'test-lighting', userNumber: n, label });
+        tests.append(b);
+      };
+      judges.forEach((j) => addTest(`X ${j.name}`, cues.x && cues.x[j.seat]));
+      addTest('Golden', cues.golden);
+      addTest('Reset', cues.reset);
+
+      const links = $('links');
+      links.innerHTML = '';
+      const base = `${location.protocol}//${location.host}`;
+      const link = (label, path, q = {}) => {
+        const sp = new URLSearchParams(q);
+        if (key) sp.set('key', key);
+        const href = `${base}${path}${sp.toString() ? `?${sp}` : ''}`;
+        const d = document.createElement('div');
+        d.innerHTML = `<span class="muted"></span> <a target="_blank"></a>`;
+        d.querySelector('span').textContent = `${label}:`;
+        d.querySelector('a').href = href;
+        d.querySelector('a').textContent = href;
+        links.append(d);
+      };
+      link('Display', '/display');
+      judges.forEach((j) => link(j.name, '/tablet', { seat: j.seat }));
+      link(golden.name, '/tablet', { seat: 'gold' });
+      render();
+    }
+
+    function render() {
+      if (!last || !judges.length) return;
+      const { show, presence, lighting } = last;
+
+      const t = $('tablets');
+      t.innerHTML = '';
+      const rows = [...judges.map((j) => ({ seat: j.seat, name: j.name, buzzed: show.xs[j.seat], cls: 'x', on: 'X' })),
+        { seat: 'gold', name: golden.name, buzzed: show.golden, cls: 'gold', on: 'GOLDEN' }];
+      for (const r of rows) {
+        const n = presence.tablets[r.seat] || 0;
+        const row = document.createElement('div');
+        row.className = 'row';
+        row.innerHTML = `<span class="dot ${n === 1 ? 'ok' : n > 1 ? 'warn' : ''}"></span><span class="name"></span><span class="pill"></span><button>Trigger</button>`;
+        row.querySelector('.name').textContent = r.name + (n > 1 ? ` (${n} devices on this seat)` : n === 0 ? ' - offline' : '');
+        const pill = row.querySelector('.pill');
+        pill.textContent = r.buzzed ? r.on : 'Ready';
+        if (r.buzzed) pill.classList.add(r.cls);
+        row.querySelector('button').title = 'Fire this buzzer from here (backup if a tablet dies)';
+        row.querySelector('button').onclick = () => hub.send({ type: 'trigger', seat: r.seat });
+        t.append(row);
+      }
+
+      $('lock').textContent = show.locked ? 'Unlock buzzers' : 'Lock buzzers';
+      $('lock').classList.toggle('on', show.locked);
+
+      setDot('dispDot', presence.displays > 0);
+      $('dispTxt').textContent = presence.displays ? `${presence.displays} open` : 'Not open';
+      const armed = presence.displays > 0 && presence.displaysArmed === presence.displays;
+      setDot('soundDot', armed ? true : presence.displays ? 'warn' : false);
+      $('soundTxt').textContent = !presence.displays ? '-' : armed ? 'Armed' : 'Click the display page once';
+
+      if (lighting.mode === 'off') {
+        setDot('agentDot', 'warn'); $('agentTxt').textContent = 'Lighting disabled in config';
+        setDot('titanDot', 'warn'); $('titanTxt').textContent = '-';
+      } else {
+        const linkOk = lighting.mode === 'direct' || lighting.agentConnected;
+        setDot('agentDot', linkOk);
+        $('agentTxt').textContent = lighting.mode === 'direct' ? 'Direct from hub' : lighting.agentConnected ? 'Agent connected' : 'Agent not connected';
+        setDot('titanDot', linkOk && lighting.titanOk === true);
+        $('titanTxt').textContent = !linkOk ? '-' : lighting.titanOk ? `OK ${lighting.titanVersion || ''}`.trim() : lighting.titanOk === false ? 'Not reachable' : 'Checking...';
+        $('titanTxt').title = lighting.lastError || '';
+      }
+
+      const log = $('log');
+      log.innerHTML = '';
+      for (const e of [...lighting.log].reverse()) {
+        const li = document.createElement('li');
+        const time = new Date(e.at).toLocaleTimeString('en-GB', { hour12: false });
+        li.textContent = `${time}  ${e.label} -> PB ${e.userNumber}  ${e.ok ? 'OK' : `FAILED: ${e.error}`}`;
+        if (!e.ok) li.className = 'fail';
+        log.append(li);
+      }
+      if (!lighting.log.length) log.innerHTML = '<li class="muted">No cues fired yet</li>';
+    }
+  </script>
+</body>
+</html>

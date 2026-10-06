@@ -1,0 +1,29 @@
+{
+  "hubPort": 8080,
+  "key": "",
+  "debounceMs": 500,
+  "judges": [
+    { "seat": "1", "name": "Judge 1" },
+    { "seat": "2", "name": "Judge 2" },
+    { "seat": "3", "name": "Judge 3" },
+    { "seat": "4", "name": "Judge 4" }
+  ],
+  "golden": { "name": "Golden Buzzer" },
+  "cues": {
+    "x": { "1": 101, "2": 102, "3": 103, "4": 104 },
+    "golden": 110,
+    "reset": null,
+    "releaseOnReset": true
+  },
+  "lighting": {
+    "mode": "agent"
+  },
+  "titan": {
+    "host": "localhost",
+    "port": 4430,
+    "timeoutMs": 1500,
+    "fireUrl": "/titan/script/2/Playbacks/FirePlaybackAtLevel?handle_userNumber={userNumber}&level_level=1&alwaysRefire=true",
+    "releaseUrl": "/titan/script/2/Playbacks/KillPlayback?handle_userNumber={userNumber}",
+    "healthUrl": "/titan/get/System/SoftwareVersion"
+  }
+}

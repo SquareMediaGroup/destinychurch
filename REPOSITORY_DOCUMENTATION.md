@@ -4374,6 +4374,7 @@ needs at least 2 verified adults.") pass through as `rule_violation` (422). Type
 | `groups/[id]/read`, `/mute`, `/attachments` | POST | Read marker, mute, signed upload URL |
 | `groups/[id]/attachments?ids=` | GET | Fresh signed links (1 hour) for cached attachments whose links expired: only files in this group, sent since you joined, not deleted, not from someone you've blocked. Up to 60 ids |
 | `groups/[id]/media?before=&limit=` | GET | Group info → Photos and files: messages that carry a photo or file, paged like `messages` (60 a page, up to 100). Same visibility as the chat (since you joined, not deleted, not blocked senders), with fresh signed links |
+| `groups/[id]/typing` | POST | "I'm typing": broadcasts `typing { groupId, memberId, name }` on the group topic over the REST broadcast (nothing stored). Only if you can post there. The app calls it at most every 4 s while the box has text; each one shows you as typing for 6 s. 30 a minute |
 | `messages/[id]` | DELETE | Soft delete (content kept for review) |
 | `messages/[id]/report`, `/reactions` | POST (+DELETE) | Report → safeguarding bell, and an email to every Safeguarding Admin (`lib/destinyOne/safeguardingEmail.server.ts`; no message content, names or group in it) |
 | `directory` | GET | Leaders only; names + adult flag, never contact details |
@@ -7271,6 +7272,10 @@ same database as the data rather than in a separate Synapse module.
   (blocked people, chat safety, privacy notice, terms), Support (help, report a problem, send
   feedback) and Your data. Download my data saves a dated `.json` file to the cache folder and opens
   the share sheet on it (iOS); Android's share sheet can't take a file URL, so it still shares the text.
+- **Typing** (`src/state/typing.ts`): a memory-only store fed by the `typing` event (never me, never
+  someone I've blocked). Each event shows that person for 6 seconds; their message arriving clears them.
+  The chat header's subtitle swaps the member count for "Leah is typing…" / "Leah and Sam are typing…" /
+  "3 people are typing…". `typingPing` throttles the API call to once every 4 seconds per group.
 - **Photo viewer** (`viewer.tsx`, a transparent full-screen modal): tapping a photo in a chat opens it
   on black. Pinch or double-tap to zoom (the native scroll view's zoom), swipe sideways through every
   photo the chat has cached, swipe down to close, tap to hide the bars. Save to Photos asks for add-only

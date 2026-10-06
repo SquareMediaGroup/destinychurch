@@ -218,6 +218,8 @@ export function createDestinyOneClient({ baseUrl, getAccessToken, fetchImpl }: D
     /** Leaders: invite someone new by email. Staff confirm them before they join. */
     inviteToGroup: (id: string, input: { email: string; name: string; adult: boolean; note?: string }) =>
       call<{ ok: true }>("POST", `/groups/${id}/invites`, input),
+    /** "I'm typing" — call at most every few seconds while the box has text. */
+    typing: (id: string) => call<{ ok: true }>("POST", `/groups/${id}/typing`),
     mute: (id: string, until: string | null) => call<{ ok: true }>("POST", `/groups/${id}/mute`, { until }),
     markRead: (id: string, messageId: number) => call<{ ok: true }>("POST", `/groups/${id}/read`, { messageId }),
 

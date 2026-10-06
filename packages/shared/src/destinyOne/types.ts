@@ -327,6 +327,8 @@ export type D1RealtimeEvent =
   | { event: "reaction"; payload: { messageId: number; groupId: string; memberId: string; emoji: string; added: boolean } }
   | { event: "poll_vote"; payload: { messageId: number; groupId: string; votes: D1PollTally[]; totalVoters: number } }
   | { event: "members_changed"; payload: { groupId: string } }
+  /** Someone is writing a message (sent every few seconds while they type; show it briefly). */
+  | { event: "typing"; payload: { groupId: string; memberId: string; name: string } }
   /** Something was pinned or unpinned: re-fetch the group (it carries the pins). */
   | { event: "pins_changed"; payload: { groupId: string } }
   | { event: "group_state"; payload: { groupId: string; state: D1GroupState; reason: string | null } }

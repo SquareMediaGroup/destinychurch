@@ -121,6 +121,31 @@ Before external TestFlight or the App Store:
 - Once the app is live, set `D1_IOS_STORE_URL` on Vercel to its App Store link so the Update
   button stops pointing at TestFlight.
 
+## v0.8 rollout
+
+v0.8 is 15 stacked PRs (#89 to #104). Merge them **in order**: each is branched from the one before.
+Then roll out in this order:
+
+1. **Finish the encryption rollout first (PR #84).** As of 6 October 2026 its migrations are *not* on the
+   live database: `d1_message_terms` doesn't exist, 14 of 18 messages are plaintext, and
+   `d1_post_message` still has the old signature. Follow #84's order: set `D1_MSG_KEYS`,
+   `D1_MSG_KEY_CURRENT` and `D1_SEARCH_KEY` in Vercel, back them up, then apply `20261004_01`, run
+   `scripts/destiny-one/encrypt-messages.ts`, and apply `20261004_02`. Every v0.8 migration builds on these.
+2. **Apply the v0.8 migrations, `20261006_01` to `_07`, in order, before deploying v0.8.** They're
+   safe ahead of the code: new columns have defaults, and the new `d1_post_message` / `d1_edit_message`
+   arguments all have defaults, so the current API's calls still match. The API selects the new
+   message columns, so the deploy must not go out before them. Run `get_advisors` afterwards.
+3. **Deploy** (merging to `main` deploys the API on Vercel).
+4. **New builds.** v0.8 adds native modules (`expo-media-library`, `expo-sharing` with an iOS share
+   extension and the app group `group.uk.destinytees.one`, `expo-task-manager`, `expo-audio`), so make
+   a new dev build and a new TestFlight build. JS-only updates won't carry them. Consider raising
+   `min_build_ios` once the new build is out, so the share extension and voice notes are on every phone.
+5. **Privacy notice.** Publish the Read receipts paragraph from `docs/content/destiny-one-notices-draft.md`,
+   and bump the notice version in `REQUIRED_CONSENTS` so everyone sees it.
+6. **Try on a phone:** photo viewer (pinch, swipe down), edit within 15 minutes, @mention someone in a muted
+   group, pin, Seen by, typing, a link preview, Reply from the lock screen with the app closed, sharing a
+   photo in from Photos, forwarding a photo, Upcoming events, recording and playing a voice note.
+
 ## Crash reporting (Sentry)
 
 Off until it's configured, so nothing is reported from local or test builds by default. To switch it

@@ -30,6 +30,7 @@ import { useConversation, type LocalMessage } from "@/lib/useConversation";
 import { chatDrafts } from "@/state/drafts";
 import { eventPick, useEventPick } from "@/state/eventPick";
 import { jumpTo, useJumpTarget } from "@/state/jump";
+import { typingLabel, typingPing, useTyping } from "@/state/typing";
 import { pollDraft, usePollDraft } from "@/state/pollDraft";
 import { errorMessage, useGroupSummary, useSession } from "@/state/session";
 import { PHOTO_CHIP_ALPHA } from "@/theme/appearance";
@@ -183,7 +184,9 @@ export default function GroupChat() {
   const frozen = group?.state === "frozen";
   const archived = group?.state === "archived";
   const department = group?.department ?? summary?.group.department;
-  const sub = group ? [department, plural(group.members.length, "member")].filter(Boolean).join(" · ") : department ?? "";
+  // "Leah is typing…" takes the place of the member count while it's true.
+  const typingNow = typingLabel(useTyping(id));
+  const sub = typingNow ?? (group ? [department, plural(group.members.length, "member")].filter(Boolean).join(" · ") : department ?? "");
   const canDelete = (m: LocalMessage) => m.mine || group?.myRole === "admin" || !!group?.canManage;
   // Pinned messages (newest pin first). Older cached copies of the group may not have the field yet.
   const pinned = group?.pinned ?? [];
@@ -315,7 +318,14 @@ export default function GroupChat() {
       onAttachEvent={() => router.push(`/group/${id}/event-picker`)}
       onError={setToast}
       initialText={editing?.body ?? chatDrafts.get(id)}
-      onTextChange={editing ? undefined : (text) => chatDrafts.set(id, text)}
+      onTextChange={
+        editing
+          ? undefined
+          : (text) => {
+              chatDrafts.set(id, text);
+              if (text.trim()) typingPing(id);
+            }
+      }
       mentionables={mentionables}
     />
   );
@@ -424,7 +434,7 @@ export default function GroupChat() {
                 <Text numberOfLines={1} style={{ fontSize: 15, fontWeight: "600", color: t.text }}>
                   {name}
                 </Text>
-                <Text numberOfLines={1} style={{ fontSize: 12, color: t.subtle }}>
+                <Text numberOfLines={1} style={{ fontSize: 12, color: typingNow ? t.tint : t.subtle }} accessibilityLiveRegion="polite">
                   {sub}
                 </Text>
               </View>

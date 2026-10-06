@@ -17,6 +17,7 @@ import { useQuery } from "@tanstack/react-query";
 import { contentPreview, type D1CommunitySummary, type D1GroupDetail, type D1GroupSummary, type D1Me, type D1Message, type D1RealtimeEvent } from "@destiny/shared";
 import { api } from "@/lib/api";
 import { queryClient } from "@/lib/queryClient";
+import { typing } from "@/state/typing";
 
 export type LocalMessage = D1Message & { status?: "sending" | "failed"; localAttachment?: { name: string; mimeType: string; sizeBytes: number | null } };
 export interface MessagesData {
@@ -157,6 +158,7 @@ export function applyEvent(e: D1RealtimeEvent, meId: string) {
       const p = e.payload;
       if (isBlocked(p.sender.id)) return; // someone I've blocked: never shown, never unread
       const mine = p.sender.id === meId;
+      typing.stopped(p.groupId, p.sender.id);
       if (p.attachmentId) {
         // The event has no signed URL; the page fetch brings one.
         void queryClient.invalidateQueries({ queryKey: keys.messages(p.groupId) });
@@ -223,6 +225,11 @@ export function applyEvent(e: D1RealtimeEvent, meId: string) {
       if (state === "archived") invalidateCommunities(); // archived groups leave the chat list
       else updateGroupSummary(groupId, (g) => ({ ...g, state, frozenReason: state === "frozen" ? reason : null }));
       void queryClient.invalidateQueries({ queryKey: keys.group(groupId) });
+      return;
+    }
+    case "typing": {
+      const { groupId, memberId, name } = e.payload;
+      if (memberId !== meId && !isBlocked(memberId)) typing.seen(groupId, memberId, name);
       return;
     }
     case "pins_changed":

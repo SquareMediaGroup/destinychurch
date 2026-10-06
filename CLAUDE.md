@@ -5,6 +5,7 @@
 - Never push directly to `main`. Work on a feature branch (branch off `main`, e.g. `feature/short-description`).
 - Push the feature branch and open a pull request for every change.
 - PRs must be reviewed and approved before merging — do not self-merge without approval.
+- **Always start from the latest commit.** Before creating a branch or worktree, run `git fetch origin` and branch from `origin/main`, not from a local `main` that may be behind. Before committing and before pushing, fetch again and check nothing landed underneath you (`git log HEAD..origin/main`); if it did, rebase or merge `origin/main` in first. When reviewing or auditing code, read it at `origin/main`, and say so if the local checkout is behind.
 - Exception: if the user explicitly tells you to push to `main` (e.g. "push this to main"), do so directly — no feature branch or PR needed for that change. The instruction applies only to the change it was given for.
 
 ## Keeping the local checkout current (Destiny One / Expo)

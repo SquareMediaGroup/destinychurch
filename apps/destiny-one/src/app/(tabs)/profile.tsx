@@ -4,7 +4,7 @@
 // heading. Sign out and the version at the bottom.
 
 import { useState, type ReactNode } from "react";
-import { ActivityIndicator, Alert, Platform, Pressable, ScrollView, Share, Text, View } from "react-native";
+import { ActivityIndicator, Alert, Platform, Pressable, ScrollView, Share, Switch, Text, View } from "react-native";
 import { router } from "expo-router";
 import * as ImagePicker from "expo-image-picker";
 import { File, Paths } from "expo-file-system";
@@ -31,6 +31,21 @@ export default function Profile() {
   const role = top ? D1_ROLE_LABELS[top] : "Member";
 
   const [exporting, setExporting] = useState(false);
+  const [savingReceipts, setSavingReceipts] = useState(false);
+
+  async function setReadReceipts(on: boolean) {
+    if (!me) return;
+    setSavingReceipts(true);
+    setMe({ ...me, readReceipts: on }); // the switch moves at once
+    try {
+      setMe(await api.updateSettings({ readReceipts: on }));
+    } catch (err) {
+      setMe({ ...me, readReceipts: !on });
+      Alert.alert("Couldn't change read receipts", errorMessage(err));
+    } finally {
+      setSavingReceipts(false);
+    }
+  }
 
   /**
    * Saves everything we hold as a .json file and opens the share sheet on it,
@@ -178,6 +193,17 @@ export default function Profile() {
       </Section>
 
       <Section title="Privacy and safety">
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 14, paddingVertical: 10, paddingHorizontal: 16 }}>
+          <View style={{ width: 32, height: 32, borderRadius: 9, backgroundColor: t.avatar, alignItems: "center", justifyContent: "center" }}>
+            <Icon name="check" size={18} color="#FFFFFF" />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={{ fontSize: 17, color: t.text }}>Read receipts</Text>
+            <Text style={{ fontSize: 13, color: t.muted }}>Turn off and no one sees when you&apos;ve read their messages, and you don&apos;t see theirs.</Text>
+          </View>
+          <Switch value={me?.readReceipts ?? true} onValueChange={(on) => void setReadReceipts(on)} disabled={savingReceipts} trackColor={{ true: ORANGE }} accessibilityLabel="Read receipts" />
+        </View>
+        <Separator inset={62} />
         <SettingsRow icon="block" label="Blocked people" value={me?.blocked.length ? String(me.blocked.length) : undefined} onPress={() => router.push("/blocked")} />
         <Separator inset={62} />
         <SettingsRow icon="shield" label="How your chats are kept safe" onPress={() => router.push("/chat-safety")} />

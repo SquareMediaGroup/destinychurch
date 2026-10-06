@@ -80,6 +80,8 @@ export interface D1Me {
   avatarUrl: string | null;
   /** People I've blocked: their messages are hidden for me and don't notify me. Never hides anything from safeguarding. */
   blocked: { id: string; displayName: string }[];
+  /** Shares read receipts, and so sees other people's (Profile → Privacy and safety). On by default. */
+  readReceipts: boolean;
   status: D1MemberStatus;
   roles: D1LeaderRole[];
   isAdult: boolean;
@@ -275,6 +277,14 @@ export interface D1Message {
   mentions: string[];
   deleted: boolean;
   mine: boolean;
+}
+
+/** Who has read one message ("Seen by"): for its sender, and for the group's managers. */
+export interface D1ReadReceipts {
+  read: { id: string; displayName: string }[];
+  notYet: { id: string; displayName: string }[];
+  /** People who have read receipts turned off: not shown either way. */
+  hidden: number;
 }
 
 export interface D1MessagePage {

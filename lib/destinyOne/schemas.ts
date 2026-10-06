@@ -28,6 +28,10 @@ export const updateNameSchema = z.object({
   lastName: name,
 });
 
+export const settingsSchema = z.object({
+  readReceipts: z.boolean().optional(),
+});
+
 export const accessRequestSchema = z.object({
   name: z.string().trim().min(2, "Please enter your full name.").max(120),
   dateOfBirth: z

@@ -25,6 +25,7 @@ Designed, engineered, and deployed by [Square Media Group](mailto:hello@squareme
 - Giving, volunteer, and serve pages
 - `/governance` transparency page — charity and company registration, trustees/directors, charitable objects, and five-year financial and filing history, drawn live from the Charity Commission and Companies House registers
 - `/nfc` "digital back of seats" — a standalone page an NFC tag or QR code on a seat opens during a service, with admin-managed tiles
+- Event song requests — a public `/song-requests` page where guests search Spotify and request clean songs during an event, showing now playing and up next from the church's live Spotify queue, with per-device rate limiting; staff open/close requests and manage the connection from `/admin/song-requests`
 - AI Smart Search — OpenAI tool-calling chat with product cards, weather, maps/directions, and live web search
 - Click analytics — a privacy-respecting `/admin/analytics` dashboard for short-link, QR-code, and NFC-tile engagement (with VPN/Tor/datacenter/Private-Relay tagging) alongside whole-site traffic
 - Protected admin dashboard (sermons, pages/posts, redirects, banner, popup, shop, training, HR, Alpha, recovery, analytics, audit log)
@@ -155,6 +156,7 @@ app/
 ├── sermons/          # Sermon archive & individual pages
 ├── serve/            # Volunteer opportunities
 ├── shop/             # Merchandise shop (Stripe checkout)
+├── song-requests/    # Event song requests — guests request clean Spotify songs
 ├── training/         # Staff training courses
 ├── twelvetwo/        # Destiny 12:2 recovery ministry
 ├── visit/            # Plan a visit

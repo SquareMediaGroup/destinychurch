@@ -302,3 +302,23 @@ select pg_temp.expect_error(
     :lead, (select v from ids where k = 'team'), (select v from found where k = 'src')),
   'only forward messages you can see');
 select pg_temp.check(true, 'a deleted message cannot be forwarded');
+
+-- ── Voice notes (20261006_07) ───────────────────────────────────────────────
+
+insert into public.d1_attachments (id, group_id, uploader_id, storage_path, mime_type, size_bytes, duration_ms)
+  values ('20000000-0000-0000-0000-000000000001', (select v from ids where k = 'announce'), :lead::uuid,
+          (select v from ids where k = 'announce') || '/20000000-0000-0000-0000-000000000001', 'audio/mp4', 48000, 12000);
+insert into found select 'voice', public.d1_post_message(:lead::uuid, (select v from ids where k = 'announce'), null, null, '20000000-0000-0000-0000-000000000001'::uuid);
+select pg_temp.check((select v from found where k = 'voice') > 0, 'a voice note (audio/mp4) can be sent like any attachment');
+
+select pg_temp.expect_error(
+  format($$insert into public.d1_attachments (group_id, uploader_id, storage_path, mime_type) values (%L, %L, 'x/y', 'audio/mpeg')$$,
+    (select v from ids where k = 'announce'), :lead),
+  'd1_attachments_mime_type_check');
+select pg_temp.check(true, 'other audio formats are still refused');
+
+select pg_temp.expect_error(
+  format($$insert into public.d1_attachments (group_id, uploader_id, storage_path, mime_type, duration_ms) values (%L, %L, 'x/z', 'audio/mp4', 400000)$$,
+    (select v from ids where k = 'announce'), :lead),
+  'd1_attachments_duration');
+select pg_temp.check(true, 'voice notes are at most 5 minutes');

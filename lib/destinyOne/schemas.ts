@@ -5,7 +5,7 @@
 // the database reports in its own words).
 
 import { z } from "zod";
-import { ATTACHMENT_MIME_TYPES, MAX_ATTACHMENT_BYTES, MAX_FEEDBACK_LENGTH, MAX_MESSAGE_LENGTH, MAX_POLL_OPTIONS, MAX_POLL_OPTION_LENGTH, MAX_POLL_QUESTION_LENGTH, MIN_POLL_OPTIONS } from "@destiny/shared";
+import { MAX_ATTACHMENT_BYTES, MAX_FEEDBACK_LENGTH, MAX_MESSAGE_LENGTH, MAX_POLL_OPTIONS, MAX_POLL_OPTION_LENGTH, MAX_POLL_QUESTION_LENGTH, MIN_POLL_OPTIONS, UPLOAD_MIME_TYPES, VOICE_MIME_TYPE, MAX_VOICE_MS } from "@destiny/shared";
 
 const uuid = z.string().uuid("That id isn't valid.").transform((s) => s.toLowerCase());
 const name = z.string().trim().min(1, "A name is required.").max(80, "Names can be up to 80 characters.");
@@ -159,10 +159,13 @@ export const reactionSchema = z.object({
   emoji: z.string().trim().min(1).max(16),
 });
 
-export const uploadSchema = z.object({
-  mimeType: z.enum(ATTACHMENT_MIME_TYPES),
-  sizeBytes: z.number().int().positive().max(MAX_ATTACHMENT_BYTES, "Files can be up to 20 MB."),
-});
+export const uploadSchema = z
+  .object({
+    mimeType: z.enum(UPLOAD_MIME_TYPES),
+    sizeBytes: z.number().int().positive().max(MAX_ATTACHMENT_BYTES, "Files can be up to 20 MB."),
+    durationMs: z.number().int().positive().max(MAX_VOICE_MS, "Voice messages can be up to 5 minutes.").optional(),
+  })
+  .refine((v) => v.mimeType !== VOICE_MIME_TYPE || v.durationMs !== undefined, "A voice message needs its length.");
 
 export const exchangeSchema = z.object({
   code: z.string().min(20).max(4000),

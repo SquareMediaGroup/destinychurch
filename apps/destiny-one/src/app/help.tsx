@@ -45,6 +45,10 @@ const TOPICS: { title: string; questions: Question[] }[] = [
         a: "Type @ and the start of their name, then pick them from the list. They'll get a notification even if they've muted the group.",
       },
       {
+        q: "How do I send a voice message?",
+        a: "With the message box empty, tap the microphone. Tap Send when you're done, or the bin to throw it away. Voice messages can be up to 5 minutes, and they're kept like photos, so our team can listen if something is reported.",
+      },
+      {
         q: "How do I find an old message?",
         a: "Use the Search tab to search every chat, or the search button at the top of a chat to search just that one.",
       },

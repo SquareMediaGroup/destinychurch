@@ -180,6 +180,8 @@ export interface D1Attachment {
   id: string;
   mimeType: string;
   sizeBytes: number | null;
+  /** Voice notes: the length in milliseconds. */
+  durationMs?: number | null;
   /** Short-lived signed URL. Re-fetch the page to get a fresh one. */
   url: string | null;
 }

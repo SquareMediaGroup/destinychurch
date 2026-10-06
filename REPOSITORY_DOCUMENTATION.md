@@ -377,6 +377,7 @@ destinychurch/
 │       ├── 20261006_05_destiny_one_link_previews.sql # part 15 (v0.8): sealed link previews
 │       ├── 20261006_06_destiny_one_forwarding.sql # part 16 (v0.8): forwarded_from; d1_post_message gains
 │       │                                   # p_forwarded_from (refuses messages you can't see)
+│       ├── 20261006_07_destiny_one_voice_notes.sql # part 17 (v0.8): audio/mp4 attachments + duration_ms
 │       │                                   # (apply after scripts/destiny-one/encrypt-messages.ts)
 │       ├── 20260927_03_destiny_one_message_search.sql # Destiny One part 4: message search
 │       ├── 20260927_02_destiny_one_leader_invites.sql # Destiny One part 3: leader invites
@@ -2177,6 +2178,16 @@ copy to its original (shown as "forwarded from message #…" in the safeguarding
 when it was sent, and it isn't deleted. `POST messages/[id]/forward { groupIds }` (up to 5, 20 a minute,
 never polls) opens the text and seals it again for each target group, copies any photo or PDF into that
 group's own folder with its own `d1_attachments` row, then posts, broadcasts and pushes like any message.
+
+**Part 17 — `20261006_07_destiny_one_voice_notes.sql`: voice notes.** `audio/mp4` joins the
+`d1_attachments` mime check and the `d1-chat-media` bucket's allowed types, and `duration_ms` (up to 5
+minutes) is kept so the app can show a voice note's length before it downloads. A voice note is an
+ordinary attachment: kept, deleted, purged and shown in the safeguarding transcript like a photo, and
+pushed as "Sender: Voice message". In the app (`src/components/VoiceNote.tsx`) the microphone sits next to
+the camera when the box is empty. Tapping it swaps the text field for a recording bar (time, Cancel,
+Send; it stops by itself at 5 minutes), recording mono AAC at 64 kbps (`expo-audio`). Under a second is
+dropped. In a bubble, nothing loads until Play, and only one voice note plays at a time. Voice notes can't
+be searched (there's no text).
 
 **Tested by:** `scripts/test-sql.sh` (`npm run test:sql`, and the "Database rules" CI job) — applies
 Supabase stubs + every Destiny One migration (parts 1–9, plus the profile-picture, min-build and

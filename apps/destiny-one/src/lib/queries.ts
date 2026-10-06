@@ -20,7 +20,7 @@ import { api } from "@/lib/api";
 import { queryClient } from "@/lib/queryClient";
 import { typing } from "@/state/typing";
 
-export type LocalMessage = D1Message & { status?: "sending" | "failed"; localAttachment?: { name: string; mimeType: string; sizeBytes: number | null } };
+export type LocalMessage = D1Message & { status?: "sending" | "failed"; localAttachment?: { name: string; mimeType: string; sizeBytes: number | null; durationMs?: number } };
 export interface MessagesData {
   messages: LocalMessage[];
   nextBefore: number | null;

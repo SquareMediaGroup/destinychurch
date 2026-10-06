@@ -24,6 +24,13 @@ export const ATTACHMENT_MIME_TYPES = [
   "application/pdf",
 ] as const;
 
+/** Voice notes: AAC in an .m4a file. Recorded in the app, never picked from Files. */
+export const VOICE_MIME_TYPE = "audio/mp4";
+/** Longest voice note, in milliseconds (d1_attachments enforces the same). */
+export const MAX_VOICE_MS = 5 * 60 * 1000;
+/** Everything that can be uploaded as an attachment. */
+export const UPLOAD_MIME_TYPES = [...ATTACHMENT_MIME_TYPES, VOICE_MIME_TYPE] as const;
+
 /**
  * The notices someone must accept before chat unlocks. Bump a version when the
  * wording changes materially and everyone is asked again.
@@ -321,7 +328,7 @@ export function pushPreviewText({ senderName, body, attachmentMime }: PushPrevie
   if (firstLine) {
     text = firstLine.length > PUSH_PREVIEW_CHARS ? `${firstLine.slice(0, PUSH_PREVIEW_CHARS - 1).trimEnd()}\u2026` : firstLine;
   } else if (attachmentMime) {
-    text = attachmentMime.startsWith("image/") ? "Photo" : "File";
+    text = attachmentMime.startsWith("image/") ? "Photo" : attachmentMime.startsWith("audio/") ? "Voice message" : "File";
   } else {
     text = "New message";
   }

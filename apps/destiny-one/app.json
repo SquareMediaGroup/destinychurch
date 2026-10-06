@@ -54,6 +54,12 @@
         }
       ],
       [
+        "expo-audio",
+        {
+          "microphonePermission": "Destiny One uses the microphone when you record a voice message. It only listens while you're recording."
+        }
+      ],
+      [
         "expo-sharing",
         {
           "ios": {

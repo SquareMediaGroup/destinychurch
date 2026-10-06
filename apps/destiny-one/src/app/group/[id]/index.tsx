@@ -276,7 +276,7 @@ export default function GroupChat() {
     setReplyTo(null);
     list.current?.scrollToOffset({ offset: 0, animated: true });
     try {
-      await convo.send({ replyTo: reply?.id }, { file: { name: file.name, mimeType: file.mimeType, sizeBytes: file.size }, upload: () => uploadAttachment(id, file) });
+      await convo.send({ replyTo: reply?.id }, { file: { name: file.name, mimeType: file.mimeType, sizeBytes: file.size, durationMs: file.durationMs }, upload: () => uploadAttachment(id, file) });
     } catch (err) {
       setToast(errorMessage(err, "Couldn't send the file. Try again."));
     }

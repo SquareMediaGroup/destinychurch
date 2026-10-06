@@ -16,6 +16,7 @@ import { Icon } from "@/components/Icon";
 import { MessageMenu, type MessageMenuActions } from "@/components/MessageMenu";
 import { Appear, Pop, PressableScale, reduceMotion, springs } from "@/components/Motion";
 import { SwipeToReply } from "@/components/Swipe";
+import { VoiceNote } from "@/components/VoiceNote";
 import { Avatar, MemberTag, withAlpha } from "@/components/ui";
 import { clock, dayLabel, eventWhen, fileMeta, messageSummary, plural, sameDay } from "@/lib/format";
 import { haptic } from "@/lib/haptics";
@@ -400,6 +401,10 @@ function Attachment({ m, onOpen }: { m: LocalMessage; onOpen: (url: string) => v
   if (!a && !local) return null;
   const mime = a?.mimeType ?? local?.mimeType ?? "";
   const url = a?.url ?? null;
+
+  if (mime.startsWith("audio/")) {
+    return <VoiceNote url={m.status ? null : url} durationMs={a?.durationMs ?? local?.durationMs ?? null} color={k.text} track={k.track} fill={k.panel} />;
+  }
 
   if (mime.startsWith("image/") && url) {
     return (

@@ -254,7 +254,8 @@ export function createDestinyOneClient({ baseUrl, getAccessToken, fetchImpl }: D
     /** Fresh links for cached attachments whose signed URLs have expired (links last an hour). */
     attachmentUrls: (groupId: string, attachmentIds: string[]) =>
       call<{ urls: { id: string; url: string | null }[] }>("GET", `/groups/${groupId}/attachments${q({ ids: attachmentIds.join(",") })}`),
-    requestUpload: (groupId: string, input: { mimeType: string; sizeBytes: number }) =>
+    /** `durationMs` for voice notes. */
+    requestUpload: (groupId: string, input: { mimeType: string; sizeBytes: number; durationMs?: number }) =>
       call<D1UploadTicket>("POST", `/groups/${groupId}/attachments`, input),
 
     /** Search your messages (groups you're in, since you joined; never deleted ones). Pass `groupId` to search one group. */

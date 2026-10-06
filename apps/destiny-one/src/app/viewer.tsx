@@ -3,8 +3,9 @@
 // sideways through every photo in that chat, swipe down to close, tap to hide
 // or show the bars. Save adds it to Photos; Share opens the share sheet.
 //
-// The photos come from the chat's cache (src/lib/queries.ts), so the viewer
-// opens instantly and pages through whatever the chat has loaded. Links are
+// The photos come from the cache (src/lib/queries.ts): the chat's messages
+// plus anything older loaded in Photos and files. So the viewer opens
+// instantly and pages through whatever has been loaded. Links are
 // signed and short-lived, so one that has expired is swapped for a fresh one
 // as it comes on screen.
 //
@@ -20,7 +21,7 @@ import { reduceMotion, springs } from "@/components/Motion";
 import { clock, dayLabel } from "@/lib/format";
 import { haptic } from "@/lib/haptics";
 import { SaveRefusedError, downloadAttachment, isPhoto, savePhoto, shareFile, type Photo } from "@/lib/media";
-import { useMessages } from "@/lib/queries";
+import { useGroupMedia, useMessages } from "@/lib/queries";
 import { refreshAttachmentUrls } from "@/lib/useConversation";
 import { errorMessage } from "@/state/session";
 
@@ -33,8 +34,14 @@ export default function Viewer() {
   const { groupId, messageId } = useLocalSearchParams<{ groupId: string; messageId: string }>();
   const insets = useSafeAreaInsets();
   const { width, height } = useWindowDimensions();
+  // The chat's photos plus any older ones loaded in Group info → Photos and files, in order.
   const messages = useMessages(groupId).data?.messages;
-  const photos = useMemo(() => (messages ?? []).filter(isPhoto), [messages]);
+  const media = useGroupMedia(groupId, { fetch: false }).data?.messages;
+  const photos = useMemo(() => {
+    const byId = new Map<number, Photo>();
+    for (const m of [...(media ?? []), ...(messages ?? [])]) if (isPhoto(m)) byId.set(m.id, m);
+    return [...byId.values()].sort((a, b) => a.id - b.id);
+  }, [messages, media]);
   const startIndex = Math.max(0, photos.findIndex((p) => p.id === Number(messageId)));
   const [index, setIndex] = useState(startIndex);
   const [chrome, setChrome] = useState(true);

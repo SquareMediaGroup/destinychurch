@@ -8,7 +8,7 @@ import * as ImagePicker from "expo-image-picker";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { checkComposition, type D1GroupMember } from "@destiny/shared";
 import { Icon, type IconName } from "@/components/Icon";
-import { MemberTag, Avatar, Bone, Card, CardButton, ConfirmDialog, ErrorState, FloatingBack, SectionLabel, SkeletonGroup, SkeletonRows } from "@/components/ui";
+import { MemberTag, Avatar, Bone, Card, CardButton, ConfirmDialog, ErrorState, FloatingBack, SectionLabel, SettingsRow, SkeletonGroup, SkeletonRows } from "@/components/ui";
 import { api } from "@/lib/api";
 import { cleanImage } from "@/lib/cleanImage";
 import { plural } from "@/lib/format";
@@ -183,6 +183,10 @@ export default function GroupInfo() {
           <Tile icon="bell" label={group.muted ? "Muted" : "Mute"} onPress={() => router.push({ pathname: "/notifications", params: { groupId: group.id } })} />
           {group.canManage ? <Tile icon="addPerson" label="Add people" onPress={() => router.push({ pathname: "/add-people", params: { groupId: group.id } })} /> : null}
         </View>
+
+        <Card>
+          <SettingsRow icon="photo" label="Photos and files" onPress={() => router.push(`/group/${group.id}/media`)} />
+        </Card>
 
         {group.canManage && rules ? (
           <Card style={{ flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 14, paddingHorizontal: 16 }}>

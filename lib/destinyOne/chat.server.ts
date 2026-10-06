@@ -399,7 +399,7 @@ async function shape(rows: MessageRow[], callerId: string): Promise<D1Message[]>
 export async function listMessages(
   caller: Caller,
   groupId: string,
-  opts: { before?: number; limit: number },
+  opts: { before?: number; limit: number; attachmentsOnly?: boolean },
 ): Promise<D1MessagePage> {
   const [membership, blocked] = await Promise.all([requireGroupMembership(caller, groupId), blockedIds(caller.member.id)]);
 
@@ -411,6 +411,8 @@ export async function listMessages(
     .order("id", { ascending: false })
     .limit(opts.limit + 1);
   if (opts.before) query = query.lt("id", opts.before);
+  // Group info → Photos and files: only messages that still carry a file.
+  if (opts.attachmentsOnly) query = query.not("attachment_id", "is", null).is("deleted_at", null);
   // People I've blocked: their messages are hidden for me (never for safeguarding).
   // (`or` keeps "Former member" messages, whose sender_id is null: NOT IN alone drops them.)
   if (blocked.length) query = query.or(`sender_id.is.null,sender_id.not.in.(${blocked.join(",")})`);

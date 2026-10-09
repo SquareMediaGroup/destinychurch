@@ -21,11 +21,15 @@ function isAllowedTestEmail(email: string): boolean {
 // TEST-ONLY: complete an order without going through Stripe. Creates a real
 // order, marks it paid, decrements stock and sends the confirmation emails —
 // so the whole flow (success screen, admin orders, emails) can be exercised
-// without a real payment. Guarded by the server-only SHOP_TEST_BYPASS flag so
-// it is impossible to trigger in production (where the flag is unset), and
+// without a real payment. Guarded by the server-only SHOP_TEST_BYPASS flag and
 // further restricted to @squaremediagroup.org / @destinytees.uk emails.
+//
+// Never available on the production deployment, whatever the flag says: the
+// flag was found switched on there in the 2026-10-09 security audit, and the
+// email check alone is no protection — the address is typed, not verified, so
+// anyone could enter a team address and walk away with a "paid" order.
 export async function POST(request: Request) {
-  if (process.env.SHOP_TEST_BYPASS !== "1") {
+  if (process.env.VERCEL_ENV === "production" || process.env.SHOP_TEST_BYPASS !== "1") {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 

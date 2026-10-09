@@ -3549,7 +3549,7 @@ stay: they're consent and legal, not chrome.
 
 #### Report a Bug (`components/report-bug/*`)
 - `ReportBugLink.tsx` — a "Report a Bug" link rendered in `ChurchFooter.tsx`. Opens an accessible in-app modal (Escape-to-close, body-scroll lock) with a small form: **Full Name**, **Email**, and **How to reproduce**. On submit it captures the current `window.location.href` as `pageUrl` and calls the `submitBugReport` server action, showing inline loading / success / error states.
-- `actions.ts` — `submitBugReport(formData)` server action. Validates name/email/steps, then uses `GITHUB_TOKEN` to open a GitHub Issue on `SquareMediaGroup/destinychurch` via the GitHub REST API (`POST /repos/.../issues`), titled `Bug Report: <name>` with the reporter, page URL, and reproduction steps in the body. Returns `{ success, error? }`; a missing `GITHUB_TOKEN` yields a friendly server-misconfiguration error. **Requires the `GITHUB_TOKEN` env var** (see Configuration).
+- `actions.ts` — `submitBugReport(formData)` server action. Validates name/email/steps, then uses `GITHUB_TOKEN` to open a GitHub Issue on `SquareMediaGroup/destinychurch` via the GitHub REST API (`POST /repos/.../issues`), titled `Bug Report: <name>` with the reporter, page URL, and reproduction steps in the body. Returns `{ success, error? }`; a missing `GITHUB_TOKEN` yields a friendly server-misconfiguration error. Because it's public and spends our GitHub token, it's fenced with a hidden `website` honeypot (answered like a success), a 3-per-minute per-IP rate limit, and field length caps. **Requires the `GITHUB_TOKEN` env var** (see Configuration).
 
 #### About Page (`components/about/*`)
 - `AboutHero.tsx` — the About page hero band.
@@ -4428,6 +4428,12 @@ mints a magic-link token hash — and redirects with a sealed 2-minute code, **n
 redeems that at `exchange` with its verifier, then `verifyOtp({ token_hash })`. An app that hijacks the
 `destinyone://` scheme on Android gets a code it can't use.
 
+`callback` refuses (`error=use_email_sign_in`) when the email belongs to an account that holds more
+than a membership — an `admin_roles` row or an `hr_staff` link — unless that account's member record
+is already linked to the **same** ChurchSuite user id, and always when the member is linked to a
+*different* ChurchSuite user. The email on a ChurchSuite user is editable by ChurchSuite admins, so a
+matching email alone would let one sign in as a website admin (security audit 2026-10-09).
+
 #### Destiny One admin API (`/api/admin/destiny-one/*`)
 Two roles, split by path in `lib/adminRoles.ts` ROUTE_RULES (the safeguarding rule is listed first
 so the broader one can't swallow it) and re-checked in every route by `requireDestinyOneAdmin` /
@@ -4568,7 +4574,10 @@ POST /api/store/checkout/bypass
 //   and the customer enters a @destinytees.uk email, pressing "Continue to payment" on
 //   the checkout page shows a popup asking whether to "Complete test order" (skips
 //   Stripe) or "Continue to payment" (real payment) — there's no standing test button
-//   visible to regular customers. Never set either flag in production.
+//   visible to regular customers. Never set either flag in production — and since
+//   the 2026-10-09 security audit (which found it set there) the route 404s and the
+//   popup is hidden whenever VERCEL_ENV is "production", whatever the flags say.
+//   The email is typed, not verified, so the domain check alone protects nothing.
 
 // Shared order logic (pricing recompute, order creation, paid-finalisation) lives
 // in lib/checkout.server.ts and is used by checkout, the webhook, and the bypass.
@@ -4576,14 +4585,12 @@ POST /api/store/checkout/bypass
 POST /api/shop-diagnostics
 //   TEMPORARY — remove with components/shop/ShopDiagnostics.tsx once the /shop
 //   blank-page bug is identified. Receives a client snapshot captured when /shop
-//   renders blank and does two things with it:
-//     1. console.error → Vercel runtime logs. Always runs; the reliable channel.
-//     2. Files/comments a GitHub issue via the GITHUB_TOKEN already used by
-//        components/report-bug/actions.ts, deduped by reason+route (label
-//        "shop-blank-page") so a recurring bug appends to one issue.
-//   Public and unauthenticated but fenced: same-origin only (403), 32KB body cap
-//   (413), 5 reports per IP per 10 min (throttled), and localhost skips the
-//   GitHub write so dev noise never reaches the issue tracker.
+//   renders blank and writes it to the Vercel runtime logs (console.error;
+//   search for "shop-diagnostics"). It used to also file GitHub issues; that was
+//   removed in the 2026-10-09 security audit because the Origin check is
+//   forgeable and the dedupe key is caller-chosen, so anyone could open
+//   unlimited issues with our token. Fenced: same-origin only (403), 32KB body
+//   cap (413), 5 reports per IP per 10 min (throttled).
 
 // ADMIN (gated by middleware, site_editor role)
 GET|POST            /api/admin/store/products

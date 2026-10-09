@@ -1,22 +1,27 @@
 // A10 Setup — shown once to every member (AccessGuard sends them here the first
-// time they reach the app), in two steps: 1 Appearance (System, Light, Dark,
-// True dark), 2 Read receipts. Both can be changed later in Profile. The theme
-// applies live as they choose; read receipts are saved on the last step.
-// Skipping keeps the defaults (System, receipts on).
+// time they reach the app), in three steps: 1 Appearance (System, Light, Dark,
+// True dark), 2 Read receipts, 3 Notifications. All can be changed later in
+// Profile. The theme applies live as they choose; read receipts are saved at
+// the end. Skipping keeps the defaults (System, receipts on, notifications
+// asked later). Step 3 counts as the notifications ask, so the first-group
+// prompt (NotificationPrompt) doesn't repeat it.
 
 import { useState } from "react";
+import * as SecureStore from "expo-secure-store";
 import { Pressable, Text, View } from "react-native";
 import { router } from "expo-router";
 import { AuthScreen } from "@/components/AuthScreen";
 import { Icon } from "@/components/Icon";
 import { Card, FormError, LargeTitle, Lead, PrimaryButton, SectionLabel, TextButton } from "@/components/ui";
 import { ModeSwatch } from "@/app/appearance";
+import { ASKED_KEY } from "@/components/NotificationPrompt";
 import { api } from "@/lib/api";
 import { haptic } from "@/lib/haptics";
+import { registerForPush } from "@/lib/push";
 import { appearance, useAppearance, type ThemeMode } from "@/state/appearance";
 import { markSetupSeen } from "@/state/setupSeen";
 import { errorMessage, useSession } from "@/state/session";
-import { useTheme } from "@/theme/tokens";
+import { INK, ORANGE, useTheme } from "@/theme/tokens";
 
 const MODES: { key: ThemeMode; label: string }[] = [
   { key: "system", label: "System" },
@@ -38,12 +43,19 @@ const RECEIPT_CHOICES: { on: boolean; title: string; body: string }[] = [
   },
 ];
 
+const TITLES = ["Choose your look", "Read receipts", "Notifications"] as const;
+const LEADS = [
+  "Pick how Destiny One looks. You can change it any time in Profile.",
+  "Choose whether people can see when you've read their messages. You can change it any time in Profile.",
+  "Know when your groups post. You can mute any group, or turn this off, at any time.",
+] as const;
+
 export default function Setup() {
   const t = useTheme();
   const { me, setMe } = useSession();
   const current = useAppearance();
   const [receipts, setReceipts] = useState(true);
-  const [step, setStep] = useState<0 | 1>(0);
+  const [step, setStep] = useState<0 | 1 | 2>(0);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -53,12 +65,15 @@ export default function Setup() {
     router.replace("/chats");
   }
 
-  async function done() {
+  async function done(turnOnNotifications: boolean) {
     setBusy(true);
     setError(null);
     try {
       // Receipts default to on, so only a change needs saving.
       if (!receipts) setMe(await api.updateSettings({ readReceipts: false }));
+      // Asked here, so the first-group prompt doesn't ask again. A refusal is the person's answer, not an error.
+      if (turnOnNotifications) await registerForPush().catch(() => undefined);
+      await SecureStore.setItemAsync(ASKED_KEY, "1").catch(() => undefined);
       await finish();
     } catch (err) {
       setError(errorMessage(err));
@@ -71,18 +86,20 @@ export default function Setup() {
       footer={
         <>
           <FormError message={error} />
-          {step === 0 ? <PrimaryButton label="Next" onPress={() => setStep(1)} /> : <PrimaryButton label="Done" onPress={done} busy={busy} />}
+          {step < 2 ? <PrimaryButton label="Next" onPress={() => setStep(step === 0 ? 1 : 2)} /> : <PrimaryButton label="Turn on notifications" onPress={() => void done(true)} busy={busy} />}
           {step === 0 ? (
             <TextButton label="Skip for now" onPress={() => void finish()} style={{ alignSelf: "center", paddingVertical: 8 }} />
-          ) : (
+          ) : step === 1 ? (
             <TextButton label="Back" onPress={() => setStep(0)} style={{ alignSelf: "center", paddingVertical: 8 }} />
+          ) : (
+            <TextButton label="Not now" onPress={() => void done(false)} style={{ alignSelf: "center", paddingVertical: 8 }} />
           )}
         </>
       }
     >
       <View style={{ paddingTop: 30, paddingHorizontal: 4, gap: 8 }}>
-        <View accessible accessibilityLabel={`Step ${step + 1} of 2`} style={{ flexDirection: "row", gap: 6, marginBottom: 10 }}>
-          {[0, 1].map((i) => (
+        <View accessible accessibilityLabel={`Step ${step + 1} of 3`} style={{ flexDirection: "row", gap: 6, marginBottom: 10 }}>
+          {[0, 1, 2].map((i) => (
             <View
               key={i}
               style={{
@@ -94,10 +111,8 @@ export default function Setup() {
             />
           ))}
         </View>
-        <LargeTitle>{step === 0 ? "Choose your look" : "Read receipts"}</LargeTitle>
-        <Lead>
-          {step === 0 ? "Pick how Destiny One looks. You can change it any time in Profile." : "Choose whether people can see when you've read their messages. You can change it any time in Profile."}
-        </Lead>
+        <LargeTitle>{TITLES[step]}</LargeTitle>
+        <Lead>{LEADS[step]}</Lead>
       </View>
 
       {step === 0 ? (
@@ -153,7 +168,7 @@ export default function Setup() {
             })}
           </View>
         </View>
-      ) : (
+      ) : step === 1 ? (
         <View style={{ marginTop: 28, gap: 8 }}>
           <SectionLabel>Read receipts</SectionLabel>
           <Card>
@@ -201,6 +216,12 @@ export default function Setup() {
               );
             })}
           </Card>
+        </View>
+      ) : (
+        <View style={{ marginTop: 40, alignItems: "center" }}>
+          <View style={{ width: 88, height: 88, borderRadius: 26, backgroundColor: ORANGE, alignItems: "center", justifyContent: "center" }}>
+            <Icon name="bell" size={42} color={INK} strokeWidth={1.9} />
+          </View>
         </View>
       )}
     </AuthScreen>

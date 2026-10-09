@@ -1,25 +1,31 @@
 // The message composer: attach (image or PDF, 20 MB) from files or the photo
-// library, take a photo with the camera (every image is re-encoded first so no
+// library, take a photo with the in-app camera (every image is re-encoded first so no
 // location or other hidden details leave the phone: src/lib/cleanImage.ts), a
 // glass text field, the reply bar,
 // and the send button that swaps in for the attach shortcut once there's text.
 
-import { forwardRef, useState } from "react";
-import { Pressable, Text, TextInput, View } from "react-native";
+import { forwardRef, useRef, useState } from "react";
+import { Animated, PanResponder, Pressable, Text, TextInput, View } from "react-native";
 import * as DocumentPicker from "expo-document-picker";
 import * as ImagePicker from "expo-image-picker";
 import { ATTACHMENT_MIME_TYPES, MAX_ATTACHMENT_BYTES, MAX_MESSAGE_LENGTH, mentionQuery, mentionSuggestions, type Mentionable } from "@destiny/shared";
 import { AttachSheet } from "@/components/AttachSheet";
 import { GlassSurface } from "@/components/GlassSurface";
 import { Icon } from "@/components/Icon";
+import { takePhoto as openCamera } from "@/lib/camera";
 import { Appear, PressableScale } from "@/components/Motion";
 import { SendAsMenu } from "@/components/SendAsMenu";
-import { VoiceRecorder } from "@/components/VoiceNote";
+import { VoiceRecorder, type VoiceRecorderHandle } from "@/components/VoiceNote";
 import { Avatar } from "@/components/ui";
 import type { Account } from "@/lib/accounts";
 import { cleanImage } from "@/lib/cleanImage";
 import { haptic } from "@/lib/haptics";
 import { ORANGE, useTheme } from "@/theme/tokens";
+
+/** How far (points) the finger slides left to cancel / up to lock, and what counts as a tap. */
+const CANCEL_SLIDE = 110;
+const LOCK_SLIDE = 70;
+const TAP_MS = 400;
 
 export interface PickedFile {
   uri: string;
@@ -65,7 +71,50 @@ export const Composer = forwardRef<TextInput, Props>(function Composer({ replyin
     onTextChange?.(text);
   };
   const [sheetOpen, setSheetOpen] = useState(false);
-  const [recording, setRecording] = useState(false);
+  // Voice recording: "held" while the finger is down on the microphone,
+  // "locked" once slid up (hands-free).
+  const [recording, setRecording] = useState<null | "held" | "locked">(null);
+  const recorder = useRef<VoiceRecorderHandle>(null);
+  const slideX = useRef(new Animated.Value(0)).current;
+  const hold = useRef({ at: 0, over: false });
+  const mic = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onPanResponderTerminationRequest: () => false,
+      onPanResponderGrant: () => {
+        hold.current = { at: Date.now(), over: false };
+        slideX.setValue(0);
+        setRecording("held");
+      },
+      onPanResponderMove: (_e, g) => {
+        if (hold.current.over) return;
+        slideX.setValue(Math.min(0, g.dx));
+        if (g.dx < -CANCEL_SLIDE) {
+          // Slid away: cancel without waiting for the finger to lift.
+          hold.current.over = true;
+          void recorder.current?.finish(false);
+        } else if (g.dy < -LOCK_SLIDE) {
+          hold.current.over = true;
+          haptic.tick();
+          setRecording("locked");
+        }
+      },
+      onPanResponderRelease: () => {
+        if (hold.current.over) return;
+        hold.current.over = true;
+        if (Date.now() - hold.current.at < TAP_MS) onErrorRef.current("Hold to record, release to send.");
+        void recorder.current?.finish(true);
+      },
+      // The system took the touch (a permission alert, a call): stop quietly.
+      onPanResponderTerminate: () => {
+        if (hold.current.over) return;
+        hold.current.over = true;
+        void recorder.current?.finish(false);
+      },
+    }),
+  ).current;
+  const onErrorRef = useRef(onError);
+  onErrorRef.current = onError;
   // Where the cursor is, to spot an "@name" being typed.
   const [cursor, setCursor] = useState(draft.length);
   const typing = mentionables?.length ? mentionQuery(draft, cursor) : null;
@@ -127,14 +176,10 @@ export const Composer = forwardRef<TextInput, Props>(function Composer({ replyin
   }
 
   async function takePhoto() {
-    const perm = await ImagePicker.requestCameraPermissionsAsync();
-    if (!perm.granted) {
-      onError("Allow camera access to take a photo.");
-      return;
-    }
-    const res = await ImagePicker.launchCameraAsync({ quality: 1 });
-    if (res.canceled || !res.assets[0]) return;
-    await imagePickerAsset(res.assets[0], "Photo.jpg");
+    // The in-app camera (src/app/camera.tsx) asks for permission itself.
+    const uri = await openCamera();
+    if (!uri) return;
+    await acceptAsset({ uri, name: "Photo.jpg", mimeType: "image/jpeg", size: null });
   }
 
   /** Holding Send: offer the other signed-in accounts that can send this message. */
@@ -225,6 +270,14 @@ export const Composer = forwardRef<TextInput, Props>(function Composer({ replyin
       ) : null}
 
       <View style={{ flexDirection: "row", alignItems: "flex-end", gap: 8 }}>
+        {recording === "held" ? (
+          <Appear key="lock-hint" from={{ y: 12, scale: 0.9 }} style={{ position: "absolute", right: 6, bottom: 64 }}>
+            <GlassSurface style={{ width: 40, height: 72, borderRadius: 20, alignItems: "center", justifyContent: "center", gap: 6 }}>
+              <Icon name="lock" size={17} color={t.text} strokeWidth={2} />
+              <Icon name="updown" size={15} color={t.subtle} strokeWidth={2} />
+            </GlassSurface>
+          </Appear>
+        ) : null}
         <PressableScale
           onPress={() => {
             haptic.selection();
@@ -244,16 +297,20 @@ export const Composer = forwardRef<TextInput, Props>(function Composer({ replyin
           )}
         </PressableScale>
 
-        {recording ? (
-          <VoiceRecorder
-            onDone={(voice) => {
-              setRecording(false);
-              if (voice) onAttach(voice);
-            }}
-          />
-        ) : (
         <View style={{ flex: 1 }}>
           <GlassSurface style={{ minHeight: 41, borderRadius: 21.5, flexDirection: "row", alignItems: "flex-end", gap: 6, paddingLeft: 16, paddingRight: 4, paddingVertical: 4 }}>
+            {recording ? (
+              <VoiceRecorder
+                controlRef={recorder}
+                locked={recording === "locked"}
+                slideX={slideX}
+                onDone={(voice) => {
+                  setRecording(null);
+                  slideX.setValue(0);
+                  if (voice) onAttach(voice);
+                }}
+              />
+            ) : null}
             <TextInput
               ref={ref}
               value={draft}
@@ -266,9 +323,9 @@ export const Composer = forwardRef<TextInput, Props>(function Composer({ replyin
               maxLength={MAX_MESSAGE_LENGTH}
               accessibilityLabel="Message"
               maxFontSizeMultiplier={1.6}
-              style={{ flex: 1, minHeight: 33, maxHeight: 140, fontSize: 17, color: t.text, paddingTop: 7, paddingBottom: 7 }}
+              style={recording ? { display: "none" } : { flex: 1, minHeight: 33, maxHeight: 140, fontSize: 17, color: t.text, paddingTop: 7, paddingBottom: 7 }}
             />
-            {/* Send and camera trade places with a pop as the draft fills or empties. */}
+            {/* Send and the microphone trade places with a pop as the draft fills or empties. */}
             {editing ? (
               <Appear key="save" from={{ scale: 0.3 }}>
                 <PressableScale onPress={send} disabled={!canSend} hitSlop={6} scaleTo={0.82} accessibilityRole="button" accessibilityLabel="Save edit" accessibilityState={{ disabled: !canSend }} style={{ width: 33, height: 33, borderRadius: 17, backgroundColor: canSend ? t.send : t.fill, alignItems: "center", justifyContent: "center" }}>
@@ -281,28 +338,34 @@ export const Composer = forwardRef<TextInput, Props>(function Composer({ replyin
                   <Icon name="send" size={17} color={t.onSend} strokeWidth={2.8} />
                 </PressableScale>
               </Appear>
-            ) : (
-              <Appear key="camera" from={{ scale: 0.5 }} style={{ flexDirection: "row" }}>
-                <PressableScale onPress={() => void takePhoto()} scaleTo={0.85} accessibilityRole="button" accessibilityLabel="Take a photo" style={{ width: 33, height: 33, alignItems: "center", justifyContent: "center" }}>
-                  <Icon name="camera" size={21} color={t.subtle} strokeWidth={1.9} />
+            ) : recording === "locked" ? (
+              <Appear key="locked-send" from={{ scale: 0.3 }}>
+                <PressableScale onPress={() => void recorder.current?.finish(true)} hitSlop={6} scaleTo={0.82} accessibilityRole="button" accessibilityLabel="Send voice message" style={{ width: 33, height: 33, borderRadius: 17, backgroundColor: t.send, alignItems: "center", justifyContent: "center" }}>
+                  <Icon name="send" size={17} color={t.onSend} strokeWidth={2.8} />
                 </PressableScale>
-                <PressableScale
-                  onPress={() => {
-                    haptic.selection();
-                    setRecording(true);
-                  }}
-                  scaleTo={0.85}
+              </Appear>
+            ) : (
+              <Appear key="mic" from={{ scale: 0.5 }}>
+                {/* Hold to record. The same view keeps the touch for the whole hold, so it stays put while the text field swaps to the recorder. */}
+                <View
+                  {...mic.panHandlers}
+                  accessible
                   accessibilityRole="button"
                   accessibilityLabel="Record a voice message"
-                  style={{ width: 33, height: 33, alignItems: "center", justifyContent: "center" }}
+                  accessibilityHint="Double tap to start recording"
+                  accessibilityActions={[{ name: "activate" }]}
+                  onAccessibilityAction={() => {
+                    hold.current = { at: Date.now(), over: true };
+                    setRecording("locked");
+                  }}
+                  style={{ width: 33, height: 33, borderRadius: 17, alignItems: "center", justifyContent: "center", backgroundColor: recording ? ORANGE : "transparent", transform: [{ scale: recording ? 1.7 : 1 }] }}
                 >
-                  <Icon name="mic" size={21} color={t.subtle} strokeWidth={1.9} />
-                </PressableScale>
+                  <Icon name="mic" size={21} color={recording ? "#FFFFFF" : t.subtle} strokeWidth={1.9} />
+                </View>
               </Appear>
             )}
           </GlassSurface>
         </View>
-        )}
       </View>
 
       {sendAsMenu ? <SendAsMenu options={sendAsMenu.options} checking={sendAsMenu.checking} onPick={(a) => void pickSendAs(a)} onClose={() => setSendAsMenu(null)} /> : null}

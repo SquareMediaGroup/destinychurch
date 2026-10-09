@@ -2184,8 +2184,11 @@ group's own folder with its own `d1_attachments` row, then posts, broadcasts and
 minutes) is kept so the app can show a voice note's length before it downloads. A voice note is an
 ordinary attachment: kept, deleted, purged and shown in the safeguarding transcript like a photo, and
 pushed as "Sender: Voice message". In the app (`src/components/VoiceNote.tsx`) the microphone sits next to
-the camera when the box is empty. Tapping it swaps the text field for a recording bar (time, Cancel,
-Send; it stops by itself at 5 minutes), recording mono AAC at 64 kbps (`expo-audio`). Under a second is
+the text field when the box is empty. It works like WhatsApp: hold to record and let go to send, slide left to
+cancel, slide up to lock it hands-free (then the bin and Send appear); a quick tap just shows a hint. The gesture
+is a `PanResponder` in `Composer.tsx`; the field shows a recording readout (time, "Slide to cancel") and it stops
+by itself at 5 minutes, recording mono AAC at 64 kbps (`expo-audio`). The camera is no longer in the text field;
+it is under the + sheet. Under a second is
 dropped. In a bubble, nothing loads until Play, and only one voice note plays at a time. Voice notes can't
 be searched (there's no text).
 
@@ -7448,7 +7451,7 @@ same database as the data rather than in a separate Synapse module.
   gradient in a clipped frame, since RN has no conic-gradient — plus buttons, fields, cards,
   dialogs, and pulsing loading skeletons — `SkeletonGroup`, `Bone`, `SkeletonRows` — used by
   Chats, Community, Group info and Edit group while data loads), `Icon.tsx` (the design's line icons via `react-native-svg`), `MessageBubble.tsx`,
-  `MessageMenu.tsx` (press-and-hold menu drawn in React Native, WhatsApp-style: the message lifts over a dimmed chat, a bar of six quick reactions plus "+" for a full emoji grid sits above it, and a card of Reply / Copy / Report / Block / Delete sits below, both solid sheets in the app's colours rather than Liquid Glass; placed by the pure `lib/menuLayout.ts` so it always fits on screen, tested in `tests/unit/destiny-one-message-menu.spec.ts`. It replaced the SwiftUI context menu, whose hosted bubbles reported the wrong height and made messages and reactions overlap), `Composer.tsx`, `NotificationPrompt.tsx` (A10, asked once
+  `MessageMenu.tsx` (press-and-hold menu drawn in React Native, WhatsApp-style: the message lifts over a dimmed chat, a bar of six quick reactions plus "+" for a full emoji grid sits above it, and a card of Reply / Copy / Report / Block / Delete sits below, both solid sheets in the app's colours rather than Liquid Glass; placed by the pure `lib/menuLayout.ts` so it always fits on screen, tested in `tests/unit/destiny-one-message-menu.spec.ts`. It replaced the SwiftUI context menu, whose hosted bubbles reported the wrong height and made messages and reactions overlap), `Composer.tsx` (its camera button opens the in-app camera, `app/camera.tsx` built on `expo-camera`, with the photo handed back through `lib/camera.ts`; it replaced the system camera screen, which closed and left the app unusable; needs a native build), `NotificationPrompt.tsx` (A10, asked once
   on first group open), `SafetyNotice.tsx`.
 - **Search** (`search` route): groups from the cached list, plus messages via `GET /search/messages`
   (`d1_search_messages`: groups you're in, since you joined, never deleted; since part 10 a blind

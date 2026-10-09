@@ -84,7 +84,7 @@ function ChatRow({ group: g }: { group: D1GroupSummary }) {
 export default function Chats() {
   const t = useTheme();
   const insets = useSafeAreaInsets();
-  const { communities, communitiesError, refreshCommunities, isLeader } = useSession();
+  const { communities, communitiesError, refreshCommunities, isLeader, assistant } = useSession();
   const [filter, setFilter] = useState<Filter>("all");
   const [refreshing, setRefreshing] = useState(false);
 
@@ -118,6 +118,16 @@ export default function Chats() {
       </View>
       <LargeTitle style={{ paddingHorizontal: 20, paddingTop: 2, paddingBottom: 8 }}>Chats</LargeTitle>
       {communitiesError && communities ? <OfflineBanner /> : null}
+      {assistant && filter !== "announcements" && (filter !== "unread" || assistant.unreadCount > 0) ? (
+        // DestinyAI: the only one-to-one chat, pinned above the communities.
+        <View style={{ paddingTop: 10, paddingHorizontal: 16, paddingBottom: 4 }}>
+          <Card shadow>
+            <SwipeActions actions={rowActions(assistant)} background={t.card}>
+              <ChatRow group={assistant} />
+            </SwipeActions>
+          </Card>
+        </View>
+      ) : null}
       {communities && communities.length > 0 ? (
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingTop: 6, paddingHorizontal: 16, paddingBottom: 4, gap: 8 }}>
           {FILTERS.map((f) => {

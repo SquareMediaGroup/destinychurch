@@ -37,6 +37,7 @@ export const GET = oneRoute(async (request) => {
     .from("d1_members")
     .select("id, display_name, adult_on")
     .eq("status", "active")
+    .eq("is_assistant", false)
     .order("display_name")
     .limit(25);
   if (q) query = query.ilike("display_name", `%${escapeLike(q)}%`);

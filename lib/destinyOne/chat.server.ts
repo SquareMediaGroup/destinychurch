@@ -197,6 +197,13 @@ export async function getCommunity(caller: Caller, communityId: string): Promise
 
 // ── Groups ──────────────────────────────────────────────────────────────────
 
+/** One group as a chat-list row (used for the chat with DestinyAI, which is in no community). */
+export async function getGroupSummary(caller: Caller, groupId: string): Promise<D1GroupSummary> {
+  const [row] = await overview(caller.member.id, groupId);
+  if (!row) throw new OneError("not_found", "That group doesn't exist, or you're not in it.");
+  return toSummary(row);
+}
+
 export async function getGroup(caller: Caller, groupId: string): Promise<D1GroupDetail> {
   const [row] = await overview(caller.member.id, groupId);
   if (!row) throw new OneError("not_found", "That group doesn't exist, or you're not in it.");

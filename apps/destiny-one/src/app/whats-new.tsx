@@ -1,40 +1,13 @@
 // What's new, from Profile → Support (and tapping the version at the bottom
-// of Profile). The latest release first. Add a release at the top of
-// RELEASES when app.json's version goes up.
+// of Profile). Every release in RELEASES (src/lib/releases.ts), latest first.
 
 import { ScrollView, Text, View } from "react-native";
 import Constants from "expo-constants";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Icon, type IconName } from "@/components/Icon";
+import { Icon } from "@/components/Icon";
 import { Card, FloatingBack, LargeTitle, Lead, SectionLabel, Separator } from "@/components/ui";
+import { RELEASES } from "@/lib/releases";
 import { useTheme } from "@/theme/tokens";
-
-interface Feature {
-  icon: IconName;
-  title: string;
-  body: string;
-}
-
-const RELEASES: { version: string; features: Feature[] }[] = [
-  {
-    version: "0.8",
-    features: [
-      { icon: "pencil", title: "Edit messages", body: "Fix a typo for 15 minutes after sending. Press and hold your message, then Edit." },
-      { icon: "people", title: "@mentions", body: "Type @ to mention someone. They'll hear about it even if they've muted the group." },
-      { icon: "pin", title: "Pinned messages", body: "Group admins can pin up to 3 messages to the top of a chat." },
-      { icon: "check", title: "Seen by", body: "See who has read your messages. You can turn read receipts off in Profile." },
-      { icon: "photo", title: "Photos, full screen", body: "Pinch to zoom, swipe between photos, and save them to your library." },
-      { icon: "doc", title: "Photos and files", body: "Everything shared in a chat, in Group info." },
-      { icon: "mic", title: "Voice messages", body: "Tap the microphone to record up to 5 minutes." },
-      { icon: "forward", title: "Forward", body: "Send a message on to another chat you're in." },
-      { icon: "share", title: "Share into Destiny One", body: "Share photos, PDFs and links from other apps straight into a chat." },
-      { icon: "bell", title: "Reply from notifications", body: "Reply or mark as read without opening the app." },
-      { icon: "calendar", title: "Upcoming events", body: "See what's on in Search, and share an event to a chat." },
-      { icon: "chats", title: "Typing and link previews", body: "See when someone's typing, and a preview of links people share." },
-      { icon: "help", title: "Help, and a tidier Profile", body: "Answers to common questions, and Profile grouped into sections." },
-    ],
-  },
-];
 
 export default function WhatsNew() {
   const t = useTheme();

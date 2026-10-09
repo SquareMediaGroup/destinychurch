@@ -9,6 +9,7 @@ import { liquidGlass } from "@/components/GlassSurface";
 import { Platform, StyleSheet, View } from "react-native";
 import { Stack, router, useSegments } from "expo-router";
 import * as Notifications from "expo-notifications";
+import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client";
@@ -25,6 +26,10 @@ import { useShakeToReportListener } from "@/lib/useShakeToReport";
 import { notificationTap, usePendingNotificationGroup } from "@/state/notificationTap";
 import { AccessGuard, SessionProvider, isInApp, useSession } from "@/state/session";
 import { useTheme } from "@/theme/tokens";
+
+// Keep the launch splash up until the saved theme is applied, so a member who
+// chose Dark never sees a light frame first.
+void SplashScreen.preventAutoHideAsync().catch(() => undefined);
 
 /**
  * Tapping a "New message" notification opens that group. The tap is only
@@ -210,7 +215,11 @@ function RootLayout() {
   useNotificationTaps();
   // The person's own send colour and wallpaper, from this phone.
   useEffect(() => {
-    void appearance.load();
+    // Hide even if loading fails; the splash must never stick.
+    void appearance
+      .load()
+      .catch(() => undefined)
+      .finally(() => void SplashScreen.hideAsync().catch(() => undefined));
   }, []);
   return (
     <SafeAreaProvider>

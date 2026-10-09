@@ -36,6 +36,7 @@ import { startHub, type Hub } from "@/lib/realtime";
 import { typing } from "@/state/typing";
 import { setReportingMember } from "@/lib/sentry";
 import { chatDrafts } from "@/state/drafts";
+import { hasSeenSetup } from "@/state/setupSeen";
 
 type Href = "/welcome" | "/request" | "/waiting" | "/notices" | "/chats";
 
@@ -401,6 +402,19 @@ export function AccessGuard() {
     if (!ready || !inApp || !target || target === "/chats") return;
     router.replace(target);
   }, [ready, inApp, target]);
+
+  // Everyone sees Setup once, existing members included, the first time they reach the app.
+  const memberId = me?.id;
+  useEffect(() => {
+    if (!ready || !inApp || target !== "/chats" || !memberId) return;
+    let live = true;
+    void hasSeenSetup(memberId).then((seen) => {
+      if (live && !seen) router.replace("/setup");
+    });
+    return () => {
+      live = false;
+    };
+  }, [ready, inApp, target, memberId]);
 
   return null;
 }

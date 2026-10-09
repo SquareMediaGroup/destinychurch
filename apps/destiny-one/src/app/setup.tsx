@@ -1,4 +1,4 @@
-// A10 Setup — shown once, straight after a new member accepts the notices:
+// A10 Setup — shown once to every member (AccessGuard sends them here the first time they reach the app):
 // pick a look (System, Light, Dark, True dark) and whether read receipts are
 // on. Both can be changed later in Profile. The theme applies live as they
 // choose; read receipts are saved when they continue. Skipping keeps the
@@ -14,6 +14,7 @@ import { ModeSwatch } from "@/app/appearance";
 import { api } from "@/lib/api";
 import { haptic } from "@/lib/haptics";
 import { appearance, useAppearance, type ThemeMode } from "@/state/appearance";
+import { markSetupSeen } from "@/state/setupSeen";
 import { errorMessage, useSession } from "@/state/session";
 import { useTheme } from "@/theme/tokens";
 
@@ -31,11 +32,17 @@ const RECEIPT_CHOICES: { on: boolean; title: string; body: string }[] = [
 
 export default function Setup() {
   const t = useTheme();
-  const { setMe } = useSession();
+  const { me, setMe } = useSession();
   const current = useAppearance();
   const [receipts, setReceipts] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  /** Remember it's been seen (so it never comes back), then on to the chats. */
+  async function finish() {
+    if (me) await markSetupSeen(me.id);
+    router.replace("/chats");
+  }
 
   async function done() {
     setBusy(true);
@@ -43,7 +50,7 @@ export default function Setup() {
     try {
       // Receipts default to on, so only a change needs saving.
       if (!receipts) setMe(await api.updateSettings({ readReceipts: false }));
-      router.replace("/chats");
+      await finish();
     } catch (err) {
       setError(errorMessage(err));
       setBusy(false);
@@ -56,7 +63,7 @@ export default function Setup() {
         <>
           <FormError message={error} />
           <PrimaryButton label="Continue" onPress={done} busy={busy} />
-          <TextButton label="Skip for now" onPress={() => router.replace("/chats")} style={{ alignSelf: "center", paddingVertical: 8 }} />
+          <TextButton label="Skip for now" onPress={() => void finish()} style={{ alignSelf: "center", paddingVertical: 8 }} />
         </>
       }
     >

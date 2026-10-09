@@ -7,6 +7,7 @@
 //   ["messages", groupId]  { messages, nextBefore }, oldest first
 //   ["media", groupId]     Group info → Photos and files: the same shape, only messages with a file
 //   ["appConfig"]          minimum builds + maintenance switch (src/lib/appGate.ts)
+//   ["events"]             upcoming church events (the one entry that goes stale on a timer: the calendar changes)
 //
 // applyEvent() is the "database told us something changed" path. Where the
 // event carries enough, it patches the cache directly (no request at all);
@@ -17,8 +18,9 @@ import { useQuery } from "@tanstack/react-query";
 import { contentPreview, type D1CommunitySummary, type D1GroupDetail, type D1GroupSummary, type D1Me, type D1Message, type D1RealtimeEvent } from "@destiny/shared";
 import { api } from "@/lib/api";
 import { queryClient } from "@/lib/queryClient";
+import { typing } from "@/state/typing";
 
-export type LocalMessage = D1Message & { status?: "sending" | "failed"; localAttachment?: { name: string; mimeType: string; sizeBytes: number | null } };
+export type LocalMessage = D1Message & { status?: "sending" | "failed"; localAttachment?: { name: string; mimeType: string; sizeBytes: number | null; durationMs?: number } };
 export interface MessagesData {
   messages: LocalMessage[];
   nextBefore: number | null;
@@ -32,6 +34,7 @@ export const keys = {
   messages: (groupId: string) => ["messages", groupId] as const,
   media: (groupId: string) => ["media", groupId] as const,
   appConfig: ["appConfig"] as const,
+  events: ["events"] as const,
 };
 
 export const PAGE = 40;
@@ -157,13 +160,14 @@ export function applyEvent(e: D1RealtimeEvent, meId: string) {
       const p = e.payload;
       if (isBlocked(p.sender.id)) return; // someone I've blocked: never shown, never unread
       const mine = p.sender.id === meId;
+      typing.stopped(p.groupId, p.sender.id);
       if (p.attachmentId) {
         // The event has no signed URL; the page fetch brings one.
         void queryClient.invalidateQueries({ queryKey: keys.messages(p.groupId) });
         void queryClient.invalidateQueries({ queryKey: keys.media(p.groupId) });
       } else {
         updateMessages(p.groupId, (list) =>
-          upsert(list, { id: p.id, groupId: p.groupId, sender: p.sender, body: p.body, replyTo: p.replyTo, attachment: null, content: p.content ?? null, reactions: [], createdAt: p.createdAt, editedAt: null, deleted: false, mine }),
+          upsert(list, { id: p.id, groupId: p.groupId, sender: p.sender, body: p.body, replyTo: p.replyTo, attachment: null, content: p.content ?? null, reactions: [], createdAt: p.createdAt, editedAt: null, mentions: p.mentions ?? [], linkPreview: null, forwarded: !!p.forwarded, deleted: false, mine }),
         );
       }
       updateGroupSummary(p.groupId, (g) => {
@@ -179,13 +183,17 @@ export function applyEvent(e: D1RealtimeEvent, meId: string) {
     case "message_deleted": {
       const { id, groupId } = e.payload;
       updateMessages(groupId, (list) => list.map((m) => (m.id === id ? { ...m, deleted: true, body: null, attachment: null, content: null, reactions: [] } : m)));
+      queryClient.setQueryData<D1GroupDetail>(keys.group(groupId), (g) => (g?.pinned?.some((p) => p.id === id) ? { ...g, pinned: g.pinned.filter((p) => p.id !== id) } : g));
       queryClient.setQueryData<MessagesData>(keys.media(groupId), (old) => (old ? { ...old, messages: old.messages.filter((m) => m.id !== id) } : old));
       updateGroupSummary(groupId, (g) => (g.lastMessage?.id === id ? { ...g, lastMessage: { ...g.lastMessage, deleted: true, preview: null } } : g));
       return;
     }
     case "message_edited": {
-      const { id, groupId, body, editedAt } = e.payload;
-      updateMessages(groupId, (list) => list.map((m) => (m.id === id ? { ...m, body, editedAt } : m)));
+      const { id, groupId, body, editedAt, mentions } = e.payload;
+      updateMessages(groupId, (list) => list.map((m) => (m.id === id ? { ...m, body, editedAt, mentions: mentions ?? m.mentions } : m)));
+      queryClient.setQueryData<D1GroupDetail>(keys.group(groupId), (g) =>
+        g?.pinned?.some((p) => p.id === id) ? { ...g, pinned: g.pinned.map((p) => (p.id === id ? { ...p, body, editedAt, mentions: mentions ?? p.mentions } : p)) } : g,
+      );
       updateGroupSummary(groupId, (g) => (g.lastMessage?.id === id ? { ...g, lastMessage: { ...g.lastMessage, preview: previewOf(body) } } : g));
       return;
     }
@@ -221,6 +229,17 @@ export function applyEvent(e: D1RealtimeEvent, meId: string) {
       void queryClient.invalidateQueries({ queryKey: keys.group(groupId) });
       return;
     }
+    case "link_preview": {
+      const { id, groupId, preview } = e.payload;
+      updateMessages(groupId, (list) => list.map((m) => (m.id === id ? { ...m, linkPreview: preview } : m)));
+      return;
+    }
+    case "typing": {
+      const { groupId, memberId, name } = e.payload;
+      if (memberId !== meId && !isBlocked(memberId)) typing.seen(groupId, memberId, name);
+      return;
+    }
+    case "pins_changed":
     case "members_changed":
       void queryClient.invalidateQueries({ queryKey: keys.group(e.payload.groupId) });
       return;
@@ -262,6 +281,11 @@ export function useMessages(groupId: string) {
 /** Group info → Photos and files (newest page; older pages are added by the screen). `fetch: false` only reads the cache. */
 export function useGroupMedia(groupId: string, opts: { fetch?: boolean } = {}) {
   return useQuery({ queryKey: keys.media(groupId), queryFn: () => api.groupMedia(groupId, { limit: 60 }), enabled: !!groupId && opts.fetch !== false });
+}
+
+/** Upcoming church events, refreshed after half an hour (the calendar isn't on Realtime). */
+export function useEvents() {
+  return useQuery({ queryKey: keys.events, queryFn: () => api.events(), staleTime: 30 * 60_000 });
 }
 
 /** A community page: straight from the chat list when it's there (it's the same data), otherwise fetched. */

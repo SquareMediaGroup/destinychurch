@@ -2,14 +2,14 @@
 // ref back to the group screen (state/eventPick.ts), which sends it.
 
 import { useEffect, useMemo, useState } from "react";
-import { FlatList, Image, Pressable, Text, View } from "react-native";
+import { FlatList, View } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import type { D1EventSummary } from "@destiny/shared";
+import { EventRow } from "@/components/EventRow";
 import { Icon } from "@/components/Icon";
-import { Card, EmptyState, ErrorState, Field, ModalHeader, SkeletonRows } from "@/components/ui";
+import { EmptyState, ErrorState, Field, ModalHeader, SkeletonRows } from "@/components/ui";
 import { api } from "@/lib/api";
-import { eventWhen } from "@/lib/format";
 import { eventPick } from "@/state/eventPick";
 import { errorMessage } from "@/state/session";
 import { useTheme } from "@/theme/tokens";
@@ -64,34 +64,5 @@ export default function EventPicker() {
         />
       )}
     </View>
-  );
-}
-
-function EventRow({ event, onPress }: { event: D1EventSummary; onPress: () => void }) {
-  const t = useTheme();
-  return (
-    <Card style={{ marginBottom: 10 }}>
-      <Pressable onPress={onPress} style={({ pressed }) => [{ flexDirection: "row", alignItems: "center", gap: 12, padding: 12, backgroundColor: pressed ? t.fill : "transparent" }]}>
-        {event.thumbnailUrl ? (
-          <Image source={{ uri: event.thumbnailUrl }} style={{ width: 56, height: 56, borderRadius: 12, backgroundColor: t.fill }} resizeMode="cover" />
-        ) : (
-          <View style={{ width: 56, height: 56, borderRadius: 12, backgroundColor: t.avatar, alignItems: "center", justifyContent: "center" }}>
-            <Icon name="calendar" size={22} color="#FFFFFF" strokeWidth={1.8} />
-          </View>
-        )}
-        <View style={{ flex: 1, gap: 2 }}>
-          <Text numberOfLines={2} style={{ fontSize: 16, fontWeight: "600", color: t.text }}>
-            {event.name}
-          </Text>
-          <Text style={{ fontSize: 13, color: t.muted }}>{eventWhen(event.startsAt)}</Text>
-          {event.location ? (
-            <Text numberOfLines={1} style={{ fontSize: 13, color: t.subtle }}>
-              {event.location}
-            </Text>
-          ) : null}
-        </View>
-        <Icon name="chevronRight" size={14} color={t.subtle} strokeWidth={2.4} />
-      </Pressable>
-    </Card>
   );
 }

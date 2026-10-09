@@ -24,6 +24,7 @@ import type {
   D1MessageHit,
   D1MessagePage,
   D1PollDraft,
+  D1ReadReceipts,
   D1UploadTicket,
 } from "./types";
 
@@ -158,6 +159,8 @@ export function createDestinyOneClient({ baseUrl, getAccessToken, fetchImpl }: D
     exchangeChurchSuiteCode: (code: string, verifier: string) =>
       call<{ tokenHash: string; type: "magiclink" }>("POST", "/auth/churchsuite/exchange", { code, verifier }),
     me: () => call<D1Me>("GET", "/me"),
+    /** Account settings. `readReceipts: false` stops sharing (and seeing) read receipts. */
+    updateSettings: (input: { readReceipts?: boolean }) => call<D1Me>("PATCH", "/me/settings", input),
     /** Change my own name. */
     updateName: (firstName: string, lastName: string) => call<D1Me>("PATCH", "/me", { firstName, lastName }),
     /** For `onboarding: "request_needed"` — ask the church team for access. */
@@ -215,6 +218,8 @@ export function createDestinyOneClient({ baseUrl, getAccessToken, fetchImpl }: D
     /** Leaders: invite someone new by email. Staff confirm them before they join. */
     inviteToGroup: (id: string, input: { email: string; name: string; adult: boolean; note?: string }) =>
       call<{ ok: true }>("POST", `/groups/${id}/invites`, input),
+    /** "I'm typing" — call at most every few seconds while the box has text. */
+    typing: (id: string) => call<{ ok: true }>("POST", `/groups/${id}/typing`),
     mute: (id: string, until: string | null) => call<{ ok: true }>("POST", `/groups/${id}/mute`, { until }),
     markRead: (id: string, messageId: number) => call<{ ok: true }>("POST", `/groups/${id}/read`, { messageId }),
 
@@ -224,11 +229,19 @@ export function createDestinyOneClient({ baseUrl, getAccessToken, fetchImpl }: D
     /** Group info → Photos and files: messages with a photo or file, paged like `messages`. */
     groupMedia: (groupId: string, opts: { before?: number; limit?: number } = {}) =>
       call<D1MessagePage>("GET", `/groups/${groupId}/media${q(opts)}`),
-    send: (groupId: string, input: { body?: string; replyTo?: number; attachmentId?: string; poll?: D1PollDraft; event?: D1EventRef }) =>
+    /** `mentions`: ids of the group members "@named" in `body` (findMentions). */
+    send: (groupId: string, input: { body?: string; replyTo?: number; attachmentId?: string; poll?: D1PollDraft; event?: D1EventRef; mentions?: string[] }) =>
       call<D1Message>("POST", `/groups/${groupId}/messages`, input),
     deleteMessage: (messageId: number) => call<{ ok: true }>("DELETE", `/messages/${messageId}`),
+    /** Send a copy of a message to up to 5 other chats I can post in (not polls). */
+    forward: (messageId: number, groupIds: string[]) => call<{ messages: D1Message[] }>("POST", `/messages/${messageId}/forward`, { groupIds }),
+    /** "Seen by" for one message: my own messages, or any message in a group I manage. */
+    receipts: (messageId: number) => call<D1ReadReceipts>("GET", `/messages/${messageId}/receipts`),
+    /** Group managers: pin (up to 3; a fourth unpins the oldest) or unpin a message. */
+    pin: (messageId: number) => call<{ ok: true }>("POST", `/messages/${messageId}/pin`),
+    unpin: (messageId: number) => call<{ ok: true }>("DELETE", `/messages/${messageId}/pin`),
     /** Change the text of my own message (within EDIT_WINDOW_MINUTES of sending). */
-    editMessage: (messageId: number, body: string) => call<D1Message>("PATCH", `/messages/${messageId}`, { body }),
+    editMessage: (messageId: number, body: string, mentions?: string[]) => call<D1Message>("PATCH", `/messages/${messageId}`, { body, mentions }),
     report: (messageId: number, reason: string) =>
       call<{ ok: true }>("POST", `/messages/${messageId}/report`, { reason }),
     react: (messageId: number, emoji: string) =>
@@ -241,13 +254,14 @@ export function createDestinyOneClient({ baseUrl, getAccessToken, fetchImpl }: D
     /** Fresh links for cached attachments whose signed URLs have expired (links last an hour). */
     attachmentUrls: (groupId: string, attachmentIds: string[]) =>
       call<{ urls: { id: string; url: string | null }[] }>("GET", `/groups/${groupId}/attachments${q({ ids: attachmentIds.join(",") })}`),
-    requestUpload: (groupId: string, input: { mimeType: string; sizeBytes: number }) =>
+    /** `durationMs` for voice notes. */
+    requestUpload: (groupId: string, input: { mimeType: string; sizeBytes: number; durationMs?: number }) =>
       call<D1UploadTicket>("POST", `/groups/${groupId}/attachments`, input),
 
     /** Search your messages (groups you're in, since you joined; never deleted ones). Pass `groupId` to search one group. */
     searchMessages: (query: string, groupId?: string) => call<D1MessageHit[]>("GET", `/search/messages${q({ q: query, groupId })}`),
 
-    /** Upcoming ChurchSuite events, for the Event attach picker. */
+    /** Upcoming ChurchSuite events, for the Event attach picker and Upcoming events. */
     events: () => call<D1EventSummary[]>("GET", "/events"),
 
     // ── Directory (leaders) ──

@@ -283,6 +283,8 @@ interface Transcript {
     created_at: string;
     edited_at: string | null;
     deleted_at: string | null;
+    /** Set on a forwarded copy: the original message's id (in another group). */
+    forwarded_from: number | null;
     sender: { display_name: string } | null;
     attachment: { mime_type: string; url: string | null } | null;
     /** Earlier versions of an edited message, oldest first. */
@@ -357,6 +359,7 @@ function TranscriptModal({ group, onClose }: { group: { id: string; name: string
                 <li key={m.id} className="rounded-xl bg-black/5 px-3 py-2 text-sm dark:bg-white/10">
                   <p className="text-xs text-destiny-grey/55 dark:text-white/55">
                     {m.sender?.display_name ?? "Former member"} · {new Date(m.created_at).toLocaleString("en-GB")}
+                    {m.forwarded_from ? ` · forwarded from message #${m.forwarded_from}` : ""}
                     {m.edited_at ? ` · edited ${new Date(m.edited_at).toLocaleString("en-GB")}` : ""}
                     {m.deleted_at ? ` · deleted ${new Date(m.deleted_at).toLocaleString("en-GB")}` : ""}
                   </p>

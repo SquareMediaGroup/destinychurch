@@ -45,7 +45,7 @@ export async function uploadAttachment(groupId: string, file: PickedFile): Promi
       throw new Error(`Couldn't read the photo (${reason(err)}).`);
     }
   }
-  const ticket = await api.requestUpload(groupId, { mimeType: file.mimeType, sizeBytes });
+  const ticket = await api.requestUpload(groupId, { mimeType: file.mimeType, sizeBytes, durationMs: file.durationMs });
   const form = new FormData();
   // React Native's FormData takes { uri, name, type } as a file part.
   form.append("file", { uri: file.uri, name: file.name, type: file.mimeType } as unknown as Blob);

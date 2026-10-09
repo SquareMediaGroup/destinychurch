@@ -38,6 +38,8 @@
 
 **Notifications show a preview.** When a message arrives, the notification shows the group name, the sender's name and the first line of the message. It is delivered through Expo (our notification service) and Apple or Google, which are based in the USA, and it can appear on your lock screen. You can stop previews for a group by muting it.
 
+**Read receipts.** When you open a chat, the person who sent a message (and the group's leaders) can see that you've read it. No time is shown. You can turn read receipts off in Profile, Privacy and safety. Then nobody sees whether you've read their messages, and you don't see anyone else's.
+
 **Who else handles your data (our processors)**
 
 | Company | What for | Where |

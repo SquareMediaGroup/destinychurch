@@ -33,6 +33,7 @@ import { movePushToActiveAccount } from "@/lib/push";
 import { applyEvent, keys } from "@/lib/queries";
 import { clearCache, queryClient, saveCacheNow, swapInActiveCache } from "@/lib/queryClient";
 import { startHub, type Hub } from "@/lib/realtime";
+import { typing } from "@/state/typing";
 import { setReportingMember } from "@/lib/sentry";
 import { chatDrafts } from "@/state/drafts";
 
@@ -206,6 +207,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     return () => {
       h.stop();
       hub.current = null;
+      typing.clear(); // another account's "typing…" mustn't linger
     };
   }, [active, meId]);
 

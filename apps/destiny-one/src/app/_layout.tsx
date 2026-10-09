@@ -15,6 +15,7 @@ import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client
 import { UpdateScreen } from "@/components/UpdateScreen";
 import { useAppGate } from "@/lib/appGate";
 import { groupIdFrom } from "@/lib/push";
+import { handleNotificationAction, registerMessageCategory, registerNotificationTask } from "@/lib/notificationActions";
 import { currentOpenGroup } from "@/lib/queries";
 import { persistOptions, queryClient } from "@/lib/queryClient";
 import { SwitchBanner } from "@/components/SwitchBanner";
@@ -33,9 +34,21 @@ import { useTheme } from "@/theme/tokens";
  */
 function useNotificationTaps() {
   useEffect(() => {
+    registerMessageCategory();
+    registerNotificationTask();
     const handled = new Set<string>();
     const take = (r: Notifications.NotificationResponse | null) => {
       if (!r) return;
+      // Reply / Mark as read run without opening anything.
+      if (r.actionIdentifier !== Notifications.DEFAULT_ACTION_IDENTIFIER) {
+        void handleNotificationAction(r);
+        try {
+          Notifications.clearLastNotificationResponse();
+        } catch {
+          // Not available (e.g. web).
+        }
+        return;
+      }
       const key = r.notification.request.identifier;
       if (handled.has(key)) return;
       handled.add(key);
@@ -131,6 +144,10 @@ function App() {
         <Stack.Screen name="report" options={{ presentation: "modal", contentStyle: { backgroundColor: t.grouped } }} />
         <Stack.Screen name="report-sent" options={{ presentation: "modal", gestureEnabled: false }} />
         <Stack.Screen name="feedback" options={{ presentation: "modal", contentStyle: { backgroundColor: t.grouped } }} />
+        <Stack.Screen name="message-info" options={{ presentation: "modal", contentStyle: { backgroundColor: t.grouped } }} />
+        <Stack.Screen name="send-event" options={{ presentation: "modal", contentStyle: { backgroundColor: t.grouped } }} />
+        <Stack.Screen name="forward" options={{ presentation: "modal", contentStyle: { backgroundColor: t.grouped } }} />
+        <Stack.Screen name="share" options={{ presentation: "modal", gestureEnabled: false, contentStyle: { backgroundColor: t.grouped } }} />
         <Stack.Screen name="search" options={{ animation: "fade" }} />
         <Stack.Screen name="viewer" options={{ presentation: "transparentModal", animation: "fade", contentStyle: { backgroundColor: "transparent" } }} />
         <Stack.Screen

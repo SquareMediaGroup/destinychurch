@@ -3,7 +3,7 @@
     "name": "Destiny One",
     "slug": "destiny-one",
     "scheme": "destinyone",
-    "version": "0.1.0",
+    "version": "0.8.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
@@ -51,6 +51,37 @@
         {
           "savePhotosPermission": "Destiny One adds photos from your chats to your library when you tap Save. It can't see your other photos.",
           "granularPermissions": []
+        }
+      ],
+      [
+        "expo-audio",
+        {
+          "microphonePermission": "Destiny One uses the microphone when you record a voice message. It only listens while you're recording."
+        }
+      ],
+      [
+        "expo-sharing",
+        {
+          "ios": {
+            "enabled": true,
+            "activationRule": {
+              "supportsText": true,
+              "supportsWebUrlWithMaxCount": 1,
+              "supportsImageWithMaxCount": 5,
+              "supportsFileWithMaxCount": 1
+            }
+          },
+          "android": {
+            "enabled": true,
+            "singleShareMimeTypes": [
+              "image/*",
+              "application/pdf",
+              "text/plain"
+            ],
+            "multipleShareMimeTypes": [
+              "image/*"
+            ]
+          }
         }
       ],
       [

@@ -7,6 +7,9 @@
 // screen; the privacy notice and docs/destiny-one-gdpr.md must say so. Members
 // can mute any group. The group id rides in `data` so a tap opens that group.
 //
+// @mentions: someone mentioned gets "Sender mentioned you: …" instead, and
+// gets it even if they've muted the group (as in WhatsApp). Blocking still wins.
+//
 // Best-effort: called from `after()`, so a slow or failing push never delays
 // or fails the message send.
 
@@ -22,7 +25,7 @@ interface ExpoTicket {
   details?: { error?: string };
 }
 
-export async function pushNewMessage(groupId: string, senderId: string, preview: PushPreview): Promise<void> {
+export async function pushNewMessage(groupId: string, senderId: string, preview: PushPreview, mentions: readonly string[] = [], messageId: number | null = null): Promise<void> {
   try {
     const supabase = createServiceClient();
     const now = new Date().toISOString();
@@ -43,34 +46,46 @@ export async function pushNewMessage(groupId: string, senderId: string, preview:
     const { data: blockers } = await supabase.from("d1_blocks").select("blocker_id").eq("blocked_id", senderId);
     const blockedBy = new Set((blockers ?? []).map((b) => b.blocker_id as string));
 
-    const recipients = (members ?? [])
-      .filter((m) => !m.muted_until || m.muted_until < now)
-      .map((m) => m.member_id as string)
-      .filter((id) => !blockedBy.has(id));
-    if (recipients.length === 0) return;
+    const mentioned = new Set(mentions);
+    const live = (members ?? []).map((m) => ({ id: m.member_id as string, muted: !!m.muted_until && m.muted_until >= now })).filter((m) => !blockedBy.has(m.id));
+    const everyone = live.filter((m) => !m.muted && !mentioned.has(m.id)).map((m) => m.id);
+    const named = live.filter((m) => mentioned.has(m.id)).map((m) => m.id);
+    if (everyone.length === 0 && named.length === 0) return;
 
     const { data: tokens } = await supabase
       .from("d1_push_tokens")
-      .select("token")
-      .in("member_id", recipients);
-    const all = (tokens ?? []).map((t) => t.token as string);
+      .select("token, member_id")
+      .in("member_id", [...everyone, ...named]);
+    const tokensFor = (ids: string[]) => (tokens ?? []).filter((t) => ids.includes(t.member_id as string)).map((t) => ({ token: t.token as string, memberId: t.member_id as string }));
 
-    for (let i = 0; i < all.length; i += CHUNK) {
-      await send(all.slice(i, i + CHUNK), groupId, title, body);
+    const batches: [{ token: string; memberId: string }[], string][] = [
+      [tokensFor(everyone), body],
+      [tokensFor(named), pushPreviewText({ ...preview, senderName: `${preview.senderName} mentioned you` })],
+    ];
+    for (const [list, text] of batches) {
+      for (let i = 0; i < list.length; i += CHUNK) await send(list.slice(i, i + CHUNK), groupId, messageId, title, text);
     }
   } catch (err) {
     console.error("⚠️ Destiny One push failed:", err);
   }
 }
 
-async function send(tokens: string[], groupId: string, title: string, body: string): Promise<void> {
-  const messages = tokens.map((to) => ({
-    to,
+/**
+ * One batch to Expo. `categoryId: "message"` gives the notification its Reply
+ * and Mark as read buttons (apps/destiny-one/src/lib/notificationActions.ts);
+ * `memberId` says which account on the phone it's for, and `messageId` what
+ * Mark as read marks.
+ */
+async function send(recipients: { token: string; memberId: string }[], groupId: string, messageId: number | null, title: string, body: string): Promise<void> {
+  const tokens = recipients.map((r) => r.token);
+  const messages = recipients.map((r) => ({
+    to: r.token,
     title,
     body,
     sound: "default",
     channelId: "messages",
-    data: { type: "message", groupId },
+    categoryId: "message",
+    data: { type: "message", groupId, messageId, memberId: r.memberId },
   }));
 
   const res = await fetch(EXPO_PUSH_URL, {

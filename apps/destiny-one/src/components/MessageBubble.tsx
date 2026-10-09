@@ -9,12 +9,14 @@
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Animated, Image, Pressable, Text, View } from "react-native";
+import * as WebBrowser from "expo-web-browser";
 import Svg, { Path } from "react-native-svg";
-import type { D1EventContent, D1LeaderRole, D1Message, D1PollContent } from "@destiny/shared";
+import { mentionSegments, type D1EventContent, type D1LinkPreview, type D1LeaderRole, type D1Message, type D1PollContent, type Mentionable } from "@destiny/shared";
 import { Icon } from "@/components/Icon";
 import { MessageMenu, type MessageMenuActions } from "@/components/MessageMenu";
 import { Appear, Pop, PressableScale, reduceMotion, springs } from "@/components/Motion";
 import { SwipeToReply } from "@/components/Swipe";
+import { VoiceNote } from "@/components/VoiceNote";
 import { Avatar, MemberTag, withAlpha } from "@/components/ui";
 import { clock, dayLabel, eventWhen, fileMeta, messageSummary, plural, sameDay } from "@/lib/format";
 import { haptic } from "@/lib/haptics";
@@ -106,6 +108,9 @@ interface BubbleProps {
   onToggleReaction: (emoji: string) => void;
   onVotePoll: (optionIds: string[]) => void;
   onRetry: () => void;
+  /** The group's members, to draw "@Name" mentions; mentions of me are highlighted. */
+  people?: Mentionable[];
+  meId?: string;
 }
 
 /** The little curl at the bottom of the last bubble in a run. Same fill as the bubble, drawn outside its corner. */
@@ -134,7 +139,7 @@ function tones(t: Theme, mine: boolean) {
     : { text: t.text, soft: t.muted, panel: t.bg, track: t.fill, bar: t.accentSoft, barMine: ORANGE, name: t.tint };
 }
 
-export function MessageBubble({ row, replyTo, senderTag, senderIsGroupAdmin, canReply, arriving, menu, onReply, onOpenAttachment, onToggleReaction, onVotePoll, onRetry }: BubbleProps) {
+export function MessageBubble({ row, replyTo, senderTag, senderIsGroupAdmin, canReply, arriving, menu, onReply, onOpenAttachment, onToggleReaction, onVotePoll, onRetry, people, meId }: BubbleProps) {
   const t = useTheme();
   const { m } = row;
   const k = tones(t, m.mine);
@@ -183,6 +188,12 @@ export function MessageBubble({ row, replyTo, senderTag, senderIsGroupAdmin, can
       style={{ opacity: m.status === "sending" ? 0.6 : 1 }}
     >
       <View style={{ ...corners, backgroundColor: m.mine ? t.send : t.bubbleIn, paddingTop: 8, paddingBottom: 9, paddingHorizontal: 14, gap: 6 }}>
+        {m.forwarded ? (
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+            <Icon name="forward" size={12} color={k.soft} strokeWidth={2.2} />
+            <Text style={{ fontSize: 12, fontStyle: "italic", color: k.soft }}>Forwarded</Text>
+          </View>
+        ) : null}
         {replyTo ? (
           <View style={{ marginTop: 2, marginHorizontal: -6, paddingVertical: 7, paddingHorizontal: 10, borderRadius: 13, backgroundColor: k.panel, gap: 1 }}>
             <Text style={{ fontSize: 13, fontWeight: "600", color: k.name }}>{replyName}</Text>
@@ -194,7 +205,12 @@ export function MessageBubble({ row, replyTo, senderTag, senderIsGroupAdmin, can
         <Attachment m={m} onOpen={onOpenAttachment} />
         {m.content?.kind === "event" ? <EventCard content={m.content} mine={m.mine} onOpen={onOpenAttachment} /> : null}
         {m.content?.kind === "poll" ? <PollCard content={m.content} mine={m.mine} sending={m.id < 0} onVote={onVotePoll} /> : null}
-        {m.body ? <Text style={{ fontSize: 17, lineHeight: 22, letterSpacing: -0.2, color: k.text }}>{m.body}</Text> : null}
+        {m.body ? (
+          <Text style={{ fontSize: 17, lineHeight: 22, letterSpacing: -0.2, color: k.text }}>
+            <Mentions text={m.body} ids={m.mentions ?? []} people={people ?? []} meId={meId} mine={m.mine} />
+          </Text>
+        ) : null}
+        {m.linkPreview ? <LinkCard preview={m.linkPreview} mine={m.mine} /> : null}
         {/* Edited messages say so, inside the bubble, so it shows whether or not the time does. */}
         {m.editedAt ? (
           <Text accessibilityLabel="Edited" style={{ marginTop: -4, alignSelf: "flex-end", fontSize: 11, color: k.soft, opacity: 0.8 }}>
@@ -294,6 +310,89 @@ export function MessageBubble({ row, replyTo, senderTag, senderIsGroupAdmin, can
   );
 }
 
+/**
+ * The body with each "@Name" it mentions in bold (a mention of me gets a
+ * highlight too) and each web link underlined and tappable.
+ */
+function Mentions({ text, ids, people, meId, mine }: { text: string; ids: string[]; people: Mentionable[]; meId?: string; mine: boolean }) {
+  const t = useTheme();
+  const k = tones(t, mine);
+  const named = people.filter((p) => ids.includes(p.id));
+  return (
+    <>
+      {mentionSegments(text, named).map((s, i) =>
+        s.mention ? (
+          <Text key={i} style={{ fontWeight: "700", color: mine ? k.text : t.tint, backgroundColor: s.mention.id === meId ? withAlpha(ORANGE, 0.2) : undefined }}>
+            {s.text}
+          </Text>
+        ) : (
+          <Links key={i} text={s.text} color={mine ? k.text : t.tint} />
+        ),
+      )}
+    </>
+  );
+}
+
+const LINK_RE = /\bhttps?:\/\/[^\s<>"'`]+/gi;
+
+/** Plain text with its http(s) links underlined; tapping one opens it in the in-app browser. */
+function Links({ text, color }: { text: string; color: string }) {
+  const parts: { text: string; url: string | null }[] = [];
+  let at = 0;
+  for (const m of text.matchAll(LINK_RE)) {
+    const url = m[0].replace(/[.,;:!?)\]}'"]+$/, "");
+    const start = m.index ?? 0;
+    if (start > at) parts.push({ text: text.slice(at, start), url: null });
+    parts.push({ text: url, url });
+    at = start + url.length;
+  }
+  if (at < text.length) parts.push({ text: text.slice(at), url: null });
+  return (
+    <>
+      {parts.map((p, i) =>
+        p.url ? (
+          <Text key={i} accessibilityRole="link" onPress={() => void WebBrowser.openBrowserAsync(p.url!)} style={{ color, textDecorationLine: "underline" }}>
+            {p.text}
+          </Text>
+        ) : (
+          p.text
+        ),
+      )}
+    </>
+  );
+}
+
+/** The preview the server made for the message's first link: picture, site, title, a line of description. */
+function LinkCard({ preview, mine }: { preview: D1LinkPreview; mine: boolean }) {
+  const t = useTheme();
+  const k = tones(t, mine);
+  return (
+    <Pressable
+      onPress={() => void WebBrowser.openBrowserAsync(preview.url)}
+      accessibilityRole="link"
+      accessibilityLabel={`${preview.title}${preview.siteName ? `, ${preview.siteName}` : ""}. Opens the link.`}
+      style={({ pressed }) => ({ marginTop: 2, marginHorizontal: -6, borderRadius: 14, overflow: "hidden", backgroundColor: k.panel, minWidth: 220, maxWidth: 280, opacity: pressed ? 0.8 : 1 })}
+    >
+      {preview.imageUrl ? <Image source={{ uri: preview.imageUrl }} style={{ width: "100%", height: 130, backgroundColor: t.fill }} resizeMode="cover" /> : null}
+      <View style={{ padding: 10, gap: 2 }}>
+        {preview.siteName ? (
+          <Text numberOfLines={1} style={{ fontSize: 12, fontWeight: "600", color: k.name }}>
+            {preview.siteName}
+          </Text>
+        ) : null}
+        <Text numberOfLines={2} style={{ fontSize: 15, fontWeight: "600", color: k.text }}>
+          {preview.title}
+        </Text>
+        {preview.description ? (
+          <Text numberOfLines={2} style={{ fontSize: 13, color: k.soft }}>
+            {preview.description}
+          </Text>
+        ) : null}
+      </View>
+    </Pressable>
+  );
+}
+
 function Attachment({ m, onOpen }: { m: LocalMessage; onOpen: (url: string) => void }) {
   const t = useTheme();
   const k = tones(t, m.mine);
@@ -302,6 +401,10 @@ function Attachment({ m, onOpen }: { m: LocalMessage; onOpen: (url: string) => v
   if (!a && !local) return null;
   const mime = a?.mimeType ?? local?.mimeType ?? "";
   const url = a?.url ?? null;
+
+  if (mime.startsWith("audio/")) {
+    return <VoiceNote url={m.status ? null : url} durationMs={a?.durationMs ?? local?.durationMs ?? null} color={k.text} track={k.track} fill={k.panel} />;
+  }
 
   if (mime.startsWith("image/") && url) {
     return (

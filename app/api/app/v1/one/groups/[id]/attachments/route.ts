@@ -63,7 +63,7 @@ export const POST = oneRoute<IdParams>(async (request, { params }) => {
   if (membership.state !== "active") {
     throw new OneError("rule_violation", "This group is paused and read-only for now.");
   }
-  const { mimeType, sizeBytes } = await readBody(request, uploadSchema);
+  const { mimeType, sizeBytes, durationMs } = await readBody(request, uploadSchema);
 
   const attachmentId = randomUUID();
   const path = `${id}/${attachmentId}`;
@@ -79,6 +79,7 @@ export const POST = oneRoute<IdParams>(async (request, { params }) => {
     storage_path: path,
     mime_type: mimeType,
     size_bytes: sizeBytes,
+    duration_ms: durationMs ?? null,
   });
   if (error) throw new OneError("unavailable", "Uploads aren't available right now.");
 

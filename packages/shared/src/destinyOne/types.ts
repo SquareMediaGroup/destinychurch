@@ -80,6 +80,8 @@ export interface D1Me {
   avatarUrl: string | null;
   /** People I've blocked: their messages are hidden for me and don't notify me. Never hides anything from safeguarding. */
   blocked: { id: string; displayName: string }[];
+  /** Shares read receipts, and so sees other people's (Profile → Privacy and safety). On by default. */
+  readReceipts: boolean;
   status: D1MemberStatus;
   roles: D1LeaderRole[];
   isAdult: boolean;
@@ -168,6 +170,8 @@ export interface D1GroupDetail extends D1GroupSummary {
   members: D1GroupMember[];
   canManage: boolean;
   canPost: boolean;
+  /** Pinned messages, newest pin first (at most 3). Only ones the caller can see. */
+  pinned: D1Message[];
   /** Current counts against the rules, for leaders. */
   rules?: { members: number; adults: number; minMembers: number; minAdults: number };
 }
@@ -176,8 +180,20 @@ export interface D1Attachment {
   id: string;
   mimeType: string;
   sizeBytes: number | null;
+  /** Voice notes: the length in milliseconds. */
+  durationMs?: number | null;
   /** Short-lived signed URL. Re-fetch the page to get a fresh one. */
   url: string | null;
+}
+
+/** A link's preview, fetched once by the server after sending (the phone never contacts the site for it). */
+export interface D1LinkPreview {
+  url: string;
+  title: string;
+  description: string | null;
+  siteName: string | null;
+  /** https only. The one thing the phone loads from the site. */
+  imageUrl: string | null;
 }
 
 export interface D1Reaction {
@@ -253,6 +269,8 @@ export interface D1EventSummary {
   startsAt: string;
   location: string | null;
   thumbnailUrl: string | null;
+  /** The event's page on the website (What's On). */
+  webUrl: string;
 }
 
 export interface D1Message {
@@ -269,8 +287,22 @@ export interface D1Message {
   createdAt: string;
   /** Set when the sender edited the text (shown as "Edited"). Earlier versions are kept for safeguarding review only. */
   editedAt: string | null;
+  /** Member ids "@mentioned" in the text (only current members of the group). */
+  mentions: string[];
+  /** A copy of a message from another chat. Who wrote the original isn't carried across. */
+  forwarded: boolean;
+  /** The first link's preview. Arrives a moment after the message (a `link_preview` event). */
+  linkPreview: D1LinkPreview | null;
   deleted: boolean;
   mine: boolean;
+}
+
+/** Who has read one message ("Seen by"): for its sender, and for the group's managers. */
+export interface D1ReadReceipts {
+  read: { id: string; displayName: string }[];
+  notYet: { id: string; displayName: string }[];
+  /** People who have read receipts turned off: not shown either way. */
+  hidden: number;
 }
 
 export interface D1MessagePage {
@@ -307,12 +339,18 @@ export interface D1UploadTicket {
 
 /** Realtime events on `d1-group:<id>` and `d1-member:<id>` (Broadcast). */
 export type D1RealtimeEvent =
-  | { event: "message"; payload: { id: number; groupId: string; sender: { id: string; displayName: string }; body: string | null; replyTo: number | null; attachmentId: string | null; content: D1MessageContent | null; createdAt: string } }
+  | { event: "message"; payload: { id: number; groupId: string; sender: { id: string; displayName: string }; body: string | null; replyTo: number | null; attachmentId: string | null; content: D1MessageContent | null; mentions: string[]; forwarded?: boolean; createdAt: string } }
   | { event: "message_deleted"; payload: { id: number; groupId: string } }
-  | { event: "message_edited"; payload: { id: number; groupId: string; body: string; editedAt: string } }
+  | { event: "message_edited"; payload: { id: number; groupId: string; body: string; editedAt: string; mentions: string[] } }
   | { event: "reaction"; payload: { messageId: number; groupId: string; memberId: string; emoji: string; added: boolean } }
   | { event: "poll_vote"; payload: { messageId: number; groupId: string; votes: D1PollTally[]; totalVoters: number } }
   | { event: "members_changed"; payload: { groupId: string } }
+  /** A message's link preview is ready (or was removed by an edit). */
+  | { event: "link_preview"; payload: { id: number; groupId: string; preview: D1LinkPreview | null } }
+  /** Someone is writing a message (sent every few seconds while they type; show it briefly). */
+  | { event: "typing"; payload: { groupId: string; memberId: string; name: string } }
+  /** Something was pinned or unpinned: re-fetch the group (it carries the pins). */
+  | { event: "pins_changed"; payload: { groupId: string } }
   | { event: "group_state"; payload: { groupId: string; state: D1GroupState; reason: string | null } }
   /** Renamed, re-described or a new icon: re-fetch the group and the chat list. */
   | { event: "group_updated"; payload: { groupId: string } }

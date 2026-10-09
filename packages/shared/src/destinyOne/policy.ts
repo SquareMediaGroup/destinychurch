@@ -24,6 +24,13 @@ export const ATTACHMENT_MIME_TYPES = [
   "application/pdf",
 ] as const;
 
+/** Voice notes: AAC in an .m4a file. Recorded in the app, never picked from Files. */
+export const VOICE_MIME_TYPE = "audio/mp4";
+/** Longest voice note, in milliseconds (d1_attachments enforces the same). */
+export const MAX_VOICE_MS = 5 * 60 * 1000;
+/** Everything that can be uploaded as an attachment. */
+export const UPLOAD_MIME_TYPES = [...ATTACHMENT_MIME_TYPES, VOICE_MIME_TYPE] as const;
+
 /**
  * The notices someone must accept before chat unlocks. Bump a version when the
  * wording changes materially and everyone is asked again.
@@ -201,6 +208,72 @@ export function canEditMessage(m: { mine: boolean; deleted: boolean; body: strin
   return m.mine && !m.deleted && m.id > 0 && !!m.body && now - Date.parse(m.createdAt) < EDIT_WINDOW_MINUTES * 60_000;
 }
 
+// ── Mentions ────────────────────────────────────────────────────────────────
+// "@Leah Simmons" in the text, plus the member ids alongside (the server only
+// keeps ids of current members of the group). Names are matched whole, longest
+// first, so "@Leah Simmons" never counts as "@Leah" too.
+
+export interface Mentionable {
+  id: string;
+  displayName: string;
+}
+
+function isNameChar(ch: string | undefined): boolean {
+  return !!ch && /[\p{L}\p{N}'’-]/u.test(ch);
+}
+
+/** Where each "@Name" from `people` sits in `text` (non-overlapping, in order). */
+function findMentionSpans(text: string, people: readonly Mentionable[]): { start: number; end: number; person: Mentionable }[] {
+  const byLength = [...people].filter((p) => p.displayName.trim()).sort((a, b) => b.displayName.length - a.displayName.length);
+  const spans: { start: number; end: number; person: Mentionable }[] = [];
+  for (let i = text.indexOf("@"); i >= 0; i = text.indexOf("@", i + 1)) {
+    if (i > 0 && isNameChar(text[i - 1])) continue; // an email address, not a mention
+    if (spans.some((s) => i >= s.start && i < s.end)) continue;
+    const hit = byLength.find((p) => text.startsWith(p.displayName, i + 1) && !isNameChar(text[i + 1 + p.displayName.length]));
+    if (hit) spans.push({ start: i, end: i + 1 + hit.displayName.length, person: hit });
+  }
+  return spans;
+}
+
+/** The ids of the people mentioned in `text`, once each. */
+export function findMentions(text: string, people: readonly Mentionable[]): string[] {
+  return [...new Set(findMentionSpans(text, people).map((s) => s.person.id))];
+}
+
+/** `text` cut into plain runs and mentions, for drawing mentions in bold. */
+export function mentionSegments(text: string, people: readonly Mentionable[]): { text: string; mention: Mentionable | null }[] {
+  const out: { text: string; mention: Mentionable | null }[] = [];
+  let at = 0;
+  for (const s of findMentionSpans(text, people)) {
+    if (s.start > at) out.push({ text: text.slice(at, s.start), mention: null });
+    out.push({ text: text.slice(s.start, s.end), mention: s.person });
+    at = s.end;
+  }
+  if (at < text.length) out.push({ text: text.slice(at), mention: null });
+  return out;
+}
+
+/**
+ * While typing: the "@…" being written just before the cursor, if any, so
+ * the composer can suggest people. `start` is the index of the "@".
+ */
+export function mentionQuery(text: string, cursor: number): { start: number; query: string } | null {
+  const before = text.slice(0, cursor);
+  const at = before.lastIndexOf("@");
+  if (at < 0 || (at > 0 && isNameChar(before[at - 1]))) return null;
+  const query = before.slice(at + 1);
+  if (query.length > 30 || /[\n@]/.test(query) || /\s{2}/.test(query) || /^\s/.test(query)) return null;
+  return { start: at, query };
+}
+
+/** People whose name matches what's been typed after "@" (any word's start), up to `limit`. */
+export function mentionSuggestions(query: string, people: readonly Mentionable[], limit = 5): Mentionable[] {
+  const q = query.trim().toLowerCase();
+  return people
+    .filter((p) => !q || p.displayName.toLowerCase().startsWith(q) || p.displayName.toLowerCase().split(/\s+/).some((w) => w.startsWith(q)))
+    .slice(0, limit);
+}
+
 export const MIN_POLL_OPTIONS = 2;
 export const MAX_POLL_OPTIONS = 6;
 export const MAX_POLL_QUESTION_LENGTH = 200;
@@ -255,7 +328,7 @@ export function pushPreviewText({ senderName, body, attachmentMime }: PushPrevie
   if (firstLine) {
     text = firstLine.length > PUSH_PREVIEW_CHARS ? `${firstLine.slice(0, PUSH_PREVIEW_CHARS - 1).trimEnd()}\u2026` : firstLine;
   } else if (attachmentMime) {
-    text = attachmentMime.startsWith("image/") ? "Photo" : "File";
+    text = attachmentMime.startsWith("image/") ? "Photo" : attachmentMime.startsWith("audio/") ? "Voice message" : "File";
   } else {
     text = "New message";
   }

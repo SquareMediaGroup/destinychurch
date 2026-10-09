@@ -33,6 +33,7 @@ export async function listUpcomingEvents(): Promise<D1EventSummary[]> {
       startsAt: s.next.startsAt,
       location: s.location?.name ?? null,
       thumbnailUrl: s.thumbnailUrl,
+      webUrl: s.webUrl,
     };
   });
 }

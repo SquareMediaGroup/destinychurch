@@ -369,6 +369,15 @@ destinychurch/
 │       ├── 20261004_02_destiny_one_message_encryption_required.sql # part 10b: refuse plaintext
 │       ├── 20261006_01_destiny_one_message_edits.sql # part 11 (v0.8): edit your own message for 15
 │       │                                   # minutes; old text kept in d1_message_edits for review
+│       ├── 20261006_02_destiny_one_mentions.sql # part 12 (v0.8): @mentions (d1_messages.mentions,
+│       │                                   # d1_valid_mentions; d1_post_message gains p_mentions)
+│       ├── 20261006_03_destiny_one_pins.sql # part 13 (v0.8): pinned messages (d1_pins, up to 3)
+│       ├── 20261006_04_destiny_one_read_receipts.sql # part 14 (v0.8): "Seen by" (d1_members.read_receipts,
+│       │                                   # d1_read_receipts)
+│       ├── 20261006_05_destiny_one_link_previews.sql # part 15 (v0.8): sealed link previews
+│       ├── 20261006_06_destiny_one_forwarding.sql # part 16 (v0.8): forwarded_from; d1_post_message gains
+│       │                                   # p_forwarded_from (refuses messages you can't see)
+│       ├── 20261006_07_destiny_one_voice_notes.sql # part 17 (v0.8): audio/mp4 attachments + duration_ms
 │       │                                   # (apply after scripts/destiny-one/encrypt-messages.ts)
 │       ├── 20260927_03_destiny_one_message_search.sql # Destiny One part 4: message search
 │       ├── 20260927_02_destiny_one_leader_invites.sql # Destiny One part 3: leader invites
@@ -1975,6 +1984,7 @@ department **sub-groups**. Migration: `supabase/migrations/20260926_01_destiny_o
 | `d1_messages` | `body` (sealed ciphertext, see part 10; 4000 characters before sealing), `reply_to`, `attachment_id`, `content` (jsonb: a poll, whose question and option labels are sealed, or an event snapshot taken at send time), soft-delete `deleted_at`/`deleted_by`. Immutable except the delete stamp |
 | `d1_message_terms` | The blind search index (part 10): keyed hashes of every prefix of every word in a body, per group. No plaintext |
 | `d1_message_edits` | Part 11: the text an edit replaced (sealed), one row per edit, for the safeguarding transcript. Deny-all RLS; removed with its message by the purge |
+| `d1_pins` | Part 13: pinned messages per group (who pinned, when). At most 3; deny-all RLS |
 | `d1_poll_votes` | One row per (poll message, member, option). Written only by `d1_vote()`, which enforces single choice and current membership and broadcasts `poll_vote` (with `groupId`) |
 | `d1_reactions`, `d1_attachments` | Reactions; files in the private `d1-chat-media` bucket (images/PDF, 20 MB) |
 | `d1_reports`, `d1_safeguarding_events` | The safeguarding queue |
@@ -2115,6 +2125,69 @@ terms. `d1_messages_immutable` lets the body and `edited_at` change only while `
 which `d1_edit_message` does for its own transaction (`set_config(..., true)`), so a direct UPDATE is
 still refused. Members see only the latest text, marked "Edited"; the safeguarding transcript shows
 every version.
+
+**Part 12 — `20261006_02_destiny_one_mentions.sql`: @mentions.** `d1_messages.mentions uuid[]` (up to
+50) holds who a message "@names". The text stays sealed; the ids are plain because the server needs them
+to notify people, and they say no more than the member list does. `d1_valid_mentions(group, actor, ids)`
+keeps only current members of the group, never the sender, so a mention can't reach anyone outside it.
+`d1_post_message` gains `p_mentions` (the 7-argument version is dropped), `d1_edit_message` gains
+`p_mentions` (null leaves them alone), and the immutability trigger lets `mentions` change only during an
+edit. Push (`lib/destinyOne/push.server.ts`): a mentioned member gets "Sender mentioned you: …", even if
+they muted the group; blocking still wins. The app parses "@Name" with `findMentions` /
+`mentionSegments` / `mentionQuery` / `mentionSuggestions` in `@destiny/shared` (longest name first, never
+inside an email address); the composer suggests members as you type "@", and bubbles draw mentions in
+bold, highlighting your own name.
+
+**Part 13 — `20261006_03_destiny_one_pins.sql`: pinned messages.** `d1_pins (group, message, pinned_by,
+pinned_at)`. `d1_pin_message(actor, message, pin)` is for people who manage the group
+(`d1_can_manage_group`) and are in it; a deleted message can't be pinned, and pinning a fourth unpins the
+oldest. It emits `pins_changed` (no text, so `d1_emit` is fine). `GET groups/[id]` returns `pinned`:
+the pinned messages the caller can see (since they joined, not deleted, not from someone they've blocked),
+newest pin first. In the app a glass bar under the chat header shows the newest pin; tapping it scrolls to
+that message (`jumpTo`) and moves on to the next, with a small indicator when there are several. Pin /
+Unpin is in the message menu for managers.
+
+**Part 14 — `20261006_04_destiny_one_read_receipts.sql`: "Seen by".** Read state used to be private; now
+`d1_read_receipts(actor, message)` lists who (of the members who were there when it was sent) has read a
+message, from the existing `last_read_message_id`. No read time exists or is shown. Only the sender, or
+someone who manages the group, can ask. `d1_members.read_receipts` (default on) is reciprocal as in
+WhatsApp: off means you show as hidden (counted, not named) and you can't see anyone's. The API reads that
+column on its own (`loadReadReceipts`), not through `MEMBER_COLUMNS`, so an API deployed before the
+migration still works. The peek preview never moves the read marker. The draft notice in
+`docs/content/destiny-one-notices-draft.md` has a Read receipts paragraph to publish with it.
+
+**Part 15 — `20261006_05_destiny_one_link_previews.sql`: link previews.** `d1_messages.link_preview` holds
+the first link's preview as sealed JSON (`D1LinkPreview`: url, title, description, siteName, https
+imageUrl), written only by `d1_set_link_preview` (the immutability trigger allows it only while that runs,
+via `d1.previewing`). The API builds it **after** sending, in `after()`
+(`lib/destinyOne/linkPreview.server.ts`), and broadcasts `link_preview` over the REST broadcast. So sending
+never waits for another website, and members' phones never contact the site to build it (only the
+preview picture is loaded by the phone, https only). The fetch is locked down against SSRF: http(s) on
+ports 80/443, at most 3 redirects, 5 s, 512 KB, HTML only, and every connection must reach a public
+address. The check runs inside the connection's own DNS lookup, so there's no rebinding gap, and bare
+IP links, which skip DNS, are checked before connecting (`isPublicAddress` refuses loopback, private,
+link-local/cloud-metadata, CGNAT, multicast and their IPv6 forms). Parsing (`firstUrl`, `parsePreview`)
+is in `lib/destinyOne/linkPreview.ts`, unit-tested. An edit that changes the link rebuilds or clears the
+preview. In the app, links in message text are underlined and open in the in-app browser, and the
+preview shows as a card under the text.
+
+**Part 16 — `20261006_06_destiny_one_forwarding.sql`: forwarding.** `d1_messages.forwarded_from` links a
+copy to its original (shown as "forwarded from message #…" in the safeguarding transcript). Members only see
+"Forwarded"; the original author isn't carried across. `d1_post_message` gains `p_forwarded_from` (the
+8-argument version is dropped) and refuses it unless the forwarder is in the original's group now, was
+when it was sent, and it isn't deleted. `POST messages/[id]/forward { groupIds }` (up to 5, 20 a minute,
+never polls) opens the text and seals it again for each target group, copies any photo or PDF into that
+group's own folder with its own `d1_attachments` row, then posts, broadcasts and pushes like any message.
+
+**Part 17 — `20261006_07_destiny_one_voice_notes.sql`: voice notes.** `audio/mp4` joins the
+`d1_attachments` mime check and the `d1-chat-media` bucket's allowed types, and `duration_ms` (up to 5
+minutes) is kept so the app can show a voice note's length before it downloads. A voice note is an
+ordinary attachment: kept, deleted, purged and shown in the safeguarding transcript like a photo, and
+pushed as "Sender: Voice message". In the app (`src/components/VoiceNote.tsx`) the microphone sits next to
+the camera when the box is empty. Tapping it swaps the text field for a recording bar (time, Cancel,
+Send; it stops by itself at 5 minutes), recording mono AAC at 64 kbps (`expo-audio`). Under a second is
+dropped. In a bubble, nothing loads until Play, and only one voice note plays at a time. Voice notes can't
+be searched (there's no text).
 
 **Tested by:** `scripts/test-sql.sh` (`npm run test:sql`, and the "Database rules" CI job) — applies
 Supabase stubs + every Destiny One migration (parts 1–9, plus the profile-picture, min-build and
@@ -4329,12 +4402,17 @@ needs at least 2 verified adults.") pass through as `rule_violation` (422). Type
 | `groups/[id]/messages` | GET, POST | Only messages since you joined; POST takes `body`, an attachment, a `poll` draft, or an `event` ref (the event is re-fetched and snapshotted server-side) and pushes a notification via `after()` (group name, "Sender: first line", or "Poll: …" / "Event: …") |
 | `messages/[id]/vote` | POST | `{ optionIds }` — your full vote set on a poll (empty clears it). 60 a minute |
 | `messages/[id]` | PATCH | `{ body }` — edit my own message's text (15 minutes, 10 times; `d1_edit_message`). Sealed with new search terms; `message_edited` goes to the group over the REST broadcast (it carries text). 20 a minute, no push |
+| `messages/[id]/pin` | POST, DELETE | Pin or unpin (group managers; at most 3, a fourth unpins the oldest). 30 a minute |
+| `messages/[id]/receipts` | GET | "Seen by": `{ read, notYet, hidden }` for the sender or a group manager, while their own read receipts are on (`d1_read_receipts`). 60 a minute |
+| `messages/[id]/forward` | POST | `{ groupIds }` (1–5): a copy into other chats I can post in, marked Forwarded, file copied per group, re-sealed per group. Not polls. 20 a minute |
+| `me/settings` | PATCH | `{ readReceipts? }` — account settings that change what others see. `D1Me.readReceipts` |
 | `events` | GET | Upcoming ChurchSuite events for the Event picker in the attach sheet |
 | `groups/[id]/invites` | POST | Leaders: `{ email, name, adult, note? }` — invite someone new; they become an access request for staff to approve, then join the group |
 | `search/messages` | GET | `?q=` — search of your messages: groups you are in, since you joined, never deleted, never from people you've blocked; newest 30. Each word matches as a prefix, on the blind index (text is encrypted at rest, see "Message encryption"). `&groupId=` searches one group (search opened from a chat): same rules; not found if you aren't in it, nothing for an archived group |
 | `groups/[id]/read`, `/mute`, `/attachments` | POST | Read marker, mute, signed upload URL |
 | `groups/[id]/attachments?ids=` | GET | Fresh signed links (1 hour) for cached attachments whose links expired: only files in this group, sent since you joined, not deleted, not from someone you've blocked. Up to 60 ids |
 | `groups/[id]/media?before=&limit=` | GET | Group info → Photos and files: messages that carry a photo or file, paged like `messages` (60 a page, up to 100). Same visibility as the chat (since you joined, not deleted, not blocked senders), with fresh signed links |
+| `groups/[id]/typing` | POST | "I'm typing": broadcasts `typing { groupId, memberId, name }` on the group topic over the REST broadcast (nothing stored). Only if you can post there. The app calls it at most every 4 s while the box has text; each one shows you as typing for 6 s. 30 a minute |
 | `messages/[id]` | DELETE | Soft delete (content kept for review) |
 | `messages/[id]/report`, `/reactions` | POST (+DELETE) | Report → safeguarding bell, and an email to every Safeguarding Admin (`lib/destinyOne/safeguardingEmail.server.ts`; no message content, names or group in it) |
 | `directory` | GET | Leaders only; names + adult flag, never contact details |
@@ -7230,13 +7308,38 @@ same database as the data rather than in a separate Synapse module.
   `?communityId` picks for New group), `notifications` (D2 + per-group mute), `search` (full-screen search opened from a chat; the
   Search tab `(tabs)/find` uses the same `SearchView` component), `report` + `report-sent` (B5), `feedback` (D5, Profile → Report a problem /
   Send feedback, `?kind=problem|idea`; also reached by shaking the phone, see below), `chat-safety`,
-  `help` (Profile → Help: short answers grouped by topic, one open at a time, with Report a problem underneath), `delete-account` (D3, type DELETE), `accounts` (account switcher, a fit-to-content form sheet), `add-account` (Profile → Add account: Add child / Add admin account, a form sheet), `password` (password sign-in) and `set-password` (Profile → Password).
+  `help` (Profile → Help: short answers grouped by topic, one open at a time, with Report a problem underneath), `whats-new` (Profile → Support, or tap the version: release notes by version, `RELEASES` in the file), `viewer`, `message-info`, `forward`, `share`, `events`, `send-event` (v0.8, see below), `delete-account` (D3, type DELETE), `accounts` (account switcher, a fit-to-content form sheet), `add-account` (Profile → Add account: Add child / Add admin account, a form sheet), `password` (password sign-in) and `set-password` (Profile → Password).
 - **Profile tab** (`(tabs)/profile.tsx`) is grouped like iOS Settings: the name card (tap the
   picture to change it, the name to open `edit-name`), then headed sections Account (email,
   password, add/switch account), Preferences (notifications, appearance), Privacy and safety
   (blocked people, chat safety, privacy notice, terms), Support (help, report a problem, send
   feedback) and Your data. Download my data saves a dated `.json` file to the cache folder and opens
   the share sheet on it (iOS); Android's share sheet can't take a file URL, so it still shares the text.
+- **Notification actions** (`src/lib/notificationActions.ts`): message pushes carry `categoryId:
+  "message"`, so they offer **Reply** (a text field; needs the phone unlocked, `isAuthenticationRequired`)
+  and **Mark as read**, neither of which opens the app. The push's `data` has `groupId`, `messageId` and
+  `memberId` (which account it's for). A notification for another account on the phone uses that
+  account's own API client (`apiFor`). iOS delivers the response to the listener in `_layout.tsx`;
+  Android to a background task (`expo-task-manager`, `registerTaskAsync`). A reply that fails posts a
+  local "Your reply wasn't sent" notification rather than vanishing.
+- **Share into Destiny One** (`share.tsx`, `+native-intent.ts`): `expo-sharing` adds an iOS share
+  extension (target `expo-sharing-extension`, app group `group.uk.destinytees.one`; EAS provisions both)
+  and Android share intents. Text, one link, up to 5 photos or one PDF. The extension opens the app on
+  an `expo-sharing://` link, which `+native-intent.ts` sends to `/share`: a preview of what's coming in,
+  then every chat you can post in (active, and Announcements only where you're an admin). Pick one and
+  it's sent, then that chat opens. Photos go through `cleanImage` like any other; anything else is
+  refused with a reason. Signed out: "Sign in first".
+- **Upcoming events** (`events.tsx`, `send-event.tsx`, `src/lib/events.ts`): the Search tab's empty state
+  shows "Coming up" (the next 3 church events) with See all → `events` (the whole calendar, searchable,
+  pull to refresh). Tapping an event offers Share to a chat (`send-event`: pick a chat, the server
+  snapshots the event as for the composer's Event button, then that chat opens) or View details (its
+  What's On page; `D1EventSummary.webUrl`). Cached as `["events"]`, the one query that goes stale on a
+  timer (30 minutes), because the calendar isn't on Realtime. `EventRow` is shared with the composer's
+  event picker.
+- **Typing** (`src/state/typing.ts`): a memory-only store fed by the `typing` event (never me, never
+  someone I've blocked). Each event shows that person for 6 seconds; their message arriving clears them.
+  The chat header's subtitle swaps the member count for "Leah is typing…" / "Leah and Sam are typing…" /
+  "3 people are typing…". `typingPing` throttles the API call to once every 4 seconds per group.
 - **Photo viewer** (`viewer.tsx`, a transparent full-screen modal): tapping a photo in a chat opens it
   on black. Pinch or double-tap to zoom (the native scroll view's zoom), swipe sideways through every
   photo the chat has cached, swipe down to close, tap to hide the bars. Save to Photos asks for add-only

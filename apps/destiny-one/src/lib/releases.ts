@@ -24,6 +24,15 @@ export interface Release {
 
 export const RELEASES: Release[] = [
   {
+    version: "0.9",
+    features: [
+      { icon: "camera", title: "A camera built into Destiny One", body: "Take a photo without leaving the chat. Tap the + button, then Camera." },
+      { icon: "mic", title: "Voice messages, WhatsApp style", body: "Hold the microphone to record and let go to send. Slide left to cancel, or up to lock it and keep your hands free." },
+      { icon: "photo", title: "Photos, files and voice notes that just work", body: "Fixes for the photo and file pickers not opening from the + sheet, and for voice messages that wouldn't send." },
+      { icon: "person", title: "Profile photo in light and dark", body: "Your picture no longer disappears from the tab bar when you switch between light and dark." },
+    ],
+  },
+  {
     version: "0.8",
     features: [
       { icon: "pencil", title: "Edit messages", body: "Fix a typo for 15 minutes after sending. Press and hold your message, then Edit." },

@@ -383,7 +383,11 @@ export const Composer = forwardRef<TextInput, Props>(function Composer({ replyin
         }}
         onDocument={() => {
           setSheetOpen(false);
-          void pickFile();
+          // iOS won't present the document picker while the sheet's Modal is still
+          // dismissing (it silently does nothing), so wait out the 220 ms slide-out.
+          setTimeout(() => {
+            void pickFile().catch(() => onError("Couldn't open your files. Try again."));
+          }, 350);
         }}
         onPoll={() => {
           setSheetOpen(false);

@@ -12,6 +12,7 @@ import { ATTACHMENT_MIME_TYPES, MAX_ATTACHMENT_BYTES, MAX_MESSAGE_LENGTH, mentio
 import { AttachSheet } from "@/components/AttachSheet";
 import { GlassSurface } from "@/components/GlassSurface";
 import { Icon } from "@/components/Icon";
+import { takePhoto as openCamera } from "@/lib/camera";
 import { Appear, PressableScale } from "@/components/Motion";
 import { SendAsMenu } from "@/components/SendAsMenu";
 import { VoiceRecorder } from "@/components/VoiceNote";
@@ -127,14 +128,10 @@ export const Composer = forwardRef<TextInput, Props>(function Composer({ replyin
   }
 
   async function takePhoto() {
-    const perm = await ImagePicker.requestCameraPermissionsAsync();
-    if (!perm.granted) {
-      onError("Allow camera access to take a photo.");
-      return;
-    }
-    const res = await ImagePicker.launchCameraAsync({ quality: 1 });
-    if (res.canceled || !res.assets[0]) return;
-    await imagePickerAsset(res.assets[0], "Photo.jpg");
+    // The in-app camera (src/app/camera.tsx) asks for permission itself.
+    const uri = await openCamera();
+    if (!uri) return;
+    await acceptAsset({ uri, name: "Photo.jpg", mimeType: "image/jpeg", size: null });
   }
 
   /** Holding Send: offer the other signed-in accounts that can send this message. */

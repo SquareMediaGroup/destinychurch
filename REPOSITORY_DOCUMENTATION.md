@@ -2184,8 +2184,11 @@ group's own folder with its own `d1_attachments` row, then posts, broadcasts and
 minutes) is kept so the app can show a voice note's length before it downloads. A voice note is an
 ordinary attachment: kept, deleted, purged and shown in the safeguarding transcript like a photo, and
 pushed as "Sender: Voice message". In the app (`src/components/VoiceNote.tsx`) the microphone sits next to
-the camera when the box is empty. Tapping it swaps the text field for a recording bar (time, Cancel,
-Send; it stops by itself at 5 minutes), recording mono AAC at 64 kbps (`expo-audio`). Under a second is
+the text field when the box is empty. It works like WhatsApp: hold to record and let go to send, slide left to
+cancel, slide up to lock it hands-free (then the bin and Send appear); a quick tap just shows a hint. The gesture
+is a `PanResponder` in `Composer.tsx`; the field shows a recording readout (time, "Slide to cancel") and it stops
+by itself at 5 minutes, recording mono AAC at 64 kbps (`expo-audio`). The camera is no longer in the text field;
+it is under the + sheet. Under a second is
 dropped. In a bubble, nothing loads until Play, and only one voice note plays at a time. Voice notes can't
 be searched (there's no text).
 

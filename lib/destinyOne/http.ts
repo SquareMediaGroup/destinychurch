@@ -12,6 +12,7 @@ import type { D1Envelope, D1ErrorCode } from "@destiny/shared";
 import { APP_API_VERSION } from "@/lib/appApi";
 import { checkRateLimit } from "@/lib/rateLimit";
 import { createServiceClient } from "@/utils/supabase/service";
+import { loadMessageKeyring } from "@/lib/destinyOne/crypto.server";
 
 const NO_STORE = {
   "Cache-Control": "private, no-store",
@@ -86,6 +87,9 @@ type Handler<C> = (request: Request, context: C) => Promise<Response>;
 export function oneRoute<C>(handler: Handler<C>): Handler<C> {
   return async (request, context) => {
     try {
+      // Message text is sealed with keys from Supabase Vault (crypto.server.ts).
+      // A route that never touches text still works if they can't be loaded.
+      await loadMessageKeyring().catch((err) => console.error("🔐 Destiny One keys unavailable:", (err as Error).message));
       return await handler(request, context);
     } catch (err) {
       if (err instanceof OneError) return oneError(err.code, err.message);

@@ -4,7 +4,7 @@ import { createServiceClient } from "@/utils/supabase/service";
 import { recordAudit } from "@/lib/audit.server";
 import { requireTranscriptReader } from "@/lib/destinyOne/admin.server";
 import { MEDIA_BUCKET } from "@/lib/destinyOne/chat.server";
-import { openBody, openContent } from "@/lib/destinyOne/crypto.server";
+import { loadMessageKeyring, openBody, openContent } from "@/lib/destinyOne/crypto.server";
 
 // GET /api/admin/destiny-one/safeguarding/groups/[id]/transcript?reason=…&from=…&to=…
 //
@@ -29,6 +29,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
   // The Safeguarding Admin role itself: super admin alone can't read conversations.
   const admin = await requireTranscriptReader();
   if (admin instanceof NextResponse) return admin;
+  await loadMessageKeyring();
   const groupId = (await params).id;
 
   const url = new URL(request.url);

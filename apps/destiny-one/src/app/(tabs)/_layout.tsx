@@ -47,7 +47,7 @@ export default function TabsLayout() {
         <NativeTabs.Trigger name="chats" accessibilityLabel="Chats" disableAutomaticContentInsets listeners={tabTick}>
           <NativeTabs.Trigger.Label hidden>Chats</NativeTabs.Trigger.Label>
           <NativeTabs.Trigger.Icon sf={{ default: "bubble.left.and.bubble.right", selected: "bubble.left.and.bubble.right.fill" }} />
-          <NativeTabs.Trigger.Badge hidden={unreadChats === 0}>{unreadChats > 99 ? "99+" : String(unreadChats)}</NativeTabs.Trigger.Badge>
+          {unreadChats > 0 && <NativeTabs.Trigger.Badge>{unreadChats > 99 ? "99+" : String(unreadChats)}</NativeTabs.Trigger.Badge>}
         </NativeTabs.Trigger>
         <NativeTabs.Trigger name="find" accessibilityLabel="Search" disableAutomaticContentInsets listeners={tabTick}>
           <NativeTabs.Trigger.Label hidden>Search</NativeTabs.Trigger.Label>

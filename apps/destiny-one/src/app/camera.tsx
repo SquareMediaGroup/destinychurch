@@ -20,7 +20,6 @@ export default function Camera() {
   const camera = useRef<CameraView>(null);
   const [facing, setFacing] = useState<CameraType>("back");
   const [flash, setFlash] = useState<FlashMode>("off");
-  const [ready, setReady] = useState(false);
   const [busy, setBusy] = useState(false);
   const [shot, setShot] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -50,7 +49,7 @@ export default function Camera() {
   }
 
   async function capture() {
-    if (busy || !ready || !camera.current) return;
+    if (busy || !camera.current) return;
     setBusy(true);
     setError(null);
     haptic.press();
@@ -126,7 +125,6 @@ export default function Camera() {
         facing={facing}
         flash={flash}
         mode="picture"
-        onCameraReady={() => setReady(true)}
         onMountError={() => setError("The camera isn't available on this device.")}
       />
       <View style={{ position: "absolute", top, left: 16, right: 16, flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
@@ -146,10 +144,10 @@ export default function Camera() {
       ) : null}
       <View style={{ position: "absolute", left: 0, right: 0, bottom: bottom, flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 32 }}>
         <View style={{ width: 80 }} />
-        <PressableScale onPress={() => void capture()} disabled={!ready || busy} scaleTo={0.9} accessibilityRole="button" accessibilityLabel="Take photo" style={{ width: 78, height: 78, borderRadius: 39, borderWidth: 4, borderColor: "#fff", alignItems: "center", justifyContent: "center", opacity: ready ? 1 : 0.5 }}>
+        <PressableScale onPress={() => void capture()} disabled={busy} scaleTo={0.9} accessibilityRole="button" accessibilityLabel="Take photo" style={{ width: 78, height: 78, borderRadius: 39, borderWidth: 4, borderColor: "#fff", alignItems: "center", justifyContent: "center", opacity: busy ? 0.5 : 1 }}>
           <View style={{ width: 62, height: 62, borderRadius: 31, backgroundColor: "#fff" }} />
         </PressableScale>
-        <Pressable onPress={() => { haptic.selection(); setFacing((f) => (f === "back" ? "front" : "back")); setFlash("off"); setReady(false); }} accessibilityRole="button" accessibilityLabel="Switch camera" style={{ ...pill, width: 80, paddingHorizontal: 0 }}>
+        <Pressable onPress={() => { haptic.selection(); setFacing((f) => (f === "back" ? "front" : "back")); setFlash("off"); }} accessibilityRole="button" accessibilityLabel="Switch camera" style={{ ...pill, width: 80, paddingHorizontal: 0 }}>
           <Text style={{ color: "#fff", fontSize: 14, fontWeight: "800" }}>Flip</Text>
         </Pressable>
       </View>

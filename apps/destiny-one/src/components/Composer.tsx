@@ -375,7 +375,10 @@ export const Composer = forwardRef<TextInput, Props>(function Composer({ replyin
         onClose={() => setSheetOpen(false)}
         onPhotos={() => {
           setSheetOpen(false);
-          void pickPhoto();
+          // Same as Document below: iOS won't present the photo picker while the sheet's Modal is still dismissing.
+          setTimeout(() => {
+            void pickPhoto().catch(() => onError("Couldn't open your photos. Try again."));
+          }, 350);
         }}
         onCamera={() => {
           setSheetOpen(false);

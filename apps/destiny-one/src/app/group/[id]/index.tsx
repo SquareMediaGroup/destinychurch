@@ -18,7 +18,7 @@ import type { MessageMenuActions } from "@/components/MessageMenu";
 import { Divider, MessageBubble, buildRows, type Row } from "@/components/MessageBubble";
 import { NotificationPrompt } from "@/components/NotificationPrompt";
 import { Avatar, BackButton, ConfirmDialog, EmptyState, ErrorState, GlassIconButton, PrimaryButton, withAlpha } from "@/components/ui";
-import { canEditMessage, canSendAs, findMentions } from "@destiny/shared";
+import { DESTINY_AI, canEditMessage, canSendAs, findMentions } from "@destiny/shared";
 import type { Account } from "@/lib/accounts";
 import { messageSummary, plural } from "@/lib/format";
 import { api } from "@/lib/api";
@@ -87,8 +87,13 @@ export default function GroupChat() {
   const admins = useMemo(() => new Set((group?.members ?? []).filter((m) => m.role === "admin").map((m) => m.id)), [group]);
   const tags = useMemo(() => new Map((group?.members ?? []).map((m) => [m.id, m.tag])), [group]);
   // Everyone in the group, for drawing "@Name"; everyone but me, for the composer's suggestions.
-  const people = useMemo(() => (group?.members ?? []).map((m) => ({ id: m.id, displayName: m.displayName })), [group]);
-  const mentionables = useMemo(() => people.filter((p) => p.id !== me?.id), [people, me?.id]);
+  // DestinyAI is always among them: in a group, "@DestinyAI" asks it something.
+  const isAssistant = (group?.kind ?? summary?.group.kind) === "assistant";
+  const people = useMemo(
+    () => [DESTINY_AI, ...(group?.members ?? []).filter((m) => m.id !== DESTINY_AI.id).map((m) => ({ id: m.id, displayName: m.displayName }))],
+    [group],
+  );
+  const mentionables = useMemo(() => (isAssistant ? [] : people.filter((p) => p.id !== me?.id)), [people, me?.id, isAssistant]);
 
   // While on screen, new messages here aren't unread.
   useFocusEffect(
@@ -186,7 +191,7 @@ export default function GroupChat() {
   const department = group?.department ?? summary?.group.department;
   // "Leah is typing…" takes the place of the member count while it's true.
   const typingNow = typingLabel(useTyping(id));
-  const sub = typingNow ?? (group ? [department, plural(group.members.length, "member")].filter(Boolean).join(" · ") : department ?? "");
+  const sub = typingNow ?? (isAssistant ? "Smart Search for Destiny" : group ? [department, plural(group.members.length, "member")].filter(Boolean).join(" · ") : department ?? "");
   const canDelete = (m: LocalMessage) => m.mine || group?.myRole === "admin" || !!group?.canManage;
   // Pinned messages (newest pin first). Older cached copies of the group may not have the field yet.
   const pinned = group?.pinned ?? [];
@@ -328,6 +333,8 @@ export default function GroupChat() {
             }
       }
       mentionables={mentionables}
+      textOnly={isAssistant}
+      placeholder={isAssistant ? "Ask DestinyAI" : undefined}
     />
   );
 
@@ -371,7 +378,14 @@ export default function GroupChat() {
           ListFooterComponent={convo.loadingOlder ? <ActivityIndicator color={ORANGE} style={{ paddingVertical: 16 }} /> : null}
           ListEmptyComponent={
             <View style={[{ transform: [{ scaleY: -1 }] }, t.photo ? { alignSelf: "center", marginHorizontal: 24, borderRadius: 24, backgroundColor: withAlpha(t.bg, PHOTO_CHIP_ALPHA) } : null]}>
-              <EmptyState title="No messages yet" body={group?.canPost ? "Say hello." : undefined} />
+              {isAssistant ? (
+                <EmptyState
+                  title="Ask DestinyAI"
+                  body={"Ask about events, services, groups, sermons or giving. It knows the church calendar and everything on Smart Search.\n\nIn a group, type @DestinyAI to ask it there. It only sees the message you tag it in, and the message you're replying to."}
+                />
+              ) : (
+                <EmptyState title="No messages yet" body={group?.canPost ? "Say hello." : undefined} />
+              )}
             </View>
           }
           renderItem={({ item }) =>
@@ -427,10 +441,10 @@ export default function GroupChat() {
       {t.wall || t.photo ? null : <LinearGradient pointerEvents="none" colors={[t.bg, withAlpha(t.bg, 0)]} locations={[0.45, 1]} style={{ position: "absolute", top: 0, left: 0, right: 0, height: insets.top + 76 }} />}
       <View style={{ position: "absolute", top: insets.top, left: 0, right: 0, height: 56, flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 16 }}>
         {preview ? <View style={{ width: 44 }} /> : <BackButton />}
-        <Pressable accessibilityRole="button" accessibilityLabel={`${name}, group info`} onPress={() => router.push(`/group/${id}/info`)} style={{ flexShrink: 1, marginHorizontal: 8 }}>
+        <Pressable accessibilityRole={isAssistant ? "header" : "button"} accessibilityLabel={isAssistant ? name : `${name}, group info`} disabled={isAssistant} onPress={() => router.push(`/group/${id}/info`)} style={{ flexShrink: 1, marginHorizontal: 8 }}>
           {({ pressed }) => (
             <GlassSurface interactive style={[{ height: 48, maxWidth: 240, borderRadius: 24, flexDirection: "row", alignItems: "center", gap: 10, paddingLeft: 6, paddingRight: 16, opacity: pressed ? 0.8 : 1 }, t.shadow]}>
-              <Avatar name={name} size={36} announcements={isAnnouncements} uri={group?.iconUrl ?? summary?.group.iconUrl} />
+              <Avatar name={name} size={36} announcements={isAnnouncements} assistant={isAssistant} uri={group?.iconUrl ?? summary?.group.iconUrl} />
               <View style={{ flexShrink: 1, minWidth: 0 }}>
                 <Text numberOfLines={1} style={{ fontSize: 15, fontWeight: "600", color: t.text }}>
                   {name}
@@ -442,7 +456,7 @@ export default function GroupChat() {
             </GlassSurface>
           )}
         </Pressable>
-        {preview ? <View style={{ width: 44 }} /> : <GlassIconButton icon="search" label={name ? `Search in ${name}` : "Search in this chat"} onPress={() => router.push({ pathname: "/search", params: { groupId: id } })} />}
+        {preview || isAssistant ? <View style={{ width: 44 }} /> : <GlassIconButton icon="search" label={name ? `Search in ${name}` : "Search in this chat"} onPress={() => router.push({ pathname: "/search", params: { groupId: id } })} />}
       </View>
 
       {/* Pinned: the newest pin; tapping shows it in the chat and moves on to the next. */}

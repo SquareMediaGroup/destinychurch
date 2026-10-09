@@ -24,6 +24,15 @@ export interface Release {
 
 export const RELEASES: Release[] = [
   {
+    version: "0.10",
+    features: [
+      { icon: "sparkle", title: "Meet DestinyAI", body: "Smart Search, now in Destiny One. Find it at the top of Chats and ask about events, services, groups, sermons or giving." },
+      { icon: "chats", title: "Ask it in any group", body: "Type @DestinyAI and your question. It answers in the chat, as a reply to you." },
+      { icon: "reply", title: "Give it context", body: "Reply to a message, then tag @DestinyAI, and it reads that message too. It can't see anything else in your chats." },
+      { icon: "calendar", title: "Knows what's on", body: "It reads the church calendar live, so it can tell you when things are and how to sign up." },
+    ],
+  },
+  {
     version: "0.9",
     features: [
       { icon: "camera", title: "A camera built into Destiny One", body: "Take a photo without leaving the chat. Tap the + button, then Camera." },

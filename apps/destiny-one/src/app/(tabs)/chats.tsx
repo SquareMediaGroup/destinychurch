@@ -73,9 +73,11 @@ function ChatRow({ group: g }: { group: D1GroupSummary }) {
         <Link.MenuAction icon={g.muted ? "bell" : "bell.slash"} onPress={() => toggleChatMute(g)}>
           {g.muted ? "Unmute" : "Mute"}
         </Link.MenuAction>
-        <Link.MenuAction icon="info.circle" onPress={() => router.push(`/group/${g.id}/info`)}>
-          Group info
-        </Link.MenuAction>
+        {g.kind === "assistant" ? null : (
+          <Link.MenuAction icon="info.circle" onPress={() => router.push(`/group/${g.id}/info`)}>
+            Group info
+          </Link.MenuAction>
+        )}
       </Link.Menu>
     </Link>
   );

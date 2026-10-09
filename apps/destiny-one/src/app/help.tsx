@@ -26,7 +26,15 @@ const TOPICS: { title: string; questions: Question[] }[] = [
     questions: [
       {
         q: "Why can't I message one person on their own?",
-        a: "Destiny One has no one-to-one chats. Every conversation happens in a group with at least 2 adults in it, so no one is ever chatting alone. It's part of how we keep everyone safe, young people especially.",
+        a: "Destiny One has no one-to-one chats between people. Every conversation happens in a group with at least 2 adults in it, so no one is ever chatting alone. It's part of how we keep everyone safe, young people especially. The one exception is DestinyAI, which is a computer, not a person.",
+      },
+      {
+        q: "What is DestinyAI?",
+        a: "DestinyAI answers questions about Destiny: what's on, service times, groups, sermons, giving and more. It reads the church calendar live. Find it at the top of Chats, or type @DestinyAI in a group to ask it there. It can get things wrong, so check anything important with a leader.",
+      },
+      {
+        q: "What can DestinyAI see?",
+        a: "In its own chat, only what you send it. In a group it can't read the chat at all. It only sees the message you tag it in, and, if you replied to a message when you tagged it, that message too. So to ask about something someone said, reply to their message and tag @DestinyAI.",
       },
       {
         q: "How do I join a group?",

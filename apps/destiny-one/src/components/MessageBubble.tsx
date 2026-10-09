@@ -11,7 +11,7 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Animated, Image, Pressable, Text, View } from "react-native";
 import * as WebBrowser from "expo-web-browser";
 import Svg, { Path } from "react-native-svg";
-import { mentionSegments, type D1EventContent, type D1LinkPreview, type D1LeaderRole, type D1Message, type D1PollContent, type Mentionable } from "@destiny/shared";
+import { DESTINY_AI_ID, mentionSegments, type D1EventContent, type D1LinkPreview, type D1LeaderRole, type D1Message, type D1PollContent, type Mentionable } from "@destiny/shared";
 import { Icon } from "@/components/Icon";
 import { MessageMenu, type MessageMenuActions } from "@/components/MessageMenu";
 import { Appear, Pop, PressableScale, reduceMotion, springs } from "@/components/Motion";
@@ -293,7 +293,7 @@ export function MessageBubble({ row, replyTo, senderTag, senderIsGroupAdmin, can
   return enter(
     <SwipeToReply enabled={swipeable} onReply={onReply}>
       <View style={{ flexDirection: "row", alignItems: "flex-end", gap: 12, paddingTop: row.gapTop, paddingRight: 56, paddingLeft: 12 }}>
-        <View style={{ width: 30, marginBottom: 2 }}>{row.showAvatar ? <Avatar name={name} size={30} /> : null}</View>
+        <View style={{ width: 30, marginBottom: 2 }}>{row.showAvatar ? <Avatar name={name} size={30} assistant={m.sender?.id === DESTINY_AI_ID} /> : null}</View>
         <View style={{ flexShrink: 1, alignItems: "flex-start", gap: 3, minWidth: 0 }}>
           {row.showName ? (
             <View style={[{ flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 12 }, photoChip(t)]}>
@@ -317,7 +317,8 @@ export function MessageBubble({ row, replyTo, senderTag, senderIsGroupAdmin, can
 function Mentions({ text, ids, people, meId, mine }: { text: string; ids: string[]; people: Mentionable[]; meId?: string; mine: boolean }) {
   const t = useTheme();
   const k = tones(t, mine);
-  const named = people.filter((p) => ids.includes(p.id));
+  // "@DestinyAI" is never in `ids` (it isn't a member), but is always drawn as a mention.
+  const named = people.filter((p) => ids.includes(p.id) || p.id === DESTINY_AI_ID);
   return (
     <>
       {mentionSegments(text, named).map((s, i) =>

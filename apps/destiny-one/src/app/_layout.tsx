@@ -144,6 +144,7 @@ function App() {
         <Stack.Screen name="report" options={{ presentation: "modal", contentStyle: { backgroundColor: t.grouped } }} />
         <Stack.Screen name="report-sent" options={{ presentation: "modal", gestureEnabled: false }} />
         <Stack.Screen name="feedback" options={{ presentation: "modal", contentStyle: { backgroundColor: t.grouped } }} />
+        <Stack.Screen name="beta" options={{ presentation: "modal", contentStyle: { backgroundColor: t.grouped } }} />
         <Stack.Screen name="message-info" options={{ presentation: "modal", contentStyle: { backgroundColor: t.grouped } }} />
         <Stack.Screen name="send-event" options={{ presentation: "modal", contentStyle: { backgroundColor: t.grouped } }} />
         <Stack.Screen name="forward" options={{ presentation: "modal", contentStyle: { backgroundColor: t.grouped } }} />

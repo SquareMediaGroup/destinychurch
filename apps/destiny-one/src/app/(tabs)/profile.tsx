@@ -3,7 +3,7 @@
 // Account, Preferences, Privacy and safety, Support and Your data, each under a
 // heading. Sign out and the version at the bottom.
 
-import { useState, type ReactNode } from "react";
+import { useRef, useState, type ReactNode } from "react";
 import { ActivityIndicator, Alert, Platform, Pressable, ScrollView, Share, Switch, Text, View } from "react-native";
 import { router } from "expo-router";
 import * as ImagePicker from "expo-image-picker";
@@ -17,7 +17,11 @@ import { Avatar, Card, CardButton, LargeTitle, SectionLabel, Separator, Settings
 import { api } from "@/lib/api";
 import { cleanImage } from "@/lib/cleanImage";
 import { errorMessage, useSession } from "@/state/session";
+import { haptic } from "@/lib/haptics";
 import { ORANGE, INK, useTheme } from "@/theme/tokens";
+
+const BETA_TAPS = 10;
+const TAP_WINDOW_MS = 2000;
 
 export default function Profile() {
   const t = useTheme();
@@ -26,6 +30,8 @@ export default function Profile() {
   const others = accounts.length - 1;
   const [signingOut, setSigningOut] = useState(false);
   const [avatarBusy, setAvatarBusy] = useState(false);
+  const taps = useRef(0);
+  const tapTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const top = me ? topRole(me.roles) : null;
   const role = top ? D1_ROLE_LABELS[top] : "Member";
@@ -97,6 +103,26 @@ export default function Profile() {
     } finally {
       setAvatarBusy(false);
     }
+  }
+
+  /**
+   * A tap on the version opens What's new; 10 quick taps in a row open the
+   * hidden beta tester screen instead. The count restarts after 2 seconds idle.
+   */
+  function tapVersion() {
+    taps.current += 1;
+    if (tapTimer.current) clearTimeout(tapTimer.current);
+    if (taps.current >= BETA_TAPS) {
+      taps.current = 0;
+      haptic.success();
+      router.push("/beta");
+      return;
+    }
+    tapTimer.current = setTimeout(() => {
+      // A single tap opens What's new, as before; a few stray ones do nothing.
+      if (taps.current === 1) router.push("/whats-new");
+      taps.current = 0;
+    }, TAP_WINDOW_MS);
   }
 
   function confirmSignOut() {
@@ -230,7 +256,7 @@ export default function Profile() {
       </Section>
 
       <CardButton label="Sign out" busy={signingOut} onPress={confirmSignOut} />
-      <Pressable onPress={() => router.push("/whats-new")} accessibilityRole="button" accessibilityLabel={`Destiny One ${Constants.expoConfig?.version ?? ""}. What's new`} hitSlop={8}>
+      <Pressable onPress={tapVersion} accessibilityRole="button" accessibilityLabel={`Destiny One ${Constants.expoConfig?.version ?? ""}. What's new`} hitSlop={8}>
         <Text style={{ textAlign: "center", fontSize: 13, color: t.subtle }}>Destiny One {Constants.expoConfig?.version ?? ""}</Text>
       </Pressable>
     </ScrollView>

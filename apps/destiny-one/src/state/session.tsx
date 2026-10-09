@@ -98,7 +98,7 @@ async function fetchMe(): Promise<D1Me | null> {
 }
 
 /** Screens you can be on without an active, consented account. Everything else is "in the app". */
-const OUTSIDE_APP = new Set(["", "index", "welcome", "email", "code", "request", "waiting", "notices"]);
+const OUTSIDE_APP = new Set(["", "index", "welcome", "email", "code", "request", "waiting", "notices", "setup"]);
 
 /** Whether the first route segment is one of the app's own screens (not launch or sign-in). */
 export function isInApp(segment: string | undefined): boolean {

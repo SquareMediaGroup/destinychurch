@@ -163,6 +163,7 @@ function App() {
         <Stack.Screen name="(tabs)" options={{ animation: "fade" }} />
         <Stack.Screen name="welcome" options={{ animation: "fade" }} />
         <Stack.Screen name="waiting" options={{ animation: "fade", gestureEnabled: false }} />
+        <Stack.Screen name="setup" options={{ animation: "fade", gestureEnabled: false }} />
         <Stack.Screen name="notices" options={{ animation: "fade", gestureEnabled: false }} />
         <Stack.Screen name="new-group" options={{ presentation: "modal", contentStyle: { backgroundColor: t.grouped } }} />
         <Stack.Screen name="report" options={{ presentation: "modal", contentStyle: { backgroundColor: t.grouped } }} />

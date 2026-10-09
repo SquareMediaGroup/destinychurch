@@ -8,6 +8,7 @@ import { AuthScreen } from "@/components/AuthScreen";
 import { Icon, type IconName } from "@/components/Icon";
 import { SafetyNotice, openDocument } from "@/components/SafetyNotice";
 import { Card, FormError, LargeTitle, Lead, PrimaryButton, Separator } from "@/components/ui";
+import { markReleaseSeen } from "@/lib/releaseSplash";
 import { api } from "@/lib/api";
 import { errorMessage, routeFor, useSession } from "@/state/session";
 import { useTheme } from "@/theme/tokens";
@@ -24,6 +25,8 @@ export default function Notices() {
     try {
       const next = await api.acceptConsents(me.outstandingConsents);
       setMe(next);
+      // A brand-new member has nothing to catch up on.
+      void markReleaseSeen();
       router.replace(routeFor(next));
     } catch (err) {
       setError(errorMessage(err));

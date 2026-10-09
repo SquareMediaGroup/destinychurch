@@ -4,7 +4,7 @@
 
 // First, so crash reporting is running before anything else loads.
 import { withErrorReporting } from "@/lib/sentry";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { liquidGlass } from "@/components/GlassSurface";
 import { Platform, StyleSheet, View } from "react-native";
 import { Stack, router, useSegments } from "expo-router";
@@ -17,6 +17,7 @@ import { useAppGate } from "@/lib/appGate";
 import { groupIdFrom } from "@/lib/push";
 import { handleNotificationAction, registerMessageCategory, registerNotificationTask } from "@/lib/notificationActions";
 import { currentOpenGroup } from "@/lib/queries";
+import { pendingSplash } from "@/lib/releaseSplash";
 import { persistOptions, queryClient } from "@/lib/queryClient";
 import { SwitchBanner } from "@/components/SwitchBanner";
 import { appearance } from "@/state/appearance";
@@ -68,6 +69,28 @@ function useNotificationTaps() {
     const sub = Notifications.addNotificationResponseReceivedListener(take);
     return () => sub.remove();
   }, []);
+}
+
+/**
+ * Shows the release splash (see lib/releases.ts) once per release, over the
+ * chat list, for an active member who has accepted the notices.
+ */
+function ReleaseSplash() {
+  const { ready, me } = useSession();
+  const segments = useSegments();
+  const inApp = isInApp(segments[0] as string | undefined);
+  const active = ready && me?.onboarding === "active" && me.outstandingConsents.length === 0;
+  const checked = useRef(false);
+
+  useEffect(() => {
+    if (!active || !inApp || checked.current) return;
+    checked.current = true;
+    void pendingSplash().then((r) => {
+      if (r) router.push("/release");
+    });
+  }, [active, inApp]);
+
+  return null;
 }
 
 /**
@@ -134,6 +157,7 @@ function App() {
       <StatusBar style="auto" />
       <AccessGuard />
       <OpenFromNotification />
+      <ReleaseSplash />
       <ShakeToReport />
       <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: t.bg } }}>
         <Stack.Screen name="(tabs)" options={{ animation: "fade" }} />
@@ -149,6 +173,7 @@ function App() {
         <Stack.Screen name="send-event" options={{ presentation: "modal", contentStyle: { backgroundColor: t.grouped } }} />
         <Stack.Screen name="forward" options={{ presentation: "modal", contentStyle: { backgroundColor: t.grouped } }} />
         <Stack.Screen name="share" options={{ presentation: "modal", gestureEnabled: false, contentStyle: { backgroundColor: t.grouped } }} />
+        <Stack.Screen name="release" options={{ presentation: "fullScreenModal", animation: "fade", gestureEnabled: false }} />
         <Stack.Screen name="search" options={{ animation: "fade" }} />
         <Stack.Screen name="camera" options={{ presentation: "fullScreenModal", animation: "fade", gestureEnabled: false, contentStyle: { backgroundColor: "#000" } }} />
         <Stack.Screen name="viewer" options={{ presentation: "transparentModal", animation: "fade", contentStyle: { backgroundColor: "transparent" } }} />

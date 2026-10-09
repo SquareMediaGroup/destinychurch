@@ -1,8 +1,8 @@
-// A10 Setup — shown once to every member (AccessGuard sends them here the first time they reach the app):
-// pick a look (System, Light, Dark, True dark) and whether read receipts are
-// on. Both can be changed later in Profile. The theme applies live as they
-// choose; read receipts are saved when they continue. Skipping keeps the
-// defaults (System, receipts on).
+// A10 Setup — shown once to every member (AccessGuard sends them here the first
+// time they reach the app), in two steps: 1 Appearance (System, Light, Dark,
+// True dark), 2 Read receipts. Both can be changed later in Profile. The theme
+// applies live as they choose; read receipts are saved on the last step.
+// Skipping keeps the defaults (System, receipts on).
 
 import { useState } from "react";
 import { Pressable, Text, View } from "react-native";
@@ -26,8 +26,16 @@ const MODES: { key: ThemeMode; label: string }[] = [
 ];
 
 const RECEIPT_CHOICES: { on: boolean; title: string; body: string }[] = [
-  { on: true, title: "Share read receipts", body: "People see when you've read their messages, and you see when they've read yours." },
-  { on: false, title: "Keep them private", body: "No one sees when you've read their messages, and you don't see theirs." },
+  {
+    on: true,
+    title: "Share read receipts",
+    body: "People see when you've read their messages, and you see when they've read yours.",
+  },
+  {
+    on: false,
+    title: "Keep them private",
+    body: "No one sees when you've read their messages, and you don't see theirs.",
+  },
 ];
 
 export default function Setup() {
@@ -35,6 +43,7 @@ export default function Setup() {
   const { me, setMe } = useSession();
   const current = useAppearance();
   const [receipts, setReceipts] = useState(true);
+  const [step, setStep] = useState<0 | 1>(0);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -62,75 +71,138 @@ export default function Setup() {
       footer={
         <>
           <FormError message={error} />
-          <PrimaryButton label="Continue" onPress={done} busy={busy} />
-          <TextButton label="Skip for now" onPress={() => void finish()} style={{ alignSelf: "center", paddingVertical: 8 }} />
+          {step === 0 ? <PrimaryButton label="Next" onPress={() => setStep(1)} /> : <PrimaryButton label="Done" onPress={done} busy={busy} />}
+          {step === 0 ? (
+            <TextButton label="Skip for now" onPress={() => void finish()} style={{ alignSelf: "center", paddingVertical: 8 }} />
+          ) : (
+            <TextButton label="Back" onPress={() => setStep(0)} style={{ alignSelf: "center", paddingVertical: 8 }} />
+          )}
         </>
       }
     >
       <View style={{ paddingTop: 30, paddingHorizontal: 4, gap: 8 }}>
-        <LargeTitle>Make it yours</LargeTitle>
-        <Lead>Two quick choices. You can change both any time in Profile.</Lead>
-      </View>
-
-      <View style={{ marginTop: 28, gap: 8 }}>
-        <SectionLabel>Appearance</SectionLabel>
-        <View accessibilityRole="radiogroup" style={{ flexDirection: "row", gap: 12 }}>
-          {MODES.map((o) => {
-            const on = o.key === current.mode;
-            return (
-              <Pressable
-                key={o.key}
-                accessibilityRole="radio"
-                accessibilityState={{ selected: on }}
-                accessibilityLabel={o.key === "system" ? "System, matches your phone" : o.label}
-                onPress={() => {
-                  if (!on) haptic.selection();
-                  appearance.set({ mode: o.key });
-                }}
-                style={({ pressed }) => ({ flex: 1, gap: 6, alignItems: "center", transform: [{ scale: pressed ? 0.96 : 1 }] })}
-              >
-                <View style={{ width: "100%", height: 84, borderRadius: 16, overflow: "hidden", flexDirection: "row", borderWidth: on ? 3 : 1, borderColor: on ? t.tint : t.sep }}>
-                  {o.key === "system" || o.key === "light" ? <ModeSwatch look="light" /> : null}
-                  {o.key === "system" || o.key === "dark" ? <ModeSwatch look="dark" /> : null}
-                  {o.key === "black" ? <ModeSwatch look="black" /> : null}
-                </View>
-                <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 13, fontWeight: on ? "600" : "400", color: t.text }}>
-                  {o.label}
-                </Text>
-              </Pressable>
-            );
-          })}
+        <View accessible accessibilityLabel={`Step ${step + 1} of 2`} style={{ flexDirection: "row", gap: 6, marginBottom: 10 }}>
+          {[0, 1].map((i) => (
+            <View
+              key={i}
+              style={{
+                width: i === step ? 22 : 8,
+                height: 8,
+                borderRadius: 4,
+                backgroundColor: i === step ? t.tint : t.fill,
+              }}
+            />
+          ))}
         </View>
+        <LargeTitle>{step === 0 ? "Choose your look" : "Read receipts"}</LargeTitle>
+        <Lead>
+          {step === 0 ? "Pick how Destiny One looks. You can change it any time in Profile." : "Choose whether people can see when you've read their messages. You can change it any time in Profile."}
+        </Lead>
       </View>
 
-      <View style={{ marginTop: 28, gap: 8 }}>
-        <SectionLabel>Read receipts</SectionLabel>
-        <Card>
-          {RECEIPT_CHOICES.map((c, i) => {
-            const on = c.on === receipts;
-            return (
-              <Pressable
-                key={String(c.on)}
-                accessibilityRole="radio"
-                accessibilityState={{ selected: on }}
-                onPress={() => {
-                  if (!on) haptic.selection();
-                  setReceipts(c.on);
-                }}
-                style={({ pressed }) => ({ flexDirection: "row", alignItems: "center", gap: 14, paddingVertical: 14, paddingHorizontal: 16, backgroundColor: pressed ? t.fill : "transparent", borderTopWidth: i ? 0.5 : 0, borderTopColor: t.sep })}
-              >
-                <View style={{ flex: 1, gap: 2 }}>
-                  <Text style={{ fontSize: 17, color: t.text }}>{c.title}</Text>
-                  <Text style={{ fontSize: 13, lineHeight: 18, color: t.muted }}>{c.body}</Text>
-                </View>
-                <View style={{ width: 24, height: 24, borderRadius: 12, borderWidth: on ? 0 : 1.5, borderColor: t.subtle, backgroundColor: on ? t.tint : "transparent", alignItems: "center", justifyContent: "center" }}>
-                  {on ? <Icon name="check" size={14} color={t.dark ? "#0E1013" : "#FFFFFF"} strokeWidth={3.2} /> : null}
-                </View>
-              </Pressable>
-            );
-          })}
-        </Card>
-      </View>
+      {step === 0 ? (
+        <View style={{ marginTop: 28, gap: 8 }}>
+          <SectionLabel>Appearance</SectionLabel>
+          <View accessibilityRole="radiogroup" style={{ flexDirection: "row", gap: 12 }}>
+            {MODES.map((o) => {
+              const on = o.key === current.mode;
+              return (
+                <Pressable
+                  key={o.key}
+                  accessibilityRole="radio"
+                  accessibilityState={{ selected: on }}
+                  accessibilityLabel={o.key === "system" ? "System, matches your phone" : o.label}
+                  onPress={() => {
+                    if (!on) haptic.selection();
+                    appearance.set({ mode: o.key });
+                  }}
+                  style={({ pressed }) => ({
+                    flex: 1,
+                    gap: 6,
+                    alignItems: "center",
+                    transform: [{ scale: pressed ? 0.96 : 1 }],
+                  })}
+                >
+                  <View
+                    style={{
+                      width: "100%",
+                      height: 84,
+                      borderRadius: 16,
+                      overflow: "hidden",
+                      flexDirection: "row",
+                      borderWidth: on ? 3 : 1,
+                      borderColor: on ? t.tint : t.sep,
+                    }}
+                  >
+                    {o.key === "system" || o.key === "light" ? <ModeSwatch look="light" /> : null}
+                    {o.key === "system" || o.key === "dark" ? <ModeSwatch look="dark" /> : null}
+                    {o.key === "black" ? <ModeSwatch look="black" /> : null}
+                  </View>
+                  <Text
+                    maxFontSizeMultiplier={1.3}
+                    style={{
+                      fontSize: 13,
+                      fontWeight: on ? "600" : "400",
+                      color: t.text,
+                    }}
+                  >
+                    {o.label}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
+        </View>
+      ) : (
+        <View style={{ marginTop: 28, gap: 8 }}>
+          <SectionLabel>Read receipts</SectionLabel>
+          <Card>
+            {RECEIPT_CHOICES.map((c, i) => {
+              const on = c.on === receipts;
+              return (
+                <Pressable
+                  key={String(c.on)}
+                  accessibilityRole="radio"
+                  accessibilityState={{ selected: on }}
+                  onPress={() => {
+                    if (!on) haptic.selection();
+                    setReceipts(c.on);
+                  }}
+                  style={({ pressed }) => ({
+                    flexDirection: "row",
+                    alignItems: "center",
+                    gap: 14,
+                    paddingVertical: 14,
+                    paddingHorizontal: 16,
+                    backgroundColor: pressed ? t.fill : "transparent",
+                    borderTopWidth: i ? 0.5 : 0,
+                    borderTopColor: t.sep,
+                  })}
+                >
+                  <View style={{ flex: 1, gap: 2 }}>
+                    <Text style={{ fontSize: 17, color: t.text }}>{c.title}</Text>
+                    <Text style={{ fontSize: 13, lineHeight: 18, color: t.muted }}>{c.body}</Text>
+                  </View>
+                  <View
+                    style={{
+                      width: 24,
+                      height: 24,
+                      borderRadius: 12,
+                      borderWidth: on ? 0 : 1.5,
+                      borderColor: t.subtle,
+                      backgroundColor: on ? t.tint : "transparent",
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
+                  >
+                    {on ? <Icon name="check" size={14} color={t.dark ? "#0E1013" : "#FFFFFF"} strokeWidth={3.2} /> : null}
+                  </View>
+                </Pressable>
+              );
+            })}
+          </Card>
+        </View>
+      )}
     </AuthScreen>
   );
 }

@@ -19,6 +19,7 @@ import { groupIdFrom } from "@/lib/push";
 import { handleNotificationAction, registerMessageCategory, registerNotificationTask } from "@/lib/notificationActions";
 import { currentOpenGroup } from "@/lib/queries";
 import { pendingSplash } from "@/lib/releaseSplash";
+import { hasSeenSetup } from "@/state/setupSeen";
 import { persistOptions, queryClient } from "@/lib/queryClient";
 import { SwitchBanner } from "@/components/SwitchBanner";
 import { appearance } from "@/state/appearance";
@@ -87,13 +88,18 @@ function ReleaseSplash() {
   const active = ready && me?.onboarding === "active" && me.outstandingConsents.length === 0;
   const checked = useRef(false);
 
+  const memberId = me?.id;
+
   useEffect(() => {
-    if (!active || !inApp || checked.current) return;
-    checked.current = true;
-    void pendingSplash().then((r) => {
+    if (!active || !inApp || !memberId || checked.current) return;
+    // Setup comes first: until it's been seen, AccessGuard is about to send them there. This re-runs when they come back.
+    void hasSeenSetup(memberId).then(async (seen) => {
+      if (!seen || checked.current) return;
+      checked.current = true;
+      const r = await pendingSplash();
       if (r) router.push("/release");
     });
-  }, [active, inApp]);
+  }, [active, inApp, memberId]);
 
   return null;
 }

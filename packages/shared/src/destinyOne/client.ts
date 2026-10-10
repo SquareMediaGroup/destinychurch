@@ -224,6 +224,7 @@ export function createDestinyOneClient({ baseUrl, getAccessToken, fetchImpl }: D
       call<{ ok: true }>("POST", `/groups/${id}/invites`, input),
     /** "I'm typing" — call at most every few seconds while the box has text. */
     typing: (id: string) => call<{ ok: true }>("POST", `/groups/${id}/typing`),
+    archive: (id: string, archived: boolean) => call<{ ok: true }>("POST", `/groups/${id}/archive`, { archived }),
     mute: (id: string, until: string | null) => call<{ ok: true }>("POST", `/groups/${id}/mute`, { until }),
     markRead: (id: string, messageId: number) => call<{ ok: true }>("POST", `/groups/${id}/read`, { messageId }),
 

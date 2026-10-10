@@ -54,6 +54,8 @@ interface OverviewRow {
   my_role: D1MembershipRole;
   joined_at: string;
   muted_until: string | null;
+  /** Not from the SQL: filled in by overview() from the membership row. */
+  archived_at?: string | null;
   unread_count: number;
   last_id: number | null;
   last_sender: string | null;
@@ -84,6 +86,7 @@ function toSummary(row: OverviewRow): D1GroupSummary {
     myRole: row.my_role,
     unreadCount: row.unread_count,
     muted: Boolean(row.muted_until && row.muted_until > new Date().toISOString()),
+    archived: Boolean(row.archived_at),
     lastMessage:
       row.last_id === null
         ? null
@@ -120,6 +123,18 @@ async function overview(memberId: string, groupId?: string): Promise<OverviewRow
   });
   if (error) throw fromDbError(error);
   const rows = (data ?? []) as OverviewRow[];
+
+  // Which of these chats this person has archived (kept off the RPC so its return type is unchanged).
+  if (rows.length) {
+    const { data: mine } = await supabase
+      .from("d1_group_members")
+      .select("group_id, archived_at")
+      .eq("member_id", memberId)
+      .is("left_at", null)
+      .in("group_id", rows.map((r) => r.group_id));
+    const archivedAt = new Map((mine ?? []).map((m) => [m.group_id as string, m.archived_at as string | null]));
+    for (const r of rows) r.archived_at = archivedAt.get(r.group_id) ?? null;
+  }
 
   // A poll or a shared event has no body, so the SQL gives no preview for it.
   // Fetch just those messages' content (one query) so the chat list can say

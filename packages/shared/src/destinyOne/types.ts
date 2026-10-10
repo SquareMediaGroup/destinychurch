@@ -142,6 +142,8 @@ export interface D1GroupSummary {
   myRole: D1MembershipRole;
   unreadCount: number;
   muted: boolean;
+  /** Hidden from the Chats list by this person (and silenced). Per person, not per group. */
+  archived: boolean;
   lastMessage: D1LastMessage | null;
 }
 

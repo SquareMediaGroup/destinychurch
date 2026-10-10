@@ -4,6 +4,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ActivityIndicator, Alert, FlatList, KeyboardAvoidingView, Pressable, Text, TextInput, View } from "react-native";
+import { GroupPeek } from "@/components/GroupPeek";
 import { router, useFocusEffect, useIsPreview, useLocalSearchParams } from "expo-router";
 import * as Clipboard from "expo-clipboard";
 import * as WebBrowser from "expo-web-browser";
@@ -41,7 +42,13 @@ import { ORANGE, useTheme } from "@/theme/tokens";
 /** How far back (pages of 40) a search result will go to find its message. */
 const MAX_JUMP_PAGES = 10;
 
+/** A peek from the chats list draws a light read-only view; only a real open builds the chat. */
 export default function GroupChat() {
+  const { id } = useLocalSearchParams<{ id: string }>();
+  return useIsPreview() ? <GroupPeek id={id} /> : <GroupChatScreen />;
+}
+
+function GroupChatScreen() {
   const t = useTheme();
   // Pressing and holding a chat in the list peeks at it here: read-only, and
   // it doesn't count as reading it (no receipts, the badge stays).

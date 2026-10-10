@@ -449,9 +449,10 @@ export default function GroupChat() {
       )}
 
       {/* Header: back · group pill (opens info) · search */}
-      {t.wall || t.photo ? null : <LinearGradient pointerEvents="none" colors={[t.bg, withAlpha(t.bg, 0)]} locations={[0.45, 1]} style={{ position: "absolute", top: 0, left: 0, right: 0, height: insets.top + 76 }} />}
+      {t.wall || t.photo || preview ? null : <LinearGradient pointerEvents="none" colors={[t.bg, withAlpha(t.bg, 0)]} locations={[0.45, 1]} style={{ position: "absolute", top: 0, left: 0, right: 0, height: insets.top + 76 }} />}
+      {preview ? null : (
       <View style={{ position: "absolute", top: insets.top, left: 0, right: 0, height: 56, flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 16 }}>
-        {preview ? <View style={{ width: 44 }} /> : <BackButton />}
+        <BackButton />
         <Pressable accessibilityRole={isAssistant ? "header" : "button"} accessibilityLabel={isAssistant ? name : `${name}, group info`} disabled={isAssistant} onPress={() => router.push(`/group/${id}/info`)} style={{ flexShrink: 1, marginHorizontal: 8 }}>
           {({ pressed }) => (
             <GlassSurface interactive style={[{ height: 48, maxWidth: 240, borderRadius: 24, flexDirection: "row", alignItems: "center", gap: 10, paddingLeft: 6, paddingRight: 16, opacity: pressed ? 0.8 : 1 }, t.shadow]}>
@@ -467,8 +468,9 @@ export default function GroupChat() {
             </GlassSurface>
           )}
         </Pressable>
-        {preview || isAssistant ? <View style={{ width: 44 }} /> : <GlassIconButton icon="search" label={name ? `Search in ${name}` : "Search in this chat"} onPress={() => router.push({ pathname: "/search", params: { groupId: id } })} />}
+        {isAssistant ? <View style={{ width: 44 }} /> : <GlassIconButton icon="search" label={name ? `Search in ${name}` : "Search in this chat"} onPress={() => router.push({ pathname: "/search", params: { groupId: id } })} />}
       </View>
+      )}
 
       {/* Pinned: the newest pin; tapping shows it in the chat and moves on to the next. */}
       {shownPin && !preview ? (

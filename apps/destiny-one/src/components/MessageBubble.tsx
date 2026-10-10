@@ -15,7 +15,7 @@ import { DESTINY_AI_ID, mentionSegments, type D1EventContent, type D1LinkPreview
 import { Icon } from "@/components/Icon";
 import { MessageMenu, type MessageMenuActions } from "@/components/MessageMenu";
 import { Appear, Pop, PressableScale, reduceMotion, springs } from "@/components/Motion";
-import { SermonPlayer, sermonWatchUrl } from "@/components/SermonPlayer";
+import { SermonPlayer, sermonWatchUrl, useSermonCardWidth } from "@/components/SermonPlayer";
 import { SwipeToReply } from "@/components/Swipe";
 import { VoiceNote } from "@/components/VoiceNote";
 import { Avatar, MemberTag, withAlpha } from "@/components/ui";
@@ -449,10 +449,11 @@ function SermonCard({ content, mine }: { content: D1SermonContent; mine: boolean
   const t = useTheme();
   const k = tones(t, mine);
   const { sermon } = content;
+  const width = useSermonCardWidth();
   const when = new Date(sermon.publishedAt).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric", timeZone: "Europe/London" });
   return (
-    <View style={{ marginTop: 2, marginHorizontal: -6, borderRadius: 14, overflow: "hidden", backgroundColor: k.panel, minWidth: 240 }}>
-      <SermonPlayer videoId={sermon.videoId} title={sermon.title} thumbnailUrl={sermon.thumbnailUrl} />
+    <View style={{ marginTop: 2, marginHorizontal: -6, borderRadius: 14, overflow: "hidden", backgroundColor: k.panel, width }}>
+      <SermonPlayer videoId={sermon.videoId} title={sermon.title} thumbnailUrl={sermon.thumbnailUrl} width={width} />
       <View style={{ padding: 10, gap: 3 }}>
         <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
           <Icon name="play" size={13} color={k.name} strokeWidth={2.2} />

@@ -398,7 +398,7 @@ export default function GroupChat() {
           }
           renderItem={({ item }) =>
             item.kind === "stream" ? (
-              <AssistantStreaming label={item.label} text={item.text} />
+              <AssistantStreaming label={item.label} text={item.text} roomy={isAssistant} />
             ) : item.kind === "msg" ? (
               <View style={item.m.id === highlightId ? { backgroundColor: withAlpha(ORANGE, 0.16) } : undefined}>
               <MessageBubble
@@ -407,6 +407,7 @@ export default function GroupChat() {
                 senderTag={(item.m.sender && tags.get(item.m.sender.id)) || null}
                 senderIsGroupAdmin={!!item.m.sender && admins.has(item.m.sender.id)}
                 canReply={!!group?.canPost && !frozen && !archived}
+                roomy={isAssistant}
                 arriving={arriving(item.m)}
                 onReply={() => startReply(item.m)}
                 menu={menuFor(item.m)}

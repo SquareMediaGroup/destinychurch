@@ -102,6 +102,8 @@ interface BubbleProps {
   senderIsGroupAdmin: boolean;
   /** False where posting isn't allowed (announcements, paused groups). */
   canReply: boolean;
+  /** The private DestinyAI chat: no sender header, and more room around each message. */
+  roomy?: boolean;
   /** Just sent or just received while the chat is open: it springs in instead of simply being there. */
   arriving?: boolean;
   /** What the press-and-hold menu does. Not shown for unsent or deleted messages. */
@@ -142,7 +144,7 @@ function tones(t: Theme, mine: boolean) {
     : { text: t.text, soft: t.muted, panel: t.bg, track: t.fill, bar: t.accentSoft, barMine: ORANGE, name: t.tint };
 }
 
-export function MessageBubble({ row, replyTo, senderTag, senderIsGroupAdmin, canReply, arriving, menu, onReply, onOpenAttachment, onToggleReaction, onVotePoll, onRetry, people, meId }: BubbleProps) {
+export function MessageBubble({ row, replyTo, senderTag, senderIsGroupAdmin, canReply, roomy, arriving, menu, onReply, onOpenAttachment, onToggleReaction, onVotePoll, onRetry, people, meId }: BubbleProps) {
   const t = useTheme();
   const { m } = row;
   const k = tones(t, m.mine);
@@ -280,7 +282,7 @@ export function MessageBubble({ row, replyTo, senderTag, senderIsGroupAdmin, can
   if (m.mine) {
     return enter(
       <SwipeToReply enabled={swipeable} onReply={onReply}>
-        <View style={{ alignItems: "flex-end", gap: 3, paddingTop: row.gapTop, paddingRight: 14, paddingLeft: 64 }}>
+        <View style={{ alignItems: "flex-end", gap: 3, paddingTop: roomy ? row.gapTop + 6 : row.gapTop, paddingRight: roomy ? 20 : 14, paddingLeft: 64 }}>
           {shown}
           {reactions}
           {/* The time only shows under the last bubble of a run, like Messages. */}
@@ -296,10 +298,10 @@ export function MessageBubble({ row, replyTo, senderTag, senderIsGroupAdmin, can
 
   return enter(
     <SwipeToReply enabled={swipeable} onReply={onReply}>
-      <View style={{ flexDirection: "row", alignItems: "flex-end", gap: 12, paddingTop: row.gapTop, paddingRight: 56, paddingLeft: 12 }}>
+      <View style={{ flexDirection: "row", alignItems: "flex-end", gap: 12, paddingTop: roomy ? row.gapTop + 6 : row.gapTop, paddingRight: roomy ? 44 : 56, paddingLeft: roomy ? 18 : 12 }}>
         <View style={{ width: 30, marginBottom: 2 }}>{row.showAvatar ? <Avatar name={name} size={30} assistant={m.sender?.id === DESTINY_AI_ID} /> : null}</View>
         <View style={{ flexShrink: 1, alignItems: "flex-start", gap: 3, minWidth: 0 }}>
-          {row.showName ? (
+          {row.showName && !roomy ? (
             <View style={[{ flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 12 }, photoChip(t)]}>
               <Text style={{ fontSize: 12, fontWeight: "600", color: t.muted }}>{name}</Text>
               <MemberTag tag={senderTag} groupAdmin={senderIsGroupAdmin} />

@@ -7,18 +7,20 @@ import { Animated, Easing, Text, View } from "react-native";
 import { Avatar, BetaTag } from "@/components/ui";
 import { useTheme } from "@/theme/tokens";
 
-export function AssistantStreaming({ label, text }: { label: string | null; text: string }) {
+export function AssistantStreaming({ label, text, roomy }: { label: string | null; text: string; roomy?: boolean }) {
   const t = useTheme();
   return (
-    <View style={{ flexDirection: "row", alignItems: "flex-end", gap: 12, paddingTop: 12, paddingRight: 56, paddingLeft: 12 }}>
+    <View style={{ flexDirection: "row", alignItems: "flex-end", gap: 12, paddingTop: roomy ? 18 : 12, paddingRight: roomy ? 44 : 56, paddingLeft: roomy ? 18 : 12 }}>
       <View style={{ width: 30, marginBottom: 2 }}>
         <Avatar name="DestinyAI" size={30} assistant />
       </View>
       <View style={{ flexShrink: 1, gap: 3, minWidth: 0 }}>
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginLeft: 4 }}>
-          <Text style={{ fontSize: 12, fontWeight: "600", color: t.muted }}>DestinyAI</Text>
-          <BetaTag />
-        </View>
+        {roomy ? null : (
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginLeft: 4 }}>
+            <Text style={{ fontSize: 12, fontWeight: "600", color: t.muted }}>DestinyAI</Text>
+            <BetaTag />
+          </View>
+        )}
         <View style={{ backgroundColor: t.card, borderRadius: 18, borderBottomLeftRadius: 6, paddingHorizontal: 14, paddingVertical: 10, minHeight: 40, justifyContent: "center" }}>
           {text ? (
             <Text style={{ fontSize: 17, lineHeight: 23, color: t.text }}>

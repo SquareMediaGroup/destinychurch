@@ -5,9 +5,14 @@
 // this card (an error boundary) instead of taking the chat down with it. In
 // either case the card falls back to the thumbnail, which opens the sermon in
 // the in-app browser.
+//
+// The player always gets a fixed width and height. With only an aspect ratio,
+// YouTube's page filled whatever height it was given and reported a taller
+// size back, so the row grew without end (tens of thousands of points) and the
+// chat turned into blank space.
 
 import { Component, type ComponentType, type ReactNode } from "react";
-import { Image, Pressable, TurboModuleRegistry, View } from "react-native";
+import { Image, Pressable, TurboModuleRegistry, View, useWindowDimensions } from "react-native";
 import * as WebBrowser from "expo-web-browser";
 import { Icon } from "@/components/Icon";
 
@@ -15,6 +20,8 @@ type WebViewComponent = ComponentType<{
   source: { uri: string; headers?: Record<string, string> };
   allowsInlineMediaPlayback?: boolean;
   allowsFullscreenVideo?: boolean;
+  scrollEnabled?: boolean;
+  automaticallyAdjustContentInsets?: boolean;
   style?: object;
   accessibilityLabel?: string;
 }>;
@@ -70,17 +77,29 @@ function Thumbnail({ videoId, title, thumbnailUrl }: { videoId: string; title: s
   );
 }
 
-export function SermonPlayer({ videoId, title, thumbnailUrl }: { videoId: string; title: string; thumbnailUrl: string }) {
+/**
+ * How wide a sermon card is: what an incoming bubble has room for (the screen,
+ * less the avatar, its gaps and the bubble's padding), up to 320.
+ */
+export function useSermonCardWidth(): number {
+  const { width } = useWindowDimensions();
+  return Math.max(200, Math.min(320, Math.round(width - 130)));
+}
+
+export function SermonPlayer({ videoId, title, thumbnailUrl, width }: { videoId: string; title: string; thumbnailUrl: string; width: number }) {
+  const height = Math.round((width * 9) / 16);
   const thumbnail = <Thumbnail videoId={videoId} title={title} thumbnailUrl={thumbnailUrl} />;
   return (
-    <View style={{ aspectRatio: 16 / 9, backgroundColor: "#000" }}>
+    <View style={{ width, height, backgroundColor: "#000", overflow: "hidden" }}>
       {WebView ? (
         <PlayerBoundary fallback={thumbnail}>
           <WebView
             source={{ uri: `https://www.youtube-nocookie.com/embed/${videoId}?playsinline=1&rel=0`, headers: { Referer: "https://destinytees.uk" } }}
             allowsInlineMediaPlayback
             allowsFullscreenVideo
-            style={{ flex: 1, backgroundColor: "#000" }}
+            scrollEnabled={false}
+            automaticallyAdjustContentInsets={false}
+            style={{ width, height, backgroundColor: "#000" }}
             accessibilityLabel={`Sermon: ${title}`}
           />
         </PlayerBoundary>

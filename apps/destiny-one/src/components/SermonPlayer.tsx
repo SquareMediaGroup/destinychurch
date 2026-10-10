@@ -13,6 +13,7 @@
 
 import { Component, type ComponentType, type ReactNode } from "react";
 import { Image, Pressable, TurboModuleRegistry, View, useWindowDimensions } from "react-native";
+import { useIsPreview } from "expo-router";
 import * as WebBrowser from "expo-web-browser";
 import { Icon } from "@/components/Icon";
 
@@ -89,9 +90,12 @@ export function useSermonCardWidth(): number {
 export function SermonPlayer({ videoId, title, thumbnailUrl, width }: { videoId: string; title: string; thumbnailUrl: string; width: number }) {
   const height = Math.round((width * 9) / 16);
   const thumbnail = <Thumbnail videoId={videoId} title={title} thumbnailUrl={thumbnailUrl} />;
+  // A chat peek (press and hold in the list) only shows the thumbnail: a web
+  // view per card, mounted on every peek, piles up and crashes Expo Go.
+  const peeking = useIsPreview();
   return (
     <View style={{ width, height, backgroundColor: "#000", overflow: "hidden" }}>
-      {WebView ? (
+      {WebView && !peeking ? (
         <PlayerBoundary fallback={thumbnail}>
           <WebView
             source={{ uri: `https://www.youtube-nocookie.com/embed/${videoId}?playsinline=1&rel=0`, headers: { Referer: "https://destinytees.uk" } }}

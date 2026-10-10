@@ -2219,6 +2219,15 @@ ChurchSuite calendar, via `upcomingEventSeries()` in `lib/destinyOne/events.serv
 the Safeguarding Lead), and says sorry in the chat rather than going quiet if anything fails. In its own
 chat it re-reads the last 16 messages for follow-ups, and only reads text (the composer is text-only there).
 
+**Live answers (streaming).** While DestinyAI works, `liveUpdates()` in `assistant.server.ts` sends
+`assistant_status` (what it's doing: "Checking the calendar", "Searching the web", or "Thinking") and
+`assistant_delta` (the whole text so far, throttled to every 150 ms) over the REST broadcast, so nothing
+is stored. Each model turn streams (`streamTurn`). The app shows them through `state/assistantStream.ts`
+as a bubble at the bottom of the chat (`components/AssistantStreaming.tsx`: animated dots, then the text
+with a blinking cursor). The finished message (the normal `message` event from DestinyAI) clears the
+bubble. A bubble with no update for 60 s is dropped, in case that message was lost. `liveUpdates().done()`
+waits for in-flight updates before posting, so a stale update can't land after the answer.
+
 **Tested by:** `scripts/test-sql.sh` (`npm run test:sql`, and the "Database rules" CI job) — applies
 Supabase stubs + every Destiny One migration (parts 1–9, plus the profile-picture, min-build and
 group-icon migrations) to a throwaway local Postgres and runs `tests/sql/destiny-one.sql`. A second

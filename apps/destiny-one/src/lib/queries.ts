@@ -16,9 +16,10 @@
 // the background, only if something on screen is using it.
 
 import { useQuery } from "@tanstack/react-query";
-import { contentPreview, type D1CommunitySummary, type D1GroupDetail, type D1GroupSummary, type D1Me, type D1Message, type D1RealtimeEvent } from "@destiny/shared";
+import { DESTINY_AI_ID, contentPreview, type D1CommunitySummary, type D1GroupDetail, type D1GroupSummary, type D1Me, type D1Message, type D1RealtimeEvent } from "@destiny/shared";
 import { api } from "@/lib/api";
 import { queryClient } from "@/lib/queryClient";
+import { clearAssistantStream, setAssistantStatus, setAssistantText } from "@/state/assistantStream";
 import { typing } from "@/state/typing";
 
 export type LocalMessage = D1Message & { status?: "sending" | "failed"; localAttachment?: { name: string; mimeType: string; sizeBytes: number | null; durationMs?: number } };
@@ -162,6 +163,8 @@ export function applyEvent(e: D1RealtimeEvent, meId: string) {
   switch (e.event) {
     case "message": {
       const p = e.payload;
+      // DestinyAI's finished answer replaces the live bubble it was writing.
+      if (p.sender.id === DESTINY_AI_ID) clearAssistantStream(p.groupId);
       if (isBlocked(p.sender.id)) return; // someone I've blocked: never shown, never unread
       const mine = p.sender.id === meId;
       typing.stopped(p.groupId, p.sender.id);
@@ -238,6 +241,12 @@ export function applyEvent(e: D1RealtimeEvent, meId: string) {
       updateMessages(groupId, (list) => list.map((m) => (m.id === id ? { ...m, linkPreview: preview } : m)));
       return;
     }
+    case "assistant_status":
+      setAssistantStatus(e.payload.groupId, e.payload.label);
+      return;
+    case "assistant_delta":
+      setAssistantText(e.payload.groupId, e.payload.text);
+      return;
     case "typing": {
       const { groupId, memberId, name } = e.payload;
       if (memberId !== meId && !isBlocked(memberId)) typing.seen(groupId, memberId, name);

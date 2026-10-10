@@ -9,6 +9,7 @@ import * as Clipboard from "expo-clipboard";
 import * as WebBrowser from "expo-web-browser";
 import { LinearGradient } from "expo-linear-gradient";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { AssistantStreaming } from "@/components/AssistantStreaming";
 import { Composer } from "@/components/Composer";
 import { Backdrop } from "@/components/Wallpaper";
 import { GlassSurface } from "@/components/GlassSurface";
@@ -28,6 +29,7 @@ import { hideSender, setOpenGroup } from "@/lib/queries";
 import { uploadAttachment } from "@/lib/upload";
 import { useConversation, type LocalMessage } from "@/lib/useConversation";
 import { chatDrafts } from "@/state/drafts";
+import { useAssistantStream } from "@/state/assistantStream";
 import { eventPick, useEventPick } from "@/state/eventPick";
 import { jumpTo, useJumpTarget } from "@/state/jump";
 import { typingLabel, typingPing, useTyping } from "@/state/typing";
@@ -68,6 +70,12 @@ export default function GroupChat() {
   const [toast, setToast] = useState<string | null>(null);
 
   const rows = useMemo(() => (messages ? buildRows(messages, firstUnreadId).reverse() : []), [messages, firstUnreadId]);
+  // DestinyAI's answer while it's being written sits at the bottom (index 0 of the inverted list).
+  const liveAnswer = useAssistantStream(id);
+  const shownRows = useMemo<Row[]>(
+    () => (liveAnswer && (liveAnswer.label || liveAnswer.text) ? [{ kind: "stream", key: "stream", label: liveAnswer.label, text: liveAnswer.text }, ...rows] : rows),
+    [liveAnswer, rows],
+  );
 
   // Messages that turn up while the chat is open (sent here, or arriving live)
   // spring in; everything already there, or loaded from further back, doesn't.
@@ -360,7 +368,7 @@ export default function GroupChat() {
         <FlatList
           ref={list}
           inverted
-          data={rows}
+          data={shownRows}
           extraData={highlightId}
           keyExtractor={(r) => r.key}
           onScrollToIndexFailed={(info) => {
@@ -389,7 +397,9 @@ export default function GroupChat() {
             </View>
           }
           renderItem={({ item }) =>
-            item.kind === "msg" ? (
+            item.kind === "stream" ? (
+              <AssistantStreaming label={item.label} text={item.text} />
+            ) : item.kind === "msg" ? (
               <View style={item.m.id === highlightId ? { backgroundColor: withAlpha(ORANGE, 0.16) } : undefined}>
               <MessageBubble
                 row={item}

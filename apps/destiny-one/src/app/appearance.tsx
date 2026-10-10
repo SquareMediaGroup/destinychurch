@@ -9,13 +9,13 @@ import { Alert, Image, Pressable, ScrollView, Text, View, useColorScheme } from 
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Icon } from "@/components/Icon";
 import { Tail, photoChip } from "@/components/MessageBubble";
-import { Slider } from "@/components/Slider";
+import { PresetPicker } from "@/components/PresetPicker";
 import { Card, FloatingBack, LargeTitle, SectionLabel, TextButton } from "@/components/ui";
 import { Backdrop, Wallpaper } from "@/components/Wallpaper";
 import { customWallpaperUri, deleteCustomWallpaper, pickCustomWallpaper } from "@/lib/customWallpaper";
 import { haptic } from "@/lib/haptics";
 import { appearance, useAppearance, type ThemeMode } from "@/state/appearance";
-import { CUSTOM_WALLPAPER, DEFAULT_SEND_COLOUR, DEFAULT_WALLPAPER, MAX_DIM, PAGE_BG, PHOTO_WALLPAPERS, SEND_COLOURS, WALLPAPERS, isPhotoWallpaper, type LookKey } from "@/theme/appearance";
+import { BLUR_PRESETS, CUSTOM_WALLPAPER, DEFAULT_SEND_COLOUR, DEFAULT_WALLPAPER, DIM_PRESETS, PAGE_BG, PHOTO_WALLPAPERS, SEND_COLOURS, WALLPAPERS, isPhotoWallpaper, nearestPreset, type LookKey } from "@/theme/appearance";
 import { photoFiles } from "@/theme/photoWallpapers";
 import { useTheme } from "@/theme/tokens";
 
@@ -185,13 +185,12 @@ export default function AppearanceScreen() {
 
           {onPhoto ? (
             <Card style={{ padding: 16, gap: 4, marginTop: 6 }}>
-              <Slider
+              <PresetPicker
                 label={scheme !== "light" ? "Dim" : "Fade"}
-                value={current.dim / MAX_DIM}
-                onChange={(v) => appearance.set({ dim: v * MAX_DIM })}
-                valueText={`${Math.round(current.dim * 100)}%`}
+                index={nearestPreset(DIM_PRESETS, current.dim)}
+                onChange={(i) => appearance.set({ dim: DIM_PRESETS[i] })}
               />
-              <Slider label="Blur" value={current.blur} onChange={(v) => appearance.set({ blur: v })} valueText={`${Math.round(current.blur * 100)}%`} />
+              <PresetPicker label="Blur" index={nearestPreset(BLUR_PRESETS, current.blur)} onChange={(i) => appearance.set({ blur: BLUR_PRESETS[i] })} />
               <Text style={{ fontSize: 13, lineHeight: 18, color: t.subtle, paddingTop: 4 }}>
                 {scheme !== "light" ? "Dimming" : "Fading"} and blurring make messages easier to read over a busy photo.
               </Text>

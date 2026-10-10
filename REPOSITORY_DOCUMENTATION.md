@@ -6220,8 +6220,10 @@ Polished to Apple's Human Interface Guidelines. The pieces, and why they exist:
   messages" dividers, "This message was deleted", the empty state) goes on a chip in the page colour
   at 90% opacity (`photoChip()` in `MessageBubble.tsx`, `PHOTO_CHIP_ALPHA`). The unit tests check
   that chip against pure black and pure white behind it in both modes (7:1 body, 4.5:1 muted).
-  The sliders (`src/components/Slider.tsx`) are `PanResponder` + Views (no native module) and
-  expose the standard "adjustable" role to screen readers. `Backdrop` (`Wallpaper.tsx`) draws
+  Fade/Dim and Blur are five-step tap pickers (`src/components/PresetPicker.tsx`: Low, Low-Med,
+  Med, High-Med, High; `DIM_PRESETS`/`BLUR_PRESETS` in `theme/appearance.ts`), not sliders: a
+  dragged slider fought the swipe-back gesture. Stored values stay numeric; an older saved value
+  shows as its nearest step (`nearestPreset`). Screen readers get a radio group. `Backdrop` (`Wallpaper.tsx`) draws
   whichever wallpaper is active and is used by the chat and the live preview.
 - **Three looks: Light, Dark, True dark** (Settings > Appearance > Theme; `ThemeMode` is `system | light | dark | black`). **Dark** is a warm tint of the brand orange (`#1A110A` page, `#26190F` cards). **True dark** (`black`) is near-black and neutral (`#0B0B0C` page, `#151517` cards, `#1C1C1F`/`#28282C` fills), deliberately not pure `#000` (harsh against white text); surfaces step up in small even lightness steps. True dark is a dark scheme to the phone (`applyMode`), so System still maps a dark phone to warm Dark. Page colours live in `PAGE_BG`; each wallpaper has `light`/`dark`/`black` tones and send colours reuse their `dark` tone for `black`, all covered by the contrast tests. The splash screen stays warm (it can't know the mode).
 - **Bubbles** (`MessageBubble.tsx`) join in runs (the corner facing the sender flattens between

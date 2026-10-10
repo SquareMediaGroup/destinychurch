@@ -11,11 +11,11 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Animated, Image, Pressable, Text, View } from "react-native";
 import * as WebBrowser from "expo-web-browser";
 import Svg, { Path } from "react-native-svg";
-import { WebView } from "react-native-webview";
 import { DESTINY_AI_ID, mentionSegments, type D1EventContent, type D1LinkPreview, type D1LeaderRole, type D1Message, type D1PollContent, type D1SermonContent, type Mentionable } from "@destiny/shared";
 import { Icon } from "@/components/Icon";
 import { MessageMenu, type MessageMenuActions } from "@/components/MessageMenu";
 import { Appear, Pop, PressableScale, reduceMotion, springs } from "@/components/Motion";
+import { SermonPlayer, sermonWatchUrl } from "@/components/SermonPlayer";
 import { SwipeToReply } from "@/components/Swipe";
 import { VoiceNote } from "@/components/VoiceNote";
 import { Avatar, MemberTag, withAlpha } from "@/components/ui";
@@ -452,15 +452,7 @@ function SermonCard({ content, mine }: { content: D1SermonContent; mine: boolean
   const when = new Date(sermon.publishedAt).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric", timeZone: "Europe/London" });
   return (
     <View style={{ marginTop: 2, marginHorizontal: -6, borderRadius: 14, overflow: "hidden", backgroundColor: k.panel, minWidth: 240 }}>
-      <View style={{ aspectRatio: 16 / 9, backgroundColor: "#000" }}>
-        <WebView
-          source={{ uri: `https://www.youtube-nocookie.com/embed/${sermon.videoId}?playsinline=1&rel=0`, headers: { Referer: "https://destinytees.uk" } }}
-          allowsInlineMediaPlayback
-          allowsFullscreenVideo
-          style={{ flex: 1, backgroundColor: "#000" }}
-          accessibilityLabel={`Sermon: ${sermon.title}`}
-        />
-      </View>
+      <SermonPlayer videoId={sermon.videoId} title={sermon.title} thumbnailUrl={sermon.thumbnailUrl} />
       <View style={{ padding: 10, gap: 3 }}>
         <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
           <Icon name="play" size={13} color={k.name} strokeWidth={2.2} />
@@ -472,7 +464,7 @@ function SermonCard({ content, mine }: { content: D1SermonContent; mine: boolean
         <Text style={{ fontSize: 13, color: k.soft }}>
           {[sermon.speaker, when].filter(Boolean).join(" · ")}
         </Text>
-        <Pressable accessibilityRole="link" onPress={() => void WebBrowser.openBrowserAsync(`https://www.youtube.com/watch?v=${sermon.videoId}`)} hitSlop={6}>
+        <Pressable accessibilityRole="link" onPress={() => void WebBrowser.openBrowserAsync(sermonWatchUrl(sermon.videoId))} hitSlop={6}>
           <Text style={{ fontSize: 13, fontWeight: "600", color: k.name }}>Open on YouTube</Text>
         </Pressable>
       </View>

@@ -18,6 +18,7 @@
 
 import { useEffect, useState, type ReactNode } from "react";
 import { Animated, Easing, Modal, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from "react-native";
+import { DESTINY_AI_ID } from "@destiny/shared";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Icon, type IconName } from "@/components/Icon";
 import { reduceMotion, springs } from "@/components/Motion";
@@ -81,7 +82,7 @@ function items(m: LocalMessage, a: MessageMenuActions): Item[][] {
   if (a.onInfo) everyday.push({ label: "Info", icon: "info", run: a.onInfo });
   const serious: Item[] = [];
   if (theirs) serious.push({ label: "Report", icon: "flag", run: a.onReport, destructive: true });
-  if (theirs && m.sender) serious.push({ label: `Block ${m.sender.displayName.split(" ")[0]}`, icon: "block", run: a.onBlock, destructive: true });
+  if (theirs && m.sender && m.sender.id !== DESTINY_AI_ID) serious.push({ label: `Block ${m.sender.displayName.split(" ")[0]}`, icon: "block", run: a.onBlock, destructive: true });
   if (a.canDelete) serious.push({ label: "Delete", icon: "trash", run: a.onDelete, destructive: true });
   return [everyday, serious].filter((g) => g.length > 0);
 }

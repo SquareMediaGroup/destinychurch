@@ -38,6 +38,12 @@ export async function listUpcomingEvents(): Promise<D1EventSummary[]> {
   });
 }
 
+/** Every upcoming event series from the ChurchSuite calendar, fully serialized (DestinyAI's find_events tool). */
+export async function upcomingEventSeries() {
+  const index = await loadIndex();
+  return index.series.map(serializeEventSeries);
+}
+
 export async function buildEventSnapshot(ref: D1EventRef): Promise<D1EventContent> {
   const index = await loadIndex();
   const series = index.bySlug.get(ref.slug);

@@ -61,9 +61,13 @@ interface Props {
   onTextChange?: (text: string) => void;
   /** People who can be @mentioned (the group's other members). Typing "@" suggests them. */
   mentionables?: Mentionable[];
+  /** Text only: no attach button and no voice notes (the chat with DestinyAI, which only reads text). */
+  textOnly?: boolean;
+  /** The empty box's hint. Defaults to "Message". */
+  placeholder?: string;
 }
 
-export const Composer = forwardRef<TextInput, Props>(function Composer({ replying, onCancelReply, editing, onCancelEdit, onSend, onAttach, onAttachPoll, onAttachEvent, onError, loadSendAsOptions, onSendAs, initialText, onTextChange, mentionables }, ref) {
+export const Composer = forwardRef<TextInput, Props>(function Composer({ replying, onCancelReply, editing, onCancelEdit, onSend, onAttach, onAttachPoll, onAttachEvent, onError, loadSendAsOptions, onSendAs, initialText, onTextChange, mentionables, textOnly, placeholder = "Message" }, ref) {
   const t = useTheme();
   const [draft, setDraftState] = useState(initialText ?? "");
   const setDraft = (text: string) => {
@@ -278,7 +282,7 @@ export const Composer = forwardRef<TextInput, Props>(function Composer({ replyin
             </GlassSurface>
           </Appear>
         ) : null}
-        <PressableScale
+        {textOnly ? null : <PressableScale
           onPress={() => {
             haptic.selection();
             setSheetOpen(true);
@@ -295,7 +299,7 @@ export const Composer = forwardRef<TextInput, Props>(function Composer({ replyin
               <Icon name="plus" size={22} color={t.text} />
             </GlassSurface>
           )}
-        </PressableScale>
+        </PressableScale>}
 
         <View style={{ flex: 1 }}>
           <GlassSurface style={{ minHeight: 41, borderRadius: 21.5, flexDirection: "row", alignItems: "flex-end", gap: 6, paddingLeft: 16, paddingRight: 4, paddingVertical: 4 }}>
@@ -316,12 +320,12 @@ export const Composer = forwardRef<TextInput, Props>(function Composer({ replyin
               value={draft}
               onChangeText={(v) => setDraft(v.slice(0, MAX_MESSAGE_LENGTH))}
               onSelectionChange={(e) => setCursor(e.nativeEvent.selection.end)}
-              placeholder="Message"
+              placeholder={placeholder}
               placeholderTextColor={t.subtle}
               selectionColor={ORANGE}
               multiline
               maxLength={MAX_MESSAGE_LENGTH}
-              accessibilityLabel="Message"
+              accessibilityLabel={placeholder}
               maxFontSizeMultiplier={1.6}
               style={recording ? { display: "none" } : { flex: 1, minHeight: 33, maxHeight: 140, fontSize: 17, color: t.text, paddingTop: 7, paddingBottom: 7 }}
             />
@@ -344,6 +348,10 @@ export const Composer = forwardRef<TextInput, Props>(function Composer({ replyin
                   <Icon name="send" size={17} color={t.onSend} strokeWidth={2.8} />
                 </PressableScale>
               </Appear>
+            ) : textOnly ? (
+              <View style={{ width: 33, height: 33, borderRadius: 17, backgroundColor: t.fill, alignItems: "center", justifyContent: "center" }}>
+                <Icon name="send" size={17} color={t.subtle} strokeWidth={2.8} />
+              </View>
             ) : (
               <Appear key="mic" from={{ scale: 0.5 }}>
                 {/* Hold to record. The same view keeps the touch for the whole hold, so it stays put while the text field swaps to the recorder. */}

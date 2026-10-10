@@ -40,6 +40,8 @@
 
 **Read receipts.** When you open a chat, the person who sent a message (and the group's leaders) can see that you've read it. No time is shown. You can turn read receipts off in Profile, Privacy and safety. Then nobody sees whether you've read their messages, and you don't see anyone else's.
 
+**DestinyAI (from v0.10).** DestinyAI is an automated assistant that answers questions about Destiny, using our church information and calendar. When you message it, or tag @DestinyAI in a group, the text of your question is sent to OpenAI to write the answer. In a group, DestinyAI only receives the message that tagged it, and the message you replied to (with the messages that one replies to), along with the senders' names. It can't read anything else in your chats, and it knows nothing else about you. Your chat with DestinyAI is kept like any other chat (1 year), and can be reported, and reviewed by our safeguarding team, in the same way. Its answers can be wrong, so check anything important with a leader.
+
 **Who else handles your data (our processors)**
 
 | Company | What for | Where |
@@ -49,6 +51,8 @@
 | Resend | Sends sign-in codes and invites by email | `[confirm region]` |
 | Sentry | Crash reports, so we can fix problems (no names, emails or messages) | EU (Germany) |
 | Expo, Apple, Google | Deliver notifications (with a message preview) | USA |
+| OpenAI | Writes DestinyAI's answers (only the messages it is given; not used to train their models) | USA |
+| Tavily | Web searches DestinyAI makes about Destiny (the search words only) | USA |
 | ChurchSuite (only if it's switched on for you) | Staff sign-in | UK |
 
 We have data processing agreements with each, and transfers to the USA are covered by `[the UK International Data Transfer Addendum / UK Extension to the EU–US Data Privacy Framework — confirm per company]`.
@@ -98,7 +102,8 @@ Destiny One is the church's only approved way for staff and volunteers to messag
 
 ## D. Plain words for young people (for the in-app notice or a parents' leaflet)
 
-- Destiny One is for chatting in your church groups. There are always at least 2 adults in every group, and there are no private chats.
+- Destiny One is for chatting in your church groups. There are always at least 2 adults in every group, and there are no private chats between people.
+- DestinyAI is a computer, not a person. You can ask it about church things, like what's on. It only sees what you send it, and it can get things wrong. If you're worried about something, tell an adult you trust, not just DestinyAI.
 - Use your real name, and don't share your phone number or address.
 - Our safeguarding team can read group chats if someone is worried. They have to say why, and it's written down every time.
 - If something upsets you or doesn't feel right, press and hold the message and tap **Report**. The person won't find out it was you. You can also **Block** someone so you don't see their messages.

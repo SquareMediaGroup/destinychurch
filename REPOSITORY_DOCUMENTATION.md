@@ -378,6 +378,7 @@ destinychurch/
 │       ├── 20261006_06_destiny_one_forwarding.sql # part 16 (v0.8): forwarded_from; d1_post_message gains
 │       │                                   # p_forwarded_from (refuses messages you can't see)
 │       ├── 20261006_07_destiny_one_voice_notes.sql # part 17 (v0.8): audio/mp4 attachments + duration_ms
+│       ├── 20261009_02_destiny_one_destinyai.sql # part 18 (v0.10): DestinyAI member + 'assistant' chats
 │       │                                   # (apply after scripts/destiny-one/encrypt-messages.ts)
 │       ├── 20260927_03_destiny_one_message_search.sql # Destiny One part 4: message search
 │       ├── 20260927_02_destiny_one_leader_invites.sql # Destiny One part 3: leader invites
@@ -1979,7 +1980,7 @@ department **sub-groups**. Migration: `supabase/migrations/20260926_01_destiny_o
 | `d1_members` | One row per app account. `auth_user_id` (nullable — set null when the account is deleted), `first_name` / `last_name` (the member can change these themselves via `PATCH /me`; `name_edited_at` records that; `name_change_log` holds the timestamps that the 2-per-30-days limit counts) and `display_name` (always `first last` — the `d1_members_sync_names` trigger derives it from first/last, or splits it into first/last when older code such as the ChurchSuite sync, invites, erasure or staff edits write only `display_name`). Once a member edits their name, the ChurchSuite re-sync no longer overwrites it, `churchsuite_contact_id` / `churchsuite_child_id` / `churchsuite_user_id`, **`adult_on`** (the 18th birthday — the full date of birth is never stored), `status` (`pending`/`active`/`suspended`/`deleted`), `roles` (`admin`, `cg_leader`, `senior_leader` — see part 8) |
 | `d1_consents` | Which version of `privacy` / `terms` / `chat_review_notice` a member accepted, when |
 | `d1_communities`, `d1_community_members` | Communities and who is in them (`admin`/`member`) |
-| `d1_groups` | `kind` (`announcements`/`group`), `department`, `state` (`active`/`frozen`/`archived`), `freeze_kind` (`auto`/`manual`), `frozen_reason` |
+| `d1_groups` | `kind` (`announcements`/`group`/`assistant`, see part 18), `owner_id` (assistant chats only), `department`, `state` (`active`/`frozen`/`archived`), `freeze_kind` (`auto`/`manual`), `frozen_reason` |
 | `d1_group_members` | Membership incl. history (`left_at` kept, so a review can see who was present when), `last_read_message_id`, `muted_until` |
 | `d1_messages` | `body` (sealed ciphertext, see part 10; 4000 characters before sealing), `reply_to`, `attachment_id`, `content` (jsonb: a poll, whose question and option labels are sealed, or an event snapshot taken at send time), soft-delete `deleted_at`/`deleted_by`. Immutable except the delete stamp |
 | `d1_message_terms` | The blind search index (part 10): keyed hashes of every prefix of every word in a body, per group. No plaintext |
@@ -2191,6 +2192,32 @@ by itself at 5 minutes, recording mono AAC at 64 kbps (`expo-audio`). The camera
 it is under the + sheet. Under a second is
 dropped. In a bubble, nothing loads until Play, and only one voice note plays at a time. Voice notes can't
 be searched (there's no text).
+
+**Part 18 — `20261009_02_destiny_one_destinyai.sql`: DestinyAI (v0.10).** The website's Smart Search,
+as a chat member. One `d1_members` row has `is_assistant` (fixed id `DESTINY_AI_ID` in `@destiny/shared`,
+no auth user, no ChurchSuite record; hidden from the directory and `d1_admin_members`). Two ways in:
+- **Its one-to-one chat**, the only one-to-one chat in Destiny One: a `d1_groups` row of kind
+  `assistant`, outside every community (`community_id` null, `owner_id` set; a check constraint ties the
+  two together, one per member), holding just its owner and DestinyAI. `d1_assistant_group(member)` makes
+  it on first use (and puts them back if they'd left). Being a group, it gets the chat screen,
+  encryption, Realtime, push, read state and reporting for free. The 3-members/2-adults rule doesn't apply
+  (`d1_evaluate_group` skips it); nobody can join it or manage it, not even senior leaders
+  (`d1_group_members_guard`, `d1_can_manage_group`); `d1_admin_groups` leaves it out. A reported
+  DestinyAI message still reaches the safeguarding queue and transcript like any other.
+- **"@DestinyAI" in a group.** DestinyAI is never a member and can't read the group. The API hands it the
+  asking message, plus the message that one replies to and that one's reply chain (up to 6, only what the
+  asker can see: since they joined, not deleted, not from someone they blocked), and nothing else. So
+  "reply to a message, then tag @DestinyAI" is how to give it context. Its answer is posted as a reply to
+  the question (`d1_messages_guard` lets DestinyAI post in a group only as a reply, never with an
+  attachment), mentioning the asker so they're notified even if the group is muted.
+`d1_post_assistant_message` (service_role only) is the only way to post as DestinyAI. The answering itself
+is `lib/destinyOne/assistant.server.ts`, run from `after()` in `POST groups/[id]/messages`: the same model
+and tools as Smart Search (`lib/smartSearch/tools.ts`, `CHURCH_FACTS`), plus `find_events` (the live
+ChurchSuite calendar, via `upcomingEventSeries()` in `lib/destinyOne/events.server.ts`) and `share_event`
+(attaches one event card to the answer). It broadcasts "DestinyAI is typing…" while it works, is limited to
+6 questions a minute per member, has a safeguarding section in its prompt (999, Childline, Samaritans,
+the Safeguarding Lead), and says sorry in the chat rather than going quiet if anything fails. In its own
+chat it re-reads the last 16 messages for follow-ups, and only reads text (the composer is text-only there).
 
 **Tested by:** `scripts/test-sql.sh` (`npm run test:sql`, and the "Database rules" CI job) — applies
 Supabase stubs + every Destiny One migration (parts 1–9, plus the profile-picture, min-build and
@@ -4402,7 +4429,7 @@ needs at least 2 verified adults.") pass through as `rule_violation` (422). Type
 | `groups/[id]` | GET, PATCH | PATCH: rename/describe/archive (managers). A rename or new description sends `group_updated` on `d1-group:<id>` (`announceGroupUpdated`), so every member's chat list updates straight away |
 | `groups/[id]/members` | POST, DELETE | Leaving never blocked |
 | `groups/[id]/icon` | POST, DELETE | Group icon (multipart `file`, 5 MB). Any current member can change it, not just admins; not for Announcements or paused groups. Stored in `d1-avatars` as `d1_groups.icon_path`; `iconUrl` on group summaries is a signed link. Sends `group_updated` like a rename. The app asks people to avoid the church logo |
-| `groups/[id]/messages` | GET, POST | Only messages since you joined; POST takes `body`, an attachment, a `poll` draft, or an `event` ref (the event is re-fetched and snapshotted server-side) and pushes a notification via `after()` (group name, "Sender: first line", or "Poll: …" / "Event: …") |
+| `groups/[id]/messages` | GET, POST | Only messages since you joined; POST takes `body`, an attachment, a `poll` draft, or an `event` ref (the event is re-fetched and snapshotted server-side) and pushes a notification via `after()` (group name, "Sender: first line", or "Poll: …" / "Event: …"). A message in the DestinyAI chat, or with "@DestinyAI" in it, is then answered by DestinyAI (part 18) |
 | `messages/[id]/vote` | POST | `{ optionIds }` — your full vote set on a poll (empty clears it). 60 a minute |
 | `messages/[id]` | PATCH | `{ body }` — edit my own message's text (15 minutes, 10 times; `d1_edit_message`). Sealed with new search terms; `message_edited` goes to the group over the REST broadcast (it carries text). 20 a minute, no push |
 | `messages/[id]/pin` | POST, DELETE | Pin or unpin (group managers; at most 3, a fourth unpins the oldest). 30 a minute |
@@ -4410,6 +4437,7 @@ needs at least 2 verified adults.") pass through as `rule_violation` (422). Type
 | `messages/[id]/forward` | POST | `{ groupIds }` (1–5): a copy into other chats I can post in, marked Forwarded, file copied per group, re-sealed per group. Not polls. 20 a minute |
 | `me/settings` | PATCH | `{ readReceipts? }` — account settings that change what others see. `D1Me.readReceipts` |
 | `events` | GET | Upcoming ChurchSuite events for the Event picker in the attach sheet |
+| `assistant` | GET | My one-to-one chat with DestinyAI as a `D1GroupSummary`, made on first use (`d1_assistant_group`). Send to it through `groups/[id]/messages` like any chat; DestinyAI answers every message (see part 18). The app pins it above the communities in Chats |
 | `groups/[id]/invites` | POST | Leaders: `{ email, name, adult, note? }` — invite someone new; they become an access request for staff to approve, then join the group |
 | `search/messages` | GET | `?q=` — search of your messages: groups you are in, since you joined, never deleted, never from people you've blocked; newest 30. Each word matches as a prefix, on the blind index (text is encrypted at rest, see "Message encryption"). `&groupId=` searches one group (search opened from a chat): same rules; not found if you aren't in it, nothing for an archived group |
 | `groups/[id]/read`, `/mute`, `/attachments` | POST | Read marker, mute, signed upload URL |

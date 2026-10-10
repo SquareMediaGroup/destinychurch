@@ -17,6 +17,7 @@ import type {
   D1EventSummary,
   D1Export,
   D1FeedbackInput,
+  D1GroupSummary,
   D1GroupDetail,
   D1Me,
   D1MembershipRole,
@@ -187,6 +188,9 @@ export function createDestinyOneClient({ baseUrl, getAccessToken, fetchImpl }: D
     /** Hide someone's messages and notifications for me. They stay in every group; safeguarding can still see everything. */
     block: (memberId: string) => call<D1Me>("POST", `/members/${memberId}/block`),
     unblock: (memberId: string) => call<D1Me>("DELETE", `/members/${memberId}/block`),
+
+    /** My one-to-one chat with DestinyAI (made the first time). Send to it like any group. */
+    assistant: () => call<D1GroupSummary>("GET", "/assistant"),
 
     // ── Communities ──
     communities: () => call<D1CommunitySummary[]>("GET", "/communities"),

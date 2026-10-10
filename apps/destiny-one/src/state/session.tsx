@@ -22,7 +22,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import { AppState } from "react-native";
 import { useIsRestoring, useQuery } from "@tanstack/react-query";
 import type { Session } from "@supabase/supabase-js";
-import type { D1CommunitySummary, D1Me } from "@destiny/shared";
+import type { D1CommunitySummary, D1GroupSummary, D1Me } from "@destiny/shared";
 import { canCreateGroup, checkAddedAccount } from "@destiny/shared";
 import { router, useSegments } from "expo-router";
 import * as accounts from "@/lib/accounts";
@@ -68,6 +68,8 @@ interface SessionValue {
   isLeader: boolean;
   communities: D1CommunitySummary[] | null;
   communitiesError: string | null;
+  /** My one-to-one chat with DestinyAI (in no community), once loaded. */
+  assistant: D1GroupSummary | null;
   /** Pull-to-refresh and "Try again". Everything else updates by itself. */
   refreshCommunities: () => Promise<void>;
   /** Signs the active account out. If another account is signed in, switches to it. */
@@ -108,7 +110,7 @@ export function isInApp(segment: string | undefined): boolean {
 
 /** Chats, groups and messages: dropped from the device when someone loses access. */
 function forgetChats() {
-  for (const key of ["communities", "community", "group", "messages"]) queryClient.removeQueries({ queryKey: [key] });
+  for (const key of ["communities", "community", "assistant", "group", "messages"]) queryClient.removeQueries({ queryKey: [key] });
 }
 
 /** Every cached entry goes stale; whatever is on screen re-fetches in the background. */
@@ -146,6 +148,9 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const communitiesQuery = useQuery({ queryKey: keys.communities, queryFn: () => api.communities(), enabled: active && !restoring && !switching });
   const communities = active ? (communitiesQuery.data ?? null) : null;
   const communitiesError = communitiesQuery.error ? errorMessage(communitiesQuery.error, "Couldn't load your chats.") : null;
+  // Made on the server the first time it's asked for. Never blocks the chat list.
+  const assistantQuery = useQuery({ queryKey: keys.assistant, queryFn: () => api.assistant(), enabled: active && !restoring && !switching });
+  const assistant = active ? (assistantQuery.data ?? null) : null;
 
   const setMe = useCallback((next: D1Me) => {
     const previous = queryClient.getQueryData<D1Me | null>(keys.me);
@@ -160,7 +165,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   );
 
   const refreshCommunities = useCallback(async () => {
-    await queryClient.refetchQueries({ queryKey: keys.communities });
+    await Promise.all([queryClient.refetchQueries({ queryKey: keys.communities }), queryClient.refetchQueries({ queryKey: keys.assistant })]);
   }, []);
 
   // Auth session of the active account: restore on launch and on every
@@ -219,7 +224,11 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     if (active && meId) void movePushToActiveAccount().catch(() => undefined);
   }, [active, meId]);
 
-  const groupIds = useMemo(() => (communities ?? []).flatMap((c) => c.groups.map((g) => g.id)).sort().join(","), [communities]);
+  const assistantId = assistant?.id;
+  const groupIds = useMemo(
+    () => [...(communities ?? []).flatMap((c) => c.groups.map((g) => g.id)), ...(assistantId ? [assistantId] : [])].sort().join(","),
+    [communities, assistantId],
+  );
   useEffect(() => {
     hub.current?.setGroups(groupIds ? groupIds.split(",") : []);
   }, [groupIds, active, meId]);
@@ -372,6 +381,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       isLeader: me ? canCreateGroup(me) : false,
       communities,
       communitiesError,
+      assistant,
       refreshCommunities,
       signOut,
       accounts: accountList,
@@ -381,7 +391,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       finishAdding,
       removeAccount,
     }),
-    [ready, session, me, setMe, refreshMe, communities, communitiesError, refreshCommunities, signOut, accountList, activeSlot, switching, switchTo, finishAdding, removeAccount],
+    [ready, session, me, setMe, refreshMe, communities, communitiesError, assistant, refreshCommunities, signOut, accountList, activeSlot, switching, switchTo, finishAdding, removeAccount],
   );
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
@@ -427,11 +437,12 @@ export function useSession(): SessionValue {
 
 /** Look up a group summary (and its community) from the cached chat list. */
 export function useGroupSummary(groupId: string | undefined) {
-  const { communities } = useSession();
-  return useMemo(() => findGroupSummary(communities, groupId), [communities, groupId]);
+  const { communities, assistant } = useSession();
+  return useMemo(() => findGroupSummary(communities, assistant, groupId), [communities, assistant, groupId]);
 }
 
-function findGroupSummary(communities: D1CommunitySummary[] | null, groupId: string | undefined) {
+function findGroupSummary(communities: D1CommunitySummary[] | null, assistant: D1GroupSummary | null, groupId: string | undefined): { group: D1GroupSummary; community: D1CommunitySummary | null } | null {
+  if (assistant && assistant.id === groupId) return { group: assistant, community: null };
   for (const c of communities ?? []) for (const g of c.groups) if (g.id === groupId) return { group: g, community: c };
   return null;
 }

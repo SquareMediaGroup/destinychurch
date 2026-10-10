@@ -15,7 +15,8 @@ export type D1MemberStatus = "pending" | "active" | "suspended" | "deleted";
  */
 export type D1LeaderRole = "admin" | "cg_leader" | "senior_leader";
 export type D1MembershipRole = "admin" | "member";
-export type D1GroupKind = "announcements" | "group";
+/** "assistant" is the one-to-one chat with DestinyAI (outside every community). */
+export type D1GroupKind = "announcements" | "group" | "assistant";
 export type D1GroupState = "active" | "frozen" | "archived";
 export type D1ConsentDocument = "privacy" | "terms" | "chat_review_notice";
 
@@ -128,7 +129,8 @@ export interface D1LastMessage {
 
 export interface D1GroupSummary {
   id: string;
-  communityId: string;
+  /** Null only for the chat with DestinyAI, which belongs to no community. */
+  communityId: string | null;
   kind: D1GroupKind;
   name: string;
   department: string | null;

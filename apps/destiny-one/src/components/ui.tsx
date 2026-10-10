@@ -216,9 +216,16 @@ export function initials(name: string | null | undefined): string {
     .toUpperCase();
 }
 
-export function Avatar({ name, size, radius, announcements, uri }: { name: string; size: number; radius?: number; announcements?: boolean; uri?: string | null }) {
+export function Avatar({ name, size, radius, announcements, assistant, uri }: { name: string; size: number; radius?: number; announcements?: boolean; assistant?: boolean; uri?: string | null }) {
   const t = useTheme();
   const r = radius ?? size / 2;
+  if (assistant) {
+    return (
+      <View style={{ width: size, height: size, borderRadius: r, backgroundColor: t.accentSoft, alignItems: "center", justifyContent: "center" }}>
+        <Icon name="sparkle" size={Math.round(size * 0.5)} color={t.tint} strokeWidth={1.9} />
+      </View>
+    );
+  }
   if (announcements) {
     return (
       <View style={{ width: size, height: size, borderRadius: r, backgroundColor: t.accentSoft, alignItems: "center", justifyContent: "center" }}>

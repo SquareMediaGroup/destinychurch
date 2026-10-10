@@ -29,7 +29,11 @@ const appearance: Appearance = {
 
 type Customer = { name: string; email: string; phone: string; notes: string };
 
-const TEST_BYPASS = process.env.NEXT_PUBLIC_SHOP_TEST_BYPASS === "1";
+// The bypass route refuses on production regardless of the flag, so don't offer
+// a test order there either (NEXT_PUBLIC_VERCEL_ENV is a Vercel system env).
+const TEST_BYPASS =
+  process.env.NEXT_PUBLIC_SHOP_TEST_BYPASS === "1" &&
+  process.env.NEXT_PUBLIC_VERCEL_ENV !== "production";
 
 export default function CheckoutPage() {
   const router = useRouter();

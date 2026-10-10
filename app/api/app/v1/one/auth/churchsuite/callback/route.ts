@@ -33,6 +33,31 @@ function back(redirect: string, params: Record<string, string>): NextResponse {
   return res;
 }
 
+/**
+ * True when this account must not be signed into via ChurchSuite:
+ *   - it's a member already linked to a different ChurchSuite login, or
+ *   - it has an admin role or a staff record and isn't already linked to THIS
+ *     ChurchSuite login. A matching email isn't enough for those accounts —
+ *     the email on a ChurchSuite user is editable by ChurchSuite admins — so
+ *     they keep signing in by email until the link exists by user id.
+ * Fails closed: a lookup error refuses.
+ */
+async function isProtectedAccount(
+  supabase: ReturnType<typeof createServiceClient>,
+  authUserId: string,
+  churchsuiteUserId: number,
+): Promise<boolean> {
+  const [admin, staff, member] = await Promise.all([
+    supabase.from("admin_roles").select("auth_user_id").eq("auth_user_id", authUserId).maybeSingle(),
+    supabase.from("hr_staff").select("id").eq("auth_user_id", authUserId).maybeSingle(),
+    supabase.from("d1_members").select("churchsuite_user_id").eq("auth_user_id", authUserId).maybeSingle(),
+  ]);
+  if (admin.error || staff.error || member.error) return true;
+  const linked = (member.data?.churchsuite_user_id as number | null | undefined) ?? null;
+  if (linked !== null && linked !== churchsuiteUserId) return true;
+  return Boolean(admin.data || staff.data) && linked !== churchsuiteUserId;
+}
+
 export async function GET(request: Request) {
   const secret = process.env.DESTINY_ONE_SECRET;
   if (!secret) return oneError("unavailable", "Sign in with ChurchSuite isn't available right now.");
@@ -70,6 +95,15 @@ export async function GET(request: Request) {
     const link = await supabase.auth.admin.generateLink({ type: "magiclink", email: csUser.email });
     if (link.error || !link.data.properties?.hashed_token || !link.data.user) {
       throw link.error ?? new Error("No sign-in token generated");
+    }
+
+    // ChurchSuite vouching for an address is enough to create a member, not to
+    // take over an account that already holds more. Whoever can edit users in
+    // ChurchSuite could otherwise give themselves a website admin's or staff
+    // member's email and come away with that person's Supabase session.
+    if (await isProtectedAccount(supabase, link.data.user.id, csUser.userId)) {
+      console.error(`⚠️ Sign in with ChurchSuite refused for protected account ${link.data.user.id}`);
+      return back(saved.redirect, { error: "use_email_sign_in" });
     }
 
     await onboardMember(

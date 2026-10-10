@@ -271,40 +271,130 @@ function tidy(text: string): string {
     .slice(0, MAX_ANSWER_CHARS);
 }
 
-async function generate(openai: OpenAI, system: string, turns: Turn[]): Promise<{ text: string; card: D1EventContent | null }> {
+const DELTA_MS = 150;
+
+const TOOL_LABELS: Record<string, string> = {
+  find_events: "Checking the calendar",
+  share_event: "Finding that event",
+  find_products: "Looking in the shop",
+  find_sermons: "Looking through sermons",
+  get_weather: "Checking the weather",
+  get_directions: "Getting directions",
+  search_web: "Searching the web",
+  extract_page: "Reading the page",
+};
+
+/**
+ * Live updates to a group while DestinyAI works: what it's doing, and the text
+ * so far. Sent over Realtime's REST broadcast, so nothing is stored. The
+ * finished message replaces them when it lands. Text is throttled, and `done()`
+ * waits for anything still on its way, so a stale update can't land after the answer.
+ */
+function liveUpdates(groupId: string) {
+  const inFlight = new Set<Promise<void>>();
+  const send = (event: string, payload: Record<string, unknown>) => {
+    const p: Promise<void> = broadcastToGroup(groupId, event, { groupId, ...payload }).finally(() => inFlight.delete(p));
+    inFlight.add(p);
+  };
+  let last = 0;
+  let timer: ReturnType<typeof setTimeout> | null = null;
+  let latest = "";
+  const flushText = () => {
+    timer = null;
+    last = Date.now();
+    send("assistant_delta", { text: latest });
+  };
+  return {
+    status(label: string | null) {
+      send("assistant_status", { label });
+    },
+    text(value: string) {
+      latest = value;
+      if (Date.now() - last >= DELTA_MS) flushText();
+      else timer ??= setTimeout(flushText, DELTA_MS - (Date.now() - last));
+    },
+    async done() {
+      if (timer) clearTimeout(timer);
+      timer = null;
+      await Promise.all(inFlight);
+    },
+  };
+}
+
+type Live = ReturnType<typeof liveUpdates>;
+
+/** What the visitor should see while the answer is still arriving: no half-written PAGE/CTA line at the end. */
+function displayText(raw: string): string {
+  return tidy(raw).replace(/\n[A-Z]{0,5}$/, "");
+}
+
+/** One model turn, streamed. Text goes to `onText` as it arrives; tool calls are collected, not run. */
+async function streamTurn(
+  openai: OpenAI,
+  convo: OpenAI.Chat.Completions.ChatCompletionMessageParam[],
+  withTools: boolean,
+  onText: (raw: string) => void,
+): Promise<{ content: string; calls: { id: string; name: string; args: string }[] }> {
+  const stream = await openai.chat.completions.create({
+    model: SMART_SEARCH_MODEL,
+    messages: convo,
+    // On the last round, no more tools: it has to answer with what it has.
+    ...(withTools ? { tools: [...EVENT_TOOLS, ...TOOL_DEFINITIONS], tool_choice: "auto" as const } : {}),
+    max_tokens: 700,
+    temperature: 0.3,
+    stream: true,
+  });
+  let content = "";
+  const calls = new Map<number, { id: string; name: string; args: string }>();
+  for await (const chunk of stream) {
+    const delta = chunk.choices[0]?.delta;
+    if (!delta) continue;
+    if (delta.content) {
+      content += delta.content;
+      onText(content);
+    }
+    for (const tc of delta.tool_calls ?? []) {
+      const cur = calls.get(tc.index) ?? { id: "", name: "", args: "" };
+      if (tc.id) cur.id = tc.id;
+      if (tc.function?.name) cur.name += tc.function.name;
+      if (tc.function?.arguments) cur.args += tc.function.arguments;
+      calls.set(tc.index, cur);
+    }
+  }
+  return { content, calls: [...calls.values()] };
+}
+
+async function generate(openai: OpenAI, system: string, turns: Turn[], live: Live): Promise<{ text: string; card: D1EventContent | null }> {
   const convo: Turn[] = [{ role: "system", content: system }, ...turns];
   const ctx: ToolContext = createToolContext();
   let card: D1EventContent | null = null;
 
   for (let round = 0; round <= MAX_TOOL_ROUNDS; round++) {
-    const res = await openai.chat.completions.create({
-      model: SMART_SEARCH_MODEL,
-      messages: convo,
-      // On the last round, no more tools: it has to answer with what it has.
-      ...(round < MAX_TOOL_ROUNDS ? { tools: [...EVENT_TOOLS, ...TOOL_DEFINITIONS], tool_choice: "auto" as const } : {}),
-      max_tokens: 700,
-      temperature: 0.3,
-    });
-    const msg = res.choices[0]?.message;
-    const calls = msg?.tool_calls?.filter((c) => c.type === "function") ?? [];
-    if (!calls.length) return { text: tidy(msg?.content ?? ""), card };
+    const { content, calls } = await streamTurn(openai, convo, round < MAX_TOOL_ROUNDS, (raw) => live.text(displayText(raw)));
+    if (!calls.length) return { text: tidy(content), card };
 
-    convo.push({ role: "assistant", content: msg?.content ?? null, tool_calls: calls });
+    convo.push({
+      role: "assistant",
+      content: content || null,
+      tool_calls: calls.map((c) => ({ id: c.id, type: "function" as const, function: { name: c.name, arguments: c.args } })),
+    });
+    live.status(TOOL_LABELS[calls[0].name] ?? "Looking that up");
+
     const results = await Promise.all(
       calls.map(async (c) => {
         let data: unknown;
         try {
-          const args = c.function.arguments ? JSON.parse(c.function.arguments) : {};
-          if (c.function.name === "find_events") {
+          const args = c.args ? JSON.parse(c.args) : {};
+          if (c.name === "find_events") {
             data = await runFindEvents(args);
-          } else if (c.function.name === "share_event") {
+          } else if (c.name === "share_event") {
             if (card) data = { ok: false, reason: "An event is already attached." };
             else {
               card = await buildEventSnapshot({ slug: String(args.slug), seriesKey: String(args.series_key) }).catch(() => null);
               data = card ? { ok: true } : { ok: false, reason: "That event couldn't be found." };
             }
           } else {
-            data = (await executeTool(c.function.name, c.function.arguments, ctx)).data;
+            data = (await executeTool(c.name, c.args, ctx)).data;
           }
         } catch (err) {
           data = { available: false, reason: (err as Error).message };
@@ -369,10 +459,13 @@ export async function answer(caller: Caller, kind: D1GroupKind, joinedAt: string
   const openai = getOpenAI();
   if (!openai) return post(caller, message.groupId, inDm, SORRY, null, replyTo);
 
-  // "DestinyAI is typing…" until the answer lands (the app shows it for a few seconds after each).
+  // "DestinyAI is typing…" in the header until the answer lands (the app shows it for a few seconds after each).
   const typing = () => broadcastToGroup(message.groupId, "typing", { groupId: message.groupId, memberId: DESTINY_AI_ID, name: DESTINY_AI_NAME });
   void typing();
   const timer = setInterval(() => void typing(), TYPING_EVERY_MS);
+  // Live status and text for the bubble that stands in for the answer until it lands.
+  const live = liveUpdates(message.groupId);
+  live.status("Thinking");
 
   try {
     const [turns, group] = await Promise.all([
@@ -382,12 +475,14 @@ export async function answer(caller: Caller, kind: D1GroupKind, joinedAt: string
     const where = inDm
       ? { kind: "dm" as const, firstName: caller.member.first_name || caller.member.display_name }
       : { kind: "group" as const, groupName: (group.data?.name as string | undefined) ?? "a group", askerName: caller.member.display_name };
-    const { text, card } = await generate(openai, systemPrompt(where), turns);
+    const { text, card } = await generate(openai, systemPrompt(where), turns, live);
     clearInterval(timer);
+    await live.done();
     await post(caller, message.groupId, inDm, text || (card ? "" : SORRY), card, replyTo);
   } catch (err) {
     clearInterval(timer);
     console.error("⚠️ DestinyAI failed:", err);
+    await live.done();
     await post(caller, message.groupId, inDm, SORRY, null, replyTo);
   }
 }

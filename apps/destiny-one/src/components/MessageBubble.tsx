@@ -42,7 +42,9 @@ export function photoChip(t: Theme) {
 export type Row =
   | { kind: "day"; key: string; label: string }
   | { kind: "new"; key: string }
-  | { kind: "msg"; key: string; m: LocalMessage; showName: boolean; showAvatar: boolean; gapTop: number; joinAbove: boolean; joinBelow: boolean };
+  | { kind: "msg"; key: string; m: LocalMessage; showName: boolean; showAvatar: boolean; gapTop: number; joinAbove: boolean; joinBelow: boolean }
+  /** DestinyAI's answer being written (live, see state/assistantStream.ts). Always the newest row. */
+  | { kind: "stream"; key: "stream"; label: string | null; text: string };
 
 /** Messages (oldest first) → display rows (oldest first), with day and unread dividers. */
 export function buildRows(messages: LocalMessage[], firstUnreadId: number | null): Row[] {

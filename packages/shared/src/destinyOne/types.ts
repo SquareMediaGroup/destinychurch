@@ -351,6 +351,10 @@ export type D1RealtimeEvent =
   | { event: "link_preview"; payload: { id: number; groupId: string; preview: D1LinkPreview | null } }
   /** Someone is writing a message (sent every few seconds while they type; show it briefly). */
   | { event: "typing"; payload: { groupId: string; memberId: string; name: string } }
+  /** DestinyAI is working on an answer: what it's doing ("Checking the calendar"), or null to clear. Live only, never stored. */
+  | { event: "assistant_status"; payload: { groupId: string; label: string | null } }
+  /** DestinyAI's answer so far (the whole text, not a fragment). Live only; the finished message replaces it. */
+  | { event: "assistant_delta"; payload: { groupId: string; text: string } }
   /** Something was pinned or unpinned: re-fetch the group (it carries the pins). */
   | { event: "pins_changed"; payload: { groupId: string } }
   | { event: "group_state"; payload: { groupId: string; state: D1GroupState; reason: string | null } }

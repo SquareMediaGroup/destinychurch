@@ -10,7 +10,7 @@ import Card from "@/components/ui/Card";
 import Disclosure from "@/components/ui/Disclosure";
 import Icon from "@/components/ui/Icon";
 import Button from "@/components/ui/Button";
-import BackgroundVideo from "@/components/ui/BackgroundVideo";
+import VideoPlayer, { type VideoCheckpoint } from "@/components/ui/VideoPlayer";
 import FirstSundayTimeline from "@/components/visit/FirstSundayTimeline";
 import { TONE_SURFACE, TONE_ACCENT } from "@/components/blocks/tokens";
 import {
@@ -47,6 +47,18 @@ export const metadata: Metadata = {
  */
 const WHAT_TO_EXPECT_VIDEO =
   "https://player.vimeo.com/progressive_redirect/playback/1158973369/rendition/1080p/file.mp4%20%281080p%29.mp4?loc=external&signature=62a42712f74bca4e0082af9c72980c99f54ccf6cebabdfa6ca58dfeae7e7caee";
+
+/**
+ * Six seconds in, the video stops and the viewer chooses: carry on, or skip
+ * ahead to 0:10. Timings and labels are placeholders tied to the stand-in clip;
+ * adjust them alongside WHAT_TO_EXPECT_VIDEO when the real video lands.
+ */
+const WHAT_TO_EXPECT_CHECKPOINTS: VideoCheckpoint[] = [
+  {
+    at: 6,
+    options: [{ label: "Continue" }, { label: "Jump to 0:10", seekTo: 10 }],
+  },
+];
 
 /**
  * The physical journey through a Sunday, in order — the pattern every source
@@ -252,10 +264,12 @@ export default function VisitPage() {
           real "what to expect" video is shot. Swap WHAT_TO_EXPECT_VIDEO for
           the final asset when it's ready; nothing else here needs to change. */}
       <Section tone="muted" padding="none" className="pt-16 sm:pt-20">
-        <div className="relative mx-auto aspect-video w-full max-w-3xl overflow-hidden rounded-3xl bg-destiny-grey">
-          <BackgroundVideo src={WHAT_TO_EXPECT_VIDEO} />
-          <div className="absolute inset-0 bg-black/20" aria-hidden="true" />
-        </div>
+        <VideoPlayer
+          src={WHAT_TO_EXPECT_VIDEO}
+          label="What to expect at Destiny Church"
+          checkpoints={WHAT_TO_EXPECT_CHECKPOINTS}
+          className="mx-auto aspect-video w-full max-w-3xl rounded-3xl"
+        />
       </Section>
 
       {/* Your first Sunday — the step-by-step walkthrough the research

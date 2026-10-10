@@ -2915,6 +2915,23 @@ page, the `components/ui/` sibling of `/dev/blocks`. 404s in production.
 reduced-motion preference (`AccessibilityContext`, which mirrors the OS setting) by simply
 not rendering when it's on, rather than looping regardless — used on `/serve` and `/alpha`.
 
+#### `ui/VideoPlayer.tsx`
+**Client component.** A content video with the site's own controls (big play button, orange
+scrubber, play/pause, mute, time, fullscreen that keeps the overlay; keys: space/k, arrows
+±5s, m, f) and optional **checkpoints** that pause playback and offer choices:
+
+```tsx
+<VideoPlayer
+  src={url}
+  label="What to expect at Destiny Church"
+  checkpoints={[{ at: 6, options: [{ label: "Continue" }, { label: "Jump to 0:10", seekTo: 10 }] }]}
+/>
+```
+
+Checkpoints are polled per animation frame (not `timeupdate`, which overshoots by up to
+250ms) and fire only when playback runs *through* them — scrubbing past one does not stop
+the video, seeking back before it re-arms it. Never autoplays. Used on `/visit`.
+
 #### `ui/Modal.tsx`
 **Client component (`"use client"`).** The shared dialog shell.
 

@@ -7,9 +7,9 @@
 // from a chat it searches that chat first ("In <group>"), with "All chats"
 // one tap away. Tapping a message opens its chat scrolled to it.
 
-import { useEffect, useMemo, useState } from "react";
-import { ActivityIndicator, Pressable, SectionList, StyleSheet, Text, View } from "react-native";
-import { router } from "expo-router";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { ActivityIndicator, Pressable, SectionList, StyleSheet, Text, TextInput, View } from "react-native";
+import { router, useFocusEffect } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { MIN_SEARCH_CHARS, type D1CommunitySummary, type D1GroupSummary, type D1MessageHit } from "@destiny/shared";
 import { Icon } from "@/components/Icon";
@@ -52,6 +52,15 @@ export function SearchView({ mode, groupId }: { mode: "tab" | "modal"; groupId?:
   const { communities } = useSession();
   const [query, setQuery] = useState("");
   const [allChats, setAllChats] = useState(false);
+  const inputRef = useRef<TextInput>(null);
+  // Landing on the Search tab brings the keyboard up (the modal does it with autoFocus).
+  useFocusEffect(
+    useCallback(() => {
+      if (!isTab) return;
+      const id = setTimeout(() => inputRef.current?.focus(), 50);
+      return () => clearTimeout(id);
+    }, [isTab]),
+  );
   const scope = groupId && !allChats ? groupId : undefined;
   const scopeName = useMemo(() => {
     for (const c of communities ?? []) for (const g of c.groups) if (g.id === groupId) return g.name;
@@ -114,6 +123,7 @@ export function SearchView({ mode, groupId }: { mode: "tab" | "modal"; groupId?:
       {isTab ? <LargeTitle style={{ paddingHorizontal: 20, paddingTop: 2, paddingBottom: 10 }}>Search</LargeTitle> : null}
       <View style={{ flexDirection: "row", alignItems: "center", gap: 12, paddingHorizontal: 16 }}>
         <Field
+          ref={inputRef}
           value={query}
           onChangeText={setQuery}
           placeholder={scope && scopeName ? `Search in ${scopeName}` : "Search messages and groups"}

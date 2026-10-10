@@ -149,6 +149,10 @@ export const muteSchema = z.object({
   until: z.string().datetime({ offset: true }).nullable(),
 });
 
+export const archiveSchema = z.object({
+  archived: z.boolean(),
+});
+
 export const reportSchema = z.object({
   reason: z.string().trim().min(1, "Please say what's wrong.").max(1000),
 });

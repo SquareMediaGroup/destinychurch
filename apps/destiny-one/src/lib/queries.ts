@@ -99,6 +99,16 @@ export function updateGroupSummary(groupId: string, fn: (g: D1GroupSummary) => D
   queryClient.setQueriesData<D1CommunitySummary>({ queryKey: ["community"] }, (old) => (old ? patch(old) : old));
 }
 
+/** Archive or restore one chat for me: applies at once, rolls back if the server says no. */
+export function toggleChatArchive(g: D1GroupSummary) {
+  const next = !g.archived;
+  updateGroupSummary(g.id, (x) => ({ ...x, archived: next }));
+  api
+    .archive(g.id, next)
+    .then(() => queryClient.invalidateQueries({ queryKey: keys.group(g.id) }))
+    .catch(() => updateGroupSummary(g.id, (x) => ({ ...x, archived: g.archived })));
+}
+
 /** Drop a group from the chat list at once (leaving it), without waiting for the server. */
 export function removeGroupLocally(groupId: string) {
   queryClient.setQueryData<D1CommunitySummary[]>(keys.communities, (old) => old?.map((c) => ({ ...c, groups: c.groups.filter((g) => g.id !== groupId) })));

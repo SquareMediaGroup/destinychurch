@@ -1981,7 +1981,7 @@ department **sub-groups**. Migration: `supabase/migrations/20260926_01_destiny_o
 | `d1_consents` | Which version of `privacy` / `terms` / `chat_review_notice` a member accepted, when |
 | `d1_communities`, `d1_community_members` | Communities and who is in them (`admin`/`member`) |
 | `d1_groups` | `kind` (`announcements`/`group`/`assistant`, see part 18), `owner_id` (assistant chats only), `department`, `state` (`active`/`frozen`/`archived`), `freeze_kind` (`auto`/`manual`), `frozen_reason` |
-| `d1_group_members` | Membership incl. history (`left_at` kept, so a review can see who was present when), `last_read_message_id`, `muted_until` |
+| `d1_group_members` | Membership incl. history (`left_at` kept, so a review can see who was present when), `last_read_message_id`, `muted_until`, `archived_at` (per-person chat archive: hides + silences the chat for that member only) |
 | `d1_messages` | `body` (sealed ciphertext, see part 10; 4000 characters before sealing), `reply_to`, `attachment_id`, `content` (jsonb: a poll, whose question and option labels are sealed, or an event snapshot taken at send time), soft-delete `deleted_at`/`deleted_by`. Immutable except the delete stamp |
 | `d1_message_terms` | The blind search index (part 10): keyed hashes of every prefix of every word in a body, per group. No plaintext |
 | `d1_message_edits` | Part 11: the text an edit replaced (sealed), one row per edit, for the safeguarding transcript. Deny-all RLS; removed with its message by the purge |
@@ -4463,7 +4463,7 @@ needs at least 2 verified adults.") pass through as `rule_violation` (422). Type
 | `assistant` | GET | My one-to-one chat with DestinyAI as a `D1GroupSummary`, made on first use (`d1_assistant_group`). Send to it through `groups/[id]/messages` like any chat; DestinyAI answers every message (see part 18). The app pins it above the communities in Chats |
 | `groups/[id]/invites` | POST | Leaders: `{ email, name, adult, note? }` — invite someone new; they become an access request for staff to approve, then join the group |
 | `search/messages` | GET | `?q=` — search of your messages: groups you are in, since you joined, never deleted, never from people you've blocked; newest 30. Each word matches as a prefix, on the blind index (text is encrypted at rest, see "Message encryption"). `&groupId=` searches one group (search opened from a chat): same rules; not found if you aren't in it, nothing for an archived group |
-| `groups/[id]/read`, `/mute`, `/attachments` | POST | Read marker, mute, signed upload URL |
+| `groups/[id]/read`, `/mute`, `/archive`, `/attachments` | POST | Read marker, mute, archive/unarchive for the caller only (`{ archived }`), signed upload URL |
 | `groups/[id]/attachments?ids=` | GET | Fresh signed links (1 hour) for cached attachments whose links expired: only files in this group, sent since you joined, not deleted, not from someone you've blocked. Up to 60 ids |
 | `groups/[id]/media?before=&limit=` | GET | Group info → Photos and files: messages that carry a photo or file, paged like `messages` (60 a page, up to 100). Same visibility as the chat (since you joined, not deleted, not blocked senders), with fresh signed links |
 | `groups/[id]/typing` | POST | "I'm typing": broadcasts `typing { groupId, memberId, name }` on the group topic over the REST broadcast (nothing stored). Only if you can post there. The app calls it at most every 4 s while the box has text; each one shows you as typing for 6 s. 30 a minute |

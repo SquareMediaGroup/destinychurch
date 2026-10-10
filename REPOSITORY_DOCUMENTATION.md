@@ -1,7 +1,7 @@
 # Destiny Church Tees Valley — Complete Repository Documentation
 
-**Version:** 1.0.17  
-**Last Updated:** September 23, 2026  
+**Version:** 1.0.18  
+**Last Updated:** October 10, 2026  
 **Repository:** Square Media Group — destinychurch  
 
 This document provides a comprehensive explanation of every major component, line of code purpose, architecture decisions, and how the system works from end-to-end.
@@ -2232,9 +2232,15 @@ waits for in-flight updates before posting, so a stale update can't land after t
 beliefs, giving, shop, sermons, charity and company records, visiting). Everything else gets one line
 saying so, and no tool call; safeguarding replies still apply. Its label says **beta** (`BetaTag` in
 `components/ui.tsx`). `share_sermon` attaches one sermon from the YouTube archive (`getFullSermonArchive`,
-checked by id) as a `D1SermonContent` (`kind: "sermon"`). The app plays it with `react-native-webview` on
-`youtube-nocookie.com`, and nothing loads until it's tapped (`SermonCard` in `MessageBubble.tsx`). Adding
-`react-native-webview` is a native change: it needs a new development build before it runs on a device.
+checked by id) as a `D1SermonContent` (`kind: "sermon"`). `SermonCard` (in `MessageBubble.tsx`) renders the
+video through `SermonPlayer` (`components/SermonPlayer.tsx`), which plays it inline with `react-native-webview`
+on `youtube-nocookie.com` when the build has that native module, and nothing loads until it's tapped. Adding
+`react-native-webview` is a native change, so a build made before it was added (anything before 0.11.2) doesn't
+have the module. Rather than crash on those builds, `SermonPlayer` checks for the module with
+`TurboModuleRegistry.get("RNCWebViewModule")` (returns `null` instead of throwing the way `getEnforcing` does)
+and wraps the player in an error boundary; on an older build — or if the player fails to render — the card
+falls back to the sermon thumbnail with a play button that opens the video in the in-app browser, instead of
+the throw taking the whole chat list down (fixed in 0.11.3, #120).
 
 **Tested by:** `scripts/test-sql.sh` (`npm run test:sql`, and the "Database rules" CI job) — applies
 Supabase stubs + every Destiny One migration (parts 1–9, plus the profile-picture, min-build and

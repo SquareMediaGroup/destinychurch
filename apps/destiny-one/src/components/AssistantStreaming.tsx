@@ -4,7 +4,7 @@
 
 import { useEffect, useRef } from "react";
 import { Animated, Easing, Text, View } from "react-native";
-import { Avatar } from "@/components/ui";
+import { Avatar, BetaTag } from "@/components/ui";
 import { useTheme } from "@/theme/tokens";
 
 export function AssistantStreaming({ label, text }: { label: string | null; text: string }) {
@@ -15,7 +15,10 @@ export function AssistantStreaming({ label, text }: { label: string | null; text
         <Avatar name="DestinyAI" size={30} assistant />
       </View>
       <View style={{ flexShrink: 1, gap: 3, minWidth: 0 }}>
-        <Text style={{ fontSize: 12, fontWeight: "600", color: t.muted, marginLeft: 4 }}>DestinyAI</Text>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginLeft: 4 }}>
+          <Text style={{ fontSize: 12, fontWeight: "600", color: t.muted }}>DestinyAI</Text>
+          <BetaTag />
+        </View>
         <View style={{ backgroundColor: t.card, borderRadius: 18, borderBottomLeftRadius: 6, paddingHorizontal: 14, paddingVertical: 10, minHeight: 40, justifyContent: "center" }}>
           {text ? (
             <Text style={{ fontSize: 17, lineHeight: 23, color: t.text }}>

@@ -339,6 +339,7 @@ export interface PushPreview {
 export function contentPreview(content: D1MessageContent | null | undefined): string | null {
   if (content?.kind === "poll") return `Poll: ${content.poll.question}`;
   if (content?.kind === "event") return `Event: ${content.event.name}`;
+  if (content?.kind === "sermon") return `Sermon: ${content.sermon.title}`;
   return null;
 }
 

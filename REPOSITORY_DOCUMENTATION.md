@@ -2228,6 +2228,14 @@ with a blinking cursor). The finished message (the normal `message` event from D
 bubble. A bubble with no update for 60 s is dropped, in case that message was lost. `liveUpdates().done()`
 waits for in-flight updates before posting, so a stale update can't land after the answer.
 
+**Scope, beta, sermons (0.11.x).** DestinyAI answers only about Destiny (its services, events, groups,
+beliefs, giving, shop, sermons, charity and company records, visiting). Everything else gets one line
+saying so, and no tool call; safeguarding replies still apply. Its label says **beta** (`BetaTag` in
+`components/ui.tsx`). `share_sermon` attaches one sermon from the YouTube archive (`getFullSermonArchive`,
+checked by id) as a `D1SermonContent` (`kind: "sermon"`). The app plays it with `react-native-webview` on
+`youtube-nocookie.com`, and nothing loads until it's tapped (`SermonCard` in `MessageBubble.tsx`). Adding
+`react-native-webview` is a native change: it needs a new development build before it runs on a device.
+
 **Tested by:** `scripts/test-sql.sh` (`npm run test:sql`, and the "Database rules" CI job) — applies
 Supabase stubs + every Destiny One migration (parts 1–9, plus the profile-picture, min-build and
 group-icon migrations) to a throwaway local Postgres and runs `tests/sql/destiny-one.sql`. A second

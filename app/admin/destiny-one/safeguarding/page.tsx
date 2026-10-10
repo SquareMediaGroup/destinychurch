@@ -391,8 +391,9 @@ function TranscriptModal({ group, onClose }: { group: { id: string; name: string
   );
 }
 
-/** Polls and events have no body; reviewers still need to read what was posted. */
+/** Polls, events and sermons have no body; reviewers still need to read what was posted. */
 function contentText(content: D1MessageContent): string {
   if (content.kind === "poll") return `Poll: ${content.poll.question} (${content.poll.options.map((o) => o.label).join(" / ")})`;
+  if (content.kind === "sermon") return `Sermon: ${content.sermon.title}`;
   return `Event: ${content.event.name}`;
 }

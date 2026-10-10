@@ -4,7 +4,7 @@
 import { Pressable, Text, View, type PressableProps } from "react-native";
 import type { D1CommunitySummary, D1GroupSummary } from "@destiny/shared";
 import { Icon } from "@/components/Icon";
-import { Avatar, CountBadge } from "@/components/ui";
+import { Avatar, BetaTag, CountBadge } from "@/components/ui";
 import { listTime } from "@/lib/format";
 import { useChatDraft } from "@/state/drafts";
 import { useTheme } from "@/theme/tokens";
@@ -61,9 +61,11 @@ export function CardGroupRow({ group, onPress, onPressIn, ...linkProps }: { grou
       <Avatar name={group.name} size={44} radius={14} announcements={group.kind === "announcements"} assistant={group.kind === "assistant"} uri={group.iconUrl} />
       <View style={{ flex: 1, minWidth: 0, gap: 1, paddingVertical: 12, paddingRight: 14 }}>
         <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-          <Text numberOfLines={1} style={{ flex: 1, fontSize: 16, fontWeight: "600", color: t.text }}>
+          <Text numberOfLines={1} style={{ flexShrink: 1, fontSize: 16, fontWeight: "600", color: t.text }}>
             {group.name}
           </Text>
+          {group.kind === "assistant" ? <BetaTag /> : null}
+          <View style={{ flex: 1 }} />
           {group.lastMessage ? <Text style={{ fontSize: 13, color: unread ? t.tint : t.subtle }}>{listTime(group.lastMessage.createdAt)}</Text> : null}
         </View>
         <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>

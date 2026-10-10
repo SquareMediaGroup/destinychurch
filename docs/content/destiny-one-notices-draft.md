@@ -53,6 +53,7 @@
 | Expo, Apple, Google | Deliver notifications (with a message preview) | USA |
 | OpenAI | Writes DestinyAI's answers (only the messages it is given; not used to train their models) | USA |
 | Tavily | Web searches DestinyAI makes about Destiny (the search words only) | USA |
+| YouTube (Google) | Plays a sermon in the chat when someone presses play (its player loads from YouTube) | USA |
 | ChurchSuite (only if it's switched on for you) | Staff sign-in | UK |
 
 We have data processing agreements with each, and transfers to the USA are covered by `[the UK International Data Transfer Addendum / UK Extension to the EU–US Data Privacy Framework — confirm per company]`.

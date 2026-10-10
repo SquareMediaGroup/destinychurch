@@ -11,7 +11,8 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Animated, Image, Pressable, Text, View } from "react-native";
 import * as WebBrowser from "expo-web-browser";
 import Svg, { Path } from "react-native-svg";
-import { DESTINY_AI_ID, mentionSegments, type D1EventContent, type D1LinkPreview, type D1LeaderRole, type D1Message, type D1PollContent, type Mentionable } from "@destiny/shared";
+import { WebView } from "react-native-webview";
+import { DESTINY_AI_ID, mentionSegments, type D1EventContent, type D1LinkPreview, type D1LeaderRole, type D1Message, type D1PollContent, type D1SermonContent, type Mentionable } from "@destiny/shared";
 import { Icon } from "@/components/Icon";
 import { MessageMenu, type MessageMenuActions } from "@/components/MessageMenu";
 import { Appear, Pop, PressableScale, reduceMotion, springs } from "@/components/Motion";
@@ -206,6 +207,7 @@ export function MessageBubble({ row, replyTo, senderTag, senderIsGroupAdmin, can
         ) : null}
         <Attachment m={m} onOpen={onOpenAttachment} />
         {m.content?.kind === "event" ? <EventCard content={m.content} mine={m.mine} onOpen={onOpenAttachment} /> : null}
+        {m.content?.kind === "sermon" ? <SermonCard content={m.content} mine={m.mine} /> : null}
         {m.content?.kind === "poll" ? <PollCard content={m.content} mine={m.mine} sending={m.id < 0} onVote={onVotePoll} /> : null}
         {m.body ? (
           <Text style={{ fontSize: 17, lineHeight: 22, letterSpacing: -0.2, color: k.text }}>
@@ -435,6 +437,46 @@ function Attachment({ m, onOpen }: { m: LocalMessage; onOpen: (url: string) => v
         <Text style={{ fontSize: 12, color: k.soft }}>{m.status === "sending" ? "Uploading..." : fileMeta(mime, a?.sizeBytes ?? local?.sizeBytes ?? null)}</Text>
       </View>
     </Pressable>
+  );
+}
+
+/**
+ * A sermon from the archive, playing right in the chat (YouTube's own player,
+ * in a web view; nothing plays until it's tapped). "Open on YouTube" opens the
+ * video in the in-app browser if the player can't load.
+ */
+function SermonCard({ content, mine }: { content: D1SermonContent; mine: boolean }) {
+  const t = useTheme();
+  const k = tones(t, mine);
+  const { sermon } = content;
+  const when = new Date(sermon.publishedAt).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric", timeZone: "Europe/London" });
+  return (
+    <View style={{ marginTop: 2, marginHorizontal: -6, borderRadius: 14, overflow: "hidden", backgroundColor: k.panel, minWidth: 240 }}>
+      <View style={{ aspectRatio: 16 / 9, backgroundColor: "#000" }}>
+        <WebView
+          source={{ uri: `https://www.youtube-nocookie.com/embed/${sermon.videoId}?playsinline=1&rel=0`, headers: { Referer: "https://destinytees.uk" } }}
+          allowsInlineMediaPlayback
+          allowsFullscreenVideo
+          style={{ flex: 1, backgroundColor: "#000" }}
+          accessibilityLabel={`Sermon: ${sermon.title}`}
+        />
+      </View>
+      <View style={{ padding: 10, gap: 3 }}>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+          <Icon name="play" size={13} color={k.name} strokeWidth={2.2} />
+          <Text style={{ fontSize: 12, fontWeight: "600", color: k.name }}>Sermon</Text>
+        </View>
+        <Text numberOfLines={2} style={{ fontSize: 15, fontWeight: "600", color: k.text }}>
+          {sermon.title}
+        </Text>
+        <Text style={{ fontSize: 13, color: k.soft }}>
+          {[sermon.speaker, when].filter(Boolean).join(" · ")}
+        </Text>
+        <Pressable accessibilityRole="link" onPress={() => void WebBrowser.openBrowserAsync(`https://www.youtube.com/watch?v=${sermon.videoId}`)} hitSlop={6}>
+          <Text style={{ fontSize: 13, fontWeight: "600", color: k.name }}>Open on YouTube</Text>
+        </Pressable>
+      </View>
+    </View>
   );
 }
 

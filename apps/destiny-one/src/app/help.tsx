@@ -30,7 +30,7 @@ const TOPICS: { title: string; questions: Question[] }[] = [
       },
       {
         q: "What is DestinyAI?",
-        a: "DestinyAI answers questions about Destiny: what's on, service times, groups, sermons, giving and more. It reads the church calendar live. Find it at the top of Chats, or type @DestinyAI in a group to ask it there. It can get things wrong, so check anything important with a leader.",
+        a: "DestinyAI is in beta. It answers questions about Destiny only: what's on, service times, groups, sermons, giving and the shop. It reads the church calendar live, and can play a sermon in the chat. Find it at the top of Chats, or type @DestinyAI in a group to ask it there. It can get things wrong, so check anything important with a leader.",
       },
       {
         q: "What can DestinyAI see?",

@@ -2,7 +2,7 @@
 // it's doing (animated dots and a label), then the words as they arrive with a
 // blinking cursor. Sits where an incoming message from DestinyAI will land.
 
-import { useEffect, useRef } from "react";
+import { useEffect, useState } from "react";
 import { Animated, Easing, Text, View } from "react-native";
 import { Avatar, BetaTag } from "@/components/ui";
 import { useTheme } from "@/theme/tokens";
@@ -40,7 +40,7 @@ export function AssistantStreaming({ label, text }: { label: string | null; text
 /** A thin bar that blinks at the end of the text while it arrives. */
 function Cursor() {
   const t = useTheme();
-  const opacity = useRef(new Animated.Value(1)).current;
+  const [opacity] = useState(() => new Animated.Value(1));
   useEffect(() => {
     const blink = Animated.loop(
       Animated.sequence([
@@ -57,7 +57,7 @@ function Cursor() {
 /** Three dots taking turns to brighten, shown while DestinyAI is still thinking. */
 function Dots() {
   const t = useTheme();
-  const phase = useRef(new Animated.Value(0)).current;
+  const [phase] = useState(() => new Animated.Value(0));
   useEffect(() => {
     const loop = Animated.loop(Animated.timing(phase, { toValue: 1, duration: 1200, easing: Easing.linear, useNativeDriver: true }));
     loop.start();

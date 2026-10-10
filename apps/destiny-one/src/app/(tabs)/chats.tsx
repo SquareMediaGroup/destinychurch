@@ -17,7 +17,7 @@ import { Appear, PressableScale, animateLayout } from "@/components/Motion";
 import { Bone, Card, EmptyState, ErrorState, LargeTitle, Separator, SkeletonGroup } from "@/components/ui";
 import { api } from "@/lib/api";
 import { haptic } from "@/lib/haptics";
-import { keys, prefetchGroup, updateGroupSummary } from "@/lib/queries";
+import { keys, prefetchGroup, toggleChatArchive, updateGroupSummary } from "@/lib/queries";
 import { queryClient } from "@/lib/queryClient";
 import type { D1GroupSummary } from "@destiny/shared";
 import { useSession } from "@/state/session";
@@ -53,6 +53,7 @@ function rowActions(g: D1GroupSummary): SwipeAction[] {
   const actions: SwipeAction[] = [];
   if (g.unreadCount > 0 && g.lastMessage) actions.push({ key: "read", label: "Read", icon: "check", bg: "#0B62D6", onPress: () => markChatRead(g) });
   actions.push({ key: "mute", label: g.muted ? "Unmute" : "Mute", icon: g.muted ? "bell" : "bellOff", bg: "#363F48", onPress: () => toggleChatMute(g) });
+  if (g.kind !== "announcements") actions.push({ key: "archive", label: g.archived ? "Unarchive" : "Archive", icon: "archive", bg: "#5B6570", onPress: () => toggleChatArchive(g) });
   return actions;
 }
 
@@ -73,6 +74,11 @@ function ChatRow({ group: g }: { group: D1GroupSummary }) {
         <Link.MenuAction icon={g.muted ? "bell" : "bell.slash"} onPress={() => toggleChatMute(g)}>
           {g.muted ? "Unmute" : "Mute"}
         </Link.MenuAction>
+        {g.kind === "announcements" ? null : (
+          <Link.MenuAction icon="archivebox" onPress={() => toggleChatArchive(g)}>
+            {g.archived ? "Unarchive" : "Archive"}
+          </Link.MenuAction>
+        )}
         {g.kind === "assistant" ? null : (
           <Link.MenuAction icon="info.circle" onPress={() => router.push(`/group/${g.id}/info`)}>
             Group info
@@ -96,10 +102,19 @@ export default function Chats() {
       (communities ?? [])
         .map((c) => ({
           community: c,
-          groups: orderedGroups(c).filter((g) => (filter === "unread" ? g.unreadCount > 0 : filter === "announcements" ? g.kind === "announcements" : true)),
+          groups: orderedGroups(c).filter((g) => !g.archived).filter((g) => (filter === "unread" ? g.unreadCount > 0 : filter === "announcements" ? g.kind === "announcements" : true)),
         }))
         .filter((x) => x.groups.length > 0),
     [communities, filter],
+  );
+
+  const archivedCount = useMemo(
+    () => (communities ?? []).reduce((n, c) => n + c.groups.filter((g) => g.archived).length, 0) + (assistant?.archived ? 1 : 0),
+    [communities, assistant],
+  );
+  const archivedUnread = useMemo(
+    () => (communities ?? []).some((c) => c.groups.some((g) => g.archived && g.unreadCount > 0)) || Boolean(assistant?.archived && assistant.unreadCount > 0),
+    [communities, assistant],
   );
 
   const onRefresh = async () => {
@@ -120,7 +135,7 @@ export default function Chats() {
       </View>
       <LargeTitle style={{ paddingHorizontal: 20, paddingTop: 2, paddingBottom: 8 }}>Chats</LargeTitle>
       {communitiesError && communities ? <OfflineBanner /> : null}
-      {assistant && filter !== "announcements" && (filter !== "unread" || assistant.unreadCount > 0) ? (
+      {assistant && !assistant.archived && filter !== "announcements" && (filter !== "unread" || assistant.unreadCount > 0) ? (
         // DestinyAI: the only one-to-one chat, pinned above the communities.
         <View style={{ paddingTop: 10, paddingHorizontal: 16, paddingBottom: 4 }}>
           <Card shadow>
@@ -129,6 +144,15 @@ export default function Chats() {
             </SwipeActions>
           </Card>
         </View>
+      ) : null}
+      {archivedCount > 0 && filter === "all" ? (
+        <Pressable accessibilityRole="button" accessibilityLabel={`Archived, ${archivedCount} chats`} onPress={() => router.push("/archived")} style={({ pressed }) => ({ flexDirection: "row", alignItems: "center", gap: 12, marginHorizontal: 20, paddingVertical: 10, opacity: pressed ? 0.6 : 1 })}>
+          <Icon name="archive" size={20} color={t.muted} />
+          <Text style={{ flex: 1, fontSize: 16, fontWeight: "600", color: t.text }}>Archived</Text>
+          {archivedUnread ? <View style={{ width: 9, height: 9, borderRadius: 5, backgroundColor: t.tint }} /> : null}
+          <Text style={{ fontSize: 15, color: t.muted }}>{archivedCount}</Text>
+          <Icon name="chevronRight" size={14} color={t.subtle} strokeWidth={2.4} />
+        </Pressable>
       ) : null}
       {communities && communities.length > 0 ? (
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingTop: 6, paddingHorizontal: 16, paddingBottom: 4, gap: 8 }}>

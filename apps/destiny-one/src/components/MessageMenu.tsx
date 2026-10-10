@@ -21,6 +21,7 @@ import { Animated, Easing, Modal, Pressable, ScrollView, StyleSheet, Text, View,
 import { DESTINY_AI_ID } from "@destiny/shared";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Icon, type IconName } from "@/components/Icon";
+import { Emoji } from "@/components/Emoji";
 import { reduceMotion, springs } from "@/components/Motion";
 import { haptic } from "@/lib/haptics";
 import { menuLayout, type Rect } from "@/lib/menuLayout";
@@ -200,9 +201,7 @@ export function MessageMenu({
               accessibilityState={{ selected: mine(e) }}
               style={({ pressed }) => ({ width: cell, height: cell, borderRadius: cell / 2, alignItems: "center", justifyContent: "center", backgroundColor: mine(e) ? t.fill2 : "transparent", transform: [{ scale: pressed ? 1.25 : 1 }] })}
             >
-              <Text allowFontScaling={false} style={{ fontSize: Math.round(cell * 0.64) }}>
-                {e}
-              </Text>
+              <Emoji size={Math.round(cell * 0.64)}>{e}</Emoji>
             </Pressable>
           ))}
           <Pressable
@@ -232,9 +231,7 @@ export function MessageMenu({
                   accessibilityLabel={`React ${e}`}
                   style={({ pressed }) => ({ width: CELL, height: CELL, borderRadius: CELL / 2, alignItems: "center", justifyContent: "center", backgroundColor: mine(e) || pressed ? t.fill2 : "transparent" })}
                 >
-                  <Text allowFontScaling={false} style={{ fontSize: 27 }}>
-                    {e}
-                  </Text>
+                  <Emoji size={27}>{e}</Emoji>
                 </Pressable>
               ))}
             </ScrollView>

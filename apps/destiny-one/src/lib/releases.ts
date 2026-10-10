@@ -24,6 +24,17 @@ export interface Release {
 
 export const RELEASES: Release[] = [
   {
+    version: "0.12",
+    features: [
+      { icon: "archive", title: "Archive chats", body: "Swipe a chat or press and hold it, then Archive. It moves to Archived at the top of Chats and goes quiet, though @mentions still reach you. Only you see the change." },
+      { icon: "sparkle", title: "DestinyAI, smarter and faster", body: "Answers appear as they're written, and you can see what it's doing while you wait. It can now play a sermon right in the chat." },
+      { icon: "sliders", title: "Simpler Appearance controls", body: "Fade and Blur are now five easy steps from Low to High, so adjusting them no longer fights the swipe back." },
+      { icon: "search", title: "Search, ready to type", body: "Tap the Search tab and the keyboard opens straight away." },
+      { icon: "chats", title: "Smoother chat previews", body: "Pressing and holding a chat shows a cleaner preview, and peeking again and again no longer crashes the app." },
+      { icon: "check", title: "Sharper reactions, and lots of fixes", body: "Emoji reactions stay crisp while they animate, sermon cards no longer leave the chat blank, and plenty of smaller fixes besides." },
+    ],
+  },
+  {
     version: "0.10",
     features: [
       { icon: "sparkle", title: "Meet DestinyAI", body: "Smart Search, now in Destiny One. Find it at the top of Chats and ask about events, services, groups, sermons or giving." },

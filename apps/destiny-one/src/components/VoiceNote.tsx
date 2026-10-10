@@ -12,6 +12,7 @@
 // only one voice note plays at a time across the app.
 
 import { useEffect, useImperativeHandle, useRef, useState, type Ref } from "react";
+import { useIsPreview } from "expo-router";
 import { Alert, Animated, Linking, Text, View } from "react-native";
 import { RecordingPresets, requestRecordingPermissionsAsync, setAudioModeAsync, useAudioPlayer, useAudioPlayerStatus, useAudioRecorder, useAudioRecorderState, type AudioPlayer } from "expo-audio";
 import { MAX_VOICE_MS, VOICE_MIME_TYPE } from "@destiny/shared";
@@ -144,7 +145,26 @@ export function VoiceRecorder({ onDone, controlRef, locked, slideX }: { onDone: 
 let playing: AudioPlayer | null = null;
 
 /** A voice note in a bubble: play/pause, a progress bar, the time. `url` null while it's still uploading. */
-export function VoiceNote({ url, durationMs, color, track, fill }: { url: string | null; durationMs: number | null; color: string; track: string; fill: string }) {
+export function VoiceNote(props: { url: string | null; durationMs: number | null; color: string; track: string; fill: string }) {
+  // A chat peek shows a static note: no audio player per note on every peek.
+  return useIsPreview() ? <VoiceNoteStatic {...props} /> : <VoiceNotePlayer {...props} />;
+}
+
+function VoiceNoteStatic({ durationMs, color, track, fill }: { durationMs: number | null; color: string; track: string; fill: string }) {
+  return (
+    <View style={{ flexDirection: "row", alignItems: "center", gap: 10, minWidth: 200, paddingVertical: 2 }}>
+      <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: fill, alignItems: "center", justifyContent: "center", opacity: 0.5 }}>
+        <Icon name="play" size={16} color={color} strokeWidth={2.6} />
+      </View>
+      <View style={{ flex: 1, gap: 5 }}>
+        <View style={{ height: 4, borderRadius: 2, backgroundColor: track }} />
+        <Text style={{ fontSize: 12, fontVariant: ["tabular-nums"], color }}>{voiceTime(durationMs ?? 0)}</Text>
+      </View>
+    </View>
+  );
+}
+
+function VoiceNotePlayer({ url, durationMs, color, track, fill }: { url: string | null; durationMs: number | null; color: string; track: string; fill: string }) {
   const player = useAudioPlayer(null);
   const status = useAudioPlayerStatus(player);
   const [loaded, setLoaded] = useState(false);

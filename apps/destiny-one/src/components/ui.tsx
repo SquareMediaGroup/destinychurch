@@ -248,6 +248,16 @@ export function Avatar({ name, size, radius, announcements, assistant, uri }: { 
   );
 }
 
+/** The small "Beta" label on DestinyAI (and anything else still in beta). */
+export function BetaTag() {
+  const t = useTheme();
+  return (
+    <View accessibilityLabel="Beta" style={{ backgroundColor: t.accentSoft, paddingHorizontal: 6, paddingVertical: 1, borderRadius: 5 }}>
+      <Text style={{ fontSize: 10, fontWeight: "700", letterSpacing: 0.3, color: t.tint }}>BETA</Text>
+    </View>
+  );
+}
+
 export function CountBadge({ count, small }: { count: number; small?: boolean }) {
   const h = small ? 20 : 22;
   return (

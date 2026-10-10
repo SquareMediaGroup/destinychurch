@@ -199,7 +199,7 @@ export default function GroupChat() {
   const department = group?.department ?? summary?.group.department;
   // "Leah is typing…" takes the place of the member count while it's true.
   const typingNow = typingLabel(useTyping(id));
-  const sub = typingNow ?? (isAssistant ? "Smart Search for Destiny" : group ? [department, plural(group.members.length, "member")].filter(Boolean).join(" · ") : department ?? "");
+  const sub = typingNow ?? (isAssistant ? "Beta · Ask about Destiny" : group ? [department, plural(group.members.length, "member")].filter(Boolean).join(" · ") : department ?? "");
   const canDelete = (m: LocalMessage) => m.mine || group?.myRole === "admin" || !!group?.canManage;
   // Pinned messages (newest pin first). Older cached copies of the group may not have the field yet.
   const pinned = group?.pinned ?? [];
@@ -389,7 +389,7 @@ export default function GroupChat() {
               {isAssistant ? (
                 <EmptyState
                   title="Ask DestinyAI"
-                  body={"Ask about events, services, groups, sermons or giving. It knows the church calendar and everything on Smart Search.\n\nIn a group, type @DestinyAI to ask it there. It only sees the message you tag it in, and the message you're replying to."}
+                  body={"DestinyAI is in beta. It answers questions about Destiny only: what's on, services, groups, sermons, giving and the shop. It can get things wrong, so check anything important with a leader.\n\nIn a group, type @DestinyAI to ask it there. It only sees the message you tag it in, and the message you're replying to."}
                 />
               ) : (
                 <EmptyState title="No messages yet" body={group?.canPost ? "Say hello." : undefined} />

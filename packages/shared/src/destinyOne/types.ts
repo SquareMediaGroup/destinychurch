@@ -248,7 +248,20 @@ export interface D1PollContent {
   };
 }
 
-export type D1MessageContent = D1EventContent | D1PollContent;
+/** A sermon from the YouTube archive, played in the chat with an embedded player (DestinyAI's share_sermon). */
+export interface D1SermonContent {
+  kind: "sermon";
+  sermon: {
+    videoId: string;
+    title: string;
+    speaker: string | null;
+    thumbnailUrl: string;
+    publishedAt: string;
+    durationSeconds: number | null;
+  };
+}
+
+export type D1MessageContent = D1EventContent | D1PollContent | D1SermonContent;
 
 /** What the app sends to create a poll — the server mints option ids and tallies. */
 export interface D1PollDraft {

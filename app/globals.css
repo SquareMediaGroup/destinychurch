@@ -1664,6 +1664,55 @@ body {
 .ProseMirror [data-drag-handle]:active {
   cursor: grabbing;
 }
+
+/* VideoPlayer scrubber: a thin track that fills orange up to --progress
+   (set inline by the component), with a thumb that grows on hover/focus. */
+.video-scrubber::-webkit-slider-runnable-track {
+  height: 4px;
+  border-radius: 9999px;
+  background: linear-gradient(
+    to right,
+    var(--color-destiny-orange) var(--progress, 0%),
+    rgb(255 255 255 / 0.3) var(--progress, 0%)
+  );
+}
+.video-scrubber::-moz-range-track {
+  height: 4px;
+  border-radius: 9999px;
+  background: rgb(255 255 255 / 0.3);
+}
+.video-scrubber::-moz-range-progress {
+  height: 4px;
+  border-radius: 9999px;
+  background: var(--color-destiny-orange);
+}
+.video-scrubber::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 14px;
+  width: 14px;
+  margin-top: -5px;
+  border-radius: 9999px;
+  background: var(--color-destiny-orange);
+  border: 0;
+  transition: transform 150ms;
+}
+.video-scrubber::-moz-range-thumb {
+  height: 14px;
+  width: 14px;
+  border-radius: 9999px;
+  background: var(--color-destiny-orange);
+  border: 0;
+}
+.video-scrubber:hover::-webkit-slider-thumb,
+.video-scrubber:focus-visible::-webkit-slider-thumb {
+  transform: scale(1.25);
+}
+.video-scrubber:focus-visible {
+  outline: 2px solid white;
+  outline-offset: 2px;
+  border-radius: 9999px;
+}
 }
 /* ── end @layer components ─────────────────────────────────────────────── */
 

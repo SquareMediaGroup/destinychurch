@@ -12,6 +12,7 @@ import { Animated, Image, Pressable, Text, View } from "react-native";
 import * as WebBrowser from "expo-web-browser";
 import Svg, { Path } from "react-native-svg";
 import { DESTINY_AI_ID, mentionSegments, type D1EventContent, type D1LinkPreview, type D1LeaderRole, type D1Message, type D1PollContent, type D1SermonContent, type Mentionable } from "@destiny/shared";
+import { Emoji } from "@/components/Emoji";
 import { Icon } from "@/components/Icon";
 import { MessageMenu, type MessageMenuActions } from "@/components/MessageMenu";
 import { Appear, Pop, PressableScale, reduceMotion, springs } from "@/components/Motion";
@@ -258,7 +259,7 @@ export function MessageBubble({ row, replyTo, senderTag, senderIsGroupAdmin, can
                 accessibilityLabel={`${r.emoji} ${r.count}${r.mine ? ", including you" : ""}`}
                 style={{ minHeight: 26, borderRadius: 13, flexDirection: "row", alignItems: "center", gap: 3, paddingHorizontal: 8, backgroundColor: r.mine ? t.accentSoft : t.card, borderWidth: 1, borderColor: r.mine ? ORANGE : t.glassLine }}
               >
-                <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 14 }}>{r.emoji}</Text>
+                <Emoji size={14} allowFontScaling maxFontSizeMultiplier={1.3}>{r.emoji}</Emoji>
                 <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 13, fontWeight: "600", color: t.text }}>{r.count}</Text>
               </PressableScale>
             </Pop>

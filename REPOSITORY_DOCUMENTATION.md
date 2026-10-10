@@ -6243,6 +6243,7 @@ Polished to Apple's Human Interface Guidelines. The pieces, and why they exist:
   reacting, poll votes, a gesture reaching its threshold, opening the message menu, pull to
   refresh, a warning when a destructive confirm dialog opens, success when a form goes through,
   and an error with every new `FormError`. Never on scroll.
+- **Emoji** (`src/components/Emoji.tsx`): renders an emoji at 1.4x and shrinks it with a static transform, so ancestor scale animations (press-grow, spring overshoot) do not stretch the emoji bitmap and blur it. Use it for any emoji inside an animated view.
 - **Motion** (`src/components/Motion.tsx`): shared spring primitives on RN `Animated` with the
   native driver (no Reanimated, so no new binary). `PressableScale` shrinks under the finger and
   springs back (`holdMs` makes a long-press target squeeze over the delay, used by bubbles);

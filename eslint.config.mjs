@@ -16,6 +16,8 @@ const eslintConfig = defineConfig([
     "mobile/**",
     // Destiny One, the Expo messaging app — its own toolchain too.
     "apps/destiny-one/**",
+    // D1 Admin, the Tauri desktop app — its own package and checks (CI job d1-admin).
+    "apps/d1-admin/**",
     // Talent show buzzers: standalone Node/CommonJS app with its own package.json.
     "apps/talent-buzzer/**",
     // Agent worktrees are full copies of the app, gitignored; linting them

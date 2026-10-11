@@ -403,6 +403,12 @@ destinychurch/
 │   │                               # never installs React Native); imports @destiny/shared through a
 │   │                               # file: link + metro.config.js. Backend: /api/app/v1/one/*.
 │   │                               # Every screen built (design variants 1B + 1F). See "Destiny One" below.
+│   ├── d1-admin/                  # D1 Admin — Destiny One on the Mac for leaders and admins (Tauri 2 +
+│   │                               # React/Vite). Chat plus the admin queues (reports, access requests,
+│   │                               # paused groups, people, invites, communities, feedback, audit log,
+│   │                               # app settings), menu bar popover, notifications, Touch ID, session
+│   │                               # in the Keychain. Own npm project; Rust shell in src-tauri/. Uses the
+│   │                               # same APIs as the phone app and the web admin. See "D1 Admin" below.
 │   ├── talent-buzzer/             # Talent show judge buzzers — one app on both machines: hub (LED) / Avolites
 │   │                               # agent (Titan PC). Android tablets press -> Titan Web API cue +
 │   │                               # X / golden takeover + sound on the LED screen. LAN only, own
@@ -2248,8 +2254,19 @@ group-icon migrations) to a throwaway local Postgres and runs `tests/sql/destiny
 suite, `destiny-one-encryption`, adds part 10 and runs `tests/sql/destiny-one-encryption.sql`
 (plaintext refused, search on terms, no realtime copy, privileges).
 
+**Timed restrictions and escalation** (`20261011_01_destiny_one_restrictions_escalation.sql`, used by the
+D1 Admin desktop app):
+- `d1_members.posting_restricted_until` — while `now()` is before it, the member can read but not post or
+  react. Enforced by `d1_enforce_posting_restriction()` as BEFORE INSERT triggers on `d1_messages` and
+  `d1_reactions`, so every write path (posting, forwarding, voice notes) is covered; raises a P0001 the API
+  shows as written. Lifts itself (no job). Unlike suspension, a restricted member still counts towards the
+  group rules, so restricting never pauses a group.
+- `d1_reports.escalated_at` / `escalated_by` — the report went to the Designated Safeguarding Lead. Status
+  stays `reviewing` (the web admin's set is unchanged).
+- Tested by the `destiny-one-restrictions` SQL suite (`tests/sql/destiny-one-restrictions.sql`).
+
 **Used By:** `lib/destinyOne/*`, `app/api/app/v1/one/**`, `app/api/admin/destiny-one/**`,
-`app/api/cron/destiny-one-{sync,purge}`.
+`app/api/cron/destiny-one-{sync,purge}`, `apps/d1-admin`.
 
 #### 30. **song_request_settings / song_request_spotify / song_requests** (Event song requests)
 **Purpose:** `/song-requests`. Migration: `supabase/migrations/20260930_01_song_requests.sql`. All three are
@@ -4505,6 +4522,17 @@ so the broader one can't swallow it) and re-checked in every route by `requireDe
 `requireSafeguardingAdmin` (`lib/destinyOne/admin.server.ts`). Every mutation calls `recordAudit`
 (section `destiny_one` or `safeguarding`).
 
+**Bearer tokens (D1 Admin desktop app).** This is the one `/api/admin` area that also accepts a
+Supabase access token as `Authorization: Bearer …` when there's no cookie session: `middleware.ts`
+resolves the user from it and then runs the same role check and audit actor headers as for a cookie,
+and `requireRole` in `admin.server.ts` falls back to it the same way. Every other `/api/admin` path is
+cookie-only. Response shapes are typed in `@destiny/shared` (`destinyOne/adminTypes.ts`, re-exported by
+`lib/destinyOne/adminTypes.ts`) and the desktop app calls them through `createDestinyOneAdminClient`
+(`destinyOne/adminClient.ts`).
+
+- `GET whoami` — open to any signed-in user (OPEN_PATHS): `{ destinyOneAdmin, safeguardingAdmin,
+  transcriptReader, superAdmin }` for the caller, so the desktop app knows which sections to show.
+
 **Destiny One Admin (`destiny_one_admin`) — runs the app, never sees message content:**
 - `GET overview` — counts for the landing page.
 - `GET members?status=`, `GET/PATCH/DELETE members/[id]` — name, age decision (`age: { adult,
@@ -4539,6 +4567,14 @@ place message content can be read:**
   rules pause as usual) or reinstate someone who is suspended (never a way round the approval queue);
   audited. Lets the safeguarding team act without the Destiny One Admin role.
 - `GET events?kind=block` — the log of members blocking / unblocking each other (the "Blocks" tab).
+- `POST/DELETE members/[id]/restrict` `{ days: 1 | 7 | 30, reason }` — timed posting restriction (can
+  read, can't post or react, lifts itself) or lift it early; audited. `GET members` rows carry
+  `postingRestrictedUntil`.
+- `POST reports/[id]/escalate` — escalate to the Designated Safeguarding Lead: sets `escalated_at`, moves
+  an open report to `reviewing`, and emails every Safeguarding Admin
+  (`emailSafeguardingAboutEscalation`, content-free like the report alert). A second call is a no-op.
+- `GET audit?before=` — the Destiny One slice of the audit log (sections `destiny_one` and
+  `safeguarding`, summary and who/when only), 50 a page. The full log stays Super Admin only.
 
 > There is no `/api/webhooks/vercel` or GitHub webhook route, and no `youtube-sync`
 > cron/cache job — `app/api/webhooks/` currently only contains `stripe/` (see Shop
@@ -4931,8 +4967,10 @@ needs credentials belongs in the e2e projects instead. `next build` is
 deliberately not in CI because page-data collection needs live Supabase env vars;
 Vercel's preview build covers that. The browser suite stays in `playwright.yml`,
 manual-trigger only, because it needs a running site to point at.
-Two more jobs, also secret-free: **Destiny One app** (`npm ci`, typecheck and
-`expo lint` inside `apps/destiny-one`, which is its own npm project) and
+Three more jobs, also secret-free: **Destiny One app** (`npm ci`, typecheck and
+`expo lint` inside `apps/destiny-one`, which is its own npm project), **D1 Admin
+desktop app** (`npm ci` and `npm run build` — typecheck plus the Vite bundle — inside
+`apps/d1-admin`; the Rust shell is only built on a Mac) and
 **Database rules** (`scripts/test-sql.sh` against the PostgreSQL that ships on
 the Ubuntu runner, so the safeguarding SQL checks run on every PR).
 
@@ -6194,6 +6232,42 @@ Thursday and reads as lost work. Emails link to the tracking page, which mints a
 fresh URL per click.
 
 ---
+
+### D1 Admin — the Mac app (`apps/d1-admin`)
+
+Destiny One for leaders and admins on macOS, built from the design canvas "The One App — Mac".
+Tauri 2 (Rust shell, `src-tauri/`) around a React + Vite UI (`src/`). Its own npm project, like the
+Expo app; imports `@destiny/shared` through a `file:` link.
+
+**Who can use it.** After sign-in it calls `GET /api/app/v1/one/me` and
+`GET /api/admin/destiny-one/whoami`. Leaders (any `D1LeaderRole`) and admins get in; anyone else sees
+"use the phone app". The sidebar's Admin section is filtered by role: Destiny One Admin → Access
+requests, People, Invites, Communities, Feedback, App settings; Safeguarding Admin → Reports, Paused
+groups, Audit log. Leaders get chat and can manage groups they lead. Every route still checks for itself.
+
+**How it talks to the backend.**
+- Chat: `createDestinyOneClient` (`/api/app/v1/one/*`), exactly as the phone app.
+- Admin: `createDestinyOneAdminClient` (`/api/admin/destiny-one/*`) with the Supabase token as a bearer
+  (see "Destiny One admin API").
+- Both go through Tauri's HTTP plugin (`src/lib/native.ts` `apiFetch`), so the website needs no CORS and
+  the token can only reach hosts in `src-tauri/capabilities/default.json`.
+- Supabase is used only for auth and Realtime; the session is stored in the macOS Keychain
+  (`keychain_*` commands in `src-tauri/src/lib.rs`).
+
+**Native pieces** (`src-tauri/src/lib.rs`): Touch ID / Mac password on launch (`touch_id.rs`,
+LocalAuthentication, setting "Require Touch ID"); a menu bar item with a count and a popover window
+(`menubar.html` → `src/menubar/`); closing the window hides it so notifications keep coming; open at
+login (autostart plugin, starts hidden). The popover holds no session: the main window sends it state
+and acts for it over Tauri events (`src/lib/menubarTypes.ts`, `src/lib/live.ts`).
+
+**Notifications** (`src/lib/live.ts`) only while the app or its menu bar item is running — no APNs.
+New messages come over Realtime (same hub as the phone app, `src/lib/realtime.ts`); reports and access
+requests refresh on a timer (1 and 2 minutes). Banners respect mute, "Show message previews" and
+"Pause notifications for 1 hour".
+
+**Building.** `npm run tauri:dev` / `npm run tauri:build` on a Mac (Rust + Xcode command line tools).
+The build is unsigned for now; `tauri.conf.json` has the signing fields ready for when the Apple
+Developer account exists. See `apps/d1-admin/README.md`.
 
 ### Destiny One app — look and feel (`apps/destiny-one/src`)
 

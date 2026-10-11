@@ -12,7 +12,7 @@
 
 import "server-only";
 import { NextResponse } from "next/server";
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { createClient } from "@/utils/supabase/server";
 import { createServiceClient } from "@/utils/supabase/service";
 import { getRoles, type AdminRole } from "@/lib/adminRoles";
@@ -22,13 +22,36 @@ export interface AdminCaller {
   email: string | null;
 }
 
+/**
+ * The signed-in user: the website's cookie session, or, for the D1 Admin
+ * desktop app, a Supabase access token in `Authorization: Bearer …`.
+ * middleware.ts accepts the same two for /api/admin/destiny-one only.
+ */
+async function callerUser(): Promise<{ id: string; email?: string | null } | null> {
+  const {
+    data: { user },
+  } = await createClient(await cookies()).auth.getUser();
+  if (user) return user;
+
+  const m = /^Bearer\s+(.+)$/i.exec(((await headers()).get("authorization") ?? "").trim());
+  if (!m) return null;
+  const { data } = await createServiceClient().auth.getUser(m[1]);
+  return data.user ?? null;
+}
+
+/** The caller's admin role flags, for the desktop app's sidebar. */
+export async function callerRoles(): Promise<{ caller: AdminCaller; roles: Record<AdminRole, boolean> } | NextResponse> {
+  const user = await callerUser();
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const roles = await getRoles(createServiceClient(), user.id);
+  return { caller: { userId: user.id, email: user.email ?? null }, roles };
+}
+
 async function requireRole(
   role: AdminRole,
   opts: { superAdminCounts?: boolean; forbidden?: string } = {},
 ): Promise<AdminCaller | NextResponse> {
-  const {
-    data: { user },
-  } = await createClient(await cookies()).auth.getUser();
+  const user = await callerUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const roles = await getRoles(createServiceClient(), user.id);

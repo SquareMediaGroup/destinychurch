@@ -23,3 +23,5 @@ export * from "./destinyOne/policy";
 export * from "./destinyOne/accountRules";
 export * from "./destinyOne/client";
 export * from "./destinyOne/signedUrls";
+export * from "./destinyOne/adminTypes";
+export * from "./destinyOne/adminClient";

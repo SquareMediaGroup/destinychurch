@@ -1,0 +1,31 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "default",
+  "description": "What the D1 Admin windows may do. The HTTP allow-list is the only place the app may send its Supabase token.",
+  "windows": ["main", "menubar"],
+  "permissions": [
+    "core:default",
+    "core:window:allow-show",
+    "core:window:allow-hide",
+    "core:window:allow-set-focus",
+    "core:window:allow-start-dragging",
+    "core:event:default",
+    "notification:default",
+    "autostart:allow-enable",
+    "autostart:allow-disable",
+    "autostart:allow-is-enabled",
+    {
+      "identifier": "opener:allow-open-url",
+      "allow": [{ "url": "https://*" }]
+    },
+    {
+      "identifier": "http:default",
+      "allow": [
+        { "url": "https://destinychurch.vercel.app/api/*" },
+        { "url": "https://destinytees.uk/api/*" },
+        { "url": "https://www.destinytees.uk/api/*" },
+        { "url": "http://localhost:3000/api/*" }
+      ]
+    }
+  ]
+}

@@ -274,6 +274,11 @@ export const adminSuspendSchema = z.object({
   reason: z.string().trim().min(3, "Give a short reason for the record.").max(500),
 });
 
+export const adminRestrictSchema = z.object({
+  days: z.union([z.literal(1), z.literal(7), z.literal(30)]),
+  reason: z.string().trim().min(3, "Give a short reason for the record.").max(500),
+});
+
 export const adminResolveSchema = z.object({
   status: z.enum(["reviewing", "closed"]),
   resolution: z.string().trim().max(2000).optional(),

@@ -51,13 +51,30 @@ export function toAdminMember(r: MemberListRow): AdminMember {
     createdAt: r.created_at,
     communityCount: r.community_count,
     groupCount: r.group_count,
+    postingRestrictedUntil: null,
   };
 }
 
 export async function listMembers(status?: string): Promise<AdminMember[]> {
-  const { data, error } = await createServiceClient().rpc("d1_admin_members", { p_status: status ?? null });
-  if (error) throw error;
-  return ((data ?? []) as MemberListRow[]).map(toAdminMember);
+  const supabase = createServiceClient();
+  const [list, restricted] = await Promise.all([
+    supabase.rpc("d1_admin_members", { p_status: status ?? null }),
+    // Timed posting restrictions still in force (migration 20261011_01). A
+    // separate read so d1_admin_members doesn't need redefining; it is a short
+    // list. A database without the column yet just shows nobody restricted.
+    supabase
+      .from("d1_members")
+      .select("id, posting_restricted_until")
+      .gt("posting_restricted_until", new Date().toISOString()),
+  ]);
+  if (list.error) throw list.error;
+  const until = new Map(
+    ((restricted.data ?? []) as { id: string; posting_restricted_until: string }[]).map((r) => [r.id, r.posting_restricted_until]),
+  );
+  return ((list.data ?? []) as MemberListRow[]).map((r) => ({
+    ...toAdminMember(r),
+    postingRestrictedUntil: until.get(r.id) ?? null,
+  }));
 }
 
 export async function getMember(id: string): Promise<AdminMember | null> {

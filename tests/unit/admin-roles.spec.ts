@@ -50,3 +50,24 @@ test("public paths are not the role system's business", () => {
   // Public pages are unmatched by middleware.
   expect(hasAccess(NO_ROLES, "/sermons")).toBe(true);
 });
+
+/* ── D1 Admin desktop app routes ──────────────────────────────────────────── */
+
+test("the desktop app's whoami answers any signed-in user, and only describes them", () => {
+  // A leader with no admin role must be able to ask, to be shown chat only.
+  expect(hasAccess(NO_ROLES, "/api/admin/destiny-one/whoami")).toBe(true);
+  // ...but the open rule is exact: it doesn't open anything under it.
+  expect(hasAccess(NO_ROLES, "/api/admin/destiny-one/whoami/x")).toBe(false);
+  expect(hasAccess(NO_ROLES, "/api/admin/destiny-one/members")).toBe(false);
+});
+
+test("restricting, escalating and the D1 audit feed are safeguarding only", () => {
+  for (const path of [
+    "/api/admin/destiny-one/safeguarding/members/abc/restrict",
+    "/api/admin/destiny-one/safeguarding/reports/1/escalate",
+    "/api/admin/destiny-one/safeguarding/audit",
+  ]) {
+    expect(hasAccess(only("safeguarding_admin"), path), path).toBe(true);
+    expect(hasAccess(only("destiny_one_admin"), path), path).toBe(false);
+  }
+});

@@ -11,6 +11,9 @@ export default defineConfig({
   clearScreen: false,
   server: { port: 1430, strictPort: true },
   envPrefix: ["VITE_"],
+  // Plain CSS, no PostCSS. Set explicitly so Vite doesn't find the website's
+  // Tailwind config at the repo root (postcss.config.mjs) and try to load it.
+  css: { postcss: {} },
   build: {
     target: "safari16",
     rollupOptions: {

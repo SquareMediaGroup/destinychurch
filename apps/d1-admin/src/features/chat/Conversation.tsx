@@ -9,10 +9,12 @@ import type { Point } from "@/components/Floating";
 import { Avatar, Empty, Loading } from "@/components/ui";
 import { api, errorText } from "@/lib/api";
 import { findGroup, flattenMessages, invalidateCommunities, setOpenGroup, castVote, toggleReaction, updateMessages, useCommunities, useGroup, useMessages } from "@/lib/chat";
+import { useAssistantStream } from "@/lib/assistantStream";
 import { dayLabel, plural, sameDay } from "@/lib/format";
 import { nav, useNav } from "@/lib/nav";
 import { openExternal } from "@/lib/native";
 import { useReady } from "@/lib/session";
+import { AssistantStreaming } from "@/features/chat/AssistantStreaming";
 import { MessageRow } from "@/features/chat/MessageRow";
 import { ACCEPT, checkFile, uploadAttachment } from "@/features/chat/upload";
 
@@ -23,6 +25,7 @@ function Composer({
   name,
   replyTo,
   people,
+  assistant,
   onCancelReply,
   onReplyLast,
 }: {
@@ -31,6 +34,8 @@ function Composer({
   replyTo: D1Message | null;
   /** The other members of the group, for "@" suggestions. */
   people: Mentionable[];
+  /** The chat with DestinyAI: text only, no files, polls or mentions. */
+  assistant: boolean;
   onCancelReply: () => void;
   onReplyLast: () => void;
 }) {
@@ -72,7 +77,7 @@ function Composer({
   const canSend = (draft.trim().length > 0 || files.length > 0) && !busy;
 
   // "@Lea" being typed just before the cursor, and who it could be.
-  const query = suggestOff ? null : mentionQuery(draft, cursor);
+  const query = suggestOff || assistant ? null : mentionQuery(draft, cursor);
   const suggestions = query ? mentionSuggestions(query.query, people) : [];
   const showSuggestions = suggestions.length > 0;
 
@@ -158,7 +163,7 @@ function Composer({
         setDragging(true);
       }}
       onDragLeave={() => setDragging(false)}
-      onDrop={onDrop}
+      onDrop={assistant ? (e) => e.preventDefault() : onDrop}
       style={{ position: "relative" }}
     >
       {showSuggestions && (
@@ -204,6 +209,7 @@ function Composer({
           </div>
         )}
         <div style={{ display: "flex", alignItems: "flex-end", gap: 6, padding: 6 }}>
+          {!assistant && (
           <button
             className="ib"
             style={{ width: 32, height: 32 }}
@@ -216,11 +222,12 @@ function Composer({
           >
             <Icon name="plus" size={18} stroke={2} />
           </button>
+          )}
           <input ref={fileInput} type="file" multiple accept={ACCEPT} hidden onChange={(e) => { pick(e.target.files); e.target.value = ""; }} />
           <textarea
             ref={textRef}
             aria-label="Message"
-            placeholder={`Message ${name}`}
+            placeholder={assistant ? "Ask DestinyAI" : `Message ${name}`}
             value={draft}
             rows={1}
             maxLength={MAX_MESSAGE_LENGTH}
@@ -264,7 +271,7 @@ function Composer({
                 onReplyLast();
               }
             }}
-            onPaste={(e) => pick(e.clipboardData.files)}
+            onPaste={(e) => !assistant && pick(e.clipboardData.files)}
             style={{ flex: 1, minWidth: 0, minHeight: 32, maxHeight: 160, border: 0, outline: 0, background: "transparent", fontSize: 14, lineHeight: "20px", padding: "6px 4px", resize: "none", fieldSizing: "content" } as React.CSSProperties}
           />
           <button
@@ -303,7 +310,7 @@ function Composer({
         <div className="error" role="alert" style={{ padding: "6px 4px 0" }}>{error}</div>
       ) : (
         <div className="subtle" style={{ padding: "6px 4px 0", fontSize: 11 }}>
-          {busy ? `${busy}…` : "Return to send, Shift-Return for a new line. Drop photos or PDFs to attach them, @ to mention someone. Chats aren't end-to-end encrypted, so the safeguarding team can review them if a concern is raised."}
+          {busy ? `${busy}…` : assistant ? "Return to send, Shift-Return for a new line. DestinyAI is in beta and can make mistakes." : "Return to send, Shift-Return for a new line. Drop photos or PDFs to attach them, @ to mention someone. Chats aren't end-to-end encrypted, so the safeguarding team can review them if a concern is raised."}
         </div>
       )}
     </div>
@@ -316,6 +323,7 @@ export function Conversation({ groupId }: { groupId: string }) {
   const found = findGroup(communities.data, groupId);
   const group = useGroup(groupId);
   const messages = useMessages(groupId);
+  const liveAnswer = useAssistantStream(groupId);
   const { me } = useReady();
   const list = useMemo(() => flattenMessages(messages.data), [messages.data]);
   const [replyTo, setReplyTo] = useState<D1Message | null>(null);
@@ -351,7 +359,8 @@ export function Conversation({ groupId }: { groupId: string }) {
   const frozen = g.state === "frozen";
   const canManage = !!detail?.canManage;
   const canPost = detail ? detail.canPost : !frozen && !isAnn;
-  const sub = [found?.community.name, g.department, detail ? plural(detail.members.length, "member") : null].filter(Boolean).join(" · ");
+  const isAssistant = g.kind === "assistant";
+  const sub = isAssistant ? "Beta · Ask about Destiny" : [found?.community.name, g.department, detail ? plural(detail.members.length, "member") : null].filter(Boolean).join(" · ");
 
   const run = async (fn: () => Promise<unknown>) => {
     setActionError(null);
@@ -391,9 +400,11 @@ export function Conversation({ groupId }: { groupId: string }) {
           <span className="sub ellipsis">{sub}</span>
         </div>
         {g.muted && <span className="subtle" style={{ fontSize: 12, padding: "0 6px" }}>Muted</span>}
-        <button className="ib" onClick={nav.toggleInfo} aria-label="Group info" aria-pressed={infoOpen} style={{ background: infoOpen ? "var(--fill2)" : "transparent" }}>
-          <Icon name="sidebar" size={18} />
-        </button>
+        {!isAssistant && (
+          <button className="ib" onClick={nav.toggleInfo} aria-label="Group info" aria-pressed={infoOpen} style={{ background: infoOpen ? "var(--fill2)" : "transparent" }}>
+            <Icon name="sidebar" size={18} />
+          </button>
+        )}
       </header>
 
       {frozen && (
@@ -421,7 +432,7 @@ export function Conversation({ groupId }: { groupId: string }) {
           {messages.isFetchingNextPage && <div className="subtle" style={{ textAlign: "center", fontSize: 12, padding: 8 }}>Loading older messages…</div>}
           {messages.isLoading && <Loading what="Loading messages" />}
           {messages.error && <div className="error" style={{ textAlign: "center" }}>Couldn't load messages. {errorText(messages.error)}</div>}
-          {!messages.isLoading && list.length === 0 && !messages.error && <Empty title="No messages yet" sub="Say hello." />}
+          {!messages.isLoading && list.length === 0 && !messages.error && <Empty title="No messages yet" sub={isAssistant ? "Ask DestinyAI about services, events, groups or anything at Destiny." : "Say hello."} />}
           {list.map((m, i) => {
             const prev = list[i - 1];
             const newDay = !prev || !sameDay(prev.createdAt, m.createdAt);
@@ -451,6 +462,7 @@ export function Conversation({ groupId }: { groupId: string }) {
               </div>
             );
           })}
+          {isAssistant && liveAnswer && (liveAnswer.label || liveAnswer.text) && <AssistantStreaming label={liveAnswer.label} text={liveAnswer.text} />}
         </div>
       </div>
 
@@ -462,7 +474,8 @@ export function Conversation({ groupId }: { groupId: string }) {
               groupId={groupId}
               name={g.name}
               replyTo={replyTo}
-              people={others}
+              people={isAssistant ? [] : others}
+              assistant={isAssistant}
               onCancelReply={() => setReplyTo(null)}
               onReplyLast={() => {
                 const last = [...list].reverse().find((x) => !x.deleted);

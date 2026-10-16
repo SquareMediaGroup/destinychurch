@@ -6,7 +6,7 @@ import { D1_ROLE_LABELS, topRole, type D1GroupSummary } from "@destiny/shared";
 import { Icon, type IconName } from "@/components/Icon";
 import { Avatar } from "@/components/ui";
 import { usePausedGroups, usePending, useReports } from "@/lib/adminData";
-import { sortGroups, useCommunities } from "@/lib/chat";
+import { sortGroups, useAssistant, useCommunities } from "@/lib/chat";
 import { shortTime } from "@/lib/format";
 import { nav, useNav, type AdminPage } from "@/lib/nav";
 import { useReady } from "@/lib/session";
@@ -64,6 +64,7 @@ export function Sidebar() {
   const { me, roles, leader } = useReady();
   const { view, query } = useNav();
   const communities = useCommunities();
+  const assistant = useAssistant();
   const reports = useReports("open", roles.safeguardingAdmin);
   const pending = usePending(roles.destinyOneAdmin);
   const paused = usePausedGroups(roles.safeguardingAdmin);
@@ -121,6 +122,12 @@ export function Sidebar() {
       </div>
 
       <div className="scroll" style={{ flex: 1, minHeight: 0, padding: "0 8px 12px" }}>
+        {assistant.data && filter === "All" && (
+          <div style={{ paddingTop: 4 }}>
+            <GroupRow g={assistant.data} current={view.kind === "chat" && view.groupId === assistant.data.id && !query} />
+          </div>
+        )}
+
         {adminNav.length > 0 && (
           <div style={{ paddingTop: 4, display: "flex", flexDirection: "column", gap: 1 }}>
             <div className="label-caps" style={{ height: 28, display: "flex", alignItems: "center", padding: "0 8px" }}>Admin</div>

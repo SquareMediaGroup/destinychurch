@@ -6,6 +6,7 @@ import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { Sidebar } from "@/components/Sidebar";
 import { Empty } from "@/components/ui";
 import { useLive } from "@/lib/live";
+import { useAssistant } from "@/lib/chat";
 import { useShortcuts } from "@/lib/shortcuts";
 import { useNav, type AdminPage } from "@/lib/nav";
 import { usePrefs } from "@/lib/prefs";
@@ -43,6 +44,7 @@ function Shell() {
   useLive();
   const { roles, leader } = useReady();
   useShortcuts(leader);
+  const assistant = useAssistant();
   const { view, query, infoOpen } = useNav();
   const searching = query.trim().length > 0;
 
@@ -62,7 +64,7 @@ function Shell() {
       <main style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", background: "var(--bg)", minHeight: 0 }}>
         <ErrorBoundary resetKey={searching ? `search:${query}` : JSON.stringify(view)}>{main}</ErrorBoundary>
       </main>
-      {!searching && view.kind === "chat" && view.groupId && infoOpen && <Inspector groupId={view.groupId} />}
+      {!searching && view.kind === "chat" && view.groupId && infoOpen && view.groupId !== assistant.data?.id && <Inspector groupId={view.groupId} />}
       <Sheets />
     </div>
   );

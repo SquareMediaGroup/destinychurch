@@ -6284,6 +6284,14 @@ button offers files or a poll (`validatePoll` rules, sent with `poll` on `api.se
 are tappable and update at once (`castVote`, undone if the server refuses). "Forward" in the right-click
 menu opens a sheet to pick up to 5 chats (`api.forward`; polls and deleted messages can't be forwarded).
 
+**DestinyAI** (`src/lib/assistantStream.ts`, `features/chat/AssistantStreaming.tsx`). The assistant chat belongs
+to no community, so it comes from `api.assistant()` (`useAssistant`) and sits at the top of the sidebar; the
+realtime hub joins its channel with the other groups. While it answers, the server broadcasts
+`assistant_status` (what it's doing) and `assistant_delta` (the text so far); `applyEvent` feeds the
+in-memory stream and the chat draws it as a bubble (dots and a label, then the words with a blinking bar).
+The finished `message` event from `DESTINY_AI_ID` clears it. Nothing is stored. The chat is text-only (no
+files, polls or mentions) and has no group info pane.
+
 **Building.** `npm run tauri:dev` / `npm run tauri:build` on a Mac (Rust + Xcode command line tools).
 The build is unsigned for now; `tauri.conf.json` has the signing fields ready for when the Apple
 Developer account exists. See `apps/d1-admin/README.md`.

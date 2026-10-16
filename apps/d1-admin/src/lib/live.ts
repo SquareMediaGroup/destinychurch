@@ -10,7 +10,7 @@ import { useEffect, useMemo, useRef } from "react";
 import type { D1CommunitySummary } from "@destiny/shared";
 import { api } from "@/lib/api";
 import { usePausedGroups, usePending, useReports } from "@/lib/adminData";
-import { allGroups, applyEvent, currentOpenGroup, invalidateCommunities, useCommunities } from "@/lib/chat";
+import { allGroups, applyEvent, currentOpenGroup, invalidateCommunities, useAssistant, useCommunities } from "@/lib/chat";
 import { initials, plural } from "@/lib/format";
 import { MENUBAR_HELLO, MENUBAR_OPEN, MENUBAR_PAUSE, MENUBAR_REPLY, MENUBAR_STATE, type MenubarState, type MenubarTarget } from "@/lib/menubarTypes";
 import { emitTo, listenTo, notify, setTrayCount, showMain } from "@/lib/native";
@@ -25,7 +25,8 @@ function bannersAllowed(): boolean {
   return p.notifications && Date.now() > p.pausedUntil;
 }
 
-function groupName(communities: D1CommunitySummary[] | undefined, id: string): { name: string; muted: boolean } {
+function groupName(communities: D1CommunitySummary[] | undefined, id: string, assistant?: { id: string; muted: boolean }): { name: string; muted: boolean } {
+  if (assistant && assistant.id === id) return { name: "DestinyAI", muted: assistant.muted };
   for (const c of communities ?? []) {
     const g = c.groups.find((x) => x.id === id);
     if (g) return { name: g.kind === "announcements" ? `${c.name} Announcements` : g.name, muted: g.muted };
@@ -37,6 +38,7 @@ export function useLive() {
   const { me, roles } = useReady();
   const prefs = usePrefs();
   const communities = useCommunities();
+  const assistant = useAssistant();
   const reports = useReports("open", roles.safeguardingAdmin);
   const pending = usePending(roles.destinyOneAdmin);
   const paused = usePausedGroups(roles.safeguardingAdmin);
@@ -44,6 +46,8 @@ export function useLive() {
   const hub = useRef<Hub | null>(null);
   const communitiesRef = useRef(communities.data);
   communitiesRef.current = communities.data;
+  const assistantRef = useRef(assistant.data);
+  assistantRef.current = assistant.data;
 
   // Realtime, for the whole signed-in session.
   useEffect(() => {
@@ -55,7 +59,7 @@ export function useLive() {
         if (event.event !== "message") return;
         const p = event.payload;
         if (p.sender.id === me.id || !bannersAllowed()) return;
-        const { name, muted } = groupName(communitiesRef.current, p.groupId);
+        const { name, muted } = groupName(communitiesRef.current, p.groupId, assistantRef.current);
         if (muted) return;
         if (document.hasFocus() && currentOpenGroup() === p.groupId) return;
         const body = getPrefs().previews ? `${p.sender.displayName}: ${p.body ?? (p.attachmentId ? "Sent a file" : "New message")}` : "New message";
@@ -66,7 +70,10 @@ export function useLive() {
     return () => hub.current?.stop();
   }, [me.id]);
 
-  const groupIds = useMemo(() => allGroups(communities.data).map((g) => g.id).join(","), [communities.data]);
+  const groupIds = useMemo(
+    () => [...allGroups(communities.data).map((g) => g.id), ...(assistant.data ? [assistant.data.id] : [])].join(","),
+    [communities.data, assistant.data],
+  );
   useEffect(() => {
     hub.current?.setGroups(groupIds ? groupIds.split(",") : []);
   }, [groupIds]);

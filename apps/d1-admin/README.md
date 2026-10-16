@@ -1,6 +1,6 @@
 # D1 Admin
 
-Destiny One for leaders and admins, on the Mac. Built from the design canvas
+Destiny One for leaders and admins, on the Mac. Built from the design canvas (kept in `design/`)
 "The One App — Mac": group chat plus the admin queues (reports, access
 requests, paused groups, people, invites, communities, feedback, audit log,
 app settings), a menu bar popover, notifications and Touch ID.

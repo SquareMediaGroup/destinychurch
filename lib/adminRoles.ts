@@ -181,6 +181,9 @@ const OPEN_PATHS = [
   // The notification bell — every admin needs it regardless of role; the
   // route itself filters content to the roles the caller actually holds.
   /^\/api\/admin\/notifications(\/|$)/,
+  // The D1 Admin desktop app's "which sections can I see" — only ever
+  // describes the caller (app/api/admin/destiny-one/whoami/route.ts).
+  /^\/api\/admin\/destiny-one\/whoami$/,
 ];
 
 export function hasAccess(roles: RoleFlags, pathname: string): boolean {

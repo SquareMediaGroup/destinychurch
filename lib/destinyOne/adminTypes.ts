@@ -1,135 +1,29 @@
-// Destiny One — shapes returned by /api/admin/destiny-one/* to the admin pages.
-// Client-safe (no server imports). The Destiny One Admin pages never receive
-// message content; only the safeguarding routes do.
+// The Destiny One admin API's shapes now live in the shared package
+// (packages/shared/src/destinyOne/adminTypes.ts), so the website and the D1
+// Admin desktop app (apps/d1-admin) read the same types. Re-exported here so
+// the website's imports didn't have to change.
 
-export type MemberStatus = "pending" | "active" | "suspended";
-export type LeaderRole = "admin" | "cg_leader" | "senior_leader";
-
-export interface AdminMember {
-  id: string;
-  displayName: string;
-  email: string | null;
-  status: MemberStatus;
-  roles: LeaderRole[];
-  isAdult: boolean;
-  /** YYYY-MM-DD the member counts as an adult from (18th birthday or verification date). */
-  adultOn: string | null;
-  /** What they said about their age in the access request. Never used by any rule. */
-  declaredAdult: boolean | null;
-  requestNote: string | null;
-  requestSubmittedAt: string | null;
-  verifiedAt: string | null;
-  verificationSource: "invite" | "admin" | "churchsuite" | null;
-  churchsuiteLinked: boolean;
-  createdAt: string;
-  communityCount: number;
-  groupCount: number;
-}
-
-export interface AdminInvite {
-  id: string;
-  email: string;
-  displayName: string;
-  isAdult: boolean;
-  roles: LeaderRole[];
-  communityIds: string[];
-  status: "pending" | "accepted" | "revoked" | "expired";
-  expiresAt: string;
-  lastSentAt: string | null;
-  acceptedAt: string | null;
-  createdAt: string;
-}
-
-export interface AdminGroup {
-  id: string;
-  communityId: string;
-  kind: "announcements" | "group";
-  name: string;
-  department: string | null;
-  description: string | null;
-  state: "active" | "frozen" | "archived";
-  freezeKind: "auto" | "manual" | null;
-  frozenReason: string | null;
-  memberCount: number;
-  adultCount: number;
-  createdAt: string;
-}
-
-export interface AdminCommunity {
-  id: string;
-  name: string;
-  description: string | null;
-  archived: boolean;
-  memberCount: number;
-  groupCount: number;
-  pausedGroupCount: number;
-  createdAt: string;
-}
-
-export interface AdminPerson {
-  id: string;
-  displayName: string;
-  isAdult: boolean;
-  role: "admin" | "member";
-  joinedAt: string;
-}
-
-export interface AdminCommunityDetail {
-  community: AdminCommunity;
-  groups: AdminGroup[];
-  members: AdminPerson[];
-}
-
-export interface AdminGroupDetail {
-  group: AdminGroup;
-  communityName: string;
-  members: AdminPerson[];
-}
-
-export interface AdminOverview {
-  activeMembers: number;
-  pendingRequests: number;
-  unsubmittedSignIns: number;
-  openInvites: number;
-  communities: number;
-  groups: number;
-  pausedGroups: number;
-  suspended: number;
-}
-
-export interface AdminSettings {
-  allowAccessRequests: boolean;
-  inviteExpiryDays: number;
-  minBuildIos: number;
-  minBuildAndroid: number;
-  forceUpdateMessage: string | null;
-  maintenanceMessage: string | null;
-  retentionDays: number;
-  churchSuiteConfigured: boolean;
-}
-
-export const LEADER_ROLE_LABELS: Record<LeaderRole, string> = {
-  admin: "Admin",
-  senior_leader: "Senior Leader",
-  cg_leader: "CG Leader",
-};
-
-export const ADMIN_API = "/api/admin/destiny-one";
-
-/** "Report a problem" / "Send feedback" from the app (d1_feedback). */
-export interface AdminFeedback {
-  id: string;
-  kind: "problem" | "idea";
-  body: string;
-  status: "new" | "done";
-  memberId: string;
-  memberName: string;
-  appVersion: string | null;
-  platform: string | null;
-  osVersion: string | null;
-  device: string | null;
-  /** The matching crash-reporting (Sentry) event, if the app had one. */
-  errorId: string | null;
-  createdAt: string;
-  doneAt: string | null;
-}
+export { ADMIN_API, LEADER_ROLE_LABELS } from "@destiny/shared";
+export type {
+  AdminAuditEntry,
+  AdminAuditPage,
+  AdminChurchSuiteMatch,
+  AdminCommunity,
+  AdminCommunityDetail,
+  AdminFeedback,
+  AdminGroup,
+  AdminGroupDetail,
+  AdminInvite,
+  AdminMember,
+  AdminMemberDetail,
+  AdminOverview,
+  AdminPerson,
+  AdminReport,
+  AdminReportStatus,
+  AdminSafeguardingGroup,
+  AdminSettings,
+  AdminTranscript,
+  AdminWhoami,
+  LeaderRole,
+  MemberStatus,
+} from "@destiny/shared";

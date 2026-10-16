@@ -6275,6 +6275,15 @@ point, clamps itself inside the window, and closes on Escape, outside click, pag
 emoji picker is a curated list in `src/lib/emoji.ts` (no dependency) and serves both reactions and the
 message box; reactions accept any emoji (the API only limits length to 16 characters).
 
+**Composing** (`src/features/chat/Conversation.tsx`, `Sheets.tsx`). The message box takes up to 10 files at
+once (dropped, pasted or picked): each goes as its own message, the text and reply with the first, and
+sent files leave the tray one by one so a failure keeps only what's left. Typing `@` suggests the other
+members of the group (`mentionQuery` / `mentionSuggestions` from `@destiny/shared`); on send,
+`findMentions` turns the names into ids for the API, and `mentionSegments` draws them bold. The plus
+button offers files or a poll (`validatePoll` rules, sent with `poll` on `api.send`); polls in the list
+are tappable and update at once (`castVote`, undone if the server refuses). "Forward" in the right-click
+menu opens a sheet to pick up to 5 chats (`api.forward`; polls and deleted messages can't be forwarded).
+
 **Building.** `npm run tauri:dev` / `npm run tauri:build` on a Mac (Rust + Xcode command line tools).
 The build is unsigned for now; `tauri.conf.json` has the signing fields ready for when the Apple
 Developer account exists. See `apps/d1-admin/README.md`.

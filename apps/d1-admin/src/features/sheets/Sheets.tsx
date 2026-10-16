@@ -1,11 +1,11 @@
 // Every sheet the app opens (nav.openSheet). One host so only one is ever up.
 
 import { useEffect, useState } from "react";
-import { checkComposition, type D1DirectoryEntry } from "@destiny/shared";
+import { MAX_POLL_OPTIONS, MAX_POLL_OPTION_LENGTH, MAX_POLL_QUESTION_LENGTH, MIN_POLL_OPTIONS, checkComposition, validatePoll, type D1DirectoryEntry } from "@destiny/shared";
 import { Icon } from "@/components/Icon";
 import { Avatar, RuleBox, Seg, Sheet, Switch } from "@/components/ui";
 import { api, errorText } from "@/lib/api";
-import { invalidateCommunities, keys, updateMessages, useCommunities, useGroup } from "@/lib/chat";
+import { invalidateCommunities, keys, orderedGroups, updateMessages, useCommunities, useGroup } from "@/lib/chat";
 import { config } from "@/lib/config";
 import { isOpenAtLogin, setOpenAtLogin } from "@/lib/native";
 import { nav, useNav, type Sheet as SheetT } from "@/lib/nav";
@@ -263,6 +263,127 @@ export function Sheets() {
   return <SheetFor sheet={sheet} />;
 }
 
+function PollSheet({ groupId }: { groupId: string }) {
+  const [question, setQuestion] = useState("");
+  const [options, setOptions] = useState(["", ""]);
+  const [multiple, setMultiple] = useState(false);
+  const { busy, error, run } = useAction();
+  const draft = { question, options, allowMultiple: multiple };
+  const check = validatePoll(draft);
+
+  return (
+    <Sheet label="New poll" onClose={nav.closeSheet}>
+      <div style={{ padding: "22px 22px 18px", display: "flex", flexDirection: "column", gap: 12 }}>
+        <h2 style={{ fontSize: 15, fontWeight: 700 }}>New poll</h2>
+        <label className="field">
+          <span>Question</span>
+          <input className="input" value={question} maxLength={MAX_POLL_QUESTION_LENGTH} onChange={(e) => setQuestion(e.target.value)} placeholder="What do you want to ask?" />
+        </label>
+        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+          <span style={{ fontSize: 12, fontWeight: 600, color: "var(--muted)" }}>Options</span>
+          {options.map((o, i) => (
+            <div key={i} style={{ display: "flex", gap: 6 }}>
+              <input
+                className="input"
+                style={{ flex: 1 }}
+                value={o}
+                maxLength={MAX_POLL_OPTION_LENGTH}
+                placeholder={`Option ${i + 1}`}
+                aria-label={`Option ${i + 1}`}
+                onChange={(e) => setOptions((cur) => cur.map((x, j) => (j === i ? e.target.value : x)))}
+              />
+              {options.length > MIN_POLL_OPTIONS && (
+                <button className="ib" aria-label={`Remove option ${i + 1}`} onClick={() => setOptions((cur) => cur.filter((_, j) => j !== i))}><Icon name="x" size={14} stroke={2.4} /></button>
+              )}
+            </div>
+          ))}
+          {options.length < MAX_POLL_OPTIONS && (
+            <button className="btn" style={{ alignSelf: "flex-start" }} onClick={() => setOptions((cur) => [...cur, ""])}>Add an option</button>
+          )}
+        </div>
+        <label style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 13 }}>
+          <Switch on={multiple} onChange={setMultiple} label="Allow more than one answer" />
+          <span>Allow more than one answer</span>
+        </label>
+        {error && <p className="error" role="alert">{error}</p>}
+        <Actions>
+          {!check.ok && (question || options.some(Boolean)) && <span className="subtle" style={{ fontSize: 12, marginRight: "auto" }}>{check.reason}</span>}
+          <button className="btn" onClick={nav.closeSheet}>Cancel</button>
+          <button
+            className="btn dark"
+            disabled={busy || !check.ok}
+            onClick={() =>
+              void run(async () => {
+                const sent = await api.send(groupId, { poll: { question: question.trim(), options: options.map((o) => o.trim()).filter(Boolean), allowMultiple: multiple } });
+                updateMessages(groupId, (list) => (list.some((m) => m.id === sent.id) ? list : [...list, sent]));
+                invalidateCommunities();
+                nav.closeSheet();
+              })
+            }
+          >
+            Send poll
+          </button>
+        </Actions>
+      </div>
+    </Sheet>
+  );
+}
+
+function ForwardSheet({ messageId, groupId }: { messageId: number; groupId: string }) {
+  const communities = useCommunities();
+  const [picked, setPicked] = useState<string[]>([]);
+  const [done, setDone] = useState(false);
+  const { busy, error, run } = useAction();
+  const targets = orderedGroups(communities.data).filter(
+    (g) => g.id !== groupId && g.communityId && g.state === "active" && (g.kind !== "announcements" || g.myRole === "admin"),
+  );
+  const toggle = (id: string) => setPicked((cur) => (cur.includes(id) ? cur.filter((x) => x !== id) : cur.length < 5 ? [...cur, id] : cur));
+
+  return (
+    <Sheet label="Forward message" onClose={nav.closeSheet}>
+      <div style={{ padding: "22px 22px 18px", display: "flex", flexDirection: "column", gap: 12 }}>
+        <h2 style={{ fontSize: 15, fontWeight: 700 }}>Forward to</h2>
+        {done ? (
+          <p className="muted" style={{ fontSize: 13 }}>Forwarded.</p>
+        ) : (
+          <>
+            <p className="muted" style={{ fontSize: 12 }}>Choose up to 5 chats you can post in. {picked.length > 0 && `${picked.length} selected.`}</p>
+            <div className="scroll" style={{ maxHeight: 280, display: "flex", flexDirection: "column", gap: 2 }}>
+              {targets.map((g) => (
+                <label key={g.id} className="row" style={{ display: "flex", alignItems: "center", gap: 10, padding: 8, borderRadius: 8, cursor: "pointer" }}>
+                  <input type="checkbox" checked={picked.includes(g.id)} onChange={() => toggle(g.id)} disabled={!picked.includes(g.id) && picked.length >= 5} />
+                  <Avatar name={g.name} size={28} square ann={g.kind === "announcements"} url={g.iconUrl} />
+                  <span className="ellipsis" style={{ fontSize: 13 }}>{g.name}</span>
+                </label>
+              ))}
+              {targets.length === 0 && <div className="subtle" style={{ fontSize: 12, padding: 8 }}>There's nowhere else you can post.</div>}
+            </div>
+          </>
+        )}
+        {error && <p className="error" role="alert">{error}</p>}
+        <Actions>
+          <button className="btn" onClick={nav.closeSheet}>{done ? "Done" : "Cancel"}</button>
+          {!done && (
+            <button
+              className="btn dark"
+              disabled={busy || picked.length === 0}
+              onClick={() =>
+                void run(async () => {
+                  await api.forward(messageId, picked);
+                  invalidateCommunities();
+                  setDone(true);
+                })
+              }
+            >
+              Forward
+            </button>
+          )}
+        </Actions>
+      </div>
+    </Sheet>
+  );
+}
+
 function ShortcutsSheet() {
   return (
     <Sheet label="Keyboard shortcuts" onClose={nav.closeSheet}>
@@ -290,6 +411,10 @@ function SheetFor({ sheet }: { sheet: SheetT }) {
       return <SettingsSheet />;
     case "shortcuts":
       return <ShortcutsSheet />;
+    case "poll":
+      return <PollSheet groupId={sheet.groupId} />;
+    case "forward":
+      return <ForwardSheet messageId={sheet.messageId} groupId={sheet.groupId} />;
     case "newGroup":
       return <NewGroupSheet communityId={sheet.communityId} />;
     case "addPeople":

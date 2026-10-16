@@ -1,49 +1,135 @@
 // The open chat: header, paused banner, messages, composer.
 
 import { useEffect, useMemo, useRef, useState, type DragEvent } from "react";
-import { MAX_MESSAGE_LENGTH, type D1Message } from "@destiny/shared";
+import { MAX_MESSAGE_LENGTH, findMentions, mentionQuery, mentionSuggestions, type D1Message, type Mentionable } from "@destiny/shared";
 import { Icon } from "@/components/Icon";
 import { ContextMenu, type MenuItem } from "@/components/ContextMenu";
 import { EmojiPicker } from "@/components/EmojiPicker";
 import type { Point } from "@/components/Floating";
 import { Avatar, Empty, Loading } from "@/components/ui";
 import { api, errorText } from "@/lib/api";
-import { findGroup, flattenMessages, invalidateCommunities, setOpenGroup, toggleReaction, updateMessages, useCommunities, useGroup, useMessages } from "@/lib/chat";
+import { findGroup, flattenMessages, invalidateCommunities, setOpenGroup, castVote, toggleReaction, updateMessages, useCommunities, useGroup, useMessages } from "@/lib/chat";
 import { dayLabel, plural, sameDay } from "@/lib/format";
 import { nav, useNav } from "@/lib/nav";
 import { openExternal } from "@/lib/native";
+import { useReady } from "@/lib/session";
 import { MessageRow } from "@/features/chat/MessageRow";
 import { ACCEPT, checkFile, uploadAttachment } from "@/features/chat/upload";
 
-function Composer({ groupId, name, replyTo, onCancelReply, onReplyLast }: { groupId: string; name: string; replyTo: D1Message | null; onCancelReply: () => void; onReplyLast: () => void }) {
+const MAX_FILES = 10;
+
+function Composer({
+  groupId,
+  name,
+  replyTo,
+  people,
+  onCancelReply,
+  onReplyLast,
+}: {
+  groupId: string;
+  name: string;
+  replyTo: D1Message | null;
+  /** The other members of the group, for "@" suggestions. */
+  people: Mentionable[];
+  onCancelReply: () => void;
+  onReplyLast: () => void;
+}) {
   const [draft, setDraft] = useState("");
-  const [file, setFile] = useState<File | null>(null);
-  const [busy, setBusy] = useState(false);
+  const [files, setFiles] = useState<File[]>([]);
+  const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [dragging, setDragging] = useState(false);
   const [emojiAt, setEmojiAt] = useState<Point | null>(null);
+  const [plusAt, setPlusAt] = useState<Point | null>(null);
+  const [cursor, setCursor] = useState(0);
+  const [suggestIndex, setSuggestIndex] = useState(0);
+  const [suggestOff, setSuggestOff] = useState(false);
   const fileInput = useRef<HTMLInputElement>(null);
   const textRef = useRef<HTMLTextAreaElement>(null);
   const lastTyping = useRef(0);
 
   useEffect(() => {
     setDraft("");
-    setFile(null);
+    setFiles([]);
     setError(null);
   }, [groupId]);
   useEffect(() => {
     if (replyTo) textRef.current?.focus();
   }, [replyTo]);
 
-  const pick = (f: File | undefined | null) => {
-    if (!f) return;
-    const problem = checkFile(f);
-    if (problem) setError(problem);
-    else {
-      setError(null);
-      setFile(f);
+  const pick = (list: FileList | File[] | null | undefined) => {
+    const picked = [...(list ?? [])];
+    if (picked.length === 0) return;
+    for (const f of picked) {
+      const problem = checkFile(f);
+      if (problem) return setError(`${f.name}: ${problem}`);
     }
+    if (files.length + picked.length > MAX_FILES) return setError(`You can send up to ${MAX_FILES} files at once.`);
+    setError(null);
+    setFiles((cur) => [...cur, ...picked]);
   };
+
+  const canSend = (draft.trim().length > 0 || files.length > 0) && !busy;
+
+  // "@Lea" being typed just before the cursor, and who it could be.
+  const query = suggestOff ? null : mentionQuery(draft, cursor);
+  const suggestions = query ? mentionSuggestions(query.query, people) : [];
+  const showSuggestions = suggestions.length > 0;
+
+  const chooseMention = (p: Mentionable) => {
+    if (!query) return;
+    const next = `${draft.slice(0, query.start)}@${p.displayName} ${draft.slice(cursor)}`;
+    if (next.length > MAX_MESSAGE_LENGTH) return;
+    const at = query.start + p.displayName.length + 2;
+    setDraft(next);
+    setCursor(at);
+    setSuggestIndex(0);
+    requestAnimationFrame(() => {
+      textRef.current?.focus();
+      textRef.current?.setSelectionRange(at, at);
+    });
+  };
+
+  async function send() {
+    if (!canSend) return;
+    setError(null);
+    const text = draft.trim();
+    const mentions = text ? findMentions(text, people) : [];
+    try {
+      if (files.length === 0) {
+        setBusy("Sending");
+        const sent = await api.send(groupId, { body: text, replyTo: replyTo?.id, mentions: mentions.length ? mentions : undefined });
+        updateMessages(groupId, (list) => (list.some((m) => m.id === sent.id) ? list : [...list, sent]));
+      } else {
+        // One message per file, like WhatsApp: the text (and the reply) go with the first.
+        const queue = [...files];
+        for (let i = 0; i < queue.length; i++) {
+          setBusy(queue.length > 1 ? `Sending ${i + 1} of ${queue.length}` : "Sending");
+          const attachmentId = await uploadAttachment(groupId, queue[i]);
+          const first = i === 0;
+          const sent = await api.send(groupId, {
+            body: first && text ? text : undefined,
+            replyTo: first ? replyTo?.id : undefined,
+            attachmentId,
+            mentions: first && mentions.length ? mentions : undefined,
+          });
+          updateMessages(groupId, (list) => (list.some((m) => m.id === sent.id) ? list : [...list, sent]));
+          // Sent files leave the tray one by one, so a failure keeps only what's left.
+          setFiles((cur) => cur.slice(1));
+          if (first) setDraft("");
+        }
+      }
+      invalidateCommunities();
+      setDraft("");
+      setFiles([]);
+      onCancelReply();
+    } catch (err) {
+      setError(errorText(err));
+    } finally {
+      setBusy(null);
+      textRef.current?.focus();
+    }
+  }
 
   /** Puts an emoji where the cursor is, and leaves the cursor after it. */
   const insertEmoji = (emoji: string) => {
@@ -59,32 +145,10 @@ function Composer({ groupId, name, replyTo, onCancelReply, onReplyLast }: { grou
     });
   };
 
-  const canSend = (draft.trim().length > 0 || !!file) && !busy;
-
-  async function send() {
-    if (!canSend) return;
-    setBusy(true);
-    setError(null);
-    try {
-      const attachmentId = file ? await uploadAttachment(groupId, file) : undefined;
-      const sent = await api.send(groupId, { body: draft.trim() || undefined, replyTo: replyTo?.id, attachmentId });
-      updateMessages(groupId, (list) => (list.some((m) => m.id === sent.id) ? list : [...list, sent]));
-      invalidateCommunities();
-      setDraft("");
-      setFile(null);
-      onCancelReply();
-    } catch (err) {
-      setError(errorText(err));
-    } finally {
-      setBusy(false);
-      textRef.current?.focus();
-    }
-  }
-
   const onDrop = (e: DragEvent) => {
     e.preventDefault();
     setDragging(false);
-    pick(e.dataTransfer.files[0]);
+    pick(e.dataTransfer.files);
   };
 
   return (
@@ -95,7 +159,28 @@ function Composer({ groupId, name, replyTo, onCancelReply, onReplyLast }: { grou
       }}
       onDragLeave={() => setDragging(false)}
       onDrop={onDrop}
+      style={{ position: "relative" }}
     >
+      {showSuggestions && (
+        <div role="listbox" aria-label="People to mention" style={{ position: "absolute", left: 40, bottom: "calc(100% - 6px)", width: 260, zIndex: 5, borderRadius: 12, background: "var(--sheet)", boxShadow: "0 12px 36px rgba(0,0,0,0.24), 0 0 0 0.5px var(--glass-line)", padding: 4 }}>
+          {suggestions.map((p, i) => (
+            <button
+              key={p.id}
+              role="option"
+              aria-selected={i === suggestIndex}
+              className="row"
+              onMouseDown={(e) => {
+                e.preventDefault();
+                chooseMention(p);
+              }}
+              style={{ width: "100%", height: 32, border: 0, borderRadius: 6, background: i === suggestIndex ? "var(--sel)" : "transparent", display: "flex", alignItems: "center", gap: 8, padding: "0 8px", fontSize: 13 }}
+            >
+              <Avatar name={p.displayName} size={22} />
+              <span className="ellipsis">{p.displayName}</span>
+            </button>
+          ))}
+        </div>
+      )}
       <div className="card" style={{ borderRadius: 14, boxShadow: dragging ? "0 0 0 2px var(--orange)" : "0 1px 2px rgba(14,16,19,0.04)", display: "flex", flexDirection: "column" }}>
         {replyTo && (
           <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 8px 0 14px" }}>
@@ -107,18 +192,31 @@ function Composer({ groupId, name, replyTo, onCancelReply, onReplyLast }: { grou
             <button className="ib sm" onClick={onCancelReply} aria-label="Cancel reply" style={{ color: "var(--subtle)" }}><Icon name="x" size={13} stroke={2.4} /></button>
           </div>
         )}
-        {file && (
-          <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 8px 0 12px" }}>
-            <span className="av" style={{ width: 32, height: 32, borderRadius: 8 }}><Icon name="file" size={16} /></span>
-            <span className="ellipsis" style={{ flex: 1, fontSize: 13, fontWeight: 600 }}>{file.name}</span>
-            <button className="ib sm" onClick={() => setFile(null)} aria-label="Remove file" style={{ color: "var(--subtle)" }}><Icon name="x" size={13} stroke={2.4} /></button>
+        {files.length > 0 && (
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 6, padding: "8px 8px 0 12px" }}>
+            {files.map((f, i) => (
+              <span key={`${f.name}-${i}`} style={{ maxWidth: 220, height: 30, display: "flex", alignItems: "center", gap: 6, padding: "0 4px 0 8px", borderRadius: 8, background: "var(--fill)" }}>
+                <Icon name="file" size={14} />
+                <span className="ellipsis" style={{ flex: 1, fontSize: 12, fontWeight: 600 }}>{f.name}</span>
+                <button className="ib sm" disabled={!!busy} onClick={() => setFiles((cur) => cur.filter((_, j) => j !== i))} aria-label={`Remove ${f.name}`} style={{ width: 22, height: 22, color: "var(--subtle)" }}><Icon name="x" size={11} stroke={2.6} /></button>
+              </span>
+            ))}
           </div>
         )}
         <div style={{ display: "flex", alignItems: "flex-end", gap: 6, padding: 6 }}>
-          <button className="ib" style={{ width: 32, height: 32 }} aria-label="Attach a photo or PDF" onClick={() => fileInput.current?.click()}>
+          <button
+            className="ib"
+            style={{ width: 32, height: 32 }}
+            aria-label="Attach"
+            aria-haspopup="menu"
+            onClick={(e) => {
+              const r = e.currentTarget.getBoundingClientRect();
+              setPlusAt({ x: r.left, y: r.top - 90 });
+            }}
+          >
             <Icon name="plus" size={18} stroke={2} />
           </button>
-          <input ref={fileInput} type="file" accept={ACCEPT} hidden onChange={(e) => { pick(e.target.files?.[0]); e.target.value = ""; }} />
+          <input ref={fileInput} type="file" multiple accept={ACCEPT} hidden onChange={(e) => { pick(e.target.files); e.target.value = ""; }} />
           <textarea
             ref={textRef}
             aria-label="Message"
@@ -128,12 +226,33 @@ function Composer({ groupId, name, replyTo, onCancelReply, onReplyLast }: { grou
             maxLength={MAX_MESSAGE_LENGTH}
             onChange={(e) => {
               setDraft(e.target.value);
+              setCursor(e.target.selectionStart);
+              setSuggestOff(false);
+              setSuggestIndex(0);
               if (Date.now() - lastTyping.current > 4000) {
                 lastTyping.current = Date.now();
                 void api.typing(groupId).catch(() => undefined);
               }
             }}
+            onSelect={(e) => setCursor(e.currentTarget.selectionStart)}
             onKeyDown={(e) => {
+              if (showSuggestions) {
+                if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+                  e.preventDefault();
+                  setSuggestIndex((i) => (i + (e.key === "ArrowDown" ? 1 : -1) + suggestions.length) % suggestions.length);
+                  return;
+                }
+                if (e.key === "Enter" || e.key === "Tab") {
+                  e.preventDefault();
+                  chooseMention(suggestions[Math.min(suggestIndex, suggestions.length - 1)]);
+                  return;
+                }
+                if (e.key === "Escape") {
+                  e.preventDefault();
+                  setSuggestOff(true);
+                  return;
+                }
+              }
               if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
                 e.preventDefault();
                 void send();
@@ -145,7 +264,7 @@ function Composer({ groupId, name, replyTo, onCancelReply, onReplyLast }: { grou
                 onReplyLast();
               }
             }}
-            onPaste={(e) => pick(e.clipboardData.files[0])}
+            onPaste={(e) => pick(e.clipboardData.files)}
             style={{ flex: 1, minWidth: 0, minHeight: 32, maxHeight: 160, border: 0, outline: 0, background: "transparent", fontSize: 14, lineHeight: "20px", padding: "6px 4px", resize: "none", fieldSizing: "content" } as React.CSSProperties}
           />
           <button
@@ -170,11 +289,21 @@ function Composer({ groupId, name, replyTo, onCancelReply, onReplyLast }: { grou
         </div>
       </div>
       {emojiAt && <EmojiPicker at={emojiAt} onPick={insertEmoji} onClose={() => { setEmojiAt(null); textRef.current?.focus(); }} />}
+      {plusAt && (
+        <ContextMenu
+          at={plusAt}
+          items={[
+            { label: "Photos or PDFs", icon: "file", onSelect: () => fileInput.current?.click() },
+            { label: "Poll", icon: "people", onSelect: () => nav.openSheet({ kind: "poll", groupId }) },
+          ]}
+          onClose={() => setPlusAt(null)}
+        />
+      )}
       {error ? (
         <div className="error" role="alert" style={{ padding: "6px 4px 0" }}>{error}</div>
       ) : (
         <div className="subtle" style={{ padding: "6px 4px 0", fontSize: 11 }}>
-          {busy ? "Sending…" : "Return to send, Shift-Return for a new line. Drop a photo or PDF to attach it. Chats aren't end-to-end encrypted, so the safeguarding team can review them if a concern is raised."}
+          {busy ? `${busy}…` : "Return to send, Shift-Return for a new line. Drop photos or PDFs to attach them, @ to mention someone. Chats aren't end-to-end encrypted, so the safeguarding team can review them if a concern is raised."}
         </div>
       )}
     </div>
@@ -187,6 +316,7 @@ export function Conversation({ groupId }: { groupId: string }) {
   const found = findGroup(communities.data, groupId);
   const group = useGroup(groupId);
   const messages = useMessages(groupId);
+  const { me } = useReady();
   const list = useMemo(() => flattenMessages(messages.data), [messages.data]);
   const [replyTo, setReplyTo] = useState<D1Message | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
@@ -196,6 +326,8 @@ export function Conversation({ groupId }: { groupId: string }) {
 
   const g = group.data ?? found?.group;
   const detail = group.data;
+  const everyone = useMemo<Mentionable[]>(() => (detail?.members ?? []).map((m) => ({ id: m.id, displayName: m.displayName })), [detail]);
+  const others = useMemo(() => everyone.filter((p) => p.id !== me.id), [everyone, me.id]);
   const admins = useMemo(() => new Set((detail?.members ?? []).filter((m) => m.role === "admin").map((m) => m.id)), [detail]);
 
   useEffect(() => {
@@ -235,6 +367,9 @@ export function Conversation({ groupId }: { groupId: string }) {
     if (m.body) {
       const body = m.body;
       items.push({ label: "Copy text", icon: "copy", onSelect: () => void navigator.clipboard.writeText(window.getSelection()?.toString() || body).catch(() => undefined) });
+    }
+    if (!m.deleted && m.content?.kind !== "poll" && (m.body || m.attachment)) {
+      items.push({ label: "Forward", icon: "arrowUpRight", onSelect: () => nav.openSheet({ kind: "forward", messageId: m.id, groupId }) });
     }
     if (m.attachment?.url) {
       const url = m.attachment.url;
@@ -308,6 +443,8 @@ export function Conversation({ groupId }: { groupId: string }) {
                   onReply={() => setReplyTo(m)}
                   onReport={() => nav.openSheet({ kind: "report", messageId: m.id, sender: m.sender?.displayName ?? "Former member", body: m.body ?? "File" })}
                   onDelete={() => nav.openSheet({ kind: "delete", messageId: m.id, groupId })}
+                  people={everyone}
+                  onVote={(ids) => void run(() => castVote(m, ids))}
                   onContextMenu={(at) => setMenu({ m, at })}
                   onMoreReactions={(at) => setPicker({ m, at })}
                 />
@@ -325,6 +462,7 @@ export function Conversation({ groupId }: { groupId: string }) {
               groupId={groupId}
               name={g.name}
               replyTo={replyTo}
+              people={others}
               onCancelReply={() => setReplyTo(null)}
               onReplyLast={() => {
                 const last = [...list].reverse().find((x) => !x.deleted);

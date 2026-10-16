@@ -1,7 +1,7 @@
 // One message, as drawn in the design: avatar and name on the first of a run,
 // bubbles, reply quote, file card, reactions, and hover actions.
 
-import type { D1Message } from "@destiny/shared";
+import { mentionSegments, type D1Message, type Mentionable } from "@destiny/shared";
 import { Icon } from "@/components/Icon";
 import { Avatar } from "@/components/ui";
 import { clockTime, fileSize } from "@/lib/format";
@@ -22,6 +22,9 @@ interface Props {
   onReply: () => void;
   onReport: () => void;
   onDelete: () => void;
+  /** Everyone in the group, to draw "@Name" in bold. */
+  people: readonly Mentionable[];
+  onVote: (optionIds: string[]) => void;
   onContextMenu: (at: Point) => void;
   onMoreReactions: (at: Point) => void;
 }
@@ -29,13 +32,44 @@ interface Props {
 function contentLine(m: D1Message): string | null {
   const c = m.content;
   if (!c) return null;
-  if (c.kind === "poll") return `Poll: ${c.poll.question} (${c.poll.totalVoters} voted)`;
   if (c.kind === "event") return `Event: ${c.event.name}`;
   if (c.kind === "sermon") return `Sermon: ${c.sermon.title}`;
   return null;
 }
 
-export function MessageRow({ m, first, replyTo, senderIsAdmin, canDelete, onReact, onReply, onReport, onDelete, onContextMenu, onMoreReactions }: Props) {
+function Poll({ poll, mine, onVote }: { poll: Extract<NonNullable<D1Message["content"]>, { kind: "poll" }>["poll"]; mine: boolean; onVote: (optionIds: string[]) => void }) {
+  const total = Math.max(1, poll.totalVoters);
+  const toggle = (id: string) => {
+    const has = poll.myOptionIds.includes(id);
+    if (poll.allowMultiple) onVote(has ? poll.myOptionIds.filter((x) => x !== id) : [...poll.myOptionIds, id]);
+    else onVote(has ? [] : [id]);
+  };
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 6, minWidth: 240 }}>
+      <div style={{ fontSize: 14, fontWeight: 700 }}>{poll.question}</div>
+      <div className="subtle" style={{ fontSize: 11, color: "inherit", opacity: 0.75 }}>{poll.allowMultiple ? "Choose one or more" : "Choose one"}</div>
+      {poll.options.map((o) => {
+        const count = poll.votes.find((v) => v.optionId === o.id)?.count ?? 0;
+        const picked = poll.myOptionIds.includes(o.id);
+        return (
+          <button
+            key={o.id}
+            onClick={() => toggle(o.id)}
+            aria-pressed={picked}
+            style={{ position: "relative", overflow: "hidden", textAlign: "left", border: 0, borderRadius: 8, padding: "7px 10px", background: mine ? "rgba(255,255,255,0.28)" : "var(--bg)", boxShadow: `inset 0 0 0 ${picked ? 1.5 : 0.5}px ${picked ? (mine ? "var(--on-orange)" : "var(--orange)") : "var(--glass-line)"}`, color: "inherit", display: "flex", gap: 8, alignItems: "center" }}
+          >
+            <span aria-hidden="true" style={{ position: "absolute", inset: 0, width: `${(count / total) * 100}%`, background: mine ? "rgba(255,255,255,0.28)" : "var(--accent-soft)" }} />
+            <span style={{ position: "relative", flex: 1, fontSize: 13, fontWeight: picked ? 700 : 500 }}>{o.label}</span>
+            <span style={{ position: "relative", fontSize: 12, fontWeight: 600 }}>{count}</span>
+          </button>
+        );
+      })}
+      <div style={{ fontSize: 11, opacity: 0.75 }}>{poll.totalVoters === 1 ? "1 person voted" : `${poll.totalVoters} people voted`}</div>
+    </div>
+  );
+}
+
+export function MessageRow({ m, first, replyTo, senderIsAdmin, canDelete, onReact, onReply, onReport, onDelete, people, onVote, onContextMenu, onMoreReactions }: Props) {
   const mine = m.mine;
   const name = mine ? "You" : m.sender?.displayName ?? "Former member";
   const att = m.attachment;
@@ -96,7 +130,14 @@ export function MessageRow({ m, first, replyTo, senderIsAdmin, canDelete, onReac
               </button>
             )}
             {extra && <div style={{ fontSize: 13, fontWeight: 600 }}>{extra}</div>}
-            {m.body && <div style={{ fontSize: 14, lineHeight: "20px", whiteSpace: "pre-wrap", overflowWrap: "anywhere" }}>{m.body}</div>}
+            {m.content?.kind === "poll" && <Poll poll={m.content.poll} mine={mine} onVote={onVote} />}
+            {m.body && (
+              <div style={{ fontSize: 14, lineHeight: "20px", whiteSpace: "pre-wrap", overflowWrap: "anywhere" }}>
+                {m.mentions.length > 0
+                  ? mentionSegments(m.body, people).map((seg, i) => (seg.mention ? <strong key={i} style={{ fontWeight: 700 }}>{seg.text}</strong> : <span key={i}>{seg.text}</span>))
+                  : m.body}
+              </div>
+            )}
             {m.linkPreview && (
               <button onClick={() => void openExternal(m.linkPreview!.url)} style={{ margin: "0 -4px", padding: "6px 10px", borderRadius: 10, background: mine ? "rgba(255,255,255,0.35)" : "var(--bg)", border: "0.5px solid var(--glass-line)", textAlign: "left", display: "flex", flexDirection: "column", gap: 2 }}>
                 <span style={{ fontSize: 12, fontWeight: 600 }}>{m.linkPreview.title}</span>

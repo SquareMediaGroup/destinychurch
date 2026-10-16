@@ -1,6 +1,6 @@
 // Chat data: react-query hooks over the app API, kept live by Realtime.
 // A trimmed port of apps/destiny-one/src/lib/queries.ts (no DestinyAI
-// streaming, polls are read-only here).
+// streaming).
 
 import { useInfiniteQuery, useQuery, type InfiniteData } from "@tanstack/react-query";
 import type { D1CommunitySummary, D1GroupSummary, D1Message, D1MessagePage, D1RealtimeEvent } from "@destiny/shared";
@@ -220,6 +220,33 @@ export async function toggleReaction(m: D1Message, emoji: string) {
     else await api.react(m.id, emoji);
   } catch (err) {
     apply(mine);
+    throw err;
+  }
+}
+
+/** Casts (or clears, with an empty list) my vote on a poll: updated here at once, undone if the server refuses. */
+export async function castVote(m: D1Message, optionIds: string[]) {
+  const before = m.content?.kind === "poll" ? m.content.poll : null;
+  if (!before) return;
+  const apply = (mine: string[]) =>
+    updateMessages(m.groupId, (list) =>
+      list.map((x) => {
+        if (x.id !== m.id || x.content?.kind !== "poll") return x;
+        const poll = x.content.poll;
+        const votes = poll.options.map((o) => {
+          const had = poll.myOptionIds.includes(o.id) ? 1 : 0;
+          const has = mine.includes(o.id) ? 1 : 0;
+          return { optionId: o.id, count: Math.max(0, (poll.votes.find((v) => v.optionId === o.id)?.count ?? 0) - had + has) };
+        });
+        const totalVoters = Math.max(0, poll.totalVoters - (poll.myOptionIds.length > 0 ? 1 : 0) + (mine.length > 0 ? 1 : 0));
+        return { ...x, content: { ...x.content, poll: { ...poll, votes, totalVoters, myOptionIds: mine } } };
+      }),
+    );
+  apply(optionIds);
+  try {
+    await api.vote(m.id, optionIds);
+  } catch (err) {
+    apply(before.myOptionIds);
     throw err;
   }
 }

@@ -2,6 +2,8 @@
 // default; give `label` when the icon is the only thing saying what it is.
 
 const PATHS = {
+  copy: "M9 9h11v11H9zM15 9V4H4v11h5",
+  smile: "M12 21a9 9 0 100-18 9 9 0 000 18zM8.5 14a4.5 4.5 0 007 0M9 9.5h.01M15 9.5h.01",
   chat: "M21 12a8 8 0 01-11.6 7.1L4 20l1-4.6A8 8 0 1121 12z",
   megaphone: "M3 11v2a1 1 0 001 1h2l5 4V6L6 10H4a1 1 0 00-1 1zM15 9a4 4 0 010 6M18 6a8 8 0 010 12",
   flag: "M5 21V4M5 4h12l-2.5 4.5L17 13H5",

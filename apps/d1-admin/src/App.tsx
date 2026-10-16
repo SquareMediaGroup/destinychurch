@@ -6,6 +6,7 @@ import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { Sidebar } from "@/components/Sidebar";
 import { Empty } from "@/components/ui";
 import { useLive } from "@/lib/live";
+import { useShortcuts } from "@/lib/shortcuts";
 import { useNav, type AdminPage } from "@/lib/nav";
 import { usePrefs } from "@/lib/prefs";
 import { useReady, useSession } from "@/lib/session";
@@ -40,7 +41,8 @@ const PAGES: Record<AdminPage, { el: () => ReactElement; role: "safeguarding" | 
 
 function Shell() {
   useLive();
-  const { roles } = useReady();
+  const { roles, leader } = useReady();
+  useShortcuts(leader);
   const { view, query, infoOpen } = useNav();
   const searching = query.trim().length > 0;
 

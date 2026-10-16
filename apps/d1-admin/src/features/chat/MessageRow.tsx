@@ -5,9 +5,12 @@ import type { D1Message } from "@destiny/shared";
 import { Icon } from "@/components/Icon";
 import { Avatar } from "@/components/ui";
 import { clockTime, fileSize } from "@/lib/format";
+import type { Point } from "@/components/Floating";
+import { QUICK_REACTIONS } from "@/lib/emoji";
 import { openExternal } from "@/lib/native";
 
-export const QUICK_REACTIONS = ["👍", "❤️", "🙏", "😂"];
+/** The hover bar shows these; the right-click menu and the picker offer the rest. */
+const BAR_REACTIONS = QUICK_REACTIONS.slice(0, 4);
 
 interface Props {
   m: D1Message;
@@ -19,6 +22,8 @@ interface Props {
   onReply: () => void;
   onReport: () => void;
   onDelete: () => void;
+  onContextMenu: (at: Point) => void;
+  onMoreReactions: (at: Point) => void;
 }
 
 function contentLine(m: D1Message): string | null {
@@ -30,7 +35,7 @@ function contentLine(m: D1Message): string | null {
   return null;
 }
 
-export function MessageRow({ m, first, replyTo, senderIsAdmin, canDelete, onReact, onReply, onReport, onDelete }: Props) {
+export function MessageRow({ m, first, replyTo, senderIsAdmin, canDelete, onReact, onReply, onReport, onDelete, onContextMenu, onMoreReactions }: Props) {
   const mine = m.mine;
   const name = mine ? "You" : m.sender?.displayName ?? "Former member";
   const att = m.attachment;
@@ -38,7 +43,15 @@ export function MessageRow({ m, first, replyTo, senderIsAdmin, canDelete, onReac
   const extra = contentLine(m);
 
   return (
-    <div className="msg" style={{ position: "relative", display: "flex", gap: 10, paddingTop: first ? 14 : 3, flexDirection: mine ? "row-reverse" : "row" }}>
+    <div
+      className="msg"
+      onContextMenu={(e) => {
+        if (m.deleted) return;
+        e.preventDefault();
+        onContextMenu({ x: e.clientX, y: e.clientY });
+      }}
+      style={{ position: "relative", display: "flex", gap: 10, paddingTop: first ? 14 : 3, flexDirection: mine ? "row-reverse" : "row" }}
+    >
       {!mine && (first ? <div style={{ marginTop: 2 }}><Avatar name={name} size={32} /></div> : <div style={{ width: 32, flex: "none" }} />)}
       <div style={{ display: "flex", flexDirection: "column", alignItems: mine ? "flex-end" : "flex-start", gap: 4, minWidth: 0, maxWidth: "72%" }}>
         {first && !mine && (
@@ -114,9 +127,19 @@ export function MessageRow({ m, first, replyTo, senderIsAdmin, canDelete, onReac
 
       {!m.deleted && (
         <div className="acts" style={{ alignSelf: "center", display: "flex", alignItems: "center", gap: 1, padding: 3, borderRadius: 10, background: "var(--sheet)", boxShadow: "var(--shadow)", border: "0.5px solid var(--glass-line)" }}>
-          {QUICK_REACTIONS.map((e) => (
+          {BAR_REACTIONS.map((e) => (
             <button key={e} className="ib sm" onClick={() => onReact(e)} aria-label={`React ${e}`} style={{ fontSize: 15 }}>{e}</button>
           ))}
+          <button
+            className="ib sm"
+            aria-label="More reactions"
+            onClick={(e) => {
+              const r = e.currentTarget.getBoundingClientRect();
+              onMoreReactions({ x: r.left, y: r.bottom + 4 });
+            }}
+          >
+            <Icon name="smile" size={15} stroke={2} />
+          </button>
           <div style={{ width: 0.5, height: 18, background: "var(--sep)", margin: "0 3px" }} />
           <button className="ib sm" onClick={onReply} aria-label="Reply"><Icon name="reply" size={15} stroke={2} /></button>
           {!mine && <button className="ib sm" onClick={onReport} aria-label="Report"><Icon name="flag" size={15} stroke={2} /></button>}

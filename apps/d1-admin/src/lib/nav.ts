@@ -10,6 +10,7 @@ export type View = { kind: "chat"; groupId: string | null } | { kind: "admin"; p
 
 export type Sheet =
   | { kind: "settings" }
+  | { kind: "shortcuts" }
   | { kind: "newGroup"; communityId?: string }
   | { kind: "addPeople"; groupId: string }
   | { kind: "report"; messageId: number; sender: string; body: string }

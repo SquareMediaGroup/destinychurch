@@ -50,6 +50,16 @@ export function allGroups(communities: D1CommunitySummary[] | undefined): D1Grou
   return (communities ?? []).flatMap((c) => c.groups);
 }
 
+/** The sidebar's order within a community: announcements first, then the most recent message. */
+export function sortGroups(groups: D1GroupSummary[]): D1GroupSummary[] {
+  return [...groups].sort((a, b) => (a.kind === "announcements" ? -1 : b.kind === "announcements" ? 1 : (b.lastMessage?.id ?? 0) - (a.lastMessage?.id ?? 0)));
+}
+
+/** Every group in the order the sidebar shows them (archived ones left out); Cmd-1 to Cmd-9 index into this. */
+export function orderedGroups(communities: D1CommunitySummary[] | undefined): D1GroupSummary[] {
+  return (communities ?? []).flatMap((c) => sortGroups(c.groups.filter((g) => !g.archived)));
+}
+
 export function findGroup(communities: D1CommunitySummary[] | undefined, id: string) {
   for (const c of communities ?? []) {
     const g = c.groups.find((x) => x.id === id);

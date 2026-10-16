@@ -6,7 +6,7 @@ import { D1_ROLE_LABELS, topRole, type D1GroupSummary } from "@destiny/shared";
 import { Icon, type IconName } from "@/components/Icon";
 import { Avatar } from "@/components/ui";
 import { usePausedGroups, usePending, useReports } from "@/lib/adminData";
-import { useCommunities } from "@/lib/chat";
+import { sortGroups, useCommunities } from "@/lib/chat";
 import { shortTime } from "@/lib/format";
 import { nav, useNav, type AdminPage } from "@/lib/nav";
 import { useReady } from "@/lib/session";
@@ -97,6 +97,7 @@ export function Sidebar() {
         <label style={{ height: 32, borderRadius: 8, background: "var(--fill2)", display: "flex", alignItems: "center", gap: 7, padding: "0 10px", color: "var(--subtle)" }}>
           <Icon name="search" size={15} stroke={2} />
           <input
+            id="sidebar-search"
             aria-label="Search messages and groups"
             placeholder="Search"
             value={query}
@@ -150,7 +151,7 @@ export function Sidebar() {
           let groups = c.groups.filter((g) => !g.archived);
           if (filter === "Unread") groups = groups.filter((g) => g.unreadCount > 0);
           if (filter === "Announcements") groups = groups.filter((g) => g.kind === "announcements");
-          groups.sort((a, b) => (a.kind === "announcements" ? -1 : b.kind === "announcements" ? 1 : (b.lastMessage?.id ?? 0) - (a.lastMessage?.id ?? 0)));
+          groups = sortGroups(groups);
           const isCollapsed = !!collapsed[c.id];
           const unreadTotal = c.groups.reduce((n, g) => n + g.unreadCount, 0);
           return (

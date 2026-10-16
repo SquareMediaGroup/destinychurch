@@ -11,6 +11,7 @@ import { isOpenAtLogin, setOpenAtLogin } from "@/lib/native";
 import { nav, useNav, type Sheet as SheetT } from "@/lib/nav";
 import { setPrefs, usePrefs } from "@/lib/prefs";
 import { queryClient } from "@/lib/queryClient";
+import { SHORTCUTS } from "@/lib/shortcuts";
 import { useReady, useSession } from "@/lib/session";
 import { PeoplePicker } from "@/features/sheets/PeoplePicker";
 
@@ -262,10 +263,33 @@ export function Sheets() {
   return <SheetFor sheet={sheet} />;
 }
 
+function ShortcutsSheet() {
+  return (
+    <Sheet label="Keyboard shortcuts" onClose={nav.closeSheet}>
+      <div style={{ padding: "22px 22px 18px", display: "flex", flexDirection: "column", gap: 12 }}>
+        <h2 style={{ fontSize: 15, fontWeight: 700 }}>Keyboard shortcuts</h2>
+        <dl style={{ display: "grid", gridTemplateColumns: "auto 1fr", gap: "8px 18px", margin: 0, fontSize: 13 }}>
+          {SHORTCUTS.map((s) => (
+            <div key={s.keys} style={{ display: "contents" }}>
+              <dt style={{ fontWeight: 600, whiteSpace: "nowrap" }}>{s.keys}</dt>
+              <dd className="muted" style={{ margin: 0 }}>{s.does}</dd>
+            </div>
+          ))}
+        </dl>
+        <Actions>
+          <button className="btn" onClick={nav.closeSheet}>Done</button>
+        </Actions>
+      </div>
+    </Sheet>
+  );
+}
+
 function SheetFor({ sheet }: { sheet: SheetT }) {
   switch (sheet.kind) {
     case "settings":
       return <SettingsSheet />;
+    case "shortcuts":
+      return <ShortcutsSheet />;
     case "newGroup":
       return <NewGroupSheet communityId={sheet.communityId} />;
     case "addPeople":

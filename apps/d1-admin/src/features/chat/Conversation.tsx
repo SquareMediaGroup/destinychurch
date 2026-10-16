@@ -3,20 +3,25 @@
 import { useEffect, useMemo, useRef, useState, type DragEvent } from "react";
 import { MAX_MESSAGE_LENGTH, type D1Message } from "@destiny/shared";
 import { Icon } from "@/components/Icon";
+import { ContextMenu, type MenuItem } from "@/components/ContextMenu";
+import { EmojiPicker } from "@/components/EmojiPicker";
+import type { Point } from "@/components/Floating";
 import { Avatar, Empty, Loading } from "@/components/ui";
 import { api, errorText } from "@/lib/api";
 import { findGroup, flattenMessages, invalidateCommunities, setOpenGroup, toggleReaction, updateMessages, useCommunities, useGroup, useMessages } from "@/lib/chat";
 import { dayLabel, plural, sameDay } from "@/lib/format";
 import { nav, useNav } from "@/lib/nav";
+import { openExternal } from "@/lib/native";
 import { MessageRow } from "@/features/chat/MessageRow";
 import { ACCEPT, checkFile, uploadAttachment } from "@/features/chat/upload";
 
-function Composer({ groupId, name, replyTo, onCancelReply }: { groupId: string; name: string; replyTo: D1Message | null; onCancelReply: () => void }) {
+function Composer({ groupId, name, replyTo, onCancelReply, onReplyLast }: { groupId: string; name: string; replyTo: D1Message | null; onCancelReply: () => void; onReplyLast: () => void }) {
   const [draft, setDraft] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [dragging, setDragging] = useState(false);
+  const [emojiAt, setEmojiAt] = useState<Point | null>(null);
   const fileInput = useRef<HTMLInputElement>(null);
   const textRef = useRef<HTMLTextAreaElement>(null);
   const lastTyping = useRef(0);
@@ -38,6 +43,20 @@ function Composer({ groupId, name, replyTo, onCancelReply }: { groupId: string; 
       setError(null);
       setFile(f);
     }
+  };
+
+  /** Puts an emoji where the cursor is, and leaves the cursor after it. */
+  const insertEmoji = (emoji: string) => {
+    const el = textRef.current;
+    const start = el?.selectionStart ?? draft.length;
+    const end = el?.selectionEnd ?? draft.length;
+    const next = draft.slice(0, start) + emoji + draft.slice(end);
+    if (next.length > MAX_MESSAGE_LENGTH) return;
+    setDraft(next);
+    requestAnimationFrame(() => {
+      el?.focus();
+      el?.setSelectionRange(start + emoji.length, start + emoji.length);
+    });
   };
 
   const canSend = (draft.trim().length > 0 || !!file) && !busy;
@@ -115,14 +134,31 @@ function Composer({ groupId, name, replyTo, onCancelReply }: { groupId: string; 
               }
             }}
             onKeyDown={(e) => {
-              if (e.key === "Enter" && !e.shiftKey) {
+              if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
                 e.preventDefault();
                 void send();
+              } else if (e.key === "Escape" && replyTo) {
+                onCancelReply();
+              } else if (e.key === "ArrowUp" && draft === "" && !replyTo) {
+                // Like most chat apps: Up in an empty box replies to the latest message.
+                e.preventDefault();
+                onReplyLast();
               }
             }}
             onPaste={(e) => pick(e.clipboardData.files[0])}
             style={{ flex: 1, minWidth: 0, minHeight: 32, maxHeight: 160, border: 0, outline: 0, background: "transparent", fontSize: 14, lineHeight: "20px", padding: "6px 4px", resize: "none", fieldSizing: "content" } as React.CSSProperties}
           />
+          <button
+            className="ib"
+            style={{ width: 32, height: 32 }}
+            aria-label="Add an emoji"
+            onClick={(e) => {
+              const r = e.currentTarget.getBoundingClientRect();
+              setEmojiAt({ x: r.right - 296, y: r.top - 240 });
+            }}
+          >
+            <Icon name="smile" size={18} stroke={2} />
+          </button>
           <button
             onClick={() => void send()}
             aria-label="Send"
@@ -133,6 +169,7 @@ function Composer({ groupId, name, replyTo, onCancelReply }: { groupId: string; 
           </button>
         </div>
       </div>
+      {emojiAt && <EmojiPicker at={emojiAt} onPick={insertEmoji} onClose={() => { setEmojiAt(null); textRef.current?.focus(); }} />}
       {error ? (
         <div className="error" role="alert" style={{ padding: "6px 4px 0" }}>{error}</div>
       ) : (
@@ -153,6 +190,8 @@ export function Conversation({ groupId }: { groupId: string }) {
   const list = useMemo(() => flattenMessages(messages.data), [messages.data]);
   const [replyTo, setReplyTo] = useState<D1Message | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [menu, setMenu] = useState<{ m: D1Message; at: Point } | null>(null);
+  const [picker, setPicker] = useState<{ m: D1Message; at: Point } | null>(null);
   const scroller = useRef<HTMLDivElement>(null);
 
   const g = group.data ?? found?.group;
@@ -163,6 +202,8 @@ export function Conversation({ groupId }: { groupId: string }) {
     setOpenGroup(groupId);
     setReplyTo(null);
     setActionError(null);
+    setMenu(null);
+    setPicker(null);
     return () => setOpenGroup(null);
   }, [groupId]);
 
@@ -187,6 +228,23 @@ export function Conversation({ groupId }: { groupId: string }) {
     } catch (err) {
       setActionError(errorText(err));
     }
+  };
+
+  const menuItems = (m: D1Message): MenuItem[] => {
+    const items: MenuItem[] = [{ label: "Reply", icon: "reply", onSelect: () => setReplyTo(m) }];
+    if (m.body) {
+      const body = m.body;
+      items.push({ label: "Copy text", icon: "copy", onSelect: () => void navigator.clipboard.writeText(window.getSelection()?.toString() || body).catch(() => undefined) });
+    }
+    if (m.attachment?.url) {
+      const url = m.attachment.url;
+      items.push({ label: m.attachment.mimeType.startsWith("image/") ? "Open photo" : "Open file", icon: "arrowUpRight", onSelect: () => void openExternal(url) });
+    }
+    if (!m.mine) {
+      items.push({ label: "Report", icon: "flag", onSelect: () => nav.openSheet({ kind: "report", messageId: m.id, sender: m.sender?.displayName ?? "Former member", body: m.body ?? "File" }) });
+    }
+    if (m.mine || canManage) items.push({ label: "Delete", icon: "trash", danger: true, onSelect: () => nav.openSheet({ kind: "delete", messageId: m.id, groupId }) });
+    return items;
   };
 
   return (
@@ -250,6 +308,8 @@ export function Conversation({ groupId }: { groupId: string }) {
                   onReply={() => setReplyTo(m)}
                   onReport={() => nav.openSheet({ kind: "report", messageId: m.id, sender: m.sender?.displayName ?? "Former member", body: m.body ?? "File" })}
                   onDelete={() => nav.openSheet({ kind: "delete", messageId: m.id, groupId })}
+                  onContextMenu={(at) => setMenu({ m, at })}
+                  onMoreReactions={(at) => setPicker({ m, at })}
                 />
               </div>
             );
@@ -261,7 +321,16 @@ export function Conversation({ groupId }: { groupId: string }) {
         <div style={{ maxWidth: 772, margin: "0 auto" }}>
           {actionError && <div className="error" role="alert" style={{ paddingBottom: 6 }}>{actionError}</div>}
           {canPost ? (
-            <Composer groupId={groupId} name={g.name} replyTo={replyTo} onCancelReply={() => setReplyTo(null)} />
+            <Composer
+              groupId={groupId}
+              name={g.name}
+              replyTo={replyTo}
+              onCancelReply={() => setReplyTo(null)}
+              onReplyLast={() => {
+                const last = [...list].reverse().find((x) => !x.deleted);
+                if (last) setReplyTo(last);
+              }}
+            />
           ) : (
             <div style={{ height: 44, borderRadius: 12, background: "var(--fill)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, color: "var(--subtle)" }}>
               {frozen ? "You can read this group, but no one can post until it reopens" : isAnn ? "Only admins can post here" : "You can't post here"}
@@ -269,6 +338,20 @@ export function Conversation({ groupId }: { groupId: string }) {
           )}
         </div>
       </div>
+
+      {menu && (
+        <ContextMenu
+          at={menu.at}
+          items={menuItems(menu.m)}
+          onReact={(e) => void run(() => toggleReaction(menu.m, e))}
+          onMoreReactions={(at) => {
+            setPicker({ m: menu.m, at });
+            setMenu(null);
+          }}
+          onClose={() => setMenu(null)}
+        />
+      )}
+      {picker && <EmojiPicker at={picker.at} label="Choose a reaction" onPick={(e) => void run(() => toggleReaction(picker.m, e))} onClose={() => setPicker(null)} />}
     </>
   );
 }

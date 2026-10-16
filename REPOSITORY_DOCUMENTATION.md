@@ -6265,6 +6265,16 @@ New messages come over Realtime (same hub as the phone app, `src/lib/realtime.ts
 requests refresh on a timer (1 and 2 minutes). Banners respect mute, "Show message previews" and
 "Pause notifications for 1 hour".
 
+**Keyboard and menus** (`src/lib/shortcuts.ts`, `src/components/Floating.tsx`, `ContextMenu.tsx`,
+`EmojiPicker.tsx`). One window-level key listener holds the shortcuts (Cmd-K search, Cmd-N new group,
+Cmd-1 to 9 open the Nth chat in sidebar order via `orderedGroups`, Option-Up/Down previous or next chat,
+Cmd-I group info, Cmd-comma settings, Cmd-slash lists them); the list shown in the shortcuts sheet is the
+same `SHORTCUTS` array, so the two can't drift. Right-clicking a message opens `ContextMenu` (quick
+reactions, Reply, Copy text, Open file, Report, Delete). `Floating` is the shared popover: it opens at a
+point, clamps itself inside the window, and closes on Escape, outside click, page scroll or blur. The
+emoji picker is a curated list in `src/lib/emoji.ts` (no dependency) and serves both reactions and the
+message box; reactions accept any emoji (the API only limits length to 16 characters).
+
 **Building.** `npm run tauri:dev` / `npm run tauri:build` on a Mac (Rust + Xcode command line tools).
 The build is unsigned for now; `tauri.conf.json` has the signing fields ready for when the Apple
 Developer account exists. See `apps/d1-admin/README.md`.

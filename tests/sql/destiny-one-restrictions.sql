@@ -76,6 +76,13 @@ select pg_temp.check(
   not exists (select 1 from public.d1_reactions where member_id = :lead::uuid),
   'a restricted member can''t react either');
 
+select pg_temp.expect_error(
+  format($$select public.d1_edit_message(%L, %s, 'd1e:v1:edited', null, null)$$, :lead, (select v from found where k = 'before')),
+  'can''t post until');
+select pg_temp.check(
+  (select body from public.d1_messages where id = (select v from found where k = 'before')) = 'd1e:v1:before',
+  'a restricted member can''t edit an earlier message either');
+
 select public.d1_react('10000000-0000-0000-0000-00000000000b'::uuid, (select v from found where k = 'before'), 'x', true);
 select pg_temp.check(
   exists (select 1 from public.d1_reactions where member_id = '10000000-0000-0000-0000-00000000000b'),

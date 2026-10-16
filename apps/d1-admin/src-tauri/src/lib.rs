@@ -13,6 +13,8 @@
 
 mod touch_id;
 
+use std::sync::Mutex;
+use std::time::{Duration, Instant};
 use tauri::{
     tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent},
     AppHandle, Manager, PhysicalPosition, RunEvent, WindowEvent,
@@ -20,6 +22,11 @@ use tauri::{
 
 const KEYCHAIN_SERVICE: &str = "uk.destinychurch.d1admin";
 const TRAY_ID: &str = "d1-tray";
+
+/// When the popover last hid itself because it lost focus. Clicking the menu
+/// bar icon takes focus first, so by the time the click is handled the popover
+/// is already hidden; without this the same click would open it again.
+static POPOVER_BLURRED_AT: Mutex<Option<Instant>> = Mutex::new(None);
 
 fn entry(key: &str) -> Result<keyring::Entry, String> {
     keyring::Entry::new(KEYCHAIN_SERVICE, key).map_err(|e| e.to_string())
@@ -99,10 +106,25 @@ fn toggle_menubar(app: &AppHandle, icon_x: f64, icon_y: f64, icon_w: f64, icon_h
         let _ = w.hide();
         return;
     }
+    let just_closed = POPOVER_BLURRED_AT
+        .lock()
+        .ok()
+        .and_then(|t| *t)
+        .is_some_and(|t| t.elapsed() < Duration::from_millis(300));
+    if just_closed {
+        return;
+    }
     if let Ok(size) = w.outer_size() {
-        let x = icon_x + icon_w / 2.0 - size.width as f64 / 2.0;
+        let mut x = icon_x + icon_w / 2.0 - size.width as f64 / 2.0;
         let y = icon_y + icon_h + 4.0;
-        let _ = w.set_position(PhysicalPosition::new(x.max(0.0), y));
+        // Stay inside the monitor the icon is on (it can be near the right edge,
+        // or on a second display with a negative x).
+        if let Ok(Some(m)) = app.monitor_from_point(icon_x + icon_w / 2.0, icon_y + icon_h / 2.0) {
+            let left = m.position().x as f64;
+            let right = left + m.size().width as f64;
+            x = x.min(right - size.width as f64 - 8.0).max(left + 8.0);
+        }
+        let _ = w.set_position(PhysicalPosition::new(x, y));
     }
     let _ = w.show();
     let _ = w.set_focus();
@@ -171,6 +193,9 @@ pub fn run() {
             }
             // The popover behaves like a menu: clicking elsewhere closes it.
             WindowEvent::Focused(false) if window.label() == "menubar" => {
+                if let Ok(mut t) = POPOVER_BLURRED_AT.lock() {
+                    *t = Some(Instant::now());
+                }
                 let _ = window.hide();
             }
             _ => {}

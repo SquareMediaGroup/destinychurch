@@ -1,12 +1,12 @@
 import { useSession } from "@/lib/session";
 import { AuthFrame } from "@/features/auth/SignIn";
 
-export function NotAllowed({ message }: { message: string }) {
+export function NotAllowed({ message, title = "Not available" }: { message: string; title?: string }) {
   const { signOut, refreshMe } = useSession();
   return (
     <AuthFrame>
       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-        <h1 style={{ fontSize: 24, fontWeight: 700 }}>Not available</h1>
+        <h1 style={{ fontSize: 24, fontWeight: 700 }}>{title}</h1>
         <p className="muted" style={{ fontSize: 14, lineHeight: "20px" }}>{message}</p>
       </div>
       <div style={{ display: "flex", gap: 8 }}>

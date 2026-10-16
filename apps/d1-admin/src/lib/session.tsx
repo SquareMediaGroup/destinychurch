@@ -24,6 +24,7 @@ export type SessionState =
   | { status: "signedOut" }
   | { status: "locked" }
   | { status: "notAllowed"; me: D1Me | null; message: string }
+  | { status: "unreachable"; message: string }
   | { status: "ready"; me: D1Me; roles: AdminWhoami; leader: boolean };
 
 interface SessionApi {
@@ -38,6 +39,11 @@ interface SessionApi {
 
 const Ctx = createContext<SessionApi | null>(null);
 
+/** Away from the app (window hidden, another app in front, or the Mac asleep) this long, and it locks again. */
+const RELOCK_AFTER_MS = 2 * 60 * 1000;
+/** While the server can't be reached, try again this often. */
+const RETRY_UNREACHABLE_MS = 15 * 1000;
+
 const SIGN_IN_FAILED = "That email and password don't match an account that can sign in here.";
 
 export function SessionProvider({ children }: { children: ReactNode }) {
@@ -48,7 +54,14 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     if (loading.current) return;
     loading.current = true;
     try {
-      const me = await api.me();
+      // One 401 can be a token that was just rolling over, so refresh and ask
+      // again before treating the session as gone.
+      const me = await api.me().catch(async (err: unknown) => {
+        if (!(err instanceof D1ApiError && err.code === "unauthenticated")) throw err;
+        const { error } = await supabase.auth.refreshSession();
+        if (error) throw err;
+        return api.me();
+      });
       const roles = await admin.whoami().catch(() => NO_ADMIN);
       const anyAdmin = roles.destinyOneAdmin || roles.safeguardingAdmin;
       const leader = isLeaderRole(me.roles);
@@ -70,7 +83,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       } else if (err instanceof D1ApiError && (err.code === "not_verified" || err.code === "access_request_needed")) {
         setState({ status: "notAllowed", me: null, message: err.message });
       } else {
-        setState({ status: "notAllowed", me: null, message: err instanceof Error ? err.message : "Couldn't reach Destiny One." });
+        setState({ status: "unreachable", message: err instanceof Error ? err.message : "Couldn't reach Destiny One." });
       }
     } finally {
       loading.current = false;
@@ -91,6 +104,43 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     });
     return () => sub.subscription.unsubscribe();
   }, [load]);
+
+  // Offline at launch isn't a refusal: keep trying quietly.
+  useEffect(() => {
+    if (state.status !== "unreachable") return;
+    const t = setInterval(() => void load(), RETRY_UNREACHABLE_MS);
+    return () => clearInterval(t);
+  }, [state.status, load]);
+
+  // Lock again after time away. Timers stop while the Mac sleeps, so the
+  // clock is compared on return rather than counted down.
+  useEffect(() => {
+    if (state.status !== "ready") return;
+    let awayAt: number | null = null;
+    const away = () => (awayAt ??= Date.now());
+    const back = () => {
+      const was = awayAt;
+      awayAt = null;
+      if (was !== null && getPrefs().touchId && Date.now() - was >= RELOCK_AFTER_MS) setState({ status: "locked" });
+    };
+    const onVisibility = () => (document.visibilityState === "hidden" ? away() : back());
+    document.addEventListener("visibilitychange", onVisibility);
+    window.addEventListener("blur", away);
+    window.addEventListener("focus", back);
+    // A sleep with the window in front never blurs, so also catch a gap in a steady tick.
+    let last = Date.now();
+    const tick = setInterval(() => {
+      const now = Date.now();
+      if (now - last >= RELOCK_AFTER_MS && getPrefs().touchId) setState({ status: "locked" });
+      last = now;
+    }, 15_000);
+    return () => {
+      document.removeEventListener("visibilitychange", onVisibility);
+      window.removeEventListener("blur", away);
+      window.removeEventListener("focus", back);
+      clearInterval(tick);
+    };
+  }, [state.status]);
 
   const value = useMemo<SessionApi>(
     () => ({

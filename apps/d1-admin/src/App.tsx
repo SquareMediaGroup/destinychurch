@@ -83,6 +83,8 @@ export function App() {
       return <Locked />;
     case "notAllowed":
       return <NotAllowed message={state.message} />;
+    case "unreachable":
+      return <NotAllowed title="Can't reach Destiny One" message={`${state.message} D1 Admin will keep trying.`} />;
     case "ready":
       return <Shell />;
   }

@@ -37,7 +37,11 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   const member = await loadMember(memberId);
   if (!member) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  const until = new Date(Date.now() + days * DAY_MS).toISOString();
+  // Never shorten a restriction by accident: a 1-day restriction on someone
+  // already restricted for 30 keeps the 30. To shorten one, lift it, then set it again.
+  const requested = Date.now() + days * DAY_MS;
+  const existing = member.posting_restricted_until ? Date.parse(member.posting_restricted_until) : 0;
+  const until = new Date(Math.max(requested, existing)).toISOString();
   const { error } = await createServiceClient()
     .from("d1_members")
     .update({ posting_restricted_until: until })

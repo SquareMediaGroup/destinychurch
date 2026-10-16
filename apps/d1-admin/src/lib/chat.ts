@@ -1,14 +1,15 @@
 // Chat data: react-query hooks over the app API, kept live by Realtime.
-// A trimmed port of apps/destiny-one/src/lib/queries.ts (no DestinyAI
-// streaming).
+// A trimmed port of apps/destiny-one/src/lib/queries.ts.
 
 import { useInfiniteQuery, useQuery, type InfiniteData } from "@tanstack/react-query";
-import type { D1CommunitySummary, D1GroupSummary, D1Message, D1MessagePage, D1RealtimeEvent } from "@destiny/shared";
+import { DESTINY_AI_ID, type D1CommunitySummary, type D1GroupSummary, type D1Message, type D1MessagePage, type D1RealtimeEvent } from "@destiny/shared";
 import { api } from "@/lib/api";
+import { clearAssistantStream, setAssistantStatus, setAssistantText } from "@/lib/assistantStream";
 import { queryClient } from "@/lib/queryClient";
 
 export const keys = {
   communities: ["communities"] as const,
+  assistant: ["assistant"] as const,
   group: (id: string) => ["group", id] as const,
   messages: (id: string) => ["messages", id] as const,
   search: (q: string) => ["search", q] as const,
@@ -16,6 +17,11 @@ export const keys = {
 
 export function useCommunities() {
   return useQuery({ queryKey: keys.communities, queryFn: () => api.communities() });
+}
+
+/** My one-to-one chat with DestinyAI. It belongs to no community, so it isn't in the communities list. */
+export function useAssistant() {
+  return useQuery({ queryKey: keys.assistant, queryFn: () => api.assistant(), staleTime: 60_000 });
 }
 
 export function useGroup(id: string | null) {
@@ -91,6 +97,7 @@ function updateGroupSummary(groupId: string, fn: (g: D1GroupSummary) => D1GroupS
   queryClient.setQueryData<D1CommunitySummary[]>(keys.communities, (old) =>
     old?.map((c) => ({ ...c, groups: c.groups.map((g) => (g.id === groupId ? fn(g) : g)) })),
   );
+  queryClient.setQueryData<D1GroupSummary>(keys.assistant, (old) => (old && old.id === groupId ? fn(old) : old));
 }
 
 let openGroupId: string | null = null;
@@ -104,6 +111,7 @@ export function currentOpenGroup() {
 
 export function invalidateCommunities() {
   void queryClient.invalidateQueries({ queryKey: keys.communities });
+  void queryClient.invalidateQueries({ queryKey: keys.assistant });
 }
 
 function preview(body: string | null): string | null {
@@ -116,6 +124,8 @@ export function applyEvent(e: D1RealtimeEvent, meId: string) {
   switch (e.event) {
     case "message": {
       const p = e.payload;
+      // DestinyAI's finished answer replaces the live bubble it was writing.
+      if (p.sender.id === DESTINY_AI_ID) clearAssistantStream(p.groupId);
       const mine = p.sender.id === meId;
       if (p.attachmentId) {
         void queryClient.invalidateQueries({ queryKey: keys.messages(p.groupId) });
@@ -169,6 +179,12 @@ export function applyEvent(e: D1RealtimeEvent, meId: string) {
       );
       return;
     }
+    case "assistant_status":
+      setAssistantStatus(e.payload.groupId, e.payload.label);
+      return;
+    case "assistant_delta":
+      setAssistantText(e.payload.groupId, e.payload.text);
+      return;
     case "link_preview": {
       const { id, groupId, preview: lp } = e.payload;
       updateMessages(groupId, (list) => list.map((m) => (m.id === id ? { ...m, linkPreview: lp } : m)));

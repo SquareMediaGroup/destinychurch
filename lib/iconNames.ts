@@ -22,6 +22,7 @@ export const ICON_NAMES = [
   "announcement",
   "api",
   "apparel",
+  "apps",
   "arrow_back",
   "arrow_downward",
   "arrow_forward",

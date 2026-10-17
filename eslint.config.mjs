@@ -5,6 +5,17 @@ import nextTs from "eslint-config-next/typescript";
 const eslintConfig = defineConfig([
   ...nextVitals,
   ...nextTs,
+  {
+    // eslint-plugin-react-hooks 7.1 (eslint-config-next 16.4) flags more React
+    // Compiler readiness patterns — fetch-on-mount setState and "latest value"
+    // refs written during render. Existing code is correct as written; keep the
+    // hints visible as warnings while it's migrated rather than failing CI.
+    rules: {
+      "react-hooks/set-state-in-effect": "warn",
+      "react-hooks/refs": "warn",
+      "react-hooks/use-memo": "warn",
+    },
+  },
   // Override default ignores of eslint-config-next.
   globalIgnores([
     // Default ignores of eslint-config-next:

@@ -1,5 +1,5 @@
 // ESLint for the Destiny One app (eslint-config-expo, flat config). The
-// website's config at the repo root ignores apps/, so this file is the one
+// website's config at the repo root ignores applications/, so this file is the one
 // `npx expo lint` uses here.
 const { defineConfig, globalIgnores } = require("eslint/config");
 const expoConfig = require("eslint-config-expo/flat");

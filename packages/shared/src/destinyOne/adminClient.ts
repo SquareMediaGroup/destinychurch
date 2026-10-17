@@ -1,5 +1,5 @@
 // Destiny One — typed client for the admin API (/api/admin/destiny-one/*),
-// for the D1 Admin desktop app (apps/d1-admin).
+// for the D1 Admin desktop app (applications/d1-admin).
 //
 // The website's admin pages call the same routes with their cookie session
 // (lib/destinyOne/adminClient.ts). The desktop app has no cookies, so this

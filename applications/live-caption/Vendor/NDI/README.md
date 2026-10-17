@@ -16,7 +16,7 @@ installed the SDK yourself.
    the standard SDK; the paid NDI Advanced SDK is not needed unless a future
    feature specifically requires it).
 3. Run the installer. It installs to `/Library/NDI SDK for Apple` by default.
-4. From `apps/live-caption/`, run:
+4. From `applications/live-caption/`, run:
    ```bash
    make ndi-setup
    ```

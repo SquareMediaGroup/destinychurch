@@ -15,7 +15,7 @@ export * from "./churchsuite/sanitize";
 export * from "./churchsuite/ics";
 export * from "./design/tokens";
 
-// Destiny One (the Expo messaging app, apps/destiny-one) — wire types, the
+// Destiny One (the Expo messaging app, applications/destiny-one) — wire types, the
 // pure safeguarding rules, and the typed API client. Unlike the Swift app,
 // Destiny One is TypeScript and imports these directly.
 export * from "./destinyOne/types";

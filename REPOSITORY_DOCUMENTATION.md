@@ -396,7 +396,7 @@ destinychurch/
 ├── docs/                          # Additional documentation, incl. mobile-app-scope.md (+ .pdf export)
 │   └── content/                   # Source copy for policy/partner text — the live pages render
 │                                   # an edited subset, so these are the fuller source. See its README.
-├── apps/                          # Standalone companion apps that live in this repo but ship
+├── applications/                  # Standalone companion apps that live in this repo but ship
 │   ├── destiny-one/               # Destiny One — the members' messaging app (Expo SDK 57, React
 │   │                               # Native, iOS + Android, Liquid Glass via expo-glass-effect).
 │   │                               # Its own npm project (NOT a root workspace, so the website build
@@ -1977,7 +1977,7 @@ request (`app/api/portal/leave`).
 ---
 
 #### 29. **d1_*** (Destiny One — members' group messaging)
-**Purpose:** The data behind Destiny One, the Expo app (`apps/destiny-one`): WhatsApp-Communities-style
+**Purpose:** The data behind Destiny One, the Expo app (`applications/destiny-one`): WhatsApp-Communities-style
 messaging — a **community** holds an **Announcements** group everyone is in (admins post) plus
 department **sub-groups**. Migration: `supabase/migrations/20260926_01_destiny_one.sql`.
 
@@ -2060,7 +2060,7 @@ minimal reliance on ChurchSuite, so identity now comes from Destiny's own staff:
 - **`admin_roles.destiny_one_admin`**, and `admin_has_role()` redefined to include it.
 
 **Part 6 — `20260928_01_destiny_one_safeguarding.sql`: fixes from the production readiness audit**
-(`apps/destiny-one/todo.md`):
+(`applications/destiny-one/todo.md`):
 - **Retention keeps evidence.** `d1_purge_expired` never deletes a message (or its attachment) that
   is linked to a report whose status isn't `closed`, however old it is.
 - **Complete erasure.** `d1_erase_member` also deletes `d1_consents`, the member's `d1_blocks` rows
@@ -2266,7 +2266,7 @@ D1 Admin desktop app):
 - Tested by the `destiny-one-restrictions` SQL suite (`tests/sql/destiny-one-restrictions.sql`).
 
 **Used By:** `lib/destinyOne/*`, `app/api/app/v1/one/**`, `app/api/admin/destiny-one/**`,
-`app/api/cron/destiny-one-{sync,purge}`, `apps/d1-admin`.
+`app/api/cron/destiny-one-{sync,purge}`, `applications/d1-admin`.
 
 #### 30. **song_request_settings / song_request_spotify / song_requests** (Event song requests)
 **Purpose:** `/song-requests`. Migration: `supabase/migrations/20260930_01_song_requests.sql`. All three are
@@ -4968,9 +4968,9 @@ deliberately not in CI because page-data collection needs live Supabase env vars
 Vercel's preview build covers that. The browser suite stays in `playwright.yml`,
 manual-trigger only, because it needs a running site to point at.
 Three more jobs, also secret-free: **Destiny One app** (`npm ci`, typecheck and
-`expo lint` inside `apps/destiny-one`, which is its own npm project), **D1 Admin
+`expo lint` inside `applications/destiny-one`, which is its own npm project), **D1 Admin
 desktop app** (`npm ci` and `npm run build` — typecheck plus the Vite bundle — inside
-`apps/d1-admin`; the Rust shell is only built on a Mac) and
+`applications/d1-admin`; the Rust shell is only built on a Mac) and
 **Database rules** (`scripts/test-sql.sh` against the PostgreSQL that ships on
 the Ubuntu runner, so the safeguarding SQL checks run on every PR).
 
@@ -6233,7 +6233,7 @@ fresh URL per click.
 
 ---
 
-### D1 Admin — the Mac app (`apps/d1-admin`)
+### D1 Admin — the Mac app (`applications/d1-admin`)
 
 Destiny One for leaders and admins on macOS, built from the design canvas "The One App — Mac".
 Tauri 2 (Rust shell, `src-tauri/`) around a React + Vite UI (`src/`). Its own npm project, like the
@@ -6294,9 +6294,9 @@ files, polls or mentions) and has no group info pane.
 
 **Building.** `npm run tauri:dev` / `npm run tauri:build` on a Mac (Rust + Xcode command line tools).
 The build is unsigned for now; `tauri.conf.json` has the signing fields ready for when the Apple
-Developer account exists. See `apps/d1-admin/README.md`.
+Developer account exists. See `applications/d1-admin/README.md`.
 
-### Destiny One app — look and feel (`apps/destiny-one/src`)
+### Destiny One app — look and feel (`applications/destiny-one/src`)
 
 Polished to Apple's Human Interface Guidelines. The pieces, and why they exist:
 
@@ -7461,7 +7461,7 @@ feed normalisation of its own, because the BFF already does all of it.
   (the native SwiftUI tab shell over the `/api/app/v1` BFF) is now built. **Chat has since moved
   off Matrix** — see Destiny One below.
 
-### Destiny One (Expo, iOS + Android) — `apps/destiny-one/`
+### Destiny One (Expo, iOS + Android) — `applications/destiny-one/`
 The members' messaging app — "WhatsApp Communities" with department sub-groups, under the
 safeguarding rules in the `d1_*` schema (§29). **Separate from the Swift app in `mobile/`**, which
 remains the content app (sermons/events/give). Chat was scoped on a self-hosted Matrix homeserver;
@@ -7724,7 +7724,7 @@ same database as the data rather than in a separate Synapse module.
   `docs/destiny-one-staff-guide.md`. Draft privacy-notice, terms and safeguarding-policy sections for
   sign-off (not live): `docs/content/destiny-one-notices-draft.md`.
 
-### Live Caption (macOS app) — `apps/live-caption/`
+### Live Caption (macOS app) — `applications/live-caption/`
 A standalone **macOS app** (not part of the website deploy) that captions live audio in real time for Destiny's AVL setup (ATEM, ProPresenter, Dante, NDI). It captures from a Core Audio device or an NDI network source, transcribes locally with a Metal-accelerated [whisper.cpp](https://github.com/ggml-org/whisper.cpp) model, and shows the caption on a connected display and/or publishes it as a live NDI source. **Audio never leaves the machine** — transcription is entirely local.
 - **Project & build.** SwiftUI, Swift 6, built against the macOS 26 SDK (for the real Liquid Glass `glassEffect()` caption plate). Like the iOS app the Xcode project is **generated, not committed**: `project.yml` is the XcodeGen source of truth and the `Makefile` wraps the build (`make whisper-build` → `make ndi-setup` → `make build` / `make run` / `make test`). `make build` fails with a clear error if either vendor step is missing.
 - **Vendored dependencies.** whisper.cpp is a git submodule at `Vendor/whisper.cpp` (pinned to a release tag, MIT). The **NDI SDK is proprietary and license-gated** — its headers/libraries are *not* committed (see `Vendor/NDI/README.md`); only the compiled app's embedded `libndi.dylib` is redistributed, which the NDI license permits. Whisper model files are multi-GB and fetched via `Scripts/fetch-whisper-model.sh`, not committed.
@@ -7737,15 +7737,15 @@ A standalone **macOS app** (not part of the website deploy) that captions live a
   - `App/` — `LiveCaptionApp` entry point and `AppState`; `Settings/Preferences.swift`; `About/`.
   - `LiveCaptionTests/` — unit tests for the resampler, stabiliser, frame renderer, NDI publisher, and vocabulary prompt.
   - `Scripts/BenchmarkRTF/` — a standalone real-time-factor/latency harness; the documented exit criterion is a model sustaining RTF ≤ 0.5–0.6 on the target **Apple M2 Max** with no latency growth across a full service. `large-v3-turbo` is the starting model, `medium` the fallback.
-### Talent Show Buzzers — `apps/talent-buzzer/`
+### Talent Show Buzzers — `applications/talent-buzzer/`
 A standalone **Node app** (not part of the website deploy) for the Destiny talent show. Four Android tablets are red X buzzers and one is a dedicated golden buzzer. A press fires an Avolites lighting cue, shows an X (or a gold takeover with confetti) on the LED screen, and plays a buzzer/fanfare from the LED screen machine. **LAN only** — no internet, Supabase or accounts, so it survives the building connection dropping.
 - **One app, two roles** (`app.js`, launched by `start.bat` on both machines): a local-only setup page (`setup/setup.html`, `127.0.0.1:8090`, Host-header checked) asks whether this is the LED screen or Avolites machine, saves it to gitignored `machine.json`, and forks `hub/server.js` or `agent/avolites-agent.js` as a child process (restarted on crash; status flows back over IPC). The hub announces itself by UDP broadcast on port 8099 (`lib/discovery.js`, no key in the packet) so the agent finds it without typing IPs.
 - **Hub** (`hub/server.js`, runs on the LED machine): plain `http` static server + `ws` WebSocket at `/ws`. Clients say `hello` with a role (`tablet` + seat, `display`, `control`, `agent`). Show rules live in `lib/state.js` (pure, unit tested): each X latches until Reset, golden fires once until Reset, per-buzzer debounce, Lock ignores all presses. When the last judge buzzes the hub also broadcasts an `all-x` event (display strobes red, optional `cues.allX` playback). Only `control` clients can reset/lock/trigger/test. Optional shared `key` gates every WebSocket for audience-accessible Wi-Fi.
 - **Pages** (`hub/public/`): `tablet.html` (fires on `pointerdown` for latency, auto-reconnect, seat picker when no `?seat=`), `display.html` (sharp extruded 3D SVG X per judge with names underneath, all-out red strobe, gold takeover, Web Audio playback of `sounds/buzzer.mp3`/`golden.mp3` with synthesised fallbacks; a one-time click arms audio because of browser autoplay rules; `?bg=transparent` for keying), `control.html` (presence per seat, audio-armed state, lighting status + log, Reset/Lock, per-seat Trigger backup, test cue/sound buttons).
 - **Lighting**: `lib/titan.js` calls the Titan Web API (port 4430; URL templates in config, `{userNumber}` filled in; retries once). Default `agent` mode runs `agent/avolites-agent.js` on the Titan PC, which connects *out* to the hub so the lighting PC needs no inbound firewall rule; `direct` mode has the hub call a console's IP itself (hardware consoles). Reset can `KillPlayback` the X/golden cues (`releaseOnReset`).
-- `tools/fake-titan.js` stands in for the console when rehearsing; `npm test` runs the state tests. Setup, tablet kiosk tips, show-day checklist: `apps/talent-buzzer/README.md`.
+- `tools/fake-titan.js` stands in for the console when rehearsing; `npm test` runs the state tests. Setup, tablet kiosk tips, show-day checklist: `applications/talent-buzzer/README.md`.
 
-- `apps/.gitkeep` keeps the `apps/` directory (for future standalone companion apps) tracked. See `apps/live-caption/README.md` for the full setup and operating guide.
+- `applications/.gitkeep` keeps the `applications/` directory (for future standalone companion apps) tracked. See `applications/live-caption/README.md` for the full setup and operating guide.
 
 ### Database Migrations
 - **52 migration files** defining schema for:

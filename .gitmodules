@@ -1,3 +1,3 @@
-[submodule "apps/live-caption/Vendor/whisper.cpp"]
-	path = apps/live-caption/Vendor/whisper.cpp
+[submodule "applications/live-caption/Vendor/whisper.cpp"]
+	path = applications/live-caption/Vendor/whisper.cpp
 	url = https://github.com/ggml-org/whisper.cpp.git

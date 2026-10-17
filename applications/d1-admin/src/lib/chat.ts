@@ -1,5 +1,5 @@
 // Chat data: react-query hooks over the app API, kept live by Realtime.
-// A trimmed port of apps/destiny-one/src/lib/queries.ts.
+// A trimmed port of applications/destiny-one/src/lib/queries.ts.
 
 import { useInfiniteQuery, useQuery, type InfiniteData } from "@tanstack/react-query";
 import { DESTINY_AI_ID, type D1CommunitySummary, type D1GroupSummary, type D1Message, type D1MessagePage, type D1RealtimeEvent } from "@destiny/shared";

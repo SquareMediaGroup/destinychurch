@@ -5,7 +5,7 @@
 //
 // Requires `make whisper-build` to have been run first (../.. relative to
 // this package), so `libwhisper`/`libggml*` and `whisper.h` exist to link
-// against. Run from apps/live-caption/:
+// against. Run from applications/live-caption/:
 //
 //   swift run --package-path Scripts/BenchmarkRTF benchmark-rtf \
 //     path/to/sermon-sample.wav --model Vendor/Models/ggml-large-v3-turbo.bin

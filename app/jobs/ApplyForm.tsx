@@ -28,7 +28,19 @@ export default function ApplyForm({
     const fd = new FormData(e.currentTarget);
     fd.set("job_id", jobId);
     fd.set("job_title", jobTitle);
-    const res = await submitApplication(fd);
+    // The action rejects (rather than returning an error) when the request
+    // never reaches it — offline, or a CV over the server-action body limit —
+    // which used to leave the button spinning on "Sending…" forever.
+    let res: Awaited<ReturnType<typeof submitApplication>>;
+    try {
+      res = await submitApplication(fd);
+    } catch {
+      setStatus("error");
+      setError(
+        "We couldn't send your application. Please check your connection and try again — if you attached a CV, try a smaller file.",
+      );
+      return;
+    }
     if (res.success) {
       setStatus("done");
     } else {
@@ -117,7 +129,7 @@ export default function ApplyForm({
           className="block w-full text-sm text-muted file:mr-3 file:rounded-lg file:border-0 file:bg-destiny-orange/10 file:px-4 file:py-2.5 file:text-sm file:font-bold file:text-destiny-orange"
         />
         <p className="mt-1.5 text-xs text-subtle">
-          PDF or Word, up to 10MB.
+          PDF or Word, up to 4MB.
         </p>
       </div>
 

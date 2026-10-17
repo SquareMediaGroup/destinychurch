@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import {
   API,
   APPLICATION_STATUS_LABELS,
@@ -76,12 +77,28 @@ export default function ApplicationsPage() {
   const allVisibleSelected =
     visibleIds.length > 0 && visibleIds.every((id) => selection.selected.has(id));
 
-  async function openDetail(app: JobApplication) {
-    setError("");
-    const res = await fetch(`${API}/applications/${app.id}`);
-    const data = await res.json().catch(() => null);
-    setOpen(data && !data.error ? data : (app as WithCv));
-  }
+  const openDetail = useCallback(
+    async (app: JobApplication) => {
+      setError("");
+      const res = await fetch(`${API}/applications/${app.id}`);
+      const data = await res.json().catch(() => null);
+      setOpen(data && !data.error ? data : (app as WithCv));
+    },
+    [setError],
+  );
+
+  // ?open=<id> is where the "new application" notification links. Opened once
+  // per id, since `apps` changes on every status update.
+  const openParam = useSearchParams().get("open");
+  const openedParam = useRef<string | null>(null);
+  useEffect(() => {
+    if (!openParam || openedParam.current === openParam) return;
+    const match = apps.find((a) => a.id === openParam);
+    if (!match) return;
+    openedParam.current = openParam;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- one-off deep link into the detail fetch
+    void openDetail(match);
+  }, [openParam, apps, openDetail]);
 
   async function setStatus(id: string, status: ApplicationStatus) {
     const res = await fetch(`${API}/applications/${id}`, {

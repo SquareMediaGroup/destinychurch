@@ -26,10 +26,13 @@ const STATUS_COLOR: Record<DesignTicketStatus, string> = {
 };
 
 function when(iso: string): string {
+  // Pinned to London: this renders on the server (UTC) and again in the
+  // browser, and a late-evening BST timestamp would otherwise disagree on the day.
   return new Date(iso).toLocaleDateString("en-GB", {
     day: "numeric",
     month: "short",
     year: "numeric",
+    timeZone: "Europe/London",
   });
 }
 

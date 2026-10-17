@@ -19,9 +19,6 @@ pub struct Stabilizer {
     finalized: Vec<WordToken>,
     partial: Vec<WordToken>,
     last_segment_id: u64,
-    /// Stream time up to which words are final. Partials at or before this are
-    /// already in `finalized` and must be dropped or they would render twice.
-    horizon: f64,
 }
 
 impl Stabilizer {
@@ -31,7 +28,6 @@ impl Stabilizer {
             finalized: Vec::new(),
             partial: Vec::new(),
             last_segment_id: 0,
-            horizon: f64::NEG_INFINITY,
         }
     }
 
@@ -43,17 +39,13 @@ impl Stabilizer {
                     return;
                 }
                 self.last_segment_id = segment_id;
-                if let Some(last) = words.last() {
-                    self.horizon = self.horizon.max(last.start_time);
-                }
                 self.finalized.extend(words);
-                let horizon = self.horizon;
-                self.partial.retain(|w| w.start_time > horizon);
+                // The transcriber follows every Finalized with a Partial that
+                // holds only the still-unconfirmed words.
+                self.partial.clear();
             }
             TranscriptEvent::Partial { words, .. } => {
-                let fresh: Vec<WordToken> =
-                    words.into_iter().filter(|w| w.start_time > self.horizon).collect();
-                self.partial = carry_forward_first_seen(fresh, &self.partial);
+                self.partial = carry_forward_first_seen(words, &self.partial);
             }
         }
     }
@@ -84,18 +76,22 @@ impl Stabilizer {
         self.finalized.clear();
         self.partial.clear();
         self.last_segment_id = 0;
-        self.horizon = f64::NEG_INFINITY;
     }
 }
 
 /// Keep the original `first_seen_at` for words the new window proposed
-/// identically; otherwise every window would reset each word's age.
+/// identically at the same position; otherwise every window would reset each
+/// word's age. Matched by position and text, not time: whisper's word times
+/// jitter between windows. Once a word differs, later words restart too.
 fn carry_forward_first_seen(incoming: Vec<WordToken>, previous: &[WordToken]) -> Vec<WordToken> {
+    let mut agreeing = true;
     incoming
         .into_iter()
-        .map(|mut w| {
-            if let Some(existing) = previous.iter().find(|p| p.same_as(&w)) {
-                w.first_seen_at = existing.first_seen_at;
+        .enumerate()
+        .map(|(i, mut w)| {
+            agreeing = agreeing && previous.get(i).is_some_and(|p| p.text == w.text);
+            if agreeing {
+                w.first_seen_at = previous[i].first_seen_at;
             }
             w
         })
@@ -123,13 +119,13 @@ mod tests {
     }
 
     #[test]
-    fn identical_reproposal_keeps_original_clock() {
+    fn identical_reproposal_keeps_original_clock_despite_time_jitter() {
         let t0 = Instant::now();
         let mut s = Stabilizer::new(Duration::from_millis(400));
         s.ingest(TranscriptEvent::Partial { words: vec![w("grace", 1.0, t0)], window_id: 1 });
         // Next window re-proposes the same word 300 ms later.
         let t1 = t0 + Duration::from_millis(300);
-        s.ingest(TranscriptEvent::Partial { words: vec![w("grace", 1.0, t1)], window_id: 2 });
+        s.ingest(TranscriptEvent::Partial { words: vec![w("grace", 1.2, t1)], window_id: 2 });
         assert_eq!(texts(s.display_words(t0 + Duration::from_millis(450), None)), ["grace"]);
     }
 
@@ -163,6 +159,8 @@ mod tests {
             window_id: 1,
         });
         s.ingest(TranscriptEvent::Finalized { words: vec![w("amazing", 1.0, t0)], segment_id: 1 });
+        s.ingest(TranscriptEvent::Partial { words: vec![w("grace", 2.0, t0)], window_id: 2 });
+        // Redelivered segment is ignored.
         s.ingest(TranscriptEvent::Finalized { words: vec![w("amazing", 1.0, t0)], segment_id: 1 });
         assert_eq!(texts(s.display_words(t0, None)), ["amazing", "grace"]);
     }

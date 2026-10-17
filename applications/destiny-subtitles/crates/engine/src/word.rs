@@ -16,9 +16,4 @@ impl WordToken {
     pub fn new(text: impl Into<String>, start_time: f64, now: Instant) -> Self {
         Self { text: text.into(), start_time, confidence: None, first_seen_at: now }
     }
-
-    /// Same word at the same place: text and start time, like the Swift original.
-    pub fn same_as(&self, other: &WordToken) -> bool {
-        self.text == other.text && self.start_time == other.start_time
-    }
 }

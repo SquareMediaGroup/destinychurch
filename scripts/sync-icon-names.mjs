@@ -42,7 +42,9 @@ async function loadValidNames() {
     await writeFile(NAMES_FILE, names.join("\n") + "\n");
     console.log(`🔄 Refreshed ${names.length} Material Symbols names`);
   }
-  return new Set((await readFile(NAMES_FILE, "utf8")).split("\n").filter(Boolean));
+  // \r?\n: a Windows checkout with core.autocrlf turns this file CRLF, and
+  // "home\r" would match nothing, emptying the icon list.
+  return new Set((await readFile(NAMES_FILE, "utf8")).split(/\r?\n/).filter(Boolean));
 }
 
 async function* walk(dir) {

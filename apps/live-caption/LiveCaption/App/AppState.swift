@@ -31,6 +31,10 @@ final class AppState {
     private var transcriber: StreamingTranscriber?
     private var engine: WhisperEngine?
     private var ndiPublishers: [NDIOutputPublisher] = []
+    /// Bumped on every stop, so events still in flight from a torn-down
+    /// pipeline (a window mid-inference, a late source failure) are ignored
+    /// instead of landing in — or stopping — the next run.
+    private var runGeneration = 0
 
     init(preferences: Preferences = Preferences()) {
         self.preferences = preferences
@@ -88,14 +92,21 @@ final class AppState {
             self.engine = engine
 
             let vocabulary = preferences.effectiveVocabulary
+            let generation = runGeneration
             let transcriber = StreamingTranscriber(
                 engine: engine,
                 vocabularyPrompt: { VocabularyPrompt.build(preamble: "", vocabulary: vocabulary) },
                 onEvent: { [weak self] event in
-                    Task { @MainActor in self?.captionStore.ingest(event) }
+                    Task { @MainActor in
+                        guard let self, self.runGeneration == generation else { return }
+                        self.captionStore.ingest(event)
+                    }
                 },
                 onFailure: { [weak self] error in
-                    Task { @MainActor in self?.handleSourceFailure(error) }
+                    Task { @MainActor in
+                        guard let self, self.runGeneration == generation else { return }
+                        self.handleSourceFailure(error)
+                    }
                 }
             )
             self.transcriber = transcriber
@@ -121,6 +132,7 @@ final class AppState {
     }
 
     func stop() {
+        runGeneration += 1
         audioSource?.stop()
         audioSource = nil
         transcriber = nil

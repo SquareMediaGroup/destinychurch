@@ -160,8 +160,16 @@ export function applyEvent(e: D1RealtimeEvent, meId: string) {
       return;
     }
     case "message_edited": {
-      const { id, groupId, body, editedAt } = e.payload;
-      updateMessages(groupId, (list) => list.map((m) => (m.id === id ? { ...m, body, editedAt } : m)));
+      const { id, groupId, body, editedAt, mentions } = e.payload;
+      updateMessages(groupId, (list) => list.map((m) => (m.id === id ? { ...m, body, editedAt, mentions: mentions ?? m.mentions } : m)));
+      updateGroupSummary(groupId, (g) => (g.lastMessage?.id === id ? { ...g, lastMessage: { ...g.lastMessage, preview: preview(body) } } : g));
+      return;
+    }
+    case "poll_vote": {
+      const { messageId, groupId, votes, totalVoters } = e.payload;
+      updateMessages(groupId, (list) =>
+        list.map((m) => (m.id !== messageId || m.content?.kind !== "poll" ? m : { ...m, content: { ...m.content, poll: { ...m.content.poll, votes, totalVoters } } })),
+      );
       return;
     }
     case "reaction": {

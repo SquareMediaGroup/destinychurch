@@ -25,7 +25,7 @@ export interface Hub {
   stop: () => void;
 }
 
-/** One hub for the signed-in member, kept for the session. Copied from apps/destiny-one/src/lib/realtime.ts. */
+/** One hub for the signed-in member, kept for the session. Copied from applications/destiny-one/src/lib/realtime.ts. */
 export function startHub(supabase: SupabaseClient, memberId: string, onEvent: Handler, onRejoin: () => void): Hub {
   const channels = new Map<string, RealtimeChannel>();
   let stopped = false;

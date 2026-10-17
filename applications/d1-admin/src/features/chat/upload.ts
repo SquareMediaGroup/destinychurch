@@ -1,6 +1,6 @@
 // Attachments: ask the API for a signed upload URL, PUT the file straight to
 // Supabase Storage, then send the message with the attachment id. Same flow
-// as the phone app (apps/destiny-one/src/lib/upload.ts); on the Mac the file
+// as the phone app (applications/destiny-one/src/lib/upload.ts); on the Mac the file
 // is a real File, so a plain fetch with FormData works.
 
 import { ATTACHMENT_MIME_TYPES, MAX_ATTACHMENT_BYTES } from "@destiny/shared";

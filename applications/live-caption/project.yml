@@ -7,7 +7,7 @@
 # Liquid Glass (glassEffect()/GlassEffectContainer) requires building against
 # the macOS 26 SDK, i.e. Xcode 26. This machine did not have Xcode installed at
 # all when this project was scaffolded (Command Line Tools only) — see
-# apps/live-caption/README.md before attempting to build.
+# applications/live-caption/README.md before attempting to build.
 
 name: LiveCaption
 

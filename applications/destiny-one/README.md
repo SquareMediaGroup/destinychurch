@@ -20,7 +20,7 @@ The app should mirror these in the UI (use `canPost`, `canCreateGroup` etc. from
 ## Setup
 
 ```bash
-cd apps/destiny-one
+cd applications/destiny-one
 npm install
 cp .env.example .env.local   # fill in the Supabase URL + publishable key
 npx expo start

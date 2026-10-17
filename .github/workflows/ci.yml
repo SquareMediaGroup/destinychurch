@@ -41,14 +41,14 @@ jobs:
     timeout-minutes: 15
     defaults:
       run:
-        working-directory: apps/destiny-one
+        working-directory: applications/destiny-one
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 24
           cache: npm
-          cache-dependency-path: apps/destiny-one/package-lock.json
+          cache-dependency-path: applications/destiny-one/package-lock.json
       # Its own npm project (not a root workspace), so it installs separately.
       - name: Install dependencies
         run: npm ci
@@ -63,14 +63,14 @@ jobs:
     timeout-minutes: 10
     defaults:
       run:
-        working-directory: apps/d1-admin
+        working-directory: applications/d1-admin
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 24
           cache: npm
-          cache-dependency-path: apps/d1-admin/package-lock.json
+          cache-dependency-path: applications/d1-admin/package-lock.json
       # Its own npm project (not a root workspace), so it installs separately.
       # The Tauri (Rust) shell is built on a Mac with `npm run tauri:build`.
       - name: Install dependencies

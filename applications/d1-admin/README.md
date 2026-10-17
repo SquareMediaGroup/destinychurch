@@ -26,7 +26,7 @@ You need Node 22+, Rust (`curl https://sh.rustup.rs -sSf | sh`) and the Xcode
 command line tools (`xcode-select --install`).
 
 ```bash
-cd apps/d1-admin
+cd applications/d1-admin
 cp .env.example .env.local     # fill in the Supabase URL and publishable key
 npm install
 npm run tauri:dev              # the app, with hot reload

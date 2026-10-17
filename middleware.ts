@@ -97,7 +97,7 @@ export async function middleware(request: NextRequest) {
 
   let { data: { user } } = await supabase.auth.getUser();
 
-  // The D1 Admin desktop app (apps/d1-admin) has no cookie jar, so for the
+  // The D1 Admin desktop app (applications/d1-admin) has no cookie jar, so for the
   // Destiny One admin API only, a Supabase access token in
   // `Authorization: Bearer …` stands in for the cookie session. Every check
   // below (roles, ROUTE_RULES, actor headers for the audit log) runs exactly

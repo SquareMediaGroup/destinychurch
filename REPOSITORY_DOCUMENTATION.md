@@ -449,7 +449,7 @@ destinychurch/
 ├── .vscode/                       # VS Code workspace settings
 ├── next.config.ts                 # Next.js configuration
 ├── playwright.config.ts           # E2E test configuration
-├── eslint.config.mjs              # ESLint rules
+├── eslint.config.mjs              # ESLint rules (React Compiler hints from react-hooks 7.1 are warnings, not errors)
 ├── postcss.config.mjs             # PostCSS plugins
 ├── tsconfig.json                  # TypeScript compiler options
 ├── package.json                   # Node dependencies and scripts
@@ -1395,6 +1395,13 @@ CREATE TABLE order_items (
 -- reads via lib/shop.server.ts; checkout/webhook write via the service role.
 -- Storage: public `product-images` bucket for product photos (WebP).
 ```
+
+> **Storage writes are service-role only** (migration `20261017_01_bug_fixes`).
+> `builder-media`, `post-media`, `product-images` and `shop-hero-images` used to
+> let any `authenticated` user insert/update/delete, on the old assumption that
+> "authenticated = staff". Destiny One sign-in creates Auth users for members,
+> so those policies were dropped; every upload already goes through an admin
+> API route using the service client. Public read policies are unchanged.
 
 **Used By:** `/shop` storefront, `/admin/store` CRUD, `POST /api/store/checkout`, `POST /api/webhooks/stripe`. `description` is HTML written via the shared `RichTextEditor` (same component used for posts/training) — the admin editor no longer has a markdown Write/Preview toggle, and the public product page renders it with `dangerouslySetInnerHTML` (no markdown fallback).
 
@@ -2798,9 +2805,8 @@ have nowhere to go. It also renders `breadcrumbsFor(pathname)`; below `md`
 which page you were on.
 
 **Route transitions.** `app/admin/template.tsx` wraps admin pages in React's
-`<ViewTransition name="admin-page">` (enabled by `experimental.viewTransition`
-in `next.config.ts`; the component comes from the React build the App Router
-runs on, not from the `react` 19.2 in `package.json`). Pages cross-fade instead
+`<ViewTransition name="admin-page">` (stable in React 19.3; Next 16.4 needs no
+config flag — the old `experimental.viewTransition` option was removed). Pages cross-fade instead
 of snapping, and the tab bar's active pill — the one element named
 `admin-tab-pill` in the document at a time — morphs from the old tab's box to
 the new one in the same frame, which is what makes switching tabs read as glass
@@ -6741,6 +6747,13 @@ accept the current privacy / terms / chat-review notices. Leader roles (`admin`,
 
 ```typescript
 const nextConfig: NextConfig = {
+  // Server actions default to a 1MB body. The jobs form takes a CV up to 4MB
+  // (app/jobs/actions.ts MAX_CV_BYTES) — Vercel itself caps a function request
+  // at 4.5MB, so a larger limit here would never be reachable.
+  experimental: {
+    serverActions: { bodySizeLimit: "4.5mb" },
+  },
+
   // Include ffmpeg binary for serverless functions (if needed)
   outputFileTracingIncludes: {
     "*": ["node_modules/ffmpeg-static/ffmpeg"],

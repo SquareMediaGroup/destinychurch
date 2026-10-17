@@ -87,10 +87,16 @@ export async function PUT(request: Request) {
     updated_at: new Date().toISOString(),
   };
 
-  // Drop the superseded file so replaced artwork doesn't accumulate in the
-  // bucket — same behaviour as the site-popup route.
-  if (existing?.image_path && existing.image_path !== payload.image_path) {
-    await supabase.storage.from(BUCKET).remove([existing.image_path as string]);
+  // The featured_event_popup_needs_active constraint would reject this with a
+  // raw Postgres message; catch it here so admin sees something actionable.
+  if (!payload.active && existing?.popup_active) {
+    return NextResponse.json(
+      {
+        error:
+          "Turn off the event popup before stopping the featured event — the popup advertises whichever event is featured.",
+      },
+      { status: 409 },
+    );
   }
 
   const { error } = await supabase
@@ -98,6 +104,12 @@ export async function PUT(request: Request) {
     .upsert(payload, { onConflict: "id" });
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+  // Drop the superseded file so replaced artwork doesn't accumulate in the
+  // bucket — only once the row no longer points at it.
+  if (existing?.image_path && existing.image_path !== payload.image_path) {
+    await supabase.storage.from(BUCKET).remove([existing.image_path as string]);
+  }
 
   // The layout reads the popup with noStore(), but the /whats-on hero and the
   // homepage carousel are cached routes — they need explicit invalidation.

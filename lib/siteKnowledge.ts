@@ -276,7 +276,10 @@ export function buildSmartSearchPrompt(): string {
     day: "numeric",
     timeZone: "Europe/London",
   });
-  const isoToday = now.toISOString().slice(0, 10);
+  // London's date, not UTC's: between midnight and 01:00 BST the UTC date is
+  // still yesterday, and the two halves of the TODAY line would disagree.
+  // en-CA formats as YYYY-MM-DD.
+  const isoToday = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/London" }).format(now);
 
   const TOOLS = `
 ────────────────────────────────────────────────────────

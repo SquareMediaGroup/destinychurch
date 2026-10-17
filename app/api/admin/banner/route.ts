@@ -75,7 +75,11 @@ export async function PUT(request: Request) {
 
   // Alpha rows are keyed by their type (alpha vs youth_alpha) so both can co-exist.
   // Non-alpha rows share a single row across types (announcement/notice/sitewide).
-  const existingQuery = supabase.from("site_banner").select("id").limit(1);
+  const existingQuery = supabase
+    .from("site_banner")
+    .select("id")
+    .order("created_at", { ascending: true })
+    .limit(1);
   const { data: existing } = isAlphaType
     ? await existingQuery.eq("type", resolvedType).maybeSingle()
     : await existingQuery.not("type", "in", ALPHA_TYPES_SQL).maybeSingle();

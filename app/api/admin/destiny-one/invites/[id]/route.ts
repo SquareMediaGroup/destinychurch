@@ -35,7 +35,11 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   }
 
   if (body.data.action === "revoke") {
-    await supabase.from("d1_invites").update({ status: "revoked", revoked_at: new Date().toISOString() }).eq("id", id);
+    const { error: revokeError } = await supabase
+      .from("d1_invites")
+      .update({ status: "revoked", revoked_at: new Date().toISOString() })
+      .eq("id", id);
+    if (revokeError) return NextResponse.json({ error: "Could not revoke." }, { status: 500 });
     // They never signed in: remove the member created for the invite (leaves
     // any groups they were put in; the rules re-check as usual).
     if (invite.member_id) {
@@ -58,7 +62,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     if (error) {
       return NextResponse.json(
         { error: error.code === "23505" ? "There's already a newer open invite for this email." : "Could not resend." },
-        { status: 409 },
+        { status: error.code === "23505" ? 409 : 500 },
       );
     }
     await sendInviteEmail(invite.email, invite.display_name);

@@ -41,5 +41,13 @@ export const createClient = (request: NextRequest) => {
     },
   );
 
-  return { supabase, supabaseResponse };
+  // A getter, not a snapshot: setAll() (run by a token refresh inside
+  // auth.getUser()) replaces supabaseResponse, and a value copied out before
+  // that would be the old response without the refreshed cookies on it.
+  return {
+    supabase,
+    get supabaseResponse() {
+      return supabaseResponse;
+    },
+  };
 };

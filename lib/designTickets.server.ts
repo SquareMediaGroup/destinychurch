@@ -113,12 +113,16 @@ export async function resolveRequesterIdentity(
 
   if (!user) {
     // Signed out. Soft-link a staff address so /portal is still complete.
+    // ilike is only the case-insensitive lookup; the address is a pattern to
+    // PostgREST (`%`, `_`, `*` are wildcards and pass isValidEmail), so the
+    // match is confirmed exactly before a stranger's ticket is linked to staff.
     const { data: staff } = await service
       .from("hr_staff")
-      .select("id")
+      .select("id, email")
       .ilike("email", base.email)
       .maybeSingle();
-    return { ...base, staffId: staff?.id ?? null };
+    const exact = staff && staff.email?.toLowerCase() === base.email.toLowerCase();
+    return { ...base, staffId: exact ? staff.id : null };
   }
 
   base.authUserId = user.id;

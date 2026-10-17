@@ -29,7 +29,11 @@ if (typeof setInterval !== "undefined") {
   setInterval(() => {
     const cutoff = Date.now() - 2 * 60 * 60_000;
     for (const [ip, r] of rlStore) {
-      if (r.cooldownUntil < Date.now() && (r.timestamps.at(-1) ?? 0) < cutoff) {
+      // Measured from the later of the last request and the end of the last
+      // cooldown: an offense empties `timestamps`, so judging by timestamps
+      // alone pruned the record (and its offense count) within ten minutes of
+      // the cooldown ending, and every repeat offense got the 5-minute one.
+      if (Math.max(r.cooldownUntil, r.timestamps.at(-1) ?? 0) < cutoff) {
         rlStore.delete(ip);
       }
     }

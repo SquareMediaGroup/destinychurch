@@ -32,7 +32,8 @@ export default function Poll() {
 
   function send() {
     if (!check.ok) return;
-    pollDraft.set(id, draft);
+    // validatePoll ignores empty options, but the server refuses them: send only the filled-in ones.
+    pollDraft.set(id, { ...draft, options: options.map((o) => o.trim()).filter(Boolean) });
     router.back();
   }
 

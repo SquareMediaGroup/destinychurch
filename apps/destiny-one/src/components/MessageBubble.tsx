@@ -54,7 +54,7 @@ export function buildRows(messages: LocalMessage[], firstUnreadId: number | null
   messages.forEach((m, i) => {
     const prev = messages[i - 1];
     const next = messages[i + 1];
-    if (!prev || !sameDay(prev.createdAt, m.createdAt)) rows.push({ kind: "day", key: `d${m.createdAt.slice(0, 10)}`, label: dayLabel(m.createdAt) });
+    if (!prev || !sameDay(prev.createdAt, m.createdAt)) rows.push({ kind: "day", key: `d${new Date(m.createdAt).toDateString()}`, label: dayLabel(m.createdAt) });
     if (m.id === firstUnreadId) rows.push({ kind: "new", key: "new" });
     // A run is consecutive messages from one person on one day, broken by the unread divider.
     const sameSender = (o?: LocalMessage) => !!o && !o.mine && !m.mine && o.sender?.id === m.sender?.id && sameDay(o.createdAt, m.createdAt);

@@ -8,7 +8,7 @@
 // group can't be edited.
 
 import { createServiceClient } from "@/utils/supabase/service";
-import { AVATAR_BUCKET, requireMember } from "@/lib/destinyOne/auth.server";
+import { AVATAR_BUCKET, requireMember, requireNotPostingRestricted } from "@/lib/destinyOne/auth.server";
 import { announceGroupUpdated, getGroup, requireGroupMembership } from "@/lib/destinyOne/chat.server";
 import { OneError, fromDbError, limit, oneJson, oneRoute, requireUuid, type IdParams } from "@/lib/destinyOne/http";
 
@@ -28,6 +28,7 @@ async function editableGroup(request: Request, params: IdParams["params"]) {
   if (membership.state !== "active") {
     throw new OneError("rule_violation", "This group is paused, so its icon can't be changed right now.");
   }
+  await requireNotPostingRestricted(caller.member.id);
   return { caller, id };
 }
 

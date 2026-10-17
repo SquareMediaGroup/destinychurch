@@ -1,0 +1,12 @@
+[package]
+name = "engine"
+version = "0.1.0"
+description = "Destiny Subtitles engine: transcript stabilising, caption formatting, rendering, NDI."
+edition = "2021"
+publish = false
+
+[dependencies]
+serde = { version = "1", features = ["derive"] }
+
+[dev-dependencies]
+serde_json = "1"

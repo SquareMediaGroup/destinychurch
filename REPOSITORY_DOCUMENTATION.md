@@ -409,6 +409,7 @@ destinychurch/
 │   │                               # app settings), menu bar popover, notifications, Touch ID, session
 │   │                               # in the Keychain. Own npm project; Rust shell in src-tauri/. Uses the
 │   │                               # same APIs as the phone app and the web admin. See "D1 Admin" below.
+│   ├── destiny-subtitles/         # Rust + Tauri macOS app: NDI audio in, live AI captions, NDI video out
 │   ├── talent-buzzer/             # Talent show judge buzzers — one app on both machines: hub (LED) / Avolites
 │   │                               # agent (Titan PC). Android tablets press -> Titan Web API cue +
 │   │                               # X / golden takeover + sound on the LED screen. LAN only, own
@@ -7737,6 +7738,13 @@ A standalone **macOS app** (not part of the website deploy) that captions live a
   - `App/` — `LiveCaptionApp` entry point and `AppState`; `Settings/Preferences.swift`; `About/`.
   - `LiveCaptionTests/` — unit tests for the resampler, stabiliser, frame renderer, NDI publisher, and vocabulary prompt.
   - `Scripts/BenchmarkRTF/` — a standalone real-time-factor/latency harness; the documented exit criterion is a model sustaining RTF ≤ 0.5–0.6 on the target **Apple M2 Max** with no latency growth across a full service. `large-v3-turbo` is the starting model, `medium` the fallback.
+### Destiny Subtitles (macOS app, Rust + Tauri) — `applications/destiny-subtitles/`
+A standalone **macOS app** (not part of the website deploy) that turns NDI audio into live subtitles and sends them out as NDI video with a transparent background, so the BirdDog can key them over programme. It replaces the earlier SwiftUI `live-caption` app. Status: **phase 1** — scaffold, engine logic and tests; no audio, whisper or NDI wired yet.
+- **Two parts, own cargo workspace and npm project** (not part of the website build): `crates/engine` (pure Rust, no Tauri/OS dependency, so it tests anywhere) and `src-tauri` (thin Tauri shell exposing `list_formats` / `active_format` / `set_active_format`). The React + Vite operator UI is in `src/`. Same shell pattern as D1 Admin.
+- **Engine modules:** `word` (`WordToken`), `stabilizer` (holds partial words until unchanged for the stability delay; ported from live-caption's `CaptionStabilizer`), `vocabulary` (speech-model prompt from Bible books + custom terms, capped at 60 words), `format` (`CaptionFormat` presets, serde JSON, greedy line wrapping that keeps the newest lines).
+- **Planned:** NDI audio in (FFI to the NDI SDK, vendored the same way as live-caption: SDK not committed), `whisper-rs` with Metal (`large-v3-turbo`), failover engine, `cosmic-text` + `tiny-skia` frame renderer, NDI video out, formats/NDI/models screens. Target machine is Apple Silicon; the original design canvas is the visual reference.
+- **Checks:** `cargo test -p engine`, `npm run build` (CI job `destiny-subtitles`). The Tauri shell and NDI build on a Mac only.
+
 ### Talent Show Buzzers — `applications/talent-buzzer/`
 A standalone **Node app** (not part of the website deploy) for the Destiny talent show. Four Android tablets are red X buzzers and one is a dedicated golden buzzer. A press fires an Avolites lighting cue, shows an X (or a gold takeover with confetti) on the LED screen, and plays a buzzer/fanfare from the LED screen machine. **LAN only** — no internet, Supabase or accounts, so it survives the building connection dropping.
 - **One app, two roles** (`app.js`, launched by `start.bat` on both machines): a local-only setup page (`setup/setup.html`, `127.0.0.1:8090`, Host-header checked) asks whether this is the LED screen or Avolites machine, saves it to gitignored `machine.json`, and forks `hub/server.js` or `agent/avolites-agent.js` as a child process (restarted on crash; status flows back over IPC). The hub announces itself by UDP broadcast on port 8099 (`lib/discovery.js`, no key in the packet) so the agent finds it without typing IPs.

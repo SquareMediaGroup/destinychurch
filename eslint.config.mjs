@@ -18,6 +18,8 @@ const eslintConfig = defineConfig([
     "applications/destiny-one/**",
     // D1 Admin, the Tauri desktop app — its own package and checks (CI job d1-admin).
     "applications/d1-admin/**",
+    // Destiny Subtitles, the Rust + Tauri captioning app: its own package (CI job destiny-subtitles).
+    "applications/destiny-subtitles/**",
     // Talent show buzzers: standalone Node/CommonJS app with its own package.json.
     "applications/talent-buzzer/**",
     // Agent worktrees are full copies of the app, gitignored; linting them

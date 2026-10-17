@@ -81,6 +81,29 @@ jobs:
           VITE_SUPABASE_URL: https://example.supabase.co
           VITE_SUPABASE_PUBLISHABLE_KEY: placeholder-for-ci
 
+  destiny-subtitles:
+    name: Destiny Subtitles app (engine tests, UI build)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: applications/destiny-subtitles
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: applications/destiny-subtitles/package-lock.json
+      # The engine crate has no Tauri/OS dependency, so it tests on Linux. The
+      # Tauri shell and NDI/whisper are built on a Mac (`npm run tauri:build`).
+      - name: Engine tests
+        run: cargo test -p engine
+      - name: Install dependencies
+        run: npm ci
+      - name: Typecheck and build the web UI
+        run: npm run build
+
   database-rules:
     name: Database rules (SQL tests)
     runs-on: ubuntu-latest

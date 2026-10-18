@@ -16,6 +16,17 @@ export const POST = oneRoute<IdParams>(async (request, { params }) => {
   const id = requireUuid((await params).id, "group");
   const { messageId } = await readBody(request, readSchema);
 
+  // The marker must name a real message in this group. Any bigint used to be
+  // accepted, so a marker set past the newest id made every later message
+  // read as "Seen" in d1_read_receipts before it was ever opened.
+  const { data: message } = await createServiceClient()
+    .from("d1_messages")
+    .select("id")
+    .eq("id", messageId)
+    .eq("group_id", id)
+    .maybeSingle();
+  if (!message) return oneJson({ ok: true as const });
+
   await createServiceClient()
     .from("d1_group_members")
     .update({ last_read_message_id: messageId })

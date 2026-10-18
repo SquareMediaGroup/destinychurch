@@ -191,7 +191,7 @@ export function Communities() {
           {communities.error && <p className="error">{errorText(communities.error)}</p>}
           {list.map(row)}
         </div>
-        <div className="scroll" style={{ flex: 1, minWidth: 0 }}>{selected ? <CommunityDetail id={selected} /> : !communities.isLoading && <Empty title="No communities yet" />}</div>
+        <div className="scroll" style={{ flex: 1, minWidth: 0 }}>{selected ? <CommunityDetail key={selected} id={selected} /> : !communities.isLoading && <Empty title="No communities yet" />}</div>
       </div>
     </>
   );

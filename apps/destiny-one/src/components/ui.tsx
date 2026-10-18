@@ -20,6 +20,7 @@ import {
   View,
   type LayoutChangeEvent,
   type StyleProp,
+  type TextInputInstance,
   type TextInputProps,
   type TextStyle,
   type ViewStyle,
@@ -166,7 +167,7 @@ export function Field({
   containerStyle,
   ref,
   ...input
-}: TextInputProps & { ref?: Ref<TextInput>; radius?: number; background?: string; leading?: ReactNode; footer?: ReactNode; inputStyle?: StyleProp<TextStyle>; containerStyle?: StyleProp<ViewStyle> }) {
+}: TextInputProps & { ref?: Ref<TextInputInstance>; radius?: number; background?: string; leading?: ReactNode; footer?: ReactNode; inputStyle?: StyleProp<TextStyle>; containerStyle?: StyleProp<ViewStyle> }) {
   const t = useTheme();
   const [focused, setFocused] = useState(false);
   return (

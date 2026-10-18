@@ -20,6 +20,12 @@ final class SermonsModel {
         do {
             videos = LoadState.from(try await client.get(.sermons, as: SermonsResponse.self))
         } catch {
+            // A cancelled `.task` (tab left mid-request) is not a failure;
+            // back to idle so the next appearance retries.
+            if Task.isCancelled {
+                if case .loading = videos { videos = .idle }
+                return
+            }
             videos = .failed(error)
         }
     }
@@ -30,6 +36,11 @@ final class SermonsModel {
             let envelope = try await client.get(.podcast, as: PodcastResponse.self)
             podcast = LoadState.from(envelope).map(\.show)
         } catch {
+            // Switching back to Watch mid-request cancels the `.task(id:)`.
+            if Task.isCancelled {
+                if case .loading = podcast { podcast = .idle }
+                return
+            }
             podcast = .failed(error)
         }
     }

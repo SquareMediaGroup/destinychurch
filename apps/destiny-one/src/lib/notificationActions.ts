@@ -65,6 +65,8 @@ export async function handleNotificationAction(response: Notifications.Notificat
   try {
     await accounts.loadAccounts();
     const owner = typeof data?.memberId === "string" ? accounts.accounts().find((a) => a.memberId === data.memberId) : undefined;
+    // For someone no longer signed in on this phone: never reply or mark read as whoever is.
+    if (typeof data?.memberId === "string" && !owner) throw new Error("Not signed in on this phone");
     const client = owner && owner.slot !== accounts.activeSlot() ? accounts.apiFor(owner.slot) : api;
 
     if (action === REPLY) {

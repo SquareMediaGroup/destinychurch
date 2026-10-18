@@ -145,7 +145,7 @@ export default function AddPeople() {
             keyboardShouldPersistTaps="handled"
             style={{ borderRadius: 22, backgroundColor: t.card, flexGrow: 0 }}
             ListEmptyComponent={
-              loading ? null : directory.isError ? (
+              loading ? undefined : directory.isError ? (
                 <EmptyState title="Couldn't load people" body={errorMessage(directory.error)} />
               ) : !communityId && term.length < 2 ? (
                 <EmptyState title="Search for someone" body="Type at least 2 letters of their name." />

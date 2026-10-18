@@ -264,7 +264,7 @@ export function Reports() {
           {!reports.isLoading && list.length === 0 && <div className="subtle" style={{ padding: "48px 16px", textAlign: "center" }}>Nothing here. All caught up.</div>}
         </div>
         <div className="scroll" style={{ flex: 1, minWidth: 0 }}>
-          {selected ? <ReportDetail report={selected} /> : !reports.isLoading && <Empty title="No report selected" />}
+          {selected ? <ReportDetail key={selected.id} report={selected} /> : !reports.isLoading && <Empty title="No report selected" />}
         </div>
       </div>
     </>

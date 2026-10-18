@@ -58,13 +58,6 @@ export async function PUT(request: Request) {
     updated_at: new Date().toISOString(),
   };
 
-  if (
-    existing.popup_image_path &&
-    existing.popup_image_path !== payload.popup_image_path
-  ) {
-    await supabase.storage.from(BUCKET).remove([existing.popup_image_path]);
-  }
-
   const before = await readForAudit("featured_event", 1);
 
   const { error } = await supabase
@@ -73,6 +66,13 @@ export async function PUT(request: Request) {
     .eq("id", 1);
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+  if (
+    existing.popup_image_path &&
+    existing.popup_image_path !== payload.popup_image_path
+  ) {
+    await supabase.storage.from(BUCKET).remove([existing.popup_image_path]);
+  }
 
   const wasActive = Boolean(before?.popup_active);
   const verb = payload.popup_active && !wasActive

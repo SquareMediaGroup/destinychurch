@@ -113,7 +113,10 @@ export async function POST(request: Request) {
 
   const ip =
     request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
-  if (rateLimited(`${ip}:${reason}`)) {
+  // Keyed on the IP alone: `reason` (and `route`) come from the body, so a key
+  // that included them gave a caller a fresh allowance — and, via the title,
+  // a fresh GitHub issue — for every made-up reason it sent.
+  if (rateLimited(ip)) {
     return Response.json({ ok: true, throttled: true });
   }
 

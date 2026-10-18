@@ -42,7 +42,7 @@ export const accessRequestSchema = z.object({
 });
 
 export const deleteAccountSchema = z.object({
-  confirm: z.literal("DELETE", { errorMap: () => ({ message: 'Send { "confirm": "DELETE" } to delete your account.' }) }),
+  confirm: z.literal("DELETE", { error: 'Send { "confirm": "DELETE" } to delete your account.' }),
 });
 
 export const emailChangeSchema = z.object({

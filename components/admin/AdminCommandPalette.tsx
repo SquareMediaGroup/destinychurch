@@ -38,6 +38,7 @@ import {
   type AdminQuickAction,
 } from "@/lib/adminNav";
 import { useAdminSession } from "@/lib/useAdminSession";
+import { useScrollLock } from "@/lib/useScrollLock";
 import { recordAdminVisit, useAdminRecents } from "@/lib/adminRecents";
 import type { AdminSearchHit } from "@/app/api/admin/search/route";
 import { Kbd } from "@/components/admin/AdminUI";
@@ -378,12 +379,9 @@ function Palette({ onClose }: { onClose: () => void }) {
 
   const flat = useMemo(() => groups.flatMap((g) => g.rows), [groups]);
 
+  useScrollLock(true);
   useEffect(() => {
     inputRef.current?.focus();
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.body.style.overflow = "";
-    };
   }, []);
 
   const go = useCallback(

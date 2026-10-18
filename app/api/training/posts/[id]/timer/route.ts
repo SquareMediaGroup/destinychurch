@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createHmac, randomBytes, timingSafeEqual } from "crypto";
+import { createServiceClient } from "@/utils/supabase/service";
 
 // HMAC key for the read-timer tokens. Prefer a dedicated secret; otherwise
 // derive one from the service-role key (never used raw) so it's stable across
@@ -53,7 +54,7 @@ export async function POST(
   }
 
   if (body.action === "verify") {
-    const { token, minReadSeconds } = body;
+    const { token } = body;
     if (!token) {
       return NextResponse.json({ error: "Missing token" }, { status: 400 });
     }
@@ -62,6 +63,19 @@ export async function POST(
     if (!payload || payload.postId !== id) {
       return NextResponse.json({ error: "Invalid token" }, { status: 400 });
     }
+
+    // The required read time is the post's, never the caller's: taking it
+    // from the body meant posting `minReadSeconds: 0` (or leaving it out)
+    // passed straight away.
+    const { data: post } = await createServiceClient()
+      .from("training_posts")
+      .select("min_read_seconds")
+      .eq("id", id)
+      .maybeSingle();
+    if (!post) {
+      return NextResponse.json({ error: "Not found" }, { status: 404 });
+    }
+    const minReadSeconds = Number(post.min_read_seconds) || 0;
 
     const elapsedSeconds = (Date.now() - payload.startedAt) / 1000;
     if (elapsedSeconds < minReadSeconds) {

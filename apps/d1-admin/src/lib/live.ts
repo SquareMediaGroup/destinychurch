@@ -16,6 +16,7 @@ import { MENUBAR_HELLO, MENUBAR_OPEN, MENUBAR_PAUSE, MENUBAR_REPLY, MENUBAR_STAT
 import { emitTo, listenTo, notify, setTrayCount, showMain } from "@/lib/native";
 import { nav } from "@/lib/nav";
 import { getPrefs, setPrefs, usePrefs } from "@/lib/prefs";
+import { queryClient } from "@/lib/queryClient";
 import { startHub, type Hub } from "@/lib/realtime";
 import { useReady } from "@/lib/session";
 import { supabase } from "@/lib/supabase";
@@ -65,7 +66,9 @@ export function useLive() {
         const body = getPrefs().previews ? `${p.sender.displayName}: ${p.body ?? (p.attachmentId ? "Sent a file" : "New message")}` : "New message";
         void notify(name, body);
       },
-      invalidateCommunities,
+      // Broadcast doesn't replay: after a drop, everything cached (open chats
+      // included) may have missed messages, so all of it goes stale.
+      () => void queryClient.invalidateQueries(),
     );
     return () => hub.current?.stop();
   }, [me.id]);

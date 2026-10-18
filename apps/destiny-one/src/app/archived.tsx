@@ -43,8 +43,8 @@ export default function Archived() {
             ) : null}
           </View>
         }
-        ListEmptyComponent={aiArchived ? null : <EmptyState title="Nothing archived" body="Swipe a chat in Chats to archive it. Archived chats are silenced and tucked away here." />}
-        ListFooterComponent={sections.length || aiArchived ? <Text style={{ fontSize: 13, lineHeight: 18, color: t.muted, paddingHorizontal: 4, paddingTop: 6 }}>Archived chats stay quiet. You&apos;ll still hear about @mentions.</Text> : null}
+        ListEmptyComponent={aiArchived ? undefined : <EmptyState title="Nothing archived" body="Swipe a chat in Chats to archive it. Archived chats are silenced and tucked away here." />}
+        ListFooterComponent={sections.length || aiArchived ? <Text style={{ fontSize: 13, lineHeight: 18, color: t.muted, paddingHorizontal: 4, paddingTop: 6 }}>Archived chats stay quiet. You&apos;ll still hear about @mentions.</Text> : undefined}
         renderItem={({ item: { community: c, groups } }) => (
           <View>
             <Text numberOfLines={1} style={{ fontSize: 15, fontWeight: "600", color: t.muted, paddingHorizontal: 4, paddingBottom: 8 }}>{c.name}</Text>

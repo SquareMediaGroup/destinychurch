@@ -6,16 +6,10 @@ import Link from "next/link";
 import AnimateIn from "@/components/AnimateIn";
 import ChurchSuiteModal from "@/components/ui/ChurchSuiteModal";
 import Button from "@/components/ui/Button";
-
-interface AlphaEvent {
-  id: string;
-  start_date: string;
-  signup_url: string;
-  location: string | null;
-}
+import { summarizeCourseSession, type CourseEvent } from "@/lib/useCourseEvents";
 
 export default function YouthAlphaSection() {
-  const [event, setEvent] = useState<AlphaEvent | null>(null);
+  const [event, setEvent] = useState<CourseEvent | null>(null);
   const [loading, setLoading] = useState(true);
   const [signupOpen, setSignupOpen] = useState(false);
 
@@ -26,7 +20,7 @@ export default function YouthAlphaSection() {
         const data = await res.json();
         const activeYouthAlpha = Array.isArray(data)
           ? data.find(
-              (e: AlphaEvent & { type: string; active: boolean }) =>
+              (e: CourseEvent) =>
                 e.type === "youth_alpha" && e.active
             )
           : null;
@@ -48,13 +42,10 @@ export default function YouthAlphaSection() {
     setSignupOpen(false);
   };
 
-  const startDateFormatted = event
-    ? new Date(event.start_date).toLocaleDateString("en-GB", {
-        year: "numeric",
-        month: "long",
-        day: "numeric",
-      })
-    : null;
+  // The next session, not the course's first date — a weekly course that began
+  // a month ago used to still read "Starting <first week>". Same helper as the
+  // other course pages and the site banner.
+  const { subtitle: sessionLabel } = summarizeCourseSession(event);
 
   return (
     <>
@@ -100,12 +91,12 @@ export default function YouthAlphaSection() {
                 for young people to explore the big questions honestly, without pressure or
                 judgement.
               </p>
-              {event && startDateFormatted && (
+              {event && sessionLabel && (
                 <p className="mt-5 inline-flex items-center gap-2 rounded-full border border-destiny-orange/25 bg-destiny-orange/10 px-4 py-2 text-sm font-bold text-destiny-orange">
                   <span aria-hidden className="material-symbols-rounded text-[18px] leading-none">
                     event
                   </span>
-                  Starting {startDateFormatted}
+                  {sessionLabel}
                   {event.location && ` · ${event.location}`}
                 </p>
               )}
@@ -140,9 +131,7 @@ export default function YouthAlphaSection() {
           onClose={closeSignup}
           src={event.signup_url}
           title="Sign Up for Youth Alpha"
-          subtitle={
-            startDateFormatted ? `Starting ${startDateFormatted}` : undefined
-          }
+          subtitle={sessionLabel}
         />
       )}
     </>

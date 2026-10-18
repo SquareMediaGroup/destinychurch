@@ -17,14 +17,23 @@ function dayKey(d: Date): string {
   return d.toLocaleDateString("en-GB", { timeZone: TZ });
 }
 
+/** Days since the epoch for the London calendar date, so "yesterday" is right across clock changes (23/25-hour days). */
+function dayNumber(d: Date): number {
+  const [day, month, year] = dayKey(d).split("/").map(Number);
+  return Date.UTC(year, month - 1, day) / 86_400_000;
+}
+
+function isYesterday(d: Date, now: Date): boolean {
+  return dayNumber(now) - dayNumber(d) === 1;
+}
+
 /** "09:14" today, "Yesterday", "Tue" this week, else "3 Oct". For list rows. */
 export function shortTime(iso: string | null | undefined): string {
   if (!iso) return "";
   const d = new Date(iso);
   const now = new Date();
   if (dayKey(d) === dayKey(now)) return d.toLocaleTimeString("en-GB", { timeZone: TZ, hour: "2-digit", minute: "2-digit" });
-  const yesterday = new Date(now.getTime() - 86_400_000);
-  if (dayKey(d) === dayKey(yesterday)) return "Yesterday";
+  if (isYesterday(d, now)) return "Yesterday";
   if (now.getTime() - d.getTime() < 6 * 86_400_000) return d.toLocaleDateString("en-GB", { timeZone: TZ, weekday: "short" });
   return d.toLocaleDateString("en-GB", { timeZone: TZ, day: "numeric", month: "short" });
 }
@@ -45,9 +54,9 @@ export function dayLabel(iso: string): string {
   const d = new Date(iso);
   const now = new Date();
   if (dayKey(d) === dayKey(now)) return "Today";
-  if (dayKey(d) === dayKey(new Date(now.getTime() - 86_400_000))) return "Yesterday";
+  if (isYesterday(d, now)) return "Yesterday";
   if (now.getTime() - d.getTime() < 6 * 86_400_000) return d.toLocaleDateString("en-GB", { timeZone: TZ, weekday: "long" });
-  return d.toLocaleDateString("en-GB", { timeZone: TZ, day: "numeric", month: "long", year: d.getFullYear() === now.getFullYear() ? undefined : "numeric" });
+  return d.toLocaleDateString("en-GB", { timeZone: TZ, day: "numeric", month: "long", year: dayKey(d).slice(-4) === dayKey(now).slice(-4) ? undefined : "numeric" });
 }
 
 export function sameDay(a: string, b: string): boolean {

@@ -15,7 +15,8 @@ export type D1MemberStatus = "pending" | "active" | "suspended" | "deleted";
  */
 export type D1LeaderRole = "admin" | "cg_leader" | "senior_leader";
 export type D1MembershipRole = "admin" | "member";
-export type D1GroupKind = "announcements" | "group";
+/** "assistant" is the one-to-one chat with DestinyAI (outside every community). */
+export type D1GroupKind = "announcements" | "group" | "assistant";
 export type D1GroupState = "active" | "frozen" | "archived";
 export type D1ConsentDocument = "privacy" | "terms" | "chat_review_notice";
 
@@ -128,7 +129,8 @@ export interface D1LastMessage {
 
 export interface D1GroupSummary {
   id: string;
-  communityId: string;
+  /** Null only for the chat with DestinyAI, which belongs to no community. */
+  communityId: string | null;
   kind: D1GroupKind;
   name: string;
   department: string | null;
@@ -140,6 +142,8 @@ export interface D1GroupSummary {
   myRole: D1MembershipRole;
   unreadCount: number;
   muted: boolean;
+  /** Hidden from the Chats list by this person (and silenced). Per person, not per group. */
+  archived: boolean;
   lastMessage: D1LastMessage | null;
 }
 
@@ -246,7 +250,20 @@ export interface D1PollContent {
   };
 }
 
-export type D1MessageContent = D1EventContent | D1PollContent;
+/** A sermon from the YouTube archive, played in the chat with an embedded player (DestinyAI's share_sermon). */
+export interface D1SermonContent {
+  kind: "sermon";
+  sermon: {
+    videoId: string;
+    title: string;
+    speaker: string | null;
+    thumbnailUrl: string;
+    publishedAt: string;
+    durationSeconds: number | null;
+  };
+}
+
+export type D1MessageContent = D1EventContent | D1PollContent | D1SermonContent;
 
 /** What the app sends to create a poll — the server mints option ids and tallies. */
 export interface D1PollDraft {
@@ -349,6 +366,10 @@ export type D1RealtimeEvent =
   | { event: "link_preview"; payload: { id: number; groupId: string; preview: D1LinkPreview | null } }
   /** Someone is writing a message (sent every few seconds while they type; show it briefly). */
   | { event: "typing"; payload: { groupId: string; memberId: string; name: string } }
+  /** DestinyAI is working on an answer: what it's doing ("Checking the calendar"), or null to clear. Live only, never stored. */
+  | { event: "assistant_status"; payload: { groupId: string; label: string | null } }
+  /** DestinyAI's answer so far (the whole text, not a fragment). Live only; the finished message replaces it. */
+  | { event: "assistant_delta"; payload: { groupId: string; text: string } }
   /** Something was pinned or unpinned: re-fetch the group (it carries the pins). */
   | { event: "pins_changed"; payload: { groupId: string } }
   | { event: "group_state"; payload: { groupId: string; state: D1GroupState; reason: string | null } }

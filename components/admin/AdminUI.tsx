@@ -31,6 +31,7 @@ import { useEffect, useId, useRef } from "react";
 import type { ReactNode } from "react";
 import Link from "next/link";
 import { motion, useReducedMotion } from "motion/react";
+import { useScrollLock } from "@/lib/useScrollLock";
 
 /* ── Class tokens ──────────────────────────────────────────────────────────── */
 
@@ -144,13 +145,14 @@ export function Modal({
 }) {
   const reduceMotion = useReducedMotion();
 
+  // Counted lock: a confirm dialog opened from inside this modal used to
+  // write overflow = "" as it closed, unlocking the page behind this one.
+  useScrollLock(true);
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
     document.addEventListener("keydown", onKey);
-    document.body.style.overflow = "hidden";
     return () => {
       document.removeEventListener("keydown", onKey);
-      document.body.style.overflow = "";
     };
   }, [onClose]);
 

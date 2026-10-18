@@ -8,13 +8,15 @@
 // Messages. Swipe a message right to reply; press and hold for the menu.
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import { Animated, Image, Pressable, Text, View } from "react-native";
+import { Animated, Image, Pressable, Text, View, type ViewInstance } from "react-native";
 import * as WebBrowser from "expo-web-browser";
 import Svg, { Path } from "react-native-svg";
-import { mentionSegments, type D1EventContent, type D1LinkPreview, type D1LeaderRole, type D1Message, type D1PollContent, type Mentionable } from "@destiny/shared";
+import { DESTINY_AI_ID, mentionSegments, type D1EventContent, type D1LinkPreview, type D1LeaderRole, type D1Message, type D1PollContent, type D1SermonContent, type Mentionable } from "@destiny/shared";
+import { Emoji } from "@/components/Emoji";
 import { Icon } from "@/components/Icon";
 import { MessageMenu, type MessageMenuActions } from "@/components/MessageMenu";
 import { Appear, Pop, PressableScale, reduceMotion, springs } from "@/components/Motion";
+import { SermonPlayer, sermonWatchUrl, useSermonCardWidth } from "@/components/SermonPlayer";
 import { SwipeToReply } from "@/components/Swipe";
 import { VoiceNote } from "@/components/VoiceNote";
 import { Avatar, MemberTag, withAlpha } from "@/components/ui";
@@ -42,7 +44,9 @@ export function photoChip(t: Theme) {
 export type Row =
   | { kind: "day"; key: string; label: string }
   | { kind: "new"; key: string }
-  | { kind: "msg"; key: string; m: LocalMessage; showName: boolean; showAvatar: boolean; gapTop: number; joinAbove: boolean; joinBelow: boolean };
+  | { kind: "msg"; key: string; m: LocalMessage; showName: boolean; showAvatar: boolean; gapTop: number; joinAbove: boolean; joinBelow: boolean }
+  /** DestinyAI's answer being written (live, see state/assistantStream.ts). Always the newest row. */
+  | { kind: "stream"; key: "stream"; label: string | null; text: string };
 
 /** Messages (oldest first) → display rows (oldest first), with day and unread dividers. */
 export function buildRows(messages: LocalMessage[], firstUnreadId: number | null): Row[] {
@@ -50,7 +54,7 @@ export function buildRows(messages: LocalMessage[], firstUnreadId: number | null
   messages.forEach((m, i) => {
     const prev = messages[i - 1];
     const next = messages[i + 1];
-    if (!prev || !sameDay(prev.createdAt, m.createdAt)) rows.push({ kind: "day", key: `d${m.createdAt.slice(0, 10)}`, label: dayLabel(m.createdAt) });
+    if (!prev || !sameDay(prev.createdAt, m.createdAt)) rows.push({ kind: "day", key: `d${new Date(m.createdAt).toDateString()}`, label: dayLabel(m.createdAt) });
     if (m.id === firstUnreadId) rows.push({ kind: "new", key: "new" });
     // A run is consecutive messages from one person on one day, broken by the unread divider.
     const sameSender = (o?: LocalMessage) => !!o && !o.mine && !m.mine && o.sender?.id === m.sender?.id && sameDay(o.createdAt, m.createdAt);
@@ -99,6 +103,8 @@ interface BubbleProps {
   senderIsGroupAdmin: boolean;
   /** False where posting isn't allowed (announcements, paused groups). */
   canReply: boolean;
+  /** The private DestinyAI chat: no sender header, and more room around each message. */
+  roomy?: boolean;
   /** Just sent or just received while the chat is open: it springs in instead of simply being there. */
   arriving?: boolean;
   /** What the press-and-hold menu does. Not shown for unsent or deleted messages. */
@@ -139,12 +145,12 @@ function tones(t: Theme, mine: boolean) {
     : { text: t.text, soft: t.muted, panel: t.bg, track: t.fill, bar: t.accentSoft, barMine: ORANGE, name: t.tint };
 }
 
-export function MessageBubble({ row, replyTo, senderTag, senderIsGroupAdmin, canReply, arriving, menu, onReply, onOpenAttachment, onToggleReaction, onVotePoll, onRetry, people, meId }: BubbleProps) {
+export function MessageBubble({ row, replyTo, senderTag, senderIsGroupAdmin, canReply, roomy, arriving, menu, onReply, onOpenAttachment, onToggleReaction, onVotePoll, onRetry, people, meId }: BubbleProps) {
   const t = useTheme();
   const { m } = row;
   const k = tones(t, m.mine);
   // Press and hold: where the bubble is on screen while its menu is open.
-  const anchor = useRef<View>(null);
+  const anchor = useRef<ViewInstance>(null);
   const [menuAt, setMenuAt] = useState<Rect | null>(null);
   const hasMenu = !m.deleted && m.id > 0;
   function openMenu() {
@@ -204,6 +210,7 @@ export function MessageBubble({ row, replyTo, senderTag, senderIsGroupAdmin, can
         ) : null}
         <Attachment m={m} onOpen={onOpenAttachment} />
         {m.content?.kind === "event" ? <EventCard content={m.content} mine={m.mine} onOpen={onOpenAttachment} /> : null}
+        {m.content?.kind === "sermon" ? <SermonCard content={m.content} mine={m.mine} /> : null}
         {m.content?.kind === "poll" ? <PollCard content={m.content} mine={m.mine} sending={m.id < 0} onVote={onVotePoll} /> : null}
         {m.body ? (
           <Text style={{ fontSize: 17, lineHeight: 22, letterSpacing: -0.2, color: k.text }}>
@@ -252,7 +259,7 @@ export function MessageBubble({ row, replyTo, senderTag, senderIsGroupAdmin, can
                 accessibilityLabel={`${r.emoji} ${r.count}${r.mine ? ", including you" : ""}`}
                 style={{ minHeight: 26, borderRadius: 13, flexDirection: "row", alignItems: "center", gap: 3, paddingHorizontal: 8, backgroundColor: r.mine ? t.accentSoft : t.card, borderWidth: 1, borderColor: r.mine ? ORANGE : t.glassLine }}
               >
-                <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 14 }}>{r.emoji}</Text>
+                <Emoji size={14} allowFontScaling maxFontSizeMultiplier={1.3}>{r.emoji}</Emoji>
                 <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 13, fontWeight: "600", color: t.text }}>{r.count}</Text>
               </PressableScale>
             </Pop>
@@ -276,7 +283,7 @@ export function MessageBubble({ row, replyTo, senderTag, senderIsGroupAdmin, can
   if (m.mine) {
     return enter(
       <SwipeToReply enabled={swipeable} onReply={onReply}>
-        <View style={{ alignItems: "flex-end", gap: 3, paddingTop: row.gapTop, paddingRight: 14, paddingLeft: 64 }}>
+        <View style={{ alignItems: "flex-end", gap: 3, paddingTop: roomy ? row.gapTop + 6 : row.gapTop, paddingRight: roomy ? 20 : 14, paddingLeft: 64 }}>
           {shown}
           {reactions}
           {/* The time only shows under the last bubble of a run, like Messages. */}
@@ -292,10 +299,10 @@ export function MessageBubble({ row, replyTo, senderTag, senderIsGroupAdmin, can
 
   return enter(
     <SwipeToReply enabled={swipeable} onReply={onReply}>
-      <View style={{ flexDirection: "row", alignItems: "flex-end", gap: 12, paddingTop: row.gapTop, paddingRight: 56, paddingLeft: 12 }}>
-        <View style={{ width: 30, marginBottom: 2 }}>{row.showAvatar ? <Avatar name={name} size={30} /> : null}</View>
+      <View style={{ flexDirection: "row", alignItems: "flex-end", gap: 12, paddingTop: roomy ? row.gapTop + 6 : row.gapTop, paddingRight: roomy ? 44 : 56, paddingLeft: roomy ? 18 : 12 }}>
+        <View style={{ width: 30, marginBottom: 2 }}>{row.showAvatar ? <Avatar name={name} size={30} assistant={m.sender?.id === DESTINY_AI_ID} /> : null}</View>
         <View style={{ flexShrink: 1, alignItems: "flex-start", gap: 3, minWidth: 0 }}>
-          {row.showName ? (
+          {row.showName && !roomy ? (
             <View style={[{ flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 12 }, photoChip(t)]}>
               <Text style={{ fontSize: 12, fontWeight: "600", color: t.muted }}>{name}</Text>
               <MemberTag tag={senderTag} groupAdmin={senderIsGroupAdmin} />
@@ -317,7 +324,8 @@ export function MessageBubble({ row, replyTo, senderTag, senderIsGroupAdmin, can
 function Mentions({ text, ids, people, meId, mine }: { text: string; ids: string[]; people: Mentionable[]; meId?: string; mine: boolean }) {
   const t = useTheme();
   const k = tones(t, mine);
-  const named = people.filter((p) => ids.includes(p.id));
+  // "@DestinyAI" is never in `ids` (it isn't a member), but is always drawn as a mention.
+  const named = people.filter((p) => ids.includes(p.id) || p.id === DESTINY_AI_ID);
   return (
     <>
       {mentionSegments(text, named).map((s, i) =>
@@ -432,6 +440,39 @@ function Attachment({ m, onOpen }: { m: LocalMessage; onOpen: (url: string) => v
         <Text style={{ fontSize: 12, color: k.soft }}>{m.status === "sending" ? "Uploading..." : fileMeta(mime, a?.sizeBytes ?? local?.sizeBytes ?? null)}</Text>
       </View>
     </Pressable>
+  );
+}
+
+/**
+ * A sermon from the archive, playing right in the chat (YouTube's own player,
+ * in a web view; nothing plays until it's tapped). "Open on YouTube" opens the
+ * video in the in-app browser if the player can't load.
+ */
+function SermonCard({ content, mine }: { content: D1SermonContent; mine: boolean }) {
+  const t = useTheme();
+  const k = tones(t, mine);
+  const { sermon } = content;
+  const width = useSermonCardWidth();
+  const when = new Date(sermon.publishedAt).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric", timeZone: "Europe/London" });
+  return (
+    <View style={{ marginTop: 2, marginHorizontal: -6, borderRadius: 14, overflow: "hidden", backgroundColor: k.panel, width }}>
+      <SermonPlayer videoId={sermon.videoId} title={sermon.title} thumbnailUrl={sermon.thumbnailUrl} width={width} />
+      <View style={{ padding: 10, gap: 3 }}>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+          <Icon name="play" size={13} color={k.name} strokeWidth={2.2} />
+          <Text style={{ fontSize: 12, fontWeight: "600", color: k.name }}>Sermon</Text>
+        </View>
+        <Text numberOfLines={2} style={{ fontSize: 15, fontWeight: "600", color: k.text }}>
+          {sermon.title}
+        </Text>
+        <Text style={{ fontSize: 13, color: k.soft }}>
+          {[sermon.speaker, when].filter(Boolean).join(" · ")}
+        </Text>
+        <Pressable accessibilityRole="link" onPress={() => void WebBrowser.openBrowserAsync(sermonWatchUrl(sermon.videoId))} hitSlop={6}>
+          <Text style={{ fontSize: 13, fontWeight: "600", color: k.name }}>Open on YouTube</Text>
+        </Pressable>
+      </View>
+    </View>
   );
 }
 

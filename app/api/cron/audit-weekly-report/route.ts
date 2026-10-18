@@ -132,12 +132,13 @@ ${lines.join("\n") || "(nothing was recorded this week)"}`,
     if (!text) return null;
 
     const [first, ...rest] = text.split("\n");
-    const headline = first.replace(/^HEADLINE:\s*/i, "").trim();
+    const hasHeadline = /^HEADLINE:/i.test(first.trim());
+    const headline = first.trim().replace(/^HEADLINE:\s*/i, "").trim();
     const body = rest.join("\n").trim();
 
     // If the model skipped the HEADLINE line, treat the whole thing as body
     // rather than eating its first sentence as a title.
-    return headline && body
+    return hasHeadline && headline && body
       ? { headline, body }
       : { headline: `Admin activity — ${periodLabel}`, body: text };
   } catch (error) {

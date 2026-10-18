@@ -8,7 +8,7 @@
 // here after signing in with a password that has since leaked (password.tsx).
 
 import { useEffect, useRef, useState } from "react";
-import { AccessibilityInfo, Text, View, type TextInput } from "react-native";
+import { AccessibilityInfo, Text, View, type TextInputInstance } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { passwordRejection, type PasswordRejection } from "@destiny/shared";
 import { AuthScreen } from "@/components/AuthScreen";
@@ -28,7 +28,7 @@ export default function SetPassword() {
   const [rejection, setRejection] = useState<PasswordRejection | null>(() =>
     leaked === "1" ? { ...passwordRejection(["pwned"]), title: "Your current password has been leaked" } : null,
   );
-  const input = useRef<TextInput>(null);
+  const input = useRef<TextInputInstance>(null);
   // null while we ask the server whether there is a password to change.
   const [existing, setExisting] = useState<boolean | null>(null);
   const [current, setCurrent] = useState("");

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Image from "next/image";
 import AnimateIn from "@/components/AnimateIn";
+import { useScrollLock } from "@/lib/useScrollLock";
 import ChurchSuiteModal from "@/components/ui/ChurchSuiteModal";
 import WorshipWithUsSection from "@/components/home/WorshipWithUsSection";
 import CourseEventCard from "@/components/courses/CourseEventCard";
@@ -59,14 +60,11 @@ export default function BibleCoursePage() {
   const openSignup = () => setSignupOpen(true);
   const closeSignup = () => setSignupOpen(false);
 
-  const openVideo = () => {
-    setVideoOpen(true);
-    document.body.style.overflow = "hidden";
-  };
-  const closeVideo = () => {
-    setVideoOpen(false);
-    document.body.style.overflow = "";
-  };
+  // Released on unmount too — leaving the page with the trailer open (Back
+  // button) used to leave the body locked on whatever page came next.
+  useScrollLock(videoOpen);
+  const openVideo = () => setVideoOpen(true);
+  const closeVideo = () => setVideoOpen(false);
 
   return (
     <>

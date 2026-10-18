@@ -2,6 +2,7 @@
 //
 //   ["me"]                 D1Me
 //   ["communities"]        the chat list (every group I'm in, by community)
+//   ["assistant"]          my one-to-one chat with DestinyAI (a group in no community)
 //   ["community", id]      only when it isn't already in the chat list
 //   ["group", id]          group details (members, rules, what I can do)
 //   ["messages", groupId]  { messages, nextBefore }, oldest first
@@ -15,9 +16,10 @@
 // the background, only if something on screen is using it.
 
 import { useQuery } from "@tanstack/react-query";
-import { contentPreview, type D1CommunitySummary, type D1GroupDetail, type D1GroupSummary, type D1Me, type D1Message, type D1RealtimeEvent } from "@destiny/shared";
+import { DESTINY_AI_ID, contentPreview, type D1CommunitySummary, type D1GroupDetail, type D1GroupSummary, type D1Me, type D1Message, type D1RealtimeEvent } from "@destiny/shared";
 import { api } from "@/lib/api";
 import { queryClient } from "@/lib/queryClient";
+import { clearAssistantStream, setAssistantStatus, setAssistantText } from "@/state/assistantStream";
 import { typing } from "@/state/typing";
 
 export type LocalMessage = D1Message & { status?: "sending" | "failed"; localAttachment?: { name: string; mimeType: string; sizeBytes: number | null; durationMs?: number } };
@@ -29,6 +31,7 @@ export interface MessagesData {
 export const keys = {
   me: ["me"] as const,
   communities: ["communities"] as const,
+  assistant: ["assistant"] as const,
   community: (id: string) => ["community", id] as const,
   group: (id: string) => ["group", id] as const,
   messages: (groupId: string) => ["messages", groupId] as const,
@@ -92,7 +95,18 @@ export function updateGroupSummary(groupId: string, fn: (g: D1GroupSummary) => D
   const patch = (c: D1CommunitySummary): D1CommunitySummary =>
     c.groups.some((g) => g.id === groupId) ? { ...c, groups: c.groups.map((g) => (g.id === groupId ? fn(g) : g)) } : c;
   queryClient.setQueryData<D1CommunitySummary[]>(keys.communities, (old) => old?.map(patch));
+  queryClient.setQueryData<D1GroupSummary>(keys.assistant, (old) => (old && old.id === groupId ? fn(old) : old));
   queryClient.setQueriesData<D1CommunitySummary>({ queryKey: ["community"] }, (old) => (old ? patch(old) : old));
+}
+
+/** Archive or restore one chat for me: applies at once, rolls back if the server says no. */
+export function toggleChatArchive(g: D1GroupSummary) {
+  const next = !g.archived;
+  updateGroupSummary(g.id, (x) => ({ ...x, archived: next }));
+  api
+    .archive(g.id, next)
+    .then(() => queryClient.invalidateQueries({ queryKey: keys.group(g.id) }))
+    .catch(() => updateGroupSummary(g.id, (x) => ({ ...x, archived: g.archived })));
 }
 
 /** Drop a group from the chat list at once (leaving it), without waiting for the server. */
@@ -117,6 +131,10 @@ export function hideSender(memberId: string) {
       old ? { ...old, messages: old.messages.filter((m) => m.sender?.id !== memberId) } : old,
     );
   }
+  // Their pinned messages too (the banner at the top of a chat).
+  queryClient.setQueriesData<D1GroupDetail>({ queryKey: ["group"] }, (g) =>
+    g?.pinned?.some((p) => p.sender?.id === memberId) ? { ...g, pinned: g.pinned.filter((p) => p.sender?.id !== memberId) } : g,
+  );
   invalidateCommunities(); // previews and unread counts come back without them
 }
 
@@ -124,6 +142,7 @@ export function hideSender(memberId: string) {
 export function showSendersAgain() {
   void queryClient.resetQueries({ queryKey: ["messages"] });
   void queryClient.resetQueries({ queryKey: ["media"] });
+  void queryClient.invalidateQueries({ queryKey: ["group"] }); // their pins
   invalidateCommunities();
 }
 
@@ -131,6 +150,7 @@ export function showSendersAgain() {
 export function invalidateCommunities() {
   void queryClient.invalidateQueries({ queryKey: keys.communities });
   void queryClient.invalidateQueries({ queryKey: ["community"] });
+  void queryClient.invalidateQueries({ queryKey: keys.assistant });
 }
 
 function previewOf(body: string | null): string | null {
@@ -158,6 +178,8 @@ export function applyEvent(e: D1RealtimeEvent, meId: string) {
   switch (e.event) {
     case "message": {
       const p = e.payload;
+      // DestinyAI's finished answer replaces the live bubble it was writing.
+      if (p.sender.id === DESTINY_AI_ID) clearAssistantStream(p.groupId);
       if (isBlocked(p.sender.id)) return; // someone I've blocked: never shown, never unread
       const mine = p.sender.id === meId;
       typing.stopped(p.groupId, p.sender.id);
@@ -234,6 +256,12 @@ export function applyEvent(e: D1RealtimeEvent, meId: string) {
       updateMessages(groupId, (list) => list.map((m) => (m.id === id ? { ...m, linkPreview: preview } : m)));
       return;
     }
+    case "assistant_status":
+      setAssistantStatus(e.payload.groupId, e.payload.label);
+      return;
+    case "assistant_delta":
+      setAssistantText(e.payload.groupId, e.payload.text);
+      return;
     case "typing": {
       const { groupId, memberId, name } = e.payload;
       if (memberId !== meId && !isBlocked(memberId)) typing.seen(groupId, memberId, name);

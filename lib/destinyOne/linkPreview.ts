@@ -119,8 +119,14 @@ export function isPublicAddress(ip: string): boolean {
   }
   if (version === 6) {
     const v6 = ip.toLowerCase();
-    const mapped = v6.match(/^::ffff:(\d+\.\d+\.\d+\.\d+)$/);
+    const mapped = v6.match(/^::(?:ffff:)?(\d+\.\d+\.\d+\.\d+)$/);
     if (mapped) return isPublicAddress(mapped[1]);
+    // The same in hex, which is how a URL writes it: new URL("http://[::ffff:169.254.169.254]").hostname is "[::ffff:a9fe:a9fe]".
+    const hex = v6.match(/^::(?:ffff:)?([0-9a-f]{1,4}):([0-9a-f]{1,4})$/);
+    if (hex) {
+      const [hi, lo] = [parseInt(hex[1], 16), parseInt(hex[2], 16)];
+      return isPublicAddress(`${hi >> 8}.${hi & 255}.${lo >> 8}.${lo & 255}`);
+    }
     if (v6 === "::" || v6 === "::1") return false;
     if (/^f[cd]/.test(v6)) return false; // unique local
     if (/^fe[89ab]/.test(v6)) return false; // link-local

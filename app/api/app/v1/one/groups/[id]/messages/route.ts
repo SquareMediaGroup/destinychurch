@@ -8,6 +8,7 @@ import { messageTerms, sealBody, sealContent } from "@/lib/destinyOne/crypto.ser
 import { buildEventSnapshot } from "@/lib/destinyOne/events.server";
 import { pushNewMessage } from "@/lib/destinyOne/push.server";
 import { attachLinkPreview } from "@/lib/destinyOne/linkPreview.server";
+import { answer } from "@/lib/destinyOne/assistant.server";
 import { OneError, fromDbError, limit, oneJson, oneRoute, readBody, requireUuid, type IdParams } from "@/lib/destinyOne/http";
 import { sendMessageSchema } from "@/lib/destinyOne/schemas";
 
@@ -33,7 +34,8 @@ function buildPollContent(draft: D1PollDraft): D1MessageContent {
 //        Send. The database refuses frozen groups, non-members, and
 //        non-admins in Announcements. The text is stored sealed (encrypted at
 //        rest). Everyone in the group receives it on the d1-group:<id>
-//        Realtime topic, then a push goes out.
+//        Realtime topic, then a push goes out. In the chat with DestinyAI, or
+//        with "@DestinyAI" in it, DestinyAI then answers (assistant.server.ts).
 
 export const dynamic = "force-dynamic";
 
@@ -105,6 +107,7 @@ export const POST = oneRoute<IdParams>(async (request, { params }) => {
       ),
       // A link's preview follows a moment later, so sending never waits on another website.
       attachLinkPreview(message.id, id, body),
+      answer(caller, membership.kind, membership.joinedAt, message),
     ]),
   );
   return oneJson(message, 201);

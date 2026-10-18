@@ -186,7 +186,20 @@ export const DEFAULT_BLUR = 0;
 /** Image blur radius at the top of the slider. */
 export const MAX_BLUR_RADIUS = 24;
 
-/** Both sliders are stored as 0 to 1; anything else (a corrupt file) becomes `fallback`. */
+/** The five steps (Low to High) the Dim/Fade and Blur settings snap to. */
+export const DIM_PRESETS = [0.1, 0.25, 0.4, 0.6, 0.8] as const;
+export const BLUR_PRESETS = [0, 0.25, 0.5, 0.75, 1] as const;
+
+/** Index of the preset closest to `value` (older saved values sit between steps). */
+export function nearestPreset(presets: readonly number[], value: number): number {
+  let best = 0;
+  for (let i = 1; i < presets.length; i++) {
+    if (Math.abs(presets[i] - value) < Math.abs(presets[best] - value)) best = i;
+  }
+  return best;
+}
+
+/** Both settings are stored as 0 to 1; anything else (a corrupt file) becomes `fallback`. */
 export function unit(value: unknown, fallback: number, max = 1): number {
   return typeof value === "number" && Number.isFinite(value) ? Math.min(max, Math.max(0, value)) : fallback;
 }

@@ -57,9 +57,16 @@ const MIME = {
 const ROUTES = { '/': '/control.html', '/tablet': '/tablet.html', '/display': '/display.html', '/control': '/control.html' };
 
 const server = http.createServer((req, res) => {
-  const url = new URL(req.url, 'http://x');
-  const pathname = ROUTES[url.pathname] ?? url.pathname;
-  const filePath = path.join(PUBLIC_DIR, path.normalize(decodeURIComponent(pathname)));
+  let filePath;
+  try {
+    const url = new URL(req.url, 'http://x');
+    const pathname = ROUTES[url.pathname] ?? url.pathname;
+    filePath = path.join(PUBLIC_DIR, path.normalize(decodeURIComponent(pathname)));
+  } catch {
+    // Malformed URL or %-escape: reject it instead of crashing the hub.
+    res.writeHead(400).end();
+    return;
+  }
   if (!filePath.startsWith(PUBLIC_DIR + path.sep)) {
     res.writeHead(403).end();
     return;
@@ -127,6 +134,8 @@ function welcome() {
 }
 
 wss.on('connection', (ws, req) => {
+  // Without a listener, a bad frame (e.g. invalid UTF-8) throws and kills the hub. 'close' follows.
+  ws.on('error', (err) => log('⚠️ ', `WebSocket error from ${req.socket.remoteAddress}: ${err.message}`));
   const url = new URL(req.url, 'http://x');
   if (config.key && url.searchParams.get('key') !== config.key) {
     log('🚫', `Rejected connection from ${req.socket.remoteAddress} (wrong or missing key)`);
@@ -145,6 +154,7 @@ wss.on('connection', (ws, req) => {
     } catch {
       return;
     }
+    if (!msg || typeof msg !== 'object') return;
     handleMessage(client, msg);
   });
 
@@ -340,6 +350,9 @@ function lanAddresses() {
     .map((i) => i.address);
 }
 
+// WebSocketServer re-emits the HTTP server's errors; without a listener that throws
+// before the handler below can print its message.
+wss.on('error', () => {});
 server.on('error', (err) => {
   log('🔥', err.code === 'EADDRINUSE' ? `Port ${config.hubPort} is already in use - is the hub already running?` : err.message);
   process.exit(1);

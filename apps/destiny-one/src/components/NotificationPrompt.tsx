@@ -13,7 +13,7 @@ import { PrimaryButton } from "@/components/ui";
 import { registerForPush } from "@/lib/push";
 import { INK, ORANGE, useTheme } from "@/theme/tokens";
 
-const ASKED_KEY = "d1.notifAsked";
+export const ASKED_KEY = "d1.notifAsked";
 
 export function NotificationPrompt({ enabled }: { enabled: boolean }) {
   const t = useTheme();

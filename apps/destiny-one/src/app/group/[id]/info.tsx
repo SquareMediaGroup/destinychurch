@@ -12,7 +12,7 @@ import { MemberTag, Avatar, Bone, Card, CardButton, ConfirmDialog, ErrorState, F
 import { api } from "@/lib/api";
 import { cleanImage } from "@/lib/cleanImage";
 import { plural } from "@/lib/format";
-import { keys, removeGroupLocally, setGroup, updateGroupSummary, useGroup } from "@/lib/queries";
+import { keys, removeGroupLocally, setGroup, toggleChatArchive, updateGroupSummary, useGroup } from "@/lib/queries";
 import { queryClient } from "@/lib/queryClient";
 import { errorMessage, useSession } from "@/state/session";
 import { INK, ORANGE, useTheme } from "@/theme/tokens";
@@ -181,6 +181,16 @@ export default function GroupInfo() {
         <View style={{ flexDirection: "row", gap: 10 }}>
           <Tile icon="search" label="Search" onPress={() => router.push({ pathname: "/search", params: { groupId: group.id } })} />
           <Tile icon="bell" label={group.muted ? "Muted" : "Mute"} onPress={() => router.push({ pathname: "/notifications", params: { groupId: group.id } })} />
+          {group.kind === "announcements" ? null : (
+            <Tile
+              icon="archive"
+              label={group.archived ? "Unarchive" : "Archive"}
+              onPress={() => {
+                toggleChatArchive(group);
+                setGroup({ ...group, archived: !group.archived });
+              }}
+            />
+          )}
           {group.canManage ? <Tile icon="addPerson" label="Add people" onPress={() => router.push({ pathname: "/add-people", params: { groupId: group.id } })} /> : null}
         </View>
 

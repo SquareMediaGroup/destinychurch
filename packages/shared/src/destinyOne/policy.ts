@@ -182,6 +182,27 @@ export function canPost(input: {
   return true;
 }
 
+// ── DestinyAI ────────────────────────────────────────────────────────────────
+// The church's Smart Search as a chat member. It has its own one-to-one chat
+// (the only one in Destiny One), and answers in a group when someone writes
+// "@DestinyAI". In a group it only sees the message that asked, and the
+// message that one replies to (with its reply chain): never the rest.
+
+/** DestinyAI's member id. Fixed, so the app needs no lookup (see migration 20261009_02). */
+export const DESTINY_AI_ID = "d1a1d1a1-0000-4000-8000-000000000001";
+export const DESTINY_AI_NAME = "DestinyAI";
+export const DESTINY_AI: Mentionable = { id: DESTINY_AI_ID, displayName: DESTINY_AI_NAME };
+
+/** Whether `text` asks DestinyAI something ("@DestinyAI", any capitalisation). */
+export function mentionsDestinyAI(text: string | null | undefined): boolean {
+  return !!text && /(^|[^\p{L}\p{N}'’-])@destinyai(?![\p{L}\p{N}'’-])/iu.test(text);
+}
+
+/** `text` without its "@DestinyAI"s, for handing the question to DestinyAI. */
+export function stripDestinyAIMention(text: string): string {
+  return text.replace(/(^|[^\p{L}\p{N}'’-])@destinyai(?![\p{L}\p{N}'’-])[,:]?/giu, "$1").replace(/[ \t]{2,}/g, " ").trim();
+}
+
 /** Group admins moderate, so they must be adults. */
 export function canBeGroupAdmin(m: PolicyMember): boolean {
   return isActive(m) && m.isAdult;
@@ -318,6 +339,7 @@ export interface PushPreview {
 export function contentPreview(content: D1MessageContent | null | undefined): string | null {
   if (content?.kind === "poll") return `Poll: ${content.poll.question}`;
   if (content?.kind === "event") return `Event: ${content.event.name}`;
+  if (content?.kind === "sermon") return `Sermon: ${content.sermon.title}`;
   return null;
 }
 

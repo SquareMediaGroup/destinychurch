@@ -20,6 +20,7 @@ import {
   View,
   type LayoutChangeEvent,
   type StyleProp,
+  type TextInputInstance,
   type TextInputProps,
   type TextStyle,
   type ViewStyle,
@@ -166,7 +167,7 @@ export function Field({
   containerStyle,
   ref,
   ...input
-}: TextInputProps & { ref?: Ref<TextInput>; radius?: number; background?: string; leading?: ReactNode; footer?: ReactNode; inputStyle?: StyleProp<TextStyle>; containerStyle?: StyleProp<ViewStyle> }) {
+}: TextInputProps & { ref?: Ref<TextInputInstance>; radius?: number; background?: string; leading?: ReactNode; footer?: ReactNode; inputStyle?: StyleProp<TextStyle>; containerStyle?: StyleProp<ViewStyle> }) {
   const t = useTheme();
   const [focused, setFocused] = useState(false);
   return (
@@ -216,9 +217,16 @@ export function initials(name: string | null | undefined): string {
     .toUpperCase();
 }
 
-export function Avatar({ name, size, radius, announcements, uri }: { name: string; size: number; radius?: number; announcements?: boolean; uri?: string | null }) {
+export function Avatar({ name, size, radius, announcements, assistant, uri }: { name: string; size: number; radius?: number; announcements?: boolean; assistant?: boolean; uri?: string | null }) {
   const t = useTheme();
   const r = radius ?? size / 2;
+  if (assistant) {
+    return (
+      <View style={{ width: size, height: size, borderRadius: r, backgroundColor: t.accentSoft, alignItems: "center", justifyContent: "center" }}>
+        <Icon name="sparkle" size={Math.round(size * 0.5)} color={t.tint} strokeWidth={1.9} />
+      </View>
+    );
+  }
   if (announcements) {
     return (
       <View style={{ width: size, height: size, borderRadius: r, backgroundColor: t.accentSoft, alignItems: "center", justifyContent: "center" }}>
@@ -237,6 +245,16 @@ export function Avatar({ name, size, radius, announcements, uri }: { name: strin
   return (
     <View style={{ width: size, height: size, borderRadius: r, backgroundColor: t.avatar, alignItems: "center", justifyContent: "center" }}>
       <Text style={{ color: "#FFFFFF", fontSize: Math.round(size * 0.37), fontWeight: "600", letterSpacing: 0.5 }}>{initials(name)}</Text>
+    </View>
+  );
+}
+
+/** The small "Beta" label on DestinyAI (and anything else still in beta). */
+export function BetaTag() {
+  const t = useTheme();
+  return (
+    <View accessibilityLabel="Beta" style={{ backgroundColor: t.accentSoft, paddingHorizontal: 6, paddingVertical: 1, borderRadius: 5 }}>
+      <Text style={{ fontSize: 10, fontWeight: "700", letterSpacing: 0.3, color: t.tint }}>BETA</Text>
     </View>
   );
 }

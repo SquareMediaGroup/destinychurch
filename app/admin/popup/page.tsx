@@ -38,7 +38,9 @@ export default function AdminPopupPage() {
 
   useEffect(() => {
     fetch("/api/admin/popup")
-      .then((r) => r.json())
+      // A failed load used to fall through to the blank defaults, showing a
+      // live banner/popup as switched off — and saving from there wiped it.
+      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))))
       .then((p) =>
         setPopup({
           active: p.active ?? false,
@@ -50,6 +52,9 @@ export default function AdminPopupPage() {
           image_path: p.image_path ?? null,
           show_once: p.show_once ?? true,
         })
+      )
+      .catch(() =>
+        setError("Couldn't load the current settings. Refresh before saving, or they'll be overwritten."),
       )
       .finally(() => setLoading(false));
   }, []);

@@ -17,6 +17,7 @@ import type {
   D1EventSummary,
   D1Export,
   D1FeedbackInput,
+  D1GroupSummary,
   D1GroupDetail,
   D1Me,
   D1MembershipRole,
@@ -188,6 +189,9 @@ export function createDestinyOneClient({ baseUrl, getAccessToken, fetchImpl }: D
     block: (memberId: string) => call<D1Me>("POST", `/members/${memberId}/block`),
     unblock: (memberId: string) => call<D1Me>("DELETE", `/members/${memberId}/block`),
 
+    /** My one-to-one chat with DestinyAI (made the first time). Send to it like any group. */
+    assistant: () => call<D1GroupSummary>("GET", "/assistant"),
+
     // ── Communities ──
     communities: () => call<D1CommunitySummary[]>("GET", "/communities"),
     community: (id: string) => call<D1CommunitySummary>("GET", `/communities/${id}`),
@@ -220,6 +224,7 @@ export function createDestinyOneClient({ baseUrl, getAccessToken, fetchImpl }: D
       call<{ ok: true }>("POST", `/groups/${id}/invites`, input),
     /** "I'm typing" — call at most every few seconds while the box has text. */
     typing: (id: string) => call<{ ok: true }>("POST", `/groups/${id}/typing`),
+    archive: (id: string, archived: boolean) => call<{ ok: true }>("POST", `/groups/${id}/archive`, { archived }),
     mute: (id: string, until: string | null) => call<{ ok: true }>("POST", `/groups/${id}/mute`, { until }),
     markRead: (id: string, messageId: number) => call<{ ok: true }>("POST", `/groups/${id}/read`, { messageId }),
 

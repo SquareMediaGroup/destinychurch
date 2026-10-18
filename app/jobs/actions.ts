@@ -9,7 +9,10 @@ import { recordNotification } from "@/lib/notify.server";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 const BUCKET = "job-applications";
-const MAX_CV_BYTES = 10 * 1024 * 1024; // 10MB
+// Vercel caps a function request body at 4.5MB and Next caps server-action
+// bodies at serverActions.bodySizeLimit (next.config.ts), so a bigger CV
+// never reaches this check.
+const MAX_CV_BYTES = 4 * 1024 * 1024; // 4MB
 const ALLOWED_CV_TYPES = [
   "application/pdf",
   "application/msword",
@@ -125,7 +128,7 @@ export async function submitApplication(formData: FormData) {
   let cvName: string | null = null;
   if (cv instanceof File && cv.size > 0) {
     if (cv.size > MAX_CV_BYTES) {
-      return { success: false, error: "Your CV must be 10MB or smaller." };
+      return { success: false, error: "Your CV must be 4MB or smaller." };
     }
     if (cv.type && !ALLOWED_CV_TYPES.includes(cv.type)) {
       return { success: false, error: "Please upload a PDF or Word document." };

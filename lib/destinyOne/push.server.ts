@@ -36,7 +36,7 @@ export async function pushNewMessage(groupId: string, senderId: string, preview:
 
     const { data: members } = await supabase
       .from("d1_group_members")
-      .select("member_id, muted_until, d1_members!d1_group_members_member_id_fkey!inner(status)")
+      .select("member_id, muted_until, archived_at, d1_members!d1_group_members_member_id_fkey!inner(status)")
       .eq("group_id", groupId)
       .is("left_at", null)
       .neq("member_id", senderId)
@@ -47,7 +47,7 @@ export async function pushNewMessage(groupId: string, senderId: string, preview:
     const blockedBy = new Set((blockers ?? []).map((b) => b.blocker_id as string));
 
     const mentioned = new Set(mentions);
-    const live = (members ?? []).map((m) => ({ id: m.member_id as string, muted: !!m.muted_until && m.muted_until >= now })).filter((m) => !blockedBy.has(m.id));
+    const live = (members ?? []).map((m) => ({ id: m.member_id as string, muted: (!!m.muted_until && m.muted_until >= now) || !!m.archived_at })).filter((m) => !blockedBy.has(m.id));
     const everyone = live.filter((m) => !m.muted && !mentioned.has(m.id)).map((m) => m.id);
     const named = live.filter((m) => mentioned.has(m.id)).map((m) => m.id);
     if (everyone.length === 0 && named.length === 0) return;

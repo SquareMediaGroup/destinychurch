@@ -3,12 +3,13 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   // Shared workspace package ships raw TypeScript; Next must transpile it.
   transpilePackages: ["@destiny/shared"],
+  // React's <ViewTransition> (app/admin/template.tsx) needs no flag since
+  // Next 16.4 / React 19.3 — the old experimental.viewTransition option is gone.
   experimental: {
-    // Enables React's <ViewTransition>, used by app/admin/template.tsx to
-    // cross-fade between admin pages and morph the mobile tab bar's active pill.
-    // The flag is app-wide, but nothing outside /admin renders a ViewTransition,
-    // so the public site navigates exactly as it did.
-    viewTransition: true,
+    // Server actions default to a 1MB body; the jobs form accepts a CV up to
+    // 4MB (app/jobs/actions.ts), which with the other fields stays under
+    // Vercel's 4.5MB function request limit.
+    serverActions: { bodySizeLimit: "4.5mb" },
   },
   outputFileTracingIncludes: {
     "*": ["node_modules/ffmpeg-static/ffmpeg"],

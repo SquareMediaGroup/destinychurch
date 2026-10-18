@@ -21,8 +21,8 @@ import { useTheme } from "@/theme/tokens";
 export default function TabsLayout() {
   const t = useTheme();
   const { switchTo, accounts, me, communities } = useSession();
-  // How many chats have something unread (muted ones don't count), on the Chats tab.
-  const unreadChats = (communities ?? []).reduce((n, c) => n + c.groups.filter((g) => g.unreadCount > 0 && !g.muted).length, 0);
+  // How many chats have something unread (muted and archived ones don't count), on the Chats tab.
+  const unreadChats = (communities ?? []).reduce((n, c) => n + c.groups.filter((g) => g.unreadCount > 0 && !g.muted && !g.archived).length, 0);
   const lastProfilePress = useRef<number | null>(null);
 
   /** Double press on Profile: hop to the most recently used other account (Face ID only if it's been a while). */
@@ -47,7 +47,7 @@ export default function TabsLayout() {
         <NativeTabs.Trigger name="chats" accessibilityLabel="Chats" disableAutomaticContentInsets listeners={tabTick}>
           <NativeTabs.Trigger.Label hidden>Chats</NativeTabs.Trigger.Label>
           <NativeTabs.Trigger.Icon sf={{ default: "bubble.left.and.bubble.right", selected: "bubble.left.and.bubble.right.fill" }} />
-          <NativeTabs.Trigger.Badge hidden={unreadChats === 0}>{unreadChats > 99 ? "99+" : String(unreadChats)}</NativeTabs.Trigger.Badge>
+          {unreadChats > 0 && <NativeTabs.Trigger.Badge>{unreadChats > 99 ? "99+" : String(unreadChats)}</NativeTabs.Trigger.Badge>}
         </NativeTabs.Trigger>
         <NativeTabs.Trigger name="find" accessibilityLabel="Search" disableAutomaticContentInsets listeners={tabTick}>
           <NativeTabs.Trigger.Label hidden>Search</NativeTabs.Trigger.Label>

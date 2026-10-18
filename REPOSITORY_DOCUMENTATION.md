@@ -1,7 +1,7 @@
 # Destiny Church Tees Valley — Complete Repository Documentation
 
-**Version:** 1.0.17  
-**Last Updated:** September 23, 2026  
+**Version:** 1.0.18  
+**Last Updated:** October 10, 2026  
 **Repository:** Square Media Group — destinychurch  
 
 This document provides a comprehensive explanation of every major component, line of code purpose, architecture decisions, and how the system works from end-to-end.
@@ -378,6 +378,7 @@ destinychurch/
 │       ├── 20261006_06_destiny_one_forwarding.sql # part 16 (v0.8): forwarded_from; d1_post_message gains
 │       │                                   # p_forwarded_from (refuses messages you can't see)
 │       ├── 20261006_07_destiny_one_voice_notes.sql # part 17 (v0.8): audio/mp4 attachments + duration_ms
+│       ├── 20261009_02_destiny_one_destinyai.sql # part 18 (v0.10): DestinyAI member + 'assistant' chats
 │       │                                   # (apply after scripts/destiny-one/encrypt-messages.ts)
 │       ├── 20260927_03_destiny_one_message_search.sql # Destiny One part 4: message search
 │       ├── 20260927_02_destiny_one_leader_invites.sql # Destiny One part 3: leader invites
@@ -396,12 +397,18 @@ destinychurch/
 │   └── content/                   # Source copy for policy/partner text — the live pages render
 │                                   # an edited subset, so these are the fuller source. See its README.
 ├── apps/                          # Standalone companion apps that live in this repo but ship
-│   ├── destiny-one/               # Destiny One — the members' messaging app (Expo SDK 57, React
+│   ├── destiny-one/               # Destiny One — the members' messaging app (Expo SDK 58, React
 │   │                               # Native, iOS + Android, Liquid Glass via expo-glass-effect).
 │   │                               # Its own npm project (NOT a root workspace, so the website build
 │   │                               # never installs React Native); imports @destiny/shared through a
 │   │                               # file: link + metro.config.js. Backend: /api/app/v1/one/*.
 │   │                               # Every screen built (design variants 1B + 1F). See "Destiny One" below.
+│   ├── d1-admin/                  # D1 Admin — Destiny One on the Mac for leaders and admins (Tauri 2 +
+│   │                               # React/Vite). Chat plus the admin queues (reports, access requests,
+│   │                               # paused groups, people, invites, communities, feedback, audit log,
+│   │                               # app settings), menu bar popover, notifications, Touch ID, session
+│   │                               # in the Keychain. Own npm project; Rust shell in src-tauri/. Uses the
+│   │                               # same APIs as the phone app and the web admin. See "D1 Admin" below.
 │   ├── talent-buzzer/             # Talent show judge buzzers — one app on both machines: hub (LED) / Avolites
 │   │                               # agent (Titan PC). Android tablets press -> Titan Web API cue +
 │   │                               # X / golden takeover + sound on the LED screen. LAN only, own
@@ -442,7 +449,7 @@ destinychurch/
 ├── .vscode/                       # VS Code workspace settings
 ├── next.config.ts                 # Next.js configuration
 ├── playwright.config.ts           # E2E test configuration
-├── eslint.config.mjs              # ESLint rules
+├── eslint.config.mjs              # ESLint rules (React Compiler hints from react-hooks 7.1 are warnings, not errors)
 ├── postcss.config.mjs             # PostCSS plugins
 ├── tsconfig.json                  # TypeScript compiler options
 ├── package.json                   # Node dependencies and scripts
@@ -1389,6 +1396,13 @@ CREATE TABLE order_items (
 -- Storage: public `product-images` bucket for product photos (WebP).
 ```
 
+> **Storage writes are service-role only** (migration `20261017_01_bug_fixes`).
+> `builder-media`, `post-media`, `product-images` and `shop-hero-images` used to
+> let any `authenticated` user insert/update/delete, on the old assumption that
+> "authenticated = staff". Destiny One sign-in creates Auth users for members,
+> so those policies were dropped; every upload already goes through an admin
+> API route using the service client. Public read policies are unchanged.
+
 **Used By:** `/shop` storefront, `/admin/store` CRUD, `POST /api/store/checkout`, `POST /api/webhooks/stripe`. `description` is HTML written via the shared `RichTextEditor` (same component used for posts/training) — the admin editor no longer has a markdown Write/Preview toggle, and the public product page renders it with `dangerouslySetInnerHTML` (no markdown fallback).
 
 ---
@@ -1979,8 +1993,8 @@ department **sub-groups**. Migration: `supabase/migrations/20260926_01_destiny_o
 | `d1_members` | One row per app account. `auth_user_id` (nullable — set null when the account is deleted), `first_name` / `last_name` (the member can change these themselves via `PATCH /me`; `name_edited_at` records that; `name_change_log` holds the timestamps that the 2-per-30-days limit counts) and `display_name` (always `first last` — the `d1_members_sync_names` trigger derives it from first/last, or splits it into first/last when older code such as the ChurchSuite sync, invites, erasure or staff edits write only `display_name`). Once a member edits their name, the ChurchSuite re-sync no longer overwrites it, `churchsuite_contact_id` / `churchsuite_child_id` / `churchsuite_user_id`, **`adult_on`** (the 18th birthday — the full date of birth is never stored), `status` (`pending`/`active`/`suspended`/`deleted`), `roles` (`admin`, `cg_leader`, `senior_leader` — see part 8) |
 | `d1_consents` | Which version of `privacy` / `terms` / `chat_review_notice` a member accepted, when |
 | `d1_communities`, `d1_community_members` | Communities and who is in them (`admin`/`member`) |
-| `d1_groups` | `kind` (`announcements`/`group`), `department`, `state` (`active`/`frozen`/`archived`), `freeze_kind` (`auto`/`manual`), `frozen_reason` |
-| `d1_group_members` | Membership incl. history (`left_at` kept, so a review can see who was present when), `last_read_message_id`, `muted_until` |
+| `d1_groups` | `kind` (`announcements`/`group`/`assistant`, see part 18), `owner_id` (assistant chats only), `department`, `state` (`active`/`frozen`/`archived`), `freeze_kind` (`auto`/`manual`), `frozen_reason` |
+| `d1_group_members` | Membership incl. history (`left_at` kept, so a review can see who was present when), `last_read_message_id`, `muted_until`, `archived_at` (per-person chat archive: hides + silences the chat for that member only) |
 | `d1_messages` | `body` (sealed ciphertext, see part 10; 4000 characters before sealing), `reply_to`, `attachment_id`, `content` (jsonb: a poll, whose question and option labels are sealed, or an event snapshot taken at send time), soft-delete `deleted_at`/`deleted_by`. Immutable except the delete stamp |
 | `d1_message_terms` | The blind search index (part 10): keyed hashes of every prefix of every word in a body, per group. No plaintext |
 | `d1_message_edits` | Part 11: the text an edit replaced (sealed), one row per edit, for the safeguarding transcript. Deny-all RLS; removed with its message by the purge |
@@ -2184,10 +2198,62 @@ group's own folder with its own `d1_attachments` row, then posts, broadcasts and
 minutes) is kept so the app can show a voice note's length before it downloads. A voice note is an
 ordinary attachment: kept, deleted, purged and shown in the safeguarding transcript like a photo, and
 pushed as "Sender: Voice message". In the app (`src/components/VoiceNote.tsx`) the microphone sits next to
-the camera when the box is empty. Tapping it swaps the text field for a recording bar (time, Cancel,
-Send; it stops by itself at 5 minutes), recording mono AAC at 64 kbps (`expo-audio`). Under a second is
+the text field when the box is empty. It works like WhatsApp: hold to record and let go to send, slide left to
+cancel, slide up to lock it hands-free (then the bin and Send appear); a quick tap just shows a hint. The gesture
+is a `PanResponder` in `Composer.tsx`; the field shows a recording readout (time, "Slide to cancel") and it stops
+by itself at 5 minutes, recording mono AAC at 64 kbps (`expo-audio`). The camera is no longer in the text field;
+it is under the + sheet. Under a second is
 dropped. In a bubble, nothing loads until Play, and only one voice note plays at a time. Voice notes can't
 be searched (there's no text).
+
+**Part 18 — `20261009_02_destiny_one_destinyai.sql`: DestinyAI (v0.10).** The website's Smart Search,
+as a chat member. One `d1_members` row has `is_assistant` (fixed id `DESTINY_AI_ID` in `@destiny/shared`,
+no auth user, no ChurchSuite record; hidden from the directory and `d1_admin_members`). Two ways in:
+- **Its one-to-one chat**, the only one-to-one chat in Destiny One: a `d1_groups` row of kind
+  `assistant`, outside every community (`community_id` null, `owner_id` set; a check constraint ties the
+  two together, one per member), holding just its owner and DestinyAI. `d1_assistant_group(member)` makes
+  it on first use (and puts them back if they'd left). Being a group, it gets the chat screen,
+  encryption, Realtime, push, read state and reporting for free. The 3-members/2-adults rule doesn't apply
+  (`d1_evaluate_group` skips it); nobody can join it or manage it, not even senior leaders
+  (`d1_group_members_guard`, `d1_can_manage_group`); `d1_admin_groups` leaves it out. A reported
+  DestinyAI message still reaches the safeguarding queue and transcript like any other.
+- **"@DestinyAI" in a group.** DestinyAI is never a member and can't read the group. The API hands it the
+  asking message, plus the message that one replies to and that one's reply chain (up to 6, only what the
+  asker can see: since they joined, not deleted, not from someone they blocked), and nothing else. So
+  "reply to a message, then tag @DestinyAI" is how to give it context. Its answer is posted as a reply to
+  the question (`d1_messages_guard` lets DestinyAI post in a group only as a reply, never with an
+  attachment), mentioning the asker so they're notified even if the group is muted.
+`d1_post_assistant_message` (service_role only) is the only way to post as DestinyAI. The answering itself
+is `lib/destinyOne/assistant.server.ts`, run from `after()` in `POST groups/[id]/messages`: the same model
+and tools as Smart Search (`lib/smartSearch/tools.ts`, `CHURCH_FACTS`), plus `find_events` (the live
+ChurchSuite calendar, via `upcomingEventSeries()` in `lib/destinyOne/events.server.ts`) and `share_event`
+(attaches one event card to the answer). It broadcasts "DestinyAI is typing…" while it works, is limited to
+6 questions a minute per member, has a safeguarding section in its prompt (999, Childline, Samaritans,
+the Safeguarding Lead), and says sorry in the chat rather than going quiet if anything fails. In its own
+chat it re-reads the last 16 messages for follow-ups, and only reads text (the composer is text-only there).
+
+**Live answers (streaming).** While DestinyAI works, `liveUpdates()` in `assistant.server.ts` sends
+`assistant_status` (what it's doing: "Checking the calendar", "Searching the web", or "Thinking") and
+`assistant_delta` (the whole text so far, throttled to every 150 ms) over the REST broadcast, so nothing
+is stored. Each model turn streams (`streamTurn`). The app shows them through `state/assistantStream.ts`
+as a bubble at the bottom of the chat (`components/AssistantStreaming.tsx`: animated dots, then the text
+with a blinking cursor). The finished message (the normal `message` event from DestinyAI) clears the
+bubble. A bubble with no update for 60 s is dropped, in case that message was lost. `liveUpdates().done()`
+waits for in-flight updates before posting, so a stale update can't land after the answer.
+
+**Scope, beta, sermons (0.11.x).** DestinyAI answers only about Destiny (its services, events, groups,
+beliefs, giving, shop, sermons, charity and company records, visiting). Everything else gets one line
+saying so, and no tool call; safeguarding replies still apply. Its label says **beta** (`BetaTag` in
+`components/ui.tsx`). `share_sermon` attaches one sermon from the YouTube archive (`getFullSermonArchive`,
+checked by id) as a `D1SermonContent` (`kind: "sermon"`). `SermonCard` (in `MessageBubble.tsx`) renders the
+video through `SermonPlayer` (`components/SermonPlayer.tsx`), which plays it inline with `react-native-webview`
+on `youtube-nocookie.com` when the build has that native module, and nothing loads until it's tapped. Adding
+`react-native-webview` is a native change, so a build made before it was added (anything before 0.11.2) doesn't
+have the module. Rather than crash on those builds, `SermonPlayer` checks for the module with
+`TurboModuleRegistry.get("RNCWebViewModule")` (returns `null` instead of throwing the way `getEnforcing` does)
+and wraps the player in an error boundary; on an older build — or if the player fails to render — the card
+falls back to the sermon thumbnail with a play button that opens the video in the in-app browser, instead of
+the throw taking the whole chat list down (fixed in 0.11.3, #120).
 
 **Tested by:** `scripts/test-sql.sh` (`npm run test:sql`, and the "Database rules" CI job) — applies
 Supabase stubs + every Destiny One migration (parts 1–9, plus the profile-picture, min-build and
@@ -2195,8 +2261,19 @@ group-icon migrations) to a throwaway local Postgres and runs `tests/sql/destiny
 suite, `destiny-one-encryption`, adds part 10 and runs `tests/sql/destiny-one-encryption.sql`
 (plaintext refused, search on terms, no realtime copy, privileges).
 
+**Timed restrictions and escalation** (`20261011_01_destiny_one_restrictions_escalation.sql`, used by the
+D1 Admin desktop app):
+- `d1_members.posting_restricted_until` — while `now()` is before it, the member can read but not post or
+  react. Enforced by `d1_enforce_posting_restriction()` as BEFORE INSERT triggers on `d1_messages` and
+  `d1_reactions`, so every write path (posting, forwarding, voice notes) is covered; raises a P0001 the API
+  shows as written. Lifts itself (no job). Unlike suspension, a restricted member still counts towards the
+  group rules, so restricting never pauses a group.
+- `d1_reports.escalated_at` / `escalated_by` — the report went to the Designated Safeguarding Lead. Status
+  stays `reviewing` (the web admin's set is unchanged).
+- Tested by the `destiny-one-restrictions` SQL suite (`tests/sql/destiny-one-restrictions.sql`).
+
 **Used By:** `lib/destinyOne/*`, `app/api/app/v1/one/**`, `app/api/admin/destiny-one/**`,
-`app/api/cron/destiny-one-{sync,purge}`.
+`app/api/cron/destiny-one-{sync,purge}`, `apps/d1-admin`.
 
 #### 30. **song_request_settings / song_request_spotify / song_requests** (Event song requests)
 **Purpose:** `/song-requests`. Migration: `supabase/migrations/20260930_01_song_requests.sql`. All three are
@@ -2728,9 +2805,8 @@ have nowhere to go. It also renders `breadcrumbsFor(pathname)`; below `md`
 which page you were on.
 
 **Route transitions.** `app/admin/template.tsx` wraps admin pages in React's
-`<ViewTransition name="admin-page">` (enabled by `experimental.viewTransition`
-in `next.config.ts`; the component comes from the React build the App Router
-runs on, not from the `react` 19.2 in `package.json`). Pages cross-fade instead
+`<ViewTransition name="admin-page">` (stable in React 19.3; Next 16.4 needs no
+config flag — the old `experimental.viewTransition` option was removed). Pages cross-fade instead
 of snapping, and the tab bar's active pill — the one element named
 `admin-tab-pill` in the document at a time — morphs from the old tab's box to
 the new one in the same frame, which is what makes switching tabs read as glass
@@ -2861,6 +2937,23 @@ page, the `components/ui/` sibling of `/dev/blocks`. 404s in production.
 **Client component.** A decorative autoplaying hero video that honours the site's
 reduced-motion preference (`AccessibilityContext`, which mirrors the OS setting) by simply
 not rendering when it's on, rather than looping regardless — used on `/serve` and `/alpha`.
+
+#### `ui/VideoPlayer.tsx`
+**Client component.** A content video with the site's own controls (big play button, orange
+scrubber, play/pause, mute, time, fullscreen that keeps the overlay; keys: space/k, arrows
+±5s, m, f) and optional **checkpoints** that pause playback and offer choices:
+
+```tsx
+<VideoPlayer
+  src={url}
+  label="What to expect at Destiny Church"
+  checkpoints={[{ at: 6, options: [{ label: "Continue" }, { label: "Jump to 0:10", seekTo: 10 }] }]}
+/>
+```
+
+Checkpoints are polled per animation frame (not `timeupdate`, which overshoots by up to
+250ms) and fire only when playback runs *through* them — scrubbing past one does not stop
+the video, seeking back before it re-arms it. Never autoplays. Used on `/visit`.
 
 #### `ui/Modal.tsx`
 **Client component (`"use client"`).** The shared dialog shell.
@@ -4399,7 +4492,7 @@ needs at least 2 verified adults.") pass through as `rule_violation` (422). Type
 | `groups/[id]` | GET, PATCH | PATCH: rename/describe/archive (managers). A rename or new description sends `group_updated` on `d1-group:<id>` (`announceGroupUpdated`), so every member's chat list updates straight away |
 | `groups/[id]/members` | POST, DELETE | Leaving never blocked |
 | `groups/[id]/icon` | POST, DELETE | Group icon (multipart `file`, 5 MB). Any current member can change it, not just admins; not for Announcements or paused groups. Stored in `d1-avatars` as `d1_groups.icon_path`; `iconUrl` on group summaries is a signed link. Sends `group_updated` like a rename. The app asks people to avoid the church logo |
-| `groups/[id]/messages` | GET, POST | Only messages since you joined; POST takes `body`, an attachment, a `poll` draft, or an `event` ref (the event is re-fetched and snapshotted server-side) and pushes a notification via `after()` (group name, "Sender: first line", or "Poll: …" / "Event: …") |
+| `groups/[id]/messages` | GET, POST | Only messages since you joined; POST takes `body`, an attachment, a `poll` draft, or an `event` ref (the event is re-fetched and snapshotted server-side) and pushes a notification via `after()` (group name, "Sender: first line", or "Poll: …" / "Event: …"). A message in the DestinyAI chat, or with "@DestinyAI" in it, is then answered by DestinyAI (part 18) |
 | `messages/[id]/vote` | POST | `{ optionIds }` — your full vote set on a poll (empty clears it). 60 a minute |
 | `messages/[id]` | PATCH | `{ body }` — edit my own message's text (15 minutes, 10 times; `d1_edit_message`). Sealed with new search terms; `message_edited` goes to the group over the REST broadcast (it carries text). 20 a minute, no push |
 | `messages/[id]/pin` | POST, DELETE | Pin or unpin (group managers; at most 3, a fourth unpins the oldest). 30 a minute |
@@ -4407,9 +4500,10 @@ needs at least 2 verified adults.") pass through as `rule_violation` (422). Type
 | `messages/[id]/forward` | POST | `{ groupIds }` (1–5): a copy into other chats I can post in, marked Forwarded, file copied per group, re-sealed per group. Not polls. 20 a minute |
 | `me/settings` | PATCH | `{ readReceipts? }` — account settings that change what others see. `D1Me.readReceipts` |
 | `events` | GET | Upcoming ChurchSuite events for the Event picker in the attach sheet |
+| `assistant` | GET | My one-to-one chat with DestinyAI as a `D1GroupSummary`, made on first use (`d1_assistant_group`). Send to it through `groups/[id]/messages` like any chat; DestinyAI answers every message (see part 18). The app pins it above the communities in Chats |
 | `groups/[id]/invites` | POST | Leaders: `{ email, name, adult, note? }` — invite someone new; they become an access request for staff to approve, then join the group |
 | `search/messages` | GET | `?q=` — search of your messages: groups you are in, since you joined, never deleted, never from people you've blocked; newest 30. Each word matches as a prefix, on the blind index (text is encrypted at rest, see "Message encryption"). `&groupId=` searches one group (search opened from a chat): same rules; not found if you aren't in it, nothing for an archived group |
-| `groups/[id]/read`, `/mute`, `/attachments` | POST | Read marker, mute, signed upload URL |
+| `groups/[id]/read`, `/mute`, `/archive`, `/attachments` | POST | Read marker, mute, archive/unarchive for the caller only (`{ archived }`), signed upload URL |
 | `groups/[id]/attachments?ids=` | GET | Fresh signed links (1 hour) for cached attachments whose links expired: only files in this group, sent since you joined, not deleted, not from someone you've blocked. Up to 60 ids |
 | `groups/[id]/media?before=&limit=` | GET | Group info → Photos and files: messages that carry a photo or file, paged like `messages` (60 a page, up to 100). Same visibility as the chat (since you joined, not deleted, not blocked senders), with fresh signed links |
 | `groups/[id]/typing` | POST | "I'm typing": broadcasts `typing { groupId, memberId, name }` on the group topic over the REST broadcast (nothing stored). Only if you can post there. The app calls it at most every 4 s while the box has text; each one shows you as typing for 6 s. 30 a minute |
@@ -4439,6 +4533,17 @@ Two roles, split by path in `lib/adminRoles.ts` ROUTE_RULES (the safeguarding ru
 so the broader one can't swallow it) and re-checked in every route by `requireDestinyOneAdmin` /
 `requireSafeguardingAdmin` (`lib/destinyOne/admin.server.ts`). Every mutation calls `recordAudit`
 (section `destiny_one` or `safeguarding`).
+
+**Bearer tokens (D1 Admin desktop app).** This is the one `/api/admin` area that also accepts a
+Supabase access token as `Authorization: Bearer …` when there's no cookie session: `middleware.ts`
+resolves the user from it and then runs the same role check and audit actor headers as for a cookie,
+and `requireRole` in `admin.server.ts` falls back to it the same way. Every other `/api/admin` path is
+cookie-only. Response shapes are typed in `@destiny/shared` (`destinyOne/adminTypes.ts`, re-exported by
+`lib/destinyOne/adminTypes.ts`) and the desktop app calls them through `createDestinyOneAdminClient`
+(`destinyOne/adminClient.ts`).
+
+- `GET whoami` — open to any signed-in user (OPEN_PATHS): `{ destinyOneAdmin, safeguardingAdmin,
+  transcriptReader, superAdmin }` for the caller, so the desktop app knows which sections to show.
 
 **Destiny One Admin (`destiny_one_admin`) — runs the app, never sees message content:**
 - `GET overview` — counts for the landing page.
@@ -4474,6 +4579,14 @@ place message content can be read:**
   rules pause as usual) or reinstate someone who is suspended (never a way round the approval queue);
   audited. Lets the safeguarding team act without the Destiny One Admin role.
 - `GET events?kind=block` — the log of members blocking / unblocking each other (the "Blocks" tab).
+- `POST/DELETE members/[id]/restrict` `{ days: 1 | 7 | 30, reason }` — timed posting restriction (can
+  read, can't post or react, lifts itself) or lift it early; audited. `GET members` rows carry
+  `postingRestrictedUntil`.
+- `POST reports/[id]/escalate` — escalate to the Designated Safeguarding Lead: sets `escalated_at`, moves
+  an open report to `reviewing`, and emails every Safeguarding Admin
+  (`emailSafeguardingAboutEscalation`, content-free like the report alert). A second call is a no-op.
+- `GET audit?before=` — the Destiny One slice of the audit log (sections `destiny_one` and
+  `safeguarding`, summary and who/when only), 50 a page. The full log stays Super Admin only.
 
 > There is no `/api/webhooks/vercel` or GitHub webhook route, and no `youtube-sync`
 > cron/cache job — `app/api/webhooks/` currently only contains `stripe/` (see Shop
@@ -4867,8 +4980,10 @@ needs credentials belongs in the e2e projects instead. `next build` is
 deliberately not in CI because page-data collection needs live Supabase env vars;
 Vercel's preview build covers that. The browser suite stays in `playwright.yml`,
 manual-trigger only, because it needs a running site to point at.
-Two more jobs, also secret-free: **Destiny One app** (`npm ci`, typecheck and
-`expo lint` inside `apps/destiny-one`, which is its own npm project) and
+Three more jobs, also secret-free: **Destiny One app** (`npm ci`, typecheck and
+`expo lint` inside `apps/destiny-one`, which is its own npm project), **D1 Admin
+desktop app** (`npm ci` and `npm run build` — typecheck plus the Vite bundle — inside
+`apps/d1-admin`; the Rust shell is only built on a Mac) and
 **Database rules** (`scripts/test-sql.sh` against the PostgreSQL that ships on
 the Ubuntu runner, so the safeguarding SQL checks run on every PR).
 
@@ -6131,6 +6246,69 @@ fresh URL per click.
 
 ---
 
+### D1 Admin — the Mac app (`apps/d1-admin`)
+
+Destiny One for leaders and admins on macOS, built from the design canvas "The One App — Mac".
+Tauri 2 (Rust shell, `src-tauri/`) around a React + Vite UI (`src/`). Its own npm project, like the
+Expo app; imports `@destiny/shared` through a `file:` link.
+
+**Who can use it.** After sign-in it calls `GET /api/app/v1/one/me` and
+`GET /api/admin/destiny-one/whoami`. Leaders (any `D1LeaderRole`) and admins get in; anyone else sees
+"use the phone app". The sidebar's Admin section is filtered by role: Destiny One Admin → Access
+requests, People, Invites, Communities, Feedback, App settings; Safeguarding Admin → Reports, Paused
+groups, Audit log. Leaders get chat and can manage groups they lead. Every route still checks for itself.
+
+**How it talks to the backend.**
+- Chat: `createDestinyOneClient` (`/api/app/v1/one/*`), exactly as the phone app.
+- Admin: `createDestinyOneAdminClient` (`/api/admin/destiny-one/*`) with the Supabase token as a bearer
+  (see "Destiny One admin API").
+- Both go through Tauri's HTTP plugin (`src/lib/native.ts` `apiFetch`), so the website needs no CORS and
+  the token can only reach hosts in `src-tauri/capabilities/default.json`.
+- Supabase is used only for auth and Realtime; the session is stored in the macOS Keychain
+  (`keychain_*` commands in `src-tauri/src/lib.rs`).
+
+**Native pieces** (`src-tauri/src/lib.rs`): Touch ID / Mac password on launch (`touch_id.rs`,
+LocalAuthentication, setting "Require Touch ID"); a menu bar item with a count and a popover window
+(`menubar.html` → `src/menubar/`); closing the window hides it so notifications keep coming; open at
+login (autostart plugin, starts hidden). The popover holds no session: the main window sends it state
+and acts for it over Tauri events (`src/lib/menubarTypes.ts`, `src/lib/live.ts`).
+
+**Notifications** (`src/lib/live.ts`) only while the app or its menu bar item is running — no APNs.
+New messages come over Realtime (same hub as the phone app, `src/lib/realtime.ts`); reports and access
+requests refresh on a timer (1 and 2 minutes). Banners respect mute, "Show message previews" and
+"Pause notifications for 1 hour".
+
+**Keyboard and menus** (`src/lib/shortcuts.ts`, `src/components/Floating.tsx`, `ContextMenu.tsx`,
+`EmojiPicker.tsx`). One window-level key listener holds the shortcuts (Cmd-K search, Cmd-N new group,
+Cmd-1 to 9 open the Nth chat in sidebar order via `orderedGroups`, Option-Up/Down previous or next chat,
+Cmd-I group info, Cmd-comma settings, Cmd-slash lists them); the list shown in the shortcuts sheet is the
+same `SHORTCUTS` array, so the two can't drift. Right-clicking a message opens `ContextMenu` (quick
+reactions, Reply, Copy text, Open file, Report, Delete). `Floating` is the shared popover: it opens at a
+point, clamps itself inside the window, and closes on Escape, outside click, page scroll or blur. The
+emoji picker is a curated list in `src/lib/emoji.ts` (no dependency) and serves both reactions and the
+message box; reactions accept any emoji (the API only limits length to 16 characters).
+
+**Composing** (`src/features/chat/Conversation.tsx`, `Sheets.tsx`). The message box takes up to 10 files at
+once (dropped, pasted or picked): each goes as its own message, the text and reply with the first, and
+sent files leave the tray one by one so a failure keeps only what's left. Typing `@` suggests the other
+members of the group (`mentionQuery` / `mentionSuggestions` from `@destiny/shared`); on send,
+`findMentions` turns the names into ids for the API, and `mentionSegments` draws them bold. The plus
+button offers files or a poll (`validatePoll` rules, sent with `poll` on `api.send`); polls in the list
+are tappable and update at once (`castVote`, undone if the server refuses). "Forward" in the right-click
+menu opens a sheet to pick up to 5 chats (`api.forward`; polls and deleted messages can't be forwarded).
+
+**DestinyAI** (`src/lib/assistantStream.ts`, `features/chat/AssistantStreaming.tsx`). The assistant chat belongs
+to no community, so it comes from `api.assistant()` (`useAssistant`) and sits at the top of the sidebar; the
+realtime hub joins its channel with the other groups. While it answers, the server broadcasts
+`assistant_status` (what it's doing) and `assistant_delta` (the text so far); `applyEvent` feeds the
+in-memory stream and the chat draws it as a bubble (dots and a label, then the words with a blinking bar).
+The finished `message` event from `DESTINY_AI_ID` clears it. Nothing is stored. The chat is text-only (no
+files, polls or mentions) and has no group info pane.
+
+**Building.** `npm run tauri:dev` / `npm run tauri:build` on a Mac (Rust + Xcode command line tools).
+The build is unsigned for now; `tauri.conf.json` has the signing fields ready for when the Apple
+Developer account exists. See `apps/d1-admin/README.md`.
+
 ### Destiny One app — look and feel (`apps/destiny-one/src`)
 
 Polished to Apple's Human Interface Guidelines. The pieces, and why they exist:
@@ -6173,8 +6351,10 @@ Polished to Apple's Human Interface Guidelines. The pieces, and why they exist:
   messages" dividers, "This message was deleted", the empty state) goes on a chip in the page colour
   at 90% opacity (`photoChip()` in `MessageBubble.tsx`, `PHOTO_CHIP_ALPHA`). The unit tests check
   that chip against pure black and pure white behind it in both modes (7:1 body, 4.5:1 muted).
-  The sliders (`src/components/Slider.tsx`) are `PanResponder` + Views (no native module) and
-  expose the standard "adjustable" role to screen readers. `Backdrop` (`Wallpaper.tsx`) draws
+  Fade/Dim and Blur are five-step tap pickers (`src/components/PresetPicker.tsx`: Low, Low-Med,
+  Med, High-Med, High; `DIM_PRESETS`/`BLUR_PRESETS` in `theme/appearance.ts`), not sliders: a
+  dragged slider fought the swipe-back gesture. Stored values stay numeric; an older saved value
+  shows as its nearest step (`nearestPreset`). Screen readers get a radio group. `Backdrop` (`Wallpaper.tsx`) draws
   whichever wallpaper is active and is used by the chat and the live preview.
 - **Three looks: Light, Dark, True dark** (Settings > Appearance > Theme; `ThemeMode` is `system | light | dark | black`). **Dark** is a warm tint of the brand orange (`#1A110A` page, `#26190F` cards). **True dark** (`black`) is near-black and neutral (`#0B0B0C` page, `#151517` cards, `#1C1C1F`/`#28282C` fills), deliberately not pure `#000` (harsh against white text); surfaces step up in small even lightness steps. True dark is a dark scheme to the phone (`applyMode`), so System still maps a dark phone to warm Dark. Page colours live in `PAGE_BG`; each wallpaper has `light`/`dark`/`black` tones and send colours reuse their `dark` tone for `black`, all covered by the contrast tests. The splash screen stays warm (it can't know the mode).
 - **Bubbles** (`MessageBubble.tsx`) join in runs (the corner facing the sender flattens between
@@ -6194,6 +6374,7 @@ Polished to Apple's Human Interface Guidelines. The pieces, and why they exist:
   reacting, poll votes, a gesture reaching its threshold, opening the message menu, pull to
   refresh, a warning when a destructive confirm dialog opens, success when a form goes through,
   and an error with every new `FormError`. Never on scroll.
+- **Emoji** (`src/components/Emoji.tsx`): renders an emoji at 1.4x and shrinks it with a static transform, so ancestor scale animations (press-grow, spring overshoot) do not stretch the emoji bitmap and blur it. Use it for any emoji inside an animated view.
 - **Motion** (`src/components/Motion.tsx`): shared spring primitives on RN `Animated` with the
   native driver (no Reanimated, so no new binary). `PressableScale` shrinks under the finger and
   springs back (`holdMs` makes a long-press target squeeze over the delay, used by bubbles);
@@ -6573,6 +6754,13 @@ accept the current privacy / terms / chat-review notices. Leader roles (`admin`,
 
 ```typescript
 const nextConfig: NextConfig = {
+  // Server actions default to a 1MB body. The jobs form takes a CV up to 4MB
+  // (app/jobs/actions.ts MAX_CV_BYTES) — Vercel itself caps a function request
+  // at 4.5MB, so a larger limit here would never be reachable.
+  experimental: {
+    serverActions: { bodySizeLimit: "4.5mb" },
+  },
+
   // Include ffmpeg binary for serverless functions (if needed)
   outputFileTracingIncludes: {
     "*": ["node_modules/ffmpeg-static/ffmpeg"],
@@ -7315,7 +7503,7 @@ same database as the data rather than in a separate Synapse module.
   `?communityId` picks for New group), `notifications` (D2 + per-group mute), `search` (full-screen search opened from a chat; the
   Search tab `(tabs)/find` uses the same `SearchView` component), `report` + `report-sent` (B5), `feedback` (D5, Profile → Report a problem /
   Send feedback, `?kind=problem|idea`; also reached by shaking the phone, see below), `chat-safety`,
-  `help` (Profile → Help: short answers grouped by topic, one open at a time, with Report a problem underneath), `whats-new` (Profile → Support, or tap the version: release notes by version, `RELEASES` in the file), `viewer`, `message-info`, `forward`, `share`, `events`, `send-event` (v0.8, see below), `delete-account` (D3, type DELETE), `accounts` (account switcher, a fit-to-content form sheet), `add-account` (Profile → Add account: Add child / Add admin account, a form sheet), `password` (password sign-in) and `set-password` (Profile → Password).
+  `help` (Profile → Help: short answers grouped by topic, one open at a time, with Report a problem underneath), `whats-new` (Profile → Support, or tap the version once: release notes by version, `RELEASES` in `src/lib/releases.ts`), `release` (the release splash, a full-screen modal shown once per release: every X.X release, and an X.X.X patch only if its `RELEASES` entry has `splash: true`; last-seen kept in AsyncStorage `d1.releaseSplash.seen.v1`, new members are marked seen when they accept the notices; logic in `src/lib/releaseSplash.ts`), `beta` (hidden: tap the version at the bottom of Profile 10 times within 2s gaps; "Become a beta tester?" modal that sends a request to the feedback inbox so an admin adds the person's email to the nightly TestFlight group; asked-state kept on the phone in AsyncStorage `d1.betaRequested.v1`), `viewer`, `message-info`, `forward`, `share`, `events`, `send-event` (v0.8, see below), `delete-account` (D3, type DELETE), `accounts` (account switcher, a fit-to-content form sheet), `add-account` (Profile → Add account: Add child / Add admin account, a form sheet), `password` (password sign-in) and `set-password` (Profile → Password).
 - **Profile tab** (`(tabs)/profile.tsx`) is grouped like iOS Settings: the name card (tap the
   picture to change it, the name to open `edit-name`), then headed sections Account (email,
   password, add/switch account), Preferences (notifications, appearance), Privacy and safety
@@ -7455,7 +7643,7 @@ same database as the data rather than in a separate Synapse module.
   gradient in a clipped frame, since RN has no conic-gradient — plus buttons, fields, cards,
   dialogs, and pulsing loading skeletons — `SkeletonGroup`, `Bone`, `SkeletonRows` — used by
   Chats, Community, Group info and Edit group while data loads), `Icon.tsx` (the design's line icons via `react-native-svg`), `MessageBubble.tsx`,
-  `MessageMenu.tsx` (press-and-hold menu drawn in React Native, WhatsApp-style: the message lifts over a dimmed chat, a bar of six quick reactions plus "+" for a full emoji grid sits above it, and a card of Reply / Copy / Report / Block / Delete sits below, both solid sheets in the app's colours rather than Liquid Glass; placed by the pure `lib/menuLayout.ts` so it always fits on screen, tested in `tests/unit/destiny-one-message-menu.spec.ts`. It replaced the SwiftUI context menu, whose hosted bubbles reported the wrong height and made messages and reactions overlap), `Composer.tsx`, `NotificationPrompt.tsx` (A10, asked once
+  `MessageMenu.tsx` (press-and-hold menu drawn in React Native, WhatsApp-style: the message lifts over a dimmed chat, a bar of six quick reactions plus "+" for a full emoji grid sits above it, and a card of Reply / Copy / Report / Block / Delete sits below, both solid sheets in the app's colours rather than Liquid Glass; placed by the pure `lib/menuLayout.ts` so it always fits on screen, tested in `tests/unit/destiny-one-message-menu.spec.ts`. It replaced the SwiftUI context menu, whose hosted bubbles reported the wrong height and made messages and reactions overlap), `Composer.tsx` (its camera button opens the in-app camera, `app/camera.tsx` built on `expo-camera`, with the photo handed back through `lib/camera.ts`; it replaced the system camera screen, which closed and left the app unusable; needs a native build), `NotificationPrompt.tsx` (A10, asked once
   on first group open), `SafetyNotice.tsx`.
 - **Search** (`search` route): groups from the cached list, plus messages via `GET /search/messages`
   (`d1_search_messages`: groups you're in, since you joined, never deleted; since part 10 a blind
@@ -7514,7 +7702,12 @@ same database as the data rather than in a separate Synapse module.
 - **Lint:** `eslint.config.js` (`eslint-config-expo`). The React Compiler rules (`react-hooks/refs`,
   `set-state-in-effect`, `preserve-manual-memoization`) are errors. The only exceptions are the two
   PanResponder handlers in `Swipe.tsx`, whose refs are read in touch handlers rather than during render
-  (marked with a reasoned `eslint-disable-next-line`).
+  (marked with a reasoned `eslint-disable-next-line`). `import/namespace` is off: `tsc` checks namespace
+  members, and the plugin misses SDK 58's compiled enums (`Notifications.AndroidImportance`).
+  `npx expo lint` caches in `.expo/cache/eslint`; delete it if results look stale.
+- **React Native 0.87+ strict types:** refs use instance types — `useRef<TextInputInstance>`,
+  `useRef<ViewInstance>` (exported from `react-native`), not `useRef<TextInput>` / `useRef<View>`.
+  `ListEmptyComponent` / `ListFooterComponent` take `undefined`, not `null`, for "nothing".
 - **Differences from the prototype:** Settings adds Download my data and Delete my account (safeguarding policy + UK GDPR access and
   erasure). Emoji reactions are allowed as member content (confirmed 2026-09-27).
 - **Sign-in:** the email screen calls `api.requestCode` (`POST /auth/code`); the server sends a code
@@ -7536,7 +7729,7 @@ same database as the data rather than in a separate Synapse module.
   access request pre-filled "Invited by X to Group (leader says: adult)", and staff approval in
   `/admin/destiny-one/requests` confirms their age and joins them to the group
   (`request_group_ids`). Migration `20260927_02_destiny_one_leader_invites.sql`.
-- Expo SDK 57, Expo Router (`src/app/`), TypeScript. Its own npm project with its own lockfile —
+- Expo SDK 58 (React Native 0.88), Expo Router (`src/app/`), TypeScript. Its own npm project with its own lockfile —
   deliberately **not** a root workspace so Vercel never installs React Native. It imports
   `@destiny/shared` via `"file:../../packages/shared"`; `metro.config.js` watches that folder.
   Excluded from the root `tsconfig.json` and `eslint.config.mjs`.

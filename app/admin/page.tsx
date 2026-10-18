@@ -74,9 +74,11 @@ const EMPTY: Snapshot = {
  * join them ourselves.
  */
 function formatToday(now = new Date()): string {
-  const weekday = now.toLocaleDateString("en-GB", { weekday: "long" });
-  const month = now.toLocaleDateString("en-GB", { month: "long" });
-  return `${weekday} ${now.getDate()} ${month} ${now.getFullYear()}`;
+  // Every field in London time: the server renders in UTC, so between midnight
+  // and 1am BST it and the browser otherwise disagreed on the day.
+  const part = (opts: Intl.DateTimeFormatOptions) =>
+    now.toLocaleDateString("en-GB", { ...opts, timeZone: "Europe/London" });
+  return `${part({ weekday: "long" })} ${part({ day: "numeric" })} ${part({ month: "long" })} ${part({ year: "numeric" })}`;
 }
 
 /** Fetch that resolves to null instead of throwing, so one 403 can't blank the page. */

@@ -22,7 +22,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import { AppState } from "react-native";
 import { useIsRestoring, useQuery } from "@tanstack/react-query";
 import type { Session } from "@supabase/supabase-js";
-import type { D1CommunitySummary, D1Me } from "@destiny/shared";
+import type { D1CommunitySummary, D1GroupSummary, D1Me } from "@destiny/shared";
 import { canCreateGroup, checkAddedAccount } from "@destiny/shared";
 import { router, useSegments } from "expo-router";
 import * as accounts from "@/lib/accounts";
@@ -36,6 +36,7 @@ import { startHub, type Hub } from "@/lib/realtime";
 import { typing } from "@/state/typing";
 import { setReportingMember } from "@/lib/sentry";
 import { chatDrafts } from "@/state/drafts";
+import { hasSeenSetup } from "@/state/setupSeen";
 
 type Href = "/welcome" | "/request" | "/waiting" | "/notices" | "/chats";
 
@@ -67,6 +68,8 @@ interface SessionValue {
   isLeader: boolean;
   communities: D1CommunitySummary[] | null;
   communitiesError: string | null;
+  /** My one-to-one chat with DestinyAI (in no community), once loaded. */
+  assistant: D1GroupSummary | null;
   /** Pull-to-refresh and "Try again". Everything else updates by itself. */
   refreshCommunities: () => Promise<void>;
   /** Signs the active account out. If another account is signed in, switches to it. */
@@ -98,7 +101,7 @@ async function fetchMe(): Promise<D1Me | null> {
 }
 
 /** Screens you can be on without an active, consented account. Everything else is "in the app". */
-const OUTSIDE_APP = new Set(["", "index", "welcome", "email", "code", "request", "waiting", "notices"]);
+const OUTSIDE_APP = new Set(["", "index", "welcome", "email", "code", "request", "waiting", "notices", "setup"]);
 
 /** Whether the first route segment is one of the app's own screens (not launch or sign-in). */
 export function isInApp(segment: string | undefined): boolean {
@@ -107,7 +110,7 @@ export function isInApp(segment: string | undefined): boolean {
 
 /** Chats, groups and messages: dropped from the device when someone loses access. */
 function forgetChats() {
-  for (const key of ["communities", "community", "group", "messages"]) queryClient.removeQueries({ queryKey: [key] });
+  for (const key of ["communities", "community", "assistant", "group", "messages", "media"]) queryClient.removeQueries({ queryKey: [key] });
 }
 
 /** Every cached entry goes stale; whatever is on screen re-fetches in the background. */
@@ -145,11 +148,15 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const communitiesQuery = useQuery({ queryKey: keys.communities, queryFn: () => api.communities(), enabled: active && !restoring && !switching });
   const communities = active ? (communitiesQuery.data ?? null) : null;
   const communitiesError = communitiesQuery.error ? errorMessage(communitiesQuery.error, "Couldn't load your chats.") : null;
+  // Made on the server the first time it's asked for. Never blocks the chat list.
+  const assistantQuery = useQuery({ queryKey: keys.assistant, queryFn: () => api.assistant(), enabled: active && !restoring && !switching });
+  const assistant = active ? (assistantQuery.data ?? null) : null;
 
   const setMe = useCallback((next: D1Me) => {
     const previous = queryClient.getQueryData<D1Me | null>(keys.me);
     // Someone else signed in on this device: nothing of theirs may show.
-    if (previous && previous.id !== next.id) void clearCache();
+    // (clearCache empties the cache a tick later, so `next` goes back in after it.)
+    if (previous && previous.id !== next.id) void clearCache().then(() => queryClient.setQueryData(keys.me, next));
     queryClient.setQueryData(keys.me, next);
   }, []);
 
@@ -159,7 +166,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   );
 
   const refreshCommunities = useCallback(async () => {
-    await queryClient.refetchQueries({ queryKey: keys.communities });
+    await Promise.all([queryClient.refetchQueries({ queryKey: keys.communities }), queryClient.refetchQueries({ queryKey: keys.assistant })]);
   }, []);
 
   // Auth session of the active account: restore on launch and on every
@@ -218,7 +225,11 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     if (active && meId) void movePushToActiveAccount().catch(() => undefined);
   }, [active, meId]);
 
-  const groupIds = useMemo(() => (communities ?? []).flatMap((c) => c.groups.map((g) => g.id)).sort().join(","), [communities]);
+  const assistantId = assistant?.id;
+  const groupIds = useMemo(
+    () => [...(communities ?? []).flatMap((c) => c.groups.map((g) => g.id)), ...(assistantId ? [assistantId] : [])].sort().join(","),
+    [communities, assistantId],
+  );
   useEffect(() => {
     hub.current?.setGroups(groupIds ? groupIds.split(",") : []);
   }, [groupIds, active, meId]);
@@ -277,7 +288,12 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       const { data } = await accounts.client().auth.getSession().catch(() => ({ data: { session: null } }));
       setSession(data.session);
       // Its session ended while it was inactive (signed out elsewhere, say).
-      if (!data.session) await accounts.removeAccount(slot, { signOut: false });
+      // Its saved chats were just loaded into memory: drop them too, or the
+      // next cache write would save them straight back to the phone.
+      if (!data.session) {
+        await clearCache();
+        await accounts.removeAccount(slot, { signOut: false });
+      }
     } finally {
       setSwitching(false);
     }
@@ -353,7 +369,9 @@ export function SessionProvider({ children }: { children: ReactNode }) {
 
   const removeAccount = useCallback(async (slot: string) => {
     if (slot === accounts.activeSlot()) return;
+    const memberId = accounts.accounts().find((a) => a.slot === slot)?.memberId;
     await accounts.removeAccount(slot, { signOut: true });
+    if (memberId) chatDrafts.forget(memberId);
   }, []);
 
   // Ready once the cache is back from disk and we know who's signed in. With
@@ -371,6 +389,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       isLeader: me ? canCreateGroup(me) : false,
       communities,
       communitiesError,
+      assistant,
       refreshCommunities,
       signOut,
       accounts: accountList,
@@ -380,7 +399,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       finishAdding,
       removeAccount,
     }),
-    [ready, session, me, setMe, refreshMe, communities, communitiesError, refreshCommunities, signOut, accountList, activeSlot, switching, switchTo, finishAdding, removeAccount],
+    [ready, session, me, setMe, refreshMe, communities, communitiesError, assistant, refreshCommunities, signOut, accountList, activeSlot, switching, switchTo, finishAdding, removeAccount],
   );
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
@@ -402,6 +421,19 @@ export function AccessGuard() {
     router.replace(target);
   }, [ready, inApp, target]);
 
+  // Everyone sees Setup once, existing members included, the first time they reach the app.
+  const memberId = me?.id;
+  useEffect(() => {
+    if (!ready || !inApp || target !== "/chats" || !memberId) return;
+    let live = true;
+    void hasSeenSetup(memberId).then((seen) => {
+      if (live && !seen) router.replace("/setup");
+    });
+    return () => {
+      live = false;
+    };
+  }, [ready, inApp, target, memberId]);
+
   return null;
 }
 
@@ -413,11 +445,12 @@ export function useSession(): SessionValue {
 
 /** Look up a group summary (and its community) from the cached chat list. */
 export function useGroupSummary(groupId: string | undefined) {
-  const { communities } = useSession();
-  return useMemo(() => findGroupSummary(communities, groupId), [communities, groupId]);
+  const { communities, assistant } = useSession();
+  return useMemo(() => findGroupSummary(communities, assistant, groupId), [communities, assistant, groupId]);
 }
 
-function findGroupSummary(communities: D1CommunitySummary[] | null, groupId: string | undefined) {
+function findGroupSummary(communities: D1CommunitySummary[] | null, assistant: D1GroupSummary | null, groupId: string | undefined): { group: D1GroupSummary; community: D1CommunitySummary | null } | null {
+  if (assistant && assistant.id === groupId) return { group: assistant, community: null };
   for (const c of communities ?? []) for (const g of c.groups) if (g.id === groupId) return { group: g, community: c };
   return null;
 }

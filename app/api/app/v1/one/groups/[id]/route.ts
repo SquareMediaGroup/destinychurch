@@ -1,5 +1,5 @@
 import { createServiceClient } from "@/utils/supabase/service";
-import { requireMember } from "@/lib/destinyOne/auth.server";
+import { requireMember, requireNotPostingRestricted } from "@/lib/destinyOne/auth.server";
 import { announceGroupUpdated, canManageGroup, getGroup, requireGroupMembership } from "@/lib/destinyOne/chat.server";
 import { OneError, fromDbError, oneJson, oneRoute, readBody, requireUuid, type IdParams } from "@/lib/destinyOne/http";
 import { updateGroupSchema } from "@/lib/destinyOne/schemas";
@@ -32,6 +32,10 @@ export const PATCH = oneRoute<IdParams>(async (request, { params }) => {
   }
   if (input.archived === false) {
     throw new OneError("forbidden", "Ask the safeguarding team to restore an archived group.");
+  }
+  // Archiving stays open to a restricted admin; changing what the group says doesn't.
+  if (input.name !== undefined || input.department !== undefined || input.description !== undefined) {
+    await requireNotPostingRestricted(caller.member.id);
   }
 
   const update: Record<string, unknown> = { updated_at: new Date().toISOString() };

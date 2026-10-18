@@ -94,6 +94,7 @@ function connect() {
     } catch {
       return;
     }
+    if (!msg || typeof msg !== 'object') return;
     if (msg.type === 'agent-config') {
       titan = { ...msg.titan, ...(titanHostOverride ? { host: titanHostOverride } : {}) };
       log('⚙️ ', `Titan Web API at http://${titan.host}:${titan.port}`);

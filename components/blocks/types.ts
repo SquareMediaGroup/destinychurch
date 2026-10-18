@@ -182,7 +182,7 @@ export interface BlockDefinition<P extends object = Record<string, unknown>> {
    * fully-populated `P` — so the default `z.ZodType<P>` (input === output)
    * would reject exactly the schemas we require.
    */
-  schema: z.ZodType<P, z.ZodTypeDef, unknown>;
+  schema: z.ZodType<P, unknown>;
   defaults: P;
   fields: FieldSchema[];
   Component: ComponentType<P & BlockRenderContext>;

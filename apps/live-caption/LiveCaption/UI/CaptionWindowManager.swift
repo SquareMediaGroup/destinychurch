@@ -50,6 +50,9 @@ final class CaptionWindowManager {
         )
 
         let window = NSWindow(contentViewController: hostingController)
+        // `hide()` both closes the window and drops our strong reference;
+        // with the NSWindow default (release on close) that over-releases it.
+        window.isReleasedWhenClosed = false
         window.styleMask = [.borderless]
         window.setFrame(screen.frame, display: true)
         window.backgroundColor = .black

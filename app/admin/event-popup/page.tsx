@@ -33,6 +33,9 @@ export default function EventPopupPage() {
     async function load() {
       try {
         const res = await fetch("/api/admin/featured-event");
+        // A 500 body is `{ error }` — without this the form loaded blank and a
+        // save from it cleared the live popup.
+        if (!res.ok) throw new Error(String(res.status));
         const row = await res.json();
         setFeaturedActive(Boolean(row.active));
         setEventName(row.event_name ?? null);

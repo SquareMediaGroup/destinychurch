@@ -4,11 +4,12 @@
 
 // First, so crash reporting is running before anything else loads.
 import { withErrorReporting } from "@/lib/sentry";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { liquidGlass } from "@/components/GlassSurface";
 import { Platform, StyleSheet, View } from "react-native";
 import { Stack, router, useSegments } from "expo-router";
 import * as Notifications from "expo-notifications";
+import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client";
@@ -17,6 +18,8 @@ import { useAppGate } from "@/lib/appGate";
 import { groupIdFrom } from "@/lib/push";
 import { handleNotificationAction, registerMessageCategory, registerNotificationTask } from "@/lib/notificationActions";
 import { currentOpenGroup } from "@/lib/queries";
+import { pendingSplash } from "@/lib/releaseSplash";
+import { hasSeenSetup } from "@/state/setupSeen";
 import { persistOptions, queryClient } from "@/lib/queryClient";
 import { SwitchBanner } from "@/components/SwitchBanner";
 import { appearance } from "@/state/appearance";
@@ -24,6 +27,10 @@ import { useShakeToReportListener } from "@/lib/useShakeToReport";
 import { notificationTap, usePendingNotificationGroup } from "@/state/notificationTap";
 import { AccessGuard, SessionProvider, isInApp, useSession } from "@/state/session";
 import { useTheme } from "@/theme/tokens";
+
+// Keep the launch splash up until the saved theme is applied, so a member who
+// chose Dark never sees a light frame first.
+void SplashScreen.preventAutoHideAsync().catch(() => undefined);
 
 /**
  * Tapping a "New message" notification opens that group. The tap is only
@@ -68,6 +75,33 @@ function useNotificationTaps() {
     const sub = Notifications.addNotificationResponseReceivedListener(take);
     return () => sub.remove();
   }, []);
+}
+
+/**
+ * Shows the release splash (see lib/releases.ts) once per release, over the
+ * chat list, for an active member who has accepted the notices.
+ */
+function ReleaseSplash() {
+  const { ready, me } = useSession();
+  const segments = useSegments();
+  const inApp = isInApp(segments[0] as string | undefined);
+  const active = ready && me?.onboarding === "active" && me.outstandingConsents.length === 0;
+  const checked = useRef(false);
+
+  const memberId = me?.id;
+
+  useEffect(() => {
+    if (!active || !inApp || !memberId || checked.current) return;
+    // Setup comes first: until it's been seen, AccessGuard is about to send them there. This re-runs when they come back.
+    void hasSeenSetup(memberId).then(async (seen) => {
+      if (!seen || checked.current) return;
+      checked.current = true;
+      const r = await pendingSplash();
+      if (r) router.push("/release");
+    });
+  }, [active, inApp, memberId]);
+
+  return null;
 }
 
 /**
@@ -134,21 +168,26 @@ function App() {
       <StatusBar style="auto" />
       <AccessGuard />
       <OpenFromNotification />
+      <ReleaseSplash />
       <ShakeToReport />
       <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: t.bg } }}>
         <Stack.Screen name="(tabs)" options={{ animation: "fade" }} />
         <Stack.Screen name="welcome" options={{ animation: "fade" }} />
         <Stack.Screen name="waiting" options={{ animation: "fade", gestureEnabled: false }} />
+        <Stack.Screen name="setup" options={{ animation: "fade", gestureEnabled: false }} />
         <Stack.Screen name="notices" options={{ animation: "fade", gestureEnabled: false }} />
         <Stack.Screen name="new-group" options={{ presentation: "modal", contentStyle: { backgroundColor: t.grouped } }} />
         <Stack.Screen name="report" options={{ presentation: "modal", contentStyle: { backgroundColor: t.grouped } }} />
         <Stack.Screen name="report-sent" options={{ presentation: "modal", gestureEnabled: false }} />
         <Stack.Screen name="feedback" options={{ presentation: "modal", contentStyle: { backgroundColor: t.grouped } }} />
+        <Stack.Screen name="beta" options={{ presentation: "modal", contentStyle: { backgroundColor: t.grouped } }} />
         <Stack.Screen name="message-info" options={{ presentation: "modal", contentStyle: { backgroundColor: t.grouped } }} />
         <Stack.Screen name="send-event" options={{ presentation: "modal", contentStyle: { backgroundColor: t.grouped } }} />
         <Stack.Screen name="forward" options={{ presentation: "modal", contentStyle: { backgroundColor: t.grouped } }} />
         <Stack.Screen name="share" options={{ presentation: "modal", gestureEnabled: false, contentStyle: { backgroundColor: t.grouped } }} />
+        <Stack.Screen name="release" options={{ presentation: "fullScreenModal", animation: "fade", gestureEnabled: false }} />
         <Stack.Screen name="search" options={{ animation: "fade" }} />
+        <Stack.Screen name="camera" options={{ presentation: "fullScreenModal", animation: "fade", gestureEnabled: false, contentStyle: { backgroundColor: "#000" } }} />
         <Stack.Screen name="viewer" options={{ presentation: "transparentModal", animation: "fade", contentStyle: { backgroundColor: "transparent" } }} />
         <Stack.Screen
           name="add-account"
@@ -182,7 +221,11 @@ function RootLayout() {
   useNotificationTaps();
   // The person's own send colour and wallpaper, from this phone.
   useEffect(() => {
-    void appearance.load();
+    // Hide even if loading fails; the splash must never stick.
+    void appearance
+      .load()
+      .catch(() => undefined)
+      .finally(() => void SplashScreen.hideAsync().catch(() => undefined));
   }, []);
   return (
     <SafeAreaProvider>

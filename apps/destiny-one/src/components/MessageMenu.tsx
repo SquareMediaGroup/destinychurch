@@ -18,8 +18,10 @@
 
 import { useEffect, useState, type ReactNode } from "react";
 import { Animated, Easing, Modal, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from "react-native";
+import { DESTINY_AI_ID } from "@destiny/shared";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Icon, type IconName } from "@/components/Icon";
+import { Emoji } from "@/components/Emoji";
 import { reduceMotion, springs } from "@/components/Motion";
 import { haptic } from "@/lib/haptics";
 import { menuLayout, type Rect } from "@/lib/menuLayout";
@@ -81,7 +83,7 @@ function items(m: LocalMessage, a: MessageMenuActions): Item[][] {
   if (a.onInfo) everyday.push({ label: "Info", icon: "info", run: a.onInfo });
   const serious: Item[] = [];
   if (theirs) serious.push({ label: "Report", icon: "flag", run: a.onReport, destructive: true });
-  if (theirs && m.sender) serious.push({ label: `Block ${m.sender.displayName.split(" ")[0]}`, icon: "block", run: a.onBlock, destructive: true });
+  if (theirs && m.sender && m.sender.id !== DESTINY_AI_ID) serious.push({ label: `Block ${m.sender.displayName.split(" ")[0]}`, icon: "block", run: a.onBlock, destructive: true });
   if (a.canDelete) serious.push({ label: "Delete", icon: "trash", run: a.onDelete, destructive: true });
   return [everyday, serious].filter((g) => g.length > 0);
 }
@@ -199,9 +201,7 @@ export function MessageMenu({
               accessibilityState={{ selected: mine(e) }}
               style={({ pressed }) => ({ width: cell, height: cell, borderRadius: cell / 2, alignItems: "center", justifyContent: "center", backgroundColor: mine(e) ? t.fill2 : "transparent", transform: [{ scale: pressed ? 1.25 : 1 }] })}
             >
-              <Text allowFontScaling={false} style={{ fontSize: Math.round(cell * 0.64) }}>
-                {e}
-              </Text>
+              <Emoji size={Math.round(cell * 0.64)}>{e}</Emoji>
             </Pressable>
           ))}
           <Pressable
@@ -231,9 +231,7 @@ export function MessageMenu({
                   accessibilityLabel={`React ${e}`}
                   style={({ pressed }) => ({ width: CELL, height: CELL, borderRadius: CELL / 2, alignItems: "center", justifyContent: "center", backgroundColor: mine(e) || pressed ? t.fill2 : "transparent" })}
                 >
-                  <Text allowFontScaling={false} style={{ fontSize: 27 }}>
-                    {e}
-                  </Text>
+                  <Emoji size={27}>{e}</Emoji>
                 </Pressable>
               ))}
             </ScrollView>

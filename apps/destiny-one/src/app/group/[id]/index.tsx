@@ -3,12 +3,14 @@
 // can post here" (announcements), or the paused card (frozen group).
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ActivityIndicator, Alert, FlatList, KeyboardAvoidingView, Pressable, Text, TextInput, View } from "react-native";
+import { ActivityIndicator, Alert, FlatList, KeyboardAvoidingView, Pressable, Text, View, type TextInputInstance } from "react-native";
+import { GroupPeek } from "@/components/GroupPeek";
 import { router, useFocusEffect, useIsPreview, useLocalSearchParams } from "expo-router";
 import * as Clipboard from "expo-clipboard";
 import * as WebBrowser from "expo-web-browser";
 import { LinearGradient } from "expo-linear-gradient";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { AssistantStreaming } from "@/components/AssistantStreaming";
 import { Composer } from "@/components/Composer";
 import { Backdrop } from "@/components/Wallpaper";
 import { GlassSurface } from "@/components/GlassSurface";
@@ -18,7 +20,7 @@ import type { MessageMenuActions } from "@/components/MessageMenu";
 import { Divider, MessageBubble, buildRows, type Row } from "@/components/MessageBubble";
 import { NotificationPrompt } from "@/components/NotificationPrompt";
 import { Avatar, BackButton, ConfirmDialog, EmptyState, ErrorState, GlassIconButton, PrimaryButton, withAlpha } from "@/components/ui";
-import { canEditMessage, canSendAs, findMentions } from "@destiny/shared";
+import { DESTINY_AI, canEditMessage, canSendAs, findMentions } from "@destiny/shared";
 import type { Account } from "@/lib/accounts";
 import { messageSummary, plural } from "@/lib/format";
 import { api } from "@/lib/api";
@@ -28,6 +30,7 @@ import { hideSender, setOpenGroup } from "@/lib/queries";
 import { uploadAttachment } from "@/lib/upload";
 import { useConversation, type LocalMessage } from "@/lib/useConversation";
 import { chatDrafts } from "@/state/drafts";
+import { useAssistantStream } from "@/state/assistantStream";
 import { eventPick, useEventPick } from "@/state/eventPick";
 import { jumpTo, useJumpTarget } from "@/state/jump";
 import { typingLabel, typingPing, useTyping } from "@/state/typing";
@@ -39,7 +42,13 @@ import { ORANGE, useTheme } from "@/theme/tokens";
 /** How far back (pages of 40) a search result will go to find its message. */
 const MAX_JUMP_PAGES = 10;
 
+/** A peek from the chats list draws a light read-only view; only a real open builds the chat. */
 export default function GroupChat() {
+  const { id } = useLocalSearchParams<{ id: string }>();
+  return useIsPreview() ? <GroupPeek id={id} /> : <GroupChatScreen />;
+}
+
+function GroupChatScreen() {
   const t = useTheme();
   // Pressing and holding a chat in the list peeks at it here: read-only, and
   // it doesn't count as reading it (no receipts, the badge stays).
@@ -57,7 +66,7 @@ export default function GroupChat() {
   const { group, messages, firstUnreadId, markRead } = convo;
 
   const list = useRef<FlatList<Row>>(null);
-  const input = useRef<TextInput>(null);
+  const input = useRef<TextInputInstance>(null);
   const [deleting, setDeleting] = useState<LocalMessage | null>(null);
   const [deleteBusy, setDeleteBusy] = useState(false);
   const [blocking, setBlocking] = useState<{ id: string; name: string } | null>(null);
@@ -68,6 +77,12 @@ export default function GroupChat() {
   const [toast, setToast] = useState<string | null>(null);
 
   const rows = useMemo(() => (messages ? buildRows(messages, firstUnreadId).reverse() : []), [messages, firstUnreadId]);
+  // DestinyAI's answer while it's being written sits at the bottom (index 0 of the inverted list).
+  const liveAnswer = useAssistantStream(id);
+  const shownRows = useMemo<Row[]>(
+    () => (liveAnswer && (liveAnswer.label || liveAnswer.text) ? [{ kind: "stream", key: "stream", label: liveAnswer.label, text: liveAnswer.text }, ...rows] : rows),
+    [liveAnswer, rows],
+  );
 
   // Messages that turn up while the chat is open (sent here, or arriving live)
   // spring in; everything already there, or loaded from further back, doesn't.
@@ -87,8 +102,13 @@ export default function GroupChat() {
   const admins = useMemo(() => new Set((group?.members ?? []).filter((m) => m.role === "admin").map((m) => m.id)), [group]);
   const tags = useMemo(() => new Map((group?.members ?? []).map((m) => [m.id, m.tag])), [group]);
   // Everyone in the group, for drawing "@Name"; everyone but me, for the composer's suggestions.
-  const people = useMemo(() => (group?.members ?? []).map((m) => ({ id: m.id, displayName: m.displayName })), [group]);
-  const mentionables = useMemo(() => people.filter((p) => p.id !== me?.id), [people, me?.id]);
+  // DestinyAI is always among them: in a group, "@DestinyAI" asks it something.
+  const isAssistant = (group?.kind ?? summary?.group.kind) === "assistant";
+  const people = useMemo(
+    () => [DESTINY_AI, ...(group?.members ?? []).filter((m) => m.id !== DESTINY_AI.id).map((m) => ({ id: m.id, displayName: m.displayName }))],
+    [group],
+  );
+  const mentionables = useMemo(() => (isAssistant ? [] : people.filter((p) => p.id !== me?.id)), [people, me?.id, isAssistant]);
 
   // While on screen, new messages here aren't unread.
   useFocusEffect(
@@ -186,7 +206,7 @@ export default function GroupChat() {
   const department = group?.department ?? summary?.group.department;
   // "Leah is typing…" takes the place of the member count while it's true.
   const typingNow = typingLabel(useTyping(id));
-  const sub = typingNow ?? (group ? [department, plural(group.members.length, "member")].filter(Boolean).join(" · ") : department ?? "");
+  const sub = typingNow ?? (isAssistant ? "Beta · Ask about Destiny" : group ? [department, plural(group.members.length, "member")].filter(Boolean).join(" · ") : department ?? "");
   const canDelete = (m: LocalMessage) => m.mine || group?.myRole === "admin" || !!group?.canManage;
   // Pinned messages (newest pin first). Older cached copies of the group may not have the field yet.
   const pinned = group?.pinned ?? [];
@@ -328,6 +348,8 @@ export default function GroupChat() {
             }
       }
       mentionables={mentionables}
+      textOnly={isAssistant}
+      placeholder={isAssistant ? "Ask DestinyAI" : undefined}
     />
   );
 
@@ -353,7 +375,7 @@ export default function GroupChat() {
         <FlatList
           ref={list}
           inverted
-          data={rows}
+          data={shownRows}
           extraData={highlightId}
           keyExtractor={(r) => r.key}
           onScrollToIndexFailed={(info) => {
@@ -368,14 +390,23 @@ export default function GroupChat() {
           onEndReachedThreshold={0.4}
           onScroll={(e) => setShowJump(e.nativeEvent.contentOffset.y > 400)}
           scrollEventThrottle={100}
-          ListFooterComponent={convo.loadingOlder ? <ActivityIndicator color={ORANGE} style={{ paddingVertical: 16 }} /> : null}
+          ListFooterComponent={convo.loadingOlder ? <ActivityIndicator color={ORANGE} style={{ paddingVertical: 16 }} /> : undefined}
           ListEmptyComponent={
             <View style={[{ transform: [{ scaleY: -1 }] }, t.photo ? { alignSelf: "center", marginHorizontal: 24, borderRadius: 24, backgroundColor: withAlpha(t.bg, PHOTO_CHIP_ALPHA) } : null]}>
-              <EmptyState title="No messages yet" body={group?.canPost ? "Say hello." : undefined} />
+              {isAssistant ? (
+                <EmptyState
+                  title="Ask DestinyAI"
+                  body={"DestinyAI is in beta. It answers questions about Destiny only: what's on, services, groups, sermons, giving and the shop. It can get things wrong, so check anything important with a leader.\n\nIn a group, type @DestinyAI to ask it there. It only sees the message you tag it in, and the message you're replying to."}
+                />
+              ) : (
+                <EmptyState title="No messages yet" body={group?.canPost ? "Say hello." : undefined} />
+              )}
             </View>
           }
           renderItem={({ item }) =>
-            item.kind === "msg" ? (
+            item.kind === "stream" ? (
+              <AssistantStreaming label={item.label} text={item.text} roomy={isAssistant} />
+            ) : item.kind === "msg" ? (
               <View style={item.m.id === highlightId ? { backgroundColor: withAlpha(ORANGE, 0.16) } : undefined}>
               <MessageBubble
                 row={item}
@@ -383,6 +414,7 @@ export default function GroupChat() {
                 senderTag={(item.m.sender && tags.get(item.m.sender.id)) || null}
                 senderIsGroupAdmin={!!item.m.sender && admins.has(item.m.sender.id)}
                 canReply={!!group?.canPost && !frozen && !archived}
+                roomy={isAssistant}
                 arriving={arriving(item.m)}
                 onReply={() => startReply(item.m)}
                 menu={menuFor(item.m)}
@@ -424,13 +456,14 @@ export default function GroupChat() {
       )}
 
       {/* Header: back · group pill (opens info) · search */}
-      {t.wall || t.photo ? null : <LinearGradient pointerEvents="none" colors={[t.bg, withAlpha(t.bg, 0)]} locations={[0.45, 1]} style={{ position: "absolute", top: 0, left: 0, right: 0, height: insets.top + 76 }} />}
+      {t.wall || t.photo || preview ? null : <LinearGradient pointerEvents="none" colors={[t.bg, withAlpha(t.bg, 0)]} locations={[0.45, 1]} style={{ position: "absolute", top: 0, left: 0, right: 0, height: insets.top + 76 }} />}
+      {preview ? null : (
       <View style={{ position: "absolute", top: insets.top, left: 0, right: 0, height: 56, flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 16 }}>
-        {preview ? <View style={{ width: 44 }} /> : <BackButton />}
-        <Pressable accessibilityRole="button" accessibilityLabel={`${name}, group info`} onPress={() => router.push(`/group/${id}/info`)} style={{ flexShrink: 1, marginHorizontal: 8 }}>
+        <BackButton />
+        <Pressable accessibilityRole={isAssistant ? "header" : "button"} accessibilityLabel={isAssistant ? name : `${name}, group info`} disabled={isAssistant} onPress={() => router.push(`/group/${id}/info`)} style={{ flexShrink: 1, marginHorizontal: 8 }}>
           {({ pressed }) => (
             <GlassSurface interactive style={[{ height: 48, maxWidth: 240, borderRadius: 24, flexDirection: "row", alignItems: "center", gap: 10, paddingLeft: 6, paddingRight: 16, opacity: pressed ? 0.8 : 1 }, t.shadow]}>
-              <Avatar name={name} size={36} announcements={isAnnouncements} uri={group?.iconUrl ?? summary?.group.iconUrl} />
+              <Avatar name={name} size={36} announcements={isAnnouncements} assistant={isAssistant} uri={group?.iconUrl ?? summary?.group.iconUrl} />
               <View style={{ flexShrink: 1, minWidth: 0 }}>
                 <Text numberOfLines={1} style={{ fontSize: 15, fontWeight: "600", color: t.text }}>
                   {name}
@@ -442,8 +475,9 @@ export default function GroupChat() {
             </GlassSurface>
           )}
         </Pressable>
-        {preview ? <View style={{ width: 44 }} /> : <GlassIconButton icon="search" label={name ? `Search in ${name}` : "Search in this chat"} onPress={() => router.push({ pathname: "/search", params: { groupId: id } })} />}
+        {isAssistant ? <View style={{ width: 44 }} /> : <GlassIconButton icon="search" label={name ? `Search in ${name}` : "Search in this chat"} onPress={() => router.push({ pathname: "/search", params: { groupId: id } })} />}
       </View>
+      )}
 
       {/* Pinned: the newest pin; tapping shows it in the chat and moves on to the next. */}
       {shownPin && !preview ? (

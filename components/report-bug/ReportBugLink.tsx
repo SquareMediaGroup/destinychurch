@@ -110,6 +110,11 @@ export default function ReportBugLink() {
               </div>
             ) : (
               <form ref={formRef} onSubmit={handleSubmit} className="space-y-4">
+                {/* Honeypot. Hidden from people and from screen readers; a bot fills it. */}
+                <div className="hidden" aria-hidden="true">
+                  <label htmlFor="bug-website">Website</label>
+                  <input id="bug-website" name="website" type="text" tabIndex={-1} autoComplete="off" />
+                </div>
                 <div>
                   <label className="mb-1.5 block text-sm font-bold text-destiny-grey" htmlFor="bug-name">
                     Full Name

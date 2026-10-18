@@ -397,7 +397,7 @@ destinychurch/
 │   └── content/                   # Source copy for policy/partner text — the live pages render
 │                                   # an edited subset, so these are the fuller source. See its README.
 ├── apps/                          # Standalone companion apps that live in this repo but ship
-│   ├── destiny-one/               # Destiny One — the members' messaging app (Expo SDK 57, React
+│   ├── destiny-one/               # Destiny One — the members' messaging app (Expo SDK 58, React
 │   │                               # Native, iOS + Android, Liquid Glass via expo-glass-effect).
 │   │                               # Its own npm project (NOT a root workspace, so the website build
 │   │                               # never installs React Native); imports @destiny/shared through a
@@ -7695,7 +7695,12 @@ same database as the data rather than in a separate Synapse module.
 - **Lint:** `eslint.config.js` (`eslint-config-expo`). The React Compiler rules (`react-hooks/refs`,
   `set-state-in-effect`, `preserve-manual-memoization`) are errors. The only exceptions are the two
   PanResponder handlers in `Swipe.tsx`, whose refs are read in touch handlers rather than during render
-  (marked with a reasoned `eslint-disable-next-line`).
+  (marked with a reasoned `eslint-disable-next-line`). `import/namespace` is off: `tsc` checks namespace
+  members, and the plugin misses SDK 58's compiled enums (`Notifications.AndroidImportance`).
+  `npx expo lint` caches in `.expo/cache/eslint`; delete it if results look stale.
+- **React Native 0.87+ strict types:** refs use instance types — `useRef<TextInputInstance>`,
+  `useRef<ViewInstance>` (exported from `react-native`), not `useRef<TextInput>` / `useRef<View>`.
+  `ListEmptyComponent` / `ListFooterComponent` take `undefined`, not `null`, for "nothing".
 - **Differences from the prototype:** Settings adds Download my data and Delete my account (safeguarding policy + UK GDPR access and
   erasure). Emoji reactions are allowed as member content (confirmed 2026-09-27).
 - **Sign-in:** the email screen calls `api.requestCode` (`POST /auth/code`); the server sends a code
@@ -7717,7 +7722,7 @@ same database as the data rather than in a separate Synapse module.
   access request pre-filled "Invited by X to Group (leader says: adult)", and staff approval in
   `/admin/destiny-one/requests` confirms their age and joins them to the group
   (`request_group_ids`). Migration `20260927_02_destiny_one_leader_invites.sql`.
-- Expo SDK 57, Expo Router (`src/app/`), TypeScript. Its own npm project with its own lockfile —
+- Expo SDK 58 (React Native 0.88), Expo Router (`src/app/`), TypeScript. Its own npm project with its own lockfile —
   deliberately **not** a root workspace so Vercel never installs React Native. It imports
   `@destiny/shared` via `"file:../../packages/shared"`; `metro.config.js` watches that folder.
   Excluded from the root `tsconfig.json` and `eslint.config.mjs`.

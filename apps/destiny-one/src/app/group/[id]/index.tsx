@@ -3,7 +3,7 @@
 // can post here" (announcements), or the paused card (frozen group).
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ActivityIndicator, Alert, FlatList, KeyboardAvoidingView, Pressable, Text, TextInput, View } from "react-native";
+import { ActivityIndicator, Alert, FlatList, KeyboardAvoidingView, Pressable, Text, View, type TextInputInstance } from "react-native";
 import { GroupPeek } from "@/components/GroupPeek";
 import { router, useFocusEffect, useIsPreview, useLocalSearchParams } from "expo-router";
 import * as Clipboard from "expo-clipboard";
@@ -66,7 +66,7 @@ function GroupChatScreen() {
   const { group, messages, firstUnreadId, markRead } = convo;
 
   const list = useRef<FlatList<Row>>(null);
-  const input = useRef<TextInput>(null);
+  const input = useRef<TextInputInstance>(null);
   const [deleting, setDeleting] = useState<LocalMessage | null>(null);
   const [deleteBusy, setDeleteBusy] = useState(false);
   const [blocking, setBlocking] = useState<{ id: string; name: string } | null>(null);
@@ -390,7 +390,7 @@ function GroupChatScreen() {
           onEndReachedThreshold={0.4}
           onScroll={(e) => setShowJump(e.nativeEvent.contentOffset.y > 400)}
           scrollEventThrottle={100}
-          ListFooterComponent={convo.loadingOlder ? <ActivityIndicator color={ORANGE} style={{ paddingVertical: 16 }} /> : null}
+          ListFooterComponent={convo.loadingOlder ? <ActivityIndicator color={ORANGE} style={{ paddingVertical: 16 }} /> : undefined}
           ListEmptyComponent={
             <View style={[{ transform: [{ scaleY: -1 }] }, t.photo ? { alignSelf: "center", marginHorizontal: 24, borderRadius: 24, backgroundColor: withAlpha(t.bg, PHOTO_CHIP_ALPHA) } : null]}>
               {isAssistant ? (

@@ -69,7 +69,7 @@ export default function Profile() {
         const file = new File(Paths.cache, `destiny-one-data-${data.exportedAt.slice(0, 10)}.json`);
         if (file.exists) file.delete();
         file.create();
-        file.write(json);
+        await file.write(json);
         await Share.share({ url: file.uri, title: "My Destiny One data" });
       } else {
         await Share.share({ title: "My Destiny One data", message: json });

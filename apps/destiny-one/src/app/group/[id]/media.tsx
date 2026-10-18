@@ -64,7 +64,7 @@ export default function GroupMedia() {
   }
 
   const cell = (width - 32 - GAP * (COLUMNS - 1)) / COLUMNS;
-  const footer = loadingOlder ? <ActivityIndicator color={ORANGE} style={{ paddingVertical: 16 }} /> : null;
+  const footer = loadingOlder ? <ActivityIndicator color={ORANGE} style={{ paddingVertical: 16 }} /> : undefined;
 
   const header = (
     <View style={{ paddingTop: insets.top + 56, paddingBottom: 14, gap: 14 }}>

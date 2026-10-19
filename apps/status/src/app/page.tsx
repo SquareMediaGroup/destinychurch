@@ -22,11 +22,8 @@ const LABEL: Record<Level, string> = {
   unknown: "Not checked",
 };
 
-const NOTICE_LABEL: Record<Notice["kind"], string> = {
-  outage: "Outage",
-  degraded: "Amber alert",
-  maintenance: "Maintenance",
-};
+// Notices are headed by who posted them; older rows have no author.
+const TEAM = "Destiny Church team";
 
 const timeFormat = new Intl.DateTimeFormat("en-GB", {
   timeZone: "Europe/London",
@@ -139,15 +136,15 @@ function NoticeCard({ notice }: { notice: Notice }) {
   return (
     <article className={`notice level-${level}`}>
       <p className="notice-kind small">
-        {notice.resolvedAt ? "Resolved" : NOTICE_LABEL[notice.kind]} · {formatTime(notice.startedAt)}
-        {notice.resolvedAt && ` to ${formatTime(notice.resolvedAt)}`}
+        {notice.author ?? TEAM} · {formatTime(notice.startedAt)}
+        {notice.resolvedAt && ` · Resolved ${formatTime(notice.resolvedAt)}`}
       </p>
       <p className="notice-title">{notice.title}</p>
       {notice.updates.length > 0 && (
         <ol className="timeline">
           {notice.updates.map((u, i) => (
             <li key={u.createdAt + i}>
-              <p className="small muted">{formatTime(u.createdAt)}</p>
+              <p className="small muted">{u.author ?? TEAM} · {formatTime(u.createdAt)}</p>
               <p className="update-body">{u.body}</p>
             </li>
           ))}

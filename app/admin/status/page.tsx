@@ -341,7 +341,7 @@ function IncidentCard({
               {isOpen ? incidentKindLabel(incident.kind) : "Resolved"}
             </Badge>
             <span className="text-xs text-destiny-grey/45 dark:text-white/45">
-              Started {timeFormat.format(new Date(incident.started_at))}
+              {incident.author_name ? `${incident.author_name} · ` : ""}Started {timeFormat.format(new Date(incident.started_at))}
               {incident.resolved_at && `, resolved ${timeFormat.format(new Date(incident.resolved_at))}`}
             </span>
           </div>
@@ -390,6 +390,7 @@ function IncidentCard({
         {incident.status_incident_updates.map((u) => (
           <li key={u.id}>
             <p className="text-xs font-bold text-destiny-grey/45 dark:text-white/45">
+              {u.author_name ? `${u.author_name} · ` : ""}
               {timeFormat.format(new Date(u.created_at))}
             </p>
             <p className="whitespace-pre-wrap text-sm text-destiny-grey dark:text-white">{u.body}</p>

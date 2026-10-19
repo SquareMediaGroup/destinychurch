@@ -8,6 +8,10 @@
 -- public: everything here is written to be published. Writes go through the
 -- admin API with the service client only.
 --
+-- author_name: the poster's admin_roles.name, copied at post time and shown
+-- publicly as the notice's heading (and on each update), so renaming or
+-- removing an admin later doesn't rewrite history.
+--
 -- long_outage_alerted_at: set by /api/cron/status-outage-alerts once it has
 -- emailed the Site Admins about an outage still open after an hour, so they
 -- get one email per outage.
@@ -20,6 +24,7 @@ create table if not exists public.status_incidents (
   started_at              timestamptz not null default now(),
   resolved_at             timestamptz,
   long_outage_alerted_at  timestamptz,
+  author_name             text,
   created_by              uuid,
   created_at              timestamptz not null default now()
 );
@@ -28,6 +33,7 @@ create table if not exists public.status_incident_updates (
   id           bigint generated always as identity primary key,
   incident_id  bigint not null references public.status_incidents(id) on delete cascade,
   body         text not null check (char_length(body) between 1 and 2000),
+  author_name  text,
   created_by   uuid,
   created_at   timestamptz not null default now()
 );

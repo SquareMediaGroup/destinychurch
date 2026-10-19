@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { createServiceClient } from "@/utils/supabase/service";
 import { recordAudit } from "@/lib/audit.server";
-import { cleanText } from "@/lib/statusIncidents.server";
+import { cleanText, currentAuthor } from "@/lib/statusIncidents.server";
 
 // POST /api/admin/status/incidents/[id]/updates  { message }
 // Adds a line to the incident's public timeline on the status page.
@@ -21,10 +21,11 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   if (findError) return NextResponse.json({ error: findError.message }, { status: 500 });
   if (!incident) return NextResponse.json({ error: "Incident not found." }, { status: 404 });
 
+  const author = await currentAuthor();
   const { data, error } = await supabase
     .from("status_incident_updates")
-    .insert({ incident_id: incident.id, body: message })
-    .select("id, incident_id, body, created_at")
+    .insert({ incident_id: incident.id, body: message, author_name: author.name, created_by: author.id })
+    .select("id, incident_id, body, author_name, created_at")
     .single();
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 

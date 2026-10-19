@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { createServiceClient } from "@/utils/supabase/service";
 import { recordAudit } from "@/lib/audit.server";
 import { incidentKindLabel } from "@/lib/statusComponents";
-import { INCIDENT_SELECT, cleanText, parseComponents, parseKind } from "@/lib/statusIncidents.server";
+import { INCIDENT_SELECT, cleanText, currentAuthor, parseComponents, parseKind } from "@/lib/statusIncidents.server";
 
 // GET  /api/admin/status/incidents  — open incidents, then the last 30 days of resolved ones
 // POST /api/admin/status/incidents  — { title, kind, components, message } opens one
@@ -36,17 +36,18 @@ export async function POST(request: Request) {
     );
   }
 
+  const author = await currentAuthor();
   const supabase = createServiceClient();
   const { data: incident, error } = await supabase
     .from("status_incidents")
-    .insert({ title, kind, components })
+    .insert({ title, kind, components, author_name: author.name, created_by: author.id })
     .select("id, title, kind, components, started_at")
     .single();
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
   const { error: updateError } = await supabase
     .from("status_incident_updates")
-    .insert({ incident_id: incident.id, body: message });
+    .insert({ incident_id: incident.id, body: message, author_name: author.name, created_by: author.id });
   if (updateError) return NextResponse.json({ error: updateError.message }, { status: 500 });
 
   await recordAudit({

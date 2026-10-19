@@ -11,6 +11,7 @@ export type NoticeKind = "outage" | "degraded" | "maintenance";
 
 export interface NoticeUpdate {
   body: string;
+  author: string | null;
   createdAt: string;
 }
 
@@ -21,6 +22,8 @@ export interface Notice {
   components: string[];
   startedAt: string;
   resolvedAt: string | null;
+  /** Who posted it (their admin profile name). */
+  author: string | null;
   /** Newest first. */
   updates: NoticeUpdate[];
 }
@@ -44,7 +47,8 @@ interface Row {
   components: string[] | null;
   started_at: string;
   resolved_at: string | null;
-  status_incident_updates: { body: string; created_at: string }[] | null;
+  author_name: string | null;
+  status_incident_updates: { body: string; author_name: string | null; created_at: string }[] | null;
 }
 
 export async function getNotices(): Promise<Notices> {
@@ -52,7 +56,7 @@ export async function getNotices(): Promise<Notices> {
 
   const since = new Date(Date.now() - SHOW_RESOLVED_FOR_MS).toISOString();
   const params = new URLSearchParams({
-    select: "id,title,kind,components,started_at,resolved_at,status_incident_updates(body,created_at)",
+    select: "id,title,kind,components,started_at,resolved_at,author_name,status_incident_updates(body,author_name,created_at)",
     or: `(resolved_at.is.null,resolved_at.gt.${since})`,
     order: "started_at.desc",
     "status_incident_updates.order": "created_at.desc",
@@ -72,7 +76,12 @@ export async function getNotices(): Promise<Notices> {
       components: r.components ?? [],
       startedAt: r.started_at,
       resolvedAt: r.resolved_at,
-      updates: (r.status_incident_updates ?? []).map((u) => ({ body: u.body, createdAt: u.created_at })),
+      author: r.author_name,
+      updates: (r.status_incident_updates ?? []).map((u) => ({
+        body: u.body,
+        author: u.author_name,
+        createdAt: u.created_at,
+      })),
     }));
     return {
       active: notices.filter((n) => !n.resolvedAt),

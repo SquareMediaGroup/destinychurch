@@ -36,6 +36,7 @@ export interface StatusIncidentUpdate {
   id: number;
   incident_id: number;
   body: string;
+  author_name: string | null;
   created_at: string;
 }
 
@@ -47,6 +48,7 @@ export interface StatusIncident {
   started_at: string;
   resolved_at: string | null;
   long_outage_alerted_at: string | null;
+  author_name: string | null;
   created_at: string;
   status_incident_updates: StatusIncidentUpdate[];
 }

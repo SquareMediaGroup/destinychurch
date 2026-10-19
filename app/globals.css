@@ -1236,92 +1236,80 @@ body {
   display: none;
 }
 
-/* ── Toast system — glass style matching the cookie banner ─────────────── */
-/* Slides in from the right on entry; no exit animation (instant unmount). */
+/* ── Toasts (sonner, unstyled) — glass style matching the cookie banner ── */
+/*
+  sonner (components/ToastProvider.tsx) owns position, stacking, swipe and
+  enter/exit motion; everything visual lives here. Its toast <li> carries
+  data-type="success|error|info" and the dc-toast-* classes below.
+*/
 
-@keyframes toast-slide-in {
-  from {
-    opacity: 0;
-    transform: translateX(calc(100% + 1.5rem));
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
-}
-
-.toast-stack {
-  position: fixed;
-  bottom: 1.5rem;
-  right: 1rem;
-  display: flex;
-  flex-direction: column-reverse;
-  gap: 0.625rem;
-  z-index: 9000;
-  pointer-events: none;
-  /* Stack above Smart Search (z-50) */
-}
-
-@media (min-width: 640px) {
-  .toast-stack {
-    right: 1.5rem;
-  }
-}
-
-.toast {
+.dc-toast {
   /* Glass surface — same recipe as .glass.glass-strong */
-  --glass-bg: rgba(18, 18, 22, 0.72);
+  --glass-bg: rgba(18, 18, 22, 0.74);
   --glass-border: rgba(255, 255, 255, 0.10);
   --glass-blur: 18px;
+  --tone: #f58021;
+  /* sonner colours its close button from these, with a stronger selector */
+  --normal-bg: rgba(255, 255, 255, 0.06);
+  --normal-bg-hover: rgba(255, 255, 255, 0.14);
+  --normal-border: rgba(255, 255, 255, 0.12);
+  --normal-border-hover: rgba(255, 255, 255, 0.2);
+  --normal-text: rgba(255, 255, 255, 0.6);
   background: var(--glass-bg);
   backdrop-filter: blur(var(--glass-blur)) saturate(1.6) brightness(1.08);
   -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(1.6) brightness(1.08);
   border: 1px solid var(--glass-border);
   box-shadow:
-    0 0 0 0.5px rgba(255,255,255,0.06) inset,
+    0 0 0 0.5px rgba(255, 255, 255, 0.06) inset,
     0 20px 48px rgba(0, 0, 0, 0.45),
     0 4px 12px rgba(0, 0, 0, 0.3);
 
-  min-width: 280px;
-  max-width: min(22rem, calc(100vw - 2rem));
+  width: var(--width);
+  max-width: calc(100vw - 2rem);
   display: flex;
+  flex-wrap: wrap;
   align-items: flex-start;
-  gap: 0.75rem;
+  column-gap: 0.75rem;
+  row-gap: 0.75rem;
   border-radius: 1rem;
-  padding: 1rem;
-  color: rgba(255,255,255,0.88);
-  pointer-events: auto;
-  animation: toast-slide-in 0.38s cubic-bezier(0.16, 1, 0.3, 1) both;
+  padding: 0.875rem 2.75rem 0.875rem 0.875rem;
+  color: rgba(255, 255, 255, 0.88);
+  font-family: inherit;
 }
 
-/* Tone accent strip — 3px left border */
-.toast::before {
-  content: "";
-  position: absolute;
-  left: 0;
-  top: 0.75rem;
-  bottom: 0.75rem;
-  width: 3px;
-  border-radius: 0 2px 2px 0;
-  background: rgba(255, 255, 255, 0.15);
+.dc-toast-success { --tone: #21c55d; }
+.dc-toast-error   { --tone: #f87171; }
+.dc-toast-info    { --tone: #f58021; }
+
+/* Tone icon in a soft tinted disc */
+.dc-toast-icon {
+  flex-shrink: 0;
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 9999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--tone);
+  background: color-mix(in srgb, var(--tone) 16%, transparent);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--tone) 28%, transparent) inset;
 }
 
-.toast { position: relative; overflow: hidden; }
+.dc-toast-icon svg {
+  width: 1rem;
+  height: 1rem;
+}
 
-.toast-success::before { background: #21c55d; }
-.toast-error::before   { background: #f87171; }
-.toast-info::before    { background: #f58021; }
-
-.toast-body {
-  flex: 1;
+.dc-toast-content {
+  flex: 1 1 0;
+  min-width: 0;
   display: flex;
   flex-direction: column;
   gap: 0.125rem;
-  padding-left: 0.25rem;
-  min-width: 0;
+  padding-top: 0.25rem;
 }
 
-.toast-title {
+.dc-toast-title {
   font-size: 0.8125rem;
   font-weight: 700;
   color: #ffffff;
@@ -1329,41 +1317,20 @@ body {
   line-height: 1.3;
 }
 
-.toast-message {
+/* A title-only toast (no description) reads as the message itself */
+.dc-toast-content:not(:has(.dc-toast-message)) .dc-toast-title {
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.88);
+}
+
+.dc-toast-message {
   font-size: 0.8125rem;
   color: rgba(255, 255, 255, 0.70);
   line-height: 1.45;
 }
 
-.toast-controls {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 0.5rem;
-  flex-shrink: 0;
-}
-
-.toast-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.375rem;
-  margin-top: 0.5rem;
-}
-
-/* Full-width actions row — sits under body text like cookie banner buttons */
-.toast:has(.toast-actions) {
-  flex-direction: column;
-}
-
-.toast:has(.toast-actions) .toast-controls {
-  flex-direction: row;
-  align-items: center;
-  flex-shrink: 1;
-  width: 100%;
-  justify-content: flex-end;
-}
-
-.toast-action {
+/* Actions drop to their own row, right-aligned, like the cookie banner */
+.dc-toast-action {
   border-radius: 9999px;
   border: 1px solid rgba(255, 255, 255, 0.15);
   background: rgba(255, 255, 255, 0.06);
@@ -1374,51 +1341,92 @@ body {
   text-transform: uppercase;
   cursor: pointer;
   padding: 0.375rem 0.875rem;
-  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease, filter 0.15s ease;
 }
 
-.toast-action:hover {
+.dc-toast:has(.dc-toast-action) .dc-toast-content {
+  flex-basis: calc(100% - 2.5rem);
+}
+
+.dc-toast-content + .dc-toast-action {
+  /* line the first button up with the text, past the icon */
+  margin-left: 2.5rem;
+}
+
+.dc-toast-action:hover {
   background: rgba(255, 255, 255, 0.12);
   border-color: rgba(245, 128, 33, 0.5);
   color: #ffffff;
 }
 
-.toast-action-primary {
+.dc-toast-action-primary {
   background: #f58021;
   border-color: transparent;
   color: #ffffff;
 }
 
-.toast-action-primary:hover {
+.dc-toast-action-primary:hover {
   filter: brightness(1.1);
   background: #f58021;
+  border-color: transparent;
 }
 
-.toast-close {
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  background: rgba(255, 255, 255, 0.06);
-  color: rgba(255, 255, 255, 0.50);
+.dc-toast-action:focus-visible,
+.dc-toast-close:focus-visible {
+  outline: 2px solid #f58021;
+  outline-offset: 2px;
+}
+
+.dc-toast .dc-toast-close {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  width: 1.5rem;
+  height: 1.5rem;
   border-radius: 9999px;
-  width: 1.75rem;
-  height: 1.75rem;
+  border: 1px solid var(--normal-border);
+  background: var(--normal-bg);
+  color: var(--normal-text);
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 1rem;
-  line-height: 1;
-  flex-shrink: 0;
-  transition: background 0.15s ease, color 0.15s ease;
   cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
 }
 
-.toast-close:hover {
-  background: rgba(255, 255, 255, 0.12);
-  color: #ffffff;
+.dc-toast-close svg {
+  width: 0.75rem;
+  height: 0.75rem;
+}
+
+.dc-toast .dc-toast-close:hover {
+  background: var(--normal-bg-hover);
+}
+
+/* Collapsed stack: only the front toast shows its content */
+.dc-toast > * {
+  transition: opacity 0.4s ease;
+}
+
+.dc-toast[data-expanded="false"][data-front="false"] > * {
+  opacity: 0;
+}
+
+/* Glass FX switched off (accessibility settings / performance gate) */
+html[data-glassfx="off"] .dc-toast {
+  background: #16161a;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+/* Reduced motion — site setting and OS setting */
+html[data-motion="reduced"] [data-sonner-toast] {
+  transition: opacity 0.15s ease !important;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .toast {
-    animation: none;
+  [data-sonner-toast] {
+    transition: opacity 0.15s ease !important;
   }
 }
 

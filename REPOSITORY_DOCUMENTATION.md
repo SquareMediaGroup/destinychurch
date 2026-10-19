@@ -2403,7 +2403,7 @@ Wraps children with React context providers:
 - **Supabase Client Provider** — Browser auth token management
 - **Theme Provider** — Dark/light mode
 - **Query Client** (if using) — API caching
-- **Toast Provider** (`components/ToastProvider.tsx`) — Passive notifications via `useToast()` (`success`/`error`/`info`)
+- **Toast Provider** (`components/ToastProvider.tsx`) — Passive notifications via `useToast()` (`success`/`error`/`info`/`push`). Rendered by [sonner](https://github.com/emilkowalski/sonner) in `unstyled` mode for stacking, swipe-to-dismiss and exit animation; the look is the glass `.dc-toast*` classes in `app/globals.css`. `push({ actions })` maps one `primary` action and one other action onto sonner's action/cancel buttons.
 - **Dialog Provider** (`components/DialogProvider.tsx`) — Styled, promise-based modal dialogs via `useDialog()`
 
 #### Dialogs & notifications — no native browser dialogs

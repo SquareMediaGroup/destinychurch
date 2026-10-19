@@ -11,6 +11,13 @@
 | Safeguarding lead (DSL) | `[name]` |
 | Planned launch | November 2026 |
 
+**Added to the app since this draft (checked 19 October 2026), not yet assessed below.** The data protection lead should add these to steps 2, 5 and 6 before signing:
+- **DestinyAI (v0.10).** An automated assistant members can message, or tag in a group. The question, the message it replies to and the senders' names go to **OpenAI (USA)**, and search words to **Tavily (USA)**. This sends children's messages to a US AI provider, so it needs its own risk entry, transfer cover and a decision on whether under-18s can use it.
+- **Sermon videos in chat** load YouTube's player (Google, USA) when someone presses play.
+- **Voice messages, polls and shared events**, kept like other messages.
+- **Members can change their own name** (twice in 30 days, with the dates logged) and email, and can **set a password** instead of using emailed codes.
+- **Read receipts**, which members can turn off.
+
 ---
 
 ## Step 1: Why a DPIA is needed

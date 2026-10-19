@@ -1,0 +1,23 @@
+{
+  "name": "destiny-status",
+  "private": true,
+  "version": "1.0.0",
+  "description": "status.destinytees.uk: live status of the Destiny Church website and Destiny One.",
+  "scripts": {
+    "dev": "next dev --port 3100",
+    "build": "next build",
+    "start": "next start",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "next": "16.4.2",
+    "react": "19.3.1",
+    "react-dom": "19.3.1"
+  },
+  "devDependencies": {
+    "@types/node": "^24.19.2",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "typescript": "~6.0.3"
+  }
+}

@@ -46,6 +46,8 @@ final class CaptionStore {
     }
 
     func start() {
+        // A new run brings a new transcriber with its own segment numbering.
+        stabilizer.beginNewStream()
         isLive = true
         // Stability is time-based, so words become displayable as the clock
         // advances, not only when a new transcript event lands. Without this

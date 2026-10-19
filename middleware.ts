@@ -93,9 +93,13 @@ export async function middleware(request: NextRequest) {
     url.search = "?" + params.toString();
     return NextResponse.redirect(url, { status: 302 });
   }
-  const { supabase, supabaseResponse } = createClient(request);
+  const session = createClient(request);
 
-  let { data: { user } } = await supabase.auth.getUser();
+  let { data: { user } } = await session.supabase.auth.getUser();
+  // Read only after getUser(): a token refresh inside it swaps in a new
+  // response carrying the refreshed auth cookies. Taken before, the refreshed
+  // session was silently dropped.
+  const { supabaseResponse } = session;
 
   // The D1 Admin desktop app (applications/d1-admin) has no cookie jar, so for the
   // Destiny One admin API only, a Supabase access token in

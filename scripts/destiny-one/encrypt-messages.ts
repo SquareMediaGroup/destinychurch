@@ -105,10 +105,12 @@ async function main(): Promise<void> {
   await loadKeys();
   await sealMessages();
   await sealReports();
+  // Only once the backfill has actually finished: printed at top level, this
+  // ran before any work and even when the backfill then failed.
+  console.log(dryRun ? "📝 Dry run: nothing written." : "✅ Done. Now apply 20261004_02_destiny_one_message_encryption_required.sql.");
 }
 
 main().catch((err) => {
   console.error("❌ Backfill failed:", err);
   process.exit(1);
 });
-console.log(dryRun ? "📝 Dry run: nothing written." : "✅ Done. Now apply 20261004_02_destiny_one_message_encryption_required.sql.");

@@ -27,9 +27,14 @@ const PAGE_SIZE = 50;
  */
 const FACET_SCAN = 2000;
 
-/** Escape the wildcards PostgREST's `ilike` treats as special. */
+/**
+ * Escape the wildcards PostgREST's `ilike` treats as special, then quote the
+ * pattern so a comma or bracket in the search ("(draft)") can't break the
+ * `.or()` filter it is spliced into.
+ */
 function likeTerm(query: string): string {
-  return `%${query.replace(/[%_\\]/g, (c) => `\\${c}`)}%`;
+  const pattern = `%${query.replace(/[%_\\]/g, (c) => `\\${c}`)}%`;
+  return `"${pattern.replace(/["\\]/g, (c) => `\\${c}`)}"`;
 }
 
 export async function GET(request: Request) {

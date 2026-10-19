@@ -136,6 +136,11 @@ function likeTerm(query: string): string {
   return `%${query.replace(/[%_\\]/g, (c) => `\\${c}`)}%`;
 }
 
+/** {@link likeTerm}, quoted so a comma or bracket can't break an `.or()` filter. */
+function orLikeTerm(query: string): string {
+  return `"${likeTerm(query).replace(/["\\]/g, (c) => `\\${c}`)}"`;
+}
+
 /**
  * What the model gets back for each row.
  *
@@ -179,7 +184,7 @@ export async function runAuditTool(
     let query = supabase.from("audit_log").select("*").order("id", { ascending: false });
 
     if (typeof args.query === "string" && args.query.trim()) {
-      const term = likeTerm(args.query.trim());
+      const term = orLikeTerm(args.query.trim());
       query = query.or(
         `summary.ilike.${term},entity_label.ilike.${term},entity.ilike.${term},actor_email.ilike.${term}`,
       );

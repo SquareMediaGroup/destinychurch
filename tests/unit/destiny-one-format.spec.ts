@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { messageSummary } from "../../apps/destiny-one/src/lib/format";
+import { messageSummary } from "../../applications/destiny-one/src/lib/format";
 
 /**
  * Destiny One's one-line summary of a message, used for reply quotes and for

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { API, type Post } from "@/lib/posts";
 import {
@@ -55,10 +55,17 @@ export default function AdminPostsPage() {
   useEffect(() => {
     if (wantsNew) setChoosingTemplate(true);
   }, [wantsNew]);
+  // Open each ?open= id once. Without this, every reload of `posts` (saving,
+  // publishing, closing the editor) reopened the editor while the param stayed
+  // in the URL.
+  const openedId = useRef<string | null>(null);
   useEffect(() => {
-    if (!openId || posts.length === 0) return;
+    if (!openId || posts.length === 0 || openedId.current === openId) return;
     const match = posts.find((p) => p.id === openId);
-    if (match) setEditing(match);
+    if (match) {
+      openedId.current = openId;
+      setEditing(match);
+    }
   }, [openId, posts]);
 
   const list = useAdminList<Post>({

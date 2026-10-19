@@ -14,6 +14,11 @@ module.exports = defineConfig([
       "react-hooks/refs": "error",
       "react-hooks/set-state-in-effect": "error",
       "react-hooks/preserve-manual-memoization": "error",
+      // tsc already checks namespace members. eslint-plugin-import's export
+      // scanner misses SDK 58's compiled enums (expo-notifications'
+      // `export var AndroidImportance` follows a comment on the same line) and
+      // reports them as missing.
+      "import/namespace": "off",
     },
   },
 ]);

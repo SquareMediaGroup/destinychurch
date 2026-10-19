@@ -33,7 +33,7 @@ function RequestCard({ m }: { m: AdminMember }) {
     setError(null);
     try {
       if (approve) {
-        await admin.approve(m.id, { adult: age === "adult", dateOfBirth: dob || null, communityIds: picked });
+        await admin.approve(m.id, { adult: age === "adult", dateOfBirth: age === "child" && dob ? dob : null, communityIds: picked });
         const names = (communities.data ?? []).filter((c) => picked.includes(c.id)).map((c) => c.name).join(", ");
         setResult({ ok: true, text: `Approved as ${age === "adult" ? "an adult" : "under 18"}${names ? ` · added to ${names}` : ""}` });
         invalidateCommunities();

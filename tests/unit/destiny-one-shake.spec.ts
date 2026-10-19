@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { createShakeDetector } from "../../apps/destiny-one/src/lib/shake";
+import { createShakeDetector } from "../../applications/destiny-one/src/lib/shake";
 
 /**
  * "Shake to report a problem" in Destiny One. It asks before opening

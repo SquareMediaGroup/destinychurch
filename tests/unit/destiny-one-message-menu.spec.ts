@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { EDGE, GAP, MIN_BUBBLE, menuLayout, type MenuLayoutInput } from "../../apps/destiny-one/src/lib/menuLayout";
+import { EDGE, GAP, MIN_BUBBLE, menuLayout, type MenuLayoutInput } from "../../applications/destiny-one/src/lib/menuLayout";
 
 /**
  * Destiny One's press-and-hold message menu: a reactions bar above the

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useSearchParams } from "next/navigation";
 import Fuse from "fuse.js";
 import {
@@ -330,10 +330,15 @@ export default function TrainingPostsPage() {
 
   // ?open=<id> comes from a ⌘K search hit — jump straight into that post.
   const openId = searchParams.get("open");
+  // Once per id: `posts` reloads after every save, and the param stays in the URL.
+  const openedId = useRef<string | null>(null);
   useEffect(() => {
-    if (!openId || posts.length === 0) return;
+    if (!openId || posts.length === 0 || openedId.current === openId) return;
     const match = posts.find((p) => p.id === openId);
-    if (match) setEditingPost(match);
+    if (match) {
+      openedId.current = openId;
+      setEditingPost(match);
+    }
   }, [openId, posts]);
 
   const matches = useMemo(() => {

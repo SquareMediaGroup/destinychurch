@@ -60,7 +60,9 @@ export default function AdminBannerPage() {
 
   useEffect(() => {
     fetch("/api/admin/banner")
-      .then((r) => r.json())
+      // A failed load used to fall through to the blank defaults, showing a
+      // live banner/popup as switched off — and saving from there wiped it.
+      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))))
       .then((b) => {
         const t: BannerType =
           b.type === "alpha" || b.type === "youth_alpha"
@@ -74,6 +76,9 @@ export default function AdminBannerPage() {
           link_text: b.link_text ?? "",
         });
       })
+      .catch(() =>
+        setError("Couldn't load the current settings. Refresh before saving, or they'll be overwritten."),
+      )
       .finally(() => setLoading(false));
   }, []);
 

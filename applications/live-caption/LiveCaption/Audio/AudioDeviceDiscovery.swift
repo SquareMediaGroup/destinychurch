@@ -59,8 +59,16 @@ enum AudioDeviceDiscovery {
         guard AudioObjectGetPropertyDataSize(deviceID, &address, 0, nil, &dataSize) == noErr, dataSize > 0 else {
             return false
         }
-        let bufferListPointer = UnsafeMutablePointer<AudioBufferList>.allocate(capacity: 1)
-        defer { bufferListPointer.deallocate() }
+        // Sized from `dataSize`, not `AudioBufferList` (which holds a single
+        // `AudioBuffer`): a device with several input streams returns a list
+        // with several buffers, and writing that into a one-buffer allocation
+        // overruns the heap.
+        let rawPointer = UnsafeMutableRawPointer.allocate(
+            byteCount: max(Int(dataSize), MemoryLayout<AudioBufferList>.size),
+            alignment: MemoryLayout<AudioBufferList>.alignment
+        )
+        defer { rawPointer.deallocate() }
+        let bufferListPointer = rawPointer.bindMemory(to: AudioBufferList.self, capacity: 1)
         guard AudioObjectGetPropertyData(deviceID, &address, 0, nil, &dataSize, bufferListPointer) == noErr else {
             return false
         }

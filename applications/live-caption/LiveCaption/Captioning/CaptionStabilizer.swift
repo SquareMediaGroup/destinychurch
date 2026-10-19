@@ -80,6 +80,17 @@ final class CaptionStabilizer {
 
     func reset() {
         finalizedWords.removeAll()
+        beginNewStream()
+    }
+
+    /// Forgets per-stream bookkeeping when a new `StreamingTranscriber`
+    /// starts, keeping the words already finalized. Each transcriber numbers
+    /// its segments from 1 and stamps words in its own source's clock, so
+    /// without this a stop/start drops every new segment as a "duplicate"
+    /// until the count passes the old run's, and a switch to a source with
+    /// an earlier clock (NDI timecode -> Core Audio host time) filters out
+    /// every partial against the old horizon.
+    func beginNewStream() {
         partialWords.removeAll()
         lastFinalizedSegmentID = 0
         finalizedHorizon = -.infinity

@@ -23,7 +23,7 @@ function NewInvite({ onDone }: { onDone: () => void }) {
     setBusy(true);
     setError(null);
     try {
-      const res = await admin.createInvites([{ email: email.trim(), name: name.trim(), adult: age === "adult", dateOfBirth: dob || null, communityIds: picked, roles: age === "adult" ? roles : [] }]);
+      const res = await admin.createInvites([{ email: email.trim(), name: name.trim(), adult: age === "adult", dateOfBirth: age === "child" && dob ? dob : null, communityIds: picked, roles: age === "adult" ? roles : [] }]);
       if (res.failed.length) setError(res.failed[0].error);
       else {
         invalidateAdmin("invites");

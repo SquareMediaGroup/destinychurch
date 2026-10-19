@@ -397,7 +397,7 @@ destinychurch/
 │   └── content/                   # Source copy for policy/partner text — the live pages render
 │                                   # an edited subset, so these are the fuller source. See its README.
 ├── applications/                  # Standalone companion apps that live in this repo but ship
-│   ├── destiny-one/               # Destiny One — the members' messaging app (Expo SDK 57, React
+│   ├── destiny-one/               # Destiny One — the members' messaging app (Expo SDK 58, React
 │   │                               # Native, iOS + Android, Liquid Glass via expo-glass-effect).
 │   │                               # Its own npm project (NOT a root workspace, so the website build
 │   │                               # never installs React Native); imports @destiny/shared through a
@@ -450,7 +450,7 @@ destinychurch/
 ├── .vscode/                       # VS Code workspace settings
 ├── next.config.ts                 # Next.js configuration
 ├── playwright.config.ts           # E2E test configuration
-├── eslint.config.mjs              # ESLint rules
+├── eslint.config.mjs              # ESLint rules (React Compiler hints from react-hooks 7.1 are warnings, not errors)
 ├── postcss.config.mjs             # PostCSS plugins
 ├── tsconfig.json                  # TypeScript compiler options
 ├── package.json                   # Node dependencies and scripts
@@ -1396,6 +1396,13 @@ CREATE TABLE order_items (
 -- reads via lib/shop.server.ts; checkout/webhook write via the service role.
 -- Storage: public `product-images` bucket for product photos (WebP).
 ```
+
+> **Storage writes are service-role only** (migration `20261017_01_bug_fixes`).
+> `builder-media`, `post-media`, `product-images` and `shop-hero-images` used to
+> let any `authenticated` user insert/update/delete, on the old assumption that
+> "authenticated = staff". Destiny One sign-in creates Auth users for members,
+> so those policies were dropped; every upload already goes through an admin
+> API route using the service client. Public read policies are unchanged.
 
 **Used By:** `/shop` storefront, `/admin/store` CRUD, `POST /api/store/checkout`, `POST /api/webhooks/stripe`. `description` is HTML written via the shared `RichTextEditor` (same component used for posts/training) — the admin editor no longer has a markdown Write/Preview toggle, and the public product page renders it with `dangerouslySetInnerHTML` (no markdown fallback).
 
@@ -2799,9 +2806,8 @@ have nowhere to go. It also renders `breadcrumbsFor(pathname)`; below `md`
 which page you were on.
 
 **Route transitions.** `app/admin/template.tsx` wraps admin pages in React's
-`<ViewTransition name="admin-page">` (enabled by `experimental.viewTransition`
-in `next.config.ts`; the component comes from the React build the App Router
-runs on, not from the `react` 19.2 in `package.json`). Pages cross-fade instead
+`<ViewTransition name="admin-page">` (stable in React 19.3; Next 16.4 needs no
+config flag — the old `experimental.viewTransition` option was removed). Pages cross-fade instead
 of snapping, and the tab bar's active pill — the one element named
 `admin-tab-pill` in the document at a time — morphs from the old tab's box to
 the new one in the same frame, which is what makes switching tabs read as glass
@@ -3637,7 +3643,7 @@ stay: they're consent and legal, not chrome.
 
 #### Report a Bug (`components/report-bug/*`)
 - `ReportBugLink.tsx` — a "Report a Bug" link rendered in `ChurchFooter.tsx`. Opens an accessible in-app modal (Escape-to-close, body-scroll lock) with a small form: **Full Name**, **Email**, and **How to reproduce**. On submit it captures the current `window.location.href` as `pageUrl` and calls the `submitBugReport` server action, showing inline loading / success / error states.
-- `actions.ts` — `submitBugReport(formData)` server action. Validates name/email/steps, then uses `GITHUB_TOKEN` to open a GitHub Issue on `SquareMediaGroup/destinychurch` via the GitHub REST API (`POST /repos/.../issues`), titled `Bug Report: <name>` with the reporter, page URL, and reproduction steps in the body. Returns `{ success, error? }`; a missing `GITHUB_TOKEN` yields a friendly server-misconfiguration error. **Requires the `GITHUB_TOKEN` env var** (see Configuration).
+- `actions.ts` — `submitBugReport(formData)` server action. Validates name/email/steps, then uses `GITHUB_TOKEN` to open a GitHub Issue on `SquareMediaGroup/destinychurch` via the GitHub REST API (`POST /repos/.../issues`), titled `Bug Report: <name>` with the reporter, page URL, and reproduction steps in the body. Returns `{ success, error? }`; a missing `GITHUB_TOKEN` yields a friendly server-misconfiguration error. Because it's public and spends our GitHub token, it's fenced with a hidden `website` honeypot (answered like a success), a 3-per-minute per-IP rate limit, and field length caps. **Requires the `GITHUB_TOKEN` env var** (see Configuration).
 
 #### About Page (`components/about/*`)
 - `AboutHero.tsx` — the About page hero band.
@@ -4517,6 +4523,12 @@ mints a magic-link token hash — and redirects with a sealed 2-minute code, **n
 redeems that at `exchange` with its verifier, then `verifyOtp({ token_hash })`. An app that hijacks the
 `destinyone://` scheme on Android gets a code it can't use.
 
+`callback` refuses (`error=use_email_sign_in`) when the email belongs to an account that holds more
+than a membership — an `admin_roles` row or an `hr_staff` link — unless that account's member record
+is already linked to the **same** ChurchSuite user id, and always when the member is linked to a
+*different* ChurchSuite user. The email on a ChurchSuite user is editable by ChurchSuite admins, so a
+matching email alone would let one sign in as a website admin (security audit 2026-10-09).
+
 #### Destiny One admin API (`/api/admin/destiny-one/*`)
 Two roles, split by path in `lib/adminRoles.ts` ROUTE_RULES (the safeguarding rule is listed first
 so the broader one can't swallow it) and re-checked in every route by `requireDestinyOneAdmin` /
@@ -4676,7 +4688,10 @@ POST /api/store/checkout/bypass
 //   and the customer enters a @destinytees.uk email, pressing "Continue to payment" on
 //   the checkout page shows a popup asking whether to "Complete test order" (skips
 //   Stripe) or "Continue to payment" (real payment) — there's no standing test button
-//   visible to regular customers. Never set either flag in production.
+//   visible to regular customers. Never set either flag in production — and since
+//   the 2026-10-09 security audit (which found it set there) the route 404s and the
+//   popup is hidden whenever VERCEL_ENV is "production", whatever the flags say.
+//   The email is typed, not verified, so the domain check alone protects nothing.
 
 // Shared order logic (pricing recompute, order creation, paid-finalisation) lives
 // in lib/checkout.server.ts and is used by checkout, the webhook, and the bypass.
@@ -4684,14 +4699,12 @@ POST /api/store/checkout/bypass
 POST /api/shop-diagnostics
 //   TEMPORARY — remove with components/shop/ShopDiagnostics.tsx once the /shop
 //   blank-page bug is identified. Receives a client snapshot captured when /shop
-//   renders blank and does two things with it:
-//     1. console.error → Vercel runtime logs. Always runs; the reliable channel.
-//     2. Files/comments a GitHub issue via the GITHUB_TOKEN already used by
-//        components/report-bug/actions.ts, deduped by reason+route (label
-//        "shop-blank-page") so a recurring bug appends to one issue.
-//   Public and unauthenticated but fenced: same-origin only (403), 32KB body cap
-//   (413), 5 reports per IP per 10 min (throttled), and localhost skips the
-//   GitHub write so dev noise never reaches the issue tracker.
+//   renders blank and writes it to the Vercel runtime logs (console.error;
+//   search for "shop-diagnostics"). It used to also file GitHub issues; that was
+//   removed in the 2026-10-09 security audit because the Origin check is
+//   forgeable and the dedupe key is caller-chosen, so anyone could open
+//   unlimited issues with our token. Fenced: same-origin only (403), 32KB body
+//   cap (413), 5 reports per IP per 10 min (throttled).
 
 // ADMIN (gated by middleware, site_editor role)
 GET|POST            /api/admin/store/products
@@ -6742,6 +6755,13 @@ accept the current privacy / terms / chat-review notices. Leader roles (`admin`,
 
 ```typescript
 const nextConfig: NextConfig = {
+  // Server actions default to a 1MB body. The jobs form takes a CV up to 4MB
+  // (app/jobs/actions.ts MAX_CV_BYTES) — Vercel itself caps a function request
+  // at 4.5MB, so a larger limit here would never be reachable.
+  experimental: {
+    serverActions: { bodySizeLimit: "4.5mb" },
+  },
+
   // Include ffmpeg binary for serverless functions (if needed)
   outputFileTracingIncludes: {
     "*": ["node_modules/ffmpeg-static/ffmpeg"],
@@ -7683,7 +7703,12 @@ same database as the data rather than in a separate Synapse module.
 - **Lint:** `eslint.config.js` (`eslint-config-expo`). The React Compiler rules (`react-hooks/refs`,
   `set-state-in-effect`, `preserve-manual-memoization`) are errors. The only exceptions are the two
   PanResponder handlers in `Swipe.tsx`, whose refs are read in touch handlers rather than during render
-  (marked with a reasoned `eslint-disable-next-line`).
+  (marked with a reasoned `eslint-disable-next-line`). `import/namespace` is off: `tsc` checks namespace
+  members, and the plugin misses SDK 58's compiled enums (`Notifications.AndroidImportance`).
+  `npx expo lint` caches in `.expo/cache/eslint`; delete it if results look stale.
+- **React Native 0.87+ strict types:** refs use instance types — `useRef<TextInputInstance>`,
+  `useRef<ViewInstance>` (exported from `react-native`), not `useRef<TextInput>` / `useRef<View>`.
+  `ListEmptyComponent` / `ListFooterComponent` take `undefined`, not `null`, for "nothing".
 - **Differences from the prototype:** Settings adds Download my data and Delete my account (safeguarding policy + UK GDPR access and
   erasure). Emoji reactions are allowed as member content (confirmed 2026-09-27).
 - **Sign-in:** the email screen calls `api.requestCode` (`POST /auth/code`); the server sends a code
@@ -7705,7 +7730,7 @@ same database as the data rather than in a separate Synapse module.
   access request pre-filled "Invited by X to Group (leader says: adult)", and staff approval in
   `/admin/destiny-one/requests` confirms their age and joins them to the group
   (`request_group_ids`). Migration `20260927_02_destiny_one_leader_invites.sql`.
-- Expo SDK 57, Expo Router (`src/app/`), TypeScript. Its own npm project with its own lockfile —
+- Expo SDK 58 (React Native 0.88), Expo Router (`src/app/`), TypeScript. Its own npm project with its own lockfile —
   deliberately **not** a root workspace so Vercel never installs React Native. It imports
   `@destiny/shared` via `"file:../../packages/shared"`; `metro.config.js` watches that folder.
   Excluded from the root `tsconfig.json` and `eslint.config.mjs`.

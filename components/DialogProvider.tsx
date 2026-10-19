@@ -13,6 +13,7 @@ import { usePathname } from "next/navigation";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { inputClass, ghostBtn, primaryBtn, dangerBtn } from "@/components/admin/AdminUI";
 import { useAdminTheme } from "@/lib/adminTheme";
+import { useScrollLock } from "@/lib/useScrollLock";
 
 type ConfirmOptions = {
   title?: string;
@@ -144,12 +145,12 @@ function DialogModal({
       if (e.key === "Escape") cancel();
     };
     document.addEventListener("keydown", onKey);
-    document.body.style.overflow = "hidden";
     return () => {
       document.removeEventListener("keydown", onKey);
-      document.body.style.overflow = "";
     };
   }, [cancel]);
+  // Counted, so closing a confirm opened over a modal leaves that modal's lock.
+  useScrollLock(true);
 
   useEffect(() => {
     // Autofocus the input (prompt) or the confirm button.

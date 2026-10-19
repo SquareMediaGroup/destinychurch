@@ -45,7 +45,9 @@ export type D1ErrorCode =
   | "invalid"
   | "rule_violation"
   | "rate_limited"
-  | "unavailable";
+  | "unavailable"
+  /** Supabase is down. `message` is OUTAGE_MESSAGE; link to D1_STATUS_URL. */
+  | "outage";
 
 /**
  * GET /config — read before sign-in. The app shows the update screen when its

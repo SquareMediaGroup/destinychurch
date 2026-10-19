@@ -10,6 +10,10 @@ import { getSettings } from "@/lib/destinyOne/settings.server";
 // whole app offline. Both are edited at /admin/destiny-one/settings, so a bad
 // build can be retired without a deploy or an App Store release.
 //
+// The settings live in Supabase, so during a Supabase outage they can't be
+// read (getSettings falls back to defaults). D1_MAINTENANCE_MESSAGE, set in
+// Vercel and redeployed, switches the app off without the database.
+//
 // Nothing here is about a person, so unlike every other /one route it may sit
 // in the CDN, briefly: a raised minimum reaches everyone within about a minute.
 
@@ -26,7 +30,7 @@ export const GET = oneRoute(async () => {
   const config: D1AppConfig = {
     minBuild: { ios: s.minBuildIos, android: s.minBuildAndroid },
     forceUpdateMessage: s.forceUpdateMessage,
-    maintenanceMessage: s.maintenanceMessage,
+    maintenanceMessage: process.env.D1_MAINTENANCE_MESSAGE || s.maintenanceMessage,
     storeUrl: { ios: IOS_STORE_URL, android: ANDROID_STORE_URL },
   };
   const res = oneJson(config);

@@ -1,6 +1,6 @@
 # Destiny One — production checklist
 
-**Target:** production by November 2026. **Audited:** 28 September 2026 (code, database rules, admin pages, nightly jobs, and a read-only look at the live Supabase project).
+**Target:** production in January 2027, alongside the new website (moved from November 2026). **Audited:** 28 September 2026 (code, database rules, admin pages, nightly jobs, and a read-only look at the live Supabase project).
 
 **Progress:** the items ticked below were done on 28 September 2026 (migration `supabase/migrations/20260928_01_destiny_one_safeguarding.sql`, applied to the live Supabase project on 28 September 2026; the website code that uses it is in PR #38). Report alert emails go to everyone with the Safeguarding Admin role, and there are none yet, so add at least one.
 
@@ -48,8 +48,8 @@ Decided with the product owner on 28 September 2026:
 ## 3. App Store and Google Play
 
 - [ ] Apple Developer and Google Play accounts **as an organisation** (needs a D-U-N-S number, which can take a couple of weeks). A personal Play account has to run a 14-day closed test with 12 testers first.
-- [ ] **A way for App Review to sign in.** Sign-in is email-code only, so reviewers need a demo account.
-- [ ] **Android push setup:** add the Firebase config file to `app.json` and give EAS the Firebase key. Neither exists, so Android notifications won't work.
+- [ ] **A way for App Review to sign in.** Reviewers need a demo account. Password sign-in already exists, so this is setup, not code: steps in `README.md` ("App Review sign-in").
+- [ ] **Android push setup.** Done in code: `app.config.js` adds the Firebase file to builds when EAS has it. Still to do: create the Firebase project, and give EAS the `GOOGLE_SERVICES_JSON` file and the FCM V1 key (steps in `README.md`, "Android push").
 - [ ] Store listings, screenshots, Apple privacy labels, Play data safety form, age ratings, and Google Play's policy for apps used by children.
 - [ ] Set `D1_IOS_STORE_URL` / `D1_ANDROID_STORE_URL` on Vercel once the listings are live. Change the version in `app.json` from 0.1.0 to 1.0.0.
 - [ ] Update the "no Destiny app" answer at `app/help/page.tsx:150`.

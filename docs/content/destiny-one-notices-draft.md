@@ -1,6 +1,6 @@
 # Destiny One — draft wording for the privacy notice, terms and safeguarding policy
 
-**Status: DRAFT for review. Not legal advice, and not live.** Written from what the app actually does (`docs/destiny-one-gdpr.md`), so Destiny's leadership, safeguarding lead and data protection adviser have a starting point. Nothing here is published until they sign it off.
+**Status: DRAFT for review. Not legal advice, and not live.** Written from what the app actually does (`docs/destiny-one-gdpr.md`), last checked against the app at v0.12 on 19 October 2026, so Destiny's leadership, safeguarding lead and data protection adviser have a starting point. Nothing here is published until they sign it off.
 
 **Before any of this goes live:**
 - Fill in every `[bracketed]` item. Who holds the safeguarding role comes from the safeguarding policy review (scoping doc D6); the lawful bases come from the DPIA. The minimum age (13) and retention (1 year) were decided on 28 September 2026.
@@ -15,12 +15,13 @@
 **What Destiny One is.** Destiny One is Destiny Church Tees Valley's app for our teams and groups to message each other. It is only for people aged 13 and over whom the church has invited. Destiny Church is the data controller.
 
 **What we hold about you**
-- Your **real name**, as the church office has it. You can't change it yourself; ask the church office.
+- Your **real name**. The church office sets it when you're invited. You can change it yourself in Profile, up to twice in any 30 days, and we keep the dates you changed it.
 - **Whether you're 18 or over.** If you're under 18 and we know your date of birth, we keep only **the date you turn 18**, never your full date of birth. If you ask to join and give your date of birth, we keep only the date you turn 18 from that too, and the note you wrote.
 - **Who approved you** and when.
-- Your **email address**, which you use to sign in. Other members never see it.
+- Your **email address**, which you use to sign in. Other members never see it. You can change it in Profile.
+- A **password**, if you choose to set one (otherwise you sign in with a code we email you). It's stored scrambled by our sign-in provider, so nobody at the church can see it.
 - The **groups and communities** you're in, including when you joined and left.
-- The **messages, photos and files** you send, your **reactions**, and messages you've deleted (see "How long we keep things").
+- The **messages, voice messages, photos and files** you send, **polls** you create and how you vote, **events** you share, your **reactions**, and messages you've deleted (see "How long we keep things").
 - A **profile picture**, if you choose to add one.
 - The notices you've agreed to, and when.
 - People you've **blocked**, and reports you've made.
@@ -29,6 +30,8 @@
 - A **device token** so we can send you notifications.
 
 **What we never collect:** phone numbers, your address, your location, your contacts, or medical information. Photos are re-saved on your phone before they're uploaded, which removes location and other hidden details.
+
+**What stays on your phone.** Some things never reach us: a chat wallpaper photo you choose, Face ID or fingerprint checks (your phone does these and only tells the app yes or no), and shake-to-report (the app notices a shake, but nothing about your movement is stored or sent). The app keeps a copy of recent chats on your phone so they open quickly; it's protected by your phone's own encryption and wiped when you sign out.
 
 **Why we use it, and our legal basis** `[to confirm in the DPIA]`
 - To run the app for church members: our legitimate interests, and for a religious not-for-profit body, UK GDPR Article 9(2)(d) where membership reveals religious belief.
@@ -47,7 +50,7 @@
 | Company | What for | Where |
 |---|---|---|
 | Supabase | Stores the app's data, sign-in and files | EU (Ireland) |
-| Vercel | Runs the app's server | `[confirm region]` |
+| Vercel | Runs the app's server | UK (London), by a US company `[confirm transfer cover]` |
 | Resend | Sends sign-in codes and invites by email | `[confirm region]` |
 | Sentry | Crash reports, so we can fix problems (no names, emails or messages) | EU (Germany) |
 | Expo, Apple, Google | Deliver notifications (with a message preview) | USA |
@@ -64,9 +67,9 @@ We have data processing agreements with each, and transfers to the USA are cover
 - Closed reports and resolved safeguarding records: 1 year.
 - Records of who reviewed a chat: `[365 days, the audit log's retention]`.
 
-**If you delete your account** (in the app: Settings → Delete my account): you leave every group, your name, age, email, profile picture, consents, blocks and device tokens are removed, and your sign-in is deleted. **Your messages stay**, shown as "Former member", until the retention period ends, because they may be needed for safeguarding. Then they're deleted too.
+**If you delete your account** (in the app: Profile → Delete my account): you leave every group, your name, age, email, profile picture, consents, blocks and device tokens are removed, and your sign-in is deleted. **Your messages stay**, shown as "Former member", until the retention period ends, because they may be needed for safeguarding. Then they're deleted too.
 
-**Your rights.** You can see a copy of everything we hold about you in the app (Settings → Download my data). You can ask us to correct your name or age (ask the church office), delete your account, or object to how we use your data, by contacting `[admin@destinytees.uk]`. You can also complain to the Information Commissioner's Office (ico.org.uk).
+**Your rights.** You can see a copy of everything we hold about you in the app (Profile → Download my data). You can correct your own name and email in Profile, ask us to correct your age (ask the church office), delete your account, or object to how we use your data, by contacting `[admin@destinytees.uk]`. You can also complain to the Information Commissioner's Office (ico.org.uk).
 
 **Children.** Young people can use Destiny One from age 13. Under-18s are only ever in groups with at least 2 adults, can only be added by adult leaders, and there's no way to find or message a young person outside a group.
 
@@ -98,6 +101,7 @@ Destiny One is the church's only approved way for staff and volunteers to messag
 - **Reports** go to the Safeguarding Admins by email and in the website admin. They are handled within `[time]` in normal working hours, following the procedure in this policy for any concern. The app is not monitored out of hours; urgent concerns go through the usual emergency routes.
 - **Staff and volunteers must not** use personal phone numbers, social media or other apps to message young people from church groups. `[Align with the church's social media and communications policy.]`
 - **Photos:** members are asked not to share photos of children without a parent's or carer's permission. The app removes location data from photos automatically.
+- **DestinyAI** is an automated assistant, not a person or a safeguarding contact. Its chats are kept and reviewable like any other. If someone tells it they are unsafe, it points them to a trusted adult, 999, Childline and Samaritans, but it does not alert anyone. `[Safeguarding lead to decide: should it alert the Safeguarding Admins?]`
 
 ---
 

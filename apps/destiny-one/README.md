@@ -121,6 +121,46 @@ Before external TestFlight or the App Store:
 - Once the app is live, set `D1_IOS_STORE_URL` on Vercel to its App Store link so the Update
   button stops pointing at TestFlight.
 
+## Android push
+
+Android notifications go through Firebase Cloud Messaging, so an Android build needs a Firebase
+project. Without it the app works, but Android phones never get a push token. `app.config.js`
+adds the Firebase file to the build when it's there; nothing secret is committed.
+
+1. In the [Firebase console](https://console.firebase.google.com), create a project (Analytics
+   off) and add an Android app with package `uk.destinytees.one`. Download `google-services.json`.
+2. Give it to EAS as a file variable, for each environment that builds for Android:
+   `npx eas-cli@latest env:create --name GOOGLE_SERVICES_JSON --type file --value ./google-services.json --visibility secret --environment production`
+   (repeat for `preview` and `development`). For a local build, put the file in this folder
+   instead; it's in `.gitignore`.
+3. In Firebase → Project settings → Service accounts, generate a new private key (JSON). Upload it
+   to EAS: `npx eas-cli@latest credentials --platform android` → production → Google Service
+   Account → "Manage your Google Service Account Key for Push Notifications (FCM V1)" → upload.
+   Keep the JSON out of the repo, and delete your downloaded copy once it's uploaded.
+4. Make a new Android build (the Firebase file is native config, so `eas update` won't carry it)
+   and send a test message to a group with the app fully closed.
+
+## App Review sign-in
+
+Sign-in is by email, so Apple and Google reviewers need a demo account with a password (the
+"Use password" button on the sign-in screen skips the emailed code). Reviewers also need a group to
+look at, and every group needs 3 people including 2 adults.
+
+1. Make a mailbox the church controls, e.g. `appreview@destinytees.uk`, plus two more for the other
+   demo members (or plus-addresses of one mailbox, if the mail provider supports them).
+2. At `/admin/destiny-one/invites`, invite all three as **adults**, with no leader, admin or safeguarding
+   roles. Invited members are staff-verified, so the nightly ChurchSuite sync never touches them.
+3. Sign in once as each (emailed code), accept the notices, then set a strong password on the review
+   account in Profile → Password.
+4. Have a leader create a "App Review" group with the three of them, and post a few ordinary
+   messages, a photo and a poll so the reviewer has something to see.
+5. Put the review email and password in App Store Connect → App Review Information (and Play
+   Console → App content → App access), with a note: "Invite-only church app. This demo account is
+   in one group. Long-press a message to Report or Block. Profile → Delete my account deletes the
+   account; please don't use it on this account, or the demo stops working."
+6. Keep this account and group when clearing test data before launch. Change the password after each
+   review if you like, and update both stores when you do.
+
 ## v0.8 rollout
 
 v0.8 is 15 stacked PRs (#89 to #104). Merge them **in order**: each is branched from the one before.

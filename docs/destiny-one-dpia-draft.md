@@ -9,7 +9,7 @@
 | Prepared by | Square Media Group (draft), 28 September 2026 |
 | Data protection lead | `[name]` |
 | Safeguarding lead (DSL) | `[name]` |
-| Planned launch | November 2026 |
+| Planned launch | January 2027, alongside the new website |
 
 **Added to the app since this draft (checked 19 October 2026), not yet assessed below.** The data protection lead should add these to steps 2, 5 and 6 before signing:
 - **DestinyAI (v0.10).** An automated assistant members can message, or tag in a group. The question, the message it replies to and the senders' names go to **OpenAI (USA)**, and search words to **Tavily (USA)**. This sends children's messages to a US AI provider, so it needs its own risk entry, transfer cover and a decision on whether under-18s can use it.

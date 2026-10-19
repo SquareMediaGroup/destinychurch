@@ -1,6 +1,6 @@
 # Destiny One — production checklist
 
-**Target:** production by November 2026. **Audited:** 28 September 2026 (code, database rules, admin pages, nightly jobs, and a read-only look at the live Supabase project).
+**Target:** production in January 2027, alongside the new website (moved from November 2026). **Audited:** 28 September 2026 (code, database rules, admin pages, nightly jobs, and a read-only look at the live Supabase project).
 
 **Progress:** the items ticked below were done on 28 September 2026 (migration `supabase/migrations/20260928_01_destiny_one_safeguarding.sql`, applied to the live Supabase project on 28 September 2026; the website code that uses it is in PR #38). Report alert emails go to everyone with the Safeguarding Admin role, and there are none yet, so add at least one.
 

@@ -1,6 +1,6 @@
 import { AutoRefresh } from "./AutoRefresh";
 import { ComponentRow } from "./ComponentRow";
-import { activeNotices, recentResolved, type Notice } from "@/lib/notices";
+import type { Notice } from "@/lib/notices";
 import { getStatus, type ServiceStatus } from "@/lib/status";
 import type { Level } from "@/lib/checks";
 
@@ -24,7 +24,7 @@ const LABEL: Record<Level, string> = {
 
 const NOTICE_LABEL: Record<Notice["kind"], string> = {
   outage: "Outage",
-  degraded: "Degraded",
+  degraded: "Amber alert",
   maintenance: "Maintenance",
 };
 
@@ -42,8 +42,7 @@ function formatTime(iso: string) {
 
 export default async function StatusPage() {
   const report = await getStatus();
-  const active = activeNotices();
-  const resolved = recentResolved();
+  const { active, resolved } = report.notices;
 
   return (
     <main className="page">
@@ -64,7 +63,7 @@ export default async function StatusPage() {
       {active.length > 0 && (
         <section className="notices" aria-label="Current notices">
           {active.map((n) => (
-            <NoticeCard key={n.title + n.startedAt} notice={n} />
+            <NoticeCard key={n.id} notice={n} />
           ))}
         </section>
       )}
@@ -77,7 +76,7 @@ export default async function StatusPage() {
         <section className="card">
           <h2 className="card-title">Past notices</h2>
           {resolved.map((n) => (
-            <NoticeCard key={n.title + n.startedAt} notice={n} />
+            <NoticeCard key={n.id} notice={n} />
           ))}
         </section>
       )}
@@ -144,7 +143,16 @@ function NoticeCard({ notice }: { notice: Notice }) {
         {notice.resolvedAt && ` to ${formatTime(notice.resolvedAt)}`}
       </p>
       <p className="notice-title">{notice.title}</p>
-      <p className="muted">{notice.body}</p>
+      {notice.updates.length > 0 && (
+        <ol className="timeline">
+          {notice.updates.map((u, i) => (
+            <li key={u.createdAt + i}>
+              <p className="small muted">{formatTime(u.createdAt)}</p>
+              <p className="update-body">{u.body}</p>
+            </li>
+          ))}
+        </ol>
+      )}
     </article>
   );
 }

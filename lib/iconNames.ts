@@ -218,6 +218,7 @@ export const ICON_NAMES = [
   "mic",
   "mobile",
   "money",
+  "monitor_heart",
   "monitoring",
   "more",
   "more_horiz",

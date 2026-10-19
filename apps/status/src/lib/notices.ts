@@ -1,42 +1,85 @@
-// Notices written by a person: an outage explanation, planned maintenance, or a
-// resolved incident. Kept in the repo rather than a database so posting one
-// never depends on the systems that might be down. Add an entry, merge, and
-// Vercel redeploys the page.
+// Incidents posted by Site Admins from the website's /admin/status: outages,
+// amber alerts and maintenance, each with a timeline of updates. Read from
+// Supabase's REST API with the publishable key (the tables are public-read,
+// supabase/migrations/20261019_01_status_incidents.sql).
 //
-// `components` uses the ids from lib/status.ts (e.g. "d1-chats", "shop").
-// Resolved notices stay on the page for 14 days after `resolvedAt`.
+// If Supabase can't be read, the page still renders its automated checks and
+// just shows no notices; that read is the only part of this app that depends
+// on Supabase. `components` uses the ids from lib/status.ts.
 
 export type NoticeKind = "outage" | "degraded" | "maintenance";
 
-export interface Notice {
-  title: string;
+export interface NoticeUpdate {
   body: string;
+  createdAt: string;
+}
+
+export interface Notice {
+  id: number;
+  title: string;
   kind: NoticeKind;
   components: string[];
-  /** ISO 8601, e.g. "2026-10-19T19:00:00Z". */
   startedAt: string;
-  resolvedAt?: string;
+  resolvedAt: string | null;
+  /** Newest first. */
+  updates: NoticeUpdate[];
 }
 
-export const notices: Notice[] = [
-  // {
-  //   title: "Destiny One messages delayed",
-  //   body: "Messages may be slow to send right now. We're watching it.",
-  //   kind: "degraded",
-  //   components: ["d1-chats", "d1-realtime"],
-  //   startedAt: "2026-10-19T19:00:00Z",
-  // },
-];
+export interface Notices {
+  active: Notice[];
+  /** Resolved in the last 14 days, newest first. */
+  resolved: Notice[];
+  /** False when Supabase couldn't be read. */
+  available: boolean;
+}
 
 const SHOW_RESOLVED_FOR_MS = 14 * 24 * 60 * 60_000;
+const SUPABASE_URL = process.env.STATUS_SUPABASE_URL?.replace(/\/$/, "") || null;
+const SUPABASE_KEY = process.env.STATUS_SUPABASE_PUBLISHABLE_KEY || null;
 
-/** Ongoing and upcoming (planned maintenance can start in the future). */
-export function activeNotices(): Notice[] {
-  return notices.filter((n) => !n.resolvedAt);
+interface Row {
+  id: number;
+  title: string;
+  kind: NoticeKind;
+  components: string[] | null;
+  started_at: string;
+  resolved_at: string | null;
+  status_incident_updates: { body: string; created_at: string }[] | null;
 }
 
-export function recentResolved(now = Date.now()): Notice[] {
-  return notices
-    .filter((n) => n.resolvedAt && now - new Date(n.resolvedAt).getTime() < SHOW_RESOLVED_FOR_MS)
-    .sort((a, b) => b.startedAt.localeCompare(a.startedAt));
+export async function getNotices(): Promise<Notices> {
+  if (!SUPABASE_URL || !SUPABASE_KEY) return { active: [], resolved: [], available: false };
+
+  const since = new Date(Date.now() - SHOW_RESOLVED_FOR_MS).toISOString();
+  const params = new URLSearchParams({
+    select: "id,title,kind,components,started_at,resolved_at,status_incident_updates(body,created_at)",
+    or: `(resolved_at.is.null,resolved_at.gt.${since})`,
+    order: "started_at.desc",
+    "status_incident_updates.order": "created_at.desc",
+  });
+
+  try {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/status_incidents?${params}`, {
+      headers: { apikey: SUPABASE_KEY },
+      signal: AbortSignal.timeout(5_000),
+    });
+    if (!res.ok) return { active: [], resolved: [], available: false };
+    const rows = (await res.json()) as Row[];
+    const notices: Notice[] = rows.map((r) => ({
+      id: r.id,
+      title: r.title,
+      kind: r.kind,
+      components: r.components ?? [],
+      startedAt: r.started_at,
+      resolvedAt: r.resolved_at,
+      updates: (r.status_incident_updates ?? []).map((u) => ({ body: u.body, createdAt: u.created_at })),
+    }));
+    return {
+      active: notices.filter((n) => !n.resolvedAt),
+      resolved: notices.filter((n) => n.resolvedAt),
+      available: true,
+    };
+  } catch {
+    return { active: [], resolved: [], available: false };
+  }
 }

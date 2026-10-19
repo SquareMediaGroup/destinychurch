@@ -5,6 +5,17 @@ import nextTs from "eslint-config-next/typescript";
 const eslintConfig = defineConfig([
   ...nextVitals,
   ...nextTs,
+  {
+    // eslint-plugin-react-hooks 7.1 (eslint-config-next 16.4) flags more React
+    // Compiler readiness patterns — fetch-on-mount setState and "latest value"
+    // refs written during render. Existing code is correct as written; keep the
+    // hints visible as warnings while it's migrated rather than failing CI.
+    rules: {
+      "react-hooks/set-state-in-effect": "warn",
+      "react-hooks/refs": "warn",
+      "react-hooks/use-memo": "warn",
+    },
+  },
   // Override default ignores of eslint-config-next.
   globalIgnores([
     // Default ignores of eslint-config-next:
@@ -16,6 +27,8 @@ const eslintConfig = defineConfig([
     "mobile/**",
     // Destiny One, the Expo messaging app — its own toolchain too.
     "apps/destiny-one/**",
+    // D1 Admin, the Tauri desktop app — its own package and checks (CI job d1-admin).
+    "apps/d1-admin/**",
     // Talent show buzzers: standalone Node/CommonJS app with its own package.json.
     "apps/talent-buzzer/**",
     // Agent worktrees are full copies of the app, gitignored; linting them

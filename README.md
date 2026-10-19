@@ -43,7 +43,7 @@ Designed, engineered, and deployed by [Square Media Group](mailto:hello@squareme
 |---|---|
 | Framework | Next.js 16 (App Router), React 19 |
 | Mobile (content) | Native iOS — SwiftUI, Swift 6 (XcodeGen project) |
-| Mobile (members) | Destiny One — Expo SDK 57 / React Native, Expo Router, TypeScript (iOS + Android) |
+| Mobile (members) | Destiny One — Expo SDK 58 / React Native, Expo Router, TypeScript (iOS + Android) |
 | Desktop | Native macOS — SwiftUI, Swift 6 (Live Caption app) |
 | On-device speech | whisper.cpp (Metal), NDI (live captions) |
 | Language | TypeScript |

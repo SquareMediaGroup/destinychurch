@@ -86,9 +86,12 @@ export default function RedirectsPage() {
       .catch(() => {});
   }, []);
 
+  // Keyed on the boolean, not `searchParams`: the list toolbar rewrites the
+  // query string as you search, which would otherwise reopen the form.
+  const wantsNew = searchParams.get("new") === "1";
   useEffect(() => {
-    if (searchParams.get("new") === "1") setShowForm(true);
-  }, [searchParams]);
+    if (wantsNew) setShowForm(true);
+  }, [wantsNew]);
 
   const list = useAdminList<Redirect>({
     items: redirects,

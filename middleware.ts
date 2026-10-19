@@ -60,6 +60,16 @@ async function getRolesCached(userId: string): Promise<RoleFlags> {
   return roles;
 }
 
+/** The Destiny One admin API, the one /api/admin area that also accepts a bearer token. */
+function isDestinyOneAdminApi(pathname: string): boolean {
+  return /^\/api\/admin\/destiny-one(\/|$)/.test(pathname);
+}
+
+function bearerFrom(request: NextRequest): string | null {
+  const m = /^Bearer\s+(.+)$/i.exec((request.headers.get("authorization") ?? "").trim());
+  return m ? m[1] : null;
+}
+
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
@@ -83,9 +93,26 @@ export async function middleware(request: NextRequest) {
     url.search = "?" + params.toString();
     return NextResponse.redirect(url, { status: 302 });
   }
-  const { supabase, supabaseResponse } = createClient(request);
+  const session = createClient(request);
 
-  const { data: { user } } = await supabase.auth.getUser();
+  let { data: { user } } = await session.supabase.auth.getUser();
+  // Read only after getUser(): a token refresh inside it swaps in a new
+  // response carrying the refreshed auth cookies. Taken before, the refreshed
+  // session was silently dropped.
+  const { supabaseResponse } = session;
+
+  // The D1 Admin desktop app (apps/d1-admin) has no cookie jar, so for the
+  // Destiny One admin API only, a Supabase access token in
+  // `Authorization: Bearer …` stands in for the cookie session. Every check
+  // below (roles, ROUTE_RULES, actor headers for the audit log) runs exactly
+  // as it does for a cookie. Every other /api/admin path stays cookie-only.
+  if (!user && isDestinyOneAdminApi(pathname)) {
+    const token = bearerFrom(request);
+    if (token) {
+      const { data } = await createServiceClient().auth.getUser(token);
+      user = data.user ?? null;
+    }
+  }
 
   // Allow unauthenticated logout endpoint so sign-out always succeeds
   if (pathname === "/api/admin/logout") {

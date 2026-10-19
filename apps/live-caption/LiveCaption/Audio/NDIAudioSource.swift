@@ -19,6 +19,8 @@ final class NDIAudioSource: AudioSource {
     private var receiverInstance: NDIlib_recv_instance_t?
     private var captureThread: Thread?
     private var resampler: AudioResampler?
+    /// Input rate `resampler` was built for; only touched on the capture thread after `start()`.
+    private var resamplerSampleRate: Double = 48_000
     private var consecutiveTimeouts = 0
 
     /// Timeouts allowed before treating the source as gone. NDI's capture
@@ -90,7 +92,10 @@ final class NDIAudioSource: AudioSource {
         isRunning = true
         consecutiveTimeouts = 0
 
-        let thread = Thread { [weak self] in self?.captureLoop() }
+        // Strong capture: the loop owns tearing down the receiver (see
+        // `stop()`), so it must run to completion even if the owner has
+        // already dropped this source. `stop()` breaks the cycle.
+        let thread = Thread { self.captureLoop() }
         thread.name = "NDIAudioSource.capture"
         thread.qualityOfService = .userInteractive
         captureThread = thread
@@ -101,14 +106,18 @@ final class NDIAudioSource: AudioSource {
         guard isRunning else { return }
         isRunning = false
         captureThread = nil
-        if let receiver = receiverInstance {
-            NDIlib_recv_destroy(receiver)
-            receiverInstance = nil
-        }
+        // The receiver is destroyed by `captureLoop()` on its way out, not
+        // here: the capture thread can be blocked inside
+        // `NDIlib_recv_capture_v3` with this receiver for up to 5s, and
+        // destroying it underneath that call is a use-after-free.
     }
 
     private func captureLoop() {
         guard let receiver = receiverInstance else { return }
+        defer {
+            NDIlib_recv_destroy(receiver)
+            receiverInstance = nil
+        }
 
         while isRunning {
             var videoFrame = NDIlib_video_frame_v2_t()
@@ -167,8 +176,22 @@ final class NDIAudioSource: AudioSource {
         let scale = 1.0 / Float(channelCount)
         for i in 0..<sampleCount { mono[i] *= scale }
 
+        // The sample rate comes off the network: a zero/garbage value must
+        // drop the frame, not crash on a force-unwrap. And the resampler was
+        // built for 48kHz, so a source at any other rate needs a matching
+        // one, or its audio is converted at the wrong speed.
+        let sampleRate = Double(frame.sample_rate)
+        guard sampleRate > 0,
+              let frameFormat = AVAudioFormat(commonFormat: .pcmFormatFloat32, sampleRate: sampleRate, channels: 1, interleaved: false)
+        else { return }
+        if resamplerSampleRate != sampleRate {
+            guard let newResampler = AudioResampler(inputFormat: frameFormat) else { return }
+            resampler = newResampler
+            resamplerSampleRate = sampleRate
+        }
+
         guard let inputBuffer = AVAudioPCMBuffer(
-            pcmFormat: AVAudioFormat(commonFormat: .pcmFormatFloat32, sampleRate: Double(frame.sample_rate), channels: 1, interleaved: false)!,
+            pcmFormat: frameFormat,
             frameCapacity: AVAudioFrameCount(sampleCount)
         ) else { return }
         inputBuffer.frameLength = AVAudioFrameCount(sampleCount)

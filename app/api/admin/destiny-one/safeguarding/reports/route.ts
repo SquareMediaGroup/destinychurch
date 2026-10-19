@@ -23,17 +23,19 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "Unknown status" }, { status: 400 });
   }
 
-  const { data, error } = await createServiceClient()
-    .from("d1_reports")
-    .select(
-      "id, group_id, reason, status, resolution, resolved_at, created_at, " +
-        "reporter:d1_members!d1_reports_reporter_id_fkey(id, display_name), " +
-        "group:d1_groups(id, name), " +
-        "message:d1_messages(id, body, content, created_at, deleted_at, deleted_by_admin, sender:d1_members!d1_messages_sender_id_fkey(id, display_name))",
-    )
-    .eq("status", status)
-    .order("created_at", { ascending: false })
-    .limit(200);
+  const columns = (extra: string) =>
+    "id, group_id, reason, status, resolution, resolved_at, " + extra + "created_at, " +
+    "reporter:d1_members!d1_reports_reporter_id_fkey(id, display_name), " +
+    "group:d1_groups(id, name), " +
+    "message:d1_messages(id, body, content, created_at, deleted_at, deleted_by_admin, sender:d1_members!d1_messages_sender_id_fkey(id, display_name))";
+  const read = (extra: string) =>
+    createServiceClient().from("d1_reports").select(columns(extra)).eq("status", status).order("created_at", { ascending: false }).limit(200);
+
+  // escalated_at arrives with migration 20261011_01. Until it has run on this
+  // database (a deploy that lands first), read without it rather than break
+  // the safeguarding queue.
+  let { data, error } = await read("escalated_at, ");
+  if (error && /escalated_at/.test(error.message)) ({ data, error } = await read(""));
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
   // Reasons and message text are encrypted at rest; open them for the reviewer.

@@ -71,6 +71,9 @@ export default function FeaturedEventPage() {
           fetch("/api/admin/events"),
           fetch("/api/admin/featured-event"),
         ]);
+        // A 500 body is `{ error }` — without this the form loaded blank and a
+        // save from it cleared the live featured event.
+        if (!rowRes.ok) throw new Error(String(rowRes.status));
         const eventsData = await eventsRes.json();
         const row = await rowRes.json();
 
@@ -144,8 +147,10 @@ export default function FeaturedEventPage() {
           event_slug: chosen?.slug ?? null,
           event_ends_at: chosen?.endsAt ?? null,
           active,
-          promote_from: promoteFrom || null,
-          promote_until: promoteUntil || null,
+          // datetime-local values carry no offset; the API parses them in UTC,
+          // so send real instants — otherwise every BST save moved them +1h.
+          promote_from: promoteFrom ? new Date(promoteFrom).toISOString() : null,
+          promote_until: promoteUntil ? new Date(promoteUntil).toISOString() : null,
           headline,
           blurb,
           image_url: imageUrl,

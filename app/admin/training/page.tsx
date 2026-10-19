@@ -43,9 +43,12 @@ export default function TrainingCategoriesPage() {
     load();
   }, [load]);
 
+  // Keyed on the boolean, not `searchParams`: the list toolbar rewrites the
+  // query string as you search, which would otherwise reopen the form.
+  const wantsNew = searchParams.get("new") === "1";
   useEffect(() => {
-    if (searchParams.get("new") === "1") setEditing("new");
-  }, [searchParams]);
+    if (wantsNew) setEditing("new");
+  }, [wantsNew]);
 
   const list = useAdminList<TrainingCategory>({
     items: categories,

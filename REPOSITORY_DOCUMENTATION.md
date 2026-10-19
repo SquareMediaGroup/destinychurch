@@ -397,12 +397,18 @@ destinychurch/
 │   └── content/                   # Source copy for policy/partner text — the live pages render
 │                                   # an edited subset, so these are the fuller source. See its README.
 ├── apps/                          # Standalone companion apps that live in this repo but ship
-│   ├── destiny-one/               # Destiny One — the members' messaging app (Expo SDK 57, React
+│   ├── destiny-one/               # Destiny One — the members' messaging app (Expo SDK 58, React
 │   │                               # Native, iOS + Android, Liquid Glass via expo-glass-effect).
 │   │                               # Its own npm project (NOT a root workspace, so the website build
 │   │                               # never installs React Native); imports @destiny/shared through a
 │   │                               # file: link + metro.config.js. Backend: /api/app/v1/one/*.
 │   │                               # Every screen built (design variants 1B + 1F). See "Destiny One" below.
+│   ├── d1-admin/                  # D1 Admin — Destiny One on the Mac for leaders and admins (Tauri 2 +
+│   │                               # React/Vite). Chat plus the admin queues (reports, access requests,
+│   │                               # paused groups, people, invites, communities, feedback, audit log,
+│   │                               # app settings), menu bar popover, notifications, Touch ID, session
+│   │                               # in the Keychain. Own npm project; Rust shell in src-tauri/. Uses the
+│   │                               # same APIs as the phone app and the web admin. See "D1 Admin" below.
 │   ├── talent-buzzer/             # Talent show judge buzzers — one app on both machines: hub (LED) / Avolites
 │   │                               # agent (Titan PC). Android tablets press -> Titan Web API cue +
 │   │                               # X / golden takeover + sound on the LED screen. LAN only, own
@@ -443,7 +449,7 @@ destinychurch/
 ├── .vscode/                       # VS Code workspace settings
 ├── next.config.ts                 # Next.js configuration
 ├── playwright.config.ts           # E2E test configuration
-├── eslint.config.mjs              # ESLint rules
+├── eslint.config.mjs              # ESLint rules (React Compiler hints from react-hooks 7.1 are warnings, not errors)
 ├── postcss.config.mjs             # PostCSS plugins
 ├── tsconfig.json                  # TypeScript compiler options
 ├── package.json                   # Node dependencies and scripts
@@ -1390,6 +1396,13 @@ CREATE TABLE order_items (
 -- Storage: public `product-images` bucket for product photos (WebP).
 ```
 
+> **Storage writes are service-role only** (migration `20261017_01_bug_fixes`).
+> `builder-media`, `post-media`, `product-images` and `shop-hero-images` used to
+> let any `authenticated` user insert/update/delete, on the old assumption that
+> "authenticated = staff". Destiny One sign-in creates Auth users for members,
+> so those policies were dropped; every upload already goes through an admin
+> API route using the service client. Public read policies are unchanged.
+
 **Used By:** `/shop` storefront, `/admin/store` CRUD, `POST /api/store/checkout`, `POST /api/webhooks/stripe`. `description` is HTML written via the shared `RichTextEditor` (same component used for posts/training) — the admin editor no longer has a markdown Write/Preview toggle, and the public product page renders it with `dangerouslySetInnerHTML` (no markdown fallback).
 
 ---
@@ -2248,8 +2261,19 @@ group-icon migrations) to a throwaway local Postgres and runs `tests/sql/destiny
 suite, `destiny-one-encryption`, adds part 10 and runs `tests/sql/destiny-one-encryption.sql`
 (plaintext refused, search on terms, no realtime copy, privileges).
 
+**Timed restrictions and escalation** (`20261011_01_destiny_one_restrictions_escalation.sql`, used by the
+D1 Admin desktop app):
+- `d1_members.posting_restricted_until` — while `now()` is before it, the member can read but not post or
+  react. Enforced by `d1_enforce_posting_restriction()` as BEFORE INSERT triggers on `d1_messages` and
+  `d1_reactions`, so every write path (posting, forwarding, voice notes) is covered; raises a P0001 the API
+  shows as written. Lifts itself (no job). Unlike suspension, a restricted member still counts towards the
+  group rules, so restricting never pauses a group.
+- `d1_reports.escalated_at` / `escalated_by` — the report went to the Designated Safeguarding Lead. Status
+  stays `reviewing` (the web admin's set is unchanged).
+- Tested by the `destiny-one-restrictions` SQL suite (`tests/sql/destiny-one-restrictions.sql`).
+
 **Used By:** `lib/destinyOne/*`, `app/api/app/v1/one/**`, `app/api/admin/destiny-one/**`,
-`app/api/cron/destiny-one-{sync,purge}`.
+`app/api/cron/destiny-one-{sync,purge}`, `apps/d1-admin`.
 
 #### 30. **song_request_settings / song_request_spotify / song_requests** (Event song requests)
 **Purpose:** `/song-requests`. Migration: `supabase/migrations/20260930_01_song_requests.sql`. All three are
@@ -2781,9 +2805,8 @@ have nowhere to go. It also renders `breadcrumbsFor(pathname)`; below `md`
 which page you were on.
 
 **Route transitions.** `app/admin/template.tsx` wraps admin pages in React's
-`<ViewTransition name="admin-page">` (enabled by `experimental.viewTransition`
-in `next.config.ts`; the component comes from the React build the App Router
-runs on, not from the `react` 19.2 in `package.json`). Pages cross-fade instead
+`<ViewTransition name="admin-page">` (stable in React 19.3; Next 16.4 needs no
+config flag — the old `experimental.viewTransition` option was removed). Pages cross-fade instead
 of snapping, and the tab bar's active pill — the one element named
 `admin-tab-pill` in the document at a time — morphs from the old tab's box to
 the new one in the same frame, which is what makes switching tabs read as glass
@@ -3619,7 +3642,7 @@ stay: they're consent and legal, not chrome.
 
 #### Report a Bug (`components/report-bug/*`)
 - `ReportBugLink.tsx` — a "Report a Bug" link rendered in `ChurchFooter.tsx`. Opens an accessible in-app modal (Escape-to-close, body-scroll lock) with a small form: **Full Name**, **Email**, and **How to reproduce**. On submit it captures the current `window.location.href` as `pageUrl` and calls the `submitBugReport` server action, showing inline loading / success / error states.
-- `actions.ts` — `submitBugReport(formData)` server action. Validates name/email/steps, then uses `GITHUB_TOKEN` to open a GitHub Issue on `SquareMediaGroup/destinychurch` via the GitHub REST API (`POST /repos/.../issues`), titled `Bug Report: <name>` with the reporter, page URL, and reproduction steps in the body. Returns `{ success, error? }`; a missing `GITHUB_TOKEN` yields a friendly server-misconfiguration error. **Requires the `GITHUB_TOKEN` env var** (see Configuration).
+- `actions.ts` — `submitBugReport(formData)` server action. Validates name/email/steps, then uses `GITHUB_TOKEN` to open a GitHub Issue on `SquareMediaGroup/destinychurch` via the GitHub REST API (`POST /repos/.../issues`), titled `Bug Report: <name>` with the reporter, page URL, and reproduction steps in the body. Returns `{ success, error? }`; a missing `GITHUB_TOKEN` yields a friendly server-misconfiguration error. Because it's public and spends our GitHub token, it's fenced with a hidden `website` honeypot (answered like a success), a 3-per-minute per-IP rate limit, and field length caps. **Requires the `GITHUB_TOKEN` env var** (see Configuration).
 
 #### About Page (`components/about/*`)
 - `AboutHero.tsx` — the About page hero band.
@@ -4499,11 +4522,28 @@ mints a magic-link token hash — and redirects with a sealed 2-minute code, **n
 redeems that at `exchange` with its verifier, then `verifyOtp({ token_hash })`. An app that hijacks the
 `destinyone://` scheme on Android gets a code it can't use.
 
+`callback` refuses (`error=use_email_sign_in`) when the email belongs to an account that holds more
+than a membership — an `admin_roles` row or an `hr_staff` link — unless that account's member record
+is already linked to the **same** ChurchSuite user id, and always when the member is linked to a
+*different* ChurchSuite user. The email on a ChurchSuite user is editable by ChurchSuite admins, so a
+matching email alone would let one sign in as a website admin (security audit 2026-10-09).
+
 #### Destiny One admin API (`/api/admin/destiny-one/*`)
 Two roles, split by path in `lib/adminRoles.ts` ROUTE_RULES (the safeguarding rule is listed first
 so the broader one can't swallow it) and re-checked in every route by `requireDestinyOneAdmin` /
 `requireSafeguardingAdmin` (`lib/destinyOne/admin.server.ts`). Every mutation calls `recordAudit`
 (section `destiny_one` or `safeguarding`).
+
+**Bearer tokens (D1 Admin desktop app).** This is the one `/api/admin` area that also accepts a
+Supabase access token as `Authorization: Bearer …` when there's no cookie session: `middleware.ts`
+resolves the user from it and then runs the same role check and audit actor headers as for a cookie,
+and `requireRole` in `admin.server.ts` falls back to it the same way. Every other `/api/admin` path is
+cookie-only. Response shapes are typed in `@destiny/shared` (`destinyOne/adminTypes.ts`, re-exported by
+`lib/destinyOne/adminTypes.ts`) and the desktop app calls them through `createDestinyOneAdminClient`
+(`destinyOne/adminClient.ts`).
+
+- `GET whoami` — open to any signed-in user (OPEN_PATHS): `{ destinyOneAdmin, safeguardingAdmin,
+  transcriptReader, superAdmin }` for the caller, so the desktop app knows which sections to show.
 
 **Destiny One Admin (`destiny_one_admin`) — runs the app, never sees message content:**
 - `GET overview` — counts for the landing page.
@@ -4539,6 +4579,14 @@ place message content can be read:**
   rules pause as usual) or reinstate someone who is suspended (never a way round the approval queue);
   audited. Lets the safeguarding team act without the Destiny One Admin role.
 - `GET events?kind=block` — the log of members blocking / unblocking each other (the "Blocks" tab).
+- `POST/DELETE members/[id]/restrict` `{ days: 1 | 7 | 30, reason }` — timed posting restriction (can
+  read, can't post or react, lifts itself) or lift it early; audited. `GET members` rows carry
+  `postingRestrictedUntil`.
+- `POST reports/[id]/escalate` — escalate to the Designated Safeguarding Lead: sets `escalated_at`, moves
+  an open report to `reviewing`, and emails every Safeguarding Admin
+  (`emailSafeguardingAboutEscalation`, content-free like the report alert). A second call is a no-op.
+- `GET audit?before=` — the Destiny One slice of the audit log (sections `destiny_one` and
+  `safeguarding`, summary and who/when only), 50 a page. The full log stays Super Admin only.
 
 > There is no `/api/webhooks/vercel` or GitHub webhook route, and no `youtube-sync`
 > cron/cache job — `app/api/webhooks/` currently only contains `stripe/` (see Shop
@@ -4639,7 +4687,10 @@ POST /api/store/checkout/bypass
 //   and the customer enters a @destinytees.uk email, pressing "Continue to payment" on
 //   the checkout page shows a popup asking whether to "Complete test order" (skips
 //   Stripe) or "Continue to payment" (real payment) — there's no standing test button
-//   visible to regular customers. Never set either flag in production.
+//   visible to regular customers. Never set either flag in production — and since
+//   the 2026-10-09 security audit (which found it set there) the route 404s and the
+//   popup is hidden whenever VERCEL_ENV is "production", whatever the flags say.
+//   The email is typed, not verified, so the domain check alone protects nothing.
 
 // Shared order logic (pricing recompute, order creation, paid-finalisation) lives
 // in lib/checkout.server.ts and is used by checkout, the webhook, and the bypass.
@@ -4647,14 +4698,12 @@ POST /api/store/checkout/bypass
 POST /api/shop-diagnostics
 //   TEMPORARY — remove with components/shop/ShopDiagnostics.tsx once the /shop
 //   blank-page bug is identified. Receives a client snapshot captured when /shop
-//   renders blank and does two things with it:
-//     1. console.error → Vercel runtime logs. Always runs; the reliable channel.
-//     2. Files/comments a GitHub issue via the GITHUB_TOKEN already used by
-//        components/report-bug/actions.ts, deduped by reason+route (label
-//        "shop-blank-page") so a recurring bug appends to one issue.
-//   Public and unauthenticated but fenced: same-origin only (403), 32KB body cap
-//   (413), 5 reports per IP per 10 min (throttled), and localhost skips the
-//   GitHub write so dev noise never reaches the issue tracker.
+//   renders blank and writes it to the Vercel runtime logs (console.error;
+//   search for "shop-diagnostics"). It used to also file GitHub issues; that was
+//   removed in the 2026-10-09 security audit because the Origin check is
+//   forgeable and the dedupe key is caller-chosen, so anyone could open
+//   unlimited issues with our token. Fenced: same-origin only (403), 32KB body
+//   cap (413), 5 reports per IP per 10 min (throttled).
 
 // ADMIN (gated by middleware, site_editor role)
 GET|POST            /api/admin/store/products
@@ -4931,8 +4980,10 @@ needs credentials belongs in the e2e projects instead. `next build` is
 deliberately not in CI because page-data collection needs live Supabase env vars;
 Vercel's preview build covers that. The browser suite stays in `playwright.yml`,
 manual-trigger only, because it needs a running site to point at.
-Two more jobs, also secret-free: **Destiny One app** (`npm ci`, typecheck and
-`expo lint` inside `apps/destiny-one`, which is its own npm project) and
+Three more jobs, also secret-free: **Destiny One app** (`npm ci`, typecheck and
+`expo lint` inside `apps/destiny-one`, which is its own npm project), **D1 Admin
+desktop app** (`npm ci` and `npm run build` — typecheck plus the Vite bundle — inside
+`apps/d1-admin`; the Rust shell is only built on a Mac) and
 **Database rules** (`scripts/test-sql.sh` against the PostgreSQL that ships on
 the Ubuntu runner, so the safeguarding SQL checks run on every PR).
 
@@ -6195,6 +6246,69 @@ fresh URL per click.
 
 ---
 
+### D1 Admin — the Mac app (`apps/d1-admin`)
+
+Destiny One for leaders and admins on macOS, built from the design canvas "The One App — Mac".
+Tauri 2 (Rust shell, `src-tauri/`) around a React + Vite UI (`src/`). Its own npm project, like the
+Expo app; imports `@destiny/shared` through a `file:` link.
+
+**Who can use it.** After sign-in it calls `GET /api/app/v1/one/me` and
+`GET /api/admin/destiny-one/whoami`. Leaders (any `D1LeaderRole`) and admins get in; anyone else sees
+"use the phone app". The sidebar's Admin section is filtered by role: Destiny One Admin → Access
+requests, People, Invites, Communities, Feedback, App settings; Safeguarding Admin → Reports, Paused
+groups, Audit log. Leaders get chat and can manage groups they lead. Every route still checks for itself.
+
+**How it talks to the backend.**
+- Chat: `createDestinyOneClient` (`/api/app/v1/one/*`), exactly as the phone app.
+- Admin: `createDestinyOneAdminClient` (`/api/admin/destiny-one/*`) with the Supabase token as a bearer
+  (see "Destiny One admin API").
+- Both go through Tauri's HTTP plugin (`src/lib/native.ts` `apiFetch`), so the website needs no CORS and
+  the token can only reach hosts in `src-tauri/capabilities/default.json`.
+- Supabase is used only for auth and Realtime; the session is stored in the macOS Keychain
+  (`keychain_*` commands in `src-tauri/src/lib.rs`).
+
+**Native pieces** (`src-tauri/src/lib.rs`): Touch ID / Mac password on launch (`touch_id.rs`,
+LocalAuthentication, setting "Require Touch ID"); a menu bar item with a count and a popover window
+(`menubar.html` → `src/menubar/`); closing the window hides it so notifications keep coming; open at
+login (autostart plugin, starts hidden). The popover holds no session: the main window sends it state
+and acts for it over Tauri events (`src/lib/menubarTypes.ts`, `src/lib/live.ts`).
+
+**Notifications** (`src/lib/live.ts`) only while the app or its menu bar item is running — no APNs.
+New messages come over Realtime (same hub as the phone app, `src/lib/realtime.ts`); reports and access
+requests refresh on a timer (1 and 2 minutes). Banners respect mute, "Show message previews" and
+"Pause notifications for 1 hour".
+
+**Keyboard and menus** (`src/lib/shortcuts.ts`, `src/components/Floating.tsx`, `ContextMenu.tsx`,
+`EmojiPicker.tsx`). One window-level key listener holds the shortcuts (Cmd-K search, Cmd-N new group,
+Cmd-1 to 9 open the Nth chat in sidebar order via `orderedGroups`, Option-Up/Down previous or next chat,
+Cmd-I group info, Cmd-comma settings, Cmd-slash lists them); the list shown in the shortcuts sheet is the
+same `SHORTCUTS` array, so the two can't drift. Right-clicking a message opens `ContextMenu` (quick
+reactions, Reply, Copy text, Open file, Report, Delete). `Floating` is the shared popover: it opens at a
+point, clamps itself inside the window, and closes on Escape, outside click, page scroll or blur. The
+emoji picker is a curated list in `src/lib/emoji.ts` (no dependency) and serves both reactions and the
+message box; reactions accept any emoji (the API only limits length to 16 characters).
+
+**Composing** (`src/features/chat/Conversation.tsx`, `Sheets.tsx`). The message box takes up to 10 files at
+once (dropped, pasted or picked): each goes as its own message, the text and reply with the first, and
+sent files leave the tray one by one so a failure keeps only what's left. Typing `@` suggests the other
+members of the group (`mentionQuery` / `mentionSuggestions` from `@destiny/shared`); on send,
+`findMentions` turns the names into ids for the API, and `mentionSegments` draws them bold. The plus
+button offers files or a poll (`validatePoll` rules, sent with `poll` on `api.send`); polls in the list
+are tappable and update at once (`castVote`, undone if the server refuses). "Forward" in the right-click
+menu opens a sheet to pick up to 5 chats (`api.forward`; polls and deleted messages can't be forwarded).
+
+**DestinyAI** (`src/lib/assistantStream.ts`, `features/chat/AssistantStreaming.tsx`). The assistant chat belongs
+to no community, so it comes from `api.assistant()` (`useAssistant`) and sits at the top of the sidebar; the
+realtime hub joins its channel with the other groups. While it answers, the server broadcasts
+`assistant_status` (what it's doing) and `assistant_delta` (the text so far); `applyEvent` feeds the
+in-memory stream and the chat draws it as a bubble (dots and a label, then the words with a blinking bar).
+The finished `message` event from `DESTINY_AI_ID` clears it. Nothing is stored. The chat is text-only (no
+files, polls or mentions) and has no group info pane.
+
+**Building.** `npm run tauri:dev` / `npm run tauri:build` on a Mac (Rust + Xcode command line tools).
+The build is unsigned for now; `tauri.conf.json` has the signing fields ready for when the Apple
+Developer account exists. See `apps/d1-admin/README.md`.
+
 ### Destiny One app — look and feel (`apps/destiny-one/src`)
 
 Polished to Apple's Human Interface Guidelines. The pieces, and why they exist:
@@ -6640,6 +6754,13 @@ accept the current privacy / terms / chat-review notices. Leader roles (`admin`,
 
 ```typescript
 const nextConfig: NextConfig = {
+  // Server actions default to a 1MB body. The jobs form takes a CV up to 4MB
+  // (app/jobs/actions.ts MAX_CV_BYTES) — Vercel itself caps a function request
+  // at 4.5MB, so a larger limit here would never be reachable.
+  experimental: {
+    serverActions: { bodySizeLimit: "4.5mb" },
+  },
+
   // Include ffmpeg binary for serverless functions (if needed)
   outputFileTracingIncludes: {
     "*": ["node_modules/ffmpeg-static/ffmpeg"],
@@ -7581,7 +7702,12 @@ same database as the data rather than in a separate Synapse module.
 - **Lint:** `eslint.config.js` (`eslint-config-expo`). The React Compiler rules (`react-hooks/refs`,
   `set-state-in-effect`, `preserve-manual-memoization`) are errors. The only exceptions are the two
   PanResponder handlers in `Swipe.tsx`, whose refs are read in touch handlers rather than during render
-  (marked with a reasoned `eslint-disable-next-line`).
+  (marked with a reasoned `eslint-disable-next-line`). `import/namespace` is off: `tsc` checks namespace
+  members, and the plugin misses SDK 58's compiled enums (`Notifications.AndroidImportance`).
+  `npx expo lint` caches in `.expo/cache/eslint`; delete it if results look stale.
+- **React Native 0.87+ strict types:** refs use instance types — `useRef<TextInputInstance>`,
+  `useRef<ViewInstance>` (exported from `react-native`), not `useRef<TextInput>` / `useRef<View>`.
+  `ListEmptyComponent` / `ListFooterComponent` take `undefined`, not `null`, for "nothing".
 - **Differences from the prototype:** Settings adds Download my data and Delete my account (safeguarding policy + UK GDPR access and
   erasure). Emoji reactions are allowed as member content (confirmed 2026-09-27).
 - **Sign-in:** the email screen calls `api.requestCode` (`POST /auth/code`); the server sends a code
@@ -7603,7 +7729,7 @@ same database as the data rather than in a separate Synapse module.
   access request pre-filled "Invited by X to Group (leader says: adult)", and staff approval in
   `/admin/destiny-one/requests` confirms their age and joins them to the group
   (`request_group_ids`). Migration `20260927_02_destiny_one_leader_invites.sql`.
-- Expo SDK 57, Expo Router (`src/app/`), TypeScript. Its own npm project with its own lockfile —
+- Expo SDK 58 (React Native 0.88), Expo Router (`src/app/`), TypeScript. Its own npm project with its own lockfile —
   deliberately **not** a root workspace so Vercel never installs React Native. It imports
   `@destiny/shared` via `"file:../../packages/shared"`; `metro.config.js` watches that folder.
   Excluded from the root `tsconfig.json` and `eslint.config.mjs`.

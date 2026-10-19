@@ -557,7 +557,10 @@ export function siteDayBounds(day: string): { start: string; end: string } | nul
   // the guess rather than assumed, and BST switches at 01:00 local, so midnight
   // is never inside the ambiguous hour.
   const start = new Date(guess.getTime() - zoneOffsetMs(guess));
-  const end = new Date(start.getTime() + 24 * 60 * 60 * 1000 - 1);
+  // End at the next local midnight, not start + 24h: the clock-change Sundays
+  // are 23 and 25 hours long here.
+  const nextGuess = new Date(guess.getTime() + 24 * 60 * 60 * 1000);
+  const end = new Date(nextGuess.getTime() - zoneOffsetMs(nextGuess) - 1);
   return { start: start.toISOString(), end: end.toISOString() };
 }
 

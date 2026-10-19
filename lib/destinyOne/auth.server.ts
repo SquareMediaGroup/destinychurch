@@ -13,6 +13,7 @@
 //                       notices (REQUIRED_CONSENTS)
 
 import "server-only";
+import { isAuthRetryableFetchError } from "@supabase/supabase-js";
 import {
   hasStaffAccess,
   isAdult,
@@ -77,6 +78,11 @@ export async function authenticate(request: Request): Promise<AuthUser> {
   if (!token) throw new OneError("unauthenticated", "Please sign in.");
 
   const { data, error } = await createServiceClient().auth.getUser(token);
+  // Supabase Auth unreachable or failing is not a bad session: "unauthenticated"
+  // makes the app sign the account out and forget it on the phone.
+  if (error && (isAuthRetryableFetchError(error) || !error.status || error.status >= 500)) {
+    throw new OneError("unavailable", "Something went wrong. Please try again.");
+  }
   if (error || !data.user) throw new OneError("unauthenticated", "Your session has expired. Please sign in again.");
 
   return {
@@ -101,11 +107,13 @@ export async function loadMemberByAuthUser(authUserId: string): Promise<MemberRo
 }
 
 export async function loadConsents(memberId: string): Promise<(D1Consent & { acceptedAt: string })[]> {
-  const { data } = await createServiceClient()
+  const { data, error } = await createServiceClient()
     .from("d1_consents")
     .select("document, version, accepted_at")
     .eq("member_id", memberId)
     .order("accepted_at", { ascending: true });
+  // A failed read isn't "accepted nothing": that would send the member back through the notices.
+  if (error) throw new OneError("unavailable", "Something went wrong. Please try again.");
   return (data ?? []).map((row) => ({
     document: row.document as D1ConsentDocument,
     version: row.version as string,
@@ -156,15 +164,47 @@ export async function avatarUrl(path: string | null): Promise<string | null> {
 
 /** The people this member has blocked, for D1Me and for filtering reads. */
 export async function loadBlocked(memberId: string): Promise<{ id: string; displayName: string }[]> {
-  const { data } = await createServiceClient()
+  const { data, error } = await createServiceClient()
     .from("d1_blocks")
     .select("blocked:d1_members!d1_blocks_blocked_id_fkey(id, display_name)")
     .eq("blocker_id", memberId)
     .order("created_at", { ascending: true });
+  // Never "nobody blocked" on a failed read: the app hides live messages from exactly this list.
+  if (error) throw new OneError("unavailable", "Something went wrong. Please try again.");
   return (data ?? []).map((row) => {
     const b = row.blocked as unknown as { id: string; display_name: string };
     return { id: b.id, displayName: b.display_name };
   });
+}
+
+/**
+ * Refuses while a timed posting restriction (20261011_01) is in force. The
+ * database triggers only guard messages and reactions; group names,
+ * descriptions and icons are written by routes, so those routes call this.
+ */
+export async function requireNotPostingRestricted(memberId: string): Promise<void> {
+  const { data, error } = await createServiceClient()
+    .from("d1_members")
+    .select("posting_restricted_until")
+    .eq("id", memberId)
+    .maybeSingle();
+  if (error) throw new OneError("unavailable", "Something went wrong. Please try again.");
+  const until = (data as { posting_restricted_until: string | null } | null)?.posting_restricted_until;
+  if (until && Date.parse(until) > Date.now()) {
+    const when = new Intl.DateTimeFormat("en-GB", {
+      timeZone: "Europe/London",
+      day: "numeric",
+      month: "long",
+      hour: "2-digit",
+      minute: "2-digit",
+      hourCycle: "h23",
+    }).formatToParts(new Date(until));
+    const part = (type: string) => when.find((p) => p.type === type)?.value ?? "";
+    throw new OneError(
+      "rule_violation",
+      `You can read your groups but can't post until ${part("day")} ${part("month")} at ${part("hour")}:${part("minute")}.`,
+    );
+  }
 }
 
 /**

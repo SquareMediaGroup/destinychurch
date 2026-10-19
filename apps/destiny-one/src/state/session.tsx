@@ -110,7 +110,7 @@ export function isInApp(segment: string | undefined): boolean {
 
 /** Chats, groups and messages: dropped from the device when someone loses access. */
 function forgetChats() {
-  for (const key of ["communities", "community", "assistant", "group", "messages"]) queryClient.removeQueries({ queryKey: [key] });
+  for (const key of ["communities", "community", "assistant", "group", "messages", "media"]) queryClient.removeQueries({ queryKey: [key] });
 }
 
 /** Every cached entry goes stale; whatever is on screen re-fetches in the background. */
@@ -155,7 +155,8 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const setMe = useCallback((next: D1Me) => {
     const previous = queryClient.getQueryData<D1Me | null>(keys.me);
     // Someone else signed in on this device: nothing of theirs may show.
-    if (previous && previous.id !== next.id) void clearCache();
+    // (clearCache empties the cache a tick later, so `next` goes back in after it.)
+    if (previous && previous.id !== next.id) void clearCache().then(() => queryClient.setQueryData(keys.me, next));
     queryClient.setQueryData(keys.me, next);
   }, []);
 
@@ -287,7 +288,12 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       const { data } = await accounts.client().auth.getSession().catch(() => ({ data: { session: null } }));
       setSession(data.session);
       // Its session ended while it was inactive (signed out elsewhere, say).
-      if (!data.session) await accounts.removeAccount(slot, { signOut: false });
+      // Its saved chats were just loaded into memory: drop them too, or the
+      // next cache write would save them straight back to the phone.
+      if (!data.session) {
+        await clearCache();
+        await accounts.removeAccount(slot, { signOut: false });
+      }
     } finally {
       setSwitching(false);
     }
@@ -363,7 +369,9 @@ export function SessionProvider({ children }: { children: ReactNode }) {
 
   const removeAccount = useCallback(async (slot: string) => {
     if (slot === accounts.activeSlot()) return;
+    const memberId = accounts.accounts().find((a) => a.slot === slot)?.memberId;
     await accounts.removeAccount(slot, { signOut: true });
+    if (memberId) chatDrafts.forget(memberId);
   }, []);
 
   // Ready once the cache is back from disk and we know who's signed in. With

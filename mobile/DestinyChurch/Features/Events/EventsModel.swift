@@ -51,6 +51,13 @@ final class EventsModel {
             let envelope = try await client.get(.events, as: EventsResponse.self)
             state = LoadState.from(envelope).map(\.series)
         } catch {
+            // Leaving the tab mid-request cancels `.task`; that is not a
+            // failure. Put an empty screen back to idle so the next
+            // appearance retries, instead of stranding it on an error.
+            if Task.isCancelled {
+                if case .loading = state { state = .idle }
+                return
+            }
             state = .failed(error)
         }
     }

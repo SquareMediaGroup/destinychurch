@@ -180,10 +180,19 @@ export async function finalizeOrderPaid(orderDbId: string): Promise<boolean> {
   if (!order) return false;
   if (order.status === "paid" || order.status === "fulfilled") return false;
 
-  await supabase
+  // Claim the transition atomically: two deliveries of the same event (a
+  // Stripe retry overlapping a slow first attempt) can both have read the
+  // order as unpaid above, and only one of them may decrement stock and send
+  // the emails. A failed write throws so the webhook answers 500 and Stripe
+  // retries, rather than carrying on as if the order had been marked paid.
+  const { data: claimed, error: claimError } = await supabase
     .from("orders")
     .update({ status: "paid", paid_at: new Date().toISOString() })
-    .eq("id", order.id);
+    .eq("id", order.id)
+    .not("status", "in", "(paid,fulfilled)")
+    .select("id");
+  if (claimError) throw new Error(`Could not mark order ${order.order_number} paid: ${claimError.message}`);
+  if (!claimed || claimed.length === 0) return false;
 
   const items = ((order as OrderWithItems).items ?? []) as OrderItem[];
   // Each decrement is an independent atomic RPC (see the

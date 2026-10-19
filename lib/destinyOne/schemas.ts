@@ -42,7 +42,7 @@ export const accessRequestSchema = z.object({
 });
 
 export const deleteAccountSchema = z.object({
-  confirm: z.literal("DELETE", { errorMap: () => ({ message: 'Send { "confirm": "DELETE" } to delete your account.' }) }),
+  confirm: z.literal("DELETE", { error: 'Send { "confirm": "DELETE" } to delete your account.' }),
 });
 
 export const emailChangeSchema = z.object({
@@ -271,6 +271,11 @@ export const adminTakedownSchema = z.object({
 
 export const adminSuspendSchema = z.object({
   suspended: z.boolean(),
+  reason: z.string().trim().min(3, "Give a short reason for the record.").max(500),
+});
+
+export const adminRestrictSchema = z.object({
+  days: z.union([z.literal(1), z.literal(7), z.literal(30)]),
   reason: z.string().trim().min(3, "Give a short reason for the record.").max(500),
 });
 

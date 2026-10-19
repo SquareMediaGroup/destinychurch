@@ -110,13 +110,13 @@ export const ThemeSchema = z.object({
       /** Pattern strength, 2–30 (%). */
       patternOpacity: z.number().min(2).max(30).catch(8).default(8),
     })
-    .default({}),
+    .prefault({}),
   text: z
     .object({
       color: color("#2d2d2d"),
       heading: color("#2d2d2d"),
     })
-    .default({}),
+    .prefault({}),
   accent: color("#f58021"),
   button: z
     .object({
@@ -137,13 +137,13 @@ export const ThemeSchema = z.object({
       showIcons: z.boolean().catch(true).default(true),
       showArrows: z.boolean().catch(true).default(true),
     })
-    .default({}),
+    .prefault({}),
   font: z
     .object({
       heading: z.enum(FONT_KEYS).catch("playfair").default("playfair"),
       body: z.enum(FONT_KEYS).catch("roboto").default("roboto"),
     })
-    .default({}),
+    .prefault({}),
   avatar: z
     .object({
       shape: z.enum(AVATAR_SHAPES).catch("circle").default("circle"),
@@ -151,7 +151,7 @@ export const ThemeSchema = z.object({
       /** A ring in the accent colour around the photo. */
       ring: z.boolean().catch(false).default(false),
     })
-    .default({}),
+    .prefault({}),
   layout: z
     .object({
       /** `hero` puts a full-width cover image above the profile. */
@@ -163,7 +163,7 @@ export const ThemeSchema = z.object({
       /** "Destiny Church Tees Valley · Visit the full website" at the bottom. */
       showFooter: z.boolean().catch(true).default(true),
     })
-    .default({}),
+    .prefault({}),
   profile: z
     .object({
       align: z.enum(["center", "left"]).catch("center").default("center"),
@@ -172,19 +172,19 @@ export const ThemeSchema = z.object({
       /** The short accent line under the header when there's no photo or socials. */
       showRule: z.boolean().catch(true).default(true),
     })
-    .default({}),
+    .prefault({}),
   socials: z
     .object({
       style: z.enum(SOCIAL_STYLES).catch("plain").default("plain"),
       size: z.enum(ICON_SIZES).catch("md").default("md"),
     })
-    .default({}),
+    .prefault({}),
   effects: z
     .object({
       /** Staggered rise-in on load. Always off under prefers-reduced-motion. */
       entrance: z.boolean().catch(true).default(true),
     })
-    .default({}),
+    .prefault({}),
 });
 
 export type Theme = z.infer<typeof ThemeSchema>;

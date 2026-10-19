@@ -5,7 +5,7 @@
 // the row.
 
 import { useRef, useState } from "react";
-import { Pressable, Text, TextInput, View } from "react-native";
+import { Pressable, Text, TextInput, View, type TextInputInstance } from "react-native";
 import { Pop, Shake } from "@/components/Motion";
 import { Beam } from "@/components/ui";
 import { haptic } from "@/lib/haptics";
@@ -13,7 +13,7 @@ import { ORANGE, useTheme } from "@/theme/tokens";
 
 export function CodeBoxes({ code, error, onChange, onComplete }: { code: string; error?: string | null; onChange: (code: string) => void; onComplete: (code: string) => void }) {
   const t = useTheme();
-  const input = useRef<TextInput>(null);
+  const input = useRef<TextInputInstance>(null);
   const [focused, setFocused] = useState(true);
   const current = Math.min(code.length, 5);
 

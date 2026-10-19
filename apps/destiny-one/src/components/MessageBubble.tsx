@@ -8,7 +8,7 @@
 // Messages. Swipe a message right to reply; press and hold for the menu.
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import { Animated, Image, Pressable, Text, View } from "react-native";
+import { Animated, Image, Pressable, Text, View, type ViewInstance } from "react-native";
 import * as WebBrowser from "expo-web-browser";
 import Svg, { Path } from "react-native-svg";
 import { DESTINY_AI_ID, mentionSegments, type D1EventContent, type D1LinkPreview, type D1LeaderRole, type D1Message, type D1PollContent, type D1SermonContent, type Mentionable } from "@destiny/shared";
@@ -54,7 +54,7 @@ export function buildRows(messages: LocalMessage[], firstUnreadId: number | null
   messages.forEach((m, i) => {
     const prev = messages[i - 1];
     const next = messages[i + 1];
-    if (!prev || !sameDay(prev.createdAt, m.createdAt)) rows.push({ kind: "day", key: `d${m.createdAt.slice(0, 10)}`, label: dayLabel(m.createdAt) });
+    if (!prev || !sameDay(prev.createdAt, m.createdAt)) rows.push({ kind: "day", key: `d${new Date(m.createdAt).toDateString()}`, label: dayLabel(m.createdAt) });
     if (m.id === firstUnreadId) rows.push({ kind: "new", key: "new" });
     // A run is consecutive messages from one person on one day, broken by the unread divider.
     const sameSender = (o?: LocalMessage) => !!o && !o.mine && !m.mine && o.sender?.id === m.sender?.id && sameDay(o.createdAt, m.createdAt);
@@ -150,7 +150,7 @@ export function MessageBubble({ row, replyTo, senderTag, senderIsGroupAdmin, can
   const { m } = row;
   const k = tones(t, m.mine);
   // Press and hold: where the bubble is on screen while its menu is open.
-  const anchor = useRef<View>(null);
+  const anchor = useRef<ViewInstance>(null);
   const [menuAt, setMenuAt] = useState<Rect | null>(null);
   const hasMenu = !m.deleted && m.id > 0;
   function openMenu() {

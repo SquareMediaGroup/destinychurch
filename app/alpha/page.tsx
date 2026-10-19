@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Image from "next/image";
 import AnimateIn from "@/components/AnimateIn";
+import { useScrollLock } from "@/lib/useScrollLock";
 import Button from "@/components/ui/Button";
 import CourseEventCard from "@/components/courses/CourseEventCard";
 import { useCourseEvents, summarizeCourseSession } from "@/lib/useCourseEvents";
@@ -41,18 +42,19 @@ export default function AlphaPage() {
   const [videoVisible, setVideoVisible] = useState(false);
   const [signupOpen, setSignupOpen] = useState(false);
   const { events, loading } = useCourseEvents((e) => e.type === "alpha" || e.type === "youth_alpha");
+  // Released on unmount too — leaving the page with the video open (Back
+  // button) used to leave the body locked on whatever page came next.
+  useScrollLock(videoOpen);
 
   const openVideo = () => {
     setVideoOpen(true);
     requestAnimationFrame(() => requestAnimationFrame(() => setVideoVisible(true)));
-    document.body.style.overflow = "hidden";
   };
 
   const closeVideo = () => {
     setVideoVisible(false);
     setTimeout(() => {
       setVideoOpen(false);
-      document.body.style.overflow = "";
     }, 350);
   };
 

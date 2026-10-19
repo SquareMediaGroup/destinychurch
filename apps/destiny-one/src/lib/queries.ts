@@ -131,6 +131,10 @@ export function hideSender(memberId: string) {
       old ? { ...old, messages: old.messages.filter((m) => m.sender?.id !== memberId) } : old,
     );
   }
+  // Their pinned messages too (the banner at the top of a chat).
+  queryClient.setQueriesData<D1GroupDetail>({ queryKey: ["group"] }, (g) =>
+    g?.pinned?.some((p) => p.sender?.id === memberId) ? { ...g, pinned: g.pinned.filter((p) => p.sender?.id !== memberId) } : g,
+  );
   invalidateCommunities(); // previews and unread counts come back without them
 }
 
@@ -138,6 +142,7 @@ export function hideSender(memberId: string) {
 export function showSendersAgain() {
   void queryClient.resetQueries({ queryKey: ["messages"] });
   void queryClient.resetQueries({ queryKey: ["media"] });
+  void queryClient.invalidateQueries({ queryKey: ["group"] }); // their pins
   invalidateCommunities();
 }
 

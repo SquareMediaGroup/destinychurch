@@ -46,6 +46,10 @@ final class APIClient: Sendable {
         // connectivity returns or the timeout expires.
         configuration.waitsForConnectivity = true
         configuration.timeoutIntervalForRequest = 15
+        // While waiting for connectivity only the *resource* timeout applies
+        // (the request one does not), and it defaults to 7 days — offline,
+        // a screen would spin forever instead of reaching its error state.
+        configuration.timeoutIntervalForResource = 30
         // Lets app traffic be told apart from web traffic in analytics.
         configuration.httpAdditionalHeaders = [
             "User-Agent": APIClient.userAgent

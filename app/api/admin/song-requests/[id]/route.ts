@@ -17,6 +17,7 @@ export async function DELETE(_req: Request, { params }: { params: Promise<{ id: 
     .select("title")
     .maybeSingle();
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (!data) return NextResponse.json({ error: "Not found." }, { status: 404 });
   await recordAudit({
     action: "delete",
     section: "announcements",

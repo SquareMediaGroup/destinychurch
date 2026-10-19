@@ -52,10 +52,12 @@ function can(roles: RoleFlags, role: AdminRole): boolean {
 
 /**
  * Escape the wildcards PostgREST's `ilike` treats as special so a query
- * containing % or _ matches literally instead of everything.
+ * containing % or _ matches literally instead of everything, then quote the
+ * pattern so a comma or bracket in the query can't break the `.or()` filter.
  */
 function likeTerm(query: string): string {
-  return `%${query.replace(/[%_\\]/g, (c) => `\\${c}`)}%`;
+  const pattern = `%${query.replace(/[%_\\]/g, (c) => `\\${c}`)}%`;
+  return `"${pattern.replace(/["\\]/g, (c) => `\\${c}`)}"`;
 }
 
 const gbp = new Intl.NumberFormat("en-GB", { style: "currency", currency: "GBP" });

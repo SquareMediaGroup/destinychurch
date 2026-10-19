@@ -48,7 +48,27 @@ function worstLevel(levels: Level[]): Level {
   return known.reduce((a, b) => (RANK[b] > RANK[a] ? b : a));
 }
 
-function component(id: string, name: string, description: string, result: ProbeResult): ComponentStatus {
+/** Every part shown on the page. Ids are used by notices and reports. */
+export const componentCatalog = [
+  { id: "pages", service: "Destiny Church website", name: "Website pages", description: "destinytees.uk and its pages" },
+  { id: "sermons", service: "Destiny Church website", name: "Sermons", description: "Watching and listening to sermons" },
+  { id: "events", service: "Destiny Church website", name: "Events and What's On", description: "Event listings and sign-ups" },
+  { id: "shop", service: "Destiny Church website", name: "Shop and checkout", description: "Shop orders and payments" },
+  { id: "giving", service: "Destiny Church website", name: "Giving", description: "Online giving" },
+  { id: "search", service: "Destiny Church website", name: "AI search", description: "Smart Search on the website" },
+  { id: "admin", service: "Destiny Church website", name: "Admin and staff portal", description: "Sign-in for staff and volunteers" },
+  { id: "d1-signin", service: "Destiny One", name: "Sign-in", description: "Email codes and passwords" },
+  { id: "d1-chats", service: "Destiny One", name: "Chats and messages", description: "Loading and sending messages" },
+  { id: "d1-realtime", service: "Destiny One", name: "Live updates", description: "New messages arriving instantly" },
+  { id: "d1-media", service: "Destiny One", name: "Photos and voice notes", description: "Uploading and viewing attachments" },
+  { id: "d1-push", service: "Destiny One", name: "Notifications", description: "Push notifications to your phone" },
+  { id: "d1-admin", service: "Destiny One", name: "D1 Admin", description: "The desktop app for admins and leaders" },
+] as const;
+
+type ComponentId = (typeof componentCatalog)[number]["id"];
+
+function component(id: ComponentId, result: ProbeResult): ComponentStatus {
+  const { name, description } = componentCatalog.find((c) => c.id === id)!;
   return { id, name, description, level: result.level, detail: result.detail };
 }
 
@@ -69,25 +89,25 @@ export async function getStatus(): Promise<StatusReport> {
     ]);
 
   const website: ComponentStatus[] = [
-    component("pages", "Website pages", "destinytees.uk and its pages", home),
-    component("sermons", "Sermons", "Watching and listening to sermons", sermons),
-    component("events", "Events and What's On", "Event listings and sign-ups", worst(whatsOn, health.database)),
-    component("shop", "Shop and checkout", "Destiny Tees shop and Stripe payments", worst(shop, health.database)),
-    component("giving", "Giving", "Online giving", give),
-    component("search", "AI search", "Smart Search on the website", worst(health.reachable, health.smartSearch)),
-    component("admin", "Admin and staff portal", "Sign-in for staff and volunteers", worst(login, health.database)),
+    component("pages", home),
+    component("sermons", sermons),
+    component("events", worst(whatsOn, health.database)),
+    component("shop", worst(shop, health.database)),
+    component("giving", give),
+    component("search", worst(health.reachable, health.smartSearch)),
+    component("admin", worst(login, health.database)),
   ];
 
   // Destiny One talks to the website's /api/app/v1/one routes and to Supabase
   // directly (sign-in, realtime, media), so it depends on both.
   const d1Server = worst(d1Config, health.database);
   const d1: ComponentStatus[] = [
-    component("d1-signin", "Sign-in", "Email codes and passwords", worst(auth, supabase.component("Auth"))),
-    component("d1-chats", "Chats and messages", "Loading and sending messages", d1Server),
-    component("d1-realtime", "Live updates", "New messages arriving instantly", worst(d1Server, supabase.component("Realtime"))),
-    component("d1-media", "Photos and voice notes", "Uploading and viewing attachments", worst(d1Server, supabase.component("Storage"))),
-    component("d1-push", "Notifications", "Push notifications to your phone", worst(d1Config, expo.overall)),
-    component("d1-admin", "D1 Admin", "The desktop app for admins and leaders", worst(d1Server, auth)),
+    component("d1-signin", worst(auth, supabase.component("Auth"))),
+    component("d1-chats", d1Server),
+    component("d1-realtime", worst(d1Server, supabase.component("Realtime"))),
+    component("d1-media", worst(d1Server, supabase.component("Storage"))),
+    component("d1-push", worst(d1Config, expo.overall)),
+    component("d1-admin", worst(d1Server, auth)),
   ];
 
   applyNotices([...website, ...d1], activeNotices());

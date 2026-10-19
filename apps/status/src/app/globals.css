@@ -244,3 +244,107 @@ h1 {
   flex-direction: column;
   gap: 4px;
 }
+
+.row-wrap {
+  border-top: 1px solid var(--border);
+}
+
+.row-wrap:first-child {
+  border-top: none;
+}
+
+.row-wrap .row {
+  border-top: none;
+}
+
+.row-side {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.report-btn,
+.report-cancel {
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  font-size: 13px;
+  color: var(--muted);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+}
+
+.report-btn:hover,
+.report-cancel:hover {
+  color: var(--text);
+}
+
+.report-form {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 0 0 14px;
+}
+
+.report-form textarea,
+.report-form input {
+  font: inherit;
+  font-size: 15px;
+  color: var(--text);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 10px;
+  width: 100%;
+}
+
+.report-form textarea:focus,
+.report-form input:focus {
+  outline: 2px solid var(--brand);
+  outline-offset: 1px;
+}
+
+.report-form .hp {
+  position: absolute;
+  left: -10000px;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+}
+
+.report-actions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-top: 4px;
+}
+
+.report-send {
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  color: #fff;
+  background: var(--brand);
+  border: none;
+  border-radius: 8px;
+  padding: 8px 14px;
+  cursor: pointer;
+}
+
+.report-send:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.report-done {
+  color: var(--ok);
+  padding: 0 0 12px;
+}
+
+.report-error {
+  color: var(--bad);
+}

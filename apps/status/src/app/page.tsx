@@ -1,6 +1,7 @@
 import { AutoRefresh } from "./AutoRefresh";
+import { ComponentRow } from "./ComponentRow";
 import { activeNotices, recentResolved, type Notice } from "@/lib/notices";
-import { getStatus, type ComponentStatus, type ServiceStatus } from "@/lib/status";
+import { getStatus, type ServiceStatus } from "@/lib/status";
 import type { Level } from "@/lib/checks";
 
 // Checks run on the server at most once a minute; everyone in between gets the
@@ -110,22 +111,18 @@ function Service({ service }: { service: ServiceStatus }) {
       </div>
       <ul className="rows">
         {service.components.map((c) => (
-          <ComponentRow key={c.id} component={c} />
+          <ComponentRow
+            key={c.id}
+            id={c.id}
+            name={c.name}
+            summary={c.detail ?? c.description}
+            levelLabel={LABEL[c.level]}
+          >
+            <StatusLabel level={c.level} />
+          </ComponentRow>
         ))}
       </ul>
     </section>
-  );
-}
-
-function ComponentRow({ component }: { component: ComponentStatus }) {
-  return (
-    <li className="row">
-      <div>
-        <p className="row-name">{component.name}</p>
-        <p className="muted small">{component.detail ?? component.description}</p>
-      </div>
-      <StatusLabel level={component.level} />
-    </li>
   );
 }
 

@@ -20,9 +20,15 @@ npm run dev                  # http://localhost:3100
 
 1. In Vercel, add a new project from this repo with **Root Directory** `apps/status`
    (framework: Next.js). Region comes from `vercel.json`.
-2. Set the env vars from `.env.example` (none are secret).
+2. Set the env vars from `.env.example`. Only `RESEND_API_KEY` is secret.
 3. Add the domain `status.destinytees.uk` to that project and create the DNS record
    Vercel asks for (a CNAME to `cname.vercel-dns.com`).
+
+## Report a problem
+
+Every part on the page has a "Report a problem" button. Reports are emailed to the
+addresses in `STATUS_REPORT_RECIPIENTS` (the super admins) through Resend, using
+`RESEND_API_KEY`. Keep that list in step with who holds `super_admin`.
 
 ## Post a notice
 

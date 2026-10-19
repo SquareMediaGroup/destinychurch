@@ -50,7 +50,7 @@ function worstLevel(levels: Level[]): Level {
 
 /** Every part shown on the page. Ids are used by notices and reports. */
 export const componentCatalog = [
-  { id: "pages", service: "Destiny Church website", name: "Website pages", description: "destinytees.uk and its pages" },
+  { id: "pages", service: "Destiny Church website", name: "Website pages", description: "The website and its pages" },
   { id: "sermons", service: "Destiny Church website", name: "Sermons", description: "Watching and listening to sermons" },
   { id: "events", service: "Destiny Church website", name: "Events and What's On", description: "Event listings and sign-ups" },
   { id: "shop", service: "Destiny Church website", name: "Shop and checkout", description: "Shop orders and payments" },

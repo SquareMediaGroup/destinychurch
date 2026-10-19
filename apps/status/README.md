@@ -12,7 +12,7 @@ HTTP request, so the page still renders when the website or Supabase is down.
 ```bash
 cd apps/status
 npm install
-cp .env.example .env.local   # optional; defaults probe https://destinytees.uk
+cp .env.example .env.local   # optional; defaults probe https://destinychurch.vercel.app
 npm run dev                  # http://localhost:3100
 ```
 

@@ -7,7 +7,6 @@ import {
   probeSite,
   probeSiteHealth,
   probeSupabaseAuth,
-  providerStatusUrl,
   type Level,
   type ProbeResult,
 } from "./checks";
@@ -28,18 +27,10 @@ export interface ServiceStatus {
   components: ComponentStatus[];
 }
 
-export interface ProviderRow {
-  name: string;
-  url: string;
-  level: Level;
-  detail: string | null;
-}
-
 export interface StatusReport {
   level: Level;
   checkedAt: string;
   services: ServiceStatus[];
-  providers: ProviderRow[];
 }
 
 const RANK: Record<Level, number> = { operational: 0, unknown: 1, degraded: 2, down: 3 };
@@ -62,7 +53,7 @@ function component(id: string, name: string, description: string, result: ProbeR
 }
 
 export async function getStatus(): Promise<StatusReport> {
-  const [home, sermons, whatsOn, shop, give, login, health, d1Config, auth, supabase, vercel, expo] =
+  const [home, sermons, whatsOn, shop, give, login, health, d1Config, auth, supabase, expo] =
     await Promise.all([
       probeSite("/"),
       probeSite("/sermons"),
@@ -74,7 +65,6 @@ export async function getStatus(): Promise<StatusReport> {
       probeSite("/api/app/v1/one/config"),
       probeSupabaseAuth(),
       probeProvider("supabase"),
-      probeProvider("vercel"),
       probeProvider("expo"),
     ]);
 
@@ -107,22 +97,11 @@ export async function getStatus(): Promise<StatusReport> {
     { id: "destiny-one", name: "Destiny One", level: worstLevel(d1.map((c) => c.level)), components: d1 },
   ];
 
-  const providers: ProviderRow[] = [
-    { name: "Supabase (database and sign-in)", url: providerStatusUrl("supabase"), ...pick(supabase.overall) },
-    { name: "Vercel (hosting)", url: providerStatusUrl("vercel"), ...pick(vercel.overall) },
-    { name: "Expo (app notifications)", url: providerStatusUrl("expo"), ...pick(expo.overall) },
-  ];
-
   return {
     level: worstLevel(services.map((s) => s.level)),
     checkedAt: new Date().toISOString(),
     services,
-    providers,
   };
-}
-
-function pick(r: ProbeResult) {
-  return { level: r.level, detail: r.detail };
 }
 
 const NOTICE_LEVEL: Record<Notice["kind"], Level> = { outage: "down", degraded: "degraded", maintenance: "degraded" };

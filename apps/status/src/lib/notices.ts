@@ -21,7 +21,7 @@ export interface Notice {
 export const notices: Notice[] = [
   // {
   //   title: "Destiny One messages delayed",
-  //   body: "Our database provider is having problems. Messages may be slow to send. We're watching it.",
+  //   body: "Messages may be slow to send right now. We're watching it.",
   //   kind: "degraded",
   //   components: ["d1-chats", "d1-realtime"],
   //   startedAt: "2026-10-19T19:00:00Z",

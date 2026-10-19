@@ -103,7 +103,8 @@ export async function probeSupabaseAuth(): Promise<ProbeResult> {
 
 // Providers publish their own status on Atlassian Statuspage, which has a
 // public JSON API. We read it rather than guess: realtime, file storage and
-// push delivery have no cheap public probe of our own.
+// push delivery have no cheap public probe of our own. Used only as an input
+// to our components; the page never names the providers.
 
 interface StatuspageSummary {
   status?: { indicator?: string; description?: string };
@@ -112,15 +113,10 @@ interface StatuspageSummary {
 
 const PROVIDER_PAGES = {
   supabase: "https://status.supabase.com",
-  vercel: "https://www.vercel-status.com",
   expo: "https://status.expo.dev",
 } as const;
 
 export type Provider = keyof typeof PROVIDER_PAGES;
-
-export function providerStatusUrl(provider: Provider): string {
-  return PROVIDER_PAGES[provider];
-}
 
 function fromComponentStatus(status: string): Level {
   switch (status) {
@@ -171,14 +167,14 @@ export async function probeProvider(provider: Provider): Promise<ProviderStatus>
 
   // Can't read the provider's page: say so, never report their outage.
   if (!summary) {
-    const unknown: ProbeResult = { level: "unknown", detail: "Provider status unavailable", ms: null };
+    const unknown: ProbeResult = { level: "unknown", detail: null, ms: null };
     return { overall: unknown, component: () => unknown };
   }
 
   const overallLevel = fromIndicator(summary.status?.indicator);
   const overall: ProbeResult = {
     level: overallLevel,
-    detail: overallLevel === "operational" ? null : summary.status?.description ?? null,
+    detail: overallLevel === "operational" ? null : "Some members may be affected",
     ms: null,
   };
 
@@ -188,7 +184,7 @@ export async function probeProvider(provider: Provider): Promise<ProviderStatus>
       const match = summary?.components?.find((c) => c.name.toLowerCase() === name.toLowerCase());
       if (!match) return overall;
       const level = fromComponentStatus(match.status);
-      return { level, detail: level === "operational" ? null : `${name} issue reported by provider`, ms: null };
+      return { level, detail: level === "operational" ? null : "Some members may be affected", ms: null };
     },
   };
 }

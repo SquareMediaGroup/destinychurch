@@ -72,23 +72,6 @@ export default async function StatusPage() {
         <Service key={s.id} service={s} />
       ))}
 
-      <section className="card">
-        <h2 className="card-title">Providers we rely on</h2>
-        <ul className="rows">
-          {report.providers.map((p) => (
-            <li key={p.name} className="row">
-              <div>
-                <a href={p.url} className="row-name link" rel="noopener noreferrer">
-                  {p.name}
-                </a>
-                {p.detail && <p className="muted small">{p.detail}</p>}
-              </div>
-              <StatusLabel level={p.level} />
-            </li>
-          ))}
-        </ul>
-      </section>
-
       {resolved.length > 0 && (
         <section className="card">
           <h2 className="card-title">Past notices</h2>

@@ -34,4 +34,5 @@ and merge. Set `resolvedAt` when it is over. Component ids are in `src/lib/statu
 See `src/lib/status.ts`. In short: public pages on the site, the site's
 `GET /api/health` (database and Smart Search), `GET /api/app/v1/one/config` for the
 Destiny One server, Supabase Auth's `/auth/v1/health`, and the public status pages of
-Supabase, Vercel and Expo for realtime, storage and push delivery.
+Supabase and Expo for realtime, storage and push delivery. Providers are inputs only:
+the page never names them.

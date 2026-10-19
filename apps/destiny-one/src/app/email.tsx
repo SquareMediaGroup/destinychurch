@@ -7,6 +7,7 @@ import { AuthScreen } from "@/components/AuthScreen";
 import { Icon } from "@/components/Icon";
 import { Field, FormError, LargeTitle, Lead, PrimaryButton, TextButton } from "@/components/ui";
 import { D1ApiError } from "@/lib/api";
+import { OUTAGE_MESSAGE } from "@destiny/shared";
 import { requestEmailCode } from "@/lib/auth";
 import { useTheme } from "@/theme/tokens";
 
@@ -41,8 +42,9 @@ export default function Email() {
       await requestEmailCode(value);
       router.push({ pathname: "/code", params: { email: value } });
     } catch (err) {
-      const limited = err instanceof D1ApiError && err.code === "rate_limited";
-      setError(limited ? "Please wait a minute and try again." : "Couldn't send the code. Check your connection and try again.");
+      const code = err instanceof D1ApiError ? err.code : null;
+      if (code === "outage") setError(OUTAGE_MESSAGE);
+      else setError(code === "rate_limited" ? "Please wait a minute and try again." : "Couldn't send the code. Check your connection and try again.");
     } finally {
       setBusy(false);
     }

@@ -6,12 +6,13 @@
 // rounded, clipped frame, which reads the same at 1.5px.
 
 import { useEffect, useState, type ReactNode, type Ref } from "react";
-import { D1_ROLE_LABELS, type D1LeaderRole } from "@destiny/shared";
+import { D1_ROLE_LABELS, D1_STATUS_URL, OUTAGE_MESSAGE, type D1LeaderRole } from "@destiny/shared";
 import {
   ActivityIndicator,
   Animated,
   Easing,
   Image,
+  Linking,
   Modal,
   Pressable,
   StyleSheet,
@@ -442,12 +443,14 @@ export function SkeletonRows({ count, avatar = 40 }: { count: number; avatar?: n
 }
 
 /** E3: generic error with Try again, showing the server's message. */
+/** During an outage (OUTAGE_MESSAGE) it also offers the status page. */
 export function ErrorState({ message, onRetry }: { message: string; onRetry: () => void }) {
   const t = useTheme();
   return (
     <Appear from={{ y: 16 }} style={{ paddingVertical: 60, paddingHorizontal: 32, alignItems: "center", gap: 14 }}>
       <Text style={{ fontSize: 15, lineHeight: 20, color: t.muted, textAlign: "center" }}>{message}</Text>
       <SecondaryButton label="Try again" onPress={onRetry} style={{ paddingHorizontal: 28 }} />
+      {message === OUTAGE_MESSAGE ? <TextButton label="Check status" onPress={() => void Linking.openURL(D1_STATUS_URL)} /> : null}
     </Appear>
   );
 }

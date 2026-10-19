@@ -4470,9 +4470,21 @@ and a message the app can show. Writes call the `d1_*` SQL functions, whose own 
 needs at least 2 verified adults.") pass through as `rule_violation` (422). Typed client:
 `createDestinyOneClient` in `@destiny/shared`.
 
+**Supabase outages.** When a route fails generically (an unexpected error, or "Something went wrong"),
+`oneRoute` asks `supabaseDown()` (`lib/destinyOne/http.ts`: Auth `/health` plus one tiny `d1_settings`
+read, 2.5 s timeout, answer shared for 15 s per instance). If Supabase is down the response is the
+`outage` code (503) with `OUTAGE_MESSAGE` ("Destiny One is having an outage right now. Check
+status.destinytees.uk for updates.", `@destiny/shared`, alongside `D1_STATUS_URL`). `auth/code` checks
+first and answers `outage` rather than "sent". In the app, `errorMessage`/`isOutage`
+(`src/state/session.tsx`) and the session's `outage` flag drive the copy: the chat-list banner reads
+"Destiny One is having an outage. Showing your last update." and opens the status page, `ErrorState`
+adds "Check status", and sign-in uses `isAuthOutage` (`src/lib/auth.ts`) so a Supabase failure on a
+code or password isn't reported as a wrong code/password or an offline phone. The maintenance switch
+lives in Supabase too, so during an outage set `D1_MAINTENANCE_MESSAGE` in Vercel and redeploy.
+
 | Route | Methods | Notes |
 |---|---|---|
-| `config` | GET | No sign-in, no token, and the only `/one` route the CDN may cache (`s-maxage=60`): `D1AppConfig` — `minBuild { ios, android }`, `forceUpdateMessage`, `maintenanceMessage`, `storeUrl` (env `D1_IOS_STORE_URL`, default `itms-beta://` = TestFlight; `D1_ANDROID_STORE_URL`). The app's forced-update gate (`appGate()` in `@destiny/shared`, `src/lib/appGate.ts`) |
+| `config` | GET | No sign-in, no token, and the only `/one` route the CDN may cache (`s-maxage=60`): `D1AppConfig` — `minBuild { ios, android }`, `forceUpdateMessage`, `maintenanceMessage` (env `D1_MAINTENANCE_MESSAGE` overrides it, for when Supabase is down), `storeUrl` (env `D1_IOS_STORE_URL`, default `itms-beta://` = TestFlight; `D1_ANDROID_STORE_URL`). The app's forced-update gate (`appGate()` in `@destiny/shared`, `src/lib/appGate.ts`) |
 | `auth/link` | POST | After every sign-in: accept an open invite for the email (`onboardMember`), return `D1Me` with `onboarding` |
 | `auth/code` | POST | No sign-in: `{ email }`. Sends the email sign-in code only if `d1_sign_in_status` says this email can get in (member, open invite, or requests open), from `after()`, and always answers `{ sent: true }`, so neither the reply nor its timing reveals who is a member. The code comes from the Supabase admin API (`generateLink`, which doesn't email) and is sent through Resend, so sign-in doesn't hit Supabase's per-IP limit for the server's address or its capped built-in sender. Rate-limited per IP and per (hashed) email. Replaced `auth/check` (2026-09-28), which said "no account" outright |
 | `me/access-request` | POST | `{ name, dateOfBirth?, note? }` — ask to join; a Destiny One Admin approves |

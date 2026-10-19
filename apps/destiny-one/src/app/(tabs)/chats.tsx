@@ -6,7 +6,7 @@
 // Mark as read / Mute / Group info underneath. Tapping the preview opens it.
 
 import { useMemo, useState } from "react";
-import { FlatList, Pressable, RefreshControl, ScrollView, Text, View } from "react-native";
+import { FlatList, Linking, Pressable, RefreshControl, ScrollView, Text, View } from "react-native";
 import { Link, router } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { GlassSurface } from "@/components/GlassSurface";
@@ -19,7 +19,7 @@ import { api } from "@/lib/api";
 import { haptic } from "@/lib/haptics";
 import { keys, prefetchGroup, toggleChatArchive, updateGroupSummary } from "@/lib/queries";
 import { queryClient } from "@/lib/queryClient";
-import type { D1GroupSummary } from "@destiny/shared";
+import { D1_STATUS_URL, type D1GroupSummary } from "@destiny/shared";
 import { useSession } from "@/state/session";
 import { ORANGE, useTheme } from "@/theme/tokens";
 
@@ -92,7 +92,7 @@ function ChatRow({ group: g }: { group: D1GroupSummary }) {
 export default function Chats() {
   const t = useTheme();
   const insets = useSafeAreaInsets();
-  const { communities, communitiesError, refreshCommunities, isLeader, assistant } = useSession();
+  const { communities, communitiesError, refreshCommunities, isLeader, assistant, outage } = useSession();
   const [filter, setFilter] = useState<Filter>("all");
   const [refreshing, setRefreshing] = useState(false);
 
@@ -134,7 +134,7 @@ export default function Chats() {
         ) : null}
       </View>
       <LargeTitle style={{ paddingHorizontal: 20, paddingTop: 2, paddingBottom: 8 }}>Chats</LargeTitle>
-      {communitiesError && communities ? <OfflineBanner /> : null}
+      {communitiesError && communities ? <OfflineBanner outage={outage} /> : null}
       {assistant && !assistant.archived && filter !== "announcements" && (filter !== "unread" || assistant.unreadCount > 0) ? (
         // DestinyAI: the only one-to-one chat, pinned above the communities.
         <View style={{ paddingTop: 10, paddingHorizontal: 16, paddingBottom: 4 }}>
@@ -240,14 +240,25 @@ function HeaderIcon({ icon, label, onPress }: { icon: "plus"; label: string; onP
   );
 }
 
-/** E1: shown above the list when the last refresh failed but we still have data. */
-function OfflineBanner() {
+/**
+ * E1: shown above the list when the last refresh failed but we still have data.
+ * During an outage it says so, and opens the status page.
+ */
+function OfflineBanner({ outage }: { outage: boolean }) {
   const t = useTheme();
   return (
-    <View style={{ marginHorizontal: 16, marginBottom: 8, flexDirection: "row", alignItems: "center", gap: 8, paddingVertical: 8, paddingHorizontal: 12, borderRadius: 12, backgroundColor: t.fill }}>
+    <Pressable
+      disabled={!outage}
+      accessibilityRole={outage ? "link" : undefined}
+      onPress={() => void Linking.openURL(D1_STATUS_URL)}
+      style={{ marginHorizontal: 16, marginBottom: 8, flexDirection: "row", alignItems: "center", gap: 8, paddingVertical: 8, paddingHorizontal: 12, borderRadius: 12, backgroundColor: t.fill }}
+    >
       <Icon name="wifiOff" size={16} color={t.muted} />
-      <Text style={{ flex: 1, fontSize: 13, color: t.muted }}>Can&apos;t connect. Showing your last update.</Text>
-    </View>
+      <Text style={{ flex: 1, fontSize: 13, color: t.muted }}>
+        {outage ? "Destiny One is having an outage. Showing your last update." : "Can't connect. Showing your last update."}
+      </Text>
+      {outage ? <Text style={{ fontSize: 13, fontWeight: "600", color: t.tint }}>Status</Text> : null}
+    </Pressable>
   );
 }
 

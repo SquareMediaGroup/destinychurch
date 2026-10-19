@@ -5,12 +5,12 @@
 import { useState } from "react";
 import { Alert, View } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
-import { SIGN_IN_FAILED } from "@destiny/shared";
+import { OUTAGE_MESSAGE, SIGN_IN_FAILED } from "@destiny/shared";
 import { AuthScreen } from "@/components/AuthScreen";
 import { Field, FormError, LargeTitle, Lead, PrimaryButton, TextButton } from "@/components/ui";
 import { isAdding } from "@/lib/accounts";
 import { requestEmailCode, signInWithPassword } from "@/lib/auth";
-import { routeFor, useSession } from "@/state/session";
+import { isOutage, routeFor, useSession } from "@/state/session";
 import { haptic } from "@/lib/haptics";
 
 export default function Password() {
@@ -37,9 +37,11 @@ export default function Password() {
       router.dismissAll();
       router.replace(routeFor(me));
       if (leaked && me.onboarding === "active") offerPasswordChange();
-    } catch {
-      // Whatever went wrong, it looks the same from here (see signInWithPassword).
-      setError(SIGN_IN_FAILED);
+    } catch (err) {
+      // Whatever went wrong, it looks the same from here (see signInWithPassword),
+      // except an outage: that isn't about this person.
+      const outage = (err instanceof Error && err.message === OUTAGE_MESSAGE) || isOutage(err);
+      setError(outage ? OUTAGE_MESSAGE : SIGN_IN_FAILED);
     } finally {
       setBusy(false);
     }

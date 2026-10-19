@@ -1,13 +1,13 @@
 "use client";
 
-import {
-  createContext,
-  useCallback,
-  useContext,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import { useMemo } from "react";
+import { Toaster, toast as sonner } from "sonner";
+
+// Toasts are rendered by sonner (https://github.com/emilkowalski/sonner) for
+// stacking, swipe-to-dismiss, hover-to-expand and enter/exit animation. The
+// look is ours: sonner runs `unstyled` and the `.dc-toast*` classes in
+// globals.css apply the glass recipe. `useToast()` keeps its original API so
+// call sites don't need to know which library sits underneath.
 
 type ToastTone = "info" | "success" | "error";
 
@@ -23,114 +23,87 @@ type Toast = {
   title?: string;
   tone: ToastTone;
   actions?: ToastAction[];
+  /** 0 keeps the toast up until the user acts or dismisses it. */
   durationMs?: number;
 };
 
-type ToastContextValue = {
-  push: (toast: Omit<Toast, "id"> & { id?: string }) => string;
-  remove: (id: string) => void;
-};
+type PushInput = Omit<Toast, "id" | "tone"> & { id?: string; tone?: ToastTone };
 
-const ToastContext = createContext<ToastContextValue | null>(null);
+const DEFAULT_DURATION_MS = 4200;
+
+function push(input: PushInput): string {
+  const id =
+    input.id || crypto.randomUUID?.() || Math.random().toString(36).slice(2);
+  const tone = input.tone ?? "info";
+
+  // sonner has one primary slot (`action`) and one secondary slot (`cancel`).
+  // Both dismiss the toast after running, matching the old behaviour.
+  const primary = input.actions?.find((a) => a.variant === "primary");
+  const secondary = input.actions?.find((a) => a !== primary);
+
+  const show = tone === "success" ? sonner.success : tone === "error" ? sonner.error : sonner.info;
+  show(input.title ?? input.message, {
+    id,
+    description: input.title ? input.message : undefined,
+    duration:
+      input.durationMs === 0 ? Infinity : (input.durationMs ?? DEFAULT_DURATION_MS),
+    action: primary ? { label: primary.label, onClick: primary.onClick } : undefined,
+    cancel: secondary ? { label: secondary.label, onClick: secondary.onClick } : undefined,
+  });
+  return id;
+}
+
+function remove(id: string) {
+  sonner.dismiss(id);
+}
 
 export function ToastProvider({ children }: { children: React.ReactNode }) {
-  const [toasts, setToasts] = useState<Toast[]>([]);
-  const timeouts = useRef<Record<string, number>>({});
-
-  const remove = useCallback((id: string) => {
-    setToasts((prev) => prev.filter((toast) => toast.id !== id));
-    if (timeouts.current[id]) {
-      clearTimeout(timeouts.current[id]);
-      delete timeouts.current[id];
-    }
-  }, []);
-
-  const push = useCallback(
-    (toast: Omit<Toast, "id"> & { id?: string }) => {
-      const id =
-        toast.id || crypto.randomUUID?.() || Math.random().toString(36).slice(2);
-      const next: Toast = {
-        id,
-        tone: toast.tone ?? "info",
-        message: toast.message,
-        title: toast.title,
-        actions: toast.actions,
-        durationMs: toast.durationMs,
-      };
-      setToasts((prev) => [...prev, next]);
-      const durationMs = toast.durationMs ?? 4200;
-      if (durationMs > 0) {
-        const timeoutId = window.setTimeout(() => remove(id), durationMs);
-        timeouts.current[id] = timeoutId;
-      }
-      return id;
-    },
-    [remove],
-  );
-
-  const value = useMemo(() => ({ push, remove }), [push, remove]);
-
   return (
-    <ToastContext.Provider value={value}>
+    <>
       {children}
-      <div className="toast-stack" aria-live="assertive" role="status">
-        {toasts.map((toast) => (
-          <div key={toast.id} className={`toast toast-${toast.tone}`}>
-            <div className="toast-body">
-              {toast.title && <p className="toast-title">{toast.title}</p>}
-              <p className="toast-message">{toast.message}</p>
-            </div>
-            <div className="toast-controls">
-              {toast.actions?.length ? (
-                <div className="toast-actions">
-                  {toast.actions.map((action, index) => (
-                    <button
-                      key={`${toast.id}-action-${index}`}
-                      type="button"
-                      className={`toast-action${action.variant === "primary" ? " toast-action-primary" : ""}`}
-                      onClick={() => {
-                        action.onClick();
-                        remove(toast.id);
-                      }}
-                    >
-                      {action.label}
-                    </button>
-                  ))}
-                </div>
-              ) : null}
-              <button
-                type="button"
-                className="toast-close"
-                aria-label="Dismiss notification"
-                onClick={() => remove(toast.id)}
-              >
-                ×
-              </button>
-            </div>
-          </div>
-        ))}
-      </div>
-    </ToastContext.Provider>
+      <Toaster
+        position="bottom-right"
+        theme="dark"
+        gap={10}
+        offset={{ bottom: "1.5rem", right: "1.5rem" }}
+        mobileOffset={{ bottom: "1rem", left: "1rem", right: "1rem" }}
+        visibleToasts={4}
+        closeButton
+        containerAriaLabel="Notifications"
+        toastOptions={{
+          unstyled: true,
+          closeButtonAriaLabel: "Dismiss notification",
+          classNames: {
+            toast: "dc-toast",
+            success: "dc-toast-success",
+            error: "dc-toast-error",
+            info: "dc-toast-info",
+            icon: "dc-toast-icon",
+            content: "dc-toast-content",
+            title: "dc-toast-title",
+            description: "dc-toast-message",
+            actionButton: "dc-toast-action dc-toast-action-primary",
+            cancelButton: "dc-toast-action",
+            closeButton: "dc-toast-close",
+          },
+        }}
+      />
+    </>
   );
 }
 
 export function useToast() {
-  const ctx = useContext(ToastContext);
-  if (!ctx) {
-    throw new Error("useToast must be used within a ToastProvider");
-  }
-
   return useMemo(
     () => ({
-      push: ctx.push,
+      push,
       success: (message: string, title = "Success") =>
-        ctx.push({ message, title, tone: "success" }),
+        push({ message, title, tone: "success" }),
       error: (message: string, title = "Something went wrong") =>
-        ctx.push({ message, title, tone: "error" }),
+        push({ message, title, tone: "error" }),
       info: (message: string, title = "Notice") =>
-        ctx.push({ message, title, tone: "info" }),
-      dismiss: ctx.remove,
+        push({ message, title, tone: "info" }),
+      dismiss: remove,
     }),
-    [ctx],
+    [],
   );
 }

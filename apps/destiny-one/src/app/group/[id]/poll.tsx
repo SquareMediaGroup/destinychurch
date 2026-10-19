@@ -4,16 +4,14 @@
 import { useState } from "react";
 import { Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { MAX_POLL_OPTIONS, MIN_POLL_OPTIONS, validatePoll } from "@destiny/shared";
 import { Icon } from "@/components/Icon";
-import { Card, Field, FieldLabel, FormError, ModalHeader, PickRow, PrimaryButton, SectionLabel, TextButton } from "@/components/ui";
+import { Card, Field, FieldLabel, FormError, ModalHeader, ModalForm, PickRow, PrimaryButton, SectionLabel, TextButton } from "@/components/ui";
 import { pollDraft } from "@/state/pollDraft";
 import { useTheme } from "@/theme/tokens";
 
 export default function Poll() {
   const t = useTheme();
-  const insets = useSafeAreaInsets();
   const { id } = useLocalSearchParams<{ id: string }>();
   const [question, setQuestion] = useState("");
   const [options, setOptions] = useState(["", ""]);
@@ -38,7 +36,7 @@ export default function Poll() {
   }
 
   return (
-    <View style={{ flex: 1, backgroundColor: t.grouped, paddingTop: insets.top, paddingHorizontal: 16, paddingBottom: Math.max(insets.bottom, 16) }}>
+    <ModalForm>
       <ModalHeader title="Poll" />
       <ScrollView contentContainerStyle={{ gap: 20, paddingTop: 14 }} keyboardShouldPersistTaps="handled">
         <View style={{ gap: 8 }}>
@@ -81,6 +79,6 @@ export default function Poll() {
         <FormError live message={!check.ok && (question || options.some(Boolean)) ? check.reason : null} />
       </ScrollView>
       <PrimaryButton label="Send" onPress={send} disabled={!check.ok} style={{ marginTop: 14 }} />
-    </View>
+    </ModalForm>
   );
 }

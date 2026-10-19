@@ -7,7 +7,7 @@ import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Icon } from "@/components/Icon";
-import { Card, Field, FieldLabel, FormError, ModalHeader, PickRow, PrimaryButton, SectionLabel } from "@/components/ui";
+import { Card, Field, FieldLabel, FormError, ModalHeader, ModalForm, PickRow, PrimaryButton, SectionLabel } from "@/components/ui";
 import { api } from "@/lib/api";
 import { errorMessage, useGroupSummary } from "@/state/session";
 import { useTheme } from "@/theme/tokens";
@@ -62,7 +62,7 @@ export default function Invite() {
   }
 
   return (
-    <View style={{ flex: 1, backgroundColor: t.grouped, paddingTop: insets.top, paddingHorizontal: 16, paddingBottom: Math.max(insets.bottom, 16) }}>
+    <ModalForm>
       <ModalHeader title="Invite by email" icon="back" />
       <ScrollView contentContainerStyle={{ gap: 20, paddingTop: 14 }} keyboardShouldPersistTaps="handled">
         <View style={{ gap: 8 }}>
@@ -87,6 +87,6 @@ export default function Invite() {
         <FormError message={error} />
       </ScrollView>
       <PrimaryButton label="Send invite" onPress={send} busy={busy} disabled={!ready} style={{ marginTop: 14 }} />
-    </View>
+    </ModalForm>
   );
 }

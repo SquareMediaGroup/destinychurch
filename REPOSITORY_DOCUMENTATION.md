@@ -7653,7 +7653,11 @@ same database as the data rather than in a separate Synapse module.
   (the rotating orange **beam** border on primary buttons and focused fields — a spinning linear
   gradient in a clipped frame, since RN has no conic-gradient — plus buttons, fields, cards,
   dialogs, and pulsing loading skeletons — `SkeletonGroup`, `Bone`, `SkeletonRows` — used by
-  Chats, Community, Group info and Edit group while data loads), `Icon.tsx` (the design's line icons via `react-native-svg`), `MessageBubble.tsx`,
+  Chats, Community, Group info and Edit group while data loads; `ModalForm` frames the modal forms
+  — Feedback, Report, New group, Invite, Edit group, Poll, Add people — so the pinned bottom button rises
+  above the keyboard, passing the page sheet's gap from the top of the screen as the keyboard offset;
+  `lib/useKeyboardShown.ts` drops the home-indicator padding under bottom bars while the keyboard is up;
+  fixed-height boxes use `minHeight` or a `maxFontSizeMultiplier` cap so the largest Dynamic Type sizes don't clip), `Icon.tsx` (the design's line icons via `react-native-svg`), `MessageBubble.tsx`,
   `MessageMenu.tsx` (press-and-hold menu drawn in React Native, WhatsApp-style: the message lifts over a dimmed chat, a bar of six quick reactions plus "+" for a full emoji grid sits above it, and a card of Reply / Copy / Report / Block / Delete sits below, both solid sheets in the app's colours rather than Liquid Glass; placed by the pure `lib/menuLayout.ts` so it always fits on screen, tested in `tests/unit/destiny-one-message-menu.spec.ts`. It replaced the SwiftUI context menu, whose hosted bubbles reported the wrong height and made messages and reactions overlap), `Composer.tsx` (its camera button opens the in-app camera, `app/camera.tsx` built on `expo-camera`, with the photo handed back through `lib/camera.ts`; it replaced the system camera screen, which closed and left the app unusable; needs a native build), `NotificationPrompt.tsx` (A10, asked once
   on first group open), `SafetyNotice.tsx`.
 - **Search** (`search` route): groups from the cached list, plus messages via `GET /search/messages`

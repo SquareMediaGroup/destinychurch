@@ -4,8 +4,7 @@
 import { useState } from "react";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Card, Field, FieldLabel, FormError, ModalHeader, PickRow, PrimaryButton, SectionLabel } from "@/components/ui";
+import { Card, Field, FieldLabel, FormError, ModalHeader, ModalForm, PickRow, PrimaryButton, SectionLabel } from "@/components/ui";
 import { api } from "@/lib/api";
 import { clock } from "@/lib/format";
 import { errorMessage } from "@/state/session";
@@ -17,7 +16,6 @@ const MAX = 1000;
 
 export default function Report() {
   const t = useTheme();
-  const insets = useSafeAreaInsets();
   const { messageId, name, at, body } = useLocalSearchParams<{ messageId: string; name: string; at: string; body: string }>();
   const [reason, setReason] = useState<string | null>(null);
   const [note, setNote] = useState("");
@@ -41,7 +39,7 @@ export default function Report() {
   }
 
   return (
-    <View style={{ flex: 1, backgroundColor: t.grouped, paddingTop: insets.top, paddingHorizontal: 16, paddingBottom: Math.max(insets.bottom, 16) }}>
+    <ModalForm>
       <ModalHeader title="Report message" />
       <ScrollView contentContainerStyle={{ gap: 20, paddingTop: 14 }} keyboardShouldPersistTaps="handled">
         <Card style={{ gap: 4, paddingVertical: 12, paddingHorizontal: 14 }}>
@@ -82,6 +80,6 @@ export default function Report() {
         <FormError message={error} />
       </ScrollView>
       <PrimaryButton label="Send report" onPress={send} busy={busy} disabled={!reason} style={{ marginTop: 14 }} />
-    </View>
+    </ModalForm>
   );
 }

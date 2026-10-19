@@ -13,7 +13,7 @@ import * as Device from "expo-device";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { MAX_FEEDBACK_LENGTH, type D1FeedbackKind } from "@destiny/shared";
 import { Icon } from "@/components/Icon";
-import { Card, Field, FieldLabel, FormError, Lead, ModalHeader, PickRow, PrimaryButton, SecondaryButton, SectionLabel } from "@/components/ui";
+import { Card, Field, FieldLabel, FormError, Lead, ModalHeader, ModalForm, PickRow, PrimaryButton, SecondaryButton, SectionLabel } from "@/components/ui";
 import { api } from "@/lib/api";
 import { lastErrorId } from "@/lib/sentry";
 import { errorMessage } from "@/state/session";
@@ -83,7 +83,7 @@ export default function Feedback() {
   }
 
   return (
-    <View style={{ flex: 1, backgroundColor: t.grouped, paddingTop: insets.top, paddingHorizontal: 16, paddingBottom: Math.max(insets.bottom, 16) }}>
+    <ModalForm>
       <ModalHeader title={kind === "problem" ? "Report a problem" : "Send feedback"} />
       <ScrollView contentContainerStyle={{ gap: 20, paddingTop: 14 }} keyboardShouldPersistTaps="handled">
         <View style={{ gap: 8 }}>
@@ -137,6 +137,6 @@ export default function Feedback() {
         <FormError message={error} />
       </ScrollView>
       <PrimaryButton label="Send" onPress={send} busy={busy} disabled={!body.trim()} style={{ marginTop: 14 }} />
-    </View>
+    </ModalForm>
   );
 }

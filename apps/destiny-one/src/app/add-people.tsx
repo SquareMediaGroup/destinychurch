@@ -7,11 +7,10 @@
 import { useEffect, useMemo, useState } from "react";
 import { ActivityIndicator, Alert, FlatList, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import type { D1DirectoryEntry } from "@destiny/shared";
 import { Icon } from "@/components/Icon";
-import { Avatar, Card, EmptyState, Field, ModalHeader, PrimaryButton, SectionLabel } from "@/components/ui";
+import { Avatar, Card, EmptyState, Field, ModalHeader, ModalForm, PrimaryButton, SectionLabel } from "@/components/ui";
 import { api } from "@/lib/api";
 import { keys, useGroup } from "@/lib/queries";
 import { queryClient } from "@/lib/queryClient";
@@ -21,7 +20,6 @@ import { INK, ORANGE, useTheme } from "@/theme/tokens";
 
 export default function AddPeople() {
   const t = useTheme();
-  const insets = useSafeAreaInsets();
   const { groupId, communityId: communityParam } = useLocalSearchParams<{ groupId?: string; communityId?: string }>();
   const { me, communities } = useSession();
   const forGroup = !!groupId;
@@ -84,7 +82,7 @@ export default function AddPeople() {
   const label = picked.length === 0 ? (forGroup ? "Add people" : "Done") : `Add ${picked.length} ${picked.length === 1 ? "person" : "people"}`;
 
   return (
-    <View style={{ flex: 1, backgroundColor: t.grouped, paddingTop: insets.top, paddingHorizontal: 16, paddingBottom: Math.max(insets.bottom, 16) }}>
+    <ModalForm>
       <ModalHeader title="Add people" icon="back" />
       <Field
         value={query}
@@ -177,6 +175,6 @@ export default function AddPeople() {
       </View>
 
       <PrimaryButton label={label} onPress={done} busy={busy} disabled={forGroup && picked.length === 0} style={{ marginTop: 14 }} />
-    </View>
+    </ModalForm>
   );
 }

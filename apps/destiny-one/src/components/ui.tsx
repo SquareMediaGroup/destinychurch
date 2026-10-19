@@ -12,12 +12,14 @@ import {
   Animated,
   Easing,
   Image,
+  KeyboardAvoidingView,
   Modal,
   Pressable,
   StyleSheet,
   Text,
   TextInput,
   View,
+  useWindowDimensions,
   type LayoutChangeEvent,
   type StyleProp,
   type TextInputInstance,
@@ -32,6 +34,7 @@ import { GlassSurface } from "@/components/GlassSurface";
 import { Icon, type IconName } from "@/components/Icon";
 import { Appear, Pop, PressableScale, Shake, reduceMotion, springs } from "@/components/Motion";
 import { haptic } from "@/lib/haptics";
+import { useKeyboardShown } from "@/lib/useKeyboardShown";
 import { ORANGE, ORANGE_LIGHT, useTheme, type Theme } from "@/theme/tokens";
 
 // ── Beam ────────────────────────────────────────────────────────────────────
@@ -325,8 +328,8 @@ export function SettingsRow({ icon, iconBg, iconColor, label, value, onPress, ch
 export function CardButton({ label, onPress, busy }: { label: string; onPress: () => void; busy?: boolean }) {
   const t = useTheme();
   return (
-    <PressableScale onPress={onPress} disabled={busy} scaleTo={0.98} style={({ pressed }) => [{ height: 50, borderRadius: 22, backgroundColor: pressed ? t.fill : t.card, borderWidth: StyleSheet.hairlineWidth, borderColor: t.glassLine, alignItems: "center", justifyContent: "center" }]}>
-      {busy ? <ActivityIndicator color={t.tint} /> : <Text style={{ fontSize: 17, color: t.tint }}>{label}</Text>}
+    <PressableScale accessibilityRole="button" onPress={onPress} disabled={busy} scaleTo={0.98} style={({ pressed }) => [{ minHeight: 50, paddingVertical: 12, paddingHorizontal: 16, borderRadius: 22, backgroundColor: pressed ? t.fill : t.card, borderWidth: StyleSheet.hairlineWidth, borderColor: t.glassLine, alignItems: "center", justifyContent: "center" }]}>
+      {busy ? <ActivityIndicator color={t.tint} /> : <Text style={{ fontSize: 17, color: t.tint, textAlign: "center" }}>{label}</Text>}
     </PressableScale>
   );
 }
@@ -335,7 +338,8 @@ export function CardButton({ label, onPress, busy }: { label: string; onPress: (
 
 export function LargeTitle({ children, style }: { children: ReactNode; style?: StyleProp<TextStyle> }) {
   const t = useTheme();
-  return <Text style={[{ fontSize: 34, fontWeight: "700", letterSpacing: 0.3, color: t.text }, style]}>{children}</Text>;
+  // Capped like the system's own large titles: at the biggest text sizes an uncapped 34pt title breaks mid-word on a small phone.
+  return <Text maxFontSizeMultiplier={1.5} style={[{ fontSize: 34, fontWeight: "700", letterSpacing: 0.3, color: t.text }, style]}>{children}</Text>;
 }
 
 export function Lead({ children, style }: { children: ReactNode; style?: StyleProp<TextStyle> }) {
@@ -347,11 +351,37 @@ export function Lead({ children, style }: { children: ReactNode; style?: StylePr
 export function ModalHeader({ title, icon = "close" }: { title: string; icon?: "back" | "close" }) {
   const t = useTheme();
   return (
-    <View style={{ height: 56, flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+    <View style={{ minHeight: 56, flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
       <BackButton icon={icon} />
-      <Text style={{ fontSize: 17, fontWeight: "600", color: t.text }}>{title}</Text>
+      <Text accessibilityRole="header" numberOfLines={1} maxFontSizeMultiplier={1.4} style={{ flexShrink: 1, marginHorizontal: 8, textAlign: "center", fontSize: 17, fontWeight: "600", color: t.text }}>
+        {title}
+      </Text>
       <View style={{ width: 44 }} />
     </View>
+  );
+}
+
+/**
+ * The frame for a modal form: header, scrolling fields, and a button pinned at
+ * the bottom that rises above the keyboard. A page sheet starts below the top
+ * of the screen, and KeyboardAvoidingView measures from the sheet, not the
+ * screen, so the gap is passed as the keyboard offset.
+ */
+export function ModalForm({ children }: { children: ReactNode }) {
+  const t = useTheme();
+  const insets = useSafeAreaInsets();
+  const keyboard = useKeyboardShown();
+  const { height: windowHeight } = useWindowDimensions();
+  const [sheetHeight, setSheetHeight] = useState(windowHeight);
+  return (
+    <KeyboardAvoidingView
+      behavior="padding"
+      keyboardVerticalOffset={Math.max(windowHeight - sheetHeight, 0)}
+      onLayout={(e) => setSheetHeight(e.nativeEvent.layout.height)}
+      style={{ flex: 1, backgroundColor: t.grouped }}
+    >
+      <View style={{ flex: 1, paddingTop: insets.top, paddingHorizontal: 16, paddingBottom: keyboard ? 16 : Math.max(insets.bottom, 16) }}>{children}</View>
+    </KeyboardAvoidingView>
   );
 }
 
@@ -528,8 +558,8 @@ export function ConfirmDialog({
 
 function DialogButton({ t, label, onPress, primary, busy }: { t: Theme; label: string; onPress: () => void; primary?: boolean; busy?: boolean }) {
   return (
-    <PressableScale onPress={onPress} disabled={busy} feedback={primary ? "press" : undefined} wrapStyle={{ flex: 1 }} style={({ pressed }) => [{ height: 48, borderRadius: 24, alignItems: "center", justifyContent: "center", backgroundColor: primary ? ORANGE : t.fill, opacity: pressed ? 0.85 : 1 }]}>
-      {busy ? <ActivityIndicator color="#0E1013" /> : <Text style={{ fontSize: 17, fontWeight: "600", color: primary ? "#0E1013" : t.text }}>{label}</Text>}
+    <PressableScale accessibilityRole="button" onPress={onPress} disabled={busy} feedback={primary ? "press" : undefined} wrapStyle={{ flex: 1 }} style={({ pressed }) => [{ minHeight: 48, paddingVertical: 10, paddingHorizontal: 12, borderRadius: 24, alignItems: "center", justifyContent: "center", backgroundColor: primary ? ORANGE : t.fill, opacity: pressed ? 0.85 : 1 }]}>
+      {busy ? <ActivityIndicator color="#0E1013" /> : <Text style={{ fontSize: 17, fontWeight: "600", textAlign: "center", color: primary ? "#0E1013" : t.text }}>{label}</Text>}
     </PressableScale>
   );
 }

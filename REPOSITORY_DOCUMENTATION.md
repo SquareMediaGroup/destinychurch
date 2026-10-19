@@ -1470,6 +1470,8 @@ All tables have RLS enabled. Access rules:
 | jobs | Yes | - | Yes | Public listings |
 | job_applications | - | - | Yes | Protect applications |
 | service_status | - | - | Yes | Service health / Smart Search kill-switch (service-role only) |
+| status_incidents | - | - | Yes | Status page incidents: outage / amber alert (`degraded`) / maintenance, affected component ids, resolved_at, long_outage_alerted_at, author_name (poster's admin profile name, shown as the notice heading). Public SELECT (published on the status page), service-role writes |
+| status_incident_updates | - | - | Yes | Timeline updates per status incident, each with author_name (public SELECT, service-role writes) |
 | posts | - | - | Yes | Freeform pages (public read via server components) |
 | training_categories / training_subgroups / training_folders / training_posts | - | - | Yes | /training resource library (public read via server components; sub-group passwords hashed) |
 | products / product_variants | - | - | Yes | Shop catalogue (public read via server components) |
@@ -2720,6 +2722,7 @@ Each section requires a specific access-level role (see
 | `/admin/banner` | `app/admin/banner/page.tsx` | Manage site banners |
 | `/admin/popup` | `app/admin/popup/page.tsx` | Manage pop-ups |
 | `/admin/redirects` | `app/admin/redirects/page.tsx` | Manage URL redirects — click counts and a per-link QR code |
+| `/admin/status` | `app/admin/status/page.tsx` | Status page incidents (Site Admin): post an outage, amber alert or maintenance for chosen parts of the website / Destiny One, add timeline updates, change, resolve, reopen. Shown on status.destinytees.uk |
 | `/admin/analytics` | `app/admin/analytics/page.tsx` | Which links, QR codes and tiles people actually use, plus whole-site traffic. Three tabs: Short links, In person (`/nfc` + `/links`), Whole site (Vercel Web Analytics) |
 | `/admin/cache` | `app/admin/cache/page.tsx` | Invalidate ISR cache |
 | `/admin/posts` | `app/admin/posts/page.tsx` | Standalone content pages |
@@ -4176,6 +4179,21 @@ drifting copy of the RBAC table.
 //
 // Also in OPEN_PATHS: it only ever returns the caller's own details.
 ```
+
+#### Status page incidents — `/api/admin/status/incidents/**` (Site Admin)
+
+```
+GET   /api/admin/status/incidents                 // open + resolved in the last 30 days, with updates (newest first)
+POST  /api/admin/status/incidents                 // { title, kind: outage|degraded|maintenance, components: string[], message }
+PATCH /api/admin/status/incidents/[id]            // { kind?, components?, title?, resolved?: boolean }
+POST  /api/admin/status/incidents/[id]/updates    // { message } — a line on the public timeline
+```
+
+Component ids are validated against `lib/statusComponents.ts` (keep in step with `componentCatalog` in
+`apps/status/src/lib/status.ts`). "Amber alert" is the UI name for `degraded`. Every write is audited
+(section `site`). `GET /api/cron/status-outage-alerts` (every 10 minutes from `.github/workflows/status-outage-alerts.yml`, since Vercel Hobby only allows daily crons; needs the `CRON_SECRET` repository secret) emails every
+`site_admin` through the site's Resend sender (`sendEmailCard`) once per outage still open after an hour,
+and stamps `long_outage_alerted_at`. Amber alerts and maintenance never email.
 
 #### `GET|POST /api/admin/redirects`
 ```typescript
@@ -6547,7 +6565,7 @@ always passes and isn't repeated per rule; anything under `/admin` or
 | `training_admin` | `/admin/training/**` | `/api/admin/training/**` |
 | `event_admin` | Courses (`alpha`, `recovery`, `bible-course`, `cap-money`, `featured-course`) + Announcements except Banner (`popup`, `featured-event`, `event-popup`, `nfc`) | `/api/admin/{alpha-events,events,featured-course,featured-event,popup,nfc}` |
 | `store_admin` | `/admin/store/**` | `/api/admin/{store,shop-hero}/**` |
-| `site_admin` | `/admin/posts`, `/admin/redirects`, `/admin/analytics` | `/api/admin/{posts,redirects,analytics}/**` |
+| `site_admin` | `/admin/posts`, `/admin/redirects`, `/admin/analytics`, `/admin/status` | `/api/admin/{posts,redirects,analytics,status}/**` |
 | `hr_admin` | `/admin/hr/**` (staff, leave, jobs, applications, documents, reviews, checklists) | `/api/admin/hr/**` |
 | `design_admin` | `/admin/design/**` (the design ticket queue) | `/api/admin/design/**` |
 | `super_admin` | Everything, plus Banner, Clear Cache, `/admin/users` and `/admin/audit` | `/api/admin/{banner,revalidate,users,audit}/**` |
@@ -7802,9 +7820,9 @@ A small **Next.js app deployed as its own Vercel project** (root directory `apps
 - **What it shows** (`src/lib/status.ts`): two services with the parts members notice. *Destiny Church website*: pages, sermons, events, shop and checkout, giving, AI search, admin and staff portal. *Destiny One*: sign-in, chats and messages, live updates, photos and voice notes, notifications, D1 Admin. Providers (Supabase, Expo) feed into components but are never named on the page or in the JSON, by Kai's call.
 - **Checks** (`src/lib/checks.ts`): GETs of public pages on the site; the site's `GET /api/health` (database + Smart Search); `GET /api/app/v1/one/config` (the D1 server); Supabase `GET /auth/v1/health` with the publishable key; and providers' public Statuspage JSON (`/api/v2/summary.json`) for realtime, storage and push, which have no cheap probe of our own. 8 s timeout; over 4 s is "Degraded". A provider page that can't be read shows "Not checked", never an outage. A component's level is the worst of its checks, ignoring unknowns.
 - **Freshness**: the page and `GET /api/status` (same report as JSON, CORS open) are ISR with `revalidate = 60`, so checks run at most once a minute and Vercel serves the last good page if a refresh fails. The open page re-fetches every minute.
-- **Notices** (`src/lib/notices.ts`): hand-written outage, degraded or maintenance notices kept in the repo, so posting one never depends on what might be down. A started notice raises its components to at least its level. Resolved notices stay for 14 days.
+- **Notices** (`src/lib/notices.ts`): incidents Site Admins post from `/admin/status` (outage, amber alert, maintenance, each with a timeline of updates headed by the posting admin's name), read from `status_incidents` via Supabase REST with the publishable key. A started notice raises its components to at least its level; resolved ones stay for 14 days. This read is the page's only Supabase dependency: if it fails, the automated checks still render and notices are simply missing.
 - **Report a problem** (`src/app/ComponentRow.tsx`, `POST /api/report`, `src/lib/report.ts`): every component has a button that opens a short form (what's wrong, optional reply email) and emails the super admins straight through Resend's HTTP API, so reports arrive while the site is down. Recipients are everyone with `super_admin` in `admin_roles`, read at send time from Supabase's REST API with `STATUS_SUPABASE_SECRET_KEY`; if that read fails (Supabase down), the report goes to admin@destinytees.uk with a note saying so. Known component ids only, length caps, a honeypot field, and a soft per-instance limit of 5 reports per address per 10 minutes.
-- **Env** (`.env.example`): `STATUS_SITE_URL` (default `https://destinytees.uk`), `STATUS_SUPABASE_URL`, `STATUS_SUPABASE_PUBLISHABLE_KEY`, and the two secrets `RESEND_API_KEY` and `STATUS_SUPABASE_SECRET_KEY`. Without the publishable key the sign-in check shows "Not checked"; without `RESEND_API_KEY` reports fail with a "Couldn't send that" message; without the secret key they all go to the fallback address.
+- **Env** (`.env.example`): `STATUS_SITE_URL` (default `https://destinychurch.vercel.app`, the origin D1's API is served from; destinytees.uk is still the old nginx site that 404s `/api`), `STATUS_SUPABASE_URL`, `STATUS_SUPABASE_PUBLISHABLE_KEY`, and the two secrets `RESEND_API_KEY` and `STATUS_SUPABASE_SECRET_KEY`. Without the publishable key the sign-in check shows "Not checked"; without `RESEND_API_KEY` reports fail with a "Couldn't send that" message; without the secret key they all go to the fallback address.
 - No uptime history or alerting yet: that needs somewhere to store results that isn't Supabase.
 
 - `apps/.gitkeep` keeps the `apps/` directory (for future standalone companion apps) tracked. See `apps/live-caption/README.md` for the full setup and operating guide.

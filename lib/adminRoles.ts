@@ -127,6 +127,9 @@ const ROUTE_RULES: { pattern: RegExp; roles: AdminRole[] }[] = [
   { pattern: /^\/api\/admin\/posts(\/|$)/, roles: ["site_admin"] },
   { pattern: /^\/api\/admin\/redirects(\/|$)/, roles: ["site_admin"] },
   { pattern: /^\/api\/admin\/analytics(\/|$)/, roles: ["site_admin"] },
+  // Status page incidents (status.destinytees.uk): outages, amber alerts, maintenance.
+  { pattern: /^\/admin\/status(\/|$)/, roles: ["site_admin"] },
+  { pattern: /^\/api\/admin\/status(\/|$)/, roles: ["site_admin"] },
 
   // HR — staff directory, leave, jobs, applications, documents, reviews
   { pattern: /^\/admin\/hr(\/|$)/, roles: ["hr_admin"] },

@@ -10,7 +10,7 @@ import {
   type Level,
   type ProbeResult,
 } from "./checks";
-import { activeNotices, type Notice } from "./notices";
+import { getNotices, type Notice, type Notices } from "./notices";
 
 export interface ComponentStatus {
   id: string;
@@ -31,6 +31,7 @@ export interface StatusReport {
   level: Level;
   checkedAt: string;
   services: ServiceStatus[];
+  notices: Notices;
 }
 
 const RANK: Record<Level, number> = { operational: 0, unknown: 1, degraded: 2, down: 3 };
@@ -50,7 +51,7 @@ function worstLevel(levels: Level[]): Level {
 
 /** Every part shown on the page. Ids are used by notices and reports. */
 export const componentCatalog = [
-  { id: "pages", service: "Destiny Church website", name: "Website pages", description: "destinytees.uk and its pages" },
+  { id: "pages", service: "Destiny Church website", name: "Website pages", description: "The website and its pages" },
   { id: "sermons", service: "Destiny Church website", name: "Sermons", description: "Watching and listening to sermons" },
   { id: "events", service: "Destiny Church website", name: "Events and What's On", description: "Event listings and sign-ups" },
   { id: "shop", service: "Destiny Church website", name: "Shop and checkout", description: "Shop orders and payments" },
@@ -73,7 +74,7 @@ function component(id: ComponentId, result: ProbeResult): ComponentStatus {
 }
 
 export async function getStatus(): Promise<StatusReport> {
-  const [home, sermons, whatsOn, shop, give, login, health, d1Config, auth, supabase, expo] =
+  const [home, sermons, whatsOn, shop, give, login, health, d1Config, auth, supabase, expo, notices] =
     await Promise.all([
       probeSite("/"),
       probeSite("/sermons"),
@@ -86,6 +87,7 @@ export async function getStatus(): Promise<StatusReport> {
       probeSupabaseAuth(),
       probeProvider("supabase"),
       probeProvider("expo"),
+      getNotices(),
     ]);
 
   const website: ComponentStatus[] = [
@@ -110,7 +112,7 @@ export async function getStatus(): Promise<StatusReport> {
     component("d1-admin", worst(d1Server, auth)),
   ];
 
-  applyNotices([...website, ...d1], activeNotices());
+  applyNotices([...website, ...d1], notices.active);
 
   const services: ServiceStatus[] = [
     { id: "website", name: "Destiny Church website", level: worstLevel(website.map((c) => c.level)), components: website },
@@ -121,6 +123,7 @@ export async function getStatus(): Promise<StatusReport> {
     level: worstLevel(services.map((s) => s.level)),
     checkedAt: new Date().toISOString(),
     services,
+    notices,
   };
 }
 

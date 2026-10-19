@@ -12,7 +12,7 @@ HTTP request, so the page still renders when the website or Supabase is down.
 ```bash
 cd apps/status
 npm install
-cp .env.example .env.local   # optional; defaults probe https://destinytees.uk
+cp .env.example .env.local   # optional; defaults probe https://destinychurch.vercel.app
 npm run dev                  # http://localhost:3100
 ```
 
@@ -33,8 +33,11 @@ admin@destinytees.uk instead.
 
 ## Post a notice
 
-Add an entry to `src/lib/notices.ts` (title, body, kind, component ids, `startedAt`)
-and merge. Set `resolvedAt` when it is over. Component ids are in `src/lib/status.ts`.
+Site Admins post outages, amber alerts and maintenance from the website's
+`/admin/status`, with timeline updates as the fix goes. They're stored in
+`status_incidents` / `status_incident_updates` (Supabase, public read) and shown
+here. An outage still open after an hour emails every Site Admin
+(`/api/cron/status-outage-alerts` on the main site).
 
 ## What each component checks
 

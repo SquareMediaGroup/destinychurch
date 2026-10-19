@@ -409,6 +409,14 @@ export const ADMIN_GROUPS: AdminNavGroup[] = [
         keywords: ["short link", "vanity", "url", "shortener", "qr"],
       },
       {
+        href: "/admin/status",
+        label: "Status page",
+        icon: "monitor_heart",
+        role: "site_admin",
+        description: "Post outages and amber alerts on status.destinytees.uk, with updates as the fix goes.",
+        keywords: ["outage", "incident", "amber alert", "maintenance", "downtime", "status"],
+      },
+      {
         href: "/admin/analytics",
         label: "Analytics",
         icon: "monitoring",

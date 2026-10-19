@@ -1,6 +1,7 @@
 // Status page: email the Site Admins when an outage has been open for an hour.
 //
-// Runs every 10 minutes (vercel.json). Finds outages posted from /admin/status
+// Runs every 10 minutes from GitHub Actions (.github/workflows/status-outage-alerts.yml;
+// the Vercel Hobby plan only allows daily crons). Finds outages posted from /admin/status
 // that started over an hour ago, are still open and haven't been alerted yet,
 // emails everyone with site_admin through the site's Resend sender, and stamps
 // long_outage_alerted_at so each outage alerts once. Amber alerts and

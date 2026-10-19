@@ -1,0 +1,32 @@
+name: Status outage alerts
+
+# Every 10 minutes, ask the site to email the Site Admins about any status
+# page outage that has been open for over an hour
+# (app/api/cron/status-outage-alerts). Lives here rather than in vercel.json
+# because the Vercel Hobby plan only allows daily cron jobs.
+#
+# Needs the repository secret CRON_SECRET (the same value as the site's
+# CRON_SECRET env var). GitHub may run scheduled jobs a few minutes late,
+# which is fine for an hour-long threshold.
+on:
+  schedule:
+    - cron: "*/10 * * * *"
+  workflow_dispatch:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Run the outage check
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+          SITE_URL: https://destinychurch.vercel.app
+        run: |
+          if [ -z "$CRON_SECRET" ]; then
+            echo "⚠️ CRON_SECRET repository secret is not set; skipping."
+            exit 0
+          fi
+          curl --fail-with-body -sS --max-time 60 \
+            -H "Authorization: Bearer $CRON_SECRET" \
+            "$SITE_URL/api/cron/status-outage-alerts"

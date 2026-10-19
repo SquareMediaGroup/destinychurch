@@ -4191,7 +4191,7 @@ POST  /api/admin/status/incidents/[id]/updates    // { message } — a line on t
 
 Component ids are validated against `lib/statusComponents.ts` (keep in step with `componentCatalog` in
 `apps/status/src/lib/status.ts`). "Amber alert" is the UI name for `degraded`. Every write is audited
-(section `site`). `GET /api/cron/status-outage-alerts` (every 10 minutes, `CRON_SECRET`) emails every
+(section `site`). `GET /api/cron/status-outage-alerts` (every 10 minutes from `.github/workflows/status-outage-alerts.yml`, since Vercel Hobby only allows daily crons; needs the `CRON_SECRET` repository secret) emails every
 `site_admin` through the site's Resend sender (`sendEmailCard`) once per outage still open after an hour,
 and stamps `long_outage_alerted_at`. Amber alerts and maintenance never email.
 

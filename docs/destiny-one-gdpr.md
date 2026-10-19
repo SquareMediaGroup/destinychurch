@@ -1,7 +1,7 @@
 # Destiny One — GDPR & safeguarding data notes
 
 **Status:** Draft, for the DPIA and the privacy-notice update. Not legal advice.
-**Covers:** the Destiny One messaging backend (`/api/app/v1/one`, `supabase/migrations/20260926_01_destiny_one.sql`) and the Expo app (`applications/destiny-one`).
+**Covers:** the Destiny One messaging backend (`/api/app/v1/one`, `supabase/migrations/20260926_01_destiny_one.sql`) and the Expo app (`apps/destiny-one`).
 
 Destiny One is a members-only group messaging app used by adults **and children**, under a
 safeguarding policy that forbids phone numbers and one-to-one messaging. Processing children's

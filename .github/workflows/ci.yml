@@ -41,14 +41,14 @@ jobs:
     timeout-minutes: 15
     defaults:
       run:
-        working-directory: applications/destiny-one
+        working-directory: apps/destiny-one
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 24
           cache: npm
-          cache-dependency-path: applications/destiny-one/package-lock.json
+          cache-dependency-path: apps/destiny-one/package-lock.json
       # Its own npm project (not a root workspace), so it installs separately.
       - name: Install dependencies
         run: npm ci
@@ -63,14 +63,14 @@ jobs:
     timeout-minutes: 10
     defaults:
       run:
-        working-directory: applications/d1-admin
+        working-directory: apps/d1-admin
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 24
           cache: npm
-          cache-dependency-path: applications/d1-admin/package-lock.json
+          cache-dependency-path: apps/d1-admin/package-lock.json
       # Its own npm project (not a root workspace), so it installs separately.
       # The Tauri (Rust) shell is built on a Mac with `npm run tauri:build`.
       - name: Install dependencies
@@ -81,20 +81,43 @@ jobs:
           VITE_SUPABASE_URL: https://example.supabase.co
           VITE_SUPABASE_PUBLISHABLE_KEY: placeholder-for-ci
 
-  destiny-subtitles:
-    name: Destiny Subtitles app (engine tests, UI build)
+  status-page:
+    name: Status page (typecheck, build)
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 10
     defaults:
       run:
-        working-directory: applications/destiny-subtitles
+        working-directory: apps/status
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 24
           cache: npm
-          cache-dependency-path: applications/destiny-subtitles/package-lock.json
+          cache-dependency-path: apps/status/package-lock.json
+      # Its own npm project and Vercel project (status.destinytees.uk), so it
+      # installs separately and stays up when the main site or Supabase is down.
+      - name: Install dependencies
+        run: npm ci
+      - name: Typecheck
+        run: npm run typecheck
+      - name: Build
+        run: npm run build
+
+  destiny-subtitles:
+    name: Destiny Subtitles app (engine tests, UI build)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: apps/destiny-subtitles
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: apps/destiny-subtitles/package-lock.json
       # The engine crate has no Tauri/OS dependency, so it tests on Linux. The
       # Tauri shell and NDI/whisper are built on a Mac (`npm run tauri:build`).
       - name: Engine tests

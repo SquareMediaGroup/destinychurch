@@ -1,5 +1,5 @@
 // Destiny One — shapes returned by /api/admin/destiny-one/* to the website's
-// admin pages and the D1 Admin desktop app (applications/d1-admin). Client-safe (no
+// admin pages and the D1 Admin desktop app (apps/d1-admin). Client-safe (no
 // server imports). The Destiny One Admin routes never return message content;
 // only the safeguarding routes do.
 //

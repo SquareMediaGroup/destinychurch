@@ -20,7 +20,7 @@ import {
   sendColour,
   unit,
   wallpaper,
-} from "../../applications/destiny-one/src/theme/appearance";
+} from "../../apps/destiny-one/src/theme/appearance";
 
 /**
  * Destiny One lets people pick their own send colour and chat wallpaper. A
@@ -114,7 +114,7 @@ test.describe("photo wallpapers", () => {
   test("each stock photo ships as a full-size image and a thumbnail", async () => {
     const { existsSync } = await import("node:fs");
     const { join } = await import("node:path");
-    const dir = join(__dirname, "../../applications/destiny-one/assets/wallpapers");
+    const dir = join(__dirname, "../../apps/destiny-one/assets/wallpapers");
     for (const p of PHOTO_WALLPAPERS) {
       expect(existsSync(join(dir, `${p.key}.jpg`)), `${p.key}.jpg`).toBe(true);
       expect(existsSync(join(dir, `${p.key}-thumb.jpg`)), `${p.key}-thumb.jpg`).toBe(true);

@@ -62,7 +62,7 @@ export const ADMIN_GROUPS: AdminNavGroup[] = [
     ],
   },
   {
-    // The Destiny One members' app (applications/destiny-one). Two roles: Destiny One
+    // The Destiny One members' app (apps/destiny-one). Two roles: Destiny One
     // Admin runs it and never sees messages; Safeguarding Admin is the only
     // role that can read them, and every read is audited.
     label: "Destiny One",

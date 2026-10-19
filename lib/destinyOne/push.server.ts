@@ -72,7 +72,7 @@ export async function pushNewMessage(groupId: string, senderId: string, preview:
 
 /**
  * One batch to Expo. `categoryId: "message"` gives the notification its Reply
- * and Mark as read buttons (applications/destiny-one/src/lib/notificationActions.ts);
+ * and Mark as read buttons (apps/destiny-one/src/lib/notificationActions.ts);
  * `memberId` says which account on the phone it's for, and `messageId` what
  * Mark as read marks.
  */

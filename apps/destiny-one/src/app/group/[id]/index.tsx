@@ -29,6 +29,7 @@ import { haptic } from "@/lib/haptics";
 import { hideSender, setOpenGroup } from "@/lib/queries";
 import { uploadAttachment } from "@/lib/upload";
 import { useConversation, type LocalMessage } from "@/lib/useConversation";
+import { useKeyboardShown } from "@/lib/useKeyboardShown";
 import { chatDrafts } from "@/state/drafts";
 import { useAssistantStream } from "@/state/assistantStream";
 import { eventPick, useEventPick } from "@/state/eventPick";
@@ -55,6 +56,8 @@ function GroupChatScreen() {
   const preview = useIsPreview();
   const safe = useSafeAreaInsets();
   const insets = preview ? { top: 8, bottom: 0, left: 0, right: 0 } : safe;
+  // The home-indicator padding under the message box is only needed while the keyboard is down.
+  const keyboard = useKeyboardShown();
   const { id } = useLocalSearchParams<{ id: string }>();
   const { me, setMe, accounts, activeSlot } = useSession();
   // Only when there's another account on this phone, and never from a child account (then a slow tap must still just send).
@@ -465,10 +468,10 @@ function GroupChatScreen() {
             <GlassSurface interactive style={[{ height: 48, maxWidth: 240, borderRadius: 24, flexDirection: "row", alignItems: "center", gap: 10, paddingLeft: 6, paddingRight: 16, opacity: pressed ? 0.8 : 1 }, t.shadow]}>
               <Avatar name={name} size={36} announcements={isAnnouncements} assistant={isAssistant} uri={group?.iconUrl ?? summary?.group.iconUrl} />
               <View style={{ flexShrink: 1, minWidth: 0 }}>
-                <Text numberOfLines={1} style={{ fontSize: 15, fontWeight: "600", color: t.text }}>
+                <Text numberOfLines={1} maxFontSizeMultiplier={1.3} style={{ fontSize: 15, fontWeight: "600", color: t.text }}>
                   {name}
                 </Text>
-                <Text numberOfLines={1} style={{ fontSize: 12, color: typingNow ? t.tint : t.subtle }} accessibilityLiveRegion="polite">
+                <Text numberOfLines={1} maxFontSizeMultiplier={1.3} style={{ fontSize: 12, color: typingNow ? t.tint : t.subtle }} accessibilityLiveRegion="polite">
                   {sub}
                 </Text>
               </View>
@@ -513,7 +516,7 @@ function GroupChatScreen() {
       ) : null}
 
       {/* Footer */}
-      <View style={{ paddingHorizontal: 12, paddingTop: 6, paddingBottom: Math.max(insets.bottom, 12) }}>
+      <View style={{ paddingHorizontal: 12, paddingTop: 6, paddingBottom: keyboard ? 12 : Math.max(insets.bottom, 12) }}>
         {toast ? (
           <Appear key={toast} from={{ y: 14, scale: 0.9 }} style={{ alignItems: "center", marginBottom: 8 }}>
             <GlassSurface style={{ borderRadius: 16, paddingVertical: 8, paddingHorizontal: 14 }}>

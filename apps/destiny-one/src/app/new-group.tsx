@@ -5,10 +5,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { checkComposition, MIN_GROUP_ADULTS, MIN_GROUP_MEMBERS, type D1CommunitySummary } from "@destiny/shared";
 import { Icon } from "@/components/Icon";
-import { Avatar, Card, Field, FieldLabel, FormError, ModalHeader, PrimaryButton, Separator } from "@/components/ui";
+import { Avatar, Card, Field, FieldLabel, FormError, ModalHeader, ModalForm, PrimaryButton, Separator } from "@/components/ui";
 import { api } from "@/lib/api";
 import { plural } from "@/lib/format";
 import { invalidateCommunities, keys, setGroup } from "@/lib/queries";
@@ -20,7 +19,6 @@ import { haptic } from "@/lib/haptics";
 
 export default function NewGroup() {
   const t = useTheme();
-  const insets = useSafeAreaInsets();
   const params = useLocalSearchParams<{ communityId?: string }>();
   const { me, communities } = useSession();
   const manageable = useMemo(() => (communities ?? []).filter((c) => c.canManage), [communities]);
@@ -81,7 +79,7 @@ export default function NewGroup() {
   }
 
   return (
-    <View style={{ flex: 1, backgroundColor: t.grouped, paddingTop: insets.top, paddingHorizontal: 16, paddingBottom: Math.max(insets.bottom, 16) }}>
+    <ModalForm>
       <ModalHeader title="New group" />
       <ScrollView contentContainerStyle={{ gap: 20, paddingTop: 14, paddingBottom: 8 }} keyboardShouldPersistTaps="handled">
         <View style={{ gap: 8 }}>
@@ -146,6 +144,6 @@ export default function NewGroup() {
         <FormError message={error} />
       </ScrollView>
       <PrimaryButton label={rule.ok ? "Create group" : "Create paused group"} onPress={create} busy={busy} disabled={!community || !name.trim()} style={{ marginTop: 14 }} />
-    </View>
+    </ModalForm>
   );
 }

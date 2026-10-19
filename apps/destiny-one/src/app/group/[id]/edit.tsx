@@ -3,8 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { ScrollView, View } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Bone, CardButton, ConfirmDialog, Field, FieldLabel, FormError, ModalHeader, PrimaryButton, SkeletonGroup } from "@/components/ui";
+import { Bone, CardButton, ConfirmDialog, Field, FieldLabel, FormError, ModalHeader, ModalForm, PrimaryButton, SkeletonGroup } from "@/components/ui";
 import { api } from "@/lib/api";
 import { removeGroupLocally, setGroup, updateGroupSummary, useGroup } from "@/lib/queries";
 import { errorMessage } from "@/state/session";
@@ -12,7 +11,6 @@ import { useTheme } from "@/theme/tokens";
 
 export default function EditGroup() {
   const t = useTheme();
-  const insets = useSafeAreaInsets();
   const { id } = useLocalSearchParams<{ id: string }>();
   const groupQuery = useGroup(id);
   const group = groupQuery.data ?? null;
@@ -58,7 +56,7 @@ export default function EditGroup() {
   }
 
   return (
-    <View style={{ flex: 1, backgroundColor: t.grouped, paddingTop: insets.top, paddingHorizontal: 16, paddingBottom: Math.max(insets.bottom, 16) }}>
+    <ModalForm>
       <ModalHeader title="Edit group" icon="back" />
       {!group && !shownError ? (
         <SkeletonGroup label="Loading group" style={{ gap: 20, paddingTop: 14, flex: 1 }}>
@@ -97,6 +95,6 @@ export default function EditGroup() {
         onCancel={() => setArchiving(false)}
         onConfirm={() => save(true)}
       />
-    </View>
+    </ModalForm>
   );
 }

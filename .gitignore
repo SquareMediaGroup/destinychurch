@@ -46,6 +46,7 @@ yarn-error.log*
 *secrets*.zip
 # Opt-in: the app's template of public build settings (no values, no secrets).
 !apps/destiny-one/.env.example
+!apps/status/.env.example
 
 # local-only secrets / instructions
 CLAUDE.local.md

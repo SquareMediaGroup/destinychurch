@@ -219,7 +219,7 @@ destinychurch/
 │   │   ├── alpha-ask/, alpha-events/ # Public Alpha info endpoints
 │   │   ├── store/                 # checkout/, checkout/bypass/ (public storefront)
 │   │   ├── training/               # unlock/, posts/[id]/timer/
-│   │   ├── health/                 # smart-search/ health check
+│   │   ├── health/                 # route.ts (public: database + Smart Search state for the status page), smart-search/ health check
 │   │   └── webhooks/               # stripe/ only — no GitHub/Vercel webhook route
 │   ├── [slug]/                    # Dynamic catchall (posts table)
 │
@@ -409,6 +409,9 @@ destinychurch/
 │   │                               # app settings), menu bar popover, notifications, Touch ID, session
 │   │                               # in the Keychain. Own npm project; Rust shell in src-tauri/. Uses the
 │   │                               # same APIs as the phone app and the web admin. See "D1 Admin" below.
+│   ├── status/                    # status.destinytees.uk — public status of the website and Destiny One
+│   │                               # (Next.js, own npm project AND own Vercel project, no Supabase client,
+│   │                               # so it stays up when the site or Supabase is down). See "Status page" below.
 │   ├── talent-buzzer/             # Talent show judge buzzers — one app on both machines: hub (LED) / Avolites
 │   │                               # agent (Titan PC). Android tablets press -> Titan Web API cue +
 │   │                               # X / golden takeover + sound on the LED screen. LAN only, own
@@ -4633,6 +4636,13 @@ GET  /api/portal/team          // directory of non-"left" hr_staff — name, rol
 A leave request/decision here (and from `/admin/hr`) triggers a notification
 email via `lib/hrEmail.ts`.
 
+#### `GET /api/health` — public health summary (read by the status page)
+
+Always 200 while the site runs; the body is `{ database: "ok" | "slow" | "down", smartSearch: "ok" | "off" | "unknown", checkedAt }`.
+The database check is a head-only count on `service_status` with a 5 s timeout (over 2 s = `slow`).
+Smart Search is reported `unknown` when the database is down, because `getSmartSearchStatus()` fails open.
+`Cache-Control: no-store`, not behind middleware, nothing about people or config. Consumer: `apps/status`.
+
 #### `GET /api/health/smart-search` — self-healing health check (cron)
 
 ```typescript
@@ -4995,7 +5005,8 @@ manual-trigger only, because it needs a running site to point at.
 Three more jobs, also secret-free: **Destiny One app** (`npm ci`, typecheck and
 `expo lint` inside `apps/destiny-one`, which is its own npm project), **D1 Admin
 desktop app** (`npm ci` and `npm run build` — typecheck plus the Vite bundle — inside
-`apps/d1-admin`; the Rust shell is only built on a Mac) and
+`apps/d1-admin`; the Rust shell is only built on a Mac), **Status page**
+(`npm ci`, typecheck and `next build` inside `apps/status`) and
 **Database rules** (`scripts/test-sql.sh` against the PostgreSQL that ships on
 the Ubuntu runner, so the safeguarding SQL checks run on every PR).
 
@@ -7654,7 +7665,11 @@ same database as the data rather than in a separate Synapse module.
   (the rotating orange **beam** border on primary buttons and focused fields — a spinning linear
   gradient in a clipped frame, since RN has no conic-gradient — plus buttons, fields, cards,
   dialogs, and pulsing loading skeletons — `SkeletonGroup`, `Bone`, `SkeletonRows` — used by
-  Chats, Community, Group info and Edit group while data loads), `Icon.tsx` (the design's line icons via `react-native-svg`), `MessageBubble.tsx`,
+  Chats, Community, Group info and Edit group while data loads; `ModalForm` frames the modal forms
+  — Feedback, Report, New group, Invite, Edit group, Poll, Add people — so the pinned bottom button rises
+  above the keyboard, passing the page sheet's gap from the top of the screen as the keyboard offset;
+  `lib/useKeyboardShown.ts` drops the home-indicator padding under bottom bars while the keyboard is up;
+  fixed-height boxes use `minHeight` or a `maxFontSizeMultiplier` cap so the largest Dynamic Type sizes don't clip), `Icon.tsx` (the design's line icons via `react-native-svg`), `MessageBubble.tsx`,
   `MessageMenu.tsx` (press-and-hold menu drawn in React Native, WhatsApp-style: the message lifts over a dimmed chat, a bar of six quick reactions plus "+" for a full emoji grid sits above it, and a card of Reply / Copy / Report / Block / Delete sits below, both solid sheets in the app's colours rather than Liquid Glass; placed by the pure `lib/menuLayout.ts` so it always fits on screen, tested in `tests/unit/destiny-one-message-menu.spec.ts`. It replaced the SwiftUI context menu, whose hosted bubbles reported the wrong height and made messages and reactions overlap), `Composer.tsx` (its camera button opens the in-app camera, `app/camera.tsx` built on `expo-camera`, with the photo handed back through `lib/camera.ts`; it replaced the system camera screen, which closed and left the app unusable; needs a native build), `NotificationPrompt.tsx` (A10, asked once
   on first group open), `SafetyNotice.tsx`.
 - **Search** (`search` route): groups from the cached list, plus messages via `GET /search/messages`
@@ -7781,6 +7796,16 @@ A standalone **Node app** (not part of the website deploy) for the Destiny talen
 - **Pages** (`hub/public/`): `tablet.html` (fires on `pointerdown` for latency, auto-reconnect, seat picker when no `?seat=`), `display.html` (sharp extruded 3D SVG X per judge with names underneath, all-out red strobe, gold takeover, Web Audio playback of `sounds/buzzer.mp3`/`golden.mp3` with synthesised fallbacks; a one-time click arms audio because of browser autoplay rules; `?bg=transparent` for keying), `control.html` (presence per seat, audio-armed state, lighting status + log, Reset/Lock, per-seat Trigger backup, test cue/sound buttons).
 - **Lighting**: `lib/titan.js` calls the Titan Web API (port 4430; URL templates in config, `{userNumber}` filled in; retries once). Default `agent` mode runs `agent/avolites-agent.js` on the Titan PC, which connects *out* to the hub so the lighting PC needs no inbound firewall rule; `direct` mode has the hub call a console's IP itself (hardware consoles). Reset can `KillPlayback` the X/golden cues (`releaseOnReset`).
 - `tools/fake-titan.js` stands in for the console when rehearsing; `npm test` runs the state tests. Setup, tablet kiosk tips, show-day checklist: `apps/talent-buzzer/README.md`.
+
+### Status page — `apps/status/` (status.destinytees.uk)
+A small **Next.js app deployed as its own Vercel project** (root directory `apps/status`, region `dub1`, not the main site's `lhr1`). It has no Supabase client and no database: every check is a plain HTTP request, so the page keeps rendering when the website, Supabase or London is down. Destiny One's outage message links here.
+- **What it shows** (`src/lib/status.ts`): two services with the parts members notice. *Destiny Church website*: pages, sermons, events, shop and checkout, giving, AI search, admin and staff portal. *Destiny One*: sign-in, chats and messages, live updates, photos and voice notes, notifications, D1 Admin. Providers (Supabase, Expo) feed into components but are never named on the page or in the JSON, by Kai's call.
+- **Checks** (`src/lib/checks.ts`): GETs of public pages on the site; the site's `GET /api/health` (database + Smart Search); `GET /api/app/v1/one/config` (the D1 server); Supabase `GET /auth/v1/health` with the publishable key; and providers' public Statuspage JSON (`/api/v2/summary.json`) for realtime, storage and push, which have no cheap probe of our own. 8 s timeout; over 4 s is "Degraded". A provider page that can't be read shows "Not checked", never an outage. A component's level is the worst of its checks, ignoring unknowns.
+- **Freshness**: the page and `GET /api/status` (same report as JSON, CORS open) are ISR with `revalidate = 60`, so checks run at most once a minute and Vercel serves the last good page if a refresh fails. The open page re-fetches every minute.
+- **Notices** (`src/lib/notices.ts`): hand-written outage, degraded or maintenance notices kept in the repo, so posting one never depends on what might be down. A started notice raises its components to at least its level. Resolved notices stay for 14 days.
+- **Report a problem** (`src/app/ComponentRow.tsx`, `POST /api/report`, `src/lib/report.ts`): every component has a button that opens a short form (what's wrong, optional reply email) and emails the super admins straight through Resend's HTTP API, so reports arrive while the site is down. Recipients are everyone with `super_admin` in `admin_roles`, read at send time from Supabase's REST API with `STATUS_SUPABASE_SECRET_KEY`; if that read fails (Supabase down), the report goes to admin@destinytees.uk with a note saying so. Known component ids only, length caps, a honeypot field, and a soft per-instance limit of 5 reports per address per 10 minutes.
+- **Env** (`.env.example`): `STATUS_SITE_URL` (default `https://destinytees.uk`), `STATUS_SUPABASE_URL`, `STATUS_SUPABASE_PUBLISHABLE_KEY`, and the two secrets `RESEND_API_KEY` and `STATUS_SUPABASE_SECRET_KEY`. Without the publishable key the sign-in check shows "Not checked"; without `RESEND_API_KEY` reports fail with a "Couldn't send that" message; without the secret key they all go to the fallback address.
+- No uptime history or alerting yet: that needs somewhere to store results that isn't Supabase.
 
 - `apps/.gitkeep` keeps the `apps/` directory (for future standalone companion apps) tracked. See `apps/live-caption/README.md` for the full setup and operating guide.
 

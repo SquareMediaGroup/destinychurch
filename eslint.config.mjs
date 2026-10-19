@@ -31,6 +31,8 @@ const eslintConfig = defineConfig([
     "apps/d1-admin/**",
     // Talent show buzzers: standalone Node/CommonJS app with its own package.json.
     "apps/talent-buzzer/**",
+    // status.destinytees.uk: its own Next app and Vercel project (CI job status-page).
+    "apps/status/**",
     // Agent worktrees are full copies of the app, gitignored; linting them
     // would report every problem twice.
     ".claude/**",

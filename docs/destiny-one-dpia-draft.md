@@ -1,6 +1,6 @@
 # Destiny One — Data Protection Impact Assessment (DRAFT)
 
-**Status: DRAFT for review and sign-off. Not legal advice.** Prepared from how the app actually works (the code, the database rules and `docs/destiny-one-gdpr.md`) and the product decisions of 28 September 2026. It follows the structure of the ICO's sample DPIA template. The church's data protection lead should check every section, fill in the `[bracketed]` items, consult the people named in step 4, and sign step 7.
+**Status: DRAFT for review and sign-off. Not legal advice.** Prepared from how the app actually works (the code, the database rules and `docs/destiny-one-gdpr.md`) and the product decisions of 28 September 2026. It follows the structure of the ICO's sample DPIA template. The church's data protection lead should check every section, fill in the `[bracketed]` items, consult the people named in step 4, and sign step 8.
 
 | | |
 |---|---|
@@ -56,7 +56,7 @@ Destiny One processes **children's personal data** (members aged 13 to 17), **pr
 
 - **Relationship:** members are part of the church community. Under-18s are in the church's youth and children's work. They'd reasonably expect the church to keep them safe, and many would expect some adult oversight of youth group chats.
 - **Children:** the minimum age is **13** (decided 28 September 2026). There is no parent or carer consent step, because UK data law treats 13 as the age a child can agree to an online service themselves and the lawful basis isn't consent. `[Consider whether parents should still be told their child has joined, as good practice.]`
-- **Control:** members can leave groups, mute them, block people, report messages, download their data and delete their account. They can't change their real name (it's set by staff) because pseudonyms undermine safeguarding.
+- **Control:** members can leave groups, mute them, block people, report messages, download their data and delete their account. They can't change their real name (it's set by staff) because pseudonyms undermine safeguarding. `[Out of date: members can now change their own name, twice in 30 days, with the dates logged. See the list above.]`
 - **Concerns in this area:** grooming and private contact between adults and children; bullying; sharing images of children; over-reaching monitoring of private conversations.
 - **Current approach elsewhere:** WhatsApp groups are common in churches but offer no oversight, allow one-to-one messaging, and expose phone numbers. Destiny One is designed to replace that.
 - **Invite-only:** only people staff invite can join (decided 28 September 2026).

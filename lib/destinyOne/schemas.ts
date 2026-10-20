@@ -257,6 +257,15 @@ export const adminSettingsSchema = z
     // Blank clears it (back to the default copy / app back on).
     forceUpdateMessage: z.string().trim().max(500).transform((v) => v || null).nullable().optional(),
     maintenanceMessage: z.string().trim().max(500).transform((v) => v || null).nullable().optional(),
+    // "0.13" (a patch number is allowed but ignored by the app). Blank turns the prompt off.
+    latestVersion: z
+      .string()
+      .trim()
+      .regex(/^(\d{1,4}\.\d{1,4}(\.\d{1,4})?)?$/, "Use a version like 0.13.")
+      .transform((v) => v || null)
+      .nullable()
+      .optional(),
+    latestVersionNotes: z.string().trim().max(1000).transform((v) => v || null).nullable().optional(),
   })
   .refine((v) => Object.keys(v).length > 0, "Nothing to change.");
 

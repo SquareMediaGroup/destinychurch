@@ -74,6 +74,34 @@ export const POST_TEMPLATES: PostTemplate[] = [
     },
   },
   {
+    id: "landing",
+    label: "Landing page",
+    description: "Banner, a full-width photo strip, wide feature cards and a call to action.",
+    icon: "web",
+    fields: {
+      hero_style: "banner",
+      show_rails: false,
+      body: [
+        "<h2>Welcome</h2><p>Say in a sentence or two what this page is about and who it's for.</p>",
+        block("gallery", { columns: "3", crop: "landscape", size: "full" }),
+        block("card-grid", {
+          heading: "What to expect",
+          columns: "3",
+          size: "wide",
+          items: [
+            { id: "one", icon: "favorite", title: "", body: "", href: "" },
+            { id: "two", icon: "groups", title: "", body: "", href: "" },
+            { id: "three", icon: "celebration", title: "", body: "", href: "" },
+          ],
+        }),
+        block("buttons", {
+          align: "center",
+          items: [{ id: "cta", label: "Find out more", href: "", style: "primary", icon: "" }],
+        }),
+      ].join(""),
+    },
+  },
+  {
     id: "info",
     label: "Info + FAQ",
     description: "Plain page with an intro, a note and common questions.",

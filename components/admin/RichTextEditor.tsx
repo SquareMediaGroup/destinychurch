@@ -19,6 +19,7 @@ import { createBlockNode } from "./blocks/createBlockNode";
 import { UnknownBlock } from "./blocks/UnknownBlockNode";
 import { BlockDocument } from "./blocks/BlockDocument";
 import { blockDropHandler } from "./blocks/insertBlock";
+import { MediaLibraryModal } from "./posts/MediaLibraryModal";
 
 declare module "@tiptap/core" {
   interface Commands<ReturnType> {
@@ -144,6 +145,24 @@ function Toolbar({
   const { prompt } = useDialog();
   const toast = useToast();
 
+  const [libraryOpen, setLibraryOpen] = useState(false);
+  const [suggesting, setSuggesting] = useState(false);
+
+  /**
+   * Asked straight away, while the picture is in mind. Cancel inserts it
+   * without one; the Posts checklist will flag it later.
+   */
+  async function insertWithAlt(src: string) {
+    const alt = await prompt({
+      title: "Describe this image",
+      message: ALT_HELP,
+      placeholder: "e.g. People worshipping at the Sunday service",
+      confirmLabel: "Insert image",
+      cancelLabel: "Skip",
+    });
+    editor.chain().focus().setImage({ src, alt: alt?.trim() ?? "" }).run();
+  }
+
   async function onPickImage(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     e.target.value = ""; // allow re-picking the same file
@@ -159,16 +178,7 @@ function Toolbar({
         toast.error(result.error);
         return;
       }
-      // Asked straight away, while the picture is in mind. Cancel inserts it
-      // without one; the Posts checklist will flag it later.
-      const alt = await prompt({
-        title: "Describe this image",
-        message: ALT_HELP,
-        placeholder: "e.g. People worshipping at the Sunday service",
-        confirmLabel: "Insert image",
-        cancelLabel: "Skip",
-      });
-      editor.chain().focus().setImage({ src: result.url, alt: alt?.trim() ?? "" }).run();
+      await insertWithAlt(result.url);
     } finally {
       setUploading(false);
     }
@@ -187,6 +197,37 @@ function Toolbar({
       title: "Image description",
       message: ALT_HELP,
       defaultValue: current,
+      confirmLabel: "Save",
+    });
+    if (alt === null) return;
+    editor.chain().focus().updateAttributes("image", { alt: alt.trim() }).run();
+  }
+
+  /** Writing help: a suggested description to edit, never applied unseen. */
+  async function suggestAlt() {
+    const src = editor.getAttributes("image").src as string | undefined;
+    if (!src || suggesting) return;
+    setSuggesting(true);
+    let suggestion = "";
+    try {
+      const res = await fetch("/api/admin/posts/suggest", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ kind: "alt", src }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.suggestion) {
+        toast.error(data.error || "Couldn't suggest a description.");
+        return;
+      }
+      suggestion = data.suggestion;
+    } finally {
+      setSuggesting(false);
+    }
+    const alt = await prompt({
+      title: "Suggested description",
+      message: "Check it's right and edit it before saving. It describes what's in the picture, not who.",
+      defaultValue: suggestion,
       confirmLabel: "Save",
     });
     if (alt === null) return;
@@ -338,8 +379,27 @@ function Toolbar({
             icon={uploading ? "hourglass_top" : "add_photo_alternate"}
             onClick={() => !uploading && fileInputRef.current?.click()}
           />
+          {advanced && (
+            <ToolbarButton label="Choose from image library" icon="photo_library" onClick={() => setLibraryOpen(true)} />
+          )}
           {imageSelected && (
             <ToolbarButton label="Image description (alt text)" icon="closed_caption" onClick={editAlt} />
+          )}
+          {imageSelected && advanced && (
+            <ToolbarButton
+              label={suggesting ? "Writing a description…" : "Suggest a description"}
+              icon={suggesting ? "hourglass_top" : "auto_awesome"}
+              onClick={suggestAlt}
+            />
+          )}
+          {libraryOpen && (
+            <MediaLibraryModal
+              onClose={() => setLibraryOpen(false)}
+              onPick={(url) => {
+                setLibraryOpen(false);
+                void insertWithAlt(url);
+              }}
+            />
           )}
         </>
       )}

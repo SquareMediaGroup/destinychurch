@@ -39,6 +39,9 @@ export interface Post {
   publish_from: string | null;
   /** Taken down at this moment, when set. */
   publish_until: string | null;
+  /** Set by "Ask for review"; cleared by publishing or withdrawing. */
+  review_requested_at?: string | null;
+  review_requested_by?: string | null;
   created_at: string;
   updated_at: string;
   /** Admin list only: non-bot views in the last 30 days, when counted. */

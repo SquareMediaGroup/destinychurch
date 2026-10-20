@@ -4,6 +4,7 @@ import { createContext, useContext, useRef, useState } from "react";
 import { useToast } from "@/components/ToastProvider";
 import { UPLOAD_ACCEPT, uploadPostImage, type UploadResult } from "@/lib/adminUpload";
 import { MAX_UPLOAD_SIZE_MB } from "@/lib/ai/media-types";
+import { MediaLibraryModal } from "@/components/admin/posts/MediaLibraryModal";
 import { FieldShell, fieldInputClass } from "./BasicFields";
 
 /**
@@ -30,6 +31,19 @@ export function ImageField({
   const [dragOver, setDragOver] = useState(false);
   const toast = useToast();
   const uploader = useContext(ImageUploaderContext);
+  const [libraryOpen, setLibraryOpen] = useState(false);
+  // The library lists the posts bucket through a posts route, so it's only
+  // offered where uploads go there too (not the links pages' own uploader).
+  const hasLibrary = uploader === uploadPostImage;
+  const libraryButton = hasLibrary && (
+    <button
+      type="button"
+      onClick={() => setLibraryOpen(true)}
+      className="min-h-10 rounded-lg border border-black/10 px-3 text-xs font-bold text-destiny-grey/60 dark:border-white/10 dark:text-white/60 transition hover:bg-[#f5f7fa] dark:hover:bg-white/10 lg:min-h-0 lg:px-2.5 lg:py-1"
+    >
+      Library
+    </button>
+  );
 
   async function upload(file: File | undefined) {
     if (!file) return;
@@ -66,6 +80,7 @@ export function ImageField({
               >
                 {uploading ? "Uploading…" : "Replace"}
               </button>
+              {libraryButton}
               <button
                 type="button"
                 onClick={() => onChange("")}
@@ -115,6 +130,24 @@ export function ImageField({
             JPG, PNG, WebP or GIF, up to {MAX_UPLOAD_SIZE_MB}MB
           </p>
         </div>
+      )}
+      {!value && hasLibrary && (
+        <button
+          type="button"
+          onClick={() => setLibraryOpen(true)}
+          className="mt-2 text-xs font-bold text-destiny-orange hover:brightness-110"
+        >
+          Or choose one already uploaded
+        </button>
+      )}
+      {libraryOpen && (
+        <MediaLibraryModal
+          onClose={() => setLibraryOpen(false)}
+          onPick={(url) => {
+            setLibraryOpen(false);
+            onChange(url);
+          }}
+        />
       )}
 
       <input

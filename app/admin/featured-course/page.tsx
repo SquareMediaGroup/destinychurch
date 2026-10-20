@@ -60,7 +60,7 @@ export default function FeaturedCoursePage() {
 
   return (
     <div className="mx-auto max-w-4xl px-6 py-10">
-      <div className="mb-6">
+      <div data-tour="page-header" className="mb-6">
         <h1 className="text-2xl font-black text-destiny-grey dark:text-white">Featured course</h1>
         <p className="mt-1 text-sm text-destiny-grey/50 dark:text-white/50">
           Choose which course headlines the What&apos;s On page. The featured

@@ -569,6 +569,16 @@ export const ADMIN_QUICK_ACTIONS: AdminQuickAction[] = [
     keywords: ["revalidate", "purge", "stale", "rebuild"],
   },
   {
+    // Handled by OnboardingProvider, which picks up ?tour=1 on any admin page.
+    // Also the only way back to a checklist someone hid or already finished.
+    id: "take-tour",
+    label: "Take the admin tour",
+    icon: "rocket_launch",
+    role: null,
+    href: "/admin?tour=1",
+    keywords: ["onboarding", "get started", "walkthrough", "help", "guide", "checklist", "welcome"],
+  },
+  {
     id: "view-site",
     label: "View live site",
     icon: "open_in_new",

@@ -263,7 +263,7 @@ export default function CourseAdminPage({ page }: { page: CourseAdminPageSlug })
   return (
     <div className="mx-auto max-w-6xl px-6 py-10">
       <div className="max-w-4xl">
-        <div className="mb-6">
+        <div data-tour="page-header" className="mb-6">
           <h1 className="text-2xl font-black text-destiny-grey dark:text-white">
             {config.heading}
           </h1>

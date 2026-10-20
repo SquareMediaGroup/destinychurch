@@ -120,7 +120,7 @@ export default function AdminPopupPage() {
   return (
     <div className="mx-auto max-w-6xl px-6 py-10">
       <div className="max-w-2xl">
-        <div className="mb-6">
+        <div data-tour="page-header" className="mb-6">
           <h1 className="text-2xl font-black text-destiny-grey dark:text-white">Site Popup</h1>
           <p className="mt-1 text-sm text-destiny-grey/50 dark:text-white/50">
             Show a one-time popup with an image, message and call-to-action.
@@ -368,6 +368,7 @@ export default function AdminPopupPage() {
             <div className="flex justify-end">
               <button
                 type="submit"
+                data-tour="popup-save"
                 disabled={saving || uploading}
                 className="inline-flex items-center gap-2 rounded-xl bg-destiny-orange px-6 py-2.5 text-sm font-bold text-white shadow-sm shadow-destiny-orange/20 transition hover:brightness-110 disabled:opacity-60"
               >

@@ -5,7 +5,7 @@
 // and the send button that swaps in for the attach shortcut once there's text.
 
 import { forwardRef, useRef, useState } from "react";
-import { Animated, PanResponder, Pressable, Text, TextInput, View, type TextInputInstance } from "react-native";
+import { Animated, PanResponder, Pressable, Text, TextInput, View, type TextInput as TextInputInstance } from "react-native";
 import * as DocumentPicker from "expo-document-picker";
 import * as ImagePicker from "expo-image-picker";
 import { ATTACHMENT_MIME_TYPES, MAX_ATTACHMENT_BYTES, MAX_MESSAGE_LENGTH, mentionQuery, mentionSuggestions, type Mentionable } from "@destiny/shared";

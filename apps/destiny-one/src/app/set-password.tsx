@@ -8,7 +8,7 @@
 // here after signing in with a password that has since leaked (password.tsx).
 
 import { useEffect, useRef, useState } from "react";
-import { AccessibilityInfo, Text, View, type TextInputInstance } from "react-native";
+import { AccessibilityInfo, Text, View, type TextInput as TextInputInstance } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { passwordRejection, type PasswordRejection } from "@destiny/shared";
 import { AuthScreen } from "@/components/AuthScreen";

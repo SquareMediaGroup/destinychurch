@@ -8,7 +8,7 @@
 // one tap away. Tapping a message opens its chat scrolled to it.
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ActivityIndicator, Pressable, SectionList, StyleSheet, Text, View, type TextInputInstance } from "react-native";
+import { ActivityIndicator, Pressable, SectionList, StyleSheet, Text, View, type TextInput as TextInputInstance } from "react-native";
 import { router, useFocusEffect } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { MIN_SEARCH_CHARS, type D1CommunitySummary, type D1GroupSummary, type D1MessageHit } from "@destiny/shared";

@@ -5,7 +5,7 @@
 // the row.
 
 import { useRef, useState } from "react";
-import { Pressable, Text, TextInput, View, type TextInputInstance } from "react-native";
+import { Pressable, Text, TextInput, View, type TextInput as TextInputInstance } from "react-native";
 import { Pop, Shake } from "@/components/Motion";
 import { Beam } from "@/components/ui";
 import { haptic } from "@/lib/haptics";

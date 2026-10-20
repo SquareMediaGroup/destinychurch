@@ -130,8 +130,7 @@
         {
           "url": "https://de.sentry.io/"
         }
-      ],
-      "expo-asset"
+      ]
     ],
     "experiments": {
       "typedRoutes": true

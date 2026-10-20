@@ -2,7 +2,7 @@
 // floating glass header, and one of three footers: the composer, "Only admins
 // can post here" (announcements), or the paused card (frozen group).
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type RefObject } from "react";
 import { ActivityIndicator, Alert, FlatList, KeyboardAvoidingView, Pressable, Text, View, type TextInputInstance } from "react-native";
 import { GroupPeek } from "@/components/GroupPeek";
 import { router, useFocusEffect, useIsPreview, useLocalSearchParams } from "expo-router";
@@ -21,6 +21,7 @@ import { Divider, MessageBubble, buildRows, type Row } from "@/components/Messag
 import { NotificationPrompt } from "@/components/NotificationPrompt";
 import { Avatar, BackButton, ConfirmDialog, EmptyState, ErrorState, GlassIconButton, PrimaryButton, withAlpha } from "@/components/ui";
 import { DESTINY_AI, canEditMessage, canSendAs, findMentions } from "@destiny/shared";
+import type { D1GroupDetail } from "@destiny/shared";
 import type { Account } from "@/lib/accounts";
 import { messageSummary, plural } from "@/lib/format";
 import { api } from "@/lib/api";
@@ -210,7 +211,6 @@ function GroupChatScreen() {
   // "Leah is typing…" takes the place of the member count while it's true.
   const typingNow = typingLabel(useTyping(id));
   const sub = typingNow ?? (isAssistant ? "Beta · Ask about Destiny" : group ? [department, plural(group.members.length, "member")].filter(Boolean).join(" · ") : department ?? "");
-  const canDelete = (m: LocalMessage) => m.mine || group?.myRole === "admin" || !!group?.canManage;
   // Pinned messages (newest pin first). Older cached copies of the group may not have the field yet.
   const pinned = group?.pinned ?? [];
   const [pinIndex, setPinIndex] = useState(0);
@@ -225,26 +225,6 @@ function GroupChatScreen() {
       setToast(errorMessage(err));
     }
   }
-
-  // What the system press-and-hold menu does for one message.
-  const menuFor = (m: LocalMessage): MessageMenuActions => ({
-    canDelete: canDelete(m),
-    onReact: (emoji) => void convo.toggleReaction(m.id, emoji).catch((err) => setToast(errorMessage(err))),
-    onReply: group?.canPost && !frozen && !archived ? () => startReply(m) : null,
-    onCopy: () => {
-      if (m.body) void Clipboard.setStringAsync(m.body);
-    },
-    onEdit: group?.canPost && !frozen && !archived && canEditMessage(m) ? () => startEdit(m) : null,
-    onShare: m.attachment ? () => void shareAttachment(m) : null,
-    onForward: m.content?.kind === "poll" ? null : () => router.push({ pathname: "/forward", params: { groupId: id, messageId: String(m.id) } }),
-    onInfo: m.mine || group?.canManage ? () => router.push({ pathname: "/message-info", params: { groupId: id, messageId: String(m.id) } }) : null,
-    pin: group?.canManage && !frozen && !archived ? { pinned: pinned.some((p) => p.id === m.id), run: () => void togglePin(m, !pinned.some((p) => p.id === m.id)) } : null,
-    onReport: () => router.push({ pathname: "/report", params: { messageId: String(m.id), name: m.sender?.displayName ?? "Former member", at: m.createdAt, body: messageSummary(m) } }),
-    onBlock: () => {
-      if (m.sender) setBlocking({ id: m.sender.id, name: m.sender.displayName });
-    },
-    onDelete: () => setDeleting(m),
-  });
 
   /** Downloads the file (links are private and short-lived) and opens the share sheet on it. */
   async function shareAttachment(m: LocalMessage) {
@@ -304,6 +284,46 @@ function GroupChatScreen() {
       setToast(errorMessage(err, "Couldn't send the file. Try again."));
     }
   }
+
+  // What a message row can do, read when it's used rather than when the row
+  // was drawn, so rows can skip redrawing (ChatRow is memoised) without ever
+  // acting on an old copy of the chat.
+  const rowActions = useRef<RowActions>(null);
+  useLayoutEffect(() => {
+    rowActions.current = {
+      reply: startReply,
+      edit: startEdit,
+      share: (m) => void shareAttachment(m),
+      togglePin: (m, on) => void togglePin(m, on),
+      block: (who) => setBlocking(who),
+      remove: (m) => setDeleting(m),
+      react: (m, emoji) => void convo.toggleReaction(m.id, emoji).catch((err) => setToast(errorMessage(err))),
+      vote: (m, optionIds) => void convo.vote(m.id, optionIds).catch((err) => setToast(errorMessage(err))),
+      retry: (m) =>
+        Alert.alert("Message not sent", undefined, [
+          { text: "Try again", onPress: () => void convo.retry(m.id) },
+          { text: "Delete", style: "destructive", onPress: () => convo.discard(m.id) },
+          { text: "Cancel", style: "cancel" },
+        ]),
+      openAttachment: (m, url) => {
+        // An event card carries its own web address; only files need a signed link.
+        if (!m.attachment) {
+          if (url) void WebBrowser.openBrowserAsync(url);
+          return;
+        }
+        // Photos open in the viewer, which pages through every photo in this chat.
+        if (isPhoto(m)) {
+          router.push({ pathname: "/viewer", params: { groupId: id, messageId: String(m.id) } });
+          return;
+        }
+        // Files (PDFs): the cached link may have expired; attachmentUrl fetches a fresh one if so.
+        void convo.attachmentUrl(m).then((fresh) => {
+          if (fresh) void WebBrowser.openBrowserAsync(fresh);
+          else setToast("Couldn't open that file. Try again.");
+        });
+      },
+    };
+  });
 
   const footer = !group || preview ? null : frozen || archived ? (
     <View style={[{ borderRadius: 28, backgroundColor: t.card, borderWidth: 0.5, borderColor: t.glassLine, padding: 18, paddingBottom: 16, gap: 12 }, t.shadow]}>
@@ -410,47 +430,20 @@ function GroupChatScreen() {
             item.kind === "stream" ? (
               <AssistantStreaming label={item.label} text={item.text} roomy={isAssistant} />
             ) : item.kind === "msg" ? (
-              <View style={item.m.id === highlightId ? { backgroundColor: withAlpha(ORANGE, 0.16) } : undefined}>
-              <MessageBubble
+              <ChatRow
                 row={item}
+                groupId={id}
+                group={group}
+                highlighted={item.m.id === highlightId}
                 replyTo={item.m.replyTo ? byId.get(item.m.replyTo) ?? null : null}
                 senderTag={(item.m.sender && tags.get(item.m.sender.id)) || null}
                 senderIsGroupAdmin={!!item.m.sender && admins.has(item.m.sender.id)}
-                canReply={!!group?.canPost && !frozen && !archived}
                 roomy={isAssistant}
                 arriving={arriving(item.m)}
-                onReply={() => startReply(item.m)}
-                menu={menuFor(item.m)}
-                onOpenAttachment={(url) => {
-                  // An event card carries its own web address; only files need a signed link.
-                  if (!item.m.attachment) {
-                    if (url) void WebBrowser.openBrowserAsync(url);
-                    return;
-                  }
-                  // Photos open in the viewer, which pages through every photo in this chat.
-                  if (isPhoto(item.m)) {
-                    router.push({ pathname: "/viewer", params: { groupId: id, messageId: String(item.m.id) } });
-                    return;
-                  }
-                  // Files (PDFs): the cached link may have expired; attachmentUrl fetches a fresh one if so.
-                  void convo.attachmentUrl(item.m).then((fresh) => {
-                    if (fresh) void WebBrowser.openBrowserAsync(fresh);
-                    else setToast("Couldn't open that file. Try again.");
-                  });
-                }}
                 people={people}
                 meId={me?.id}
-                onToggleReaction={(emoji) => void convo.toggleReaction(item.m.id, emoji).catch((err) => setToast(errorMessage(err)))}
-                onVotePoll={(optionIds) => void convo.vote(item.m.id, optionIds).catch((err) => setToast(errorMessage(err)))}
-                onRetry={() =>
-                  Alert.alert("Message not sent", undefined, [
-                    { text: "Try again", onPress: () => void convo.retry(item.m.id) },
-                    { text: "Delete", style: "destructive", onPress: () => convo.discard(item.m.id) },
-                    { text: "Cancel", style: "cancel" },
-                  ])
-                }
+                actions={rowActions}
               />
-              </View>
             ) : (
               <Divider row={item} />
             )
@@ -589,3 +582,88 @@ function GroupChatScreen() {
     </KeyboardAvoidingView>
   );
 }
+
+type RowActions = {
+  reply: (m: LocalMessage) => void;
+  edit: (m: LocalMessage) => void;
+  share: (m: LocalMessage) => void;
+  togglePin: (m: LocalMessage, on: boolean) => void;
+  block: (who: { id: string; name: string }) => void;
+  remove: (m: LocalMessage) => void;
+  react: (m: LocalMessage, emoji: string) => void;
+  vote: (m: LocalMessage, optionIds: string[]) => void;
+  retry: (m: LocalMessage) => void;
+  openAttachment: (m: LocalMessage, url: string) => void;
+};
+
+type ChatRowProps = {
+  row: Extract<Row, { kind: "msg" }>;
+  groupId: string;
+  group: D1GroupDetail | null;
+  highlighted: boolean;
+  replyTo: LocalMessage | null;
+  senderTag: Parameters<typeof MessageBubble>[0]["senderTag"];
+  senderIsGroupAdmin: boolean;
+  roomy: boolean;
+  arriving: boolean;
+  people: Parameters<typeof MessageBubble>[0]["people"];
+  meId: string | undefined;
+  actions: RefObject<RowActions | null>;
+};
+
+/**
+ * One message in the list. Memoised: DestinyAI writing an answer, someone
+ * typing, the jump button or a toast all redraw the screen, and without this
+ * every bubble on screen redrew with it. Everything a row shows comes in as
+ * props, so it redraws exactly when one of them changes; what it does goes
+ * through `actions`, which always holds the screen's latest handlers.
+ */
+const ChatRow = memo(function ChatRow({ row, groupId, group, highlighted, replyTo, senderTag, senderIsGroupAdmin, roomy, arriving, people, meId, actions }: ChatRowProps) {
+  const { m } = row;
+  const run = () => actions.current!;
+  const frozen = group?.state === "frozen";
+  const archived = group?.state === "archived";
+  const canPost = !!group?.canPost && !frozen && !archived;
+  // Older cached copies of the group may not have the field yet.
+  const isPinned = (group?.pinned ?? []).some((p) => p.id === m.id);
+  // What the system press-and-hold menu does for this message.
+  const menu: MessageMenuActions = {
+    canDelete: m.mine || group?.myRole === "admin" || !!group?.canManage,
+    onReact: (emoji) => run().react(m, emoji),
+    onReply: canPost ? () => run().reply(m) : null,
+    onCopy: () => {
+      if (m.body) void Clipboard.setStringAsync(m.body);
+    },
+    onEdit: canPost && canEditMessage(m) ? () => run().edit(m) : null,
+    onShare: m.attachment ? () => run().share(m) : null,
+    onForward: m.content?.kind === "poll" ? null : () => router.push({ pathname: "/forward", params: { groupId, messageId: String(m.id) } }),
+    onInfo: m.mine || group?.canManage ? () => router.push({ pathname: "/message-info", params: { groupId, messageId: String(m.id) } }) : null,
+    pin: group?.canManage && !frozen && !archived ? { pinned: isPinned, run: () => run().togglePin(m, !isPinned) } : null,
+    onReport: () => router.push({ pathname: "/report", params: { messageId: String(m.id), name: m.sender?.displayName ?? "Former member", at: m.createdAt, body: messageSummary(m) } }),
+    onBlock: () => {
+      if (m.sender) run().block({ id: m.sender.id, name: m.sender.displayName });
+    },
+    onDelete: () => run().remove(m),
+  };
+  return (
+    <View style={highlighted ? { backgroundColor: withAlpha(ORANGE, 0.16) } : undefined}>
+      <MessageBubble
+        row={row}
+        replyTo={replyTo}
+        senderTag={senderTag}
+        senderIsGroupAdmin={senderIsGroupAdmin}
+        canReply={canPost}
+        roomy={roomy}
+        arriving={arriving}
+        onReply={() => run().reply(m)}
+        menu={menu}
+        onOpenAttachment={(url) => run().openAttachment(m, url)}
+        people={people}
+        meId={meId}
+        onToggleReaction={(emoji) => run().react(m, emoji)}
+        onVotePoll={(optionIds) => run().vote(m, optionIds)}
+        onRetry={() => run().retry(m)}
+      />
+    </View>
+  );
+});

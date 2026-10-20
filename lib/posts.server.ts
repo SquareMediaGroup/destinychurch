@@ -1,5 +1,6 @@
 // Server-only data fetchers for the public Posts pages (the /[slug] catch-all).
 import "server-only";
+import { cache } from "react";
 import { createServiceClient } from "@/utils/supabase/service";
 import type { Post } from "@/lib/posts";
 import { verifyPreviewToken } from "@/lib/postPreview.server";
@@ -8,7 +9,7 @@ import { verifyPreviewToken } from "@/lib/postPreview.server";
  * The post at this slug, or null. Published posts are returned to anyone; a
  * draft only when `previewToken` is a valid signed preview for that post.
  */
-export async function getPostForView(
+async function loadPostForView(
   slug: string,
   previewToken?: string,
 ): Promise<{ post: Post; preview: boolean } | null> {
@@ -29,4 +30,6 @@ export async function getPostForView(
   if (verifyPreviewToken(post.id, previewToken)) return { post, preview: true };
   return null;
 }
+// cache(): generateMetadata and the page both ask, but it's one query per request.
+export const getPostForView = cache(loadPostForView);
 

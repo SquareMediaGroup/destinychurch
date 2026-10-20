@@ -11,8 +11,13 @@ import WorshipWithUsSection from "@/components/home/WorshipWithUsSection";
 import GetInvolvedSection from "@/components/home/GetInvolvedSection";
 import { isYouTubeQuotaExceeded, getLatestVideoFromRSS } from "@/lib/youtube";
 import { getLatestVideo } from "@/lib/speakerOverrides.server";
+import { getEventIndex } from "@/lib/events.server";
 
 export default async function HomePageBody() {
+  // WhatsOnSection only starts once the video below has resolved; start its
+  // event feed now so the two load side by side. getEventIndex is per-request
+  // cached, so the section picks up this same promise.
+  void getEventIndex();
   const quotaExceeded = await isYouTubeQuotaExceeded();
   const video = quotaExceeded
     ? await getLatestVideoFromRSS()

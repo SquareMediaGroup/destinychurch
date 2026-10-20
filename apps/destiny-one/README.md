@@ -89,6 +89,8 @@ screen over everything; if a maintenance message is set, everyone sees that inst
 at `/admin/destiny-one/settings` ("App versions" and "Maintenance"), so a bad build can be retired
 without a release. The last answer is cached, so an offline launch is never blocked. Expo Go and
 web have no build number and are always let in.
+To see either screen in Expo Go, add `EXPO_PUBLIC_D1_PREVIEW_GATE=update` (or `maintenance`) to
+`.env.local` and restart with `npx expo start -c`. Only development builds read it.
 
 ## Icons and splash
 

@@ -12,6 +12,7 @@ import type { ChecklistItem } from "@/lib/postChecklist";
 import { PublishChecklist } from "./PublishChecklist";
 import { SharePreview } from "./SharePreview";
 import { TagsField } from "./TagsField";
+import { ScheduleFields } from "./ScheduleFields";
 
 /** A tiny picture of each hero style, so the choice reads at a glance. */
 function HeroThumb({ style }: { style: HeroStyle }) {
@@ -113,6 +114,8 @@ export function PageSettings({
       <PublishChecklist items={checklist} />
 
       {urlAndStatus}
+
+      <ScheduleFields form={form} set={set} />
 
       <HeroStylePicker value={form.hero_style} onChange={(v) => set("hero_style", v)} />
 

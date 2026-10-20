@@ -3,12 +3,14 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useIsDesktop } from "@/lib/useIsDesktop";
 import { useScrollLock } from "@/lib/useScrollLock";
-import { API, type Post, type PostFields } from "@/lib/posts";
+import { API, postState, type Post, type PostFields } from "@/lib/posts";
 import type { PostTemplate } from "@/lib/postTemplates";
 import { useDialog } from "@/components/DialogProvider";
 import { useSelectedBlock } from "@/components/admin/blocks/useSelectedBlock";
 import { PageSettings } from "./PageSettings";
 import { ShareModal } from "./ShareModal";
+import { HistoryPanel } from "./HistoryPanel";
+import { useToast } from "@/components/ToastProvider";
 import { postChecklist } from "@/lib/postChecklist";
 import { slugify } from "@/lib/jobs";
 import { primaryBtn, ghostBtn } from "@/components/admin/AdminUI";
@@ -24,32 +26,6 @@ import { BlockTools } from "@/components/admin/blocks/BlockTools";
 // panels live. Desktop has room for permanent Blocks and Settings sidebars,
 // mobile reaches the same panels through bottom sheets.
 // See lib/useIsDesktop for why the breakpoint must be read synchronously.
-
-function PublishToggle({
-  value,
-  onChange,
-}: {
-  value: boolean;
-  onChange: (v: boolean) => void;
-}) {
-  return (
-    <button
-      type="button"
-      role="switch"
-      aria-checked={value}
-      onClick={() => onChange(!value)}
-      className={`relative h-6 w-11 shrink-0 rounded-full transition ${
-        value ? "bg-destiny-green" : "bg-black/15"
-      }`}
-    >
-      <span
-        className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition ${
-          value ? "left-[22px]" : "left-0.5"
-        }`}
-      />
-    </button>
-  );
-}
 
 /**
  * A collapsible desktop sidebar. Collapsed it becomes a thin vertical rail so
@@ -206,6 +182,11 @@ function SlugField({
   );
 }
 
+/**
+ * The form's starting values. For a live page with unpublished changes, the
+ * draft is laid over the live columns: the editor always shows the latest
+ * saved version, and the banner says it isn't live yet.
+ */
 function initialFields(post: Post | null, template?: PostTemplate): PostFields {
   const base: PostFields = {
     title: post?.title ?? "",
@@ -220,8 +201,10 @@ function initialFields(post: Post | null, template?: PostTemplate): PostFields {
     show_rails: post?.show_rails ?? true,
     hide_from_search: post?.hide_from_search ?? false,
     tags: post?.tags ?? [],
+    publish_from: post?.publish_from ?? null,
+    publish_until: post?.publish_until ?? null,
   };
-  return post ? base : { ...base, ...template?.fields };
+  return post ? { ...base, ...(post.draft ?? {}) } : { ...base, ...template?.fields };
 }
 
 export function PostEditor({
@@ -270,7 +253,19 @@ export function PostEditor({
   // knowing when a save is the one that publishes the page.
   const [savedPublished, setSavedPublished] = useState(post?.is_published ?? false);
   const [shareOpen, setShareOpen] = useState(false);
+  // Mobile only: History lives in the desktop sidebar's third tab.
+  const [historyOpen, setHistoryOpen] = useState(false);
+  // A live page with saved-but-unpublished changes (posts.draft).
+  const [hasDraft, setHasDraft] = useState(Boolean(post?.draft));
+  // The URL the page is live at, to offer redirecting it when the slug changes.
+  const [liveSlug, setLiveSlug] = useState(post?.slug ?? "");
+  const [redirectOldSlug, setRedirectOldSlug] = useState(true);
+  // Bumped when a version is brought back from History: the rich-text editor
+  // only reads its value once, so it has to remount to show different content.
+  const [editorKey, setEditorKey] = useState(0);
+  const toast = useToast();
   const checklist = useMemo(() => postChecklist(form), [form]);
+  const slugMoving = savedPublished && Boolean(liveSlug) && form.slug !== liveSlug;
   // Once the admin edits the slug by hand, stop auto-deriving it from the title.
   const slugTouched = useRef(Boolean(post));
 
@@ -281,7 +276,7 @@ export function PostEditor({
   // Page, and a manual tab choice holds until the selection changes.
   const selected = useSelectedBlock(editorInstance);
   const selectionKey = selected ? `${selected.pos}|${selected.blockName}` : "";
-  const [tabChoice, setTabChoice] = useState<{ key: string; tab: "page" | "block" } | null>(null);
+  const [tabChoice, setTabChoice] = useState<{ key: string; tab: "page" | "block" | "history" } | null>(null);
   const rightTab =
     tabChoice && tabChoice.key === selectionKey ? tabChoice.tab : selected ? "block" : "page";
 
@@ -307,8 +302,8 @@ export function PostEditor({
   useScrollLock(true);
 
   async function requestClose() {
-    // Escape inside the share panel closes the panel, not the editor.
-    if (shareOpen) return;
+    // Escape inside the share or history panel closes the panel, not the editor.
+    if (shareOpen || historyOpen) return;
     if (
       dirty &&
       !(await confirm({
@@ -323,8 +318,14 @@ export function PostEditor({
     onClose();
   }
 
-  /** Saves the post. Returns its id, or null if validation or the request failed. */
-  async function save({ close }: { close: boolean }): Promise<string | null> {
+  /**
+   * Saves the post. Returns its id, or null if validation or the request failed.
+   *
+   * "draft": on a live page, keeps the changes off the site (posts.draft); on a
+   * page that's never been published it's an ordinary save. "publish": takes
+   * the page (or its changes) live. Neither closes the editor unless asked.
+   */
+  async function save({ mode, close = false }: { mode: "draft" | "publish"; close?: boolean }): Promise<string | null> {
     if (saving) return null;
     if (!form.title.trim()) {
       onError("A post title is required.");
@@ -342,9 +343,13 @@ export function PostEditor({
       onError("The Image header needs an image — add one in Page settings, or pick another header.");
       return null;
     }
+    if (form.publish_from && form.publish_until && new Date(form.publish_until) <= new Date(form.publish_from)) {
+      onError("The take-down time must be after the go-live time.");
+      return null;
+    }
     // The save that takes a page live is the moment the checklist matters.
     // Asked once per publish, never on later saves of a live page.
-    if (form.is_published && !savedPublished && checklist.length > 0) {
+    if (mode === "publish" && !savedPublished && checklist.length > 0) {
       const go = await confirm({
         title: "Publish with these gaps?",
         message: checklist.map((i) => `• ${i.message}`).join("\n"),
@@ -354,11 +359,14 @@ export function PostEditor({
     }
     setSaving(true);
 
+    const payload = postId
+      ? { ...form, mode, ...(slugMoving ? { redirect_old_slug: redirectOldSlug } : {}) }
+      : { ...form, is_published: mode === "publish" };
     const send = (expected: string | undefined) =>
       fetch(postId ? `${API}/${postId}` : API, {
         method: postId ? "PATCH" : "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(postId && expected ? { ...form, expected_updated_at: expected } : form),
+        body: JSON.stringify(postId && expected ? { ...payload, expected_updated_at: expected } : payload),
       });
 
     let res = await send(loadedUpdatedAt);
@@ -383,12 +391,93 @@ export function PostEditor({
       onError(data.error || "Something went wrong.");
       return null;
     }
+    const published = Boolean(data.is_published);
     setPostId(data.id);
     setLoadedUpdatedAt(data.updated_at);
-    setSavedPublished(Boolean(data.is_published));
-    setSavedSnapshot(JSON.stringify(form));
-    if (close) onSaved();
+    setSavedPublished(published);
+    setHasDraft(Boolean(data.draft));
+    setLiveSlug(data.slug);
+    const saved = { ...form, is_published: published };
+    setForm(saved);
+    setSavedSnapshot(JSON.stringify(saved));
+    if (data.redirected_from) {
+      toast.success(`The old link /${data.redirected_from} now goes to /${data.slug}.`, "Old link redirected");
+    }
+    if (close) {
+      onSaved();
+    } else if (mode === "draft") {
+      toast.success(
+        published ? "Saved. The live page won't change until you publish." : "Draft saved.",
+        "Saved",
+      );
+    }
     return data.id as string;
+  }
+
+  /** Throws away a live page's unpublished changes and reloads the live version. */
+  async function discardDraft() {
+    if (!postId) return;
+    if (
+      !(await confirm({
+        title: "Discard unpublished changes?",
+        message: "The editor goes back to the version that's live now. The discarded version stays in History.",
+        confirmLabel: "Discard changes",
+        tone: "danger",
+      }))
+    )
+      return;
+    const res = await fetch(`${API}/${postId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ mode: "discard_draft", expected_updated_at: loadedUpdatedAt }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      onError(data.error || "Couldn't discard the changes.");
+      return;
+    }
+    const live = initialFields(data as Post);
+    setLoadedUpdatedAt(data.updated_at);
+    setHasDraft(false);
+    setForm(live);
+    setSavedSnapshot(JSON.stringify(live));
+    setEditorKey((k) => k + 1);
+  }
+
+  /** Takes a live page off the site (its content and any draft are kept). */
+  async function unpublish() {
+    if (!postId) return;
+    if (
+      !(await confirm({
+        title: "Unpublish this page?",
+        message: `/${liveSlug} stops working straight away. You can publish it again at any time.`,
+        confirmLabel: "Unpublish",
+        tone: "danger",
+      }))
+    )
+      return;
+    const res = await fetch(`${API}/${postId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ is_published: false, expected_updated_at: loadedUpdatedAt }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      onError(data.error || "Couldn't unpublish the page.");
+      return;
+    }
+    setLoadedUpdatedAt(data.updated_at);
+    setSavedPublished(false);
+    setForm((f) => ({ ...f, is_published: false }));
+    setSavedSnapshot((snap) => JSON.stringify({ ...(JSON.parse(snap) as PostFields), is_published: false }));
+    toast.success("The page is no longer live.", "Unpublished");
+  }
+
+  function restoreVersion(snapshot: Partial<PostFields>) {
+    setForm((f) => ({ ...f, ...snapshot }));
+    setEditorKey((k) => k + 1);
+    setHistoryOpen(false);
+    toast.success("Loaded into the editor. Save or publish to keep it.", "Version brought back");
   }
 
   /**
@@ -398,7 +487,7 @@ export function PostEditor({
    */
   async function preview() {
     const tab = window.open("about:blank", "_blank");
-    const id = await save({ close: false });
+    const id = await save({ mode: "draft" });
     if (!id) {
       tab?.close();
       return;
@@ -416,9 +505,9 @@ export function PostEditor({
 
   // Latest handlers for the document-level listeners, so they don't need
   // re-binding on every keystroke.
-  const handlers = useRef({ requestClose, save: () => save({ close: true }) });
+  const handlers = useRef({ requestClose, save: () => save({ mode: "draft" }) });
   useEffect(() => {
-    handlers.current = { requestClose, save: () => save({ close: true }) };
+    handlers.current = { requestClose, save: () => save({ mode: "draft" }) };
   });
 
   useEffect(() => {
@@ -442,11 +531,64 @@ export function PostEditor({
   }, [dirty]);
 
   const slugField = (id: string) => (
-    <SlugField id={id} value={form.slug} onChange={onSlugChange} state={slugState} />
+    <div>
+      <SlugField id={id} value={form.slug} onChange={onSlugChange} state={slugState} />
+      {slugMoving && (
+        <label className="mt-2 flex items-start gap-2 rounded-xl bg-[#f5f7fa] px-3 py-2.5 text-xs text-destiny-grey/70 dark:bg-white/5 dark:text-white/70">
+          <input
+            type="checkbox"
+            checked={redirectOldSlug}
+            onChange={(e) => setRedirectOldSlug(e.target.checked)}
+            className="mt-0.5 accent-destiny-orange"
+          />
+          <span>
+            When you publish, send people from the old link <span className="font-mono">/{liveSlug}</span> to the
+            new one, so shared links and QR codes keep working.
+          </span>
+        </label>
+      )}
+    </div>
+  );
+
+  const state = postState({ ...form, is_published: savedPublished });
+  const stateLabel = !savedPublished
+    ? "Draft"
+    : state === "scheduled"
+      ? "Scheduled"
+      : state === "ended"
+        ? "Ended"
+        : "Live";
+  const publishLabel = savedPublished ? "Publish changes" : "Publish";
+
+  // Shown under the header on both layouts when a live page has changes that
+  // aren't live yet.
+  const draftBanner = savedPublished && hasDraft && (
+    <div className="flex shrink-0 flex-wrap items-center gap-x-3 gap-y-1 border-b border-amber-500/20 bg-amber-500/10 px-4 py-2 text-xs text-amber-700 dark:text-amber-300">
+      <span className="material-symbols-rounded text-[17px]" aria-hidden="true">edit_note</span>
+      <span className="font-medium">This page has saved changes that aren&apos;t live yet.</span>
+      <button type="button" onClick={() => save({ mode: "publish" })} className="font-bold underline">
+        Publish them
+      </button>
+      <button type="button" onClick={discardDraft} className="font-bold underline">
+        Discard
+      </button>
+    </div>
+  );
+
+  // The publish-state controls Page settings shows on both layouts.
+  const unpublishControl = savedPublished && (
+    <button
+      type="button"
+      onClick={unpublish}
+      className="self-start text-xs font-bold text-destiny-red hover:brightness-110"
+    >
+      Unpublish this page
+    </button>
   );
 
   const editor = (
     <RichTextEditor
+      key={editorKey}
       value={form.body ?? ""}
       onChange={(html) => set("body", html)}
       placeholder="Write the page content — use the toolbar for text, and the Blocks panel for FAQs, callouts and cards."
@@ -480,15 +622,17 @@ export function PostEditor({
               placeholder="Page title"
               className="flex-1 bg-transparent text-lg font-black text-destiny-grey dark:text-white outline-none placeholder:font-bold placeholder:text-destiny-grey/30 dark:placeholder:text-white/30"
             />
-            <div className="flex shrink-0 items-center gap-2">
-              <span className="text-xs font-bold uppercase tracking-wider text-destiny-grey/45 dark:text-white/45">
-                Published
-              </span>
-              <PublishToggle
-                value={form.is_published}
-                onChange={(v) => set("is_published", v)}
-              />
-            </div>
+            <span
+              className={`shrink-0 rounded-full px-2.5 py-1 text-[11px] font-bold uppercase tracking-wider ${
+                stateLabel === "Live"
+                  ? "bg-destiny-green/10 text-destiny-green"
+                  : stateLabel === "Scheduled"
+                    ? "bg-destiny-orange/10 text-destiny-orange"
+                    : "bg-black/5 text-destiny-grey/50 dark:bg-white/10 dark:text-white/50"
+              }`}
+            >
+              {stateLabel}
+            </span>
             {dirty && (
               <span className="text-xs font-medium text-destiny-grey/45 dark:text-white/45">
                 Unsaved changes
@@ -499,12 +643,20 @@ export function PostEditor({
             </button>
             <button
               type="button"
+              className={ghostBtn}
+              disabled={saving}
+              onClick={() => save({ mode: "draft" })}
+              title={savedPublished ? "Save without changing the live page (Ctrl+S)" : "Save (Ctrl+S)"}
+            >
+              {saving ? "Saving…" : "Save draft"}
+            </button>
+            <button
+              type="button"
               className={primaryBtn}
               disabled={saving}
-              onClick={() => save({ close: true })}
-              title="Save (Ctrl+S)"
+              onClick={() => save({ mode: "publish", close: true })}
             >
-              {saving ? "Saving…" : postId ? "Save changes" : "Create post"}
+              {publishLabel}
             </button>
             <button
               type="button"
@@ -518,6 +670,7 @@ export function PostEditor({
             </button>
           </div>
         </div>
+        {draftBanner}
 
         {/*
           Blocks sidebar | canvas | settings sidebar.
@@ -540,7 +693,7 @@ export function PostEditor({
           <SidePanel side="right" open={inspectorOpen} onToggle={() => setInspectorOpen((v) => !v)} label="Settings" icon="tune">
             <div className="flex h-full flex-col">
               <div role="tablist" aria-label="Settings" className="flex shrink-0 gap-1 border-b border-black/8 p-2 dark:border-white/8">
-                {(["page", "block"] as const).map((tab) => (
+                {(["page", "block", "history"] as const).map((tab) => (
                   <button
                     key={tab}
                     type="button"
@@ -553,7 +706,7 @@ export function PostEditor({
                         : "text-destiny-grey/45 hover:text-destiny-grey dark:text-white/45 dark:hover:text-white"
                     }`}
                   >
-                    {tab === "page" ? "Page" : "Block"}
+                    {tab === "page" ? "Page" : tab === "block" ? "Block" : "History"}
                   </button>
                 ))}
               </div>
@@ -563,11 +716,18 @@ export function PostEditor({
                     <PageSettings
                       form={form}
                       set={set}
-                      urlAndStatus={slugField("post-slug-desktop")}
+                      urlAndStatus={
+                        <>
+                          {slugField("post-slug-desktop")}
+                          {unpublishControl}
+                        </>
+                      }
                       checklist={checklist}
                       tagSuggestions={tagSuggestions}
                     />
                   </div>
+                ) : rightTab === "history" ? (
+                  <HistoryPanel postId={postId} refreshKey={loadedUpdatedAt} onRestore={restoreVersion} />
                 ) : (
                   <BlockInspector editor={editorInstance} />
                 )}
@@ -579,7 +739,7 @@ export function PostEditor({
         {shareOpen && postId && (
           <ShareModal
             postId={postId}
-            slug={(JSON.parse(savedSnapshot) as PostFields).slug}
+            slug={liveSlug}
             title={form.title}
             isPublished={savedPublished}
             onClose={() => setShareOpen(false)}
@@ -627,7 +787,7 @@ export function PostEditor({
           type="button"
           className={`${primaryBtn} shrink-0 px-3.5`}
           disabled={saving}
-          onClick={() => save({ close: true })}
+          onClick={() => save({ mode: "draft" })}
         >
           {saving ? "Saving…" : "Save"}
         </button>
@@ -648,18 +808,20 @@ export function PostEditor({
           <span className="truncate">/{form.slug || "page-url-slug"}</span>
           <span
             className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${
-              form.is_published
+              stateLabel === "Live"
                 ? "bg-destiny-green/10 text-destiny-green"
                 : "bg-black/5 text-destiny-grey/45 dark:text-white/45"
             }`}
           >
-            {form.is_published ? "Live" : "Draft"}
+            {stateLabel}
           </span>
         </button>
         {/* Same separation as desktop: blocks are reached from outside the
             editor, never from its formatting toolbar. */}
         <BlockTools editor={editorInstance} />
       </div>
+
+      {draftBanner}
 
       <div className="flex min-h-0 flex-1 flex-col bg-[#f5f7fa] p-2">{editor}</div>
 
@@ -670,20 +832,20 @@ export function PostEditor({
           onClose={() => setPageSettingsOpen(false)}
         >
           <div className="flex flex-col gap-5 px-4 py-4">
-            {slugField("post-slug")}
+            <button
+              type="button"
+              className={`${primaryBtn} w-full`}
+              disabled={saving}
+              onClick={() => {
+                setPageSettingsOpen(false);
+                save({ mode: "publish", close: true });
+              }}
+            >
+              {publishLabel}
+            </button>
 
-            <div className="flex items-center justify-between gap-3 rounded-xl bg-[#f5f7fa] px-4 py-3">
-              <div className="min-w-0">
-                <p className="text-sm font-bold text-destiny-grey dark:text-white">Published</p>
-                <p className="text-xs text-destiny-grey/45 dark:text-white/45">
-                  When on, the page is live at its URL.
-                </p>
-              </div>
-              <PublishToggle
-                value={form.is_published}
-                onChange={(v) => set("is_published", v)}
-              />
-            </div>
+            {slugField("post-slug")}
+            {unpublishControl}
 
             <PageSettings form={form} set={set} checklist={checklist} tagSuggestions={tagSuggestions} />
 
@@ -713,6 +875,17 @@ export function PostEditor({
             <button
               type="button"
               className={`${ghostBtn} w-full`}
+              disabled={!postId}
+              onClick={() => {
+                setPageSettingsOpen(false);
+                setHistoryOpen(true);
+              }}
+            >
+              History
+            </button>
+            <button
+              type="button"
+              className={`${ghostBtn} w-full`}
               onClick={() => setPageSettingsOpen(false)}
             >
               Done
@@ -724,11 +897,17 @@ export function PostEditor({
       {shareOpen && postId && (
         <ShareModal
           postId={postId}
-          slug={(JSON.parse(savedSnapshot) as PostFields).slug}
+          slug={liveSlug}
           title={form.title}
           isPublished={savedPublished}
           onClose={() => setShareOpen(false)}
         />
+      )}
+
+      {historyOpen && (
+        <Sheet title="History" detent="auto" onClose={() => setHistoryOpen(false)}>
+          <HistoryPanel postId={postId} refreshKey={loadedUpdatedAt} onRestore={restoreVersion} />
+        </Sheet>
       )}
     </div>
   );

@@ -39,6 +39,24 @@ export function parsePageSettings(body: Record<string, unknown>): Result {
     fields.tags = normaliseTags(body.tags);
   }
 
+  for (const key of ["publish_from", "publish_until"] as const) {
+    if (body[key] === undefined) continue;
+    if (body[key] === null || body[key] === "") {
+      fields[key] = null;
+      continue;
+    }
+    const when = typeof body[key] === "string" ? new Date(body[key] as string) : null;
+    if (!when || Number.isNaN(when.getTime())) return { ok: false, error: "That date and time isn't valid." };
+    fields[key] = when.toISOString();
+  }
+  if (
+    typeof fields.publish_from === "string" &&
+    typeof fields.publish_until === "string" &&
+    fields.publish_until <= fields.publish_from
+  ) {
+    return { ok: false, error: "The take-down time must be after the go-live time." };
+  }
+
   if (fields.hero_style === "image" && body.hero_image_url !== undefined && !fields.hero_image_url) {
     return { ok: false, error: "The Image hero needs an image." };
   }

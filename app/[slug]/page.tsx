@@ -71,7 +71,7 @@ export default async function SlugPage({ params, searchParams }: Props) {
       <article className="bg-white pb-24">
         {preview && (
           <div className="sticky top-0 z-40 bg-destiny-grey px-4 py-2 text-center text-xs font-bold uppercase tracking-wider text-white">
-            Preview — this page is not published
+            {post.is_published ? "Preview: these changes aren't live yet" : "Preview: this page is not published"}
           </div>
         )}
         <PostHero post={post} />

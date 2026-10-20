@@ -1,5 +1,6 @@
 import { z } from "zod";
 import type { BlockDefinition } from "../types";
+import { sizeField, sizeSchema } from "../size";
 import GalleryBlock, { type GalleryProps } from "./GalleryBlock";
 
 export const galleryBlock: BlockDefinition<GalleryProps> = {
@@ -24,9 +25,10 @@ export const galleryBlock: BlockDefinition<GalleryProps> = {
     columns: z.enum(["2", "3"]).default("2"),
     crop: z.enum(["square", "landscape", "natural"]).default("square"),
     caption: z.string().default(""),
+    size: sizeSchema,
   }),
 
-  defaults: { items: [], columns: "2", crop: "square", caption: "" },
+  defaults: { items: [], columns: "2", crop: "square", caption: "", size: "normal" },
 
   fields: [
     {
@@ -70,6 +72,7 @@ export const galleryBlock: BlockDefinition<GalleryProps> = {
       ],
     },
     { kind: "text", name: "caption", label: "Caption", help: "Optional." },
+    sizeField,
   ],
 
   Component: GalleryBlock,

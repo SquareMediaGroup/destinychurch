@@ -24,8 +24,14 @@ export function BlockInspector({
   editor,
   onClose,
   layout = "sidebar",
+  allowWide = false,
 }: {
   editor: Editor | null;
+  /**
+   * Show the Width setting on blocks that have one. Only the Posts editor
+   * passes it: no other surface renders wide blocks (components/blocks/size.ts).
+   */
+  allowWide?: boolean;
   /** Mobile only — the desktop panel is always present. */
   onClose?: () => void;
   /**
@@ -188,7 +194,7 @@ export function BlockInspector({
           sheet ? "gap-5 pb-6 pt-4" : "gap-4 py-4"
         }`}
       >
-        {def.fields.map((field) => (
+        {def.fields.filter((field) => allowWide || field.name !== "size").map((field) => (
           <FieldRenderer
             key={field.name}
             field={field}

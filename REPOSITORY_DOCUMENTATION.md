@@ -1268,6 +1268,16 @@ CREATE TABLE posts (
   description text,                            -- meta description + social card
   og_image_url text,                           -- share image; falls back to hero_image_url
   show_rails boolean NOT NULL DEFAULT true,    -- promo rails beside the page at 1600px+
+  -- Admin quick wins (20261020_02_posts_quick_wins.sql)
+  hide_from_search boolean NOT NULL DEFAULT false, -- out of the sitemap + noindex
+  tags text[] NOT NULL DEFAULT '{}',           -- admin-only labels for the list's filter
+  deleted_at timestamptz,                      -- the Bin; purged after 30 days
+  updated_by text,                             -- admin name (or email) of the last save
+  review_link_version integer NOT NULL DEFAULT 0, -- in every preview token; bump = revoke all
+  -- Safety (20261020_03_posts_safety.sql)
+  draft jsonb,                                 -- unpublished edits to a live page (DRAFT_FIELDS)
+  publish_from timestamptz,                    -- served only from here, when set
+  publish_until timestamptz,                   -- taken down here, when set (CHECK until > from)
   created_at timestamptz DEFAULT now(),
   updated_at timestamptz DEFAULT now()
 );
@@ -1278,13 +1288,90 @@ CREATE TABLE posts (
 **Why presets, not styling:** the page settings are deliberately page-level choices (how the page
 opens, what it says when shared, whether the rails show) rather than per-element colours, spacing
 or layout. That's what keeps the Posts editor a page builder that non-designers can use without
-producing off-brand pages. Columns/sections, per-block styling, revisions and scheduling were
-considered and left out on purpose. `lib/posts-fields.ts` validates these fields for both the
+producing off-brand pages. Columns/sections and per-block styling were considered and left out
+on purpose. (Revisions and scheduling were too, at first; they were added in October 2026 once
+Posts was being used for campaign pages that need to come down on time and edits that need a way
+back. See below.) `lib/posts-fields.ts` validates these fields for both the
 POST and PATCH routes.
+
+**The Bin, not a delete:** `DELETE /api/admin/posts/[id]` sets `deleted_at`, which takes the page
+off the public site at once (`getPostForView` ignores binned rows). The list's Bin view restores or
+deletes for good (`?permanent=1`, only for a binned post). Binned posts older than 30 days are
+purged by the list endpoint itself rather than a cron (Vercel Hobby allows only daily crons, and
+the Bin only matters to someone looking at the list). A binned post keeps its slug, so restoring
+can't collide.
+
+**Drafts of live pages:** the editor's buttons are *Save draft* and *Publish* (*Publish changes*
+once live); there's no published switch in the form any more. On a live page, Save draft (and
+Preview, and Ctrl/Cmd+S) PATCHes with `mode: "draft"`, which stores the content fields
+(`DRAFT_FIELDS` in `lib/posts.ts`: title, slug, body, header, subtitle, description, share image,
+rails) in `posts.draft`, keeping only what differs from the live columns, so the public page doesn't
+change. `mode: "publish"` writes everything, publishes and clears the draft; `mode: "discard_draft"`
+drops it. Tags, search visibility and the schedule are settings about the page and apply on any
+save. Previews and review links show the draft laid over the live page. A page that has never been
+published doesn't use `draft`: it is all draft.
+
+**Old URLs keep working:** publishing a live page with a new slug inserts a `redirects` row from
+the old slug to `/<new>` (unless the editor's "send people from the old link" box is unticked),
+repoints existing redirects that targeted the old slug (so nothing chains), and audits it.
+`checkSlug` lets a post take back a slug held by a redirect that points at itself
+(`reclaimsRedirectId`), and the publish deletes that redirect.
+
+**Scheduling:** `postState()` (`lib/posts.ts`) is draft / scheduled / live / ended from
+`is_published`, `publish_from` and `publish_until`. `getPostForView` serves only `live`; the
+sitemap likewise. The page is `force-dynamic`, so a page comes down on time with no cron.
+
+**History:** `post_revisions` (post_id, kind draft|published, snapshot of the content fields,
+created_by, created_at; service-role only) gets a row on every create, draft save and publish;
+`recordRevision` keeps the newest 30 per post. `GET /api/admin/posts/[id]/revisions` lists them
+without content, `…/revisions/[revisionId]` returns one. "Bring back" in the editor's History tab
+loads the snapshot into the form unsaved, so restoring goes through the normal save or publish.
+
+**Block widths and the Landing template:** Gallery, Card grid and Video have a `size` prop
+(`components/blocks/size.ts`: normal | wide | full, default normal so old content parses
+unchanged). It's honoured only where `RichContent` gets `allowWide`, which only
+`app/[slug]/page.tsx` passes: Wide reaches ~1100px on large screens, Full goes edge to edge
+(`.dc-bleed` in globals.css). A page with any wide or full block (`hasWideBlocks`) drops its promo
+rails, because full-bleed needs the article centred. Training, jobs and shop never show the Width
+field (`BlockInspector`/`BlockTools` `allowWide`). The built-in "Landing page" template uses them.
+
+**Editor extras (migration `20261020_04_posts_editor.sql`):**
+- *Saved templates:* `post_templates` (label, description, fields jsonb, created_by). "Save as
+  template" in Page settings stores the content and page settings (not URL, schedule or tags);
+  they show above the built-in starters in the New post picker, with delete.
+- *Ready for review:* `posts.review_requested_at/_by`. "Ask for review" saves the page and
+  notifies Posts admins (bell, `roles: ["site_admin"]`); the list shows "Needs review";
+  publishing (PATCH `mode: "publish"`) or "Withdraw" clears it.
+- *Who's editing:* `post_editing` (post_id, auth_user_id, name, seen_at). The open editor POSTs a
+  heartbeat every 20s while visible (`usePostPresence`) and DELETEs on close; anyone seen in the
+  last minute shows as "Sam is also editing this page". Polled, not Realtime.
+- *"/" menu:* typing `/` on an empty line opens `SlashMenu` to insert a block by keyboard.
+- *Image library:* `GET /api/admin/posts/media` lists the `post-media` bucket; `MediaLibraryModal`
+  is offered from `ImageField` (where the uploader is the posts one) and the editor toolbar.
+- *Device preview:* Preview saves a draft and shows the signed preview link in a frame at phone,
+  tablet and computer widths (`DevicePreview`), with "Open in a new tab".
+- *Writing help:* `POST /api/admin/posts/suggest` (OpenAI, `SMART_SEARCH_MODEL`) suggests a
+  description from the page, or alt text for the selected image. Always put in front of the admin
+  to edit; 503 when no key is set.
+- *Link check:* `POST /api/admin/posts/check-links` checks up to 25 links in the body: internal
+  ones against posts and redirects, external ones by HEAD/GET with redirects followed by hand and
+  every hop's host checked with `isPrivateHost` (`lib/postLinks.ts`).
+- *Promote:* the Share panel links to `/admin/popup` and `/admin/banner` with `?promote=1…`
+  (`lib/promote.ts`); those pages lay the page's title, description, image and link over the
+  loaded settings, unsaved, with a note, and clear the params from the URL.
+
+**Edit conflicts:** the editor sends the `updated_at` it loaded as `expected_updated_at`; PATCH
+returns 409 with the current row if someone saved since, and the editor names who and offers to
+replace their changes. Bulk publish/unpublish don't send it, since they don't touch content.
+
+**Views:** published post visits log a `post_view` engagement event keyed by post id (so a slug
+change keeps its history). `post_view_counts(p_since)` aggregates non-bot views in Postgres for
+the list's 30-day Views column.
 
 **Used By:**
 - `lib/posts.server.ts` (`getPostForView`) for the public `/[slug]` catch-all
 - `app/api/admin/posts` CRUD, admin dashboard to write pages
+- `app/sitemap.ts` (`listIndexablePosts`) — published, not hidden, not binned
 
 ---
 
@@ -2618,10 +2705,14 @@ from beyond the query text itself.
   promo rails from `components/posts/PostRails.tsx` unless the post turns them off.
   `generateMetadata` emits the post's description and Open Graph image.
 - **Draft previews:** `?preview=<token>` shows an unpublished post when the token is a valid
-  signature for that post's id (`lib/postPreview.server.ts` — `<expiry>.<hmac>`, one hour, signed
-  with the Supabase secret key like the training unlock cookies). Tokens come from
-  `GET /api/admin/posts/[id]/preview`. The page shows a "Preview" bar and is `noindex`. Without a
+  signature for that post's id and `review_link_version` (`lib/postPreview.server.ts` —
+  `<expiry>.<hmac>`, signed with the Supabase secret key like the training unlock cookies). Tokens
+  come from `GET /api/admin/posts/[id]/preview`: one hour for the editor's Preview, 7 days with
+  `?kind=review` for a link sent for sign-off. `DELETE` on the same route bumps the version, which
+  revokes every outstanding link. The page shows a "Preview" bar and is `noindex`. Without a
   valid token a draft 404s exactly as before.
+- **Views and search:** a published (non-preview) view records a `post_view` engagement event via
+  `after()`. `hide_from_search` adds `noindex` and keeps the page out of `app/sitemap.ts`.
 - If no post matches, falls back to an active `redirects` row for the same slug (see Database
   Schema §1) and `redirect()`s there. A hit is recorded via `after()` — read `headers()` during
   render (an `after()` callback in a Server Component can't call it), close over the values, and
@@ -3389,7 +3480,7 @@ to keep.
 - `AdminTabBar.tsx` — The mobile bottom tab bar: a scrolling row of Liquid Glass group tabs derived from `tabsFor()`, with a `Sheet` for multi-page groups (where a group's own landing page is listed as "Overview", highlighted only on that exact page) and a view-transitioned active pill. See "Admin navigation, search and keyboard shortcuts"
 - `AdminHeader.tsx` — Sticky desktop header for the admin shell (`md`+ only); shows the full breadcrumb trail from `breadcrumbsFor(pathname)` — every level above the current page a link — plus ⌘K, the notification bell (`AdminNotificationBell`), the theme toggle, shortcut help and a "View live site" button
 - `AdminNotificationBell.tsx` — The notification bell: an unread badge and a dropdown of the most recent notifications for whatever roles the signed-in admin holds. Data and Realtime delivery both come from `lib/useNotifications.ts` (initial `GET /api/admin/notifications`, then a private Broadcast channel per held role); marking one or all read is optimistic and reconciled on the next refresh. See the `notifications` table in Database Schema for the delivery model.
-- `RichTextEditor.tsx` — Shared TipTap rich-text editor (HTML output); used by posts, training posts, HR job descriptions, and (since `a22301b`) shop product descriptions. Optional `blocks` / `onEditor` props admit [content blocks](#content-blocks) — schema and drop handling only; the blocks UI is a separate surface owned by the parent, deliberately **not** part of this toolbar.
+- `RichTextEditor.tsx` — Shared TipTap rich-text editor (HTML output); used by posts, training posts, HR job descriptions, and (since `a22301b`) shop product descriptions. Optional `blocks` / `onEditor` props admit [content blocks](#content-blocks) — schema and drop handling only; the blocks UI is a separate surface owned by the parent, deliberately **not** part of this toolbar. With `enableImages`, inserting from the toolbar asks for alt text, an "Image description" button appears while an image is selected (`useEditorState`, since the toolbar doesn't re-render on selection alone), and pasted or dropped image files are uploaded through `uploadPostImage` and inserted where they landed (base64 is disallowed, so they used to vanish).
   The toolbar does exactly one job: reformat the current text selection. The old "Embed YouTube video", "Embed ChurchSuite form" and "Embed HTML" buttons are now the Video, ChurchSuite form and Custom embed blocks — they inserted new objects rather than formatting a selection, so they belonged in the sidebar. `enableYouTube` and `enableHtmlEmbed` now only register the legacy `youtube` / `htmlEmbed` nodes so pages authored with those buttons keep parsing; `enableChurchSuite` is gone entirely (it only ever drove a button, since ChurchSuite embeds were stored as `htmlEmbed`).
 - `blocks/*` — **Client.** Editor side of the content-block system: the TipTap node factory, node-view chrome, the Blocks sidebar, the schema-driven settings inspector and its field components. See [Content Blocks](#content-blocks).
 - `ChurchSuiteEventFill.tsx` — **Client.** Collapsible "Fill from ChurchSuite event" picker embedded in the "Add Event" form of every course admin page. Fetches the same picker feed as `/admin/featured-event` (`/api/admin/events`) and, on selection, calls `onFill({ startDate, location, signupUrl, name })` to prefill those three form fields — no new table or API route. Deliberately leaves `format`/`frequency`/meeting fields untouched, since those `alpha_events` columns have no ChurchSuite equivalent.
@@ -3508,8 +3599,19 @@ The member-facing pieces of the `/training` resource library.
 - `useTrainingProgress.ts` — Per-browser completion store in `localStorage` (no per-user accounts; trainees share a group password). Exposes `useCompletedSet()` and `toggleCompleted()`; starts empty on first render to avoid hydration mismatch, then fills in after mount and stays reactive across tabs via a custom event + the `storage` event.
 
 #### Admin Content/Training/HR Components (`components/admin/{posts,training,hr}/*`)
-- `posts/PostEditor.tsx` — Standalone page editor (uses `RichTextEditor`). Full-screen at **both** breakpoints; only the panel placement differs. Desktop gets the permanent Blocks and Settings sidebars; mobile edits the title in the header, puts the slug and published switch behind a "Page settings" sheet, and gives the rest of the screen to the editor. It was previously a `Modal` on mobile — the whole form inside a scrolling popup, with the editor capped at 420px and scrolling separately inside that, so the page content got about a third of the screen and a newly added block was immediately pushed out of sight. The desktop right sidebar has **Page** and **Block** tabs: Page holds the URL and `PageSettings`, Block the `BlockInspector`; selecting a block switches to Block and deselecting returns to Page (derived from the selection, not synced by an effect). Tracks unsaved changes (closing, Escape and tab close ask first), saves on Ctrl/Cmd+S, and has a **Preview** button that saves then opens a signed preview link. New posts start from a template (`lib/postTemplates.ts`).
-- `posts/PageSettings.tsx` — Page-level settings shared by the desktop sidebar and the mobile sheet: header style picker (Plain / Image / Banner thumbnails), header image, subtitle, description with a 160-character counter, share image and the promo-rails toggle. Reuses the block inspector's field components (`ImageField`, `TextField`, …) so uploads go through the same `post-media` route.
+- `posts/PostEditor.tsx` — Standalone page editor (uses `RichTextEditor`). Full-screen at **both** breakpoints; only the panel placement differs. Desktop gets the permanent Blocks and Settings sidebars; mobile edits the title in the header, puts the slug and published switch behind a "Page settings" sheet, and gives the rest of the screen to the editor. It was previously a `Modal` on mobile — the whole form inside a scrolling popup, with the editor capped at 420px and scrolling separately inside that, so the page content got about a third of the screen and a newly added block was immediately pushed out of sight. The desktop right sidebar has **Page**, **Block** and **History** tabs (History is described under `HistoryPanel`). Buttons are **Save draft** and **Publish** / **Publish changes**, with a banner when a live page has unpublished changes (Publish them / Discard) and "Unpublish this page" in Page settings. The first two tabs: Page holds the URL and `PageSettings`, Block the `BlockInspector`; selecting a block switches to Block and deselecting returns to Page (derived from the selection, not synced by an effect). Tracks unsaved changes (closing, Escape and tab close ask first), saves on Ctrl/Cmd+S, and has a **Preview** button that saves then opens a signed preview link. New posts start from a template (`lib/postTemplates.ts`). Saving sends `expected_updated_at` and handles a 409 by naming who saved and offering to replace their changes. The save that publishes a draft shows the pre-publish checklist (`lib/postChecklist.ts`) once as a "Publish anyway?" confirm. A **Share** button opens `ShareModal`.
+- `posts/ShareModal.tsx` — Copy link, channel-tagged links (`?s=social&utm_source=whatsapp` etc., so Analytics can tell channels apart), the printable QR code (reuses `RedirectQrModal`, same `/<slug>` namespace), and 7-day review links with "Turn off all review links".
+- `posts/PublishChecklist.tsx` — Renders `lib/postChecklist.ts` at the top of Page settings: empty page, long title, missing/long description, no share image, images without alt text (body and gallery), buttons with no link. Warnings only.
+- `posts/SharePreview.tsx` — A WhatsApp/Facebook-style link card from the same fallbacks the page metadata uses.
+- `posts/TagsField.tsx` — Tag chips with suggestions from tags already in use (case-insensitive reuse).
+- `posts/PageSettings.tsx` — Page-level settings shared by the desktop sidebar and the mobile sheet: header style picker (Plain / Image / Banner thumbnails), header image, subtitle, description with a 160-character counter, share image (with `SharePreview`), the promo-rails toggle, "Hide from search engines", tags and the schedule (`ScheduleFields`: go-live and take-down times as local datetime inputs). The checklist sits at the top.
+- `posts/MediaLibraryModal.tsx` — Grid of images already in `post-media`, newest first, with "Show more"; returns the picked URL.
+- `posts/DevicePreview.tsx` — Full-screen frame of the signed preview link at phone (390), tablet (820) and computer (1440, scaled to fit) widths. Escape closes it, not the editor.
+- `posts/LinkCheck.tsx` — "Check links" box under the checklist in Page settings; lists broken links and where they are.
+- `posts/SavedTemplates.tsx` — Saved templates in the New post picker, with delete; hidden when there are none.
+- `posts/usePostPresence.ts` — Heartbeat hook for "who else is editing" plus `presenceLine()`.
+- `blocks/SlashMenu.tsx` — The "/" block menu beside the rich-text editor; open whenever the cursor's paragraph reads `/query`, keys captured before ProseMirror sees them.
+- `posts/HistoryPanel.tsx` — The editor's History tab (a sheet on mobile): saved versions with who and when, and "Bring back", which loads one into the form unsaved. Reuses the block inspector's field components (`ImageField`, `TextField`, …) so uploads go through the same `post-media` route.
 - `training/PostEditor.tsx` — Training post editor (uses `RichTextEditor`). Still a `Modal` on mobile: its body is one field among many rather than the whole point of the screen, and it inherits the mobile block sheets and toolbar from `BlockTools` either way.
 - `training/CategoryModal.tsx`, `SubgroupModal.tsx`, `FolderModal.tsx`, `IconPicker.tsx` — Training tree CRUD modals
 - `hr/HrUI.tsx` — Staff directory, leave requests, documents (main HR dashboard shell)
@@ -4307,8 +4409,69 @@ and stamps `long_outage_alerted_at`. Amber alerts and maintenance never email.
 #### `GET /api/admin/posts/[id]/preview`
 ```typescript
 // Signed preview URL for a (possibly unpublished) post
-// Returns: { url: "/<slug>?preview=<expiry>.<hmac>" } — valid for one hour
+// Query: ?kind=review for a 7-day review link (audited); otherwise one hour
+// Returns: { url: "/<slug>?preview=<expiry>.<hmac>", expiresAt }
 // See lib/postPreview.server.ts and the /[slug] catch-all
+```
+
+#### `DELETE /api/admin/posts/[id]/preview`
+```typescript
+// Turns off every preview and review link for the post by bumping
+// posts.review_link_version (tokens are signed with it). Audited.
+```
+
+#### `GET /api/admin/posts` · `PATCH|DELETE /api/admin/posts/[id]`
+```typescript
+// GET: every post including the Bin, each with views_30d (post_view_counts RPC);
+//      purges binned posts older than 30 days first (lib/posts-admin.server.ts)
+// PATCH: partial update. mode: "draft" | "publish" | "discard_draft" (see the
+//        posts schema notes); none = direct write (list toggle, Bin restore).
+//        expected_updated_at → 409 { conflict, current } if someone saved
+//        since; restore: true takes it out of the Bin; redirect_old_slug:
+//        false skips the old-URL redirect; returns redirected_from when one
+//        was made. Sets updated_by from the admin profile name (else email)
+// DELETE: moves to the Bin; ?permanent=1 deletes a binned post for good
+```
+
+#### `GET /api/admin/posts/[id]/revisions` · `GET …/revisions/[revisionId]`
+```typescript
+// The post's saved versions (newest 30), newest first, without content;
+// then one version's snapshot. Read-only: restoring happens in the editor.
+```
+
+#### `GET|POST /api/admin/posts/templates` · `DELETE …/templates/[templateId]`
+```typescript
+// Saved post templates (audited). POST { label, description?, fields } keeps
+// the content and page settings only.
+```
+
+#### `POST|DELETE /api/admin/posts/[id]/review`
+```typescript
+// POST { note? }: marks the post for review and notifies site_admin (audited).
+// DELETE withdraws. Publishing also clears it.
+```
+
+#### `POST|DELETE /api/admin/posts/[id]/editing`
+```typescript
+// Editor heartbeat (audit-exempt). POST returns { others: [{ name }] } seen
+// in the last 60s; DELETE on close. Stale rows are swept occasionally.
+```
+
+#### `GET /api/admin/posts/media`
+```typescript
+// The post-media bucket, newest first, 60 per page: { items, nextOffset }.
+```
+
+#### `POST /api/admin/posts/suggest`
+```typescript
+// Writing help (audit-exempt, nothing stored). { kind: "description", title, body }
+// or { kind: "alt", src } → { suggestion }. 503 without an OpenAI key.
+```
+
+#### `POST /api/admin/posts/check-links`
+```typescript
+// { body } → { checked, problems: [{ href, where, problem }], truncated }.
+// Max 25 links; private hosts refused on every redirect hop (audit-exempt).
 ```
 
 #### `GET /api/admin/posts/check-slug`
@@ -6088,7 +6251,7 @@ share. Modelled closely on the audit log, split the same way.
 
 - **`lib/engagement.ts`** — the vocabulary, client-safe (touches neither the
   database nor `next/headers`). Closed sets so the page's filters can be chips:
-  `ENGAGEMENT_SOURCES` (`redirect` / `nfc` / `links` / `links_view`, each with its own noun —
+  `ENGAGEMENT_SOURCES` (`redirect` / `nfc` / `links` / `links_view` / `post_view`, each with its own noun —
   "click" vs "tap" — icon and blurb), `SRC_TAGS` (`qr` / `nfc` / `print` /
   `social`, the `?s=` values that separate "scanned the flyer" from "clicked the
   post"), and `IP_CATEGORIES` (`apple_private_relay` / `vpn` / `tor` /

@@ -3,16 +3,22 @@ import { createServiceClient } from "@/utils/supabase/service";
 import { checkSlug } from "@/lib/posts-slug";
 import { recordAudit } from "@/lib/audit.server";
 import { parsePageSettings } from "@/lib/posts-fields";
+import { currentEditorName, postViewCounts, purgeExpiredBin, recordRevision } from "@/lib/posts-admin.server";
+import { pickDraftFields, type PostFields } from "@/lib/posts";
 
+/** Every post, Bin included (the page splits them), with 30-day view counts. */
 export async function GET() {
   const supabase = createServiceClient();
-  const { data, error } = await supabase
-    .from("posts")
-    .select("*")
-    .order("created_at", { ascending: false });
+  await purgeExpiredBin(supabase);
+  const [{ data, error }, views] = await Promise.all([
+    supabase.from("posts").select("*").order("created_at", { ascending: false }),
+    postViewCounts(supabase),
+  ]);
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  return NextResponse.json(data);
+  return NextResponse.json(
+    (data ?? []).map((p) => ({ ...p, views_30d: views.get(p.id) ?? 0 })),
+  );
 }
 
 export async function POST(request: Request) {
@@ -28,6 +34,7 @@ export async function POST(request: Request) {
   }
 
   const supabase = createServiceClient();
+  const editor = await currentEditorName(supabase);
   const result = await checkSlug(supabase, body.slug ?? "");
   if (!result.ok) {
     return NextResponse.json({ error: result.reason }, { status: result.status });
@@ -41,11 +48,20 @@ export async function POST(request: Request) {
       body: body.body?.trim() || null,
       is_published: body.is_published ?? false,
       ...settings.fields,
+      updated_by: editor,
     })
     .select()
     .single();
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+  await recordRevision(
+    supabase,
+    data.id,
+    data.is_published ? "published" : "draft",
+    pickDraftFields(data as Partial<PostFields>),
+    editor,
+  );
 
   await recordAudit({
     action: "create",

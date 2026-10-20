@@ -8,6 +8,10 @@ import {
   TextField,
   ToggleField,
 } from "@/components/admin/blocks/fields/BasicFields";
+import type { ChecklistItem } from "@/lib/postChecklist";
+import { PublishChecklist } from "./PublishChecklist";
+import { SharePreview } from "./SharePreview";
+import { TagsField } from "./TagsField";
 
 /** A tiny picture of each hero style, so the choice reads at a glance. */
 function HeroThumb({ style }: { style: HeroStyle }) {
@@ -93,14 +97,21 @@ export function PageSettings({
   form,
   set,
   urlAndStatus,
+  checklist,
+  tagSuggestions,
 }: {
   form: PostFields;
   set: <K extends keyof PostFields>(key: K, value: PostFields[K]) => void;
   urlAndStatus?: React.ReactNode;
+  checklist: ChecklistItem[];
+  /** Tags already used on other posts. */
+  tagSuggestions: string[];
 }) {
   const description = form.description ?? "";
   return (
     <div className="flex flex-col gap-5">
+      <PublishChecklist items={checklist} />
+
       {urlAndStatus}
 
       <HeroStylePicker value={form.hero_style} onChange={(v) => set("hero_style", v)} />
@@ -151,12 +162,23 @@ export function PageSettings({
         onChange={(url) => set("og_image_url", url || null)}
       />
 
+      <SharePreview form={form} />
+
       <ToggleField
         label="Show promo sidebars"
         help="Upcoming events and courses beside the page on wide screens."
         value={form.show_rails}
         onChange={(v) => set("show_rails", v)}
       />
+
+      <ToggleField
+        label="Hide from search engines"
+        help="Keeps the page out of Google. Use it for pages meant only for people with the link or QR code."
+        value={form.hide_from_search}
+        onChange={(v) => set("hide_from_search", v)}
+      />
+
+      <TagsField value={form.tags} suggestions={tagSuggestions} onChange={(v) => set("tags", v)} />
     </div>
   );
 }

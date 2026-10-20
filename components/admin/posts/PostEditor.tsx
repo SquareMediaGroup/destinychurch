@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useIsDesktop } from "@/lib/useIsDesktop";
 import { useScrollLock } from "@/lib/useScrollLock";
 import { API, type Post, type PostFields } from "@/lib/posts";
@@ -8,6 +8,8 @@ import type { PostTemplate } from "@/lib/postTemplates";
 import { useDialog } from "@/components/DialogProvider";
 import { useSelectedBlock } from "@/components/admin/blocks/useSelectedBlock";
 import { PageSettings } from "./PageSettings";
+import { ShareModal } from "./ShareModal";
+import { postChecklist } from "@/lib/postChecklist";
 import { slugify } from "@/lib/jobs";
 import { primaryBtn, ghostBtn } from "@/components/admin/AdminUI";
 import { Sheet } from "@/components/admin/Sheet";
@@ -216,6 +218,8 @@ function initialFields(post: Post | null, template?: PostTemplate): PostFields {
     description: post?.description ?? null,
     og_image_url: post?.og_image_url ?? null,
     show_rails: post?.show_rails ?? true,
+    hide_from_search: post?.hide_from_search ?? false,
+    tags: post?.tags ?? [],
   };
   return post ? base : { ...base, ...template?.fields };
 }
@@ -223,6 +227,7 @@ function initialFields(post: Post | null, template?: PostTemplate): PostFields {
 export function PostEditor({
   post,
   template,
+  tagSuggestions,
   onClose,
   onSaved,
   onError,
@@ -230,6 +235,8 @@ export function PostEditor({
   post: Post | null;
   /** New posts only: the starter layout picked from the template chooser. */
   template?: PostTemplate;
+  /** Tags already used across posts, offered as suggestions. */
+  tagSuggestions: string[];
   onClose: () => void;
   onSaved: () => void;
   onError: (msg: string) => void;
@@ -256,6 +263,14 @@ export function PostEditor({
   // Set once a new post has been saved (by Preview) so later saves PATCH it.
   const [postId, setPostId] = useState<string | undefined>(post?.id);
   const [saving, setSaving] = useState(false);
+  // The server's updated_at as of our last load or save. Sent with each save so
+  // the API can refuse to silently overwrite someone else's edit (409).
+  const [loadedUpdatedAt, setLoadedUpdatedAt] = useState<string | undefined>(post?.updated_at);
+  // Published state as saved (not as toggled), for the share panel and for
+  // knowing when a save is the one that publishes the page.
+  const [savedPublished, setSavedPublished] = useState(post?.is_published ?? false);
+  const [shareOpen, setShareOpen] = useState(false);
+  const checklist = useMemo(() => postChecklist(form), [form]);
   // Once the admin edits the slug by hand, stop auto-deriving it from the title.
   const slugTouched = useRef(Boolean(post));
 
@@ -292,6 +307,8 @@ export function PostEditor({
   useScrollLock(true);
 
   async function requestClose() {
+    // Escape inside the share panel closes the panel, not the editor.
+    if (shareOpen) return;
     if (
       dirty &&
       !(await confirm({
@@ -325,22 +342,50 @@ export function PostEditor({
       onError("The Image header needs an image — add one in Page settings, or pick another header.");
       return null;
     }
+    // The save that takes a page live is the moment the checklist matters.
+    // Asked once per publish, never on later saves of a live page.
+    if (form.is_published && !savedPublished && checklist.length > 0) {
+      const go = await confirm({
+        title: "Publish with these gaps?",
+        message: checklist.map((i) => `• ${i.message}`).join("\n"),
+        confirmLabel: "Publish anyway",
+      });
+      if (!go) return null;
+    }
     setSaving(true);
 
-    const url = postId ? `${API}/${postId}` : API;
-    const method = postId ? "PATCH" : "POST";
-    const res = await fetch(url, {
-      method,
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(form),
-    });
+    const send = (expected: string | undefined) =>
+      fetch(postId ? `${API}/${postId}` : API, {
+        method: postId ? "PATCH" : "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(postId && expected ? { ...form, expected_updated_at: expected } : form),
+      });
+
+    let res = await send(loadedUpdatedAt);
+    let data = await res.json().catch(() => ({}));
+    if (res.status === 409 && data.conflict) {
+      const by = (data.current?.updated_by as string | null) || "someone else";
+      const overwrite = await confirm({
+        title: "This page changed while you were editing",
+        message: `${by} saved it after you opened it. Saving now replaces their changes with yours. To keep theirs, cancel, copy anything you need, then close and reopen the page.`,
+        confirmLabel: "Replace their changes",
+        tone: "danger",
+      });
+      if (!overwrite) {
+        setSaving(false);
+        return null;
+      }
+      res = await send(undefined);
+      data = await res.json().catch(() => ({}));
+    }
     setSaving(false);
-    const data = await res.json().catch(() => ({}));
     if (!res.ok) {
       onError(data.error || "Something went wrong.");
       return null;
     }
     setPostId(data.id);
+    setLoadedUpdatedAt(data.updated_at);
+    setSavedPublished(Boolean(data.is_published));
     setSavedSnapshot(JSON.stringify(form));
     if (close) onSaved();
     return data.id as string;
@@ -461,6 +506,16 @@ export function PostEditor({
             >
               {saving ? "Saving…" : postId ? "Save changes" : "Create post"}
             </button>
+            <button
+              type="button"
+              onClick={() => setShareOpen(true)}
+              disabled={!postId}
+              title={postId ? "Share" : "Save the page first to share it"}
+              aria-label="Share"
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-destiny-grey/50 transition hover:bg-[#f5f7fa] hover:text-destiny-grey disabled:opacity-40 dark:text-white/50 dark:hover:text-white"
+            >
+              <span className="material-symbols-rounded text-xl" aria-hidden="true">ios_share</span>
+            </button>
           </div>
         </div>
 
@@ -505,7 +560,13 @@ export function PostEditor({
               <div className="min-h-0 flex-1">
                 {rightTab === "page" ? (
                   <div className="h-full overflow-y-auto p-4">
-                    <PageSettings form={form} set={set} urlAndStatus={slugField("post-slug-desktop")} />
+                    <PageSettings
+                      form={form}
+                      set={set}
+                      urlAndStatus={slugField("post-slug-desktop")}
+                      checklist={checklist}
+                      tagSuggestions={tagSuggestions}
+                    />
                   </div>
                 ) : (
                   <BlockInspector editor={editorInstance} />
@@ -514,6 +575,16 @@ export function PostEditor({
             </div>
           </SidePanel>
         </div>
+
+        {shareOpen && postId && (
+          <ShareModal
+            postId={postId}
+            slug={(JSON.parse(savedSnapshot) as PostFields).slug}
+            title={form.title}
+            isPublished={savedPublished}
+            onClose={() => setShareOpen(false)}
+          />
+        )}
       </div>
     );
   }
@@ -614,7 +685,19 @@ export function PostEditor({
               />
             </div>
 
-            <PageSettings form={form} set={set} />
+            <PageSettings form={form} set={set} checklist={checklist} tagSuggestions={tagSuggestions} />
+
+            <button
+              type="button"
+              className={`${ghostBtn} w-full`}
+              disabled={!postId}
+              onClick={() => {
+                setPageSettingsOpen(false);
+                setShareOpen(true);
+              }}
+            >
+              {postId ? "Share" : "Save the page to share it"}
+            </button>
 
             <button
               type="button"
@@ -636,6 +719,16 @@ export function PostEditor({
             </button>
           </div>
         </Sheet>
+      )}
+
+      {shareOpen && postId && (
+        <ShareModal
+          postId={postId}
+          slug={(JSON.parse(savedSnapshot) as PostFields).slug}
+          title={form.title}
+          isPublished={savedPublished}
+          onClose={() => setShareOpen(false)}
+        />
       )}
     </div>
   );

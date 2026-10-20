@@ -150,7 +150,8 @@ function DialogModal({
           </h2>
         )}
         {request.message && (
-          <p className="text-sm leading-relaxed text-muted dark:text-on-dark-muted">
+          // pre-line: a message can carry a short list, one item per line.
+          <p className="whitespace-pre-line text-sm leading-relaxed text-muted dark:text-on-dark-muted">
             {request.message}
           </p>
         )}

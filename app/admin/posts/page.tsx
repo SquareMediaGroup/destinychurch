@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { API, type Post } from "@/lib/posts";
+import { API, BIN_DAYS, type Post } from "@/lib/posts";
 import {
   PageHeader,
   Badge,
@@ -33,6 +33,9 @@ export default function AdminPostsPage() {
   const [editing, setEditing] = useState<Post | { template: PostTemplate } | null>(null);
   const [choosingTemplate, setChoosingTemplate] = useState(false);
   const [working, setWorking] = useState(false);
+  // The Bin is its own view rather than a status chip, so "All" keeps meaning
+  // every page that still exists.
+  const [inBin, setInBin] = useState(false);
 
   const load = useCallback(async () => {
     try {
@@ -43,6 +46,16 @@ export default function AdminPostsPage() {
       setLoading(false);
     }
   }, []);
+
+  const livePosts = useMemo(() => posts.filter((p) => !p.deleted_at), [posts]);
+  const binnedPosts = useMemo(() => posts.filter((p) => p.deleted_at), [posts]);
+  const shownPosts = inBin ? binnedPosts : livePosts;
+  // Every tag in use, most used first, for the filter chips and the editor.
+  const allTags = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const p of livePosts) for (const t of p.tags ?? []) counts.set(t, (counts.get(t) ?? 0) + 1);
+    return [...counts.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0])).map(([t]) => t);
+  }, [livePosts]);
 
   useEffect(() => {
     load();
@@ -61,7 +74,7 @@ export default function AdminPostsPage() {
   const openedId = useRef<string | null>(null);
   useEffect(() => {
     if (!openId || posts.length === 0 || openedId.current === openId) return;
-    const match = posts.find((p) => p.id === openId);
+    const match = posts.find((p) => p.id === openId && !p.deleted_at);
     if (match) {
       openedId.current = openId;
       setEditing(match);
@@ -69,10 +82,11 @@ export default function AdminPostsPage() {
   }, [openId, posts]);
 
   const list = useAdminList<Post>({
-    items: posts,
+    items: shownPosts,
     searchKeys: [
-      { name: "title", weight: 0.7 },
-      { name: "slug", weight: 0.3 },
+      { name: "title", weight: 0.6 },
+      { name: "slug", weight: 0.25 },
+      { name: "tags", weight: 0.15 },
     ],
     filters: [
       {
@@ -84,16 +98,22 @@ export default function AdminPostsPage() {
         match: (post, value) =>
           value === "published" ? post.is_published : !post.is_published,
       },
+      {
+        key: "tag",
+        options: allTags.map((t) => ({ value: t, label: t })),
+        match: (post, value) => (post.tags ?? []).includes(value),
+      },
     ],
     sorts: {
       title: (a, b) => a.title.localeCompare(b.title),
       slug: (a, b) => a.slug.localeCompare(b.slug),
       status: (a, b) => Number(a.is_published) - Number(b.is_published),
       updated: (a, b) => a.updated_at.localeCompare(b.updated_at),
+      views: (a, b) => (a.views_30d ?? 0) - (b.views_30d ?? 0),
     },
   });
 
-  const selection = useRowSelection(posts);
+  const selection = useRowSelection(shownPosts);
   const visibleIds = useMemo(() => list.visible.map((p) => p.id), [list.visible]);
 
   async function togglePublish(post: Post) {
@@ -118,7 +138,7 @@ export default function AdminPostsPage() {
     let slug = `${post.slug}-copy`;
     for (let n = 2; taken.has(slug); n++) slug = `${post.slug}-copy-${n}`;
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { id, created_at, updated_at, ...fields } = post;
+    const { id, created_at, updated_at, deleted_at, updated_by, views_30d, ...fields } = post;
     const res = await fetch(API, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -133,18 +153,51 @@ export default function AdminPostsPage() {
     setEditing(data as Post);
   }
 
+  /** Moves a post to the Bin, with an Undo on the toast. No confirm needed. */
   async function remove(post: Post) {
+    setError("");
+    const res = await fetch(`${API}/${post.id}`, { method: "DELETE" });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      setError(data.error || "Could not delete.");
+      return;
+    }
+    toast.push({
+      tone: "success",
+      title: "Moved to the Bin",
+      message: `“${post.title}” is no longer live. It stays in the Bin for ${BIN_DAYS} days.`,
+      actions: [{ label: "Undo", onClick: () => restore(post), variant: "primary" }],
+    });
+    load();
+  }
+
+  async function restore(post: Post) {
+    setError("");
+    const res = await fetch(`${API}/${post.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ restore: true }),
+    });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      setError(data.error || "Could not restore.");
+      return;
+    }
+    load();
+  }
+
+  async function deleteForever(post: Post) {
     if (
       !(await confirm({
-        title: "Delete post",
-        message: `Delete "${post.title}"? This cannot be undone.`,
-        confirmLabel: "Delete",
+        title: "Delete for good",
+        message: `Permanently delete "${post.title}"? This cannot be undone.`,
+        confirmLabel: "Delete for good",
         tone: "danger",
       }))
     )
       return;
     setError("");
-    const res = await fetch(`${API}/${post.id}`, { method: "DELETE" });
+    const res = await fetch(`${API}/${post.id}?permanent=1`, { method: "DELETE" });
     if (!res.ok) {
       const data = await res.json().catch(() => ({}));
       setError(data.error || "Could not delete.");
@@ -188,20 +241,30 @@ export default function AdminPostsPage() {
   async function bulkDelete() {
     const ids = [...selection.selected];
     if (ids.length === 0) return;
+    const noun = `${ids.length} post${ids.length === 1 ? "" : "s"}`;
     if (
-      !(await confirm({
-        title: `Delete ${ids.length} post${ids.length === 1 ? "" : "s"}`,
-        message: `This permanently deletes ${ids.length} post${ids.length === 1 ? "" : "s"}. This cannot be undone.`,
-        confirmLabel: "Delete",
-        tone: "danger",
-      }))
+      !(await confirm(
+        inBin
+          ? {
+              title: `Delete ${noun} for good`,
+              message: `This permanently deletes ${noun}. This cannot be undone.`,
+              confirmLabel: "Delete for good",
+              tone: "danger",
+            }
+          : {
+              title: `Move ${noun} to the Bin`,
+              message: `They stop being live straight away and can be restored from the Bin for ${BIN_DAYS} days.`,
+              confirmLabel: "Move to Bin",
+              tone: "danger",
+            },
+      ))
     )
       return;
     setWorking(true);
     setError("");
     const results = await Promise.allSettled(
       ids.map((id) =>
-        fetch(`${API}/${id}`, { method: "DELETE" }).then((r) => {
+        fetch(`${API}/${id}${inBin ? "?permanent=1" : ""}`, { method: "DELETE" }).then((r) => {
           if (!r.ok) throw new Error();
         }),
       ),
@@ -233,7 +296,7 @@ export default function AdminPostsPage() {
       <ErrorNote>{error}</ErrorNote>
 
       {loading ? (
-        <TableSkeleton columns={5} />
+        <TableSkeleton columns={6} />
       ) : posts.length === 0 ? (
         <EmptyState
           icon="article"
@@ -256,53 +319,108 @@ export default function AdminPostsPage() {
             total={list.total}
             shown={list.shown}
             filters={
-              <FilterChips
-                label="Status"
-                options={list.filterOptions("status")}
-                value={list.filterValues.status}
-                onChange={(v) => list.setFilter("status", v)}
-              />
+              <div className="flex flex-wrap items-center gap-3">
+                {!inBin && (
+                  <FilterChips
+                    label="Status"
+                    options={list.filterOptions("status")}
+                    value={list.filterValues.status}
+                    onChange={(v) => list.setFilter("status", v)}
+                  />
+                )}
+                {!inBin && allTags.length > 0 && (
+                  <FilterChips
+                    label="Tag"
+                    options={list.filterOptions("tag")}
+                    value={list.filterValues.tag}
+                    onChange={(v) => list.setFilter("tag", v)}
+                  />
+                )}
+                <button
+                  type="button"
+                  aria-pressed={inBin}
+                  onClick={() => {
+                    selection.clear();
+                    setInBin((v) => !v);
+                  }}
+                  className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-bold transition ${
+                    inBin
+                      ? "bg-destiny-grey text-white dark:bg-white dark:text-destiny-grey"
+                      : "border border-black/10 bg-white text-destiny-grey/60 hover:bg-[#f5f7fa] dark:border-white/10 dark:bg-destiny-grey-800 dark:text-white/60"
+                  }`}
+                >
+                  <span className="material-symbols-rounded text-[15px]" aria-hidden="true">
+                    {inBin ? "arrow_back" : "delete"}
+                  </span>
+                  {inBin ? "Back to pages" : `Bin (${binnedPosts.length})`}
+                </button>
+              </div>
             }
           >
             <BulkBar count={selection.count} noun="post" onClear={selection.clear}>
-              <button
-                className="rounded-lg bg-destiny-green/10 px-3 py-1.5 text-xs font-bold text-destiny-green transition hover:bg-destiny-green/20 disabled:opacity-50"
-                disabled={working}
-                onClick={() => bulkPublish(true)}
-              >
-                Publish
-              </button>
-              <button
-                className="rounded-lg bg-black/5 px-3 py-1.5 text-xs font-bold text-destiny-grey/70 dark:text-white/70 transition hover:bg-black/10 disabled:opacity-50"
-                disabled={working}
-                onClick={() => bulkPublish(false)}
-              >
-                Unpublish
-              </button>
+              {!inBin && (
+                <>
+                  <button
+                    className="rounded-lg bg-destiny-green/10 px-3 py-1.5 text-xs font-bold text-destiny-green transition hover:bg-destiny-green/20 disabled:opacity-50"
+                    disabled={working}
+                    onClick={() => bulkPublish(true)}
+                  >
+                    Publish
+                  </button>
+                  <button
+                    className="rounded-lg bg-black/5 px-3 py-1.5 text-xs font-bold text-destiny-grey/70 dark:text-white/70 transition hover:bg-black/10 disabled:opacity-50"
+                    disabled={working}
+                    onClick={() => bulkPublish(false)}
+                  >
+                    Unpublish
+                  </button>
+                </>
+              )}
               <button
                 className="rounded-lg bg-destiny-red/10 px-3 py-1.5 text-xs font-bold text-destiny-red transition hover:bg-destiny-red/20 disabled:opacity-50"
                 disabled={working}
                 onClick={bulkDelete}
               >
-                Delete
+                {inBin ? "Delete for good" : "Move to Bin"}
               </button>
             </BulkBar>
           </ListToolbar>
 
           {list.visible.length === 0 ? (
-            <EmptyState
-              icon="search_off"
-              title="No posts match"
-              hint="Try a different word, or clear the filters."
-              action={
-                <button
-                  className="text-sm font-bold text-destiny-orange hover:brightness-110"
-                  onClick={list.clearAll}
-                >
-                  Clear search and filters
-                </button>
-              }
-            />
+            inBin && !list.isFiltered ? (
+              <EmptyState
+                icon="delete"
+                title="The Bin is empty"
+                hint={`Deleted posts wait here for ${BIN_DAYS} days before they're gone for good.`}
+              />
+            ) : !inBin && !list.isFiltered ? (
+              // Every post is in the Bin; the toolbar's Bin button is the way back.
+              <EmptyState
+                icon="article"
+                title="No live or draft posts"
+                hint="Everything is in the Bin. Restore a post from there, or start a new one."
+                action={
+                  <button className={primaryBtn} onClick={() => setChoosingTemplate(true)}>
+                    <span className="material-symbols-rounded text-lg" aria-hidden="true">add</span>
+                    New post
+                  </button>
+                }
+              />
+            ) : (
+              <EmptyState
+                icon="search_off"
+                title="No posts match"
+                hint="Try a different word, or clear the filters."
+                action={
+                  <button
+                    className="text-sm font-bold text-destiny-orange hover:brightness-110"
+                    onClick={list.clearAll}
+                  >
+                    Clear search and filters
+                  </button>
+                }
+              />
+            )
           ) : (
             <div className="overflow-x-auto rounded-3xl border border-black/5 bg-white shadow-sm dark:border-white/8 dark:bg-destiny-grey-800">
               <table className="w-full text-left text-sm">
@@ -339,7 +457,14 @@ export default function AdminPostsPage() {
                       onSort={list.toggleSort}
                     />
                     <SortHeader
-                      label="Edited"
+                      label="Views"
+                      field="views"
+                      active={list.sortField === "views"}
+                      direction={list.sortDirection}
+                      onSort={list.toggleSort}
+                    />
+                    <SortHeader
+                      label={inBin ? "Deleted" : "Edited"}
                       field="updated"
                       active={list.sortField === "updated"}
                       direction={list.sortDirection}
@@ -352,8 +477,8 @@ export default function AdminPostsPage() {
                   {list.visible.map((p) => (
                     <tr
                       key={p.id}
-                      onClick={() => setEditing(p)}
-                      className={`group cursor-pointer transition hover:bg-[#f5f7fa] dark:hover:bg-white/10 ${
+                      onClick={() => !inBin && setEditing(p)}
+                      className={`group ${inBin ? "" : "cursor-pointer"} transition hover:bg-[#f5f7fa] dark:hover:bg-white/10 ${
                         selection.selected.has(p.id) ? "bg-destiny-orange/5" : ""
                       }`}
                     >
@@ -369,9 +494,23 @@ export default function AdminPostsPage() {
                       <td className="px-5 py-3.5">
                         <div className="flex items-center gap-3">
                           <PostThumb post={p} />
-                          <p className="font-bold text-destiny-grey dark:text-white transition group-hover:text-destiny-orange">
-                            {p.title}
-                          </p>
+                          <div className="min-w-0">
+                            <p className="font-bold text-destiny-grey dark:text-white transition group-hover:text-destiny-orange">
+                              {p.title}
+                            </p>
+                            {(p.tags ?? []).length > 0 && (
+                              <p className="mt-0.5 flex flex-wrap gap-1">
+                                {p.tags.map((t) => (
+                                  <span
+                                    key={t}
+                                    className="rounded-full bg-black/5 px-1.5 py-px text-[10px] font-bold text-destiny-grey/55 dark:bg-white/10 dark:text-white/55"
+                                  >
+                                    {t}
+                                  </span>
+                                ))}
+                              </p>
+                            )}
+                          </div>
                         </div>
                       </td>
                       <td className="px-5 py-3.5">
@@ -380,70 +519,118 @@ export default function AdminPostsPage() {
                         </span>
                       </td>
                       <td className="px-5 py-3.5">
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            togglePublish(p);
-                          }}
-                          title={p.is_published ? "Unpublish" : "Publish"}
-                        >
-                          <Badge tone={p.is_published ? "green" : "grey"}>
-                            {p.is_published ? "Published" : "Draft"}
-                          </Badge>
-                        </button>
+                        {inBin ? (
+                          <Badge tone="grey">In Bin</Badge>
+                        ) : (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              togglePublish(p);
+                            }}
+                            title={p.is_published ? "Unpublish" : "Publish"}
+                          >
+                            <Badge tone={p.is_published ? "green" : "grey"}>
+                              {p.is_published ? "Published" : "Draft"}
+                            </Badge>
+                          </button>
+                        )}
+                      </td>
+                      <td
+                        className="whitespace-nowrap px-5 py-3.5 text-xs tabular-nums text-destiny-grey/60 dark:text-white/60"
+                        title="Visits in the last 30 days, not counting bots"
+                      >
+                        {p.is_published || p.views_30d ? (p.views_30d ?? 0).toLocaleString() : "–"}
                       </td>
                       <td className="whitespace-nowrap px-5 py-3.5 text-xs text-destiny-grey/50 dark:text-white/50">
-                        <time dateTime={p.updated_at} title={new Date(p.updated_at).toLocaleString()}>
-                          {relativeTime(p.updated_at)}
-                        </time>
+                        {(() => {
+                          const at = inBin && p.deleted_at ? p.deleted_at : p.updated_at;
+                          return (
+                            <time dateTime={at} title={new Date(at).toLocaleString()}>
+                              {relativeTime(at)}
+                            </time>
+                          );
+                        })()}
+                        {p.updated_by && (
+                          <span className="block max-w-[10rem] truncate text-[11px] text-destiny-grey/40 dark:text-white/40">
+                            by {p.updated_by}
+                          </span>
+                        )}
                       </td>
                       <td className="px-5 py-3.5">
                         <div className="flex items-center justify-end gap-3">
-                          {p.is_published && (
-                            <a
-                              href={`/${p.slug}`}
-                              target="_blank"
-                              rel="noreferrer"
-                              onClick={(e) => e.stopPropagation()}
-                              className="text-destiny-grey/40 dark:text-white/40 transition hover:text-destiny-orange"
-                              aria-label={`View ${p.title} live`}
-                            >
-                              <span className="material-symbols-rounded text-xl" aria-hidden="true">
-                                open_in_new
-                              </span>
-                            </a>
+                          {inBin ? (
+                            <>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  restore(p);
+                                }}
+                                className="rounded-lg bg-destiny-green/10 px-2.5 py-1 text-xs font-bold text-destiny-green transition hover:bg-destiny-green/20"
+                              >
+                                Restore
+                              </button>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  deleteForever(p);
+                                }}
+                                className="text-destiny-grey/40 dark:text-white/40 transition hover:text-destiny-red"
+                                aria-label={`Delete ${p.title} for good`}
+                                title="Delete for good"
+                              >
+                                <span className="material-symbols-rounded text-xl" aria-hidden="true">delete_forever</span>
+                              </button>
+                            </>
+                          ) : (
+                            <>
+                              {p.is_published && (
+                                <a
+                                  href={`/${p.slug}`}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  onClick={(e) => e.stopPropagation()}
+                                  className="text-destiny-grey/40 dark:text-white/40 transition hover:text-destiny-orange"
+                                  aria-label={`View ${p.title} live`}
+                                >
+                                  <span className="material-symbols-rounded text-xl" aria-hidden="true">
+                                    open_in_new
+                                  </span>
+                                </a>
+                              )}
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setEditing(p);
+                                }}
+                                className="text-destiny-grey/40 dark:text-white/40 transition hover:text-destiny-orange group-hover:text-destiny-orange"
+                                aria-label={`Edit ${p.title}`}
+                              >
+                                <span className="material-symbols-rounded text-xl" aria-hidden="true">edit</span>
+                              </button>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  duplicate(p);
+                                }}
+                                className="text-destiny-grey/40 dark:text-white/40 transition hover:text-destiny-orange"
+                                aria-label={`Duplicate ${p.title}`}
+                                title="Duplicate"
+                              >
+                                <span className="material-symbols-rounded text-xl" aria-hidden="true">content_copy</span>
+                              </button>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  remove(p);
+                                }}
+                                className="text-destiny-grey/40 dark:text-white/40 transition hover:text-destiny-red"
+                                aria-label={`Move ${p.title} to the Bin`}
+                                title="Move to Bin"
+                              >
+                                <span className="material-symbols-rounded text-xl" aria-hidden="true">delete</span>
+                              </button>
+                            </>
                           )}
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setEditing(p);
-                            }}
-                            className="text-destiny-grey/40 dark:text-white/40 transition hover:text-destiny-orange group-hover:text-destiny-orange"
-                            aria-label={`Edit ${p.title}`}
-                          >
-                            <span className="material-symbols-rounded text-xl" aria-hidden="true">edit</span>
-                          </button>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              duplicate(p);
-                            }}
-                            className="text-destiny-grey/40 dark:text-white/40 transition hover:text-destiny-orange"
-                            aria-label={`Duplicate ${p.title}`}
-                            title="Duplicate"
-                          >
-                            <span className="material-symbols-rounded text-xl" aria-hidden="true">content_copy</span>
-                          </button>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              remove(p);
-                            }}
-                            className="text-destiny-grey/40 dark:text-white/40 transition hover:text-destiny-red"
-                            aria-label={`Delete ${p.title}`}
-                          >
-                            <span className="material-symbols-rounded text-xl" aria-hidden="true">delete</span>
-                          </button>
                         </div>
                       </td>
                     </tr>
@@ -492,6 +679,7 @@ export default function AdminPostsPage() {
           key={"id" in editing ? editing.id : "new"}
           post={"id" in editing ? editing : null}
           template={"template" in editing ? editing.template : undefined}
+          tagSuggestions={allTags}
           onClose={() => setEditing(null)}
           onSaved={() => {
             setEditing(null);

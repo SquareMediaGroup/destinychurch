@@ -36,8 +36,9 @@ export async function generateMetadata({ params, searchParams }: Props): Promise
       description: post.description ?? undefined,
       images: image ? [image] : undefined,
     },
-    // A preview link must never end up in a search index.
-    robots: preview ? { index: false, follow: false } : undefined,
+    // A preview link must never end up in a search index, and nor must a page
+    // the admin asked to keep out of search (a QR-only page).
+    robots: preview || post.hide_from_search ? { index: false, follow: false } : undefined,
   };
 }
 
@@ -49,6 +50,22 @@ export default async function SlugPage({ params, searchParams }: Props) {
   const found = await getPostForView(slug, previewParam(await searchParams));
   if (found) {
     const { post, preview } = found;
+    // Count the view for the admin list's "Views" column. Previews are the
+    // editor checking their own work, so they aren't counted. Read the request
+    // now: after() callbacks can't call headers() — see readRequestContext().
+    if (!preview) {
+      const ctx = readRequestContext(await headers());
+      const campaign = readCampaignParams(await searchParams);
+      after(() =>
+        recordEngagement({
+          source: "post_view",
+          targetKey: post.id,
+          targetLabel: `/${post.slug}`,
+          ...ctx,
+          ...campaign,
+        }),
+      );
+    }
     const plain = post.hero_style === "plain" || (post.hero_style === "image" && !post.hero_image_url);
     return (
       <article className="bg-white pb-24">

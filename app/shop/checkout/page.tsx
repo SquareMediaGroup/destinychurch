@@ -101,6 +101,15 @@ export default function CheckoutPage() {
         setLoading(false);
         return;
       }
+      // A basket with only the free item needs no payment — the order is
+      // already complete.
+      if (data.free) {
+        clear();
+        router.push(
+          `/shop/checkout/success?order=${encodeURIComponent(data.orderNumber)}&redirect_status=succeeded`,
+        );
+        return;
+      }
       setClientSecret(data.clientSecret);
       setOrderNumber(data.orderNumber);
     } catch {
@@ -266,7 +275,7 @@ export default function CheckoutPage() {
                 )}
 
                 <Button type="submit" size="cta" fullWidth loading={loading}>
-                  {loading ? "Starting…" : "Continue to payment"}
+                  {loading ? "Starting…" : subtotal === 0 ? "Place order" : "Continue to payment"}
                   <span className="material-symbols-rounded text-lg" aria-hidden="true">arrow_forward</span>
                 </Button>
               </form>

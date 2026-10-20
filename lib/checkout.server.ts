@@ -6,7 +6,13 @@ import { z } from "zod";
 import { customAlphabet } from "nanoid";
 import { Resend } from "resend";
 import { createServiceClient } from "@/utils/supabase/service";
-import { formatPrice, type OrderItem, type OrderWithItems } from "@/lib/shop";
+import {
+  FREE_ITEM_LIMIT,
+  FREE_ITEM_LIMIT_MESSAGE,
+  formatPrice,
+  type OrderItem,
+  type OrderWithItems,
+} from "@/lib/shop";
 import { recordNotification } from "@/lib/notify.server";
 
 const orderId = customAlphabet("ACDEFGHJKLMNPQRSTUVWXYZ23456789", 8);
@@ -120,8 +126,36 @@ export async function buildPendingOrder(input: CheckoutInput): Promise<BuildResu
   }
 
   const total = subtotal; // collection-only: no shipping/handling
-  if (total <= 0) {
-    return { ok: false, status: 400, error: "Your basket is empty." };
+
+  // One free item per customer, ever. The claim itself is taken when the order
+  // completes (claimFreeItem); this check turns away a basket that can't pass.
+  const free = orderItems.reduce(
+    (n, oi) => n + (oi.unit_price_pennies === 0 ? oi.quantity : 0),
+    0,
+  );
+  if (free > FREE_ITEM_LIMIT) {
+    return {
+      ok: false,
+      status: 409,
+      error: `${FREE_ITEM_LIMIT_MESSAGE} Please remove the extra free items from your basket.`,
+    };
+  }
+  if (free > 0) {
+    const { data: claim, error: claimErr } = await supabase
+      .from("shop_free_item_claims")
+      .select("email")
+      .eq("email", normalizeEmail(customer.email))
+      .maybeSingle();
+    if (claimErr) {
+      return { ok: false, status: 500, error: "Could not load your basket" };
+    }
+    if (claim) {
+      return {
+        ok: false,
+        status: 409,
+        error: `You've already had your free item. ${FREE_ITEM_LIMIT_MESSAGE}`,
+      };
+    }
   }
 
   const orderNumber = `DT-${orderId()}`;
@@ -156,6 +190,23 @@ export async function buildPendingOrder(input: CheckoutInput): Promise<BuildResu
   }
 
   return { ok: true, orderDbId: order.id, orderNumber, total };
+}
+
+function normalizeEmail(email: string): string {
+  return email.trim().toLowerCase();
+}
+
+/**
+ * Take this customer's one free-item claim for an order. Returns false if the
+ * email already has one — the unique row is what stops two checkouts racing.
+ */
+export async function claimFreeItem(email: string, orderDbId: string): Promise<boolean> {
+  const { error } = await createServiceClient()
+    .from("shop_free_item_claims")
+    .insert({ email: normalizeEmail(email), order_id: orderDbId });
+  if (!error) return true;
+  if (error.code === "23505") return false;
+  throw new Error(`Could not record free item claim: ${error.message}`);
 }
 
 /** Delete a pending order (used to roll back if Stripe setup fails). */
@@ -195,6 +246,26 @@ export async function finalizeOrderPaid(orderDbId: string): Promise<boolean> {
   if (!claimed || claimed.length === 0) return false;
 
   const items = ((order as OrderWithItems).items ?? []) as OrderItem[];
+
+  // Paid orders carrying a free item take the claim here, once payment is in.
+  // A free-only order already took it before completing (see the checkout
+  // route), so its own row is the conflict and is ignored.
+  if (items.some((item) => item.unit_price_pennies === 0)) {
+    const { data: existing } = await supabase
+      .from("shop_free_item_claims")
+      .select("order_id")
+      .eq("email", normalizeEmail(order.customer_email))
+      .maybeSingle();
+    if (!existing) {
+      await claimFreeItem(order.customer_email, order.id).catch((err) =>
+        console.error(`Free item claim failed for ${order.order_number}:`, err),
+      );
+    } else if (existing.order_id !== order.id) {
+      console.warn(
+        `⚠️ Order ${order.order_number} paid with a free item, but this customer had already claimed one`,
+      );
+    }
+  }
   // Each decrement is an independent atomic RPC (see the
   // decrement_variant_stock migration) — a read-then-write here would let two
   // concurrent finalizations both read the same starting stock and clobber each

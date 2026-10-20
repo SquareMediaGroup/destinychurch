@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { API, BIN_DAYS, type Post } from "@/lib/posts";
+import { API, BIN_DAYS, postState, type Post, type PostState } from "@/lib/posts";
 import {
   PageHeader,
   Badge,
@@ -19,6 +19,7 @@ import {
 import { useToast } from "@/components/ToastProvider";
 import { relativeTime } from "@/lib/audit";
 import { POST_TEMPLATES, type PostTemplate } from "@/lib/postTemplates";
+import { SavedTemplates } from "@/components/admin/posts/SavedTemplates";
 import { useAdminList, useRowSelection } from "@/lib/useAdminList";
 import { PostEditor } from "@/components/admin/posts/PostEditor";
 import { useDialog } from "@/components/DialogProvider";
@@ -92,11 +93,12 @@ export default function AdminPostsPage() {
       {
         key: "status",
         options: [
-          { value: "published", label: "Published" },
+          { value: "live", label: "Live" },
+          { value: "scheduled", label: "Scheduled" },
+          { value: "ended", label: "Ended" },
           { value: "draft", label: "Draft" },
         ],
-        match: (post, value) =>
-          value === "published" ? post.is_published : !post.is_published,
+        match: (post, value) => postState(post) === value,
       },
       {
         key: "tag",
@@ -107,7 +109,7 @@ export default function AdminPostsPage() {
     sorts: {
       title: (a, b) => a.title.localeCompare(b.title),
       slug: (a, b) => a.slug.localeCompare(b.slug),
-      status: (a, b) => Number(a.is_published) - Number(b.is_published),
+      status: (a, b) => STATE_ORDER[postState(a)] - STATE_ORDER[postState(b)],
       updated: (a, b) => a.updated_at.localeCompare(b.updated_at),
       views: (a, b) => (a.views_30d ?? 0) - (b.views_30d ?? 0),
     },
@@ -138,11 +140,14 @@ export default function AdminPostsPage() {
     let slug = `${post.slug}-copy`;
     for (let n = 2; taken.has(slug); n++) slug = `${post.slug}-copy-${n}`;
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { id, created_at, updated_at, deleted_at, updated_by, views_30d, ...fields } = post;
+    const { id, created_at, updated_at, deleted_at, updated_by, views_30d, draft, publish_from, publish_until, ...fields } =
+      post;
+    // The copy starts from the latest saved version (draft included) with no
+    // schedule of its own.
     const res = await fetch(API, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ...fields, title: `${post.title} (copy)`, slug, is_published: false }),
+      body: JSON.stringify({ ...fields, ...(draft ?? {}), title: `${post.title} (copy)`, slug, is_published: false }),
     });
     const data = await res.json().catch(() => ({}));
     if (!res.ok) {
@@ -529,11 +534,10 @@ export default function AdminPostsPage() {
                             }}
                             title={p.is_published ? "Unpublish" : "Publish"}
                           >
-                            <Badge tone={p.is_published ? "green" : "grey"}>
-                              {p.is_published ? "Published" : "Draft"}
-                            </Badge>
+                            <Badge tone={STATE_BADGE[postState(p)].tone}>{STATE_BADGE[postState(p)].label}</Badge>
                           </button>
                         )}
+                        {!inBin && <ScheduleNote post={p} />}
                       </td>
                       <td
                         className="whitespace-nowrap px-5 py-3.5 text-xs tabular-nums text-destiny-grey/60 dark:text-white/60"
@@ -647,6 +651,12 @@ export default function AdminPostsPage() {
           <p className="mb-4 text-sm text-destiny-grey/60 dark:text-white/60">
             Pick a starting point. Everything in it can be changed or removed.
           </p>
+          <SavedTemplates
+            onPick={(t) => {
+              setChoosingTemplate(false);
+              setEditing({ template: t });
+            }}
+          />
           <div className="grid gap-3 sm:grid-cols-2">
             {POST_TEMPLATES.map((t) => (
               <button
@@ -680,7 +690,11 @@ export default function AdminPostsPage() {
           post={"id" in editing ? editing : null}
           template={"template" in editing ? editing.template : undefined}
           tagSuggestions={allTags}
-          onClose={() => setEditing(null)}
+          // Draft saves don't close the editor, so refresh on the way out too.
+          onClose={() => {
+            setEditing(null);
+            load();
+          }}
           onSaved={() => {
             setEditing(null);
             setError("");
@@ -691,6 +705,45 @@ export default function AdminPostsPage() {
         />
       )}
     </div>
+  );
+}
+
+const STATE_ORDER: Record<PostState, number> = { draft: 0, scheduled: 1, live: 2, ended: 3 };
+
+const STATE_BADGE: Record<PostState, { label: string; tone: string }> = {
+  live: { label: "Live", tone: "green" },
+  scheduled: { label: "Scheduled", tone: "orange" },
+  ended: { label: "Ended", tone: "grey" },
+  draft: { label: "Draft", tone: "grey" },
+};
+
+const shortDate = (iso: string) =>
+  new Date(iso).toLocaleString(undefined, { day: "numeric", month: "short", hour: "numeric", minute: "2-digit" });
+
+/** The line under the status badge: when it goes live or ends, and waiting changes. */
+function ScheduleNote({ post }: { post: Post }) {
+  const state = postState(post);
+  const note =
+    state === "scheduled" && post.publish_from
+      ? `Goes live ${shortDate(post.publish_from)}`
+      : state === "live" && post.publish_until
+        ? `Ends ${shortDate(post.publish_until)}`
+        : state === "ended" && post.publish_until
+          ? `Ended ${shortDate(post.publish_until)}`
+          : null;
+  if (!note && !(post.draft && post.is_published) && !post.review_requested_at) return null;
+  return (
+    <span className="mt-1 block space-y-0.5 text-[11px] text-destiny-grey/45 dark:text-white/45">
+      {post.review_requested_at && (
+        <span className="block whitespace-nowrap font-bold text-destiny-orange">
+          Needs review{post.review_requested_by ? ` (${post.review_requested_by})` : ""}
+        </span>
+      )}
+      {note && <span className="block whitespace-nowrap">{note}</span>}
+      {post.draft && post.is_published && (
+        <span className="block whitespace-nowrap text-amber-700 dark:text-amber-300">Unpublished changes</span>
+      )}
+    </span>
   );
 }
 

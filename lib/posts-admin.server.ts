@@ -70,3 +70,33 @@ export async function postViewCounts(supabase: ServiceClient): Promise<Map<strin
     ((data ?? []) as { post_id: string; views: number | string }[]).map((r) => [r.post_id, Number(r.views)]),
   );
 }
+
+/** How many revisions are kept per post. */
+export const REVISIONS_KEPT = 30;
+
+/** Adds a revision and trims the post's history to the newest REVISIONS_KEPT. */
+export async function recordRevision(
+  supabase: ServiceClient,
+  postId: string,
+  kind: "draft" | "published",
+  snapshot: Record<string, unknown>,
+  createdBy: string | null,
+): Promise<void> {
+  const { error } = await supabase
+    .from("post_revisions")
+    .insert({ post_id: postId, kind, snapshot, created_by: createdBy });
+  if (error) {
+    // History is a safety net; a failed write mustn't fail the save.
+    console.error("⚠️ post_revisions insert failed:", error.message);
+    return;
+  }
+  const { data: stale } = await supabase
+    .from("post_revisions")
+    .select("id")
+    .eq("post_id", postId)
+    .order("created_at", { ascending: false })
+    .range(REVISIONS_KEPT, REVISIONS_KEPT + 50);
+  if (stale && stale.length > 0) {
+    await supabase.from("post_revisions").delete().in("id", stale.map((r) => r.id));
+  }
+}

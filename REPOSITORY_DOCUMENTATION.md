@@ -1274,6 +1274,10 @@ CREATE TABLE posts (
   deleted_at timestamptz,                      -- the Bin; purged after 30 days
   updated_by text,                             -- admin name (or email) of the last save
   review_link_version integer NOT NULL DEFAULT 0, -- in every preview token; bump = revoke all
+  -- Safety (20261020_03_posts_safety.sql)
+  draft jsonb,                                 -- unpublished edits to a live page (DRAFT_FIELDS)
+  publish_from timestamptz,                    -- served only from here, when set
+  publish_until timestamptz,                   -- taken down here, when set (CHECK until > from)
   created_at timestamptz DEFAULT now(),
   updated_at timestamptz DEFAULT now()
 );
@@ -1284,8 +1288,10 @@ CREATE TABLE posts (
 **Why presets, not styling:** the page settings are deliberately page-level choices (how the page
 opens, what it says when shared, whether the rails show) rather than per-element colours, spacing
 or layout. That's what keeps the Posts editor a page builder that non-designers can use without
-producing off-brand pages. Columns/sections, per-block styling, revisions and scheduling were
-considered and left out on purpose. `lib/posts-fields.ts` validates these fields for both the
+producing off-brand pages. Columns/sections and per-block styling were considered and left out
+on purpose. (Revisions and scheduling were too, at first; they were added in October 2026 once
+Posts was being used for campaign pages that need to come down on time and edits that need a way
+back. See below.) `lib/posts-fields.ts` validates these fields for both the
 POST and PATCH routes.
 
 **The Bin, not a delete:** `DELETE /api/admin/posts/[id]` sets `deleted_at`, which takes the page
@@ -1294,6 +1300,65 @@ deletes for good (`?permanent=1`, only for a binned post). Binned posts older th
 purged by the list endpoint itself rather than a cron (Vercel Hobby allows only daily crons, and
 the Bin only matters to someone looking at the list). A binned post keeps its slug, so restoring
 can't collide.
+
+**Drafts of live pages:** the editor's buttons are *Save draft* and *Publish* (*Publish changes*
+once live); there's no published switch in the form any more. On a live page, Save draft (and
+Preview, and Ctrl/Cmd+S) PATCHes with `mode: "draft"`, which stores the content fields
+(`DRAFT_FIELDS` in `lib/posts.ts`: title, slug, body, header, subtitle, description, share image,
+rails) in `posts.draft`, keeping only what differs from the live columns, so the public page doesn't
+change. `mode: "publish"` writes everything, publishes and clears the draft; `mode: "discard_draft"`
+drops it. Tags, search visibility and the schedule are settings about the page and apply on any
+save. Previews and review links show the draft laid over the live page. A page that has never been
+published doesn't use `draft`: it is all draft.
+
+**Old URLs keep working:** publishing a live page with a new slug inserts a `redirects` row from
+the old slug to `/<new>` (unless the editor's "send people from the old link" box is unticked),
+repoints existing redirects that targeted the old slug (so nothing chains), and audits it.
+`checkSlug` lets a post take back a slug held by a redirect that points at itself
+(`reclaimsRedirectId`), and the publish deletes that redirect.
+
+**Scheduling:** `postState()` (`lib/posts.ts`) is draft / scheduled / live / ended from
+`is_published`, `publish_from` and `publish_until`. `getPostForView` serves only `live`; the
+sitemap likewise. The page is `force-dynamic`, so a page comes down on time with no cron.
+
+**History:** `post_revisions` (post_id, kind draft|published, snapshot of the content fields,
+created_by, created_at; service-role only) gets a row on every create, draft save and publish;
+`recordRevision` keeps the newest 30 per post. `GET /api/admin/posts/[id]/revisions` lists them
+without content, `…/revisions/[revisionId]` returns one. "Bring back" in the editor's History tab
+loads the snapshot into the form unsaved, so restoring goes through the normal save or publish.
+
+**Block widths and the Landing template:** Gallery, Card grid and Video have a `size` prop
+(`components/blocks/size.ts`: normal | wide | full, default normal so old content parses
+unchanged). It's honoured only where `RichContent` gets `allowWide`, which only
+`app/[slug]/page.tsx` passes: Wide reaches ~1100px on large screens, Full goes edge to edge
+(`.dc-bleed` in globals.css). A page with any wide or full block (`hasWideBlocks`) drops its promo
+rails, because full-bleed needs the article centred. Training, jobs and shop never show the Width
+field (`BlockInspector`/`BlockTools` `allowWide`). The built-in "Landing page" template uses them.
+
+**Editor extras (migration `20261020_04_posts_editor.sql`):**
+- *Saved templates:* `post_templates` (label, description, fields jsonb, created_by). "Save as
+  template" in Page settings stores the content and page settings (not URL, schedule or tags);
+  they show above the built-in starters in the New post picker, with delete.
+- *Ready for review:* `posts.review_requested_at/_by`. "Ask for review" saves the page and
+  notifies Posts admins (bell, `roles: ["site_admin"]`); the list shows "Needs review";
+  publishing (PATCH `mode: "publish"`) or "Withdraw" clears it.
+- *Who's editing:* `post_editing` (post_id, auth_user_id, name, seen_at). The open editor POSTs a
+  heartbeat every 20s while visible (`usePostPresence`) and DELETEs on close; anyone seen in the
+  last minute shows as "Sam is also editing this page". Polled, not Realtime.
+- *"/" menu:* typing `/` on an empty line opens `SlashMenu` to insert a block by keyboard.
+- *Image library:* `GET /api/admin/posts/media` lists the `post-media` bucket; `MediaLibraryModal`
+  is offered from `ImageField` (where the uploader is the posts one) and the editor toolbar.
+- *Device preview:* Preview saves a draft and shows the signed preview link in a frame at phone,
+  tablet and computer widths (`DevicePreview`), with "Open in a new tab".
+- *Writing help:* `POST /api/admin/posts/suggest` (OpenAI, `SMART_SEARCH_MODEL`) suggests a
+  description from the page, or alt text for the selected image. Always put in front of the admin
+  to edit; 503 when no key is set.
+- *Link check:* `POST /api/admin/posts/check-links` checks up to 25 links in the body: internal
+  ones against posts and redirects, external ones by HEAD/GET with redirects followed by hand and
+  every hop's host checked with `isPrivateHost` (`lib/postLinks.ts`).
+- *Promote:* the Share panel links to `/admin/popup` and `/admin/banner` with `?promote=1…`
+  (`lib/promote.ts`); those pages lay the page's title, description, image and link over the
+  loaded settings, unsaved, with a note, and clear the params from the URL.
 
 **Edit conflicts:** the editor sends the `updated_at` it loaded as `expected_updated_at`; PATCH
 returns 409 with the current row if someone saved since, and the editor names who and offers to
@@ -3534,12 +3599,19 @@ The member-facing pieces of the `/training` resource library.
 - `useTrainingProgress.ts` — Per-browser completion store in `localStorage` (no per-user accounts; trainees share a group password). Exposes `useCompletedSet()` and `toggleCompleted()`; starts empty on first render to avoid hydration mismatch, then fills in after mount and stays reactive across tabs via a custom event + the `storage` event.
 
 #### Admin Content/Training/HR Components (`components/admin/{posts,training,hr}/*`)
-- `posts/PostEditor.tsx` — Standalone page editor (uses `RichTextEditor`). Full-screen at **both** breakpoints; only the panel placement differs. Desktop gets the permanent Blocks and Settings sidebars; mobile edits the title in the header, puts the slug and published switch behind a "Page settings" sheet, and gives the rest of the screen to the editor. It was previously a `Modal` on mobile — the whole form inside a scrolling popup, with the editor capped at 420px and scrolling separately inside that, so the page content got about a third of the screen and a newly added block was immediately pushed out of sight. The desktop right sidebar has **Page** and **Block** tabs: Page holds the URL and `PageSettings`, Block the `BlockInspector`; selecting a block switches to Block and deselecting returns to Page (derived from the selection, not synced by an effect). Tracks unsaved changes (closing, Escape and tab close ask first), saves on Ctrl/Cmd+S, and has a **Preview** button that saves then opens a signed preview link. New posts start from a template (`lib/postTemplates.ts`). Saving sends `expected_updated_at` and handles a 409 by naming who saved and offering to replace their changes. The save that publishes a draft shows the pre-publish checklist (`lib/postChecklist.ts`) once as a "Publish anyway?" confirm. A **Share** button opens `ShareModal`.
+- `posts/PostEditor.tsx` — Standalone page editor (uses `RichTextEditor`). Full-screen at **both** breakpoints; only the panel placement differs. Desktop gets the permanent Blocks and Settings sidebars; mobile edits the title in the header, puts the slug and published switch behind a "Page settings" sheet, and gives the rest of the screen to the editor. It was previously a `Modal` on mobile — the whole form inside a scrolling popup, with the editor capped at 420px and scrolling separately inside that, so the page content got about a third of the screen and a newly added block was immediately pushed out of sight. The desktop right sidebar has **Page**, **Block** and **History** tabs (History is described under `HistoryPanel`). Buttons are **Save draft** and **Publish** / **Publish changes**, with a banner when a live page has unpublished changes (Publish them / Discard) and "Unpublish this page" in Page settings. The first two tabs: Page holds the URL and `PageSettings`, Block the `BlockInspector`; selecting a block switches to Block and deselecting returns to Page (derived from the selection, not synced by an effect). Tracks unsaved changes (closing, Escape and tab close ask first), saves on Ctrl/Cmd+S, and has a **Preview** button that saves then opens a signed preview link. New posts start from a template (`lib/postTemplates.ts`). Saving sends `expected_updated_at` and handles a 409 by naming who saved and offering to replace their changes. The save that publishes a draft shows the pre-publish checklist (`lib/postChecklist.ts`) once as a "Publish anyway?" confirm. A **Share** button opens `ShareModal`.
 - `posts/ShareModal.tsx` — Copy link, channel-tagged links (`?s=social&utm_source=whatsapp` etc., so Analytics can tell channels apart), the printable QR code (reuses `RedirectQrModal`, same `/<slug>` namespace), and 7-day review links with "Turn off all review links".
 - `posts/PublishChecklist.tsx` — Renders `lib/postChecklist.ts` at the top of Page settings: empty page, long title, missing/long description, no share image, images without alt text (body and gallery), buttons with no link. Warnings only.
 - `posts/SharePreview.tsx` — A WhatsApp/Facebook-style link card from the same fallbacks the page metadata uses.
 - `posts/TagsField.tsx` — Tag chips with suggestions from tags already in use (case-insensitive reuse).
-- `posts/PageSettings.tsx` — Page-level settings shared by the desktop sidebar and the mobile sheet: header style picker (Plain / Image / Banner thumbnails), header image, subtitle, description with a 160-character counter, share image (with `SharePreview`), the promo-rails toggle, "Hide from search engines" and tags. The checklist sits at the top. Reuses the block inspector's field components (`ImageField`, `TextField`, …) so uploads go through the same `post-media` route.
+- `posts/PageSettings.tsx` — Page-level settings shared by the desktop sidebar and the mobile sheet: header style picker (Plain / Image / Banner thumbnails), header image, subtitle, description with a 160-character counter, share image (with `SharePreview`), the promo-rails toggle, "Hide from search engines", tags and the schedule (`ScheduleFields`: go-live and take-down times as local datetime inputs). The checklist sits at the top.
+- `posts/MediaLibraryModal.tsx` — Grid of images already in `post-media`, newest first, with "Show more"; returns the picked URL.
+- `posts/DevicePreview.tsx` — Full-screen frame of the signed preview link at phone (390), tablet (820) and computer (1440, scaled to fit) widths. Escape closes it, not the editor.
+- `posts/LinkCheck.tsx` — "Check links" box under the checklist in Page settings; lists broken links and where they are.
+- `posts/SavedTemplates.tsx` — Saved templates in the New post picker, with delete; hidden when there are none.
+- `posts/usePostPresence.ts` — Heartbeat hook for "who else is editing" plus `presenceLine()`.
+- `blocks/SlashMenu.tsx` — The "/" block menu beside the rich-text editor; open whenever the cursor's paragraph reads `/query`, keys captured before ProseMirror sees them.
+- `posts/HistoryPanel.tsx` — The editor's History tab (a sheet on mobile): saved versions with who and when, and "Bring back", which loads one into the form unsaved. Reuses the block inspector's field components (`ImageField`, `TextField`, …) so uploads go through the same `post-media` route.
 - `training/PostEditor.tsx` — Training post editor (uses `RichTextEditor`). Still a `Modal` on mobile: its body is one field among many rather than the whole point of the screen, and it inherits the mobile block sheets and toolbar from `BlockTools` either way.
 - `training/CategoryModal.tsx`, `SubgroupModal.tsx`, `FolderModal.tsx`, `IconPicker.tsx` — Training tree CRUD modals
 - `hr/HrUI.tsx` — Staff directory, leave requests, documents (main HR dashboard shell)
@@ -3723,11 +3795,13 @@ stay: they're consent and legal, not chrome.
 - `HomePageBody.tsx` — the whole homepage composition, extracted as a server
   component so the real page (`app/page.tsx`) and the variant-preview route
   (`app/home/page.tsx`) render identical markup with a different event-card
-  treatment (`cardVariant`) rather than duplicating the layout. It resolves the
-  latest sermon once — `getLatestVideo()`, falling back to `getLatestVideoFromRSS()`
-  when the YouTube quota is exceeded — and renders, in order: `HomeOverscrollColor`,
-  `HeroSection`, `MissionSection`, `LatestSermonSection`, `WhatsOnSection`,
-  `EveryoneHasAPlaceSection`, `WorshipWithUsSection`, `GetInvolvedSection`.
+  treatment (`cardVariant`) rather than duplicating the layout. It renders, in
+  order: `HomeOverscrollColor`, `HeroSection`, `ServiceTimesBar`, `MissionSection`,
+  `LatestSermonSection`, `WhatsOnSection`, `EveryoneHasAPlaceSection`,
+  `WorshipWithUsSection`, `GetInvolvedSection`. The latest sermon (`getLatestVideo()`,
+  falling back to `getLatestVideoFromRSS()` when the YouTube quota is exceeded) and
+  `WhatsOnSection` each stream in behind their own `<Suspense>`, so the hero (the
+  page's LCP element) never waits on YouTube or Supabase.
 - `HomeOverscrollColor.tsx` — a render-nothing client component that sets
   `document.documentElement.style.background` to Destiny orange (`#F58021`) on
   mount and restores it on unmount, so the overscroll/rubber-band area at the top
@@ -4350,10 +4424,54 @@ and stamps `long_outage_alerted_at`. Amber alerts and maintenance never email.
 ```typescript
 // GET: every post including the Bin, each with views_30d (post_view_counts RPC);
 //      purges binned posts older than 30 days first (lib/posts-admin.server.ts)
-// PATCH: partial update. expected_updated_at → 409 { conflict, current } if
-//        someone saved since; restore: true takes it out of the Bin;
-//        sets updated_by from the admin profile name (else email)
+// PATCH: partial update. mode: "draft" | "publish" | "discard_draft" (see the
+//        posts schema notes); none = direct write (list toggle, Bin restore).
+//        expected_updated_at → 409 { conflict, current } if someone saved
+//        since; restore: true takes it out of the Bin; redirect_old_slug:
+//        false skips the old-URL redirect; returns redirected_from when one
+//        was made. Sets updated_by from the admin profile name (else email)
 // DELETE: moves to the Bin; ?permanent=1 deletes a binned post for good
+```
+
+#### `GET /api/admin/posts/[id]/revisions` · `GET …/revisions/[revisionId]`
+```typescript
+// The post's saved versions (newest 30), newest first, without content;
+// then one version's snapshot. Read-only: restoring happens in the editor.
+```
+
+#### `GET|POST /api/admin/posts/templates` · `DELETE …/templates/[templateId]`
+```typescript
+// Saved post templates (audited). POST { label, description?, fields } keeps
+// the content and page settings only.
+```
+
+#### `POST|DELETE /api/admin/posts/[id]/review`
+```typescript
+// POST { note? }: marks the post for review and notifies site_admin (audited).
+// DELETE withdraws. Publishing also clears it.
+```
+
+#### `POST|DELETE /api/admin/posts/[id]/editing`
+```typescript
+// Editor heartbeat (audit-exempt). POST returns { others: [{ name }] } seen
+// in the last 60s; DELETE on close. Stale rows are swept occasionally.
+```
+
+#### `GET /api/admin/posts/media`
+```typescript
+// The post-media bucket, newest first, 60 per page: { items, nextOffset }.
+```
+
+#### `POST /api/admin/posts/suggest`
+```typescript
+// Writing help (audit-exempt, nothing stored). { kind: "description", title, body }
+// or { kind: "alt", src } → { suggestion }. 503 without an OpenAI key.
+```
+
+#### `POST /api/admin/posts/check-links`
+```typescript
+// { body } → { checked, problems: [{ href, where, problem }], truncated }.
+// Max 25 links; private hosts refused on every redirect hop (audit-exempt).
 ```
 
 #### `GET /api/admin/posts/check-slug`
@@ -5375,11 +5493,20 @@ mid-service behaviour.
 
 ---
 
-### `lib/iconNames.ts` / `scripts/sync-icon-names.mjs` — icon font subset
+### `lib/iconNames.ts` / `lib/iconFont.ts` / `scripts/sync-icon-names.mjs` — icon font subset
 
-The Material Symbols Rounded font is ~410 KB in full. `app/layout.tsx` requests it from
-Google Fonts with `&icon_names=…` built from `ICON_NAMES`, which brings it down to ~40 KB
-(PageSpeed flagged the full font as the page's largest and render-blocking resource).
+The Material Symbols Rounded font is ~410 KB in full. Google Fonts subsets it with
+`&icon_names=…` built from `ICON_NAMES`, which brings it down to ~40 KB (PageSpeed flagged
+the full font as the page's largest and render-blocking resource).
+
+- **Self-hosted.** The script downloads that subset to
+  `public/fonts/material-symbols-rounded-<hash>.woff2` (hash of the icon list, so a new
+  list gets a new file under the year-long `/fonts` cache) and writes its path to
+  `lib/iconFont.ts`. `app/layout.tsx` inlines the `@font-face` plus Google's own
+  `.material-symbols-rounded` rule in a `<style>`, so no page waits on a render-blocking
+  stylesheet from fonts.googleapis.com (PageSpeed's largest mobile FCP cost before).
+  The download only happens when the list changes; on CI/Vercel a failed download fails
+  the build, locally it warns and keeps the previous font.
 
 - **Generated, never hand-edited.** `scripts/sync-icon-names.mjs` intersects every quoted
   string literal and bare JSX text under `app/`, `components/`, `lib/`, `contexts/`,

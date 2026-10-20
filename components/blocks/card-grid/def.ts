@@ -1,6 +1,7 @@
 import { z } from "zod";
 import type { BlockDefinition } from "../types";
 import { TONE_OPTIONS } from "../tokens";
+import { sizeField, sizeSchema } from "../size";
 import CardGridBlock, { type CardGridProps } from "./CardGridBlock";
 
 export const cardGridBlock: BlockDefinition<CardGridProps> = {
@@ -29,6 +30,7 @@ export const cardGridBlock: BlockDefinition<CardGridProps> = {
     columns: z.enum(["2", "3"]).default("2"),
     marker: z.enum(["icon", "number", "none"]).default("icon"),
     tone: z.enum(["light", "muted", "orange", "blue", "green", "purple"]).default("light"),
+    size: sizeSchema,
   }),
 
   defaults: {
@@ -41,6 +43,7 @@ export const cardGridBlock: BlockDefinition<CardGridProps> = {
     columns: "2",
     marker: "icon",
     tone: "light",
+    size: "normal",
   },
 
   fields: [
@@ -88,6 +91,7 @@ export const cardGridBlock: BlockDefinition<CardGridProps> = {
       ],
     },
     { kind: "tone", name: "tone", label: "Card colour", options: TONE_OPTIONS },
+    sizeField,
   ],
 
   Component: CardGridBlock,

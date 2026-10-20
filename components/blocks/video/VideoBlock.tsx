@@ -1,10 +1,13 @@
 import MediaEmbed from "@/components/missions/MediaEmbed";
 import type { BlockRenderContext } from "../types";
 import { BODY_MUTED } from "../tokens";
+import type { BlockSize } from "../size";
 
 export interface VideoProps {
   url: string;
   caption: string;
+  /** Posts only: how far it reaches past the column. See ../size.ts. */
+  size: BlockSize;
 }
 
 /**

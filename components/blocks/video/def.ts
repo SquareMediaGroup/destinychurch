@@ -1,5 +1,6 @@
 import { z } from "zod";
 import type { BlockDefinition } from "../types";
+import { sizeField, sizeSchema } from "../size";
 import VideoBlock, { type VideoProps, youTubeId } from "./VideoBlock";
 
 export const videoBlock: BlockDefinition<VideoProps> = {
@@ -14,9 +15,10 @@ export const videoBlock: BlockDefinition<VideoProps> = {
   schema: z.object({
     url: z.string().default(""),
     caption: z.string().default(""),
+    size: sizeSchema,
   }),
 
-  defaults: { url: "", caption: "" },
+  defaults: { url: "", caption: "", size: "normal" },
 
   fields: [
     {
@@ -32,6 +34,7 @@ export const videoBlock: BlockDefinition<VideoProps> = {
       label: "Caption",
       help: "Optional. Also used as the video's accessible title.",
     },
+    sizeField,
   ],
 
   Component: VideoBlock,

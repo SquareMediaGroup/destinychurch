@@ -25,7 +25,7 @@ import { PodcastPlayerProvider } from "@/components/sermons/podcast/PodcastPlaye
 import { createServiceClient } from "@/utils/supabase/service";
 import { unstable_noStore as noStore } from "next/cache";
 import { SpeedInsights } from "@vercel/speed-insights/next";
-import { ICON_NAMES } from "@/lib/iconNames";
+import { ICON_FONT_URL } from "@/lib/iconFont";
 import { SmartSearchVisibilityProvider } from "@/lib/smartSearchVisibility";
 import {
   ADDRESS,
@@ -36,9 +36,20 @@ import {
   SCHEDULE,
 } from "@/lib/churchInfo";
 
-// Subset to the icons the site uses: ~40 KB instead of the full ~410 KB font.
-// ICON_NAMES is regenerated before every dev/build by scripts/sync-icon-names.mjs.
-const MATERIAL_SYMBOLS_URL = `https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,500,0,0&icon_names=${ICON_NAMES.join(",")}&display=block`;
+// Material Symbols, subset to the icons the site uses (~40 KB instead of the
+// full ~410 KB font) and self-hosted: scripts/sync-icon-names.mjs downloads the
+// subset before every dev/build. This is the stylesheet Google serves for it,
+// inlined so no page waits on a render-blocking request to another origin.
+//
+// font-display: block, not the usual swap: every icon on the site is a
+// ligature, so a fallback face would paint the literal text ("shopping_bag",
+// "arrow_forward") before swapping to the glyph. Block is what Google
+// themselves document for Material Symbols.
+//
+// The class rule is Google's own, verbatim. It sits after the app CSS, as the
+// linked stylesheet did, so it keeps overriding the same properties of the
+// .material-symbols-rounded rule in globals.css.
+const MATERIAL_SYMBOLS_CSS = `@font-face{font-family:'Material Symbols Rounded';font-style:normal;font-weight:500;font-display:block;src:url(${ICON_FONT_URL}) format('woff2')}.material-symbols-rounded{font-family:'Material Symbols Rounded';font-weight:normal;font-style:normal;font-size:24px;line-height:1;letter-spacing:normal;text-transform:none;display:inline-block;white-space:nowrap;word-wrap:normal;direction:ltr;-webkit-font-feature-settings:'liga';-webkit-font-smoothing:antialiased}`;
 
 const roboto = Roboto({
   variable: "--font-roboto",
@@ -54,9 +65,15 @@ const anton = Anton({
   weight: "400",
 });
 
+// Playfair and Poppins only appear on a handful of inner pages (italic
+// accents, /twelvetwo), so they are not preloaded. Preloading them put five
+// extra font files (~100 KB) ahead of the hero on every page, which is what
+// PageSpeed's mobile LCP was waiting on. They still load, with swap, on the
+// pages that use them.
 const playfair = Playfair_Display({
   variable: "--font-playfair",
   display: "swap",
+  preload: false,
   subsets: ["latin"],
   weight: ["400", "500", "600", "700"],
   style: ["normal", "italic"],
@@ -65,6 +82,7 @@ const playfair = Playfair_Display({
 const poppins = Poppins({
   variable: "--font-poppins",
   display: "swap",
+  preload: false,
   subsets: ["latin"],
   weight: ["600", "700", "800"],
 });
@@ -278,16 +296,7 @@ export default async function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
-        {/* The stylesheet below is already in the HTML, so fonts.googleapis.com
-            needs no preconnect (Lighthouse flagged it as unused). The font file
-            it points at is only discovered once that CSS arrives, so warming
-            fonts.gstatic.com is what saves the round trip. */}
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
-        {/* display=block, not the usual swap: every icon on the site is a
-            ligature, so a fallback face would paint the literal text
-            ("shopping_bag", "arrow_forward") before swapping to the glyph.
-            Block is what Google themselves document for Material Symbols. */}
-        <link rel="stylesheet" href={MATERIAL_SYMBOLS_URL} />
+        <style dangerouslySetInnerHTML={{ __html: MATERIAL_SYMBOLS_CSS }} />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(orgSchema) }}

@@ -8,6 +8,7 @@ import { getPostForView } from "@/lib/posts.server";
 import { EventsRail, CoursesRail } from "@/components/posts/PostRails";
 import { PostHero, PostPlainTitle } from "@/components/posts/PostHero";
 import RichContent from "@/components/content/RichContent";
+import { hasWideBlocks } from "@/components/blocks/size";
 import { readCampaignParams, readRequestContext, recordEngagement } from "@/lib/engagement.server";
 
 interface Props {
@@ -67,11 +68,15 @@ export default async function SlugPage({ params, searchParams }: Props) {
       );
     }
     const plain = post.hero_style === "plain" || (post.hero_style === "image" && !post.hero_image_url);
+    // Wide and full-width blocks need the article centred, so a page with any
+    // drops the promo rails (components/blocks/size.ts).
+    const wide = hasWideBlocks(post.body);
+    const showRails = post.show_rails && !wide;
     return (
-      <article className="bg-white pb-24">
+      <article className={`bg-white pb-24 ${wide ? "overflow-x-clip" : ""}`}>
         {preview && (
           <div className="sticky top-0 z-40 bg-destiny-grey px-4 py-2 text-center text-xs font-bold uppercase tracking-wider text-white">
-            Preview — this page is not published
+            {post.is_published ? "Preview: these changes aren't live yet" : "Preview: this page is not published"}
           </div>
         )}
         <PostHero post={post} />
@@ -88,23 +93,24 @@ export default async function SlugPage({ params, searchParams }: Props) {
         */}
         <div
           className={`mx-auto grid w-full max-w-3xl px-4 pt-12 lg:px-8 ${
-            post.show_rails
+            showRails
               ? "min-[1600px]:max-w-[1560px] min-[1600px]:grid-cols-[300px_minmax(0,768px)_300px] min-[1600px]:gap-16"
               : ""
           }`}
         >
           {/* Article stays first in the DOM so promo never precedes the content. */}
           <div
-            className={`min-w-0 ${post.show_rails ? "min-[1440px]:col-start-2 min-[1440px]:row-start-1" : ""}`}
+            className={`min-w-0 ${showRails ? "min-[1440px]:col-start-2 min-[1440px]:row-start-1" : ""}`}
           >
             {plain && <PostPlainTitle post={post} />}
             <RichContent
               html={post.body}
+              allowWide
               className={`rte-content text-[0.97rem] text-destiny-grey/80 ${plain ? "mt-8" : ""}`}
             />
           </div>
 
-          {post.show_rails && (
+          {showRails && (
             <>
               {/* Streamed so a slow ChurchSuite feed can't hold up the post body. */}
               <Suspense fallback={null}>

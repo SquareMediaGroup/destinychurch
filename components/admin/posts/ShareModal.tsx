@@ -6,6 +6,7 @@ import { RedirectQrModal } from "@/components/admin/redirects/RedirectQrModal";
 import { useToast } from "@/components/ToastProvider";
 import { useDialog } from "@/components/DialogProvider";
 import { API, SITE_ORIGIN } from "@/lib/posts";
+import { promoteHref } from "@/lib/promote";
 
 /**
  * Getting the link out, in one place: the plain link, links tagged by where
@@ -51,12 +52,17 @@ export function ShareModal({
   postId,
   slug,
   title,
+  description,
+  image,
   isPublished,
   onClose,
 }: {
   postId: string;
   slug: string;
   title: string;
+  description?: string | null;
+  /** The share or header image, offered to the popup. */
+  image?: string | null;
   /** As saved, not as toggled in the editor. */
   isPublished: boolean;
   onClose: () => void;
@@ -127,6 +133,37 @@ export function ShareModal({
               <span className="material-symbols-rounded text-lg" aria-hidden="true">qr_code_2</span>
               QR code for print
             </button>
+          </section>
+        ) : null}
+
+        {isPublished ? (
+          <section className="border-t border-black/5 pt-4 dark:border-white/8">
+            <p className="text-sm font-bold text-destiny-grey dark:text-white">Promote on the site</p>
+            <p className="mb-3 text-xs text-destiny-grey/55 dark:text-white/55">
+              Opens the popup or banner settings with this page filled in. Nothing changes until you save there.
+            </p>
+            <div className="grid grid-cols-2 gap-2">
+              {(
+                [
+                  ["popup", "Site popup", "web_asset"],
+                  ["banner", "Banner", "campaign"],
+                ] as const
+              ).map(([target, label, icon]) => (
+                <a
+                  key={target}
+                  href={promoteHref(target, {
+                    title,
+                    text: description ?? "",
+                    link: `/${slug}`,
+                    image: image ?? null,
+                  })}
+                  className={`${ghostBtn} w-full`}
+                >
+                  <span className="material-symbols-rounded text-lg" aria-hidden="true">{icon}</span>
+                  {label}
+                </a>
+              ))}
+            </div>
           </section>
         ) : (
           <p className="rounded-xl bg-[#f5f7fa] px-3 py-2.5 text-xs text-destiny-grey/60 dark:bg-white/5 dark:text-white/60">

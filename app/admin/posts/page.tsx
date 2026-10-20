@@ -19,6 +19,7 @@ import {
 import { useToast } from "@/components/ToastProvider";
 import { relativeTime } from "@/lib/audit";
 import { POST_TEMPLATES, type PostTemplate } from "@/lib/postTemplates";
+import { SavedTemplates } from "@/components/admin/posts/SavedTemplates";
 import { useAdminList, useRowSelection } from "@/lib/useAdminList";
 import { PostEditor } from "@/components/admin/posts/PostEditor";
 import { useDialog } from "@/components/DialogProvider";
@@ -650,6 +651,12 @@ export default function AdminPostsPage() {
           <p className="mb-4 text-sm text-destiny-grey/60 dark:text-white/60">
             Pick a starting point. Everything in it can be changed or removed.
           </p>
+          <SavedTemplates
+            onPick={(t) => {
+              setChoosingTemplate(false);
+              setEditing({ template: t });
+            }}
+          />
           <div className="grid gap-3 sm:grid-cols-2">
             {POST_TEMPLATES.map((t) => (
               <button
@@ -724,9 +731,14 @@ function ScheduleNote({ post }: { post: Post }) {
         : state === "ended" && post.publish_until
           ? `Ended ${shortDate(post.publish_until)}`
           : null;
-  if (!note && !(post.draft && post.is_published)) return null;
+  if (!note && !(post.draft && post.is_published) && !post.review_requested_at) return null;
   return (
     <span className="mt-1 block space-y-0.5 text-[11px] text-destiny-grey/45 dark:text-white/45">
+      {post.review_requested_at && (
+        <span className="block whitespace-nowrap font-bold text-destiny-orange">
+          Needs review{post.review_requested_by ? ` (${post.review_requested_by})` : ""}
+        </span>
+      )}
       {note && <span className="block whitespace-nowrap">{note}</span>}
       {post.draft && post.is_published && (
         <span className="block whitespace-nowrap text-amber-700 dark:text-amber-300">Unpublished changes</span>

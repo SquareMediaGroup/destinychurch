@@ -53,7 +53,7 @@ import { useSelectedBlock } from "./useSelectedBlock";
  * on purpose — the desktop one is not a smaller version of anything, it is a
  * mouse-shaped one.
  */
-export function BlockTools({ editor }: { editor: Editor | null }) {
+export function BlockTools({ editor, allowWide = false }: { editor: Editor | null; allowWide?: boolean }) {
   const [sheet, setSheet] = useState<"blocks" | "settings" | "more" | null>(null);
   const selected = useSelectedBlock(editor);
   const def = selected ? BLOCKS[selected.blockName] : undefined;
@@ -181,7 +181,7 @@ export function BlockTools({ editor }: { editor: Editor | null }) {
           onClose={() => setSheet(null)}
         >
           {/* No onClose: the sheet owns the header, and its own close button. */}
-          <BlockInspector editor={editor} layout="sheet" />
+          <BlockInspector editor={editor} layout="sheet" allowWide={allowWide} />
         </Sheet>
       )}
 

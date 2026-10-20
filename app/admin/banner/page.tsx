@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import type { BannerType } from "@/contexts/BannerContext";
+import { clearPromoteFromUrl, readPromote } from "@/lib/promote";
 
 interface Banner {
   active: boolean;
@@ -57,6 +58,7 @@ export default function AdminBannerPage() {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState("");
+  const [promotedFrom, setPromotedFrom] = useState<string | null>(null);
 
   useEffect(() => {
     fetch("/api/admin/banner")
@@ -68,13 +70,30 @@ export default function AdminBannerPage() {
           b.type === "alpha" || b.type === "youth_alpha"
             ? "announcement"
             : (b.type ?? "announcement");
-        setBanner({
+        const loaded: Banner = {
           active: b.active ?? false,
           message: b.message ?? "",
           type: t,
           link: b.link ?? "",
           link_text: b.link_text ?? "",
-        });
+        };
+        // "Promote" from a post's Share panel: its title and link over the
+        // saved settings, unsaved until Save. Never over a site-wide block.
+        const promo = readPromote(window.location.search);
+        if (promo) {
+          clearPromoteFromUrl();
+          setPromotedFrom(promo.title || "a page");
+          setBanner({
+            ...loaded,
+            active: true,
+            type: loaded.type === "sitewide" ? "announcement" : loaded.type,
+            message: promo.title,
+            link: promo.link,
+            link_text: "Find out more",
+          });
+          return;
+        }
+        setBanner(loaded);
       })
       .catch(() =>
         setError("Couldn't load the current settings. Refresh before saving, or they'll be overwritten."),
@@ -123,6 +142,12 @@ export default function AdminBannerPage() {
           </div>
         ) : (
           <form onSubmit={handleSave} className="flex flex-col gap-6">
+            {promotedFrom && (
+              <p className="rounded-xl bg-destiny-orange/10 px-4 py-3 text-sm text-destiny-orange">
+                Filled in from the page &ldquo;{promotedFrom}&rdquo;. Check it over, then save to put it live. Nothing
+                has changed yet.
+              </p>
+            )}
             {/* Live preview */}
             {banner.active && !!banner.message && (
               isSitewide ? (

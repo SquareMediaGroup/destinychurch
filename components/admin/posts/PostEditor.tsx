@@ -21,6 +21,9 @@ import { BLOCK_LIST } from "@/components/blocks/registry";
 import { BlockPalette } from "@/components/admin/blocks/BlockPalette";
 import { BlockInspector } from "@/components/admin/blocks/BlockInspector";
 import { BlockTools } from "@/components/admin/blocks/BlockTools";
+import { SlashMenu } from "@/components/admin/blocks/SlashMenu";
+import { DevicePreview } from "./DevicePreview";
+import { presenceLine, usePostPresence } from "./usePostPresence";
 
 // Both breakpoints are full-screen document editors; what differs is where the
 // panels live. Desktop has room for permanent Blocks and Settings sidebars,
@@ -224,7 +227,7 @@ export function PostEditor({
   onSaved: () => void;
   onError: (msg: string) => void;
 }) {
-  const { confirm } = useDialog();
+  const { confirm, prompt } = useDialog();
   const isDesktop = useIsDesktop();
   // The editor instance, published by RichTextEditor via onEditor, so the
   // Blocks sidebar and the inspector can drive it.
@@ -263,6 +266,13 @@ export function PostEditor({
   // Bumped when a version is brought back from History: the rich-text editor
   // only reads its value once, so it has to remount to show different content.
   const [editorKey, setEditorKey] = useState(0);
+  // The signed preview link while the in-editor device preview is open.
+  const [devicePreviewUrl, setDevicePreviewUrl] = useState<string | null>(null);
+  // "Ask for review": who asked, cleared by publishing or withdrawing.
+  const [review, setReview] = useState<{ by: string | null } | null>(
+    post?.review_requested_at ? { by: post.review_requested_by ?? null } : null,
+  );
+  const othersEditing = usePostPresence(postId);
   const toast = useToast();
   const checklist = useMemo(() => postChecklist(form), [form]);
   const slugMoving = savedPublished && Boolean(liveSlug) && form.slug !== liveSlug;
@@ -302,8 +312,9 @@ export function PostEditor({
   useScrollLock(true);
 
   async function requestClose() {
-    // Escape inside the share or history panel closes the panel, not the editor.
-    if (shareOpen || historyOpen) return;
+    // Escape inside the share or history panel, or any modal opened from the
+    // editor (the image library), closes that, not the editor.
+    if (shareOpen || historyOpen || devicePreviewUrl || document.querySelector('[data-tour="modal"]')) return;
     if (
       dirty &&
       !(await confirm({
@@ -397,6 +408,7 @@ export function PostEditor({
     setSavedPublished(published);
     setHasDraft(Boolean(data.draft));
     setLiveSlug(data.slug);
+    if (mode === "publish") setReview(null);
     const saved = { ...form, is_published: published };
     setForm(saved);
     setSavedSnapshot(JSON.stringify(saved));
@@ -503,6 +515,79 @@ export function PostEditor({
     else window.open(data.url, "_blank");
   }
 
+  /** Save, then show the draft at phone, tablet and computer widths. */
+  async function openDevicePreview() {
+    const id = await save({ mode: "draft" });
+    if (!id) return;
+    const res = await fetch(`${API}/${id}/preview`);
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || !data.url) {
+      onError(data.error || "Couldn't create a preview link.");
+      return;
+    }
+    setDevicePreviewUrl(data.url);
+  }
+
+  /** Saves the page and asks Posts admins to look it over (bell notification). */
+  async function askForReview() {
+    const note = await prompt({
+      title: "Ask for a review",
+      message: "Posts admins get a notification with a link to this page. Add a note if there's something to look at.",
+      placeholder: "Optional, e.g. Check the dates",
+      confirmLabel: "Ask for review",
+    });
+    if (note === null) return;
+    const id = await save({ mode: "draft" });
+    if (!id) return;
+    const res = await fetch(`${API}/${id}/review`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ note }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      onError(data.error || "Couldn't ask for a review.");
+      return;
+    }
+    setReview({ by: data.review_requested_by ?? null });
+    toast.success("Posts admins have been told it's ready to look at.", "Review requested");
+  }
+
+  async function withdrawReview() {
+    if (!postId) return;
+    const res = await fetch(`${API}/${postId}/review`, { method: "DELETE" });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      onError(data.error || "Couldn't withdraw the request.");
+      return;
+    }
+    setReview(null);
+  }
+
+  /** Keeps this page's content and settings as a starting point for new pages. */
+  async function saveAsTemplate() {
+    const label = await prompt({
+      title: "Save as a template",
+      message:
+        "New pages can start from this one's content and page settings. The URL, schedule and tags aren't included.",
+      placeholder: "Template name, e.g. Conference",
+      defaultValue: form.title,
+      confirmLabel: "Save template",
+    });
+    if (!label?.trim()) return;
+    const res = await fetch(`${API}/templates`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ label, fields: form }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      onError(data.error || "Couldn't save the template.");
+      return;
+    }
+    toast.success(`“${data.label}” is now in the New post picker.`, "Template saved");
+  }
+
   // Latest handlers for the document-level listeners, so they don't need
   // re-binding on every keystroke.
   const handlers = useRef({ requestClose, save: () => save({ mode: "draft" }) });
@@ -575,6 +660,41 @@ export function PostEditor({
     </div>
   );
 
+  // Someone else has the page open: saves would race (the 409 check catches
+  // it, but it's kinder to know before typing).
+  const presenceBanner = othersEditing.length > 0 && (
+    <div className="flex shrink-0 items-center gap-2 border-b border-sky-500/20 bg-sky-500/10 px-4 py-2 text-xs font-medium text-sky-700 dark:text-sky-300">
+      <span className="material-symbols-rounded text-[17px]" aria-hidden="true">group</span>
+      {presenceLine(othersEditing)}
+    </div>
+  );
+
+  const reviewBanner = review && (
+    <div className="flex shrink-0 flex-wrap items-center gap-x-3 gap-y-1 border-b border-destiny-orange/20 bg-destiny-orange/10 px-4 py-2 text-xs text-destiny-orange">
+      <span className="material-symbols-rounded text-[17px]" aria-hidden="true">rate_review</span>
+      <span className="font-medium">
+        {review.by ? `${review.by} asked for a review.` : "Waiting for a review."} Publishing signs it off.
+      </span>
+      <button type="button" onClick={withdrawReview} className="font-bold underline">
+        Withdraw
+      </button>
+    </div>
+  );
+
+  // Less-used page actions, at the foot of Page settings on both layouts.
+  const pageActions = (
+    <div className="flex flex-col gap-2 border-t border-black/8 pt-4 dark:border-white/8">
+      {!review && (
+        <button type="button" className={`${ghostBtn} w-full`} disabled={saving} onClick={askForReview}>
+          Ask for review
+        </button>
+      )}
+      <button type="button" className={`${ghostBtn} w-full`} onClick={saveAsTemplate}>
+        Save as template
+      </button>
+    </div>
+  );
+
   // The publish-state controls Page settings shows on both layouts.
   const unpublishControl = savedPublished && (
     <button
@@ -601,6 +721,7 @@ export function PostEditor({
       onEditor={setEditorInstance}
     />
   );
+  const slashMenu = <SlashMenu editor={editorInstance} />;
 
   // ── Desktop: full-screen document editor ──────────────────────────────
   if (isDesktop) {
@@ -638,7 +759,7 @@ export function PostEditor({
                 Unsaved changes
               </span>
             )}
-            <button type="button" className={ghostBtn} disabled={saving} onClick={preview}>
+            <button type="button" className={ghostBtn} disabled={saving} onClick={openDevicePreview}>
               Preview
             </button>
             <button
@@ -671,6 +792,8 @@ export function PostEditor({
           </div>
         </div>
         {draftBanner}
+        {reviewBanner}
+        {presenceBanner}
 
         {/*
           Blocks sidebar | canvas | settings sidebar.
@@ -725,11 +848,12 @@ export function PostEditor({
                       checklist={checklist}
                       tagSuggestions={tagSuggestions}
                     />
+                    <div className="mt-5">{pageActions}</div>
                   </div>
                 ) : rightTab === "history" ? (
                   <HistoryPanel postId={postId} refreshKey={loadedUpdatedAt} onRestore={restoreVersion} />
                 ) : (
-                  <BlockInspector editor={editorInstance} />
+                  <BlockInspector editor={editorInstance} allowWide />
                 )}
               </div>
             </div>
@@ -741,10 +865,14 @@ export function PostEditor({
             postId={postId}
             slug={liveSlug}
             title={form.title}
+            description={form.description}
+            image={form.og_image_url || form.hero_image_url}
             isPublished={savedPublished}
             onClose={() => setShareOpen(false)}
           />
         )}
+        {devicePreviewUrl && <DevicePreview url={devicePreviewUrl} onClose={() => setDevicePreviewUrl(null)} />}
+        {slashMenu}
       </div>
     );
   }
@@ -818,12 +946,15 @@ export function PostEditor({
         </button>
         {/* Same separation as desktop: blocks are reached from outside the
             editor, never from its formatting toolbar. */}
-        <BlockTools editor={editorInstance} />
+        <BlockTools editor={editorInstance} allowWide />
       </div>
 
       {draftBanner}
+      {reviewBanner}
+      {presenceBanner}
 
       <div className="flex min-h-0 flex-1 flex-col bg-[#f5f7fa] p-2">{editor}</div>
+      {slashMenu}
 
       {pageSettingsOpen && (
         <Sheet
@@ -848,6 +979,7 @@ export function PostEditor({
             {unpublishControl}
 
             <PageSettings form={form} set={set} checklist={checklist} tagSuggestions={tagSuggestions} />
+            {pageActions}
 
             <button
               type="button"
@@ -899,6 +1031,8 @@ export function PostEditor({
           postId={postId}
           slug={liveSlug}
           title={form.title}
+          description={form.description}
+          image={form.og_image_url || form.hero_image_url}
           isPublished={savedPublished}
           onClose={() => setShareOpen(false)}
         />

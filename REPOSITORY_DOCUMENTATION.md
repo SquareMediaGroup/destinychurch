@@ -1327,6 +1327,39 @@ created_by, created_at; service-role only) gets a row on every create, draft sav
 without content, `…/revisions/[revisionId]` returns one. "Bring back" in the editor's History tab
 loads the snapshot into the form unsaved, so restoring goes through the normal save or publish.
 
+**Block widths and the Landing template:** Gallery, Card grid and Video have a `size` prop
+(`components/blocks/size.ts`: normal | wide | full, default normal so old content parses
+unchanged). It's honoured only where `RichContent` gets `allowWide`, which only
+`app/[slug]/page.tsx` passes: Wide reaches ~1100px on large screens, Full goes edge to edge
+(`.dc-bleed` in globals.css). A page with any wide or full block (`hasWideBlocks`) drops its promo
+rails, because full-bleed needs the article centred. Training, jobs and shop never show the Width
+field (`BlockInspector`/`BlockTools` `allowWide`). The built-in "Landing page" template uses them.
+
+**Editor extras (migration `20261020_04_posts_editor.sql`):**
+- *Saved templates:* `post_templates` (label, description, fields jsonb, created_by). "Save as
+  template" in Page settings stores the content and page settings (not URL, schedule or tags);
+  they show above the built-in starters in the New post picker, with delete.
+- *Ready for review:* `posts.review_requested_at/_by`. "Ask for review" saves the page and
+  notifies Posts admins (bell, `roles: ["site_admin"]`); the list shows "Needs review";
+  publishing (PATCH `mode: "publish"`) or "Withdraw" clears it.
+- *Who's editing:* `post_editing` (post_id, auth_user_id, name, seen_at). The open editor POSTs a
+  heartbeat every 20s while visible (`usePostPresence`) and DELETEs on close; anyone seen in the
+  last minute shows as "Sam is also editing this page". Polled, not Realtime.
+- *"/" menu:* typing `/` on an empty line opens `SlashMenu` to insert a block by keyboard.
+- *Image library:* `GET /api/admin/posts/media` lists the `post-media` bucket; `MediaLibraryModal`
+  is offered from `ImageField` (where the uploader is the posts one) and the editor toolbar.
+- *Device preview:* Preview saves a draft and shows the signed preview link in a frame at phone,
+  tablet and computer widths (`DevicePreview`), with "Open in a new tab".
+- *Writing help:* `POST /api/admin/posts/suggest` (OpenAI, `SMART_SEARCH_MODEL`) suggests a
+  description from the page, or alt text for the selected image. Always put in front of the admin
+  to edit; 503 when no key is set.
+- *Link check:* `POST /api/admin/posts/check-links` checks up to 25 links in the body: internal
+  ones against posts and redirects, external ones by HEAD/GET with redirects followed by hand and
+  every hop's host checked with `isPrivateHost` (`lib/postLinks.ts`).
+- *Promote:* the Share panel links to `/admin/popup` and `/admin/banner` with `?promote=1…`
+  (`lib/promote.ts`); those pages lay the page's title, description, image and link over the
+  loaded settings, unsaved, with a note, and clear the params from the URL.
+
 **Edit conflicts:** the editor sends the `updated_at` it loaded as `expected_updated_at`; PATCH
 returns 409 with the current row if someone saved since, and the editor names who and offers to
 replace their changes. Bulk publish/unpublish don't send it, since they don't touch content.
@@ -3572,6 +3605,12 @@ The member-facing pieces of the `/training` resource library.
 - `posts/SharePreview.tsx` — A WhatsApp/Facebook-style link card from the same fallbacks the page metadata uses.
 - `posts/TagsField.tsx` — Tag chips with suggestions from tags already in use (case-insensitive reuse).
 - `posts/PageSettings.tsx` — Page-level settings shared by the desktop sidebar and the mobile sheet: header style picker (Plain / Image / Banner thumbnails), header image, subtitle, description with a 160-character counter, share image (with `SharePreview`), the promo-rails toggle, "Hide from search engines", tags and the schedule (`ScheduleFields`: go-live and take-down times as local datetime inputs). The checklist sits at the top.
+- `posts/MediaLibraryModal.tsx` — Grid of images already in `post-media`, newest first, with "Show more"; returns the picked URL.
+- `posts/DevicePreview.tsx` — Full-screen frame of the signed preview link at phone (390), tablet (820) and computer (1440, scaled to fit) widths. Escape closes it, not the editor.
+- `posts/LinkCheck.tsx` — "Check links" box under the checklist in Page settings; lists broken links and where they are.
+- `posts/SavedTemplates.tsx` — Saved templates in the New post picker, with delete; hidden when there are none.
+- `posts/usePostPresence.ts` — Heartbeat hook for "who else is editing" plus `presenceLine()`.
+- `blocks/SlashMenu.tsx` — The "/" block menu beside the rich-text editor; open whenever the cursor's paragraph reads `/query`, keys captured before ProseMirror sees them.
 - `posts/HistoryPanel.tsx` — The editor's History tab (a sheet on mobile): saved versions with who and when, and "Bring back", which loads one into the form unsaved. Reuses the block inspector's field components (`ImageField`, `TextField`, …) so uploads go through the same `post-media` route.
 - `training/PostEditor.tsx` — Training post editor (uses `RichTextEditor`). Still a `Modal` on mobile: its body is one field among many rather than the whole point of the screen, and it inherits the mobile block sheets and toolbar from `BlockTools` either way.
 - `training/CategoryModal.tsx`, `SubgroupModal.tsx`, `FolderModal.tsx`, `IconPicker.tsx` — Training tree CRUD modals
@@ -4396,6 +4435,41 @@ and stamps `long_outage_alerted_at`. Amber alerts and maintenance never email.
 ```typescript
 // The post's saved versions (newest 30), newest first, without content;
 // then one version's snapshot. Read-only: restoring happens in the editor.
+```
+
+#### `GET|POST /api/admin/posts/templates` · `DELETE …/templates/[templateId]`
+```typescript
+// Saved post templates (audited). POST { label, description?, fields } keeps
+// the content and page settings only.
+```
+
+#### `POST|DELETE /api/admin/posts/[id]/review`
+```typescript
+// POST { note? }: marks the post for review and notifies site_admin (audited).
+// DELETE withdraws. Publishing also clears it.
+```
+
+#### `POST|DELETE /api/admin/posts/[id]/editing`
+```typescript
+// Editor heartbeat (audit-exempt). POST returns { others: [{ name }] } seen
+// in the last 60s; DELETE on close. Stale rows are swept occasionally.
+```
+
+#### `GET /api/admin/posts/media`
+```typescript
+// The post-media bucket, newest first, 60 per page: { items, nextOffset }.
+```
+
+#### `POST /api/admin/posts/suggest`
+```typescript
+// Writing help (audit-exempt, nothing stored). { kind: "description", title, body }
+// or { kind: "alt", src } → { suggestion }. 503 without an OpenAI key.
+```
+
+#### `POST /api/admin/posts/check-links`
+```typescript
+// { body } → { checked, problems: [{ href, where, problem }], truncated }.
+// Max 25 links; private hosts refused on every redirect hop (audit-exempt).
 ```
 
 #### `GET /api/admin/posts/check-slug`

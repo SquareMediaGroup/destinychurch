@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
+import { clearPromoteFromUrl, readPromote } from "@/lib/promote";
 
 interface Popup {
   active: boolean;
@@ -34,6 +35,7 @@ export default function AdminPopupPage() {
   const [uploading, setUploading] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState("");
+  const [promotedFrom, setPromotedFrom] = useState<string | null>(null);
   const fileInput = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -41,8 +43,8 @@ export default function AdminPopupPage() {
       // A failed load used to fall through to the blank defaults, showing a
       // live banner/popup as switched off — and saving from there wiped it.
       .then((r) => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))))
-      .then((p) =>
-        setPopup({
+      .then((p) => {
+        const loaded: Popup = {
           active: p.active ?? false,
           title: p.title ?? "",
           body: p.body ?? "",
@@ -51,8 +53,26 @@ export default function AdminPopupPage() {
           image_url: p.image_url ?? null,
           image_path: p.image_path ?? null,
           show_once: p.show_once ?? true,
-        })
-      )
+        };
+        // "Promote" from a post's Share panel: its details over the saved
+        // settings, unsaved until Save.
+        const promo = readPromote(window.location.search);
+        if (promo) {
+          clearPromoteFromUrl();
+          setPromotedFrom(promo.title || "a page");
+          setPopup({
+            ...loaded,
+            active: true,
+            title: promo.title,
+            body: promo.text,
+            cta_text: "Find out more",
+            cta_link: promo.link,
+            ...(promo.image ? { image_url: promo.image, image_path: null } : {}),
+          });
+          return;
+        }
+        setPopup(loaded);
+      })
       .catch(() =>
         setError("Couldn't load the current settings. Refresh before saving, or they'll be overwritten."),
       )
@@ -135,6 +155,12 @@ export default function AdminPopupPage() {
           </div>
         ) : (
           <form onSubmit={handleSave} className="flex flex-col gap-6">
+            {promotedFrom && (
+              <p className="rounded-xl bg-destiny-orange/10 px-4 py-3 text-sm text-destiny-orange">
+                Filled in from the page &ldquo;{promotedFrom}&rdquo;. Check it over, then save to put it live. Nothing
+                has changed yet.
+              </p>
+            )}
             {/* Live preview */}
             {popup.active && (popup.title || popup.body || popup.image_url) && (
               <div className="rounded-2xl border border-black/5 bg-white dark:border-white/8 dark:bg-destiny-grey-800 p-4 shadow-sm">

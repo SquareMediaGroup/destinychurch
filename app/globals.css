@@ -1449,6 +1449,12 @@ html[data-motion="reduced"] [data-sonner-toast] {
 .rte-content {
   line-height: 1.75;
 }
+/* A Full-width block on a Posts page (components/blocks/size.ts): edge to edge
+   from inside the centred reading column. The page clips horizontal overflow
+   so the scrollbar's width can't add a sideways scroll. */
+.dc-bleed {
+  margin-inline: calc(50% - 50vw);
+}
 .rte-content h2 {
   font-family: var(--font-roboto), system-ui, sans-serif;
   font-weight: 900;

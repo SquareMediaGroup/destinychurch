@@ -132,6 +132,9 @@ export async function PATCH(
     if (mode === "publish") {
       updates.is_published = true;
       updates.draft = null;
+      // Publishing is the sign-off a review request was waiting for.
+      updates.review_requested_at = null;
+      updates.review_requested_by = null;
     } else if (mode === "draft") {
       // A page that isn't published (perhaps unpublished with changes still
       // waiting): the editor loaded the draft over the columns, so what it

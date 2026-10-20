@@ -182,7 +182,7 @@ export default function FeaturedEventPage() {
 
   return (
     <div className="mx-auto max-w-6xl px-6 py-10">
-      <div className="mb-8">
+      <div data-tour="page-header" className="mb-8">
         <h1 className="text-2xl font-black text-destiny-grey dark:text-white">Featured event</h1>
         <p className="mt-1 max-w-2xl text-sm text-destiny-grey/50 dark:text-white/50">
           Promote one event across the site: a wide banner above the What&apos;s

@@ -13,8 +13,9 @@
 // Demo mode is entered for the *whole* run, not just the sandbox steps. A tour
 // where only some buttons are safe is a tour nobody trusts.
 
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
+  Suspense,
   createContext,
   useCallback,
   useContext,
@@ -35,7 +36,7 @@ import {
 } from "@/lib/adminOnboarding";
 import { clearDemoCookie, enterDemoMode, exitDemoMode } from "@/lib/demoMode";
 import { useOnboarding } from "@/lib/onboardingProgress";
-import { useAdminSession, type PreviewRole } from "@/lib/useAdminSession";
+import { useAdminSession, setRolePreview, type PreviewRole } from "@/lib/useAdminSession";
 import dynamic from "next/dynamic";
 import OnboardingChecklist from "./OnboardingChecklist";
 import RolePreviewBar from "./RolePreviewBar";
@@ -44,6 +45,14 @@ const WelcomeGate = dynamic(() => import("./WelcomeGate"));
 
 /** How long to wait for a step's anchor before showing the card unanchored. */
 const ANCHOR_TIMEOUT_MS = 2500;
+/**
+ * How long to keep looking after that. A list that takes four seconds to load
+ * still gets its spotlight; the card just moves onto it when it turns up.
+ */
+const ANCHOR_GIVE_UP_MS = 10000;
+
+/** `?tour=1` on any admin URL (re)starts the tour — the command palette's way in. */
+const TOUR_PARAM = "tour";
 
 interface TourContext {
   /** The checklist this person is owed, in order. */
@@ -54,6 +63,8 @@ interface TourContext {
   start: (sectionId?: string) => void;
   /** Preview one role's tour — super admins only. */
   startRole: (role: PreviewRole, sectionId?: string) => void;
+  /** Bring the checklist back (clearing it if it was finished) and run it. */
+  restart: () => void;
   stop: () => void;
 }
 
@@ -110,15 +121,24 @@ export default function OnboardingProvider({ children }: { children: React.React
   }, []);
 
   /* ── Navigate to the step's page ─────────────────────────────────────────── */
+  // Exact match on purpose. A prefix match left Back stranded: stepping back
+  // from the new-product form to "press New product" kept you on
+  // /admin/store/products/new, which counts as "under /admin/store", so the
+  // button the step points at never appeared. Steps that belong on a page the
+  // route can't name use `stay` instead.
   useEffect(() => {
     if (!step || step.stay) return;
-    const onRoute = pathname === step.route || pathname.startsWith(`${step.route}/`);
-    if (!onRoute) router.push(step.route);
+    if (pathname !== step.route) router.push(step.route);
   }, [step, pathname, router]);
 
   /* ── Find the anchor, then keep it in view ───────────────────────────────── */
   useEffect(() => {
-    const selector = step?.anchor ? `[data-tour="${step.anchor}"]` : null;
+    const anchors = step?.anchor
+      ? Array.isArray(step.anchor)
+        ? step.anchor
+        : [step.anchor]
+      : [];
+    const selector = anchors.length ? anchors : null;
     const started = performance.now();
     let frame = 0;
     let first = true;
@@ -137,20 +157,24 @@ export default function OnboardingProvider({ children }: { children: React.React
       // The admin renders desktop and mobile copies of the header search and
       // the nav; only one of them has a size at any width, so take the first
       // match that is actually on screen rather than the first in the DOM.
-      const found = Array.from(document.querySelectorAll<HTMLElement>(selector)).find(
-        (el) => el.getBoundingClientRect().width > 0,
-      );
+      let found: HTMLElement | undefined;
+      for (const name of selector) {
+        found = Array.from(document.querySelectorAll<HTMLElement>(`[data-tour="${name}"]`)).find(
+          (el) => el.getBoundingClientRect().width > 0,
+        );
+        if (found) break;
+      }
       if (found) {
         setAnchorEl(found);
         setSearching(false);
         found.scrollIntoView({ block: "center", behavior: "smooth" });
         return;
       }
-      if (performance.now() - started > ANCHOR_TIMEOUT_MS) {
-        // The page never produced it — show the card centred rather than stall.
-        setSearching(false);
-        return;
-      }
+      const waited = performance.now() - started;
+      // Slow page: show the card centred rather than stall, but keep looking
+      // so it can still jump onto the anchor once the page catches up.
+      if (waited > ANCHOR_TIMEOUT_MS) setSearching(false);
+      if (waited > ANCHOR_GIVE_UP_MS) return;
       frame = requestAnimationFrame(look);
     };
 
@@ -250,24 +274,51 @@ export default function OnboardingProvider({ children }: { children: React.React
 
   const startRole = useCallback(
     (role: PreviewRole, sectionId?: string) => {
+      // Narrow the interface to the role as well. Otherwise "every page you can
+      // reach is here" spotlights a super admin's full sidebar, which is the
+      // opposite of what the preview is for. The preview bar stays up after the
+      // tour so they can keep looking around, and says how to leave.
+      setRolePreview(role);
       const list = checklistForRole(role);
       setRun(buildRun(list, role, sectionId));
     },
     [buildRun],
   );
 
+  const restart = useCallback(() => {
+    if (!sections.length) {
+      // Nothing of their own to run. A super admin's tours live on the preview
+      // page; anyone else (HR only, say) simply has no tour yet.
+      if (actualRoles.super_admin) router.push("/admin/onboarding");
+      return;
+    }
+    const { done, total } = progressFor(sections, progress.completed);
+    if (done >= total) progress.reset();
+    else progress.restore();
+    start();
+  }, [sections, progress, start, router, actualRoles.super_admin]);
+
   const stop = useCallback(() => setRun(null), []);
 
+  const ready = sessionLoaded && progress.loaded;
+
   const value = useMemo<TourContext>(
-    () => ({ sections, completed: progress.completed, running: run !== null, start, startRole, stop }),
-    [sections, progress.completed, run, start, startRole, stop],
+    () => ({
+      sections,
+      completed: progress.completed,
+      running: run !== null,
+      start,
+      startRole,
+      restart,
+      stop,
+    }),
+    [sections, progress.completed, run, start, startRole, restart, stop],
   );
 
   const { done, total } = progressFor(sections, progress.completed);
 
   // Nothing shows until we know who this is, and nothing shows for someone with
   // no tour to run (a super admin who isn't previewing).
-  const ready = sessionLoaded && progress.loaded;
   const eligible = ready && sections.length > 0;
   const showGate = eligible && !previewRole && !progress.gateSeen && !run;
   const showChecklist = eligible && !run && progress.gateSeen && !progress.dismissed && done < total;
@@ -276,11 +327,17 @@ export default function OnboardingProvider({ children }: { children: React.React
     <Ctx.Provider value={value}>
       {previewRole && actualRoles.super_admin && <RolePreviewBar role={previewRole} />}
       {children}
-      {showGate && <WelcomeGate sections={sections} roles={roles} onStart={start} onSkip={progress.dismiss} />}
+      {/* Its own Suspense boundary: useSearchParams would otherwise opt every
+          admin page out of prerendering. */}
+      <Suspense fallback={null}>
+        <TourParam ready={ready} onTour={restart} />
+      </Suspense>
+      {showGate && <WelcomeGate sections={sections} roles={roles} onStart={start} onSkip={progress.setGateSeen} />}
       {showChecklist && <OnboardingChecklist />}
       {run && step && (
         <TourSpotlight
           step={step}
+          section={sectionOfStep(sections, step.id)}
           anchor={anchorEl}
           searching={searching}
           index={run.index}
@@ -292,4 +349,33 @@ export default function OnboardingProvider({ children }: { children: React.React
       )}
     </Ctx.Provider>
   );
+}
+
+/**
+ * Starts the tour when `?tour=1` lands on the URL (the command palette's
+ * "Take the admin tour"), then strips the parameter so a refresh doesn't start
+ * it again. A component of its own so the search-params read sits behind a
+ * Suspense boundary.
+ */
+function TourParam({ ready, onTour }: { ready: boolean; onTour: () => void }) {
+  const params = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
+  const wanted = params.has(TOUR_PARAM);
+  // onTour changes identity on most renders; only a fresh ?tour=1 should fire.
+  const onTourRef = useRef(onTour);
+  useEffect(() => {
+    onTourRef.current = onTour;
+  }, [onTour]);
+
+  useEffect(() => {
+    if (!ready || !wanted) return;
+    const rest = new URLSearchParams(params.toString());
+    rest.delete(TOUR_PARAM);
+    const query = rest.toString();
+    router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
+    onTourRef.current();
+  }, [ready, wanted, params, pathname, router]);
+
+  return null;
 }

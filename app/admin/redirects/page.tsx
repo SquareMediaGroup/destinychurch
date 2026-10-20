@@ -205,7 +205,7 @@ export default function RedirectsPage() {
       <ErrorNote>{error}</ErrorNote>
 
       {showForm && (
-        <div className="mb-8 rounded-3xl border border-black/5 bg-white dark:border-white/8 dark:bg-destiny-grey-800 p-6 shadow-sm">
+        <div data-tour="redirect-form" className="mb-8 rounded-3xl border border-black/5 bg-white dark:border-white/8 dark:bg-destiny-grey-800 p-6 shadow-sm">
           <h2 className="mb-4 text-sm font-bold uppercase tracking-wider text-destiny-grey/50 dark:text-white/50">
             New redirect
           </h2>

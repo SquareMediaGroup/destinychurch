@@ -1,3 +1,5 @@
+import { existsSync, readFileSync } from "node:fs";
+import { join } from "node:path";
 import { test, expect } from "@playwright/test";
 import {
   ROLE_LABELS,
@@ -105,6 +107,46 @@ test("a step resolves back to the section that owns it", () => {
   const sections = checklistForRole("store_admin");
   expect(sectionOfStep(sections, "store-create")?.id).toBe("store-products");
   expect(sectionOfStep(sections, "not-a-step")).toBeNull();
+});
+
+test("every anchor a tour spotlights is rendered by the page it's on", () => {
+  // The tour waits for its anchor, gives up and shows a centred card pointing
+  // at nothing. That failure is silent, which is how most of the Event Admin
+  // tour ended up spotlighting nothing: its pages never used PageHeader, so
+  // "page-header" was never on screen. Read from source rather than rendered,
+  // so it's a heuristic: the page (or an admin component it imports) must
+  // either write the attribute itself or use the shared primitive that does.
+  const root = join(__dirname, "../..");
+  const SHELL = new Set(["sidebar", "tabbar", "command-trigger"]);
+  const VIA: Record<string, string> = {
+    "page-header": "<PageHeader",
+    "page-action": "<PageHeader",
+    "list-toolbar": "<ListToolbar",
+    "list-search": "<SearchInput",
+    modal: "<Modal",
+  };
+  const read = (file: string) => (existsSync(file) ? readFileSync(file, "utf8") : "");
+  const pageSource = (route: string) => {
+    const page = read(join(root, "app", route, "page.tsx"));
+    const imported = Array.from(page.matchAll(/from "@\/components\/admin\/([^"]+)"/g)).map(
+      (m) => read(join(root, "components/admin", `${m[1]}.tsx`)),
+    );
+    return [page, ...imported].join("\n");
+  };
+
+  for (const role of TOUR_ORDER) {
+    for (const step of stepsOf(checklistForRole(role))) {
+      // `stay` steps sit on a page their route can't name (a fresh product's editor).
+      if (!step.anchor || step.stay) continue;
+      const names = Array.isArray(step.anchor) ? step.anchor : [step.anchor];
+      if (names.every((n) => SHELL.has(n))) continue;
+      const src = pageSource(step.route);
+      const found = names.some(
+        (n) => src.includes(`data-tour="${n}"`) || (VIA[n] !== undefined && src.includes(VIA[n])),
+      );
+      expect(found, `${step.id}: ${step.route} never renders data-tour="${names.join('" or "')}"`).toBe(true);
+    }
+  }
 });
 
 /* ── Demo mode ─────────────────────────────────────────────────────────────── */

@@ -3342,10 +3342,13 @@ to keep.
   of the tree.
 - `WelcomeGate.tsx` — Full-screen modal on a person's first `/admin` visit,
   naming the access levels they hold and how long their tour takes. "Skip for
-  now" is a real answer and is recorded as one — this is a gate, not a wall.
+  now" (or Escape) is a real answer and is recorded as one — this is a gate,
+  not a wall. It only marks the gate seen: the Get Started checklist stays, so
+  "later" has somewhere to happen. Focus is trapped while it is open.
 - `OnboardingChecklist.tsx` — The persistent "Get Started" launcher
   (bottom-right, remaining-count badge) and its expanding panel — percent bar,
-  tickable sections, "Dismiss checklist". Reuses `<BorderBeam size="pulse-inner">`
+  tickable sections, "Hide checklist" (with a note on how to bring it back).
+  Picking a section closes the panel before the tour starts. Reuses `<BorderBeam size="pulse-inner">`
   (`border-beam`) as the attention cue while anything is left to do. The
   collapsed launcher pill is mounted for the whole `/admin` session (not just
   while the panel is open), so its beam is explicitly `active={left > 0}` —
@@ -3354,8 +3357,15 @@ to keep.
 - `TourSpotlight.tsx` — The overlay itself: four scrim rectangles frame the
   anchored element rather than a clip-path, so the real element stays fully
   clickable — the sandbox steps depend on that. An orange ring lights the
-  target; the tooltip card carries Back/Next/Exit and picks whichever side of
-  the anchor actually has room.
+  target; the tooltip card carries Back/Next/Exit (and Left/Right arrow keys
+  when focus isn't in a field), shows the section name and position within it
+  plus a whole-run progress bar, and picks whichever side of the anchor
+  actually has room, measured against the card's real height. With no anchor
+  it centres on screen; below 720px it docks full-width to the bottom, or the
+  top when the anchor is down there (the tab bar). A click-to-continue step
+  shows Next anyway if its anchor never appeared, so the tour can't strand
+  anyone. `super_admin` "Run this tour" also switches the role preview on, so
+  the sidebar the tour points at is the one that role actually gets.
 - `RolePreviewBar.tsx` — Sticky bar shown while a super admin is previewing
   another access level (from `/admin/onboarding`). States plainly that this is
   presentation only — middleware still knows they're a super admin.
@@ -5127,6 +5137,25 @@ person recognises, and step ids churn every time a tour is reworded.
 `hasAccess()` for its own role — the same drift guard `admin-nav.spec.ts`
 applies to the sidebar, and for the same reason: a tour that bounces someone to
 `?forbidden=1` is worse than no tour.
+
+**Anchors must exist on the page.** A step whose `data-tour` anchor isn't
+rendered falls back to a centred card after 2.5s (and keeps looking for up to
+10s, jumping onto the anchor if the page catches up). Pages that don't use
+`PageHeader` (Shop Hero, the course pages, Featured Course/Event, Popup, NFC,
+the product editor) carry `data-tour="page-header"` on their own header block
+for that reason. Other anchors: `page-action`, `list-toolbar`, `list-search`
+(shared `AdminUI` primitives), `modal` (the shared `Modal` panel, used by the
+training tour's practice category), `redirect-form`, `popup-save`,
+`product-name` / `product-submit`, `sidebar` / `tabbar`, `command-trigger`. A
+step can list several anchors (`anchor: ["sidebar", "tabbar"]`); the first one
+on screen wins, which is how Orientation works on phones.
+
+**Restarting.** The command palette's "Take the admin tour" quick action opens
+`/admin?tour=1`; `OnboardingProvider` picks up the parameter on any admin page,
+brings a hidden checklist back (clearing it first if everything was already
+done) and starts the tour. Super admins are sent to `/admin/onboarding`. It is
+the only way back to a hidden or finished checklist, so the welcome gate, the
+checklist footer and the tour's closing card all point to it.
 
 **`lib/onboardingProgress.ts`** is the client half — the module-scope cached
 promise pattern from `lib/useAdminSession.ts`, so the welcome gate, the

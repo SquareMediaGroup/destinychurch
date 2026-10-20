@@ -11,7 +11,7 @@
 // there isn't — the same BorderBeam the Smart Search pill uses when it's
 // loading, which is the site's existing way of saying "look here".
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { BorderBeam } from "border-beam";
 import { progressFor } from "@/lib/adminOnboarding";
@@ -24,6 +24,13 @@ export default function OnboardingChecklist() {
   const { dismiss } = useOnboarding();
   const [open, setOpen] = useState(false);
   const mounted = useHydrated();
+
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setOpen(false);
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [open]);
 
   if (!mounted) return null;
 
@@ -38,9 +45,11 @@ export default function OnboardingChecklist() {
           <div className="relative p-5">
             <div className="flex items-start justify-between gap-3">
               <div>
-                <h2 className="text-sm font-black text-white">Let&rsquo;s start with the basics</h2>
-                <p className="mt-0.5 text-xs text-white/50">
-                  {left} {left === 1 ? "thing" : "things"} left
+                <h2 id="onboarding-checklist-title" className="text-sm font-black text-white">
+                  Get started
+                </h2>
+                <p className="mt-0.5 text-xs text-white/55">
+                  {done} of {total} done. Pick any one to jump straight in.
                 </p>
               </div>
               <span className="text-sm font-black tabular-nums text-white/70">{pct}%</span>
@@ -67,7 +76,12 @@ export default function OnboardingChecklist() {
                   <li key={section.id}>
                     <button
                       type="button"
-                      onClick={() => start(section.id)}
+                      onClick={() => {
+                        // Closed first, so it doesn't spring back open over the
+                        // page when the tour ends.
+                        setOpen(false);
+                        start(section.id);
+                      }}
                       className="flex w-full items-center gap-3 rounded-xl px-2 py-2.5 text-left transition hover:bg-white/10"
                     >
                       <span
@@ -81,10 +95,11 @@ export default function OnboardingChecklist() {
                       </span>
                       <span
                         className={`text-sm font-bold ${
-                          isDone ? "text-white/40 line-through" : "text-white/85"
+                          isDone ? "text-white/45 line-through" : "text-white/85"
                         }`}
                       >
                         {section.label}
+                        {isDone && <span className="sr-only"> (done)</span>}
                       </span>
                     </button>
                   </li>
@@ -92,13 +107,18 @@ export default function OnboardingChecklist() {
               })}
             </ul>
 
-            <button
-              type="button"
-              onClick={dismiss}
-              className="mt-3 w-full rounded-xl border-t border-white/10 pt-3 text-center text-xs font-bold text-white/45 transition hover:text-white"
-            >
-              Dismiss checklist
-            </button>
+            <div className="mt-3 border-t border-white/10 pt-3 text-center">
+              <button
+                type="button"
+                onClick={dismiss}
+                className="rounded-lg px-2 py-1 text-xs font-bold text-white/55 transition hover:text-white"
+              >
+                Hide checklist
+              </button>
+              <p className="mt-1 text-[11px] text-white/40">
+                Bring it back any time: press Command-K and search for &ldquo;tour&rdquo;.
+              </p>
+            </div>
           </div>
         </BorderBeam>
       )}
@@ -109,6 +129,7 @@ export default function OnboardingChecklist() {
           type="button"
           onClick={() => setOpen((o) => !o)}
           aria-expanded={open}
+          aria-label={left > 0 ? `Get Started, ${left} left` : "Get Started"}
           className="relative flex items-center gap-2 rounded-full px-5 py-3 text-sm font-bold text-white"
         >
           <span className="material-symbols-rounded text-lg text-destiny-orange" aria-hidden="true">

@@ -5,15 +5,19 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Buzzer Display</title>
   <style>
-    :root { --red: #ff1f3a; --gold: #f5c542; }
+    :root { --red: #ff1f3a; --gold: #f5c542;
+      /* Layout unit. The screen's width is fixed but its height varies, so
+         everything is sized in --u: 1vw on a normal screen, shrinking with
+         the height on a short, wide one so the X's and names always fit. */
+      --u: min(1vw, 2.9vh); }
     * { box-sizing: border-box; }
     html, body { margin: 0; height: 100%; overflow: hidden; background: #000; color: #fff; cursor: none;
       font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
     body.transparent { background: transparent; }
-    #xs { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; gap: 3vw; padding: 0 4vw 4vw; }
+    #xs { position: absolute; inset: 0; display: flex; align-items: center; justify-content: space-evenly; gap: 3vw; padding: 0 4vw calc(4 * var(--u)); }
     body.shake #xs { animation: shake 320ms linear; }
-    @keyframes shake { 20% { transform: translate(-0.6vw, 0.3vw); } 40% { transform: translate(0.5vw, -0.4vw); } 60% { transform: translate(-0.4vw, -0.2vw); } 80% { transform: translate(0.3vw, 0.3vw); } }
-    .slot { flex: 1; max-width: 22vw; aspect-ratio: 1; position: relative; perspective: 90vw; }
+    @keyframes shake { 20% { transform: translate(calc(-0.6 * var(--u)), calc(0.3 * var(--u))); } 40% { transform: translate(calc(0.5 * var(--u)), calc(-0.4 * var(--u))); } 60% { transform: translate(calc(-0.4 * var(--u)), calc(-0.2 * var(--u))); } 80% { transform: translate(calc(0.3 * var(--u)), calc(0.3 * var(--u))); } }
+    .slot { flex: 1; max-width: calc(22 * var(--u)); aspect-ratio: 1; position: relative; perspective: calc(90 * var(--u)); }
     .slot .layer { position: absolute; inset: 0; }
     .slot svg { width: 100%; height: 100%; overflow: visible; display: block; }
     .slot .ghost use { fill: none; stroke: rgba(255,255,255,0.16); stroke-width: 1.2; stroke-linejoin: miter; }
@@ -22,22 +26,22 @@
     /* The X: sharp polygon, extruded depth behind a gradient face, tilted
        towards the audience so it reads as popping out of the screen. */
     .slot .mark { opacity: 0; transform-style: preserve-3d; transform-origin: 50% 50%;
-      filter: drop-shadow(0 1.6vw 1.4vw rgba(0,0,0,0.85)) drop-shadow(0 0 2.5vw rgba(255,31,58,0.55)); }
-    .slot.on .mark { opacity: 1; transform: rotateX(10deg) rotateY(-12deg) translateZ(2vw);
+      filter: drop-shadow(0 calc(1.6 * var(--u)) calc(1.4 * var(--u)) rgba(0,0,0,0.85)) drop-shadow(0 0 calc(2.5 * var(--u)) rgba(255,31,58,0.55)); }
+    .slot.on .mark { opacity: 1; transform: rotateX(10deg) rotateY(-12deg) translateZ(calc(2 * var(--u)));
       animation: pop3d 520ms cubic-bezier(.18,1.4,.4,1) both, float 3.2s ease-in-out 520ms infinite alternate; }
     .slot.on.static .mark { animation: float 3.2s ease-in-out infinite alternate; }
     @keyframes pop3d {
-      0% { opacity: 0; transform: rotateX(45deg) rotateY(-40deg) translateZ(40vw) scale(1.6); }
+      0% { opacity: 0; transform: rotateX(45deg) rotateY(-40deg) translateZ(calc(40 * var(--u))) scale(1.6); }
       55% { opacity: 1; }
-      100% { opacity: 1; transform: rotateX(10deg) rotateY(-12deg) translateZ(2vw) scale(1); } }
+      100% { opacity: 1; transform: rotateX(10deg) rotateY(-12deg) translateZ(calc(2 * var(--u))) scale(1); } }
     @keyframes float {
-      from { transform: rotateX(10deg) rotateY(-12deg) translateZ(2vw); }
-      to { transform: rotateX(6deg) rotateY(-6deg) translateZ(3vw); } }
+      from { transform: rotateX(10deg) rotateY(-12deg) translateZ(calc(2 * var(--u))); }
+      to { transform: rotateX(6deg) rotateY(-6deg) translateZ(calc(3 * var(--u))); } }
 
-    .slot .label { position: absolute; left: -2vw; right: -2vw; top: 100%; margin-top: 1.6vw; text-align: center;
-      font-size: 2.2vw; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: rgba(255,255,255,0.45);
+    .slot .label { position: absolute; left: calc(-2 * var(--u)); right: calc(-2 * var(--u)); top: 100%; margin-top: calc(1.6 * var(--u)); text-align: center;
+      font-size: calc(2.2 * var(--u)); font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: rgba(255,255,255,0.45);
       white-space: nowrap; overflow: hidden; text-overflow: ellipsis; transition: color 250ms, text-shadow 250ms; }
-    .slot.on .label { color: #fff; text-shadow: 0 0 1.2vw rgba(255,31,58,0.9); }
+    .slot.on .label { color: #fff; text-shadow: 0 0 calc(1.2 * var(--u)) rgba(255,31,58,0.9); }
     body.no-labels .slot .label { display: none; }
 
     body.flash::after { content: ""; position: absolute; inset: 0; background: rgba(255,31,58,0.35); animation: flash 350ms ease-out forwards; pointer-events: none; }
@@ -51,26 +55,26 @@
     @keyframes strobe { 0%, 16%, 33%, 50%, 66%, 83% { opacity: 0.9; } 8%, 25%, 41%, 58%, 75%, 91%, 100% { opacity: 0; } }
     @keyframes alarm-pulse { from { opacity: 0.35; } to { opacity: 1; } }
     body.all-out-strobe .slot.on .mark { animation: throb 433ms ease-in-out 6; }
-    @keyframes throb { 0% { transform: rotateX(10deg) rotateY(-12deg) translateZ(2vw) scale(1); } 50% { transform: rotateX(10deg) rotateY(-12deg) translateZ(6vw) scale(1.12); } 100% { transform: rotateX(10deg) rotateY(-12deg) translateZ(2vw) scale(1); } }
+    @keyframes throb { 0% { transform: rotateX(10deg) rotateY(-12deg) translateZ(calc(2 * var(--u))) scale(1); } 50% { transform: rotateX(10deg) rotateY(-12deg) translateZ(calc(6 * var(--u))) scale(1.12); } 100% { transform: rotateX(10deg) rotateY(-12deg) translateZ(calc(2 * var(--u))) scale(1); } }
     body.all-out .slot .label { color: #fff; }
 
     #golden { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; opacity: 0; pointer-events: none;
       background: radial-gradient(circle at 50% 50%, #fff6d0 0%, #f5c542 35%, #b8860b 75%, #4a3300 100%); transition: opacity 250ms; }
     body.is-golden #golden { opacity: 1; }
     body.is-golden #xs { opacity: 0; }
-    #golden h1 { margin: 0; font-size: 11vw; font-weight: 900; line-height: 0.95; text-align: center; color: #fff; letter-spacing: 0.02em;
-      text-shadow: 0 0.4vw 0 #8a6410, 0 0 3vw rgba(255,255,255,0.9), 0 0 8vw rgba(255,220,120,0.9); }
+    #golden h1 { margin: 0; font-size: calc(11 * var(--u)); font-weight: 900; line-height: 0.95; text-align: center; color: #fff; letter-spacing: 0.02em;
+      text-shadow: 0 calc(0.4 * var(--u)) 0 #8a6410, 0 0 calc(3 * var(--u)) rgba(255,255,255,0.9), 0 0 calc(8 * var(--u)) rgba(255,220,120,0.9); }
     body.is-golden #golden h1 { animation: pop 700ms cubic-bezier(.2,1.5,.4,1) both, shimmer 1.6s ease-in-out 700ms infinite alternate; }
     @keyframes pop { from { transform: scale(0.2); opacity: 0; } to { transform: scale(1); opacity: 1; } }
     @keyframes shimmer { from { transform: scale(1); } to { transform: scale(1.04); } }
     #confetti { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
 
-    #arm { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1.5vw;
+    #arm { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: calc(1.5 * var(--u));
       background: rgba(0,0,0,0.92); cursor: pointer; z-index: 10; text-align: center; }
-    #arm h2 { margin: 0; font-size: 3vw; }
-    #arm p { margin: 0; font-size: 1.4vw; opacity: 0.7; max-width: 60vw; }
+    #arm h2 { margin: 0; font-size: calc(3 * var(--u)); }
+    #arm p { margin: 0; font-size: calc(1.4 * var(--u)); opacity: 0.7; max-width: calc(60 * var(--u)); }
     body.armed #arm { display: none; }
-    #conn { position: absolute; top: 1vw; right: 1vw; width: 1vw; height: 1vw; border-radius: 50%; background: #c00; display: none; z-index: 11; }
+    #conn { position: absolute; top: calc(1 * var(--u)); right: calc(1 * var(--u)); width: calc(1 * var(--u)); height: calc(1 * var(--u)); border-radius: 50%; background: #c00; display: none; z-index: 11; }
     body.offline #conn { display: block; }
   </style>
 </head>
@@ -355,6 +359,13 @@
       }
       raf = requestAnimationFrame(tick);
     }
+
+    // Keep the confetti matching the screen if the window is resized mid-golden.
+    addEventListener('resize', () => {
+      if (!raf) return;
+      canvas.width = innerWidth * devicePixelRatio;
+      canvas.height = innerHeight * devicePixelRatio;
+    });
 
     function stopGolden() {
       body.classList.remove('is-golden');

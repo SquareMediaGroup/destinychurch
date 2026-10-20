@@ -1207,9 +1207,24 @@ body {
   sitewide `html[data-motion="reduced"] *` kill switch (see globals.css,
   further down this file) already covers it for reduced-motion visitors at
   every breakpoint.
+
+  It rises without fading. "Welcome Home" is the page's LCP element, and
+  Chrome does not count a paint at opacity 0: with the fade, LCP waited for
+  the animation to get going after the scripts had loaded, which on PageSpeed's
+  throttled mobile run put LCP seconds behind first paint. Painting it at full
+  opacity from the first frame keeps the entrance and lets LCP land with FCP.
 */
+@keyframes heroRise {
+  from {
+    transform: translate3d(0, 24px, 0);
+  }
+  to {
+    transform: translate3d(0, 0, 0);
+  }
+}
+
 .hero-text-animate {
-  animation: fadeInUp 0.9s ease forwards;
+  animation: heroRise 0.9s ease both;
 }
 
 

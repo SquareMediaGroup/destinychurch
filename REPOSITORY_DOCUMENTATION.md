@@ -3795,11 +3795,13 @@ stay: they're consent and legal, not chrome.
 - `HomePageBody.tsx` — the whole homepage composition, extracted as a server
   component so the real page (`app/page.tsx`) and the variant-preview route
   (`app/home/page.tsx`) render identical markup with a different event-card
-  treatment (`cardVariant`) rather than duplicating the layout. It resolves the
-  latest sermon once — `getLatestVideo()`, falling back to `getLatestVideoFromRSS()`
-  when the YouTube quota is exceeded — and renders, in order: `HomeOverscrollColor`,
-  `HeroSection`, `MissionSection`, `LatestSermonSection`, `WhatsOnSection`,
-  `EveryoneHasAPlaceSection`, `WorshipWithUsSection`, `GetInvolvedSection`.
+  treatment (`cardVariant`) rather than duplicating the layout. It renders, in
+  order: `HomeOverscrollColor`, `HeroSection`, `ServiceTimesBar`, `MissionSection`,
+  `LatestSermonSection`, `WhatsOnSection`, `EveryoneHasAPlaceSection`,
+  `WorshipWithUsSection`, `GetInvolvedSection`. The latest sermon (`getLatestVideo()`,
+  falling back to `getLatestVideoFromRSS()` when the YouTube quota is exceeded) and
+  `WhatsOnSection` each stream in behind their own `<Suspense>`, so the hero (the
+  page's LCP element) never waits on YouTube or Supabase.
 - `HomeOverscrollColor.tsx` — a render-nothing client component that sets
   `document.documentElement.style.background` to Destiny orange (`#F58021`) on
   mount and restores it on unmount, so the overscroll/rubber-band area at the top
@@ -5491,11 +5493,20 @@ mid-service behaviour.
 
 ---
 
-### `lib/iconNames.ts` / `scripts/sync-icon-names.mjs` — icon font subset
+### `lib/iconNames.ts` / `lib/iconFont.ts` / `scripts/sync-icon-names.mjs` — icon font subset
 
-The Material Symbols Rounded font is ~410 KB in full. `app/layout.tsx` requests it from
-Google Fonts with `&icon_names=…` built from `ICON_NAMES`, which brings it down to ~40 KB
-(PageSpeed flagged the full font as the page's largest and render-blocking resource).
+The Material Symbols Rounded font is ~410 KB in full. Google Fonts subsets it with
+`&icon_names=…` built from `ICON_NAMES`, which brings it down to ~40 KB (PageSpeed flagged
+the full font as the page's largest and render-blocking resource).
+
+- **Self-hosted.** The script downloads that subset to
+  `public/fonts/material-symbols-rounded-<hash>.woff2` (hash of the icon list, so a new
+  list gets a new file under the year-long `/fonts` cache) and writes its path to
+  `lib/iconFont.ts`. `app/layout.tsx` inlines the `@font-face` plus Google's own
+  `.material-symbols-rounded` rule in a `<style>`, so no page waits on a render-blocking
+  stylesheet from fonts.googleapis.com (PageSpeed's largest mobile FCP cost before).
+  The download only happens when the list changes; on CI/Vercel a failed download fails
+  the build, locally it warns and keeps the previous font.
 
 - **Generated, never hand-edited.** `scripts/sync-icon-names.mjs` intersects every quoted
   string literal and bare JSX text under `app/`, `components/`, `lib/`, `contexts/`,

@@ -16,6 +16,10 @@ final class NDIAudioSource: AudioSource {
     private(set) var isRunning = false
 
     private let sourceName: String
+    /// `ip:port` the source was discovered at. Passed to the receiver so it
+    /// connects straight there, rather than having to resolve the name again
+    /// (which fails across subnets unless discovery is configured for them).
+    private let urlAddress: String
     private var receiverInstance: NDIlib_recv_instance_t?
     private var captureThread: Thread?
     private var resampler: AudioResampler?
@@ -29,8 +33,9 @@ final class NDIAudioSource: AudioSource {
     /// and not silently stalling for a full minute during a live service.
     private static let maxConsecutiveTimeouts = 4
 
-    init(sourceName: String) {
+    init(sourceName: String, urlAddress: String = "") {
         self.sourceName = sourceName
+        self.urlAddress = urlAddress
     }
 
     /// Enumerates NDI sources currently visible on the network. Call
@@ -58,13 +63,23 @@ final class NDIAudioSource: AudioSource {
     func start() throws {
         guard !isRunning else { return }
 
-        guard let source = Self.discoverSources().first(where: { $0.displayName == sourceName }) else {
-            throw AudioSourceError.deviceUnavailable
+        // A known address connects directly; otherwise the source must be
+        // visible to discovery right now.
+        var address = urlAddress
+        if address.isEmpty {
+            guard let source = Self.discoverSources().first(where: { $0.displayName == sourceName }) else {
+                throw AudioSourceError.deviceUnavailable
+            }
+            if case .ndi(_, let discoveredAddress) = source { address = discoveredAddress }
         }
 
         var ndiSource = NDIlib_source_t()
+        // Deliberately not freed: a few bytes per start, and it rules out the
+        // receiver ever reading them after they're gone.
         let sourceNamePointer: UnsafeMutablePointer<CChar>? = sourceName.withCString { strdup($0) }
+        let addressPointer: UnsafeMutablePointer<CChar>? = address.isEmpty ? nil : address.withCString { strdup($0) }
         ndiSource.p_ndi_name = UnsafePointer(sourceNamePointer)
+        ndiSource.p_url_address = addressPointer.map { UnsafePointer($0) }
 
         var createSettings = NDIlib_recv_create_v3_t()
         createSettings.source_to_connect_to = ndiSource

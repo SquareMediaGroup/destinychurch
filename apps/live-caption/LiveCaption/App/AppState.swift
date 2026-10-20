@@ -36,10 +36,28 @@ final class AppState {
     /// instead of landing in — or stopping — the next run.
     private var runGeneration = 0
 
+    /// The NDI network settings the SDK actually started with. The SDK reads
+    /// them once per launch, so when `preferences.ndiNetwork` differs from
+    /// this the operator needs to restart the app to apply them.
+    let appliedNDINetwork: NDINetworkConfiguration
+
+    /// Whether the last start found a voice-activity model and is filtering
+    /// out applause, music and noise. Reflected in `statusMessage`.
+    private(set) var isFilteringNonSpeech = false
+
     init(preferences: Preferences = Preferences()) {
         self.preferences = preferences
         self.captionStore = CaptionStore(stabilityDelay: preferences.stabilityDelay)
         self.captionStore.maxDisplayWords = preferences.maxDisplayWords
+
+        // Must run before anything else touches the NDI SDK (discovery,
+        // receivers, senders), because the SDK reads its network config once.
+        self.appliedNDINetwork = preferences.ndiNetwork
+        self.alertMessage = NDIRuntime.initialize(with: preferences.ndiNetwork)
+    }
+
+    var ndiNetworkNeedsRestart: Bool {
+        preferences.ndiNetwork != appliedNDINetwork
     }
 
     // MARK: - Discovery
@@ -91,10 +109,18 @@ final class AppState {
             let engine = try WhisperEngine(modelPath: modelPath)
             self.engine = engine
 
+            // Without a VAD model this degrades to transcribing everything,
+            // which is how the app behaved before the filter existed.
+            let speechDetector = preferences.filterNonSpeech
+                ? ModelCatalog.vadModel().flatMap { SpeechDetector(modelPath: $0.url.path) }
+                : nil
+            isFilteringNonSpeech = speechDetector != nil
+
             let vocabulary = preferences.effectiveVocabulary
             let generation = runGeneration
             let transcriber = StreamingTranscriber(
                 engine: engine,
+                speechDetector: speechDetector,
                 vocabularyPrompt: { VocabularyPrompt.build(preamble: "", vocabulary: vocabulary) },
                 onEvent: { [weak self] event in
                     Task { @MainActor in
@@ -124,6 +150,9 @@ final class AppState {
 
             isRunning = true
             statusMessage = "Running — \(source.displayName)"
+            if preferences.filterNonSpeech && !isFilteringNonSpeech {
+                statusMessage += " (speech filter off: detection model not installed)"
+            }
         } catch {
             stop()
             statusMessage = "Failed to start"
@@ -244,8 +273,8 @@ final class AppState {
         switch source {
         case .coreAudio(let deviceID, _):
             CoreAudioSource(deviceID: deviceID)
-        case .ndi(let sourceName, _):
-            NDIAudioSource(sourceName: sourceName)
+        case .ndi(let sourceName, let urlAddress):
+            NDIAudioSource(sourceName: sourceName, urlAddress: urlAddress)
         }
     }
 }

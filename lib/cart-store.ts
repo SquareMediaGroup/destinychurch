@@ -5,7 +5,7 @@
 
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import type { CartItem } from "@/lib/shop";
+import { FREE_ITEM_LIMIT, freeUnits, type CartItem } from "@/lib/shop";
 
 interface CartState {
   items: CartItem[];
@@ -21,6 +21,12 @@ export const useCart = create<CartState>()(
       items: [],
       add: (item) =>
         set((state) => {
+          // Free items are capped per person; the checkout enforces it too.
+          if (item.unitPricePennies === 0) {
+            const room = FREE_ITEM_LIMIT - freeUnits(state.items);
+            if (room <= 0) return state;
+            item = { ...item, quantity: Math.min(item.quantity, room) };
+          }
           const existing = state.items.find(
             (i) => i.variantId === item.variantId,
           );
@@ -42,11 +48,15 @@ export const useCart = create<CartState>()(
       setQty: (variantId, quantity) =>
         set((state) => ({
           items: state.items
-            .map((i) =>
-              i.variantId === variantId
-                ? { ...i, quantity: Math.max(1, Math.floor(quantity)) }
-                : i,
-            )
+            .map((i) => {
+              if (i.variantId !== variantId) return i;
+              let next = Math.max(1, Math.floor(quantity));
+              if (i.unitPricePennies === 0) {
+                const others = freeUnits(state.items) - i.quantity;
+                next = Math.min(next, Math.max(1, FREE_ITEM_LIMIT - others));
+              }
+              return { ...i, quantity: next };
+            })
             .filter((i) => i.quantity > 0),
         })),
       clear: () => set({ items: [] }),

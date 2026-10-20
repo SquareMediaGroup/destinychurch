@@ -5,7 +5,10 @@ import Link from "next/link";
 import { useToast } from "@/components/ToastProvider";
 import { useCart } from "@/lib/cart-store";
 import {
+  FREE_ITEM_LIMIT,
+  FREE_ITEM_LIMIT_MESSAGE,
   formatPrice,
+  freeUnits,
   sizeIndex,
   variantPrice,
   type ProductVariant,
@@ -16,6 +19,7 @@ import Button from "@/components/ui/Button";
 export default function ProductBuyPanel({ product }: { product: ProductWithVariants }) {
   const toast = useToast();
   const add = useCart((s) => s.add);
+  const cartFree = useCart((s) => freeUnits(s.items));
 
   const active = useMemo(
     () => product.variants.filter((v) => v.is_active),
@@ -76,7 +80,12 @@ export default function ProductBuyPanel({ product }: { product: ProductWithVaria
       toast.error("That option isn't available right now.");
       return;
     }
-    const clampedQty = Math.min(qty, selected.stock);
+    const isFree = variantPrice(selected, product) === 0;
+    if (isFree && cartFree >= FREE_ITEM_LIMIT) {
+      toast.error(`${FREE_ITEM_LIMIT_MESSAGE} You already have one in your basket.`);
+      return;
+    }
+    const clampedQty = Math.min(qty, selected.stock, isFree ? FREE_ITEM_LIMIT : Infinity);
     add({
       productId: product.id,
       variantId: selected.id,
@@ -95,7 +104,10 @@ export default function ProductBuyPanel({ product }: { product: ProductWithVaria
   return (
     <div className="mt-6">
       {/* Price */}
-      <p className="text-2xl font-black text-destiny-grey">{formatPrice(price)}</p>
+      <p className="text-2xl font-black text-destiny-grey">
+        {price === 0 ? "Free" : formatPrice(price)}
+      </p>
+      {price === 0 && <p className="mt-1 text-sm text-muted">{FREE_ITEM_LIMIT_MESSAGE}</p>}
 
       {/* Colour */}
       {hasColor && (
@@ -184,7 +196,9 @@ export default function ProductBuyPanel({ product }: { product: ProductWithVaria
           <button
             type="button"
             onClick={() =>
-              setQty((q) => Math.min(selected?.stock ?? 99, q + 1))
+              setQty((q) =>
+                Math.min(selected?.stock ?? 99, price === 0 ? FREE_ITEM_LIMIT : 99, q + 1),
+              )
             }
             className="flex h-11 w-11 items-center justify-center text-muted transition hover:text-destiny-grey"
             aria-label="Increase quantity"

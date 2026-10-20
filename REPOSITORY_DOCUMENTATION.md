@@ -338,6 +338,7 @@ destinychurch/
 │       ├── 20260708_shop.sql      # Shop: products, variants, orders, items
 │       ├── 20260708_shop_product_fit.sql # products.fit (male/female/unisex/kids)
 │       ├── 20260710_shop_hero.sql # Editable auto-rotating /shop hero slides
+│       ├── 20261020_01_shop_free_item_limit.sql # Free items: one per customer (shop_free_item_claims)
 │       ├── 20260711_02..07_*.sql  # RLS/security-advisor fixes; shop product_type; page builder + sermon hiding removed
 │       ├── 20260711_rls_harden_base_tables.sql # RLS hardening pass across base tables
 │       ├── 20260712_alpha_events_bible_course_type.sql # The Bible Course
@@ -1406,6 +1407,18 @@ CREATE TABLE order_items (
 > so those policies were dropped; every upload already goes through an admin
 > API route using the service client. Public read policies are unchanged.
 
+> **Free items: one per person** (migration `20261020_01_shop_free_item_limit`).
+> A product or variant priced at 0 is a free item, and each customer gets one,
+> ever. The shop is guest checkout, so "customer" means the lower-cased email.
+> `shop_free_item_claims` (email primary key, `order_id`, service-only RLS) holds
+> the claims. `buildPendingOrder` turns away a basket with more than one free
+> unit or an email that already has a claim. A basket of only the free item has
+> nothing to pay: `POST /api/store/checkout` takes the claim (the unique key
+> stops two racing checkouts) and completes the order without Stripe. A paid
+> order carrying a free item takes the claim in `finalizeOrderPaid`. The basket
+> (`lib/cart-store.ts`) caps free units at one for display. To let someone have
+> another free item, delete their row from `shop_free_item_claims`.
+
 **Used By:** `/shop` storefront, `/admin/store` CRUD, `POST /api/store/checkout`, `POST /api/webhooks/stripe`. `description` is HTML written via the shared `RichTextEditor` (same component used for posts/training) — the admin editor no longer has a markdown Write/Preview toggle, and the public product page renders it with `dangerouslySetInnerHTML` (no markdown fallback).
 
 ---
@@ -1476,6 +1489,7 @@ All tables have RLS enabled. Access rules:
 | training_categories / training_subgroups / training_folders / training_posts | - | - | Yes | /training resource library (public read via server components; sub-group passwords hashed) |
 | products / product_variants | - | - | Yes | Shop catalogue (public read via server components) |
 | orders / order_items | - | - | Yes | Store orders (written by Stripe webhook) |
+| shop_free_item_claims | - | - | Yes | One free item per customer email (written by checkout) |
 | shop_hero_slides | - | - | Yes | Editable /shop hero (public read via server components) |
 | sermons / sermon_transcripts / sermon_link_suggestions / ai_reports / auth_users / admin_users | - | - | Yes | Base-schema legacy tables (deny-all "service only"; not read by the app) |
 | studio_assets / studio_components | - | - | Yes | Orphaned Studio-builder tables (never dropped; unused) |

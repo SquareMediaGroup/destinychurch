@@ -2504,7 +2504,7 @@ Wraps children with React context providers:
 - **Supabase Client Provider** — Browser auth token management
 - **Theme Provider** — Dark/light mode
 - **Query Client** (if using) — API caching
-- **Toast Provider** (`components/ToastProvider.tsx`) — Passive notifications via `useToast()` (`success`/`error`/`info`/`push`). Rendered by [sonner](https://github.com/emilkowalski/sonner) in `unstyled` mode for stacking, swipe-to-dismiss and exit animation; the look is the glass `.dc-toast*` classes in `app/globals.css`. `push({ actions })` maps one `primary` action and one other action onto sonner's action/cancel buttons.
+- **Toast Provider** (`components/ToastProvider.tsx`) — Passive notifications via `useToast()` (`success`/`error`/`info`/`push`). Rendered by [sonner](https://github.com/emilkowalski/sonner) in `unstyled` mode for stacking, swipe-to-dismiss and exit animation; the look is the glass `.dc-toast*` classes in `app/globals.css`. `push({ actions })` maps one `primary` action and one other action onto sonner's action/cancel buttons. The bottom offset reads `--cookie-banner-clearance` (falls back to 1.5rem / 1rem mobile) so the stack lifts above the cookie banner.
 - **Dialog Provider** (`components/DialogProvider.tsx`) — Styled, promise-based modal dialogs via `useDialog()`. The modal itself lives in `components/DialogLayer.tsx` and is lazy-loaded on first use (and warmed by any `useDialog()` caller), so public pages don't ship it or the `motion` library; its button/input classes come from `components/admin/adminTokens.ts`, which `AdminUI.tsx` re-exports
 
 #### Dialogs & notifications — no native browser dialogs
@@ -2538,7 +2538,7 @@ caught; the same helper gates the footer, banners, popups and Smart Search.
 - **Logo** — Clickable link to home
 - **Navigation menu** — Top-level links plus hover **dropdowns** ("About", "What's on") that fade in as white rounded cards with a staggered per-item reveal
 - **Mobile menu** — Animated hamburger (bars morph into an X) opens a **full-screen brand-colour overlay** with drill-down submenus and a top-down reveal (see `ChurchHeader.tsx` below); no left-hand drawer. Top-level items and a submenu ("What's on"/"About") sit side by side in a double-width row that slides horizontally (`translateX`) between the two, rather than an instant swap — both panels stay mounted so the transition is a real slide in both directions, and the submenu panel keeps rendering the last-active submenu's items while sliding back out so it never flashes empty.
-- **Scroll morph** — The header pill reshapes as you scroll (progress ramps over `MORPH_DISTANCE`)
+- **Scroll morph** — The header pill reshapes as you scroll (progress ramps over `MORPH_DISTANCE`). The pill is frosted `.glass` (blur only, deliberately no `glass-refract` and, via `glass-no-bloom`, no hover glow); its grey fill goes 0.6→0.78 on the home hero and 1→0.8 on inner pages so nav text stays legible once scrolled
 - **Auth indicator** — Login/logout buttons
 
 Site search is **not** in the header — it lives in the floating `FloatingSmartSearch` mark (Smart Search); see that component below.
@@ -3104,7 +3104,7 @@ focus to whatever opened it, and locks body scroll — restoring the *previous*
   - Desktop: horizontal menu bar; "About" and "What's on" open hover **dropdowns** (`Dropdown`) rendered as white rounded cards that fade in with a staggered per-item reveal (a brief close delay keeps them from flickering shut between the trigger and the card)
   - Mobile: an animated hamburger (bars morph into an X) toggles a **full-screen brand-colour overlay** (`fixed inset-0`, `bg-destiny-orange/60 backdrop-blur`, a sibling of `<header>`) with **drill-down submenus** (`mobileSubmenu` state) and a top-down reveal; scrolling auto-closes it
   - The top-level list and the active submenu's list are laid out side by side in a `width: 200%` flex row that translates `-50%`/`0` (`transition: transform 0.38s cubic-bezier(0.4, 0, 0.2, 1)`) to switch between them — a real slide left/right rather than an unmount/mount swap. Both panels stay mounted; a `lastSubmenu` value (updated during render, not in an effect, guarded against re-render loops) keeps the submenu panel showing its last items while it slides back off-screen so it never goes blank mid-transition. The per-item stagger fade/translateY on entry is unchanged.
-  - A scroll-driven **morph** reshapes the header pill (`progress` ramps 0→1 over `MORPH_DISTANCE`)
+  - A scroll-driven **morph** reshapes the header pill (`progress` ramps 0→1 over `MORPH_DISTANCE`); surface is `glass glass-no-bloom` (no `glass-refract`, no cursor bloom or focus halo), fill alpha `0.6→0.78` (home) / `1→0.8` (inner pages)
   - Active route highlighting
   - Search is not in the header — it lives in `FloatingSmartSearch`
   - Self-suppresses: returns `null` on `/admin`, `/nfc`, and `/portal` (each is a chrome-free shell with its own minimal layout)
@@ -3143,6 +3143,7 @@ focus to whatever opened it, and locks body scroll — restoring the *previous*
   - Renders only after mount and only while no choice is stored (hydration-guarded so SSR/client markup match)
   - Two buttons: **"Accept all cookies"** (`allowAll` → media + analytics on) and **"Necessary cookies only"** (`denyOptional` → both off). Both link out to the Privacy Policy and Terms of Use
   - A finer `savePreferences({ media, analytics })` also exists for per-category control
+  - While visible it publishes `--cookie-banner-clearance` on `<html>` (its top edge from the viewport bottom, plus a 12px gap); `ToastProvider` uses it as the sonner bottom offset so toasts (e.g. the first-visit Performance Mode toast) stack above the banner rather than over it
 - **Gotcha:** Because consent loads from `localStorage` in an effect, `consent` is `null` on first render. Every gated component waits for `mounted` before reading it, so nothing embeds or tracks until the stored choice (or its absence) is known.
 
 #### `AnalyticsGate.tsx`

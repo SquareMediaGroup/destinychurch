@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import Image from "next/image";
+import PhotoSlideshow from "@/components/ui/PhotoSlideshow";
 import AnimateIn from "@/components/AnimateIn";
 
 interface Topic {
@@ -118,17 +118,13 @@ export default function AlphaTopics() {
             </div>
           </AnimateIn>
           <AnimateIn delay={100} className="w-full md:w-1/2">
-            <div className="grid grid-cols-2 gap-3">
-              <div className="relative h-48 overflow-hidden rounded-2xl">
-                <Image src="/img/Alpha/Alpha/WiA-SC_V2-Carousel_02.webp" alt="" fill sizes="(max-width: 768px) 50vw, 25vw" className="object-cover" />
-              </div>
-              <div className="relative h-48 overflow-hidden rounded-2xl">
-                <Image src="/img/Alpha/Alpha/WiA-SC_V2-Carousel_03.webp" alt="" fill sizes="(max-width: 768px) 50vw, 25vw" className="object-cover" />
-              </div>
-              <div className="relative col-span-2 h-40 overflow-hidden rounded-2xl">
-                <Image src="/img/Alpha/Alpha/WiA-SC_V2-Carousel_04.webp" alt="" fill sizes="(max-width: 768px) 100vw, 50vw" className="object-cover" />
-              </div>
-            </div>
+            <PhotoSlideshow
+              photos={[
+                { src: "/img/Alpha/Alpha/WiA-SC_V2-Carousel_02.webp", alt: "" },
+                { src: "/img/Alpha/Alpha/WiA-SC_V2-Carousel_03.webp", alt: "" },
+                { src: "/img/Alpha/Alpha/WiA-SC_V2-Carousel_04.webp", alt: "" },
+              ]}
+            />
           </AnimateIn>
         </div>
       </div>

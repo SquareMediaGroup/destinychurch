@@ -3029,6 +3029,15 @@ inset blurred-photo CTA banner (`WorshipWithUsSection`, `ConnectGroupsBanner`, �
 left, stacked buttons right. Both replace the CSS-`background-image` / independently-pasted
 blur+scrim idiom that had accumulated across ~8–11 files.
 
+#### `ui/PhotoSlideshow.tsx`
+**Client component.** One 4:3 rounded frame that crossfades (1.4s) between photos every 12 seconds,
+with a pause button and dot buttons in a dark pill bottom-left. Replaced every bento-style photo
+grid beside body copy (`/serve` "You have something to offer", `/visit` "In the service", `/connect-card`, `/alpha` "The Topics", and the
+`/kids`, `/youth`, `/young-adults` split sections, which used the now-deleted
+`ministry/ImageMosaic`). The long interval is deliberate: beside copy it should read as a photo
+that occasionally changes, not as motion. No auto-advance under "Reduce animations" or the OS
+setting; the pause button covers WCAG 2.2.2 for everyone else.
+
 #### `ui/Field.tsx` (`Field`, `TextareaField`, `SelectField`)
 **Client component.** The one input shape: generates an id, wires `label`/`aria-describedby`/
 `aria-invalid`, and renders a hint or an error. Replaces three competing `inputClass`
@@ -3281,9 +3290,8 @@ editing five files. All server components.
 - `SplitSection.tsx` — image-and-copy split on a 7/5 asymmetric 12-column grid rather than an even
   50/50. `reverse` swaps columns via `lg:order-*` so JSX stays in reading order; `wideMedia` flips the
   ratio for photo-led sections; `tone="dark"` renders the shared `#363f48 → #242e37` band.
-- `ImageMosaic.tsx` — 3-or-4 image offset mosaic replacing the old `col-span-2`-plus-two-squares
-  collage. Every tile is `fill` inside a fixed aspect box with a real `sizes`, which is what removes
-  the layout shift and oversized downloads the old fixed-`width`/`height` collages caused.
+- Split-section media is a `ui/PhotoSlideshow` (it replaced the offset `ImageMosaic`, removed in
+  favour of one slowly crossfading photo).
 - `FeatureGrid.tsx` — the "why join / what we're about" cards. Card shell borrowed from
   `events/EventCard` (hairline border, two-layer shadow, hover lift); the orange-tinted icon square
   was dropped in favour of an oversized index numeral. One `AnimateIn` wraps the whole grid —

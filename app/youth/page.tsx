@@ -3,7 +3,7 @@ import Image from "next/image";
 import AnimateIn from "@/components/AnimateIn";
 import MinistryHero from "@/components/ministry/MinistryHero";
 import SplitSection from "@/components/ministry/SplitSection";
-import ImageMosaic from "@/components/ministry/ImageMosaic";
+import PhotoSlideshow from "@/components/ui/PhotoSlideshow";
 import AgeGroupCards, { type AgeGroup } from "@/components/ministry/AgeGroupCards";
 import WorshipWithUsSection from "@/components/home/WorshipWithUsSection";
 import YouthAlphaSection from "@/components/youth-alpha/YouthAlphaSection";
@@ -68,9 +68,9 @@ export default function YouthPage() {
         title="More than a youth group"
         wideMedia
         media={
-          <ImageMosaic
-            wide
-            images={[
+          <PhotoSlideshow
+            sizes="(min-width: 1024px) 58vw, 100vw"
+            photos={[
               { src: "/img/photos/EHAP_Youth.webp", alt: "A young person at Destiny Youth" },
               { src: "/img/photos/Gallery/YouthCommunity.webp", alt: "Young people together at Destiny Youth" },
               { src: "/img/photos/Gallery/WorshipMoment3.webp", alt: "" },

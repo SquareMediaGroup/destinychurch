@@ -3,7 +3,7 @@ import Link from "next/link";
 import AnimateIn from "@/components/AnimateIn";
 import MinistryHero from "@/components/ministry/MinistryHero";
 import SplitSection from "@/components/ministry/SplitSection";
-import ImageMosaic from "@/components/ministry/ImageMosaic";
+import PhotoSlideshow from "@/components/ui/PhotoSlideshow";
 import FeatureGrid from "@/components/ministry/FeatureGrid";
 import WorshipWithUsSection from "@/components/home/WorshipWithUsSection";
 import Button from "@/components/ui/Button";
@@ -51,9 +51,9 @@ export default function YoungAdultsPage() {
         title="Life is better together"
         wideMedia
         media={
-          <ImageMosaic
-            wide
-            images={[
+          <PhotoSlideshow
+            sizes="(min-width: 1024px) 58vw, 100vw"
+            photos={[
               { src: "/img/photos/Gallery/YouthCommunity.webp", alt: "Young adults together at Destiny Church" },
               { src: "/img/photos/Community.webp", alt: "" },
               { src: "/img/photos/WorshipMoment1.webp", alt: "" },
@@ -77,9 +77,9 @@ export default function YoungAdultsPage() {
         reverse
         wideMedia
         media={
-          <ImageMosaic
-            wide
-            images={[
+          <PhotoSlideshow
+            sizes="(min-width: 1024px) 58vw, 100vw"
+            photos={[
               { src: "/img/photos/WorshipMoment2.webp", alt: "" },
               { src: "/img/photos/ConnectGroups.webp", alt: "" },
               { src: "/img/photos/Gallery/SingingLand2.webp", alt: "" },

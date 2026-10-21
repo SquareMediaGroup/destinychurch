@@ -8,7 +8,7 @@ const cards = [
     title: "Get Connected",
     description:
       "Biblical community reflects the very nature of God. We were made and created to belong to a small group of believers who encourage each other, study God's Word together, and support each other in their walk of faith.",
-    image: "/img/photos/Prayer1.webp",
+    image: "/img/photos/Conversation.webp",
     cta: "Join a Connect Group",
     href: "/connect",
   },

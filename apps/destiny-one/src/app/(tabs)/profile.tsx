@@ -216,6 +216,8 @@ export default function Profile() {
         <SettingsRow icon="bell" iconBg={ORANGE} iconColor={INK} label="Notifications" onPress={() => router.push("/notifications")} />
         <Separator inset={62} />
         <SettingsRow icon="sliders" label="Appearance" onPress={() => router.push("/appearance")} />
+        <Separator inset={62} />
+        <SettingsRow icon="storage" label="Storage and data" onPress={() => router.push("/storage-data")} />
       </Section>
 
       <Section title="Privacy and safety">

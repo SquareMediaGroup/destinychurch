@@ -23,6 +23,8 @@ import { hasSeenSetup } from "@/state/setupSeen";
 import { persistOptions, queryClient } from "@/lib/queryClient";
 import { SwitchBanner } from "@/components/SwitchBanner";
 import { appearance } from "@/state/appearance";
+import { dataSettings } from "@/state/dataSettings";
+import { networkUsage } from "@/state/networkUsage";
 import { useShakeToReportListener } from "@/lib/useShakeToReport";
 import { notificationTap, usePendingNotificationGroup } from "@/state/notificationTap";
 import { AccessGuard, SessionProvider, isInApp, useSession } from "@/state/session";
@@ -220,6 +222,11 @@ function sheetOptions(solid: string) {
 function RootLayout() {
   useNotificationTaps();
   // The person's own send colour and wallpaper, from this phone.
+  // Storage and data settings and the network usage count, from this phone.
+  useEffect(() => {
+    void dataSettings.load();
+    void networkUsage.load();
+  }, []);
   useEffect(() => {
     // Hide even if loading fails; the splash must never stick.
     void appearance

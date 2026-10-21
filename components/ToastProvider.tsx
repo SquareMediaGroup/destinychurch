@@ -65,8 +65,10 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
         position="bottom-right"
         theme="dark"
         gap={10}
-        offset={{ bottom: "1.5rem", right: "1.5rem" }}
-        mobileOffset={{ bottom: "1rem", left: "1rem", right: "1rem" }}
+        // Lift the stack above the cookie banner while it is showing
+        // (CookieBanner publishes --cookie-banner-clearance).
+        offset={{ bottom: "var(--cookie-banner-clearance, 1.5rem)", right: "1.5rem" }}
+        mobileOffset={{ bottom: "var(--cookie-banner-clearance, 1rem)", left: "1rem", right: "1rem" }}
         visibleToasts={4}
         closeButton
         containerAriaLabel="Notifications"

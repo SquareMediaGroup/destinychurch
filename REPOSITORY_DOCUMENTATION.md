@@ -2504,7 +2504,7 @@ Wraps children with React context providers:
 - **Supabase Client Provider** — Browser auth token management
 - **Theme Provider** — Dark/light mode
 - **Query Client** (if using) — API caching
-- **Toast Provider** (`components/ToastProvider.tsx`) — Passive notifications via `useToast()` (`success`/`error`/`info`/`push`). Rendered by [sonner](https://github.com/emilkowalski/sonner) in `unstyled` mode for stacking, swipe-to-dismiss and exit animation; the look is the glass `.dc-toast*` classes in `app/globals.css`. `push({ actions })` maps one `primary` action and one other action onto sonner's action/cancel buttons.
+- **Toast Provider** (`components/ToastProvider.tsx`) — Passive notifications via `useToast()` (`success`/`error`/`info`/`push`). Rendered by [sonner](https://github.com/emilkowalski/sonner) in `unstyled` mode for stacking, swipe-to-dismiss and exit animation; the look is the glass `.dc-toast*` classes in `app/globals.css`. `push({ actions })` maps one `primary` action and one other action onto sonner's action/cancel buttons. The bottom offset reads `--cookie-banner-clearance` (falls back to 1.5rem / 1rem mobile) so the stack lifts above the cookie banner.
 - **Dialog Provider** (`components/DialogProvider.tsx`) — Styled, promise-based modal dialogs via `useDialog()`. The modal itself lives in `components/DialogLayer.tsx` and is lazy-loaded on first use (and warmed by any `useDialog()` caller), so public pages don't ship it or the `motion` library; its button/input classes come from `components/admin/adminTokens.ts`, which `AdminUI.tsx` re-exports
 
 #### Dialogs & notifications — no native browser dialogs
@@ -3143,6 +3143,7 @@ focus to whatever opened it, and locks body scroll — restoring the *previous*
   - Renders only after mount and only while no choice is stored (hydration-guarded so SSR/client markup match)
   - Two buttons: **"Accept all cookies"** (`allowAll` → media + analytics on) and **"Necessary cookies only"** (`denyOptional` → both off). Both link out to the Privacy Policy and Terms of Use
   - A finer `savePreferences({ media, analytics })` also exists for per-category control
+  - While visible it publishes `--cookie-banner-clearance` on `<html>` (its top edge from the viewport bottom, plus a 12px gap); `ToastProvider` uses it as the sonner bottom offset so toasts (e.g. the first-visit Performance Mode toast) stack above the banner rather than over it
 - **Gotcha:** Because consent loads from `localStorage` in an effect, `consent` is `null` on first render. Every gated component waits for `mounted` before reading it, so nothing embeds or tracks until the stored choice (or its absence) is known.
 
 #### `AnalyticsGate.tsx`

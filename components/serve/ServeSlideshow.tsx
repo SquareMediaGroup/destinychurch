@@ -12,67 +12,41 @@ const photos = [
   { src: "/img/photos/Training_DC-scaled.webp", alt: "" },
 ];
 
-const SLIDE_MS = 6000;
+// Kept long on purpose: this sits beside body copy, so it should read as a
+// photo that occasionally changes, not as something moving.
+const SLIDE_MS = 12000;
 
 // Replaces the three-photo bento on /serve: one frame that slowly crossfades
-// between team photos, each easing in a 6% zoom while it is on screen.
-// Under "Reduce animations" (or the OS setting) there is no zoom and no
-// auto-advance; the dots keep every photo reachable either way, and the pause
-// button covers WCAG 2.2.2 for everyone else.
+// between team photos. Under "Reduce animations" (or the OS setting) there is
+// no auto-advance; the dots keep every photo reachable either way, and the
+// pause button covers WCAG 2.2.2 for everyone else.
 export default function ServeSlideshow() {
   const { reducedMotion } = useAccessibility();
   const [current, setCurrent] = useState(0);
-  const [prev, setPrev] = useState<number | null>(null);
   const [paused, setPaused] = useState(false);
-  // The first photo has to render unzoomed once before it can transition in.
-  const [started, setStarted] = useState(false);
-
-  const goTo = (i: number) => {
-    if (i === current) return;
-    setPrev(current);
-    setCurrent(i);
-  };
-
-  useEffect(() => {
-    const frame = requestAnimationFrame(() => setStarted(true));
-    return () => cancelAnimationFrame(frame);
-  }, []);
 
   useEffect(() => {
     if (reducedMotion || paused) return;
-    const timer = setInterval(() => {
-      setPrev(current);
-      setCurrent((current + 1) % photos.length);
-    }, SLIDE_MS);
+    const timer = setInterval(() => setCurrent((c) => (c + 1) % photos.length), SLIDE_MS);
     return () => clearInterval(timer);
   }, [reducedMotion, paused, current]);
 
   return (
     <div className="relative aspect-[4/3] w-full overflow-hidden rounded-3xl bg-destiny-grey">
-      {photos.map((photo, i) => {
-        const isCurrent = i === current;
-        // The outgoing photo holds its zoom while it fades, so it never snaps.
-        const zoomed = !reducedMotion && ((isCurrent && started) || i === prev);
-        return (
-          <Image
-            key={photo.src}
-            src={photo.src}
-            alt={photo.alt}
-            fill
-            sizes="(max-width: 768px) 100vw, 50vw"
-            className={`object-cover ${isCurrent ? "opacity-100" : "opacity-0"} ${
-              zoomed ? "scale-[1.06]" : "scale-100"
-            }`}
-            style={{
-              transition: isCurrent
-                ? `opacity 1400ms ease-in-out, transform ${SLIDE_MS + 1400}ms linear`
-                : "opacity 1400ms ease-in-out",
-            }}
-            aria-hidden={isCurrent ? undefined : true}
-            priority={i === 0}
-          />
-        );
-      })}
+      {photos.map((photo, i) => (
+        <Image
+          key={photo.src}
+          src={photo.src}
+          alt={photo.alt}
+          fill
+          sizes="(max-width: 768px) 100vw, 50vw"
+          className={`object-cover transition-opacity duration-[1400ms] ease-in-out ${
+            i === current ? "opacity-100" : "opacity-0"
+          }`}
+          aria-hidden={i === current ? undefined : true}
+          priority={i === 0}
+        />
+      ))}
 
       <div className="absolute bottom-3 left-3 flex items-center rounded-full bg-black/45 pl-1 pr-2 backdrop-blur-sm">
         {!reducedMotion && (
@@ -91,7 +65,7 @@ export default function ServeSlideshow() {
           <button
             key={photo.src}
             type="button"
-            onClick={() => goTo(i)}
+            onClick={() => setCurrent(i)}
             aria-label={`Show photo ${i + 1} of ${photos.length}`}
             aria-current={i === current ? "true" : undefined}
             className="group px-1 py-3"

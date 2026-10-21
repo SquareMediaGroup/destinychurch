@@ -74,7 +74,7 @@ export default function ServePage() {
             </AnimateIn>
             <AnimateIn delay={100} className="grid w-full grid-cols-2 gap-3 md:w-1/2">
               <div className="col-span-2 overflow-hidden rounded-3xl">
-                <Image src="/img/photos/Training_DC-scaled.webp" alt="Serving at Destiny" width={640} height={280} className="w-full object-cover" />
+                <Image src="/img/photos/WorshipTeam.webp" alt="The worship team singing on stage" width={640} height={280} className="w-full object-cover" />
               </div>
               <div className="overflow-hidden rounded-2xl">
                 <Image src="/img/photos/audience.webp" alt="" width={300} height={200} className="w-full object-cover" />

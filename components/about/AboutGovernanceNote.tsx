@@ -5,12 +5,12 @@ export default function AboutGovernanceNote() {
     <section className="bg-white py-6 sm:py-8">
       <div className="mx-auto max-w-2xl px-4 text-center lg:px-8">
         <p className="text-sm text-subtle">
-          Curious how we&apos;re structured as a charity? Read about our{" "}
+          Learn more about{" "}
           <Link
             href="/governance"
             className="font-bold text-destiny-orange underline underline-offset-4"
           >
-            governance
+            our charity&apos;s governance and structure
           </Link>
           .
         </p>

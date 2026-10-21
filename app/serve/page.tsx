@@ -76,9 +76,9 @@ export default function ServePage() {
               <PhotoSlideshow
                 photos={[
                   { src: "/img/photos/WorshipTeam.webp", alt: "The worship team singing on stage" },
-                  { src: "/img/photos/audience.webp", alt: "" },
-                  { src: "/img/photos/worship-dc.webp", alt: "" },
-                  { src: "/img/photos/Training_DC-scaled.webp", alt: "" },
+                  { src: "/img/photos/audience.webp", alt: "The congregation during a Sunday service" },
+                  { src: "/img/photos/worship-dc.webp", alt: "Worship leaders singing on stage" },
+                  { src: "/img/photos/Training_DC-scaled.webp", alt: "Volunteers seated in the auditorium during a training session" },
                 ]}
               />
             </AnimateIn>

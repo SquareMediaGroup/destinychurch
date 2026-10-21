@@ -79,7 +79,6 @@ const ministries: Ministry[] = [
       "Destiny Youth is a space where teenagers can be themselves, ask hard questions, and encounter a God who knows them by name. The team runs Sunday sessions and regular youth events, creating environments that are energetic, honest, and rooted in the Word. If you have a heart for young people and remember what it felt like to be a teenager navigating life and faith, this team is for you.",
     photos: [
       "/img/photos/Gallery/YouthCommunity.webp",
-      "/img/photos/YA1.webp",
       "/img/photos/EHAP_Youth.webp",
     ],
     requirements: [
@@ -211,11 +210,7 @@ const ministries: Ministry[] = [
       "Take the love of God beyond the church walls — locally, nationally and internationally. Get involved in outreach events and mission trips.",
     detail:
       "Outreach & Missions is about taking the Gospel beyond our four walls. The team organises local community initiatives, partners with national organisations, and sends teams on international mission trips. Whether you want to hand out food in Middlesbrough or fly to a partner church overseas, this team will give you the opportunity to be the hands and feet of Jesus in a very real way.",
-    photos: [
-      "/img/photos/Gallery/Community.webp",
-      "/img/photos/Gallery/OlderPeople.webp",
-      "/img/photos/Community.webp",
-    ],
+    photos: [],
     category: "Outreach",
   },
   {
@@ -241,10 +236,7 @@ const ministries: Ministry[] = [
       "Help create beautiful spaces that welcome people and reflect the heart of Destiny — from Sunday stage design to seasonal installations.",
     detail:
       "The Decoration team transforms the physical space of Destiny Church into an environment that speaks before a word is even said. From Sunday stage setups and seasonal displays to special events and creative installations, this team uses artistic gifts to create atmosphere. If you have an eye for design, a creative streak, or simply love making spaces feel special, come and join us.",
-    photos: [
-      "/img/photos/Gallery/WorshipMoment3.webp",
-      "/img/photos/Gallery/SingingLand4.webp",
-    ],
+    photos: [],
     category: "Worship & Arts",
   },
   {
@@ -271,9 +263,7 @@ const ministries: Ministry[] = [
     detail:
       "Alpha is one of the most powerful evangelism tools in the church — a series of sessions that create a safe space for anyone to explore Christianity, no matter where they're starting from. The Alpha team helps with hosting, cooking, leading small group discussions, and praying for guests. If you have a heart for people who are searching, and want to play a part in their journey to faith, this is a team you'll love.",
     photos: [
-      "/img/photos/Gallery/Community2.webp",
-      "/img/photos/Gallery/OlderPeople.webp",
-      "/img/photos/Gallery/FamilySatTogether.webp",
+      "/img/photos/Courses/Alpha.webp",
     ],
     category: "Outreach",
   },
@@ -349,7 +339,7 @@ export default function MinistriesGrid() {
   );
 }
 
-function PhotoSlideshow({ photos, color }: { photos: string[]; color: string }) {
+function PhotoSlideshow({ photos, color, label }: { photos: string[]; color: string; label: string }) {
   const [index, setIndex] = useState(0);
   if (photos.length === 0) return null;
   const prev = () => setIndex((i) => (i - 1 + photos.length) % photos.length);
@@ -359,7 +349,7 @@ function PhotoSlideshow({ photos, color }: { photos: string[]; color: string }) 
       <Image
         key={photos[index]}
         src={photos[index]}
-        alt=""
+        alt={`${label} at Destiny Church, photo ${index + 1} of ${photos.length}`}
         fill
         className="object-cover transition-opacity duration-300"
         sizes="(max-width: 640px) 100vw, 672px"
@@ -444,7 +434,7 @@ function MinistryModal({
           {/* Photos slideshow */}
           {m.photos.length > 0 && (
             <div className="pb-5">
-              <PhotoSlideshow photos={m.photos} color={m.color} />
+              <PhotoSlideshow photos={m.photos} color={m.color} label={m.name} />
             </div>
           )}
 

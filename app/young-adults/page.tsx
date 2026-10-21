@@ -55,8 +55,8 @@ export default function YoungAdultsPage() {
             sizes="(min-width: 1024px) 58vw, 100vw"
             photos={[
               { src: "/img/photos/Gallery/YouthCommunity.webp", alt: "Young adults together at Destiny Church" },
-              { src: "/img/photos/Community.webp", alt: "" },
-              { src: "/img/photos/WorshipMoment1.webp", alt: "" },
+              { src: "/img/photos/Community.webp", alt: "People chatting together at Destiny Church" },
+              { src: "/img/photos/WorshipMoment1.webp", alt: "Three singers leading worship under purple stage lights" },
             ]}
           />
         }
@@ -80,9 +80,9 @@ export default function YoungAdultsPage() {
           <PhotoSlideshow
             sizes="(min-width: 1024px) 58vw, 100vw"
             photos={[
-              { src: "/img/photos/WorshipMoment2.webp", alt: "" },
-              { src: "/img/photos/ConnectGroups.webp", alt: "" },
-              { src: "/img/photos/Gallery/SingingLand2.webp", alt: "" },
+              { src: "/img/photos/WorshipMoment2.webp", alt: "The congregation worshipping with hands raised" },
+              { src: "/img/photos/ConnectGroups.webp", alt: "Two women hugging in the auditorium" },
+              { src: "/img/photos/Gallery/SingingLand2.webp", alt: "A worship leader singing with one hand raised" },
             ]}
           />
         }

@@ -11,18 +11,9 @@ interface Step {
   title: string;
   time: string | null;
   body: string;
+  /** Hover preview for this moment; null where we have no fitting photo. */
+  image: string | null;
 }
-
-// Placeholder art — any photo we already have. Swap per-step once real
-// photography for each moment of the walkthrough exists.
-const HOVER_IMAGES = [
-  "/img/photos/Gallery/Community.webp",
-  "/img/photos/Gallery/SingingLand.webp",
-  "/img/photos/Gallery/Speaker.webp",
-  "/img/photos/Gallery/FamilySatTogether.webp",
-  "/img/photos/Gallery/WorshipMoment.webp",
-  "/img/photos/Gallery/Speaker2.webp",
-];
 
 const REST_ROTATE = 6; // degrees — the image's resting tilt when the cursor is still
 const FOLLOW_EASE = 0.16; // how quickly the image catches up to the cursor
@@ -86,9 +77,7 @@ export default function FirstSundayTimeline({ timeline }: { timeline: readonly S
           <AnimateIn key={step.title} delay={i * 60}>
             <li
               className="relative flex flex-col items-center text-center"
-              onMouseEnter={() =>
-                setHoverSrc(HOVER_IMAGES[i % HOVER_IMAGES.length])
-              }
+              onMouseEnter={() => setHoverSrc(step.image)}
             >
               {/* Connects this dot to the next one only — not a single line
                   for the whole list — so it stops short after the last

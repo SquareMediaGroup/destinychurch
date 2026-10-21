@@ -77,9 +77,9 @@ export default function ConnectCardPage() {
             <AnimateIn delay={100} className="w-full md:w-1/2">
               <PhotoSlideshow
                 photos={[
-                  { src: "/img/photos/Community.webp", alt: "Community" },
-                  { src: "/img/photos/Gallery/FamilySatTogether.webp", alt: "" },
-                  { src: "/img/photos/ConnectGroups.webp", alt: "" },
+                  { src: "/img/photos/Welcome-Gift-Bags.webp", alt: "A member of the welcome team smiling beside a stack of orange welcome gift bags" },
+                  { src: "/img/photos/Community.webp", alt: "People greeting each other at Destiny Church" },
+                  { src: "/img/photos/ConnectGroups.webp", alt: "Two women hugging in the auditorium" },
                 ]}
               />
             </AnimateIn>

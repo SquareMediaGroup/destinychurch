@@ -56,9 +56,9 @@ const ministries: Ministry[] = [
     detail:
       "Destiny Kids is where the next generation first encounters Jesus. We run vibrant, safe, and age-appropriate sessions for children aged 0–11 every Sunday. Volunteers get involved in storytelling, crafts, games, check-in, and one-to-one care. No special qualifications needed — just a love for kids and a heart to serve. All volunteers are DBS checked.",
     photos: [
+      "/img/photos/Kids-Church-Sunday.webp",
       "/img/photos/Kids1.webp",
       "/img/photos/Kids2.webp",
-      "/img/photos/Gallery/FamilySatTogether.webp",
     ],
     requirements: [
       "Enhanced DBS check (we'll help arrange this)",
@@ -101,9 +101,9 @@ const ministries: Ministry[] = [
     detail:
       "The Welcome Team is the heartbeat of Sunday hospitality. You're the first face a guest sees when they walk through the door, and that moment matters more than you know. From greeting and directing to ensuring safety and accessibility, this team makes sure every single person — whether it's their first Sunday or their hundredth — feels genuinely seen and welcomed.",
     photos: [
+      "/img/photos/Welcome-Gift-Bags.webp",
+      "/img/photos/Conversation.webp",
       "/img/photos/Gallery/Community.webp",
-      "/img/photos/Gallery/Community2.webp",
-      "/img/photos/Gallery/OlderPeople.webp",
     ],
     category: "Community",
   },
@@ -119,8 +119,7 @@ const ministries: Ministry[] = [
       "Prayer is the engine room of everything at Destiny. The Prayer Team ministers to individuals during and after services, intercedes for the church and the city, and helps build a culture where encountering God is the norm. If you feel called to a ministry of prayer and want to serve the church in one of the most impactful ways possible, this team is waiting for you.",
     photos: [
       "/img/photos/Prayer1.webp",
-      "/img/photos/Gallery/Speaker.webp",
-      "/img/photos/Gallery/Speaker2.webp",
+      "/img/photos/Prayer-During-Worship.webp",
     ],
     category: "Community",
   },
@@ -136,8 +135,8 @@ const ministries: Ministry[] = [
       "Connect Groups are where real community happens. These small groups of 8–12 people meet mid-week in homes across Teesside to study the Word, pray together, and do life. As a Connect Group leader or host, you create the space for people to belong, grow and be known. Training and ongoing support are provided for all leaders.",
     photos: [
       "/img/photos/ConnectGroups.webp",
+      "/img/photos/After-Service-Chat.webp",
       "/img/photos/Gallery/Community2.webp",
-      "/img/photos/Gallery/FamilySatTogether.webp",
     ],
     category: "Community",
   },
@@ -152,9 +151,9 @@ const ministries: Ministry[] = [
     detail:
       "There is theology in a warm cup of coffee. The Hospitality team serves refreshments before and after every Sunday service, creating a relaxed atmosphere where conversations happen and friendships form. It might sound simple, but this team plays a crucial role in making Destiny feel like home. If you love people and don't mind getting behind a counter, we'd love you on the team.",
     photos: [
+      "/img/photos/After-Service-Chat.webp",
       "/img/photos/Gallery/Community.webp",
       "/img/photos/Gallery/OlderPeople.webp",
-      "/img/photos/Gallery/FamilySatTogether.webp",
     ],
     category: "Community",
   },
@@ -229,10 +228,7 @@ const ministries: Ministry[] = [
       "Keep Destiny running smoothly behind the scenes. If you're organised, detail-oriented and love serving practically, this team needs you.",
     detail:
       "The Administration team keeps the engine of Destiny Church running. From communications and scheduling to event logistics and financial administration, this is a team for people who love order, precision and making things happen. If you're organised, reliable and enjoy serving in ways that others often don't see — this is one of the most valuable roles in the church.",
-    photos: [
-      "/img/photos/Gallery/Community2.webp",
-      "/img/photos/Gallery/FamilySatTogether.webp",
-    ],
+    photos: [],
     category: "Behind the Scenes",
   },
   {
@@ -261,10 +257,7 @@ const ministries: Ministry[] = [
       "Help keep our building clean, well-maintained and ready for every service and event. Practical skills of every kind welcome.",
     detail:
       "The Building Maintenance team ensures that Destiny's home is always clean, safe and well-kept. From regular cleaning rotas and DIY repairs to post-event tidy-ups and facility improvements, this is a hands-on team for people who love practical service. No specialist skills required — just a willingness to roll up your sleeves and take care of what God has given us.",
-    photos: [
-      "/img/photos/Gallery/Community.webp",
-      "/img/photos/Gallery/FamilySatTogether.webp",
-    ],
+    photos: [],
     category: "Behind the Scenes",
   },
   {

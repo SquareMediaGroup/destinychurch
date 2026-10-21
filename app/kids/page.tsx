@@ -105,9 +105,9 @@ export default function KidsPage() {
           <PhotoSlideshow
             sizes="(min-width: 1024px) 58vw, 100vw"
             photos={[
-              { src: "/img/photos/portrait-kids.webp", alt: "A child at Destiny Kids" },
-              { src: "/img/photos/Kids2.webp", alt: "Destiny Kids in class" },
-              { src: "/img/photos/Kids3.webp", alt: "" },
+              { src: "/img/photos/Kids-Church-Sunday.webp", alt: "A leader teaching a group of children sitting on the floor at Destiny Kids" },
+              { src: "/img/photos/Kids2.webp", alt: "A girl listening during Destiny Kids" },
+              { src: "/img/photos/Kids3.webp", alt: "Children worshipping in front of the stage at a Destiny Kids event" },
             ]}
           />
         }
@@ -139,9 +139,7 @@ export default function KidsPage() {
           <PhotoSlideshow
             sizes="(min-width: 1024px) 58vw, 100vw"
             photos={[
-              { src: "/img/photos/portrait-kids-3.webp", alt: "A toddler at Tots Mornings" },
-              { src: "/img/photos/wide-kids.webp", alt: "Tots Mornings play session" },
-              { src: "/img/photos/Gallery/FamilySatTogether.webp", alt: "" },
+              { src: "/img/photos/wide-kids.webp", alt: "Children and parents at play tables in the church hall" },
             ]}
           />
         }

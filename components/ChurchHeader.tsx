@@ -292,7 +292,7 @@ export default function ChurchHeader() {
           <div className="relative">
           {/* Pill */}
           <div
-            className="glass flex items-center justify-between px-4 py-2 md:px-6"
+            className="glass glass-no-bloom flex items-center justify-between px-4 py-2 md:px-6"
             style={{
               borderRadius: `${48 * progress}px`,
               // Frosted blur only (no SVG refraction, which was Chromium-only and

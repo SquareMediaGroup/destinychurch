@@ -120,9 +120,9 @@ export default function AlphaTopics() {
           <AnimateIn delay={100} className="w-full md:w-1/2">
             <PhotoSlideshow
               photos={[
-                { src: "/img/Alpha/Alpha/WiA-SC_V2-Carousel_02.webp", alt: "" },
-                { src: "/img/Alpha/Alpha/WiA-SC_V2-Carousel_03.webp", alt: "" },
-                { src: "/img/Alpha/Alpha/WiA-SC_V2-Carousel_04.webp", alt: "" },
+                { src: "/img/Alpha/Alpha/WiA-SC_V2-Carousel_02.webp", alt: "Join a series of group conversations that freely explore the basics of the Christian faith in an open, friendly environment. At each Alpha session, you'll be hosted in a small group and watch an episode on a different question of faith." },
+                { src: "/img/Alpha/Alpha/WiA-SC_V2-Carousel_03.webp", alt: "Then you have a chance to share your thoughts and hear what others think. You can say anything you like, or nothing at all." },
+                { src: "/img/Alpha/Alpha/WiA-SC_V2-Carousel_04.webp", alt: "Everyone's welcome. You're invited, no matter your background or beliefs. It's free and there's no pressure to come back." },
               ]}
             />
           </AnimateIn>

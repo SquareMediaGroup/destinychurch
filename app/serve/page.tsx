@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
-import Image from "next/image";
 import AnimateIn from "@/components/AnimateIn";
 import WorshipWithUsSection from "@/components/home/WorshipWithUsSection";
 import MinistriesGrid from "@/components/serve/MinistriesGrid";
+import ServeSlideshow from "@/components/serve/ServeSlideshow";
 import ChurchSuiteEmbed from "@/components/ChurchSuiteEmbed";
 import BackgroundVideo from "@/components/ui/BackgroundVideo";
 
@@ -72,16 +72,8 @@ export default function ServePage() {
                 Whether you love music, working with children, tech, admin or just making people feel welcome — there is a team at Destiny where you belong and where your contribution genuinely matters.
               </p>
             </AnimateIn>
-            <AnimateIn delay={100} className="grid w-full grid-cols-2 gap-3 md:w-1/2">
-              <div className="col-span-2 overflow-hidden rounded-3xl">
-                <Image src="/img/photos/WorshipTeam.webp" alt="The worship team singing on stage" width={640} height={280} className="w-full object-cover" />
-              </div>
-              <div className="overflow-hidden rounded-2xl">
-                <Image src="/img/photos/audience.webp" alt="" width={300} height={200} className="w-full object-cover" />
-              </div>
-              <div className="overflow-hidden rounded-2xl">
-                <Image src="/img/photos/worship-dc.webp" alt="" width={300} height={200} className="w-full object-cover" />
-              </div>
+            <AnimateIn delay={100} className="w-full md:w-1/2">
+              <ServeSlideshow />
             </AnimateIn>
           </div>
         </div>

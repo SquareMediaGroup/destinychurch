@@ -34,7 +34,7 @@ export const UPLOAD_QUALITY_OPTIONS: { key: UploadQuality; label: string }[] = [
   { key: "hd", label: "HD" },
 ];
 
-export const DEFAULT_DATA_SETTINGS: DataSettings = { uploadQuality: "hd", photos: "always", voice: "wifi" };
+export const DEFAULT_DATA_SETTINGS: DataSettings = { uploadQuality: "standard", photos: "always", voice: "wifi" };
 
 const KEY = "d1.data.v1";
 const DOWNLOADED_KEY = "d1.data.downloaded.v1";

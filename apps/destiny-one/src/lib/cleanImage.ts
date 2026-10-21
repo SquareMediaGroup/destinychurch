@@ -11,8 +11,8 @@ import type { UploadQuality } from "@/state/dataSettings";
 
 /**
  * Longest side, in pixels, and JPEG quality of an image we upload, by the
- * Storage and data "Upload quality" setting. HD is plenty for a phone screen;
- * Standard is roughly a third of the size, for sending on mobile data.
+ * Storage and data "Upload quality" setting. Standard (the default) is plenty for a phone
+ * screen at roughly a third of the size; HD (avatars and group icons) is sharper.
  */
 const QUALITY: Record<UploadQuality, { maxSide: number; jpeg: number }> = {
   hd: { maxSide: 2048, jpeg: 0.85 },

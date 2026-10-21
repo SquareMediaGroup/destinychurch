@@ -6583,7 +6583,7 @@ Polished to Apple's Human Interface Guidelines. The pieces, and why they exist:
     data, since the last reset. Counted by the app from attachment sizes (uploads in
     `upload.ts`, first loads via `noteLoaded`, file downloads in `media.ts`); phones don't
     expose per-app counters to Expo Go apps.
-  - *Upload quality* (Standard or HD, default HD): `cleanImage(…, { quality })` scales chat photos
+  - *Upload quality* (Standard or HD, default Standard): `cleanImage(…, { quality })` scales chat photos
     to 1280px / JPEG 0.7 or 2048px / JPEG 0.85. Avatars and group icons always use HD.
   - *Media auto-download* for Photos and Voice messages (Never / Wi-Fi / Wi-Fi and mobile data;
     defaults: photos always, voice on Wi-Fi), plus reset. A photo that shouldn't load shows a

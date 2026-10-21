@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import Image from "next/image";
+import PhotoSlideshow from "@/components/ui/PhotoSlideshow";
 import Link from "next/link";
 import AnimateIn from "@/components/AnimateIn";
 import VisitSlideshow from "@/components/visit/VisitSlideshow";
@@ -311,16 +311,15 @@ export default function VisitPage() {
               ))}
             </div>
           </AnimateIn>
-          <AnimateIn delay={100} className="grid w-full grid-cols-2 gap-3 md:w-1/2">
-            <div className="col-span-2 overflow-hidden rounded-panel">
-              <Image src="/img/photos/Plan a Visit.webp" alt="Destiny Church" width={640} height={300} className="w-full object-cover" />
-            </div>
-            <div className="overflow-hidden rounded-card">
-              <Image src="/img/photos/Gallery/Speaker.webp" alt="" width={300} height={220} className="w-full object-cover" />
-            </div>
-            <div className="overflow-hidden rounded-card">
-              <Image src="/img/photos/Gallery/Speaker2.webp" alt="" width={300} height={220} className="w-full object-cover" />
-            </div>
+          <AnimateIn delay={100} className="w-full md:w-1/2">
+            <PhotoSlideshow
+              className="rounded-panel"
+              photos={[
+                { src: "/img/photos/Plan a Visit.webp", alt: "Destiny Church" },
+                { src: "/img/photos/Gallery/Speaker.webp", alt: "" },
+                { src: "/img/photos/Gallery/Speaker2.webp", alt: "" },
+              ]}
+            />
           </AnimateIn>
         </div>
       </Section>

@@ -16,7 +16,7 @@ interface Props {
   title: string;
   /** Body copy and any CTAs. */
   children: React.ReactNode;
-  /** Usually an <ImageMosaic /> or a single framed image. */
+  /** Usually a <PhotoSlideshow /> or a single framed image. */
   media: React.ReactNode;
   /** Put the media on the right (default is media left on the copy's lead). */
   reverse?: boolean;

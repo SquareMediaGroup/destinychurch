@@ -7,10 +7,17 @@
 // PDFs are left alone: they aren't photos, and re-encoding would destroy them.
 
 import { ImageManipulator, SaveFormat } from "expo-image-manipulator";
+import type { UploadQuality } from "@/state/dataSettings";
 
-/** Longest side, in pixels, of an image we upload. Plenty for a phone screen. */
-const MAX_SIDE = 2048;
-const JPEG_QUALITY = 0.85;
+/**
+ * Longest side, in pixels, and JPEG quality of an image we upload, by the
+ * Storage and data "Upload quality" setting. HD is plenty for a phone screen;
+ * Standard is roughly a third of the size, for sending on mobile data.
+ */
+const QUALITY: Record<UploadQuality, { maxSide: number; jpeg: number }> = {
+  hd: { maxSide: 2048, jpeg: 0.85 },
+  standard: { maxSide: 1280, jpeg: 0.7 },
+};
 
 export interface CleanImage {
   uri: string;
@@ -21,7 +28,8 @@ export interface CleanImage {
 }
 
 /** A fresh copy of the image at `uri` with no metadata. PNGs stay PNG (screenshots stay sharp); everything else becomes JPEG. */
-export async function cleanImage(uri: string, name: string, mimeType: string, options: { square?: boolean } = {}): Promise<CleanImage> {
+export async function cleanImage(uri: string, name: string, mimeType: string, options: { square?: boolean; quality?: UploadQuality } = {}): Promise<CleanImage> {
+  const { maxSide, jpeg } = QUALITY[options.quality ?? "hd"];
   let image = await ImageManipulator.manipulate(uri).renderAsync();
   if (options.square && image.width !== image.height) {
     // Centre crop, for avatars and icons.
@@ -30,14 +38,14 @@ export async function cleanImage(uri: string, name: string, mimeType: string, op
     context.crop({ originX: Math.round((image.width - side) / 2), originY: Math.round((image.height - side) / 2), width: side, height: side });
     image = await context.renderAsync();
   }
-  if (Math.max(image.width, image.height) > MAX_SIDE) {
+  if (Math.max(image.width, image.height) > maxSide) {
     const context = ImageManipulator.manipulate(image);
-    context.resize(image.width >= image.height ? { width: MAX_SIDE } : { height: MAX_SIDE });
+    context.resize(image.width >= image.height ? { width: maxSide } : { height: maxSide });
     image = await context.renderAsync();
   }
 
   const png = mimeType === "image/png";
-  const saved = await image.saveAsync(png ? { format: SaveFormat.PNG } : { format: SaveFormat.JPEG, compress: JPEG_QUALITY });
+  const saved = await image.saveAsync(png ? { format: SaveFormat.PNG } : { format: SaveFormat.JPEG, compress: jpeg });
   const base = name.replace(/\.[^.]+$/, "") || "Photo";
   return {
     uri: saved.uri,

@@ -6571,6 +6571,29 @@ Developer account exists. See `apps/d1-admin/README.md`.
 
 Polished to Apple's Human Interface Guidelines. The pieces, and why they exist:
 
+- **Storage and data** (Profile → Storage and data, `src/app/storage-data.tsx`), modelled on
+  WhatsApp's screen. All personal to the phone (`src/state/dataSettings.ts`, AsyncStorage
+  `d1.data.v1`). Sections:
+  - *Free up storage* (`src/app/storage.tsx`, `src/lib/storage.ts`): size of the app's cache
+    folder (downloaded photos, voice messages, opened files, photos prepared for sending) and of
+    the saved-messages cache, free space on the phone, and **Clear downloaded media**. Files
+    written in the last 10 minutes are kept, in case one is still uploading.
+  - *Network usage* (`src/app/network-usage.tsx`, `src/state/networkUsage.ts`, `d1.usage.v1`):
+    media sent and received per kind (photos, voice messages, documents) and Wi-Fi vs mobile
+    data, since the last reset. Counted by the app from attachment sizes (uploads in
+    `upload.ts`, first loads via `noteLoaded`, file downloads in `media.ts`); phones don't
+    expose per-app counters to Expo Go apps.
+  - *Upload quality* (Standard or HD, default HD): `cleanImage(…, { quality })` scales chat photos
+    to 1280px / JPEG 0.7 or 2048px / JPEG 0.85. Avatars and group icons always use HD.
+  - *Media auto-download* for Photos and Voice messages (Never / Wi-Fi / Wi-Fi and mobile data;
+    defaults: photos always, voice on Wi-Fi), plus reset. A photo that shouldn't load shows a
+    download button with its size; a voice message that should is fetched ahead
+    (`player.replace` on mount), otherwise it loads on play as before. Own media and anything
+    loaded once (`d1.data.downloaded.v1`, last 3000 ids) always shows. The connection type comes
+    from `expo-network` (`src/lib/network.ts`, one listener for the app; unknown counts as mobile).
+  - Left out on purpose: "use less data for calls" (no calls), proxy, auto-download *quality*
+    (the server keeps one copy of each photo) and video (not an attachment type).
+
 - **Personal appearance** (Profile → Appearance, `src/app/appearance.tsx`). Each person picks the
   colour of the messages *they send* and a conversation wallpaper (a pattern, a stock photo, or
   their own photo). Kept on the phone only (`src/state/appearance.ts`, AsyncStorage,

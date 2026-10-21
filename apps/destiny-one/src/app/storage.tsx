@@ -60,7 +60,7 @@ export default function FreeUpStorage() {
             <>
               <View style={{ flexDirection: "row", alignItems: "baseline", justifyContent: "space-between", gap: 12 }}>
                 <Text style={{ fontSize: 28, fontWeight: "700", color: t.text }}>{formatBytes(total)}</Text>
-                {use.freeBytes != null ? <Text style={{ fontSize: 15, color: t.muted }}>{formatBytes(use.freeBytes)} free on this phone</Text> : null}
+                {use.freeBytes ? <Text style={{ fontSize: 15, color: t.muted }}>{formatBytes(use.freeBytes)} free on this phone</Text> : null}
               </View>
               <View style={{ height: 8, borderRadius: 4, backgroundColor: t.fill, overflow: "hidden", flexDirection: "row" }}>
                 <View style={{ width: `${mediaShare * 100}%`, backgroundColor: ORANGE }} />

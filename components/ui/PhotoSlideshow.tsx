@@ -8,12 +8,21 @@ export interface SlideshowPhoto {
   src: string;
   /** Empty string for purely decorative photos. */
   alt: string;
+  /** CSS object-position, for a portrait shot cropped into a landscape frame. */
+  position?: string;
 }
+
+const RATIOS = {
+  "4/3": "aspect-[4/3]",
+  "3/2": "aspect-[3/2]",
+} as const;
 
 interface Props {
   photos: SlideshowPhoto[];
   /** next/image `sizes` hint for the frame's rendered width. */
   sizes?: string;
+  /** Frame shape. 3/2 suits sets that are all straight-off-the-camera landscape shots. */
+  ratio?: keyof typeof RATIOS;
   /** Extra classes for the frame, e.g. a different corner radius. */
   className?: string;
 }
@@ -23,7 +32,7 @@ interface Props {
 const SLIDE_MS = 12000;
 
 /**
- * One 4:3 frame that slowly crossfades between photos. Replaces the bento
+ * One 4:3 (or 3:2) frame that slowly crossfades between photos. Replaces the bento
  * photo grids (one wide shot over two squares, and the offset ImageMosaic)
  * that used to sit beside copy across the site.
  *
@@ -34,6 +43,7 @@ const SLIDE_MS = 12000;
 export default function PhotoSlideshow({
   photos,
   sizes = "(max-width: 768px) 100vw, 50vw",
+  ratio = "4/3",
   className = "rounded-3xl",
 }: Props) {
   const { reducedMotion } = useAccessibility();
@@ -48,7 +58,7 @@ export default function PhotoSlideshow({
   }, [reducedMotion, paused, current, photos.length]);
 
   return (
-    <div className={`relative aspect-[4/3] w-full overflow-hidden bg-[#e8ecf1] ${className}`}>
+    <div className={`relative ${RATIOS[ratio]} w-full overflow-hidden bg-[#e8ecf1] ${className}`}>
       {photos.map((photo, i) => (
         <Image
           key={photo.src}
@@ -56,6 +66,7 @@ export default function PhotoSlideshow({
           alt={photo.alt}
           fill
           sizes={sizes}
+          style={photo.position ? { objectPosition: photo.position } : undefined}
           className={`object-cover transition-opacity duration-[1400ms] ease-in-out ${
             i === current ? "opacity-100" : "opacity-0"
           }`}

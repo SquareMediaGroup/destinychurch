@@ -2823,6 +2823,7 @@ Each section requires a specific access-level role (see
 | Route | File | Purpose |
 |-------|------|---------|
 | `/login` | `app/login/page.tsx` | Staff sign-in. On success (or on revisiting while already signed in), shows a "choose a system" screen — Admin (`/admin`) and Portal (`/portal`) cards, greyed out for whichever the account can't open (`getSystemAccess` in `lib/staffPortalAuth.ts`) |
+| `/emergency` | `app/emergency/page.tsx` | Break-glass status page, opened only by the emergency sign-in during an outage (see `lib/outage.ts` in Libraries & Utilities). Not indexed |
 | `/admin/forgot-password` | `app/admin/forgot-password/page.tsx` | Password reset request |
 | `/admin/reset-password` | `app/admin/reset-password/page.tsx` | Password reset form. A password Supabase refuses (found in a data breach, or too weak) gets an explanation panel from `passwordRejection()` instead of a raw error |
 | `/admin` | `app/admin/page.tsx` | Admin dashboard home |
@@ -5519,6 +5520,20 @@ pages said "nothing here" instead of "something's wrong".
   in place of the feed. Times come from `lib/churchInfo.ts`.
 
 Fail-state copy must not name Supabase, Vercel or Expo.
+
+**Emergency (break-glass) sign-in** — `lib/emergencyAccess.ts`,
+`lib/emergencyPassword.server.ts`, `app/emergency/`. Kai's call (2026-10-22):
+credentials live in env vars, never in code. Set all three or it stays off:
+`EMERGENCY_LOGIN_EMAIL`, `EMERGENCY_LOGIN_PASSWORD_HASH` (run
+`node scripts/emergency-login-hash.mjs`, which reads the password from the
+terminal and prints `scrypt:<salt>:<key>`), and `EMERGENCY_SESSION_SECRET` (32+
+random characters). `/login` only tries these when sign-in itself can't be
+reached, so they can't bypass a working sign-in. They set an 8-hour signed
+`dc-emergency` cookie (httpOnly, SameSite=Strict) that opens `/emergency` and
+nothing else: a live check of each service, what visitors see, and where to
+look. It isn't a wider admin session because every admin page needs the
+database that is down. Uses are logged to the server log only (the audit log is
+in the database). Tests: `tests/unit/emergency-access.spec.ts`.
 
 ---
 

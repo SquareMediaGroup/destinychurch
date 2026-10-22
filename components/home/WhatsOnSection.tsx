@@ -2,6 +2,8 @@ import Link from "next/link";
 import AnimateIn from "@/components/AnimateIn";
 import EventsCarousel from "@/components/home/EventsCarousel";
 import EventCard from "@/components/events/EventCard";
+import WeeklyGatheringCard from "@/components/events/WeeklyGatheringCard";
+import { WEEKLY_GATHERINGS } from "@/lib/weeklyGatherings";
 import { getEventIndex, getFeaturedEvent } from "@/lib/events.server";
 
 /**
@@ -14,44 +16,6 @@ import { getEventIndex, getFeaturedEvent } from "@/lib/events.server";
  * a range only because its image had a fixed pixel height.
  */
 const CARD_WIDTH = "w-[280px] shrink-0 sm:w-[320px]";
-
-/**
- * The degraded state. `fetchChurchSuiteEvents` returns [] on any error, so an
- * empty feed is indistinguishable from an outage — showing the church's three
- * standing weekly gatherings beats showing an empty rail.
- */
-function EventCardPlaceholder({ index }: { index: number }) {
-  const placeholders = [
-    { name: "Sunday Service", day: "SUN", location: "Destiny Centre" },
-    { name: "Connect Groups", day: "WED", location: "Various Locations" },
-    { name: "Prayer Meeting", day: "TUE", location: "Destiny Centre" },
-  ];
-  const item = placeholders[index % placeholders.length];
-
-  return (
-    <div
-      className={`${CARD_WIDTH} overflow-hidden rounded-[20px] border border-black/[0.07] bg-white shadow-[0_1px_2px_rgba(16,24,40,.04),0_8px_24px_-8px_rgba(16,24,40,.10)]`}
-    >
-      <div className="relative flex aspect-[16/10] w-full items-center justify-center bg-[#f5f7fa]">
-        <span className="text-[52px] font-black leading-none tracking-[-0.03em] text-destiny-grey/20">
-          {item.day}
-        </span>
-      </div>
-      <div className="p-5">
-        <p className="text-[11.5px] font-bold uppercase tracking-[0.09em] text-destiny-orange">
-          Weekly
-        </p>
-        <h3
-          style={{ fontFamily: "var(--font-roboto)" }}
-          className="mt-1.5 text-[20px] font-semibold leading-[1.22] tracking-[-0.017em] text-destiny-grey"
-        >
-          {item.name}
-        </h3>
-        <p className="mt-1.5 text-sm text-subtle">{item.location}</p>
-      </div>
-    </div>
-  );
-}
 
 export default async function WhatsOnSection() {
   const index = await getEventIndex();
@@ -102,8 +66,15 @@ export default async function WhatsOnSection() {
                     sizes="(max-width: 640px) 280px, 320px"
                   />
                 ))
-              : Array.from({ length: 3 }).map((_, i) => (
-                  <EventCardPlaceholder key={i} index={i} />
+              : // The degraded state: the feed is down (or genuinely empty),
+                // so show the church's standing weekly gatherings instead of
+                // an empty rail.
+                WEEKLY_GATHERINGS.map((gathering) => (
+                  <WeeklyGatheringCard
+                    key={gathering.name}
+                    gathering={gathering}
+                    className={CARD_WIDTH}
+                  />
                 ))}
           </EventsCarousel>
         </AnimateIn>

@@ -1,6 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { stripMaxAge } from "./sessionCookie";
+import { resilientFetch } from "@/lib/outage";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY;
@@ -14,6 +15,9 @@ export const createClient = (
     supabaseUrl!,
     supabaseKey!,
     {
+      // Fail fast in an outage — see utils/supabase/service.ts.
+      db: { retry: false },
+      global: { fetch: resilientFetch },
       cookies: {
         getAll() {
           return cookieStore.getAll();

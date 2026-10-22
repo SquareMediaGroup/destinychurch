@@ -136,6 +136,36 @@ function renderBanner(banner: BannerData, index: number) {
 
   if (!banner.message) return null;
 
+  if (banner.type === "outage") {
+    // A plain <a>: the status page is a separate site.
+    return (
+      <div
+        key={`${banner.type}-${index}`}
+        role="status"
+        className="fixed left-0 right-0 z-[60] flex h-10 items-center justify-center gap-2 overflow-hidden bg-[#b45309] px-3 sm:gap-3 sm:px-4"
+        style={{ top }}
+      >
+        <span className="material-symbols-rounded shrink-0 text-sm text-white/90" aria-hidden="true">
+          warning
+        </span>
+        <p className="min-w-0 truncate text-xs font-medium text-white sm:text-sm">
+          {banner.message}
+        </p>
+        {banner.link && (
+          <a
+            href={banner.link}
+            className="group inline-flex shrink-0 items-center gap-1 whitespace-nowrap text-xs font-bold text-white sm:text-sm"
+          >
+            <span className="underline underline-offset-2 group-hover:no-underline">
+              {banner.link_text ?? "Service status"}
+            </span>
+            <span className="material-symbols-rounded text-xs" aria-hidden="true">arrow_forward</span>
+          </a>
+        )}
+      </div>
+    );
+  }
+
   const isNotice = banner.type === "notice";
   return (
     <div

@@ -8,7 +8,7 @@ import {
   eventDescriptionText,
   eventImage,
   eventSignupUrl,
-  fetchChurchSuiteEvents,
+  fetchChurchSuiteEventsResult,
   lastOccurrenceEnd,
   parseFeedDate,
   type EventIndex,
@@ -16,16 +16,42 @@ import {
 } from "@destiny/shared";
 import { createServiceClient } from "@/utils/supabase/service";
 import { RESERVED_EVENT_SLUGS } from "@/lib/events";
+import { clearOutage, getOutageState, markOutage } from "@/lib/outage";
+
+/** The event index, plus whether the feed could be read at all. */
+export type LoadedEventIndex = EventIndex & {
+  /**
+   * True when the feed could not be reached or read, so the (empty) index
+   * means "we don't know", not "nothing is on". Pages show the weekly
+   * gatherings and an apology instead of "no upcoming events".
+   */
+  unavailable: boolean;
+};
 
 /**
  * Every upcoming event, grouped into series with stable slugs.
  *
- * `fetchChurchSuiteEvents` returns [] on any error, so an empty index is also
- * the degraded state — callers must render an empty state rather than throw.
+ * A failed feed still yields an empty index, so callers that only iterate keep
+ * working; `unavailable` is what tells an outage apart from an empty calendar.
  */
-async function loadEventIndex(): Promise<EventIndex> {
-  const events = await fetchChurchSuiteEvents({ next: { revalidate: 300 } });
-  return buildEventIndex(events, { reservedSlugs: RESERVED_EVENT_SLUGS });
+async function loadEventIndex(): Promise<LoadedEventIndex> {
+  // The feed failed moments ago: don't make this request wait out another
+  // timeout. (A cached copy would have been served instead of failing, so
+  // skipping the fetch here never hides events we already had.)
+  if (getOutageState().events) {
+    return { ...buildEventIndex([], { reservedSlugs: RESERVED_EVENT_SLUGS }), unavailable: true };
+  }
+  const result = await fetchChurchSuiteEventsResult({
+    next: { revalidate: 300 },
+    // A hung feed must not hold up every page that shows events.
+    signal: AbortSignal.timeout(5_000),
+  });
+  if (result.ok) clearOutage("events");
+  else markOutage("events");
+  const index = buildEventIndex(result.ok ? result.events : [], {
+    reservedSlugs: RESERVED_EVENT_SLUGS,
+  });
+  return { ...index, unavailable: !result.ok };
 }
 // Built once per request: the layout's event popup and the page (homepage
 // rail, /whats-on) each need it, and parsing the feed isn't free.

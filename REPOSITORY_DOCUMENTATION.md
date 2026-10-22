@@ -3183,6 +3183,7 @@ Once consent is in, `ChurchSuiteEmbed` and `MediaEmbed` cover the iframe with `u
   - Optional CTA link
   - Can be dismissed by user (session storage)
 - **Path suppression:** hidden on `/admin` and `/portal` (both are chrome-free staff shells with their own minimal layout); the `isAdmin` check in the component covers both prefixes
+- **Outage notice (`type: "outage"`):** never stored. The root layout builds it from `getOutageState()` (`lib/outage.ts`) when the data store or the calendar feed failed on this request, and it replaces any scheduled banner except the sitewide maintenance screen. Amber bar, links to status.destinytees.uk, names no provider.
 
 #### `SitePopup.tsx`
 - **What:** Modal pop-up overlay
@@ -5487,6 +5488,40 @@ whereas this lands straight on the right line. `msUntilNextStage` returns
 
 ---
 
+### `lib/outage.ts` — outage detection and fail-fast data clients
+
+What the public site does when the data store or the ChurchSuite calendar feed
+is down. Before this, every page took ~14s in an outage (supabase-js retried
+each query after 1s, 2s and 4s) and never loaded at all if the outage hung, and
+pages said "nothing here" instead of "something's wrong".
+
+- **`resilientFetch`** is the `global.fetch` of every server Supabase client
+  (`utils/supabase/service.ts`, `server.ts`, `middleware.ts`, all with
+  `db: { retry: false }`). Reads (GET/HEAD) time out after 6s; writes and
+  uploads don't. A network error, timeout or gateway status (502/503/504,
+  520-526) opens a breaker for 30s, during which requests throw
+  `ServiceUnavailableError` (a `TypeError`, so existing error handling applies)
+  without touching the network. Per server instance; a caller's own abort and
+  ordinary API errors don't trip it. Tests: `tests/unit/outage.spec.ts`.
+- **The calendar feed** (`lib/events.server.ts`) times out after 5s, records
+  failures with `markOutage("events")`, skips the fetch while that's open, and
+  returns `unavailable: true` on the index so pages can tell an outage from an
+  empty calendar.
+- **`getOutageState()`** feeds the outage banner (see `SiteBanner.tsx`) and the
+  fail states: `components/ServiceUnavailable.tsx` (inline: Shop, Training,
+  Jobs, Sermons, What's On) and `components/PageUnavailable.tsx` (whole page,
+  used where a page would otherwise `notFound()` — builder pages, events,
+  products, roles, training). Staff sign-in says "unavailable" rather than
+  "Invalid email or password". `ChurchSuiteEmbed` probes the form host and shows
+  a contact card if it can't be reached, because a cross-origin iframe fires
+  `onLoad` even for the browser's own error page.
+- **`lib/weeklyGatherings.ts`** is what the homepage rail and /whats-on show
+  in place of the feed. Times come from `lib/churchInfo.ts`.
+
+Fail-state copy must not name Supabase, Vercel or Expo.
+
+---
+
 ### `lib/serviceTimes.ts`
 
 Sunday service times in the church's own timezone. The site is served from UTC
@@ -7753,7 +7788,7 @@ feed normalisation of its own, because the BFF already does all of it.
     read of a feed timestamp goes through `parseFeedDate` and that fix lives in one place.
     `isUpcoming` compares `datetime_end`, so a multiday event already in progress stays visible.
   - `src/churchsuite/series.ts` — `buildEventIndex`, the single source of truth for event slugs
-    (grid, cards, detail pages, `generateStaticParams`, sitemap and the admin picker all read it).
+    (grid, cards, detail pages, sitemap and the admin picker all read it).
     Groups occurrences by `sequence ?? id` — ChurchSuite's `sequence` is the series key, so the
     seven "Destiny 12:2" rows collapse to one entry. Slugs are assigned in date order, so the
     soonest event wins a contested name and later claimants take an identifier suffix.

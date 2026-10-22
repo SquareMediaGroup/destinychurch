@@ -5,6 +5,8 @@ import { createContext, useContext } from "react";
 export type BannerType =
   | "announcement"
   | "notice"
+  /** Set by the root layout, never stored: a service the site reads from is down. */
+  | "outage"
   | "sitewide"
   | "alpha"
   | "youth_alpha"

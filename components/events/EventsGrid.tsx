@@ -16,6 +16,9 @@ import { useMemo, useState } from "react";
 import type { EventSeries } from "@destiny/shared";
 import AnimateIn from "@/components/AnimateIn";
 import EventCard from "./EventCard";
+import WeeklyGatheringCard from "./WeeklyGatheringCard";
+import ServiceUnavailable from "@/components/ServiceUnavailable";
+import { WEEKLY_GATHERINGS } from "@/lib/weeklyGatherings";
 
 export type EventMonthGroup = {
   key: string;
@@ -50,8 +53,11 @@ function CardGrid({
 
 export default function EventsGrid({
   groups,
+  unavailable = false,
 }: {
   groups: EventMonthGroup[];
+  /** The calendar feed couldn't be read: show the weekly gatherings instead. */
+  unavailable?: boolean;
 }) {
   const [search, setSearch] = useState("");
   const [mode, setMode] = useState<GroupMode>("all");
@@ -76,6 +82,26 @@ export default function EventsGrid({
   );
 
   const hasResults = flat.length > 0;
+
+  if (unavailable) {
+    return (
+      <section id="events" className="bg-white py-12 sm:py-16">
+        <div className="mx-auto max-w-7xl px-4 lg:px-8">
+          <ServiceUnavailable title="We can't load the full calendar right now" className="mb-10">
+            Here&apos;s what happens every week in the meantime. Check back
+            soon for one-off events and courses.
+          </ServiceUnavailable>
+          <AnimateIn>
+            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 lg:gap-7">
+              {WEEKLY_GATHERINGS.map((gathering) => (
+                <WeeklyGatheringCard key={gathering.name} gathering={gathering} />
+              ))}
+            </div>
+          </AnimateIn>
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section id="events" className="bg-white py-12 sm:py-16">

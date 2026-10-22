@@ -3,6 +3,8 @@ import { Suspense } from "react";
 import { after } from "next/server";
 import { headers } from "next/headers";
 import { redirect, notFound } from "next/navigation";
+import PageUnavailable from "@/components/PageUnavailable";
+import { getOutageState } from "@/lib/outage";
 import { createServiceClient } from "@/utils/supabase/service";
 import { getPostForView } from "@/lib/posts.server";
 import { EventsRail, CoursesRail } from "@/components/posts/PostRails";
@@ -159,5 +161,8 @@ export default async function SlugPage({ params, searchParams }: Props) {
 
     redirect(redirectRow.target_url);
   }
+  // Nothing matched — but during an outage that says nothing about whether
+  // the page exists.
+  if (getOutageState().data) return <PageUnavailable />;
   notFound();
 }

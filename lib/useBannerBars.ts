@@ -18,7 +18,8 @@ export function useBannerBars(): number {
   const live = useLiveStatus();
   const pathname = usePathname();
 
-  if (pathname.startsWith("/admin") || pathname.startsWith("/portal")) return 0;
+  // Same set SiteBanner stands aside on, or the spacer leaves an empty bar.
+  if (pathname.startsWith("/admin") || pathname.startsWith("/portal") || pathname === "/login") return 0;
   if (banner.active && banner.type === "sitewide") return 0;
   // SiteBanner and LiveBanner both stand aside on legal pages.
   if (isLegalPagePath(pathname)) return 0;

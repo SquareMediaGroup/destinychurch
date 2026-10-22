@@ -69,6 +69,7 @@ export const ICON_NAMES = [
   "close",
   "closed_caption",
   "cloud",
+  "cloud_off",
   "co_present",
   "code",
   "coffee",

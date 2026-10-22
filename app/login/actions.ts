@@ -8,6 +8,8 @@ import { checkRateLimit, resetRateLimit } from "@/lib/loginRateLimit";
 import { getSystemAccess, type SystemAccess } from "@/lib/staffPortalAuth";
 import { ADMIN_ROLES, getRoles } from "@/lib/adminRoles";
 import { recordAudit } from "@/lib/audit.server";
+import { isAuthRetryableFetchError } from "@supabase/supabase-js";
+import { getOutageState } from "@/lib/outage";
 
 const REMEMBER_MAX_AGE = 60 * 60 * 24 * 400; // matches Supabase's own default cookie lifetime
 
@@ -45,6 +47,15 @@ async function signInCore(
   const cookieStore = await cookies();
   const supabase = createClient(cookieStore, { remember });
   const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+
+  // Can't reach the sign-in service: say so, rather than blame the password.
+  if (error && (isAuthRetryableFetchError(error) || getOutageState().data)) {
+    return {
+      success: false,
+      error:
+        "Sign-in is unavailable right now because of a problem on our side. Please try again shortly, or check status.destinytees.uk for updates.",
+    };
+  }
 
   if (error || !data.user) {
     // Recorded with no actor — nobody signed in. Rate-limited attempts are

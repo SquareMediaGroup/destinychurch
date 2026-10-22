@@ -1,4 +1,5 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import { resilientFetch } from "@/lib/outage";
 
 // The service-role client (bypasses RLS) — the one implementation shared by
 // every server-side caller, so there's a single place to change auth options
@@ -20,6 +21,10 @@ export function createServiceClient(): SupabaseClient {
 
   client = createClient(url, secretKey, {
     auth: { autoRefreshToken: false, persistSession: false },
+    // Fail fast in an outage: no built-in retries (they waited 1s, 2s, 4s per
+    // query), and resilientFetch times reads out and trips a breaker.
+    db: { retry: false },
+    global: { fetch: resilientFetch },
   });
 
   return client;

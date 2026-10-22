@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import PageUnavailable from "@/components/PageUnavailable";
+import { getOutageState } from "@/lib/outage";
 import AnimateIn from "@/components/AnimateIn";
 import PasswordGate from "@/components/training/PasswordGate";
 import CompleteButton from "@/components/training/CompleteButton";
@@ -38,7 +40,10 @@ export default async function TrainingPostPage({
 }) {
   const { categorySlug, subgroupSlug, postSlug } = await params;
   const found = await getPostBySlugs(categorySlug, subgroupSlug, postSlug);
-  if (!found) notFound();
+  if (!found) {
+    if (getOutageState().data) return <PageUnavailable what="training" />;
+    notFound();
+  }
 
   const { category, subgroup, post } = found;
 

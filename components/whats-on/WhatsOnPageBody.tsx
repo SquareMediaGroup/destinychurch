@@ -31,7 +31,7 @@ export default async function WhatsOnPageBody() {
           the sitemap all deep-link to #events, which must still land on the
           grid rather than on the banner. */}
       <FeaturedEventHero featured={featuredEvent} />
-      <EventsGrid groups={groups} />
+      <EventsGrid groups={groups} unavailable={index.unavailable} />
       <ConnectGroupsBanner />
       <CoursesSection featuredId={featuredCourseId} />
       <TogetherMissionSection />

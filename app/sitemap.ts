@@ -93,11 +93,18 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${BASE_URL}/baptism`,      changeFrequency: "monthly", priority: 0.7 },
     { url: `${BASE_URL}/child-dedication`, changeFrequency: "monthly", priority: 0.6 },
     { url: `${BASE_URL}/hire`,          changeFrequency: "monthly", priority: 0.7 },
+    { url: `${BASE_URL}/missions`,     changeFrequency: "monthly", priority: 0.7 },
+    { url: `${BASE_URL}/twelvetwo`,    changeFrequency: "monthly", priority: 0.7 },
+    { url: `${BASE_URL}/volunteer`,    changeFrequency: "monthly", priority: 0.6 },
+    { url: `${BASE_URL}/shop`,         changeFrequency: "weekly",  priority: 0.6 },
+    { url: `${BASE_URL}/jobs`,         changeFrequency: "weekly",  priority: 0.5 },
+    { url: `${BASE_URL}/help`,         changeFrequency: "monthly", priority: 0.5 },
     { url: `${BASE_URL}/contact`,      changeFrequency: "yearly",  priority: 0.6 },
     { url: `${BASE_URL}/governance`,   changeFrequency: "monthly", priority: 0.5 },
     { url: `${BASE_URL}/privacy`,      changeFrequency: "yearly",  priority: 0.3 },
     { url: `${BASE_URL}/terms`,        changeFrequency: "yearly",  priority: 0.3 },
     { url: `${BASE_URL}/data-gdpr`,    changeFrequency: "yearly",  priority: 0.3 },
     { url: `${BASE_URL}/safeguarding`, changeFrequency: "yearly",  priority: 0.3 },
+    { url: `${BASE_URL}/accessibility`, changeFrequency: "yearly", priority: 0.3 },
   ];
 }

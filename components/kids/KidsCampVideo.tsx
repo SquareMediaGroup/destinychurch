@@ -1,4 +1,5 @@
 import AnimateIn from "@/components/AnimateIn";
+import MediaEmbed from "@/components/missions/MediaEmbed";
 
 export default function KidsCampVideo() {
   return (
@@ -10,16 +11,13 @@ export default function KidsCampVideo() {
           </h2>
         </AnimateIn>
         <AnimateIn delay={100}>
-          <div className="overflow-hidden rounded-2xl bg-black shadow-lg">
-            <div className="aspect-video">
-              <iframe
-                src="https://www.youtube.com/embed/WGoK046sqns"
-                title="Promo Video"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                allowFullScreen
-                className="h-full w-full"
-              />
-            </div>
+          {/* Behind the media-cookie consent gate like every other YouTube embed,
+              and on youtube-nocookie so nothing is set until playback starts. */}
+          <div className="rounded-2xl shadow-lg">
+            <MediaEmbed
+              src="https://www.youtube-nocookie.com/embed/WGoK046sqns"
+              title="Promo Video"
+            />
           </div>
         </AnimateIn>
       </div>

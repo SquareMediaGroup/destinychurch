@@ -1,20 +1,20 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import PageUnavailable from "@/components/PageUnavailable";
+import { getOutageState } from "@/lib/outage";
 import ReactMarkdown from "react-markdown";
 import AnimateIn from "@/components/AnimateIn";
 import ApplyForm from "../ApplyForm";
-import { getJobBySlug, getPublishedJobs } from "@/lib/jobs.server";
+import { getJobBySlug } from "@/lib/jobs.server";
 import { EMPLOYMENT_LABELS, KIND_LABELS, isClosed } from "@/lib/jobs";
 import RichContent from "@/components/content/RichContent";
 import Button, { buttonClasses } from "@/components/ui/Button";
 
-export const revalidate = 300;
-
-export async function generateStaticParams() {
-  const jobs = await getPublishedJobs();
-  return jobs.map((job) => ({ slug: job.slug }));
-}
+// Rendered per request, not ISR: the root layout reads live data with
+// noStore(), so a role not prebuilt at deploy time crashed with
+// DYNAMIC_SERVER_USAGE instead of rendering (same fix as /whats-on/[slug]).
+export const dynamic = "force-dynamic";
 
 export async function generateMetadata({
   params,
@@ -75,7 +75,10 @@ export default async function JobDetailPage({
 }) {
   const { slug } = await params;
   const job = await getJobBySlug(slug);
-  if (!job) notFound();
+  if (!job) {
+    if (getOutageState().data) return <PageUnavailable what="this role" />;
+    notFound();
+  }
 
   const closed = isClosed(job);
 

@@ -3,6 +3,8 @@ import { getPublishedProducts, getActiveShopHeroSlides } from "@/lib/shop.server
 import ShopHero from "@/components/shop/ShopHero";
 import ShopProductGrid from "@/components/shop/ShopProductGrid";
 import Button from "@/components/ui/Button";
+import ServiceUnavailable from "@/components/ServiceUnavailable";
+import { getOutageState } from "@/lib/outage";
 
 export const metadata: Metadata = {
   title: "Shop",
@@ -104,7 +106,11 @@ export default async function ShopPage() {
         )}
 
         {/* Grid */}
-        {products.length === 0 ? (
+        {products.length === 0 && getOutageState().data ? (
+          <ServiceUnavailable title="We can't load the shop right now" className="shop-reveal">
+            Our products will be back shortly. Please try again in a little while.
+          </ServiceUnavailable>
+        ) : products.length === 0 ? (
           <div className="shop-reveal rounded-3xl border border-black/10 bg-white/60 p-14 text-center">
             <span className="material-symbols-rounded text-5xl text-destiny-grey/25" aria-hidden="true">
               storefront

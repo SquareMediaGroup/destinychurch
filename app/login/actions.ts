@@ -1,6 +1,7 @@
 "use server";
 
 import { cookies, headers } from "next/headers";
+import { redirect } from "next/navigation";
 import { createClient } from "@/utils/supabase/server";
 import { createServiceClient } from "@/utils/supabase/service";
 import { REMEMBER_COOKIE_NAME } from "@/utils/supabase/sessionCookie";
@@ -8,15 +9,35 @@ import { checkRateLimit, resetRateLimit } from "@/lib/loginRateLimit";
 import { getSystemAccess, type SystemAccess } from "@/lib/staffPortalAuth";
 import { ADMIN_ROLES, getRoles } from "@/lib/adminRoles";
 import { recordAudit } from "@/lib/audit.server";
+import { isAuthRetryableFetchError } from "@supabase/supabase-js";
+import { getOutageState } from "@/lib/outage";
+import {
+  createEmergencyToken,
+  EMERGENCY_COOKIE,
+  EMERGENCY_SESSION_SECONDS,
+  isEmergencyLoginConfigured,
+} from "@/lib/emergencyAccess";
+import { verifyEmergencyPassword } from "@/lib/emergencyPassword.server";
 
 const REMEMBER_MAX_AGE = 60 * 60 * 24 * 400; // matches Supabase's own default cookie lifetime
 
 /**
  * Everything a sign-in does except decide where you end up.
  */
+async function isEmergencyLogin(email: string, password: string): Promise<boolean> {
+  if (!isEmergencyLoginConfigured()) return false;
+  const configured = process.env.EMERGENCY_LOGIN_EMAIL!.trim().toLowerCase();
+  // Check the password even on a wrong email, so timing doesn't reveal the address.
+  const passwordOk = await verifyEmergencyPassword(
+    password,
+    process.env.EMERGENCY_LOGIN_PASSWORD_HASH!,
+  );
+  return passwordOk && email.toLowerCase() === configured;
+}
+
 async function signInCore(
   formData: FormData,
-): Promise<{ success: boolean; error?: string; userId?: string }> {
+): Promise<{ success: boolean; error?: string; userId?: string; emergency?: boolean }> {
   // Resolve client IP (works on Vercel and most reverse proxies)
   const headersList = await headers();
   const ip =
@@ -45,6 +66,31 @@ async function signInCore(
   const cookieStore = await cookies();
   const supabase = createClient(cookieStore, { remember });
   const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+
+  // Can't reach the sign-in service: say so, rather than blame the password.
+  if (error && (isAuthRetryableFetchError(error) || getOutageState().data)) {
+    // Unless these are the break-glass credentials (lib/emergencyAccess.ts),
+    // which only work in exactly this situation.
+    if (await isEmergencyLogin(email, password)) {
+      cookieStore.set(EMERGENCY_COOKIE, await createEmergencyToken(email), {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "strict",
+        path: "/",
+        maxAge: EMERGENCY_SESSION_SECONDS,
+      });
+      resetRateLimit(ip);
+      // The audit log lives in the database that's down, so the server log is
+      // the only record.
+      console.warn(`🚨 Emergency sign-in used by ${email} from ${ip}`);
+      return { success: true, emergency: true };
+    }
+    return {
+      success: false,
+      error:
+        "Sign-in is unavailable right now because of a problem on our side. Please try again shortly, or check status.destinytees.uk for updates.",
+    };
+  }
 
   if (error || !data.user) {
     // Recorded with no actor — nobody signed in. Rate-limited attempts are
@@ -101,6 +147,8 @@ export async function adminSignIn(
   formData: FormData,
 ): Promise<{ success: boolean; error?: string; email?: string; access?: SystemAccess }> {
   const result = await signInCore(formData);
+  // A break-glass session opens only the emergency page; there's no system to choose.
+  if (result.emergency) redirect("/emergency");
   if (!result.success || !result.userId) return result;
 
   const access = await getSystemAccess(createServiceClient(), result.userId);

@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import Button from "@/components/ui/Button";
+import { STATUS_PAGE_URL } from "@/lib/outage";
 
 export default function Error({
   error,
@@ -32,6 +33,12 @@ export default function Error({
           Back to home
         </Button>
       </div>
+      <a
+        href={STATUS_PAGE_URL}
+        className="mt-6 text-sm font-semibold text-destiny-orange underline underline-offset-4 hover:no-underline"
+      >
+        Check service status
+      </a>
       {error.digest && (
         <p className="mt-6 text-xs text-subtle">
           Reference: {error.digest}

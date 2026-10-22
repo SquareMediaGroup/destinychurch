@@ -5,6 +5,7 @@ import { isLinkedToStaff } from "@/lib/staffPortalAuth";
 import { AUDIT_ACTOR_HEADERS } from "@/lib/audit";
 import type { User } from "@supabase/supabase-js";
 import { type NextRequest, NextResponse } from "next/server";
+import { EMERGENCY_COOKIE, verifyEmergencyToken } from "@/lib/emergencyAccess";
 
 /**
  * Forward who this is to the route handler on the request headers.
@@ -93,6 +94,13 @@ export async function middleware(request: NextRequest) {
     url.search = "?" + params.toString();
     return NextResponse.redirect(url, { status: 302 });
   }
+  // Break-glass session (lib/emergencyAccess.ts): this one page, nothing else.
+  if (pathname === "/emergency") {
+    const emergency = await verifyEmergencyToken(request.cookies.get(EMERGENCY_COOKIE)?.value);
+    if (!emergency) return NextResponse.redirect(new URL("/login", request.url));
+    return NextResponse.next();
+  }
+
   const session = createClient(request);
 
   let { data: { user } } = await session.supabase.auth.getUser();
@@ -201,5 +209,7 @@ export const config = {
     // Staff self-service portal
     "/portal/:path*",
     "/api/portal/:path*",
+    // Break-glass status page
+    "/emergency",
   ],
 };

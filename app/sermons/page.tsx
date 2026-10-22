@@ -10,6 +10,7 @@ import WatchOnYouTubeBand from "@/components/sermons/WatchOnYouTubeBand";
 import WorshipWithUsSection from "@/components/home/WorshipWithUsSection";
 import AnimateIn from "@/components/AnimateIn";
 import PageHero from "@/components/ui/PageHero";
+import ServiceUnavailable from "@/components/ServiceUnavailable";
 
 export const metadata: Metadata = {
   title: "Sermons",
@@ -93,22 +94,28 @@ export default async function SermonsPage() {
               {hasFeature ? (
                 <FeaturedSermon video={latestVideo} episode={featuredEpisode} />
               ) : (
-                <p className="rounded-2xl border border-black/[0.07] bg-[#f5f7fa] p-8 text-center text-sm text-muted">
-                  Messages are loading. Catch every one on{" "}
-                  <a
-                    href={SPOTIFY_PODCAST_URL}
-                    className="font-bold text-destiny-orange underline"
-                  >
+                // Nothing to feature means the video feed itself couldn't
+                // be read, not that there are no sermons.
+                <ServiceUnavailable title="We can't load sermons right now">
+                  You can still catch every message on{" "}
+                  <a href={SPOTIFY_PODCAST_URL} className="font-bold text-destiny-orange underline">
                     Spotify
                   </a>{" "}
-                  meanwhile.
-                </p>
+                  or{" "}
+                  <a href={CHANNEL_URL} className="font-bold text-destiny-orange underline">
+                    YouTube
+                  </a>
+                  .
+                </ServiceUnavailable>
               )}
             </AnimateIn>
           </div>
         </section>
 
         {/* ── Video archive ─────────────────────────────────────── */}
+        {/* An empty archive means the video feed couldn't be read, so skip
+            the grid rather than have it say "no sermons match". */}
+        {archive.length > 0 && (
         <section className="bg-[#f5f7fa] py-16">
           <div className="mx-auto max-w-7xl px-4 lg:px-8">
             <SermonGrid
@@ -119,6 +126,7 @@ export default async function SermonsPage() {
             />
           </div>
         </section>
+        )}
 
         {/* ── YouTube redirect band ────────────────────────────── */}
         <section className="bg-white py-16">

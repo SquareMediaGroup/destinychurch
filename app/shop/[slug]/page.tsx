@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import PageUnavailable from "@/components/PageUnavailable";
+import { getOutageState } from "@/lib/outage";
 import { getProductBySlug } from "@/lib/shop.server";
 import { fromPrice, formatPrice, FIT_LABELS } from "@/lib/shop";
 import ProductGallery from "@/components/shop/ProductGallery";
@@ -41,7 +43,10 @@ export default async function ProductPage({
 }) {
   const { slug } = await params;
   const product = await getProductBySlug(slug);
-  if (!product) notFound();
+  if (!product) {
+    if (getOutageState().data) return <PageUnavailable what="this product" />;
+    notFound();
+  }
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-white text-destiny-grey">

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { STATUS_PAGE_URL } from "@/lib/outage";
 
 // global-error replaces the root layout, so it must render its own <html>/<body>.
 // It only fires when the root layout itself throws.
@@ -54,6 +55,11 @@ export default function GlobalError({
         >
           Try again
         </button>
+        <p style={{ marginTop: "1.5rem", fontSize: "0.875rem" }}>
+          <a href={STATUS_PAGE_URL} style={{ color: "#f58021", fontWeight: 600 }}>
+            Check service status
+          </a>
+        </p>
       </body>
     </html>
   );

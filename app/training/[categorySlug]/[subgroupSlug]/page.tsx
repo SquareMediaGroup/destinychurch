@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import PageUnavailable from "@/components/PageUnavailable";
+import { getOutageState } from "@/lib/outage";
 import AnimateIn from "@/components/AnimateIn";
 import PasswordGate from "@/components/training/PasswordGate";
 import TrainingProgress from "@/components/training/TrainingProgress";
@@ -33,7 +35,10 @@ export default async function TrainingSubgroupPage({
 }) {
   const { categorySlug, subgroupSlug } = await params;
   const found = await getSubgroupBySlugs(categorySlug, subgroupSlug);
-  if (!found) notFound();
+  if (!found) {
+    if (getOutageState().data) return <PageUnavailable what="training" />;
+    notFound();
+  }
 
   const { category, subgroup } = found;
 

@@ -52,7 +52,9 @@ export type D1ErrorCode =
 /**
  * GET /config — read before sign-in. The app shows the update screen when its
  * native build number is below `minBuild` for its platform, and the
- * maintenance screen whenever `maintenanceMessage` is set.
+ * maintenance screen whenever `maintenanceMessage` is set. An app whose X.X
+ * is older than `latestVersion` shows a dismissible "update available" prompt
+ * once (see `optionalUpdate()`).
  */
 export interface D1AppConfig {
   minBuild: { ios: number; android: number };
@@ -62,6 +64,10 @@ export interface D1AppConfig {
   maintenanceMessage: string | null;
   /** Where the Update button goes. */
   storeUrl: { ios: string; android: string };
+  /** Newest version in the stores ("0.13"), or null when the prompt is off. Optional: older servers leave it out. */
+  latestVersion?: string | null;
+  /** What's in it, one line per feature (may be empty). */
+  latestVersionNotes?: string[];
 }
 
 export interface D1Consent {

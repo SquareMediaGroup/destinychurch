@@ -90,6 +90,11 @@ at `/admin/destiny-one/settings` ("App versions" and "Maintenance"), so a bad bu
 without a release. The last answer is cached, so an offline launch is never blocked. Expo Go and
 web have no build number and are always let in.
 
+The same config can offer an update without forcing it. Set "Latest version in the stores"
+(e.g. `0.13`) and a few lines of what's new under "Update available prompt". Anyone on an older
+X.X sees a sheet listing them with Update and Not now, once per version. The last number is
+ignored, so patch releases never prompt. Leave the version blank to turn it off.
+
 ## Icons and splash
 
 Generated from `public/img/brand/destiny-icon.svg` by `node scripts/make-icons.mjs` (uses `sharp`

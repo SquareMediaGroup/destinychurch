@@ -89,6 +89,13 @@ screen over everything; if a maintenance message is set, everyone sees that inst
 at `/admin/destiny-one/settings` ("App versions" and "Maintenance"), so a bad build can be retired
 without a release. The last answer is cached, so an offline launch is never blocked. Expo Go and
 web have no build number and are always let in.
+To see either screen in Expo Go, add `EXPO_PUBLIC_D1_PREVIEW_GATE=update` (or `maintenance`) to
+`.env.local` and restart with `npx expo start -c`. Only development builds read it.
+
+The same config can offer an update without forcing it. Set "Latest version in the stores"
+(e.g. `0.13`) and a few lines of what's new under "Update available prompt". Anyone on an older
+X.X sees a sheet listing them with Update and Not now, once per version. The last number is
+ignored, so patch releases never prompt. Leave the version blank to turn it off.
 
 ## Icons and splash
 

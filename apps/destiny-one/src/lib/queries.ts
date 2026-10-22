@@ -7,7 +7,7 @@
 //   ["group", id]          group details (members, rules, what I can do)
 //   ["messages", groupId]  { messages, nextBefore }, oldest first
 //   ["media", groupId]     Group info → Photos and files: the same shape, only messages with a file
-//   ["appConfig"]          minimum builds + maintenance switch (src/lib/appGate.ts)
+//   ["appConfig"]          minimum builds, maintenance switch, latest version (src/lib/appGate.ts, updatePrompt.ts)
 //   ["events"]             upcoming church events (the one entry that goes stale on a timer: the calendar changes)
 //
 // applyEvent() is the "database told us something changed" path. Where the

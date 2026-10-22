@@ -7480,6 +7480,10 @@ ENABLE_SMART_SEARCH=true
 - **CDN** — Automatic global distribution
 - **Analytics** — Built-in performance monitoring
 
+**Rolling back a bad deploy:** see [`docs/deployment-rollback.md`](docs/deployment-rollback.md)
+(Vercel Instant Rollback, telling members via /admin/status, then fixing forwards; migrations
+are not rolled back with the code).
+
 ### Caching Strategy
 
 | Content | Strategy | TTL | Invalidation |

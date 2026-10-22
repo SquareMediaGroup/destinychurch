@@ -23,7 +23,7 @@ import {
   useWindowDimensions,
   type LayoutChangeEvent,
   type StyleProp,
-  type TextInputInstance,
+  type TextInput as TextInputInstance,
   type TextInputProps,
   type TextStyle,
   type ViewStyle,

@@ -21,8 +21,8 @@ interface Props {
   /** Put the media on the right (default is media left on the copy's lead). */
   reverse?: boolean;
   tone?: Tone;
-  /** Give the media the wider column instead of the copy. */
-  wideMedia?: boolean;
+  /** Split the columns 6/6 instead of 7/5, so a slideshow sits at half width. */
+  evenSplit?: boolean;
 }
 
 const DARK_GRADIENT = "linear-gradient(135deg, #363f48 0%, #242e37 100%)";
@@ -34,11 +34,11 @@ export default function SplitSection({
   media,
   reverse = false,
   tone = "light",
-  wideMedia = false,
+  evenSplit = false,
 }: Props) {
   const dark = tone === "dark";
-  const copySpan = wideMedia ? "lg:col-span-5" : "lg:col-span-7";
-  const mediaSpan = wideMedia ? "lg:col-span-7" : "lg:col-span-5";
+  const copySpan = evenSplit ? "lg:col-span-6" : "lg:col-span-7";
+  const mediaSpan = evenSplit ? "lg:col-span-6" : "lg:col-span-5";
 
   return (
     <section

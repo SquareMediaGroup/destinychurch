@@ -100,12 +100,12 @@ export default function KidsPage() {
       <SplitSection
         eyebrow="About Destiny Kids"
         title="Faith starts young"
-        wideMedia
+        evenSplit
         media={
           <PhotoSlideshow
-            sizes="(min-width: 1024px) 58vw, 100vw"
+            sizes="(min-width: 1024px) 50vw, 100vw"
             photos={[
-              { src: "/img/photos/Kids-Church-Sunday.webp", alt: "A leader teaching a group of children sitting on the floor at Destiny Kids" },
+              { src: "/img/photos/Kids-Church-Sunday.webp", position: "50% 45%", alt: "A leader teaching a group of children sitting on the floor at Destiny Kids" },
               { src: "/img/photos/Kids2.webp", alt: "A girl listening during Destiny Kids" },
               { src: "/img/photos/Kids3.webp", alt: "Children worshipping in front of the stage at a Destiny Kids event" },
             ]}
@@ -134,10 +134,11 @@ export default function KidsPage() {
         title="Tots Mornings"
         tone="dark"
         reverse
-        wideMedia
+        evenSplit
         media={
           <PhotoSlideshow
-            sizes="(min-width: 1024px) 58vw, 100vw"
+            sizes="(min-width: 1024px) 50vw, 100vw"
+            ratio="3/2"
             photos={[
               { src: "/img/photos/wide-kids.webp", alt: "Children and parents at play tables in the church hall" },
             ]}

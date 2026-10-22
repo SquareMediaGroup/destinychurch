@@ -3032,13 +3032,14 @@ left, stacked buttons right. Both replace the CSS-`background-image` / independe
 blur+scrim idiom that had accumulated across ~8–11 files.
 
 #### `ui/PhotoSlideshow.tsx`
-**Client component.** One 4:3 rounded frame that crossfades (1.4s) between photos every 12 seconds,
+**Client component.** One 4:3 (or `ratio="3/2"` for all-landscape sets) rounded frame that crossfades (1.4s) between photos every 12 seconds,
 with a pause button and dot buttons in a dark pill bottom-left. Replaced every bento-style photo
 grid beside body copy (`/serve` "You have something to offer", `/visit` "In the service", `/connect-card`, `/alpha` "The Topics", and the
 `/kids`, `/youth`, `/young-adults` split sections, which used the now-deleted
 `ministry/ImageMosaic`). The long interval is deliberate: beside copy it should read as a photo
 that occasionally changes, not as motion. No auto-advance under "Reduce animations" or the OS
-setting; the pause button covers WCAG 2.2.2 for everyone else.
+setting; the pause button covers WCAG 2.2.2 for everyone else. A photo's optional `position` sets
+`object-position`, for a portrait shot cropped into the landscape frame.
 
 #### `ui/Field.tsx` (`Field`, `TextareaField`, `SelectField`)
 **Client component.** The one input shape: generates an id, wires `label`/`aria-describedby`/
@@ -3290,8 +3291,8 @@ editing five files. All server components.
   heroes, and they're where `/kids` and `/youth` carry their schedule instead of cramming it into the
   eyebrow. `objectPosition` frames per-page (`/kids` needs `top`).
 - `SplitSection.tsx` — image-and-copy split on a 7/5 asymmetric 12-column grid rather than an even
-  50/50. `reverse` swaps columns via `lg:order-*` so JSX stays in reading order; `wideMedia` flips the
-  ratio for photo-led sections; `tone="dark"` renders the shared `#363f48 → #242e37` band.
+  50/50. `reverse` swaps columns via `lg:order-*` so JSX stays in reading order; `evenSplit` makes it
+  6/6 so a `PhotoSlideshow` sits at half width (`/kids`, `/youth`, `/young-adults`); `tone="dark"` renders the shared `#363f48 → #242e37` band.
 - Split-section media is a `ui/PhotoSlideshow` (it replaced the offset `ImageMosaic`, removed in
   favour of one slowly crossfading photo).
 - `FeatureGrid.tsx` — the "why join / what we're about" cards. Card shell borrowed from

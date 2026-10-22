@@ -2,19 +2,27 @@
 
 import { useEffect, useState } from "react";
 import Image from "next/image";
-import Icon from "@/components/ui/Icon";
 import { useAccessibility } from "@/contexts/AccessibilityContext";
 
 export interface SlideshowPhoto {
   src: string;
   /** Empty string for purely decorative photos. */
   alt: string;
+  /** CSS object-position, for a portrait shot cropped into a landscape frame. */
+  position?: string;
 }
+
+const RATIOS = {
+  "4/3": "aspect-[4/3]",
+  "3/2": "aspect-[3/2]",
+} as const;
 
 interface Props {
   photos: SlideshowPhoto[];
   /** next/image `sizes` hint for the frame's rendered width. */
   sizes?: string;
+  /** Frame shape. 3/2 suits sets that are all straight-off-the-camera landscape shots. */
+  ratio?: keyof typeof RATIOS;
   /** Extra classes for the frame, e.g. a different corner radius. */
   className?: string;
 }
@@ -24,7 +32,7 @@ interface Props {
 const SLIDE_MS = 12000;
 
 /**
- * One 4:3 frame that slowly crossfades between photos. Replaces the bento
+ * One 4:3 (or 3:2) frame that slowly crossfades between photos. Replaces the bento
  * photo grids (one wide shot over two squares, and the offset ImageMosaic)
  * that used to sit beside copy across the site.
  *
@@ -35,6 +43,7 @@ const SLIDE_MS = 12000;
 export default function PhotoSlideshow({
   photos,
   sizes = "(max-width: 768px) 100vw, 50vw",
+  ratio = "4/3",
   className = "rounded-3xl",
 }: Props) {
   const { reducedMotion } = useAccessibility();
@@ -49,7 +58,7 @@ export default function PhotoSlideshow({
   }, [reducedMotion, paused, current, photos.length]);
 
   return (
-    <div className={`relative aspect-[4/3] w-full overflow-hidden bg-[#f5f7fa] ${className}`}>
+    <div className={`relative ${RATIOS[ratio]} w-full overflow-hidden bg-[#e8ecf1] ${className}`}>
       {photos.map((photo, i) => (
         <Image
           key={photo.src}
@@ -57,6 +66,7 @@ export default function PhotoSlideshow({
           alt={photo.alt}
           fill
           sizes={sizes}
+          style={photo.position ? { objectPosition: photo.position } : undefined}
           className={`object-cover transition-opacity duration-[1400ms] ease-in-out ${
             i === current ? "opacity-100" : "opacity-0"
           }`}
@@ -65,17 +75,7 @@ export default function PhotoSlideshow({
       ))}
 
       {photos.length > 1 && (
-        <div className="absolute bottom-3 left-3 flex items-center rounded-full bg-black/45 pl-1 pr-2 backdrop-blur-sm">
-          {!reducedMotion && (
-            <button
-              type="button"
-              onClick={() => setPaused((p) => !p)}
-              aria-label={paused ? "Play slideshow" : "Pause slideshow"}
-              className="flex h-8 w-8 items-center justify-center text-white/90 hover:text-white"
-            >
-              <Icon name={paused ? "play_arrow" : "pause"} filled size="sm" />
-            </button>
-          )}
+        <div className="absolute bottom-4 left-4 flex items-center gap-1 rounded-full bg-[rgba(20,24,28,0.42)] py-1 pl-2.5 pr-1.5 backdrop-blur-md">
           {/* Padding on the button, not the bar, so each dot is a usable tap
               target without the indicator itself getting any heavier. */}
           {photos.map((photo, i) => (
@@ -85,15 +85,34 @@ export default function PhotoSlideshow({
               onClick={() => setCurrent(i)}
               aria-label={`Show photo ${i + 1} of ${photos.length}`}
               aria-current={i === current ? "true" : undefined}
-              className="group px-1 py-3"
+              className="flex h-7 items-center justify-center px-[3px] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-destiny-orange"
             >
               <span
-                className={`block h-1.5 rounded-full bg-white transition-all duration-300 ${
-                  i === current ? "w-5 opacity-100" : "w-1.5 opacity-60 group-hover:opacity-90"
+                className={`block h-1.5 rounded-full transition-[width,background-color] duration-[400ms] ease-out ${
+                  i === current ? "w-[22px] bg-destiny-orange" : "w-1.5 bg-white/70"
                 }`}
               />
             </button>
           ))}
+          {!reducedMotion && (
+            <button
+              type="button"
+              onClick={() => setPaused((p) => !p)}
+              aria-label={paused ? "Play slideshow" : "Pause slideshow"}
+              className="ml-0.5 flex h-7 w-7 items-center justify-center rounded-full text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-destiny-orange"
+            >
+              {paused ? (
+                <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true">
+                  <path d="M3 1.5v9l7.5-4.5z" fill="currentColor" />
+                </svg>
+              ) : (
+                <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true">
+                  <rect x="2.5" y="1.5" width="2.5" height="9" rx="0.8" fill="currentColor" />
+                  <rect x="7" y="1.5" width="2.5" height="9" rx="0.8" fill="currentColor" />
+                </svg>
+              )}
+            </button>
+          )}
         </div>
       )}
     </div>

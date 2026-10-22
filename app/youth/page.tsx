@@ -64,12 +64,12 @@ export default function YouthPage() {
       <SplitSection
         eyebrow="About Destiny Youth"
         title="More than a youth group"
-        wideMedia
+        evenSplit
         media={
           <PhotoSlideshow
-            sizes="(min-width: 1024px) 58vw, 100vw"
+            sizes="(min-width: 1024px) 50vw, 100vw"
             photos={[
-              { src: "/img/photos/EHAP_Youth.webp", alt: "A young person at Destiny Youth" },
+              { src: "/img/photos/EHAP_Youth.webp", position: "50% 35%", alt: "A young person at Destiny Youth" },
               { src: "/img/photos/Gallery/YouthCommunity.webp", alt: "Young people together at Destiny Youth" },
               { src: "/img/photos/Gallery/WorshipMoment3.webp", alt: "A crowd with hands raised in worship" },
             ]}

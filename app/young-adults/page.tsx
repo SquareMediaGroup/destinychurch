@@ -49,10 +49,11 @@ export default function YoungAdultsPage() {
       <SplitSection
         eyebrow="Who We Are"
         title="Life is better together"
-        wideMedia
+        evenSplit
         media={
           <PhotoSlideshow
-            sizes="(min-width: 1024px) 58vw, 100vw"
+            sizes="(min-width: 1024px) 50vw, 100vw"
+            ratio="3/2"
             photos={[
               { src: "/img/photos/Gallery/YouthCommunity.webp", alt: "Young adults together at Destiny Church" },
               { src: "/img/photos/Community.webp", alt: "People chatting together at Destiny Church" },
@@ -75,10 +76,11 @@ export default function YoungAdultsPage() {
         eyebrow="Events & Gatherings"
         title="We come together often"
         reverse
-        wideMedia
+        evenSplit
         media={
           <PhotoSlideshow
-            sizes="(min-width: 1024px) 58vw, 100vw"
+            sizes="(min-width: 1024px) 50vw, 100vw"
+            ratio="3/2"
             photos={[
               { src: "/img/photos/WorshipMoment2.webp", alt: "The congregation worshipping with hands raised" },
               { src: "/img/photos/ConnectGroups.webp", alt: "Two women hugging in the auditorium" },

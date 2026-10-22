@@ -7385,6 +7385,16 @@ NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_live_...
 STRIPE_WEBHOOK_SECRET=whsec_...
 SHOP_TEST_BYPASS=            # leave unset in production — enables /api/store/checkout/bypass
 
+# Error tracking (Sentry, optional — without a DSN nothing is sent). Set up in
+# instrumentation.ts (server/edge), instrumentation-client.ts (browser) and
+# sentry.shared.ts (shared options: errors only, no tracing or replay, all
+# personal-data collection off, email addresses scrubbed from messages).
+SENTRY_DSN=https://...@....ingest.sentry.io/...           # server + edge
+NEXT_PUBLIC_SENTRY_DSN=https://...@....ingest.sentry.io/... # browser (same value)
+SENTRY_ORG=                  # build-time, with SENTRY_AUTH_TOKEN: uploads source maps
+SENTRY_PROJECT=              # so stack traces show real file names
+SENTRY_AUTH_TOKEN=
+
 # GitHub (CI/CD + "Report a Bug" footer form — used by components/report-bug/actions.ts
 # to open issues on SquareMediaGroup/destinychurch via the GitHub REST API)
 GITHUB_TOKEN=ghp_...
@@ -7517,6 +7527,8 @@ are not rolled back with the code).
    - Geography-aware CDN (UK origin)
 
 5. **Monitoring:**
+   - Sentry — server, edge and browser errors (`instrumentation.ts`, `instrumentation-client.ts`,
+     `sentry.shared.ts`); inert until `SENTRY_DSN` / `NEXT_PUBLIC_SENTRY_DSN` are set
    - Vercel Analytics — tracks Web Vitals
    - Vercel Speed Insights — performance timeline
    - Custom events logged to analytics

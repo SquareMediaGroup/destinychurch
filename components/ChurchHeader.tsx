@@ -292,10 +292,13 @@ export default function ChurchHeader() {
           <div className="relative">
           {/* Pill */}
           <div
-            className="glass glass-refract flex items-center justify-between px-4 py-2 md:px-6"
+            className="glass glass-no-bloom flex items-center justify-between px-4 py-2 md:px-6"
             style={{
               borderRadius: `${48 * progress}px`,
-              backgroundColor: `rgba(54, 63, 72, ${(isHome ? 0.6 : 1) - (isHome ? 0.2 : 0.6) * progress})`,
+              // Frosted blur only (no SVG refraction, which was Chromium-only and
+              // costly to redraw every scroll frame). The scrolled pill settles
+              // at ~0.8 so the white nav stays legible over bright imagery.
+              backgroundColor: `rgba(54, 63, 72, ${isHome ? 0.6 + 0.18 * progress : 1 - 0.2 * progress})`,
               transition: "box-shadow 0.3s, border-color 0.3s",
             }}
           >

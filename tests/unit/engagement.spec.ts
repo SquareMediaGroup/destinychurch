@@ -132,8 +132,8 @@ test("no user agent means no device/os/browser guess, not a wrong one", () => {
 
 /* ── Engagement sources ──────────────────────────────────────────────────── */
 
-test("the engagement sources are exactly redirect, nfc, links and links_view", () => {
-  expect(ENGAGEMENT_SOURCE_KEYS.sort()).toEqual(["links", "links_view", "nfc", "redirect"]);
+test("the engagement sources are exactly redirect, nfc, links, links_view and post_view", () => {
+  expect(ENGAGEMENT_SOURCE_KEYS.sort()).toEqual(["links", "links_view", "nfc", "post_view", "redirect"]);
 });
 
 test("isEngagementSource rejects anything outside the closed set", () => {
@@ -141,6 +141,7 @@ test("isEngagementSource rejects anything outside the closed set", () => {
   expect(isEngagementSource("nfc")).toBe(true);
   expect(isEngagementSource("links")).toBe(true);
   expect(isEngagementSource("links_view")).toBe(true);
+  expect(isEngagementSource("post_view")).toBe(true);
   expect(isEngagementSource("shortlink")).toBe(false);
   expect(isEngagementSource("")).toBe(false);
   expect(isEngagementSource(null)).toBe(false);

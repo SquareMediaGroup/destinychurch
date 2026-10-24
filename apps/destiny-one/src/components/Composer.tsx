@@ -20,6 +20,7 @@ import { Avatar } from "@/components/ui";
 import type { Account } from "@/lib/accounts";
 import { cleanImage } from "@/lib/cleanImage";
 import { haptic } from "@/lib/haptics";
+import { dataSettings } from "@/state/dataSettings";
 import { ORANGE, useTheme } from "@/theme/tokens";
 
 /** How far (points) the finger slides left to cancel / up to lock, and what counts as a tap. */
@@ -146,7 +147,7 @@ export const Composer = forwardRef<TextInputInstance, Props>(function Composer({
     if (a.mimeType.startsWith("image/")) {
       // A fresh copy with no hidden details (above all, no GPS location).
       try {
-        const clean = await cleanImage(a.uri, a.name, a.mimeType);
+        const clean = await cleanImage(a.uri, a.name, a.mimeType, { quality: dataSettings.get().uploadQuality });
         onAttach({ uri: clean.uri, name: clean.name, mimeType: clean.mimeType, size: null });
       } catch {
         onError("Couldn't prepare that photo. Try another one.");

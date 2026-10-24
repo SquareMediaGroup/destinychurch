@@ -4,7 +4,7 @@ import AnimateIn from "@/components/AnimateIn";
 import Button from "@/components/ui/Button";
 import MinistryHero from "@/components/ministry/MinistryHero";
 import SplitSection from "@/components/ministry/SplitSection";
-import ImageMosaic from "@/components/ministry/ImageMosaic";
+import PhotoSlideshow from "@/components/ui/PhotoSlideshow";
 import FactStrip from "@/components/ministry/FactStrip";
 import AgeGroupCards, { type AgeGroup } from "@/components/ministry/AgeGroupCards";
 import WorshipWithUsSection from "@/components/home/WorshipWithUsSection";
@@ -100,14 +100,14 @@ export default function KidsPage() {
       <SplitSection
         eyebrow="About Destiny Kids"
         title="Faith starts young"
-        wideMedia
+        evenSplit
         media={
-          <ImageMosaic
-            wide
-            images={[
-              { src: "/img/photos/portrait-kids.webp", alt: "A child at Destiny Kids" },
-              { src: "/img/photos/Kids2.webp", alt: "Destiny Kids in class" },
-              { src: "/img/photos/Kids3.webp", alt: "" },
+          <PhotoSlideshow
+            sizes="(min-width: 1024px) 50vw, 100vw"
+            photos={[
+              { src: "/img/photos/Kids-Church-Sunday.webp", position: "50% 45%", alt: "A leader teaching a group of children sitting on the floor at Destiny Kids" },
+              { src: "/img/photos/Kids2.webp", alt: "A girl listening during Destiny Kids" },
+              { src: "/img/photos/Kids3.webp", alt: "Children worshipping in front of the stage at a Destiny Kids event" },
             ]}
           />
         }
@@ -134,14 +134,13 @@ export default function KidsPage() {
         title="Tots Mornings"
         tone="dark"
         reverse
-        wideMedia
+        evenSplit
         media={
-          <ImageMosaic
-            wide
-            images={[
-              { src: "/img/photos/portrait-kids-3.webp", alt: "A toddler at Tots Mornings" },
-              { src: "/img/photos/wide-kids.webp", alt: "Tots Mornings play session" },
-              { src: "/img/photos/Gallery/FamilySatTogether.webp", alt: "" },
+          <PhotoSlideshow
+            sizes="(min-width: 1024px) 50vw, 100vw"
+            ratio="3/2"
+            photos={[
+              { src: "/img/photos/wide-kids.webp", alt: "Children and parents at play tables in the church hall" },
             ]}
           />
         }

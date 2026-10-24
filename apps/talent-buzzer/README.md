@@ -15,6 +15,25 @@ If **all four judges** buzz, the screen flashes red and an alarm sounds.
 
 ---
 
+## Downloads (everything you need, in one place)
+
+Click these links on the computers. You don't need to search for anything.
+
+| What | Link | Where it goes |
+| --- | --- | --- |
+| **Talent Buzzer app** (a small ZIP, about 0.5 MB) | [Download talent-buzzer.zip](https://github.com/SquareMediaGroup/destinychurch/releases/download/talent-buzzer/talent-buzzer.zip) | Both computers |
+| **Node.js** for Windows (free, the engine the app runs on) | [Download the Node.js installer](https://nodejs.org/dist/v24.22.0/node-v24.22.0-x64.msi) | Both computers |
+| **Google Chrome** for the tablets (usually already installed) | [Chrome on Google Play](https://play.google.com/store/apps/details?id=com.android.chrome) | All 5 tablets |
+
+> If the Node.js link doesn't suit the computer (for example it's a Mac or an ARM laptop), use the
+> [Node.js download page](https://nodejs.org/en/download) and pick the **LTS** installer for that computer.
+>
+> If the app link ever says "Not Found", use the [download page for all versions](https://github.com/SquareMediaGroup/destinychurch/releases/tag/talent-buzzer),
+> or, as a last resort, [download all of the church code](https://github.com/SquareMediaGroup/destinychurch/archive/refs/heads/main.zip)
+> (a big file, about 180 MB) and use the `apps\talent-buzzer` folder inside it.
+
+---
+
 ## How it fits together
 
 ```
@@ -40,8 +59,7 @@ Tick these off before you start:
 - [ ] The **Avolites computer** (Windows, running Titan)
 - [ ] **5 Android tablets**, charged, with their chargers
 - [ ] All of them on the **same Wi-Fi / network**
-- [ ] The **`talent-buzzer` folder** (see Part 1, step 2)
-- [ ] **Internet** on both computers for the first setup (only needed once)
+- [ ] **Internet** on both computers for the downloads (only needed once)
 - [ ] About **30 minutes**, plus 5 minutes with whoever runs the lights
 
 > **Tip:** Do the setup the day before the show, not five minutes before doors open.
@@ -54,33 +72,36 @@ Do this on the computer that is plugged into the big LED screen.
 
 **1. Install Node.js** (the engine the app runs on)
 
-1. Open a web browser and go to **https://nodejs.org**
-2. Click the big green button that says **LTS**. A file downloads.
-3. Open the downloaded file. Click **Next**, **Next**, **Next**, then **Install**, then **Finish**.
-   You don't need to change anything.
+1. Click this link: **[Download the Node.js installer](https://nodejs.org/dist/v24.22.0/node-v24.22.0-x64.msi)**. A file downloads.
+2. Open the downloaded file (it's in your **Downloads** folder). Click **Next**, **Next**, **Next**,
+   then **Install**, then **Finish**. You don't need to change anything.
+   - If it asks *"Do you want to allow this app to make changes?"*, click **Yes**.
+   - If it offers to install "Tools for Native Modules", leave that box **unticked**. It isn't needed.
 
-**2. Get the `talent-buzzer` folder**
+> Already have Node.js? That's fine, as long as it's version 20 or newer. If it's too old,
+> `start.bat` tells you and opens the download page for you.
 
-1. Go to the church code on GitHub. Click the green **Code** button, then **Download ZIP**.
-   (If you can't see it, ask whoever looks after the church website code to send you the folder.)
-2. Find the ZIP in your Downloads. Right-click it and choose **Extract All**, then **Extract**.
-3. Open the new folder, then **apps**. Inside is a folder called **`talent-buzzer`**.
-4. Copy the **`talent-buzzer`** folder to the **Desktop**.
+**2. Get the app**
+
+1. Click this link: **[Download talent-buzzer.zip](https://github.com/SquareMediaGroup/destinychurch/releases/download/talent-buzzer/talent-buzzer.zip)**.
+2. Find **`talent-buzzer.zip`** in your **Downloads** folder. Right-click it and choose **Extract All**, then **Extract**.
+3. A new window opens with a folder called **`talent-buzzer`** inside. Drag that folder onto the **Desktop**.
 
 **3. Start the app**
 
 1. Open the `talent-buzzer` folder on the Desktop.
-2. Double-click **`start.bat`**.
+2. Double-click **`start.bat`**. (If your computer hides file endings, it's just called **start**, with a cog icon.)
    - If a blue box says *"Windows protected your PC"*, click **More info**, then **Run anyway**.
-3. A black window opens. The first time, it downloads a few bits, which needs internet.
-   **Leave this black window open**, because closing it stops the buzzers.
+   - If it says *"Node.js is not installed"*, go back to step 1.
+3. A black window opens. **Leave this black window open**, because closing it stops the buzzers.
 4. If a box says *"Windows Defender Firewall has blocked some features"*:
    tick **Private networks**, then click **Allow access**.
    This is important: without it the tablets can't connect.
 
 **4. Tell it which computer this is**
 
-A page opens in the web browser by itself:
+A page opens in the web browser by itself. (If it doesn't, click **[http://localhost:8090](http://localhost:8090)**.
+That link only works on a computer where `start.bat` is running.)
 
 ![Which machine is this?](docs/images/setup-choose.jpg)
 
@@ -107,7 +128,9 @@ On the LED screen computer:
    until you click.
 4. Press **F11** on the keyboard so it fills the whole screen.
 
-**You should see** four faint X outlines with the judges' names underneath:
+**You should see** four faint X outlines with the judges' names underneath.
+The page fits itself to the screen: on a short, wide LED wall the X's get smaller so they and the
+names always fit, and on a tall one they stay centred.
 
 ![The screen waiting for the first buzz](docs/images/display-empty.jpg)
 
@@ -117,11 +140,8 @@ On the LED screen computer:
 
 On the lighting computer (the one running Titan):
 
-1. **Check the lighting desk can be controlled.** Open a web browser and type this into the address bar exactly:
-
-   ```
-   http://localhost:4430/titan/get/System/SoftwareVersion
-   ```
+1. **Check the lighting desk can be controlled.** On this computer, click this link (or copy it into the web browser):
+   **[http://localhost:4430/titan/get/System/SoftwareVersion](http://localhost:4430/titan/get/System/SoftwareVersion)**
 
    **You should see** a version number, like `"15.0"`. If you see an error, ask the lighting person
    to make sure Titan is open and running.
@@ -147,7 +167,7 @@ On the lighting computer (the one running Titan):
 Do this on **each** tablet.
 
 1. Connect the tablet to the **same Wi-Fi** as the computers.
-2. Open **Chrome**.
+2. Open **Chrome**. (Not on the tablet? Get it from [Chrome on Google Play](https://play.google.com/store/apps/details?id=com.android.chrome).)
 3. Type the tablet's link into the address bar. Copy it **exactly** from the **Device links** list on the
    LED screen computer, for example:
 
@@ -272,6 +292,7 @@ What the audience sees:
 | Problem | Try this |
 | --- | --- |
 | Tablet says **"Not connected - reconnecting..."** | Is the tablet on the same Wi-Fi as the computers? Is the black `start.bat` window still open on the LED screen computer? Is the link typed exactly right? |
+| Black window says **"Node.js is not installed"** or **"old version of Node.js"** | Install Node.js with the [Node.js installer link](https://nodejs.org/dist/v24.22.0/node-v24.22.0-x64.msi), then double-click `start.bat` again. |
 | **No tablets can connect at all** | On the LED screen computer, Windows Firewall is probably blocking it. Search the Start menu for **"Allow an app through Windows Firewall"**, find **Node.js**, and tick **Private**. |
 | **No sound** | Click once on the big screen. Check the computer's volume and that sound goes to the right speakers. Use **Test X sound** on the control page. |
 | **Avolites page stuck on "Looking on the network..."** | Both computers must be on the same network. Allow Node.js through the firewall (see above) on the **Avolites** computer too. Or click **Change**, type the LED screen computer's address (shown as **Network address** on its setup page), then **Start**. |
@@ -316,7 +337,17 @@ What the audience sees:
   On reset it calls `.../Playbacks/KillPlayback?handle_userNumber=<N>`. These URLs are templates in `config.json`
   (`titan.*`), so they can be changed without code if a Titan version names things differently.
   **They haven't been tested on a real console yet, so check them during your first rehearsal.**
-- Everything runs on the local network. No internet or accounts are needed once `npm install` has run.
+- Everything runs on the local network. No internet or accounts are needed on show day.
+
+### Where the download comes from
+
+The [talent-buzzer.zip](https://github.com/SquareMediaGroup/destinychurch/releases/download/talent-buzzer/talent-buzzer.zip)
+link is rebuilt by [.github/workflows/talent-buzzer-release.yml](../../.github/workflows/talent-buzzer-release.yml)
+whenever this folder changes on `main` (or when it's run by hand from the Actions tab). It runs the tests, adds
+`node_modules` (so the show computers never run `npm install`), and uploads the ZIP to the
+[`talent-buzzer` release](https://github.com/SquareMediaGroup/destinychurch/releases/tag/talent-buzzer).
+`start.bat` checks Node.js is installed and is version 20 or newer, and only runs `npm install` if `node_modules` is missing
+(for example when the folder was copied from a git checkout).
 
 ### Show rules
 
@@ -369,6 +400,8 @@ Without them, the page makes its own buzzer, alarm and fanfare.
 ### Rehearsing without the lighting desk
 
 ```bash
+git clone https://github.com/SquareMediaGroup/destinychurch.git
+cd destinychurch/apps/talent-buzzer
 npm install
 npm run fake-titan          # pretends to be Titan on port 4430 and prints every playback
 npm start                   # setup page; pick "LED screen machine"

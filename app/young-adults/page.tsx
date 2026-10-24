@@ -3,7 +3,7 @@ import Link from "next/link";
 import AnimateIn from "@/components/AnimateIn";
 import MinistryHero from "@/components/ministry/MinistryHero";
 import SplitSection from "@/components/ministry/SplitSection";
-import ImageMosaic from "@/components/ministry/ImageMosaic";
+import PhotoSlideshow from "@/components/ui/PhotoSlideshow";
 import FeatureGrid from "@/components/ministry/FeatureGrid";
 import WorshipWithUsSection from "@/components/home/WorshipWithUsSection";
 import Button from "@/components/ui/Button";
@@ -49,14 +49,15 @@ export default function YoungAdultsPage() {
       <SplitSection
         eyebrow="Who We Are"
         title="Life is better together"
-        wideMedia
+        evenSplit
         media={
-          <ImageMosaic
-            wide
-            images={[
+          <PhotoSlideshow
+            sizes="(min-width: 1024px) 50vw, 100vw"
+            ratio="3/2"
+            photos={[
               { src: "/img/photos/Gallery/YouthCommunity.webp", alt: "Young adults together at Destiny Church" },
-              { src: "/img/photos/Community.webp", alt: "" },
-              { src: "/img/photos/WorshipMoment1.webp", alt: "" },
+              { src: "/img/photos/Community.webp", alt: "People chatting together at Destiny Church" },
+              { src: "/img/photos/WorshipMoment1.webp", alt: "Three singers leading worship under purple stage lights" },
             ]}
           />
         }
@@ -75,14 +76,15 @@ export default function YoungAdultsPage() {
         eyebrow="Events & Gatherings"
         title="We come together often"
         reverse
-        wideMedia
+        evenSplit
         media={
-          <ImageMosaic
-            wide
-            images={[
-              { src: "/img/photos/WorshipMoment2.webp", alt: "" },
-              { src: "/img/photos/ConnectGroups.webp", alt: "" },
-              { src: "/img/photos/Gallery/SingingLand2.webp", alt: "" },
+          <PhotoSlideshow
+            sizes="(min-width: 1024px) 50vw, 100vw"
+            ratio="3/2"
+            photos={[
+              { src: "/img/photos/WorshipMoment2.webp", alt: "The congregation worshipping with hands raised" },
+              { src: "/img/photos/ConnectGroups.webp", alt: "Two women hugging in the auditorium" },
+              { src: "/img/photos/Gallery/SingingLand2.webp", alt: "A worship leader singing with one hand raised" },
             ]}
           />
         }

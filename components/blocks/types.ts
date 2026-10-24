@@ -30,10 +30,10 @@ export type Tone = "light" | "muted" | "orange" | "blue" | "green" | "purple";
 /**
  * How wide a block may render.
  *
- * There is deliberately no "full" (edge-to-edge). Post bodies render inside a
- * fixed reading column, and at ≥1600px `app/[slug]/page.tsx` puts that column
- * in an off-centre grid track alongside the promo rails — so the usual
- * `margin-inline: calc(50% - 50vw)` full-bleed trick would be wrong there.
+ * There is deliberately no "full" here. This is the block's natural shape in
+ * any column; an author's choice to make a block Wide or Full on a Posts page
+ * is a prop, `size` (see ./size.ts), which also explains how that page drops
+ * its promo rails so full-bleed can work.
  */
 export type BlockWidth = "column" | "wide";
 

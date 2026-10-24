@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import Image from "next/image";
+import PhotoSlideshow from "@/components/ui/PhotoSlideshow";
 import Link from "next/link";
 import AnimateIn from "@/components/AnimateIn";
 import ConnectCardCTAs from "@/components/connect-card/ConnectCardCTAs";
@@ -74,16 +74,14 @@ export default function ConnectCardPage() {
                 It helps us get to know you better, point you towards the right community, and make sure you feel at home. There&apos;s no obligation — just an open door.
               </p>
             </AnimateIn>
-            <AnimateIn delay={100} className="grid w-full grid-cols-2 gap-3 md:w-1/2">
-              <div className="col-span-2 overflow-hidden rounded-3xl">
-                <Image src="/img/photos/Community.webp" alt="Community" width={640} height={300} className="w-full object-cover" />
-              </div>
-              <div className="overflow-hidden rounded-2xl">
-                <Image src="/img/photos/Gallery/FamilySatTogether.webp" alt="" width={300} height={220} className="w-full object-cover" />
-              </div>
-              <div className="overflow-hidden rounded-2xl">
-                <Image src="/img/photos/ConnectGroups.webp" alt="" width={300} height={220} className="w-full object-cover" />
-              </div>
+            <AnimateIn delay={100} className="w-full md:w-1/2">
+              <PhotoSlideshow
+                photos={[
+                  { src: "/img/photos/Welcome-Gift-Bags.webp", alt: "A member of the welcome team smiling beside a stack of orange welcome gift bags" },
+                  { src: "/img/photos/Community.webp", alt: "People greeting each other at Destiny Church" },
+                  { src: "/img/photos/ConnectGroups.webp", alt: "Two women hugging in the auditorium" },
+                ]}
+              />
             </AnimateIn>
           </div>
         </div>

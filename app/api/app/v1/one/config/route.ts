@@ -8,7 +8,9 @@ import { getSettings } from "@/lib/destinyOne/settings.server";
 // sign-in, so it still reaches a signed-out or broken build. Builds below
 // minBuild see the "update the app" screen; a maintenance message takes the
 // whole app offline. Both are edited at /admin/destiny-one/settings, so a bad
-// build can be retired without a deploy or an App Store release.
+// build can be retired without a deploy or an App Store release. latestVersion
+// (with its notes) only offers an update: older X.X apps show a dismissible
+// prompt once per version.
 //
 // The settings live in Supabase, so during a Supabase outage they can't be
 // read (getSettings falls back to defaults). D1_MAINTENANCE_MESSAGE, set in
@@ -32,6 +34,12 @@ export const GET = oneRoute(async () => {
     forceUpdateMessage: s.forceUpdateMessage,
     maintenanceMessage: process.env.D1_MAINTENANCE_MESSAGE || s.maintenanceMessage,
     storeUrl: { ios: IOS_STORE_URL, android: ANDROID_STORE_URL },
+    latestVersion: s.latestVersion,
+    latestVersionNotes: (s.latestVersionNotes ?? "")
+      .split("\n")
+      .map((line) => line.replace(/^\s*[-*\u2022]\s*/, "").trim())
+      .filter(Boolean)
+      .slice(0, 10),
   };
   const res = oneJson(config);
   res.headers.set("Cache-Control", "public, s-maxage=60, stale-while-revalidate=300");

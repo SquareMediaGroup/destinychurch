@@ -451,7 +451,7 @@ destinychurch/
 │   └── ...
 │
 ├── .github/                       # GitHub workflows
-│   └── workflows/                 # ci.yml (every PR), playwright.yml (manual e2e), AI content jobs
+│   └── workflows/                 # ci.yml (every PR), playwright.yml (manual e2e), AI content jobs, talent-buzzer-release.yml
 │
 ├── .claude/                       # Claude Code settings
 ├── .vscode/                       # VS Code workspace settings
@@ -1272,6 +1272,16 @@ CREATE TABLE posts (
   description text,                            -- meta description + social card
   og_image_url text,                           -- share image; falls back to hero_image_url
   show_rails boolean NOT NULL DEFAULT true,    -- promo rails beside the page at 1600px+
+  -- Admin quick wins (20261020_02_posts_quick_wins.sql)
+  hide_from_search boolean NOT NULL DEFAULT false, -- out of the sitemap + noindex
+  tags text[] NOT NULL DEFAULT '{}',           -- admin-only labels for the list's filter
+  deleted_at timestamptz,                      -- the Bin; purged after 30 days
+  updated_by text,                             -- admin name (or email) of the last save
+  review_link_version integer NOT NULL DEFAULT 0, -- in every preview token; bump = revoke all
+  -- Safety (20261020_03_posts_safety.sql)
+  draft jsonb,                                 -- unpublished edits to a live page (DRAFT_FIELDS)
+  publish_from timestamptz,                    -- served only from here, when set
+  publish_until timestamptz,                   -- taken down here, when set (CHECK until > from)
   created_at timestamptz DEFAULT now(),
   updated_at timestamptz DEFAULT now()
 );
@@ -1282,13 +1292,90 @@ CREATE TABLE posts (
 **Why presets, not styling:** the page settings are deliberately page-level choices (how the page
 opens, what it says when shared, whether the rails show) rather than per-element colours, spacing
 or layout. That's what keeps the Posts editor a page builder that non-designers can use without
-producing off-brand pages. Columns/sections, per-block styling, revisions and scheduling were
-considered and left out on purpose. `lib/posts-fields.ts` validates these fields for both the
+producing off-brand pages. Columns/sections and per-block styling were considered and left out
+on purpose. (Revisions and scheduling were too, at first; they were added in October 2026 once
+Posts was being used for campaign pages that need to come down on time and edits that need a way
+back. See below.) `lib/posts-fields.ts` validates these fields for both the
 POST and PATCH routes.
+
+**The Bin, not a delete:** `DELETE /api/admin/posts/[id]` sets `deleted_at`, which takes the page
+off the public site at once (`getPostForView` ignores binned rows). The list's Bin view restores or
+deletes for good (`?permanent=1`, only for a binned post). Binned posts older than 30 days are
+purged by the list endpoint itself rather than a cron (Vercel Hobby allows only daily crons, and
+the Bin only matters to someone looking at the list). A binned post keeps its slug, so restoring
+can't collide.
+
+**Drafts of live pages:** the editor's buttons are *Save draft* and *Publish* (*Publish changes*
+once live); there's no published switch in the form any more. On a live page, Save draft (and
+Preview, and Ctrl/Cmd+S) PATCHes with `mode: "draft"`, which stores the content fields
+(`DRAFT_FIELDS` in `lib/posts.ts`: title, slug, body, header, subtitle, description, share image,
+rails) in `posts.draft`, keeping only what differs from the live columns, so the public page doesn't
+change. `mode: "publish"` writes everything, publishes and clears the draft; `mode: "discard_draft"`
+drops it. Tags, search visibility and the schedule are settings about the page and apply on any
+save. Previews and review links show the draft laid over the live page. A page that has never been
+published doesn't use `draft`: it is all draft.
+
+**Old URLs keep working:** publishing a live page with a new slug inserts a `redirects` row from
+the old slug to `/<new>` (unless the editor's "send people from the old link" box is unticked),
+repoints existing redirects that targeted the old slug (so nothing chains), and audits it.
+`checkSlug` lets a post take back a slug held by a redirect that points at itself
+(`reclaimsRedirectId`), and the publish deletes that redirect.
+
+**Scheduling:** `postState()` (`lib/posts.ts`) is draft / scheduled / live / ended from
+`is_published`, `publish_from` and `publish_until`. `getPostForView` serves only `live`; the
+sitemap likewise. The page is `force-dynamic`, so a page comes down on time with no cron.
+
+**History:** `post_revisions` (post_id, kind draft|published, snapshot of the content fields,
+created_by, created_at; service-role only) gets a row on every create, draft save and publish;
+`recordRevision` keeps the newest 30 per post. `GET /api/admin/posts/[id]/revisions` lists them
+without content, `…/revisions/[revisionId]` returns one. "Bring back" in the editor's History tab
+loads the snapshot into the form unsaved, so restoring goes through the normal save or publish.
+
+**Block widths and the Landing template:** Gallery, Card grid and Video have a `size` prop
+(`components/blocks/size.ts`: normal | wide | full, default normal so old content parses
+unchanged). It's honoured only where `RichContent` gets `allowWide`, which only
+`app/[slug]/page.tsx` passes: Wide reaches ~1100px on large screens, Full goes edge to edge
+(`.dc-bleed` in globals.css). A page with any wide or full block (`hasWideBlocks`) drops its promo
+rails, because full-bleed needs the article centred. Training, jobs and shop never show the Width
+field (`BlockInspector`/`BlockTools` `allowWide`). The built-in "Landing page" template uses them.
+
+**Editor extras (migration `20261020_04_posts_editor.sql`):**
+- *Saved templates:* `post_templates` (label, description, fields jsonb, created_by). "Save as
+  template" in Page settings stores the content and page settings (not URL, schedule or tags);
+  they show above the built-in starters in the New post picker, with delete.
+- *Ready for review:* `posts.review_requested_at/_by`. "Ask for review" saves the page and
+  notifies Posts admins (bell, `roles: ["site_admin"]`); the list shows "Needs review";
+  publishing (PATCH `mode: "publish"`) or "Withdraw" clears it.
+- *Who's editing:* `post_editing` (post_id, auth_user_id, name, seen_at). The open editor POSTs a
+  heartbeat every 20s while visible (`usePostPresence`) and DELETEs on close; anyone seen in the
+  last minute shows as "Sam is also editing this page". Polled, not Realtime.
+- *"/" menu:* typing `/` on an empty line opens `SlashMenu` to insert a block by keyboard.
+- *Image library:* `GET /api/admin/posts/media` lists the `post-media` bucket; `MediaLibraryModal`
+  is offered from `ImageField` (where the uploader is the posts one) and the editor toolbar.
+- *Device preview:* Preview saves a draft and shows the signed preview link in a frame at phone,
+  tablet and computer widths (`DevicePreview`), with "Open in a new tab".
+- *Writing help:* `POST /api/admin/posts/suggest` (OpenAI, `SMART_SEARCH_MODEL`) suggests a
+  description from the page, or alt text for the selected image. Always put in front of the admin
+  to edit; 503 when no key is set.
+- *Link check:* `POST /api/admin/posts/check-links` checks up to 25 links in the body: internal
+  ones against posts and redirects, external ones by HEAD/GET with redirects followed by hand and
+  every hop's host checked with `isPrivateHost` (`lib/postLinks.ts`).
+- *Promote:* the Share panel links to `/admin/popup` and `/admin/banner` with `?promote=1…`
+  (`lib/promote.ts`); those pages lay the page's title, description, image and link over the
+  loaded settings, unsaved, with a note, and clear the params from the URL.
+
+**Edit conflicts:** the editor sends the `updated_at` it loaded as `expected_updated_at`; PATCH
+returns 409 with the current row if someone saved since, and the editor names who and offers to
+replace their changes. Bulk publish/unpublish don't send it, since they don't touch content.
+
+**Views:** published post visits log a `post_view` engagement event keyed by post id (so a slug
+change keeps its history). `post_view_counts(p_since)` aggregates non-bot views in Postgres for
+the list's 30-day Views column.
 
 **Used By:**
 - `lib/posts.server.ts` (`getPostForView`) for the public `/[slug]` catch-all
 - `app/api/admin/posts` CRUD, admin dashboard to write pages
+- `app/sitemap.ts` (`listIndexablePosts`) — published, not hidden, not binned
 
 ---
 
@@ -2077,8 +2164,10 @@ minimal reliance on ChurchSuite, so identity now comes from Destiny's own staff:
   one-time code proves ownership — no invite token) and joins the listed communities.
 - **`d1_settings`** (one row) — `allow_access_requests` (off = invite-only), `invite_expiry_days`,
   `min_build_ios` / `min_build_android` (builds below see the app's "update" screen),
-  `force_update_message`, `maintenance_message` (set = the whole app shows it instead of working).
-  The last four are served publicly by `GET /api/app/v1/one/config`.
+  `force_update_message`, `maintenance_message` (set = the whole app shows it instead of working),
+  `latest_version` ("0.13"; apps on an older X.X get a dismissible "update available" prompt once)
+  and `latest_version_notes` (one feature per line, shown on that prompt).
+  All but the first two are served publicly by `GET /api/app/v1/one/config`.
 - **Admin-path functions** with no acting member (website staff may have no app account):
   `d1_admin_create_community`, `_add_community_members`, `_set_community_role`,
   `_remove_community_member`, `_create_group`, `_add_group_members`, `_remove_group_member`,
@@ -2421,7 +2510,7 @@ Wraps children with React context providers:
 - **Supabase Client Provider** — Browser auth token management
 - **Theme Provider** — Dark/light mode
 - **Query Client** (if using) — API caching
-- **Toast Provider** (`components/ToastProvider.tsx`) — Passive notifications via `useToast()` (`success`/`error`/`info`/`push`). Rendered by [sonner](https://github.com/emilkowalski/sonner) in `unstyled` mode for stacking, swipe-to-dismiss and exit animation; the look is the glass `.dc-toast*` classes in `app/globals.css`. `push({ actions })` maps one `primary` action and one other action onto sonner's action/cancel buttons.
+- **Toast Provider** (`components/ToastProvider.tsx`) — Passive notifications via `useToast()` (`success`/`error`/`info`/`push`). Rendered by [sonner](https://github.com/emilkowalski/sonner) in `unstyled` mode for stacking, swipe-to-dismiss and exit animation; the look is the glass `.dc-toast*` classes in `app/globals.css`. `push({ actions })` maps one `primary` action and one other action onto sonner's action/cancel buttons. The bottom offset reads `--cookie-banner-clearance` (falls back to 1.5rem / 1rem mobile) so the stack lifts above the cookie banner.
 - **Dialog Provider** (`components/DialogProvider.tsx`) — Styled, promise-based modal dialogs via `useDialog()`. The modal itself lives in `components/DialogLayer.tsx` and is lazy-loaded on first use (and warmed by any `useDialog()` caller), so public pages don't ship it or the `motion` library; its button/input classes come from `components/admin/adminTokens.ts`, which `AdminUI.tsx` re-exports
 
 #### Dialogs & notifications — no native browser dialogs
@@ -2455,7 +2544,7 @@ caught; the same helper gates the footer, banners, popups and Smart Search.
 - **Logo** — Clickable link to home
 - **Navigation menu** — Top-level links plus hover **dropdowns** ("About", "What's on") that fade in as white rounded cards with a staggered per-item reveal
 - **Mobile menu** — Animated hamburger (bars morph into an X) opens a **full-screen brand-colour overlay** with drill-down submenus and a top-down reveal (see `ChurchHeader.tsx` below); no left-hand drawer. Top-level items and a submenu ("What's on"/"About") sit side by side in a double-width row that slides horizontally (`translateX`) between the two, rather than an instant swap — both panels stay mounted so the transition is a real slide in both directions, and the submenu panel keeps rendering the last-active submenu's items while sliding back out so it never flashes empty.
-- **Scroll morph** — The header pill reshapes as you scroll (progress ramps over `MORPH_DISTANCE`)
+- **Scroll morph** — The header pill reshapes as you scroll (progress ramps over `MORPH_DISTANCE`). The pill is frosted `.glass` (blur only, deliberately no `glass-refract` and, via `glass-no-bloom`, no hover glow); its grey fill goes 0.6→0.78 on the home hero and 1→0.8 on inner pages so nav text stays legible once scrolled
 - **Auth indicator** — Login/logout buttons
 
 Site search is **not** in the header — it lives in the floating `FloatingSmartSearch` mark (Smart Search); see that component below.
@@ -2622,10 +2711,14 @@ from beyond the query text itself.
   promo rails from `components/posts/PostRails.tsx` unless the post turns them off.
   `generateMetadata` emits the post's description and Open Graph image.
 - **Draft previews:** `?preview=<token>` shows an unpublished post when the token is a valid
-  signature for that post's id (`lib/postPreview.server.ts` — `<expiry>.<hmac>`, one hour, signed
-  with the Supabase secret key like the training unlock cookies). Tokens come from
-  `GET /api/admin/posts/[id]/preview`. The page shows a "Preview" bar and is `noindex`. Without a
+  signature for that post's id and `review_link_version` (`lib/postPreview.server.ts` —
+  `<expiry>.<hmac>`, signed with the Supabase secret key like the training unlock cookies). Tokens
+  come from `GET /api/admin/posts/[id]/preview`: one hour for the editor's Preview, 7 days with
+  `?kind=review` for a link sent for sign-off. `DELETE` on the same route bumps the version, which
+  revokes every outstanding link. The page shows a "Preview" bar and is `noindex`. Without a
   valid token a draft 404s exactly as before.
+- **Views and search:** a published (non-preview) view records a `post_view` engagement event via
+  `after()`. `hide_from_search` adds `noindex` and keeps the page out of `app/sitemap.ts`.
 - If no post matches, falls back to an active `redirects` row for the same slug (see Database
   Schema §1) and `redirect()`s there. A hit is recorded via `after()` — read `headers()` during
   render (an `after()` callback in a Server Component can't call it), close over the values, and
@@ -2942,6 +3035,16 @@ inset blurred-photo CTA banner (`WorshipWithUsSection`, `ConnectGroupsBanner`, �
 left, stacked buttons right. Both replace the CSS-`background-image` / independently-pasted
 blur+scrim idiom that had accumulated across ~8–11 files.
 
+#### `ui/PhotoSlideshow.tsx`
+**Client component.** One 4:3 (or `ratio="3/2"` for all-landscape sets) rounded frame that crossfades (1.4s) between photos every 12 seconds,
+with a pause button and dot buttons in a dark pill bottom-left. Replaced every bento-style photo
+grid beside body copy (`/serve` "You have something to offer", `/visit` "In the service", `/connect-card`, `/alpha` "The Topics", and the
+`/kids`, `/youth`, `/young-adults` split sections, which used the now-deleted
+`ministry/ImageMosaic`). The long interval is deliberate: beside copy it should read as a photo
+that occasionally changes, not as motion. No auto-advance under "Reduce animations" or the OS
+setting; the pause button covers WCAG 2.2.2 for everyone else. A photo's optional `position` sets
+`object-position`, for a portrait shot cropped into the landscape frame.
+
 #### `ui/Field.tsx` (`Field`, `TextareaField`, `SelectField`)
 **Client component.** The one input shape: generates an id, wires `label`/`aria-describedby`/
 `aria-invalid`, and renders a hint or an error. Replaces three competing `inputClass`
@@ -3017,7 +3120,7 @@ focus to whatever opened it, and locks body scroll — restoring the *previous*
   - Desktop: horizontal menu bar; "About" and "What's on" open hover **dropdowns** (`Dropdown`) rendered as white rounded cards that fade in with a staggered per-item reveal (a brief close delay keeps them from flickering shut between the trigger and the card)
   - Mobile: an animated hamburger (bars morph into an X) toggles a **full-screen brand-colour overlay** (`fixed inset-0`, `bg-destiny-orange/60 backdrop-blur`, a sibling of `<header>`) with **drill-down submenus** (`mobileSubmenu` state) and a top-down reveal; scrolling auto-closes it
   - The top-level list and the active submenu's list are laid out side by side in a `width: 200%` flex row that translates `-50%`/`0` (`transition: transform 0.38s cubic-bezier(0.4, 0, 0.2, 1)`) to switch between them — a real slide left/right rather than an unmount/mount swap. Both panels stay mounted; a `lastSubmenu` value (updated during render, not in an effect, guarded against re-render loops) keeps the submenu panel showing its last items while it slides back off-screen so it never goes blank mid-transition. The per-item stagger fade/translateY on entry is unchanged.
-  - A scroll-driven **morph** reshapes the header pill (`progress` ramps 0→1 over `MORPH_DISTANCE`)
+  - A scroll-driven **morph** reshapes the header pill (`progress` ramps 0→1 over `MORPH_DISTANCE`); surface is `glass glass-no-bloom` (no `glass-refract`, no cursor bloom or focus halo), fill alpha `0.6→0.78` (home) / `1→0.8` (inner pages)
   - Active route highlighting
   - Search is not in the header — it lives in `FloatingSmartSearch`
   - Self-suppresses: returns `null` on `/admin`, `/nfc`, and `/portal` (each is a chrome-free shell with its own minimal layout)
@@ -3056,6 +3159,7 @@ focus to whatever opened it, and locks body scroll — restoring the *previous*
   - Renders only after mount and only while no choice is stored (hydration-guarded so SSR/client markup match)
   - Two buttons: **"Accept all cookies"** (`allowAll` → media + analytics on) and **"Necessary cookies only"** (`denyOptional` → both off). Both link out to the Privacy Policy and Terms of Use
   - A finer `savePreferences({ media, analytics })` also exists for per-category control
+  - While visible it publishes `--cookie-banner-clearance` on `<html>` (its top edge from the viewport bottom, plus a 12px gap); `ToastProvider` uses it as the sonner bottom offset so toasts (e.g. the first-visit Performance Mode toast) stack above the banner rather than over it
 - **Gotcha:** Because consent loads from `localStorage` in an effect, `consent` is `null` on first render. Every gated component waits for `mounted` before reading it, so nothing embeds or tracks until the stored choice (or its absence) is known.
 
 #### `AnalyticsGate.tsx`
@@ -3191,11 +3295,10 @@ editing five files. All server components.
   heroes, and they're where `/kids` and `/youth` carry their schedule instead of cramming it into the
   eyebrow. `objectPosition` frames per-page (`/kids` needs `top`).
 - `SplitSection.tsx` — image-and-copy split on a 7/5 asymmetric 12-column grid rather than an even
-  50/50. `reverse` swaps columns via `lg:order-*` so JSX stays in reading order; `wideMedia` flips the
-  ratio for photo-led sections; `tone="dark"` renders the shared `#363f48 → #242e37` band.
-- `ImageMosaic.tsx` — 3-or-4 image offset mosaic replacing the old `col-span-2`-plus-two-squares
-  collage. Every tile is `fill` inside a fixed aspect box with a real `sizes`, which is what removes
-  the layout shift and oversized downloads the old fixed-`width`/`height` collages caused.
+  50/50. `reverse` swaps columns via `lg:order-*` so JSX stays in reading order; `evenSplit` makes it
+  6/6 so a `PhotoSlideshow` sits at half width (`/kids`, `/youth`, `/young-adults`); `tone="dark"` renders the shared `#363f48 → #242e37` band.
+- Split-section media is a `ui/PhotoSlideshow` (it replaced the offset `ImageMosaic`, removed in
+  favour of one slowly crossfading photo).
 - `FeatureGrid.tsx` — the "why join / what we're about" cards. Card shell borrowed from
   `events/EventCard` (hairline border, two-layer shadow, hover lift); the orange-tinted icon square
   was dropped in favour of an oversized index numeral. One `AnimateIn` wraps the whole grid —
@@ -3393,7 +3496,7 @@ to keep.
 - `AdminTabBar.tsx` — The mobile bottom tab bar: a scrolling row of Liquid Glass group tabs derived from `tabsFor()`, with a `Sheet` for multi-page groups (where a group's own landing page is listed as "Overview", highlighted only on that exact page) and a view-transitioned active pill. See "Admin navigation, search and keyboard shortcuts"
 - `AdminHeader.tsx` — Sticky desktop header for the admin shell (`md`+ only); shows the full breadcrumb trail from `breadcrumbsFor(pathname)` — every level above the current page a link — plus ⌘K, the notification bell (`AdminNotificationBell`), the theme toggle, shortcut help and a "View live site" button
 - `AdminNotificationBell.tsx` — The notification bell: an unread badge and a dropdown of the most recent notifications for whatever roles the signed-in admin holds. Data and Realtime delivery both come from `lib/useNotifications.ts` (initial `GET /api/admin/notifications`, then a private Broadcast channel per held role); marking one or all read is optimistic and reconciled on the next refresh. See the `notifications` table in Database Schema for the delivery model.
-- `RichTextEditor.tsx` — Shared TipTap rich-text editor (HTML output); used by posts, training posts, HR job descriptions, and (since `a22301b`) shop product descriptions. Optional `blocks` / `onEditor` props admit [content blocks](#content-blocks) — schema and drop handling only; the blocks UI is a separate surface owned by the parent, deliberately **not** part of this toolbar.
+- `RichTextEditor.tsx` — Shared TipTap rich-text editor (HTML output); used by posts, training posts, HR job descriptions, and (since `a22301b`) shop product descriptions. Optional `blocks` / `onEditor` props admit [content blocks](#content-blocks) — schema and drop handling only; the blocks UI is a separate surface owned by the parent, deliberately **not** part of this toolbar. With `enableImages`, inserting from the toolbar asks for alt text, an "Image description" button appears while an image is selected (`useEditorState`, since the toolbar doesn't re-render on selection alone), and pasted or dropped image files are uploaded through `uploadPostImage` and inserted where they landed (base64 is disallowed, so they used to vanish).
   The toolbar does exactly one job: reformat the current text selection. The old "Embed YouTube video", "Embed ChurchSuite form" and "Embed HTML" buttons are now the Video, ChurchSuite form and Custom embed blocks — they inserted new objects rather than formatting a selection, so they belonged in the sidebar. `enableYouTube` and `enableHtmlEmbed` now only register the legacy `youtube` / `htmlEmbed` nodes so pages authored with those buttons keep parsing; `enableChurchSuite` is gone entirely (it only ever drove a button, since ChurchSuite embeds were stored as `htmlEmbed`).
 - `blocks/*` — **Client.** Editor side of the content-block system: the TipTap node factory, node-view chrome, the Blocks sidebar, the schema-driven settings inspector and its field components. See [Content Blocks](#content-blocks).
 - `ChurchSuiteEventFill.tsx` — **Client.** Collapsible "Fill from ChurchSuite event" picker embedded in the "Add Event" form of every course admin page. Fetches the same picker feed as `/admin/featured-event` (`/api/admin/events`) and, on selection, calls `onFill({ startDate, location, signupUrl, name })` to prefill those three form fields — no new table or API route. Deliberately leaves `format`/`frequency`/meeting fields untouched, since those `alpha_events` columns have no ChurchSuite equivalent.
@@ -3512,8 +3615,19 @@ The member-facing pieces of the `/training` resource library.
 - `useTrainingProgress.ts` — Per-browser completion store in `localStorage` (no per-user accounts; trainees share a group password). Exposes `useCompletedSet()` and `toggleCompleted()`; starts empty on first render to avoid hydration mismatch, then fills in after mount and stays reactive across tabs via a custom event + the `storage` event.
 
 #### Admin Content/Training/HR Components (`components/admin/{posts,training,hr}/*`)
-- `posts/PostEditor.tsx` — Standalone page editor (uses `RichTextEditor`). Full-screen at **both** breakpoints; only the panel placement differs. Desktop gets the permanent Blocks and Settings sidebars; mobile edits the title in the header, puts the slug and published switch behind a "Page settings" sheet, and gives the rest of the screen to the editor. It was previously a `Modal` on mobile — the whole form inside a scrolling popup, with the editor capped at 420px and scrolling separately inside that, so the page content got about a third of the screen and a newly added block was immediately pushed out of sight. The desktop right sidebar has **Page** and **Block** tabs: Page holds the URL and `PageSettings`, Block the `BlockInspector`; selecting a block switches to Block and deselecting returns to Page (derived from the selection, not synced by an effect). Tracks unsaved changes (closing, Escape and tab close ask first), saves on Ctrl/Cmd+S, and has a **Preview** button that saves then opens a signed preview link. New posts start from a template (`lib/postTemplates.ts`).
-- `posts/PageSettings.tsx` — Page-level settings shared by the desktop sidebar and the mobile sheet: header style picker (Plain / Image / Banner thumbnails), header image, subtitle, description with a 160-character counter, share image and the promo-rails toggle. Reuses the block inspector's field components (`ImageField`, `TextField`, …) so uploads go through the same `post-media` route.
+- `posts/PostEditor.tsx` — Standalone page editor (uses `RichTextEditor`). Full-screen at **both** breakpoints; only the panel placement differs. Desktop gets the permanent Blocks and Settings sidebars; mobile edits the title in the header, puts the slug and published switch behind a "Page settings" sheet, and gives the rest of the screen to the editor. It was previously a `Modal` on mobile — the whole form inside a scrolling popup, with the editor capped at 420px and scrolling separately inside that, so the page content got about a third of the screen and a newly added block was immediately pushed out of sight. The desktop right sidebar has **Page**, **Block** and **History** tabs (History is described under `HistoryPanel`). Buttons are **Save draft** and **Publish** / **Publish changes**, with a banner when a live page has unpublished changes (Publish them / Discard) and "Unpublish this page" in Page settings. The first two tabs: Page holds the URL and `PageSettings`, Block the `BlockInspector`; selecting a block switches to Block and deselecting returns to Page (derived from the selection, not synced by an effect). Tracks unsaved changes (closing, Escape and tab close ask first), saves on Ctrl/Cmd+S, and has a **Preview** button that saves then opens a signed preview link. New posts start from a template (`lib/postTemplates.ts`). Saving sends `expected_updated_at` and handles a 409 by naming who saved and offering to replace their changes. The save that publishes a draft shows the pre-publish checklist (`lib/postChecklist.ts`) once as a "Publish anyway?" confirm. A **Share** button opens `ShareModal`.
+- `posts/ShareModal.tsx` — Copy link, channel-tagged links (`?s=social&utm_source=whatsapp` etc., so Analytics can tell channels apart), the printable QR code (reuses `RedirectQrModal`, same `/<slug>` namespace), and 7-day review links with "Turn off all review links".
+- `posts/PublishChecklist.tsx` — Renders `lib/postChecklist.ts` at the top of Page settings: empty page, long title, missing/long description, no share image, images without alt text (body and gallery), buttons with no link. Warnings only.
+- `posts/SharePreview.tsx` — A WhatsApp/Facebook-style link card from the same fallbacks the page metadata uses.
+- `posts/TagsField.tsx` — Tag chips with suggestions from tags already in use (case-insensitive reuse).
+- `posts/PageSettings.tsx` — Page-level settings shared by the desktop sidebar and the mobile sheet: header style picker (Plain / Image / Banner thumbnails), header image, subtitle, description with a 160-character counter, share image (with `SharePreview`), the promo-rails toggle, "Hide from search engines", tags and the schedule (`ScheduleFields`: go-live and take-down times as local datetime inputs). The checklist sits at the top.
+- `posts/MediaLibraryModal.tsx` — Grid of images already in `post-media`, newest first, with "Show more"; returns the picked URL.
+- `posts/DevicePreview.tsx` — Full-screen frame of the signed preview link at phone (390), tablet (820) and computer (1440, scaled to fit) widths. Escape closes it, not the editor.
+- `posts/LinkCheck.tsx` — "Check links" box under the checklist in Page settings; lists broken links and where they are.
+- `posts/SavedTemplates.tsx` — Saved templates in the New post picker, with delete; hidden when there are none.
+- `posts/usePostPresence.ts` — Heartbeat hook for "who else is editing" plus `presenceLine()`.
+- `blocks/SlashMenu.tsx` — The "/" block menu beside the rich-text editor; open whenever the cursor's paragraph reads `/query`, keys captured before ProseMirror sees them.
+- `posts/HistoryPanel.tsx` — The editor's History tab (a sheet on mobile): saved versions with who and when, and "Bring back", which loads one into the form unsaved. Reuses the block inspector's field components (`ImageField`, `TextField`, …) so uploads go through the same `post-media` route.
 - `training/PostEditor.tsx` — Training post editor (uses `RichTextEditor`). Still a `Modal` on mobile: its body is one field among many rather than the whole point of the screen, and it inherits the mobile block sheets and toolbar from `BlockTools` either way.
 - `training/CategoryModal.tsx`, `SubgroupModal.tsx`, `FolderModal.tsx`, `IconPicker.tsx` — Training tree CRUD modals
 - `hr/HrUI.tsx` — Staff directory, leave requests, documents (main HR dashboard shell)
@@ -3697,11 +3811,13 @@ stay: they're consent and legal, not chrome.
 - `HomePageBody.tsx` — the whole homepage composition, extracted as a server
   component so the real page (`app/page.tsx`) and the variant-preview route
   (`app/home/page.tsx`) render identical markup with a different event-card
-  treatment (`cardVariant`) rather than duplicating the layout. It resolves the
-  latest sermon once — `getLatestVideo()`, falling back to `getLatestVideoFromRSS()`
-  when the YouTube quota is exceeded — and renders, in order: `HomeOverscrollColor`,
-  `HeroSection`, `MissionSection`, `LatestSermonSection`, `WhatsOnSection`,
-  `EveryoneHasAPlaceSection`, `WorshipWithUsSection`, `GetInvolvedSection`.
+  treatment (`cardVariant`) rather than duplicating the layout. It renders, in
+  order: `HomeOverscrollColor`, `HeroSection`, `ServiceTimesBar`, `MissionSection`,
+  `LatestSermonSection`, `WhatsOnSection`, `EveryoneHasAPlaceSection`,
+  `WorshipWithUsSection`, `GetInvolvedSection`. The latest sermon (`getLatestVideo()`,
+  falling back to `getLatestVideoFromRSS()` when the YouTube quota is exceeded) and
+  `WhatsOnSection` each stream in behind their own `<Suspense>`, so the hero (the
+  page's LCP element) never waits on YouTube or Supabase.
 - `HomeOverscrollColor.tsx` — a render-nothing client component that sets
   `document.documentElement.style.background` to Destiny orange (`#F58021`) on
   mount and restores it on unmount, so the overscroll/rubber-band area at the top
@@ -4309,8 +4425,69 @@ and stamps `long_outage_alerted_at`. Amber alerts and maintenance never email.
 #### `GET /api/admin/posts/[id]/preview`
 ```typescript
 // Signed preview URL for a (possibly unpublished) post
-// Returns: { url: "/<slug>?preview=<expiry>.<hmac>" } — valid for one hour
+// Query: ?kind=review for a 7-day review link (audited); otherwise one hour
+// Returns: { url: "/<slug>?preview=<expiry>.<hmac>", expiresAt }
 // See lib/postPreview.server.ts and the /[slug] catch-all
+```
+
+#### `DELETE /api/admin/posts/[id]/preview`
+```typescript
+// Turns off every preview and review link for the post by bumping
+// posts.review_link_version (tokens are signed with it). Audited.
+```
+
+#### `GET /api/admin/posts` · `PATCH|DELETE /api/admin/posts/[id]`
+```typescript
+// GET: every post including the Bin, each with views_30d (post_view_counts RPC);
+//      purges binned posts older than 30 days first (lib/posts-admin.server.ts)
+// PATCH: partial update. mode: "draft" | "publish" | "discard_draft" (see the
+//        posts schema notes); none = direct write (list toggle, Bin restore).
+//        expected_updated_at → 409 { conflict, current } if someone saved
+//        since; restore: true takes it out of the Bin; redirect_old_slug:
+//        false skips the old-URL redirect; returns redirected_from when one
+//        was made. Sets updated_by from the admin profile name (else email)
+// DELETE: moves to the Bin; ?permanent=1 deletes a binned post for good
+```
+
+#### `GET /api/admin/posts/[id]/revisions` · `GET …/revisions/[revisionId]`
+```typescript
+// The post's saved versions (newest 30), newest first, without content;
+// then one version's snapshot. Read-only: restoring happens in the editor.
+```
+
+#### `GET|POST /api/admin/posts/templates` · `DELETE …/templates/[templateId]`
+```typescript
+// Saved post templates (audited). POST { label, description?, fields } keeps
+// the content and page settings only.
+```
+
+#### `POST|DELETE /api/admin/posts/[id]/review`
+```typescript
+// POST { note? }: marks the post for review and notifies site_admin (audited).
+// DELETE withdraws. Publishing also clears it.
+```
+
+#### `POST|DELETE /api/admin/posts/[id]/editing`
+```typescript
+// Editor heartbeat (audit-exempt). POST returns { others: [{ name }] } seen
+// in the last 60s; DELETE on close. Stale rows are swept occasionally.
+```
+
+#### `GET /api/admin/posts/media`
+```typescript
+// The post-media bucket, newest first, 60 per page: { items, nextOffset }.
+```
+
+#### `POST /api/admin/posts/suggest`
+```typescript
+// Writing help (audit-exempt, nothing stored). { kind: "description", title, body }
+// or { kind: "alt", src } → { suggestion }. 503 without an OpenAI key.
+```
+
+#### `POST /api/admin/posts/check-links`
+```typescript
+// { body } → { checked, problems: [{ href, where, problem }], truncated }.
+// Max 25 links; private hosts refused on every redirect hop (audit-exempt).
 ```
 
 #### `GET /api/admin/posts/check-slug`
@@ -4533,7 +4710,7 @@ lives in Supabase too, so during an outage set `D1_MAINTENANCE_MESSAGE` in Verce
 
 | Route | Methods | Notes |
 |---|---|---|
-| `config` | GET | No sign-in, no token, and the only `/one` route the CDN may cache (`s-maxage=60`): `D1AppConfig` — `minBuild { ios, android }`, `forceUpdateMessage`, `maintenanceMessage` (env `D1_MAINTENANCE_MESSAGE` overrides it, for when Supabase is down), `storeUrl` (env `D1_IOS_STORE_URL`, default `itms-beta://` = TestFlight; `D1_ANDROID_STORE_URL`). The app's forced-update gate (`appGate()` in `@destiny/shared`, `src/lib/appGate.ts`) |
+| `config` | GET | No sign-in, no token, and the only `/one` route the CDN may cache (`s-maxage=60`): `D1AppConfig` — `minBuild { ios, android }`, `forceUpdateMessage`, `maintenanceMessage` (env `D1_MAINTENANCE_MESSAGE` overrides it, for when Supabase is down), `storeUrl` (env `D1_IOS_STORE_URL`, default `itms-beta://` = TestFlight; `D1_ANDROID_STORE_URL`), `latestVersion` + `latestVersionNotes` (string[], the notes split by line, max 10). The app's forced-update gate (`appGate()` in `@destiny/shared`, `src/lib/appGate.ts`) and optional update prompt (`optionalUpdate()`, `src/lib/updatePrompt.ts`) |
 | `auth/link` | POST | After every sign-in: accept an open invite for the email (`onboardMember`), return `D1Me` with `onboarding` |
 | `auth/code` | POST | No sign-in: `{ email }`. Sends the email sign-in code only if `d1_sign_in_status` says this email can get in (member, open invite, or requests open), from `after()`, and always answers `{ sent: true }`, so neither the reply nor its timing reveals who is a member. The code comes from the Supabase admin API (`generateLink`, which doesn't email) and is sent through Resend, so sign-in doesn't hit Supabase's per-IP limit for the server's address or its capped built-in sender. Rate-limited per IP and per (hashed) email. Replaced `auth/check` (2026-09-28), which said "no account" outright |
 | `me/access-request` | POST | `{ name, dateOfBirth?, note? }` — ask to join; a Destiny One Admin approves |
@@ -5332,11 +5509,20 @@ mid-service behaviour.
 
 ---
 
-### `lib/iconNames.ts` / `scripts/sync-icon-names.mjs` — icon font subset
+### `lib/iconNames.ts` / `lib/iconFont.ts` / `scripts/sync-icon-names.mjs` — icon font subset
 
-The Material Symbols Rounded font is ~410 KB in full. `app/layout.tsx` requests it from
-Google Fonts with `&icon_names=…` built from `ICON_NAMES`, which brings it down to ~40 KB
-(PageSpeed flagged the full font as the page's largest and render-blocking resource).
+The Material Symbols Rounded font is ~410 KB in full. Google Fonts subsets it with
+`&icon_names=…` built from `ICON_NAMES`, which brings it down to ~40 KB (PageSpeed flagged
+the full font as the page's largest and render-blocking resource).
+
+- **Self-hosted.** The script downloads that subset to
+  `public/fonts/material-symbols-rounded-<hash>.woff2` (hash of the icon list, so a new
+  list gets a new file under the year-long `/fonts` cache) and writes its path to
+  `lib/iconFont.ts`. `app/layout.tsx` inlines the `@font-face` plus Google's own
+  `.material-symbols-rounded` rule in a `<style>`, so no page waits on a render-blocking
+  stylesheet from fonts.googleapis.com (PageSpeed's largest mobile FCP cost before).
+  The download only happens when the list changes; on CI/Vercel a failed download fails
+  the build, locally it warns and keeps the previous font.
 
 - **Generated, never hand-edited.** `scripts/sync-icon-names.mjs` intersects every quoted
   string literal and bare JSX text under `app/`, `components/`, `lib/`, `contexts/`,
@@ -6081,7 +6267,7 @@ share. Modelled closely on the audit log, split the same way.
 
 - **`lib/engagement.ts`** — the vocabulary, client-safe (touches neither the
   database nor `next/headers`). Closed sets so the page's filters can be chips:
-  `ENGAGEMENT_SOURCES` (`redirect` / `nfc` / `links` / `links_view`, each with its own noun —
+  `ENGAGEMENT_SOURCES` (`redirect` / `nfc` / `links` / `links_view` / `post_view`, each with its own noun —
   "click" vs "tap" — icon and blurb), `SRC_TAGS` (`qr` / `nfc` / `print` /
   `social`, the `?s=` values that separate "scanned the flyer" from "clicked the
   post"), and `IP_CATEGORIES` (`apple_private_relay` / `vpn` / `tor` /
@@ -6400,6 +6586,29 @@ Developer account exists. See `apps/d1-admin/README.md`.
 ### Destiny One app — look and feel (`apps/destiny-one/src`)
 
 Polished to Apple's Human Interface Guidelines. The pieces, and why they exist:
+
+- **Storage and data** (Profile → Storage and data, `src/app/storage-data.tsx`), modelled on
+  WhatsApp's screen. All personal to the phone (`src/state/dataSettings.ts`, AsyncStorage
+  `d1.data.v1`). Sections:
+  - *Free up storage* (`src/app/storage.tsx`, `src/lib/storage.ts`): size of the app's cache
+    folder (downloaded photos, voice messages, opened files, photos prepared for sending) and of
+    the saved-messages cache, free space on the phone, and **Clear downloaded media**. Files
+    written in the last 10 minutes are kept, in case one is still uploading.
+  - *Network usage* (`src/app/network-usage.tsx`, `src/state/networkUsage.ts`, `d1.usage.v1`):
+    media sent and received per kind (photos, voice messages, documents) and Wi-Fi vs mobile
+    data, since the last reset. Counted by the app from attachment sizes (uploads in
+    `upload.ts`, first loads via `noteLoaded`, file downloads in `media.ts`); phones don't
+    expose per-app counters to Expo Go apps.
+  - *Upload quality* (Standard or HD, default Standard): `cleanImage(…, { quality })` scales chat photos
+    to 1280px / JPEG 0.7 or 2048px / JPEG 0.85. Avatars and group icons always use HD.
+  - *Media auto-download* for Photos and Voice messages (Never / Wi-Fi / Wi-Fi and mobile data;
+    defaults: photos always, voice on Wi-Fi), plus reset. A photo that shouldn't load shows a
+    download button with its size; a voice message that should is fetched ahead
+    (`player.replace` on mount), otherwise it loads on play as before. Own media and anything
+    loaded once (`d1.data.downloaded.v1`, last 3000 ids) always shows. The connection type comes
+    from `expo-network` (`src/lib/network.ts`, one listener for the app; unknown counts as mobile).
+  - Left out on purpose: "use less data for calls" (no calls), proxy, auto-download *quality*
+    (the server keeps one copy of each photo) and video (not an attachment type).
 
 - **Personal appearance** (Profile → Appearance, `src/app/appearance.tsx`). Each person picks the
   colour of the messages *they send* and a conversation wallpaper (a pattern, a stock photo, or
@@ -7591,7 +7800,7 @@ same database as the data rather than in a separate Synapse module.
   `?communityId` picks for New group), `notifications` (D2 + per-group mute), `search` (full-screen search opened from a chat; the
   Search tab `(tabs)/find` uses the same `SearchView` component), `report` + `report-sent` (B5), `feedback` (D5, Profile → Report a problem /
   Send feedback, `?kind=problem|idea`; also reached by shaking the phone, see below), `chat-safety`,
-  `help` (Profile → Help: short answers grouped by topic, one open at a time, with Report a problem underneath), `whats-new` (Profile → Support, or tap the version once: release notes by version, `RELEASES` in `src/lib/releases.ts`), `release` (the release splash, a full-screen modal shown once per release: every X.X release, and an X.X.X patch only if its `RELEASES` entry has `splash: true`; last-seen kept in AsyncStorage `d1.releaseSplash.seen.v1`, new members are marked seen when they accept the notices; logic in `src/lib/releaseSplash.ts`), `beta` (hidden: tap the version at the bottom of Profile 10 times within 2s gaps; "Become a beta tester?" modal that sends a request to the feedback inbox so an admin adds the person's email to the nightly TestFlight group; asked-state kept on the phone in AsyncStorage `d1.betaRequested.v1`), `viewer`, `message-info`, `forward`, `share`, `events`, `send-event` (v0.8, see below), `delete-account` (D3, type DELETE), `accounts` (account switcher, a fit-to-content form sheet), `add-account` (Profile → Add account: Add child / Add admin account, a form sheet), `password` (password sign-in) and `set-password` (Profile → Password).
+  `help` (Profile → Help: short answers grouped by topic, one open at a time, with Report a problem underneath), `whats-new` (Profile → Support, or tap the version once: release notes by version, `RELEASES` in `src/lib/releases.ts`), `release` (the release splash, a full-screen modal shown once per release: every X.X release, and an X.X.X patch only if its `RELEASES` entry has `splash: true`; last-seen kept in AsyncStorage `d1.releaseSplash.seen.v1`, new members are marked seen when they accept the notices; logic in `src/lib/releaseSplash.ts`), `update-available` (optional update prompt, a fit-to-content form sheet pushed over Chats once per version when `latestVersion`'s X.X is newer than the app's; patch numbers ignored; never blocks; waits for setup and the release splash; seen-state in AsyncStorage `d1.updatePrompt.seen.v1`, marked as it opens; Update opens `storeUrl`, Not now closes), `beta` (hidden: tap the version at the bottom of Profile 10 times within 2s gaps; "Become a beta tester?" modal that sends a request to the feedback inbox so an admin adds the person's email to the nightly TestFlight group; asked-state kept on the phone in AsyncStorage `d1.betaRequested.v1`), `viewer`, `message-info`, `forward`, `share`, `events`, `send-event` (v0.8, see below), `delete-account` (D3, type DELETE), `accounts` (account switcher, a fit-to-content form sheet), `add-account` (Profile → Add account: Add child / Add admin account, a form sheet), `password` (password sign-in) and `set-password` (Profile → Password).
 - **Profile tab** (`(tabs)/profile.tsx`) is grouped like iOS Settings: the name card (tap the
   picture to change it, the name to open `edit-name`), then headed sections Account (email,
   password, add/switch account), Preferences (notifications, appearance), Privacy and safety
@@ -7858,9 +8067,10 @@ A standalone **macOS app** (not part of the website deploy) that captions live a
 A standalone **Node app** (not part of the website deploy) for the Destiny talent show. Four Android tablets are red X buzzers and one is a dedicated golden buzzer. A press fires an Avolites lighting cue, shows an X (or a gold takeover with confetti) on the LED screen, and plays a buzzer/fanfare from the LED screen machine. **LAN only** — no internet, Supabase or accounts, so it survives the building connection dropping.
 - **One app, two roles** (`app.js`, launched by `start.bat` on both machines): a local-only setup page (`setup/setup.html`, `127.0.0.1:8090`, Host-header checked) asks whether this is the LED screen or Avolites machine, saves it to gitignored `machine.json`, and forks `hub/server.js` or `agent/avolites-agent.js` as a child process (restarted on crash; status flows back over IPC). The hub announces itself by UDP broadcast on port 8099 (`lib/discovery.js`, no key in the packet) so the agent finds it without typing IPs.
 - **Hub** (`hub/server.js`, runs on the LED machine): plain `http` static server + `ws` WebSocket at `/ws`. Clients say `hello` with a role (`tablet` + seat, `display`, `control`, `agent`). Show rules live in `lib/state.js` (pure, unit tested): each X latches until Reset, golden fires once until Reset, per-buzzer debounce, Lock ignores all presses. When the last judge buzzes the hub also broadcasts an `all-x` event (display strobes red, optional `cues.allX` playback). Only `control` clients can reset/lock/trigger/test. Optional shared `key` gates every WebSocket for audience-accessible Wi-Fi.
-- **Pages** (`hub/public/`): `tablet.html` (fires on `pointerdown` for latency, auto-reconnect, seat picker when no `?seat=`), `display.html` (sharp extruded 3D SVG X per judge with names underneath, all-out red strobe, gold takeover, Web Audio playback of `sounds/buzzer.mp3`/`golden.mp3` with synthesised fallbacks; a one-time click arms audio because of browser autoplay rules; `?bg=transparent` for keying), `control.html` (presence per seat, audio-armed state, lighting status + log, Reset/Lock, per-seat Trigger backup, test cue/sound buttons).
+- **Pages** (`hub/public/`): `tablet.html` (fires on `pointerdown` for latency, auto-reconnect, seat picker when no `?seat=`), `display.html` (sharp extruded 3D SVG X per judge with names underneath, sized in a `--u` unit of `min(1vw, 2.9vh)` so it fits any LED wall height at a fixed width, all-out red strobe, gold takeover, Web Audio playback of `sounds/buzzer.mp3`/`golden.mp3` with synthesised fallbacks; a one-time click arms audio because of browser autoplay rules; `?bg=transparent` for keying), `control.html` (presence per seat, audio-armed state, lighting status + log, Reset/Lock, per-seat Trigger backup, test cue/sound buttons).
 - **Lighting**: `lib/titan.js` calls the Titan Web API (port 4430; URL templates in config, `{userNumber}` filled in; retries once). Default `agent` mode runs `agent/avolites-agent.js` on the Titan PC, which connects *out* to the hub so the lighting PC needs no inbound firewall rule; `direct` mode has the hub call a console's IP itself (hardware consoles). Reset can `KillPlayback` the X/golden cues (`releaseOnReset`).
 - `tools/fake-titan.js` stands in for the console when rehearsing; `npm test` runs the state tests. Setup, tablet kiosk tips, show-day checklist: `apps/talent-buzzer/README.md`.
+- **Download**: `.github/workflows/talent-buzzer-release.yml` runs on pushes to `main` touching the folder (or by hand), runs the tests and uploads a ready-to-run `talent-buzzer.zip` (with `node_modules`) to the `talent-buzzer` GitHub release; the README links straight to `releases/download/talent-buzzer/talent-buzzer.zip`. `start.bat` checks Node.js 20+ is installed and opens nodejs.org if not.
 
 ### Status page — `apps/status/` (status.destinytees.uk)
 A small **Next.js app deployed as its own Vercel project** (root directory `apps/status`, region `dub1`, not the main site's `lhr1`). It has no Supabase client and no database: every check is a plain HTTP request, so the page keeps rendering when the website, Supabase or London is down. Destiny One's outage message links here.

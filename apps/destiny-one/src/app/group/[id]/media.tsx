@@ -17,6 +17,7 @@ import { isPhoto } from "@/lib/media";
 import { keys, useGroupMedia, type LocalMessage, type MessagesData } from "@/lib/queries";
 import { queryClient } from "@/lib/queryClient";
 import { refreshAttachmentUrls } from "@/lib/useConversation";
+import { noteLoaded, useAutoDownload } from "@/state/dataSettings";
 import { errorMessage } from "@/state/session";
 import { ORANGE, useTheme } from "@/theme/tokens";
 
@@ -124,7 +125,7 @@ export default function GroupMedia() {
               accessibilityLabel={`Photo from ${item.mine ? "you" : item.sender?.displayName ?? "a former member"}, ${dayLabel(item.createdAt)}`}
               style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
             >
-              <Image source={{ uri: item.attachment?.url ?? undefined }} style={{ width: cell, height: cell, backgroundColor: t.fill }} resizeMode="cover" />
+              <GridPhoto item={item} size={cell} />
             </Pressable>
           )}
         />
@@ -165,4 +166,19 @@ export default function GroupMedia() {
       <FloatingBack background={t.grouped} />
     </View>
   );
+}
+
+/** A grid cell: the photo, or a download mark when Storage and data says it doesn't load by itself (tapping opens it in the viewer, which loads it). */
+function GridPhoto({ item, size }: { item: LocalMessage; size: number }) {
+  const t = useTheme();
+  const a = item.attachment;
+  const auto = useAutoDownload("photos", a?.id, item.mine);
+  if (!a?.url || !auto) {
+    return (
+      <View style={{ width: size, height: size, backgroundColor: t.fill, alignItems: "center", justifyContent: "center" }}>
+        {a?.url ? <Icon name="download" size={20} color={t.muted} strokeWidth={2.2} /> : null}
+      </View>
+    );
+  }
+  return <Image source={{ uri: a.url }} style={{ width: size, height: size, backgroundColor: t.fill }} resizeMode="cover" onLoad={() => noteLoaded(a, item.mine)} />;
 }

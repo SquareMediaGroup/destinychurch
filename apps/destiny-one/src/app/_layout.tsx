@@ -7,22 +7,27 @@ import { withErrorReporting } from "@/lib/sentry";
 import { useEffect, useRef } from "react";
 import { liquidGlass } from "@/components/GlassSurface";
 import { Platform, StyleSheet, View } from "react-native";
-import { Stack, router, useSegments } from "expo-router";
+import { Stack, router, usePathname, useSegments } from "expo-router";
 import * as Notifications from "expo-notifications";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
 import { SafeAreaProvider } from "react-native-safe-area-context";
+import { useQuery } from "@tanstack/react-query";
 import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client";
 import { UpdateScreen } from "@/components/UpdateScreen";
 import { useAppGate } from "@/lib/appGate";
+import { api } from "@/lib/api";
 import { groupIdFrom } from "@/lib/push";
 import { handleNotificationAction, registerMessageCategory, registerNotificationTask } from "@/lib/notificationActions";
-import { currentOpenGroup } from "@/lib/queries";
+import { currentOpenGroup, keys } from "@/lib/queries";
 import { pendingSplash } from "@/lib/releaseSplash";
 import { hasSeenSetup } from "@/state/setupSeen";
+import { markUpdatePromptSeen, pendingUpdatePrompt } from "@/lib/updatePrompt";
 import { persistOptions, queryClient } from "@/lib/queryClient";
 import { SwitchBanner } from "@/components/SwitchBanner";
 import { appearance } from "@/state/appearance";
+import { dataSettings } from "@/state/dataSettings";
+import { networkUsage } from "@/state/networkUsage";
 import { useShakeToReportListener } from "@/lib/useShakeToReport";
 import { notificationTap, usePendingNotificationGroup } from "@/state/notificationTap";
 import { AccessGuard, SessionProvider, isInApp, useSession } from "@/state/session";
@@ -105,6 +110,43 @@ function ReleaseSplash() {
 }
 
 /**
+ * Offers a newer X.X release once (see lib/updatePrompt.ts), as a sheet over
+ * Chats, for an active member. Waits for setup and the release splash,
+ * so it never stacks on either; the path is watched so it tries again once
+ * they're out of the way.
+ */
+function UpdatePrompt() {
+  const { ready, me } = useSession();
+  const segments = useSegments();
+  const pathname = usePathname();
+  const inApp = isInApp(segments[0] as string | undefined);
+  const active = ready && me?.onboarding === "active" && me.outstandingConsents.length === 0;
+  const { data: config } = useQuery({ queryKey: keys.appConfig, queryFn: () => api.appConfig() });
+  const shown = useRef<string | null>(null);
+  const memberId = me?.id;
+  const atHome = pathname === "/chats";
+
+  useEffect(() => {
+    if (!active || !inApp || !atHome || !memberId || !config) return;
+    let cancelled = false;
+    void (async () => {
+      if (!(await hasSeenSetup(memberId)) || (await pendingSplash())) return;
+      const version = await pendingUpdatePrompt(config);
+      if (cancelled || !version || shown.current === version) return;
+      shown.current = version;
+      // Seen as soon as it's shown, so swiping the sheet away counts as Not now.
+      await markUpdatePromptSeen(version);
+      router.push("/update-available");
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [active, inApp, atHome, memberId, config]);
+
+  return null;
+}
+
+/**
  * Opens the chat from a tapped notification once someone is signed in, has
  * accepted the notices and is past the launch screen, so the chat lands on top
  * of the chat list rather than under it. Already looking at that chat: stays put.
@@ -169,6 +211,7 @@ function App() {
       <AccessGuard />
       <OpenFromNotification />
       <ReleaseSplash />
+      <UpdatePrompt />
       <ShakeToReport />
       <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: t.bg } }}>
         <Stack.Screen name="(tabs)" options={{ animation: "fade" }} />
@@ -197,6 +240,10 @@ function App() {
           name="accounts"
           options={sheetOptions(t.grouped)}
         />
+        <Stack.Screen
+          name="update-available"
+          options={sheetOptions(t.grouped)}
+        />
       </Stack>
       <SwitchBanner />
     </SessionProvider>
@@ -220,6 +267,11 @@ function sheetOptions(solid: string) {
 function RootLayout() {
   useNotificationTaps();
   // The person's own send colour and wallpaper, from this phone.
+  // Storage and data settings and the network usage count, from this phone.
+  useEffect(() => {
+    void dataSettings.load();
+    void networkUsage.load();
+  }, []);
   useEffect(() => {
     // Hide even if loading fails; the splash must never stick.
     void appearance

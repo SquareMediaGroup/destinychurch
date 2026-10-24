@@ -10,7 +10,8 @@ import type { AdminSettings } from "@/lib/destinyOne/adminTypes";
 // GET   /api/admin/destiny-one/settings
 // PATCH /api/admin/destiny-one/settings  { allowAccessRequests?, inviteExpiryDays?,
 //                                          minBuildIos?, minBuildAndroid?,
-//                                          forceUpdateMessage?, maintenanceMessage? }
+//                                          forceUpdateMessage?, maintenanceMessage?,
+//                                          latestVersion?, latestVersionNotes? }
 //
 // allowAccessRequests off = invite-only: people without an invite are told to
 // ask for one instead of seeing the request form. Retention is read-only here
@@ -18,7 +19,8 @@ import type { AdminSettings } from "@/lib/destinyOne/adminTypes";
 //
 // The min builds and messages feed the app's public config
 // (/api/app/v1/one/config): raising a minimum sends everyone on an older build
-// to the "update the app" screen.
+// to the "update the app" screen. latestVersion only offers an update: apps on
+// an older X.X see a dismissible prompt once, with latestVersionNotes.
 
 export const dynamic = "force-dynamic";
 
@@ -36,6 +38,9 @@ function auditSummary(before: D1Settings, after: D1Settings): string {
   }
   if (before.minBuildIos !== after.minBuildIos || before.minBuildAndroid !== after.minBuildAndroid) {
     return `Set the minimum Destiny One app build to iOS ${after.minBuildIos}, Android ${after.minBuildAndroid}`;
+  }
+  if (before.latestVersion !== after.latestVersion) {
+    return after.latestVersion ? `Offered the Destiny One ${after.latestVersion} update to older apps` : "Turned off the Destiny One update prompt";
   }
   return "Changed the Destiny One settings";
 }
@@ -62,6 +67,8 @@ export async function PATCH(request: Request) {
       ...(body.data.minBuildAndroid !== undefined ? { min_build_android: body.data.minBuildAndroid } : {}),
       ...(body.data.forceUpdateMessage !== undefined ? { force_update_message: body.data.forceUpdateMessage } : {}),
       ...(body.data.maintenanceMessage !== undefined ? { maintenance_message: body.data.maintenanceMessage } : {}),
+      ...(body.data.latestVersion !== undefined ? { latest_version: body.data.latestVersion } : {}),
+      ...(body.data.latestVersionNotes !== undefined ? { latest_version_notes: body.data.latestVersionNotes } : {}),
       updated_at: new Date().toISOString(),
       updated_by: admin.userId,
     })

@@ -110,6 +110,8 @@ export interface AdminSettings {
   minBuildAndroid: number;
   forceUpdateMessage: string | null;
   maintenanceMessage: string | null;
+  latestVersion: string | null;
+  latestVersionNotes: string | null;
   retentionDays: number;
   churchSuiteConfigured: boolean;
 }

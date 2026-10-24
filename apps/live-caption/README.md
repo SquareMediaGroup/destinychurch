@@ -124,6 +124,27 @@ default. This is a decoding bias, not a dictionary: only the first
 `VocabularyPrompt.maxWordCount` words are sent, custom terms first, because a
 bloated prompt crowds out real audio context and hurts accuracy.
 
+## Packaging (.dmg)
+
+```bash
+make dmg
+```
+
+Builds Release and writes `build/Live-Caption-<version>.dmg` (drag the app to
+Applications). It checks that `libndi.dylib` is embedded and loads from inside
+the app, so the church Mac doesn't need the NDI SDK installed.
+
+- **Signing**: ad-hoc by default. That opens on the Mac that built it; on any
+  other Mac the first launch is blocked until it's allowed in System Settings >
+  Privacy & Security > Open Anyway. For a DMG that opens anywhere:
+  `make dmg SIGN_IDENTITY="Developer ID Application: …" NOTARY_PROFILE=<profile>`
+  (needs an Apple Developer account; the profile comes from
+  `xcrun notarytool store-credentials`).
+- **Models are not in the DMG** (multi-GB). On the target Mac, put
+  `ggml-large-v3-turbo.bin` and `ggml-silero-v5.1.2.bin` in
+  `~/Library/Application Support/Live Caption/Models` (Settings >
+  Transcription > Open Models Folder).
+
 ## Benchmarking
 
 The scope doc's single biggest risk is latency drift over a full ~60-90 minute

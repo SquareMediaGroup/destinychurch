@@ -28,6 +28,7 @@ Audio never leaves the machine: transcription is entirely local.
 make whisper-build    # clones the whisper.cpp submodule, builds it with Metal
 make ndi-setup        # copies the installed NDI SDK's headers/lib in (see Vendor/NDI/README.md)
 ./Scripts/fetch-whisper-model.sh large-v3-turbo
+./Scripts/fetch-whisper-model.sh silero-v5.1.2   # speech detection, filters applause/music/noise
 make build
 ```
 
@@ -62,6 +63,49 @@ outline so they survive being composited over both a bright stage wash and a
 dark set. Source name and resolution are in Settings > NDI Output; changes
 take effect the next time captioning starts.
 
+### NDI network
+
+NDI is pull-based: receivers (ATEM, vMix, OBS, ProPresenter) connect to this
+Mac; nothing is pushed to a destination address. Settings > NDI Network
+controls where that happens:
+
+- **Network interfaces**: this Mac's own IPs that NDI may use. Set it to the
+  AV network's address when the Mac also has Wi-Fi.
+- **Discovery servers**: NDI Discovery Server addresses, for receivers on
+  another subnet or networks that block mDNS.
+- **Find sources at these IPs**: machines queried directly for NDI *input*
+  sources, without mDNS.
+- **Multicast**: send by multicast from a chosen address range and TTL.
+
+The standard NDI SDK reads these once per process, from an
+`ndi-config.v1.json` the app writes to
+`~/Library/Application Support/Live Caption/NDI/` and points the SDK at with
+`NDI_CONFIG_DIR`, so **a change needs an app restart**. Left at defaults, the
+app writes nothing and NDI uses the machine-wide config (NDI Tools / Access
+Manager). Ports are fixed by NDI and not configurable in the standard SDK:
+TCP 5960, TCP 5961 upward per stream, 7960 upward when sending, 5959 for a
+discovery server, UDP 5353 for mDNS. Open those on any firewall in between.
+
+### Applause, music and noise
+
+Whisper is a speech-to-text model, not a sound classifier. On applause or
+music it often writes a label ("[Applause]", "(music)", "♪") and on noise or
+silence it can invent words ("Thanks for watching"). Three layers keep that
+off screen:
+
+1. **Silero VAD** (`SpeechDetector`): a window with no detected speech is
+   never sent to whisper, and words placed well outside any speech are
+   dropped. Needs `ggml-silero-v5.1.2.bin` in the Models folder; without it
+   the app transcribes everything and says so in the status line. Toggle in
+   Settings > Transcription.
+2. **Label stripping** (`TranscriptCleaner`): anything in `[...]`/`(...)`
+   and music symbols are removed.
+3. **No-speech probability and stock outros**: segments whisper itself rates
+   as probably not speech (> 0.8), and known subtitle outros, are dropped.
+
+Applause *during* speech (a congregation clapping along under a preacher)
+is still transcribed: VAD sees speech in it, which is correct.
+
 ### Caption stability
 
 whisper.cpp re-transcribes overlapping windows, so recent words can change
@@ -79,6 +123,27 @@ miss — speakers, local place names. The 66 books of the Bible are included by
 default. This is a decoding bias, not a dictionary: only the first
 `VocabularyPrompt.maxWordCount` words are sent, custom terms first, because a
 bloated prompt crowds out real audio context and hurts accuracy.
+
+## Packaging (.dmg)
+
+```bash
+make dmg
+```
+
+Builds Release and writes `build/Live-Caption-<version>.dmg` (drag the app to
+Applications). It checks that `libndi.dylib` is embedded and loads from inside
+the app, so the church Mac doesn't need the NDI SDK installed.
+
+- **Signing**: ad-hoc by default. That opens on the Mac that built it; on any
+  other Mac the first launch is blocked until it's allowed in System Settings >
+  Privacy & Security > Open Anyway. For a DMG that opens anywhere:
+  `make dmg SIGN_IDENTITY="Developer ID Application: …" NOTARY_PROFILE=<profile>`
+  (needs an Apple Developer account; the profile comes from
+  `xcrun notarytool store-credentials`).
+- **Models are not in the DMG** (multi-GB). On the target Mac, put
+  `ggml-large-v3-turbo.bin` and `ggml-silero-v5.1.2.bin` in
+  `~/Library/Application Support/Live Caption/Models` (Settings >
+  Transcription > Open Models Folder).
 
 ## Benchmarking
 

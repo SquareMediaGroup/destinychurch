@@ -170,6 +170,12 @@ struct ControlPanelView: View {
                 }
             }
 
+            if appState.ndiNetworkNeedsRestart {
+                Text("NDI network settings changed. Restart Live Caption to apply them.")
+                    .font(.caption)
+                    .foregroundStyle(.orange)
+            }
+
             if appState.preferences.ndiOutputs.filter(\.isEnabled).isEmpty {
                 Text("No outputs enabled. Add one in Settings > NDI Output.")
                     .font(.caption)

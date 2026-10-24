@@ -424,6 +424,10 @@ destinychurch/
 │                                   # and/or publishing an NDI source. Audio never leaves the machine.
 │                                   # whisper.cpp is a git submodule under Vendor/; the NDI SDK is
 │                                   # license-gated and not committed. Build via `make` (see its README).
+│                                   # Settings > NDI Network sets the interface, discovery servers and
+│                                   # multicast (written to an app-owned ndi-config.v1.json via
+│                                   # NDI_CONFIG_DIR). A Silero VAD gate keeps applause/music/noise
+│                                   # away from whisper (needs ggml-silero-*.bin in the Models folder).
 ├── mobile/                        # Native SwiftUI iOS app (Swift 6, strict concurrency). Five tabs —
 │                                   # Home/Sermons/Events/Give/More. XcodeGen project (project.yml is
 │                                   # the source of truth; the .xcodeproj is generated, not committed).

@@ -13,10 +13,12 @@ struct SettingsView: View {
                 .tabItem { Text("Transcription") }
             NDIOutputSettingsView(preferences: preferences)
                 .tabItem { Text("NDI Output") }
+            NDINetworkSettingsView(preferences: preferences)
+                .tabItem { Text("NDI Network") }
             VocabularySettingsView(preferences: preferences)
                 .tabItem { Text("Vocabulary") }
         }
-        .frame(width: 480, height: 340)
+        .frame(width: 520, height: 420)
     }
 }
 
@@ -70,6 +72,18 @@ private struct TranscriptionSettingsView: View {
                         .font(.caption)
                         .foregroundStyle(.secondary)
                     Text("How long a word must stay unchanged before it appears. Higher is steadier but lags the speaker further; lower shows words sooner but lets them visibly rewrite themselves.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+
+            LabeledContent("Non-speech") {
+                VStack(alignment: .leading) {
+                    Toggle("Ignore applause, music and noise", isOn: $preferences.filterNonSpeech)
+                    Text(ModelCatalog.vadModel() == nil
+                        ? "Needs the speech detection model, which is not installed. Run Scripts/fetch-whisper-model.sh silero-v5.1.2 or put ggml-silero-v5.1.2.bin in the Models folder."
+                        : "Audio with no one speaking is not sent to the caption model, so it cannot invent words for it. Takes effect the next time captioning starts.")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
@@ -188,6 +202,70 @@ private struct NDIOutputRow: View {
                 .font(.callout)
         }
         .padding(.vertical, 4)
+    }
+}
+
+/// Process-wide NDI network settings. NDI receivers pull from this Mac, so
+/// these control which network the captions leave on and who can find them,
+/// not a destination to push to.
+private struct NDINetworkSettingsView: View {
+    @Bindable var preferences: Preferences
+    @State private var localAddresses: [String] = []
+
+    var body: some View {
+        Form {
+            Section {
+                TextField("Network interfaces (this Mac's IPs)", text: $preferences.ndiNetwork.allowedAdapters, prompt: Text("All interfaces"))
+                Text(localAddresses.isEmpty
+                    ? "No network interfaces found."
+                    : "This Mac: \(localAddresses.joined(separator: ", ")). Pick the AV network so captions do not go out over Wi-Fi.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
+            Section {
+                TextField("Discovery servers", text: $preferences.ndiNetwork.discoveryServers, prompt: Text("e.g. 192.168.10.5"))
+                TextField("Find sources at these IPs", text: $preferences.ndiNetwork.extraSourceIPs, prompt: Text("e.g. 192.168.20.40, 192.168.20.41"))
+                Text("Use these when the switcher or sound desk is on another subnet, or the network blocks automatic discovery. Separate several with commas.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
+            Section {
+                Toggle("Send by multicast", isOn: $preferences.ndiNetwork.multicastEnabled)
+                if preferences.ndiNetwork.multicastEnabled {
+                    TextField("Address prefix", text: $preferences.ndiNetwork.multicastPrefix)
+                    TextField("Netmask", text: $preferences.ndiNetwork.multicastNetmask)
+                    Stepper("Hops (TTL): \(preferences.ndiNetwork.multicastTTL)", value: $preferences.ndiNetwork.multicastTTL, in: 1...16)
+                }
+            }
+
+            Section {
+                let errors = preferences.ndiNetwork.validationErrors(localAddresses: Set(localAddresses))
+                if errors.isEmpty {
+                    Text("Restart Live Caption to apply changes here. NDI reads these settings once, when the app opens. Ports are fixed by NDI: 5960 and 5961 upward (TCP) and 7960 upward for sending; 5959 for a discovery server; 5353 (UDP) for automatic discovery.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                } else {
+                    ForEach(errors, id: \.self) { error in
+                        Text(error)
+                            .font(.caption)
+                            .foregroundStyle(.orange)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                }
+                Button("Reset to Defaults") {
+                    preferences.ndiNetwork = NDINetworkConfiguration()
+                }
+            }
+        }
+        .formStyle(.grouped)
+        .onAppear {
+            localAddresses = NDIRuntime.localIPv4Addresses().sorted()
+        }
     }
 }
 

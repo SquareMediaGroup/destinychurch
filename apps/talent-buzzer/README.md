@@ -231,11 +231,21 @@ The lighting person needs to make the "looks" for each buzzer. Show them this pa
 If they use **different numbers**, change them on the **Control page** (the **Control** link on the setup page):
 
 1. In the **Lighting cues** box, type each playback number next to its buzzer. Leave a box empty to fire nothing.
-2. Click **Test** next to any of them to check the right look comes up.
-3. Click **Save cues**. The buzzers use the new numbers straight away, and the app remembers them next time.
+2. Pick what it does:
+   - **Go** fires the playback (like pressing its Go).
+   - **Flash** or **Swop** presses that button. For Flash, flash must be turned on for that playback in Titan.
+   - **Fader** moves the playback's fader to the level you type (0 to 100%).
+3. Set **times in seconds**, for example `5 times in 5 s`. Once (`1`) means Go, Swop and Fader stay on until Reset.
+   More than once means it pulses on and off that many times, spread evenly over those seconds.
+4. Click **Test** next to any of them to check the right look comes up.
+5. Click **Save cues**. The buzzers use the new settings straight away, and the app remembers them next time.
 
-To fire **any** playback at any time (for example a look that isn't on a buzzer), type its number in the
-**Fire any playback** box and click **Fire**. Click **Release** to turn it off again.
+To fire **any** playback at any time (for example a look that isn't on a buzzer), fill in the
+**Fire any playback** box the same way and click **Fire**. Click **Off** to undo it.
+
+> **Rehearse with the real desk first.** Go and Kill have been used before; Flash, Swop and Fader use the
+> commands from Avolites' Web API notes and need checking on your console. If one does nothing, the
+> **Lighting log** on the Control page says why.
 
 > **Judges' names** are still changed in a file. On the LED screen computer, copy **`config.example.json`** in the
 > `talent-buzzer` folder and rename the copy to **`config.json`** (if it isn't there already). Open it in Notepad
@@ -373,13 +383,13 @@ whenever this folder changes on `main` (or when it's run by hand from the Action
 | `judges` | Seats and names shown on the tablets, control page and display |
 | `golden.name` | Name for the golden tablet |
 | `cues.*` | Set from the Control page's **Lighting cues** box (`set-cues` over the WebSocket, validated by `lib/cues.js`), which writes them back to `config.json` (creating it from the example on first save). |
-| `cues.x` | Titan playback user number per seat |
+| `cues.x` | Cue per seat: `{ userNumber, action: fire\|flash\|swop\|level, level: 0-100, times: 1-20, seconds: 1-30 }`. A bare number (older configs) means a plain Go once. |
 | `cues.allX` | Playback fired when all four judges have buzzed, or `null` |
 | `cues.golden` | Golden buzzer playback |
 | `cues.reset` | Playback fired on Reset, or `null` |
 | `cues.releaseOnReset` | Kill X / all-X / golden playbacks on Reset (set `false` if the looks time out by themselves) |
 | `lighting.mode` | `agent` (default), `direct` (hub calls Titan itself), or `off` |
-| `titan.*` | Titan Web API host/port/timeout and URL templates (`{userNumber}` is filled in) |
+| `titan.*` | Titan Web API host/port/timeout and URL templates (`{userNumber}` and, for `levelUrl`, `{level}` as 0-1 are filled in). `fireUrl`/`releaseUrl` are Go/Kill; `flashUrl`, `flashOffUrl`, `swopUrl`, `swopOffUrl` and `levelUrl` default to Titan's `Playbacks/FlashPlayback`, `ClearFlashPlayback`, `SwopPlayback`, `ClearSwopPlayback` and `SetPlaybackLevel` if missing. |
 
 ### Hardware console instead of a Titan PC
 

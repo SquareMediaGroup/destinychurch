@@ -25,6 +25,11 @@
     "timeoutMs": 1500,
     "fireUrl": "/titan/script/2/Playbacks/FirePlaybackAtLevel?handle_userNumber={userNumber}&level_level=1&alwaysRefire=true",
     "releaseUrl": "/titan/script/2/Playbacks/KillPlayback?handle_userNumber={userNumber}",
+    "flashUrl": "/titan/script/2/Playbacks/FlashPlayback?handle_userNumber={userNumber}",
+    "flashOffUrl": "/titan/script/2/Playbacks/ClearFlashPlayback?handle_userNumber={userNumber}",
+    "swopUrl": "/titan/script/2/Playbacks/SwopPlayback?handle_userNumber={userNumber}",
+    "swopOffUrl": "/titan/script/2/Playbacks/ClearSwopPlayback?handle_userNumber={userNumber}",
+    "levelUrl": "/titan/script/2/Playbacks/SetPlaybackLevel?srcHandle_userNumber={userNumber}&level_level={level}",
     "healthUrl": "/titan/get/System/SoftwareVersion"
   }
 }

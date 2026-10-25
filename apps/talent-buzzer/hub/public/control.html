@@ -37,7 +37,14 @@
     input[type=text] { font: inherit; color: var(--text); background: #0f1014; border: 1px solid #3a3e48; border-radius: 8px; padding: 7px 10px; width: 7em; }
     input[type=text]:focus { outline: 2px solid #4c6ef5; outline-offset: -1px; }
     input.bad { border-color: var(--bad); }
-    .cue .name { flex: 1; }
+    section.wide { grid-column: 1 / -1; }
+    .cue { flex-wrap: wrap; }
+    .cue .name { flex: 1 1 160px; }
+    .cue .fields { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+    .cue input.num { width: 5.5em; }
+    .cue input.small { width: 3.6em; }
+    select { font: inherit; color: var(--text); background: #0f1014; border: 1px solid #3a3e48; border-radius: 8px; padding: 7px 8px; }
+    .cue .lvl[hidden] { display: none; }
     #cueMsg { min-height: 1.4em; margin: 8px 0 0; }
     #cueMsg.fail { color: var(--bad); } #cueMsg.ok { color: var(--ok); }
     label.check { display: flex; align-items: center; gap: 8px; padding: 8px 0 4px; }
@@ -72,24 +79,22 @@
       <div class="row"><span class="dot" id="titanDot"></span><span class="name">Avolites Titan</span><span class="pill" id="titanTxt"></span></div>
     </section>
 
-    <section>
+    <section class="wide">
       <h2>Lighting cues</h2>
-      <p class="muted" style="margin-top: 0">The Titan playback number each buzzer fires. Leave a box empty to fire nothing.
-        <b>Test</b> fires that playback only; the screen and show state are not touched.</p>
+      <p class="muted" style="margin-top: 0">For each buzzer: the Titan playback number, what to do with it, and how many times in how many
+        seconds. Leave the number empty to fire nothing. <b>Go</b> fires the playback; <b>Flash</b> and <b>Swop</b> press those buttons
+        (Flash needs flash turned on for that playback in Titan); <b>Fader</b> moves it to the level you set. Done once, Go, Swop and Fader
+        stay on until Reset; done several times they pulse on and off. <b>Test</b> runs it without touching the screen.</p>
       <div id="cueRows"></div>
       <label class="check"><input type="checkbox" id="releaseOnReset"> Turn the buzzer looks off when Reset is pressed</label>
       <div class="actions" style="margin-top: 8px"><button class="primary" id="saveCues">Save cues</button></div>
       <p class="muted" id="cueMsg"></p>
     </section>
 
-    <section>
+    <section class="wide">
       <h2>Fire any playback</h2>
-      <p class="muted" style="margin-top: 0">Type a Titan playback number to fire it or turn it off, any time.</p>
-      <div class="actions">
-        <input type="text" id="anyCue" inputmode="numeric" placeholder="e.g. 205" aria-label="Playback number">
-        <button id="anyFire">Fire</button>
-        <button id="anyRelease">Release</button>
-      </div>
+      <p class="muted" style="margin-top: 0">Any playback, any time. <b>Off</b> undoes it (kill, clear flash or swop, or fader to 0).</p>
+      <div id="anyRow"></div>
       <p class="muted" id="anyMsg" style="margin-bottom: 0"></p>
     </section>
 
@@ -147,66 +152,103 @@
     function setDot(id, level) { $(id).className = `dot ${level === true ? 'ok' : level === 'warn' ? 'warn' : ''}`; }
 
     // ---------- lighting cues ----------
-    const cueRe = /^\s*$|^\s*[1-9]\d{0,4}\s*$/; // empty, or 1-99999
+    const numRe = /^\s*$|^\s*[1-9]\d{0,4}\s*$/; // empty, or 1-99999
+    const ACTION_LABELS = [['fire', 'Go'], ['flash', 'Flash'], ['swop', 'Swop'], ['level', 'Fader']];
 
     function cueMessage(text, cls) {
       $('cueMsg').textContent = text;
       $('cueMsg').className = `muted ${cls || ''}`;
     }
 
-    function cueFields() {
-      return [
-        ...judges.map((j) => ({ id: `x-${j.seat}`, label: `${j.name} buzzes`, value: cues.x && cues.x[j.seat], seat: j.seat })),
-        { id: 'allX', label: 'All four have buzzed', value: cues.allX },
-        { id: 'golden', label: `${golden.name}`, value: cues.golden },
-        { id: 'reset', label: 'Reset is pressed', value: cues.reset },
-      ];
+    // One editor row: number, action, fader level, times, seconds, Test (and Off).
+    function cueEditor(label, value, { withOff = false, say = cueMessage } = {}) {
+      const v = value || {};
+      const row = document.createElement('div');
+      row.className = 'row cue';
+      row.innerHTML = `<span class="name"></span><span class="fields">
+        <input type="text" class="num" inputmode="numeric" placeholder="none" title="Titan playback number">
+        <select title="What to do"></select>
+        <span class="lvl"><input type="text" class="small level" inputmode="numeric" title="Fader level, 0 to 100"> %</span>
+        <input type="text" class="small times" inputmode="numeric" title="How many times"> times in
+        <input type="text" class="small secs" inputmode="numeric" title="Seconds"> s
+        <button class="test">Test</button></span>`;
+      row.querySelector('.name').textContent = label;
+      const q = (sel) => row.querySelector(sel);
+      const select = q('select');
+      for (const [val, text] of ACTION_LABELS) select.append(new Option(text, val));
+      q('.num').value = v.userNumber == null ? '' : String(v.userNumber);
+      select.value = v.action || 'fire';
+      q('.level').value = String(v.level ?? 100);
+      q('.times').value = String(v.times ?? 1);
+      q('.secs').value = String(v.seconds ?? 5);
+      const showLevel = () => (q('.lvl').hidden = select.value !== 'level');
+      select.onchange = showLevel;
+      showLevel();
+      for (const inp of row.querySelectorAll('input')) inp.setAttribute('aria-label', `${label}: ${inp.title}`);
+      select.setAttribute('aria-label', `${label}: what to do`);
+      if (withOff) {
+        const off = document.createElement('button');
+        off.textContent = 'Off';
+        q('.fields').append(off);
+        off.onclick = () => { const c = read(); if (c) hub.send({ type: 'cue-off', cue: c, label }); else say(`${label}: type a playback number first.`, 'fail'); };
+      }
+      // Returns the cue, null when the number is empty, or undefined (and marks the box) when invalid.
+      const read = () => {
+        const checks = [[q('.num'), numRe], [q('.level'), /^\s*(100|\d{1,2})\s*$/], [q('.times'), /^\s*([1-9]|1\d|20)\s*$/], [q('.secs'), /^\s*([1-9]|[12]\d|30)\s*$/]];
+        let ok = true;
+        for (const [inp, re] of checks) { const bad = !re.test(inp.value); inp.classList.toggle('bad', bad); ok = ok && !bad; }
+        if (!ok) return undefined;
+        if (!q('.num').value.trim()) return null;
+        return { userNumber: q('.num').value.trim(), action: select.value, level: q('.level').value.trim(), times: q('.times').value.trim(), seconds: q('.secs').value.trim() };
+      };
+      q('.test').onclick = () => {
+        const c = read();
+        if (c === undefined) return say(`${label}: check the boxes marked in red.`, 'fail');
+        if (c === null) return say(`${label}: type a playback number first.`, 'fail');
+        say('');
+        hub.send({ type: 'test-cue', cue: c, label });
+      };
+      for (const inp of row.querySelectorAll('input')) inp.oninput = () => { inp.classList.remove('bad'); say(''); };
+      row.read = read;
+      return row;
     }
 
+    let cueRowsById = {};
     function buildCues() {
       const rows = $('cueRows');
       rows.innerHTML = '';
-      for (const f of cueFields()) {
-        const row = document.createElement('div');
-        row.className = 'row cue';
-        row.innerHTML = `<span class="name"></span><input type="text" inputmode="numeric" placeholder="none"><button>Test</button>`;
-        row.querySelector('.name').textContent = f.label;
-        const input = row.querySelector('input');
-        input.id = `cue-${f.id}`;
-        input.setAttribute('aria-label', `Playback for ${f.label}`);
-        input.value = f.value == null ? '' : String(f.value);
-        input.oninput = () => { input.classList.toggle('bad', !cueRe.test(input.value)); cueMessage(''); };
-        input.onkeydown = (e) => { if (e.key === 'Enter') saveCues(); };
-        row.querySelector('button').onclick = () => {
-          const v = input.value.trim();
-          if (!v) return cueMessage(`${f.label}: no playback set.`, 'fail');
-          hub.send({ type: 'test-lighting', userNumber: v, label: f.label });
-        };
+      cueRowsById = {};
+      const fields = [
+        ...judges.map((j) => [`x-${j.seat}`, `${j.name} buzzes`, cues.x && cues.x[j.seat]]),
+        ['allX', 'All four have buzzed', cues.allX],
+        ['golden', golden.name, cues.golden],
+        ['reset', 'Reset is pressed', cues.reset],
+      ];
+      for (const [id, label, value] of fields) {
+        const row = cueEditor(label, value);
+        row.label = label;
+        cueRowsById[id] = row;
         rows.append(row);
       }
       $('releaseOnReset').checked = cues.releaseOnReset !== false;
     }
 
     function saveCues() {
-      const val = (id) => $(`cue-${id}`).value.trim();
-      const edit = { x: {}, allX: val('allX'), golden: val('golden'), reset: val('reset'), releaseOnReset: $('releaseOnReset').checked };
-      for (const j of judges) edit.x[j.seat] = val(`x-${j.seat}`);
-      const bad = cueFields().find((f) => !cueRe.test(val(f.id)));
-      if (bad) return cueMessage(`${bad.label}: use a whole number from 1 to 99999, or leave it empty.`, 'fail');
+      const edit = { x: {}, releaseOnReset: $('releaseOnReset').checked };
+      for (const [id, row] of Object.entries(cueRowsById)) {
+        const c = row.read();
+        if (c === undefined) return cueMessage(`${row.label}: check the boxes marked in red.`, 'fail');
+        if (id.startsWith('x-')) edit.x[id.slice(2)] = c;
+        else edit[id] = c;
+      }
       if (!hub.send({ type: 'set-cues', cues: edit })) cueMessage('Not connected to the hub. Try again in a moment.', 'fail');
       else cueMessage('Saving...');
     }
     $('saveCues').onclick = saveCues;
 
-    function fireAny(type) {
-      const v = $('anyCue').value.trim();
-      if (!/^[1-9]\d{0,4}$/.test(v)) { $('anyMsg').textContent = 'Type a whole number from 1 to 99999.'; return; }
-      $('anyMsg').textContent = '';
-      hub.send({ type, userNumber: v, label: 'Manual' });
-    }
-    $('anyFire').onclick = () => fireAny('test-lighting');
-    $('anyRelease').onclick = () => fireAny('release-lighting');
-    $('anyCue').onkeydown = (e) => { if (e.key === 'Enter') fireAny('test-lighting'); };
+    const anyRow = cueEditor('Playback', null, { withOff: true, say: (t) => ($('anyMsg').textContent = t) });
+    anyRow.querySelector('.test').textContent = 'Fire';
+    $('anyRow').append(anyRow);
 
     function buildStatic() {
       buildCues();

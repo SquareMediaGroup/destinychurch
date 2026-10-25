@@ -17,7 +17,9 @@ http
       return;
     }
     if (url.pathname.includes('/Playbacks/')) {
-      console.log(`[${t}] 💡 ${url.pathname.split('/').pop()} playback ${url.searchParams.get('handle_userNumber')}`);
+      const n = url.searchParams.get('handle_userNumber') ?? url.searchParams.get('srcHandle_userNumber');
+      const level = url.searchParams.get('level_level');
+      console.log(`[${t}] 💡 ${url.pathname.split('/').pop()} playback ${n}${level != null ? ` level ${level}` : ''}`);
       res.end('');
       return;
     }

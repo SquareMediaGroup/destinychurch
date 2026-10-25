@@ -12,6 +12,7 @@ const path = require('node:path');
 const { WebSocketServer } = require('ws');
 const { ShowState } = require('../lib/state');
 const titanApi = require('../lib/titan');
+const { parseCue, applyCueEdit } = require('../lib/cues');
 const discovery = require('../lib/discovery');
 
 const APP_DIR = path.join(__dirname, '..');
@@ -26,8 +27,9 @@ function loadConfig() {
   if (!file) throw new Error('No config.json found');
   if (file.endsWith('config.example.json')) log('⚠️ ', 'No config.json yet, using config.example.json (copy it to config.json to customise)');
   const config = JSON.parse(fs.readFileSync(file, 'utf8'));
+  const savedHubPort = config.hubPort;
   if (process.env.PORT) config.hubPort = Number(process.env.PORT);
-  return { config, file };
+  return { config, file, savedHubPort };
 }
 
 function log(icon, ...msg) {
@@ -35,7 +37,17 @@ function log(icon, ...msg) {
   console.log(`[${t}] ${icon}`, ...msg);
 }
 
-const { config, file: configFile } = loadConfig();
+const { config, file: configFile, savedHubPort } = loadConfig();
+
+// Saves cue changes made on the control page. Never writes over
+// config.example.json: the first save creates config.json next to it.
+function saveConfig() {
+  const target = configFile.endsWith('config.example.json') ? path.join(APP_DIR, 'config.json') : configFile;
+  const tmp = `${target}.tmp`;
+  fs.writeFileSync(tmp, JSON.stringify({ ...config, hubPort: savedHubPort }, null, 2) + '\n');
+  fs.renameSync(tmp, target);
+  return target;
+}
 const seats = config.judges.map((j) => String(j.seat));
 const state = new ShowState({ seats, debounceMs: config.debounceMs });
 const lightingMode = config.lighting?.mode ?? 'agent'; // agent | direct | off
@@ -240,10 +252,39 @@ function handleMessage(client, msg) {
       pushState();
       break;
     }
-    case 'test-lighting': {
+    case 'test-lighting':
+    case 'release-lighting': {
       if (client.role !== 'control') return;
-      const n = Number(msg.userNumber);
-      if (Number.isFinite(n)) fireLighting(n, `Test ${msg.label ?? ''}`.trim());
+      let n;
+      try {
+        n = parseCue(msg.userNumber);
+      } catch (err) {
+        send(client.ws, { type: 'cues-error', error: err.message });
+        return;
+      }
+      if (n == null) return;
+      const release = msg.type === 'release-lighting';
+      fireLighting(n, `${release ? 'Release' : 'Test'} ${msg.label ?? ''}`.trim(), release ? 'release' : 'fire');
+      break;
+    }
+    case 'set-cues': {
+      if (client.role !== 'control') return;
+      let next;
+      try {
+        next = applyCueEdit(config.cues, msg.cues ?? {}, seats);
+      } catch (err) {
+        send(client.ws, { type: 'cues-error', error: err.message });
+        return;
+      }
+      config.cues = next;
+      let savedTo = null;
+      try {
+        savedTo = saveConfig();
+      } catch (err) {
+        log('⚠️ ', `Cues changed but could not be saved: ${err.message}`);
+      }
+      log('🎛️ ', `Lighting cues changed${savedTo ? ` (saved to ${path.basename(savedTo)})` : ' (NOT saved, lost on restart)'}: ${JSON.stringify(next)}`);
+      broadcast({ type: 'cues', cues: next, saved: Boolean(savedTo) }, ['control']);
       break;
     }
     case 'test-sound': {

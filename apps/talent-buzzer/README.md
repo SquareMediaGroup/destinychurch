@@ -228,27 +228,20 @@ The lighting person needs to make the "looks" for each buzzer. Show them this pa
 | All four have buzzed (e.g. red strobe), optional | 120 |
 | Golden buzzer | 110 |
 
-If they use **different numbers**, change them on the **LED screen computer**:
+If they use **different numbers**, change them on the **Control page** (the **Control** link on the setup page):
 
-1. In the `talent-buzzer` folder, copy **`config.example.json`** and paste it.
-   Rename the copy to **`config.json`**.
-2. Right-click `config.json` → **Open with** → **Notepad**.
-3. Find this part and change **only the numbers**:
+1. In the **Lighting cues** box, type each playback number next to its buzzer. Leave a box empty to fire nothing.
+2. Click **Test** next to any of them to check the right look comes up.
+3. Click **Save cues**. The buzzers use the new numbers straight away, and the app remembers them next time.
 
-   ```json
-   "cues": {
-     "x": { "1": 101, "2": 102, "3": 103, "4": 104 },
-     "golden": 110,
-     "allX": null,
-   ```
+To fire **any** playback at any time (for example a look that isn't on a buzzer), type its number in the
+**Fire any playback** box and click **Fire**. Click **Release** to turn it off again.
 
-   - To use an "all four" look, change `null` to its number, e.g. `"allX": 120,`
-   - Near the top you can change the judges' names too: `{ "seat": "1", "name": "Pastor Dave" }`
-4. **Save** (Ctrl + S) and close Notepad.
-5. Close the black `start.bat` window and double-click `start.bat` again.
-
-> **Careful:** keep every `"`, `:` and `,` exactly where it is. Only change the numbers and names.
-> If the app won't start after editing, delete `config.json` and try again.
+> **Judges' names** are still changed in a file. On the LED screen computer, copy **`config.example.json`** in the
+> `talent-buzzer` folder and rename the copy to **`config.json`** (if it isn't there already). Open it in Notepad
+> (or TextEdit on a Mac), change only the names, for example `{ "seat": "1", "name": "Pastor Dave" }`, save, then close the
+> app's window and start it again. Keep every `"`, `:` and `,` where it is. If the app won't start after editing,
+> delete `config.json` and try again.
 
 ---
 
@@ -266,7 +259,7 @@ Go through this list:
    If it says *"Click the display page once"*, click the big screen.
 3. [ ] **Lighting link** and **Avolites Titan:** both green.
 4. [ ] Click **Test X sound**, **Test all out** and **Test gold**. You hear them through the speakers.
-5. [ ] Click each **Test lighting cue** button. The right look comes up each time.
+5. [ ] In **Lighting cues**, click each **Test** button. The right look comes up each time.
 6. [ ] Press each tablet once. Check the X appears, the sound plays and the lights change.
 7. [ ] Click **Reset buzzers**.
 8. [ ] Click **Lock buzzers** until the first act starts.
@@ -312,7 +305,7 @@ What the audience sees:
 | **Avolites page stuck on "Looking on the network..."** | Both computers must be on the same network. Allow Node.js through the firewall (see above) on the **Avolites** computer too. Or click **Change**, type the LED screen computer's address (shown as **Network address** on its setup page), then **Start**. |
 | **Avolites Titan: Not reachable** | Titan isn't open, or step 1 of Part 3 didn't work. Ask the lighting person. |
 | **Lights don't change but the screen does** | Look at the **Lighting log** on the control page. It says what went wrong. |
-| **The wrong light look comes up** | The numbers in `config.json` don't match Titan. See Part 5. |
+| **The wrong light look comes up** | The numbers in **Lighting cues** on the Control page don't match Titan. See Part 5. |
 | **The big screen went back to a small window** | Click it and press **F11** again. |
 | **Something is really stuck** | Close the black `start.bat` window and double-click `start.bat` again. The tablets and the screen reconnect by themselves within a few seconds. |
 | **"Wrong access key"** | Someone set a key in `config.json`. See "For techies". |
@@ -379,6 +372,7 @@ whenever this folder changes on `main` (or when it's run by hand from the Action
 | `debounceMs` | Ignore a second press on the same buzzer within this many ms |
 | `judges` | Seats and names shown on the tablets, control page and display |
 | `golden.name` | Name for the golden tablet |
+| `cues.*` | Set from the Control page's **Lighting cues** box (`set-cues` over the WebSocket, validated by `lib/cues.js`), which writes them back to `config.json` (creating it from the example on first save). |
 | `cues.x` | Titan playback user number per seat |
 | `cues.allX` | Playback fired when all four judges have buzzed, or `null` |
 | `cues.golden` | Golden buzzer playback |

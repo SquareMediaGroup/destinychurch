@@ -34,6 +34,13 @@
     #log li.fail { color: var(--bad); }
     .links a { color: #9db4ff; word-break: break-all; }
     .links div { padding: 3px 0; }
+    input[type=text] { font: inherit; color: var(--text); background: #0f1014; border: 1px solid #3a3e48; border-radius: 8px; padding: 7px 10px; width: 7em; }
+    input[type=text]:focus { outline: 2px solid #4c6ef5; outline-offset: -1px; }
+    input.bad { border-color: var(--bad); }
+    .cue .name { flex: 1; }
+    #cueMsg { min-height: 1.4em; margin: 8px 0 0; }
+    #cueMsg.fail { color: var(--bad); } #cueMsg.ok { color: var(--ok); }
+    label.check { display: flex; align-items: center; gap: 8px; padding: 8px 0 4px; }
   </style>
 </head>
 <body>
@@ -66,9 +73,24 @@
     </section>
 
     <section>
-      <h2>Test lighting cues</h2>
-      <p class="muted" style="margin-top: 0">Fires the playback only. The screen and show state are not touched.</p>
-      <div class="actions" id="cueTests"></div>
+      <h2>Lighting cues</h2>
+      <p class="muted" style="margin-top: 0">The Titan playback number each buzzer fires. Leave a box empty to fire nothing.
+        <b>Test</b> fires that playback only; the screen and show state are not touched.</p>
+      <div id="cueRows"></div>
+      <label class="check"><input type="checkbox" id="releaseOnReset"> Turn the buzzer looks off when Reset is pressed</label>
+      <div class="actions" style="margin-top: 8px"><button class="primary" id="saveCues">Save cues</button></div>
+      <p class="muted" id="cueMsg"></p>
+    </section>
+
+    <section>
+      <h2>Fire any playback</h2>
+      <p class="muted" style="margin-top: 0">Type a Titan playback number to fire it or turn it off, any time.</p>
+      <div class="actions">
+        <input type="text" id="anyCue" inputmode="numeric" placeholder="e.g. 205" aria-label="Playback number">
+        <button id="anyFire">Fire</button>
+        <button id="anyRelease">Release</button>
+      </div>
+      <p class="muted" id="anyMsg" style="margin-bottom: 0"></p>
     </section>
 
     <section>
@@ -100,6 +122,13 @@
           golden = msg.golden;
           cues = msg.cues;
           buildStatic();
+        } else if (msg.type === 'cues') {
+          cues = msg.cues;
+          buildCues();
+          cueMessage(msg.saved ? 'Saved. The buzzers use these cues now.' : 'Changed for now, but could not be saved: they reset when the app restarts.', msg.saved ? 'ok' : 'fail');
+        } else if (msg.type === 'cues-error') {
+          cueMessage(msg.error, 'fail');
+          $('anyMsg').textContent = msg.error;
         } else if (msg.type === 'state') {
           last = msg;
           render();
@@ -117,20 +146,70 @@
 
     function setDot(id, level) { $(id).className = `dot ${level === true ? 'ok' : level === 'warn' ? 'warn' : ''}`; }
 
+    // ---------- lighting cues ----------
+    const cueRe = /^\s*$|^\s*[1-9]\d{0,4}\s*$/; // empty, or 1-99999
+
+    function cueMessage(text, cls) {
+      $('cueMsg').textContent = text;
+      $('cueMsg').className = `muted ${cls || ''}`;
+    }
+
+    function cueFields() {
+      return [
+        ...judges.map((j) => ({ id: `x-${j.seat}`, label: `${j.name} buzzes`, value: cues.x && cues.x[j.seat], seat: j.seat })),
+        { id: 'allX', label: 'All four have buzzed', value: cues.allX },
+        { id: 'golden', label: `${golden.name}`, value: cues.golden },
+        { id: 'reset', label: 'Reset is pressed', value: cues.reset },
+      ];
+    }
+
+    function buildCues() {
+      const rows = $('cueRows');
+      rows.innerHTML = '';
+      for (const f of cueFields()) {
+        const row = document.createElement('div');
+        row.className = 'row cue';
+        row.innerHTML = `<span class="name"></span><input type="text" inputmode="numeric" placeholder="none"><button>Test</button>`;
+        row.querySelector('.name').textContent = f.label;
+        const input = row.querySelector('input');
+        input.id = `cue-${f.id}`;
+        input.setAttribute('aria-label', `Playback for ${f.label}`);
+        input.value = f.value == null ? '' : String(f.value);
+        input.oninput = () => { input.classList.toggle('bad', !cueRe.test(input.value)); cueMessage(''); };
+        input.onkeydown = (e) => { if (e.key === 'Enter') saveCues(); };
+        row.querySelector('button').onclick = () => {
+          const v = input.value.trim();
+          if (!v) return cueMessage(`${f.label}: no playback set.`, 'fail');
+          hub.send({ type: 'test-lighting', userNumber: v, label: f.label });
+        };
+        rows.append(row);
+      }
+      $('releaseOnReset').checked = cues.releaseOnReset !== false;
+    }
+
+    function saveCues() {
+      const val = (id) => $(`cue-${id}`).value.trim();
+      const edit = { x: {}, allX: val('allX'), golden: val('golden'), reset: val('reset'), releaseOnReset: $('releaseOnReset').checked };
+      for (const j of judges) edit.x[j.seat] = val(`x-${j.seat}`);
+      const bad = cueFields().find((f) => !cueRe.test(val(f.id)));
+      if (bad) return cueMessage(`${bad.label}: use a whole number from 1 to 99999, or leave it empty.`, 'fail');
+      if (!hub.send({ type: 'set-cues', cues: edit })) cueMessage('Not connected to the hub. Try again in a moment.', 'fail');
+      else cueMessage('Saving...');
+    }
+    $('saveCues').onclick = saveCues;
+
+    function fireAny(type) {
+      const v = $('anyCue').value.trim();
+      if (!/^[1-9]\d{0,4}$/.test(v)) { $('anyMsg').textContent = 'Type a whole number from 1 to 99999.'; return; }
+      $('anyMsg').textContent = '';
+      hub.send({ type, userNumber: v, label: 'Manual' });
+    }
+    $('anyFire').onclick = () => fireAny('test-lighting');
+    $('anyRelease').onclick = () => fireAny('release-lighting');
+    $('anyCue').onkeydown = (e) => { if (e.key === 'Enter') fireAny('test-lighting'); };
+
     function buildStatic() {
-      const tests = $('cueTests');
-      tests.innerHTML = '';
-      const addTest = (label, n) => {
-        if (n == null) return;
-        const b = document.createElement('button');
-        b.textContent = `${label} (PB ${n})`;
-        b.onclick = () => hub.send({ type: 'test-lighting', userNumber: n, label });
-        tests.append(b);
-      };
-      judges.forEach((j) => addTest(`X ${j.name}`, cues.x && cues.x[j.seat]));
-      addTest('All X', cues.allX);
-      addTest('Golden', cues.golden);
-      addTest('Reset', cues.reset);
+      buildCues();
 
       const links = $('links');
       links.innerHTML = '';

@@ -1,6 +1,6 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { parseJudgeCount, normaliseJudges, activeJudges } = require('../lib/judges');
+const { parseJudgeCount, normaliseJudges, applyNameEdit, activeJudges } = require('../lib/judges');
 const { ShowState } = require('../lib/state');
 
 const four = [1, 2, 3, 4].map((n) => ({ seat: String(n), name: `J${n}` }));
@@ -40,4 +40,17 @@ test('all X follows the number of judges in use', () => {
   assert.equal(s.allX(), false);
   s.press('2');
   assert.equal(s.allX(), true);
+});
+
+test('applyNameEdit renames judges and the golden buzzer, tidying spaces', () => {
+  const { judges, golden } = applyNameEdit(four, { name: 'Golden Buzzer' }, { judges: { 1: '  Pastor   Dave ', 9: 'Nobody' }, golden: 'Gold!' });
+  assert.equal(judges[0].name, 'Pastor Dave');
+  assert.equal(judges[1].name, 'J2');
+  assert.equal(golden.name, 'Gold!');
+  assert.equal(four[0].name, 'J1');
+});
+
+test('applyNameEdit rejects empty and over-long names', () => {
+  assert.throws(() => applyNameEdit(four, { name: 'G' }, { judges: { 2: '   ' } }), /Judge 2: type a name/);
+  assert.throws(() => applyNameEdit(four, { name: 'G' }, { golden: 'x'.repeat(41) }), /Golden buzzer: keep the name/);
 });

@@ -11,7 +11,7 @@ falls, a fanfare plays, and the lights do something special.
 
 If **every judge** buzzes, the screen flashes red and an alarm sounds.
 
-There can be **2, 3 or 4 judges**. Pick the number on the Control page (see [Fewer judges](#fewer-judges)).
+There can be **2, 3 or 4 judges**. Pick the number on the Control page (see [Judges' names and how many](#judges-names-and-how-many)).
 
 ![Two judges have buzzed](docs/images/display-xs.jpg)
 
@@ -249,11 +249,7 @@ To fire **any** playback at any time (for example a look that isn't on a buzzer)
 > commands from Avolites' Web API notes and need checking on your console. If one does nothing, the
 > **Lighting log** on the Control page says why.
 
-> **Judges' names** are still changed in a file. On the LED screen computer, copy **`config.example.json`** in the
-> `talent-buzzer` folder and rename the copy to **`config.json`** (if it isn't there already). Open it in Notepad
-> (or TextEdit on a Mac), change only the names, for example `{ "seat": "1", "name": "Pastor Dave" }`, save, then close the
-> app's window and start it again. Keep every `"`, `:` and `,` where it is. If the app won't start after editing,
-> delete `config.json` and try again.
+> **Judges' names:** see [Judges' names and how many](#judges-names-and-how-many) below.
 
 ---
 
@@ -294,10 +290,13 @@ the **Golden buzzer** fanfare.
 The screen uses the new sound straight away, with no refresh needed. It is kept when the app restarts and when you
 download a new version. **Built-in** puts the original sound back.
 
-## Fewer judges
+## Judges' names and how many
 
-There can be 2, 3 or 4 judges. On the Control page, in the **Show** box, pick the number next to
-**Number of judges**.
+**Names:** on the Control page, in the **Show** box, type each judge's name (and a name for the golden
+buzzer), then click **Save names**. The big screen, the tablets and the Control page change straight away,
+and the names stay after a restart.
+
+**How many:** there can be 2, 3 or 4 judges. In the same box, pick the number next to **Number of judges**.
 
 - The screen shows that many X's, spread across the width.
 - The red alarm goes off when **all of those** judges have buzzed.
@@ -409,7 +408,7 @@ whenever this folder changes on `main` (or when it's run by hand from the Action
 | `debounceMs` | Ignore a second press on the same buzzer within this many ms |
 | `judges` | Seats and names shown on the tablets, control page and display. Always filled up to four (missing ones become "Judge N"). |
 | `judgeCount` | How many judges are in use, 2 to 4, from the top of `judges`. Set from the Control page (`set-judges`, validated by `lib/judges.js`). Defaults to the length of `judges`. |
-| `golden.name` | Name for the golden tablet |
+| `golden.name` | Name for the golden tablet. `judges[].name` and this are set from the Control page (`set-names`, validated by `lib/judges.js`: 1 to 40 characters). |
 | `cues.*` | Set from the Control page's **Lighting cues** box (`set-cues` over the WebSocket, validated by `lib/cues.js`), which writes them back to `config.json` (creating it from the example on first save). |
 | `cues.x` | Cue per seat: `{ userNumber, action: fire\|flash\|swop\|level, level: 0-100, times: 1-20, seconds: 1-30 }`. A bare number (older configs) means a plain Go once. |
 | `cues.allX` | Playback fired when every judge in use has buzzed, or `null` |
